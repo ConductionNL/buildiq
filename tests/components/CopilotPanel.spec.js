@@ -14,7 +14,9 @@ import { mount } from '@vue/test-utils'
 
 const axiosGet = vi.fn()
 const axiosPost = vi.fn()
-vi.mock('@nextcloud/axios', () => ({ default: { get: (...a) => axiosGet(...a), post: (...a) => axiosPost(...a) } }))
+vi.mock('@nextcloud/axios', () => ({
+	default: { get: (...a) => axiosGet(...a), post: (...a) => axiosPost(...a) },
+}))
 vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => p }))
 
 import CopilotPanel from '../../src/components/copilot/CopilotPanel.vue'
@@ -31,10 +33,14 @@ describe('CopilotPanel.vue — spec ai-copilot REQ-OBAIC-007', () => {
 
 	it('renders a user bubble synchronously on send', async () => {
 		axiosPost.mockReturnValueOnce(new Promise(() => {})) // never resolves in this test
-		const wrapper = mount(CopilotPanel, { propsData: { appSlug: 'tool-library' } })
+		const wrapper = mount(CopilotPanel, {
+			propsData: { appSlug: 'tool-library' },
+		})
 		const input = wrapper.find('[data-testid="copilot-message-input"]')
 		await input.setValue('Add a suppliers page with a table widget')
-		await wrapper.find('[data-testid="copilot-message-input"]').trigger('keydown.enter')
+		await wrapper
+			.find('[data-testid="copilot-message-input"]')
+			.trigger('keydown.enter')
 
 		expect(wrapper.text()).toContain('Add a suppliers page with a table widget')
 	})
@@ -43,28 +49,59 @@ describe('CopilotPanel.vue — spec ai-copilot REQ-OBAIC-007', () => {
 		axiosPost.mockResolvedValueOnce({
 			data: {
 				summary: 'Adds a suppliers page',
-				steps: [{ tool: 'openbuild.upsertPage', arguments: { appSlug: 'tool-library', pageId: 'suppliers', title: 'Suppliers', type: 'index', route: '/suppliers' } }],
+				steps: [
+					{
+						tool: 'openbuild.upsertPage',
+						arguments: {
+							appSlug: 'tool-library',
+							pageId: 'suppliers',
+							title: 'Suppliers',
+							type: 'index',
+							route: '/suppliers',
+						},
+					},
+				],
 				manifests: {},
 			},
 		})
 
-		const wrapper = mount(CopilotPanel, { propsData: { appSlug: 'tool-library' } })
-		await wrapper.find('[data-testid="copilot-message-input"]').setValue('add a suppliers page')
-		await wrapper.find('[data-testid="copilot-message-input"]').trigger('keydown.enter')
+		const wrapper = mount(CopilotPanel, {
+			propsData: { appSlug: 'tool-library' },
+		})
+		await wrapper
+			.find('[data-testid="copilot-message-input"]')
+			.setValue('add a suppliers page')
+		await wrapper
+			.find('[data-testid="copilot-message-input"]')
+			.trigger('keydown.enter')
 		await flush()
 		await wrapper.vm.$nextTick()
 
-		expect(wrapper.findAllComponents({ name: 'CopilotProposal' })).toHaveLength(1)
+		expect(wrapper.findAllComponents({ name: 'CopilotProposal' })).toHaveLength(
+			1,
+		)
 	})
 
 	it('Approve calls executePlan exactly once', async () => {
 		axiosPost
-			.mockResolvedValueOnce({ data: { summary: 'x', steps: [{ tool: 'openbuild.upsertPage', arguments: {} }], manifests: {} } })
+			.mockResolvedValueOnce({
+				data: {
+					summary: 'x',
+					steps: [{ tool: 'openbuild.upsertPage', arguments: {} }],
+					manifests: {},
+				},
+			})
 			.mockResolvedValueOnce({ data: { results: [{ success: true }] } })
 
-		const wrapper = mount(CopilotPanel, { propsData: { appSlug: 'tool-library' } })
-		await wrapper.find('[data-testid="copilot-message-input"]').setValue('add a page')
-		await wrapper.find('[data-testid="copilot-message-input"]').trigger('keydown.enter')
+		const wrapper = mount(CopilotPanel, {
+			propsData: { appSlug: 'tool-library' },
+		})
+		await wrapper
+			.find('[data-testid="copilot-message-input"]')
+			.setValue('add a page')
+		await wrapper
+			.find('[data-testid="copilot-message-input"]')
+			.trigger('keydown.enter')
 		await flush()
 		await wrapper.vm.$nextTick()
 
@@ -77,11 +114,23 @@ describe('CopilotPanel.vue — spec ai-copilot REQ-OBAIC-007', () => {
 	})
 
 	it('Discard never calls executePlan', async () => {
-		axiosPost.mockResolvedValueOnce({ data: { summary: 'x', steps: [{ tool: 'openbuild.upsertPage', arguments: {} }], manifests: {} } })
+		axiosPost.mockResolvedValueOnce({
+			data: {
+				summary: 'x',
+				steps: [{ tool: 'openbuild.upsertPage', arguments: {} }],
+				manifests: {},
+			},
+		})
 
-		const wrapper = mount(CopilotPanel, { propsData: { appSlug: 'tool-library' } })
-		await wrapper.find('[data-testid="copilot-message-input"]').setValue('add a page')
-		await wrapper.find('[data-testid="copilot-message-input"]').trigger('keydown.enter')
+		const wrapper = mount(CopilotPanel, {
+			propsData: { appSlug: 'tool-library' },
+		})
+		await wrapper
+			.find('[data-testid="copilot-message-input"]')
+			.setValue('add a page')
+		await wrapper
+			.find('[data-testid="copilot-message-input"]')
+			.trigger('keydown.enter')
 		await flush()
 		await wrapper.vm.$nextTick()
 
@@ -94,17 +143,33 @@ describe('CopilotPanel.vue — spec ai-copilot REQ-OBAIC-007', () => {
 	})
 
 	it('the input is disabled while a proposal is pending review', async () => {
-		axiosPost.mockResolvedValueOnce({ data: { summary: 'x', steps: [{ tool: 'openbuild.upsertPage', arguments: {} }], manifests: {} } })
+		axiosPost.mockResolvedValueOnce({
+			data: {
+				summary: 'x',
+				steps: [{ tool: 'openbuild.upsertPage', arguments: {} }],
+				manifests: {},
+			},
+		})
 
-		const wrapper = mount(CopilotPanel, { propsData: { appSlug: 'tool-library' } })
-		await wrapper.find('[data-testid="copilot-message-input"]').setValue('add a page')
-		await wrapper.find('[data-testid="copilot-message-input"]').trigger('keydown.enter')
+		const wrapper = mount(CopilotPanel, {
+			propsData: { appSlug: 'tool-library' },
+		})
+		await wrapper
+			.find('[data-testid="copilot-message-input"]')
+			.setValue('add a page')
+		await wrapper
+			.find('[data-testid="copilot-message-input"]')
+			.trigger('keydown.enter')
 		await flush()
 		await wrapper.vm.$nextTick()
 
 		// Vue 3 renders a true boolean attribute as `disabled=""` — a falsy
 		// empty string — so presence is the signal, not truthiness.
-		expect(wrapper.find('[data-testid="copilot-message-input"]').attributes('disabled')).toBeDefined()
+		expect(
+			wrapper
+				.find('[data-testid="copilot-message-input"]')
+				.attributes('disabled'),
+		).toBeDefined()
 	})
 
 	// -------------------------------------------------------------------
@@ -112,13 +177,22 @@ describe('CopilotPanel.vue — spec ai-copilot REQ-OBAIC-007', () => {
 	// -------------------------------------------------------------------
 
 	it('omitting agentId renders no "acting as" header (bare copilot, unchanged)', () => {
-		const wrapper = mount(CopilotPanel, { propsData: { appSlug: 'tool-library' } })
-		expect(wrapper.find('[data-testid="copilot-acting-as"]').exists()).toBe(false)
+		const wrapper = mount(CopilotPanel, {
+			propsData: { appSlug: 'tool-library' },
+		})
+		expect(wrapper.find('[data-testid="copilot-acting-as"]').exists()).toBe(
+			false,
+		)
 	})
 
 	it('an agentId renders the "acting as" header with the agent name', () => {
 		const wrapper = mount(CopilotPanel, {
-			propsData: { appSlug: 'tool-library', agentId: 'agent-1', name: 'Page builder assistant', instructions: 'Be helpful.' },
+			propsData: {
+				appSlug: 'tool-library',
+				agentId: 'agent-1',
+				name: 'Page builder assistant',
+				instructions: 'Be helpful.',
+			},
 		})
 		const header = wrapper.find('[data-testid="copilot-acting-as"]')
 		expect(header.exists()).toBe(true)
@@ -128,24 +202,46 @@ describe('CopilotPanel.vue — spec ai-copilot REQ-OBAIC-007', () => {
 
 	it('sending a message with an agentId includes it in the plan request', async () => {
 		axiosPost.mockReturnValueOnce(new Promise(() => {}))
-		const wrapper = mount(CopilotPanel, { propsData: { appSlug: 'tool-library', agentId: 'agent-1' } })
-		await wrapper.find('[data-testid="copilot-message-input"]').setValue('add a page')
-		await wrapper.find('[data-testid="copilot-message-input"]').trigger('keydown.enter')
+		const wrapper = mount(CopilotPanel, {
+			propsData: { appSlug: 'tool-library', agentId: 'agent-1' },
+		})
+		await wrapper
+			.find('[data-testid="copilot-message-input"]')
+			.setValue('add a page')
+		await wrapper
+			.find('[data-testid="copilot-message-input"]')
+			.trigger('keydown.enter')
 
 		expect(axiosPost).toHaveBeenCalledWith(
 			'/apps/openbuild/api/copilot/plan',
-			expect.objectContaining({ brief: 'add a page', appSlug: 'tool-library', agentId: 'agent-1' }),
+			expect.objectContaining({
+				brief: 'add a page',
+				appSlug: 'tool-library',
+				agentId: 'agent-1',
+			}),
 		)
 	})
 
 	it('approving a proposal with an agentId includes it in the execute request', async () => {
 		axiosPost
-			.mockResolvedValueOnce({ data: { summary: 'x', steps: [{ tool: 'openbuild.upsertPage', arguments: {} }], manifests: {} } })
+			.mockResolvedValueOnce({
+				data: {
+					summary: 'x',
+					steps: [{ tool: 'openbuild.upsertPage', arguments: {} }],
+					manifests: {},
+				},
+			})
 			.mockResolvedValueOnce({ data: { results: [{ success: true }] } })
 
-		const wrapper = mount(CopilotPanel, { propsData: { appSlug: 'tool-library', agentId: 'agent-1' } })
-		await wrapper.find('[data-testid="copilot-message-input"]').setValue('add a page')
-		await wrapper.find('[data-testid="copilot-message-input"]').trigger('keydown.enter')
+		const wrapper = mount(CopilotPanel, {
+			propsData: { appSlug: 'tool-library', agentId: 'agent-1' },
+		})
+		await wrapper
+			.find('[data-testid="copilot-message-input"]')
+			.setValue('add a page')
+		await wrapper
+			.find('[data-testid="copilot-message-input"]')
+			.trigger('keydown.enter')
 		await flush()
 		await wrapper.vm.$nextTick()
 
@@ -160,11 +256,23 @@ describe('CopilotPanel.vue — spec ai-copilot REQ-OBAIC-007', () => {
 	})
 
 	it('discarding a proposal with an agentId logs it via the discard endpoint', async () => {
-		axiosPost.mockResolvedValueOnce({ data: { summary: 'x', steps: [{ tool: 'openbuild.upsertPage', arguments: {} }], manifests: {} } })
+		axiosPost.mockResolvedValueOnce({
+			data: {
+				summary: 'x',
+				steps: [{ tool: 'openbuild.upsertPage', arguments: {} }],
+				manifests: {},
+			},
+		})
 
-		const wrapper = mount(CopilotPanel, { propsData: { appSlug: 'tool-library', agentId: 'agent-1' } })
-		await wrapper.find('[data-testid="copilot-message-input"]').setValue('add a page')
-		await wrapper.find('[data-testid="copilot-message-input"]').trigger('keydown.enter')
+		const wrapper = mount(CopilotPanel, {
+			propsData: { appSlug: 'tool-library', agentId: 'agent-1' },
+		})
+		await wrapper
+			.find('[data-testid="copilot-message-input"]')
+			.setValue('add a page')
+		await wrapper
+			.find('[data-testid="copilot-message-input"]')
+			.trigger('keydown.enter')
 		await flush()
 		await wrapper.vm.$nextTick()
 

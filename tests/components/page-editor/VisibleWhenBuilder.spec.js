@@ -38,7 +38,9 @@ describe('VisibleWhenBuilder', () => {
 		await wrapper.find('.visible-when-builder__select').setValue('wantsContact')
 		// A controlled component only re-renders the op/value inputs once the
 		// caller passes the emitted value back down as the prop.
-		await wrapper.setProps({ modelValue: wrapper.emitted('update:modelValue')[0][0] })
+		await wrapper.setProps({
+			modelValue: wrapper.emitted('update:modelValue')[0][0],
+		})
 		await wrapper.find('.visible-when-builder__value').setValue('true')
 		const last = wrapper.emitted('update:modelValue').at(-1)[0]
 		expect(last).toEqual({ field: 'wantsContact', value: true })
@@ -54,7 +56,9 @@ describe('VisibleWhenBuilder', () => {
 	it('keeps a non-boolean non-numeric value as a literal string', async () => {
 		const wrapper = mountBuilder(null)
 		await wrapper.find('.visible-when-builder__select').setValue('wantsContact')
-		await wrapper.setProps({ modelValue: wrapper.emitted('update:modelValue')[0][0] })
+		await wrapper.setProps({
+			modelValue: wrapper.emitted('update:modelValue')[0][0],
+		})
 		await wrapper.find('.visible-when-builder__value').setValue('hello')
 		const last = wrapper.emitted('update:modelValue').at(-1)[0]
 		expect(last.value).toBe('hello')

@@ -216,6 +216,78 @@ final class ExportsControllerTest extends TestCase {
 	}//end testSubmitReturns422ForInvalidTarget()
 
 	/**
+	 * submit() rejects a non-semver `applicationVersion` with 422, NOT 500.
+	 *
+	 * `exportJob.applicationVersion` is declared in openbuild_register.json as
+	 * `pattern: ^\d+\.\d+\.\d+(?:[-+][\w.-]+)?$` and ExportDialog.vue sends a
+	 * semver. The controller previously checked only that the field was
+	 * non-empty, so any other string passed validation and failed three layers
+	 * down, where OpenRegister refused the record and ExportJobService::queue()
+	 * rethrew as a RuntimeException — reaching the caller as a bare HTTP 500:
+	 *
+	 *   OpenBuild export submit failed: Could not record the export job:
+	 *   Property 'applicationVersion' should match pattern ... but 'production'
+	 *   does not.
+	 *
+	 * 'production' is the value used here deliberately: it is a version SLUG,
+	 * the exact mistake the Newman collection was making, and the one a client
+	 * is most likely to repeat.
+	 *
+	 * `queue` is asserted NEVER to be called — a 422 that still queued the job
+	 * would be a worse defect than the 500 it replaced.
+	 *
+	 * @return void
+	 */
+	public function testSubmitReturns422ForNonSemverApplicationVersion(): void {
+		$this->stubAuthorisedFallback();
+		$this->request->method('getParams')->willReturn(
+			[
+				'target' => 'zip',
+				'applicationVersion' => 'production',
+			]
+		);
+
+		$this->exportJobService->expects(self::never())->method('queue');
+
+		$response = $this->buildController()->submit('hello-world');
+		self::assertInstanceOf(JSONResponse::class, $response);
+		self::assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
+
+		// The message must name the offending FIELD. A 422 that says only
+		// "invalid request" leaves the caller exactly as stuck as the 500 did.
+		$data = $response->getData();
+		self::assertIsArray($data);
+		self::assertArrayHasKey('error', $data);
+		self::assertStringContainsString('applicationVersion', (string)$data['error']);
+	}//end testSubmitReturns422ForNonSemverApplicationVersion()
+
+	/**
+	 * A well-formed semver with a pre-release/build suffix is ACCEPTED.
+	 *
+	 * The negative test above is only meaningful next to this one: a guard that
+	 * rejected everything would satisfy it while breaking every real export.
+	 * `1.2.3-rc.1` exercises the optional `(?:[-+][\w.-]+)?` group rather than
+	 * the bare `x.y.z` the happy-path test already covers.
+	 *
+	 * @return void
+	 */
+	public function testSubmitAcceptsSemverWithPreReleaseSuffix(): void {
+		$this->stubAuthorisedFallback();
+		$this->request->method('getParams')->willReturn(
+			[
+				'target' => 'zip',
+				'applicationVersion' => '1.2.3-rc.1',
+			]
+		);
+
+		$this->exportJobService->method('queue')->willReturn('11111111-1111-4111-8111-111111111111');
+
+		$response = $this->buildController()->submit('hello-world');
+		self::assertInstanceOf(JSONResponse::class, $response);
+		self::assertNotSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
+	}//end testSubmitAcceptsSemverWithPreReleaseSuffix()
+
+	/**
 	 * Test 2: submit() requires per-object Application access — when the
 	 * RBAC fallback denies (user not authenticated → IUserSession::getUser
 	 * returns null), the controller returns 403 Forbidden and the

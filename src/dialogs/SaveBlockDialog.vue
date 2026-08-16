@@ -20,52 +20,89 @@
 		@closing="onClose">
 		<div class="ob-save-block">
 			<p class="ob-save-block__intro">
-				{{ isSection
-					? t('openbuild', 'Save the selected widgets as a reusable block your organisation can insert into any page.')
-					: t('openbuild', 'Save this widget as a reusable block your organisation can insert into any page.') }}
+				{{
+					isSection
+						? t(
+								'openbuild',
+								'Save the selected widgets as a reusable block your organisation can insert into any page.',
+							)
+						: t(
+								'openbuild',
+								'Save this widget as a reusable block your organisation can insert into any page.',
+							)
+				}}
 			</p>
 
 			<NcTextField
-				:model-value="form.name"
+				:modelValue="form.name"
 				:label="t('openbuild', 'Block name')"
 				@update:modelValue="onNameInput" />
 			<NcTextField
-				:model-value="form.slug"
+				:modelValue="form.slug"
 				:label="t('openbuild', 'Slug (kebab-case, max 48 chars)')"
 				@update:modelValue="form.slug = $event" />
 			<NcTextArea
-				:model-value="form.description"
+				:modelValue="form.description"
 				:label="t('openbuild', 'Description')"
 				@update:modelValue="form.description = $event" />
 			<NcTextField
-				:model-value="form.category"
-				:label="t('openbuild', 'Category (e.g. {examples})', { examples: categoryHint })"
+				:modelValue="form.category"
+				:label="
+					t('openbuild', 'Category (e.g. {examples})', {
+						examples: categoryHint,
+					})
+				"
 				@update:modelValue="form.category = $event" />
 
 			<!-- Capture summary -->
 			<section class="ob-save-block__summary">
 				<h3>{{ t('openbuild', 'What will be captured') }}</h3>
 				<p v-if="dependencySummary.length">
-					{{ t('openbuild', 'Bindings reference {count} schema(s).', { count: dependencySummary.length }) }}
+					{{
+						t('openbuild', 'Bindings reference {count} schema(s).', {
+							count: dependencySummary.length,
+						})
+					}}
 				</p>
 				<ul v-if="dependencySummary.length" class="ob-save-block__schemas">
 					<li v-for="entry in dependencySummary" :key="entry.sourceSlug">
 						<code>{{ entry.slug }}</code>
 						<span v-if="entry.shared" class="ob-save-block__shared-flag">
-							{{ t('openbuild', '(shared schema — captured unchanged)') }}
+							{{
+								t(
+									'openbuild',
+									'(shared schema — captured unchanged)',
+								)
+							}}
 						</span>
 					</li>
 				</ul>
 				<p class="ob-save-block__no-rows">
-					{{ t('openbuild', 'No object data (rows) is captured — only structure.') }}
+					{{
+						t(
+							'openbuild',
+							'No object data (rows) is captured — only structure.',
+						)
+					}}
 				</p>
 			</section>
 
 			<p v-if="collisionError" class="ob-save-block__error" role="alert">
-				{{ t('openbuild', 'Two schemas would collide under the same name: {schemas}. Rename one before saving.', { schemas: collisionError }) }}
+				{{
+					t(
+						'openbuild',
+						'Two schemas would collide under the same name: {schemas}. Rename one before saving.',
+						{ schemas: collisionError },
+					)
+				}}
 			</p>
 			<p v-if="slugTakenError" class="ob-save-block__error" role="alert">
-				{{ t('openbuild', 'That slug is already used by a block in your organisation. Pick another slug.') }}
+				{{
+					t(
+						'openbuild',
+						'That slug is already used by a block in your organisation. Pick another slug.',
+					)
+				}}
 			</p>
 			<p v-if="saveError" class="ob-save-block__error" role="alert">
 				{{ saveError }}
@@ -76,10 +113,7 @@
 			<NcButton @click="onClose">
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
-			<NcButton
-				type="primary"
-				:disabled="!canSave || saving"
-				@click="save">
+			<NcButton variant="primary" :disabled="!canSave || saving" @click="save">
 				{{ saveLabel }}
 			</NcButton>
 		</template>
@@ -87,11 +121,10 @@
 </template>
 
 <script>
+import { getCurrentUser } from '@nextcloud/auth'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { getCurrentUser } from '@nextcloud/auth'
-import { NcButton, NcDialog, NcTextField, NcTextArea } from '@nextcloud/vue'
-
+import { NcButton, NcDialog, NcTextArea, NcTextField } from '@nextcloud/vue'
 import {
 	BLOCK_CATEGORIES,
 	captureBlock,
@@ -115,6 +148,7 @@ export default {
 		// Blocks already visible to the caller, for slug-collision checking.
 		existingBlocks: { type: Array, default: () => [] },
 	},
+
 	emits: ['update:open', 'saved'],
 	data() {
 		return {
@@ -124,12 +158,14 @@ export default {
 				description: '',
 				category: '',
 			},
+
 			slugEditedManually: false,
 			saving: false,
 			saveError: '',
 			collisionError: '',
 		}
 	},
+
 	computed: {
 		/**
 		 * Whether the current selection is a multi-widget section capture.
@@ -140,6 +176,7 @@ export default {
 		isSection() {
 			return isSectionFragment(this.fragment)
 		},
+
 		/**
 		 * Dialog title — varies for a single-widget vs a section capture.
 		 *
@@ -151,6 +188,7 @@ export default {
 				? t('openbuild', 'Save section as block')
 				: t('openbuild', 'Save widget as block')
 		},
+
 		/**
 		 * Suggested category examples shown in the field label.
 		 *
@@ -160,6 +198,7 @@ export default {
 		categoryHint() {
 			return BLOCK_CATEGORIES.join(', ')
 		},
+
 		/**
 		 * The capture result, or null when capture throws a de-namespace
 		 * collision (surfaced via `collisionError`).
@@ -183,6 +222,7 @@ export default {
 				return null
 			}
 		},
+
 		/**
 		 * The source Application's slug (used for de-namespacing).
 		 *
@@ -192,6 +232,7 @@ export default {
 		appSlug() {
 			return (this.application && this.application.slug) || ''
 		},
+
 		/**
 		 * The current Nextcloud user id, recorded as `createdBy`.
 		 *
@@ -202,6 +243,7 @@ export default {
 			const user = getCurrentUser()
 			return (user && user.uid) || ''
 		},
+
 		/**
 		 * Schema-dependency summary rendered in the capture-summary section.
 		 *
@@ -211,6 +253,7 @@ export default {
 		dependencySummary() {
 			return this.capture ? this.capture.summary.schemaDependencies : []
 		},
+
 		/**
 		 * Slug well-formedness (mirrors the schema's `^[a-z0-9][a-z0-9-]*[a-z0-9]$`).
 		 *
@@ -218,8 +261,12 @@ export default {
 		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		slugValid() {
-			return /^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(this.form.slug) && this.form.slug.length <= 48
+			return (
+				/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(this.form.slug)
+				&& this.form.slug.length <= 48
+			)
 		},
+
 		/**
 		 * Whether the chosen slug already belongs to a visible block (v1:
 		 * create-only, no update-in-place — see design.md's "no version
@@ -231,6 +278,7 @@ export default {
 		slugTakenError() {
 			return this.existingBlocks.some((b) => b && b.slug === this.form.slug)
 		},
+
 		/**
 		 * Whether Save is allowed.
 		 *
@@ -238,13 +286,16 @@ export default {
 		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		canSave() {
-			return this.form.name.trim().length > 0
+			return (
+				this.form.name.trim().length > 0
 				&& this.slugValid
 				&& this.form.category.trim().length > 0
 				&& !!this.capture
 				&& !this.collisionError
 				&& !this.slugTakenError
+			)
 		},
+
 		/**
 		 * Save button label.
 		 *
@@ -252,9 +303,12 @@ export default {
 		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		saveLabel() {
-			return this.saving ? t('openbuild', 'Saving…') : t('openbuild', 'Save block')
+			return this.saving
+				? t('openbuild', 'Saving…')
+				: t('openbuild', 'Save block')
 		},
 	},
+
 	watch: {
 		/**
 		 * Reset the form each time the dialog opens.
@@ -268,6 +322,7 @@ export default {
 				this.resetForm()
 			}
 		},
+
 		fragment: {
 			/**
 			 * Re-check the de-namespace collision whenever the selected
@@ -279,12 +334,15 @@ export default {
 			handler() {
 				this.recomputeCollision()
 			},
+
 			immediate: true,
 		},
-		'form.slug'() {
+
+		'form.slug': function () {
 			this.slugEditedManually = true
 		},
 	},
+
 	/**
 	 * Prefill on mount when already open (the parent renders the dialog
 	 * with `v-if="open"`, so `created` fires with `open: true`).
@@ -297,6 +355,7 @@ export default {
 			this.resetForm()
 		}
 	},
+
 	methods: {
 		/**
 		 * Reset the form, prefilled from the selected fragment.
@@ -306,8 +365,11 @@ export default {
 		 */
 		resetForm() {
 			const first = this.isSection
-				? ((this.fragment && this.fragment.widgets && this.fragment.widgets[0]) || {})
-				: (this.fragment || {})
+				? (this.fragment
+						&& this.fragment.widgets
+						&& this.fragment.widgets[0])
+					|| {}
+				: this.fragment || {}
 			const seedName = first.widgetKey || first.id || ''
 			this.form = {
 				name: seedName,
@@ -320,6 +382,7 @@ export default {
 			this.saveError = ''
 			this.recomputeCollision()
 		},
+
 		/**
 		 * Update the name and auto-suggest the slug until the user edits
 		 * the slug field by hand.
@@ -335,6 +398,7 @@ export default {
 				this.slugEditedManually = false
 			}
 		},
+
 		/**
 		 * Recompute the de-namespace collision message by attempting a
 		 * capture; `SlugCollisionError` names both colliding schemas.
@@ -362,6 +426,7 @@ export default {
 				}
 			}
 		},
+
 		/**
 		 * Close the dialog.
 		 *
@@ -374,6 +439,7 @@ export default {
 			}
 			this.$emit('update:open', false)
 		},
+
 		/**
 		 * Persist the captured block via OR REST (create-only, v1).
 		 *
@@ -392,7 +458,11 @@ export default {
 				this.$emit('update:open', false)
 			} catch (e) {
 				const data = e?.response?.data
-				this.saveError = data?.detail || data?.error || e?.message || t('openbuild', 'Saving the block failed.')
+				this.saveError =
+					data?.detail
+					|| data?.error
+					|| e?.message
+					|| t('openbuild', 'Saving the block failed.')
 			} finally {
 				this.saving = false
 			}

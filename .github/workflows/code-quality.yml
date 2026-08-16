@@ -2,7 +2,35 @@ name: Code Quality
 
 on:
   push:
-    branches: [main, development, feature/**, bugfix/**, hotfix/**]
+    # An ALLOW-LIST of branch prefixes is a gate with a hole in it, and the
+    # hole is SILENT: a branch matching nothing gets no CI at all, and its last
+    # visible status is whatever it inherited — indistinguishable, on every
+    # dashboard, from a branch that passed.
+    #
+    # Two live examples, both found 2026-08-14: `perf/**` was uncovered in
+    # openconnector, where a merge carrying unresolved conflict markers and 84
+    # failing tests was pushed and nothing ran; and `feat/**` was uncovered in
+    # openregister — note the list said `feature/**`, so every branch anyone
+    # named `feat/...` had been running unchecked.
+    #
+    # Prefixes are added rather than replaced with `**` because this workflow is
+    # expensive (PHPUnit matrix, Newman, Playwright). The fast structural checks
+    # DO run on `**` — see merge-hygiene.yml, added in the same change.
+    #
+    # ⚠️ Adding prefixes is not the durable fix; the next invented one is
+    # uncovered again. The durable fix is branch protection requiring a PR into
+    # development, which the pull_request trigger below already gates correctly.
+    branches:
+      - main
+      - development
+      - feature/**
+      - feat/**
+      - bugfix/**
+      - hotfix/**
+      - perf/**
+      - refactor/**
+      - chore/**
+      - fix/**
   pull_request:
     branches: [main, master, development, beta]
   workflow_dispatch:
@@ -80,24 +108,41 @@ jobs:
       # `enable-axe` is deliberately still NOT set — a vanilla Nextcloud 34
       # reports serious/critical violations on core's OWN routes that DOM
       # scoping does not remove. Enabling axe is a separate decision.
-      # Newman stays disabled while the openbuild#33 fixes are in flight.
-      # The collection bugs in this PR are fixed (uuid `@self.id` extraction,
-      # `export-job` slug correction, hello-world `@self.slug` fallback). But
-      # an upstream OR-side infrastructure blocker still prevents the seed
-      # from running in CI:
+      # Newman is ON. It has never actually run in this repository: the flag
+      # was `false`, which makes the job report `skipped`, and a skipped job is
+      # indistinguishable from a passing one in the run summary. Eighteen
+      # collections sit in `tests/integration/` having never been executed once
+      # by CI.
       #
-      #   1. `OpenBuild: SeedHelloWorld failed: Call to undefined function
-      #      React\Async\await()` — OR's runtime-schema-API on `development`
-      #      pulls `react/async` but the composer dependency isn't surfacing
-      #      in the CI install, so the function isn't autoloaded.
-      #   2. SQLite (`database: sqlite`) trips
-      #      `[PermissionHandler] no such function: REGEXP` from OR's
-      #      MagicMapper. The query uses MySQL's REGEXP operator which
-      #      SQLite doesn't ship.
+      # THE SEED COULD NOT FAIL, SO "IT WOULD JUST BE RED" WAS NEVER MEASURED.
+      # The shared workflow interpolated `newman-seed-command` into an
+      # UNQUOTED `eval` with no status check. This repository is the one caller
+      # in the fleet that passes an `&&` chain —
+      #   `php occ app:disable openbuild && php occ app:enable openbuild`
+      # — so the outer shell split it before `eval` ever saw it, `eval` ran
+      # only the `disable`, and bash's `set -e` exemption for `&&` lists
+      # returned 0 regardless. Fixed upstream in ConductionNL/.github#212: the
+      # seed now reaches `eval` as one quoted unit and its combined status is
+      # the step's. A red Newman leg here is therefore a real finding now, and
+      # so is a green one.
       #
-      # File those as their own issues; once both are unblocked, flip this
-      # back to `true` and re-evaluate.
-      enable-newman: false
+      # The two blockers this flag used to carry:
+      #
+      #   1. `SeedHelloWorld failed: Call to undefined function
+      #      React\Async\await()` — OpenRegister's runtime-schema-API pulls
+      #      `react/async` but it was not surfacing in the CI install.
+      #      Re-measured 2026-08-09: `react/async ^4.3` is a `require` in
+      #      openregister@development's composer.json AND is present in its
+      #      committed composer.lock, so the CI install resolves it.
+      #   2. `[PermissionHandler] no such function: REGEXP` from OR's
+      #      MagicMapper under SQLite. Dead: `database:` below is now `pgsql`,
+      #      and that switch was made for exactly this family of failure (see
+      #      the note under `database`). Newman reads the same `database`
+      #      input, so it moved to Postgres with everything else.
+      #
+      # Neither blocker was re-measured after `database: pgsql` landed. This
+      # flag makes CI answer the question instead of the comment answering it.
+      enable-newman: true
       # Was `sqlite`. Measured on run 31018480923: it is what made the E2E seed
       # fail before a single spec ran —
       #
@@ -119,7 +164,40 @@ jobs:
       # override. The `database` input also feeds PHPUnit, Newman and the
       # journeydoc capture, so those move to Postgres with it.
       database: pgsql
-      newman-seed-command: 'php occ app:disable openbuild && php occ app:enable openbuild'
+      # Was `php occ app:disable openbuild && php occ app:enable openbuild`.
+      # That command seeded NOTHING and exited 0 while doing it — the exact
+      # shape this programme exists to find. Nextcloud runs repair steps on
+      # install and upgrade, not on disable/enable of an app that is already
+      # installed, so the hello-world fixture was never created; and the
+      # dedicated `openbuild:seed-hello-world-fixture` occ command was never
+      # invoked at all. Disabling and re-enabling an app genuinely succeeds,
+      # so the step was green for a true reason while leaving the instance
+      # unseeded.
+      #
+      # Measured 2026-08-10 by logging the register contents from inside the
+      # suite: the three Applications present in CI were `newman-wizard-single`,
+      # `newman-wizard-dsp` and `newman-permits` — every one of them created by
+      # the collections themselves during the run. There was no `hello-world`.
+      # Four collections (versioning, application-versions, rbac, page-editor)
+      # open by locating it, so the lookup returned nothing, the
+      # `application_uuid` variable stayed empty, and every later URL in those
+      # collections interpolated an empty path segment — the `//` and trailing
+      # `/` 404s that dominated the failure list.
+      #
+      # This is the seed Playwright has been using all along
+      # (`playwright-seed-command` below is the same script), and it really
+      # does the work: ci-seed.sh line ~358 runs
+      # `php occ openbuild:seed-hello-world-fixture`. It is `set -euo pipefail`
+      # and refuses to run outside CI without an explicit base URL, so it stays
+      # able to fail — no `|| true` anywhere in the path.
+      # `SEED_REQUIRE_BUNDLE=0` — this job never loads the SPA. It calls the
+      # REST API and asserts on JSON, and it does not run the frontend build,
+      # so there is no bundle for it to serve. The default in ci-seed.sh is to
+      # ENFORCE the bundle gate (Playwright still does, unchanged); this opts
+      # out deliberately and the script ANNOUNCES the skip in its output, so a
+      # skipped browser check can never read as a passed one. Every API fixture
+      # this suite depends on is still seeded and still able to fail.
+      newman-seed-command: 'SEED_REQUIRE_BUNDLE=0 bash apps/openbuild/tests/e2e/ci-seed.sh'
       # OpenRegister `development` carries the runtime-schema-API (auto-create
       # Register on application-type imports — OR PR #1464) and the lifecycle
       # engine (ObjectTransitionedEvent) that OpenBuild's repair steps + the
@@ -157,14 +235,9 @@ jobs:
       additional-apps: '[{"repo":"ConductionNL/openregister","app":"openregister","ref":"development"},{"repo":"ConductionNL/docudesk","app":"docudesk","ref":"main"}]'
       enable-sbom: true
 
-      # Integration Tests (Newman) stays OFF here, deliberately, and unlike the
-      # gates above this is not a default nobody chose. The `enable-newman:
-      # false` further up carries two named, still-live upstream blockers
-      # (OpenRegister's `React\Async\await()` not autoloading in the CI install,
-      # and SQLite lacking `REGEXP` for OR's MagicMapper). Nineteen collections
-      # are committed and would all meet those two failures — a guaranteed red
-      # whose cause is already written down, which teaches nothing the comment
-      # does not already say. Flipped back on in the commit that closes them.
+      # (Integration Tests (Newman) is enabled at `enable-newman` above; the
+      # reasoning, and the re-measurement of the two blockers that used to keep
+      # it off, is written there.)
 
       # ── Frontend Check legs ──────────────────────────────────────────────
       # `frontend-checks` defaults to `[]`, and an empty list means the shared
@@ -196,7 +269,19 @@ jobs:
       # which is not the repository — `.github/workflows/` is not part of it.
       # A first attempt at this invariant as a PHPUnit test went red on all four
       # legs for exactly that reason.
-      frontend-checks: '["check:manifest", "test:l10n", "check:gitignore", "check:nc-floor"]'
+      #
+      # `format` (prettier --check) is listed because the shared workflow has NO
+      # prettier job of its own — `quality.yml` runs eslint and stylelint and
+      # mentions prettier ZERO times. This repo already carries
+      # `@nextcloud/prettier-config` and a `format` script, so without this leg
+      # `npm run format` never runs outside a developer's editor and the tree
+      # drifts straight back out of format between merges — the same inert-
+      # formatter failure mode that made the old `.prettierrc` worth deleting.
+      # Centralising the config never stopped drift; the gate does.
+      # Measured on this tree before enabling: PASSES, 429 of 441 tracked
+      # frontend files in scope (docs/ excluded via .prettierignore; build
+      # output via .gitignore, which prettier 3 also reads).
+      frontend-checks: '["check:manifest", "test:l10n", "check:gitignore", "check:nc-floor", "format"]'
 
       # ── Coverage ratchet ─────────────────────────────────────────────────
       # `enable-coverage-guard` defaults to FALSE, which is why both

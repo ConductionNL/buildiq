@@ -18,7 +18,7 @@
 					type="radio"
 					:checked="origin === 'openregister'"
 					value="openregister"
-					@change="selectOrigin('openregister')">
+					@change="selectOrigin('openregister')" />
 				{{ t('openbuild', 'OpenRegister') }}
 			</label>
 			<label class="ds-origin-toggle__radio">
@@ -26,7 +26,7 @@
 					type="radio"
 					:checked="origin === 'openconnector'"
 					value="openconnector"
-					@change="selectOrigin('openconnector')">
+					@change="selectOrigin('openconnector')" />
 				{{ t('openbuild', 'OpenConnector') }}
 			</label>
 		</fieldset>
@@ -34,22 +34,27 @@
 		<div v-if="origin === 'openconnector'" class="ds-origin-toggle__connector">
 			<ConnectorSourcePicker
 				:binding="connector"
-				@update:endpoint-path="onEndpointPath"
-				@sample-fetch="onSampleFetch" />
+				@update:endpointPath="onEndpointPath"
+				@sampleFetch="onSampleFetch" />
 			<ConnectorFieldMapper
 				:binding="connector"
 				:sample="sample"
 				:refreshing="sampleLoading"
-				@update:items-path="onItemsPath"
+				@update:itemsPath="onItemsPath"
 				@update:fields="onFields"
-				@refetch-sample="onRefetch" />
+				@refetchSample="onRefetch" />
 		</div>
 
 		<ConfirmActionDialog
 			v-model:open="confirmSwitchOpen"
 			:name="t('openbuild', 'Switch data source')"
-			:message="t('openbuild', 'Switching to OpenRegister discards the OpenConnector mapping. Continue?')"
-			:confirm-label="t('openbuild', 'Confirm')"
+			:message="
+				t(
+					'openbuild',
+					'Switching to OpenRegister discards the OpenConnector mapping. Continue?',
+				)
+			"
+			:confirmLabel="t('openbuild', 'Confirm')"
 			destructive
 			@confirm="onConfirmSwitch" />
 	</div>
@@ -58,9 +63,9 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import ConnectorSourcePicker from './ConnectorSourcePicker.vue'
-import ConnectorFieldMapper from './ConnectorFieldMapper.vue'
 import ConfirmActionDialog from '../../dialogs/ConfirmActionDialog.vue'
+import ConnectorFieldMapper from './ConnectorFieldMapper.vue'
+import ConnectorSourcePicker from './ConnectorSourcePicker.vue'
 
 export default {
 	name: 'DataSourceOriginToggle',
@@ -72,6 +77,7 @@ export default {
 			default: () => ({}),
 		},
 	},
+
 	emits: ['update:dataSource'],
 	data() {
 		return {
@@ -80,6 +86,7 @@ export default {
 			confirmSwitchOpen: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * Derive the active origin from the binding shape: connector wins,
@@ -89,13 +96,17 @@ export default {
 		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-002
 		 */
 		origin() {
-			return this.dataSource && this.dataSource.connector ? 'openconnector' : 'openregister'
+			return this.dataSource && this.dataSource.connector
+				? 'openconnector'
+				: 'openregister'
 		},
+
 		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-002 */
 		connector() {
 			return (this.dataSource && this.dataSource.connector) || {}
 		},
 	},
+
 	methods: {
 		/**
 		 * Switch the data-source origin. Switching to OpenConnector seeds an
@@ -114,8 +125,11 @@ export default {
 				return
 			}
 			// next === openregister
-			const hasMapping = this.connector && (this.connector.endpointPath
-				|| (this.connector.fields && Object.keys(this.connector.fields).length))
+			const hasMapping =
+				this.connector
+				&& (this.connector.endpointPath
+					|| (this.connector.fields
+						&& Object.keys(this.connector.fields).length))
 			if (hasMapping) {
 				// There IS a mapping to lose — ask first. dropConnector() runs
 				// only from the dialog's confirm, so cancelling keeps it.
@@ -124,6 +138,7 @@ export default {
 			}
 			this.dropConnector()
 		},
+
 		/**
 		 * Apply the switch to OpenRegister once the user has confirmed
 		 * discarding the OpenConnector mapping.
@@ -135,6 +150,7 @@ export default {
 			this.confirmSwitchOpen = false
 			this.dropConnector()
 		},
+
 		/**
 		 * Remove the connector block and emit the updated data source.
 		 *
@@ -147,6 +163,7 @@ export default {
 			this.sample = null
 			this.$emit('update:dataSource', next2)
 		},
+
 		/**
 		 * Merge a partial connector update into the dataSource and emit.
 		 *
@@ -157,6 +174,7 @@ export default {
 			const connector = { ...this.connector, ...patch }
 			this.$emit('update:dataSource', { ...this.dataSource, connector })
 		},
+
 		/**
 		 * Store the endpoint the source picker settled on.
 		 *
@@ -166,6 +184,7 @@ export default {
 		onEndpointPath(endpointPath) {
 			this.emitConnector({ endpointPath })
 		},
+
 		/**
 		 * Store the list-root selector picked in the field mapper.
 		 *
@@ -175,6 +194,7 @@ export default {
 		onItemsPath(itemsPath) {
 			this.emitConnector({ itemsPath })
 		},
+
 		/**
 		 * Store the whole field map after the mapper added or removed one
 		 * entry — ConnectorFieldMapper always emits the complete map, never a
@@ -186,6 +206,7 @@ export default {
 		onFields(fields) {
 			this.emitConnector({ fields })
 		},
+
 		/**
 		 * Fetch a sample payload for the mapping editor.
 		 *
@@ -201,7 +222,9 @@ export default {
 			try {
 				const path = String(endpointPath).replace(/^\/+/, '')
 				const url = generateUrl(`/apps/openconnector/api/endpoint/${path}`)
-				const { data } = await axios.get(url, { params: this.connector.query || {} })
+				const { data } = await axios.get(url, {
+					params: this.connector.query || {},
+				})
 				this.sample = data && data.data !== undefined ? data.data : data
 			} catch {
 				this.sample = null
@@ -209,6 +232,7 @@ export default {
 				this.sampleLoading = false
 			}
 		},
+
 		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-003 */
 		onRefetch() {
 			this.onSampleFetch(this.connector.endpointPath)

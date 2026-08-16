@@ -16,7 +16,7 @@
 <template>
 	<div class="ob-manifest-detail">
 		<header class="ob-manifest-detail__header">
-			<NcButton type="tertiary" @click="goBack">
+			<NcButton variant="tertiary" @click="goBack">
 				<template #icon>
 					<ArrowLeft :size="20" />
 				</template>
@@ -37,7 +37,14 @@
 			<article class="ob-manifest-detail__layer">
 				<h3>{{ t('openbuild', 'Base') }}</h3>
 				<p class="ob-manifest-detail__layer-meta">
-					{{ isHybrid ? t('openbuild', 'The installed Nextcloud app manifest. Read-only.') : t('openbuild', 'The built app manifest. Read-only.') }}
+					{{
+						isHybrid
+							? t(
+									'openbuild',
+									'The installed Nextcloud app manifest. Read-only.',
+								)
+							: t('openbuild', 'The built app manifest. Read-only.')
+					}}
 				</p>
 			</article>
 
@@ -45,46 +52,62 @@
 			<article class="ob-manifest-detail__layer">
 				<h3>{{ t('openbuild', 'Admin delta') }}</h3>
 				<p class="ob-manifest-detail__layer-meta">
-					{{ t('openbuild', 'Instance-wide shared customization managed by admins.') }}
+					{{
+						t(
+							'openbuild',
+							'Instance-wide shared customization managed by admins.',
+						)
+					}}
 				</p>
 				<NcButton
 					v-if="adminVersionUuid"
-					type="tertiary"
+					variant="tertiary"
 					@click="openInOpenRegister(adminVersionUuid)">
 					{{ t('openbuild', 'Open version history in OpenRegister') }}
 				</NcButton>
 			</article>
 
 			<!-- Your (per-user) delta -->
-			<article class="ob-manifest-detail__layer ob-manifest-detail__layer--user">
+			<article
+				class="ob-manifest-detail__layer ob-manifest-detail__layer--user">
 				<h3>{{ t('openbuild', 'Your delta') }}</h3>
 				<p class="ob-manifest-detail__layer-meta">
 					{{ userMeta }}
 				</p>
-				<div v-if="allowUserOverrides" class="ob-manifest-detail__layer-actions">
+				<div
+					v-if="allowUserOverrides"
+					class="ob-manifest-detail__layer-actions">
 					<template v-if="userDelta.exists">
-						<NcButton type="secondary" @click="showEditModal = true">
+						<NcButton variant="secondary" @click="showEditModal = true">
 							{{ t('openbuild', 'Edit') }}
 						</NcButton>
-						<NcButton type="tertiary" @click="resetOverride">
+						<NcButton variant="tertiary" @click="resetOverride">
 							{{ t('openbuild', 'Reset') }}
 						</NcButton>
 						<NcButton
 							v-if="userDelta.versionUuid"
-							type="tertiary"
+							variant="tertiary"
 							@click="openInOpenRegister(userDelta.versionUuid)">
-							{{ t('openbuild', 'Open version history in OpenRegister') }}
+							{{
+								t(
+									'openbuild',
+									'Open version history in OpenRegister',
+								)
+							}}
 						</NcButton>
 					</template>
-					<NcButton v-else
-						type="secondary"
+					<NcButton
+						v-else
+						variant="secondary"
 						:disabled="creating"
 						@click="createOverride">
 						{{ t('openbuild', 'Create override') }}
 					</NcButton>
 				</div>
 				<p v-else class="ob-manifest-detail__layer-meta">
-					{{ t('openbuild', 'This app does not allow per-user overrides.') }}
+					{{
+						t('openbuild', 'This app does not allow per-user overrides.')
+					}}
 				</p>
 			</article>
 		</section>
@@ -96,10 +119,16 @@
 		<section v-if="canViewUserOverrides" class="ob-manifest-detail__overrides">
 			<header class="ob-manifest-detail__overrides-header">
 				<h3>{{ t('openbuild', 'User overrides') }}</h3>
-				<span class="ob-manifest-detail__overrides-count">{{ userOverrides.length }}</span>
+				<span class="ob-manifest-detail__overrides-count">{{
+					userOverrides.length
+				}}</span>
 			</header>
-			<p v-if="userOverrides.length === 0" class="ob-manifest-detail__layer-meta">
-				{{ t('openbuild', 'No users have created a personal override yet.') }}
+			<p
+				v-if="userOverrides.length === 0"
+				class="ob-manifest-detail__layer-meta">
+				{{
+					t('openbuild', 'No users have created a personal override yet.')
+				}}
 			</p>
 			<ul v-else class="ob-manifest-detail__overrides-list">
 				<li
@@ -108,11 +137,13 @@
 					class="ob-manifest-detail__override">
 					<div class="ob-manifest-detail__override-main">
 						<strong>{{ ovr.owner }}</strong>
-						<small v-if="ovr.updatedAt">{{ formatDate(ovr.updatedAt) }}</small>
+						<small v-if="ovr.updatedAt">{{
+							formatDate(ovr.updatedAt)
+						}}</small>
 					</div>
 					<NcButton
 						v-if="ovr.versionUuid"
-						type="tertiary"
+						variant="tertiary"
 						@click="openInOpenRegister(ovr.versionUuid)">
 						{{ t('openbuild', 'Open in OpenRegister') }}
 					</NcButton>
@@ -124,7 +155,10 @@
 		     (admin + user deltas) with rollback via OpenRegister versioning. -->
 		<section class="ob-manifest-detail__history">
 			<div v-if="canEdit" class="ob-manifest-detail__history-actions">
-				<NcButton type="secondary" :disabled="creatingDraft" @click="createDraft">
+				<NcButton
+					variant="secondary"
+					:disabled="creatingDraft"
+					@click="createDraft">
 					<template #icon>
 						<Plus :size="20" />
 					</template>
@@ -134,34 +168,33 @@
 			<VersionHistory
 				v-if="appUuid"
 				ref="versionHistory"
-				:app-slug="appSlug"
-				:application-uuid="appUuid"
-				:current-version-uuid="adminVersionUuid"
-				:can-edit="canEdit"
-				:can-release="canRelease"
+				:appSlug="appSlug"
+				:applicationUuid="appUuid"
+				:currentVersionUuid="adminVersionUuid"
+				:canEdit="canEdit"
+				:canRelease="canRelease"
 				@rollback="onRollback"
 				@released="loadAll" />
 		</section>
 
 		<UserDeltaEditModal
 			v-model:open="showEditModal"
-			:app-slug="appSlug"
+			:appSlug="appSlug"
 			:delta="userDelta.manifestDelta"
 			@saved="onUserDeltaSaved" />
 	</div>
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
 import { getCurrentUser } from '@nextcloud/auth'
+import axios from '@nextcloud/axios'
 import { showSuccess } from '@nextcloud/dialogs'
+import { generateUrl } from '@nextcloud/router'
 import NcButton from '@nextcloud/vue/components/NcButton'
 import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
-
-import VersionHistory from './VersionHistory.vue'
 import UserDeltaEditModal from '../modals/UserDeltaEditModal.vue'
+import VersionHistory from './VersionHistory.vue'
 
 export default {
 	name: 'ManifestLayersDetail',
@@ -170,11 +203,18 @@ export default {
 		// The app UUID, forwarded from the route param by CnPageRenderer.
 		objectId: { type: String, default: '' },
 	},
+
 	data() {
 		return {
 			application: null,
 			adminVersionUuid: '',
-			userDelta: { allowed: false, exists: false, versionUuid: null, manifestDelta: {} },
+			userDelta: {
+				allowed: false,
+				exists: false,
+				versionUuid: null,
+				manifestDelta: {},
+			},
+
 			creating: false,
 			creatingDraft: false,
 			showEditModal: false,
@@ -184,6 +224,7 @@ export default {
 			canViewUserOverrides: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * The app UUID (from the route param or the loaded record).
@@ -191,11 +232,15 @@ export default {
 		 * @return {string}
 		 */
 		appUuid() {
-			return this.objectId
-				|| (this.application && (this.application.uuid || this.application.id))
+			return (
+				this.objectId
+				|| (this.application
+					&& (this.application.uuid || this.application.id))
 				|| (this.$route && this.$route.params && this.$route.params.objectId)
 				|| ''
+			)
 		},
+
 		/**
 		 * The app's kebab-case slug.
 		 *
@@ -204,6 +249,7 @@ export default {
 		appSlug() {
 			return (this.application && this.application.slug) || ''
 		},
+
 		/**
 		 * The app's display name.
 		 *
@@ -212,6 +258,7 @@ export default {
 		appName() {
 			return (this.application && this.application.name) || this.appSlug
 		},
+
 		/**
 		 * Whether this is a hybrid app.
 		 *
@@ -220,6 +267,7 @@ export default {
 		isHybrid() {
 			return (this.application && this.application.appType) === 'hybrid'
 		},
+
 		/**
 		 * Whether the app allows per-user overrides.
 		 *
@@ -228,6 +276,7 @@ export default {
 		allowUserOverrides() {
 			return !!(this.application && this.application.allowUserOverrides)
 		},
+
 		/**
 		 * Whether the caller may edit versions (owner / editor / NC admin).
 		 *
@@ -238,6 +287,7 @@ export default {
 		canEdit() {
 			return this.hasRole('owners') || this.hasRole('editors') || this.isAdmin
 		},
+
 		/**
 		 * Whether the caller may release a draft to production (owner only).
 		 *
@@ -249,14 +299,20 @@ export default {
 		canRelease() {
 			return this.hasRole('owners')
 		},
+
 		/**
 		 * Whether the current user is a Nextcloud admin.
 		 *
 		 * @return {boolean}
 		 */
 		isAdmin() {
-			return !!(typeof OC !== 'undefined' && OC.isUserAdmin && OC.isUserAdmin())
+			return !!(
+				typeof OC !== 'undefined'
+				&& OC.isUserAdmin
+				&& OC.isUserAdmin()
+			)
 		},
+
 		/**
 		 * Pre-translated meta line for the user-delta layer.
 		 *
@@ -264,16 +320,24 @@ export default {
 		 */
 		userMeta() {
 			if (!this.allowUserOverrides) {
-				return t('openbuild', 'Per-user overrides are turned off for this app.')
+				return t(
+					'openbuild',
+					'Per-user overrides are turned off for this app.',
+				)
 			}
 			return this.userDelta.exists
-				? t('openbuild', 'Your personal delta, layered over the admin delta.')
+				? t(
+						'openbuild',
+						'Your personal delta, layered over the admin delta.',
+					)
 				: t('openbuild', 'You have no personal override yet.')
 		},
 	},
+
 	mounted() {
 		this.loadAll()
 	},
+
 	methods: {
 		/**
 		 * Load the app record, its admin version, and the caller's user delta.
@@ -282,8 +346,13 @@ export default {
 		 */
 		async loadAll() {
 			await this.loadApplication()
-			await Promise.all([this.loadAdminVersion(), this.loadUserDelta(), this.loadUserOverrides()])
+			await Promise.all([
+				this.loadAdminVersion(),
+				this.loadUserDelta(),
+				this.loadUserOverrides(),
+			])
 		},
+
 		/**
 		 * Whether the current user is listed (by `user:<uid>`) in a permission
 		 * role bucket on the loaded Application. Group membership is enforced
@@ -301,6 +370,7 @@ export default {
 			const bucket = Array.isArray(perms[role]) ? perms[role] : []
 			return bucket.includes('user:' + uid)
 		},
+
 		/**
 		 * Load ALL users' overrides for this app (maintainer view). A 403 means
 		 * the caller is not an owner/editor/admin — the section stays hidden.
@@ -310,9 +380,13 @@ export default {
 		async loadUserOverrides() {
 			if (!this.appSlug) return
 			try {
-				const url = generateUrl('/apps/openbuild/api/app-overrides/{appId}/user-deltas', { appId: this.appSlug })
+				const url = generateUrl(
+					'/apps/openbuild/api/app-overrides/{appId}/user-deltas',
+					{ appId: this.appSlug },
+				)
 				const { data } = await axios.get(url)
-				this.userOverrides = (data && Array.isArray(data.overrides)) ? data.overrides : []
+				this.userOverrides =
+					data && Array.isArray(data.overrides) ? data.overrides : []
 				this.canViewUserOverrides = true
 			} catch (e) {
 				// 403 (not a maintainer) or any error → hide the section.
@@ -320,6 +394,7 @@ export default {
 				this.userOverrides = []
 			}
 		},
+
 		/**
 		 * Format an ISO timestamp for display, falling back to the raw value.
 		 *
@@ -334,6 +409,7 @@ export default {
 				return iso
 			}
 		},
+
 		/**
 		 * Load the Application record by UUID.
 		 *
@@ -352,6 +428,7 @@ export default {
 				this.error = t('openbuild', 'Could not load the app.')
 			}
 		},
+
 		/**
 		 * Resolve the admin (production) version UUID for the version-history reuse.
 		 *
@@ -360,9 +437,11 @@ export default {
 		async loadAdminVersion() {
 			const pv = this.application && this.application.productionVersion
 			if (pv) {
-				this.adminVersionUuid = (typeof pv === 'string') ? pv : (pv.uuid || pv.id || '')
+				this.adminVersionUuid =
+					typeof pv === 'string' ? pv : pv.uuid || pv.id || ''
 			}
 		},
+
 		/**
 		 * Load the caller's own user-delta state.
 		 *
@@ -371,7 +450,10 @@ export default {
 		async loadUserDelta() {
 			if (!this.appSlug) return
 			try {
-				const url = generateUrl('/apps/openbuild/api/app-overrides/{appId}/user', { appId: this.appSlug })
+				const url = generateUrl(
+					'/apps/openbuild/api/app-overrides/{appId}/user',
+					{ appId: this.appSlug },
+				)
 				const { data } = await axios.get(url)
 				this.userDelta = {
 					allowed: !!(data && data.allowed),
@@ -380,9 +462,15 @@ export default {
 					manifestDelta: (data && data.manifestDelta) || {},
 				}
 			} catch (e) {
-				this.userDelta = { allowed: false, exists: false, versionUuid: null, manifestDelta: {} }
+				this.userDelta = {
+					allowed: false,
+					exists: false,
+					versionUuid: null,
+					manifestDelta: {},
+				}
 			}
 		},
+
 		/**
 		 * Create an empty user delta.
 		 *
@@ -393,7 +481,10 @@ export default {
 			this.creating = true
 			this.error = ''
 			try {
-				const url = generateUrl('/apps/openbuild/api/app-overrides/{appId}/user', { appId: this.appSlug })
+				const url = generateUrl(
+					'/apps/openbuild/api/app-overrides/{appId}/user',
+					{ appId: this.appSlug },
+				)
 				await axios.put(url, {})
 				await this.loadUserDelta()
 			} catch (e) {
@@ -402,6 +493,7 @@ export default {
 				this.creating = false
 			}
 		},
+
 		/**
 		 * Delete the caller's own user delta.
 		 *
@@ -411,13 +503,17 @@ export default {
 			if (!this.appSlug) return
 			this.error = ''
 			try {
-				const url = generateUrl('/apps/openbuild/api/app-overrides/{appId}/user', { appId: this.appSlug })
+				const url = generateUrl(
+					'/apps/openbuild/api/app-overrides/{appId}/user',
+					{ appId: this.appSlug },
+				)
 				await axios.delete(url)
 				await this.loadUserDelta()
 			} catch (e) {
 				this.error = t('openbuild', 'Could not reset your override.')
 			}
 		},
+
 		/**
 		 * Refresh the user delta after the edit modal saved.
 		 *
@@ -426,6 +522,7 @@ export default {
 		onUserDeltaSaved() {
 			this.loadUserDelta()
 		},
+
 		/**
 		 * No-op rollback handler — OpenRegister performs the version rollback;
 		 * we just refresh the layer state afterwards.
@@ -435,6 +532,7 @@ export default {
 		onRollback() {
 			this.loadAll()
 		},
+
 		/**
 		 * The own UUID of an ApplicationVersion row (`id` or `@self` envelope).
 		 *
@@ -445,6 +543,7 @@ export default {
 			const self = (row && row['@self']) || {}
 			return (row && row.id) || self.id || self.uuid || (row && row.uuid) || ''
 		},
+
 		/**
 		 * Create a new draft version: clone the production manifest, share the
 		 * production register (omit `register` so the backend inherits it), and
@@ -461,13 +560,22 @@ export default {
 			this.creatingDraft = true
 			this.error = ''
 			try {
-				const listUrl = generateUrl('/apps/openbuild/api/applications/{slug}/versions', { slug: this.appSlug })
+				const listUrl = generateUrl(
+					'/apps/openbuild/api/applications/{slug}/versions',
+					{ slug: this.appSlug },
+				)
 				const { data } = await axios.get(listUrl)
-				const rows = Array.isArray(data) ? data : ((data && data.results) ? data.results : [])
+				const rows = Array.isArray(data)
+					? data
+					: data && data.results
+						? data.results
+						: []
 
 				// Clone the current production version's manifest.
 				let manifest = {}
-				const prod = rows.find(r => this.rowUuid(r) === this.adminVersionUuid)
+				const prod = rows.find(
+					(r) => this.rowUuid(r) === this.adminVersionUuid,
+				)
 				if (prod && prod.manifest) {
 					manifest = prod.manifest
 				}
@@ -482,7 +590,7 @@ export default {
 				})
 				const n = maxN + 1
 				let slug = 'draft-' + n
-				if (rows.some(r => (r && r.slug) === slug)) {
+				if (rows.some((r) => (r && r.slug) === slug)) {
 					slug = slug + '-' + Date.now().toString(36)
 				}
 
@@ -494,17 +602,26 @@ export default {
 					manifest,
 					application: this.appUuid,
 				})
-				showSuccess(t('openbuild', 'Draft “{name}” created.', { name: 'Draft ' + n }))
+				showSuccess(
+					t('openbuild', 'Draft “{name}” created.', {
+						name: 'Draft ' + n,
+					}),
+				)
 				if (this.$refs.versionHistory) {
 					await this.$refs.versionHistory.refresh()
 				}
 			} catch (e) {
-				const detail = (e && e.response && e.response.data && e.response.data.detail) || ''
-				this.error = t('openbuild', 'Could not create a draft.') + (detail ? ' ' + detail : '')
+				const detail =
+					(e && e.response && e.response.data && e.response.data.detail)
+					|| ''
+				this.error =
+					t('openbuild', 'Could not create a draft.')
+					+ (detail ? ' ' + detail : '')
 			} finally {
 				this.creatingDraft = false
 			}
 		},
+
 		/**
 		 * Deep-link to an ApplicationVersion row's OpenRegister object page
 		 * (which carries OR's native version history / time-travel / rollback).
@@ -520,6 +637,7 @@ export default {
 			)
 			window.location.href = url
 		},
+
 		/**
 		 * Navigate back to the app detail page.
 		 *
@@ -527,7 +645,12 @@ export default {
 		 */
 		goBack() {
 			if (this.$router && this.appUuid) {
-				this.$router.push({ name: 'VirtualAppDetail', params: { objectId: this.appUuid } }).catch(() => {})
+				this.$router
+					.push({
+						name: 'VirtualAppDetail',
+						params: { objectId: this.appUuid },
+					})
+					.catch(() => {})
 			}
 		},
 	},

@@ -10,7 +10,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 
 vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => p }))
-vi.mock('@nextcloud/axios', () => ({ default: { get: vi.fn(), post: vi.fn(), delete: vi.fn() } }))
+vi.mock('@nextcloud/axios', () => ({
+	default: { get: vi.fn(), post: vi.fn(), delete: vi.fn() },
+}))
 
 import axios from '@nextcloud/axios'
 import AutomationsPage from '../../src/views/AutomationsPage.vue'
@@ -18,7 +20,8 @@ import AutomationsPage from '../../src/views/AutomationsPage.vue'
 const NcButtonStub = {
 	name: 'NcButton',
 	props: ['type', 'disabled'],
-	template: '<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
+	template:
+		'<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
 }
 const NcSelectStub = {
 	name: 'NcSelect',
@@ -28,15 +31,23 @@ const NcSelectStub = {
 const NcCheckboxRadioSwitchStub = {
 	name: 'NcCheckboxRadioSwitch',
 	props: ['checked', 'type'],
-	template: '<label class="ncswitch-stub" @click="$emit(\'update:checked\', !checked)"><slot /></label>',
+	template:
+		'<label class="ncswitch-stub" @click="$emit(\'update:checked\', !checked)"><slot /></label>',
 }
-const NcLoadingIconStub = { name: 'NcLoadingIcon', template: '<div class="ncloading-stub" />' }
+const NcLoadingIconStub = {
+	name: 'NcLoadingIcon',
+	template: '<div class="ncloading-stub" />',
+}
 const NcEmptyContentStub = {
 	name: 'NcEmptyContent',
 	props: ['name', 'description'],
 	template: '<div class="ncempty-stub">{{ name }}</div>',
 }
-const NcNoteCardStub = { name: 'NcNoteCard', props: ['type'], template: '<div class="ncnotecard-stub"><slot /></div>' }
+const NcNoteCardStub = {
+	name: 'NcNoteCard',
+	props: ['type'],
+	template: '<div class="ncnotecard-stub"><slot /></div>',
+}
 
 const stubs = {
 	NcButton: NcButtonStub,
@@ -45,14 +56,24 @@ const stubs = {
 	NcLoadingIcon: NcLoadingIconStub,
 	NcEmptyContent: NcEmptyContentStub,
 	NcNoteCard: NcNoteCardStub,
-	AutomationEditDialog: { name: 'AutomationEditDialog', template: '<div class="edit-dialog-stub" />' },
-	AutomationTestPanelModal: { name: 'AutomationTestPanelModal', template: '<div class="test-panel-stub" />' },
+	AutomationEditDialog: {
+		name: 'AutomationEditDialog',
+		template: '<div class="edit-dialog-stub" />',
+	},
+	AutomationTestPanelModal: {
+		name: 'AutomationTestPanelModal',
+		template: '<div class="test-panel-stub" />',
+	},
 }
 
 const flush = () => new Promise((r) => setTimeout(r, 0))
 
 const application = { slug: 'permit-tracker', name: 'Permit Tracker' }
-const version = { id: 'version-1', name: 'Development', register: 'openbuild-permit-tracker-development' }
+const version = {
+	id: 'version-1',
+	name: 'Development',
+	register: 'openbuild-permit-tracker-development',
+}
 
 const automation = (overrides = {}) => ({
 	id: 'aut-1',
@@ -183,21 +204,35 @@ describe('AutomationsPage', () => {
 		expect(wrapper.find('[data-testid="drift-badge"]').exists()).toBe(true)
 	})
 
-	it('REQ-AUTD-001: switching versions refetches and shows only that version\'s automations', async () => {
-		const otherVersion = { id: 'version-2', name: 'Production', register: 'openbuild-permit-tracker-production' }
+	it("REQ-AUTD-001: switching versions refetches and shows only that version's automations", async () => {
+		const otherVersion = {
+			id: 'version-2',
+			name: 'Production',
+			register: 'openbuild-permit-tracker-production',
+		}
 		axios.get.mockImplementation((url) => {
 			if (url.includes('/api/applications') && !url.includes('versions')) {
 				return Promise.resolve({ data: { results: [application] } })
 			}
 			if (url.includes('/versions')) {
-				return Promise.resolve({ data: { results: [version, otherVersion] } })
+				return Promise.resolve({
+					data: { results: [version, otherVersion] },
+				})
 			}
 			if (url.includes('/automation')) {
 				return Promise.resolve({
 					data: {
 						results: [
-							automation({ id: 'aut-1', versionUuid: 'version-1', name: 'Draft automation' }),
-							automation({ id: 'aut-2', versionUuid: 'version-2', name: 'Prod automation' }),
+							automation({
+								id: 'aut-1',
+								versionUuid: 'version-1',
+								name: 'Draft automation',
+							}),
+							automation({
+								id: 'aut-2',
+								versionUuid: 'version-2',
+								name: 'Prod automation',
+							}),
 						],
 					},
 				})

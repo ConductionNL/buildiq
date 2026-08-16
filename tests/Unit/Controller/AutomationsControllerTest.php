@@ -32,6 +32,7 @@ use OCA\OpenBuild\Service\AutomationWriteService;
 use OCA\OpenBuild\Service\ConditionActionExecutor;
 use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
 use OCP\IGroupManager;
@@ -52,9 +53,9 @@ final class AutomationsControllerTest extends TestCase {
 	private IRequest&MockObject $request;
 
 	/**
-	 * @var ObjectService&MockObject
+	 * @var ObjectServiceInterface&MockObject
 	 */
-	private ObjectService&MockObject $objectService;
+	private ObjectServiceInterface&MockObject $objectService;
 
 	/**
 	 * @var AutomationCompilerService&MockObject
@@ -90,7 +91,7 @@ final class AutomationsControllerTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		$this->request = $this->createMock(IRequest::class);
-		$this->objectService = $this->createMock(ObjectService::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->compiler = $this->createMock(AutomationCompilerService::class);
 		$this->conditionExecutor = $this->createMock(ConditionActionExecutor::class);
 		$this->userSession = $this->createMock(IUserSession::class);

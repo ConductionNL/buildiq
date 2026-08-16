@@ -17,17 +17,17 @@
 <template>
 	<DeleteAppDialog
 		:open="!!item"
-		:app-name="appName"
+		:appName="appName"
 		:busy="busy"
 		@update:open="onOpenChange"
 		@confirm="onConfirm" />
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
-import { showError } from '@nextcloud/dialogs'
 import { useObjectStore } from '@conduction/nextcloud-vue'
+import axios from '@nextcloud/axios'
+import { showError } from '@nextcloud/dialogs'
+import { generateUrl } from '@nextcloud/router'
 import DeleteAppDialog from '../dialogs/DeleteAppDialog.vue'
 
 // The applications index self-fetches under this object-type key
@@ -61,6 +61,7 @@ export default {
 			const i = this.item || {}
 			return String(i.name || i.slug || '')
 		},
+
 		/**
 		 * OpenRegister object id / UUID of the targeted app.
 		 *
@@ -98,16 +99,24 @@ export default {
 			}
 			this.busy = true
 			try {
-				await axios.delete(generateUrl(`/apps/openbuild/api/applications/${this.appUuid}`), {
-					params: { deleteData: deleteData ? 1 : 0 },
-				})
+				await axios.delete(
+					generateUrl(`/apps/openbuild/api/applications/${this.appUuid}`),
+					{
+						params: { deleteData: deleteData ? 1 : 0 },
+					},
+				)
 				this.evictFromList(this.appUuid)
 				if (typeof this.close === 'function') {
 					this.close()
 				}
 			} catch (e) {
-				const detail = (e.response && e.response.data && e.response.data.detail) || e.message || e
-				showError(this.t('openbuild', 'Delete failed: {error}', { error: detail }))
+				const detail =
+					(e.response && e.response.data && e.response.data.detail)
+					|| e.message
+					|| e
+				showError(
+					this.t('openbuild', 'Delete failed: {error}', { error: detail }),
+				)
 			} finally {
 				this.busy = false
 			}
@@ -137,7 +146,10 @@ export default {
 				}
 			} catch (e) {
 				// eslint-disable-next-line no-console
-				console.warn('[openbuild] could not evict deleted app from list cache', e)
+				console.warn(
+					'[openbuild] could not evict deleted app from list cache',
+					e,
+				)
 			}
 		},
 	},

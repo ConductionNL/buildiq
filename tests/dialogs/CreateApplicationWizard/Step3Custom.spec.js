@@ -56,7 +56,6 @@ function lastEmit(wrapper) {
 }
 
 describe('Step3Custom.vue — spec task 6.4', () => {
-
 	// -------------------------------------------------------------------------
 	// Initialisation
 	// -------------------------------------------------------------------------
@@ -306,8 +305,10 @@ describe('Step3Custom.vue — spec task 6.4', () => {
 		await wrapper.vm.$nextTick()
 		const e = lastEmit(wrapper)
 		if (e && e.versions) {
-			e.versions.forEach(v => {
-				expect(Object.keys(v)).toEqual(expect.arrayContaining(['name', 'slug']))
+			e.versions.forEach((v) => {
+				expect(Object.keys(v)).toEqual(
+					expect.arrayContaining(['name', 'slug']),
+				)
 				expect('_id' in v).toBe(false)
 				expect('_slugManual' in v).toBe(false)
 			})

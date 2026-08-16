@@ -53,7 +53,7 @@ namespace OCA\OpenBuild\Service;
 use OCA\OpenBuild\Exception\WizardCreationException;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\RegisterService;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -109,7 +109,7 @@ class ApplicationCreationService {
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger PSR logger for diagnostics
-	 * @param ObjectService $objectService OpenRegister object service
+	 * @param ObjectServiceInterface $objectService OpenRegister object service
 	 * @param RegisterService $registerService OpenRegister register-level service
 	 * @param RegisterMapper $registerMapper Resolves register slugs
 	 * @param SchemaMapper $schemaMapper Resolves schema slugs
@@ -120,7 +120,7 @@ class ApplicationCreationService {
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
-		private readonly ObjectService $objectService,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly RegisterService $registerService,
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,

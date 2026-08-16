@@ -23,7 +23,8 @@ const baseStubs = {
 	NcDialog: {
 		name: 'NcDialog',
 		props: ['name', 'noClose'],
-		template: '<div class="nc-dialog-stub"><slot /><div class="nc-dialog-actions"><slot name="actions" /></div></div>',
+		template:
+			'<div class="nc-dialog-stub"><slot /><div class="nc-dialog-actions"><slot name="actions" /></div></div>',
 	},
 	// `emits: ['click']` is load-bearing under Vue 3: without it the parent's
 	// `@click` stays in `$attrs` and falls through onto the root <button>, so a
@@ -32,9 +33,10 @@ const baseStubs = {
 	// `emits: ['click', 'update:pressed']`, so it never fires twice.
 	NcButton: {
 		name: 'NcButton',
-		props: ['type', 'disabled'],
+		props: ['type', 'variant', 'disabled'],
 		emits: ['click'],
-		template: '<button :disabled="disabled" :data-type="type" @click="$emit(\'click\', $event)"><slot /></button>',
+		template:
+			'<button :disabled="disabled" :data-type="variant || type" @click="$emit(\'click\', $event)"><slot /></button>',
 	},
 	// Vue 3 `v-model` on a component means `modelValue` / `update:modelValue`.
 	// The real NcCheckboxRadioSwitch (@nextcloud/vue 9) follows that; the Vue 2
@@ -43,12 +45,17 @@ const baseStubs = {
 		name: 'NcCheckboxRadioSwitch',
 		props: ['modelValue', 'disabled'],
 		emits: ['update:modelValue'],
-		template: '<label class="nc-checkbox-stub"><input type="checkbox" :checked="modelValue" :disabled="disabled" @change="$emit(\'update:modelValue\', $event.target.checked)"><slot /></label>',
+		template:
+			'<label class="nc-checkbox-stub"><input type="checkbox" :checked="modelValue" :disabled="disabled" @change="$emit(\'update:modelValue\', $event.target.checked)"><slot /></label>',
 	},
-	NcLoadingIcon: { name: 'NcLoadingIcon', template: '<span class="nc-loading-stub" />' },
+	NcLoadingIcon: {
+		name: 'NcLoadingIcon',
+		template: '<span class="nc-loading-stub" />',
+	},
 }
 
-const DeleteAppDialog = (await import('../../src/dialogs/DeleteAppDialog.vue')).default
+const DeleteAppDialog = (await import('../../src/dialogs/DeleteAppDialog.vue'))
+	.default
 
 function mountDialog(propsData = {}) {
 	return mount(DeleteAppDialog, {
@@ -73,7 +80,9 @@ function cancelButton(wrapper) {
 describe('DeleteAppDialog — destructive-data opt-in contract', () => {
 	it('renders the confirmation copy with the app name', () => {
 		const wrapper = mountDialog({ appName: 'My Store' })
-		expect(wrapper.text()).toContain('Delete "{name}" and all of its versions? This cannot be undone.')
+		expect(wrapper.text()).toContain(
+			'Delete "{name}" and all of its versions? This cannot be undone.',
+		)
 	})
 
 	it('defaults the "also delete all data" checkbox to unchecked on open', () => {

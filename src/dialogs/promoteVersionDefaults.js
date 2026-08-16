@@ -18,7 +18,11 @@ export function defaultStrategyFor(application, target) {
 	const productionUuid = (application && application.productionVersion) || ''
 	const targetUuid = (target && (target.id || target.uuid)) || ''
 
-	if (productionUuid !== '' && targetUuid !== '' && productionUuid === targetUuid) {
+	if (
+		productionUuid !== ''
+		&& targetUuid !== ''
+		&& productionUuid === targetUuid
+	) {
 		return 'migrate-existing-data'
 	}
 

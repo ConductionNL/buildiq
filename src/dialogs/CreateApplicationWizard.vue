@@ -21,29 +21,31 @@
 	<CnWizardDialog
 		v-if="show"
 		ref="wizard"
-		:dialog-title="t('openbuild', 'Create app')"
+		:dialogTitle="t('openbuild', 'Create app')"
 		:steps="wizardSteps"
 		:defaults="defaults"
 		:validate="validateStep"
-		:cancel-label="t('openbuild', 'Cancel')"
-		:back-label="t('openbuild', 'Back')"
-		:next-label="t('openbuild', 'Next')"
-		:submit-label="t('openbuild', 'Create')"
-		:close-label="t('openbuild', 'Close')"
-		:success-text="t('openbuild', 'App created.')"
+		:cancelLabel="t('openbuild', 'Cancel')"
+		:backLabel="t('openbuild', 'Back')"
+		:nextLabel="t('openbuild', 'Next')"
+		:submitLabel="t('openbuild', 'Create')"
+		:closeLabel="t('openbuild', 'Close')"
+		:successText="t('openbuild', 'App created.')"
 		@submit="onSubmit"
 		@close="onClose">
 		<template #step-basics="{ stepData, setStepData }">
 			<Step1Basics
 				:payload="stepData"
 				@update:payload="setStepData"
-				@ai-app-created="onAiAppCreated" />
+				@aiAppCreated="onAiAppCreated" />
 		</template>
 
 		<template #step-preset="{ stepData, setStepData }">
 			<Step2Preset
 				:payload="stepData"
-				@update:payload="(partial) => onPresetUpdate(partial, setStepData)" />
+				@update:payload="
+					(partial) => onPresetUpdate(partial, setStepData)
+				" />
 		</template>
 
 		<template #step-custom="{ stepData, setStepData }">
@@ -57,15 +59,14 @@
 </template>
 
 <script>
+import { CnWizardDialog } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { CnWizardDialog } from '@conduction/nextcloud-vue'
-
-import { resolveAppIcon } from '../utils/iconCatalogues.js'
 import Step1Basics from './CreateApplicationWizard/Step1Basics.vue'
 import Step2Preset from './CreateApplicationWizard/Step2Preset.vue'
 import Step3Custom from './CreateApplicationWizard/Step3Custom.vue'
 import Step4Review from './CreateApplicationWizard/Step4Review.vue'
+import { resolveAppIcon } from '../utils/iconCatalogues.js'
 
 export default {
 	name: 'CreateApplicationWizard',
@@ -148,7 +149,7 @@ export default {
 		 */
 		onPresetUpdate(partial, setStepData) {
 			setStepData(partial)
-			if (partial && Object.prototype.hasOwnProperty.call(partial, 'preset')) {
+			if (partial && Object.hasOwn(partial, 'preset')) {
 				this.presetSelected = partial.preset
 			}
 		},
@@ -163,13 +164,19 @@ export default {
 		 */
 		validateStep(stepId, stepData) {
 			if (stepId === 'basics') {
-				return stepData._step1Valid ? true : t('openbuild', 'Enter a name and a valid slug.')
+				return stepData._step1Valid
+					? true
+					: t('openbuild', 'Enter a name and a valid slug.')
 			}
 			if (stepId === 'preset') {
-				return stepData._step2Valid ? true : t('openbuild', 'Choose a version preset.')
+				return stepData._step2Valid
+					? true
+					: t('openbuild', 'Choose a version preset.')
 			}
 			if (stepId === 'custom') {
-				return stepData._step3Valid ? true : t('openbuild', 'Complete the custom version chain.')
+				return stepData._step3Valid
+					? true
+					: t('openbuild', 'Complete the custom version chain.')
 			}
 			return true
 		},
@@ -233,7 +240,12 @@ export default {
 					await this.attachIcon(uuid, 'icon', 'app-icon.svg', lightSvg)
 				}
 				if (darkSvg) {
-					await this.attachIcon(uuid, 'iconDark', 'app-icon-dark.svg', darkSvg)
+					await this.attachIcon(
+						uuid,
+						'iconDark',
+						'app-icon-dark.svg',
+						darkSvg,
+					)
 				}
 			} catch (err) {
 				console.error('OpenBuild: failed to attach app icon', err)
@@ -277,11 +289,17 @@ export default {
 		reportError(data, err) {
 			let message = data.message || data.detail
 			if (!message && err) message = err.message
-			if (!message) message = t('openbuild', 'Failed to create the application.')
-			if (Array.isArray(data.orphanedResources) && data.orphanedResources.length > 0) {
-				message += ' ' + t('openbuild', 'Some resources need manual cleanup: {list}', {
-					list: data.orphanedResources.join(', '),
-				})
+			if (!message)
+				message = t('openbuild', 'Failed to create the application.')
+			if (
+				Array.isArray(data.orphanedResources)
+				&& data.orphanedResources.length > 0
+			) {
+				message +=
+					' '
+					+ t('openbuild', 'Some resources need manual cleanup: {list}', {
+						list: data.orphanedResources.join(', '),
+					})
 			}
 			if (this.$refs.wizard) {
 				this.$refs.wizard.setError(message)
@@ -310,7 +328,9 @@ export default {
 		onAiAppCreated(appSlug) {
 			this.onClose()
 			if (this.$router && appSlug) {
-				this.$router.push({ name: 'PageDesigner', params: { slug: appSlug } }).catch(() => {})
+				this.$router
+					.push({ name: 'PageDesigner', params: { slug: appSlug } })
+					.catch(() => {})
 			}
 			// Emit with no uuid so a parent's `created(applicationUuid)` handler
 			// (e.g. DashboardIndex.onAppCreated) refreshes its listing instead of

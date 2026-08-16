@@ -46,7 +46,7 @@ namespace OCA\OpenBuild\Service;
 
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IUser;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -61,7 +61,7 @@ class ManifestResolverService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService OpenRegister object service (ADR-022)
+	 * @param ObjectServiceInterface $objectService OpenRegister object service (ADR-022)
 	 * @param RegisterMapper $registerMapper Register slug-to-ID resolver
 	 * @param SchemaMapper $schemaMapper Schema slug-to-ID resolver
 	 * @param LoggerInterface $logger PSR logger for diagnostics
@@ -70,7 +70,7 @@ class ManifestResolverService {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly LoggerInterface $logger,

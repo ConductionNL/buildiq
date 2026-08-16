@@ -20,9 +20,16 @@
 -->
 <template>
 	<div data-testid="copilot-panel" class="copilot-panel">
-		<div v-if="agentId" data-testid="copilot-acting-as" class="copilot-panel__acting-as">
+		<div
+			v-if="agentId"
+			data-testid="copilot-acting-as"
+			class="copilot-panel__acting-as">
 			<strong>{{ t('openbuild', 'Acting as:') }} {{ name || agentId }}</strong>
-			<span v-if="instructions" class="copilot-panel__acting-as-instructions">{{ instructions }}</span>
+			<span
+				v-if="instructions"
+				class="copilot-panel__acting-as-instructions"
+				>{{ instructions }}</span
+			>
 		</div>
 
 		<div class="copilot-panel__messages">
@@ -31,17 +38,21 @@
 				:key="message.id"
 				class="copilot-panel__message"
 				:class="`copilot-panel__message--${message.role}`">
-				<p v-if="message.role === 'user'" class="copilot-panel__bubble copilot-panel__bubble--user">
+				<p
+					v-if="message.role === 'user'"
+					class="copilot-panel__bubble copilot-panel__bubble--user">
 					{{ message.text }}
 				</p>
 				<CopilotProposal
 					v-else-if="message.role === 'assistant' && message.plan"
 					:plan="message.plan"
-					:can-approve="isPendingProposal(message) ? canApprove : false"
+					:canApprove="isPendingProposal(message) ? canApprove : false"
 					:busy="isPendingProposal(message) && state === 'executing'"
 					@approve="onApprove(message)"
 					@discard="onDiscard(message)" />
-				<p v-else-if="message.role === 'assistant'" class="copilot-panel__bubble copilot-panel__bubble--error">
+				<p
+					v-else-if="message.role === 'assistant'"
+					class="copilot-panel__bubble copilot-panel__bubble--error">
 					{{ message.error }}
 				</p>
 			</div>
@@ -53,11 +64,24 @@
 				data-testid="copilot-message-input"
 				class="copilot-panel__input"
 				:disabled="inputDisabled"
-				:placeholder="t('openbuild', 'Ask the copilot to add a page, widget, or menu item…')"
-				:aria-label="t('openbuild', 'Ask the copilot to add a page, widget, or menu item…')"
+				:placeholder="
+					t(
+						'openbuild',
+						'Ask the copilot to add a page, widget, or menu item…',
+					)
+				"
+				:aria-label="
+					t(
+						'openbuild',
+						'Ask the copilot to add a page, widget, or menu item…',
+					)
+				"
 				rows="2"
 				@keydown.enter.exact.prevent="onSend" />
-			<NcButton type="primary" :disabled="inputDisabled || !draft.trim()" @click="onSend">
+			<NcButton
+				variant="primary"
+				:disabled="inputDisabled || !draft.trim()"
+				@click="onSend">
 				{{ t('openbuild', 'Send') }}
 			</NcButton>
 		</div>
@@ -66,8 +90,8 @@
 
 <script>
 import { NcButton } from '@nextcloud/vue'
-import { useCopilot } from '../../composables/useCopilot.js'
 import CopilotProposal from './CopilotProposal.vue'
+import { useCopilot } from '../../composables/useCopilot.js'
 
 export default {
 	name: 'CopilotPanel',
@@ -80,6 +104,7 @@ export default {
 			type: String,
 			required: true,
 		},
+
 		/**
 		 * Optional Agent id (spec `agent-workspace` design.md Decision 3).
 		 * Omitted entirely, this panel behaves exactly as the bare copilot
@@ -90,16 +115,19 @@ export default {
 			type: String,
 			default: '',
 		},
+
 		/** The agent's name, shown in the "Acting as" header when `agentId` is set. */
 		name: {
 			type: String,
 			default: '',
 		},
+
 		/** The agent's instructions, shown as a hint under the "Acting as" header. */
 		instructions: {
 			type: String,
 			default: '',
 		},
+
 		/**
 		 * The agent's effective enabled tools — a client-side HINT only
 		 * (e.g. future greyed-out affordance). Never the security boundary,
@@ -136,6 +164,7 @@ export default {
 		state() {
 			return this.copilot.state.value
 		},
+
 		/**
 		 * Whether the pending proposal's predicted manifests all pass the
 		 * canonical manifest v2 validator.
@@ -146,6 +175,7 @@ export default {
 		canApprove() {
 			return this.copilot.canApprove.value
 		},
+
 		/**
 		 * The input is disabled while a plan is in flight or a proposal is
 		 * pending review/execution — the user must Approve or Discard first
@@ -157,7 +187,11 @@ export default {
 		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
 		 */
 		inputDisabled() {
-			return this.state === 'planning' || this.state === 'review' || this.state === 'executing'
+			return (
+				this.state === 'planning'
+				|| this.state === 'review'
+				|| this.state === 'executing'
+			)
 		},
 	},
 
@@ -188,14 +222,26 @@ export default {
 			this.messages.push({ id: this.nextMessageId++, role: 'user', text })
 			this.draft = ''
 
-			await this.copilot.generatePlan(text, this.appSlug, this.agentId || undefined)
+			await this.copilot.generatePlan(
+				text,
+				this.appSlug,
+				this.agentId || undefined,
+			)
 
 			const assistantId = this.nextMessageId++
 			if (this.copilot.state.value === 'review') {
 				this.pendingMessageId = assistantId
-				this.messages.push({ id: assistantId, role: 'assistant', plan: this.copilot.plan.value })
+				this.messages.push({
+					id: assistantId,
+					role: 'assistant',
+					plan: this.copilot.plan.value,
+				})
 			} else {
-				this.messages.push({ id: assistantId, role: 'assistant', error: this.copilot.errorMessage.value })
+				this.messages.push({
+					id: assistantId,
+					role: 'assistant',
+					error: this.copilot.errorMessage.value,
+				})
 			}
 		},
 

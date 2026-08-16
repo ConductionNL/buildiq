@@ -134,11 +134,26 @@ export default defineConfig({
 	globalTimeout: 36 * 60 * 1000,
 	reporter: process.env.CI
 		? [
-			['github'],
-			['html', { open: 'never', outputFolder: path.join(APP_ROOT, 'playwright-report') }],
-			['list'],
-		]
-		: [['html', { open: 'never', outputFolder: path.join(APP_ROOT, 'playwright-report') }], ['list']],
+				['github'],
+				[
+					'html',
+					{
+						open: 'never',
+						outputFolder: path.join(APP_ROOT, 'playwright-report'),
+					},
+				],
+				['list'],
+			]
+		: [
+				[
+					'html',
+					{
+						open: 'never',
+						outputFolder: path.join(APP_ROOT, 'playwright-report'),
+					},
+				],
+				['list'],
+			],
 	outputDir: path.join(APP_ROOT, 'test-results'),
 
 	use: {
@@ -152,7 +167,10 @@ export default defineConfig({
 		storageState: path.resolve(__dirname, '.auth', 'admin.json'),
 		httpCredentials: {
 			username: process.env.NC_ADMIN_USER || 'admin',
-			password: process.env.NC_ADMIN_PASSWORD || process.env.NC_ADMIN_PASS || 'admin',
+			password:
+				process.env.NC_ADMIN_PASSWORD
+				|| process.env.NC_ADMIN_PASS
+				|| 'admin',
 		},
 		// Note: do NOT set `OCS-APIRequest: true` here globally. The header
 		// makes Nextcloud treat every request as an API call — including the

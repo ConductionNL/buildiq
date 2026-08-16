@@ -40,10 +40,16 @@ describe('useApplicationRecord — concurrent fetch coalescing (#49)', () => {
 
 	it('collapses ten concurrent callers into one request', async () => {
 		let resolveRequest
-		axios.get.mockReturnValue(new Promise((resolve) => { resolveRequest = resolve }))
+		axios.get.mockReturnValue(
+			new Promise((resolve) => {
+				resolveRequest = resolve
+			}),
+		)
 
 		// Ten callers, exactly as the page produced them before the fix.
-		const calls = Array.from({ length: 10 }, () => fetchApplicationRecord('hydra-console'))
+		const calls = Array.from({ length: 10 }, () =>
+			fetchApplicationRecord('hydra-console'),
+		)
 		resolveRequest({ data: { name: 'Hydra Console', slug: 'hydra-console' } })
 		const results = await Promise.all(calls)
 

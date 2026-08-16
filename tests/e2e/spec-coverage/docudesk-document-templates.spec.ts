@@ -32,7 +32,11 @@
  */
 
 import { test, expect } from '@playwright/test'
-import { ensureApp, dismissOverlays, suppressSupportDialog } from '../support/appFixture'
+import {
+	ensureApp,
+	dismissOverlays,
+	suppressSupportDialog,
+} from '../support/appFixture'
 import { readStagedManifest } from '../support/stagedManifest'
 import { E2E_BASE_URL as BASE } from '../support/baseUrl'
 import { confirmAction } from '../support/confirmDialog'
@@ -59,13 +63,24 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 	 */
 	async function seedManifest(page, documents: object[] = []): Promise<void> {
 		const base = `${BASE}/index.php/apps/openbuild/api/applications/${APP_SLUG}/manifest`
-		const current = await page.request.get(base, { headers: { 'OCS-APIRequest': 'true' } })
+		const current = await page.request.get(base, {
+			headers: { 'OCS-APIRequest': 'true' },
+		})
 		expect(current.ok(), 'GET fixture manifest must succeed').toBeTruthy()
 		const manifest = await current.json()
 		const next = {
 			...manifest,
-			schemas: [{ slug: SCHEMA_SLUG, title: 'Hello Message', properties: { title: { type: 'string' } } }],
-			runtime: { ...(manifest.runtime || {}), ...(documents.length ? { documents } : {}) },
+			schemas: [
+				{
+					slug: SCHEMA_SLUG,
+					title: 'Hello Message',
+					properties: { title: { type: 'string' } },
+				},
+			],
+			runtime: {
+				...(manifest.runtime || {}),
+				...(documents.length ? { documents } : {}),
+			},
 		}
 		if (documents.length === 0 && next.runtime) {
 			delete next.runtime.documents
@@ -84,13 +99,18 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 	 * @return {Promise<void>}
 	 */
 	async function openDesigner(page): Promise<void> {
-		await page.goto(`${BASE}/apps/openbuild/builder/${APP_SLUG}/pages?_version=production`, {
-			waitUntil: 'domcontentloaded',
-		})
+		await page.goto(
+			`${BASE}/apps/openbuild/builder/${APP_SLUG}/pages?_version=production`,
+			{
+				waitUntil: 'domcontentloaded',
+			},
+		)
 		await page.waitForSelector('.page-designer__left', { timeout: 60_000 })
 		await dismissOverlays(page)
 		await page.locator('.ob-documents-section').scrollIntoViewIfNeeded()
-		await expect(page.locator('.ob-documents-section')).toBeVisible({ timeout: 30_000 })
+		await expect(page.locator('.ob-documents-section')).toBeVisible({
+			timeout: 30_000,
+		})
 	}
 
 	/**
@@ -107,9 +127,17 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 	 * @param optionText The option to choose.
 	 * @return {Promise<void>}
 	 */
-	async function pickOption(page, inputLabel: RegExp, optionText: RegExp): Promise<void> {
+	async function pickOption(
+		page,
+		inputLabel: RegExp,
+		optionText: RegExp,
+	): Promise<void> {
 		await page.getByRole('combobox', { name: inputLabel }).click()
-		await page.getByRole('option').filter({ hasText: optionText }).first().click()
+		await page
+			.getByRole('option')
+			.filter({ hasText: optionText })
+			.first()
+			.click()
 	}
 
 	/**
@@ -128,12 +156,16 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 	 */
 	async function openDialog(page, trigger: RegExp): Promise<void> {
 		const templates = page.waitForResponse(
-			(resp) => /\/apps\/docudesk\/api\/templates(\?.*)?$/.test(resp.url()) && resp.request().method() === 'GET',
+			(resp) =>
+				/\/apps\/docudesk\/api\/templates(\?.*)?$/.test(resp.url())
+				&& resp.request().method() === 'GET',
 			{ timeout: 20_000 },
 		)
 		await page.getByRole('button', { name: trigger }).click()
 		const resp = await templates
-		expect(resp.status(), 'the template list must load before picking one').toBe(200)
+		expect(resp.status(), 'the template list must load before picking one').toBe(
+			200,
+		)
 		// The list is rendered from the resolved promise a tick later.
 		await expect(page.locator('.ob-document-attach')).toBeVisible()
 	}
@@ -144,7 +176,9 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 	})
 
 	// @e2e docudesk-document-templates::attaching-a-template-writes-the-manifest-entry
-	test('REQ-DDT-002 — attach a Docudesk template via the Documents section', async ({ page }) => {
+	test('REQ-DDT-002 — attach a Docudesk template via the Documents section', async ({
+		page,
+	}) => {
 		await seedManifest(page)
 		await openDesigner(page)
 
@@ -153,7 +187,9 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 
 		await pickOption(page, /^template$/i, new RegExp(TEMPLATE_NAME, 'i'))
 		await pickOption(page, /^schema$/i, /hello message/i)
-		await page.getByRole('textbox', { name: /action label/i }).fill('Generate confirmation letter')
+		await page
+			.getByRole('textbox', { name: /action label/i })
+			.fill('Generate confirmation letter')
 		await page.getByRole('button', { name: /^save$/i }).click()
 
 		// The Documents section lists the new attachment.
@@ -170,11 +206,15 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 		expect(documents[0].schema).toBe(SCHEMA_SLUG)
 		expect(documents[0].label).toBe('Generate confirmation letter')
 		expect(documents[0].templateName).toBe(TEMPLATE_NAME)
-		expect(documents[0].templateId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+		expect(documents[0].templateId).toMatch(
+			/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+		)
 	})
 
 	// @e2e docudesk-document-templates::preview-renders-before-committing
-	test('REQ-DDT-002 — preview renders the template before saving', async ({ page }) => {
+	test('REQ-DDT-002 — preview renders the template before saving', async ({
+		page,
+	}) => {
 		await seedManifest(page)
 		await openDesigner(page)
 
@@ -184,7 +224,9 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 		// Assert the CONTRACT (REQ-DDT-006 pins preview to this exact route),
 		// then assert the result is presented without committing anything.
 		const previewRequest = page.waitForRequest(
-			(req) => /\/apps\/docudesk\/api\/templates\/[^/]+\/preview$/.test(req.url()) && req.method() === 'POST',
+			(req) =>
+				/\/apps\/docudesk\/api\/templates\/[^/]+\/preview$/.test(req.url())
+				&& req.method() === 'POST',
 			{ timeout: 20_000 },
 		)
 		await page.getByRole('button', { name: /preview with sample data/i }).click()
@@ -193,7 +235,9 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 		// Either a rendered body or the explicit failure message — both are
 		// "presented", and neither may silently do nothing.
 		await expect(
-			page.locator('.ob-document-attach__preview-body, .ob-document-attach__preview .ob-document-attach__error'),
+			page.locator(
+				'.ob-document-attach__preview-body, .ob-document-attach__preview .ob-document-attach__error',
+			),
 		).toBeVisible({ timeout: 20_000 })
 
 		// Nothing was saved: the manifest is still attachment-free.
@@ -202,16 +246,20 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 	})
 
 	// @e2e docudesk-document-templates::edit-warns-about-a-deleted-template
-	test('REQ-DDT-002 — editing warns when the template was deleted', async ({ page }) => {
+	test('REQ-DDT-002 — editing warns when the template was deleted', async ({
+		page,
+	}) => {
 		// An attachment whose template no longer exists in Docudesk: the UUID is
 		// well-formed but unknown, so the dialog's snapshot refresh 404s.
-		await seedManifest(page, [{
-			id: 'pw-gone',
-			schema: SCHEMA_SLUG,
-			templateId: '00000000-0000-4000-8000-000000000000',
-			templateName: 'Verwijderde brief',
-			label: 'Generate deleted letter',
-		}])
+		await seedManifest(page, [
+			{
+				id: 'pw-gone',
+				schema: SCHEMA_SLUG,
+				templateId: '00000000-0000-4000-8000-000000000000',
+				templateName: 'Verwijderde brief',
+				label: 'Generate deleted letter',
+			},
+		])
 		await openDesigner(page)
 
 		await expect(page.locator('.ob-documents-section__item')).toHaveCount(1)
@@ -220,26 +268,45 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 		// Assert the call AND its status, so a warning that fails to appear is
 		// distinguishable from a check that was never made.
 		const snapshotResponse = page.waitForResponse(
-			(resp) => /\/apps\/docudesk\/api\/templates\/00000000-0000-4000-8000-000000000000$/.test(resp.url()),
+			(resp) =>
+				/\/apps\/docudesk\/api\/templates\/00000000-0000-4000-8000-000000000000$/.test(
+					resp.url(),
+				),
 			{ timeout: 20_000 },
 		)
-		await page.locator('.ob-documents-section__item').first().getByRole('button', { name: /^edit$/i }).click()
-		expect((await snapshotResponse).status(), 'a deleted template must 404').toBe(404)
+		await page
+			.locator('.ob-documents-section__item')
+			.first()
+			.getByRole('button', { name: /^edit$/i })
+			.click()
+		expect(
+			(await snapshotResponse).status(),
+			'a deleted template must 404',
+		).toBe(404)
 
-		await expect(page.locator('.ob-document-attach__warn')).toContainText(/no longer exists/i, { timeout: 20_000 })
+		await expect(page.locator('.ob-document-attach__warn')).toContainText(
+			/no longer exists/i,
+			{ timeout: 20_000 },
+		)
 		// The builder can still recover — the template picker stays usable.
-		await expect(page.getByRole('combobox', { name: /^template$/i })).toBeVisible()
+		await expect(
+			page.getByRole('combobox', { name: /^template$/i }),
+		).toBeVisible()
 	})
 
 	// @e2e docudesk-document-templates::dependency-auto-added-on-save
-	test('REQ-DDT-005 — docudesk dependency auto-added on save', async ({ page }) => {
-		await seedManifest(page, [{
-			id: 'pw-dep',
-			schema: SCHEMA_SLUG,
-			templateId: '11111111-1111-4111-8111-111111111111',
-			templateName: TEMPLATE_NAME,
-			label: 'Generate confirmation letter',
-		}])
+	test('REQ-DDT-005 — docudesk dependency auto-added on save', async ({
+		page,
+	}) => {
+		await seedManifest(page, [
+			{
+				id: 'pw-dep',
+				schema: SCHEMA_SLUG,
+				templateId: '11111111-1111-4111-8111-111111111111',
+				templateName: TEMPLATE_NAME,
+				label: 'Generate confirmation letter',
+			},
+		])
 		await openDesigner(page)
 
 		/**
@@ -255,9 +322,12 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 		 */
 		const persistedDependencies = async (): Promise<string[]> => {
 			return page.evaluate(async (slug) => {
-				const resp = await fetch(`/index.php/apps/openbuild/api/applications/${slug}/manifest`, {
-					headers: { 'OCS-APIRequest': 'true' },
-				})
+				const resp = await fetch(
+					`/index.php/apps/openbuild/api/applications/${slug}/manifest`,
+					{
+						headers: { 'OCS-APIRequest': 'true' },
+					},
+				)
 				if (!resp.ok) {
 					return []
 				}
@@ -266,26 +336,38 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 		}
 
 		await page.getByRole('button', { name: /save pages/i }).click()
-		await expect.poll(
-			async () => (await persistedDependencies()).filter((d) => d === 'docudesk').length,
-			{ timeout: 20_000 },
-		).toBe(1)
+		await expect
+			.poll(
+				async () =>
+					(await persistedDependencies()).filter((d) => d === 'docudesk')
+						.length,
+				{ timeout: 20_000 },
+			)
+			.toBe(1)
 
 		// Re-saving must not duplicate the entry.
 		await page.getByRole('button', { name: /save pages/i }).click()
-		await expect(page.locator('.page-designer-host__toast')).toBeVisible({ timeout: 20_000 })
-		expect((await persistedDependencies()).filter((d) => d === 'docudesk')).toHaveLength(1)
+		await expect(page.locator('.page-designer-host__toast')).toBeVisible({
+			timeout: 20_000,
+		})
+		expect(
+			(await persistedDependencies()).filter((d) => d === 'docudesk'),
+		).toHaveLength(1)
 	})
 
 	// @e2e docudesk-document-templates::designer-degrades-when-docudesk-is-missing
-	test('REQ-DDT-005 — designer degrades when Docudesk is missing', async ({ page }) => {
-		await seedManifest(page, [{
-			id: 'pw-existing',
-			schema: SCHEMA_SLUG,
-			templateId: '22222222-2222-4222-8222-222222222222',
-			templateName: TEMPLATE_NAME,
-			label: 'Generate confirmation letter',
-		}])
+	test('REQ-DDT-005 — designer degrades when Docudesk is missing', async ({
+		page,
+	}) => {
+		await seedManifest(page, [
+			{
+				id: 'pw-existing',
+				schema: SCHEMA_SLUG,
+				templateId: '22222222-2222-4222-8222-222222222222',
+				templateName: TEMPLATE_NAME,
+				label: 'Generate confirmation letter',
+			},
+		])
 
 		// Simulate absence the way `useAppStatus` actually decides it. It has TWO
 		// signals and both must say absent: first the server-injected
@@ -296,7 +378,11 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 		// uninstalled Docudesk produces, rather than a bespoke test flag.
 		await page.addInitScript(() => {
 			const install = () => {
-				const oc = (window as unknown as { OC?: { appswebroots?: Record<string, string> } }).OC
+				const oc = (
+					window as unknown as {
+						OC?: { appswebroots?: Record<string, string> }
+					}
+				).OC
 				if (oc && oc.appswebroots) {
 					delete oc.appswebroots.docudesk
 				}
@@ -304,12 +390,18 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 			install()
 			document.addEventListener('DOMContentLoaded', install)
 		})
-		await page.route('**/apps/docudesk/api', (route) => route.fulfill({ status: 404, body: '' }))
+		await page.route('**/apps/docudesk/api', (route) =>
+			route.fulfill({ status: 404, body: '' }),
+		)
 		await openDesigner(page)
 
 		// The Add action is disabled, with the missing-app hint.
-		await expect(page.getByRole('button', { name: /attach template/i })).toBeDisabled({ timeout: 20_000 })
-		await expect(page.locator('.ob-documents-section__hint')).toContainText(/not available/i)
+		await expect(
+			page.getByRole('button', { name: /attach template/i }),
+		).toBeDisabled({ timeout: 20_000 })
+		await expect(page.locator('.ob-documents-section__hint')).toContainText(
+			/not available/i,
+		)
 
 		// The existing attachment stays listed, and detachable.
 		const item = page.locator('.ob-documents-section__item')
@@ -322,7 +414,10 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 		// screen unanswered, the manifest was never written, and the assertion
 		// below failed as though detach were broken. See
 		// tests/e2e/support/confirmDialog.ts.
-		await item.first().getByRole('button', { name: /^detach$/i }).click()
+		await item
+			.first()
+			.getByRole('button', { name: /^detach$/i })
+			.click()
 		await confirmAction(page, 'Detach template', /^detach$/i)
 		await expect(page.locator('.ob-documents-section__item')).toHaveCount(0)
 	})
@@ -380,7 +475,9 @@ test.skip('REQ-DDT-003 — generate produces a download', async ({ page }) => {
 
 // @e2e docudesk-document-templates::filename-template-interpolates-object-properties
 // STUB BODY — see the note above (defect fixed; real body still to be written). Logic covered by vitest (renderFilename + buildFilename).
-test.skip('REQ-DDT-003 — filename template interpolates object properties', async ({ page }) => {
+test.skip('REQ-DDT-003 — filename template interpolates object properties', async ({
+	page,
+}) => {
 	// @e2e docudesk-document-templates::filename-template-interpolates-object-properties
 	await page.goto(`${BASE}/apps/openbuild/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 10_000 })
@@ -396,7 +493,9 @@ test.skip('REQ-DDT-003 — a 403 renders the no-access message', async ({ page }
 
 // @e2e docudesk-document-templates::double-click-issues-one-request
 // STUB BODY — see the note above (defect fixed; real body still to be written). Logic covered by vitest (in-flight guard test).
-test.skip('REQ-DDT-003 — double-click issues exactly one request', async ({ page }) => {
+test.skip('REQ-DDT-003 — double-click issues exactly one request', async ({
+	page,
+}) => {
 	// @e2e docudesk-document-templates::double-click-issues-one-request
 	await page.goto(`${BASE}/apps/openbuild/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 10_000 })
@@ -404,7 +503,9 @@ test.skip('REQ-DDT-003 — double-click issues exactly one request', async ({ pa
 
 // @e2e docudesk-document-templates::two-attachments-render-two-ordered-buttons
 // STUB BODY — see the note above (defect fixed; real body still to be written). Logic covered by vitest (DocumentActions ordered-buttons test).
-test.skip('REQ-DDT-004 — two attachments render two ordered buttons', async ({ page }) => {
+test.skip('REQ-DDT-004 — two attachments render two ordered buttons', async ({
+	page,
+}) => {
 	// @e2e docudesk-document-templates::two-attachments-render-two-ordered-buttons
 	await page.goto(`${BASE}/apps/openbuild/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 10_000 })
@@ -420,7 +521,9 @@ test.skip('REQ-DDT-004 — no attachments renders nothing', async ({ page }) => 
 
 // @e2e docudesk-document-templates::runtime-surface-degrades-without-requests
 // STUB BODY — see the note above (defect fixed; real body still to be written). Logic covered by vitest (DocumentActions absent-app state issues no request).
-test.skip('REQ-DDT-005 — runtime surface degrades without requests', async ({ page }) => {
+test.skip('REQ-DDT-005 — runtime surface degrades without requests', async ({
+	page,
+}) => {
 	// @e2e docudesk-document-templates::runtime-surface-degrades-without-requests
 	await page.goto(`${BASE}/apps/openbuild/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 10_000 })

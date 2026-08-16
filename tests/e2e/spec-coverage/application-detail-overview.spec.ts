@@ -42,17 +42,24 @@ async function gotoHelloWorldDetail(page: import('@playwright/test').Page) {
 // true with all six rows deleted. The test title says so itself: "renders main
 // area without crashing". That is a smoke test, and a smoke test is a fine
 // thing to have; it is just not this requirement.
-test.skip('REQ-OBADO-001 — application detail page renders main area without crashing', async ({ page }) => {
+test.skip('REQ-OBADO-001 — application detail page renders main area without crashing', async ({
+	page,
+}) => {
 	await gotoHelloWorldDetail(page)
 
 	// Main content area must be visible
-	await expect(page.locator('main'), 'main content must be visible').toBeVisible({ timeout: 10_000 })
+	await expect(page.locator('main'), 'main content must be visible').toBeVisible({
+		timeout: 10_000,
+	})
 
 	// The page title must reference OpenBuild
 	await expect(page).toHaveTitle(/openbuild/i)
 
 	// The app name "Hello World" must appear in the detail
-	await expect(page.getByText('Hello World').first(), 'app name must be visible in detail').toBeVisible({ timeout: 10_000 })
+	await expect(
+		page.getByText('Hello World').first(),
+		'app name must be visible in detail',
+	).toBeVisible({ timeout: 10_000 })
 })
 
 // QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no application detail / icon / template-clone UI renders. Re-enable when #41 is fixed.
@@ -63,24 +70,37 @@ test.skip('REQ-OBADO-001 — application detail page renders main area without c
 // never asserted on — and finishes on the same two white-screen checks as the
 // test above. Its own comment concedes it: "the page still passes if main
 // rendered". A computed-but-unasserted value is the tell.
-test.skip('REQ-OBADO-001 — detail page renders the app icon from the Application record', async ({ page }) => {
+test.skip('REQ-OBADO-001 — detail page renders the app icon from the Application record', async ({
+	page,
+}) => {
 	await gotoHelloWorldDetail(page)
 
 	await expect(page.locator('main')).toBeVisible({ timeout: 10_000 })
 
 	// An icon element should be present in the hero/header area
 	// Icons are typically <img> or <svg> elements in the header region
-	const heroIcon = page.locator('header img, [class*="hero"] img, [class*="header"] img, [class*="icon"] img').first()
-	const svgIcon = page.locator('header svg, [class*="hero"] svg, [class*="header"] svg').first()
+	const heroIcon = page
+		.locator(
+			'header img, [class*="hero"] img, [class*="header"] img, [class*="icon"] img',
+		)
+		.first()
+	const svgIcon = page
+		.locator('header svg, [class*="hero"] svg, [class*="header"] svg')
+		.first()
 	const iconCount = (await heroIcon.count()) + (await svgIcon.count())
 
 	// If neither img nor svg is found, the page still passes if main rendered
 	// (icon may be a CSS background or not yet implemented for the dev fixture)
 	// The primary assertion is that the page renders without a white screen
-	await expect(page.locator('main'), 'detail page must render main content').toBeVisible({ timeout: 10_000 })
+	await expect(
+		page.locator('main'),
+		'detail page must render main content',
+	).toBeVisible({ timeout: 10_000 })
 
 	// Confirm no fatal JS error caused a blank page
-	await expect(page.getByText('Hello World').first()).toBeVisible({ timeout: 5_000 })
+	await expect(page.getByText('Hello World').first()).toBeVisible({
+		timeout: 5_000,
+	})
 })
 
 // @e2e application-detail-overview::register-widget-deep-links-to-openregister
@@ -90,9 +110,14 @@ test.skip('REQ-OBADO-001 — detail page renders the app icon from the Applicati
 // development through 2026-07-29, while this file was last touched at the
 // original 2026-06-04 quarantine commit. The detail route itself is driven and
 // asserted by applicationDetailOverview.spec.ts, which passes in CI.
-test('REQ-OBADO-006 — Register widget shows an "Open in OpenRegister" link on detail page', async ({ page }) => {
+test('REQ-OBADO-006 — Register widget shows an "Open in OpenRegister" link on detail page', async ({
+	page,
+}) => {
 	// @e2e application-detail-overview::register-widget-deep-links-to-openregister
-	test.skip(!LIVE, 'Requires live dev env with the ApplicationDetailHeader cockpit built — set OPENBUILD_E2E_LIVE=1')
+	test.skip(
+		!LIVE,
+		'Requires live dev env with the ApplicationDetailHeader cockpit built — set OPENBUILD_E2E_LIVE=1',
+	)
 
 	await gotoHelloWorldDetail(page)
 	await expect(page.locator('main')).toBeVisible({ timeout: 10_000 })
@@ -108,9 +133,14 @@ test('REQ-OBADO-006 — Register widget shows an "Open in OpenRegister" link on 
 	// `.ob-register-widget` makes the assertion be about the widget the
 	// requirement names.
 	const widget = page.locator('.ob-register-widget')
-	await expect(widget, 'the Register widget must render on the detail page').toBeVisible({ timeout: 15_000 })
+	await expect(
+		widget,
+		'the Register widget must render on the detail page',
+	).toBeVisible({ timeout: 15_000 })
 
-	const openRegister = widget.getByRole('button', { name: /open in openregister/i })
+	const openRegister = widget.getByRole('button', {
+		name: /open in openregister/i,
+	})
 	await expect(
 		openRegister,
 		'Register widget must expose the "Open in OpenRegister" affordance',
@@ -122,10 +152,13 @@ test('REQ-OBADO-006 — Register widget shows an "Open in OpenRegister" link on 
 	// `getAttribute('href')` here would be null and — as the old body did —
 	// skipped by an `if (href)`, i.e. asserted nothing about where it goes.
 	const navigation = page.waitForRequest(
-		(req) => req.isNavigationRequest() && /\/apps\/openregister\//.test(req.url()),
+		(req) =>
+			req.isNavigationRequest() && /\/apps\/openregister\//.test(req.url()),
 		{ timeout: 10_000 },
 	)
 	await openRegister.click()
 	const target = (await navigation).url()
-	expect(target, 'the deep link must target the OpenRegister app').toMatch(/\/apps\/openregister\/registers\//)
+	expect(target, 'the deep link must target the OpenRegister app').toMatch(
+		/\/apps\/openregister\/registers\//,
+	)
 })

@@ -71,24 +71,60 @@ async function stub(name) {
 	return {
 		default: {
 			name,
-			props: ['config', 'pageType', 'appSlug', 'dataRegisters', 'parentRoute', 'pageId', 'runtimeExternalForms'],
-			render() { return h('div', { class: `${name.toLowerCase()}-stub` }, name) },
+			props: [
+				'config',
+				'pageType',
+				'appSlug',
+				'dataRegisters',
+				'parentRoute',
+				'pageId',
+				'runtimeExternalForms',
+			],
+			render() {
+				return h('div', { class: `${name.toLowerCase()}-stub` }, name)
+			},
 		},
 	}
 }
-vi.mock('../../src/components/page-editor/IndexPageEditor.vue', () => stub('IndexPageEditor'))
-vi.mock('../../src/components/page-editor/DetailPageEditor.vue', () => stub('DetailPageEditor'))
-vi.mock('../../src/components/page-editor/DashboardPageEditor.vue', () => stub('DashboardPageEditor'))
-vi.mock('../../src/components/page-editor/FormPageEditor.vue', () => stub('FormPageEditor'))
-vi.mock('../../src/components/page-editor/LogsPageEditor.vue', () => stub('LogsPageEditor'))
-vi.mock('../../src/components/page-editor/SettingsPageEditor.vue', () => stub('SettingsPageEditor'))
-vi.mock('../../src/components/page-editor/ChatPageEditor.vue', () => stub('ChatPageEditor'))
-vi.mock('../../src/components/page-editor/FilesPageEditor.vue', () => stub('FilesPageEditor'))
-vi.mock('../../src/components/page-editor/CustomPageEditor.vue', () => stub('CustomPageEditor'))
-vi.mock('../../src/components/page-editor/MapPageEditor.vue', () => stub('MapPageEditor'))
-vi.mock('../../src/components/page-editor/RoadmapPageEditor.vue', () => stub('RoadmapPageEditor'))
-vi.mock('../../src/components/page-editor/SearchPageEditor.vue', () => stub('SearchPageEditor'))
-vi.mock('../../src/components/page-editor/WikiPageEditor.vue', () => stub('WikiPageEditor'))
+vi.mock('../../src/components/page-editor/IndexPageEditor.vue', () =>
+	stub('IndexPageEditor'),
+)
+vi.mock('../../src/components/page-editor/DetailPageEditor.vue', () =>
+	stub('DetailPageEditor'),
+)
+vi.mock('../../src/components/page-editor/DashboardPageEditor.vue', () =>
+	stub('DashboardPageEditor'),
+)
+vi.mock('../../src/components/page-editor/FormPageEditor.vue', () =>
+	stub('FormPageEditor'),
+)
+vi.mock('../../src/components/page-editor/LogsPageEditor.vue', () =>
+	stub('LogsPageEditor'),
+)
+vi.mock('../../src/components/page-editor/SettingsPageEditor.vue', () =>
+	stub('SettingsPageEditor'),
+)
+vi.mock('../../src/components/page-editor/ChatPageEditor.vue', () =>
+	stub('ChatPageEditor'),
+)
+vi.mock('../../src/components/page-editor/FilesPageEditor.vue', () =>
+	stub('FilesPageEditor'),
+)
+vi.mock('../../src/components/page-editor/CustomPageEditor.vue', () =>
+	stub('CustomPageEditor'),
+)
+vi.mock('../../src/components/page-editor/MapPageEditor.vue', () =>
+	stub('MapPageEditor'),
+)
+vi.mock('../../src/components/page-editor/RoadmapPageEditor.vue', () =>
+	stub('RoadmapPageEditor'),
+)
+vi.mock('../../src/components/page-editor/SearchPageEditor.vue', () =>
+	stub('SearchPageEditor'),
+)
+vi.mock('../../src/components/page-editor/WikiPageEditor.vue', () =>
+	stub('WikiPageEditor'),
+)
 // StubPageEditor keeps its real required-prop contract (title/message) so
 // the dispatch-binding tests below can assert PageDesigner actually binds
 // them (REQ-PEC-001) rather than stubbing that contract away.
@@ -120,7 +156,9 @@ vi.mock('../../src/components/page-editor/PageListEditor.vue', async () => {
 		default: {
 			name: 'PageListEditor',
 			props: ['pages', 'selectedIndex'],
-			render() { return h('div', { class: 'page-list-editor-stub' }) },
+			render() {
+				return h('div', { class: 'page-list-editor-stub' })
+			},
 		},
 	}
 })
@@ -130,7 +168,9 @@ vi.mock('../../src/components/page-editor/MenuTreeEditor.vue', async () => {
 		default: {
 			name: 'MenuTreeEditor',
 			props: ['menu'],
-			render() { return h('div', { class: 'menu-tree-editor-stub' }) },
+			render() {
+				return h('div', { class: 'menu-tree-editor-stub' })
+			},
 		},
 	}
 })
@@ -155,7 +195,8 @@ describe('PageDesigner', () => {
 			if (typeof url === 'string' && url.includes('/versions')) {
 				return Promise.resolve({ data: { results: [] } })
 			}
-			const slug = (config && config.params && config.params.slug) || 'hello-world'
+			const slug =
+				(config && config.params && config.params.slug) || 'hello-world'
 			const app = applicationFixture || { slug }
 			return Promise.resolve({ data: { results: [app] } })
 		})
@@ -184,8 +225,12 @@ describe('PageDesigner', () => {
 		})
 		wrapper.vm.selectPage(0)
 		await wrapper.vm.$nextTick()
-		expect(wrapper.findComponent({ name: 'IndexPageEditor' }).exists()).toBe(true)
-		expect(wrapper.findComponent({ name: 'FormPageEditor' }).exists()).toBe(false)
+		expect(wrapper.findComponent({ name: 'IndexPageEditor' }).exists()).toBe(
+			true,
+		)
+		expect(wrapper.findComponent({ name: 'FormPageEditor' }).exists()).toBe(
+			false,
+		)
 	})
 
 	it('dispatcher picks FormPageEditor for type=form', async () => {
@@ -205,12 +250,16 @@ describe('PageDesigner', () => {
 		})
 		wrapper.vm.selectPage(0)
 		await wrapper.vm.$nextTick()
-		expect(wrapper.findComponent({ name: 'DashboardPageEditor' }).exists()).toBe(true)
+		expect(wrapper.findComponent({ name: 'DashboardPageEditor' }).exists()).toBe(
+			true,
+		)
 	})
 
 	it('unknown page.type falls back to StubPageEditor (raw-JSON preserves edits)', async () => {
 		const wrapper = mountDesigner({
-			pages: [{ id: 'x', type: 'unknown-future-type', config: { foo: 'bar' } }],
+			pages: [
+				{ id: 'x', type: 'unknown-future-type', config: { foo: 'bar' } },
+			],
 			menu: [],
 		})
 		wrapper.vm.selectPage(0)
@@ -273,13 +322,23 @@ describe('PageDesigner', () => {
 
 		it('selecting a wiki page mounts the wiki sub-editor, not the stub', async () => {
 			const wrapper = mountDesigner({
-				pages: [{ id: 'w', type: 'wiki', config: { register: 'r', schema: 's' } }],
+				pages: [
+					{
+						id: 'w',
+						type: 'wiki',
+						config: { register: 'r', schema: 's' },
+					},
+				],
 				menu: [],
 			})
 			wrapper.vm.selectPage(0)
 			await wrapper.vm.$nextTick()
-			expect(wrapper.findComponent({ name: 'WikiPageEditor' }).exists()).toBe(true)
-			expect(wrapper.findComponent({ name: 'StubPageEditor' }).exists()).toBe(false)
+			expect(wrapper.findComponent({ name: 'WikiPageEditor' }).exists()).toBe(
+				true,
+			)
+			expect(wrapper.findComponent({ name: 'StubPageEditor' }).exists()).toBe(
+				false,
+			)
 		})
 	})
 
@@ -293,7 +352,9 @@ describe('PageDesigner', () => {
 		})
 		wrapper.vm.selectPage(0)
 		await wrapper.vm.$nextTick()
-		expect(wrapper.findComponent({ name: 'IndexPageEditor' }).exists()).toBe(true)
+		expect(wrapper.findComponent({ name: 'IndexPageEditor' }).exists()).toBe(
+			true,
+		)
 		wrapper.vm.selectPage(1)
 		await wrapper.vm.$nextTick()
 		expect(wrapper.findComponent({ name: 'FormPageEditor' }).exists()).toBe(true)
@@ -326,18 +387,44 @@ describe('PageDesigner', () => {
 		const wrapper = mountDesigner({
 			pages: [{ id: 'form-page-1', type: 'form', config: {} }],
 			menu: [],
-			runtime: { externalForms: [{ id: 'ef-1', pageId: 'form-page-1', register: 'intake', schema: 'report', status: 'enabled' }] },
+			runtime: {
+				externalForms: [
+					{
+						id: 'ef-1',
+						pageId: 'form-page-1',
+						register: 'intake',
+						schema: 'report',
+						status: 'enabled',
+					},
+				],
+			},
 		})
 		wrapper.vm.selectPage(0)
 		await wrapper.vm.$nextTick()
 		const sub = wrapper.findComponent({ name: 'FormPageEditor' })
 		expect(sub.props('pageId')).toBe('form-page-1')
-		expect(sub.props('runtimeExternalForms')).toEqual([{ id: 'ef-1', pageId: 'form-page-1', register: 'intake', schema: 'report', status: 'enabled' }])
+		expect(sub.props('runtimeExternalForms')).toEqual([
+			{
+				id: 'ef-1',
+				pageId: 'form-page-1',
+				register: 'intake',
+				schema: 'report',
+				status: 'enabled',
+			},
+		])
 	})
 
 	it('onExternalFormsUpdate merges the array onto manifest.runtime.externalForms', async () => {
 		const wrapper = mountDesigner({ pages: [], menu: [] })
-		const list = [{ id: 'ef-1', pageId: 'p1', register: 'intake', schema: 'report', status: 'enabled' }]
+		const list = [
+			{
+				id: 'ef-1',
+				pageId: 'p1',
+				register: 'intake',
+				schema: 'report',
+				status: 'enabled',
+			},
+		]
 		wrapper.vm.onExternalFormsUpdate(list)
 		await wrapper.vm.$nextTick()
 		const emitted = wrapper.emitted('update:manifest')
@@ -346,7 +433,11 @@ describe('PageDesigner', () => {
 	})
 
 	it('onExternalFormsUpdate([]) deletes runtime.externalForms — byte-identical when never used', async () => {
-		const wrapper = mountDesigner({ pages: [], menu: [], runtime: { externalForms: [{ id: 'ef-1' }] } })
+		const wrapper = mountDesigner({
+			pages: [],
+			menu: [],
+			runtime: { externalForms: [{ id: 'ef-1' }] },
+		})
 		wrapper.vm.onExternalFormsUpdate([])
 		await wrapper.vm.$nextTick()
 		const emitted = wrapper.emitted('update:manifest')
@@ -426,7 +517,9 @@ describe('PageDesigner', () => {
 		validateSpy.mockClear()
 		const wrapper = mountDesigner({ pages: [], menu: [] })
 		expect(validateSpy).toHaveBeenCalledTimes(1)
-		wrapper.setProps({ manifest: { pages: [{ id: 'home', type: 'index' }], menu: [] } })
+		wrapper.setProps({
+			manifest: { pages: [{ id: 'home', type: 'index' }], menu: [] },
+		})
 		await wrapper.vm.$nextTick()
 		expect(validateSpy).toHaveBeenCalledTimes(2)
 	})
@@ -436,7 +529,9 @@ describe('PageDesigner', () => {
 		it('resolves the Application record in created() and stores its dataRegisters', async () => {
 			applicationFixture = {
 				slug: 'hello-world',
-				dataRegisters: [{ register: 'spectr', label: 'Spectr market intelligence data' }],
+				dataRegisters: [
+					{ register: 'spectr', label: 'Spectr market intelligence data' },
+				],
 			}
 			const wrapper = mountDesigner({ pages: [], menu: [] }, 'hello-world')
 			await new Promise((r) => setTimeout(r, 0))
@@ -449,12 +544,17 @@ describe('PageDesigner', () => {
 		it('passes applicationDataRegisters as the data-registers prop to the mounted sub-editor', async () => {
 			applicationFixture = {
 				slug: 'hello-world',
-				dataRegisters: [{ register: 'spectr', label: 'Spectr market intelligence data' }],
+				dataRegisters: [
+					{ register: 'spectr', label: 'Spectr market intelligence data' },
+				],
 			}
-			const wrapper = mountDesigner({
-				pages: [{ id: 'home', type: 'index', config: {} }],
-				menu: [],
-			}, 'hello-world')
+			const wrapper = mountDesigner(
+				{
+					pages: [{ id: 'home', type: 'index', config: {} }],
+					menu: [],
+				},
+				'hello-world',
+			)
 			await new Promise((r) => setTimeout(r, 0))
 			await wrapper.vm.$nextTick()
 			wrapper.vm.selectPage(0)
@@ -481,7 +581,9 @@ describe('PageDesigner', () => {
 			// Only the (skipped) dataRegisters fetch would have used a plain
 			// application lookup; assert none of the recorded calls targeted it.
 			const appLookupCalls = axiosGetMock.mock.calls.filter(
-				([url]) => typeof url === 'string' && url.includes('objects/openbuild/application'),
+				([url]) =>
+					typeof url === 'string'
+					&& url.includes('objects/openbuild/application'),
 			)
 			expect(appLookupCalls).toHaveLength(0)
 		})

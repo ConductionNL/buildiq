@@ -35,12 +35,12 @@
 		     a v-for in the default slot throws "draggable element must have an
 		     item slot" at render. -->
 		<Draggable
-			:model-value="pages"
+			:modelValue="pages"
 			handle=".page-list-editor__drag-handle"
 			:animation="150"
-			item-key="id"
+			itemKey="id"
 			class="page-list-editor__list"
-			@update:model-value="onReorder">
+			@update:modelValue="onReorder">
 			<template #item="{ element: page, index }">
 				<!--
 					The row is selected by CLICK, and until now by click only:
@@ -63,12 +63,16 @@
 						'page-list-editor__row--error': hasError(page, index),
 					}"
 					role="group"
-					:aria-label="t('openbuild', 'Page {position}', { position: index + 1 })"
+					:aria-label="
+						t('openbuild', 'Page {position}', { position: index + 1 })
+					"
 					tabindex="-1"
 					@click="$emit('select', index)"
 					@focusin="$emit('select', index)"
 					@keydown.enter="$emit('select', index)">
-					<span class="page-list-editor__drag-handle" :title="t('openbuild', 'Drag to reorder')">
+					<span
+						class="page-list-editor__drag-handle"
+						:title="t('openbuild', 'Drag to reorder')">
 						⠿
 					</span>
 					<input
@@ -78,7 +82,7 @@
 						:placeholder="t('openbuild', 'page id')"
 						:aria-label="t('openbuild', 'page id')"
 						@click.stop
-						@input="updateField(index, 'id', $event.target.value)">
+						@input="updateField(index, 'id', $event.target.value)" />
 					<input
 						:value="page.route || ''"
 						type="text"
@@ -86,16 +90,18 @@
 						:placeholder="t('openbuild', '/route/:param')"
 						:aria-label="t('openbuild', '/route/:param')"
 						@click.stop
-						@input="updateField(index, 'route', $event.target.value)">
+						@input="updateField(index, 'route', $event.target.value)" />
 					<span class="page-list-editor__type-tag">{{ page.type }}</span>
 					<!-- `.native` was removed in Vue 3; a plain listener falls
 					     through to the component's root element via $attrs. -->
 					<PermissionGroupField
 						class="page-list-editor__permission"
 						:permission="page.permission || ''"
-						:known-groups="knownGroups"
+						:knownGroups="knownGroups"
 						@click.stop
-						@update:permission="updateField(index, 'permission', $event || '')" />
+						@update:permission="
+							updateField(index, 'permission', $event || '')
+						" />
 					<button
 						type="button"
 						class="page-list-editor__remove"
@@ -164,11 +170,13 @@ export default {
 			type: Array,
 			default: () => [],
 		},
+
 		selectedIndex: {
 			type: Number,
 			default: -1,
 		},
 	},
+
 	emits: ['update:pages', 'select'],
 	data() {
 		return {
@@ -176,6 +184,7 @@ export default {
 			addingType: null,
 		}
 	},
+
 	computed: {
 		/**
 		 * Group ids already referenced by any page's `permission` (spec
@@ -187,13 +196,17 @@ export default {
 		knownGroups() {
 			const gids = new Set()
 			for (const page of this.pages) {
-				const value = page && typeof page.permission === 'string' ? page.permission : ''
+				const value =
+					page && typeof page.permission === 'string'
+						? page.permission
+						: ''
 				if (value.startsWith('group:')) {
 					gids.add(value.slice('group:'.length))
 				}
 			}
 			return Array.from(gids)
 		},
+
 		/**
 		 * Observed behaviour of `duplicateIds` (retrofit annotation).
 		 *
@@ -206,8 +219,11 @@ export default {
 					counts.set(p.id, (counts.get(p.id) || 0) + 1)
 				}
 			}
-			return Array.from(counts.entries()).filter(([, c]) => c > 1).map(([id]) => id)
+			return Array.from(counts.entries())
+				.filter(([, c]) => c > 1)
+				.map(([id]) => id)
 		},
+
 		/**
 		 * Observed behaviour of `invalidRoutes` (retrofit annotation).
 		 *
@@ -219,6 +235,7 @@ export default {
 				.map((p) => p.route)
 		},
 	},
+
 	methods: {
 		/**
 		 * Observed behaviour of `startAdd` (retrofit annotation).
@@ -228,6 +245,7 @@ export default {
 		startAdd() {
 			this.addingType = ''
 		},
+
 		/**
 		 * Observed behaviour of `cancelAdd` (retrofit annotation).
 		 *
@@ -236,6 +254,7 @@ export default {
 		cancelAdd() {
 			this.addingType = null
 		},
+
 		/**
 		 * Observed behaviour of `confirmAdd` (retrofit annotation).
 		 *
@@ -259,6 +278,7 @@ export default {
 			this.$emit('select', next.length - 1)
 			this.addingType = null
 		},
+
 		/**
 		 * Write one scalar key on one page. Clearing a field deletes the key
 		 * rather than storing `''`, so `manifest.pages[n]` never carries
@@ -281,6 +301,7 @@ export default {
 			next[index] = current
 			this.$emit('update:pages', next)
 		},
+
 		/**
 		 * Drop a page from the manifest. When the removed page was the
 		 * selected one, `select` is re-emitted with -1 so PageDesigner clears
@@ -297,6 +318,7 @@ export default {
 				this.$emit('select', -1)
 			}
 		},
+
 		/**
 		 * Drag-reorder of the page list. vuedraggable v4 hands the whole
 		 * reordered array through `update:modelValue` rather than mutating
@@ -309,6 +331,7 @@ export default {
 		onReorder(newOrder) {
 			this.$emit('update:pages', newOrder)
 		},
+
 		/**
 		 * Whether a row should be outlined red: its `id` collides with another
 		 * page's, or its `route` fails the route-pattern grammar.

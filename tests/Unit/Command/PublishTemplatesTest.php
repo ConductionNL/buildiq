@@ -32,6 +32,7 @@ namespace OCA\OpenBuild\Tests\Unit\Command;
 
 use OCA\OpenBuild\Command\PublishTemplates;
 use OCA\OpenBuild\Service\GitHubAppSyncService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -53,9 +54,9 @@ class PublishTemplatesTest extends TestCase {
 	/**
 	 * Mock OR object service.
 	 *
-	 * @var ObjectService&MockObject
+	 * @var ObjectServiceInterface&MockObject
 	 */
-	private ObjectService&MockObject $objectService;
+	private ObjectServiceInterface&MockObject $objectService;
 
 	/**
 	 * The command under test.
@@ -71,12 +72,12 @@ class PublishTemplatesTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		$this->syncService = $this->createMock(GitHubAppSyncService::class);
-		$this->objectService = $this->createMock(ObjectService::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 
 		$this->command = new PublishTemplates(
 			$this->syncService,
 			$this->objectService,
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(LoggerInterface::class),
 		);
 	}//end setUp()
 

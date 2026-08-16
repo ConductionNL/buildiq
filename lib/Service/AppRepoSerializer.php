@@ -40,7 +40,7 @@ namespace OCA\OpenBuild\Service;
 
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -119,7 +119,7 @@ class AppRepoSerializer {
 	 * @param SchemaMapper $schemaMapper Resolves companion schema definitions by id.
 	 * @param LoggerInterface $logger PSR logger (server-side diagnostics only).
 	 * @param TemplateRepoSerializer $templateSerializer Serialises a seeded template into the same repo layout.
-	 * @param ObjectService|null $objectService Reads connector + automation objects (app-repo-format-v2).
+	 * @param ObjectServiceInterface|null $objectService Reads connector + automation objects (app-repo-format-v2).
 	 *                                          Nullable so the v1 construction shape still works and the
 	 *                                          new channels simply collect nothing when it is absent.
 	 *
@@ -130,7 +130,7 @@ class AppRepoSerializer {
 		private readonly SchemaMapper $schemaMapper,
 		private readonly LoggerInterface $logger,
 		private readonly TemplateRepoSerializer $templateSerializer,
-		private readonly ?ObjectService $objectService = null,
+		private readonly ?ObjectServiceInterface $objectService = null,
 	) {
 	}//end __construct()
 

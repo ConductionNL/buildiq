@@ -35,6 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuild\Tests\Unit\Mcp\Handler;
 
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenBuild\Mcp\Handler\AbstractToolHandler;
 use OCA\OpenBuild\Mcp\OpenBuildToolProvider;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -123,6 +124,7 @@ class WriteHandlerValidationTest extends TestCase {
 			$this->groupManager,
 			$this->container,
 			$this->logger,
+			$this->createMock(ObjectServiceInterface::class),
 		);
 
 	}//end setUp()
@@ -683,7 +685,7 @@ class WriteHandlerValidationTest extends TestCase {
 	 * @param string $uid The user UID to place in owners.
 	 * @param string $appSlug The app slug.
 	 *
-	 * @return \OCA\OpenRegister\Service\ObjectService&MockObject
+	 * @return \OCA\OpenRegister\Service\ObjectServiceInterface&MockObject
 	 */
 	private function buildOwnerObjectService(string $uid, string $appSlug): object {
 		$objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);

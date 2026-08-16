@@ -21,10 +21,17 @@ const fetchRegisters = vi.fn(async () => [
 const fetchSchemas = vi.fn(async () => [{ slug: 'articles', title: 'Articles' }])
 
 vi.mock('../../../src/composables/useRegisterPicker.js', () => ({
-	useRegisterPicker: () => ({ fetchRegisters, fetchSchemas, fetchSchemaProperties: vi.fn(async () => ({})), resolveAppRegister: () => '' }),
+	useRegisterPicker: () => ({
+		fetchRegisters,
+		fetchSchemas,
+		fetchSchemaProperties: vi.fn(async () => ({})),
+		resolveAppRegister: () => '',
+	}),
 }))
 
-const SearchPageEditor = (await import('../../../src/components/page-editor/SearchPageEditor.vue')).default
+const SearchPageEditor = (
+	await import('../../../src/components/page-editor/SearchPageEditor.vue')
+).default
 
 function mountEditor(config = {}) {
 	return mount(SearchPageEditor, { propsData: { config, appSlug: 'hello-world' } })
@@ -96,7 +103,10 @@ describe('SearchPageEditor', () => {
 	})
 
 	it('register change resets schema (partner-clear)', async () => {
-		const wrapper = mountEditor({ register: 'openbuild-hello-world', schema: 'old-schema' })
+		const wrapper = mountEditor({
+			register: 'openbuild-hello-world',
+			schema: 'old-schema',
+		})
 		wrapper.vm.updateRegister('another-register')
 		await wrapper.vm.$nextTick()
 		const next = wrapper.emitted('update:config')[0][0]
@@ -131,7 +141,14 @@ describe('SearchPageEditor', () => {
 
 	it('validatedConfigKeys matches the surfaced keys', () => {
 		expect(mountEditor().vm.validatedConfigKeys).toEqual([
-			'register', 'schema', 'title', 'placeholder', 'searchLabel', 'idleLabel', 'emptyLabel', 'facets',
+			'register',
+			'schema',
+			'title',
+			'placeholder',
+			'searchLabel',
+			'idleLabel',
+			'emptyLabel',
+			'facets',
 		])
 	})
 })

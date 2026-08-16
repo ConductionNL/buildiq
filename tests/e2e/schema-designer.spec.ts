@@ -92,7 +92,9 @@ test.describe('OpenBuild Schema Designer — end-to-end (REQ-OBSD-001..008)', ()
 		void page
 	})
 
-	test('create virtual app → add schema → add 2 fields → save → edit → delete', async ({ page }) => {
+	test('create virtual app → add schema → add 2 fields → save → edit → delete', async ({
+		page,
+	}) => {
 		// Steps 1–2 — ensure the virtual app exists (idempotent). App creation
 		// moved to the multi-step wizard; the old flat "Add application" form no
 		// longer exists, so create via the atomic wizard endpoint instead.
@@ -105,9 +107,12 @@ test.describe('OpenBuild Schema Designer — end-to-end (REQ-OBSD-001..008)', ()
 		// register (which wizard-created apps don't have), so schemas would be
 		// written to / read from the wrong namespace and never resolve. The real
 		// in-app nav carries the same marker via buildVersionedRoute().
-		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/schemas?_version=production`, {
-			waitUntil: 'domcontentloaded',
-		})
+		await page.goto(
+			`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/schemas?_version=production`,
+			{
+				waitUntil: 'domcontentloaded',
+			},
+		)
 
 		// Wait for the panel to render — either the empty state or a row list.
 		const panel = page.locator('.openbuild-schema-list')
@@ -126,15 +131,25 @@ test.describe('OpenBuild Schema Designer — end-to-end (REQ-OBSD-001..008)', ()
 		// and dies on strict mode (intermittently, depending on which renders
 		// first). Same for the submit button, which shares its label with the
 		// list's "Add schema" action.
-		await page.getByRole('button', { name: /add schema/i }).first().click()
-		const addDialog = page.locator('[role="dialog"]').filter({ hasText: /add schema/i }).first()
+		await page
+			.getByRole('button', { name: /add schema/i })
+			.first()
+			.click()
+		const addDialog = page
+			.locator('[role="dialog"]')
+			.filter({ hasText: /add schema/i })
+			.first()
 		await expect(addDialog).toBeVisible({ timeout: 15_000 })
-		await addDialog.getByRole('textbox', { name: /schema slug/i }).fill(SCHEMA_SLUG)
+		await addDialog
+			.getByRole('textbox', { name: /schema slug/i })
+			.fill(SCHEMA_SLUG)
 		await addDialog.getByRole('textbox', { name: /^title$/i }).fill('Message')
 		await addDialog.getByRole('button', { name: /^add schema$/i }).click()
 
 		// Detail view loads; back button is visible.
-		await expect(page.getByRole('button', { name: /back to schemas/i })).toBeVisible({
+		await expect(
+			page.getByRole('button', { name: /back to schemas/i }),
+		).toBeVisible({
 			timeout: 45_000,
 		})
 
@@ -158,8 +173,12 @@ test.describe('OpenBuild Schema Designer — end-to-end (REQ-OBSD-001..008)', ()
 
 		// Reload and verify persistence.
 		await page.reload({ waitUntil: 'domcontentloaded' })
-		await expect(page.getByLabel('Name', { exact: false }).first()).toHaveValue('subject')
-		await expect(page.getByLabel('Name', { exact: false }).nth(1)).toHaveValue('body')
+		await expect(page.getByLabel('Name', { exact: false }).first()).toHaveValue(
+			'subject',
+		)
+		await expect(page.getByLabel('Name', { exact: false }).nth(1)).toHaveValue(
+			'body',
+		)
 
 		// Step 6 — edit the title and save.
 		await page.getByLabel(/title/i).first().fill('Message v2')
@@ -167,7 +186,9 @@ test.describe('OpenBuild Schema Designer — end-to-end (REQ-OBSD-001..008)', ()
 
 		// Back to the list — the row should reflect the new title.
 		await page.getByRole('button', { name: /back to schemas/i }).click()
-		await expect(page.locator('.openbuild-schema-list__rows')).toContainText('Message v2')
+		await expect(page.locator('.openbuild-schema-list__rows')).toContainText(
+			'Message v2',
+		)
 
 		// Step 7 — delete the schema via the per-row action; confirm in
 		// the dialog (REQ-OBSD-008).
@@ -183,22 +204,33 @@ test.describe('OpenBuild Schema Designer — end-to-end (REQ-OBSD-001..008)', ()
 		const row = page
 			.locator('.openbuild-schema-list__row')
 			.filter({ hasText: NAMESPACED_SLUG })
-		await row.getByRole('button', { name: /actions|more/i }).first().click()
-		await page.getByRole('menuitem', { name: /delete/i })
+		await row
+			.getByRole('button', { name: /actions|more/i })
+			.first()
+			.click()
+		await page
+			.getByRole('menuitem', { name: /delete/i })
 			.or(page.getByRole('button', { name: /^delete$/i }))
 			.first()
 			.click()
 		// REQ-OBSD-008: deletion is gated — the confirm button stays disabled
 		// until the exact schema slug is typed, so a stray click cannot destroy
 		// a schema. Type it, then confirm.
-		const confirmDialog = page.locator('[role="dialog"]').filter({ hasText: /delete schema/i }).first()
+		const confirmDialog = page
+			.locator('[role="dialog"]')
+			.filter({ hasText: /delete schema/i })
+			.first()
 		await expect(confirmDialog).toBeVisible({ timeout: 15_000 })
-		await confirmDialog.getByRole('textbox', { name: /type the slug to confirm/i }).fill(NAMESPACED_SLUG)
+		await confirmDialog
+			.getByRole('textbox', { name: /type the slug to confirm/i })
+			.fill(NAMESPACED_SLUG)
 		await confirmDialog.getByRole('button', { name: /^delete schema$/i }).click()
 
 		// Row disappears from the list.
 		await expect(
-			page.locator('.openbuild-schema-list__row').filter({ hasText: NAMESPACED_SLUG }),
+			page
+				.locator('.openbuild-schema-list__row')
+				.filter({ hasText: NAMESPACED_SLUG }),
 		).toHaveCount(0, { timeout: 45_000 })
 	})
 })

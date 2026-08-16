@@ -18,7 +18,10 @@
   -->
 <template>
 	<div class="settings-section-builder">
-		<div v-for="(section, index) in localSections" :key="index" class="settings-section-builder__section">
+		<div
+			v-for="(section, index) in localSections"
+			:key="index"
+			class="settings-section-builder__section">
 			<div class="settings-section-builder__head">
 				<input
 					:value="section.title || ''"
@@ -26,14 +29,14 @@
 					class="settings-section-builder__field"
 					:placeholder="t('openbuild', 'Section title (i18n key)')"
 					:aria-label="t('openbuild', 'Section title (i18n key)')"
-					@input="updateField(index, 'title', $event.target.value)">
+					@input="updateField(index, 'title', $event.target.value)" />
 				<input
 					:value="section.id || ''"
 					type="text"
 					class="settings-section-builder__field settings-section-builder__field--narrow"
 					:placeholder="t('openbuild', 'id (optional)')"
 					:aria-label="t('openbuild', 'id (optional)')"
-					@input="updateField(index, 'id', $event.target.value)">
+					@input="updateField(index, 'id', $event.target.value)" />
 				<button
 					type="button"
 					class="settings-section-builder__remove"
@@ -49,7 +52,7 @@
 						type="radio"
 						:checked="bodyKind(section) === 'fields'"
 						value="fields"
-						@change="setBodyKind(index, 'fields')">
+						@change="setBodyKind(index, 'fields')" />
 					{{ t('openbuild', 'Fields') }}
 				</label>
 				<label class="settings-section-builder__inline">
@@ -57,7 +60,7 @@
 						type="radio"
 						:checked="bodyKind(section) === 'component'"
 						value="component"
-						@change="setBodyKind(index, 'component')">
+						@change="setBodyKind(index, 'component')" />
 					{{ t('openbuild', 'Component') }}
 				</label>
 				<label class="settings-section-builder__inline">
@@ -65,17 +68,21 @@
 						type="radio"
 						:checked="bodyKind(section) === 'widgets'"
 						value="widgets"
-						@change="setBodyKind(index, 'widgets')">
+						@change="setBodyKind(index, 'widgets')" />
 					{{ t('openbuild', 'Widgets') }}
 				</label>
 			</div>
 
-			<div v-if="bodyKind(section) === 'fields'" class="settings-section-builder__body">
+			<div
+				v-if="bodyKind(section) === 'fields'"
+				class="settings-section-builder__body">
 				<FormFieldBuilder
-					:model-value="section.fields || []"
+					:modelValue="section.fields || []"
 					@update:modelValue="updateField(index, 'fields', $event)" />
 			</div>
-			<div v-else-if="bodyKind(section) === 'component'" class="settings-section-builder__body">
+			<div
+				v-else-if="bodyKind(section) === 'component'"
+				class="settings-section-builder__body">
 				<label class="settings-section-builder__row">
 					{{ t('openbuild', 'customComponents key') }}
 					<input
@@ -83,26 +90,40 @@
 						type="text"
 						:placeholder="t('openbuild', 'e.g. AppSettingsPanel')"
 						:aria-label="t('openbuild', 'e.g. AppSettingsPanel')"
-						@input="updateField(index, 'component', $event.target.value)">
+						@input="
+							updateField(index, 'component', $event.target.value)
+						" />
 				</label>
 				<label class="settings-section-builder__row">
 					{{ t('openbuild', 'props (JSON, optional)') }}
 					<textarea
 						class="settings-section-builder__textarea"
 						spellcheck="false"
-						:value="propsDraft[index] !== undefined ? propsDraft[index] : stringifyProps(section.props)"
+						:value="
+							propsDraft[index] !== undefined
+								? propsDraft[index]
+								: stringifyProps(section.props)
+						"
 						@input="onPropsInput(index, $event.target.value)" />
 				</label>
-				<p v-if="propsError[index]" class="settings-section-builder__error" role="alert">
+				<p
+					v-if="propsError[index]"
+					class="settings-section-builder__error"
+					role="alert">
 					{{ propsError[index] }}
 				</p>
 			</div>
 			<div v-else class="settings-section-builder__body">
-				<div v-for="(widget, wIndex) in (section.widgets || [])" :key="wIndex" class="settings-section-builder__widget">
+				<div
+					v-for="(widget, wIndex) in section.widgets || []"
+					:key="wIndex"
+					class="settings-section-builder__widget">
 					<select
 						:value="widget.type || 'version-info'"
 						class="settings-section-builder__field settings-section-builder__field--narrow"
-						@change="updateWidget(index, wIndex, 'type', $event.target.value)">
+						@change="
+							updateWidget(index, wIndex, 'type', $event.target.value)
+						">
 						<option v-for="wt in WIDGET_TYPES" :key="wt" :value="wt">
 							{{ wt }}
 						</option>
@@ -112,16 +133,29 @@
 						:value="widget.componentName || ''"
 						type="text"
 						class="settings-section-builder__field"
-						:placeholder="t('openbuild', 'componentName (customComponents key)')"
-						:aria-label="t('openbuild', 'componentName (customComponents key)')"
-						@input="updateWidget(index, wIndex, 'componentName', $event.target.value)">
+						:placeholder="
+							t('openbuild', 'componentName (customComponents key)')
+						"
+						:aria-label="
+							t('openbuild', 'componentName (customComponents key)')
+						"
+						@input="
+							updateWidget(
+								index,
+								wIndex,
+								'componentName',
+								$event.target.value,
+							)
+						" />
 					<input
 						:value="stringifyProps(widget.props)"
 						type="text"
 						class="settings-section-builder__field"
 						:placeholder="t('openbuild', 'props (JSON, optional)')"
 						:aria-label="t('openbuild', 'props (JSON, optional)')"
-						@input="onWidgetPropsInput(index, wIndex, $event.target.value)">
+						@input="
+							onWidgetPropsInput(index, wIndex, $event.target.value)
+						" />
 					<button
 						type="button"
 						class="settings-section-builder__remove"
@@ -130,12 +164,18 @@
 						✕
 					</button>
 				</div>
-				<button type="button" class="settings-section-builder__add" @click="addWidget(index)">
+				<button
+					type="button"
+					class="settings-section-builder__add"
+					@click="addWidget(index)">
 					+ {{ t('openbuild', 'Add widget') }}
 				</button>
 			</div>
 		</div>
-		<button type="button" class="settings-section-builder__add" @click="addSection">
+		<button
+			type="button"
+			class="settings-section-builder__add"
+			@click="addSection">
 			+ {{ t('openbuild', 'Add section') }}
 		</button>
 	</div>
@@ -156,6 +196,7 @@ export default {
 			default: () => [],
 		},
 	},
+
 	emits: ['update:modelValue'],
 	data() {
 		return {
@@ -167,6 +208,7 @@ export default {
 			propsError: {},
 		}
 	},
+
 	computed: {
 		/**
 		 * Observed behaviour of `localSections` (retrofit annotation).
@@ -177,6 +219,7 @@ export default {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
 		},
 	},
+
 	methods: {
 		/**
 		 * Observed behaviour of `bodyKind` (retrofit annotation).
@@ -198,6 +241,7 @@ export default {
 			}
 			return 'fields'
 		},
+
 		/**
 		 * Observed behaviour of `stringifyProps` (retrofit annotation).
 		 *
@@ -217,6 +261,7 @@ export default {
 				return ''
 			}
 		},
+
 		/**
 		 * Observed behaviour of `emit` (retrofit annotation).
 		 *
@@ -228,6 +273,7 @@ export default {
 		emit(sections) {
 			this.$emit('update:modelValue', sections)
 		},
+
 		/**
 		 * Observed behaviour of `updateField` (retrofit annotation).
 		 *
@@ -244,8 +290,12 @@ export default {
 		updateField(index, key, value) {
 			const next = this.localSections.slice()
 			const current = { ...(next[index] || {}) }
-			if (value === '' || value === null || value === undefined
-				|| (Array.isArray(value) && value.length === 0)) {
+			if (
+				value === ''
+				|| value === null
+				|| value === undefined
+				|| (Array.isArray(value) && value.length === 0)
+			) {
 				delete current[key]
 			} else {
 				current[key] = value
@@ -253,6 +303,7 @@ export default {
 			next[index] = current
 			this.emit(next)
 		},
+
 		/**
 		 * Observed behaviour of `setBodyKind` (retrofit annotation).
 		 *
@@ -282,6 +333,7 @@ export default {
 			this.propsError[index] = ''
 			this.emit(next)
 		},
+
 		/**
 		 * Observed behaviour of `onPropsInput` (retrofit annotation).
 		 *
@@ -308,6 +360,7 @@ export default {
 				this.propsError[index] = (e && e.message) || String(e)
 			}
 		},
+
 		/**
 		 * Observed behaviour of `addWidget` (retrofit annotation).
 		 *
@@ -322,6 +375,7 @@ export default {
 			next[index] = current
 			this.emit(next)
 		},
+
 		/**
 		 * Observed behaviour of `updateWidget` (retrofit annotation).
 		 *
@@ -349,6 +403,7 @@ export default {
 			next[index] = current
 			this.emit(next)
 		},
+
 		/**
 		 * Observed behaviour of `onWidgetPropsInput` (retrofit annotation).
 		 *
@@ -373,6 +428,7 @@ export default {
 				// settings validator surfaces the malformed state.
 			}
 		},
+
 		/**
 		 * Observed behaviour of `removeWidget` (retrofit annotation).
 		 *
@@ -391,6 +447,7 @@ export default {
 			next[index] = current
 			this.emit(next)
 		},
+
 		/**
 		 * Observed behaviour of `addSection` (retrofit annotation).
 		 *
@@ -401,6 +458,7 @@ export default {
 			next.push({ title: '', fields: [] })
 			this.emit(next)
 		},
+
 		/**
 		 * Observed behaviour of `removeSection` (retrofit annotation).
 		 *

@@ -11,6 +11,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Files\IAppData;
 use PHPUnit\Framework\TestCase;
@@ -153,7 +154,7 @@ final class ExportServiceTest extends TestCase {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('find')->with(42)->willReturn($schema);
 
-		$objectService = $this->createMock(ObjectService::class);
+		$objectService = $this->createMock(ObjectServiceInterface::class);
 		$objectService->method('searchObjects')->willReturn([
 			['id' => 'row-1', 'name' => 'Acme'],
 			['id' => 'row-2', 'name' => 'Beta'],
@@ -192,7 +193,7 @@ final class ExportServiceTest extends TestCase {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('find')->with(42)->willReturn($schema);
 
-		$objectService = $this->createMock(ObjectService::class);
+		$objectService = $this->createMock(ObjectServiceInterface::class);
 		$objectService->expects(self::never())->method('searchObjects');
 
 		// No dataRegisters[].includeData at all — the request body omitted it.
@@ -394,13 +395,13 @@ final class ExportServiceTest extends TestCase {
 	private function buildService(
 		?RegisterMapper $registerMapper = null,
 		?SchemaMapper $schemaMapper = null,
-		?ObjectService $objectService = null,
+		?ObjectServiceInterface $objectService = null,
 	): ExportService {
 		$appData = $this->createStub(IAppData::class);
 		$bundler = new DataRegisterExportBundler(
 			$registerMapper ?? $this->createMock(RegisterMapper::class),
 			$schemaMapper ?? $this->createMock(SchemaMapper::class),
-			$objectService ?? $this->createMock(ObjectService::class),
+			$objectService ?? $this->createMock(ObjectServiceInterface::class),
 			new NullLogger()
 		);
 
@@ -408,7 +409,15 @@ final class ExportServiceTest extends TestCase {
 			$appData,
 			new PlaceholderResolver(),
 			new NullLogger(),
-			$bundler
+			$bundler,
+			// The flow/agent bundler. Injected as a no-op double: these tests
+			// are about the data-register path and the ZIP mechanics, and a
+			// real one here would couple them to a second store.
+			new \OCA\OpenBuild\Service\FlowAndAgentExportBundler(
+				$this->createMock(\OCA\OpenRegister\Db\FlowMapper::class),
+				$this->createMock(\OCA\OpenRegister\Service\ObjectService::class),
+				new NullLogger()
+			)
 		);
 	}//end buildService()
 

@@ -50,7 +50,7 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -68,14 +68,14 @@ class DocumentGenerationListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService Scans the `automation` register for matching triggers.
+	 * @param ObjectServiceInterface $objectService Scans the `automation` register for matching triggers.
 	 * @param DocumentGenerationService $documentGenerator Calls Docudesk + writes the configured output(s).
 	 * @param LoggerInterface $logger PSR logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly DocumentGenerationService $documentGenerator,
 		private readonly LoggerInterface $logger,
 	) {

@@ -34,7 +34,7 @@ use OCA\OpenBuild\Service\ExportService;
 use OCA\OpenBuild\Service\PlaceholderResolver;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\Files\IAppData;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -287,7 +287,7 @@ final class ExporterEndToEndTest extends TestCase {
 		$bundler = new DataRegisterExportBundler(
 			$this->createStub(RegisterMapper::class),
 			$this->createStub(SchemaMapper::class),
-			$this->createStub(ObjectService::class),
+			$this->createStub(ObjectServiceInterface::class),
 			new NullLogger()
 		);
 
@@ -295,7 +295,15 @@ final class ExporterEndToEndTest extends TestCase {
 			$appData,
 			new PlaceholderResolver(),
 			new NullLogger(),
-			$bundler
+			$bundler,
+			// The flow/agent bundler. Injected as a no-op double: these tests
+			// are about the data-register path and the ZIP mechanics, and a
+			// real one here would couple them to a second store.
+			new \OCA\OpenBuild\Service\FlowAndAgentExportBundler(
+				$this->createMock(\OCA\OpenRegister\Db\FlowMapper::class),
+				$this->createMock(\OCA\OpenRegister\Service\ObjectService::class),
+				new NullLogger()
+			)
 		);
 	}//end buildService()
 

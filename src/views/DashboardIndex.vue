@@ -24,14 +24,15 @@
 			:loading="loading">
 			<!-- Create app — primary header action (opens the creation wizard). -->
 			<template #header-actions>
-				<NcButton type="primary" @click="showWizard = true">
+				<NcButton variant="primary" @click="showWizard = true">
 					{{ t('openbuild', 'Create app') }}
 				</NcButton>
 			</template>
 
 			<!-- KPI: Apps (total) — clickable → Apps index -->
 			<template #widget-apps>
-				<div class="ob-kpi-link"
+				<div
+					class="ob-kpi-link"
 					role="button"
 					tabindex="0"
 					@click="goTo('VirtualApps')"
@@ -41,15 +42,16 @@
 						:icon="iconApps"
 						:title="t('openbuild', 'Apps')"
 						:count="counts.apps"
-						:count-label="t('openbuild', 'apps')"
+						:countLabel="t('openbuild', 'apps')"
 						variant="primary"
-						show-zero-count />
+						showZeroCount />
 				</div>
 			</template>
 
 			<!-- KPI: Hybrid apps — clickable → Apps index -->
 			<template #widget-hybrid>
-				<div class="ob-kpi-link"
+				<div
+					class="ob-kpi-link"
 					role="button"
 					tabindex="0"
 					@click="goTo('VirtualApps')"
@@ -59,15 +61,16 @@
 						:icon="iconHybrid"
 						:title="t('openbuild', 'Hybrid apps')"
 						:count="counts.hybrid"
-						:count-label="t('openbuild', 'hybrid')"
+						:countLabel="t('openbuild', 'hybrid')"
 						variant="default"
-						show-zero-count />
+						showZeroCount />
 				</div>
 			</template>
 
 			<!-- KPI: Published versions — clickable → Apps index -->
 			<template #widget-versions>
-				<div class="ob-kpi-link"
+				<div
+					class="ob-kpi-link"
 					role="button"
 					tabindex="0"
 					@click="goTo('VirtualApps')"
@@ -77,9 +80,9 @@
 						:icon="iconVersions"
 						:title="t('openbuild', 'Published versions')"
 						:count="counts.versions"
-						:count-label="t('openbuild', 'versions')"
+						:countLabel="t('openbuild', 'versions')"
 						variant="success"
-						show-zero-count />
+						showZeroCount />
 				</div>
 			</template>
 
@@ -90,21 +93,27 @@
 				<NcEmptyContent
 					v-if="!loading && recentApps.length === 0"
 					:name="t('openbuild', 'No apps yet')"
-					:description="t('openbuild', 'Create your first app to get started.')" />
+					:description="
+						t('openbuild', 'Create your first app to get started.')
+					" />
 				<div v-else class="ob-recent-apps">
 					<CnDataTable
 						:rows="recentApps"
 						:columns="recentColumns"
 						:loading="false"
 						:selectable="false"
-						@row-click="goToApp">
+						@rowClick="goToApp">
 						<template #actions-header>
 							{{ t('openbuild', 'Edit') }}
 						</template>
 						<template #row-actions="{ row }">
 							<NcButton
-								type="tertiary"
-								:aria-label="t('openbuild', 'Open {name}', { name: row.name || row.slug })"
+								variant="tertiary"
+								:aria-label="
+									t('openbuild', 'Open {name}', {
+										name: row.name || row.slug,
+									})
+								"
 								@click="goToApp(row)">
 								<template #icon>
 									<PencilOutline :size="20" />
@@ -123,14 +132,18 @@
 </template>
 
 <script>
+import {
+	CnDashboardPage,
+	CnDataTable,
+	CnStatsBlock,
+} from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent } from '@nextcloud/vue'
-import { CnDashboardPage, CnStatsBlock, CnDataTable } from '@conduction/nextcloud-vue'
-import ShapeOutline from 'vue-material-design-icons/ShapeOutline.vue'
-import PuzzleOutline from 'vue-material-design-icons/PuzzleOutline.vue'
 import History from 'vue-material-design-icons/History.vue'
 import PencilOutline from 'vue-material-design-icons/PencilOutline.vue'
+import PuzzleOutline from 'vue-material-design-icons/PuzzleOutline.vue'
+import ShapeOutline from 'vue-material-design-icons/ShapeOutline.vue'
 import CreateApplicationWizard from '../dialogs/CreateApplicationWizard.vue'
 
 export default {
@@ -166,10 +179,42 @@ export default {
 			counts: { apps: 0, hybrid: 0, versions: 0 },
 			recentApps: [],
 			dashboardLayout: [
-				{ id: 1, widgetId: 'apps', gridX: 0, gridY: 0, gridWidth: 4, gridHeight: 2, showTitle: false },
-				{ id: 2, widgetId: 'hybrid', gridX: 4, gridY: 0, gridWidth: 4, gridHeight: 2, showTitle: false },
-				{ id: 3, widgetId: 'versions', gridX: 8, gridY: 0, gridWidth: 4, gridHeight: 2, showTitle: false },
-				{ id: 4, widgetId: 'recent-apps', gridX: 0, gridY: 2, gridWidth: 12, gridHeight: 8, flush: true },
+				{
+					id: 1,
+					widgetId: 'apps',
+					gridX: 0,
+					gridY: 0,
+					gridWidth: 4,
+					gridHeight: 2,
+					showTitle: false,
+				},
+				{
+					id: 2,
+					widgetId: 'hybrid',
+					gridX: 4,
+					gridY: 0,
+					gridWidth: 4,
+					gridHeight: 2,
+					showTitle: false,
+				},
+				{
+					id: 3,
+					widgetId: 'versions',
+					gridX: 8,
+					gridY: 0,
+					gridWidth: 4,
+					gridHeight: 2,
+					showTitle: false,
+				},
+				{
+					id: 4,
+					widgetId: 'recent-apps',
+					gridX: 0,
+					gridY: 2,
+					gridWidth: 12,
+					gridHeight: 8,
+					flush: true,
+				},
 			],
 		}
 	},
@@ -234,7 +279,10 @@ export default {
 				this.counts = { apps, hybrid, versions }
 				this.recentApps = recent.map((a) => ({
 					...a,
-					typeLabel: a.appType === 'hybrid' ? t('openbuild', 'Hybrid') : t('openbuild', 'Virtual'),
+					typeLabel:
+						a.appType === 'hybrid'
+							? t('openbuild', 'Hybrid')
+							: t('openbuild', 'Virtual'),
 				}))
 			} catch (e) {
 				// Dashboard is best-effort — leave zeros / empty list on failure.
@@ -255,7 +303,12 @@ export default {
 		onAppCreated(applicationUuid) {
 			this.showWizard = false
 			if (this.$router && applicationUuid) {
-				this.$router.push({ name: 'VirtualAppDetail', params: { objectId: applicationUuid } }).catch(() => {})
+				this.$router
+					.push({
+						name: 'VirtualAppDetail',
+						params: { objectId: applicationUuid },
+					})
+					.catch(() => {})
 				return
 			}
 			this.loadDashboard()
@@ -271,8 +324,13 @@ export default {
 		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
 		 */
 		async fetchTotal(schema, filter = {}) {
-			const url = generateUrl('/apps/openregister/api/objects/openbuild/{schema}', { schema })
-			const { data } = await axios.get(url, { params: { _limit: 1, ...filter } })
+			const url = generateUrl(
+				'/apps/openregister/api/objects/openbuild/{schema}',
+				{ schema },
+			)
+			const { data } = await axios.get(url, {
+				params: { _limit: 1, ...filter },
+			})
 			return Number(data && data.total ? data.total : 0)
 		},
 
@@ -286,9 +344,14 @@ export default {
 		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
 		 */
 		async fetchObjects(schema, limit) {
-			const url = generateUrl('/apps/openregister/api/objects/openbuild/{schema}', { schema })
-			const { data } = await axios.get(url, { params: { _limit: limit, _order: { '@self.updated': 'DESC' } } })
-			return (data && Array.isArray(data.results)) ? data.results : []
+			const url = generateUrl(
+				'/apps/openregister/api/objects/openbuild/{schema}',
+				{ schema },
+			)
+			const { data } = await axios.get(url, {
+				params: { _limit: limit, _order: { '@self.updated': 'DESC' } },
+			})
+			return data && Array.isArray(data.results) ? data.results : []
 		},
 
 		/**
@@ -312,9 +375,13 @@ export default {
 		 * @return {void}
 		 */
 		goToApp(row) {
-			const uuid = (row && ((row['@self'] && row['@self'].id) || row.uuid || row.id)) || ''
+			const uuid =
+				(row && ((row['@self'] && row['@self'].id) || row.uuid || row.id))
+				|| ''
 			if (this.$router && uuid) {
-				this.$router.push({ name: 'VirtualAppDetail', params: { objectId: uuid } }).catch(() => {})
+				this.$router
+					.push({ name: 'VirtualAppDetail', params: { objectId: uuid } })
+					.catch(() => {})
 			}
 		},
 	},

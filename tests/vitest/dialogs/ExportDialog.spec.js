@@ -31,7 +31,10 @@ vi.mock('@nextcloud/router', () => ({
 }))
 
 const stubs = {
-	NcDialog: { template: '<div class="nc-dialog-stub"><slot /><slot name="actions" /></div>' },
+	NcDialog: {
+		template:
+			'<div class="nc-dialog-stub"><slot /><slot name="actions" /></div>',
+	},
 	NcButton: { template: '<button><slot /></button>' },
 	NcCheckboxRadioSwitch: { template: '<label><slot /></label>' },
 	NcTextField: {
@@ -127,6 +130,9 @@ describe('ExportDialog — the GitHub target holds no token', () => {
 			{ id: 'cred-1', name: 'My GitHub', provider: 'github' },
 		])
 
-		expect(wrapper.vm.form.githubCredential).toEqual({ label: 'My GitHub', value: 'cred-1' })
+		expect(wrapper.vm.form.githubCredential).toEqual({
+			label: 'My GitHub',
+			value: 'cred-1',
+		})
 	})
 })

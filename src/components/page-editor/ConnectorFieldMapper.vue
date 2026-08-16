@@ -11,7 +11,10 @@
 <template>
 	<div class="connector-field-mapper">
 		<div class="connector-field-mapper__toolbar">
-			<NcButton type="tertiary" :disabled="refreshing" @click="$emit('refetch-sample')">
+			<NcButton
+				variant="tertiary"
+				:disabled="refreshing"
+				@click="$emit('refetch-sample')">
 				{{ t('openbuild', 'Re-fetch sample') }}
 			</NcButton>
 			<span v-if="itemsPath" class="connector-field-mapper__items-path">
@@ -31,21 +34,34 @@
 						type="button"
 						class="connector-field-mapper__node-btn"
 						@click="setItemsPath(node.path)">
-						{{ nodeLabel(node) }} <span class="connector-field-mapper__node-type">[array]</span>
+						{{ nodeLabel(node) }}
+						<span class="connector-field-mapper__node-type"
+							>[array]</span
+						>
 					</button>
 					<button
 						v-else-if="node.isLeaf"
 						type="button"
 						class="connector-field-mapper__node-btn"
 						@click="addField(node)">
-						{{ nodeLabel(node) }}: <span class="connector-field-mapper__node-value">{{ String(node.value) }}</span>
+						{{ nodeLabel(node) }}:
+						<span class="connector-field-mapper__node-value">{{
+							String(node.value)
+						}}</span>
 					</button>
-					<span v-else class="connector-field-mapper__node-obj">{{ nodeLabel(node) }}</span>
+					<span v-else class="connector-field-mapper__node-obj">{{
+						nodeLabel(node)
+					}}</span>
 				</li>
 			</ul>
 		</div>
 		<p v-else class="connector-field-mapper__hint">
-			{{ t('openbuild', 'Select an endpoint and fetch a sample to start mapping fields.') }}
+			{{
+				t(
+					'openbuild',
+					'Select an endpoint and fetch a sample to start mapping fields.',
+				)
+			}}
 		</p>
 
 		<table v-if="fieldRows.length" class="connector-field-mapper__fields">
@@ -63,22 +79,37 @@
 					<!-- Row-actions column: no visible caption, but still a column
 					     header, so it keeps `scope="col"` and an sr-only name. -->
 					<th scope="col">
-						<span class="hidden-visually">{{ t('openbuild', 'Actions') }}</span>
+						<span class="hidden-visually">{{
+							t('openbuild', 'Actions')
+						}}</span>
 					</th>
 				</tr>
 			</thead>
 			<tbody>
-				<tr v-for="row in fieldRows" :key="row.name" :class="{ 'connector-field-mapper__row--dead': row.dead }">
+				<tr
+					v-for="row in fieldRows"
+					:key="row.name"
+					:class="{ 'connector-field-mapper__row--dead': row.dead }">
 					<td>{{ row.name }}</td>
-					<td><code>{{ row.selector }}</code></td>
+					<td>
+						<code>{{ row.selector }}</code>
+					</td>
 					<td>
 						<span v-if="row.dead" class="connector-field-mapper__warn">
-							{{ t('openbuild', 'Selector resolved to no value in the latest sample') }}
+							{{
+								t(
+									'openbuild',
+									'Selector resolved to no value in the latest sample',
+								)
+							}}
 						</span>
 						<span v-else>{{ String(row.sample) }}</span>
 					</td>
 					<td>
-						<NcButton type="tertiary" :aria-label="t('openbuild', 'Remove field')" @click="removeField(row.name)">
+						<NcButton
+							variant="tertiary"
+							:aria-label="t('openbuild', 'Remove field')"
+							@click="removeField(row.name)">
 							{{ t('openbuild', 'Remove') }}
 						</NcButton>
 					</td>
@@ -90,16 +121,16 @@
 			v-model:open="promptOpen"
 			:name="t('openbuild', 'Add field')"
 			:label="t('openbuild', 'Display field name')"
-			:initial-value="promptSuggestion"
-			:confirm-label="t('openbuild', 'Confirm')"
+			:initialValue="promptSuggestion"
+			:confirmLabel="t('openbuild', 'Confirm')"
 			@submit="onPromptSubmit" />
 	</div>
 </template>
 
 <script>
 import { NcButton } from '@nextcloud/vue'
-import { flattenSample, resolveSelector } from '../../services/selectors.js'
 import PromptTextDialog from '../../dialogs/PromptTextDialog.vue'
+import { flattenSample, resolveSelector } from '../../services/selectors.js'
 
 export default {
 	name: 'ConnectorFieldMapper',
@@ -110,16 +141,19 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
 		// The sample response payload fetched from the endpoint.
 		sample: {
 			type: [Object, Array, String, Number, Boolean],
 			default: null,
 		},
+
 		refreshing: {
 			type: Boolean,
 			default: false,
 		},
 	},
+
 	emits: ['update:itemsPath', 'update:fields'],
 	data() {
 		return {
@@ -128,15 +162,18 @@ export default {
 			pendingNode: null,
 		}
 	},
+
 	computed: {
 		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-003 */
 		itemsPath() {
 			return (this.binding && this.binding.itemsPath) || ''
 		},
+
 		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-003 */
 		fields() {
 			return (this.binding && this.binding.fields) || {}
 		},
+
 		/**
 		 * The sub-tree the field selectors are relative to — the first item
 		 * under `itemsPath` when set, otherwise the sample root.
@@ -151,6 +188,7 @@ export default {
 			const list = resolveSelector(this.sample, this.itemsPath)
 			return Array.isArray(list) && list.length ? list[0] : null
 		},
+
 		/**
 		 * Flattened tree nodes for display, computed against the item context
 		 * so leaf selectors are relative to a single item.
@@ -168,6 +206,7 @@ export default {
 				depth: n.path ? n.path.split('.').length : 0,
 			}))
 		},
+
 		/**
 		 * The mapped field list with live sample values + dead-selector flags.
 		 *
@@ -182,11 +221,13 @@ export default {
 					name,
 					selector,
 					sample: resolved === undefined ? null : resolved,
-					dead: ctx !== null && ctx !== undefined && resolved === undefined,
+					dead:
+						ctx !== null && ctx !== undefined && resolved === undefined,
 				}
 			})
 		},
 	},
+
 	methods: {
 		/**
 		 * @param {object} node - tree node.
@@ -200,6 +241,7 @@ export default {
 			const segs = node.path.split('.')
 			return segs[segs.length - 1]
 		},
+
 		/**
 		 * Set the list-root selector from a clicked array node. The clicked
 		 * path is relative to the current root, which for the initial mapping
@@ -211,6 +253,7 @@ export default {
 		setItemsPath(path) {
 			this.$emit('update:itemsPath', path)
 		},
+
 		/**
 		 * Append a field mapping from a clicked leaf node. The display-field
 		 * name is pre-filled from the leaf key; the selector is the leaf's
@@ -224,6 +267,7 @@ export default {
 			this.promptSuggestion = this.nodeLabel(node)
 			this.promptOpen = true
 		},
+
 		/**
 		 * Add the mapping once the user has named the display field.
 		 *
@@ -245,6 +289,7 @@ export default {
 			const next = { ...this.fields, [name]: node.path }
 			this.$emit('update:fields', next)
 		},
+
 		/**
 		 * Remove a mapped field.
 		 *

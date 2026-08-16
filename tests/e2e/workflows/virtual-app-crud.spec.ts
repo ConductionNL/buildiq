@@ -67,10 +67,14 @@ async function gotoAppBrowser(page: Page): Promise<void> {
 	await page.goto('/apps/openbuild/applications')
 	await page
 		.waitForResponse(
-			(r) => r.url().includes('/objects/openbuild/application') && r.status() === 200,
+			(r) =>
+				r.url().includes('/objects/openbuild/application')
+				&& r.status() === 200,
 			{ timeout: 20_000 },
 		)
-		.catch(() => { /* list may already be cached */ })
+		.catch(() => {
+			/* list may already be cached */
+		})
 	await page.waitForTimeout(1500)
 }
 
@@ -110,7 +114,10 @@ test.describe('Virtual App — full CRUD with persistence', () => {
 		await cleanupByPrefix(request)
 	})
 
-	test('CREATE via UI wizard persists and the new row appears', async ({ page, request }) => {
+	test('CREATE via UI wizard persists and the new row appears', async ({
+		page,
+		request,
+	}) => {
 		// The wizard provisions the app + one register per version, which can
 		// take longer than the default 30s on a busy shared instance.
 		test.setTimeout(90_000)
@@ -120,32 +127,51 @@ test.describe('Virtual App — full CRUD with persistence', () => {
 		// On the prefixed e2e name the derived slug stays inside the cleanup
 		// prefix, so afterAll still sweeps it.
 		const name = `${E2E_PREFIX} Create ${Math.floor(Math.random() * 1e4)}`
-		const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+		const slug = name
+			.toLowerCase()
+			.replace(/[^a-z0-9]+/g, '-')
+			.replace(/^-|-$/g, '')
 
 		await gotoAppBrowser(page)
 
 		// The button reads "Add app" (src/components/VirtualAppsActions.vue),
 		// not "Add application" — live-verified.
-		await page.getByRole('button', { name: /add app/i }).first().click()
+		await page
+			.getByRole('button', { name: /add app/i })
+			.first()
+			.click()
 		const dialog = page.locator('[role="dialog"], .modal-container').first()
 		await expect(dialog).toBeVisible({ timeout: 8_000 })
 
 		// Step 1 — App basics: fill the name (slug derives automatically).
-		const nameInput = dialog.locator('input[placeholder*="My Permit Tracker" i]').first()
+		const nameInput = dialog
+			.locator('input[placeholder*="My Permit Tracker" i]')
+			.first()
 		await expect(nameInput).toBeVisible({ timeout: 8_000 })
 		await nameInput.fill(name)
-		await expect(dialog.getByText(slug, { exact: false }).first()).toBeVisible({ timeout: 5_000 })
+		await expect(dialog.getByText(slug, { exact: false }).first()).toBeVisible({
+			timeout: 5_000,
+		})
 		await dialog.getByRole('button', { name: /^next$/i }).click()
 
 		// Step 2 — version preset: pick the simplest single-version preset.
-		await expect(dialog.getByText(/choose a version preset/i)).toBeVisible({ timeout: 8_000 })
-		await dialog.getByRole('button', { name: /Single/i }).first().click()
+		await expect(dialog.getByText(/choose a version preset/i)).toBeVisible({
+			timeout: 8_000,
+		})
+		await dialog
+			.getByRole('button', { name: /Single/i })
+			.first()
+			.click()
 		await dialog.getByRole('button', { name: /^next$/i }).click()
 
 		// Step 3 — review and create: the wizard provisions the app + registers.
-		await expect(dialog.getByText(/review and create/i)).toBeVisible({ timeout: 8_000 })
+		await expect(dialog.getByText(/review and create/i)).toBeVisible({
+			timeout: 8_000,
+		})
 		const createPost = page.waitForResponse(
-			(r) => r.url().includes('/api/applications/wizard') && r.request().method() === 'POST',
+			(r) =>
+				r.url().includes('/api/applications/wizard')
+				&& r.request().method() === 'POST',
 			{ timeout: 20_000 },
 		)
 		await dialog.getByRole('button', { name: /^create$/i }).click()
@@ -153,22 +179,41 @@ test.describe('Virtual App — full CRUD with persistence', () => {
 		expect([200, 201]).toContain(resp.status())
 
 		// Row appears in the list (UI reflects the new app).
-		await expect(page.getByText(name, { exact: false }).first()).toBeVisible({ timeout: 10_000 })
+		await expect(page.getByText(name, { exact: false }).first()).toBeVisible({
+			timeout: 10_000,
+		})
 
 		// TRUE PERSISTENCE: the app object is independently readable via the OR
 		// API by its derived slug (resolve uuid through the applications list).
-		await expect.poll(async () => {
-			const res = await request.get(
-				`${process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'}/index.php/apps/openregister/api/objects/openbuild/application?_limit=200`,
-				{ headers: { 'OCS-APIRequest': 'true', Authorization: 'Basic ' + Buffer.from('admin:admin').toString('base64') } },
+		await expect
+			.poll(
+				async () => {
+					const res = await request.get(
+						`${process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'}/index.php/apps/openregister/api/objects/openbuild/application?_limit=200`,
+						{
+							headers: {
+								'OCS-APIRequest': 'true',
+								Authorization:
+									'Basic '
+									+ Buffer.from('admin:admin').toString('base64'),
+							},
+						},
+					)
+					const body = await res.json()
+					const rows: Array<Record<string, unknown>> = Array.isArray(body)
+						? body
+						: (body.results ?? [])
+					return rows.some((r) => r.slug === slug && r.name === name)
+				},
+				{ timeout: 15_000 },
 			)
-			const body = await res.json()
-			const rows: Array<Record<string, unknown>> = Array.isArray(body) ? body : (body.results ?? [])
-			return rows.some((r) => r.slug === slug && r.name === name)
-		}, { timeout: 15_000 }).toBe(true)
+			.toBe(true)
 	})
 
-	test('READ — a seeded app is listed in the UI by name and slug', async ({ page, request }) => {
+	test('READ — a seeded app is listed in the UI by name and slug', async ({
+		page,
+		request,
+	}) => {
 		const app = await seedVirtualApp(request, { name: `E2E Read ${E2E_PREFIX}` })
 
 		await gotoAppBrowser(page)
@@ -180,7 +225,9 @@ test.describe('Virtual App — full CRUD with persistence', () => {
 		// newest row renders, then assert.
 		await showSeededRow(page)
 
-		await expect(page.getByText(app.name, { exact: false }).first()).toBeVisible({ timeout: 10_000 })
+		await expect(page.getByText(app.name, { exact: false }).first()).toBeVisible(
+			{ timeout: 10_000 },
+		)
 		// Slug is rendered in the row too.
 		await expect(page.locator('body')).toContainText(app.slug)
 
@@ -199,15 +246,21 @@ test.describe('Virtual App — full CRUD with persistence', () => {
 	// The backend delete path itself is exercised (deleteVirtualApp + the
 	// CREATE/READ persistence round-trips). Un-fixme once the index Table view
 	// row binding (or a card/detail delete action) is restored in the lib.
-	test.fixme(
-		'DELETE via UI bulk action removes the row and the object (index Table view binds no rows; no UI delete affordance)',
-		async ({ page, request }) => {
-		const app = await seedVirtualApp(request, { name: `E2E Delete ${E2E_PREFIX}` })
+	test.fixme('DELETE via UI bulk action removes the row and the object (index Table view binds no rows; no UI delete affordance)', async ({
+		page,
+		request,
+	}) => {
+		const app = await seedVirtualApp(request, {
+			name: `E2E Delete ${E2E_PREFIX}`,
+		})
 
 		await gotoAppBrowser(page)
-		await expect(page.getByText(app.name, { exact: false }).first()).toBeVisible({ timeout: 10_000 })
+		await expect(page.getByText(app.name, { exact: false }).first()).toBeVisible(
+			{ timeout: 10_000 },
+		)
 
-		const tableToggle = page.getByRole('radio', { name: /table/i })
+		const tableToggle = page
+			.getByRole('radio', { name: /table/i })
 			.or(page.locator('input[type="radio"][value="table"]'))
 			.first()
 		await tableToggle.click({ force: true })
@@ -221,11 +274,17 @@ test.describe('Virtual App — full CRUD with persistence', () => {
 		const checkboxLabel = row.locator('.checkbox-radio-switch, label').first()
 		await checkboxLabel.click({ force: true })
 		// Confirm the row is actually selected before invoking the bulk action.
-		await expect(row.locator('input[type="checkbox"]').first()).toBeChecked({ timeout: 5_000 })
+		await expect(row.locator('input[type="checkbox"]').first()).toBeChecked({
+			timeout: 5_000,
+		})
 
 		// Open the table Actions menu → "Delete selected".
-		await page.getByRole('button', { name: /^actions$/i }).first().click()
-		const deleteSelected = page.getByRole('menuitem', { name: /delete selected/i })
+		await page
+			.getByRole('button', { name: /^actions$/i })
+			.first()
+			.click()
+		const deleteSelected = page
+			.getByRole('menuitem', { name: /delete selected/i })
 			.or(page.getByText(/delete selected/i))
 			.first()
 		await expect(deleteSelected).toBeVisible({ timeout: 6_000 })
@@ -235,17 +294,25 @@ test.describe('Virtual App — full CRUD with persistence', () => {
 		// "Delete selected" opens a confirm dialog ("Delete items … Cancel /
 		// Delete") listing the selected app. Confirm via the dialog's own
 		// Delete button (scoped so we don't re-hit the menu item).
-		const confirmDialog = page.locator('.modal-container, [role="dialog"]').filter({ hasText: /delete items/i }).first()
+		const confirmDialog = page
+			.locator('.modal-container, [role="dialog"]')
+			.filter({ hasText: /delete items/i })
+			.first()
 		await expect(confirmDialog).toBeVisible({ timeout: 6_000 })
 		await expect(confirmDialog).toContainText(app.name)
 
 		// The action-menu popper that launched the dialog lingers on top and can
 		// intercept clicks. Click inside the dialog body first (dismisses the
 		// popper, keeps the modal) so the subsequent Delete click hit-tests cleanly.
-		await confirmDialog.getByText(/delete items/i).first().click()
+		await confirmDialog
+			.getByText(/delete items/i)
+			.first()
+			.click()
 
 		const deletePromise = page.waitForResponse(
-			(r) => r.url().includes('/objects/openbuild/application') && r.request().method() === 'DELETE',
+			(r) =>
+				r.url().includes('/objects/openbuild/application')
+				&& r.request().method() === 'DELETE',
 			{ timeout: 15_000 },
 		)
 		await confirmDialog.getByRole('button', { name: /^delete$/i }).click()
@@ -264,7 +331,9 @@ test.describe('Virtual App — full CRUD with persistence', () => {
 	// create returned 422 app_slug_conflict. OpenRegister's lockObject now
 	// accepts a pre-creation/advisory identifier, so the documented four-step
 	// wizard entry point returns 201 with the new app's UUID.
-	test('CREATE via the four-step wizard endpoint returns 201 with the new app uuid', async ({ request }) => {
+	test('CREATE via the four-step wizard endpoint returns 201 with the new app uuid', async ({
+		request,
+	}) => {
 		const slug = `${E2E_PREFIX}-wiz-${Math.floor(Math.random() * 1e4)}`
 		const { status, body } = await wizardCreate(request, {
 			name: `E2E Wizard ${slug}`,
@@ -273,22 +342,25 @@ test.describe('Virtual App — full CRUD with persistence', () => {
 			preset: 'single',
 		})
 		expect(status, 'wizard create should return 201').toBe(201)
-		expect(body.applicationUuid, 'wizard must return the new app uuid').toBeTruthy()
+		expect(
+			body.applicationUuid,
+			'wizard must return the new app uuid',
+		).toBeTruthy()
 	})
 
 	// ---- #41: detail/editor sidebar does not populate ----------------------
-	test.fixme(
-		'EDIT via the row detail sidebar (Conduction/openbuild#41: editor does not render app fields)',
-		async ({ page, request }) => {
-			const app = await seedVirtualApp(request, { name: `E2E Edit ${E2E_PREFIX}` })
-			await gotoAppBrowser(page)
-			await page.getByText(app.name, { exact: false }).first().click()
-			// In a fixed build the detail/edit sidebar shows the app's fields;
-			// today it opens but never populates the object — so the edit + save
-			// + persist assertions below cannot run honestly.
-			const sidebar = page.locator('.app-sidebar, [class*="detail"]').first()
-			await expect(sidebar).toContainText(app.slug, { timeout: 8_000 })
-			await deleteVirtualApp(request, app.uuid)
-		},
-	)
+	test.fixme('EDIT via the row detail sidebar (Conduction/openbuild#41: editor does not render app fields)', async ({
+		page,
+		request,
+	}) => {
+		const app = await seedVirtualApp(request, { name: `E2E Edit ${E2E_PREFIX}` })
+		await gotoAppBrowser(page)
+		await page.getByText(app.name, { exact: false }).first().click()
+		// In a fixed build the detail/edit sidebar shows the app's fields;
+		// today it opens but never populates the object — so the edit + save
+		// + persist assertions below cannot run honestly.
+		const sidebar = page.locator('.app-sidebar, [class*="detail"]').first()
+		await expect(sidebar).toContainText(app.slug, { timeout: 8_000 })
+		await deleteVirtualApp(request, app.uuid)
+	})
 })

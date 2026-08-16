@@ -37,7 +37,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuild\Service;
 
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -107,7 +107,7 @@ class RuleEngineService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService OpenRegister object service.
+	 * @param ObjectServiceInterface $objectService OpenRegister object service.
 	 * @param DecisionTableEvaluator $decisionEvaluator DMN table evaluator.
 	 * @param ConditionActionExecutor $conditionExecutor Condition-action chain executor.
 	 * @param RuleSetCacheManager $cacheManager Hot-reload bundle cache.
@@ -121,7 +121,7 @@ class RuleEngineService {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly DecisionTableEvaluator $decisionEvaluator,
 		private readonly ConditionActionExecutor $conditionExecutor,
 		private readonly RuleSetCacheManager $cacheManager,

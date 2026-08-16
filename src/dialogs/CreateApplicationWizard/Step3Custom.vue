@@ -13,7 +13,12 @@
 			{{ t('openbuild', 'Define your version chain') }}
 		</h3>
 		<p class="wizard-step3__description">
-			{{ t('openbuild', 'Versions are ordered top-to-bottom: upstream (e.g. Development) at top, downstream (e.g. Production) at bottom.') }}
+			{{
+				t(
+					'openbuild',
+					'Versions are ordered top-to-bottom: upstream (e.g. Development) at top, downstream (e.g. Production) at bottom.',
+				)
+			}}
 		</p>
 
 		<ul class="wizard-step3__rows" aria-label="Version chain rows">
@@ -27,7 +32,12 @@
 				@drop.prevent="onDrop(index)"
 				@dragend="onDragEnd">
 				<!-- Drag handle (visual enhancement; ↑/↓ are accessibility path) -->
-				<span class="wizard-step3__drag-handle" aria-hidden="true" title="Drag to reorder">⠿</span>
+				<span
+					class="wizard-step3__drag-handle"
+					aria-hidden="true"
+					title="Drag to reorder"
+					>⠿</span
+				>
 
 				<!-- Name input -->
 				<div class="wizard-step3__row-name">
@@ -36,10 +46,14 @@
 						class="wizard-step3__input"
 						type="text"
 						:value="row.name"
-						:placeholder="t('openbuild', 'Version name (e.g. Production)')"
-						:aria-label="t('openbuild', 'Version name (e.g. Production)')"
+						:placeholder="
+							t('openbuild', 'Version name (e.g. Production)')
+						"
+						:aria-label="
+							t('openbuild', 'Version name (e.g. Production)')
+						"
 						autocomplete="off"
-						@input="onNameInput(index, $event)">
+						@input="onNameInput(index, $event)" />
 				</div>
 
 				<!-- Slug chip + Advanced toggle -->
@@ -56,7 +70,11 @@
 						type="button"
 						class="wizard-step3__advanced-toggle"
 						@click="toggleAdvanced(index)">
-						{{ advancedOpen[index] ? t('openbuild', 'Hide') : t('openbuild', 'Advanced') }}
+						{{
+							advancedOpen[index]
+								? t('openbuild', 'Hide')
+								: t('openbuild', 'Advanced')
+						}}
 					</button>
 				</div>
 
@@ -64,14 +82,19 @@
 					<input
 						:id="'wizard-version-slug-' + index"
 						class="wizard-step3__input"
-						:class="{ 'wizard-step3__input--error': getSlugError(index) }"
+						:class="{
+							'wizard-step3__input--error': getSlugError(index),
+						}"
 						type="text"
 						:value="row.slug"
 						:placeholder="t('openbuild', 'kebab-case-slug')"
 						:aria-label="t('openbuild', 'kebab-case-slug')"
 						autocomplete="off"
-						@input="onSlugInput(index, $event)">
-					<p v-if="getSlugError(index)" class="wizard-step3__error-msg" role="alert">
+						@input="onSlugInput(index, $event)" />
+					<p
+						v-if="getSlugError(index)"
+						class="wizard-step3__error-msg"
+						role="alert">
 						{{ getSlugError(index) }}
 					</p>
 				</div>
@@ -122,6 +145,9 @@
 import { toKebabCase, validateSlug } from '../../utils/slugPattern.js'
 
 let _idCounter = 0
+/**
+ *
+ */
 function nextId() {
 	return ++_idCounter
 }
@@ -142,9 +168,21 @@ export default {
 	emits: ['update:payload'],
 
 	data() {
-		const versions = this.payload.versions && this.payload.versions.length > 0
-			? this.payload.versions.map(v => ({ ...v, _id: nextId(), _slugManual: false }))
-			: [{ name: 'Production', slug: 'production', _id: nextId(), _slugManual: false }]
+		const versions =
+			this.payload.versions && this.payload.versions.length > 0
+				? this.payload.versions.map((v) => ({
+						...v,
+						_id: nextId(),
+						_slugManual: false,
+					}))
+				: [
+						{
+							name: 'Production',
+							slug: 'production',
+							_id: nextId(),
+							_slugManual: false,
+						},
+					]
 
 		return {
 			localVersions: versions,
@@ -162,7 +200,8 @@ export default {
 		 */
 		slugErrors() {
 			return this.localVersions.map((row) => {
-				if (!row.name) return t('openbuild', 'Version name must not be empty.')
+				if (!row.name)
+					return t('openbuild', 'Version name must not be empty.')
 				const result = validateSlug(row.slug)
 				return result.valid ? null : result.message
 			})
@@ -196,7 +235,7 @@ export default {
 		isValid() {
 			if (this.localVersions.length === 0) return false
 			if (this.duplicateSlugs.size > 0) return false
-			return this.slugErrors.every(e => e === null)
+			return this.slugErrors.every((e) => e === null)
 		},
 	},
 
@@ -236,7 +275,10 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
 		 */
 		emit() {
-			const clean = this.localVersions.map(({ name, slug }) => ({ name, slug }))
+			const clean = this.localVersions.map(({ name, slug }) => ({
+				name,
+				slug,
+			}))
 			this.$emit('update:payload', {
 				versions: clean,
 				_step3Valid: this.isValid,
@@ -256,7 +298,10 @@ export default {
 		 */
 		getSlugError(index) {
 			if (this.isDuplicate(index)) {
-				return t('openbuild', `Slug \`${this.localVersions[index].slug}\` is already used in this chain`)
+				return t(
+					'openbuild',
+					`Slug \`${this.localVersions[index].slug}\` is already used in this chain`,
+				)
 			}
 
 			return this.slugErrors[index] || null

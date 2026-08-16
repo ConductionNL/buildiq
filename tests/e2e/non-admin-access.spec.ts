@@ -40,8 +40,10 @@ test.describe('a non-admin with an app role can use the app', () => {
 		const page = await context.newPage()
 		try {
 			await suppressSupportDialog(page)
-		await suppressSetupWizard(page)
-			await page.goto(`${BASE_URL}/apps/openbuild/`, { waitUntil: 'domcontentloaded' })
+			await suppressSetupWizard(page)
+			await page.goto(`${BASE_URL}/apps/openbuild/`, {
+				waitUntil: 'domcontentloaded',
+			})
 			await ensureVersionChain(page, TEST_SLUG, 'PW Version Chain')
 			await grantAppRoles(page, TEST_SLUG, {
 				editors: ['group:rbac-editors'],
@@ -52,11 +54,18 @@ test.describe('a non-admin with an app role can use the app', () => {
 		}
 	})
 
-	test('an editor reaches the schema designer, not the first-time-setup wizard', async ({ browser }) => {
-		const context = await browser.newContext({ storageState: 'tests/e2e/.auth/rbac-editor.json' })
+	test('an editor reaches the schema designer, not the first-time-setup wizard', async ({
+		browser,
+	}) => {
+		const context = await browser.newContext({
+			storageState: 'tests/e2e/.auth/rbac-editor.json',
+		})
 		const page = await context.newPage()
 		try {
-			await page.goto(`${BASE_URL}/apps/openbuild/builder/${TEST_SLUG}/schemas`, { waitUntil: 'domcontentloaded' })
+			await page.goto(
+				`${BASE_URL}/apps/openbuild/builder/${TEST_SLUG}/schemas`,
+				{ waitUntil: 'domcontentloaded' },
+			)
 
 			// The positive half goes FIRST, because it is also the readiness
 			// signal. This used to sit behind
@@ -82,21 +91,31 @@ test.describe('a non-admin with an app role can use the app', () => {
 		}
 	})
 
-	test('an editor sees the applications they were granted, and only those', async ({ browser }) => {
-		const context = await browser.newContext({ storageState: 'tests/e2e/.auth/rbac-editor.json' })
+	test('an editor sees the applications they were granted, and only those', async ({
+		browser,
+	}) => {
+		const context = await browser.newContext({
+			storageState: 'tests/e2e/.auth/rbac-editor.json',
+		})
 		const page = await context.newPage()
 		try {
 			const resp = await page.request.get(
 				`${BASE_URL}/index.php/apps/openbuild/api/applications`,
 				{ headers: { 'OCS-APIRequest': 'true' } },
 			)
-			expect(resp.status(), 'the application list must answer for a non-admin').toBe(200)
+			expect(
+				resp.status(),
+				'the application list must answer for a non-admin',
+			).toBe(200)
 			const body = await resp.json()
 			const rows = Array.isArray(body) ? body : (body?.results ?? [])
 
 			// Non-zero is the openbuild#76 regression guard: OR used to filter
 			// every row out one layer below openbuild's own permission check.
-			expect(rows.length, 'a granted editor must see at least their app').toBeGreaterThan(0)
+			expect(
+				rows.length,
+				'a granted editor must see at least their app',
+			).toBeGreaterThan(0)
 			expect(
 				rows.map((r: Record<string, unknown>) => r?.slug),
 				'the granted app must be among them',
@@ -106,8 +125,12 @@ test.describe('a non-admin with an app role can use the app', () => {
 		}
 	})
 
-	test('an outsider with no role sees nothing — the grant is what matters', async ({ browser }) => {
-		const context = await browser.newContext({ storageState: 'tests/e2e/.auth/rbac-outsider.json' })
+	test('an outsider with no role sees nothing — the grant is what matters', async ({
+		browser,
+	}) => {
+		const context = await browser.newContext({
+			storageState: 'tests/e2e/.auth/rbac-outsider.json',
+		})
 		const page = await context.newPage()
 		try {
 			const resp = await page.request.get(
@@ -120,7 +143,10 @@ test.describe('a non-admin with an app role can use the app', () => {
 			// The control for the test above: `read: ["authenticated"]` is a COARSE
 			// grant at the OpenRegister layer. If openbuild's own row-level filter
 			// ever stopped running, this is the test that would notice.
-			expect(rows.length, 'a caller with no app role must see no applications').toBe(0)
+			expect(
+				rows.length,
+				'a caller with no app role must see no applications',
+			).toBe(0)
 		} finally {
 			await context.close()
 		}

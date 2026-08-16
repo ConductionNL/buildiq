@@ -14,7 +14,10 @@ import { describe, it, expect, vi } from 'vitest'
 vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => `/index.php${p}` }))
 vi.mock('@nextcloud/axios', () => ({ default: { post: vi.fn(), get: vi.fn() } }))
 
-import { useDataImport, summarizeImport } from '../../src/composables/useDataImport.js'
+import {
+	useDataImport,
+	summarizeImport,
+} from '../../src/composables/useDataImport.js'
 
 describe('summarizeImport', () => {
 	it('flattens a sheet-keyed OR summary into counts + importJobId + errors', () => {
@@ -38,7 +41,11 @@ describe('summarizeImport', () => {
 		expect(s.skipped).toBe(1)
 		expect(s.importJobId).toBe('job-uuid-123')
 		expect(s.errors).toHaveLength(1)
-		expect(s.errors[0]).toMatchObject({ sheet: 'Sheet1', row: 5, message: 'bad date' })
+		expect(s.errors[0]).toMatchObject({
+			sheet: 'Sheet1',
+			row: 5,
+			message: 'bad date',
+		})
 		expect(s.errorsCsv).toBe('YmFzZTY0')
 		expect(s.errorsCsvFilename).toBe('import_errors.csv')
 	})
@@ -58,7 +65,13 @@ describe('summarizeImport', () => {
 
 	it('returns zeroed summary for a malformed / empty response', () => {
 		expect(summarizeImport(null)).toEqual({
-			importJobId: null, created: 0, updated: 0, skipped: 0, errors: [], errorsCsv: null, errorsCsvFilename: null,
+			importJobId: null,
+			created: 0,
+			updated: 0,
+			skipped: 0,
+			errors: [],
+			errorsCsv: null,
+			errorsCsvFilename: null,
 		})
 		expect(summarizeImport({}).created).toBe(0)
 		expect(summarizeImport({ summary: 'not-an-object' }).created).toBe(0)
@@ -66,18 +79,30 @@ describe('summarizeImport', () => {
 })
 
 describe('useDataImport.importFile', () => {
-	const okResponse = { data: { summary: { S: { created: [{}], updated: [], unchanged: [], errors: [] }, importJobId: 'j1' } } }
+	const okResponse = {
+		data: {
+			summary: {
+				S: { created: [{}], updated: [], unchanged: [], errors: [] },
+				importJobId: 'j1',
+			},
+		},
+	}
 
 	it('create-schema path: POSTs multipart file + includeObjects and NO schema param', async () => {
 		const client = { post: vi.fn().mockResolvedValue(okResponse) }
 		const { importFile } = useDataImport({ client })
 		const file = new File(['a,b\n1,2\n'], 'people.csv', { type: 'text/csv' })
 
-		const summary = await importFile({ registerId: 'openbuild-app-staging', file })
+		const summary = await importFile({
+			registerId: 'openbuild-app-staging',
+			file,
+		})
 
 		expect(client.post).toHaveBeenCalledTimes(1)
 		const [url, form, opts] = client.post.mock.calls[0]
-		expect(url).toBe('/index.php/apps/openregister/api/registers/openbuild-app-staging/import')
+		expect(url).toBe(
+			'/index.php/apps/openregister/api/registers/openbuild-app-staging/import',
+		)
 		expect(form).toBeInstanceOf(FormData)
 		expect(form.get('file')).toBe(file)
 		expect(form.get('includeObjects')).toBe('true')
@@ -100,20 +125,28 @@ describe('useDataImport.importFile', () => {
 
 	it('throws when registerId or file is missing (no silent no-op)', async () => {
 		const { importFile } = useDataImport({ client: { post: vi.fn() } })
-		await expect(importFile({ file: new File(['x'], 'a.csv') })).rejects.toThrow(/registerId/)
+		await expect(importFile({ file: new File(['x'], 'a.csv') })).rejects.toThrow(
+			/registerId/,
+		)
 		await expect(importFile({ registerId: 'r' })).rejects.toThrow(/file/)
 	})
 })
 
 describe('useDataImport.rollbackImport', () => {
 	it('POSTs the importJobId to the OR rollback endpoint', async () => {
-		const client = { post: vi.fn().mockResolvedValue({ data: { importJobId: 'j1', deleted: 2 } }) }
+		const client = {
+			post: vi
+				.fn()
+				.mockResolvedValue({ data: { importJobId: 'j1', deleted: 2 } }),
+		}
 		const { rollbackImport } = useDataImport({ client })
 
 		const report = await rollbackImport('j1')
 
 		const [url, body] = client.post.mock.calls[0]
-		expect(url).toBe('/index.php/apps/openregister/api/registers/import/rollback')
+		expect(url).toBe(
+			'/index.php/apps/openregister/api/registers/import/rollback',
+		)
 		expect(body).toEqual({ importJobId: 'j1' })
 		expect(report.deleted).toBe(2)
 	})
@@ -127,10 +160,14 @@ describe('useDataImport.rollbackImport', () => {
 describe('useDataImport.templateUrl', () => {
 	it('builds the schema import-template URL with the requested format', () => {
 		const { templateUrl } = useDataImport({ client: {} })
-		expect(templateUrl({ registerId: 'reg1', schema: 'permit', format: 'csv' }))
-			.toBe('/index.php/apps/openregister/api/registers/reg1/schemas/permit/import-template?format=csv')
-		expect(templateUrl({ registerId: 'reg1', schema: 'permit' }))
-			.toContain('format=xlsx')
+		expect(
+			templateUrl({ registerId: 'reg1', schema: 'permit', format: 'csv' }),
+		).toBe(
+			'/index.php/apps/openregister/api/registers/reg1/schemas/permit/import-template?format=csv',
+		)
+		expect(templateUrl({ registerId: 'reg1', schema: 'permit' })).toContain(
+			'format=xlsx',
+		)
 	})
 
 	it('returns empty string when register or schema is missing', () => {

@@ -47,7 +47,7 @@ use OCA\OpenBuild\Exception\PromotionFailedException;
 use OCA\OpenBuild\Exception\VersionLockedException;
 use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenBuild\Service\VersionPromotionService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -75,7 +75,7 @@ class VersionPromotionController extends Controller {
 	 *
 	 * @param IRequest $request The current HTTP request
 	 * @param LoggerInterface $logger PSR logger
-	 * @param ObjectService $objectService OR object surface (load source + parent)
+	 * @param ObjectServiceInterface $objectService OR object surface (load source + parent)
 	 * @param IUserSession $userSession Current NC user session
 	 * @param VersionPromotionService $promotionService Imperative promotion flow owner
 	 * @param PermissionResolver $permissionResolver Shared permission-grammar resolver (H1 fix)
@@ -85,7 +85,7 @@ class VersionPromotionController extends Controller {
 	public function __construct(
 		IRequest $request,
 		private readonly LoggerInterface $logger,
-		private readonly ObjectService $objectService,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly IUserSession $userSession,
 		private readonly VersionPromotionService $promotionService,
 		private readonly PermissionResolver $permissionResolver,

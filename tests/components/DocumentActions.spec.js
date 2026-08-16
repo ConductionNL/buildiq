@@ -18,26 +18,46 @@ const NcButtonStub = {
 	name: 'NcButton',
 	props: ['type', 'disabled'],
 	emits: ['click'],
-	template: '<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
+	template:
+		'<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
 }
 
 const object = { '@self': { id: 'abc-123', register: 'kap', schema: 'kapaanvraag' } }
 
 const attachments = [
-	{ id: 'a', schema: 'kapaanvraag', templateId: 'u1', templateName: 'A', label: 'Generate A' },
-	{ id: 'b', schema: 'kapaanvraag', templateId: 'u2', templateName: 'B', label: 'Generate B' },
-	{ id: 'c', schema: 'andere', templateId: 'u3', templateName: 'C', label: 'Generate C' },
+	{
+		id: 'a',
+		schema: 'kapaanvraag',
+		templateId: 'u1',
+		templateName: 'A',
+		label: 'Generate A',
+	},
+	{
+		id: 'b',
+		schema: 'kapaanvraag',
+		templateId: 'u2',
+		templateName: 'B',
+		label: 'Generate B',
+	},
+	{
+		id: 'c',
+		schema: 'andere',
+		templateId: 'u3',
+		templateName: 'C',
+		label: 'Generate C',
+	},
 ]
 
 // `docudeskAvailable` defaults to `null` = "probe the instance yourself". In
 // jsdom that probe has no server to reach, so it resolves ABSENT and the widget
 // correctly refuses to generate. Every test whose subject is NOT the capability
 // check therefore states its precondition explicitly.
-const factory = (props = {}, mountOptions = {}) => mount(DocumentActions, {
-	propsData: { object, attachments, docudeskAvailable: true, ...props },
-	stubs: { NcButton: NcButtonStub },
-	...mountOptions,
-})
+const factory = (props = {}, mountOptions = {}) =>
+	mount(DocumentActions, {
+		propsData: { object, attachments, docudeskAvailable: true, ...props },
+		stubs: { NcButton: NcButtonStub },
+		...mountOptions,
+	})
 
 describe('DocumentActions', () => {
 	it('renders one button per attachment for the object schema, in declared order', () => {
@@ -68,7 +88,11 @@ describe('DocumentActions', () => {
 			stubs: { NcButton: NcButtonStub },
 			// CnDetailPage provides this; its `schema` is the manifest's
 			// `config.schema`, i.e. the slug the attachments are declared with.
-			global: { provide: { cnObjectContext: { register: 'kap', schema: 'kapaanvraag' } } },
+			global: {
+				provide: {
+					cnObjectContext: { register: 'kap', schema: 'kapaanvraag' },
+				},
+			},
 		})
 		const buttons = wrapper.findAll('.ob-document-actions__row button')
 		expect(buttons).toHaveLength(2)
@@ -84,7 +108,14 @@ describe('DocumentActions', () => {
 				docudeskAvailable: true,
 			},
 			stubs: { NcButton: NcButtonStub },
-			global: { provide: { cnObjectContext: { register: 'kap', schema: 'een-andere-schema' } } },
+			global: {
+				provide: {
+					cnObjectContext: {
+						register: 'kap',
+						schema: 'een-andere-schema',
+					},
+				},
+			},
 		})
 		// The normalisation must not degrade into "match anything" — an object
 		// whose schema declares no attachments still renders nothing.
@@ -92,7 +123,9 @@ describe('DocumentActions', () => {
 	})
 
 	it('renders nothing when the schema has no attachments', () => {
-		const wrapper = factory({ object: { '@self': { id: 'x', schema: 'unknown' } } })
+		const wrapper = factory({
+			object: { '@self': { id: 'x', schema: 'unknown' } },
+		})
 		expect(wrapper.find('.ob-document-actions').exists()).toBe(false)
 	})
 
@@ -108,7 +141,10 @@ describe('DocumentActions', () => {
 		const wrapper = factory()
 		const spy = vi.fn().mockResolvedValue(null)
 		wrapper.vm.docs.generate = spy
-		await wrapper.findAll('.ob-document-actions__row button').at(0).trigger('click')
+		await wrapper
+			.findAll('.ob-document-actions__row button')
+			.at(0)
+			.trigger('click')
 		expect(spy).toHaveBeenCalledTimes(1)
 		expect(spy.mock.calls[0][0].id).toBe('a')
 	})
@@ -122,7 +158,9 @@ describe('DocumentActions', () => {
 		const wrapper = mount(DocumentActions, {
 			propsData: { object, docudeskAvailable: true },
 			stubs: { NcButton: NcButtonStub },
-			global: { provide: { cnManifest: { runtime: { documents: attachments } } } },
+			global: {
+				provide: { cnManifest: { runtime: { documents: attachments } } },
+			},
 		})
 		const buttons = wrapper.findAll('.ob-document-actions__row button')
 		expect(buttons).toHaveLength(2)
@@ -135,10 +173,20 @@ describe('DocumentActions', () => {
 			propsData: {
 				object,
 				docudeskAvailable: true,
-				attachments: [{ id: 'z', schema: 'kapaanvraag', templateId: 'u9', templateName: 'Z', label: 'Generate Z' }],
+				attachments: [
+					{
+						id: 'z',
+						schema: 'kapaanvraag',
+						templateId: 'u9',
+						templateName: 'Z',
+						label: 'Generate Z',
+					},
+				],
 			},
 			stubs: { NcButton: NcButtonStub },
-			global: { provide: { cnManifest: { runtime: { documents: attachments } } } },
+			global: {
+				provide: { cnManifest: { runtime: { documents: attachments } } },
+			},
 		})
 		const buttons = wrapper.findAll('.ob-document-actions__row button')
 		expect(buttons).toHaveLength(1)

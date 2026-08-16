@@ -34,7 +34,11 @@
  */
 
 import { test, expect } from '@playwright/test'
-import { ensureApp, dismissOverlays, suppressSupportDialog } from './support/appFixture'
+import {
+	ensureApp,
+	dismissOverlays,
+	suppressSupportDialog,
+} from './support/appFixture'
 
 // PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts.
 import { E2E_BASE_URL as BASE_URL } from './support/baseUrl'
@@ -56,24 +60,45 @@ test.describe('openbuild page designer', () => {
 		await ensureApp(page, APP_SLUG, 'PW Page Designer')
 	})
 
-	test('REQ-OBPD-002 + REQ-OBPD-003 + REQ-OBPD-009: add page → save → renders in builder', async ({ page }) => {
+	test('REQ-OBPD-002 + REQ-OBPD-003 + REQ-OBPD-009: add page → save → renders in builder', async ({
+		page,
+	}) => {
 		// Reset to a known baseline so the run is idempotent: this test saves the
 		// page it adds, so a second run would otherwise stack duplicate routes.
 		const manifestUrl = `/index.php/apps/openbuild/api/applications/${APP_SLUG}/manifest`
-		await page.goto(`${BASE_URL}/apps/openbuild/`, { waitUntil: 'domcontentloaded' })
-		await page.evaluate(async ({ manifestUrl, route }) => {
-			const tok = window.OC?.requestToken
-				|| document.querySelector('head')?.getAttribute('data-requesttoken')
-				|| ''
-			const headers = { requesttoken: tok, 'OCS-APIRequest': 'true', 'Content-Type': 'application/json' }
-			const current = await (await fetch(manifestUrl, { headers })).json()
-			const pages = (current.pages || []).filter((p) => p.route !== route)
-			await fetch(manifestUrl, { method: 'PUT', headers, body: JSON.stringify({ manifest: { ...current, pages } }) })
-		}, { manifestUrl, route: NEW_ROUTE })
-
-		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/pages?_version=production`, {
+		await page.goto(`${BASE_URL}/apps/openbuild/`, {
 			waitUntil: 'domcontentloaded',
 		})
+		await page.evaluate(
+			async ({ manifestUrl, route }) => {
+				const tok =
+					window.OC?.requestToken
+					|| document
+						.querySelector('head')
+						?.getAttribute('data-requesttoken')
+					|| ''
+				const headers = {
+					requesttoken: tok,
+					'OCS-APIRequest': 'true',
+					'Content-Type': 'application/json',
+				}
+				const current = await (await fetch(manifestUrl, { headers })).json()
+				const pages = (current.pages || []).filter((p) => p.route !== route)
+				await fetch(manifestUrl, {
+					method: 'PUT',
+					headers,
+					body: JSON.stringify({ manifest: { ...current, pages } }),
+				})
+			},
+			{ manifestUrl, route: NEW_ROUTE },
+		)
+
+		await page.goto(
+			`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/pages?_version=production`,
+			{
+				waitUntil: 'domcontentloaded',
+			},
+		)
 		await page.waitForSelector('.page-designer__left', { timeout: 60_000 })
 		await dismissOverlays(page)
 
@@ -85,7 +110,10 @@ test.describe('openbuild page designer', () => {
 		// the type picker, and Confirm stays disabled until a type is chosen.
 		await page.locator('.page-list-editor__add').click()
 		const confirm = page.getByRole('button', { name: /^confirm$/i })
-		await expect(confirm, 'Confirm is gated on choosing a page type first').toBeDisabled()
+		await expect(
+			confirm,
+			'Confirm is gated on choosing a page type first',
+		).toBeDisabled()
 		await page.locator('.page-list-editor__select').selectOption('index')
 		await expect(confirm).toBeEnabled()
 		await confirm.click()
@@ -102,20 +130,35 @@ test.describe('openbuild page designer', () => {
 		await page.getByRole('button', { name: /save pages/i }).click()
 
 		// The save must reach the STORED manifest, not just the editor buffer.
-		await expect.poll(async () => {
-			const stored = await page.evaluate(async (url) => {
-				const resp = await fetch(url, { headers: { 'OCS-APIRequest': 'true' } })
-				return resp.json()
-			}, manifestUrl)
-			return (stored.pages || []).some((p) => p.route === NEW_ROUTE)
-		}, { timeout: 30_000, message: 'the added page must be persisted to the manifest' }).toBe(true)
+		await expect
+			.poll(
+				async () => {
+					const stored = await page.evaluate(async (url) => {
+						const resp = await fetch(url, {
+							headers: { 'OCS-APIRequest': 'true' },
+						})
+						return resp.json()
+					}, manifestUrl)
+					return (stored.pages || []).some((p) => p.route === NEW_ROUTE)
+				},
+				{
+					timeout: 30_000,
+					message: 'the added page must be persisted to the manifest',
+				},
+			)
+			.toBe(true)
 
 		// REQ-OBPD-003 — the newly-added route renders in the built virtual app.
-		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}${NEW_ROUTE}?_version=production`, {
-			waitUntil: 'domcontentloaded',
-		})
+		await page.goto(
+			`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}${NEW_ROUTE}?_version=production`,
+			{
+				waitUntil: 'domcontentloaded',
+			},
+		)
 		await expect(
-			page.locator('#openbuild-builder, .cn-app-root, .cn-page-renderer').first(),
+			page
+				.locator('#openbuild-builder, .cn-app-root, .cn-page-renderer')
+				.first(),
 			'the saved route must render inside the builder host',
 		).toBeVisible({ timeout: 45_000 })
 	})

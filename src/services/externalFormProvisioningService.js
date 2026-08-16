@@ -35,7 +35,9 @@ const PUBLIC_GROUP = 'public'
  * @return {string}
  */
 function schemaUrl(schemaSlug) {
-	return generateUrl(`/apps/openregister/api/schemas/${encodeURIComponent(schemaSlug)}`)
+	return generateUrl(
+		`/apps/openregister/api/schemas/${encodeURIComponent(schemaSlug)}`,
+	)
 }
 
 /**
@@ -108,7 +110,10 @@ function cloneAuthorization(authorization) {
  * @return {Promise<object>} - the updated schema.
  * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-003
  */
-export async function enablePublicCreate({ schema, publicRead = false }, client = defaultAxios) {
+export async function enablePublicCreate(
+	{ schema, publicRead = false },
+	client = defaultAxios,
+) {
 	const { data: current } = await client.get(schemaUrl(schema))
 	const authorization = cloneAuthorization(current && current.authorization)
 	authorization.create = addGroup(authorization.create, PUBLIC_GROUP)
@@ -133,7 +138,10 @@ export async function enablePublicCreate({ schema, publicRead = false }, client 
  * @return {Promise<object>} - the updated schema.
  * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-005
  */
-export async function revokePublicCreate({ schema, removeRead = false }, client = defaultAxios) {
+export async function revokePublicCreate(
+	{ schema, removeRead = false },
+	client = defaultAxios,
+) {
 	const { data: current } = await client.get(schemaUrl(schema))
 	const authorization = cloneAuthorization(current && current.authorization)
 	authorization.create = removeGroup(authorization.create, PUBLIC_GROUP)
@@ -191,7 +199,13 @@ function buildAnonymousCreateAction(register, schema) {
 function mergeAnonymousCreateAction(actions, register, schema) {
 	const next = Array.isArray(actions) ? actions.slice() : []
 	const entry = buildAnonymousCreateAction(register, schema)
-	const idx = next.findIndex((a) => a && a.type === 'create' && a.register === register && a.schema === schema)
+	const idx = next.findIndex(
+		(a) =>
+			a
+			&& a.type === 'create'
+			&& a.register === register
+			&& a.schema === schema,
+	)
 	if (idx >= 0) {
 		next[idx] = { ...next[idx], ...entry }
 	} else {
@@ -211,7 +225,9 @@ function mergeAnonymousCreateAction(actions, register, schema) {
  */
 function mergeAnonymousCollection(collections, register, schema) {
 	const next = Array.isArray(collections) ? collections.slice() : []
-	const idx = next.findIndex((c) => c && c.register === register && c.schema === schema)
+	const idx = next.findIndex(
+		(c) => c && c.register === register && c.schema === schema,
+	)
 	const entry = { register, schema, anonymous: true }
 	if (idx >= 0) {
 		next[idx] = { ...next[idx], ...entry }
@@ -228,7 +244,12 @@ function mergeAnonymousCollection(collections, register, schema) {
  * @return {string}
  */
 function resolveObjectId(data) {
-	return (data && data['@self'] && data['@self'].id) || (data && data.id) || (data && data.uuid) || ''
+	return (
+		(data && data['@self'] && data['@self'].id)
+		|| (data && data.id)
+		|| (data && data.uuid)
+		|| ''
+	)
 }
 
 /**
@@ -253,18 +274,33 @@ function resolveObjectId(data) {
  * @return {Promise<{objectId: ?string, portalPath: ?string, unavailable: boolean}>}
  * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-004
  */
-export async function provisionPortalPage({ register, schema, objectId }, client = defaultAxios) {
+export async function provisionPortalPage(
+	{ register, schema, objectId },
+	client = defaultAxios,
+) {
 	try {
 		if (objectId) {
 			const { data: current } = await client.get(portalPageUrl(objectId))
 			const payload = {
 				...current,
 				status: 'active',
-				collections: mergeAnonymousCollection(current && current.collections, register, schema),
-				actions: mergeAnonymousCreateAction(current && current.actions, register, schema),
+				collections: mergeAnonymousCollection(
+					current && current.collections,
+					register,
+					schema,
+				),
+				actions: mergeAnonymousCreateAction(
+					current && current.actions,
+					register,
+					schema,
+				),
 			}
 			const { data } = await client.put(portalPageUrl(objectId), payload)
-			return { objectId: resolveObjectId(data) || objectId, portalPath: '/portal', unavailable: false }
+			return {
+				objectId: resolveObjectId(data) || objectId,
+				portalPath: '/portal',
+				unavailable: false,
+			}
 		}
 		const payload = {
 			label: `${schema} — external intake`,
@@ -276,7 +312,11 @@ export async function provisionPortalPage({ register, schema, objectId }, client
 			pages: [],
 		}
 		const { data } = await client.post(portalPageUrl(), payload)
-		return { objectId: resolveObjectId(data), portalPath: '/portal', unavailable: false }
+		return {
+			objectId: resolveObjectId(data),
+			portalPath: '/portal',
+			unavailable: false,
+		}
 	} catch (error) {
 		if (isPortalPageSchemaMissing(error)) {
 			return { objectId: null, portalPath: null, unavailable: true }

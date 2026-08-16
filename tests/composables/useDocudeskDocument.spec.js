@@ -7,7 +7,11 @@
  * Spec: docudesk-document-templates (REQ-DDT-003).
  */
 import { describe, it, expect, vi } from 'vitest'
-import { useDocudeskDocument, renderFilename, resolveDataRef } from '../../src/composables/useDocudeskDocument.js'
+import {
+	useDocudeskDocument,
+	renderFilename,
+	resolveDataRef,
+} from '../../src/composables/useDocudeskDocument.js'
 
 const UUID = '11111111-2222-3333-4444-555555555555'
 
@@ -26,7 +30,9 @@ const object = {
 
 describe('renderFilename', () => {
 	it('interpolates object properties', () => {
-		expect(renderFilename('bevestiging-{{dossiernummer}}.pdf', object)).toBe('bevestiging-2026-0042.pdf')
+		expect(renderFilename('bevestiging-{{dossiernummer}}.pdf', object)).toBe(
+			'bevestiging-2026-0042.pdf',
+		)
 	})
 	it('renders missing properties as empty', () => {
 		expect(renderFilename('x-{{nope}}.pdf', object)).toBe('x-.pdf')
@@ -38,15 +44,26 @@ describe('renderFilename', () => {
 
 describe('resolveDataRef', () => {
 	it('resolves register/schema/id from the @self envelope', () => {
-		expect(resolveDataRef(object, attachment)).toEqual({ register: 'kap', schema: 'kapaanvraag', id: 'abc-123' })
+		expect(resolveDataRef(object, attachment)).toEqual({
+			register: 'kap',
+			schema: 'kapaanvraag',
+			id: 'abc-123',
+		})
 	})
 	it('returns null when the id is missing', () => {
-		expect(resolveDataRef({ '@self': { register: 'kap', schema: 'kapaanvraag' } }, attachment)).toBeNull()
+		expect(
+			resolveDataRef(
+				{ '@self': { register: 'kap', schema: 'kapaanvraag' } },
+				attachment,
+			),
+		).toBeNull()
 	})
 })
 
 describe('useDocudeskDocument', () => {
-	const blobResponse = () => ({ data: new Blob(['PDF'], { type: 'application/pdf' }) })
+	const blobResponse = () => ({
+		data: new Blob(['PDF'], { type: 'application/pdf' }),
+	})
 
 	it('sends the correct request shape and downloads', async () => {
 		const client = { post: vi.fn().mockResolvedValue(blobResponse()) }
@@ -58,7 +75,9 @@ describe('useDocudeskDocument', () => {
 		expect(client.post).toHaveBeenCalledTimes(1)
 		const [, body, opts] = client.post.mock.calls[0]
 		expect(body.templateId).toBe(UUID)
-		expect(body.dataRefs).toEqual([{ register: 'kap', schema: 'kapaanvraag', id: 'abc-123' }])
+		expect(body.dataRefs).toEqual([
+			{ register: 'kap', schema: 'kapaanvraag', id: 'abc-123' },
+		])
 		expect(body.options.format).toBe('pdf')
 		expect(opts.responseType).toBe('blob')
 		expect(download).toHaveBeenCalledTimes(1)
@@ -68,7 +87,10 @@ describe('useDocudeskDocument', () => {
 		const client = { post: vi.fn().mockResolvedValue(blobResponse()) }
 		const download = vi.fn()
 		const docs = useDocudeskDocument({ client, download })
-		await docs.generate({ ...attachment, filenameTemplate: 'bevestiging-{{dossiernummer}}.pdf' }, object)
+		await docs.generate(
+			{ ...attachment, filenameTemplate: 'bevestiging-{{dossiernummer}}.pdf' },
+			object,
+		)
 		const [body] = [client.post.mock.calls[0][1]]
 		expect(body.filename).toBe('bevestiging-2026-0042.pdf')
 	})
@@ -82,7 +104,9 @@ describe('useDocudeskDocument', () => {
 	})
 
 	it('maps a 403 to the no-access error code', async () => {
-		const client = { post: vi.fn().mockRejectedValue({ response: { status: 403 } }) }
+		const client = {
+			post: vi.fn().mockRejectedValue({ response: { status: 403 } }),
+		}
 		const docs = useDocudeskDocument({ client, download: vi.fn() })
 		const result = await docs.generate(attachment, object)
 		expect(result).toBe('no-access')
@@ -90,7 +114,9 @@ describe('useDocudeskDocument', () => {
 	})
 
 	it('maps other failures to generate-failed', async () => {
-		const client = { post: vi.fn().mockRejectedValue({ response: { status: 500 } }) }
+		const client = {
+			post: vi.fn().mockRejectedValue({ response: { status: 500 } }),
+		}
 		const docs = useDocudeskDocument({ client, download: vi.fn() })
 		const result = await docs.generate(attachment, object)
 		expect(result).toBe('generate-failed')
@@ -98,7 +124,14 @@ describe('useDocudeskDocument', () => {
 
 	it('guards against double-click: two rapid calls issue one request', async () => {
 		let resolve
-		const client = { post: vi.fn().mockImplementation(() => new Promise((r) => { resolve = r })) }
+		const client = {
+			post: vi.fn().mockImplementation(
+				() =>
+					new Promise((r) => {
+						resolve = r
+					}),
+			),
+		}
 		const docs = useDocudeskDocument({ client, download: vi.fn() })
 		const p1 = docs.generate(attachment, object)
 		const p2 = docs.generate(attachment, object)

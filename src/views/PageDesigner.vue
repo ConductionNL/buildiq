@@ -59,22 +59,22 @@
 			@close="blocksSidebarOpen = false">
 			<BlockLibraryPanel
 				:open="blocksSidebarOpen"
-				:target-schema-slugs="targetSchemaSlugs"
-				:target-widgets="(selectedPage && selectedPage.widgets) || []"
-				@insert-widgets="onInsertWidgets" />
+				:targetSchemaSlugs="targetSchemaSlugs"
+				:targetWidgets="(selectedPage && selectedPage.widgets) || []"
+				@insertWidgets="onInsertWidgets" />
 		</NcAppSidebar>
 
 		<div class="page-designer__panes">
 			<aside class="page-designer__left">
 				<PageListEditor
 					:pages="pages"
-					:selected-index="selectedIndex"
+					:selectedIndex="selectedIndex"
 					@update:pages="onPagesUpdate"
 					@select="selectPage" />
 				<MenuTreeEditor
 					:menu="menu"
 					@update:menu="onMenuUpdate"
-					@depth-violation="onDepthViolation" />
+					@depthViolation="onDepthViolation" />
 			</aside>
 
 			<section class="page-designer__centre">
@@ -82,27 +82,43 @@
 					<component
 						:is="subEditorFor(selectedPage.type)"
 						:config="selectedPage.config || {}"
-						:page-type="selectedPage.type"
-						:app-slug="slug"
+						:pageType="selectedPage.type"
+						:appSlug="slug"
 						:data-registers="applicationDataRegisters"
-						:parent-route="selectedPage.route || ''"
-						:title="t('openbuild', 'Unsupported page type: {type}', { type: selectedPage.type })"
-						:message="t('openbuild', 'No visual editor exists for this page type yet. Edit the raw config below; unknown keys are preserved.')"
-						:page-id="selectedPage.id || ''"
-						:runtime-external-forms="externalForms"
+						:parentRoute="selectedPage.route || ''"
+						:title="
+							t('openbuild', 'Unsupported page type: {type}', {
+								type: selectedPage.type,
+							})
+						"
+						:message="
+							t(
+								'openbuild',
+								'No visual editor exists for this page type yet. Edit the raw config below; unknown keys are preserved.',
+							)
+						"
+						:pageId="selectedPage.id || ''"
+						:runtimeExternalForms="externalForms"
 						@update:config="onConfigUpdate"
-						@update:runtime-external-forms="onExternalFormsUpdate" />
+						@update:runtimeExternalForms="onExternalFormsUpdate" />
 					<!-- component-blocks task 2.2: widget/section selection
 					     affordance feeding SaveBlockDialog. Operates on the
 					     page's uniform v2 widgets[] array. -->
 					<WidgetSelectionPanel
 						:widgets="selectedPage.widgets || []"
 						:application="{ slug }"
-						:existing-blocks="existingBlocks"
+						:existingBlocks="existingBlocks"
 						@saved="onBlockSaved" />
 				</div>
 				<div v-else class="page-designer__empty">
-					<p>{{ t('openbuild', 'Select a page on the left, or add one to start designing.') }}</p>
+					<p>
+						{{
+							t(
+								'openbuild',
+								'Select a page on the left, or add one to start designing.',
+							)
+						}}
+					</p>
 				</div>
 			</section>
 
@@ -114,16 +130,18 @@
 				     ever issued to OpenRegister from this instance. The v-else
 				     branch is the degraded fallback for environments whose
 				     @conduction/nextcloud-vue predates the overload. -->
-				<div v-if="previewAvailable && livePreviewProps" class="page-designer__preview">
+				<div
+					v-if="previewAvailable && livePreviewProps"
+					class="page-designer__preview">
 					<h4>{{ t('openbuild', 'Live preview') }}</h4>
 					<div class="page-designer__preview-surface">
 						<CnAppRoot
 							:key="livePreviewProps.key"
-							:app-id="livePreviewProps.appId"
+							:appId="livePreviewProps.appId"
 							:manifest="livePreviewProps.manifest"
 							:registry="previewRegistry"
-							:custom-components="previewFlatRegistry"
-							:page-types="previewPageTypes"
+							:customComponents="previewFlatRegistry"
+							:pageTypes="previewPageTypes"
 							:translate="translateForPreview"
 							:permissions="previewPermissions" />
 					</div>
@@ -131,7 +149,12 @@
 				<div v-else class="page-designer__preview-fallback">
 					<h4>{{ t('openbuild', 'Live preview') }}</h4>
 					<p class="page-designer__preview-message">
-						{{ t('openbuild', 'Live preview is not yet installed. Save and open the built app to preview your changes.') }}
+						{{
+							t(
+								'openbuild',
+								'Live preview is not yet installed. Save and open the built app to preview your changes.',
+							)
+						}}
 					</p>
 					<button
 						type="button"
@@ -143,11 +166,19 @@
 				</div>
 				<div class="page-designer__errors">
 					<h4>{{ t('openbuild', 'Validation') }}</h4>
-					<p v-if="depthError" class="page-designer__error-row" role="alert">
+					<p
+						v-if="depthError"
+						class="page-designer__error-row"
+						role="alert">
 						{{ t('openbuild', 'Menu depth is limited to two levels.') }}
 					</p>
-					<ul v-if="validatorErrors.length" class="page-designer__error-list">
-						<li v-for="(err, i) in validatorErrors" :key="i" class="page-designer__error-row">
+					<ul
+						v-if="validatorErrors.length"
+						class="page-designer__error-list">
+						<li
+							v-for="(err, i) in validatorErrors"
+							:key="i"
+							class="page-designer__error-row">
 							{{ err }}
 						</li>
 					</ul>
@@ -161,36 +192,40 @@
 </template>
 
 <script>
+import {
+	CnAppRoot,
+	defaultPageTypes,
+	mergeManifestDelta,
+} from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
 import { translate as ncT } from '@nextcloud/l10n'
+import { generateUrl } from '@nextcloud/router'
 import { NcAppSidebar } from '@nextcloud/vue'
-import { CnAppRoot, defaultPageTypes, mergeManifestDelta } from '@conduction/nextcloud-vue'
-import registry from '../registry.js'
-import PageListEditor from '../components/page-editor/PageListEditor.vue'
 import BlockLibraryPanel from '../components/page-editor/BlockLibraryPanel.vue'
-import WidgetSelectionPanel from '../components/page-editor/WidgetSelectionPanel.vue'
-import MenuTreeEditor from '../components/page-editor/MenuTreeEditor.vue'
-import IndexPageEditor from '../components/page-editor/IndexPageEditor.vue'
-import DetailPageEditor from '../components/page-editor/DetailPageEditor.vue'
-import DashboardPageEditor from '../components/page-editor/DashboardPageEditor.vue'
-import FormPageEditor from '../components/page-editor/FormPageEditor.vue'
-import LogsPageEditor from '../components/page-editor/LogsPageEditor.vue'
-import SettingsPageEditor from '../components/page-editor/SettingsPageEditor.vue'
 import ChatPageEditor from '../components/page-editor/ChatPageEditor.vue'
-import FilesPageEditor from '../components/page-editor/FilesPageEditor.vue'
 import CustomPageEditor from '../components/page-editor/CustomPageEditor.vue'
+import DashboardPageEditor from '../components/page-editor/DashboardPageEditor.vue'
+import DetailPageEditor from '../components/page-editor/DetailPageEditor.vue'
+import FilesPageEditor from '../components/page-editor/FilesPageEditor.vue'
+import FormPageEditor from '../components/page-editor/FormPageEditor.vue'
+import IndexPageEditor from '../components/page-editor/IndexPageEditor.vue'
+import LogsPageEditor from '../components/page-editor/LogsPageEditor.vue'
 import MapPageEditor from '../components/page-editor/MapPageEditor.vue'
+import MenuTreeEditor from '../components/page-editor/MenuTreeEditor.vue'
+import PageListEditor from '../components/page-editor/PageListEditor.vue'
 import RoadmapPageEditor from '../components/page-editor/RoadmapPageEditor.vue'
 import SearchPageEditor from '../components/page-editor/SearchPageEditor.vue'
-import WikiPageEditor from '../components/page-editor/WikiPageEditor.vue'
+import SettingsPageEditor from '../components/page-editor/SettingsPageEditor.vue'
 import StubPageEditor from '../components/page-editor/StubPageEditor.vue'
+import WidgetSelectionPanel from '../components/page-editor/WidgetSelectionPanel.vue'
+import WikiPageEditor from '../components/page-editor/WikiPageEditor.vue'
+import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 import { useLivePreview } from '../composables/useLivePreview.js'
 import { useManifestValidator } from '../composables/useManifestValidator.js'
-import { useSessionHistory } from '../composables/useSessionHistory.js'
-import { useApplicationVersion } from '../composables/useApplicationVersion.js'
-import { isEditableTarget } from '../utils/isEditableTarget.js'
 import { useRegisterPicker } from '../composables/useRegisterPicker.js'
+import { useSessionHistory } from '../composables/useSessionHistory.js'
+import registry from '../registry.js'
+import { isEditableTarget } from '../utils/isEditableTarget.js'
 
 // Mapping of page.type → sub-editor component, covering every canonical v2
 // page type that ships a renderer component (REQ-PEC-001). Adding a new
@@ -238,6 +273,7 @@ export default {
 		WikiPageEditor,
 		StubPageEditor,
 	},
+
 	/**
 	 * Observed behaviour of `provide` (retrofit annotation).
 	 *
@@ -258,15 +294,18 @@ export default {
 			},
 		}
 	},
+
 	props: {
 		manifest: {
 			type: Object,
 			default: () => ({ pages: [], menu: [] }),
 		},
+
 		slug: {
 			type: String,
 			default: '',
 		},
+
 		/**
 		 * Session-boundary key (REQ-BUR-004, design.md D3). Owned by the
 		 * host (`PageDesignerHost.vue`), derived from slug + version slug +
@@ -280,6 +319,7 @@ export default {
 			default: '',
 		},
 	},
+
 	emits: ['update:manifest', 'save-and-preview'],
 	/**
 	 * Observed behaviour of `setup` (retrofit annotation).
@@ -299,6 +339,7 @@ export default {
 		const history = useSessionHistory(props.manifest, { limit: 100 })
 		return { previewAvailable, previewProps, validator, history }
 	},
+
 	data() {
 		return {
 			selectedIndex: -1,
@@ -321,6 +362,7 @@ export default {
 			existingBlocks: [],
 		}
 	},
+
 	computed: {
 		/**
 		 * Observed behaviour of `pages` (retrofit annotation).
@@ -328,16 +370,22 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
 		pages() {
-			return Array.isArray(this.manifest && this.manifest.pages) ? this.manifest.pages : []
+			return Array.isArray(this.manifest && this.manifest.pages)
+				? this.manifest.pages
+				: []
 		},
+
 		/**
 		 * Observed behaviour of `menu` (retrofit annotation).
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
 		menu() {
-			return Array.isArray(this.manifest && this.manifest.menu) ? this.manifest.menu : []
+			return Array.isArray(this.manifest && this.manifest.menu)
+				? this.manifest.menu
+				: []
 		},
+
 		/**
 		 * `runtime.externalForms[]` (REQ-EFP-001/002) — read here so
 		 * FormPageEditor can filter to the selected page's entry without
@@ -347,10 +395,15 @@ export default {
 		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-001
 		 */
 		externalForms() {
-			return Array.isArray(this.manifest && this.manifest.runtime && this.manifest.runtime.externalForms)
+			return Array.isArray(
+				this.manifest
+					&& this.manifest.runtime
+					&& this.manifest.runtime.externalForms,
+			)
 				? this.manifest.runtime.externalForms
 				: []
 		},
+
 		/**
 		 * Observed behaviour of `selectedPage` (retrofit annotation).
 		 *
@@ -362,6 +415,7 @@ export default {
 			}
 			return this.pages[this.selectedIndex]
 		},
+
 		/**
 		 * Observed behaviour of `validatorErrors` (retrofit annotation).
 		 *
@@ -370,6 +424,7 @@ export default {
 		validatorErrors() {
 			return this.validator.errors.value || []
 		},
+
 		/**
 		 * Observed behaviour of `canSaveAndPreview` (retrofit annotation).
 		 *
@@ -378,6 +433,7 @@ export default {
 		canSaveAndPreview() {
 			return !!this.slug && this.validatorErrors.length === 0
 		},
+
 		/**
 		 * Observed behaviour of `canUndo` (retrofit annotation).
 		 *
@@ -386,6 +442,7 @@ export default {
 		canUndo() {
 			return !!(this.history && this.history.canUndo.value)
 		},
+
 		/**
 		 * Observed behaviour of `canRedo` (retrofit annotation).
 		 *
@@ -394,6 +451,7 @@ export default {
 		canRedo() {
 			return !!(this.history && this.history.canRedo.value)
 		},
+
 		/**
 		 * REQ-OBPD-008: prop bag for the sandboxed CnAppRoot preview mount —
 		 * `{ appId, manifest, key }` derived from the in-flight (unsaved)
@@ -413,6 +471,7 @@ export default {
 			}
 			return this.previewProps(this.slug, this.manifest)
 		},
+
 		/**
 		 * REQ-OBPD-008 / REQ-OBPD-007: the v2 kind-tagged registry the preview
 		 * sandbox resolves custom-page / slot-override components against —
@@ -427,6 +486,7 @@ export default {
 			// bundle shapes and Vue.extend() mutates component defs (_Ctor).
 			return { ...registry }
 		},
+
 		/**
 		 * Flattened `{ name: component }` map derived from the v2 registry,
 		 * mirroring App.vue's `flatRegistry` — CnPageRenderer's
@@ -440,15 +500,17 @@ export default {
 		previewFlatRegistry() {
 			const out = {}
 			for (const [name, entry] of Object.entries(this.previewRegistry || {})) {
-				const component = entry && typeof entry === 'object' && 'component' in entry
-					? entry.component
-					: entry
+				const component =
+					entry && typeof entry === 'object' && 'component' in entry
+						? entry.component
+						: entry
 				if (component) {
 					out[name] = component
 				}
 			}
 			return out
 		},
+
 		/**
 		 * The built-in page-type registry the preview sandbox dispatches
 		 * `page.type` against — the same `defaultPageTypes` App.vue passes.
@@ -459,6 +521,7 @@ export default {
 		previewPageTypes() {
 			return { ...defaultPageTypes }
 		},
+
 		/**
 		 * Permission flags handed to the preview's CnAppNav. Mirrors
 		 * App.vue's `permissions` computed.
@@ -470,6 +533,7 @@ export default {
 			return window.OC?.currentUser?.permissions ?? []
 		},
 	},
+
 	watch: {
 		manifest: {
 			deep: true,
@@ -494,6 +558,7 @@ export default {
 				}
 			},
 		},
+
 		/**
 		 * REQ-BUR-004: a session-key change (save / app-slug / version
 		 * switch, owned by the host) re-baselines the undo/redo history to
@@ -508,6 +573,7 @@ export default {
 			}
 		},
 	},
+
 	/**
 	 * Resolve the active Application's declared `dataRegisters` bindings
 	 * (design.md Decision 2) so the mounted sub-editor's register picker can
@@ -523,6 +589,7 @@ export default {
 			this.fetchBlockCaptureContext()
 		}
 	},
+
 	/**
 	 * Observed behaviour of `mounted` (retrofit annotation).
 	 *
@@ -536,26 +603,39 @@ export default {
 		// satisfying REQ-OBVR-008 bookmarkability).
 		// NOTE: no $router.replace() call here — that would strip ?_version=.
 		if (this.slug) {
-			const versionSlug = (this.$route && this.$route.query && this.$route.query._version) || undefined
-			const { applicationVersion, loading, error } = useApplicationVersion(this.slug, versionSlug)
+			const versionSlug =
+				(this.$route && this.$route.query && this.$route.query._version)
+				|| undefined
+			const { applicationVersion, loading, error } = useApplicationVersion(
+				this.slug,
+				versionSlug,
+			)
 			this.applicationVersion = applicationVersion.value
 			this.versionLoading = loading.value
-			const unwatch = this.$watch(() => applicationVersion.value, (v) => {
-				this.applicationVersion = v
-			})
-			const unwatchLoading = this.$watch(() => loading.value, (v) => {
-				this.versionLoading = v
-				if (!v) {
-					unwatch()
-					unwatchLoading()
-					this.versionError = error.value
-				}
-			})
+			const unwatch = this.$watch(
+				() => applicationVersion.value,
+				(v) => {
+					this.applicationVersion = v
+				},
+			)
+			const unwatchLoading = this.$watch(
+				() => loading.value,
+				(v) => {
+					this.versionLoading = v
+					if (!v) {
+						unwatch()
+						unwatchLoading()
+						this.versionError = error.value
+					}
+				},
+			)
 		}
 	},
+
 	beforeUnmount() {
 		document.removeEventListener('keydown', this.onKeydown)
 	},
+
 	methods: {
 		/**
 		 * Fetch the Application record for `this.slug` and store its
@@ -573,15 +653,25 @@ export default {
 		 */
 		async fetchApplicationDataRegisters() {
 			try {
-				const url = generateUrl('/apps/openregister/api/objects/openbuild/application')
-				const { data } = await axios.get(url, { params: { slug: this.slug, _limit: 1 } })
-				const apps = Array.isArray(data && data.results) ? data.results : (Array.isArray(data) ? data : [])
+				const url = generateUrl(
+					'/apps/openregister/api/objects/openbuild/application',
+				)
+				const { data } = await axios.get(url, {
+					params: { slug: this.slug, _limit: 1 },
+				})
+				const apps = Array.isArray(data && data.results)
+					? data.results
+					: Array.isArray(data)
+						? data
+						: []
 				const app = apps.find((a) => a && a.slug === this.slug) || null
-				this.applicationDataRegisters = (app && Array.isArray(app.dataRegisters)) ? app.dataRegisters : []
+				this.applicationDataRegisters =
+					app && Array.isArray(app.dataRegisters) ? app.dataRegisters : []
 			} catch (e) {
 				this.applicationDataRegisters = []
 			}
 		},
+
 		/**
 		 * Resolve the current app's own companion schema slugs (via the same
 		 * `useRegisterPicker` composable `openSaveAsTemplate` already uses)
@@ -596,20 +686,34 @@ export default {
 		 */
 		async fetchBlockCaptureContext() {
 			try {
-				const picker = useRegisterPicker({ appSlug: this.slug, dataRegisters: this.applicationDataRegisters })
-				const schemas = await picker.fetchSchemas(picker.resolveAppRegister())
-				this.targetSchemaSlugs = Array.isArray(schemas) ? schemas.map((s) => s && s.slug).filter(Boolean) : []
+				const picker = useRegisterPicker({
+					appSlug: this.slug,
+					dataRegisters: this.applicationDataRegisters,
+				})
+				const schemas = await picker.fetchSchemas(
+					picker.resolveAppRegister(),
+				)
+				this.targetSchemaSlugs = Array.isArray(schemas)
+					? schemas.map((s) => s && s.slug).filter(Boolean)
+					: []
 			} catch (e) {
 				this.targetSchemaSlugs = []
 			}
 			try {
-				const url = generateUrl('/apps/openregister/api/objects/openbuild/component-block')
+				const url = generateUrl(
+					'/apps/openregister/api/objects/openbuild/component-block',
+				)
 				const { data } = await axios.get(url)
-				this.existingBlocks = Array.isArray(data && data.results) ? data.results : (Array.isArray(data) ? data : [])
+				this.existingBlocks = Array.isArray(data && data.results)
+					? data.results
+					: Array.isArray(data)
+						? data
+						: []
 			} catch (e) {
 				this.existingBlocks = []
 			}
 		},
+
 		/**
 		 * Merge freshly-inserted widgetEntry objects (from
 		 * `BlockLibraryPanel`'s `insert-widgets` event, already deep-copied
@@ -623,13 +727,21 @@ export default {
 		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		onInsertWidgets(widgets) {
-			if (!this.selectedPage || !Array.isArray(widgets) || widgets.length === 0) {
+			if (
+				!this.selectedPage
+				|| !Array.isArray(widgets)
+				|| widgets.length === 0
+			) {
 				return
 			}
 			const delta = { pages: [{ id: this.selectedPage.id, widgets }] }
-			const { manifest: merged } = mergeManifestDelta(this.manifest || {}, delta)
+			const { manifest: merged } = mergeManifestDelta(
+				this.manifest || {},
+				delta,
+			)
 			this.emitManifest(merged)
 		},
+
 		/**
 		 * Refresh the block-capture context after a block is saved from the
 		 * widget-selection affordance, so the block library reflects it
@@ -641,6 +753,7 @@ export default {
 		onBlockSaved() {
 			this.fetchBlockCaptureContext()
 		},
+
 		/**
 		 * Observed behaviour of `subEditorFor` (retrofit annotation).
 		 *
@@ -654,6 +767,7 @@ export default {
 		subEditorFor(type) {
 			return SUB_EDITOR_MAP[type] || 'StubPageEditor'
 		},
+
 		/**
 		 * Observed behaviour of `selectPage` (retrofit annotation).
 		 *
@@ -666,6 +780,7 @@ export default {
 		selectPage(index) {
 			this.selectedIndex = index
 		},
+
 		/**
 		 * Observed behaviour of `emitManifest` (retrofit annotation).
 		 *
@@ -681,6 +796,7 @@ export default {
 		emitManifest(next) {
 			this.$emit('update:manifest', next)
 		},
+
 		/**
 		 * Observed behaviour of `onPagesUpdate` (retrofit annotation).
 		 *
@@ -696,6 +812,7 @@ export default {
 			const next = { ...(this.manifest || {}), pages }
 			this.emitManifest(next)
 		},
+
 		/**
 		 * Observed behaviour of `onMenuUpdate` (retrofit annotation).
 		 *
@@ -714,6 +831,7 @@ export default {
 			this.depthError = false
 			this.emitManifest(next)
 		},
+
 		/**
 		 * Observed behaviour of `onDepthViolation` (retrofit annotation).
 		 *
@@ -722,6 +840,7 @@ export default {
 		onDepthViolation() {
 			this.depthError = true
 		},
+
 		/**
 		 * Observed behaviour of `onConfigUpdate` (retrofit annotation).
 		 *
@@ -742,6 +861,7 @@ export default {
 			const next = { ...(this.manifest || {}), pages }
 			this.emitManifest(next)
 		},
+
 		/**
 		 * Persist an updated `runtime.externalForms[]` array from
 		 * FormPageEditor's ExternalFormAccessDialog (REQ-EFP-001). Deletes the
@@ -769,6 +889,7 @@ export default {
 			}
 			this.emitManifest(next)
 		},
+
 		/**
 		 * Observed behaviour of `saveAndPreview` (retrofit annotation).
 		 *
@@ -777,6 +898,7 @@ export default {
 		saveAndPreview() {
 			this.$emit('save-and-preview')
 		},
+
 		/**
 		 * REQ-OBPD-008: translate function handed to the sandboxed CnAppRoot
 		 * preview (mirrors App.vue's `translateForApp`). Closes over
@@ -790,6 +912,7 @@ export default {
 		translateForPreview(key) {
 			return ncT('openbuild', key)
 		},
+
 		// --- Undo / redo (OQ-1) -------------------------------------------
 		/**
 		 * Observed behaviour of `undo` (retrofit annotation).
@@ -805,6 +928,7 @@ export default {
 				this.emitManifest(prev)
 			}
 		},
+
 		/**
 		 * Observed behaviour of `redo` (retrofit annotation).
 		 *
@@ -819,6 +943,7 @@ export default {
 				this.emitManifest(next)
 			}
 		},
+
 		/**
 		 * REQ-BUR-003: document-level Undo/Redo shortcut handler with an
 		 * editable-target guard — chords are ignored while focus is inside
@@ -849,6 +974,7 @@ export default {
 				this.redo()
 			}
 		},
+
 		// --- Inline validator marks (task 5.5) ----------------------------
 		/**
 		 * Observed behaviour of `configPathPrefix` (retrofit annotation).
@@ -868,6 +994,7 @@ export default {
 			}
 			return `/pages/${this.selectedIndex}/config/${configKey}`
 		},
+
 		/**
 		 * Observed behaviour of `registerConfigField` (retrofit annotation).
 		 *
@@ -880,10 +1007,15 @@ export default {
 		 */
 		registerConfigField(configKey) {
 			const prefix = this.configPathPrefix(configKey)
-			if (prefix && this.validator && typeof this.validator.register === 'function') {
+			if (
+				prefix
+				&& this.validator
+				&& typeof this.validator.register === 'function'
+			) {
 				this.validator.register(prefix)
 			}
 		},
+
 		/**
 		 * Observed behaviour of `unregisterConfigField` (retrofit annotation).
 		 *
@@ -895,10 +1027,15 @@ export default {
 		 */
 		unregisterConfigField(configKey) {
 			const prefix = this.configPathPrefix(configKey)
-			if (prefix && this.validator && typeof this.validator.unregister === 'function') {
+			if (
+				prefix
+				&& this.validator
+				&& typeof this.validator.unregister === 'function'
+			) {
 				this.validator.unregister(prefix)
 			}
 		},
+
 		/**
 		 * Observed behaviour of `configErrorFor` (retrofit annotation).
 		 *

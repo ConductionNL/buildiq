@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: EUPL-1.2
 import { VTooltip } from 'floating-vue'
+
 import 'floating-vue/dist/style.css'
 
 /**

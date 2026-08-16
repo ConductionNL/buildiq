@@ -16,13 +16,15 @@ const NcButtonStub = {
 	name: 'NcButton',
 	props: ['type', 'disabled'],
 	emits: ['click'],
-	template: '<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
+	template:
+		'<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
 }
 
-const factory = (props) => mount(ConnectorFieldMapper, {
-	propsData: props,
-	stubs: { NcButton: NcButtonStub },
-})
+const factory = (props) =>
+	mount(ConnectorFieldMapper, {
+		propsData: props,
+		stubs: { NcButton: NcButtonStub },
+	})
 
 describe('ConnectorFieldMapper', () => {
 	// window.prompt is no longer used — the field name is collected by
@@ -35,7 +37,9 @@ describe('ConnectorFieldMapper', () => {
 		})
 		// VTU v2 `findAll` returns a plain Array, not a v1 WrapperArray — the
 		// `.wrappers` accessor is gone and reads as undefined.
-		const arrayBtn = wrapper.findAll('button').find((b) => b.text().includes('resultaten'))
+		const arrayBtn = wrapper
+			.findAll('button')
+			.find((b) => b.text().includes('resultaten'))
 		await arrayBtn.trigger('click')
 		expect(wrapper.emitted()['update:itemsPath'][0]).toEqual(['resultaten'])
 	})

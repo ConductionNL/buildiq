@@ -1,3 +1,4 @@
+import { validateManifest } from '@conduction/nextcloud-vue'
 // SPDX-License-Identifier: EUPL-1.2
 /**
  * useCopilot — Vue 2.7 composable owning the copilot state machine
@@ -10,9 +11,13 @@
  *
  * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
  */
-import { ref, computed } from 'vue'
-import { validateManifest } from '@conduction/nextcloud-vue'
-import { fetchCopilotHealth, requestPlan, executePlan, discardRun } from '../services/copilot.js'
+import { computed, ref } from 'vue'
+import {
+	discardRun,
+	executePlan,
+	fetchCopilotHealth,
+	requestPlan,
+} from '../services/copilot.js'
 
 /** @type {{available: boolean, reason?: string}|null} */
 let healthCache = null
@@ -46,10 +51,14 @@ function validatePredictedManifests(manifests) {
 			continue
 		}
 		try {
-			const outcome = validateManifest ? validateManifest(predicted) : { valid: true, errors: [] }
-			result.set(versionKey, outcome.valid ? [] : (outcome.errors || []))
+			const outcome = validateManifest
+				? validateManifest(predicted)
+				: { valid: true, errors: [] }
+			result.set(versionKey, outcome.valid ? [] : outcome.errors || [])
 		} catch (e) {
-			result.set(versionKey, [`validator threw: ${e && e.message ? e.message : e}`])
+			result.set(versionKey, [
+				`validator threw: ${e && e.message ? e.message : e}`,
+			])
 		}
 	}
 	return result
@@ -132,7 +141,9 @@ export function useCopilot() {
 		try {
 			const result = await requestPlan({ brief, appSlug, agentId })
 			plan.value = result
-			manifestErrors.value = validatePredictedManifests(result && result.manifests)
+			manifestErrors.value = validatePredictedManifests(
+				result && result.manifests,
+			)
 			state.value = 'review'
 		} catch (err) {
 			errorMessage.value = (err && err.message) || 'Failed to generate a plan.'
@@ -165,7 +176,8 @@ export function useCopilot() {
 			executeResult.value = result
 			state.value = 'done'
 		} catch (err) {
-			errorMessage.value = (err && err.message) || 'Failed to execute the plan.'
+			errorMessage.value =
+				(err && err.message) || 'Failed to execute the plan.'
 			state.value = 'error'
 		}
 	}
@@ -184,7 +196,11 @@ export function useCopilot() {
 	 */
 	function discard(agentId) {
 		if (agentId && plan.value) {
-			discardRun({ agentId, prompt: lastPrompt.value, plan: { summary: plan.value.summary, steps: plan.value.steps } })
+			discardRun({
+				agentId,
+				prompt: lastPrompt.value,
+				plan: { summary: plan.value.summary, steps: plan.value.steps },
+			})
 		}
 		state.value = 'idle'
 		plan.value = null

@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuild\Mcp;
 
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
@@ -233,6 +234,7 @@ class OpenBuildToolProvider implements IMcpToolProvider {
 		private readonly IGroupManager $groupManager,
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly ?PermissionResolver $permissionResolver = null,
 		private readonly ?AuditTrailMapper $auditTrailMapper = null,
 	) {
@@ -323,6 +325,11 @@ class OpenBuildToolProvider implements IMcpToolProvider {
 			$this->container,
 			$this->logger,
 			$this->groupManager,
+			// AbstractToolHandler takes the object service as parameter #5.
+			// Omitting it here shifted $permissionResolver onto it, and that
+			// argument is nullable -- so every handler was constructed with null
+			// where the service belongs.
+			$this->objectService,
 			$this->permissionResolver,
 			$this->auditTrailMapper,
 		);

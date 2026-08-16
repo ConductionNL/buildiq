@@ -20,7 +20,7 @@ const DONT_CARE = ['', '-', '*', 'any']
  * @return {boolean} True when the cell is a recognised condition shape.
  */
 export function isCellConditionValid(raw) {
-	const value = (raw === undefined || raw === null) ? '' : String(raw).trim()
+	const value = raw === undefined || raw === null ? '' : String(raw).trim()
 
 	if (DONT_CARE.includes(value.toLowerCase())) {
 		return true

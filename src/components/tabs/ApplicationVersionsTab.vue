@@ -15,11 +15,13 @@
 		</p>
 		<VersionHistory
 			v-if="obAppUuid"
-			:app-slug="(obApp && obApp.slug) || ''"
-			:application-uuid="obAppUuid"
-			:current-version-uuid="(obApp && (obApp.productionVersion || obApp.currentVersion)) || ''"
-			:can-edit="canEdit"
-			:can-release="canRelease"
+			:appSlug="(obApp && obApp.slug) || ''"
+			:applicationUuid="obAppUuid"
+			:currentVersionUuid="
+				(obApp && (obApp.productionVersion || obApp.currentVersion)) || ''
+			"
+			:canEdit="canEdit"
+			:canRelease="canRelease"
 			@rollback="onRollback"
 			@released="onReleased" />
 		<p v-if="rollbackError" class="ob-versions-tab__error">
@@ -41,6 +43,7 @@ export default {
 	data() {
 		return { rollbackError: '' }
 	},
+
 	computed: {
 		/**
 		 * Whether the caller may edit versions (owner / editor role).
@@ -50,6 +53,7 @@ export default {
 		canEdit() {
 			return this.obAppRole === 'owner' || this.obAppRole === 'editor'
 		},
+
 		/**
 		 * Whether the caller may release a draft to production (owner only).
 		 *
@@ -59,6 +63,7 @@ export default {
 			return this.obAppRole === 'owner'
 		},
 	},
+
 	methods: {
 		/**
 		 * Refresh the application after a release so the production marker moves.
@@ -68,6 +73,7 @@ export default {
 		onReleased() {
 			this.obLoadApp()
 		},
+
 		/**
 		 * Restore a snapshot's manifest onto the application's ACTIVE VERSION.
 		 *
@@ -113,7 +119,9 @@ export default {
 				// Note the endpoint's asymmetry: GET returns the manifest bare,
 				// PUT expects it wrapped in `{ manifest }`.
 				await axios.put(
-					generateUrl(`/apps/openbuild/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`),
+					generateUrl(
+						`/apps/openbuild/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`,
+					),
 					{ manifest: version.manifest },
 				)
 				// `status` IS a real property, so this one always worked.

@@ -14,7 +14,12 @@
 			{{ t('openbuild', 'Review and create') }}
 		</h3>
 		<p class="wizard-step4__description">
-			{{ t('openbuild', 'Review the settings below. Clicking Create will provision your app, all version registers, and seed them with the default schema.') }}
+			{{
+				t(
+					'openbuild',
+					'Review the settings below. Clicking Create will provision your app, all version registers, and seed them with the default schema.',
+				)
+			}}
 		</p>
 
 		<dl class="wizard-step4__summary">
@@ -24,7 +29,9 @@
 			</div>
 			<div class="wizard-step4__row">
 				<dt>{{ t('openbuild', 'Slug') }}</dt>
-				<dd><code>{{ payload.slug || '—' }}</code></dd>
+				<dd>
+					<code>{{ payload.slug || '—' }}</code>
+				</dd>
 			</div>
 			<div v-if="payload.description" class="wizard-step4__row">
 				<dt>{{ t('openbuild', 'Description') }}</dt>
@@ -56,7 +63,9 @@
 					<span class="wizard-step4__icon-img" v-html="lightIconSvg" />
 					<figcaption>{{ t('openbuild', 'Light') }}</figcaption>
 				</figure>
-				<figure v-if="darkIconSvg" class="wizard-step4__icon-preview wizard-step4__icon-preview--dark">
+				<figure
+					v-if="darkIconSvg"
+					class="wizard-step4__icon-preview wizard-step4__icon-preview--dark">
 					<!-- eslint-disable-next-line vue/no-v-html -->
 					<span class="wizard-step4__icon-img" v-html="darkIconSvg" />
 					<figcaption>{{ t('openbuild', 'Dark') }}</figcaption>
@@ -99,7 +108,7 @@ export default {
 		 */
 		chainDisplay() {
 			if (this.versions.length === 0) return '—'
-			return this.versions.map(v => v.slug || v.name || '?').join(' → ')
+			return this.versions.map((v) => v.slug || v.name || '?').join(' → ')
 		},
 
 		/**

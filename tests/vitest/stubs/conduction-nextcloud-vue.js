@@ -31,7 +31,11 @@ import { h } from 'vue'
 const stub = (name) => ({
 	name,
 	render() {
-		return h('div', { class: `${name.toLowerCase()}-stub` }, this.$slots?.default?.())
+		return h(
+			'div',
+			{ class: `${name.toLowerCase()}-stub` },
+			this.$slots?.default?.(),
+		)
 	},
 })
 
@@ -73,7 +77,15 @@ export const CnAppNav = stub('CnAppNav')
 export const CnPageRenderer = { name: 'CnPageRenderer', render: () => h('div') }
 export const CnCard = {
 	name: 'CnCard',
-	props: ['title', 'description', 'titleTooltip', 'icon', 'iconSize', 'labels', 'stats'],
+	props: [
+		'title',
+		'description',
+		'titleTooltip',
+		'icon',
+		'iconSize',
+		'labels',
+		'stats',
+	],
 	render() {
 		return h('div', { class: 'cn-card-stub' }, [
 			h('h3', this.title),

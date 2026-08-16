@@ -52,19 +52,46 @@ const APP_SLUG = `e2e-copilot-lib-${Date.now().toString(36)}`
 const stubbedPlan = (slug: string) => ({
 	summary: 'A tool library where members can borrow and return tools.',
 	steps: [
-		{ tool: 'openbuild.createApp', arguments: { slug, name: 'E2E Copilot Tool Library', preset: 'dev-prod' } },
-		{ tool: 'openbuild.upsertPage', arguments: { appSlug: slug, pageId: 'home', title: 'Home', type: 'index', route: '/' } },
+		{
+			tool: 'openbuild.createApp',
+			arguments: {
+				slug,
+				name: 'E2E Copilot Tool Library',
+				preset: 'dev-prod',
+			},
+		},
+		{
+			tool: 'openbuild.upsertPage',
+			arguments: {
+				appSlug: slug,
+				pageId: 'home',
+				title: 'Home',
+				type: 'index',
+				route: '/',
+			},
+		},
 	],
 	manifests: {
 		[`${slug}@development`]: {
 			current: { version: '1.0.0', menu: [], pages: [] },
-			predicted: { version: '1.0.0', menu: [], pages: [{ id: 'home', route: '/', type: 'index', title: 'Home', config: {} }] },
+			predicted: {
+				version: '1.0.0',
+				menu: [],
+				pages: [
+					{
+						id: 'home',
+						route: '/',
+						type: 'index',
+						title: 'Home',
+						config: {},
+					},
+				],
+			},
 		},
 	},
 })
 
 test.describe('Wizard "Generate with AI" (spec: ai-copilot)', () => {
-
 	// The confirm path runs a REAL createApp + upsertPage through the MCP
 	// handlers and then waits for the SPA to route to the new app, which
 	// exceeds the 30s project default on a loaded dev box. Wall clock only —
@@ -72,10 +99,18 @@ test.describe('Wizard "Generate with AI" (spec: ai-copilot)', () => {
 	test.describe.configure({ timeout: 90_000 })
 
 	// @e2e ai-copilot::generate-with-ai-creates-the-described-app-after-confirmation
-	test('Generate with AI creates the described app after confirmation (spec: ai-copilot)', async ({ page }) => {
+	test('Generate with AI creates the described app after confirmation (spec: ai-copilot)', async ({
+		page,
+	}) => {
 		// Health gates `copilotAvailable`, probed from mounted() — route it
 		// before the first navigation.
-		await page.route(HEALTH_URL, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ available: true }) }))
+		await page.route(HEALTH_URL, (route) =>
+			route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify({ available: true }),
+			}),
+		)
 		await page.goto('/apps/openbuild/')
 		await dismissWalkthrough(page)
 		await dismissSupportDialog(page)
@@ -85,38 +120,73 @@ test.describe('Wizard "Generate with AI" (spec: ai-copilot)', () => {
 		// networkidle never resolves and eats the whole 90s describe timeout
 		// (live-verified: still hung with the walkthrough dismissed). Wait for
 		// the Dashboard's own "Create app" entry point instead.
-		await expect(page.getByRole('button', { name: /create app|add application/i }).first(), 'Dashboard must render its create-app entry point').toBeVisible({ timeout: 20_000 })
+		await expect(
+			page
+				.getByRole('button', { name: /create app|add application/i })
+				.first(),
+			'Dashboard must render its create-app entry point',
+		).toBeVisible({ timeout: 20_000 })
 
-		await page.route(PLAN_URL, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(stubbedPlan(APP_SLUG)) }))
+		await page.route(PLAN_URL, (route) =>
+			route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify(stubbedPlan(APP_SLUG)),
+			}),
+		)
 
 		// Surface a backend rejection by name rather than as a URL timeout.
-		const executeResponse = page.waitForResponse((r) => r.url().includes('/api/copilot/execute'))
+		const executeResponse = page.waitForResponse((r) =>
+			r.url().includes('/api/copilot/execute'),
+		)
 
-		await page.getByRole('button', { name: /create app|add application/i }).first().click()
-		await page.waitForSelector('[data-testid="copilot-generate-button"]', { timeout: 10_000 })
+		await page
+			.getByRole('button', { name: /create app|add application/i })
+			.first()
+			.click()
+		await page.waitForSelector('[data-testid="copilot-generate-button"]', {
+			timeout: 10_000,
+		})
 		await page.locator('[data-testid="copilot-generate-button"]').click()
 
-		await page.locator('[data-testid="copilot-brief-input"] textarea, [data-testid="copilot-brief-input"]').fill(
-			'A tool library where members can borrow and return tools',
-		)
+		await page
+			.locator(
+				'[data-testid="copilot-brief-input"] textarea, [data-testid="copilot-brief-input"]',
+			)
+			.fill('A tool library where members can borrow and return tools')
 		await page.getByRole('button', { name: /^generate$/i }).click()
 
 		const review = page.locator('[data-testid="copilot-plan-review"]')
-		await expect(review, 'plan review must render').toBeVisible({ timeout: 10_000 })
-		await expect(review).toContainText('A tool library where members can borrow and return tools.')
+		await expect(review, 'plan review must render').toBeVisible({
+			timeout: 10_000,
+		})
+		await expect(review).toContainText(
+			'A tool library where members can borrow and return tools.',
+		)
 
 		await page.locator('[data-testid="copilot-confirm"]').click()
 
 		const res = await executeResponse
-		expect(res.status(), `execute must succeed — body: ${await res.text()}`).toBe(200)
+		expect(
+			res.status(),
+			`execute must succeed — body: ${await res.text()}`,
+		).toBe(200)
 
 		// On success the wizard closes and the browser navigates to the new app.
 		await expect(page).toHaveURL(new RegExp(APP_SLUG), { timeout: 15_000 })
 	})
 
 	// @e2e ai-copilot::cancelling-the-review-applies-nothing
-	test('Cancelling the review applies nothing (spec: ai-copilot)', async ({ page }) => {
-		await page.route(HEALTH_URL, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ available: true }) }))
+	test('Cancelling the review applies nothing (spec: ai-copilot)', async ({
+		page,
+	}) => {
+		await page.route(HEALTH_URL, (route) =>
+			route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify({ available: true }),
+			}),
+		)
 		await page.goto('/apps/openbuild/')
 		await dismissWalkthrough(page)
 		await dismissSupportDialog(page)
@@ -126,11 +196,22 @@ test.describe('Wizard "Generate with AI" (spec: ai-copilot)', () => {
 		// networkidle never resolves and eats the whole 90s describe timeout
 		// (live-verified: still hung with the walkthrough dismissed). Wait for
 		// the Dashboard's own "Create app" entry point instead.
-		await expect(page.getByRole('button', { name: /create app|add application/i }).first(), 'Dashboard must render its create-app entry point').toBeVisible({ timeout: 20_000 })
+		await expect(
+			page
+				.getByRole('button', { name: /create app|add application/i })
+				.first(),
+			'Dashboard must render its create-app entry point',
+		).toBeVisible({ timeout: 20_000 })
 
 		// A distinct slug: this test must never create an app, so if the guard
 		// regresses the stray Application is unambiguously traceable here.
-		await page.route(PLAN_URL, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(stubbedPlan(`${APP_SLUG}-cancel`)) }))
+		await page.route(PLAN_URL, (route) =>
+			route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify(stubbedPlan(`${APP_SLUG}-cancel`)),
+			}),
+		)
 
 		let executeCalled = false
 		await page.route('**/apps/openbuild/api/copilot/execute', (route) => {
@@ -138,27 +219,47 @@ test.describe('Wizard "Generate with AI" (spec: ai-copilot)', () => {
 			return route.continue()
 		})
 
-		await page.getByRole('button', { name: /create app|add application/i }).first().click()
-		await page.waitForSelector('[data-testid="copilot-generate-button"]', { timeout: 10_000 })
+		await page
+			.getByRole('button', { name: /create app|add application/i })
+			.first()
+			.click()
+		await page.waitForSelector('[data-testid="copilot-generate-button"]', {
+			timeout: 10_000,
+		})
 		await page.locator('[data-testid="copilot-generate-button"]').click()
-		await page.locator('[data-testid="copilot-brief-input"] textarea, [data-testid="copilot-brief-input"]').fill('A tool library')
+		await page
+			.locator(
+				'[data-testid="copilot-brief-input"] textarea, [data-testid="copilot-brief-input"]',
+			)
+			.fill('A tool library')
 		await page.getByRole('button', { name: /^generate$/i }).click()
-		await expect(page.locator('[data-testid="copilot-plan-review"]')).toBeVisible({ timeout: 10_000 })
+		await expect(
+			page.locator('[data-testid="copilot-plan-review"]'),
+		).toBeVisible({ timeout: 10_000 })
 
 		await page.locator('[data-testid="copilot-cancel"]').click()
 
-		expect(executeCalled, 'execute must never be called after Cancel').toBe(false)
+		expect(executeCalled, 'execute must never be called after Cancel').toBe(
+			false,
+		)
 	})
 
 	// @e2e ai-copilot::the-button-is-absent-without-a-provider
-	test('The button is absent without a provider (spec: ai-copilot)', async ({ page }) => {
+	test('The button is absent without a provider (spec: ai-copilot)', async ({
+		page,
+	}) => {
 		// The deliberate 503 side of the health gate: with no provider the
 		// entry point must not render at all.
-		await page.route(HEALTH_URL, (route) => route.fulfill({
-			status: 503,
-			contentType: 'application/json',
-			body: JSON.stringify({ status: 'unavailable', reason: 'no_provider' }),
-		}))
+		await page.route(HEALTH_URL, (route) =>
+			route.fulfill({
+				status: 503,
+				contentType: 'application/json',
+				body: JSON.stringify({
+					status: 'unavailable',
+					reason: 'no_provider',
+				}),
+			}),
+		)
 		await page.goto('/apps/openbuild/')
 		await dismissWalkthrough(page)
 		await dismissSupportDialog(page)
@@ -168,11 +269,24 @@ test.describe('Wizard "Generate with AI" (spec: ai-copilot)', () => {
 		// networkidle never resolves and eats the whole 90s describe timeout
 		// (live-verified: still hung with the walkthrough dismissed). Wait for
 		// the Dashboard's own "Create app" entry point instead.
-		await expect(page.getByRole('button', { name: /create app|add application/i }).first(), 'Dashboard must render its create-app entry point').toBeVisible({ timeout: 20_000 })
+		await expect(
+			page
+				.getByRole('button', { name: /create app|add application/i })
+				.first(),
+			'Dashboard must render its create-app entry point',
+		).toBeVisible({ timeout: 20_000 })
 
-		await page.getByRole('button', { name: /create app|add application/i }).first().click()
-		await page.waitForSelector('.wizard-step1, [data-testid="copilot-brief-input"], body', { timeout: 10_000 })
+		await page
+			.getByRole('button', { name: /create app|add application/i })
+			.first()
+			.click()
+		await page.waitForSelector(
+			'.wizard-step1, [data-testid="copilot-brief-input"], body',
+			{ timeout: 10_000 },
+		)
 
-		await expect(page.locator('[data-testid="copilot-generate-button"]')).toHaveCount(0)
+		await expect(
+			page.locator('[data-testid="copilot-generate-button"]'),
+		).toHaveCount(0)
 	})
 })

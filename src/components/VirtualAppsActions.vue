@@ -16,20 +16,21 @@
   -->
 <template>
 	<div class="ob-va-actions">
-		<div class="ob-va-actions__filter" role="group" :aria-label="t('openbuild', 'Filter apps by type')">
+		<div
+			class="ob-va-actions__filter"
+			role="group"
+			:aria-label="t('openbuild', 'Filter apps by type')">
 			<NcButton
 				v-for="opt in filterOptions"
 				:key="opt.value"
-				:type="activeFilter === opt.value ? 'secondary' : 'tertiary'"
+				:variant="activeFilter === opt.value ? 'secondary' : 'tertiary'"
 				:pressed="activeFilter === opt.value"
 				@click="setFilter(opt.value)">
 				{{ opt.label }}
 			</NcButton>
 		</div>
 
-		<NcButton
-			type="primary"
-			@click="showWizard = true">
+		<NcButton variant="primary" @click="showWizard = true">
 			{{ t('openbuild', 'Add app') }}
 		</NcButton>
 
@@ -71,6 +72,7 @@ export default {
 				{ value: 'hybrid', label: t('openbuild', 'Hybrid') },
 			]
 		},
+
 		/**
 		 * The active filter, read from the `?filter=` URL query param. Defaults
 		 * to 'all' when absent or unrecognised.
@@ -79,7 +81,8 @@ export default {
 		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
 		 */
 		activeFilter() {
-			const filter = this.$route && this.$route.query ? this.$route.query.filter : null
+			const filter =
+				this.$route && this.$route.query ? this.$route.query.filter : null
 			return ['virtual', 'hybrid'].includes(filter) ? filter : 'all'
 		},
 	},
@@ -109,6 +112,7 @@ export default {
 				this.$router.replace({ query }).catch(() => {})
 			}
 		},
+
 		/**
 		 * Observed behaviour of `onWizardCreated` (retrofit annotation).
 		 *

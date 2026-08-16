@@ -3,7 +3,7 @@
 	<section class="export-jobs">
 		<header class="export-jobs__header">
 			<h2>{{ t('openbuild', 'Export application') }}</h2>
-			<NcButton v-if="applicationSlug" type="primary" @click="openDialog">
+			<NcButton v-if="applicationSlug" variant="primary" @click="openDialog">
 				{{ t('openbuild', 'Start export') }}
 			</NcButton>
 		</header>
@@ -23,7 +23,9 @@
 					<!-- Actions column: no visible caption, but it is still a column
 					     header, so it keeps `scope="col"` and an sr-only name. -->
 					<th scope="col">
-						<span class="hidden-visually">{{ t('openbuild', 'Actions') }}</span>
+						<span class="hidden-visually">{{
+							t('openbuild', 'Actions')
+						}}</span>
 					</th>
 				</tr>
 			</thead>
@@ -34,22 +36,34 @@
 				  makes every key identical and lets Vue reuse the wrong <tr>
 				  as statuses change under polling.
 				-->
-				<tr v-for="(job, i) in jobs" :key="(job['@self'] && job['@self'].id) || i">
+				<tr
+					v-for="(job, i) in jobs"
+					:key="(job['@self'] && job['@self'].id) || i">
 					<td>{{ job.applicationVersion }}</td>
 					<td>{{ job.target }}</td>
 					<td>{{ statusLabel(job.status) }}</td>
 					<td>
 						<NcButton
-							v-if="job.status === 'succeeded' && job.target === 'zip' && job.downloadUrl"
+							v-if="
+								job.status === 'succeeded'
+								&& job.target === 'zip'
+								&& job.downloadUrl
+							"
 							:href="job.downloadUrl">
 							{{ t('openbuild', 'Download ZIP') }}
 						</NcButton>
 						<NcButton
-							v-else-if="job.status === 'succeeded' && job.target === 'github' && job.githubPullRequestUrl"
+							v-else-if="
+								job.status === 'succeeded'
+								&& job.target === 'github'
+								&& job.githubPullRequestUrl
+							"
 							:href="job.githubPullRequestUrl">
 							{{ t('openbuild', 'View pull request') }}
 						</NcButton>
-						<span v-else-if="job.status === 'failed'" class="export-jobs__error">
+						<span
+							v-else-if="job.status === 'failed'"
+							class="export-jobs__error">
 							{{ job.errorMessage }}
 						</span>
 					</td>
@@ -62,15 +76,15 @@
 
 		<ExportDialog
 			v-if="showDialog"
-			:application-slug="applicationSlug"
+			:applicationSlug="applicationSlug"
 			@close="showDialog = false"
 			@queued="onQueued" />
 	</section>
 </template>
 
 <script>
-import { NcButton } from '@nextcloud/vue'
 import { generateUrl } from '@nextcloud/router'
+import { NcButton } from '@nextcloud/vue'
 import ExportDialog from '../dialogs/ExportDialog.vue'
 
 export default {
@@ -79,18 +93,21 @@ export default {
 		NcButton,
 		ExportDialog,
 	},
+
 	props: {
 		/** Slug — the key the export SUBMIT endpoint takes. */
 		applicationSlug: {
 			type: String,
 			required: true,
 		},
+
 		/** Object id — the key stored jobs are actually filterable by. */
 		applicationUuid: {
 			type: String,
 			default: '',
 		},
 	},
+
 	data() {
 		return {
 			jobs: [],
@@ -98,6 +115,7 @@ export default {
 			poller: null,
 		}
 	},
+
 	/**
 	 * Observed behaviour of `mounted` (retrofit annotation).
 	 *
@@ -107,6 +125,7 @@ export default {
 		this.fetchJobs()
 		this.poller = setInterval(this.fetchJobs, 2000)
 	},
+
 	/**
 	 * Observed behaviour of `beforeDestroy` (retrofit annotation).
 	 *
@@ -117,6 +136,7 @@ export default {
 			clearInterval(this.poller)
 		}
 	},
+
 	methods: {
 		/**
 		 * Observed behaviour of `openDialog` (retrofit annotation).
@@ -126,6 +146,7 @@ export default {
 		openDialog() {
 			this.showDialog = true
 		},
+
 		/**
 		 * Observed behaviour of `onQueued` (retrofit annotation).
 		 *
@@ -134,6 +155,7 @@ export default {
 		onQueued() {
 			this.fetchJobs()
 		},
+
 		/**
 		 * Observed behaviour of `fetchJobs` (retrofit annotation).
 		 *
@@ -164,7 +186,12 @@ export default {
 				//
 				// `applicationSlug` is still the right key for the SUBMIT endpoint
 				// (/api/applications/{slug}/exports), so both props are kept.
-				const url = generateUrl('/apps/openregister/api/objects/openbuild/export-job') + '?applicationUuid=' + encodeURIComponent(this.applicationUuid)
+				const url =
+					generateUrl(
+						'/apps/openregister/api/objects/openbuild/export-job',
+					)
+					+ '?applicationUuid='
+					+ encodeURIComponent(this.applicationUuid)
 				const response = await fetch(url)
 				if (!response.ok) {
 					return
@@ -175,6 +202,7 @@ export default {
 				// Silent fail; polling will retry.
 			}
 		},
+
 		/**
 		 * Observed behaviour of `statusLabel` (retrofit annotation).
 		 *

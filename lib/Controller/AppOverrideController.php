@@ -209,7 +209,7 @@ class AppOverrideController extends Controller {
 		}
 
 		try {
-			$record = $this->appOverrideService->getUserDelta(appId: $appId, uid: (string)$user->getUID());
+			$record = $this->appOverrideService->getUserDelta(appId: $appId, uid: $user->getUID());
 		} catch (Throwable $e) {
 			$this->logger->error(
 				'OpenBuild: user-delta get failed for appId ' . $appId . ': ' . $e->getMessage(),

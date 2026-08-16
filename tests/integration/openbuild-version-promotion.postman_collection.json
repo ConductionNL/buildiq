@@ -14,6 +14,7 @@
 	},
 	"variable": [
 		{ "key": "base_url",       "value": "http://localhost:8080", "type": "string" },
+		{ "key": "noAuthBase",     "value": "http://127.0.0.1:8080", "type": "string" },
 		{ "key": "admin_user",     "value": "admin",                 "type": "string" },
 		{ "key": "admin_password", "value": "admin",                 "type": "string" },
 		{ "key": "app_uuid",       "value": "",                      "type": "string" },
@@ -150,7 +151,7 @@
 							"mode": "raw",
 							"raw": "{ \"strategy\": \"start-with-source-data\" }"
 						},
-						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/00000000-0000-0000-0000-000000000001/versions/00000000-0000-0000-0000-000000000002/promote"
+						"url": "{{noAuthBase}}/index.php/apps/openbuild/api/applications/00000000-0000-0000-0000-000000000001/versions/00000000-0000-0000-0000-000000000002/promote"
 					},
 					"event": [
 						{
@@ -158,8 +159,13 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('unauthenticated promote returns 401 or 403', function () {",
-									"    pm.expect([401, 403]).to.include(pm.response.code);",
+									"// {{noAuthBase}} — `auth: noauth` drops the Authorization header but",
+									"// NOT the session cookie held for {{base_url}}, so the probe stayed",
+									"// logged in and Nextcloud answered 412 (CSRF) instead of 401.",
+									"pm.test('unauthenticated promote returns 401', function () {",
+									"    pm.expect(pm.response.code, pm.response.code === 412",
+									"        ? 'got 412 (CSRF) — this probe carried a session cookie, so it was NOT anonymous; it must use {{noAuthBase}}'",
+									"        : 'an anonymous promote must be refused with 401').to.eql(401);",
 									"});"
 								]
 							}

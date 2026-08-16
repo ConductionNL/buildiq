@@ -56,26 +56,38 @@ webpackConfig.entry = {
 // of the resolved node_modules package, producing wrong/broken builds.
 const localLib = path.resolve(__dirname, '../nextcloud-vue/src')
 const localLibPkg = path.resolve(__dirname, '../nextcloud-vue/package.json')
-let useLocalLib = process.env.USE_LOCAL_LIB !== 'false' && fs.existsSync(localLib)
-if (useLocalLib && fs.existsSync(localLibPkg)) {
+// USE_LOCAL_LIB is opt-IN (ADR-090). Building against a developer's working
+// checkout is the wrong default for a build that can ship.
+let useLocalLib = process.env.USE_LOCAL_LIB === 'true' && fs.existsSync(localLib)
+if (useLocalLib) {
+	let localVersion = 'unreadable'
+	let satisfied = false
 	try {
-		// semver is an optional transitive dep — the try/catch degrades
-		// gracefully when it is absent, so it is intentionally not declared
-		// as a direct dependency of this app.
+		// semver is an optional transitive dep, so the require can fail.
 		// eslint-disable-next-line n/no-extraneous-require
 		const semver = require('semver')
-		const required = require('./package.json').dependencies['@conduction/nextcloud-vue']
-		const localVersion = require(localLibPkg).version
-		if (!semver.satisfies(localVersion, required, { includePrerelease: true })) {
-			// eslint-disable-next-line no-console
-			console.warn(
-				`[webpack] Ignoring local ../nextcloud-vue (v${localVersion}); it does not satisfy `
-				+ `the required range "${required}". Building against node_modules instead.`,
-			)
-			useLocalLib = false
-		}
+		const required =
+			require('./package.json').dependencies['@conduction/nextcloud-vue']
+		localVersion = require(localLibPkg).version
+		satisfied = semver.satisfies(localVersion, required, {
+			includePrerelease: true,
+		})
 	} catch (e) {
-		// semver unavailable or package read failed — keep the existsSync default.
+		// Fail CLOSED. This previously kept the existsSync default, so an absent
+		// semver silently left the sibling ENABLED — the one case the check exists
+		// for is the case it stopped covering. A guard that degrades to "allow" is
+		// not a guard.
+		satisfied = false
+	}
+
+	if (!satisfied) {
+		// eslint-disable-next-line no-console
+		console.warn(
+			`[webpack] Ignoring local ../nextcloud-vue (v${localVersion}); it does not `
+				+ "satisfy this app's declared @conduction/nextcloud-vue range. "
+				+ 'Building against node_modules instead.',
+		)
+		useLocalLib = false
 	}
 }
 
@@ -118,7 +130,9 @@ webpackConfig.module = {
 webpackConfig.plugins = [
 	new VueLoaderPlugin(),
 	new webpack.DefinePlugin({ appName: JSON.stringify(appId) }),
-	new webpack.DefinePlugin({ appVersion: JSON.stringify(process.env.npm_package_version) }),
+	new webpack.DefinePlugin({
+		appVersion: JSON.stringify(process.env.npm_package_version),
+	}),
 ]
 
 // Force @nextcloud/dialogs to resolve from this app's node_modules,
@@ -128,7 +142,10 @@ webpackConfig.plugins = [
 // package to its DIRECTORY, so '@nextcloud/dialogs/style.css' (imported by
 // nextcloud-vue's useAppInstaller) would resolve to a non-existent root style.css.
 // dialogs v6 ships the stylesheet at dist/style.css behind its "exports" map.
-webpackConfig.resolve.alias['@nextcloud/dialogs/style.css$'] = path.resolve(__dirname, 'node_modules/@nextcloud/dialogs/dist/style.css')
+webpackConfig.resolve.alias['@nextcloud/dialogs/style.css$'] = path.resolve(
+	__dirname,
+	'node_modules/@nextcloud/dialogs/dist/style.css',
+)
 
 // The Vue-3 lines of @nextcloud/vue (v9) and @nextcloud/dialogs (v7) are
 // ESM-only: neither package.json has `main`/`module`, only an `exports` map
@@ -144,8 +161,14 @@ webpackConfig.resolve.alias['@nextcloud/dialogs/style.css$'] = path.resolve(__di
 // specifier resolves to a real file, no condition matching involved. The
 // exact-match (`$`) form is used so deep imports (e.g.
 // `@nextcloud/vue/components/NcButton`) still go through the exports map.
-webpackConfig.resolve.alias['@nextcloud/dialogs$'] = path.resolve(__dirname, 'node_modules/@nextcloud/dialogs/dist/index.mjs')
-webpackConfig.resolve.alias['@nextcloud/vue$'] = path.resolve(__dirname, 'node_modules/@nextcloud/vue/dist/index.mjs')
+webpackConfig.resolve.alias['@nextcloud/dialogs$'] = path.resolve(
+	__dirname,
+	'node_modules/@nextcloud/dialogs/dist/index.mjs',
+)
+webpackConfig.resolve.alias['@nextcloud/vue$'] = path.resolve(
+	__dirname,
+	'node_modules/@nextcloud/vue/dist/index.mjs',
+)
 
 // NOTE: `resolve.fallback.path` is set to `path-browserify` above (see the
 // resolve block). The FilePicker DOES run in this app — nextcloud-vue's

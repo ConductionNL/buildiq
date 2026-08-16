@@ -52,34 +52,87 @@ vi.mock('../../../src/store/schemas.js', () => {
 
 vi.mock('@nextcloud/dialogs', () => dialogMocks)
 
-const { default: SchemaDesigner } = await import('../../../src/views/SchemaDesigner.vue')
+const { default: SchemaDesigner } =
+	await import('../../../src/views/SchemaDesigner.vue')
 
 const editorStubs = {
-	SchemaListPanel: { name: 'SchemaListPanel', props: ['schemas', 'loading'], template: '<div />' },
+	SchemaListPanel: {
+		name: 'SchemaListPanel',
+		props: ['schemas', 'loading'],
+		template: '<div />',
+	},
 	SchemaHeaderForm: {
 		name: 'SchemaHeaderForm',
 		props: ['value', 'lockedSlug'],
 		template: '<div class="schema-header-stub" />',
 	},
-	FieldEditor: { name: 'FieldEditor', props: ['fields', 'schemaSlugs'], template: '<div class="field-editor-stub" />' },
-	LifecycleEditor: { name: 'LifecycleEditor', props: ['states', 'transitions'], template: '<div class="lifecycle-editor-stub" />' },
-	RelationEditor: { name: 'RelationEditor', props: ['relations', 'schemaSlugs'], template: '<div class="relation-editor-stub" />' },
-	AccessEditor: { name: 'AccessEditor', props: ['access', 'fieldNames', 'availableGroups', 'readOnly'], template: '<div class="access-editor-stub" />' },
-	WidgetEditor: { name: 'WidgetEditor', props: ['widgets'], template: '<div class="widget-editor-stub" />' },
-	AggregationEditor: { name: 'AggregationEditor', props: ['aggregations'], template: '<div />' },
-	CalculationEditor: { name: 'CalculationEditor', props: ['calculations'], template: '<div />' },
-	NotificationEditor: { name: 'NotificationEditor', props: ['notifications'], template: '<div />' },
+	FieldEditor: {
+		name: 'FieldEditor',
+		props: ['fields', 'schemaSlugs'],
+		template: '<div class="field-editor-stub" />',
+	},
+	LifecycleEditor: {
+		name: 'LifecycleEditor',
+		props: ['states', 'transitions'],
+		template: '<div class="lifecycle-editor-stub" />',
+	},
+	RelationEditor: {
+		name: 'RelationEditor',
+		props: ['relations', 'schemaSlugs'],
+		template: '<div class="relation-editor-stub" />',
+	},
+	AccessEditor: {
+		name: 'AccessEditor',
+		props: ['access', 'fieldNames', 'availableGroups', 'readOnly'],
+		template: '<div class="access-editor-stub" />',
+	},
+	WidgetEditor: {
+		name: 'WidgetEditor',
+		props: ['widgets'],
+		template: '<div class="widget-editor-stub" />',
+	},
+	AggregationEditor: {
+		name: 'AggregationEditor',
+		props: ['aggregations'],
+		template: '<div />',
+	},
+	CalculationEditor: {
+		name: 'CalculationEditor',
+		props: ['calculations'],
+		template: '<div />',
+	},
+	NotificationEditor: {
+		name: 'NotificationEditor',
+		props: ['notifications'],
+		template: '<div />',
+	},
 	NcButton: {
 		name: 'NcButton',
 		props: ['type', 'disabled', 'title'],
-		template: '<button class="nc-button-stub" :disabled="disabled" :title="title" @click="$emit(\'click\', $event)"><slot name="icon" /><slot /></button>',
+		template:
+			'<button class="nc-button-stub" :disabled="disabled" :title="title" @click="$emit(\'click\', $event)"><slot name="icon" /><slot /></button>',
 	},
-	NcEmptyContent: { name: 'NcEmptyContent', props: ['name', 'description'], template: '<div class="empty-stub" />' },
-	NcLoadingIcon: { name: 'NcLoadingIcon', template: '<div class="loading-stub" />' },
-	NcNoteCard: { name: 'NcNoteCard', props: ['type'], template: '<div class="note-stub"><slot /></div>' },
+	NcEmptyContent: {
+		name: 'NcEmptyContent',
+		props: ['name', 'description'],
+		template: '<div class="empty-stub" />',
+	},
+	NcLoadingIcon: {
+		name: 'NcLoadingIcon',
+		template: '<div class="loading-stub" />',
+	},
+	NcNoteCard: {
+		name: 'NcNoteCard',
+		props: ['type'],
+		template: '<div class="note-stub"><slot /></div>',
+	},
 }
 
-function makeRouter({ slug = 'hello-world', schemaId = '', version = undefined } = {}) {
+function makeRouter({
+	slug = 'hello-world',
+	schemaId = '',
+	version = undefined,
+} = {}) {
 	return {
 		params: { slug, schemaId },
 		query: version ? { _version: version } : {},
@@ -127,7 +180,11 @@ beforeEach(() => {
 
 describe('SchemaDesigner — undo/redo (builder-undo-redo)', () => {
 	it('REQ-BUR-002: both buttons disabled in a fresh detail session', async () => {
-		const wrapper = await (async () => { const w = mountDetail(); await flush(w); return w })()
+		const wrapper = await (async () => {
+			const w = mountDetail()
+			await flush(w)
+			return w
+		})()
 		expect(wrapper.vm.canUndo).toBe(false)
 		expect(wrapper.vm.canRedo).toBe(false)
 	})
@@ -138,7 +195,15 @@ describe('SchemaDesigner — undo/redo (builder-undo-redo)', () => {
 		const before = wrapper.vm.staged
 		wrapper.vm.onFieldsChange([
 			...wrapper.vm.staged.fields,
-			{ _key: 'f-new', name: 'body', type: 'string', required: false, default: null, description: '', validation: {} },
+			{
+				_key: 'f-new',
+				name: 'body',
+				type: 'string',
+				required: false,
+				default: null,
+				description: '',
+				validation: {},
+			},
 		])
 		await wrapper.vm.$nextTick()
 		expect(wrapper.vm.canUndo).toBe(true)
@@ -155,7 +220,15 @@ describe('SchemaDesigner — undo/redo (builder-undo-redo)', () => {
 		await flush(wrapper)
 		wrapper.vm.onFieldsChange([
 			...wrapper.vm.staged.fields,
-			{ _key: 'f-new', name: 'body', type: 'string', required: false, default: null, description: '', validation: {} },
+			{
+				_key: 'f-new',
+				name: 'body',
+				type: 'string',
+				required: false,
+				default: null,
+				description: '',
+				validation: {},
+			},
 		])
 		await wrapper.vm.$nextTick()
 		wrapper.vm.undo()
@@ -176,17 +249,28 @@ describe('SchemaDesigner — undo/redo (builder-undo-redo)', () => {
 		// transitions/relations/widgets and a non-null access block) — the
 		// engine's structural-identity no-op would otherwise absorb a
 		// same-as-current commit and under-count entries.
-		wrapper.vm.onHeaderChange({ title: 'New title', description: '', version: '0.2.0' })
+		wrapper.vm.onHeaderChange({
+			title: 'New title',
+			description: '',
+			version: '0.2.0',
+		})
 		await wrapper.vm.$nextTick()
 		wrapper.vm.onStatesChange([{ name: 'draft', initial: true }])
 		await wrapper.vm.$nextTick()
-		wrapper.vm.onTransitionsChange([{ from: 'draft', to: 'published', label: 'publish' }])
+		wrapper.vm.onTransitionsChange([
+			{ from: 'draft', to: 'published', label: 'publish' },
+		])
 		await wrapper.vm.$nextTick()
-		wrapper.vm.onRelationsChange([{ name: 'owner', target: 'user', type: 'many-to-one' }])
+		wrapper.vm.onRelationsChange([
+			{ name: 'owner', target: 'user', type: 'many-to-one' },
+		])
 		await wrapper.vm.$nextTick()
 		wrapper.vm.onWidgetsChange([{ type: 'table', config: {} }])
 		await wrapper.vm.$nextTick()
-		wrapper.vm.onAccessChange({ rows: [{ op: 'read', kind: 'group', groups: ['admin'] }], extraKeys: {} })
+		wrapper.vm.onAccessChange({
+			rows: [{ op: 'read', kind: 'group', groups: ['admin'] }],
+			extraKeys: {},
+		})
 		await wrapper.vm.$nextTick()
 		expect(wrapper.vm.history.size.value).toBe(sizeBefore + 6)
 	})
@@ -196,7 +280,15 @@ describe('SchemaDesigner — undo/redo (builder-undo-redo)', () => {
 		await flush(wrapper)
 		wrapper.vm.onFieldsChange([
 			...wrapper.vm.staged.fields,
-			{ _key: 'f-new', name: 'body', type: 'string', required: false, default: null, description: '', validation: {} },
+			{
+				_key: 'f-new',
+				name: 'body',
+				type: 'string',
+				required: false,
+				default: null,
+				description: '',
+				validation: {},
+			},
 		])
 		await wrapper.vm.$nextTick()
 		expect(wrapper.vm.staged.fields).toHaveLength(2)
@@ -216,7 +308,15 @@ describe('SchemaDesigner — undo/redo (builder-undo-redo)', () => {
 		await flush(wrapper)
 		wrapper.vm.onFieldsChange([
 			...wrapper.vm.staged.fields,
-			{ _key: 'f-new', name: 'body', type: 'string', required: false, default: null, description: '', validation: {} },
+			{
+				_key: 'f-new',
+				name: 'body',
+				type: 'string',
+				required: false,
+				default: null,
+				description: '',
+				validation: {},
+			},
 		])
 		await wrapper.vm.$nextTick()
 		expect(wrapper.vm.canUndo).toBe(true)
@@ -233,7 +333,15 @@ describe('SchemaDesigner — undo/redo (builder-undo-redo)', () => {
 		await flush(wrapper)
 		wrapper.vm.onFieldsChange([
 			...wrapper.vm.staged.fields,
-			{ _key: 'f-new', name: 'body', type: 'string', required: false, default: null, description: '', validation: {} },
+			{
+				_key: 'f-new',
+				name: 'body',
+				type: 'string',
+				required: false,
+				default: null,
+				description: '',
+				validation: {},
+			},
 		])
 		await wrapper.vm.$nextTick()
 		expect(wrapper.vm.canUndo).toBe(true)
@@ -247,13 +355,31 @@ describe('SchemaDesigner — undo/redo (builder-undo-redo)', () => {
 		await flush(wrapper)
 		wrapper.vm.onFieldsChange([
 			...wrapper.vm.staged.fields,
-			{ _key: 'f-new', name: 'body', type: 'string', required: false, default: null, description: '', validation: {} },
+			{
+				_key: 'f-new',
+				name: 'body',
+				type: 'string',
+				required: false,
+				default: null,
+				description: '',
+				validation: {},
+			},
 		])
 		await wrapper.vm.$nextTick()
-		wrapper.vm.onKeydown({ ctrlKey: true, key: 'z', shiftKey: false, preventDefault() {} })
+		wrapper.vm.onKeydown({
+			ctrlKey: true,
+			key: 'z',
+			shiftKey: false,
+			preventDefault() {},
+		})
 		await wrapper.vm.$nextTick()
 		expect(wrapper.vm.staged.fields).toHaveLength(1)
-		wrapper.vm.onKeydown({ ctrlKey: true, key: 'z', shiftKey: true, preventDefault() {} })
+		wrapper.vm.onKeydown({
+			ctrlKey: true,
+			key: 'z',
+			shiftKey: true,
+			preventDefault() {},
+		})
 		await wrapper.vm.$nextTick()
 		expect(wrapper.vm.staged.fields).toHaveLength(2)
 	})
@@ -263,7 +389,15 @@ describe('SchemaDesigner — undo/redo (builder-undo-redo)', () => {
 		await flush(wrapper)
 		wrapper.vm.onFieldsChange([
 			...wrapper.vm.staged.fields,
-			{ _key: 'f-new', name: 'body', type: 'string', required: false, default: null, description: '', validation: {} },
+			{
+				_key: 'f-new',
+				name: 'body',
+				type: 'string',
+				required: false,
+				default: null,
+				description: '',
+				validation: {},
+			},
 		])
 		await wrapper.vm.$nextTick()
 		let prevented = false
@@ -273,7 +407,9 @@ describe('SchemaDesigner — undo/redo (builder-undo-redo)', () => {
 			key: 'z',
 			shiftKey: false,
 			target: input,
-			preventDefault() { prevented = true },
+			preventDefault() {
+				prevented = true
+			},
 		})
 		await wrapper.vm.$nextTick()
 		expect(prevented).toBe(false)
@@ -288,7 +424,12 @@ describe('SchemaDesigner — undo/redo (builder-undo-redo)', () => {
 		})
 		await flush(wrapper)
 		expect(() => {
-			wrapper.vm.onKeydown({ ctrlKey: true, key: 'z', shiftKey: false, preventDefault() {} })
+			wrapper.vm.onKeydown({
+				ctrlKey: true,
+				key: 'z',
+				shiftKey: false,
+				preventDefault() {},
+			})
 		}).not.toThrow()
 	})
 
@@ -308,7 +449,15 @@ describe('SchemaDesigner — undo/redo (builder-undo-redo)', () => {
 		await flush(wrapper)
 		wrapper.vm.onFieldsChange([
 			...wrapper.vm.staged.fields,
-			{ _key: 'f-new', name: 'body', type: 'string', required: false, default: null, description: '', validation: {} },
+			{
+				_key: 'f-new',
+				name: 'body',
+				type: 'string',
+				required: false,
+				default: null,
+				description: '',
+				validation: {},
+			},
 		])
 		await wrapper.vm.$nextTick()
 		expect(wrapper.vm.canUndo).toBe(true)
@@ -323,7 +472,15 @@ describe('SchemaDesigner — undo/redo (builder-undo-redo)', () => {
 		await flush(wrapper)
 		wrapper.vm.onFieldsChange([
 			...wrapper.vm.staged.fields,
-			{ _key: 'f-new', name: 'body', type: 'string', required: false, default: null, description: '', validation: {} },
+			{
+				_key: 'f-new',
+				name: 'body',
+				type: 'string',
+				required: false,
+				default: null,
+				description: '',
+				validation: {},
+			},
 		])
 		await wrapper.vm.$nextTick()
 		expect(wrapper.vm.canUndo).toBe(true)

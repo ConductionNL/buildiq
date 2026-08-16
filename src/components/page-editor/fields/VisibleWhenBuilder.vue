@@ -52,7 +52,7 @@
 				:placeholder="t('openbuild', 'Value')"
 				:aria-label="t('openbuild', 'Condition value')"
 				:value="currentValueDisplay"
-				@input="onValueInput($event.target.value)">
+				@input="onValueInput($event.target.value)" />
 			<button
 				v-if="currentField"
 				type="button"
@@ -97,15 +97,18 @@ export default {
 			type: Object,
 			default: null,
 		},
+
 		fieldOptions: {
 			type: Array,
 			default: () => [],
 		},
 	},
+
 	emits: ['update:modelValue'],
 	data() {
 		return { OPS }
 	},
+
 	computed: {
 		/**
 		 * Whether the current `visibleWhen` uses an advanced (`endpoint` /
@@ -114,27 +117,39 @@ export default {
 		 * @return {boolean}
 		 */
 		isAdvanced() {
-			return !!(this.modelValue && (this.modelValue.endpoint || this.modelValue.source))
+			return !!(
+				this.modelValue
+				&& (this.modelValue.endpoint || this.modelValue.source)
+			)
 		},
+
 		/**
 		 * The currently-picked sibling field key, or '' (no condition).
 		 *
 		 * @return {string}
 		 */
 		currentField() {
-			if (this.isAdvanced || !this.modelValue || typeof this.modelValue.field !== 'string') {
+			if (
+				this.isAdvanced
+				|| !this.modelValue
+				|| typeof this.modelValue.field !== 'string'
+			) {
 				return ''
 			}
 			return this.modelValue.field
 		},
+
 		/**
 		 * The current op, defaulting to `eq` when absent.
 		 *
 		 * @return {string}
 		 */
 		currentOp() {
-			return (this.modelValue && this.modelValue.op !== undefined) ? this.modelValue.op : 'eq'
+			return this.modelValue && this.modelValue.op !== undefined
+				? this.modelValue.op
+				: 'eq'
 		},
+
 		/**
 		 * The current value, stringified for the text input.
 		 *
@@ -147,6 +162,7 @@ export default {
 			return String(this.modelValue.value)
 		},
 	},
+
 	methods: {
 		/**
 		 * Assemble and emit the next `visibleWhen` from the three inputs,
@@ -169,15 +185,19 @@ export default {
 			}
 			this.$emit('update:modelValue', next)
 		},
+
 		onFieldChange(value) {
 			this.emitCondition(value, this.currentOp, this.currentValueDisplay)
 		},
+
 		onOpChange(value) {
 			this.emitCondition(this.currentField, value, this.currentValueDisplay)
 		},
+
 		onValueInput(value) {
 			this.emitCondition(this.currentField, this.currentOp, value)
 		},
+
 		/**
 		 * Clear the condition entirely.
 		 *

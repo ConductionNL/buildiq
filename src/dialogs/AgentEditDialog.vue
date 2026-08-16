@@ -19,33 +19,42 @@
 		@close="onClose">
 		<div class="agent-edit">
 			<h2 class="agent-edit__title">
-				{{ editing ? t('openbuild', 'Edit agent') : t('openbuild', 'New agent') }}
+				{{
+					editing
+						? t('openbuild', 'Edit agent')
+						: t('openbuild', 'New agent')
+				}}
 			</h2>
 
 			<NcTextField
-				:model-value="name"
+				:modelValue="name"
 				:label="t('openbuild', 'Name')"
 				data-testid="agent-name-field"
 				@update:modelValue="name = $event" />
 
 			<NcTextArea
-				:model-value="instructions"
+				:modelValue="instructions"
 				:label="t('openbuild', 'Instructions')"
-				:placeholder="t('openbuild', 'Tell this agent how it should help — prefixed onto its system prompt for every message.')"
+				:placeholder="
+					t(
+						'openbuild',
+						'Tell this agent how it should help — prefixed onto its system prompt for every message.',
+					)
+				"
 				data-testid="agent-instructions-field"
 				@update:modelValue="instructions = $event" />
 
 			<NcSelect
 				v-model="modelTaskTypeOption"
-				:input-label="t('openbuild', 'Model task type')"
+				:inputLabel="t('openbuild', 'Model task type')"
 				:options="modelTaskTypeOptions"
 				:clearable="false"
 				label="label"
 				data-testid="agent-model-task-type-select" />
 
 			<NcSelect
-				:model-value="enabledToolsSelection"
-				:input-label="t('openbuild', 'Enabled tools')"
+				:modelValue="enabledToolsSelection"
+				:inputLabel="t('openbuild', 'Enabled tools')"
 				:options="toolOptions"
 				:multiple="true"
 				:clearable="false"
@@ -53,17 +62,25 @@
 				data-testid="agent-enabled-tools-select"
 				@update:modelValue="onEnabledToolsSelect" />
 			<p class="agent-edit__hint">
-				{{ t('openbuild', 'This agent can never use a tool outside this list — enforced server-side on every request.') }}
+				{{
+					t(
+						'openbuild',
+						'This agent can never use a tool outside this list — enforced server-side on every request.',
+					)
+				}}
 			</p>
 
 			<NcTextField
-				:model-value="String(maxActionsPerRun)"
+				:modelValue="String(maxActionsPerRun)"
 				type="number"
 				:label="t('openbuild', 'Max actions per run')"
 				data-testid="agent-max-actions-field"
 				@update:modelValue="onMaxActionsInput" />
 
-			<p v-if="showValidation && !valid" class="agent-edit__error" role="alert">
+			<p
+				v-if="showValidation && !valid"
+				class="agent-edit__error"
+				role="alert">
 				{{ validationMessage }}
 			</p>
 			<NcNoteCard v-if="errorMessage" type="error">
@@ -74,7 +91,8 @@
 				<NcButton @click="onClose">
 					{{ t('openbuild', 'Cancel') }}
 				</NcButton>
-				<NcButton type="primary"
+				<NcButton
+					variant="primary"
 					:disabled="saving"
 					data-testid="agent-save-button"
 					@click="onSave">
@@ -88,7 +106,14 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcModal, NcNoteCard, NcSelect, NcTextArea, NcTextField } from '@nextcloud/vue'
+import {
+	NcButton,
+	NcModal,
+	NcNoteCard,
+	NcSelect,
+	NcTextArea,
+	NcTextField,
+} from '@nextcloud/vue'
 
 export default {
 	name: 'AgentEditDialog',
@@ -108,7 +133,11 @@ export default {
 			id: null,
 			name: '',
 			instructions: '',
-			modelTaskTypeOption: { value: 'TextToText', label: t('openbuild', 'Text to text') },
+			modelTaskTypeOption: {
+				value: 'TextToText',
+				label: t('openbuild', 'Text to text'),
+			},
+
 			enabledTools: [],
 			maxActionsPerRun: 10,
 			showValidation: false,
@@ -122,6 +151,7 @@ export default {
 		editing() {
 			return !!this.id
 		},
+
 		/**
 		 * The eight OpenBuildToolProvider tool ids, mirrored 1:1 with the schema enum.
 		 *
@@ -131,15 +161,37 @@ export default {
 		toolOptions() {
 			return [
 				{ value: 'openbuild.listApps', label: t('openbuild', 'List apps') },
-				{ value: 'openbuild.getAppManifest', label: t('openbuild', 'Get app manifest') },
-				{ value: 'openbuild.createApp', label: t('openbuild', 'Create app') },
-				{ value: 'openbuild.promoteVersion', label: t('openbuild', 'Promote version') },
-				{ value: 'openbuild.upsertSchema', label: t('openbuild', 'Create or update schema') },
-				{ value: 'openbuild.upsertPage', label: t('openbuild', 'Create or update page') },
-				{ value: 'openbuild.addWidget', label: t('openbuild', 'Add widget') },
-				{ value: 'openbuild.upsertMenuItem', label: t('openbuild', 'Create or update menu item') },
+				{
+					value: 'openbuild.getAppManifest',
+					label: t('openbuild', 'Get app manifest'),
+				},
+				{
+					value: 'openbuild.createApp',
+					label: t('openbuild', 'Create app'),
+				},
+				{
+					value: 'openbuild.promoteVersion',
+					label: t('openbuild', 'Promote version'),
+				},
+				{
+					value: 'openbuild.upsertSchema',
+					label: t('openbuild', 'Create or update schema'),
+				},
+				{
+					value: 'openbuild.upsertPage',
+					label: t('openbuild', 'Create or update page'),
+				},
+				{
+					value: 'openbuild.addWidget',
+					label: t('openbuild', 'Add widget'),
+				},
+				{
+					value: 'openbuild.upsertMenuItem',
+					label: t('openbuild', 'Create or update menu item'),
+				},
 			]
 		},
+
 		/**
 		 * v1 exposes exactly one task type — schema field kept for a v1.1 follow-up (design.md Open Questions).
 		 *
@@ -149,6 +201,7 @@ export default {
 		modelTaskTypeOptions() {
 			return [{ value: 'TextToText', label: t('openbuild', 'Text to text') }]
 		},
+
 		/**
 		 * Selected NcSelect option objects for `enabledTools`.
 		 *
@@ -156,15 +209,23 @@ export default {
 		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
 		 */
 		enabledToolsSelection() {
-			return this.toolOptions.filter((o) => this.enabledTools.includes(o.value))
+			return this.toolOptions.filter((o) =>
+				this.enabledTools.includes(o.value),
+			)
 		},
+
 		/**
 		 * @return {boolean} Whether the form can be saved.
 		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
 		 */
 		valid() {
-			return this.name.trim().length >= 2 && this.enabledTools.length > 0 && this.maxActionsPerRun >= 1
+			return (
+				this.name.trim().length >= 2
+				&& this.enabledTools.length > 0
+				&& this.maxActionsPerRun >= 1
+			)
 		},
+
 		/**
 		 * @return {string} The first-violated validation message.
 		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
@@ -210,10 +271,17 @@ export default {
 			this.name = a.name || ''
 			this.instructions = a.instructions || ''
 			const taskType = a.modelTaskType || 'TextToText'
-			this.modelTaskTypeOption = this.modelTaskTypeOptions.find((o) => o.value === taskType) || this.modelTaskTypeOptions[0]
-			this.enabledTools = Array.isArray(a.enabledTools) ? [...a.enabledTools] : []
-			this.maxActionsPerRun = Number.isFinite(a.maxActionsPerRun) ? a.maxActionsPerRun : 10
+			this.modelTaskTypeOption =
+				this.modelTaskTypeOptions.find((o) => o.value === taskType)
+				|| this.modelTaskTypeOptions[0]
+			this.enabledTools = Array.isArray(a.enabledTools)
+				? [...a.enabledTools]
+				: []
+			this.maxActionsPerRun = Number.isFinite(a.maxActionsPerRun)
+				? a.maxActionsPerRun
+				: 10
 		},
+
 		/**
 		 * Apply an enabled-tools multi-select change.
 		 *
@@ -222,8 +290,11 @@ export default {
 		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
 		 */
 		onEnabledToolsSelect(options) {
-			this.enabledTools = Array.isArray(options) ? options.map((o) => o.value) : []
+			this.enabledTools = Array.isArray(options)
+				? options.map((o) => o.value)
+				: []
 		},
+
 		/**
 		 * Apply the max-actions-per-run numeric field change, clamped to >= 1.
 		 *
@@ -233,8 +304,10 @@ export default {
 		 */
 		onMaxActionsInput(value) {
 			const parsed = parseInt(value, 10)
-			this.maxActionsPerRun = Number.isFinite(parsed) && parsed > 0 ? parsed : 1
+			this.maxActionsPerRun =
+				Number.isFinite(parsed) && parsed > 0 ? parsed : 1
 		},
+
 		/**
 		 * Persist the agent via OpenRegister's generic REST surface (ADR-022).
 		 *
@@ -251,13 +324,18 @@ export default {
 			const payload = {
 				name: this.name,
 				instructions: this.instructions,
-				modelTaskType: this.modelTaskTypeOption ? this.modelTaskTypeOption.value : 'TextToText',
+				modelTaskType: this.modelTaskTypeOption
+					? this.modelTaskTypeOption.value
+					: 'TextToText',
+
 				enabledTools: this.enabledTools,
 				maxActionsPerRun: this.maxActionsPerRun,
 				applicationSlug: this.applicationSlug,
 			}
 			try {
-				const base = generateUrl('/apps/openregister/api/objects/openbuild/agent')
+				const base = generateUrl(
+					'/apps/openregister/api/objects/openbuild/agent',
+				)
 				if (this.editing && this.id) {
 					await axios.put(`${base}/${this.id}`, payload)
 				} else {
@@ -270,6 +348,7 @@ export default {
 				this.saving = false
 			}
 		},
+
 		/**
 		 * @return {void}
 		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend

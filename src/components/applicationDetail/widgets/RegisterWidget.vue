@@ -26,11 +26,18 @@
 		<!-- Schema list (replaces the old schema/object/file count grid). -->
 		<div class="ob-register-widget__schemas">
 			<div class="ob-register-widget__schemas-head">
-				<span class="ob-register-widget__schemas-label">{{ t('openbuild', 'Schemas') }}</span>
-				<span v-if="!loading" class="ob-register-widget__schemas-count">{{ schemas.length }}</span>
+				<span class="ob-register-widget__schemas-label">{{
+					t('openbuild', 'Schemas')
+				}}</span>
+				<span v-if="!loading" class="ob-register-widget__schemas-count">{{
+					schemas.length
+				}}</span>
 			</div>
 
-			<NcLoadingIcon v-if="loading" :size="24" class="ob-register-widget__loading" />
+			<NcLoadingIcon
+				v-if="loading"
+				:size="24"
+				class="ob-register-widget__loading" />
 
 			<p v-else-if="schemas.length === 0" class="ob-register-widget__empty">
 				{{ t('openbuild', 'This register defines no schemas.') }}
@@ -46,7 +53,14 @@
 				<li
 					v-if="schemas.length > visibleLimit"
 					class="ob-register-widget__schema ob-register-widget__schema--more">
-					{{ n('openbuild', '+%n more schema', '+%n more schemas', schemas.length - visibleLimit) }}
+					{{
+						n(
+							'openbuild',
+							'+%n more schema',
+							'+%n more schemas',
+							schemas.length - visibleLimit,
+						)
+					}}
 				</li>
 			</ul>
 		</div>
@@ -54,11 +68,11 @@
 		<footer class="ob-register-widget__footer">
 			<NcButton
 				v-if="canImport"
-				type="secondary"
+				variant="secondary"
 				@click="$emit('import-data', { registerSlug, schemas })">
 				{{ t('openbuild', 'Import data') }}
 			</NcButton>
-			<NcButton type="primary" @click="openInOpenRegister">
+			<NcButton variant="primary" @click="openInOpenRegister">
 				{{ t('openbuild', 'Open in OpenRegister') }}
 			</NcButton>
 		</footer>
@@ -102,6 +116,7 @@ export default {
 		 */
 		canImport: { type: Boolean, default: false },
 	},
+
 	emits: ['import-data'],
 	data() {
 		return {
@@ -112,6 +127,7 @@ export default {
 			visibleLimit: 12,
 		}
 	},
+
 	computed: {
 		/**
 		 * The register to show. For a HYBRID app this is the installed fleet
@@ -123,8 +139,11 @@ export default {
 		 */
 		registerSlug() {
 			if (this.registerSlugOverride) return this.registerSlugOverride
-			return this.isHybrid ? this.appSlug : `openbuild-${this.appSlug}-${this.versionSlug}`
+			return this.isHybrid
+				? this.appSlug
+				: `openbuild-${this.appSlug}-${this.versionSlug}`
 		},
+
 		/**
 		 * The schemas shown inline (the rest collapse into a "+N more" row).
 		 *
@@ -134,12 +153,15 @@ export default {
 			return this.schemas.slice(0, this.visibleLimit)
 		},
 	},
+
 	watch: {
 		registerSlug: 'loadSchemas',
 	},
+
 	mounted() {
 		this.loadSchemas()
 	},
+
 	methods: {
 		/**
 		 * Resolve the register by slug and list its schemas by name. Two reads:
@@ -167,9 +189,13 @@ export default {
 					params: { _limit: 1000 },
 					headers: { 'OCS-APIREQUEST': 'true' },
 				})
-				const registers = (regData && Array.isArray(regData.results)) ? regData.results : []
+				const registers =
+					regData && Array.isArray(regData.results) ? regData.results : []
 				const register = registers.find((r) => r.slug === this.registerSlug)
-				const schemaIds = (register && Array.isArray(register.schemas)) ? register.schemas.map(String) : []
+				const schemaIds =
+					register && Array.isArray(register.schemas)
+						? register.schemas.map(String)
+						: []
 
 				if (schemaIds.length > 0) {
 					const schemasUrl = generateUrl('/apps/openregister/api/schemas')
@@ -177,15 +203,22 @@ export default {
 						params: { _limit: 10000 },
 						headers: { 'OCS-APIREQUEST': 'true' },
 					})
-					const allSchemas = (schData && Array.isArray(schData.results)) ? schData.results : []
+					const allSchemas =
+						schData && Array.isArray(schData.results)
+							? schData.results
+							: []
 					const byId = new Map()
 					allSchemas.forEach((s) => {
-						const id = String((s['@self'] && s['@self'].id) || s.id || '')
+						const id = String(
+							(s['@self'] && s['@self'].id) || s.id || '',
+						)
 						if (id) byId.set(id, s.title || s.slug || id)
 					})
 
 					result = schemaIds
-						.map((id) => (byId.has(id) ? { id, name: byId.get(id) } : null))
+						.map((id) =>
+							byId.has(id) ? { id, name: byId.get(id) } : null,
+						)
 						.filter(Boolean)
 						.sort((a, b) => String(a.name).localeCompare(String(b.name)))
 				}
@@ -202,6 +235,7 @@ export default {
 			this.schemas = result
 			this.loading = false
 		},
+
 		/**
 		 * Deep-link to OpenRegister's register detail page (top-level Nextcloud
 		 * URL, not a Vue Router internal route).
@@ -209,7 +243,9 @@ export default {
 		 * @return {void}
 		 */
 		openInOpenRegister() {
-			const url = generateUrl(`/apps/openregister/registers/${encodeURIComponent(this.registerSlug)}`)
+			const url = generateUrl(
+				`/apps/openregister/registers/${encodeURIComponent(this.registerSlug)}`,
+			)
 			window.location.href = url
 		},
 	},

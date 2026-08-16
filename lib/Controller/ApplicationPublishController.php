@@ -37,7 +37,7 @@ use OCA\OpenBuild\Service\ApplicationDeletionService;
 use OCA\OpenBuild\Service\Credential\VirtualAppCredentialRegistrar;
 use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenBuild\Service\VersionPromotionService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -75,7 +75,7 @@ class ApplicationPublishController extends Controller {
 	 *
 	 * @param IRequest $request The current HTTP request
 	 * @param LoggerInterface $logger PSR logger
-	 * @param ObjectService $objectService OR object surface (load + save)
+	 * @param ObjectServiceInterface $objectService OR object surface (load + save)
 	 * @param IUserSession $userSession Current NC user session
 	 * @param PermissionResolver $permissionResolver Shared permission-grammar resolver
 	 * @param ApplicationDeletionService $deletionService Full-teardown service for delete
@@ -86,7 +86,7 @@ class ApplicationPublishController extends Controller {
 	public function __construct(
 		IRequest $request,
 		private readonly LoggerInterface $logger,
-		private readonly ObjectService $objectService,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly IUserSession $userSession,
 		private readonly PermissionResolver $permissionResolver,
 		private readonly ApplicationDeletionService $deletionService,

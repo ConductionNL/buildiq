@@ -12,20 +12,25 @@
 		<div class="link-repo">
 			<h2>{{ t('openbuild', 'Link a GitHub repository') }}</h2>
 			<p class="link-repo__summary">
-				{{ t('openbuild', 'Connect this app to a GitHub repository so you can publish and pull versions.') }}
+				{{
+					t(
+						'openbuild',
+						'Connect this app to a GitHub repository so you can publish and pull versions.',
+					)
+				}}
 			</p>
 			<NcTextField
-				:model-value="owner"
+				:modelValue="owner"
 				:label="t('openbuild', 'Repository owner (user or org)')"
 				:placeholder="t('openbuild', 'conduction')"
 				@update:modelValue="owner = $event" />
 			<NcTextField
-				:model-value="name"
+				:modelValue="name"
 				:label="t('openbuild', 'Repository name')"
 				:placeholder="t('openbuild', 'my-app')"
 				@update:modelValue="name = $event" />
 			<NcTextField
-				:model-value="org"
+				:modelValue="org"
 				:label="t('openbuild', 'Create under organisation (optional)')"
 				:placeholder="t('openbuild', 'Leave empty to use your own account')"
 				@update:modelValue="org = $event" />
@@ -36,8 +41,15 @@
 				<NcButton @click="onClose">
 					{{ t('openbuild', 'Cancel') }}
 				</NcButton>
-				<NcButton type="primary" :disabled="!canSubmit || submitting" @click="submit">
-					{{ submitting ? t('openbuild', 'Linking…') : t('openbuild', 'Link repository') }}
+				<NcButton
+					variant="primary"
+					:disabled="!canSubmit || submitting"
+					@click="submit">
+					{{
+						submitting
+							? t('openbuild', 'Linking…')
+							: t('openbuild', 'Link repository')
+					}}
 				</NcButton>
 			</div>
 		</div>
@@ -58,6 +70,7 @@ export default {
 		/** The Application slug whose repo is being linked. */
 		slug: { type: String, default: '' },
 	},
+
 	emits: ['close', 'linked'],
 	data() {
 		return {
@@ -68,6 +81,7 @@ export default {
 			error: '',
 		}
 	},
+
 	computed: {
 		/**
 		 * Whether the owner + name pass the safe GitHub identity pattern.
@@ -80,6 +94,7 @@ export default {
 			return ok.test(this.owner.trim()) && ok.test(this.name.trim())
 		},
 	},
+
 	watch: {
 		open(value) {
 			if (value) {
@@ -91,6 +106,7 @@ export default {
 			}
 		},
 	},
+
 	methods: {
 		/**
 		 * Close the dialog unless a request is in flight.
@@ -103,6 +119,7 @@ export default {
 			}
 			this.$emit('close')
 		},
+
 		/**
 		 * POST the linkage to the GitHub sync link endpoint and emit `linked`.
 		 *
@@ -116,7 +133,10 @@ export default {
 			this.submitting = true
 			this.error = ''
 			try {
-				const url = generateUrl('/apps/openbuild/api/applications/{slug}/github/link', { slug: this.slug })
+				const url = generateUrl(
+					'/apps/openbuild/api/applications/{slug}/github/link',
+					{ slug: this.slug },
+				)
 				const body = { owner: this.owner.trim(), name: this.name.trim() }
 				if (this.org.trim()) {
 					body.org = this.org.trim()
@@ -126,7 +146,11 @@ export default {
 				this.$emit('close')
 			} catch (e) {
 				const data = e?.response?.data
-				this.error = data?.detail || data?.error || e?.message || t('openbuild', 'Could not link the repository.')
+				this.error =
+					data?.detail
+					|| data?.error
+					|| e?.message
+					|| t('openbuild', 'Could not link the repository.')
 				this.submitting = false
 			}
 		},

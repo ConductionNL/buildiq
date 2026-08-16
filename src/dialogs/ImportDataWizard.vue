@@ -20,7 +20,7 @@
 <template>
 	<NcDialog
 		:name="t('openbuild', 'Import data')"
-		:can-close="!importing"
+		:canClose="!importing"
 		size="large"
 		@closing="onClose">
 		<div class="ob-import-wizard">
@@ -30,7 +30,10 @@
 					v-for="s in stepLabels"
 					:key="s.n"
 					class="ob-import-wizard__step"
-					:class="{ 'ob-import-wizard__step--active': step === s.n, 'ob-import-wizard__step--done': step > s.n }">
+					:class="{
+						'ob-import-wizard__step--active': step === s.n,
+						'ob-import-wizard__step--done': step > s.n,
+					}">
 					<span class="ob-import-wizard__step-n">{{ s.n }}</span>
 					<span class="ob-import-wizard__step-label">{{ s.label }}</span>
 				</li>
@@ -64,14 +67,18 @@
 					<NcSelect
 						v-model="selectedSchema"
 						class="ob-import-wizard__schema-select"
-						:input-label="t('openbuild', 'Target schema')"
+						:inputLabel="t('openbuild', 'Target schema')"
 						:options="schemaOptions"
-						:placeholder="schemaOptions.length ? t('openbuild', 'Choose a schema') : t('openbuild', 'No schemas in this version yet')"
+						:placeholder="
+							schemaOptions.length
+								? t('openbuild', 'Choose a schema')
+								: t('openbuild', 'No schemas in this version yet')
+						"
 						label="label"
 						:disabled="!schemaOptions.length" />
 					<NcButton
 						v-if="selectedSchema"
-						type="tertiary"
+						variant="tertiary"
 						class="ob-import-wizard__template-btn"
 						@click="downloadTemplate">
 						<template #icon>
@@ -81,7 +88,12 @@
 					</NcButton>
 				</template>
 				<p v-else class="ob-import-wizard__hint">
-					{{ t('openbuild', 'OpenRegister reads the file\'s header row to infer the fields and creates the schema for you.') }}
+					{{
+						t(
+							'openbuild',
+							"OpenRegister reads the file's header row to infer the fields and creates the schema for you.",
+						)
+					}}
 				</p>
 			</section>
 
@@ -96,19 +108,28 @@
 					type="file"
 					class="ob-import-wizard__file-input"
 					accept=".xlsx,.xls,.csv,.json"
-					@change="onFileChosen">
-				<NcButton type="secondary" @click="pickFile">
+					@change="onFileChosen" />
+				<NcButton variant="secondary" @click="pickFile">
 					<template #icon>
 						<UploadIcon :size="20" />
 					</template>
-					{{ file ? t('openbuild', 'Choose a different file') : t('openbuild', 'Select xlsx, xls, csv or json') }}
+					{{
+						file
+							? t('openbuild', 'Choose a different file')
+							: t('openbuild', 'Select xlsx, xls, csv or json')
+					}}
 				</NcButton>
 				<div v-if="file" class="ob-import-wizard__file-meta">
 					<strong>{{ file.name }}</strong>
 					<span>{{ detectedTypeLabel }} · {{ humanSize }}</span>
 				</div>
 				<NcNoteCard v-if="file && isLargeFile" type="warning">
-					{{ t('openbuild', 'Large files import synchronously and may take a while. Consider splitting very large spreadsheets.') }}
+					{{
+						t(
+							'openbuild',
+							'Large files import synchronously and may take a while. Consider splitting very large spreadsheets.',
+						)
+					}}
 				</NcNoteCard>
 			</section>
 
@@ -118,18 +139,40 @@
 					{{ t('openbuild', 'Preview') }}
 				</h3>
 				<p class="ob-import-wizard__hint">
-					{{ targetMode === 'existing'
-						? t('openbuild', 'Rows will be mapped onto these schema fields by matching column headers.')
-						: t('openbuild', 'OpenRegister will infer these fields from the file and create the schema.') }}
+					{{
+						targetMode === 'existing'
+							? t(
+									'openbuild',
+									'Rows will be mapped onto these schema fields by matching column headers.',
+								)
+							: t(
+									'openbuild',
+									'OpenRegister will infer these fields from the file and create the schema.',
+								)
+					}}
 				</p>
 				<ul v-if="previewColumns.length" class="ob-import-wizard__columns">
-					<li v-for="col in previewColumns" :key="col.name" class="ob-import-wizard__column">
-						<span class="ob-import-wizard__column-name">{{ col.name }}</span>
-						<span v-if="col.type" class="ob-import-wizard__column-type">{{ col.type }}</span>
+					<li
+						v-for="col in previewColumns"
+						:key="col.name"
+						class="ob-import-wizard__column">
+						<span class="ob-import-wizard__column-name">{{
+							col.name
+						}}</span>
+						<span
+							v-if="col.type"
+							class="ob-import-wizard__column-type"
+							>{{ col.type }}</span
+						>
 					</li>
 				</ul>
 				<p v-else class="ob-import-wizard__hint">
-					{{ t('openbuild', 'Field preview is not available for this file type; OpenRegister will parse it on import.') }}
+					{{
+						t(
+							'openbuild',
+							'Field preview is not available for this file type; OpenRegister will parse it on import.',
+						)
+					}}
 				</p>
 
 				<template v-if="sampleRows.length">
@@ -148,7 +191,10 @@
 						<table class="ob-import-wizard__sample">
 							<thead v-if="sampleHeader.length">
 								<tr>
-									<th v-for="(cell, ci) in sampleHeader" :key="'h-' + ci" scope="col">
+									<th
+										v-for="(cell, ci) in sampleHeader"
+										:key="'h-' + ci"
+										scope="col">
 										{{ cell }}
 									</th>
 								</tr>
@@ -186,20 +232,39 @@
 				</h3>
 				<div class="ob-import-wizard__counts">
 					<div class="ob-import-wizard__count">
-						<span class="ob-import-wizard__count-n">{{ result.created }}</span>
-						<span class="ob-import-wizard__count-label">{{ t('openbuild', 'created') }}</span>
+						<span class="ob-import-wizard__count-n">{{
+							result.created
+						}}</span>
+						<span class="ob-import-wizard__count-label">{{
+							t('openbuild', 'created')
+						}}</span>
 					</div>
 					<div class="ob-import-wizard__count">
-						<span class="ob-import-wizard__count-n">{{ result.updated }}</span>
-						<span class="ob-import-wizard__count-label">{{ t('openbuild', 'updated') }}</span>
+						<span class="ob-import-wizard__count-n">{{
+							result.updated
+						}}</span>
+						<span class="ob-import-wizard__count-label">{{
+							t('openbuild', 'updated')
+						}}</span>
 					</div>
 					<div class="ob-import-wizard__count">
-						<span class="ob-import-wizard__count-n">{{ result.skipped }}</span>
-						<span class="ob-import-wizard__count-label">{{ t('openbuild', 'skipped') }}</span>
+						<span class="ob-import-wizard__count-n">{{
+							result.skipped
+						}}</span>
+						<span class="ob-import-wizard__count-label">{{
+							t('openbuild', 'skipped')
+						}}</span>
 					</div>
 				</div>
 				<NcNoteCard v-if="result.errors.length" type="warning">
-					{{ n('openbuild', '%n row could not be imported.', '%n rows could not be imported.', result.errors.length) }}
+					{{
+						n(
+							'openbuild',
+							'%n row could not be imported.',
+							'%n rows could not be imported.',
+							result.errors.length,
+						)
+					}}
 				</NcNoteCard>
 				<ul v-if="result.errors.length" class="ob-import-wizard__errors">
 					<li v-for="(err, i) in result.errors.slice(0, 10)" :key="i">
@@ -208,7 +273,7 @@
 				</ul>
 				<NcButton
 					v-if="result.errorsCsv"
-					type="tertiary"
+					variant="tertiary"
 					@click="downloadErrorCsv">
 					<template #icon>
 						<DownloadIcon :size="20" />
@@ -221,20 +286,20 @@
 		<template #actions>
 			<NcButton
 				v-if="step > 1 && step < 5 && !importing"
-				type="tertiary"
+				variant="tertiary"
 				@click="back">
 				{{ t('openbuild', 'Back') }}
 			</NcButton>
 			<NcButton
 				v-if="step < 4"
-				type="primary"
+				variant="primary"
 				:disabled="!canAdvance"
 				@click="next">
 				{{ t('openbuild', 'Next') }}
 			</NcButton>
 			<NcButton
 				v-else-if="step === 4"
-				type="primary"
+				variant="primary"
 				:disabled="importing"
 				@click="runImport">
 				{{ t('openbuild', 'Import') }}
@@ -242,12 +307,16 @@
 			<template v-else>
 				<NcButton
 					v-if="result.importJobId"
-					type="warning"
+					variant="warning"
 					:disabled="undoing"
 					@click="undo">
-					{{ undoing ? t('openbuild', 'Undoing…') : t('openbuild', 'Undo import') }}
+					{{
+						undoing
+							? t('openbuild', 'Undoing…')
+							: t('openbuild', 'Undo import')
+					}}
 				</NcButton>
-				<NcButton type="primary" @click="onClose">
+				<NcButton variant="primary" @click="onClose">
 					{{ t('openbuild', 'Done') }}
 				</NcButton>
 			</template>
@@ -256,15 +325,14 @@
 </template>
 
 <script>
-import NcDialog from '@nextcloud/vue/components/NcDialog'
 import NcButton from '@nextcloud/vue/components/NcButton'
-import NcSelect from '@nextcloud/vue/components/NcSelect'
-import NcNoteCard from '@nextcloud/vue/components/NcNoteCard'
-import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
 import NcCheckboxRadioSwitch from '@nextcloud/vue/components/NcCheckboxRadioSwitch'
+import NcDialog from '@nextcloud/vue/components/NcDialog'
+import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
+import NcNoteCard from '@nextcloud/vue/components/NcNoteCard'
+import NcSelect from '@nextcloud/vue/components/NcSelect'
 import DownloadIcon from 'vue-material-design-icons/Download.vue'
 import UploadIcon from 'vue-material-design-icons/Upload.vue'
-
 import { useDataImport } from '../composables/useDataImport.js'
 
 const MAX_SAMPLE_ROWS = 5
@@ -282,6 +350,7 @@ export default {
 		DownloadIcon,
 		UploadIcon,
 	},
+
 	props: {
 		/**
 		 * The target register slug — ALWAYS the active version's own
@@ -302,6 +371,7 @@ export default {
 		 */
 		importClient: { type: Object, default: null },
 	},
+
 	emits: ['close', 'imported'],
 	data() {
 		return {
@@ -314,10 +384,20 @@ export default {
 			importing: false,
 			undoing: false,
 			error: '',
-			result: { importJobId: null, created: 0, updated: 0, skipped: 0, errors: [], errorsCsv: null, errorsCsvFilename: null },
+			result: {
+				importJobId: null,
+				created: 0,
+				updated: 0,
+				skipped: 0,
+				errors: [],
+				errorsCsv: null,
+				errorsCsvFilename: null,
+			},
+
 			importer: this.importClient || useDataImport(),
 		}
 	},
+
 	computed: {
 		/**
 		 * The sample table's header cells — the CSV's own header line.
@@ -333,6 +413,7 @@ export default {
 		sampleHeader() {
 			return this.sampleRows.length > 0 ? this.sampleRows[0] : []
 		},
+
 		/**
 		 * The sample table's data rows — everything after the header line.
 		 *
@@ -343,6 +424,7 @@ export default {
 		sampleBody() {
 			return this.sampleRows.slice(1)
 		},
+
 		/**
 		 * Step-rail labels.
 		 *
@@ -358,6 +440,7 @@ export default {
 				{ n: 5, label: t('openbuild', 'Result') },
 			]
 		},
+
 		/**
 		 * Schema options for the NcSelect, projected from the schemas prop.
 		 * Only the active version register's schemas are passed in, so shared
@@ -367,12 +450,21 @@ export default {
 		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.1
 		 */
 		schemaOptions() {
-			return (this.schemas || []).map((s) => ({
-				id: String(s.slug || (s['@self'] && s['@self'].slug) || s.id || s.uuid || ''),
-				label: String(s.title || s.name || s.slug || s.id || ''),
-				type: s,
-			})).filter((o) => o.id)
+			return (this.schemas || [])
+				.map((s) => ({
+					id: String(
+						s.slug
+							|| (s['@self'] && s['@self'].slug)
+							|| s.id
+							|| s.uuid
+							|| '',
+					),
+					label: String(s.title || s.name || s.slug || s.id || ''),
+					type: s,
+				}))
+				.filter((o) => o.id)
 		},
+
 		/**
 		 * OR import type inferred from the file extension (display only; OR
 		 * re-detects server-side).
@@ -384,7 +476,10 @@ export default {
 			if (!this.file) {
 				return ''
 			}
-			const ext = String(this.file.name || '').split('.').pop().toLowerCase()
+			const ext = String(this.file.name || '')
+				.split('.')
+				.pop()
+				.toLowerCase()
 			if (ext === 'xlsx' || ext === 'xls') {
 				return 'excel'
 			}
@@ -396,6 +491,7 @@ export default {
 			}
 			return ''
 		},
+
 		/**
 		 * Human label for the detected file type.
 		 *
@@ -410,6 +506,7 @@ export default {
 			}
 			return map[this.detectedType] || t('openbuild', 'Unsupported file type')
 		},
+
 		/**
 		 * Human-readable file size.
 		 *
@@ -426,6 +523,7 @@ export default {
 			}
 			return `${(b / (1024 * 1024)).toFixed(1)} MB`
 		},
+
 		/**
 		 * Whether the chosen file exceeds the synchronous-import size hint.
 		 *
@@ -435,6 +533,7 @@ export default {
 		isLargeFile() {
 			return !!this.file && this.file.size > LARGE_FILE_BYTES
 		},
+
 		/**
 		 * Confirmation-step summary text.
 		 *
@@ -445,10 +544,19 @@ export default {
 			const fileName = this.file ? this.file.name : ''
 			if (this.targetMode === 'existing') {
 				const label = this.selectedSchema ? this.selectedSchema.label : ''
-				return t('openbuild', 'Import "{file}" into the "{schema}" schema. OpenRegister parses the file and writes the rows.', { file: fileName, schema: label })
+				return t(
+					'openbuild',
+					'Import "{file}" into the "{schema}" schema. OpenRegister parses the file and writes the rows.',
+					{ file: fileName, schema: label },
+				)
 			}
-			return t('openbuild', 'Import "{file}" as a new schema. OpenRegister infers the fields from the header row and writes the rows.', { file: fileName })
+			return t(
+				'openbuild',
+				'Import "{file}" as a new schema. OpenRegister infers the fields from the header row and writes the rows.',
+				{ file: fileName },
+			)
 		},
+
 		/**
 		 * Whether the current step's requirements are met to advance.
 		 *
@@ -465,6 +573,7 @@ export default {
 			return true
 		},
 	},
+
 	watch: {
 		/**
 		 * Clear any stale error when the target schema changes.
@@ -476,6 +585,7 @@ export default {
 			this.error = ''
 		},
 	},
+
 	/**
 	 * Pre-select the schema the wizard was opened on (Schema Designer entry).
 	 *
@@ -490,6 +600,7 @@ export default {
 			}
 		}
 	},
+
 	methods: {
 		/**
 		 * Open the native file picker.
@@ -502,6 +613,7 @@ export default {
 				this.$refs.fileInput.click()
 			}
 		},
+
 		/**
 		 * Store the chosen file. For CSV we read the header + first rows for a
 		 * DISPLAY-ONLY preview (no schema inference, no transform, no persist —
@@ -518,6 +630,7 @@ export default {
 			this.previewColumns = []
 			this.sampleRows = []
 		},
+
 		/**
 		 * Build the preview: target-schema columns (from OR metadata) for the
 		 * existing-schema path, plus a display-only CSV sample.
@@ -529,9 +642,16 @@ export default {
 			// Existing-schema target: show the schema's own fields as the
 			// columns rows are mapped onto (sourced from OR-provided schema
 			// metadata, never from parsing the file).
-			if (this.targetMode === 'existing' && this.selectedSchema && this.selectedSchema.type) {
+			if (
+				this.targetMode === 'existing'
+				&& this.selectedSchema
+				&& this.selectedSchema.type
+			) {
 				const schema = this.selectedSchema.type
-				const props = (schema.properties || (schema.schema && schema.schema.properties)) || {}
+				const props =
+					schema.properties
+					|| (schema.schema && schema.schema.properties)
+					|| {}
 				this.previewColumns = Object.keys(props).map((name) => ({
 					name,
 					type: (props[name] && props[name].type) || '',
@@ -542,6 +662,7 @@ export default {
 				this.readCsvSample()
 			}
 		},
+
 		/**
 		 * Read the first lines of a CSV for a display-only sample. This does
 		 * NOT infer a schema or write anything — OpenRegister owns the
@@ -558,11 +679,17 @@ export default {
 			const reader = new FileReader()
 			reader.onload = () => {
 				const text = String(reader.result || '')
-				const lines = text.split(/\r?\n/).filter((l) => l.length > 0).slice(0, MAX_SAMPLE_ROWS + 1)
+				const lines = text
+					.split(/\r?\n/)
+					.filter((l) => l.length > 0)
+					.slice(0, MAX_SAMPLE_ROWS + 1)
 				const rows = lines.map((l) => l.split(','))
 				this.sampleRows = rows
 				if (this.targetMode === 'create' && rows.length > 0) {
-					this.previewColumns = rows[0].map((name) => ({ name: name.trim(), type: '' }))
+					this.previewColumns = rows[0].map((name) => ({
+						name: name.trim(),
+						type: '',
+					}))
 				}
 			}
 			reader.onerror = () => {
@@ -572,6 +699,7 @@ export default {
 			// Only read a small slice — the sample is cosmetic.
 			reader.readAsText(this.file.slice(0, 64 * 1024))
 		},
+
 		/**
 		 * Advance to the next step, building the preview when leaving upload.
 		 *
@@ -587,6 +715,7 @@ export default {
 			}
 			this.step += 1
 		},
+
 		/**
 		 * Go back one step.
 		 *
@@ -598,6 +727,7 @@ export default {
 				this.step -= 1
 			}
 		},
+
 		/**
 		 * Run the import by delegating to OpenRegister. OpenBuild uploads the
 		 * file bytes only; OR parses, infers, and writes.
@@ -612,7 +742,10 @@ export default {
 				const summary = await this.importer.importFile({
 					registerId: this.registerId,
 					file: this.file,
-					schema: this.targetMode === 'existing' && this.selectedSchema ? this.selectedSchema.id : undefined,
+					schema:
+						this.targetMode === 'existing' && this.selectedSchema
+							? this.selectedSchema.id
+							: undefined,
 					includeObjects: true,
 				})
 				this.result = summary
@@ -624,6 +757,7 @@ export default {
 				this.importing = false
 			}
 		},
+
 		/**
 		 * Undo the import via OpenRegister's rollback endpoint.
 		 *
@@ -638,7 +772,13 @@ export default {
 			this.error = ''
 			try {
 				await this.importer.rollbackImport(this.result.importJobId)
-				this.result = { ...this.result, importJobId: null, created: 0, updated: 0, skipped: 0 }
+				this.result = {
+					...this.result,
+					importJobId: null,
+					created: 0,
+					updated: 0,
+					skipped: 0,
+				}
 				this.$emit('imported', { rolledBack: true })
 			} catch (e) {
 				this.error = this.readError(e)
@@ -646,6 +786,7 @@ export default {
 				this.undoing = false
 			}
 		},
+
 		/**
 		 * Download the offline import template for the selected schema.
 		 *
@@ -666,6 +807,7 @@ export default {
 				window.location.href = url
 			}
 		},
+
 		/**
 		 * Download the per-row error report OR returned (base64 CSV).
 		 *
@@ -683,6 +825,7 @@ export default {
 			a.click()
 			document.body.removeChild(a)
 		},
+
 		/**
 		 * Extract a human error message from an OR error (e.g. 403 manage gate).
 		 *
@@ -695,8 +838,11 @@ export default {
 			if (data && data.error) {
 				return String(data.error)
 			}
-			return (e && e.message) ? String(e.message) : t('openbuild', 'Import failed.')
+			return e && e.message
+				? String(e.message)
+				: t('openbuild', 'Import failed.')
 		},
+
 		/**
 		 * Close the wizard.
 		 *

@@ -17,7 +17,7 @@
 	<div class="agents-page">
 		<header class="agents-page__header">
 			<h2>{{ t('openbuild', 'Agents') }}</h2>
-			<NcButton type="primary" :disabled="!selectedApp" @click="openNew">
+			<NcButton variant="primary" :disabled="!selectedApp" @click="openNew">
 				{{ t('openbuild', 'New agent') }}
 			</NcButton>
 		</header>
@@ -26,11 +26,11 @@
 			<NcSelect
 				v-model="selectedApp"
 				class="agents-page__picker-select"
-				:input-label="t('openbuild', 'Application')"
+				:inputLabel="t('openbuild', 'Application')"
 				:options="applications"
 				:loading="loadingApplications"
 				label="name"
-				track-by="slug"
+				trackBy="slug"
 				@update:modelValue="onAppChange" />
 		</div>
 
@@ -39,7 +39,12 @@
 		<NcEmptyContent
 			v-else-if="selectedApp && agents.length === 0"
 			:name="t('openbuild', 'No agents yet')"
-			:description="t('openbuild', 'Create an agent to give it instructions and a scoped subset of the builder tools.')" />
+			:description="
+				t(
+					'openbuild',
+					'Create an agent to give it instructions and a scoped subset of the builder tools.',
+				)
+			" />
 
 		<p v-else-if="!selectedApp" class="agents-page__hint">
 			{{ t('openbuild', 'Select an application to see its agents.') }}
@@ -51,19 +56,28 @@
 					v-for="agent in agents"
 					:key="agent.id"
 					class="agents-page__item"
-					:class="{ 'agents-page__item--active': selectedAgent && selectedAgent.id === agent.id }"
+					:class="{
+						'agents-page__item--active':
+							selectedAgent && selectedAgent.id === agent.id,
+					}"
 					data-testid="agent-row">
-					<button class="agents-page__item-main" @click="selectAgent(agent)">
+					<button
+						class="agents-page__item-main"
+						@click="selectAgent(agent)">
 						<strong>{{ agent.name }}</strong>
 						<span class="agents-page__item-meta">
-							{{ t('openbuild', '{count} tool(s) enabled', { count: (agent.enabledTools || []).length }) }}
+							{{
+								t('openbuild', '{count} tool(s) enabled', {
+									count: (agent.enabledTools || []).length,
+								})
+							}}
 						</span>
 					</button>
 					<div class="agents-page__item-side">
-						<NcButton type="tertiary" @click="openEdit(agent)">
+						<NcButton variant="tertiary" @click="openEdit(agent)">
 							{{ t('openbuild', 'Edit') }}
 						</NcButton>
-						<NcButton type="tertiary" @click="remove(agent)">
+						<NcButton variant="tertiary" @click="remove(agent)">
 							{{ t('openbuild', 'Delete') }}
 						</NcButton>
 					</div>
@@ -72,10 +86,14 @@
 
 			<div v-if="selectedAgent" class="agents-page__detail">
 				<div class="agents-page__detail-tabs">
-					<NcButton :type="activeTab === 'chat' ? 'primary' : 'tertiary'" @click="activeTab = 'chat'">
+					<NcButton
+						:variant="activeTab === 'chat' ? 'primary' : 'tertiary'"
+						@click="activeTab = 'chat'">
 						{{ t('openbuild', 'Chat') }}
 					</NcButton>
-					<NcButton :type="activeTab === 'history' ? 'primary' : 'tertiary'" @click="activeTab = 'history'">
+					<NcButton
+						:variant="activeTab === 'history' ? 'primary' : 'tertiary'"
+						@click="activeTab = 'history'">
 						{{ t('openbuild', 'Run history') }}
 					</NcButton>
 				</div>
@@ -83,13 +101,16 @@
 				<CopilotPanel
 					v-if="activeTab === 'chat'"
 					:key="selectedAgent.id"
-					:app-slug="selectedApp.slug"
-					:agent-id="selectedAgent.id"
+					:appSlug="selectedApp.slug"
+					:agentId="selectedAgent.id"
 					:name="selectedAgent.name"
 					:instructions="selectedAgent.instructions"
-					:enabled-tools="selectedAgent.enabledTools || []" />
+					:enabledTools="selectedAgent.enabledTools || []" />
 
-				<AgentRunHistory v-else :key="`history-${selectedAgent.id}`" :agent-id="selectedAgent.id" />
+				<AgentRunHistory
+					v-else
+					:key="`history-${selectedAgent.id}`"
+					:agentId="selectedAgent.id" />
 			</div>
 		</div>
 
@@ -100,7 +121,7 @@
 		<AgentEditDialog
 			v-model:open="editDialogOpen"
 			:agent="editingAgent"
-			:application-slug="selectedApp ? selectedApp.slug : ''"
+			:applicationSlug="selectedApp ? selectedApp.slug : ''"
 			@saved="onDialogSaved" />
 	</div>
 </template>
@@ -108,9 +129,15 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcEmptyContent, NcLoadingIcon, NcNoteCard, NcSelect } from '@nextcloud/vue'
-import CopilotPanel from '../components/copilot/CopilotPanel.vue'
+import {
+	NcButton,
+	NcEmptyContent,
+	NcLoadingIcon,
+	NcNoteCard,
+	NcSelect,
+} from '@nextcloud/vue'
 import AgentRunHistory from '../components/agents/AgentRunHistory.vue'
+import CopilotPanel from '../components/copilot/CopilotPanel.vue'
 import AgentEditDialog from '../dialogs/AgentEditDialog.vue'
 
 export default {
@@ -125,6 +152,7 @@ export default {
 		AgentRunHistory,
 		AgentEditDialog,
 	},
+
 	data() {
 		return {
 			loading: false,
@@ -139,9 +167,11 @@ export default {
 			editingAgent: null,
 		}
 	},
+
 	mounted() {
 		this.fetchApplications()
 	},
+
 	methods: {
 		/**
 		 * Load the caller's Applications for the picker.
@@ -162,6 +192,7 @@ export default {
 				this.loadingApplications = false
 			}
 		},
+
 		/**
 		 * Handle an application selection: reset the agent list + selection, fetch agents.
 		 *
@@ -175,6 +206,7 @@ export default {
 				this.fetchAgents()
 			}
 		},
+
 		/**
 		 * Load every `agent` object and filter to the selected Application
 		 * (mirrors AutomationsPage's fetch-all-then-filter pattern for the
@@ -187,16 +219,21 @@ export default {
 			this.loading = true
 			this.errorMessage = ''
 			try {
-				const url = generateUrl('/apps/openregister/api/objects/openbuild/agent')
+				const url = generateUrl(
+					'/apps/openregister/api/objects/openbuild/agent',
+				)
 				const { data } = await axios.get(url)
 				const all = this.extractResults(data)
-				this.agents = all.filter((a) => a.applicationSlug === this.selectedApp.slug)
+				this.agents = all.filter(
+					(a) => a.applicationSlug === this.selectedApp.slug,
+				)
 			} catch (error) {
 				this.errorMessage = t('openbuild', 'Could not load agents.')
 			} finally {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * Select an agent for the chat/history detail panel.
 		 *
@@ -208,6 +245,7 @@ export default {
 			this.selectedAgent = agent
 			this.activeTab = 'chat'
 		},
+
 		/**
 		 * @return {void}
 		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
@@ -216,6 +254,7 @@ export default {
 			this.editingAgent = null
 			this.editDialogOpen = true
 		},
+
 		/**
 		 * @param {object} agent - the agent row to edit.
 		 * @return {void}
@@ -225,6 +264,7 @@ export default {
 			this.editingAgent = agent
 			this.editDialogOpen = true
 		},
+
 		/**
 		 * @return {void}
 		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
@@ -233,6 +273,7 @@ export default {
 			this.editDialogOpen = false
 			this.fetchAgents()
 		},
+
 		/**
 		 * Delete an agent via OpenRegister's generic REST surface.
 		 *
@@ -242,7 +283,9 @@ export default {
 		 */
 		async remove(agent) {
 			try {
-				const url = generateUrl(`/apps/openregister/api/objects/openbuild/agent/${agent.id}`)
+				const url = generateUrl(
+					`/apps/openregister/api/objects/openbuild/agent/${agent.id}`,
+				)
 				await axios.delete(url)
 				if (this.selectedAgent && this.selectedAgent.id === agent.id) {
 					this.selectedAgent = null
@@ -252,6 +295,7 @@ export default {
 				this.errorMessage = t('openbuild', 'Could not delete the agent.')
 			}
 		},
+
 		/**
 		 * Normalise an OpenRegister list response (bare array or `{results}` envelope).
 		 *

@@ -12,8 +12,15 @@
   -->
 <template>
 	<div v-if="schemaAttachments.length" class="ob-document-actions">
-		<div v-if="docudeskChecked && !docudeskUsable" class="ob-document-actions__unavailable">
-			{{ t('openbuild', 'Docudesk is not available — document generation is disabled.') }}
+		<div
+			v-if="docudeskChecked && !docudeskUsable"
+			class="ob-document-actions__unavailable">
+			{{
+				t(
+					'openbuild',
+					'Docudesk is not available — document generation is disabled.',
+				)
+			}}
 		</div>
 		<template v-else>
 			<div
@@ -21,7 +28,7 @@
 				:key="att.id"
 				class="ob-document-actions__row">
 				<NcButton
-					type="secondary"
+					variant="secondary"
 					:disabled="isBusy(att)"
 					@click="onGenerate(att)">
 					{{ isBusy(att) ? t('openbuild', 'Generating…') : att.label }}
@@ -39,9 +46,9 @@
 
 <script>
 import { NcButton } from '@nextcloud/vue'
-import { useDocudeskDocument } from '../../composables/useDocudeskDocument.js'
 import { useAppStatus } from '../../composables/useAppStatus.js'
-import { objectSchemaKeys, matchesKey } from '../../utils/objectSchemaKeys.js'
+import { useDocudeskDocument } from '../../composables/useDocudeskDocument.js'
+import { matchesKey, objectSchemaKeys } from '../../utils/objectSchemaKeys.js'
 
 export default {
 	name: 'DocumentActions',
@@ -55,12 +62,14 @@ export default {
 		// this injection is what makes the two sides comparable at all.
 		cnObjectContext: { default: null },
 	},
+
 	props: {
 		// The current OR object being viewed.
 		object: {
 			type: Object,
 			default: () => ({}),
 		},
+
 		// All document attachments for the app (manifest `runtime.documents[]`).
 		// The widget filters to this object's schema itself.
 		//
@@ -74,8 +83,9 @@ export default {
 		// holds the list.
 		attachments: {
 			type: Array,
-			default: () => ([]),
+			default: () => [],
 		},
+
 		// Soft capability flag for Docudesk (graceful absence, REQ-DDT-005).
 		// `null` (the default) means "decide for yourself" — see
 		// `docudeskUsable`. A boolean is an explicit override.
@@ -84,6 +94,7 @@ export default {
 			default: null,
 		},
 	},
+
 	/**
 	 * Bind the Docudesk generate integration and the soft capability probe.
 	 *
@@ -95,6 +106,7 @@ export default {
 		const docudesk = useAppStatus('docudesk')
 		return { docs, docudesk }
 	},
+
 	computed: {
 		/**
 		 * Has the Docudesk capability been decided yet?
@@ -107,6 +119,7 @@ export default {
 		docudeskChecked() {
 			return this.docudeskAvailable !== null || this.docudesk.checked.value
 		},
+
 		/**
 		 * May this surface talk to Docudesk?
 		 *
@@ -118,6 +131,7 @@ export default {
 				? this.docudesk.available.value
 				: this.docudeskAvailable
 		},
+
 		/**
 		 * The app's document attachments: the explicit prop when a host supplies
 		 * one, else the built app's own `runtime.documents[]` from the manifest.
@@ -133,6 +147,7 @@ export default {
 			const list = manifest && manifest.runtime && manifest.runtime.documents
 			return Array.isArray(list) ? list : []
 		},
+
 		/**
 		 * The object's schema slug from its `@self` envelope.
 		 *
@@ -142,6 +157,7 @@ export default {
 		objectSchema() {
 			return this.schemaKeys[0] || ''
 		},
+
 		/**
 		 * Every name this object's schema can legitimately be known by.
 		 *
@@ -156,6 +172,7 @@ export default {
 		schemaKeys() {
 			return objectSchemaKeys(this.object, this.cnObjectContext)
 		},
+
 		/**
 		 * Attachments declared for this object's schema, in declared order.
 		 *
@@ -167,9 +184,12 @@ export default {
 			if (keys.length === 0) {
 				return []
 			}
-			return this.effectiveAttachments.filter((a) => a && matchesKey(a.schema, keys))
+			return this.effectiveAttachments.filter(
+				(a) => a && matchesKey(a.schema, keys),
+			)
 		},
 	},
+
 	mounted() {
 		// Fire the capability probe once. `useAppStatus` short-circuits on
 		// `OC.appswebroots` and caches per session, so this is cheap.
@@ -177,6 +197,7 @@ export default {
 			this.docudesk.check()
 		}
 	},
+
 	methods: {
 		/**
 		 * @param {object} att - the attachment.
@@ -186,6 +207,7 @@ export default {
 		isBusy(att) {
 			return this.docs.busyFor(att, this.object)
 		},
+
 		/**
 		 * @param {object} att - the attachment.
 		 * @return {?string}
@@ -194,6 +216,7 @@ export default {
 		errorCode(att) {
 			return this.docs.errorFor(att, this.object)
 		},
+
 		/**
 		 * @param {object} att - the attachment.
 		 * @return {string}
@@ -202,8 +225,12 @@ export default {
 		errorMessage(att) {
 			return this.errorCode(att) === 'no-access'
 				? t('openbuild', 'You do not have access to generate this document.')
-				: t('openbuild', 'Generating the document failed. The object is unchanged — you can try again.')
+				: t(
+						'openbuild',
+						'Generating the document failed. The object is unchanged — you can try again.',
+					)
 		},
+
 		/**
 		 * Trigger generation for an attachment (guarded against absent app).
 		 *
@@ -216,7 +243,10 @@ export default {
 			// /apps/docudesk. Resolve the capability BEFORE generating rather
 			// than reading a possibly-unresolved flag — `check()` is cached, so
 			// the await is free after the first call.
-			if (this.docudeskAvailable === null && this.docudesk.checked.value === false) {
+			if (
+				this.docudeskAvailable === null
+				&& this.docudesk.checked.value === false
+			) {
 				await this.docudesk.check()
 			}
 			if (!this.docudeskUsable) {

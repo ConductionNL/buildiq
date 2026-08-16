@@ -47,17 +47,28 @@ const POLL_TIMEOUT_MS = 60_000
 // mounts, which is the part that silently broke; the ZIP round-trip below stays
 // skipped for the unrelated reasons documented there.
 test.describe('OpenBuild export dialog', () => {
-	test('the Export action opens the export dialog with its target picker', async ({ page }) => {
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/applications/${APPLICATION_SLUG}`, {
-			waitUntil: 'domcontentloaded',
-		})
+	test('the Export action opens the export dialog with its target picker', async ({
+		page,
+	}) => {
+		await page.goto(
+			`${NEXTCLOUD_URL}/apps/openbuild/applications/${APPLICATION_SLUG}`,
+			{
+				waitUntil: 'domcontentloaded',
+			},
+		)
 		const exportButton = page.getByRole('button', { name: /^export$/i }).first()
-		await expect(exportButton, 'the app detail page must offer an Export action').toBeVisible({ timeout: 30_000 })
+		await expect(
+			exportButton,
+			'the app detail page must offer an Export action',
+		).toBeVisible({ timeout: 30_000 })
 		await exportButton.click()
 
 		// The regression: this never appeared.
 		const dialog = page.locator('.export-dialog')
-		await expect(dialog, 'clicking Export must mount the export dialog').toBeVisible({ timeout: 20_000 })
+		await expect(
+			dialog,
+			'clicking Export must mount the export dialog',
+		).toBeVisible({ timeout: 20_000 })
 
 		// Its three pickers are labelled via `<label for>`; the combobox itself
 		// carries no accessible name in this @nextcloud/vue version, so a
@@ -68,7 +79,9 @@ test.describe('OpenBuild export dialog', () => {
 
 		// ZIP is the default target, and the submit action is reachable.
 		await expect(dialog).toContainText('ZIP download')
-		await expect(page.getByRole('button', { name: /start export/i })).toBeVisible()
+		await expect(
+			page.getByRole('button', { name: /start export/i }),
+		).toBeVisible()
 	})
 })
 
@@ -92,18 +105,30 @@ test.describe.skip('OpenBuild ZIP export', () => {
 		// Login via the Nextcloud login form. CI uses storageState; this
 		// fallback keeps the spec runnable in local dev.
 		await page.goto(`${NEXTCLOUD_URL}/index.php/login`)
-		if (await page.locator('input[name="user"]').isVisible({ timeout: 5_000 }).catch(() => false)) {
+		if (
+			await page
+				.locator('input[name="user"]')
+				.isVisible({ timeout: 5_000 })
+				.catch(() => false)
+		) {
 			await page.fill('input[name="user"]', ADMIN_USER)
 			await page.fill('input[name="password"]', ADMIN_PASSWORD)
-			await page.locator('button[type="submit"], input[type="submit"]').first().click()
+			await page
+				.locator('button[type="submit"], input[type="submit"]')
+				.first()
+				.click()
 			// Pretty URLs in modern NC drop the `/index.php` prefix; accept both.
 			await page.waitForURL(/\/apps\//, { timeout: 15_000 })
 		}
 	})
 
-	test('export a hello-world Application as a ZIP and download it', async ({ page }) => {
+	test('export a hello-world Application as a ZIP and download it', async ({
+		page,
+	}) => {
 		// 1. Navigate to the hello-world editor.
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/applications/${APPLICATION_SLUG}`)
+		await page.goto(
+			`${NEXTCLOUD_URL}/apps/openbuild/applications/${APPLICATION_SLUG}`,
+		)
 
 		// 2. Open the Export dialog. The button is wired in
 		//    src/views/ApplicationDetail.vue per task 8.3.
@@ -123,7 +148,9 @@ test.describe.skip('OpenBuild ZIP export', () => {
 		await page.getByRole('button', { name: /^submit|^export$/i }).click()
 
 		// 5. Poll the jobs list until status=succeeded.
-		const succeededRow = page.locator('[data-test="export-job-row"]:has-text("succeeded")').first()
+		const succeededRow = page
+			.locator('[data-test="export-job-row"]:has-text("succeeded")')
+			.first()
 		await expect(succeededRow).toBeVisible({ timeout: POLL_TIMEOUT_MS })
 
 		// 6. Click the download button and capture the resulting file.
@@ -139,9 +166,13 @@ test.describe.skip('OpenBuild ZIP export', () => {
 		expect(suggestedFilename.length).toBeGreaterThan(0)
 	})
 
-	test('export dialog rejects submission with invalid target', async ({ page }) => {
+	test('export dialog rejects submission with invalid target', async ({
+		page,
+	}) => {
 		// Locks the client-side guard mirror of the 422 controller path.
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/applications/${APPLICATION_SLUG}`)
+		await page.goto(
+			`${NEXTCLOUD_URL}/apps/openbuild/applications/${APPLICATION_SLUG}`,
+		)
 		const exportButton = page.getByRole('button', { name: /export/i })
 		await expect(exportButton).toBeVisible({ timeout: 15_000 })
 		await exportButton.click()

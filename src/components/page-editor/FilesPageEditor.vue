@@ -28,7 +28,7 @@
 					:value="config.folder || ''"
 					:placeholder="t('openbuild', 'e.g. /Documents or Attachments')"
 					:aria-invalid="isInvalid('folder')"
-					@input="update('folder', $event.target.value)">
+					@input="update('folder', $event.target.value)" />
 				<InlineFieldMark :error="markFor('folder')" />
 			</label>
 		</fieldset>
@@ -36,7 +36,10 @@
 		<fieldset class="files-page-editor__fieldset">
 			<legend>{{ t('openbuild', 'Allowed types (optional)') }}</legend>
 			<div class="files-page-editor__tags">
-				<span v-for="(typ, index) in allowedTypes" :key="index" class="files-page-editor__tag">
+				<span
+					v-for="(typ, index) in allowedTypes"
+					:key="index"
+					class="files-page-editor__tag">
 					{{ typ }}
 					<button
 						type="button"
@@ -57,14 +60,22 @@
 					:aria-invalid="isInvalid('allowedTypes')"
 					@keydown.enter.prevent="commitDraft"
 					@keydown.,.prevent="commitDraft"
-					@blur="commitDraft">
+					@blur="commitDraft" />
 				<datalist id="files-page-editor-type-suggestions">
-					<option v-for="opt in TYPE_SUGGESTIONS" :key="opt" :value="opt" />
+					<option
+						v-for="opt in TYPE_SUGGESTIONS"
+						:key="opt"
+						:value="opt" />
 				</datalist>
 			</div>
 			<InlineFieldMark :error="markFor('allowedTypes')" />
 			<p class="files-page-editor__hint">
-				{{ t('openbuild', 'MIME types (image/png) or extensions (.pdf). Leave empty to allow everything.') }}
+				{{
+					t(
+						'openbuild',
+						'MIME types (image/png) or extensions (.pdf). Leave empty to allow everything.',
+					)
+				}}
 			</p>
 		</fieldset>
 	</div>
@@ -100,19 +111,23 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
 		pageType: {
 			type: String,
 			default: 'files',
 		},
+
 		appSlug: {
 			type: String,
 			default: '',
 		},
+
 		parentRoute: {
 			type: String,
 			default: '',
 		},
 	},
+
 	emits: ['update:config'],
 	data() {
 		return {
@@ -120,6 +135,7 @@ export default {
 			TYPE_SUGGESTIONS,
 		}
 	},
+
 	computed: {
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
@@ -129,15 +145,19 @@ export default {
 		validatedConfigKeys() {
 			return ['folder', 'allowedTypes']
 		},
+
 		/**
 		 * Observed behaviour of `allowedTypes` (retrofit annotation).
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		allowedTypes() {
-			return Array.isArray(this.config.allowedTypes) ? this.config.allowedTypes : []
+			return Array.isArray(this.config.allowedTypes)
+				? this.config.allowedTypes
+				: []
 		},
 	},
+
 	methods: {
 		/**
 		 * Write one key on the page's `config` block. Only the named key is
@@ -150,13 +170,18 @@ export default {
 		 */
 		update(key, value) {
 			const next = { ...this.config }
-			if (value === '' || value === null || (Array.isArray(value) && value.length === 0)) {
+			if (
+				value === ''
+				|| value === null
+				|| (Array.isArray(value) && value.length === 0)
+			) {
 				delete next[key]
 			} else {
 				next[key] = value
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Observed behaviour of `commitDraft` (retrofit annotation).
 		 *
@@ -170,6 +195,7 @@ export default {
 			}
 			this.update('allowedTypes', [...this.allowedTypes, value])
 		},
+
 		/**
 		 * Remove one allowed-type tag. Removing the last one deletes
 		 * `allowedTypes` altogether (via `update`), which the runtime reads

@@ -28,7 +28,11 @@ const t = (app, key, vars) => {
 }
 
 const router = { push: vi.fn(), replace: vi.fn().mockResolvedValue(undefined) }
-const route = { name: 'VirtualAppDetail', params: { objectId: 'app-uuid' }, query: {} }
+const route = {
+	name: 'VirtualAppDetail',
+	params: { objectId: 'app-uuid' },
+	query: {},
+}
 
 /**
  * Spec: openbuild-app-detail-overview / application-detail-overview
@@ -75,9 +79,24 @@ describe('ApplicationDetailHeader', () => {
 
 	it('renders pill tabs for each version in chain order, with production starred', async () => {
 		const versions = [
-			{ uuid: 'dev-uuid', slug: 'development', promotesTo: 'staging-uuid', name: 'development' },
-			{ uuid: 'staging-uuid', slug: 'staging', promotesTo: 'prod-uuid', name: 'staging' },
-			{ uuid: 'prod-uuid', slug: 'production', promotesTo: null, name: 'production' },
+			{
+				uuid: 'dev-uuid',
+				slug: 'development',
+				promotesTo: 'staging-uuid',
+				name: 'development',
+			},
+			{
+				uuid: 'staging-uuid',
+				slug: 'staging',
+				promotesTo: 'prod-uuid',
+				name: 'staging',
+			},
+			{
+				uuid: 'prod-uuid',
+				slug: 'production',
+				promotesTo: null,
+				name: 'production',
+			},
 		]
 
 		const wrapper = shallowMount(ApplicationDetailHeader, {
@@ -124,5 +143,4 @@ describe('ApplicationDetailHeader', () => {
 		expect(visible.length).toBe(1)
 		expect(visible[0].slug).toBe('production')
 	})
-
 })

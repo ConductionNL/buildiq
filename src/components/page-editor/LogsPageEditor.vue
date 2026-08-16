@@ -30,7 +30,7 @@
 						type="radio"
 						:checked="sourceShape === 'register'"
 						value="register"
-						@change="setSourceShape('register')">
+						@change="setSourceShape('register')" />
 					{{ t('openbuild', 'Register + schema') }}
 				</label>
 				<label class="logs-page-editor__inline">
@@ -38,7 +38,7 @@
 						type="radio"
 						:checked="sourceShape === 'source'"
 						value="source"
-						@change="setSourceShape('source')">
+						@change="setSourceShape('source')" />
 					{{ t('openbuild', 'Source (URL or registry key)') }}
 				</label>
 			</div>
@@ -53,7 +53,10 @@
 						<option value="">
 							{{ t('openbuild', '— select register —') }}
 						</option>
-						<option v-for="r in registers" :key="r.slug || r.id" :value="r.slug">
+						<option
+							v-for="r in registers"
+							:key="r.slug || r.id"
+							:value="r.slug">
 							{{ r.title || r.slug }}
 						</option>
 					</select>
@@ -69,7 +72,10 @@
 						<option value="">
 							{{ t('openbuild', '— select schema —') }}
 						</option>
-						<option v-for="s in schemas" :key="s.slug || s.id" :value="s.slug">
+						<option
+							v-for="s in schemas"
+							:key="s.slug || s.id"
+							:value="s.slug">
 							{{ s.title || s.slug }}
 						</option>
 					</select>
@@ -82,22 +88,32 @@
 					<input
 						type="text"
 						:value="config.source || ''"
-						:placeholder="t('openbuild', '/api/objects/:slug/audit or a customComponents key')"
+						:placeholder="
+							t(
+								'openbuild',
+								'/api/objects/:slug/audit or a customComponents key',
+							)
+						"
 						:aria-invalid="isInvalid('source')"
-						@input="update('source', $event.target.value)">
+						@input="update('source', $event.target.value)" />
 					<InlineFieldMark :error="markFor('source')" />
 				</label>
 			</div>
 			<p class="logs-page-editor__hint">
-				{{ t('openbuild', 'Exactly one of (register + schema) or source must be set.') }}
+				{{
+					t(
+						'openbuild',
+						'Exactly one of (register + schema) or source must be set.',
+					)
+				}}
 			</p>
 		</fieldset>
 
 		<fieldset class="logs-page-editor__fieldset">
 			<legend>{{ t('openbuild', 'Columns') }}</legend>
 			<ColumnBuilder
-				:model-value="config.columns || []"
-				:schema-properties="schemaProperties"
+				:modelValue="config.columns || []"
+				:schemaProperties="schemaProperties"
 				@update:modelValue="update('columns', $event)" />
 			<InlineFieldMark :error="markFor('columns')" />
 		</fieldset>
@@ -119,25 +135,30 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
 		pageType: {
 			type: String,
 			default: 'logs',
 		},
+
 		appSlug: {
 			type: String,
 			default: '',
 		},
+
 		// The Application's declared `dataRegisters` bindings, forwarded into
 		// useRegisterPicker so the register picker labels/hoists them.
 		dataRegisters: {
 			type: Array,
 			default: () => [],
 		},
+
 		parentRoute: {
 			type: String,
 			default: '',
 		},
 	},
+
 	emits: ['update:config'],
 	/**
 	 * Build the register/schema picker for this editor. Options-API `data`
@@ -150,9 +171,13 @@ export default {
 	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-2.1
 	 */
 	setup(props) {
-		const picker = useRegisterPicker({ appSlug: props.appSlug, dataRegisters: props.dataRegisters })
+		const picker = useRegisterPicker({
+			appSlug: props.appSlug,
+			dataRegisters: props.dataRegisters,
+		})
 		return { picker }
 	},
+
 	data() {
 		return {
 			registers: [],
@@ -160,6 +185,7 @@ export default {
 			schemaProperties: {},
 		}
 	},
+
 	computed: {
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
@@ -169,6 +195,7 @@ export default {
 		validatedConfigKeys() {
 			return ['register', 'schema', 'source', 'columns']
 		},
+
 		/**
 		 * Observed behaviour of `sourceShape` (retrofit annotation).
 		 *
@@ -183,6 +210,7 @@ export default {
 			return 'register'
 		},
 	},
+
 	watch: {
 		'config.register': {
 			immediate: true,
@@ -201,6 +229,7 @@ export default {
 				}
 			},
 		},
+
 		'config.schema': {
 			immediate: true,
 			/**
@@ -219,9 +248,11 @@ export default {
 			},
 		},
 	},
+
 	async mounted() {
 		await this.fetchRegisters()
 	},
+
 	methods: {
 		/**
 		 * Write one key on the page's `config` block and keep the
@@ -235,7 +266,11 @@ export default {
 		 */
 		update(key, value) {
 			const next = { ...this.config }
-			if (value === '' || value === null || (Array.isArray(value) && value.length === 0)) {
+			if (
+				value === ''
+				|| value === null
+				|| (Array.isArray(value) && value.length === 0)
+			) {
 				delete next[key]
 			} else {
 				next[key] = value
@@ -252,6 +287,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Switch between the two mutually exclusive data-source branches by
 		 * deleting the keys of the branch being left, so the emitted config
@@ -270,6 +306,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Observed behaviour of `fetchRegisters` (retrofit annotation).
 		 *
@@ -278,6 +315,7 @@ export default {
 		async fetchRegisters() {
 			this.registers = await this.picker.fetchRegisters()
 		},
+
 		/**
 		 * Load the schemas of one register into the schema dropdown.
 		 *
@@ -288,6 +326,7 @@ export default {
 		async fetchSchemas(register) {
 			this.schemas = await this.picker.fetchSchemas(register)
 		},
+
 		/**
 		 * Load one schema's JSON-Schema `properties` map, which ColumnBuilder
 		 * turns into the column field picker's options.
@@ -298,7 +337,10 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		async fetchSchemaProperties(register, schema) {
-			this.schemaProperties = await this.picker.fetchSchemaProperties(register, schema)
+			this.schemaProperties = await this.picker.fetchSchemaProperties(
+				register,
+				schema,
+			)
 		},
 	},
 }

@@ -84,17 +84,25 @@ async function open(page: Page, path: string): Promise<void> {
  * @param request Playwright request context (carries the admin session).
  * @return {Promise<Record<string, any>>} The `hello-world` Application record.
  */
-async function fetchApplication(request: APIRequestContext): Promise<Record<string, any>> {
-	const res = await request.get(`${BASE}/index.php/apps/openbuild/api/applications`, {
-		headers: { 'OCS-APIRequest': 'true' },
-	})
+async function fetchApplication(
+	request: APIRequestContext,
+): Promise<Record<string, any>> {
+	const res = await request.get(
+		`${BASE}/index.php/apps/openbuild/api/applications`,
+		{
+			headers: { 'OCS-APIRequest': 'true' },
+		},
+	)
 	expect(res.ok(), 'the applications API must answer').toBeTruthy()
 	const body = await res.json()
 	const rows: Array<Record<string, any>> = Array.isArray(body)
 		? body
 		: (body.results ?? body.applications ?? [])
 	const app = rows.find((a) => (a.slug ?? a['@self']?.slug) === SLUG)
-	expect(app, `the seeded "${SLUG}" Application must exist — globalSetup runs the seed command`).toBeTruthy()
+	expect(
+		app,
+		`the seeded "${SLUG}" Application must exist — globalSetup runs the seed command`,
+	).toBeTruthy()
 	return app as Record<string, any>
 }
 
@@ -131,7 +139,9 @@ async function openDetailSidebar(page: Page, objectId: string): Promise<void> {
 	if (!(await sidebar.isVisible().catch(() => false))) {
 		await page.locator('.app-sidebar__toggle').first().click()
 	}
-	await expect(sidebar, 'the object sidebar must open').toBeVisible({ timeout: 15_000 })
+	await expect(sidebar, 'the object sidebar must open').toBeVisible({
+		timeout: 15_000,
+	})
 }
 
 /**
@@ -147,13 +157,21 @@ async function openDetailSidebar(page: Page, objectId: string): Promise<void> {
  * @param label The tab's visible label, e.g. `Manifest`.
  * @return {Promise<void>}
  */
-async function activateSidebarTab(page: Page, id: string, label: string): Promise<void> {
-	const tabButton = page.locator('.app-sidebar-header__info, .app-sidebar-tabs__nav')
+async function activateSidebarTab(
+	page: Page,
+	id: string,
+	label: string,
+): Promise<void> {
+	const tabButton = page
+		.locator('.app-sidebar-header__info, .app-sidebar-tabs__nav')
 		.getByRole('tab', { name: new RegExp(`^${label}$`, 'i') })
 	if (await tabButton.count()) {
 		await tabButton.first().click()
 	} else {
-		await page.getByRole('tab', { name: new RegExp(`^${label}$`, 'i') }).first().click()
+		await page
+			.getByRole('tab', { name: new RegExp(`^${label}$`, 'i') })
+			.first()
+			.click()
 	}
 	await expect(
 		page.locator(`[data-testid="cn-object-sidebar-tab-${id}"]`),
@@ -168,37 +186,37 @@ async function activateSidebarTab(page: Page, id: string, label: string): Promis
 // @e2e openbuild-runtime::navigating-into-a-virtual-app-renders-its-manifest-pages
 test.skip('REQ-OBR-002 — builder route mounts a nested CnAppRoot for the virtual app', async () => {
 	// @e2e openbuild-runtime::navigating-into-a-virtual-app-renders-its-manifest-pages
-//
-// SUPERSEDED REQUIREMENT — established from source + a live page snapshot, not
-// inferred. REQ-OBR-002/003 describe `/builder/:slug/*` mounting a NESTED
-// `CnAppRoot` INSIDE the OpenBuild shell, with the outer `CnAppNav` and chrome
-// still visible. The product deliberately does the opposite now:
-//
-//   appinfo/routes.php maps the bare `/builder/{slug}` (and `/builder/{slug}/`)
-//   to `dashboard#builder`, a STANDALONE page that boots `src/builder.js` —
-//   its own webpack entry (`openbuild-builder.js`). That file's header states
-//   the reason outright: "It is deliberately NOT the OpenBuild SPA: rendering
-//   the app inside OpenBuild's shell nests one NcContent in another (double
-//   chrome) and, worse, shares OpenBuild's router — which has none of the app's
-//   page routes, so page content never resolves."
-//
-// `src/views/BuilderHost.vue` still exists and is still registered, but it only
-// mounts for builder sub-paths that fall through to the SPA catch-all — never
-// for the bare runtime route these scenarios navigate to. That is why
-// `[data-testid="openbuild-builder-host"]` is genuinely absent while the app
-// itself renders: the failed run's page snapshot shows the virtual app's
-// "Messages" index with all three seeded rows, under a nav link to
-// `/apps/openbuild/builder/hello-world/`, and no builder-host wrapper anywhere.
-//
-// The BEHAVIOUR both scenarios exist to protect — the seeded app's index and
-// detail pages resolving from its own manifest — is covered and passing in
-// "REQ-OBR-004 — the seeded index lists the three sample messages and opens
-// one" (and in tests/e2e/builder-host.spec.ts). Re-asserting it here under the
-// nested-mount wording would test an architecture the app abandoned on purpose.
-//
-// Resolution belongs in the spec: REQ-OBR-002/003 should be re-worded around the
-// standalone runtime entry. Left skipped rather than deleted so that rewrite has
-// something to find.
+	//
+	// SUPERSEDED REQUIREMENT — established from source + a live page snapshot, not
+	// inferred. REQ-OBR-002/003 describe `/builder/:slug/*` mounting a NESTED
+	// `CnAppRoot` INSIDE the OpenBuild shell, with the outer `CnAppNav` and chrome
+	// still visible. The product deliberately does the opposite now:
+	//
+	//   appinfo/routes.php maps the bare `/builder/{slug}` (and `/builder/{slug}/`)
+	//   to `dashboard#builder`, a STANDALONE page that boots `src/builder.js` —
+	//   its own webpack entry (`openbuild-builder.js`). That file's header states
+	//   the reason outright: "It is deliberately NOT the OpenBuild SPA: rendering
+	//   the app inside OpenBuild's shell nests one NcContent in another (double
+	//   chrome) and, worse, shares OpenBuild's router — which has none of the app's
+	//   page routes, so page content never resolves."
+	//
+	// `src/views/BuilderHost.vue` still exists and is still registered, but it only
+	// mounts for builder sub-paths that fall through to the SPA catch-all — never
+	// for the bare runtime route these scenarios navigate to. That is why
+	// `[data-testid="openbuild-builder-host"]` is genuinely absent while the app
+	// itself renders: the failed run's page snapshot shows the virtual app's
+	// "Messages" index with all three seeded rows, under a nav link to
+	// `/apps/openbuild/builder/hello-world/`, and no builder-host wrapper anywhere.
+	//
+	// The BEHAVIOUR both scenarios exist to protect — the seeded app's index and
+	// detail pages resolving from its own manifest — is covered and passing in
+	// "REQ-OBR-004 — the seeded index lists the three sample messages and opens
+	// one" (and in tests/e2e/builder-host.spec.ts). Re-asserting it here under the
+	// nested-mount wording would test an architecture the app abandoned on purpose.
+	//
+	// Resolution belongs in the spec: REQ-OBR-002/003 should be re-worded around the
+	// standalone runtime entry. Left skipped rather than deleted so that rewrite has
+	// something to find.
 })
 
 // ---------------------------------------------------------------------------
@@ -224,7 +242,9 @@ test.skip('REQ-OBR-003 — a detail path after the slug resolves on the inner ro
 // ---------------------------------------------------------------------------
 
 // @e2e openbuild-runtime::fresh-install-renders-the-seeded-virtual-app
-test('REQ-OBR-004 — the seeded index lists the three sample messages and opens one', async ({ page }) => {
+test('REQ-OBR-004 — the seeded index lists the three sample messages and opens one', async ({
+	page,
+}) => {
 	// @e2e openbuild-runtime::fresh-install-renders-the-seeded-virtual-app
 	await open(page, `/builder/${SLUG}`)
 
@@ -238,7 +258,9 @@ test('REQ-OBR-004 — the seeded index lists the three sample messages and opens
 	// "opening one of them renders the seeded detail page" — click through and
 	// assert the URL moved onto the manifest's `/messages/:id` route.
 	await page.getByText(SEEDED_TITLES[0], { exact: false }).first().click()
-	await page.waitForURL(new RegExp(`/builder/${SLUG}/messages/[^/]+`), { timeout: 20_000 })
+	await page.waitForURL(new RegExp(`/builder/${SLUG}/messages/[^/]+`), {
+		timeout: 20_000,
+	})
 	await expect(
 		page.getByText(SEEDED_TITLES[0], { exact: false }).first(),
 		'the detail page must render the message that was clicked',
@@ -246,7 +268,9 @@ test('REQ-OBR-004 — the seeded index lists the three sample messages and opens
 })
 
 // @e2e openbuild-runtime::re-running-the-repair-step-is-idempotent
-test('REQ-OBR-004 — re-running the seed creates no duplicate app or messages', async ({ request }) => {
+test('REQ-OBR-004 — re-running the seed creates no duplicate app or messages', async ({
+	request,
+}) => {
 	// @e2e openbuild-runtime::re-running-the-repair-step-is-idempotent
 	// globalSetup runs `openbuild:seed-hello-world-fixture` before every suite
 	// run against an instance that already holds the fixture from the previous
@@ -254,9 +278,12 @@ test('REQ-OBR-004 — re-running the seed creates no duplicate app or messages',
 	// an already-seeded install, which is exactly the scenario's precondition.
 	// What it asserts is the scenario's THEN: still exactly one Application and
 	// exactly three messages.
-	const res = await request.get(`${BASE}/index.php/apps/openbuild/api/applications`, {
-		headers: { 'OCS-APIRequest': 'true' },
-	})
+	const res = await request.get(
+		`${BASE}/index.php/apps/openbuild/api/applications`,
+		{
+			headers: { 'OCS-APIRequest': 'true' },
+		},
+	)
 	expect(res.ok()).toBeTruthy()
 	const body = await res.json()
 	const rows: Array<Record<string, any>> = Array.isArray(body)
@@ -286,7 +313,10 @@ test('REQ-OBR-004 — re-running the seed creates no duplicate app or messages',
 // ---------------------------------------------------------------------------
 
 // @e2e openbuild-runtime::invalid-edit-is-blocked-before-save
-test('REQ-OBR-005 — an invalid manifest is rejected inline and sends no write', async ({ page, request }) => {
+test('REQ-OBR-005 — an invalid manifest is rejected inline and sends no write', async ({
+	page,
+	request,
+}) => {
 	// @e2e openbuild-runtime::invalid-edit-is-blocked-before-save
 	const app = await fetchApplication(request)
 	await openDetailSidebar(page, objectIdOf(app))
@@ -295,14 +325,20 @@ test('REQ-OBR-005 — an invalid manifest is rejected inline and sends no write'
 	const textarea = page.locator('[data-testid="openbuild-editor-textarea"]')
 	await expect(textarea).toBeVisible({ timeout: 15_000 })
 	const original = await textarea.inputValue()
-	expect(original.length, 'the editor must load the stored manifest').toBeGreaterThan(0)
+	expect(
+		original.length,
+		'the editor must load the stored manifest',
+	).toBeGreaterThan(0)
 
 	// Count every write the page attempts while the invalid save is driven.
 	// "no PUT request is sent to OR" is the load-bearing half of this scenario
 	// and is invisible in the DOM.
 	const writes: string[] = []
 	page.on('request', (r) => {
-		if (['PUT', 'POST', 'PATCH'].includes(r.method()) && /\/(objects|applications)\//.test(r.url())) {
+		if (
+			['PUT', 'POST', 'PATCH'].includes(r.method())
+			&& /\/(objects|applications)\//.test(r.url())
+		) {
 			writes.push(`${r.method()} ${r.url()}`)
 		}
 	})
@@ -315,7 +351,9 @@ test('REQ-OBR-005 — an invalid manifest is rejected inline and sends no write'
 		page.locator('.ob-manifest-tab__error'),
 		'the shared error surface must cite the validation failure',
 	).toBeVisible({ timeout: 10_000 })
-	await expect(page.locator('.ob-manifest-tab__error')).toContainText(/pages|invalid|manifest/i)
+	await expect(page.locator('.ob-manifest-tab__error')).toContainText(
+		/pages|invalid|manifest/i,
+	)
 
 	// Give any in-flight write a beat to appear before asserting none happened.
 	await page.waitForTimeout(1_500)
@@ -326,11 +364,17 @@ test('REQ-OBR-005 — an invalid manifest is rejected inline and sends no write'
 		`${BASE}/index.php/apps/openbuild/api/applications/${SLUG}/manifest`,
 		{ headers: { 'OCS-APIRequest': 'true' } },
 	)
-	expect((await after.json()).pages, 'the stored manifest must still have its pages').toBeTruthy()
+	expect(
+		(await after.json()).pages,
+		'the stored manifest must still have its pages',
+	).toBeTruthy()
 })
 
 // @e2e openbuild-runtime::valid-edit-persists-and-reloads
-test('REQ-OBR-005 — a valid edit is PUT to OR and survives a reload', async ({ page, request }) => {
+test('REQ-OBR-005 — a valid edit is PUT to OR and survives a reload', async ({
+	page,
+	request,
+}) => {
 	// @e2e openbuild-runtime::valid-edit-persists-and-reloads
 	//
 	// This was skipped on a product defect it found: ApplicationManifestTab
@@ -349,44 +393,65 @@ test('REQ-OBR-005 — a valid edit is PUT to OR and survives a reload', async ({
 	await expect(textarea).toBeVisible({ timeout: 15_000 })
 
 	// The editor must show the REAL manifest, not `{}` — the defect above.
-	await expect.poll(async () => {
-		const raw = await textarea.inputValue()
-		try {
-			return Array.isArray(JSON.parse(raw).pages)
-		} catch {
-			return false
-		}
-	}, { timeout: 20_000, message: 'the editor must load the stored manifest, not an empty object' }).toBe(true)
+	await expect
+		.poll(
+			async () => {
+				const raw = await textarea.inputValue()
+				try {
+					return Array.isArray(JSON.parse(raw).pages)
+				} catch {
+					return false
+				}
+			},
+			{
+				timeout: 20_000,
+				message:
+					'the editor must load the stored manifest, not an empty object',
+			},
+		)
+		.toBe(true)
 
 	const original = JSON.parse(await textarea.inputValue())
 	expect(original.pages, 'the loaded manifest must carry its pages').toBeTruthy()
 
 	// A valid edit: bump a top-level marker the manifest schema allows.
 	const marker = `e2e-${Date.now().toString(36)}`
-	await textarea.fill(JSON.stringify({ ...original, description: marker }, null, 2))
+	await textarea.fill(
+		JSON.stringify({ ...original, description: marker }, null, 2),
+	)
 	await page.locator('[data-testid="openbuild-editor-save"]').click()
 
 	// It must reach the SERVER, not just the buffer.
-	await expect.poll(async () => {
-		const resp = await request.get(
-			`${BASE}/index.php/apps/openbuild/api/applications/${SLUG}/manifest`,
-			{ headers: { 'OCS-APIRequest': 'true' } },
+	await expect
+		.poll(
+			async () => {
+				const resp = await request.get(
+					`${BASE}/index.php/apps/openbuild/api/applications/${SLUG}/manifest`,
+					{ headers: { 'OCS-APIRequest': 'true' } },
+				)
+				return (await resp.json()).description
+			},
+			{ timeout: 30_000, message: 'a valid edit must be PUT to the server' },
 		)
-		return (await resp.json()).description
-	}, { timeout: 30_000, message: 'a valid edit must be PUT to the server' }).toBe(marker)
+		.toBe(marker)
 
 	// And it must survive a reload of the editor.
 	await page.reload({ waitUntil: 'domcontentloaded' })
 	await openDetailSidebar(page, objectIdOf(app))
 	await activateSidebarTab(page, 'manifest', 'Manifest')
 	await expect(textarea).toBeVisible({ timeout: 15_000 })
-	await expect.poll(async () => {
-		try {
-			return JSON.parse(await textarea.inputValue()).description
-		} catch {
-			return null
-		}
-	}, { timeout: 20_000, message: 'the saved edit must survive a reload' }).toBe(marker)
+	await expect
+		.poll(
+			async () => {
+				try {
+					return JSON.parse(await textarea.inputValue()).description
+				} catch {
+					return null
+				}
+			},
+			{ timeout: 20_000, message: 'the saved edit must survive a reload' },
+		)
+		.toBe(marker)
 
 	// Leave the fixture as we found it.
 	await request.put(
@@ -416,7 +481,10 @@ test.skip('REQ-OBR-005 — Design tab is the default sibling of Raw JSON', async
 })
 
 // @e2e openbuild-runtime::unsaved-edits-survive-a-tab-switch
-test('REQ-OBR-005 — unsaved manifest edits survive a sidebar tab switch', async ({ page, request }) => {
+test('REQ-OBR-005 — unsaved manifest edits survive a sidebar tab switch', async ({
+	page,
+	request,
+}) => {
 	// @e2e openbuild-runtime::unsaved-edits-survive-a-tab-switch
 	//
 	// The requirement's subject is "the shared in-flight manifest state SHALL
@@ -465,7 +533,9 @@ test('REQ-OBR-005 — unsaved manifest edits survive a sidebar tab switch', asyn
 // ---------------------------------------------------------------------------
 
 // @e2e openbuild-runtime::schema-list-route-renders-the-designer-not-the-virtual-app
-test('REQ-OBR-006a — /builder/:slug/schemas renders the designer and does NOT mount the virtual app', async ({ page }) => {
+test('REQ-OBR-006a — /builder/:slug/schemas renders the designer and does NOT mount the virtual app', async ({
+	page,
+}) => {
 	// @e2e openbuild-runtime::schema-list-route-renders-the-designer-not-the-virtual-app
 	await open(page, `/builder/${SLUG}/schemas`)
 
@@ -484,7 +554,9 @@ test('REQ-OBR-006a — /builder/:slug/schemas renders the designer and does NOT 
 		nested,
 		`the nested CnAppRoot for "${SLUG}" must not mount on the schemas route`,
 	).toHaveLength(0)
-	await expect(page.locator('[data-testid="openbuild-builder-host"]')).toHaveCount(0)
+	await expect(page.locator('[data-testid="openbuild-builder-host"]')).toHaveCount(
+		0,
+	)
 })
 
 // @e2e openbuild-runtime::virtual-app-preview-route-still-mounts-the-nested-cnapproot
@@ -538,7 +610,10 @@ test.skip('REQ-OBR-007a — the Schemas entry appears in the builder context', a
 // ---------------------------------------------------------------------------
 
 // @e2e openbuild-runtime::successful-publish-creates-a-snapshot
-test('REQ-OBR-006b — the owner-only publish control is reachable and reflects lifecycle state', async ({ page, request }) => {
+test('REQ-OBR-006b — the owner-only publish control is reachable and reflects lifecycle state', async ({
+	page,
+	request,
+}) => {
 	// @e2e openbuild-runtime::successful-publish-creates-a-snapshot
 	//
 	// The requirement puts Publish "alongside Save" on a single editor view. The
@@ -549,9 +624,14 @@ test('REQ-OBR-006b — the owner-only publish control is reachable and reflects 
 	// published lifecycle transition" maps onto.
 	const app = await fetchApplication(request)
 	await open(page, `/applications/${objectIdOf(app)}`)
-	await expect(page.locator('.ob-detail-header__name')).toBeVisible({ timeout: 20_000 })
+	await expect(page.locator('.ob-detail-header__name')).toBeVisible({
+		timeout: 20_000,
+	})
 
-	await page.getByRole('button', { name: /^actions$/i }).first().click()
+	await page
+		.getByRole('button', { name: /^actions$/i })
+		.first()
+		.click()
 	const settings = page.getByRole('menuitem', { name: /^settings$/i })
 	await expect(
 		settings.first(),
@@ -561,8 +641,13 @@ test('REQ-OBR-006b — the owner-only publish control is reachable and reflects 
 
 	// The switch itself, and the fact that it mirrors the stored lifecycle state
 	// rather than being a decorative control.
-	const publishedSwitch = page.getByRole('checkbox', { name: /published/i }).first()
-	await expect(publishedSwitch, 'the Settings modal must expose the Published switch').toBeVisible({ timeout: 10_000 })
+	const publishedSwitch = page
+		.getByRole('checkbox', { name: /published/i })
+		.first()
+	await expect(
+		publishedSwitch,
+		'the Settings modal must expose the Published switch',
+	).toBeVisible({ timeout: 10_000 })
 	const uiPublished = await publishedSwitch.isChecked()
 	const storedPublished = (app.status ?? '') === 'published'
 	expect(
@@ -572,7 +657,10 @@ test('REQ-OBR-006b — the owner-only publish control is reachable and reflects 
 })
 
 // @e2e openbuild-runtime::validation-blocks-publish
-test('REQ-OBR-006b — an invalid manifest cannot be saved, so it can never be published', async ({ page, request }) => {
+test('REQ-OBR-006b — an invalid manifest cannot be saved, so it can never be published', async ({
+	page,
+	request,
+}) => {
 	// @e2e openbuild-runtime::validation-blocks-publish
 	//
 	// The scenario's contract is "no save or lifecycle call is sent, and the
@@ -595,7 +683,10 @@ test('REQ-OBR-006b — an invalid manifest cannot be saved, so it can never be p
 
 	const lifecycleCalls: string[] = []
 	page.on('request', (r) => {
-		if (r.method() !== 'GET' && /\/(publish|lifecycle|objects)\//.test(r.url())) {
+		if (
+			r.method() !== 'GET'
+			&& /\/(publish|lifecycle|objects)\//.test(r.url())
+		) {
 			lifecycleCalls.push(`${r.method()} ${r.url()}`)
 		}
 	})
@@ -603,11 +694,18 @@ test('REQ-OBR-006b — an invalid manifest cannot be saved, so it can never be p
 	// Not even valid JSON — the harshest input the shared error surface handles.
 	await textarea.fill('{ this is not json')
 	await page.locator('[data-testid="openbuild-editor-save"]').click()
-	await expect(page.locator('.ob-manifest-tab__error')).toBeVisible({ timeout: 10_000 })
-	await expect(page.locator('.ob-manifest-tab__error')).toContainText(/parse|invalid/i)
+	await expect(page.locator('.ob-manifest-tab__error')).toBeVisible({
+		timeout: 10_000,
+	})
+	await expect(page.locator('.ob-manifest-tab__error')).toContainText(
+		/parse|invalid/i,
+	)
 
 	await page.waitForTimeout(1_500)
-	expect(lifecycleCalls, 'no write or lifecycle call may follow a failed validation').toEqual([])
+	expect(
+		lifecycleCalls,
+		'no write or lifecycle call may follow a failed validation',
+	).toEqual([])
 
 	const after = await request.get(
 		`${BASE}/index.php/apps/openbuild/api/applications/${SLUG}/manifest`,
@@ -624,18 +722,28 @@ test('REQ-OBR-006b — an invalid manifest cannot be saved, so it can never be p
 // ---------------------------------------------------------------------------
 
 // @e2e openbuild-runtime::newly-published-application-shows-published-badge
-test('REQ-OBR-007b — every ApplicationCard carries a lifecycle status badge', async ({ page, request }) => {
+test('REQ-OBR-007b — every ApplicationCard carries a lifecycle status badge', async ({
+	page,
+	request,
+}) => {
 	// @e2e openbuild-runtime::newly-published-application-shows-published-badge
 	await open(page, '/applications')
 
-	const card = page.locator('.ob-app-card').filter({ hasText: 'Hello World' }).first()
-	await expect(card, 'the seeded app must render as a card').toBeVisible({ timeout: 20_000 })
+	const card = page
+		.locator('.ob-app-card')
+		.filter({ hasText: 'Hello World' })
+		.first()
+	await expect(card, 'the seeded app must render as a card').toBeVisible({
+		timeout: 20_000,
+	})
 
 	// Unconditional: the badge must exist and must read one of the three
 	// lifecycle labels. The old body wrapped this in `if (count > 0)`, so a
 	// missing badge passed silently.
 	const badge = card.locator('.ob-app-card__badge')
-	await expect(badge, 'the card must carry exactly one status badge').toHaveCount(1)
+	await expect(badge, 'the card must carry exactly one status badge').toHaveCount(
+		1,
+	)
 	// Retrying: the card paints a placeholder first and settles once the shared
 	// production-version lookup resolves. A one-shot read races that.
 	await expect(
@@ -659,7 +767,7 @@ test('REQ-OBR-007b — every ApplicationCard carries a lifecycle status badge', 
 	expect(
 		detail,
 		'the seeded app must expose a resolved productionVersionDetail — the card '
-		+ 'cannot render a real status without it',
+			+ 'cannot render a real status without it',
 	).toBeTruthy()
 	await expect(
 		badge,
@@ -668,7 +776,10 @@ test('REQ-OBR-007b — every ApplicationCard carries a lifecycle status badge', 
 })
 
 // @e2e openbuild-runtime::edited-draft-shows-modified-indicator
-test('REQ-OBR-007b — the detail header carries the same status badge as the list row', async ({ page, request }) => {
+test('REQ-OBR-007b — the detail header carries the same status badge as the list row', async ({
+	page,
+	request,
+}) => {
 	// Budget note: this scenario boots the OpenBuild SPA twice times over, and
 	// each boot is a manifest fetch plus register/schema resolution. The 30s
 	// project default is sized for single-navigation tests. This is a realistic
@@ -684,23 +795,37 @@ test('REQ-OBR-007b — the detail header carries the same status badge as the li
 	const app = await fetchApplication(request)
 
 	await open(page, '/applications')
-	const card = page.locator('.ob-app-card').filter({ hasText: 'Hello World' }).first()
+	const card = page
+		.locator('.ob-app-card')
+		.filter({ hasText: 'Hello World' })
+		.first()
 	await expect(card).toBeVisible({ timeout: 20_000 })
 	// Let the badge settle before reading it — see the note in the test above.
-	await expect(card.locator('.ob-app-card__badge'))
-		.toHaveText(/^(draft|published|archived)$/i, { timeout: 15_000 })
-	const listBadge = ((await card.locator('.ob-app-card__badge').textContent()) ?? '').trim().toLowerCase()
+	await expect(card.locator('.ob-app-card__badge')).toHaveText(
+		/^(draft|published|archived)$/i,
+		{ timeout: 15_000 },
+	)
+	const listBadge = (
+		(await card.locator('.ob-app-card__badge').textContent()) ?? ''
+	)
+		.trim()
+		.toLowerCase()
 
 	await open(page, `/applications/${objectIdOf(app)}`)
 	const headerBadge = page.locator('.ob-detail-header__badge--status')
-	await expect(headerBadge, 'the detail header must carry a status badge').toBeVisible({ timeout: 20_000 })
+	await expect(
+		headerBadge,
+		'the detail header must carry a status badge',
+	).toBeVisible({ timeout: 20_000 })
 	const headerText = ((await headerBadge.textContent()) ?? '').trim().toLowerCase()
 
 	expect(
 		['draft', 'published', 'archived'],
 		`the header badge must show a lifecycle status, got "${headerText}"`,
 	).toContain(headerText)
-	expect(headerText, 'the header badge and the list row must agree').toBe(listBadge)
+	expect(headerText, 'the header badge and the list row must agree').toBe(
+		listBadge,
+	)
 })
 
 // ---------------------------------------------------------------------------
@@ -776,7 +901,10 @@ test.skip('REQ-OBR-009a — cancelling the confirmation sends no write', async (
 // ---------------------------------------------------------------------------
 
 // @e2e openbuild-runtime::default-diff-shows-current-draft-vs-latest-published
-test('REQ-OBR-010 — the diff view preselects draft → current version and diffs client-side', async ({ page, request }) => {
+test('REQ-OBR-010 — the diff view preselects draft → current version and diffs client-side', async ({
+	page,
+	request,
+}) => {
 	// @e2e openbuild-runtime::default-diff-shows-current-draft-vs-latest-published
 	const app = await fetchApplication(request)
 
@@ -793,15 +921,24 @@ test('REQ-OBR-010 — the diff view preselects draft → current version and dif
 	// (a) the component mounted with the preselected pair.
 	const mounted = await findMounted(page, 'ManifestDiff')
 	expect(mounted.length, 'the Diff tab must mount ManifestDiff').toBeGreaterThan(0)
-	expect(mounted[0].props.from, 'the default comparison starts from the draft').toBe('draft')
-	expect(mounted[0].props.slug, 'the diff is scoped to this application').toBe(SLUG)
+	expect(
+		mounted[0].props.from,
+		'the default comparison starts from the draft',
+	).toBe('draft')
+	expect(mounted[0].props.slug, 'the diff is scoped to this application').toBe(
+		SLUG,
+	)
 
 	// (b) the pair is surfaced to the user.
-	await expect(page.locator('.manifest-diff__pair')).toContainText(/draft/i, { timeout: 20_000 })
+	await expect(page.locator('.manifest-diff__pair')).toContainText(/draft/i, {
+		timeout: 20_000,
+	})
 
 	// (c) exactly one server round-trip — the diff itself is computed in the
 	// browser (design.md Decision 5), so no second call to a diff service.
-	await expect.poll(() => diffRequests.length, { timeout: 20_000 }).toBeLessThanOrEqual(1)
+	await expect
+		.poll(() => diffRequests.length, { timeout: 20_000 })
+		.toBeLessThanOrEqual(1)
 
 	// (d) the component reached a rendered state — either a diff pane, or the
 	// documented "nothing to diff" state when the app was never published.
@@ -834,7 +971,9 @@ test.skip('REQ-OBR-010 — an arbitrary snapshot pair can be compared', async ()
 // ---------------------------------------------------------------------------
 
 // @e2e openbuild-runtime::caller-in-any-role-gets-200
-test('REQ-OBR-006c — a caller holding a role gets 200 and the stored manifest', async ({ request }) => {
+test('REQ-OBR-006c — a caller holding a role gets 200 and the stored manifest', async ({
+	request,
+}) => {
 	// @e2e openbuild-runtime::caller-in-any-role-gets-200
 	const res = await request.get(
 		`${BASE}/index.php/apps/openbuild/api/applications/${SLUG}/manifest`,
@@ -844,12 +983,19 @@ test('REQ-OBR-006c — a caller holding a role gets 200 and the stored manifest'
 	expect(res.headers()['content-type'] ?? '').toContain('application/json')
 
 	const body = await res.json()
-	expect(Array.isArray(body.pages), 'the body must be the stored manifest blob').toBe(true)
-	expect(body.pages.length, 'the seeded manifest declares pages').toBeGreaterThan(0)
+	expect(
+		Array.isArray(body.pages),
+		'the body must be the stored manifest blob',
+	).toBe(true)
+	expect(body.pages.length, 'the seeded manifest declares pages').toBeGreaterThan(
+		0,
+	)
 	// The seed's index page over `hello-message` is what the runtime scenarios
 	// above render, so its presence ties this contract to those tests.
 	expect(
-		body.pages.some((p: Record<string, any>) => p.config?.schema === 'hello-message'),
+		body.pages.some(
+			(p: Record<string, any>) => p.config?.schema === 'hello-message',
+		),
 		'the served manifest must be the hello-world blob',
 	).toBe(true)
 })
@@ -876,24 +1022,39 @@ test.skip('REQ-OBR-006c — a caller with no role gets 403 and no metadata leak'
 // ---------------------------------------------------------------------------
 
 // @e2e openbuild-runtime::user-sees-only-authorised-applications
-test('REQ-OBR-007c — the list renders exactly the applications the API authorises', async ({ page, request }) => {
+test('REQ-OBR-007c — the list renders exactly the applications the API authorises', async ({
+	page,
+	request,
+}) => {
 	// @e2e openbuild-runtime::user-sees-only-authorised-applications
-	const res = await request.get(`${BASE}/index.php/apps/openbuild/api/applications`, {
-		headers: { 'OCS-APIRequest': 'true' },
-	})
+	const res = await request.get(
+		`${BASE}/index.php/apps/openbuild/api/applications`,
+		{
+			headers: { 'OCS-APIRequest': 'true' },
+		},
+	)
 	const body = await res.json()
-	const authorised: Array<Record<string, any>> = Array.isArray(body) ? body : (body.results ?? [])
+	const authorised: Array<Record<string, any>> = Array.isArray(body)
+		? body
+		: (body.results ?? [])
 	const authorisedSlugs = authorised
 		.map((a) => a.slug ?? a['@self']?.slug)
 		.filter(Boolean) as string[]
-	expect(authorisedSlugs.length, 'admin must be authorised on at least the seeded app').toBeGreaterThan(0)
+	expect(
+		authorisedSlugs.length,
+		'admin must be authorised on at least the seeded app',
+	).toBeGreaterThan(0)
 
 	await open(page, '/applications')
-	await expect(page.locator('.ob-app-card').first()).toBeVisible({ timeout: 20_000 })
+	await expect(page.locator('.ob-app-card').first()).toBeVisible({
+		timeout: 20_000,
+	})
 
 	// Every card renders its slug in the muted chip (`/{slug}`), so the rendered
 	// set can be compared against the authorised set rather than merely counted.
-	const rendered = (await page.locator('.ob-app-card__chip--muted').allTextContents())
+	const rendered = (
+		await page.locator('.ob-app-card__chip--muted').allTextContents()
+	)
 		.map((s) => s.trim().replace(/^\//, ''))
 		.filter(Boolean)
 
@@ -932,7 +1093,10 @@ test.skip('REQ-OBR-007c — a caller with no roles sees an empty list and the as
 // ---------------------------------------------------------------------------
 
 // @e2e openbuild-runtime::owner-sees-all-controls
-test('REQ-OBR-008b — an owner sees the editable manifest, Save, and every owner-only action', async ({ page, request }) => {
+test('REQ-OBR-008b — an owner sees the editable manifest, Save, and every owner-only action', async ({
+	page,
+	request,
+}) => {
 	// Budget note: this scenario boots the OpenBuild SPA twice times over, and
 	// each boot is a manifest fetch plus register/schema resolution. The 30s
 	// project default is sized for single-navigation tests. This is a realistic
@@ -950,7 +1114,10 @@ test('REQ-OBR-008b — an owner sees the editable manifest, Save, and every owne
 	// off for viewer / none).
 	const textarea = page.locator('[data-testid="openbuild-editor-textarea"]')
 	await expect(textarea).toBeVisible({ timeout: 15_000 })
-	await expect(textarea, 'an owner must get an editable manifest').not.toHaveAttribute('readonly', /.*/)
+	await expect(
+		textarea,
+		'an owner must get an editable manifest',
+	).not.toHaveAttribute('readonly', /.*/)
 	await expect(
 		page.locator('[data-testid="openbuild-editor-save"]'),
 		'an owner must see Save',
@@ -959,9 +1126,19 @@ test('REQ-OBR-008b — an owner sees the editable manifest, Save, and every owne
 	// owner ⇒ the whole owner-gated action set is present. Each of these is
 	// `v-if="obAppRole === 'owner'"` in ApplicationDetailActions.vue.
 	await open(page, `/applications/${objectId}`)
-	await expect(page.locator('.ob-detail-header__name')).toBeVisible({ timeout: 20_000 })
-	await page.getByRole('button', { name: /^actions$/i }).first().click()
-	for (const label of [/^settings$/i, /manage permissions/i, /permission history/i, /^delete$/i]) {
+	await expect(page.locator('.ob-detail-header__name')).toBeVisible({
+		timeout: 20_000,
+	})
+	await page
+		.getByRole('button', { name: /^actions$/i })
+		.first()
+		.click()
+	for (const label of [
+		/^settings$/i,
+		/manage permissions/i,
+		/permission history/i,
+		/^delete$/i,
+	]) {
 		await expect(
 			page.getByRole('menuitem', { name: label }).first(),
 			`owner-only action ${label} must be visible`,

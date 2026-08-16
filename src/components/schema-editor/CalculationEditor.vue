@@ -14,9 +14,16 @@
 			<h3>{{ t('openbuild', 'Calculations') }}</h3>
 		</header>
 		<NcNoteCard type="info">
-			{{ t('openbuild', 'The calculation editor ships in v1.1 (see design Decision 7). Existing calculations declared on this schema are shown read-only below.') }}
+			{{
+				t(
+					'openbuild',
+					'The calculation editor ships in v1.1 (see design Decision 7). Existing calculations declared on this schema are shown read-only below.',
+				)
+			}}
 		</NcNoteCard>
-		<pre v-if="calculations" class="openbuild-calculation-editor__readonly">{{ formatted }}</pre>
+		<pre v-if="calculations" class="openbuild-calculation-editor__readonly">{{
+			formatted
+		}}</pre>
 		<p v-else class="openbuild-calculation-editor__empty">
 			{{ t('openbuild', 'No calculations declared on this schema.') }}
 		</p>
@@ -32,6 +39,7 @@ export default {
 	props: {
 		calculations: { type: [Object, Array], default: null },
 	},
+
 	computed: {
 		/**
 		 * Render the calculations block as pretty JSON for read-only display.

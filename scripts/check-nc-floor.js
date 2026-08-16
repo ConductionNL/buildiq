@@ -48,7 +48,9 @@ const EXPECTED_PHP_FLOOR = '8.3'
 function read(file) {
 	if (!fs.existsSync(file)) {
 		console.error('[check:nc-floor] CANNOT RUN: ' + file + ' does not exist.')
-		console.error('[check:nc-floor] This is a broken instrument, not a clean result.')
+		console.error(
+			'[check:nc-floor] This is a broken instrument, not a clean result.',
+		)
 		process.exit(2)
 	}
 	return fs.readFileSync(file, 'utf8')
@@ -63,14 +65,17 @@ const ncMatches = info.match(/<nextcloud\b[^>]*>/g) || []
 if (ncMatches.length !== 1) {
 	console.error(
 		'[check:nc-floor] Expected exactly one <nextcloud> element in appinfo/info.xml, found '
-		+ ncMatches.length + '.',
+			+ ncMatches.length
+			+ '.',
 	)
 	process.exit(2)
 }
 
 const minMatch = ncMatches[0].match(/min-version\s*=\s*"(\d+)"/)
 if (minMatch === null) {
-	console.error('[check:nc-floor] <nextcloud> carries no min-version: ' + ncMatches[0])
+	console.error(
+		'[check:nc-floor] <nextcloud> carries no min-version: ' + ncMatches[0],
+	)
 	process.exit(2)
 }
 const floor = Number(minMatch[1])
@@ -92,7 +97,9 @@ const refsLine = workflow
 	.find((line) => line.startsWith('nextcloud-test-refs:'))
 
 if (refsLine === undefined) {
-	console.error('[check:nc-floor] No nextcloud-test-refs input found in ' + WORKFLOW + '.')
+	console.error(
+		'[check:nc-floor] No nextcloud-test-refs input found in ' + WORKFLOW + '.',
+	)
 	process.exit(2)
 }
 
@@ -104,7 +111,9 @@ const refs = [...refsLine.matchAll(/stable(\d+)/g)].map((m) => ({
 // Positive control on the INPUT. "I found nothing wrong" and "I read nothing"
 // are the same output otherwise.
 if (refs.length === 0) {
-	console.error('[check:nc-floor] Parsed ZERO nextcloud-test-refs out of ' + WORKFLOW + '.')
+	console.error(
+		'[check:nc-floor] Parsed ZERO nextcloud-test-refs out of ' + WORKFLOW + '.',
+	)
 	console.error('[check:nc-floor] That is a broken parser, not a clean result.')
 	process.exit(2)
 }
@@ -114,11 +123,17 @@ let failed = false
 for (const { ref, major } of refs) {
 	if (major < floor) {
 		console.error(
-			'[check:nc-floor] CI installs OpenBuild on ' + ref + ' (Nextcloud ' + major + ') but '
-			+ 'appinfo/info.xml declares min-version="' + floor + '". min-version is enforced at '
-			+ 'install time, so `occ app:enable openbuild` refuses on that leg and the seed fails '
-			+ 'with "is not installed or enabled" — which reads like a migration fault. '
-			+ 'Lower the floor or drop the leg.',
+			'[check:nc-floor] CI installs OpenBuild on '
+				+ ref
+				+ ' (Nextcloud '
+				+ major
+				+ ') but '
+				+ 'appinfo/info.xml declares min-version="'
+				+ floor
+				+ '". min-version is enforced at '
+				+ 'install time, so `occ app:enable openbuild` refuses on that leg and the seed fails '
+				+ 'with "is not installed or enabled" — which reads like a migration fault. '
+				+ 'Lower the floor or drop the leg.',
 		)
 		failed = true
 	}
@@ -129,16 +144,27 @@ for (const { ref, major } of refs) {
 // silent lowering has to argue with a check.
 if (floor !== EXPECTED_NC_FLOOR) {
 	console.error(
-		'[check:nc-floor] Nextcloud floor is ' + floor + ', expected ' + EXPECTED_NC_FLOOR + '. '
-		+ 'The fleet standardises on Nextcloud ' + EXPECTED_NC_FLOOR + ' so it can require PHP '
-		+ EXPECTED_PHP_FLOOR + '. Change this constant deliberately, with a reason.',
+		'[check:nc-floor] Nextcloud floor is '
+			+ floor
+			+ ', expected '
+			+ EXPECTED_NC_FLOOR
+			+ '. '
+			+ 'The fleet standardises on Nextcloud '
+			+ EXPECTED_NC_FLOOR
+			+ ' so it can require PHP '
+			+ EXPECTED_PHP_FLOOR
+			+ '. Change this constant deliberately, with a reason.',
 	)
 	failed = true
 }
 
 if (phpFloor !== EXPECTED_PHP_FLOOR) {
 	console.error(
-		'[check:nc-floor] PHP floor is ' + phpFloor + ', expected ' + EXPECTED_PHP_FLOOR + '.',
+		'[check:nc-floor] PHP floor is '
+			+ phpFloor
+			+ ', expected '
+			+ EXPECTED_PHP_FLOOR
+			+ '.',
 	)
 	failed = true
 }
@@ -148,6 +174,11 @@ if (failed) {
 }
 
 console.log(
-	'[check:nc-floor] OK — floor NC ' + floor + ' / PHP ' + phpFloor + '; CI legs '
-	+ refs.map((r) => r.ref).join(', ') + ' all satisfy it.',
+	'[check:nc-floor] OK — floor NC '
+		+ floor
+		+ ' / PHP '
+		+ phpFloor
+		+ '; CI legs '
+		+ refs.map((r) => r.ref).join(', ')
+		+ ' all satisfy it.',
 )

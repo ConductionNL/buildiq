@@ -19,11 +19,15 @@
 <template>
 	<div v-if="eligible" class="ob-track-link-action">
 		<NcButton :disabled="minting" @click="mint">
-			{{ minting ? t('openbuild', 'Minting…') : t('openbuild', 'Mint track-link') }}
+			{{
+				minting
+					? t('openbuild', 'Minting…')
+					: t('openbuild', 'Mint track-link')
+			}}
 		</NcButton>
 		<div v-if="link" class="ob-track-link-action__result">
 			<code>{{ link }}</code>
-			<NcButton type="tertiary" @click="copy">
+			<NcButton variant="tertiary" @click="copy">
 				{{ t('openbuild', 'Copy') }}
 			</NcButton>
 		</div>
@@ -31,10 +35,14 @@
 </template>
 
 <script>
-import { NcButton } from '@nextcloud/vue'
 import { showError, showSuccess } from '@nextcloud/dialogs'
+import { NcButton } from '@nextcloud/vue'
 import { useTrackLinkAction } from '../../composables/useTrackLinkAction.js'
-import { objectSchemaKeys, objectRegisterKeys, matchesKey } from '../../utils/objectSchemaKeys.js'
+import {
+	matchesKey,
+	objectRegisterKeys,
+	objectSchemaKeys,
+} from '../../utils/objectSchemaKeys.js'
 
 export default {
 	name: 'TrackLinkAction',
@@ -51,22 +59,26 @@ export default {
 		// computed below.
 		cnObjectContext: { default: null },
 	},
+
 	props: {
 		object: {
 			type: Object,
 			default: null,
 		},
+
 		objectId: {
 			type: String,
 			default: '',
 		},
 	},
+
 	data() {
 		return {
 			minting: false,
 			link: '',
 		}
 	},
+
 	computed: {
 		/**
 		 * The object's OR register slug, read off the `@self` envelope.
@@ -77,6 +89,7 @@ export default {
 		register() {
 			return this.registerKeys[0] || ''
 		},
+
 		/**
 		 * Every name this object's register can legitimately be known by.
 		 *
@@ -86,6 +99,7 @@ export default {
 		registerKeys() {
 			return objectRegisterKeys(this.object, this.cnObjectContext)
 		},
+
 		/**
 		 * The object's OR schema slug, read off the `@self` envelope.
 		 *
@@ -95,6 +109,7 @@ export default {
 		schema() {
 			return this.schemaKeys[0] || ''
 		},
+
 		/**
 		 * Every name this object's schema can legitimately be known by.
 		 *
@@ -109,6 +124,7 @@ export default {
 		schemaKeys() {
 			return objectSchemaKeys(this.object, this.cnObjectContext)
 		},
+
 		/**
 		 * The resolved object id — prefer the explicit prop (CnDetailPage
 		 * always resolves one for a mounted detail view), fall back to the
@@ -118,8 +134,13 @@ export default {
 		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-006
 		 */
 		resolvedObjectId() {
-			return this.objectId || (this.object && this.object['@self'] && this.object['@self'].id) || ''
+			return (
+				this.objectId
+				|| (this.object && this.object['@self'] && this.object['@self'].id)
+				|| ''
+			)
 		},
+
 		/**
 		 * The manifest entry (if any) `runtime.externalForms[]` carries for
 		 * this object's `(register, schema)`.
@@ -128,16 +149,29 @@ export default {
 		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-006
 		 */
 		externalFormEntry() {
-			const list = this.cnManifest && this.cnManifest.runtime && this.cnManifest.runtime.externalForms
+			const list =
+				this.cnManifest
+				&& this.cnManifest.runtime
+				&& this.cnManifest.runtime.externalForms
 			const registerKeys = this.registerKeys
 			const schemaKeys = this.schemaKeys
-			if (!Array.isArray(list) || registerKeys.length === 0 || schemaKeys.length === 0) {
+			if (
+				!Array.isArray(list)
+				|| registerKeys.length === 0
+				|| schemaKeys.length === 0
+			) {
 				return null
 			}
-			return list.find((e) => e
-				&& matchesKey(e.register, registerKeys)
-				&& matchesKey(e.schema, schemaKeys)) || null
+			return (
+				list.find(
+					(e) =>
+						e
+						&& matchesKey(e.register, registerKeys)
+						&& matchesKey(e.schema, schemaKeys),
+				) || null
+			)
 		},
+
 		/**
 		 * REQ-EFP-006: only offered when the schema's external-form entry has
 		 * `trackLinkAction.enabled: true` — never rendered otherwise.
@@ -147,9 +181,15 @@ export default {
 		 */
 		eligible() {
 			const entry = this.externalFormEntry
-			return !!(entry && entry.trackLinkAction && entry.trackLinkAction.enabled && this.resolvedObjectId)
+			return !!(
+				entry
+				&& entry.trackLinkAction
+				&& entry.trackLinkAction.enabled
+				&& this.resolvedObjectId
+			)
 		},
 	},
+
 	methods: {
 		/**
 		 * Mint the track-link for the currently viewed object.
@@ -164,15 +204,24 @@ export default {
 			this.minting = true
 			try {
 				const { mintTrackLink } = useTrackLinkAction()
-				const result = await mintTrackLink(this.register, this.schema, this.resolvedObjectId)
+				const result = await mintTrackLink(
+					this.register,
+					this.schema,
+					this.resolvedObjectId,
+				)
 				this.link = result.url
 				showSuccess(t('openbuild', 'Track-link minted.'))
 			} catch (e) {
-				showError(t('openbuild', 'Could not mint a track-link: {error}', { error: (e && e.message) || String(e) }))
+				showError(
+					t('openbuild', 'Could not mint a track-link: {error}', {
+						error: (e && e.message) || String(e),
+					}),
+				)
 			} finally {
 				this.minting = false
 			}
 		},
+
 		/**
 		 * Copy the minted link to the clipboard.
 		 *

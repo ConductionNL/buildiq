@@ -26,14 +26,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuild\Mcp\Handler;
 
+use Psr\Container\ContainerInterface;
 use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
-use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
@@ -68,6 +68,7 @@ abstract class AbstractToolHandler {
 		protected readonly ContainerInterface $container,
 		protected readonly LoggerInterface $logger,
 		protected readonly IGroupManager $groupManager,
+		private readonly ObjectServiceInterface $objectService,
 		protected readonly ?PermissionResolver $permissionResolver = null,
 		protected readonly ?AuditTrailMapper $auditTrailMapper = null,
 	) {
@@ -157,10 +158,9 @@ abstract class AbstractToolHandler {
 			return $this->errorResult(error: 'forbidden', message: 'You must be signed in.');
 		}
 
-		$objectService = $this->container->get('OCA\OpenRegister\Service\ObjectService');
 		// Openbuild is a system-wide register (not org-scoped); bypass the
 		// organisation filter so MCP callers in any org can resolve apps.
-		$apps = $objectService->searchObjectsBySlug(
+		$apps = $this->objectService->searchObjectsBySlug(
 			self::REGISTER_SLUG,
 			'application',
 			['slug' => $appSlug],
@@ -191,7 +191,7 @@ abstract class AbstractToolHandler {
 				// Copilot path (harden-rules-authz-and-audit-parity, L2 / #3).
 				$appEntity = null;
 				try {
-					$appEntity = $objectService->find((string)($app['uuid'] ?? ($app['id'] ?? '')));
+					$appEntity = $this->objectService->find((string)($app['uuid'] ?? ($app['id'] ?? '')));
 				} catch (\Throwable $e) {
 					$appEntity = null;
 				}
@@ -600,7 +600,7 @@ abstract class AbstractToolHandler {
 	 * `lockObject` since the concurrency-fix release; failing loudly (503) is
 	 * safer than silently allowing last-writer-wins data loss.
 	 *
-	 * @param ObjectService $objectService OpenRegister ObjectService instance.
+	 * @param ObjectServiceInterface $objectService OpenRegister ObjectService instance.
 	 * @param array<string, mixed> $version The existing ApplicationVersion as an associative array.
 	 * @param array<string, mixed> $manifest The new manifest blob to write onto the version.
 	 *
@@ -609,7 +609,7 @@ abstract class AbstractToolHandler {
 	 * @throws \RuntimeException (code 409) when the version is locked by another writer.
 	 * @throws \RuntimeException (code 503) when the ObjectService does not provide lockObject.
 	 */
-	protected function saveVersionManifest(ObjectService $objectService, array $version, array $manifest): array {
+	protected function saveVersionManifest(ObjectServiceInterface $objectService, array $version, array $manifest): array {
 		$versionUuid = $this->extractUuid(item: $version);
 
 		// Acquire an OR optimistic lock before the write to prevent last-writer-

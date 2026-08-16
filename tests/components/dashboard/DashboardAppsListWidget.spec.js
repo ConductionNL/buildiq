@@ -23,7 +23,9 @@ vi.mock('@nextcloud/router', () => ({
 	imagePath: (app, file) => `/apps/${app}/img/${file}`,
 }))
 
-const DashboardAppsListWidget = (await import('../../../src/components/dashboard/DashboardAppsListWidget.vue')).default
+const DashboardAppsListWidget = (
+	await import('../../../src/components/dashboard/DashboardAppsListWidget.vue')
+).default
 
 const flush = async (wrapper) => {
 	await new Promise((r) => setTimeout(r, 0))
@@ -76,7 +78,12 @@ describe('DashboardAppsListWidget', () => {
 	it('fetches, sorts by _updated desc, and slices to 8', async () => {
 		const nodes = []
 		for (let i = 0; i < 10; i++) {
-			nodes.push({ _uuid: 'u' + i, name: 'App ' + i, slug: 'app-' + i, _updated: `2026-01-${String(i + 1).padStart(2, '0')}T00:00:00Z` })
+			nodes.push({
+				_uuid: 'u' + i,
+				name: 'App ' + i,
+				slug: 'app-' + i,
+				_updated: `2026-01-${String(i + 1).padStart(2, '0')}T00:00:00Z`,
+			})
 		}
 		axiosPostMock.mockResolvedValue(graphqlResponse(nodes, 10))
 		const wrapper = mountWidget()
@@ -92,7 +99,14 @@ describe('DashboardAppsListWidget', () => {
 	})
 
 	it('renders the "view all" footer only when total exceeds visible apps', async () => {
-		const nodes = [{ _uuid: 'u1', name: 'One', slug: 'one', _updated: '2026-01-01T00:00:00Z' }]
+		const nodes = [
+			{
+				_uuid: 'u1',
+				name: 'One',
+				slug: 'one',
+				_updated: '2026-01-01T00:00:00Z',
+			},
+		]
 		axiosPostMock.mockResolvedValue(graphqlResponse(nodes, 42))
 		const wrapper = mountWidget()
 		await flush(wrapper)
@@ -139,7 +153,12 @@ describe('DashboardAppsListWidget', () => {
 			expect(vm.appStatus({ status: 'weird' })).toBe('draft')
 			expect(vm.appStatus({})).toBe('draft')
 			// productionVersion.status wins over top-level status.
-			expect(vm.appStatus({ productionVersion: { status: 'published' }, status: 'draft' })).toBe('published')
+			expect(
+				vm.appStatus({
+					productionVersion: { status: 'published' },
+					status: 'draft',
+				}),
+			).toBe('published')
 		})
 
 		it('appStatusLabel maps the status bucket to its label', () => {
@@ -149,7 +168,9 @@ describe('DashboardAppsListWidget', () => {
 		})
 
 		it('appVersion prefers the production semver, then version, then dash', () => {
-			expect(vm.appVersion({ productionVersion: { semver: '2.1.0' } })).toBe('2.1.0')
+			expect(vm.appVersion({ productionVersion: { semver: '2.1.0' } })).toBe(
+				'2.1.0',
+			)
 			expect(vm.appVersion({ version: '1.0.0' })).toBe('1.0.0')
 			expect(vm.appVersion({})).toBe('—')
 		})
@@ -160,7 +181,9 @@ describe('DashboardAppsListWidget', () => {
 			expect(out).not.toBe('—')
 			expect(typeof out).toBe('string')
 			// Also resolves from the @self envelope.
-			expect(vm.appUpdated({ '@self': { updated: '2026-03-15T00:00:00Z' } })).not.toBe('—')
+			expect(
+				vm.appUpdated({ '@self': { updated: '2026-03-15T00:00:00Z' } }),
+			).not.toBe('—')
 		})
 
 		// A real <img>, not a bare `{ src }` stub: onIconError reads the LITERAL
@@ -168,9 +191,14 @@ describe('DashboardAppsListWidget', () => {
 		// which the DOM makes absolute.
 		it('onIconError swaps in the fallback icon', () => {
 			const target = document.createElement('img')
-			target.setAttribute('src', '/index.php/apps/openbuild/icons/foo-dark.svg')
+			target.setAttribute(
+				'src',
+				'/index.php/apps/openbuild/icons/foo-dark.svg',
+			)
 			vm.onIconError({ target })
-			expect(target.getAttribute('src')).toBe('/apps/openbuild/img/app-dark.svg')
+			expect(target.getAttribute('src')).toBe(
+				'/apps/openbuild/img/app-dark.svg',
+			)
 		})
 
 		it('onIconError does not re-swap once the fallback itself is showing', () => {
@@ -180,7 +208,9 @@ describe('DashboardAppsListWidget', () => {
 			const target = document.createElement('img')
 			target.setAttribute('src', '/apps/openbuild/img/app-dark.svg')
 			vm.onIconError({ target })
-			expect(target.getAttribute('src')).toBe('/apps/openbuild/img/app-dark.svg')
+			expect(target.getAttribute('src')).toBe(
+				'/apps/openbuild/img/app-dark.svg',
+			)
 		})
 	})
 
@@ -189,7 +219,10 @@ describe('DashboardAppsListWidget', () => {
 		const wrapper = mountWidget(push)
 		await flush(wrapper)
 		wrapper.vm.openApp({ _uuid: 'abc' })
-		expect(push).toHaveBeenCalledWith({ name: 'VirtualAppDetail', params: { objectId: 'abc' } })
+		expect(push).toHaveBeenCalledWith({
+			name: 'VirtualAppDetail',
+			params: { objectId: 'abc' },
+		})
 	})
 
 	it('openApp is a no-op when the app has no id', async () => {

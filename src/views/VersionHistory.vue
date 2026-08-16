@@ -19,7 +19,12 @@
 			{{ t('openbuild', 'Loading…') }}
 		</p>
 		<p v-else-if="!versions.length" class="version-history__empty">
-			{{ t('openbuild', 'No versions yet — create a draft to start a new version.') }}
+			{{
+				t(
+					'openbuild',
+					'No versions yet — create a draft to start a new version.',
+				)
+			}}
 		</p>
 		<ul v-else class="version-history__list">
 			<li
@@ -34,11 +39,17 @@
 				<div class="version-history__row-main">
 					<div class="version-history__row-title">
 						<strong>{{ rowName(row) }}</strong>
-						<small class="version-history__semver">{{ rowSemver(row) }}</small>
-						<span class="version-history__badge" :class="`version-history__badge--${rowStatus(row)}`">
+						<small class="version-history__semver">{{
+							rowSemver(row)
+						}}</small>
+						<span
+							class="version-history__badge"
+							:class="`version-history__badge--${rowStatus(row)}`">
 							{{ statusLabel(row) }}
 						</span>
-						<span v-if="isProduction(row)" class="version-history__badge version-history__badge--production">
+						<span
+							v-if="isProduction(row)"
+							class="version-history__badge version-history__badge--production">
 							{{ t('openbuild', 'Production') }}
 						</span>
 					</div>
@@ -48,7 +59,10 @@
 					<button class="version-history__btn" @click="openVersion(row)">
 						{{ t('openbuild', 'Open') }}
 					</button>
-					<button v-if="canEdit" class="version-history__btn" @click="editVersion(row)">
+					<button
+						v-if="canEdit"
+						class="version-history__btn"
+						@click="editVersion(row)">
 						{{ t('openbuild', 'Edit') }}
 					</button>
 					<button
@@ -79,8 +93,8 @@
 
 <script>
 import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
 import { showError, showSuccess } from '@nextcloud/dialogs'
+import { generateUrl } from '@nextcloud/router'
 import RollbackConfirmModal from '../modals/RollbackConfirmModal.vue'
 
 export default {
@@ -88,33 +102,39 @@ export default {
 	components: {
 		RollbackConfirmModal,
 	},
+
 	props: {
 		/** The parent Application slug — drives the working versions endpoint. */
 		appSlug: {
 			type: String,
 			default: '',
 		},
+
 		/** The parent Application UUID (kept for back-compat callers). */
 		applicationUuid: {
 			type: String,
 			default: '',
 		},
+
 		/** The current production version UUID — marks the "Production" row. */
 		currentVersionUuid: {
 			type: String,
 			default: '',
 		},
+
 		/** Whether the caller may edit versions (owner/editor/admin). */
 		canEdit: {
 			type: Boolean,
 			default: false,
 		},
+
 		/** Whether the caller may release a draft to production (owner only). */
 		canRelease: {
 			type: Boolean,
 			default: false,
 		},
 	},
+
 	emits: ['rollback', 'released'],
 	data() {
 		return {
@@ -125,6 +145,7 @@ export default {
 			rollbackTarget: null,
 		}
 	},
+
 	watch: {
 		appSlug: {
 			immediate: true,
@@ -144,6 +165,7 @@ export default {
 				}
 			},
 		},
+
 		applicationUuid: {
 			immediate: true,
 			/**
@@ -162,6 +184,7 @@ export default {
 			},
 		},
 	},
+
 	methods: {
 		/**
 		 * Load the ApplicationVersion rows.  When appSlug is available the slug
@@ -184,12 +207,22 @@ export default {
 			try {
 				let url
 				if (this.appSlug) {
-					url = generateUrl('/apps/openbuild/api/applications/{slug}/versions', { slug: this.appSlug })
+					url = generateUrl(
+						'/apps/openbuild/api/applications/{slug}/versions',
+						{ slug: this.appSlug },
+					)
 				} else {
-					url = generateUrl('/apps/openbuild/api/applicationversions?applicationUuid={uuid}', { uuid: this.applicationUuid })
+					url = generateUrl(
+						'/apps/openbuild/api/applicationversions?applicationUuid={uuid}',
+						{ uuid: this.applicationUuid },
+					)
 				}
 				const { data } = await axios.get(url)
-				const raw = Array.isArray(data) ? data : ((data && data.results) ? data.results : [])
+				const raw = Array.isArray(data)
+					? data
+					: data && data.results
+						? data.results
+						: []
 				// The IDOR filter applies ONLY to the unscoped endpoint. The
 				// by-slug URL above is already app-scoped server-side, and its
 				// rows do not carry `applicationUuid` at all — measured, every
@@ -205,11 +238,15 @@ export default {
 				// every app, always. Filtering a server-scoped response against
 				// a field that response does not contain is not defence in
 				// depth — it is an unconditional deny.
-				const filtered = (this.applicationUuid && !this.appSlug)
-					? raw.filter(r => r && r.applicationUuid === this.applicationUuid)
-					: raw
+				const filtered =
+					this.applicationUuid && !this.appSlug
+						? raw.filter(
+								(r) =>
+									r && r.applicationUuid === this.applicationUuid,
+							)
+						: raw
 				this.versions = filtered
-					.filter(r => this.rowStatus(r) !== 'archived')
+					.filter((r) => this.rowStatus(r) !== 'archived')
 					.sort((a, b) => {
 						const bProd = this.isProduction(b) ? 1 : 0
 						const aProd = this.isProduction(a) ? 1 : 0
@@ -227,6 +264,7 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * Stable key for a version row.
 		 *
@@ -234,8 +272,9 @@ export default {
 		 * @return {string}
 		 */
 		rowKey(row) {
-			return this.rowUuid(row) || (this.rowSlug(row) + ':' + this.rowName(row))
+			return this.rowUuid(row) || this.rowSlug(row) + ':' + this.rowName(row)
 		},
+
 		/**
 		 * The version row's own UUID (from `id` or the `@self` envelope).
 		 *
@@ -246,6 +285,7 @@ export default {
 			const self = (row && row['@self']) || {}
 			return (row && row.id) || self.id || self.uuid || (row && row.uuid) || ''
 		},
+
 		/**
 		 * The version row's human label (name, falling back to slug).
 		 *
@@ -255,6 +295,7 @@ export default {
 		rowName(row) {
 			return (row && (row.name || row.slug)) || ''
 		},
+
 		/**
 		 * The version row's slug (used for `?_version=`).
 		 *
@@ -264,6 +305,7 @@ export default {
 		rowSlug(row) {
 			return (row && row.slug) || ''
 		},
+
 		/**
 		 * The version row's semver string.  Reads the canonical `semver` field
 		 * first, then falls back to the `version` field used by the OR-backed
@@ -277,6 +319,7 @@ export default {
 		rowSemver(row) {
 			return (row && (row.semver || row.version)) || ''
 		},
+
 		/**
 		 * The version row's lifecycle status.
 		 *
@@ -286,6 +329,7 @@ export default {
 		rowStatus(row) {
 			return (row && row.status) || 'draft'
 		},
+
 		/**
 		 * Translated label for a row's status.
 		 *
@@ -302,6 +346,7 @@ export default {
 			}
 			return t('openbuild', 'Draft')
 		},
+
 		/**
 		 * Whether the row is the Application's current production version.
 		 *
@@ -309,8 +354,12 @@ export default {
 		 * @return {boolean}
 		 */
 		isProduction(row) {
-			return !!this.currentVersionUuid && this.rowUuid(row) === this.currentVersionUuid
+			return (
+				!!this.currentVersionUuid
+				&& this.rowUuid(row) === this.currentVersionUuid
+			)
 		},
+
 		/**
 		 * Open a version in the live shell — production at the canonical URL,
 		 * any other version via `?_version=` (RBAC-gated server-side).
@@ -324,11 +373,14 @@ export default {
 			if (!this.appSlug) {
 				return
 			}
-			const base = generateUrl('/apps/openbuild/builder/{slug}', { slug: this.appSlug })
+			const base = generateUrl('/apps/openbuild/builder/{slug}', {
+				slug: this.appSlug,
+			})
 			window.location.href = this.isProduction(row)
 				? base
 				: base + '?_version=' + encodeURIComponent(this.rowSlug(row))
 		},
+
 		/**
 		 * Edit a version in the page designer, scoped via `?_version=` for
 		 * non-production versions (editor+ only — gated by `canEdit`).
@@ -342,11 +394,14 @@ export default {
 			if (!this.appSlug) {
 				return
 			}
-			const base = generateUrl('/apps/openbuild/builder/{slug}/pages', { slug: this.appSlug })
+			const base = generateUrl('/apps/openbuild/builder/{slug}/pages', {
+				slug: this.appSlug,
+			})
 			window.location.href = this.isProduction(row)
 				? base
 				: base + '?_version=' + encodeURIComponent(this.rowSlug(row))
 		},
+
 		/**
 		 * Release a draft version: set-as-production + publish + demote previous
 		 * production (owner only, server-enforced). Refreshes on success.
@@ -368,16 +423,26 @@ export default {
 					{ slug: this.appSlug, versionSlug },
 				)
 				await axios.post(url, {})
-				showSuccess(t('openbuild', '“{name}” is now the production version.', { name: this.rowName(row) }))
+				showSuccess(
+					t('openbuild', '“{name}” is now the production version.', {
+						name: this.rowName(row),
+					}),
+				)
 				this.$emit('released')
 				await this.refresh()
 			} catch (e) {
-				const detail = (e && e.response && e.response.data && e.response.data.detail) || (e && e.message) || ''
-				showError(t('openbuild', 'Release failed') + (detail ? ': ' + detail : ''))
+				const detail =
+					(e && e.response && e.response.data && e.response.data.detail)
+					|| (e && e.message)
+					|| ''
+				showError(
+					t('openbuild', 'Release failed') + (detail ? ': ' + detail : ''),
+				)
 			} finally {
 				this.releasing = ''
 			}
 		},
+
 		/**
 		 * Open the rollback confirmation for a non-production version.
 		 *
@@ -389,12 +454,16 @@ export default {
 		askRollback(row) {
 			this.rollbackTarget = {
 				uuid: this.rowUuid(row),
-				version: this.rowSemver(row) || (this.rowName(row) + ' ' + this.rowSemver(row)).trim(),
+				version:
+					this.rowSemver(row)
+					|| (this.rowName(row) + ' ' + this.rowSemver(row)).trim(),
+
 				manifest: row.manifest,
 				publishedAt: (row && row.publishedAt) || '',
 			}
 			this.rollbackOpen = true
 		},
+
 		/**
 		 * Forward a confirmed rollback to the parent (which performs the PUT).
 		 *
@@ -406,6 +475,7 @@ export default {
 			this.rollbackOpen = false
 			this.rollbackTarget = null
 		},
+
 		/**
 		 * Dismiss the rollback confirmation.
 		 *

@@ -19,14 +19,19 @@
 		@closing="onClose">
 		<div class="ob-block-remap">
 			<p class="ob-block-remap__intro">
-				{{ t('openbuild', 'This block references schemas that do not exist under the same name in this app. Map each one to a schema here, or leave it unresolved — an unresolved binding inserts as a visible "needs remap" placeholder, it is never silently dropped.') }}
+				{{
+					t(
+						'openbuild',
+						'This block references schemas that do not exist under the same name in this app. Map each one to a schema here, or leave it unresolved — an unresolved binding inserts as a visible "needs remap" placeholder, it is never silently dropped.',
+					)
+				}}
 			</p>
 
 			<div v-for="dep in dependencies" :key="dep" class="ob-block-remap__row">
 				<span class="ob-block-remap__source">{{ dep }}</span>
 				<NcSelect
 					v-model="selections[dep]"
-					:input-label="t('openbuild', 'Map “{dep}” to', { dep })"
+					:inputLabel="t('openbuild', 'Map “{dep}” to', { dep })"
 					:options="schemaOptions"
 					:clearable="true"
 					:placeholder="t('openbuild', 'Leave unresolved')" />
@@ -41,7 +46,7 @@
 			<NcButton @click="onClose">
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
-			<NcButton type="primary" @click="confirm">
+			<NcButton variant="primary" @click="confirm">
 				{{ t('openbuild', 'Insert block') }}
 			</NcButton>
 		</template>
@@ -61,6 +66,7 @@ export default {
 		// Schema slugs available in the target app.
 		targetSchemaSlugs: { type: Array, default: () => [] },
 	},
+
 	emits: ['update:open', 'resolved'],
 	data() {
 		return {
@@ -68,6 +74,7 @@ export default {
 			selections: {},
 		}
 	},
+
 	computed: {
 		/**
 		 * Options offered in every remap picker.
@@ -79,6 +86,7 @@ export default {
 			return this.targetSchemaSlugs.map((slug) => ({ id: slug, label: slug }))
 		},
 	},
+
 	watch: {
 		/**
 		 * Reset every dependency's picker whenever the dialog opens.
@@ -92,6 +100,7 @@ export default {
 				this.resetSelections()
 			}
 		},
+
 		/**
 		 * Reset the picker state whenever the mismatched-dependency list changes.
 		 *
@@ -102,6 +111,7 @@ export default {
 			this.resetSelections()
 		},
 	},
+
 	/**
 	 * Reset the picker state when already open on mount.
 	 *
@@ -113,6 +123,7 @@ export default {
 			this.resetSelections()
 		}
 	},
+
 	methods: {
 		/**
 		 * Reset every dependency's picker to unresolved (null).
@@ -127,6 +138,7 @@ export default {
 			}
 			this.selections = next
 		},
+
 		/**
 		 * Close without resolving anything.
 		 *
@@ -136,6 +148,7 @@ export default {
 		onClose() {
 			this.$emit('update:open', false)
 		},
+
 		/**
 		 * Build `{ remapMap, unresolvedDependencies }` from the current
 		 * picker state and emit it — `blockInsert.js#insertBlock` consumes

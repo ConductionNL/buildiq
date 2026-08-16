@@ -60,7 +60,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuild\Service;
 
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -92,7 +92,7 @@ class AutomationWriteService {
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger PSR logger.
-	 * @param ObjectService $objectService OpenRegister object service.
+	 * @param ObjectServiceInterface $objectService OpenRegister object service.
 	 * @param AutomationCompilerService $compiler Compiler/apply/remove/status service.
 	 * @param PermissionResolver $permissionResolver Shared permission-grammar resolver.
 	 * @param IUserSession $userSession Current user session.
@@ -101,7 +101,7 @@ class AutomationWriteService {
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
-		private readonly ObjectService $objectService,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly AutomationCompilerService $compiler,
 		private readonly PermissionResolver $permissionResolver,
 		private readonly IUserSession $userSession,

@@ -13,17 +13,27 @@
   -->
 <template>
 	<div class="ob-apps-list-widget" data-testid="ob-apps-list-widget">
-		<NcLoadingIcon v-if="loading" :size="32" class="ob-apps-list-widget__loading" />
+		<NcLoadingIcon
+			v-if="loading"
+			:size="32"
+			class="ob-apps-list-widget__loading" />
 
 		<NcEmptyContent
 			v-else-if="!loading && apps.length === 0"
 			:name="t('openbuild', 'No virtual apps yet')"
-			:description="t('openbuild', 'Create your first virtual application to get started.')">
+			:description="
+				t(
+					'openbuild',
+					'Create your first virtual application to get started.',
+				)
+			">
 			<template #icon>
-				<span class="icon-category-app-bundles" style="width:48px;height:48px;display:block;" />
+				<span
+					class="icon-category-app-bundles"
+					style="width: 48px; height: 48px; display: block" />
 			</template>
 			<template #action>
-				<NcButton type="primary" @click="goToApps">
+				<NcButton variant="primary" @click="goToApps">
 					{{ t('openbuild', 'Create an app') }}
 				</NcButton>
 			</template>
@@ -47,7 +57,9 @@
 					<!-- Row-actions column: no visible caption, but still a column
 					     header, so it keeps `scope="col"` and an sr-only name. -->
 					<th scope="col" class="ob-apps-list-widget__col-actions">
-						<span class="hidden-visually">{{ t('openbuild', 'Actions') }}</span>
+						<span class="hidden-visually">{{
+							t('openbuild', 'Actions')
+						}}</span>
 					</th>
 				</tr>
 			</thead>
@@ -65,9 +77,15 @@
 								:alt="app.name || app.slug"
 								width="20"
 								height="20"
-								@error="onIconError">
-							<span class="ob-apps-list-widget__name">{{ app.name || app.slug || t('openbuild', 'Untitled app') }}</span>
-							<span class="ob-apps-list-widget__slug">{{ app.slug }}</span>
+								@error="onIconError" />
+							<span class="ob-apps-list-widget__name">{{
+								app.name
+								|| app.slug
+								|| t('openbuild', 'Untitled app')
+							}}</span>
+							<span class="ob-apps-list-widget__slug">{{
+								app.slug
+							}}</span>
 						</div>
 					</td>
 					<td class="ob-apps-list-widget__col-status">
@@ -85,8 +103,12 @@
 					</td>
 					<td class="ob-apps-list-widget__col-actions">
 						<NcButton
-							type="tertiary"
-							:aria-label="t('openbuild', 'Open {name}', { name: app.name || app.slug })"
+							variant="tertiary"
+							:aria-label="
+								t('openbuild', 'Open {name}', {
+									name: app.name || app.slug,
+								})
+							"
 							@click.stop="openApp(app)">
 							<template #icon>
 								<ArrowRight :size="16" />
@@ -97,8 +119,10 @@
 			</tbody>
 		</table>
 
-		<div v-if="!loading && total > apps.length" class="ob-apps-list-widget__footer">
-			<NcButton type="tertiary" @click="goToApps">
+		<div
+			v-if="!loading && total > apps.length"
+			class="ob-apps-list-widget__footer">
+			<NcButton variant="tertiary" @click="goToApps">
 				{{ t('openbuild', 'View all {count} apps', { count: total }) }}
 			</NcButton>
 		</div>
@@ -106,9 +130,9 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl, imagePath } from '@nextcloud/router'
-import axios from '@nextcloud/axios'
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import ArrowRight from 'vue-material-design-icons/ArrowRight.vue'
 
@@ -162,7 +186,7 @@ export default {
 				})
 				const conn = data?.data?.application
 				const edges = conn?.edges ?? []
-				const nodes = edges.map(e => e.node)
+				const nodes = edges.map((e) => e.node)
 				// Sort by most recently updated, take first 8.
 				nodes.sort((a, b) => {
 					const at = a._updated ? new Date(a._updated).getTime() : 0
@@ -180,13 +204,21 @@ export default {
 		},
 
 		appId(app) {
-			return app._uuid || (app['@self'] && app['@self'].id) || app.uuid || app.id || app.slug
+			return (
+				app._uuid
+				|| (app['@self'] && app['@self'].id)
+				|| app.uuid
+				|| app.id
+				|| app.slug
+			)
 		},
 
 		appStatus(app) {
 			const pv = app.productionVersion
 			const status = (pv && pv.status) || app.status
-			return ['draft', 'published', 'archived'].includes(status) ? status : 'draft'
+			return ['draft', 'published', 'archived'].includes(status)
+				? status
+				: 'draft'
 		},
 
 		appStatusLabel(app) {
@@ -194,16 +226,23 @@ export default {
 		},
 
 		appVersion(app) {
-			return (app.productionVersion && app.productionVersion.semver)
+			return (
+				(app.productionVersion && app.productionVersion.semver)
 				|| app.version
 				|| '—'
+			)
 		},
 
 		appUpdated(app) {
-			const raw = app._updated || (app['@self'] && app['@self'].updated) || app.updated
+			const raw =
+				app._updated || (app['@self'] && app['@self'].updated) || app.updated
 			if (!raw) return '—'
 			try {
-				return new Date(raw).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+				return new Date(raw).toLocaleDateString(undefined, {
+					day: 'numeric',
+					month: 'short',
+					year: 'numeric',
+				})
 			} catch {
 				return raw
 			}
@@ -230,7 +269,10 @@ export default {
 		openApp(app) {
 			const id = this.appId(app)
 			if (id && this.$router) {
-				this.$router.push({ name: 'VirtualAppDetail', params: { objectId: id } })
+				this.$router.push({
+					name: 'VirtualAppDetail',
+					params: { objectId: id },
+				})
 			}
 		},
 
@@ -334,15 +376,30 @@ export default {
 	color: var(--color-warning-text, #8a5300);
 }
 
-.ob-apps-list-widget__col-name { width: 45%; }
+.ob-apps-list-widget__col-name {
+	width: 45%;
+}
 
-.ob-apps-list-widget__col-status { width: 15%; }
+.ob-apps-list-widget__col-status {
+	width: 15%;
+}
 
-.ob-apps-list-widget__col-version { width: 12%; font-family: monospace; font-size: 12px; }
+.ob-apps-list-widget__col-version {
+	width: 12%;
+	font-family: monospace;
+	font-size: 12px;
+}
 
-.ob-apps-list-widget__col-updated { width: 18%; color: var(--color-text-maxcontrast, #888); font-size: 12px; }
+.ob-apps-list-widget__col-updated {
+	width: 18%;
+	color: var(--color-text-maxcontrast, #888);
+	font-size: 12px;
+}
 
-.ob-apps-list-widget__col-actions { width: 10%; text-align: right; }
+.ob-apps-list-widget__col-actions {
+	width: 10%;
+	text-align: right;
+}
 
 .ob-apps-list-widget__footer {
 	padding: 8px 12px;

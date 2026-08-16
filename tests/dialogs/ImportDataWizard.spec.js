@@ -21,35 +21,52 @@ const baseStubs = {
 	NcDialog: {
 		name: 'NcDialog',
 		props: ['name', 'canClose', 'size'],
-		template: '<div class="nc-dialog-stub"><slot /><div class="nc-dialog-actions"><slot name="actions" /></div></div>',
+		template:
+			'<div class="nc-dialog-stub"><slot /><div class="nc-dialog-actions"><slot name="actions" /></div></div>',
 	},
 	NcButton: {
 		name: 'NcButton',
 		props: ['type', 'disabled'],
-		template: '<button :disabled="disabled" :data-type="type" @click="$emit(\'click\', $event)"><slot /></button>',
+		template:
+			'<button :disabled="disabled" :data-type="type" @click="$emit(\'click\', $event)"><slot /></button>',
 	},
 	NcSelect: {
 		name: 'NcSelect',
 		props: ['inputLabel', 'options', 'disabled', 'placeholder'],
 		template: '<div class="nc-select-stub" :data-input-label="inputLabel" />',
 	},
-	NcNoteCard: { name: 'NcNoteCard', props: ['type'], template: '<div class="nc-note-stub"><slot /></div>' },
-	NcLoadingIcon: { name: 'NcLoadingIcon', template: '<span class="nc-loading-stub" />' },
+	NcNoteCard: {
+		name: 'NcNoteCard',
+		props: ['type'],
+		template: '<div class="nc-note-stub"><slot /></div>',
+	},
+	NcLoadingIcon: {
+		name: 'NcLoadingIcon',
+		template: '<span class="nc-loading-stub" />',
+	},
 	NcCheckboxRadioSwitch: {
 		name: 'NcCheckboxRadioSwitch',
 		props: ['checked', 'value', 'name', 'type'],
-		template: '<label class="nc-radio-stub"><input type="radio" :value="value" @change="$emit(\'update:checked\', value)"><slot /></label>',
+		template:
+			'<label class="nc-radio-stub"><input type="radio" :value="value" @change="$emit(\'update:checked\', value)"><slot /></label>',
 	},
 	DownloadIcon: { name: 'DownloadIcon', template: '<span />' },
 	UploadIcon: { name: 'UploadIcon', template: '<span />' },
 }
 
-const ImportDataWizard = (await import('../../src/dialogs/ImportDataWizard.vue')).default
+const ImportDataWizard = (await import('../../src/dialogs/ImportDataWizard.vue'))
+	.default
 
 function makeClient(overrides = {}) {
 	return {
 		importFile: vi.fn().mockResolvedValue({
-			importJobId: 'job-1', created: 3, updated: 1, skipped: 0, errors: [], errorsCsv: null, errorsCsvFilename: null,
+			importJobId: 'job-1',
+			created: 3,
+			updated: 1,
+			skipped: 0,
+			errors: [],
+			errorsCsv: null,
+			errorsCsvFilename: null,
 		}),
 		rollbackImport: vi.fn().mockResolvedValue({ deleted: 3 }),
 		templateUrl: vi.fn().mockReturnValue('/tpl-url'),
@@ -61,7 +78,10 @@ function mountWizard(propsData = {}, importClient = makeClient()) {
 	return mount(ImportDataWizard, {
 		propsData: {
 			registerId: 'openbuild-app-staging',
-			schemas: [{ slug: 'permit', title: 'Permit' }, { slug: 'person', title: 'Person' }],
+			schemas: [
+				{ slug: 'permit', title: 'Permit' },
+				{ slug: 'person', title: 'Person' },
+			],
 			importClient,
 			...propsData,
 		},
@@ -73,7 +93,11 @@ describe('ImportDataWizard', () => {
 	it('create-schema path imports via OpenRegister with NO schema param', async () => {
 		const client = makeClient()
 		const wrapper = mountWizard({}, client)
-		await wrapper.setData({ targetMode: 'create', file: new File(['a,b\n1,2\n'], 'people.csv'), step: 4 })
+		await wrapper.setData({
+			targetMode: 'create',
+			file: new File(['a,b\n1,2\n'], 'people.csv'),
+			step: 4,
+		})
 
 		await wrapper.vm.runImport()
 
@@ -105,7 +129,11 @@ describe('ImportDataWizard', () => {
 	it('Undo triggers OpenRegister rollback with the importJobId', async () => {
 		const client = makeClient()
 		const wrapper = mountWizard({}, client)
-		await wrapper.setData({ targetMode: 'create', file: new File(['x'], 'a.csv'), step: 4 })
+		await wrapper.setData({
+			targetMode: 'create',
+			file: new File(['x'], 'a.csv'),
+			step: 4,
+		})
 		await wrapper.vm.runImport()
 
 		await wrapper.vm.undo()
@@ -127,15 +155,29 @@ describe('ImportDataWizard', () => {
 
 		wrapper.vm.downloadTemplate('csv')
 
-		expect(client.templateUrl).toHaveBeenCalledWith({ registerId: 'openbuild-app-staging', schema: 'permit', format: 'csv' })
+		expect(client.templateUrl).toHaveBeenCalledWith({
+			registerId: 'openbuild-app-staging',
+			schema: 'permit',
+			format: 'csv',
+		})
 	})
 
 	it('surfaces an OpenRegister error (e.g. 403 manage-permission) without faking success', async () => {
 		const client = makeClient({
-			importFile: vi.fn().mockRejectedValue({ response: { data: { error: 'User does not have permission to manage this register' } } }),
+			importFile: vi.fn().mockRejectedValue({
+				response: {
+					data: {
+						error: 'User does not have permission to manage this register',
+					},
+				},
+			}),
 		})
 		const wrapper = mountWizard({}, client)
-		await wrapper.setData({ targetMode: 'create', file: new File(['x'], 'a.csv'), step: 4 })
+		await wrapper.setData({
+			targetMode: 'create',
+			file: new File(['x'], 'a.csv'),
+			step: 4,
+		})
 
 		await wrapper.vm.runImport()
 
@@ -176,6 +218,8 @@ describe('ImportDataWizard', () => {
 		const bodyRows = wrapper.findAll('.ob-import-wizard__sample tbody tr')
 		expect(bodyRows).toHaveLength(2)
 		expect(bodyRows.at(0).text()).toContain('Ada')
-		expect(wrapper.find('.ob-import-wizard__sample tbody').text()).not.toContain('email')
+		expect(wrapper.find('.ob-import-wizard__sample tbody').text()).not.toContain(
+			'email',
+		)
 	})
 })

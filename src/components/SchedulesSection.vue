@@ -16,32 +16,48 @@
 			<h3 class="ob-schedules-section__title">
 				{{ t('openbuild', 'Scheduled tasks') }}
 			</h3>
-			<NcButton type="secondary" @click="openAdd">
+			<NcButton variant="secondary" @click="openAdd">
 				{{ t('openbuild', 'Add scheduled task') }}
 			</NcButton>
 		</header>
 
 		<p v-if="schedules.length === 0" class="ob-schedules-section__empty">
-			{{ t('openbuild', 'No scheduled tasks yet. Add one to run a synchronization on a schedule.') }}
+			{{
+				t(
+					'openbuild',
+					'No scheduled tasks yet. Add one to run a synchronization on a schedule.',
+				)
+			}}
 		</p>
 		<ul v-else class="ob-schedules-section__list">
-			<li v-for="schedule in schedules" :key="schedule.id" class="ob-schedules-section__item">
+			<li
+				v-for="schedule in schedules"
+				:key="schedule.id"
+				class="ob-schedules-section__item">
 				<div class="ob-schedules-section__item-main">
 					<strong>{{ schedule.id }}</strong>
 					<span class="ob-schedules-section__item-meta">
-						{{ cadenceSummary(schedule) }} · {{ actionSummary(schedule) }} · {{ syncSummary(schedule) }}
+						{{ cadenceSummary(schedule) }} ·
+						{{ actionSummary(schedule) }} · {{ syncSummary(schedule) }}
 					</span>
 				</div>
 				<div class="ob-schedules-section__item-side">
 					<span
 						class="ob-schedules-section__enabled"
-						:class="{ 'ob-schedules-section__enabled--off': schedule.enabled === false }">
-						{{ schedule.enabled === false ? t('openbuild', 'Disabled') : t('openbuild', 'Enabled') }}
+						:class="{
+							'ob-schedules-section__enabled--off':
+								schedule.enabled === false,
+						}">
+						{{
+							schedule.enabled === false
+								? t('openbuild', 'Disabled')
+								: t('openbuild', 'Enabled')
+						}}
 					</span>
-					<NcButton type="tertiary" @click="openEdit(schedule)">
+					<NcButton variant="tertiary" @click="openEdit(schedule)">
 						{{ t('openbuild', 'Edit') }}
 					</NcButton>
-					<NcButton type="tertiary" @click="remove(schedule)">
+					<NcButton variant="tertiary" @click="remove(schedule)">
 						{{ t('openbuild', 'Remove') }}
 					</NcButton>
 				</div>
@@ -51,14 +67,14 @@
 		<ScheduleEditDialog
 			v-model:open="dialogOpen"
 			:entry="editingEntry"
-			:existing-ids="otherIds"
+			:existingIds="otherIds"
 			@save="onDialogSave" />
 
 		<ConfirmActionDialog
 			v-model:open="confirmRemoveOpen"
 			:name="t('openbuild', 'Remove scheduled task')"
 			:message="t('openbuild', 'Remove this scheduled task?')"
-			:confirm-label="t('openbuild', 'Remove')"
+			:confirmLabel="t('openbuild', 'Remove')"
 			destructive
 			@confirm="onConfirmRemove" />
 	</section>
@@ -66,8 +82,8 @@
 
 <script>
 import { NcButton } from '@nextcloud/vue'
-import ScheduleEditDialog from '../dialogs/ScheduleEditDialog.vue'
 import ConfirmActionDialog from '../dialogs/ConfirmActionDialog.vue'
+import ScheduleEditDialog from '../dialogs/ScheduleEditDialog.vue'
 
 /** Known interval presets, seconds → i18n cadence label key. */
 const INTERVAL_LABELS = Object.freeze({
@@ -86,6 +102,7 @@ export default {
 			default: () => ({}),
 		},
 	},
+
 	emits: ['update:manifest'],
 	data() {
 		return {
@@ -95,11 +112,18 @@ export default {
 			pendingRemoval: null,
 		}
 	},
+
 	computed: {
 		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-001 */
 		schedules() {
-			return (this.manifest && Array.isArray(this.manifest.schedules) && this.manifest.schedules) || []
+			return (
+				(this.manifest
+					&& Array.isArray(this.manifest.schedules)
+					&& this.manifest.schedules)
+				|| []
+			)
 		},
+
 		/**
 		 * Ids used by entries OTHER than the one being edited (for the
 		 * dialog's uniqueness check).
@@ -109,9 +133,12 @@ export default {
 		 */
 		otherIds() {
 			const editingId = this.editingEntry && this.editingEntry.id
-			return this.schedules.map((s) => s.id).filter((id) => id && id !== editingId)
+			return this.schedules
+				.map((s) => s.id)
+				.filter((id) => id && id !== editingId)
 		},
 	},
+
 	methods: {
 		/**
 		 * Human cadence summary for a schedule row.
@@ -129,10 +156,13 @@ export default {
 				if (label) {
 					return t('openbuild', label)
 				}
-				return t('openbuild', 'Every {seconds}s', { seconds: schedule.interval })
+				return t('openbuild', 'Every {seconds}s', {
+					seconds: schedule.interval,
+				})
 			}
 			return t('openbuild', 'No cadence')
 		},
+
 		/**
 		 * Human action summary for a schedule row.
 		 *
@@ -146,6 +176,7 @@ export default {
 			}
 			return schedule.action || t('openbuild', 'No action')
 		},
+
 		/**
 		 * The target synchronization id for a schedule row.
 		 *
@@ -157,11 +188,13 @@ export default {
 			const id = schedule.arguments && schedule.arguments.synchronizationId
 			return id || t('openbuild', 'No synchronization')
 		},
+
 		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-001 */
 		openAdd() {
 			this.editingEntry = null
 			this.dialogOpen = true
 		},
+
 		/**
 		 * Open the schedule dialog on an existing entry.
 		 *
@@ -176,6 +209,7 @@ export default {
 			this.editingEntry = schedule
 			this.dialogOpen = true
 		},
+
 		/**
 		 * Persist an added / edited entry into `manifest.schedules[]`.
 		 *
@@ -184,7 +218,9 @@ export default {
 		 */
 		onDialogSave(entry) {
 			const list = this.schedules.slice()
-			const idx = this.editingEntry ? list.findIndex((s) => s.id === this.editingEntry.id) : -1
+			const idx = this.editingEntry
+				? list.findIndex((s) => s.id === this.editingEntry.id)
+				: -1
 			if (idx >= 0) {
 				list.splice(idx, 1, entry)
 			} else {
@@ -192,6 +228,7 @@ export default {
 			}
 			this.$emit('update:manifest', this.withSchedules(list))
 		},
+
 		/**
 		 * Remove an entry from `manifest.schedules[]`.
 		 *
@@ -202,6 +239,7 @@ export default {
 			this.pendingRemoval = schedule
 			this.confirmRemoveOpen = true
 		},
+
 		/**
 		 * Drop the pending entry once the user has confirmed it.
 		 *
@@ -222,6 +260,7 @@ export default {
 			const list = this.schedules.filter((s) => s.id !== schedule.id)
 			this.$emit('update:manifest', this.withSchedules(list))
 		},
+
 		/**
 		 * Return a manifest copy with the given schedules list set (or the
 		 * `schedules` key removed when empty so zero-schedule manifests

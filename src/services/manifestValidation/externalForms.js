@@ -25,7 +25,15 @@ export const EXTERNAL_FORM_STATUSES = Object.freeze(['enabled', 'disabled'])
 
 /** The only keys an `externalForms` entry may carry. */
 const ALLOWED_KEYS = Object.freeze([
-	'id', 'pageId', 'register', 'schema', 'status', 'publicRead', 'organisationScope', 'portalPage', 'trackLinkAction',
+	'id',
+	'pageId',
+	'register',
+	'schema',
+	'status',
+	'publicRead',
+	'organisationScope',
+	'portalPage',
+	'trackLinkAction',
 ])
 
 /** The only keys a `portalPage` object may carry (when not null). */
@@ -43,7 +51,8 @@ const ALLOWED_TRACK_LINK_KEYS = Object.freeze(['enabled'])
  */
 export function validateExternalForms(manifest) {
 	const errors = []
-	const externalForms = manifest && manifest.runtime && manifest.runtime.externalForms
+	const externalForms =
+		manifest && manifest.runtime && manifest.runtime.externalForms
 	if (externalForms === undefined) {
 		return errors
 	}
@@ -62,7 +71,9 @@ export function validateExternalForms(manifest) {
 		}
 		for (const key of Object.keys(entry)) {
 			if (!ALLOWED_KEYS.includes(key)) {
-				errors.push(`/runtime/externalForms/${idx}/${key}: openbuild.externalForm.error.unknown-key`)
+				errors.push(
+					`/runtime/externalForms/${idx}/${key}: openbuild.externalForm.error.unknown-key`,
+				)
 			}
 		}
 		// id — required, at most one entry per id.
@@ -91,12 +102,21 @@ export function validateExternalForms(manifest) {
 			errors.push(at('openbuild.externalForm.error.status-invalid'))
 		}
 		// publicRead — boolean (default false when absent).
-		if (entry.publicRead !== undefined && typeof entry.publicRead !== 'boolean') {
+		if (
+			entry.publicRead !== undefined
+			&& typeof entry.publicRead !== 'boolean'
+		) {
 			errors.push(at('openbuild.externalForm.error.public-read-not-boolean'))
 		}
 		// organisationScope — string id or null (absent tolerated as null).
-		if (entry.organisationScope !== undefined && entry.organisationScope !== null && typeof entry.organisationScope !== 'string') {
-			errors.push(at('openbuild.externalForm.error.organisation-scope-invalid'))
+		if (
+			entry.organisationScope !== undefined
+			&& entry.organisationScope !== null
+			&& typeof entry.organisationScope !== 'string'
+		) {
+			errors.push(
+				at('openbuild.externalForm.error.organisation-scope-invalid'),
+			)
 		}
 		// portalPage — `{objectId, portalPath}` or null (absent tolerated as null).
 		if (entry.portalPage !== undefined && entry.portalPage !== null) {
@@ -106,14 +126,25 @@ export function validateExternalForms(manifest) {
 			} else {
 				for (const key of Object.keys(pp)) {
 					if (!ALLOWED_PORTAL_PAGE_KEYS.includes(key)) {
-						errors.push(`/runtime/externalForms/${idx}/portalPage/${key}: openbuild.externalForm.error.unknown-key`)
+						errors.push(
+							`/runtime/externalForms/${idx}/portalPage/${key}: openbuild.externalForm.error.unknown-key`,
+						)
 					}
 				}
 				if (typeof pp.objectId !== 'string' || pp.objectId.trim() === '') {
-					errors.push(at('openbuild.externalForm.error.portal-page-object-id-required'))
+					errors.push(
+						at(
+							'openbuild.externalForm.error.portal-page-object-id-required',
+						),
+					)
 				}
-				if (pp.portalPath !== undefined && typeof pp.portalPath !== 'string') {
-					errors.push(at('openbuild.externalForm.error.portal-page-path-invalid'))
+				if (
+					pp.portalPath !== undefined
+					&& typeof pp.portalPath !== 'string'
+				) {
+					errors.push(
+						at('openbuild.externalForm.error.portal-page-path-invalid'),
+					)
 				}
 			}
 		}
@@ -121,15 +152,23 @@ export function validateExternalForms(manifest) {
 		if (entry.trackLinkAction !== undefined) {
 			const tla = entry.trackLinkAction
 			if (!tla || typeof tla !== 'object' || Array.isArray(tla)) {
-				errors.push(at('openbuild.externalForm.error.track-link-action-invalid'))
+				errors.push(
+					at('openbuild.externalForm.error.track-link-action-invalid'),
+				)
 			} else {
 				for (const key of Object.keys(tla)) {
 					if (!ALLOWED_TRACK_LINK_KEYS.includes(key)) {
-						errors.push(`/runtime/externalForms/${idx}/trackLinkAction/${key}: openbuild.externalForm.error.unknown-key`)
+						errors.push(
+							`/runtime/externalForms/${idx}/trackLinkAction/${key}: openbuild.externalForm.error.unknown-key`,
+						)
 					}
 				}
 				if (typeof tla.enabled !== 'boolean') {
-					errors.push(at('openbuild.externalForm.error.track-link-action-enabled-not-boolean'))
+					errors.push(
+						at(
+							'openbuild.externalForm.error.track-link-action-enabled-not-boolean',
+						),
+					)
 				}
 			}
 		}

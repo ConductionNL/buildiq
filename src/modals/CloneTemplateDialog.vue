@@ -1,8 +1,9 @@
 <!-- SPDX-License-Identifier: EUPL-1.2 -->
 <template>
-	<NcModal v-if="open"
+	<NcModal
+		v-if="open"
 		size="normal"
-		label-id="clone-template-dialog-title"
+		labelId="clone-template-dialog-title"
 		@close="onClose">
 		<div class="clone-dialog">
 			<h2 id="clone-template-dialog-title">
@@ -10,16 +11,17 @@
 			</h2>
 			<p v-if="template" class="clone-dialog__summary">
 				{{ dialogSummaryLead }}
-				<strong>{{ resolvedTitle }}</strong>.
+				<strong>{{ resolvedTitle }}</strong
+				>.
 				{{ t('openbuild', 'You can edit everything after cloning.') }}
 			</p>
 			<NcTextField
-				:model-value="localName"
+				:modelValue="localName"
 				:label="t('openbuild', 'Application name')"
 				:placeholder="t('openbuild', 'My permits')"
 				@update:modelValue="localName = $event" />
 			<NcTextField
-				:model-value="localSlug"
+				:modelValue="localSlug"
 				:label="t('openbuild', 'Slug (kebab-case, max 32 chars)')"
 				:placeholder="t('openbuild', 'my-permits')"
 				@update:modelValue="localSlug = $event" />
@@ -30,7 +32,10 @@
 				<NcButton @click="onClose">
 					{{ t('openbuild', 'Cancel') }}
 				</NcButton>
-				<NcButton type="primary" :disabled="!canSubmit || submitting" @click="submit">
+				<NcButton
+					variant="primary"
+					:disabled="!canSubmit || submitting"
+					@click="submit">
 					{{ submitLabel }}
 				</NcButton>
 			</div>
@@ -61,6 +66,7 @@ export default {
 		// The GitHub repo identity to install `{ owner, repo, ref? }`.
 		githubRepo: { type: Object, default: null },
 	},
+
 	emits: ['close', 'submit', 'installed'],
 	data() {
 		return {
@@ -70,6 +76,7 @@ export default {
 			submitting: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * Title shown in the dialog heading and used as the NcModal `name`
@@ -78,8 +85,11 @@ export default {
 		 * @return {string} The translated dialog title.
 		 */
 		dialogTitle() {
-			return this.remote ? t('openbuild', 'Install template') : t('openbuild', 'Use this template')
+			return this.remote
+				? t('openbuild', 'Install template')
+				: t('openbuild', 'Use this template')
 		},
+
 		/**
 		 * Observed behaviour of `resolvedTitle` (retrofit annotation).
 		 *
@@ -89,16 +99,20 @@ export default {
 			if (!this.template) return ''
 			return t('openbuild', this.template.title || this.template.slug)
 		},
+
 		/**
 		 * Observed behaviour of `canSubmit` (retrofit annotation).
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
 		 */
 		canSubmit() {
-			return this.localName.trim().length > 0
+			return (
+				this.localName.trim().length > 0
 				&& /^[a-z0-9]+(-[a-z0-9]+)*$/.test(this.localSlug)
 				&& this.localSlug.length <= 32
+			)
 		},
+
 		/**
 		 * Label for the primary action button — installing for a remote store
 		 * template, cloning for a local built-in template.
@@ -108,10 +122,15 @@ export default {
 		 */
 		submitLabel() {
 			if (this.remote || this.github) {
-				return this.submitting ? t('openbuild', 'Installing…') : t('openbuild', 'Install')
+				return this.submitting
+					? t('openbuild', 'Installing…')
+					: t('openbuild', 'Install')
 			}
-			return this.submitting ? t('openbuild', 'Cloning…') : t('openbuild', 'Clone template')
+			return this.submitting
+				? t('openbuild', 'Cloning…')
+				: t('openbuild', 'Clone template')
 		},
+
 		/**
 		 * Modal heading — install wording for a remote store / GitHub app,
 		 * clone wording for a local template.
@@ -123,8 +142,11 @@ export default {
 			if (this.github) {
 				return t('openbuild', 'Install app from GitHub')
 			}
-			return this.remote ? t('openbuild', 'Install template') : t('openbuild', 'Use this template')
+			return this.remote
+				? t('openbuild', 'Install template')
+				: t('openbuild', 'Use this template')
 		},
+
 		/**
 		 * Lead-in sentence of the summary line, matching the install/clone verb.
 		 *
@@ -138,6 +160,7 @@ export default {
 			return t('openbuild', 'Create a new application from')
 		},
 	},
+
 	watch: {
 		/**
 		 * Observed behaviour of `open` (retrofit annotation).
@@ -160,6 +183,7 @@ export default {
 			}
 		},
 	},
+
 	methods: {
 		/**
 		 * Observed behaviour of `onClose` (retrofit annotation).
@@ -170,6 +194,7 @@ export default {
 			if (this.submitting) return
 			this.$emit('close')
 		},
+
 		/**
 		 * Observed behaviour of `submit` (retrofit annotation).
 		 *
@@ -177,10 +202,16 @@ export default {
 		 */
 		async submit() {
 			if (!this.canSubmit) {
-				this.error = t('openbuild', 'Provide a name and a kebab-case slug (max 32 chars).')
+				this.error = t(
+					'openbuild',
+					'Provide a name and a kebab-case slug (max 32 chars).',
+				)
 				return
 			}
-			const payload = { name: this.localName.trim(), slug: this.localSlug.trim() }
+			const payload = {
+				name: this.localName.trim(),
+				slug: this.localSlug.trim(),
+			}
 			this.submitting = true
 			this.error = ''
 			if (this.github) {
@@ -198,6 +229,7 @@ export default {
 				this.submitting = false
 			}
 		},
+
 		/**
 		 * Install a remote store template via the backend store install
 		 * endpoint, then emit `installed` with the created application so the
@@ -218,10 +250,15 @@ export default {
 				this.$emit('close')
 			} catch (e) {
 				const data = e?.response?.data
-				this.error = data?.detail || data?.error || e?.message || t('openbuild', 'Install failed.')
+				this.error =
+					data?.detail
+					|| data?.error
+					|| e?.message
+					|| t('openbuild', 'Install failed.')
 				this.submitting = false
 			}
 		},
+
 		/**
 		 * Install a GitHub-shop app via the GitHub shop install endpoint, then
 		 * emit `installed` with the created application so the parent can redirect
@@ -235,7 +272,10 @@ export default {
 		async installGithub(payload) {
 			const repo = this.githubRepo || {}
 			if (!repo.owner || !repo.repo) {
-				this.error = t('openbuild', 'This GitHub app is missing its repository identity.')
+				this.error = t(
+					'openbuild',
+					'This GitHub app is missing its repository identity.',
+				)
 				this.submitting = false
 				return
 			}
@@ -258,13 +298,21 @@ export default {
 				// The install endpoint returns a generic-but-actionable error
 				// carrying the parser error code + offending file path.
 				const file = data?.file || data?.path
-				const base = data?.detail || data?.error || e?.message || t('openbuild', 'Install failed.')
+				const base =
+					data?.detail
+					|| data?.error
+					|| e?.message
+					|| t('openbuild', 'Install failed.')
 				this.error = file
-					? t('openbuild', '{message} (in {file})', { message: base, file })
+					? t('openbuild', '{message} (in {file})', {
+							message: base,
+							file,
+						})
 					: base
 				this.submitting = false
 			}
 		},
+
 		/**
 		 * Suggest a kebab-case slug from an arbitrary source string.
 		 *
@@ -280,6 +328,7 @@ export default {
 				.slice(0, 32)
 				.replace(/-+$/g, '')
 		},
+
 		/**
 		 * Observed behaviour of `setError` (retrofit annotation).
 		 *

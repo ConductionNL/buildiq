@@ -22,14 +22,15 @@ vi.mock('@nextcloud/capabilities', () => {
 	return { getCapabilities: capabilitiesMocks.getCapabilities }
 })
 
-const { useOrAccessCapabilities, BASELINE_SCOPES } = await import('../../src/composables/useOrAccessCapabilities.js')
+const { useOrAccessCapabilities, BASELINE_SCOPES } =
+	await import('../../src/composables/useOrAccessCapabilities.js')
 
 beforeEach(() => {
 	capabilitiesMocks.getCapabilities.mockReset()
 })
 
 describe('useOrAccessCapabilities', () => {
-	it('REQ-OBDSA-003: absent capabilities key falls back to baseline [\'group\']', () => {
+	it("REQ-OBDSA-003: absent capabilities key falls back to baseline ['group']", () => {
 		capabilitiesMocks.getCapabilities.mockReturnValue({})
 		expect(useOrAccessCapabilities()).toEqual({ scopes: ['group'] })
 	})
@@ -39,11 +40,15 @@ describe('useOrAccessCapabilities', () => {
 		expect(useOrAccessCapabilities().scopes).toEqual([...BASELINE_SCOPES])
 	})
 
-	it('REQ-OBDSA-003: advertised [\'group\',\'creator\',\'condition\'] passes through', () => {
+	it("REQ-OBDSA-003: advertised ['group','creator','condition'] passes through", () => {
 		capabilitiesMocks.getCapabilities.mockReturnValue({
-			openregister: { authorization: { scopes: ['group', 'creator', 'condition'] } },
+			openregister: {
+				authorization: { scopes: ['group', 'creator', 'condition'] },
+			},
 		})
-		expect(useOrAccessCapabilities()).toEqual({ scopes: ['group', 'creator', 'condition'] })
+		expect(useOrAccessCapabilities()).toEqual({
+			scopes: ['group', 'creator', 'condition'],
+		})
 	})
 
 	it('REQ-OBDSA-003: a non-array scopes value falls back to baseline', () => {

@@ -13,8 +13,8 @@
 
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { useRole, getCurrentUserGroups } from '../composables/useRole.js'
 import { fetchApplicationRecord } from '../composables/useApplicationRecord.js'
+import { getCurrentUserGroups, useRole } from '../composables/useRole.js'
 
 const OR_OBJECTS = '/apps/openregister/api/objects/openbuild/application'
 
@@ -46,8 +46,15 @@ export default {
 				const self = this.obApp['@self'] || {}
 				return self.id || self.uuid || this.obApp.uuid || this.obApp.id || ''
 			}
-			return String(this.objectId || this.objectUuid
-				|| (this.object && ((this.object['@self'] || {}).id || this.object.uuid || this.object.id)) || '')
+			return String(
+				this.objectId
+					|| this.objectUuid
+					|| (this.object
+						&& ((this.object['@self'] || {}).id
+							|| this.object.uuid
+							|| this.object.id))
+					|| '',
+			)
 		},
 		obAppRole() {
 			return useRole(this.obApp, getCurrentUserGroups())
@@ -67,7 +74,12 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async obLoadApp(force = false) {
-			if (!force && this.object && (this.object.manifest !== undefined || this.object.slug !== undefined)) {
+			if (
+				!force
+				&& this.object
+				&& (this.object.manifest !== undefined
+					|| this.object.slug !== undefined)
+			) {
 				this.obApp = this.object
 				return
 			}
@@ -87,7 +99,12 @@ export default {
 				// other. Routing every consumer through one coalescing helper
 				// collapses the burst to a single round-trip.
 				const data = await fetchApplicationRecord(uuid)
-				this.obApp = (data && data.results) ? data.results : (data && data['@self'] ? data : data)
+				this.obApp =
+					data && data.results
+						? data.results
+						: data && data['@self']
+							? data
+							: data
 			} catch (e) {
 				this.obAppError = `${t('openbuild', 'Failed to load application')}: ${e.message || e}`
 			} finally {
@@ -106,8 +123,16 @@ export default {
 			if (!uuid || !this.obApp) {
 				return
 			}
-			const { data } = await axios.put(generateUrl(`${OR_OBJECTS}/${uuid}`), { ...this.obApp, ...patch })
-			this.obApp = (data && data.results) ? data.results : (data && data['@self'] ? data : { ...this.obApp, ...patch })
+			const { data } = await axios.put(generateUrl(`${OR_OBJECTS}/${uuid}`), {
+				...this.obApp,
+				...patch,
+			})
+			this.obApp =
+				data && data.results
+					? data.results
+					: data && data['@self']
+						? data
+						: { ...this.obApp, ...patch }
 		},
 	},
 }

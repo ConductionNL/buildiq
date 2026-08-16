@@ -35,7 +35,11 @@ import { test, expect } from '@playwright/test'
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 const TEST_SLUG = process.env.NC_TEST_SLUG ?? 'hello-world'
 
-async function loginAs(page: import('@playwright/test').Page, user: string, pass: string): Promise<void> {
+async function loginAs(
+	page: import('@playwright/test').Page,
+	user: string,
+	pass: string,
+): Promise<void> {
 	await page.goto(`${BASE}/index.php/login`)
 	await page.locator('input[name="user"]').fill(user)
 	await page.locator('input[name="password"]').fill(pass)
@@ -83,11 +87,12 @@ async function loginAs(page: import('@playwright/test').Page, user: string, pass
 // scenarios to THAT selector is the un-quarantine, and it needs a multi-version
 // chain to have a non-terminal pill to promote from, which this instance has
 // not got (hello-world has exactly one version, `production`).
-test.describe.skip('PromoteVersionDialog — e2e with live call site (pending spec B / openbuild-app-detail-overview)', () => {
-
+test.describe
+	.skip('PromoteVersionDialog — e2e with live call site (pending spec B / openbuild-app-detail-overview)', () => {
 	// TODO: Replace this selector with the actual Promote button once spec B
 	// wires the dialog into the ApplicationVersion list in the detail page.
-	const TODO_PROMOTE_BUTTON_SELECTOR = '[data-testid="promote-version-btn"], button:has-text("Promote")'
+	const TODO_PROMOTE_BUTTON_SELECTOR =
+		'[data-testid="promote-version-btn"], button:has-text("Promote")'
 
 	test.use({ storageState: { cookies: [], origins: [] } })
 
@@ -95,11 +100,15 @@ test.describe.skip('PromoteVersionDialog — e2e with live call site (pending sp
 		await loginAs(page, 'admin', 'admin')
 	})
 
-	test('5.1 — empty-start: Confirm is disabled until exact slug is typed', async ({ page }) => {
+	test('5.1 — empty-start: Confirm is disabled until exact slug is typed', async ({
+		page,
+	}) => {
 		// Navigate to the detail page for hello-world. `networkidle` never
 		// settles on Nextcloud (ADR-074 rule 4); the Promote button becoming
 		// visible is the readiness signal these scenarios actually need.
-		await page.goto(`${BASE}/index.php/apps/openbuild/builder/${TEST_SLUG}`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${BASE}/index.php/apps/openbuild/builder/${TEST_SLUG}`, {
+			waitUntil: 'domcontentloaded',
+		})
 
 		// Open the Promote dialog (call site added by spec B).
 		const promoteBtn = page.locator(TODO_PROMOTE_BUTTON_SELECTOR).first()
@@ -111,23 +120,33 @@ test.describe.skip('PromoteVersionDialog — e2e with live call site (pending sp
 		await expect(dialog).toBeVisible({ timeout: 5_000 })
 
 		// Select the "empty-start" strategy radio.
-		const emptyStartRadio = dialog.locator('input[type="radio"][value="empty-start"]')
+		const emptyStartRadio = dialog
+			.locator('input[type="radio"][value="empty-start"]')
 			.or(dialog.getByText(/empty start/i))
 		await emptyStartRadio.click()
 
 		// Confirm button must be DISABLED with empty input.
 		const confirmBtn = dialog.getByRole('button', { name: /promote|confirm/i })
-		await expect(confirmBtn, 'Confirm must be disabled when empty-start is selected and input is empty').toBeDisabled()
+		await expect(
+			confirmBtn,
+			'Confirm must be disabled when empty-start is selected and input is empty',
+		).toBeDisabled()
 
 		// Type wrong slug.
 		const slugInput = dialog.locator('input[type="text"]').last()
 		await slugInput.fill('wrong-slug')
-		await expect(confirmBtn, 'Confirm must still be disabled with wrong slug').toBeDisabled()
+		await expect(
+			confirmBtn,
+			'Confirm must still be disabled with wrong slug',
+		).toBeDisabled()
 
 		// Clear and type exact slug.
 		await slugInput.fill('')
 		await slugInput.fill(TEST_SLUG)
-		await expect(confirmBtn, 'Confirm must be enabled when exact app slug is typed').toBeEnabled()
+		await expect(
+			confirmBtn,
+			'Confirm must be enabled when exact app slug is typed',
+		).toBeEnabled()
 
 		// Click Confirm — the dialog emits confirm event and closes.
 		await confirmBtn.click()
@@ -135,8 +154,12 @@ test.describe.skip('PromoteVersionDialog — e2e with live call site (pending sp
 		await expect(dialog).not.toBeVisible({ timeout: 5_000 })
 	})
 
-	test('5.2 — start-with-source-data: Confirm is enabled by default', async ({ page }) => {
-		await page.goto(`${BASE}/index.php/apps/openbuild/builder/${TEST_SLUG}`, { waitUntil: 'domcontentloaded' })
+	test('5.2 — start-with-source-data: Confirm is enabled by default', async ({
+		page,
+	}) => {
+		await page.goto(`${BASE}/index.php/apps/openbuild/builder/${TEST_SLUG}`, {
+			waitUntil: 'domcontentloaded',
+		})
 
 		const promoteBtn = page.locator(TODO_PROMOTE_BUTTON_SELECTOR).first()
 		await expect(promoteBtn).toBeVisible({ timeout: 10_000 })
@@ -146,17 +169,26 @@ test.describe.skip('PromoteVersionDialog — e2e with live call site (pending sp
 		await expect(dialog).toBeVisible({ timeout: 5_000 })
 
 		// start-with-source-data should be available.
-		const startWithSourceRadio = dialog.locator('input[type="radio"][value="start-with-source-data"]')
-		if (await startWithSourceRadio.count() > 0) {
+		const startWithSourceRadio = dialog.locator(
+			'input[type="radio"][value="start-with-source-data"]',
+		)
+		if ((await startWithSourceRadio.count()) > 0) {
 			await startWithSourceRadio.click()
 		}
 
 		const confirmBtn = dialog.getByRole('button', { name: /promote|confirm/i })
-		await expect(confirmBtn, 'Confirm must be enabled by default for start-with-source-data').toBeEnabled()
+		await expect(
+			confirmBtn,
+			'Confirm must be enabled by default for start-with-source-data',
+		).toBeEnabled()
 	})
 
-	test('5.2 — migrate-existing-data: Confirm is enabled by default', async ({ page }) => {
-		await page.goto(`${BASE}/index.php/apps/openbuild/builder/${TEST_SLUG}`, { waitUntil: 'domcontentloaded' })
+	test('5.2 — migrate-existing-data: Confirm is enabled by default', async ({
+		page,
+	}) => {
+		await page.goto(`${BASE}/index.php/apps/openbuild/builder/${TEST_SLUG}`, {
+			waitUntil: 'domcontentloaded',
+		})
 
 		const promoteBtn = page.locator(TODO_PROMOTE_BUTTON_SELECTOR).first()
 		await expect(promoteBtn).toBeVisible({ timeout: 10_000 })
@@ -165,13 +197,18 @@ test.describe.skip('PromoteVersionDialog — e2e with live call site (pending sp
 		const dialog = page.locator('[role="dialog"]')
 		await expect(dialog).toBeVisible({ timeout: 5_000 })
 
-		const migrateRadio = dialog.locator('input[type="radio"][value="migrate-existing-data"]')
-		if (await migrateRadio.count() > 0) {
+		const migrateRadio = dialog.locator(
+			'input[type="radio"][value="migrate-existing-data"]',
+		)
+		if ((await migrateRadio.count()) > 0) {
 			await migrateRadio.click()
 		}
 
 		const confirmBtn = dialog.getByRole('button', { name: /promote|confirm/i })
-		await expect(confirmBtn, 'Confirm must be enabled by default for migrate-existing-data').toBeEnabled()
+		await expect(
+			confirmBtn,
+			'Confirm must be enabled by default for migrate-existing-data',
+		).toBeEnabled()
 	})
 })
 
@@ -193,7 +230,13 @@ test.describe('PromoteVersionDialog — component available (static assertion)',
 			process.cwd(),
 			'src/dialogs/PromoteVersionDialog.vue',
 		)
-		const exists = await fs.stat(dialogPath).then(() => true).catch(() => false)
-		expect(exists, 'PromoteVersionDialog.vue must be in src/dialogs/ (ADR-004)').toBe(true)
+		const exists = await fs
+			.stat(dialogPath)
+			.then(() => true)
+			.catch(() => false)
+		expect(
+			exists,
+			'PromoteVersionDialog.vue must be in src/dialogs/ (ADR-004)',
+		).toBe(true)
 	})
 })

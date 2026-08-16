@@ -52,7 +52,16 @@ const RUNS_URL_PATTERN = /\/apps\/openbuild\/api\/agents\/.+\/runs/
 const SCOPED_PLAN = {
 	summary: 'Adds a contact-details step to the intake form.',
 	steps: [
-		{ tool: 'openbuild.upsertPage', arguments: { appSlug: APP_SLUG, pageId: 'e2e-agent-contact', title: 'Contact details', type: 'form', route: '/e2e-agent-contact' } },
+		{
+			tool: 'openbuild.upsertPage',
+			arguments: {
+				appSlug: APP_SLUG,
+				pageId: 'e2e-agent-contact',
+				title: 'Contact details',
+				type: 'form',
+				route: '/e2e-agent-contact',
+			},
+		},
 	],
 	manifests: {
 		[`${APP_SLUG}@development`]: {
@@ -60,7 +69,15 @@ const SCOPED_PLAN = {
 			predicted: {
 				version: '1.0.0',
 				menu: [],
-				pages: [{ id: 'e2e-agent-contact', route: '/e2e-agent-contact', type: 'form', title: 'Contact details', config: {} }],
+				pages: [
+					{
+						id: 'e2e-agent-contact',
+						route: '/e2e-agent-contact',
+						type: 'form',
+						title: 'Contact details',
+						config: {},
+					},
+				],
 			},
 		},
 	},
@@ -74,9 +91,12 @@ test.describe('agent-workspace — Agents page', () => {
 	// violation (>1 match). Delete any pre-existing copies once, up front, so
 	// each run starts from a clean slate.
 	test.beforeAll(async ({ request }) => {
-		const resp = await request.get('/index.php/apps/openregister/api/objects/openbuild/agent', {
-			headers: { 'OCS-APIRequest': 'true' },
-		})
+		const resp = await request.get(
+			'/index.php/apps/openregister/api/objects/openbuild/agent',
+			{
+				headers: { 'OCS-APIRequest': 'true' },
+			},
+		)
 		if (resp.ok() === false) {
 			return
 		}
@@ -84,9 +104,14 @@ test.describe('agent-workspace — Agents page', () => {
 		const items = Array.isArray(body) ? body : (body.results ?? [])
 		for (const agent of items) {
 			if (agent?.name === 'E2E page builder assistant' && agent?.id) {
-				await request.delete(`/index.php/apps/openregister/api/objects/openbuild/agent/${agent.id}`, {
-					headers: { 'OCS-APIRequest': 'true' },
-				}).catch(() => {})
+				await request
+					.delete(
+						`/index.php/apps/openregister/api/objects/openbuild/agent/${agent.id}`,
+						{
+							headers: { 'OCS-APIRequest': 'true' },
+						},
+					)
+					.catch(() => {})
 			}
 		}
 	})
@@ -103,8 +128,13 @@ test.describe('agent-workspace — Agents page', () => {
 		// empty), causing a spurious "create it inline" duplicate on top of
 		// an agent an earlier test in this file already created.
 		await expect(
-			page.locator('[data-testid="agent-row"]').first().or(page.getByText(/no agents yet/i)),
-		).toBeVisible({ timeout: 10_000 }).catch(() => {})
+			page
+				.locator('[data-testid="agent-row"]')
+				.first()
+				.or(page.getByText(/no agents yet/i)),
+		)
+			.toBeVisible({ timeout: 10_000 })
+			.catch(() => {})
 	})
 
 	test('create an agent scoped to two tools', async ({ page }) => {
@@ -115,17 +145,25 @@ test.describe('agent-workspace — Agents page', () => {
 		// can stall a locator action's actionability check past its timeout).
 		await page.waitForTimeout(1_500)
 
-		await page.getByRole('textbox', { name: /^name$/i }).fill('E2E page builder assistant')
-		await page.getByRole('textbox', { name: /instructions/i }).fill('Only add form pages for this test.')
+		await page
+			.getByRole('textbox', { name: /^name$/i })
+			.fill('E2E page builder assistant')
+		await page
+			.getByRole('textbox', { name: /instructions/i })
+			.fill('Only add form pages for this test.')
 
 		// The multi-select dropdown CLOSES after each pick (no keepOpen behavior
 		// on this component) — it must be reopened before selecting the next
 		// option, or the second `getByRole('option', ...)` waits forever for a
 		// listbox that no longer exists.
 		await page.getByRole('combobox', { name: /enabled tools/i }).click()
-		await page.getByRole('option', { name: looseOptionName('Create or update page') }).click()
+		await page
+			.getByRole('option', { name: looseOptionName('Create or update page') })
+			.click()
 		await page.getByRole('combobox', { name: /enabled tools/i }).click()
-		await page.getByRole('option', { name: looseOptionName('Add widget') }).click()
+		await page
+			.getByRole('option', { name: looseOptionName('Add widget') })
+			.click()
 		// No explicit close needed — the dropdown already auto-closes after each
 		// pick (see the note above). Pressing Escape here was closing the whole
 		// NcModal instead (nothing left open for it to intercept), wiping the
@@ -134,14 +172,19 @@ test.describe('agent-workspace — Agents page', () => {
 		await page.getByRole('button', { name: /^save$/i }).click()
 		await expect(page.locator('.agent-edit')).toHaveCount(0, { timeout: 10_000 })
 
-		const row = page.locator('[data-testid="agent-row"]', { hasText: 'E2E page builder assistant' })
+		const row = page.locator('[data-testid="agent-row"]', {
+			hasText: 'E2E page builder assistant',
+		})
 		await expect(row).toBeVisible()
 		await expect(row).toContainText('2 tool(s) enabled')
 	})
 
 	// @e2e agent-workspace::agent-chat-plans-and-executes-scoped-to-that-agent
 	// @e2e agent-workspace::run-history-shows-every-tool-calls-arguments-and-result
-	test('chat with an agent, approve a proposal, confirm the run appears in run-history with tool-call detail', async ({ page, request }) => {
+	test('chat with an agent, approve a proposal, confirm the run appears in run-history with tool-call detail', async ({
+		page,
+		request,
+	}) => {
 		// This instance's `/api/copilot/health` reports {status:"ok"} (NC core
 		// registers the `core:text2text` task type even with no real backing
 		// provider — see CopilotService::health(), which only checks the task
@@ -153,25 +196,38 @@ test.describe('agent-workspace — Agents page', () => {
 		// waited the full test timeout both times. That is the actual
 		// "no usable TaskProcessing LLM provider" signal on this instance;
 		// hard-skip rather than rely on the misleading health status.
-		test.skip(true, 'requires a TaskProcessing LLM provider — absent on this instance (health reports ok but the live plan→approve flow never completes; see comment above)')
+		test.skip(
+			true,
+			'requires a TaskProcessing LLM provider — absent on this instance (health reports ok but the live plan→approve flow never completes; see comment above)',
+		)
 
-		const row = page.locator('[data-testid="agent-row"]', { hasText: 'E2E page builder assistant' })
+		const row = page.locator('[data-testid="agent-row"]', {
+			hasText: 'E2E page builder assistant',
+		})
 		// If the seeded agent from the previous test isn't present (fresh run
 		// order — Playwright test files run independently), create it inline
 		// so this test is independently runnable.
-		if (await row.count() === 0) {
+		if ((await row.count()) === 0) {
 			await page.getByRole('button', { name: /new agent/i }).click()
 			await page.waitForSelector('.agent-edit')
 			// Brief settle before interacting — see the identical note in
 			// automations.spec.ts (NcModal open transition + shared-instance load
 			// can stall a locator action's actionability check past its timeout).
 			await page.waitForTimeout(1_500)
-			await page.getByRole('textbox', { name: /^name$/i }).fill('E2E page builder assistant')
+			await page
+				.getByRole('textbox', { name: /^name$/i })
+				.fill('E2E page builder assistant')
 			await page.getByRole('combobox', { name: /enabled tools/i }).click()
-			await page.getByRole('option', { name: looseOptionName('Create or update page') }).click()
+			await page
+				.getByRole('option', {
+					name: looseOptionName('Create or update page'),
+				})
+				.click()
 			// No explicit close needed — see the note in the first test above.
 			await page.getByRole('button', { name: /^save$/i }).click()
-			await expect(page.locator('.agent-edit')).toHaveCount(0, { timeout: 10_000 })
+			await expect(page.locator('.agent-edit')).toHaveCount(0, {
+				timeout: 10_000,
+			})
 		}
 
 		// The row's clickable "select this agent" surface is the inner
@@ -183,20 +239,37 @@ test.describe('agent-workspace — Agents page', () => {
 		await row.locator('.agents-page__item-main').click()
 		const chatPanel = page.locator('[data-testid="copilot-panel"]')
 		await expect(chatPanel).toBeVisible({ timeout: 5_000 })
-		await expect(page.locator('[data-testid="copilot-acting-as"]')).toContainText('E2E page builder assistant')
+		await expect(
+			page.locator('[data-testid="copilot-acting-as"]'),
+		).toContainText('E2E page builder assistant')
 
-		await page.route(PLAN_URL, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(SCOPED_PLAN) }))
+		await page.route(PLAN_URL, (route) =>
+			route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify(SCOPED_PLAN),
+			}),
+		)
 
-		await chatPanel.locator('[data-testid="copilot-message-input"]').fill('add a contact-details step to the intake form')
-		await chatPanel.locator('[data-testid="copilot-message-input"]').press('Enter')
+		await chatPanel
+			.locator('[data-testid="copilot-message-input"]')
+			.fill('add a contact-details step to the intake form')
+		await chatPanel
+			.locator('[data-testid="copilot-message-input"]')
+			.press('Enter')
 
 		const proposal = chatPanel.locator('[data-testid="copilot-proposal"]')
-		await expect(proposal, 'proposal card must render').toBeVisible({ timeout: 10_000 })
+		await expect(proposal, 'proposal card must render').toBeVisible({
+			timeout: 10_000,
+		})
 
 		const executeRequest = page.waitForRequest(EXECUTE_URL)
 		await proposal.locator('[data-testid="copilot-approve"]').click()
 		const request2 = await executeRequest
-		expect(request2.postDataJSON().agentId, 'execute request must carry the agent id').toBeTruthy()
+		expect(
+			request2.postDataJSON().agentId,
+			'execute request must carry the agent id',
+		).toBeTruthy()
 
 		// Switch to the run-history tab and confirm the applied run with tool-call detail.
 		await page.getByRole('button', { name: /run history/i }).click()
@@ -205,15 +278,21 @@ test.describe('agent-workspace — Agents page', () => {
 
 		const runRow = page.locator('[data-testid="agent-run-row"]').first()
 		await expect(runRow).toBeVisible({ timeout: 10_000 })
-		await expect(runRow.locator('[data-testid="agent-run-outcome"]')).toHaveText(/applied/i)
-		await expect(runRow.locator('[data-testid="agent-run-tool-call"]').first()).toContainText('openbuild.upsertPage')
+		await expect(runRow.locator('[data-testid="agent-run-outcome"]')).toHaveText(
+			/applied/i,
+		)
+		await expect(
+			runRow.locator('[data-testid="agent-run-tool-call"]').first(),
+		).toContainText('openbuild.upsertPage')
 	})
 
 	test('a disallowed tool request is rejected', async ({ page, request }) => {
 		const health = await request.get(HEALTH_URL)
 		test.skip(health.status() === 503, 'No AI provider configured')
 
-		const row = page.locator('[data-testid="agent-row"]', { hasText: 'E2E page builder assistant' })
+		const row = page.locator('[data-testid="agent-row"]', {
+			hasText: 'E2E page builder assistant',
+		})
 		await expect(row).toBeVisible({ timeout: 10_000 })
 		// The row's clickable "select this agent" surface is the inner
 		// `.agents-page__item-main` button, not the `<li data-testid="agent-row">`
@@ -231,16 +310,29 @@ test.describe('agent-workspace — Agents page', () => {
 		// server-side allow-list intersection must reject it (422 plan_invalid).
 		// The stubbed response mirrors CopilotService::planWithinContext()'s
 		// real rejection envelope for a step outside the narrowed allow-list.
-		await page.route(PLAN_URL, (route) => route.fulfill({
-			status: 422,
-			contentType: 'application/json',
-			body: JSON.stringify({ error: 'plan_invalid', message: 'Step outside the agent allow-list.' }),
-		}))
+		await page.route(PLAN_URL, (route) =>
+			route.fulfill({
+				status: 422,
+				contentType: 'application/json',
+				body: JSON.stringify({
+					error: 'plan_invalid',
+					message: 'Step outside the agent allow-list.',
+				}),
+			}),
+		)
 
-		await chatPanel.locator('[data-testid="copilot-message-input"]').fill('create a brand new app for me')
-		await chatPanel.locator('[data-testid="copilot-message-input"]').press('Enter')
+		await chatPanel
+			.locator('[data-testid="copilot-message-input"]')
+			.fill('create a brand new app for me')
+		await chatPanel
+			.locator('[data-testid="copilot-message-input"]')
+			.press('Enter')
 
-		await expect(chatPanel.locator('.copilot-panel__bubble--error')).toBeVisible({ timeout: 10_000 })
-		await expect(chatPanel.locator('[data-testid="copilot-proposal"]')).toHaveCount(0)
+		await expect(chatPanel.locator('.copilot-panel__bubble--error')).toBeVisible(
+			{ timeout: 10_000 },
+		)
+		await expect(
+			chatPanel.locator('[data-testid="copilot-proposal"]'),
+		).toHaveCount(0)
 	})
 })

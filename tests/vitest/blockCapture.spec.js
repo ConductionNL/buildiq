@@ -32,7 +32,10 @@ const widgetFragment = {
 	gridWidth: 4,
 	gridHeight: 2,
 	props: { colorMap: { submitted: 'info' } },
-	dataSource: { register: 'vergunning-app', schema: 'vergunning-app-permit-application' },
+	dataSource: {
+		register: 'vergunning-app',
+		schema: 'vergunning-app-permit-application',
+	},
 }
 
 describe('blockCapture — collectSchemaRefs', () => {
@@ -44,13 +47,19 @@ describe('blockCapture — collectSchemaRefs', () => {
 	it('collects distinct references across a section fragment', () => {
 		const section = buildSectionFragment('section-1', [
 			{ ...widgetFragment, id: 'a' },
-			{ id: 'b', widgetKey: 'field-display', props: { relatedSchema: 'vergunning-app-applicant' } },
+			{
+				id: 'b',
+				widgetKey: 'field-display',
+				props: { relatedSchema: 'vergunning-app-applicant' },
+			},
 		])
 		const refs = [...collectSchemaRefs(section)]
-		expect(refs).toEqual(expect.arrayContaining([
-			'vergunning-app-permit-application',
-			'vergunning-app-applicant',
-		]))
+		expect(refs).toEqual(
+			expect.arrayContaining([
+				'vergunning-app-permit-application',
+				'vergunning-app-applicant',
+			]),
+		)
 		expect(refs).toHaveLength(2)
 	})
 
@@ -60,10 +69,19 @@ describe('blockCapture — collectSchemaRefs', () => {
 })
 
 describe('blockCapture — captureBlock (single widget)', () => {
-	const meta = { slug: 'status-badge-widget', name: 'Status badge', description: 'A badge', category: 'display' }
+	const meta = {
+		slug: 'status-badge-widget',
+		name: 'Status badge',
+		description: 'A badge',
+		category: 'display',
+	}
 
 	it('de-namespaces schema references and records schemaDependencies', () => {
-		const { record, summary } = captureBlock(widgetFragment, 'vergunning-app', meta)
+		const { record, summary } = captureBlock(
+			widgetFragment,
+			'vergunning-app',
+			meta,
+		)
 
 		expect(record.slug).toBe('status-badge-widget')
 		expect(record.sourceApplicationSlug).toBe('vergunning-app')
@@ -93,23 +111,38 @@ describe('blockCapture — captureBlock (single widget)', () => {
 	})
 
 	it('flags an unprefixed shared schema and captures its slug unchanged', () => {
-		const fragment = { id: 'w', widgetKey: 'x', dataSource: { schema: 'shared-contacts' } }
+		const fragment = {
+			id: 'w',
+			widgetKey: 'x',
+			dataSource: { schema: 'shared-contacts' },
+		}
 		const { record, summary } = captureBlock(fragment, 'vergunning-app', meta)
-		expect(summary.schemaDependencies[0]).toMatchObject({ slug: 'shared-contacts', shared: true })
+		expect(summary.schemaDependencies[0]).toMatchObject({
+			slug: 'shared-contacts',
+			shared: true,
+		})
 		expect(record.schemaDependencies).toEqual(['shared-contacts'])
 	})
 
 	it('throws a typed SlugCollisionError naming both schemas on a de-namespace collision', () => {
 		const section = buildSectionFragment('s', [
-			{ id: 'a', widgetKey: 'x', dataSource: { schema: 'vergunning-app-tasks' } },
+			{
+				id: 'a',
+				widgetKey: 'x',
+				dataSource: { schema: 'vergunning-app-tasks' },
+			},
 			{ id: 'b', widgetKey: 'y', dataSource: { relatedSchema: 'tasks' } },
 		])
-		expect(() => captureBlock(section, 'vergunning-app', meta)).toThrow(SlugCollisionError)
+		expect(() => captureBlock(section, 'vergunning-app', meta)).toThrow(
+			SlugCollisionError,
+		)
 		try {
 			captureBlock(section, 'vergunning-app', meta)
 		} catch (e) {
 			expect(e.code).toBe('slug-collision')
-			expect(e.sourceSlugs).toEqual(expect.arrayContaining(['vergunning-app-tasks', 'tasks']))
+			expect(e.sourceSlugs).toEqual(
+				expect.arrayContaining(['vergunning-app-tasks', 'tasks']),
+			)
 		}
 	})
 })
@@ -117,10 +150,22 @@ describe('blockCapture — captureBlock (single widget)', () => {
 describe('blockCapture — captureBlock (page section)', () => {
 	it('captures every selected widget, preserving their relative order', () => {
 		const section = buildSectionFragment('applicant-summary', [
-			{ id: 'name', widgetKey: 'field-display', props: { schema: 'vergunning-app-applicant' } },
-			{ id: 'status', widgetKey: 'status-badge', props: { schema: 'vergunning-app-applicant' } },
+			{
+				id: 'name',
+				widgetKey: 'field-display',
+				props: { schema: 'vergunning-app-applicant' },
+			},
+			{
+				id: 'status',
+				widgetKey: 'status-badge',
+				props: { schema: 'vergunning-app-applicant' },
+			},
 		])
-		const meta = { slug: 'applicant-summary-section', name: 'Applicant summary', category: 'layout' }
+		const meta = {
+			slug: 'applicant-summary-section',
+			name: 'Applicant summary',
+			category: 'layout',
+		}
 		const { record } = captureBlock(section, 'vergunning-app', meta)
 
 		expect(isSectionFragment(record.fragment)).toBe(true)
@@ -133,7 +178,13 @@ describe('blockCapture — captureBlock (page section)', () => {
 describe('blockCapture — helpers', () => {
 	it('exports the suggested (non-enforced) category list', () => {
 		expect(BLOCK_CATEGORIES).toEqual(
-			expect.arrayContaining(['display', 'layout', 'form', 'navigation', 'data']),
+			expect.arrayContaining([
+				'display',
+				'layout',
+				'form',
+				'navigation',
+				'data',
+			]),
 		)
 	})
 

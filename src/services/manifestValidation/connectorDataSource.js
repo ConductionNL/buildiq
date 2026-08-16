@@ -19,10 +19,24 @@
 export const CONNECTOR_METHODS = Object.freeze(['GET'])
 
 /** Keys that would carry credential material — explicitly forbidden. */
-const CREDENTIAL_KEYS = Object.freeze(['headers', 'token', 'apiKey', 'authorization', 'auth', 'secret'])
+const CREDENTIAL_KEYS = Object.freeze([
+	'headers',
+	'token',
+	'apiKey',
+	'authorization',
+	'auth',
+	'secret',
+])
 
 /** The only keys a connector block may carry. */
-const ALLOWED_KEYS = Object.freeze(['endpointPath', 'method', 'query', 'itemsPath', 'fields', 'cacheTtl'])
+const ALLOWED_KEYS = Object.freeze([
+	'endpointPath',
+	'method',
+	'query',
+	'itemsPath',
+	'fields',
+	'cacheTtl',
+])
 
 /** Dot-path grammar: object keys / numeric indices, dot-separated. */
 const DOT_PATH = /^[A-Za-z0-9_$]+(\.[A-Za-z0-9_$]+)*$/
@@ -49,13 +63,18 @@ export function validateConnectorDataSource(dataSource, pointer) {
 	}
 	const at = (code) => `${pointer}/connector: ${code}`
 
-	if (connector === null || typeof connector !== 'object' || Array.isArray(connector)) {
+	if (
+		connector === null
+		|| typeof connector !== 'object'
+		|| Array.isArray(connector)
+	) {
 		errors.push(at('openbuild.connector.error.invalid-shape'))
 		return errors
 	}
 
 	// Exclusivity: connector cannot coexist with register/schema or graphql.
-	const hasRegisterForm = dataSource.register !== undefined || dataSource.schema !== undefined
+	const hasRegisterForm =
+		dataSource.register !== undefined || dataSource.schema !== undefined
 	const hasGraphqlForm = dataSource.graphql !== undefined
 	if (hasRegisterForm || hasGraphqlForm) {
 		errors.push(`${pointer}: openbuild.connector.error.mixed-form`)
@@ -66,7 +85,9 @@ export function validateConnectorDataSource(dataSource, pointer) {
 		if (CREDENTIAL_KEYS.includes(key)) {
 			errors.push(at('openbuild.connector.error.credentials-forbidden'))
 		} else if (!ALLOWED_KEYS.includes(key)) {
-			errors.push(`${pointer}/connector/${key}: openbuild.connector.error.unknown-key`)
+			errors.push(
+				`${pointer}/connector/${key}: openbuild.connector.error.unknown-key`,
+			)
 		}
 	}
 
@@ -81,7 +102,10 @@ export function validateConnectorDataSource(dataSource, pointer) {
 	}
 
 	// method — optional, closed enum GET.
-	if (connector.method !== undefined && !CONNECTOR_METHODS.includes(connector.method)) {
+	if (
+		connector.method !== undefined
+		&& !CONNECTOR_METHODS.includes(connector.method)
+	) {
 		errors.push(at('openbuild.connector.error.method-unsupported'))
 	}
 
@@ -102,19 +126,29 @@ export function validateConnectorDataSource(dataSource, pointer) {
 
 	// itemsPath — optional dot-path.
 	if (connector.itemsPath !== undefined && connector.itemsPath !== '') {
-		if (typeof connector.itemsPath !== 'string' || !DOT_PATH.test(connector.itemsPath)) {
+		if (
+			typeof connector.itemsPath !== 'string'
+			|| !DOT_PATH.test(connector.itemsPath)
+		) {
 			errors.push(at('openbuild.connector.error.itemspath-invalid'))
 		}
 	}
 
 	// fields — required, min 1 entry, dot-path string values.
 	const fields = connector.fields
-	if (fields === null || typeof fields !== 'object' || Array.isArray(fields) || Object.keys(fields).length === 0) {
+	if (
+		fields === null
+		|| typeof fields !== 'object'
+		|| Array.isArray(fields)
+		|| Object.keys(fields).length === 0
+	) {
 		errors.push(at('openbuild.connector.error.fields-required'))
 	} else {
 		for (const [name, sel] of Object.entries(fields)) {
 			if (typeof sel !== 'string' || !DOT_PATH.test(sel)) {
-				errors.push(`${pointer}/connector/fields/${name}: openbuild.connector.error.field-selector-invalid`)
+				errors.push(
+					`${pointer}/connector/fields/${name}: openbuild.connector.error.field-selector-invalid`,
+				)
 			}
 		}
 	}
@@ -150,15 +184,22 @@ export function validateManifestConnectors(manifest) {
 			return
 		}
 		if (cfg.dataSource) {
-			errors.push(...validateConnectorDataSource(cfg.dataSource, `/pages/${pageIdx}/config/dataSource`))
+			errors.push(
+				...validateConnectorDataSource(
+					cfg.dataSource,
+					`/pages/${pageIdx}/config/dataSource`,
+				),
+			)
 		}
 		if (Array.isArray(cfg.widgets)) {
 			cfg.widgets.forEach((widget, widgetIdx) => {
 				if (widget && widget.dataSource) {
-					errors.push(...validateConnectorDataSource(
-						widget.dataSource,
-						`/pages/${pageIdx}/config/widgets/${widgetIdx}/dataSource`,
-					))
+					errors.push(
+						...validateConnectorDataSource(
+							widget.dataSource,
+							`/pages/${pageIdx}/config/widgets/${widgetIdx}/dataSource`,
+						),
+					)
 				}
 			})
 		}

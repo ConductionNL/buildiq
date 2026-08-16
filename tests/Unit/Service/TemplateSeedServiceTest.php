@@ -30,6 +30,7 @@ namespace OCA\OpenBuild\Tests\Unit\Service;
 
 use OCA\OpenBuild\Service\TemplateSeedService;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -63,9 +64,9 @@ class TemplateSeedServiceTest extends TestCase {
 	/**
 	 * Mock OR ObjectService.
 	 *
-	 * @var ObjectService&MockObject
+	 * @var ObjectServiceInterface&MockObject
 	 */
-	private ObjectService&MockObject $objectService;
+	private ObjectServiceInterface&MockObject $objectService;
 
 	/**
 	 * Mock IAppManager.
@@ -91,7 +92,7 @@ class TemplateSeedServiceTest extends TestCase {
 
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->appManager = $this->createMock(IAppManager::class);
-		$this->objectService = $this->createMock(ObjectService::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 	}//end setUp()
 
 	/**

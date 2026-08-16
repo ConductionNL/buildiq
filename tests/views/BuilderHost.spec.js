@@ -21,7 +21,17 @@ vi.mock('@nextcloud/router', () => ({
 
 vi.mock('../../src/composables/useApplicationVersion.js', () => ({
 	useApplicationVersion: () => ({
-		applicationVersion: ref({ manifest: { runtime: { theme: { source: 'nldesign', tokenSet: 'amsterdam', tokenSetName: 'Amsterdam' } } } } ),
+		applicationVersion: ref({
+			manifest: {
+				runtime: {
+					theme: {
+						source: 'nldesign',
+						tokenSet: 'amsterdam',
+						tokenSetName: 'Amsterdam',
+					},
+				},
+			},
+		}),
 		loading: ref(false),
 		error: ref(null),
 		ready: Promise.resolve(),
@@ -29,7 +39,9 @@ vi.mock('../../src/composables/useApplicationVersion.js', () => ({
 }))
 
 vi.mock('../../src/composables/useRegisterPicker.js', () => ({
-	useRegisterPicker: () => ({ fetchDataSources: vi.fn().mockResolvedValue({ registers: [] }) }),
+	useRegisterPicker: () => ({
+		fetchDataSources: vi.fn().mockResolvedValue({ registers: [] }),
+	}),
 	registerScope: () => ({}),
 }))
 
@@ -43,8 +55,17 @@ vi.mock('../../src/store/schemas.js', () => ({
 
 const CnAppRootStub = {
 	name: 'CnAppRoot',
-	props: ['appId', 'aiCompanion', 'bundledManifest', 'registry', 'dataSourcesLoader', 'options'],
-	render() { return h('div', { class: 'cn-app-root-stub' }) },
+	props: [
+		'appId',
+		'aiCompanion',
+		'bundledManifest',
+		'registry',
+		'dataSourcesLoader',
+		'options',
+	],
+	render() {
+		return h('div', { class: 'cn-app-root-stub' })
+	},
 }
 
 const BuilderHost = (await import('../../src/views/BuilderHost.vue')).default
@@ -72,7 +93,13 @@ describe('BuilderHost (REQ-NTS-003 — CnAppRoot owns theme application, zero Op
 		// BuilderHost's own declared props to CnAppRoot — no `theme`, no
 		// `data-nldesign-theme-scope` override, no `data-openbuild-theme-scope`.
 		expect(Object.keys(cnAppRoot.props())).toEqual(
-			expect.arrayContaining(['appId', 'aiCompanion', 'registry', 'dataSourcesLoader', 'options']),
+			expect.arrayContaining([
+				'appId',
+				'aiCompanion',
+				'registry',
+				'dataSourcesLoader',
+				'options',
+			]),
 		)
 		expect(cnAppRoot.props()).not.toHaveProperty('theme')
 	})

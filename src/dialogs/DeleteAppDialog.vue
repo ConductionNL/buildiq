@@ -11,28 +11,48 @@
 	<NcDialog
 		v-if="open"
 		:name="t('openbuild', 'Delete app')"
-		:no-close="busy"
+		:noClose="busy"
 		@closing="$emit('update:open', false)">
 		<div class="delete-app">
 			<p>
-				{{ t('openbuild', 'Delete "{name}" and all of its versions? This cannot be undone.', { name: appName }) }}
+				{{
+					t(
+						'openbuild',
+						'Delete "{name}" and all of its versions? This cannot be undone.',
+						{ name: appName },
+					)
+				}}
 			</p>
-			<NcCheckboxRadioSwitch
-				v-model="deleteData"
-				:disabled="busy">
-				{{ t('openbuild', 'Also permanently delete all data (the app\'s registers and everything stored in them)') }}
+			<NcCheckboxRadioSwitch v-model="deleteData" :disabled="busy">
+				{{
+					t(
+						'openbuild',
+						"Also permanently delete all data (the app's registers and everything stored in them)",
+					)
+				}}
 			</NcCheckboxRadioSwitch>
 			<p class="delete-app__hint">
-				{{ deleteData
-					? t('openbuild', 'All data will be permanently removed. The app slug becomes available again.')
-					: t('openbuild', 'The app is removed but its data is kept in OpenRegister.') }}
+				{{
+					deleteData
+						? t(
+								'openbuild',
+								'All data will be permanently removed. The app slug becomes available again.',
+							)
+						: t(
+								'openbuild',
+								'The app is removed but its data is kept in OpenRegister.',
+							)
+				}}
 			</p>
 		</div>
 		<template #actions>
 			<NcButton :disabled="busy" @click="$emit('update:open', false)">
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
-			<NcButton type="error" :disabled="busy" @click="$emit('confirm', deleteData)">
+			<NcButton
+				variant="error"
+				:disabled="busy"
+				@click="$emit('confirm', deleteData)">
 				<template v-if="busy" #icon>
 					<NcLoadingIcon :size="20" />
 				</template>
@@ -43,9 +63,9 @@
 </template>
 
 <script>
-import NcDialog from '@nextcloud/vue/components/NcDialog'
 import NcButton from '@nextcloud/vue/components/NcButton'
 import NcCheckboxRadioSwitch from '@nextcloud/vue/components/NcCheckboxRadioSwitch'
+import NcDialog from '@nextcloud/vue/components/NcDialog'
 import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
 
 export default {
@@ -59,6 +79,7 @@ export default {
 		/** Whether the delete is in flight. */
 		busy: { type: Boolean, default: false },
 	},
+
 	emits: ['update:open', 'confirm'],
 	data() {
 		return {
@@ -67,6 +88,7 @@ export default {
 			deleteData: false,
 		}
 	},
+
 	watch: {
 		open(value) {
 			if (value) {

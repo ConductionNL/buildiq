@@ -33,7 +33,7 @@ namespace OCA\OpenBuild\Tests\Unit\Service;
 
 use OCA\OpenBuild\Service\JobOwnerImpersonator;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
@@ -102,7 +102,7 @@ final class JobOwnerImpersonatorTest extends TestCase {
 	 * @return void
 	 */
 	private function resolvesObjectService(?ObjectEntity $object): void {
-		$objectService = $this->createMock(ObjectService::class);
+		$objectService = $this->createMock(ObjectServiceInterface::class);
 		$objectService->method('find')->willReturn($object);
 
 		$this->container->method('has')->willReturn(true);

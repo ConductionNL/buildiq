@@ -34,15 +34,39 @@ vi.mock('../../src/modals/CloneTemplateDialog.vue', () => ({
 	default: {
 		name: 'CloneTemplateDialog',
 		props: ['open', 'template', 'github', 'githubRepo'],
-		render() { return null },
+		render() {
+			return null
+		},
 	},
 }))
 
 import TemplateGallery from '../../src/views/TemplateGallery.vue'
 
 const githubCards = [
-	{ owner: 'conduction', repo: 'petstore', slug: 'petstore', name: 'Pet Store', description: 'A pet store app', category: 'internal-operations', appType: 'virtual', version: '1.0.0', stars: 12, installable: true, unparseable: false, credentials: [] },
-	{ owner: 'conduction', repo: 'broken', slug: 'broken', name: 'Broken', description: '', installable: false, unparseable: true, credentials: [] },
+	{
+		owner: 'conduction',
+		repo: 'petstore',
+		slug: 'petstore',
+		name: 'Pet Store',
+		description: 'A pet store app',
+		category: 'internal-operations',
+		appType: 'virtual',
+		version: '1.0.0',
+		stars: 12,
+		installable: true,
+		unparseable: false,
+		credentials: [],
+	},
+	{
+		owner: 'conduction',
+		repo: 'broken',
+		slug: 'broken',
+		name: 'Broken',
+		description: '',
+		installable: false,
+		unparseable: true,
+		credentials: [],
+	},
 ]
 
 /**
@@ -53,7 +77,15 @@ const githubCards = [
  * @param {object} credentialsResponse The `/credentials` response body.
  * @return {Promise<import('@vue/test-utils').Wrapper>}
  */
-async function mountGallery(githubResponse = { outcome: 'ok', cards: githubCards, rateLimited: false, brokerCredentialAvailable: false }, credentialsResponse = []) {
+async function mountGallery(
+	githubResponse = {
+		outcome: 'ok',
+		cards: githubCards,
+		rateLimited: false,
+		brokerCredentialAvailable: false,
+	},
+	credentialsResponse = [],
+) {
 	axiosMock.get.mockImplementation((url) => {
 		const u = String(url)
 		if (u.includes('shop/github/search')) {
@@ -68,11 +100,30 @@ async function mountGallery(githubResponse = { outcome: 'ok', cards: githubCards
 	const wrapper = mount(TemplateGallery, {
 		mocks: { $router: { resolve: vi.fn(), push: vi.fn() } },
 		stubs: {
-			NcButton: { name: 'NcButton', props: ['type', 'disabled'], template: '<button class="nc-button-stub" :data-type="type" @click="$emit(\'click\', $event)"><slot /></button>' },
-			NcTextField: { name: 'NcTextField', props: ['value', 'label', 'placeholder'], template: '<input class="nc-textfield-stub" :value="value" @input="$emit(\'update:value\', $event.target.value)" />' },
+			NcButton: {
+				name: 'NcButton',
+				props: ['type', 'disabled'],
+				template:
+					'<button class="nc-button-stub" :data-type="type" @click="$emit(\'click\', $event)"><slot /></button>',
+			},
+			NcTextField: {
+				name: 'NcTextField',
+				props: ['value', 'label', 'placeholder'],
+				template:
+					'<input class="nc-textfield-stub" :value="value" @input="$emit(\'update:value\', $event.target.value)" />',
+			},
 			NcLoadingIcon: true,
-			NcEmptyContent: { name: 'NcEmptyContent', props: ['name'], template: '<div class="nc-empty-stub">{{ name }}</div>' },
-			NcNoteCard: { name: 'NcNoteCard', props: ['type'], template: '<div class="nc-note-stub" :data-type="type"><slot /></div>' },
+			NcEmptyContent: {
+				name: 'NcEmptyContent',
+				props: ['name'],
+				template: '<div class="nc-empty-stub">{{ name }}</div>',
+			},
+			NcNoteCard: {
+				name: 'NcNoteCard',
+				props: ['type'],
+				template:
+					'<div class="nc-note-stub" :data-type="type"><slot /></div>',
+			},
 		},
 	})
 	await new Promise((resolve) => setTimeout(resolve, 0))
@@ -86,7 +137,9 @@ async function mountGallery(githubResponse = { outcome: 'ok', cards: githubCards
  * @return {number}
  */
 function githubSearchCalls() {
-	return axiosMock.get.mock.calls.filter((c) => String(c[0]).includes('shop/github/search')).length
+	return axiosMock.get.mock.calls.filter((c) =>
+		String(c[0]).includes('shop/github/search'),
+	).length
 }
 
 describe('TemplateGallery.vue — GitHub-only store', () => {
@@ -137,12 +190,23 @@ describe('TemplateGallery.vue — GitHub-only store', () => {
 		await wrapper.vm.$nextTick()
 
 		expect(wrapper.vm.cloneOpen).toBe(true)
-		expect(wrapper.vm.cloneGithubRepo).toEqual({ owner: 'conduction', repo: 'petstore' })
+		expect(wrapper.vm.cloneGithubRepo).toEqual({
+			owner: 'conduction',
+			repo: 'petstore',
+		})
 		expect(wrapper.vm.cloneTarget.slug).toBe('petstore')
 	})
 
 	it('shows a rate-limit hint with a credential pointer when none is present', async () => {
-		const wrapper = await mountGallery({ outcome: 'github_rate_limited', cards: [], rateLimited: true, brokerCredentialAvailable: false }, [])
+		const wrapper = await mountGallery(
+			{
+				outcome: 'github_rate_limited',
+				cards: [],
+				rateLimited: true,
+				brokerCredentialAvailable: false,
+			},
+			[],
+		)
 
 		expect(wrapper.vm.githubUnavailable).toBe(true)
 		expect(wrapper.vm.hasGithubCredential).toBe(false)

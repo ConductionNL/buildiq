@@ -4,14 +4,16 @@
 			<NcAppNavigationItem
 				:name="t('app-template', 'Dashboard')"
 				:to="{ name: 'Dashboard' }"
-				:exact="true">
+				:exact="true"
+			>
 				<template #icon>
 					<HomeIcon :size="20" />
 				</template>
 			</NcAppNavigationItem>
 			<NcAppNavigationItem
 				:name="t('app-template', 'Documentation')"
-				@click="openLink('https://conduction.nl', '_blank')">
+				@click="openLink('https://conduction.nl', '_blank')"
+			>
 				<template #icon>
 					<BookOpenVariantOutline :size="20" />
 				</template>
@@ -20,7 +22,8 @@
 		<template #footer>
 			<NcAppNavigationItem
 				:name="t('app-template', 'Settings')"
-				:to="{ name: 'Settings' }">
+				:to="{ name: 'Settings' }"
+			>
 				<template #icon>
 					<CogIcon :size="20" />
 				</template>
@@ -30,13 +33,13 @@
 </template>
 
 <script>
-import { NcAppNavigation, NcAppNavigationItem } from '@nextcloud/vue'
-import BookOpenVariantOutline from 'vue-material-design-icons/BookOpenVariantOutline.vue'
-import CogIcon from 'vue-material-design-icons/Cog.vue'
-import HomeIcon from 'vue-material-design-icons/Home.vue'
+import { NcAppNavigation, NcAppNavigationItem } from "@nextcloud/vue";
+import BookOpenVariantOutline from "vue-material-design-icons/BookOpenVariantOutline.vue";
+import CogIcon from "vue-material-design-icons/Cog.vue";
+import HomeIcon from "vue-material-design-icons/Home.vue";
 
 export default {
-	name: 'MainMenu',
+	name: "MainMenu",
 	components: {
 		NcAppNavigation,
 		NcAppNavigationItem,
@@ -45,9 +48,9 @@ export default {
 		HomeIcon,
 	},
 	methods: {
-		openLink(url, target = '_blank') {
-			window.open(url, target)
+		openLink(url, target = "_blank") {
+			window.open(url, target);
 		},
 	},
-}
+};
 </script>

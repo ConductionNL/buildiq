@@ -1,3 +1,4 @@
+import { getRequestToken } from '@nextcloud/auth'
 // SPDX-License-Identifier: EUPL-1.2
 /**
  * useRegisterPicker — composable that fetches registers + schemas for
@@ -20,7 +21,6 @@
  *    consistent across pickers; no direct axios import in the consumers.
  */
 import { generateUrl } from '@nextcloud/router'
-import { getRequestToken } from '@nextcloud/auth'
 
 /**
  * The registers the pages editor can bind a page to: the app's own register,
@@ -44,7 +44,7 @@ export function registerScope(perAppRegister, manifest, dataRegisters = []) {
 	const scope = new Set()
 	if (perAppRegister) scope.add(perAppRegister)
 
-	const pages = (manifest && Array.isArray(manifest.pages)) ? manifest.pages : []
+	const pages = manifest && Array.isArray(manifest.pages) ? manifest.pages : []
 	pages.forEach((p) => {
 		const register = p && p.config && p.config.register
 		if (register) scope.add(register)
@@ -57,11 +57,16 @@ export function registerScope(perAppRegister, manifest, dataRegisters = []) {
 	return [...scope]
 }
 
-const PICKER_HEADERS = () => ({
-	'Content-Type': 'application/json',
-	Accept: 'application/json',
-	requesttoken: getRequestToken(),
-})
+/**
+ *
+ */
+function PICKER_HEADERS() {
+	return {
+		'Content-Type': 'application/json',
+		Accept: 'application/json',
+		requesttoken: getRequestToken(),
+	}
+}
 
 /**
  * Fetch helpers for the register / schema pickers used by IndexPageEditor
@@ -144,7 +149,10 @@ export function useRegisterPicker(opts = {}) {
 			const labelByRegister = new Map()
 			dataRegisters.forEach((binding) => {
 				if (binding && binding.register) {
-					labelByRegister.set(binding.register, binding.label ?? binding.register)
+					labelByRegister.set(
+						binding.register,
+						binding.label ?? binding.register,
+					)
 				}
 			})
 
@@ -152,7 +160,11 @@ export function useRegisterPicker(opts = {}) {
 			// in the order the Application declared them" tier.
 			const declarationOrder = new Map()
 			dataRegisters.forEach((binding, index) => {
-				if (binding && binding.register && !declarationOrder.has(binding.register)) {
+				if (
+					binding
+					&& binding.register
+					&& !declarationOrder.has(binding.register)
+				) {
 					declarationOrder.set(binding.register, index)
 				}
 			})
@@ -167,6 +179,10 @@ export function useRegisterPicker(opts = {}) {
 
 			// Tier 0: per-app register. Tier 1: dataRegisters bindings (in
 			// declaration order). Tier 2: everything else (OR's order).
+			/**
+			 *
+			 * @param entry
+			 */
 			function tierFor(entry) {
 				const key = entry && (entry.slug || entry.id)
 				if (perApp && key === perApp) {
@@ -178,7 +194,10 @@ export function useRegisterPicker(opts = {}) {
 				return 2
 			}
 
-			const indexed = labelled.map((entry, originalIndex) => ({ entry, originalIndex }))
+			const indexed = labelled.map((entry, originalIndex) => ({
+				entry,
+				originalIndex,
+			}))
 			indexed.sort((a, b) => {
 				const tierA = tierFor(a.entry)
 				const tierB = tierFor(b.entry)
@@ -211,7 +230,9 @@ export function useRegisterPicker(opts = {}) {
 			return []
 		}
 		try {
-			const url = generateUrl(`/apps/openregister/api/registers/${register}/schemas`)
+			const url = generateUrl(
+				`/apps/openregister/api/registers/${register}/schemas`,
+			)
 			const response = await fetch(url, { headers: PICKER_HEADERS() })
 			if (!response.ok) {
 				return []
@@ -257,7 +278,10 @@ export function useRegisterPicker(opts = {}) {
 		}
 		const schemas = await fetchSchemas(register)
 		const match = schemas.find(
-			(entry) => entry && (String(entry.slug) === String(schema) || String(entry.id) === String(schema)),
+			(entry) =>
+				entry
+				&& (String(entry.slug) === String(schema)
+					|| String(entry.id) === String(schema)),
 		)
 		return (match && match.properties) || {}
 	}
@@ -285,23 +309,26 @@ export function useRegisterPicker(opts = {}) {
 		if (!Array.isArray(registers) || registers.length === 0) {
 			return { registers: [] }
 		}
-		const wanted = Array.isArray(scope) && scope.length ? scope.filter(Boolean) : null
+		const wanted =
+			Array.isArray(scope) && scope.length ? scope.filter(Boolean) : null
 		const inScope = wanted
 			? registers.filter((r) => wanted.includes(r.slug || r.id))
 			: registers
-		const mapped = await Promise.all(inScope.map(async (r) => {
-			const registerSlug = r.slug || r.id
-			const schemas = await fetchSchemas(registerSlug)
-			return {
-				value: registerSlug,
-				label: r.title || registerSlug,
-				schemas: (Array.isArray(schemas) ? schemas : []).map((s) => ({
-					value: s.slug || s.id,
-					label: s.title || s.slug || s.id,
-					columns: Object.keys((s && s.properties) || {}),
-				})),
-			}
-		}))
+		const mapped = await Promise.all(
+			inScope.map(async (r) => {
+				const registerSlug = r.slug || r.id
+				const schemas = await fetchSchemas(registerSlug)
+				return {
+					value: registerSlug,
+					label: r.title || registerSlug,
+					schemas: (Array.isArray(schemas) ? schemas : []).map((s) => ({
+						value: s.slug || s.id,
+						label: s.title || s.slug || s.id,
+						columns: Object.keys((s && s.properties) || {}),
+					})),
+				}
+			}),
+		)
 		return { registers: mapped }
 	}
 

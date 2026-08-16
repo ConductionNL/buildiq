@@ -24,19 +24,24 @@
 
 			<NcSelect
 				v-model="staged.hitPolicy"
-				:input-label="t('openbuild', 'Hit policy')"
+				:inputLabel="t('openbuild', 'Hit policy')"
 				:options="hitPolicies"
 				data-testid="hit-policy" />
 
 			<h4>{{ t('openbuild', 'Input columns') }}</h4>
-			<div v-for="(col, index) in staged.inputColumns" :key="'in-' + index" class="decision-table-editor__col">
+			<div
+				v-for="(col, index) in staged.inputColumns"
+				:key="'in-' + index"
+				class="decision-table-editor__col">
 				<NcTextField v-model="col.name" :label="t('openbuild', 'Name')" />
-				<NcTextField v-model="col.expressionPath" :label="t('openbuild', 'Payload path')" />
-				<NcButton type="tertiary" @click="removeInput(index)">
+				<NcTextField
+					v-model="col.expressionPath"
+					:label="t('openbuild', 'Payload path')" />
+				<NcButton variant="tertiary" @click="removeInput(index)">
 					{{ t('openbuild', 'Remove') }}
 				</NcButton>
 			</div>
-			<NcButton type="secondary" @click="addInput">
+			<NcButton variant="secondary" @click="addInput">
 				{{ t('openbuild', 'Add input column') }}
 			</NcButton>
 
@@ -44,7 +49,10 @@
 			<table class="decision-table-editor__grid">
 				<thead>
 					<tr>
-						<th v-for="(col, index) in staged.inputColumns" :key="'h-' + index" scope="col">
+						<th
+							v-for="(col, index) in staged.inputColumns"
+							:key="'h-' + index"
+							scope="col">
 							{{ col.name }}
 						</th>
 						<th scope="col">
@@ -54,29 +62,37 @@
 				</thead>
 				<tbody>
 					<tr v-for="(rule, rIndex) in staged.rules" :key="'r-' + rIndex">
-						<td v-for="(col, cIndex) in staged.inputColumns" :key="'c-' + cIndex">
+						<td
+							v-for="(col, cIndex) in staged.inputColumns"
+							:key="'c-' + cIndex">
 							<input
 								v-model="rule.conditions[col.name]"
 								class="decision-table-editor__cell"
-								:class="{ 'decision-table-editor__cell--invalid': !isCellValid(rule.conditions[col.name]) }"
+								:class="{
+									'decision-table-editor__cell--invalid':
+										!isCellValid(rule.conditions[col.name]),
+								}"
 								:aria-label="col.name"
-								@input="markDirty">
+								@input="markDirty" />
 						</td>
 						<td>
 							<input
 								v-model="rule.values.decision"
 								class="decision-table-editor__cell"
-								:aria-label="t('openbuild', 'Decision')">
+								:aria-label="t('openbuild', 'Decision')" />
 						</td>
 					</tr>
 				</tbody>
 			</table>
-			<NcButton type="secondary" @click="addRule">
+			<NcButton variant="secondary" @click="addRule">
 				{{ t('openbuild', 'Add rule') }}
 			</NcButton>
 
 			<div v-if="warnings.length" class="decision-table-editor__warnings">
-				<NcNoteCard v-for="(warning, wIndex) in warnings" :key="'w-' + wIndex" type="warning">
+				<NcNoteCard
+					v-for="(warning, wIndex) in warnings"
+					:key="'w-' + wIndex"
+					type="warning">
 					{{ warning }}
 				</NcNoteCard>
 			</div>
@@ -90,8 +106,8 @@
 			<NcButton @click="$emit('close')">
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
-			<NcButton type="primary" :disabled="saving" @click="save">
-				{{ saving ? t('openbuild', 'Saving...') : t('openbuild', 'Save') }}
+			<NcButton variant="primary" :disabled="saving" @click="save">
+				{{ saving ? t('openbuild', 'Saving…') : t('openbuild', 'Save') }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -100,8 +116,13 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcDialog, NcNoteCard, NcSelect, NcTextField } from '@nextcloud/vue'
-
+import {
+	NcButton,
+	NcDialog,
+	NcNoteCard,
+	NcSelect,
+	NcTextField,
+} from '@nextcloud/vue'
 import { isCellConditionValid } from '../utils/feelCell.js'
 
 export default {
@@ -113,12 +134,14 @@ export default {
 		NcSelect,
 		NcTextField,
 	},
+
 	props: {
 		ruleSet: {
 			type: Object,
 			required: true,
 		},
 	},
+
 	emits: ['close', 'saved'],
 	data() {
 		return {
@@ -127,14 +150,29 @@ export default {
 				name: this.ruleSet.name || '',
 				ruleType: 'decision-table',
 				hitPolicy: this.ruleSet.hitPolicy || 'first',
-				inputColumns: this.ruleSet.inputColumns ? JSON.parse(JSON.stringify(this.ruleSet.inputColumns)) : [],
-				rules: this.ruleSet.rules ? JSON.parse(JSON.stringify(this.ruleSet.rules)) : [],
+				inputColumns: this.ruleSet.inputColumns
+					? JSON.parse(JSON.stringify(this.ruleSet.inputColumns))
+					: [],
+
+				rules: this.ruleSet.rules
+					? JSON.parse(JSON.stringify(this.ruleSet.rules))
+					: [],
 			},
-			hitPolicies: ['unique', 'first', 'priority', 'any', 'collect', 'rule-order'],
+
+			hitPolicies: [
+				'unique',
+				'first',
+				'priority',
+				'any',
+				'collect',
+				'rule-order',
+			],
+
 			saving: false,
 			errorMessage: '',
 		}
 	},
+
 	computed: {
 		/**
 		 * Editor feedback: flag a catch-all rule that makes later rules unreachable.
@@ -144,17 +182,29 @@ export default {
 		 */
 		warnings() {
 			const issues = []
-			const catchAllIndex = this.staged.rules.findIndex((r) => Object.keys(r.conditions || {}).length === 0)
-			if (catchAllIndex !== -1 && catchAllIndex < this.staged.rules.length - 1) {
-				issues.push(t('openbuild', 'A catch-all rule appears before other rules — later rules are unreachable.'))
+			const catchAllIndex = this.staged.rules.findIndex(
+				(r) => Object.keys(r.conditions || {}).length === 0,
+			)
+			if (
+				catchAllIndex !== -1
+				&& catchAllIndex < this.staged.rules.length - 1
+			) {
+				issues.push(
+					t(
+						'openbuild',
+						'A catch-all rule appears before other rules — later rules are unreachable.',
+					),
+				)
 			}
 			return issues
 		},
 	},
+
 	methods: {
 		isCellValid(value) {
 			return isCellConditionValid(value)
 		},
+
 		markDirty() {},
 		/**
 		 * Append an empty input column to the staged table.
@@ -163,8 +213,13 @@ export default {
 		 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-002-decisiontable-schema-for-dmn-based-multi-condition-rules
 		 */
 		addInput() {
-			this.staged.inputColumns.push({ name: '', type: 'string', expressionPath: '' })
+			this.staged.inputColumns.push({
+				name: '',
+				type: 'string',
+				expressionPath: '',
+			})
 		},
+
 		/**
 		 * Remove one input column from the staged table.
 		 *
@@ -175,6 +230,7 @@ export default {
 		removeInput(index) {
 			this.staged.inputColumns.splice(index, 1)
 		},
+
 		/**
 		 * Append an empty rule row to the staged table.
 		 *
@@ -182,8 +238,13 @@ export default {
 		 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-002-decisiontable-schema-for-dmn-based-multi-condition-rules
 		 */
 		addRule() {
-			this.staged.rules.push({ conditions: {}, values: { decision: '' }, label: '' })
+			this.staged.rules.push({
+				conditions: {},
+				values: { decision: '' },
+				label: '',
+			})
 		},
+
 		/**
 		 * Persist the RuleSet and its DecisionTable via OpenRegister.
 		 *
@@ -194,14 +255,18 @@ export default {
 			this.saving = true
 			this.errorMessage = ''
 			try {
-				const ruleSetUrl = generateUrl('/apps/openregister/api/objects/openbuild/rule-set')
+				const ruleSetUrl = generateUrl(
+					'/apps/openregister/api/objects/openbuild/rule-set',
+				)
 				await axios.post(ruleSetUrl, {
 					slug: this.staged.slug,
 					name: this.staged.name,
 					ruleType: 'decision-table',
 					status: this.ruleSet.status || 'draft',
 				})
-				const tableUrl = generateUrl('/apps/openregister/api/objects/openbuild/decision-table')
+				const tableUrl = generateUrl(
+					'/apps/openregister/api/objects/openbuild/decision-table',
+				)
 				await axios.post(tableUrl, {
 					ruleSetId: this.staged.slug,
 					hitPolicy: this.staged.hitPolicy,
@@ -210,7 +275,10 @@ export default {
 				})
 				this.$emit('saved')
 			} catch (error) {
-				this.errorMessage = t('openbuild', 'Could not save the decision table.')
+				this.errorMessage = t(
+					'openbuild',
+					'Could not save the decision table.',
+				)
 			} finally {
 				this.saving = false
 			}

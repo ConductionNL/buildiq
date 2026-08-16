@@ -67,7 +67,10 @@ describe('useRegisterPicker — REQ-OBFFUI-001', () => {
 
 	describe('fetchRegisters', () => {
 		it('returns the registers list when the request succeeds', async () => {
-			const registers = [{ id: 'r1', slug: 'common' }, { id: 'r2', slug: 'other' }]
+			const registers = [
+				{ id: 'r1', slug: 'common' },
+				{ id: 'r2', slug: 'other' },
+			]
 			global.fetch = vi.fn().mockResolvedValue({
 				ok: true,
 				json: async () => ({ results: registers }),
@@ -139,7 +142,9 @@ describe('useRegisterPicker — REQ-OBFFUI-001', () => {
 			})
 
 			const { fetchRegisters } = useRegisterPicker({
-				dataRegisters: [{ register: 'spectr', label: 'Spectr market intelligence data' }],
+				dataRegisters: [
+					{ register: 'spectr', label: 'Spectr market intelligence data' },
+				],
 			})
 			const result = await fetchRegisters()
 			const spectr = result.find((r) => r.slug === 'spectr')
@@ -279,14 +284,18 @@ describe('useRegisterPicker — REQ-OBFFUI-001', () => {
 			const properties = { name: { type: 'string' } }
 			global.fetch = vi.fn().mockResolvedValue({
 				ok: true,
-				json: async () => ({ results: [{ id: 7, slug: 'person', properties }] }),
+				json: async () => ({
+					results: [{ id: 7, slug: 'person', properties }],
+				}),
 			})
 
 			const { fetchSchemaProperties } = useRegisterPicker()
 			const result = await fetchSchemaProperties('my-register', 'person')
 			expect(result).toEqual(properties)
 			expect(global.fetch).toHaveBeenCalledTimes(1)
-			expect(global.fetch.mock.calls[0][0]).toContain('/apps/openregister/api/registers/my-register/schemas')
+			expect(global.fetch.mock.calls[0][0]).toContain(
+				'/apps/openregister/api/registers/my-register/schemas',
+			)
 			expect(global.fetch.mock.calls[0][0]).not.toMatch(/\/schemas\/person$/)
 		})
 
@@ -294,7 +303,9 @@ describe('useRegisterPicker — REQ-OBFFUI-001', () => {
 			const properties = { age: { type: 'integer' } }
 			global.fetch = vi.fn().mockResolvedValue({
 				ok: true,
-				json: async () => ({ results: [{ id: 42, slug: 'person', properties }] }),
+				json: async () => ({
+					results: [{ id: 42, slug: 'person', properties }],
+				}),
 			})
 
 			const { fetchSchemaProperties } = useRegisterPicker()
@@ -313,7 +324,9 @@ describe('useRegisterPicker — REQ-OBFFUI-001', () => {
 		it('returns {} when the register holds no matching schema', async () => {
 			global.fetch = vi.fn().mockResolvedValue({
 				ok: true,
-				json: async () => ({ results: [{ id: 1, slug: 'other', properties: { x: {} } }] }),
+				json: async () => ({
+					results: [{ id: 1, slug: 'other', properties: { x: {} } }],
+				}),
 			})
 
 			const { fetchSchemaProperties } = useRegisterPicker()

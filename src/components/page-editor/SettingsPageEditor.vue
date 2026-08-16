@@ -34,7 +34,7 @@
 					:value="config.saveEndpoint || ''"
 					:placeholder="t('openbuild', '/api/objects/:slug/settings')"
 					:aria-invalid="isInvalid('saveEndpoint')"
-					@input="update('saveEndpoint', $event.target.value)">
+					@input="update('saveEndpoint', $event.target.value)" />
 				<InlineFieldMark :error="markFor('saveEndpoint')" />
 			</label>
 		</fieldset>
@@ -47,7 +47,7 @@
 						type="radio"
 						:checked="layoutShape === 'sections'"
 						value="sections"
-						@change="setLayoutShape('sections')">
+						@change="setLayoutShape('sections')" />
 					{{ t('openbuild', 'Flat sections') }}
 				</label>
 				<label class="settings-page-editor__inline">
@@ -55,7 +55,7 @@
 						type="radio"
 						:checked="layoutShape === 'tabs'"
 						value="tabs"
-						@change="setLayoutShape('tabs')">
+						@change="setLayoutShape('tabs')" />
 					{{ t('openbuild', 'Tabbed sections') }}
 				</label>
 			</div>
@@ -64,17 +64,22 @@
 			</p>
 		</fieldset>
 
-		<fieldset v-if="layoutShape === 'sections'" class="settings-page-editor__fieldset">
+		<fieldset
+			v-if="layoutShape === 'sections'"
+			class="settings-page-editor__fieldset">
 			<legend>{{ t('openbuild', 'Sections') }}</legend>
 			<SettingsSectionBuilder
-				:model-value="config.sections || []"
+				:modelValue="config.sections || []"
 				@update:modelValue="update('sections', $event)" />
 			<InlineFieldMark :error="markFor('sections')" />
 		</fieldset>
 
 		<fieldset v-else class="settings-page-editor__fieldset">
 			<legend>{{ t('openbuild', 'Tabs') }}</legend>
-			<div v-for="(tab, index) in tabs" :key="index" class="settings-page-editor__tab">
+			<div
+				v-for="(tab, index) in tabs"
+				:key="index"
+				class="settings-page-editor__tab">
 				<div class="settings-page-editor__tab-head">
 					<input
 						:value="tab.id || ''"
@@ -82,21 +87,25 @@
 						class="settings-page-editor__field settings-page-editor__field--narrow"
 						:placeholder="t('openbuild', 'Tab id')"
 						:aria-label="t('openbuild', 'Tab id')"
-						@input="updateTabField(index, 'id', $event.target.value)">
+						@input="updateTabField(index, 'id', $event.target.value)" />
 					<input
 						:value="tab.label || ''"
 						type="text"
 						class="settings-page-editor__field"
 						:placeholder="t('openbuild', 'Tab label (i18n key)')"
 						:aria-label="t('openbuild', 'Tab label (i18n key)')"
-						@input="updateTabField(index, 'label', $event.target.value)">
+						@input="
+							updateTabField(index, 'label', $event.target.value)
+						" />
 					<input
 						:value="tab.icon || ''"
 						type="text"
 						class="settings-page-editor__field settings-page-editor__field--narrow"
 						:placeholder="t('openbuild', 'Icon (optional)')"
 						:aria-label="t('openbuild', 'Icon (optional)')"
-						@input="updateTabField(index, 'icon', $event.target.value)">
+						@input="
+							updateTabField(index, 'icon', $event.target.value)
+						" />
 					<button
 						type="button"
 						class="settings-page-editor__remove"
@@ -106,7 +115,7 @@
 					</button>
 				</div>
 				<SettingsSectionBuilder
-					:model-value="tab.sections || []"
+					:modelValue="tab.sections || []"
 					@update:modelValue="updateTabField(index, 'sections', $event)" />
 			</div>
 			<button type="button" class="settings-page-editor__add" @click="addTab">
@@ -118,8 +127,8 @@
 </template>
 
 <script>
-import SettingsSectionBuilder from './fields/SettingsSectionBuilder.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
+import SettingsSectionBuilder from './fields/SettingsSectionBuilder.vue'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
@@ -131,19 +140,23 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
 		pageType: {
 			type: String,
 			default: 'settings',
 		},
+
 		appSlug: {
 			type: String,
 			default: '',
 		},
+
 		parentRoute: {
 			type: String,
 			default: '',
 		},
 	},
+
 	emits: ['update:config'],
 	computed: {
 		/**
@@ -154,6 +167,7 @@ export default {
 		validatedConfigKeys() {
 			return ['saveEndpoint', 'sections', 'tabs']
 		},
+
 		/**
 		 * Observed behaviour of `layoutShape` (retrofit annotation).
 		 *
@@ -162,11 +176,15 @@ export default {
 		layoutShape() {
 			// `tabs` wins only when there is no `sections` array so a
 			// half-edited config never silently flips branches.
-			if (Array.isArray(this.config.tabs) && !Array.isArray(this.config.sections)) {
+			if (
+				Array.isArray(this.config.tabs)
+				&& !Array.isArray(this.config.sections)
+			) {
 				return 'tabs'
 			}
 			return 'sections'
 		},
+
 		/**
 		 * Observed behaviour of `tabs` (retrofit annotation).
 		 *
@@ -176,6 +194,7 @@ export default {
 			return Array.isArray(this.config.tabs) ? this.config.tabs : []
 		},
 	},
+
 	methods: {
 		/**
 		 * Write one key on the page's `config` block. Only the named key is
@@ -190,14 +209,21 @@ export default {
 		 */
 		update(key, value) {
 			const next = { ...this.config }
-			if (value === '' || value === null || value === undefined
-				|| (Array.isArray(value) && value.length === 0 && key === 'saveEndpoint')) {
+			if (
+				value === ''
+				|| value === null
+				|| value === undefined
+				|| (Array.isArray(value)
+					&& value.length === 0
+					&& key === 'saveEndpoint')
+			) {
 				delete next[key]
 			} else {
 				next[key] = value
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Switch between the two mutually exclusive layouts, deleting the key
 		 * of the branch being left and seeding an empty array for the branch
@@ -223,6 +249,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Write one key on one tab of the tabbed layout, leaving that tab's
 		 * other keys and the rest of the tab list alone.
@@ -245,6 +272,7 @@ export default {
 			next.tabs = tabsArr
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Observed behaviour of `addTab` (retrofit annotation).
 		 *
@@ -256,6 +284,7 @@ export default {
 			delete next.sections
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Drop one tab, along with the sections authored under it. `tabs` is
 		 * kept even when the last tab goes, so the layout stays on the tabbed

@@ -48,7 +48,7 @@ namespace OCA\OpenBuild\Service;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\RegisterService;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -120,7 +120,7 @@ class ApplicationVersionService {
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger PSR logger for diagnostics
-	 * @param ObjectService $objectService OpenRegister object service
+	 * @param ObjectServiceInterface $objectService OpenRegister object service
 	 * @param RegisterService $registerService OpenRegister register-level service
 	 * @param RegisterMapper $registerMapper Resolves register slugs to entities
 	 * @param AutomationCompilerService $automationCompiler Recompiles a cloned automation's
@@ -131,7 +131,7 @@ class ApplicationVersionService {
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
-		private readonly ObjectService $objectService,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly RegisterService $registerService,
 		private readonly RegisterMapper $registerMapper,
 		private readonly AutomationCompilerService $automationCompiler,

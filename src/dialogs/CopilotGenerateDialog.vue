@@ -14,23 +14,34 @@
 	<NcModal
 		v-if="open"
 		:name="t('openbuild', 'Generate an app with AI')"
-		:can-close="state !== 'planning' && state !== 'executing'"
+		:canClose="state !== 'planning' && state !== 'executing'"
 		@close="onCancel">
 		<div class="copilot-generate">
 			<h2 class="copilot-generate__title">
 				{{ t('openbuild', 'Generate an app with AI') }}
 			</h2>
 
-			<template v-if="state === 'idle' || state === 'planning' || state === 'error'">
+			<template
+				v-if="state === 'idle' || state === 'planning' || state === 'error'">
 				<p class="copilot-generate__hint">
-					{{ t('openbuild', 'Describe the app you want to build in a sentence or two. The AI will propose schemas, pages and menu items for you to review before anything is created.') }}
+					{{
+						t(
+							'openbuild',
+							'Describe the app you want to build in a sentence or two. The AI will propose schemas, pages and menu items for you to review before anything is created.',
+						)
+					}}
 				</p>
 				<NcTextArea
 					v-model="brief"
 					data-testid="copilot-brief-input"
 					:label="t('openbuild', 'Describe your app')"
 					:disabled="state === 'planning'"
-					:placeholder="t('openbuild', 'e.g. A tool library where members can borrow and return tools')"
+					:placeholder="
+						t(
+							'openbuild',
+							'e.g. A tool library where members can borrow and return tools',
+						)
+					"
 					:rows="4" />
 				<p v-if="errorMessage" class="copilot-generate__error" role="alert">
 					{{ errorMessage }}
@@ -38,7 +49,9 @@
 			</template>
 
 			<template v-else-if="state === 'review' || state === 'executing'">
-				<div data-testid="copilot-plan-review" class="copilot-generate__review">
+				<div
+					data-testid="copilot-plan-review"
+					class="copilot-generate__review">
 					<p class="copilot-generate__summary">
 						{{ plan && plan.summary }}
 					</p>
@@ -46,7 +59,9 @@
 					<div v-if="schemaSteps.length" class="copilot-generate__group">
 						<h3>{{ t('openbuild', 'Schemas') }}</h3>
 						<ul>
-							<li v-for="(step, idx) in schemaSteps" :key="'schema-'+idx">
+							<li
+								v-for="(step, idx) in schemaSteps"
+								:key="'schema-' + idx">
 								{{ step.arguments.title || step.arguments.slug }}
 							</li>
 						</ul>
@@ -55,8 +70,11 @@
 					<div v-if="pageSteps.length" class="copilot-generate__group">
 						<h3>{{ t('openbuild', 'Pages') }}</h3>
 						<ul>
-							<li v-for="(step, idx) in pageSteps" :key="'page-'+idx">
-								{{ step.arguments.title || step.arguments.pageId }} ({{ step.arguments.type }})
+							<li
+								v-for="(step, idx) in pageSteps"
+								:key="'page-' + idx">
+								{{ step.arguments.title || step.arguments.pageId }}
+								({{ step.arguments.type }})
 							</li>
 						</ul>
 					</div>
@@ -64,14 +82,24 @@
 					<div v-if="menuSteps.length" class="copilot-generate__group">
 						<h3>{{ t('openbuild', 'Menu items') }}</h3>
 						<ul>
-							<li v-for="(step, idx) in menuSteps" :key="'menu-'+idx">
+							<li
+								v-for="(step, idx) in menuSteps"
+								:key="'menu-' + idx">
 								{{ step.arguments.label }}
 							</li>
 						</ul>
 					</div>
 
-					<p v-if="!canApprove" class="copilot-generate__error" role="alert">
-						{{ t('openbuild', 'The proposed manifest did not pass validation, so it cannot be created. Try rephrasing your brief.') }}
+					<p
+						v-if="!canApprove"
+						class="copilot-generate__error"
+						role="alert">
+						{{
+							t(
+								'openbuild',
+								'The proposed manifest did not pass validation, so it cannot be created. Try rephrasing your brief.',
+							)
+						}}
 					</p>
 				</div>
 			</template>
@@ -84,19 +112,29 @@
 					{{ t('openbuild', 'Cancel') }}
 				</NcButton>
 				<NcButton
-					v-if="state === 'idle' || state === 'planning' || state === 'error'"
-					type="primary"
+					v-if="
+						state === 'idle' || state === 'planning' || state === 'error'
+					"
+					variant="primary"
 					:disabled="!brief.trim() || state === 'planning'"
 					@click="onGenerate">
-					{{ state === 'planning' ? t('openbuild', 'Generating…') : t('openbuild', 'Generate') }}
+					{{
+						state === 'planning'
+							? t('openbuild', 'Generating…')
+							: t('openbuild', 'Generate')
+					}}
 				</NcButton>
 				<NcButton
 					v-else
 					data-testid="copilot-confirm"
-					type="primary"
+					variant="primary"
 					:disabled="!canApprove || state === 'executing'"
 					@click="onConfirm">
-					{{ state === 'executing' ? t('openbuild', 'Creating…') : t('openbuild', 'Confirm & create') }}
+					{{
+						state === 'executing'
+							? t('openbuild', 'Creating…')
+							: t('openbuild', 'Confirm & create')
+					}}
 				</NcButton>
 			</div>
 		</div>
@@ -104,7 +142,7 @@
 </template>
 
 <script>
-import { NcModal, NcButton, NcTextArea } from '@nextcloud/vue'
+import { NcButton, NcModal, NcTextArea } from '@nextcloud/vue'
 import { useCopilot } from '../composables/useCopilot.js'
 
 export default {
@@ -142,6 +180,7 @@ export default {
 		state() {
 			return this.copilot.state.value
 		},
+
 		/**
 		 * The current plan response, or null before one has been generated.
 		 *
@@ -151,6 +190,7 @@ export default {
 		plan() {
 			return this.copilot.plan.value
 		},
+
 		/**
 		 * Whether every predicted manifest passes the canonical validator.
 		 *
@@ -160,6 +200,7 @@ export default {
 		canApprove() {
 			return this.copilot.canApprove.value
 		},
+
 		/**
 		 * The current error message, or '' when there is none.
 		 *
@@ -169,6 +210,7 @@ export default {
 		errorMessage() {
 			return this.copilot.errorMessage.value
 		},
+
 		/**
 		 * Proposed `upsertSchema` steps, for the "Schemas" review group.
 		 *
@@ -178,6 +220,7 @@ export default {
 		schemaSteps() {
 			return this.stepsByTool('openbuild.upsertSchema')
 		},
+
 		/**
 		 * Proposed `upsertPage` steps, for the "Pages" review group.
 		 *
@@ -187,6 +230,7 @@ export default {
 		pageSteps() {
 			return this.stepsByTool('openbuild.upsertPage')
 		},
+
 		/**
 		 * Proposed `upsertMenuItem` steps, for the "Menu items" review group.
 		 *
@@ -246,8 +290,13 @@ export default {
 			if (this.copilot.state.value !== 'done') {
 				return
 			}
-			const results = (this.copilot.executeResult.value && this.copilot.executeResult.value.results) || []
-			const createResult = results.find((r) => r && r.created === true && r.app)
+			const results =
+				(this.copilot.executeResult.value
+					&& this.copilot.executeResult.value.results)
+				|| []
+			const createResult = results.find(
+				(r) => r && r.created === true && r.app,
+			)
 			const appSlug = createResult ? createResult.app.slug : ''
 			this.$emit('created', appSlug)
 			this.$emit('update:open', false)

@@ -17,13 +17,10 @@
   - never receive an empty string.
   -->
 <template>
-	<NcDialog
-		v-if="open"
-		:name="name"
-		@closing="$emit('update:open', false)">
+	<NcDialog v-if="open" :name="name" @closing="$emit('update:open', false)">
 		<div class="prompt-text">
 			<NcTextField
-				v-model:value="value"
+				v-model="value"
 				:label="label"
 				:placeholder="placeholder"
 				@keydown.enter="onSubmit" />
@@ -32,7 +29,7 @@
 			<NcButton @click="$emit('update:open', false)">
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
-			<NcButton type="primary" :disabled="!value.trim()" @click="onSubmit">
+			<NcButton variant="primary" :disabled="!value.trim()" @click="onSubmit">
 				{{ confirmLabel || t('openbuild', 'Confirm') }}
 			</NcButton>
 		</template>
@@ -40,8 +37,8 @@
 </template>
 
 <script>
-import NcDialog from '@nextcloud/vue/components/NcDialog'
 import NcButton from '@nextcloud/vue/components/NcButton'
+import NcDialog from '@nextcloud/vue/components/NcDialog'
 import NcTextField from '@nextcloud/vue/components/NcTextField'
 
 export default {
@@ -61,12 +58,14 @@ export default {
 		/** Label for the submitting button; falls back to "Confirm". */
 		confirmLabel: { type: String, default: '' },
 	},
+
 	emits: ['update:open', 'submit'],
 	data() {
 		return {
 			value: this.initialValue,
 		}
 	},
+
 	watch: {
 		/**
 		 * Re-seed the input each time the dialog opens.
@@ -85,6 +84,7 @@ export default {
 			}
 		},
 	},
+
 	methods: {
 		/**
 		 * Emit the trimmed value, ignoring a blank entry.

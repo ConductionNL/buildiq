@@ -20,16 +20,32 @@
 	<div class="page-designer-host">
 		<header class="page-designer-host__header">
 			<div class="page-designer-host__title">
-				<h2>{{ application ? application.name : t('openbuild', 'Page designer') }}</h2>
+				<h2>
+					{{
+						application
+							? application.name
+							: t('openbuild', 'Page designer')
+					}}
+				</h2>
 				<p v-if="application" class="page-designer-host__subtitle">
-					{{ t('openbuild', 'Design the pages and menu of this app, then publish from Apps.') }}
+					{{
+						t(
+							'openbuild',
+							'Design the pages and menu of this app, then publish from Apps.',
+						)
+					}}
 				</p>
 			</div>
 			<div class="page-designer-host__actions">
-				<router-link class="page-designer-host__link" :to="{ name: 'VirtualApps' }">
+				<router-link
+					class="page-designer-host__link"
+					:to="{ name: 'VirtualApps' }">
 					{{ t('openbuild', 'Back to Apps') }}
 				</router-link>
-				<a v-if="builderUrl" class="page-designer-host__link" :href="builderUrl">
+				<a
+					v-if="builderUrl"
+					class="page-designer-host__link"
+					:href="builderUrl">
 					{{ t('openbuild', 'Open app') }}
 				</a>
 				<!-- AI copilot panel toggle (spec ai-copilot REQ-OBAIC-007) —
@@ -44,10 +60,14 @@
 				</NcButton>
 				<NcButton
 					v-if="application"
-					type="primary"
+					variant="primary"
 					:disabled="saving"
 					@click="save">
-					{{ saving ? t('openbuild', 'Saving…') : t('openbuild', 'Save pages') }}
+					{{
+						saving
+							? t('openbuild', 'Saving…')
+							: t('openbuild', 'Save pages')
+					}}
 				</NcButton>
 			</div>
 		</header>
@@ -63,21 +83,30 @@
 		<NcEmptyContent
 			v-if="versionNotFound"
 			:name="t('openbuild', 'Version not found')"
-			:description="t('openbuild', 'The requested version does not exist or you do not have access to it.')" />
+			:description="
+				t(
+					'openbuild',
+					'The requested version does not exist or you do not have access to it.',
+				)
+			" />
 		<div v-else-if="loading" class="page-designer-host__loading">
 			<NcLoadingIcon :size="44" />
 		</div>
 		<NcEmptyContent
 			v-else-if="!application"
 			:name="t('openbuild', 'No app found')"
-			:description="t('openbuild', 'No app exists for the slug {slug}.', { slug: routeSlug })" />
+			:description="
+				t('openbuild', 'No app exists for the slug {slug}.', {
+					slug: routeSlug,
+				})
+			" />
 		<PageDesigner
 			v-else
 			:manifest="manifest"
 			:slug="routeSlug"
-			:session-key="sessionKey"
+			:sessionKey="sessionKey"
 			@update:manifest="onManifestUpdate"
-			@save-and-preview="save" />
+			@saveAndPreview="save" />
 
 		<!-- REQ-PWA-002: Workflows section — attach Procest case types to the
 		     app's schemas. Soft-checks Procest availability for graceful absence. -->
@@ -85,9 +114,9 @@
 			v-if="application"
 			:manifest="manifest"
 			:schemas="appSchemas"
-			:procest-available="procestAvailable"
+			:procestAvailable="procestAvailable"
 			@update:manifest="onManifestUpdate"
-			@create-link-property="onCreateLinkProperty" />
+			@createLinkProperty="onCreateLinkProperty" />
 
 		<!-- REQ-NTS-002: Theme section — pick an NL Design token set for this
 		     app. Soft-checks nldesign availability for graceful absence.
@@ -97,8 +126,8 @@
 		<ThemeSection
 			v-if="application"
 			:manifest="manifest"
-			:nldesign-available="nldesignAvailable"
-			:preview-available="livePreviewAvailable"
+			:nldesignAvailable="nldesignAvailable"
+			:previewAvailable="livePreviewAvailable"
 			@update:manifest="onManifestUpdate"
 			@preview="onThemePreview" />
 
@@ -108,7 +137,7 @@
 			v-if="application"
 			:manifest="manifest"
 			:schemas="appSchemas"
-			:docudesk-available="docudeskAvailable"
+			:docudeskAvailable="docudeskAvailable"
 			@update:manifest="onManifestUpdate" />
 
 		<!-- REQ-OBSA-001: Scheduled tasks section — author the app's top-level
@@ -122,8 +151,10 @@
 		<!-- AI copilot side panel (spec ai-copilot REQ-OBAIC-007) — proposes
 		     reviewable operations with a manifest diff; approve applies via
 		     the same MCP handler layer and refreshes the designer's manifest. -->
-		<aside v-if="copilotToggleVisible && showCopilotPanel" class="page-designer-host__copilot">
-			<CopilotPanel :app-slug="routeSlug" @executed="load" />
+		<aside
+			v-if="copilotToggleVisible && showCopilotPanel"
+			class="page-designer-host__copilot">
+			<CopilotPanel :appSlug="routeSlug" @executed="load" />
 		</aside>
 	</div>
 </template>
@@ -132,18 +163,23 @@
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
-import { useApplicationVersion } from '../composables/useApplicationVersion.js'
-import { useAppStatus } from '../composables/useAppStatus.js'
-import { useLivePreview } from '../composables/useLivePreview.js'
-import { useCopilot } from '../composables/useCopilot.js'
-import { reconcileWorkflowDependency, reconcileConnectorDependency, reconcileDocumentDependency, stripDependencyMarker } from '../services/manifestDependencies.js'
-import { assignUnassignedFieldsToFinalStep } from '../services/manifestValidation/formLogic.js'
-import PageDesigner from './PageDesigner.vue'
-import WorkflowAttachmentsSection from '../components/WorkflowAttachmentsSection.vue'
-import ThemeSection from '../components/ThemeSection.vue'
+import CopilotPanel from '../components/copilot/CopilotPanel.vue'
 import DocumentAttachmentsSection from '../components/DocumentAttachmentsSection.vue'
 import SchedulesSection from '../components/SchedulesSection.vue'
-import CopilotPanel from '../components/copilot/CopilotPanel.vue'
+import ThemeSection from '../components/ThemeSection.vue'
+import WorkflowAttachmentsSection from '../components/WorkflowAttachmentsSection.vue'
+import PageDesigner from './PageDesigner.vue'
+import { useApplicationVersion } from '../composables/useApplicationVersion.js'
+import { useAppStatus } from '../composables/useAppStatus.js'
+import { useCopilot } from '../composables/useCopilot.js'
+import { useLivePreview } from '../composables/useLivePreview.js'
+import {
+	reconcileConnectorDependency,
+	reconcileDocumentDependency,
+	reconcileWorkflowDependency,
+	stripDependencyMarker,
+} from '../services/manifestDependencies.js'
+import { assignUnassignedFieldsToFinalStep } from '../services/manifestValidation/formLogic.js'
 
 const EMPTY_MANIFEST = { version: '1.0.0', menu: [], pages: [] }
 
@@ -217,7 +253,9 @@ export default {
 		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
 		 */
 		copilotToggleVisible() {
-			const isHybrid = !!(this.application && this.application.appType === 'hybrid')
+			const isHybrid = !!(
+				this.application && this.application.appType === 'hybrid'
+			)
 			return this.copilot.isAvailable.value && !isHybrid
 		},
 
@@ -235,7 +273,8 @@ export default {
 				return schemas.map((s) => ({
 					slug: s.slug || s.id || s.title,
 					title: s.title || s.slug,
-					properties: s.properties || (s.schema && s.schema.properties) || {},
+					properties:
+						s.properties || (s.schema && s.schema.properties) || {},
 				}))
 			}
 			if (schemas && typeof schemas === 'object') {
@@ -247,6 +286,7 @@ export default {
 			}
 			return []
 		},
+
 		/**
 		 * The virtual-app slug from the route (/builder/:slug/pages).
 		 *
@@ -277,7 +317,11 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		versionNotFound() {
-			return !this.versionLoading && this.versionError !== null && this.applicationVersion === null
+			return (
+				!this.versionLoading
+				&& this.versionError !== null
+				&& this.applicationVersion === null
+			)
 		},
 
 		/**
@@ -288,7 +332,11 @@ export default {
 		 */
 		applicationUuid() {
 			const self = this.application && this.application['@self']
-			return (self && self.id) || (this.application && this.application.uuid) || ''
+			return (
+				(self && self.id)
+				|| (this.application && this.application.uuid)
+				|| ''
+			)
 		},
 
 		/**
@@ -301,8 +349,12 @@ export default {
 			if (!this.application) {
 				return ''
 			}
-			const published = this.application.currentVersion || this.application.status === 'published'
-			return published ? generateUrl(`/apps/openbuild/builder/${this.application.slug}`) : ''
+			const published =
+				this.application.currentVersion
+				|| this.application.status === 'published'
+			return published
+				? generateUrl(`/apps/openbuild/builder/${this.application.slug}`)
+				: ''
 		},
 
 		/**
@@ -345,6 +397,7 @@ export default {
 			await this.resolveVersion()
 			await this.load()
 		},
+
 		/**
 		 * A `?_version=` switch must reload the manifest from the newly
 		 * resolved ApplicationVersion — pre-existing gap fixed here
@@ -430,7 +483,9 @@ export default {
 		onThemePreview(theme) {
 			if (theme) {
 				if (this.themePreviewBaseline === undefined) {
-					this.themePreviewBaseline = (this.manifest.runtime && this.manifest.runtime.theme) || null
+					this.themePreviewBaseline =
+						(this.manifest.runtime && this.manifest.runtime.theme)
+						|| null
 				}
 				this.manifest = this.withRuntimeTheme(this.manifest, theme)
 				return
@@ -439,9 +494,13 @@ export default {
 				// No preview was ever started this session — nothing to revert.
 				return
 			}
-			this.manifest = this.withRuntimeTheme(this.manifest, this.themePreviewBaseline)
+			this.manifest = this.withRuntimeTheme(
+				this.manifest,
+				this.themePreviewBaseline,
+			)
 			this.themePreviewBaseline = undefined
 		},
+
 		/**
 		 * Return a manifest copy with `runtime.theme` set (or removed when
 		 * `theme` is falsy, so a themeless revert serializes byte-identically).
@@ -469,6 +528,7 @@ export default {
 			}
 			return next
 		},
+
 		/**
 		 * Delegate one-click link-property creation to the schema designer.
 		 * Emitted up from the Workflows dialog; opens the schema designer for
@@ -487,9 +547,12 @@ export default {
 			// /builder/:slug/schemas) with the target schema + the property to
 			// add pre-seeded; the designer adds the string property with its own
 			// field validation.
-			const base = generateUrl(`/apps/openbuild/builder/${this.routeSlug}/schemas`)
+			const base = generateUrl(
+				`/apps/openbuild/builder/${this.routeSlug}/schemas`,
+			)
 			window.location.href = `${base}?schema=${encodeURIComponent(schemaSlug)}&addProperty=zaakUrl`
 		},
+
 		/**
 		 * Resolve the active ApplicationVersion via useApplicationVersion composable
 		 * (REQ-OBVR-004 / REQ-OBVR-005). Called on created and when slug/versionSlug change.
@@ -499,23 +562,27 @@ export default {
 		 */
 		async resolveVersion() {
 			this.versionError = null
-			const { applicationVersion, loading, error, ready } = useApplicationVersion(
-				this.routeSlug,
-				this.versionSlug,
-			)
+			const { applicationVersion, loading, error, ready } =
+				useApplicationVersion(this.routeSlug, this.versionSlug)
 			this.applicationVersion = applicationVersion.value
 			this.versionLoading = loading.value
-			const unwatch = this.$watch(() => applicationVersion.value, (v) => {
-				this.applicationVersion = v
-			})
-			const unwatchLoading = this.$watch(() => loading.value, (v) => {
-				this.versionLoading = v
-				if (!v) {
-					unwatch()
-					unwatchLoading()
-					this.versionError = error.value
-				}
-			})
+			const unwatch = this.$watch(
+				() => applicationVersion.value,
+				(v) => {
+					this.applicationVersion = v
+				},
+			)
+			const unwatchLoading = this.$watch(
+				() => loading.value,
+				(v) => {
+					this.versionLoading = v
+					if (!v) {
+						unwatch()
+						unwatchLoading()
+						this.versionError = error.value
+					}
+				},
+			)
 			// AWAIT the in-flight fetch (#174). Every caller pairs this with load(),
 			// which seeds the editor manifest FROM `applicationVersion` exactly once
 			// — so returning before it settles left the designer showing "No pages
@@ -539,28 +606,41 @@ export default {
 			this.error = ''
 			this.toast = ''
 			try {
-				const url = generateUrl('/apps/openregister/api/objects/openbuild/application')
+				const url = generateUrl(
+					'/apps/openregister/api/objects/openbuild/application',
+				)
 				const { data } = await axios.get(url, { params: { _limit: 100 } })
-				const apps = (data && data.results) ? data.results : (Array.isArray(data) ? data : [])
-				const app = apps.find(a => a && a.slug === this.routeSlug) || null
+				const apps =
+					data && data.results
+						? data.results
+						: Array.isArray(data)
+							? data
+							: []
+				const app = apps.find((a) => a && a.slug === this.routeSlug) || null
 				this.application = app
 				// ADR-002 / REQ-OBPD-009: the manifest now lives on the active
 				// ApplicationVersion. Seed from the resolved version's manifest when
 				// available, falling back to the Application's manifest for apps that
 				// have not yet been migrated to the versioned model.
-				const versionManifest = this.applicationVersion
+				const versionManifest =
+					this.applicationVersion
 					&& this.applicationVersion.manifest
 					&& typeof this.applicationVersion.manifest === 'object'
-					? this.applicationVersion.manifest
-					: null
-				const seed = versionManifest
-					|| (app && app.manifest && typeof app.manifest === 'object' ? app.manifest : null)
+						? this.applicationVersion.manifest
+						: null
+				const seed =
+					versionManifest
+					|| (app && app.manifest && typeof app.manifest === 'object'
+						? app.manifest
+						: null)
 				this.manifest = seed
 					? JSON.parse(JSON.stringify(seed))
 					: { ...EMPTY_MANIFEST }
 			} catch (e) {
 				this.application = null
-				this.error = t('openbuild', 'Failed to load the app: {error}', { error: (e && e.message) || String(e) })
+				this.error = t('openbuild', 'Failed to load the app: {error}', {
+					error: (e && e.message) || String(e),
+				})
 			} finally {
 				this.loading = false
 			}
@@ -621,11 +701,18 @@ export default {
 				// stored object server-side, leaving every untouched field intact —
 				// losslessly and without tripping the collision.
 				const version = this.applicationVersion
-				const versionUuid = version
-					&& ((version['@self'] && version['@self'].id) || version.uuid || version.id)
+				const versionUuid =
+					version
+					&& ((version['@self'] && version['@self'].id)
+						|| version.uuid
+						|| version.id)
 				if (version && versionUuid) {
-					const url = generateUrl(`/apps/openregister/api/objects/openbuild/applicationVersion/${versionUuid}`)
-					const { data } = await axios.patch(url, { manifest: this.manifest })
+					const url = generateUrl(
+						`/apps/openregister/api/objects/openbuild/applicationVersion/${versionUuid}`,
+					)
+					const { data } = await axios.patch(url, {
+						manifest: this.manifest,
+					})
 					if (data && typeof data === 'object') {
 						this.applicationVersion = data
 					}
@@ -636,8 +723,13 @@ export default {
 					this.saveCounter += 1
 					return
 				}
-				const url = generateUrl(`/apps/openregister/api/objects/openbuild/application/${this.applicationUuid}`)
-				const { data } = await axios.put(url, { ...this.application, manifest: this.manifest })
+				const url = generateUrl(
+					`/apps/openregister/api/objects/openbuild/application/${this.applicationUuid}`,
+				)
+				const { data } = await axios.put(url, {
+					...this.application,
+					manifest: this.manifest,
+				})
 				if (data && typeof data === 'object') {
 					this.application = data
 				}
@@ -645,7 +737,9 @@ export default {
 				// REQ-BUR-004: see the PATCH branch above — same session-boundary bump.
 				this.saveCounter += 1
 			} catch (e) {
-				this.error = t('openbuild', 'Failed to save: {error}', { error: (e && e.message) || String(e) })
+				this.error = t('openbuild', 'Failed to save: {error}', {
+					error: (e && e.message) || String(e),
+				})
 			} finally {
 				this.saving = false
 			}

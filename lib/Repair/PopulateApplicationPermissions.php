@@ -44,7 +44,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuild\Repair;
 
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Log\LoggerInterface;
@@ -63,13 +63,13 @@ class PopulateApplicationPermissions implements IRepairStep {
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger Logger for diagnostics
-	 * @param ObjectService $objectService OpenRegister object service
+	 * @param ObjectServiceInterface $objectService OpenRegister object service
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private LoggerInterface $logger,
-		private ObjectService $objectService,
+		private ObjectServiceInterface $objectService,
 	) {
 	}//end __construct()
 

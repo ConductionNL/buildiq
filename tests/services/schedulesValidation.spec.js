@@ -46,7 +46,13 @@ describe('validateSchedules', () => {
 	})
 
 	it('passes a valid cron entry', () => {
-		const cronEntry = { id: 'weekly-report', enabled: true, cron: '0 3 * * 1', action: 'openconnector:synchronization', arguments: { synchronizationId: 'abc' } }
+		const cronEntry = {
+			id: 'weekly-report',
+			enabled: true,
+			cron: '0 3 * * 1',
+			action: 'openconnector:synchronization',
+			arguments: { synchronizationId: 'abc' },
+		}
 		expect(validateSchedules(withSchedules([cronEntry]))).toEqual([])
 	})
 
@@ -61,7 +67,9 @@ describe('validateSchedules', () => {
 	})
 
 	it('rejects both interval and cron (one-of)', () => {
-		const errs = validateSchedules(withSchedules([{ ...validEntry, cron: '0 3 * * 1' }]))
+		const errs = validateSchedules(
+			withSchedules([{ ...validEntry, cron: '0 3 * * 1' }]),
+		)
 		expect(errs.some((e) => e.includes('cadence-both'))).toBe(true)
 	})
 
@@ -72,12 +80,16 @@ describe('validateSchedules', () => {
 	})
 
 	it('rejects a non-positive interval', () => {
-		const errs = validateSchedules(withSchedules([{ ...validEntry, interval: 0 }]))
+		const errs = validateSchedules(
+			withSchedules([{ ...validEntry, interval: 0 }]),
+		)
 		expect(errs.some((e) => e.includes('interval-invalid'))).toBe(true)
 	})
 
 	it('rejects a non-integer interval', () => {
-		const errs = validateSchedules(withSchedules([{ ...validEntry, interval: 1.5 }]))
+		const errs = validateSchedules(
+			withSchedules([{ ...validEntry, interval: 1.5 }]),
+		)
 		expect(errs.some((e) => e.includes('interval-invalid'))).toBe(true)
 	})
 
@@ -88,17 +100,25 @@ describe('validateSchedules', () => {
 	})
 
 	it('rejects a non-allow-listed action', () => {
-		const errs = validateSchedules(withSchedules([{ ...validEntry, action: 'openconnector:job' }]))
+		const errs = validateSchedules(
+			withSchedules([{ ...validEntry, action: 'openconnector:job' }]),
+		)
 		expect(errs.some((e) => e.includes('action-unsupported'))).toBe(true)
 	})
 
 	it('rejects a missing synchronization id for the sync action', () => {
-		const errs = validateSchedules(withSchedules([{ ...validEntry, arguments: {} }]))
+		const errs = validateSchedules(
+			withSchedules([{ ...validEntry, arguments: {} }]),
+		)
 		expect(errs.some((e) => e.includes('synchronization-required'))).toBe(true)
 	})
 
 	it('rejects an empty synchronization id', () => {
-		const errs = validateSchedules(withSchedules([{ ...validEntry, arguments: { synchronizationId: '  ' } }]))
+		const errs = validateSchedules(
+			withSchedules([
+				{ ...validEntry, arguments: { synchronizationId: '  ' } },
+			]),
+		)
 		expect(errs.some((e) => e.includes('synchronization-required'))).toBe(true)
 	})
 
@@ -109,22 +129,30 @@ describe('validateSchedules', () => {
 	})
 
 	it('rejects a non-slug id', () => {
-		const errs = validateSchedules(withSchedules([{ ...validEntry, id: 'Not A Slug' }]))
+		const errs = validateSchedules(
+			withSchedules([{ ...validEntry, id: 'Not A Slug' }]),
+		)
 		expect(errs.some((e) => e.includes('id-not-slug'))).toBe(true)
 	})
 
 	it('rejects duplicate ids', () => {
-		const errs = validateSchedules(withSchedules([validEntry, { ...validEntry }]))
+		const errs = validateSchedules(
+			withSchedules([validEntry, { ...validEntry }]),
+		)
 		expect(errs.some((e) => e.includes('duplicate-id'))).toBe(true)
 	})
 
 	it('rejects an unknown key', () => {
-		const errs = validateSchedules(withSchedules([{ ...validEntry, foo: 'bar' }]))
+		const errs = validateSchedules(
+			withSchedules([{ ...validEntry, foo: 'bar' }]),
+		)
 		expect(errs.some((e) => e.includes('unknown-key'))).toBe(true)
 	})
 
 	it('rejects a non-boolean enabled', () => {
-		const errs = validateSchedules(withSchedules([{ ...validEntry, enabled: 'yes' }]))
+		const errs = validateSchedules(
+			withSchedules([{ ...validEntry, enabled: 'yes' }]),
+		)
 		expect(errs.some((e) => e.includes('enabled-invalid'))).toBe(true)
 	})
 

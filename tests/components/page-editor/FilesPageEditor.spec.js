@@ -39,7 +39,9 @@ describe('FilesPageEditor', () => {
 		wrapper.vm.typeDraft = 'application/pdf'
 		wrapper.vm.commitDraft()
 		await wrapper.vm.$nextTick()
-		expect(wrapper.emitted('update:config')[0][0].allowedTypes).toEqual(['application/pdf'])
+		expect(wrapper.emitted('update:config')[0][0].allowedTypes).toEqual([
+			'application/pdf',
+		])
 		expect(wrapper.vm.typeDraft).toBe('')
 	})
 
@@ -60,21 +62,31 @@ describe('FilesPageEditor', () => {
 	})
 
 	it('removing a type drops it from the list', async () => {
-		const wrapper = mountEditor({ folder: '/x', allowedTypes: ['.pdf', '.docx'] })
+		const wrapper = mountEditor({
+			folder: '/x',
+			allowedTypes: ['.pdf', '.docx'],
+		})
 		wrapper.vm.removeType(0)
 		await wrapper.vm.$nextTick()
-		expect(wrapper.emitted('update:config')[0][0].allowedTypes).toEqual(['.docx'])
+		expect(wrapper.emitted('update:config')[0][0].allowedTypes).toEqual([
+			'.docx',
+		])
 	})
 
 	it('removing the last type deletes the key', async () => {
 		const wrapper = mountEditor({ folder: '/x', allowedTypes: ['.pdf'] })
 		wrapper.vm.removeType(0)
 		await wrapper.vm.$nextTick()
-		expect(wrapper.emitted('update:config')[0][0]).not.toHaveProperty('allowedTypes')
+		expect(wrapper.emitted('update:config')[0][0]).not.toHaveProperty(
+			'allowedTypes',
+		)
 	})
 
 	it('renders an existing allowedTypes list as tags', () => {
-		const wrapper = mountEditor({ folder: '/x', allowedTypes: ['image/png', '.csv'] })
+		const wrapper = mountEditor({
+			folder: '/x',
+			allowedTypes: ['image/png', '.csv'],
+		})
 		const tags = wrapper.findAll('.files-page-editor__tag')
 		expect(tags).toHaveLength(2)
 		expect(wrapper.text()).toContain('image/png')

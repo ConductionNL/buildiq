@@ -17,31 +17,44 @@
 		</p>
 
 		<ul class="copilot-proposal__steps">
-			<li v-for="(step, idx) in plan.steps" :key="idx" class="copilot-proposal__step">
+			<li
+				v-for="(step, idx) in plan.steps"
+				:key="idx"
+				class="copilot-proposal__step">
 				<code>{{ step.tool }}</code>
-				<span class="copilot-proposal__step-detail">{{ stepDetail(step) }}</span>
+				<span class="copilot-proposal__step-detail">{{
+					stepDetail(step)
+				}}</span>
 			</li>
 		</ul>
 
 		<ManifestDiff
 			v-for="(pair, versionKey) in plan.manifests"
 			:key="versionKey"
-			:from-manifest="pair.current"
-			:to-manifest="pair.predicted"
-			:from-label-text="t('openbuild', 'Current')"
-			:to-label-text="t('openbuild', 'Predicted')" />
+			:fromManifest="pair.current"
+			:toManifest="pair.predicted"
+			:fromLabelText="t('openbuild', 'Current')"
+			:toLabelText="t('openbuild', 'Predicted')" />
 
 		<p v-if="!canApprove" class="copilot-proposal__error" role="alert">
-			{{ t('openbuild', 'This proposal did not pass validation and cannot be applied.') }}
+			{{
+				t(
+					'openbuild',
+					'This proposal did not pass validation and cannot be applied.',
+				)
+			}}
 		</p>
 
 		<div class="copilot-proposal__actions">
-			<NcButton data-testid="copilot-discard" :disabled="busy" @click="$emit('discard')">
+			<NcButton
+				data-testid="copilot-discard"
+				:disabled="busy"
+				@click="$emit('discard')">
 				{{ t('openbuild', 'Discard') }}
 			</NcButton>
 			<NcButton
 				data-testid="copilot-approve"
-				type="primary"
+				variant="primary"
 				:disabled="!canApprove || busy"
 				@click="$emit('approve')">
 				{{ busy ? t('openbuild', 'Applying…') : t('openbuild', 'Approve') }}
@@ -65,11 +78,13 @@ export default {
 			type: Object,
 			required: true,
 		},
+
 		/** False while any predicted manifest fails the canonical validator. */
 		canApprove: {
 			type: Boolean,
 			default: false,
 		},
+
 		/** True while the approved plan is executing. */
 		busy: {
 			type: Boolean,
@@ -89,7 +104,14 @@ export default {
 		 */
 		stepDetail(step) {
 			const args = step.arguments || {}
-			return args.title || args.label || args.pageId || args.slug || args.appSlug || ''
+			return (
+				args.title
+				|| args.label
+				|| args.pageId
+				|| args.slug
+				|| args.appSlug
+				|| ''
+			)
 		},
 	},
 }

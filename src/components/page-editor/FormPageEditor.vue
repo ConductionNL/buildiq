@@ -19,7 +19,7 @@
 						type="radio"
 						:checked="submitShape === 'handler'"
 						value="handler"
-						@change="setSubmitShape('handler')">
+						@change="setSubmitShape('handler')" />
 					{{ t('openbuild', 'submitHandler (registry key)') }}
 				</label>
 				<label class="form-page-editor__inline">
@@ -27,7 +27,7 @@
 						type="radio"
 						:checked="submitShape === 'endpoint'"
 						value="endpoint"
-						@change="setSubmitShape('endpoint')">
+						@change="setSubmitShape('endpoint')" />
 					{{ t('openbuild', 'submitEndpoint (URL)') }}
 				</label>
 			</div>
@@ -39,31 +39,32 @@
 				:placeholder="t('openbuild', 'customComponents registry key')"
 				:aria-label="t('openbuild', 'customComponents registry key')"
 				:aria-invalid="isInvalid('submitHandler')"
-				@input="setSubmitHandler($event.target.value)">
+				@input="setSubmitHandler($event.target.value)" />
 			<input
 				v-else-if="submitShape === 'endpoint'"
 				type="text"
 				class="form-page-editor__input"
 				:value="config.submitEndpoint || ''"
-				:placeholder="t('openbuild', '/api/objects/:slug/...')"
-				:aria-label="t('openbuild', '/api/objects/:slug/...')"
+				:placeholder="t('openbuild', '/api/objects/:slug/…')"
+				:aria-label="t('openbuild', '/api/objects/:slug/…')"
 				:aria-invalid="isInvalid('submitEndpoint')"
-				@input="setSubmitEndpoint($event.target.value)">
-			<InlineFieldMark :error="markFor(submitShape === 'endpoint' ? 'submitEndpoint' : 'submitHandler')" />
+				@input="setSubmitEndpoint($event.target.value)" />
+			<InlineFieldMark
+				:error="
+					markFor(
+						submitShape === 'endpoint'
+							? 'submitEndpoint'
+							: 'submitHandler',
+					)
+				" />
 			<label class="form-page-editor__group-row">
 				{{ t('openbuild', 'Method') }}
 				<select
 					:value="config.submitMethod || 'POST'"
 					@change="update('submitMethod', $event.target.value)">
-					<option value="POST">
-						POST
-					</option>
-					<option value="PUT">
-						PUT
-					</option>
-					<option value="PATCH">
-						PATCH
-					</option>
+					<option value="POST">POST</option>
+					<option value="PUT">PUT</option>
+					<option value="PATCH">PATCH</option>
 				</select>
 			</label>
 			<label class="form-page-editor__group-row">
@@ -71,15 +72,9 @@
 				<select
 					:value="config.mode || 'public'"
 					@change="update('mode', $event.target.value)">
-					<option value="public">
-						public
-					</option>
-					<option value="create">
-						create
-					</option>
-					<option value="edit">
-						edit
-					</option>
+					<option value="public">public</option>
+					<option value="create">create</option>
+					<option value="edit">edit</option>
 				</select>
 			</label>
 			<label class="form-page-editor__group-row">
@@ -88,7 +83,7 @@
 					type="text"
 					:value="config.submitLabel || ''"
 					:placeholder="t('openbuild', 'i18n key')"
-					@input="update('submitLabel', $event.target.value)">
+					@input="update('submitLabel', $event.target.value)" />
 			</label>
 			<label class="form-page-editor__group-row">
 				{{ t('openbuild', 'Success message (optional)') }}
@@ -96,15 +91,15 @@
 					type="text"
 					:value="config.successMessage || ''"
 					:placeholder="t('openbuild', 'i18n key')"
-					@input="update('successMessage', $event.target.value)">
+					@input="update('successMessage', $event.target.value)" />
 			</label>
 		</fieldset>
 
 		<fieldset class="form-page-editor__fieldset">
 			<legend>{{ t('openbuild', 'Fields') }}</legend>
 			<FormFieldBuilder
-				:model-value="config.fields || []"
-				show-logic
+				:modelValue="config.fields || []"
+				showLogic
 				@update:modelValue="update('fields', $event)" />
 			<InlineFieldMark :error="markFor('fields')" />
 		</fieldset>
@@ -127,56 +122,84 @@
 			<legend>{{ t('openbuild', 'External access') }}</legend>
 			<template v-if="externalTarget">
 				<p class="form-page-editor__external-status">
-					{{ externalFormEntry && externalFormEntry.status === 'enabled'
-						? t('openbuild', 'Externally fillable ({register}/{schema})', externalTarget)
-						: t('openbuild', 'Not externally fillable yet ({register}/{schema})', externalTarget) }}
+					{{
+						externalFormEntry && externalFormEntry.status === 'enabled'
+							? t(
+									'openbuild',
+									'Externally fillable ({register}/{schema})',
+									externalTarget,
+								)
+							: t(
+									'openbuild',
+									'Not externally fillable yet ({register}/{schema})',
+									externalTarget,
+								)
+					}}
 				</p>
-				<button type="button" class="form-page-editor__external-btn" @click="externalDialogOpen = true">
+				<button
+					type="button"
+					class="form-page-editor__external-btn"
+					@click="externalDialogOpen = true">
 					{{ t('openbuild', 'Configure') }}
 				</button>
 				<ExternalFormAccessDialog
 					v-model:open="externalDialogOpen"
 					:register="externalTarget.register"
 					:schema="externalTarget.schema"
-					:page-id="pageId"
+					:pageId="pageId"
 					:entry="externalFormEntry"
 					@save="onExternalFormSave" />
 			</template>
 			<p v-else class="form-page-editor__hint">
-				{{ t('openbuild', 'External access requires a submitEndpoint shaped like /api/objects/{register}/{schema}.') }}
+				{{
+					t(
+						'openbuild',
+						'External access requires a submitEndpoint shaped like /api/objects/{register}/{schema}.',
+					)
+				}}
 			</p>
 		</fieldset>
 	</div>
 </template>
 
 <script>
+import ExternalFormAccessDialog from '../../dialogs/ExternalFormAccessDialog.vue'
 import FormFieldBuilder from './fields/FormFieldBuilder.vue'
 import FormStepsManager from './fields/FormStepsManager.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
-import ExternalFormAccessDialog from '../../dialogs/ExternalFormAccessDialog.vue'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'FormPageEditor',
-	components: { FormFieldBuilder, FormStepsManager, InlineFieldMark, ExternalFormAccessDialog },
+	components: {
+		FormFieldBuilder,
+		FormStepsManager,
+		InlineFieldMark,
+		ExternalFormAccessDialog,
+	},
+
 	mixins: [pageEditorValidationMixin],
 	props: {
 		config: {
 			type: Object,
 			default: () => ({}),
 		},
+
 		pageType: {
 			type: String,
 			default: 'form',
 		},
+
 		appSlug: {
 			type: String,
 			default: '',
 		},
+
 		parentRoute: {
 			type: String,
 			default: '',
 		},
+
 		// The selected page's `id` (mergeManifestDelta's page key) — the
 		// `runtime.externalForms[].pageId` this editor writes/reads
 		// (REQ-EFP-001/002).
@@ -184,6 +207,7 @@ export default {
 			type: String,
 			default: '',
 		},
+
 		// The manifest's full `runtime.externalForms[]` array — this editor
 		// filters to the entry (if any) owned by `pageId`.
 		runtimeExternalForms: {
@@ -191,12 +215,14 @@ export default {
 			default: () => [],
 		},
 	},
+
 	emits: ['update:config', 'update:runtimeExternalForms'],
 	data() {
 		return {
 			externalDialogOpen: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * `{register, schema}` resolved from `config.submitEndpoint` when it
@@ -212,9 +238,13 @@ export default {
 				return null
 			}
 			const endpoint = this.config.submitEndpoint || ''
-			const match = /^\/(?:apps\/openregister\/)?api\/objects\/([^/]+)\/([^/]+)\/?$/.exec(endpoint)
+			const match =
+				/^\/(?:apps\/openregister\/)?api\/objects\/([^/]+)\/([^/]+)\/?$/.exec(
+					endpoint,
+				)
 			return match ? { register: match[1], schema: match[2] } : null
 		},
+
 		/**
 		 * The existing `runtime.externalForms[]` entry for THIS page, if any.
 		 *
@@ -225,8 +255,13 @@ export default {
 			if (!this.pageId) {
 				return null
 			}
-			return (this.runtimeExternalForms || []).find((e) => e && e.pageId === this.pageId) || null
+			return (
+				(this.runtimeExternalForms || []).find(
+					(e) => e && e.pageId === this.pageId,
+				) || null
+			)
 		},
+
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
 		 * `steps` added by REQ-OBFEL-001 so `formLogic.js` / the canonical
@@ -236,8 +271,19 @@ export default {
 		 * @spec openspec/specs/form-editor-logic/spec.md#req-obfel-001
 		 */
 		validatedConfigKeys() {
-			return ['submitHandler', 'submitEndpoint', 'submitMethod', 'mode', 'submitLabel', 'successMessage', 'fields', 'initialValue', 'steps']
+			return [
+				'submitHandler',
+				'submitEndpoint',
+				'submitMethod',
+				'mode',
+				'submitLabel',
+				'successMessage',
+				'fields',
+				'initialValue',
+				'steps',
+			]
 		},
+
 		/**
 		 * Observed behaviour of `submitShape` (retrofit annotation).
 		 *
@@ -253,6 +299,7 @@ export default {
 			return 'handler'
 		},
 	},
+
 	methods: {
 		/**
 		 * Write one key on the page's `config` block. Only the named key is
@@ -273,6 +320,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Switch between the two mutually exclusive submit targets by
 		 * deleting the key of the branch being left, so the emitted config
@@ -290,6 +338,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Write `submitHandler` and clear `submitEndpoint` in the same emit,
 		 * so typing a handler can never leave a stale endpoint behind.
@@ -308,6 +357,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Write `submitEndpoint` and clear `submitHandler` in the same emit.
 		 * The value is also what `externalTarget` parses, so an OR
@@ -327,6 +377,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Persist the provisioned/revoked entry from ExternalFormAccessDialog
 		 * into `runtime.externalForms[]` (find-or-append by pageId, per

@@ -18,9 +18,9 @@
 // Spec: openbuild-app-detail-overview / capability application-insights
 // (REQ-OBAI-001, REQ-OBAI-002, REQ-OBAI-006).
 
-import { ref, watch } from 'vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { ref, watch } from 'vue'
 
 /**
  * Composable that exposes the live insights payload for an Application + Version.
@@ -42,7 +42,12 @@ import { generateUrl } from '@nextcloud/router'
  * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-1
  */
 export function useApplicationInsights(appUuidRef, versionUuidRef, windowRef) {
-	const kpis = ref({ activeUsers: 0, objectCount: 0, filesCount: 0, auditEventCount: 0 })
+	const kpis = ref({
+		activeUsers: 0,
+		objectCount: 0,
+		filesCount: 0,
+		auditEventCount: 0,
+	})
 	const activity = ref([])
 	const loading = ref(false)
 	const error = ref(null)
@@ -57,7 +62,9 @@ export function useApplicationInsights(appUuidRef, versionUuidRef, windowRef) {
 	 * @return {*} The unwrapped value.
 	 */
 	function unwrap(maybeRef) {
-		return maybeRef && typeof maybeRef === 'object' && 'value' in maybeRef ? maybeRef.value : maybeRef
+		return maybeRef && typeof maybeRef === 'object' && 'value' in maybeRef
+			? maybeRef.value
+			: maybeRef
 	}
 
 	/**
@@ -84,23 +91,50 @@ export function useApplicationInsights(appUuidRef, versionUuidRef, windowRef) {
 			)
 			const { data } = await axios.get(url, { params: { window: win } })
 			if (data && typeof data === 'object') {
-				kpis.value = (data.kpis && typeof data.kpis === 'object')
-					? { activeUsers: 0, objectCount: 0, filesCount: 0, auditEventCount: 0, ...data.kpis }
-					: { activeUsers: 0, objectCount: 0, filesCount: 0, auditEventCount: 0 }
+				kpis.value =
+					data.kpis && typeof data.kpis === 'object'
+						? {
+								activeUsers: 0,
+								objectCount: 0,
+								filesCount: 0,
+								auditEventCount: 0,
+								...data.kpis,
+							}
+						: {
+								activeUsers: 0,
+								objectCount: 0,
+								filesCount: 0,
+								auditEventCount: 0,
+							}
 				activity.value = Array.isArray(data.activity) ? data.activity : []
 			} else {
-				kpis.value = { activeUsers: 0, objectCount: 0, filesCount: 0, auditEventCount: 0 }
+				kpis.value = {
+					activeUsers: 0,
+					objectCount: 0,
+					filesCount: 0,
+					auditEventCount: 0,
+				}
 				activity.value = []
 			}
 		} catch (e) {
 			const status = (e && e.response && e.response.status) || 0
 			if (status === 404) {
 				versionNoLongerAccessible.value = true
-				kpis.value = { activeUsers: 0, objectCount: 0, filesCount: 0, auditEventCount: 0 }
+				kpis.value = {
+					activeUsers: 0,
+					objectCount: 0,
+					filesCount: 0,
+					auditEventCount: 0,
+				}
 				activity.value = []
 			} else {
 				error.value = e instanceof Error ? e : new Error(String(e))
-				kpis.value = { activeUsers: 0, objectCount: 0, filesCount: 0, auditEventCount: 0 }
+				kpis.value = {
+					activeUsers: 0,
+					objectCount: 0,
+					filesCount: 0,
+					auditEventCount: 0,
+				}
 				activity.value = []
 			}
 		} finally {
@@ -129,7 +163,11 @@ export function useApplicationInsights(appUuidRef, versionUuidRef, windowRef) {
 	if (appUuidRef && typeof appUuidRef === 'object' && 'value' in appUuidRef) {
 		sources.push(appUuidRef)
 	}
-	if (versionUuidRef && typeof versionUuidRef === 'object' && 'value' in versionUuidRef) {
+	if (
+		versionUuidRef
+		&& typeof versionUuidRef === 'object'
+		&& 'value' in versionUuidRef
+	) {
 		sources.push(versionUuidRef)
 	}
 	if (windowRef && typeof windowRef === 'object' && 'value' in windowRef) {

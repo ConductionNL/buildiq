@@ -19,7 +19,9 @@
 
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import PageListEditor, { PAGE_TYPES } from '../../../src/components/page-editor/PageListEditor.vue'
+import PageListEditor, {
+	PAGE_TYPES,
+} from '../../../src/components/page-editor/PageListEditor.vue'
 // The shared stub mirrors vuedraggable v4 (`modelValue` + `#item` scoped
 // slot). The v2-shaped local stub this replaced never invoked `#item`, so
 // every row silently vanished from the render.
@@ -92,7 +94,12 @@ describe('PageListEditor', () => {
 		const next = wrapper.emitted('update:pages')[0][0]
 		expect(next[0].type).toBe('map')
 		expect(next[0].route).toBe('/map')
-		expect(next[0].config).toEqual({ center: [52.1326, 5.2913], zoom: 7, layers: [], markers: {} })
+		expect(next[0].config).toEqual({
+			center: [52.1326, 5.2913],
+			zoom: 7,
+			layers: [],
+			markers: {},
+		})
 	})
 
 	it('confirmAdd for roadmap/search/wiki types seeds their pinned default configs', async () => {
@@ -170,9 +177,7 @@ describe('PageListEditor', () => {
 	})
 
 	it('removePage of the selected row emits select(-1)', async () => {
-		const wrapper = mountEditor([
-			{ id: 'a', type: 'index' },
-		], 0)
+		const wrapper = mountEditor([{ id: 'a', type: 'index' }], 0)
 		wrapper.vm.removePage(0)
 		await wrapper.vm.$nextTick()
 		expect(wrapper.emitted('select')).toContainEqual([-1])

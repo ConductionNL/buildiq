@@ -25,15 +25,32 @@
 <template>
 	<div class="form-steps-manager">
 		<div v-if="unassignedKeys.length" class="form-steps-manager__pool">
-			<span class="form-steps-manager__pool-label">{{ t('openbuild', 'Unassigned fields:') }}</span>
-			<span v-for="key in unassignedKeys" :key="key" class="form-steps-manager__pool-key">{{ key }}</span>
+			<span class="form-steps-manager__pool-label">{{
+				t('openbuild', 'Unassigned fields:')
+			}}</span>
+			<span
+				v-for="key in unassignedKeys"
+				:key="key"
+				class="form-steps-manager__pool-key"
+				>{{ key }}</span
+			>
 			<p v-if="localSteps.length" class="form-steps-manager__pool-note">
-				{{ t('openbuild', 'Unassigned fields are automatically added to the last step when you save.') }}
+				{{
+					t(
+						'openbuild',
+						'Unassigned fields are automatically added to the last step when you save.',
+					)
+				}}
 			</p>
 		</div>
 
 		<p v-if="!localSteps.length" class="form-steps-manager__empty">
-			{{ t('openbuild', 'This form renders as a single step. Add a step to build a multi-step wizard.') }}
+			{{
+				t(
+					'openbuild',
+					'This form renders as a single step. Add a step to build a multi-step wizard.',
+				)
+			}}
 		</p>
 
 		<div
@@ -47,14 +64,14 @@
 					class="form-steps-manager__field"
 					:placeholder="t('openbuild', 'Step title')"
 					:aria-label="t('openbuild', 'Step title')"
-					@input="onTitleInput(index, $event.target.value)">
+					@input="onTitleInput(index, $event.target.value)" />
 				<input
 					:value="step.id || ''"
 					type="text"
 					class="form-steps-manager__field form-steps-manager__field--narrow"
 					:placeholder="t('openbuild', 'step-id')"
 					:aria-label="t('openbuild', 'Step id')"
-					@input="updateStepField(index, 'id', $event.target.value)">
+					@input="updateStepField(index, 'id', $event.target.value)" />
 				<button
 					type="button"
 					class="form-steps-manager__icon-button"
@@ -85,14 +102,18 @@
 				class="form-steps-manager__field form-steps-manager__description"
 				:placeholder="t('openbuild', 'Description (optional)')"
 				:aria-label="t('openbuild', 'Step description')"
-				@input="updateStepField(index, 'description', $event.target.value)">
+				@input="
+					updateStepField(index, 'description', $event.target.value)
+				" />
 
 			<div class="form-steps-manager__fields">
 				<span
 					v-for="(key, fIndex) in step.fields || []"
 					:key="key + fIndex"
 					class="form-steps-manager__field-chip"
-					:class="{ 'form-steps-manager__field-chip--dangling': isDangling(key) }">
+					:class="{
+						'form-steps-manager__field-chip--dangling': isDangling(key),
+					}">
 					{{ key }}
 					<button
 						type="button"
@@ -102,7 +123,9 @@
 						✕
 					</button>
 				</span>
-				<span v-if="!(step.fields || []).length" class="form-steps-manager__no-fields">
+				<span
+					v-if="!(step.fields || []).length"
+					class="form-steps-manager__no-fields">
 					{{ t('openbuild', 'No fields assigned yet.') }}
 				</span>
 			</div>
@@ -181,11 +204,13 @@ export default {
 			type: Array,
 			default: () => [],
 		},
+
 		fields: {
 			type: Array,
 			default: () => [],
 		},
 	},
+
 	emits: ['update:steps'],
 	data() {
 		return {
@@ -194,6 +219,7 @@ export default {
 			pendingAssignment: {},
 		}
 	},
+
 	computed: {
 		/**
 		 * The steps array, tolerant of an absent/non-array prop.
@@ -203,6 +229,7 @@ export default {
 		localSteps() {
 			return Array.isArray(this.steps) ? this.steps : []
 		},
+
 		/**
 		 * `config.fields[].key` values declared on the sibling field list.
 		 *
@@ -213,6 +240,7 @@ export default {
 				.map((f) => f && f.key)
 				.filter((k) => typeof k === 'string' && k !== '')
 		},
+
 		/**
 		 * Declared field keys not yet referenced by any step's `fields[]`.
 		 *
@@ -220,10 +248,15 @@ export default {
 		 */
 		unassignedKeys() {
 			const assigned = new Set()
-			this.localSteps.forEach((s) => (Array.isArray(s && s.fields) ? s.fields : []).forEach((k) => assigned.add(k)))
+			this.localSteps.forEach((s) =>
+				(Array.isArray(s && s.fields) ? s.fields : []).forEach((k) =>
+					assigned.add(k),
+				),
+			)
 			return this.declaredKeys.filter((k) => !assigned.has(k))
 		},
 	},
+
 	methods: {
 		/**
 		 * A stable-ish v-for key: prefer the step id, fall back to index.
@@ -235,6 +268,7 @@ export default {
 		stepKey(step, index) {
 			return (step && step.id) || `step-${index}`
 		},
+
 		/**
 		 * Whether a field key referenced by a step no longer exists in
 		 * `config.fields[]` (REQ-OBFEL-004).
@@ -245,6 +279,7 @@ export default {
 		isDangling(key) {
 			return !this.declaredKeys.includes(key)
 		},
+
 		/**
 		 * The `{ hasError, message }` bag for a step's dangling field
 		 * references, shaped for `<InlineFieldMark>`. Never mutates —
@@ -254,15 +289,20 @@ export default {
 		 * @return {{hasError: boolean, message: string}}
 		 */
 		danglingMark(step) {
-			const dangling = (Array.isArray(step && step.fields) ? step.fields : []).filter((k) => this.isDangling(k))
+			const dangling = (
+				Array.isArray(step && step.fields) ? step.fields : []
+			).filter((k) => this.isDangling(k))
 			if (!dangling.length) {
 				return { hasError: false, message: '' }
 			}
 			return {
 				hasError: true,
-				message: t('openbuild', 'Step references removed field(s): {keys}', { keys: dangling.join(', ') }),
+				message: t('openbuild', 'Step references removed field(s): {keys}', {
+					keys: dangling.join(', '),
+				}),
 			}
 		},
+
 		/**
 		 * Emit the next steps array — `null` when it would be empty, so the
 		 * caller's spread-write (`FormPageEditor.update`) drops the `steps`
@@ -274,6 +314,7 @@ export default {
 		emitSteps(next) {
 			this.$emit('update:steps', next.length ? next : null)
 		},
+
 		/**
 		 * The ids of every OTHER step (for uniqueness when deriving/typing
 		 * an id).
@@ -287,6 +328,7 @@ export default {
 				.map((s) => s && s.id)
 				.filter(Boolean)
 		},
+
 		/**
 		 * Update a single step's field, shallow-cloning the array and the
 		 * step object so unknown sibling keys survive.
@@ -301,6 +343,7 @@ export default {
 			next[index] = { ...next[index], [key]: value }
 			this.emitSteps(next)
 		},
+
 		/**
 		 * Title input handler — re-derives the id from the new title as
 		 * long as the id still looks auto-derived (i.e. the developer has
@@ -313,7 +356,10 @@ export default {
 		 */
 		onTitleInput(index, value) {
 			const step = this.localSteps[index] || {}
-			const prevAutoSlug = uniqueSlug(slugify(step.title || ''), this.otherIds(index))
+			const prevAutoSlug = uniqueSlug(
+				slugify(step.title || ''),
+				this.otherIds(index),
+			)
 			const isTracking = !step.id || step.id === prevAutoSlug
 			const next = this.localSteps.slice()
 			const updated = { ...step, title: value }
@@ -323,6 +369,7 @@ export default {
 			next[index] = updated
 			this.emitSteps(next)
 		},
+
 		/**
 		 * Move a step up (-1) or down (+1); no-op past the array bounds.
 		 *
@@ -340,6 +387,7 @@ export default {
 			next.splice(target, 0, item)
 			this.emitSteps(next)
 		},
+
 		/**
 		 * Delete a step. Its field-key references simply drop out of every
 		 * step's `fields[]` — no field DEFINITION is touched, so the keys
@@ -353,6 +401,7 @@ export default {
 			next.splice(index, 1)
 			this.emitSteps(next)
 		},
+
 		/**
 		 * Add a new step with a placeholder title and an empty field list.
 		 *
@@ -361,10 +410,14 @@ export default {
 		addStep() {
 			const next = this.localSteps.slice()
 			const title = t('openbuild', 'Step {n}', { n: next.length + 1 })
-			const id = uniqueSlug(slugify(title), next.map((s) => s && s.id).filter(Boolean))
+			const id = uniqueSlug(
+				slugify(title),
+				next.map((s) => s && s.id).filter(Boolean),
+			)
 			next.push({ id, title, fields: [] })
 			this.emitSteps(next)
 		},
+
 		/**
 		 * Assign the step's currently pending pool selection to its
 		 * `fields[]` list, then clear the selection.
@@ -383,6 +436,7 @@ export default {
 			this.pendingAssignment[index] = ''
 			this.emitSteps(next)
 		},
+
 		/**
 		 * Remove one field-key reference from a step, returning it to the
 		 * unassigned pool.

@@ -19,20 +19,33 @@
 		<div v-else-if="noAccess" class="procest-case-status-panel__state">
 			{{ t('openbuild', 'You do not have access to this case.') }}
 		</div>
-		<div v-else-if="detailError" class="procest-case-status-panel__state procest-case-status-panel__state--error">
+		<div
+			v-else-if="detailError"
+			class="procest-case-status-panel__state procest-case-status-panel__state--error">
 			<p>{{ t('openbuild', 'Could not load the linked case.') }}</p>
-			<NcButton type="secondary" @click="reload">
+			<NcButton variant="secondary" @click="reload">
 				{{ t('openbuild', 'Retry') }}
 			</NcButton>
 		</div>
 
 		<div v-else-if="!hasLinkedCase" class="procest-case-status-panel__unlinked">
-			<p>{{ t('openbuild', 'No Procest case is linked to this object yet.') }}</p>
-			<NcButton type="primary" :disabled="starting" @click="startNow">
-				{{ starting ? t('openbuild', 'Starting…') : t('openbuild', 'Start case') }}
+			<p>
+				{{ t('openbuild', 'No Procest case is linked to this object yet.') }}
+			</p>
+			<NcButton variant="primary" :disabled="starting" @click="startNow">
+				{{
+					starting
+						? t('openbuild', 'Starting…')
+						: t('openbuild', 'Start case')
+				}}
 			</NcButton>
 			<p v-if="startError" class="procest-case-status-panel__warn">
-				{{ t('openbuild', 'Starting the case failed. The object is unchanged — you can try again.') }}
+				{{
+					t(
+						'openbuild',
+						'Starting the case failed. The object is unchanged — you can try again.',
+					)
+				}}
 			</p>
 		</div>
 
@@ -41,12 +54,22 @@
 				{{ caseIdentification }}
 			</h3>
 			<p class="procest-case-status-panel__current">
-				{{ t('openbuild', 'Current status: {status}', { status: currentStatus }) }}
+				{{
+					t('openbuild', 'Current status: {status}', {
+						status: currentStatus,
+					})
+				}}
 			</p>
-			<ol v-if="statusHistory.length" class="procest-case-status-panel__timeline">
+			<ol
+				v-if="statusHistory.length"
+				class="procest-case-status-panel__timeline">
 				<li v-for="(s, idx) in statusHistory" :key="idx">
-					<span class="procest-case-status-panel__status-name">{{ statusLabel(s) }}</span>
-					<span class="procest-case-status-panel__status-date">{{ s.datumStatusGezet || s.created || '' }}</span>
+					<span class="procest-case-status-panel__status-name">{{
+						statusLabel(s)
+					}}</span>
+					<span class="procest-case-status-panel__status-date">{{
+						s.datumStatusGezet || s.created || ''
+					}}</span>
 				</li>
 			</ol>
 			<a
@@ -64,7 +87,10 @@
 <script>
 import { NcButton } from '@nextcloud/vue'
 import { useProcestCase } from '../../composables/useProcestCase.js'
-import { buildProcestCaseUrl, caseUuidFromReference } from '../../services/procestLinks.js'
+import {
+	buildProcestCaseUrl,
+	caseUuidFromReference,
+} from '../../services/procestLinks.js'
 
 export default {
 	name: 'ProcestCaseStatusPanel',
@@ -75,12 +101,14 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
 		// The workflow attachment for this object's schema.
 		attachment: {
 			type: Object,
 			default: () => ({}),
 		},
 	},
+
 	/**
 	 * Bind the Procest case integration to this attachment.
 	 *
@@ -91,63 +119,85 @@ export default {
 		const procest = useProcestCase({ attachment: props.attachment })
 		return { procest }
 	},
+
 	computed: {
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
 		loadingDetail() {
 			return this.procest.loadingDetail.value
 		},
+
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
 		detailError() {
 			return this.procest.detailError.value
 		},
+
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
 		noAccess() {
 			return this.procest.noAccess.value
 		},
+
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-003 */
 		starting() {
 			return this.procest.starting.value
 		},
+
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-003 */
 		startError() {
 			return this.procest.startError.value
 		},
+
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
 		linkReference() {
 			const prop = this.attachment && this.attachment.linkProperty
 			return (prop && this.object && this.object[prop]) || ''
 		},
+
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
 		hasLinkedCase() {
 			return !!this.procest.caseDetail.value || !!this.linkReference
 		},
+
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
 		statusHistory() {
 			return this.procest.statusHistory.value || []
 		},
+
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
 		caseIdentification() {
 			const c = this.procest.caseDetail.value || {}
-			return c.identificatie || c.identification || t('openbuild', 'Linked case')
+			return (
+				c.identificatie || c.identification || t('openbuild', 'Linked case')
+			)
 		},
+
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
 		currentStatus() {
 			const c = this.procest.caseDetail.value || {}
-			return c.statusName || (c.status && (c.status.statustypeOmschrijving || c.status.naam)) || t('openbuild', 'Unknown')
+			return (
+				c.statusName
+				|| (c.status && (c.status.statustypeOmschrijving || c.status.naam))
+				|| t('openbuild', 'Unknown')
+			)
 		},
+
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-005 */
 		deepLink() {
 			const c = this.procest.caseDetail.value || {}
-			const uuid = (c.uuid || (c['@self'] && c['@self'].id)) || caseUuidFromReference(this.linkReference)
+			const uuid =
+				c.uuid
+				|| (c['@self'] && c['@self'].id)
+				|| caseUuidFromReference(this.linkReference)
 			return buildProcestCaseUrl(uuid)
 		},
 	},
+
 	/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
 	mounted() {
 		if (this.linkReference) {
 			this.procest.loadDetail(this.linkReference)
 		}
 	},
+
 	methods: {
 		/**
 		 * @param {object} s - a status-history entry.
@@ -155,12 +205,20 @@ export default {
 		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-004
 		 */
 		statusLabel(s) {
-			return s.statustypeOmschrijving || s.statustype || s.naam || s.status || t('openbuild', 'Status')
+			return (
+				s.statustypeOmschrijving
+				|| s.statustype
+				|| s.naam
+				|| s.status
+				|| t('openbuild', 'Status')
+			)
 		},
+
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
 		reload() {
 			this.procest.loadDetail(this.linkReference)
 		},
+
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-003 */
 		async startNow() {
 			await this.procest.reconcileOrStart(this.object)

@@ -13,8 +13,8 @@
 		<header class="manifest-diff__header">
 			<h3>{{ t('openbuild', 'Manifest diff') }}</h3>
 			<small class="manifest-diff__pair">
-				{{ t('openbuild', 'From') }}: <code>{{ fromLabel }}</code>
-				→ {{ t('openbuild', 'To') }}: <code>{{ toLabel }}</code>
+				{{ t('openbuild', 'From') }}: <code>{{ fromLabel }}</code> →
+				{{ t('openbuild', 'To') }}: <code>{{ toLabel }}</code>
 			</small>
 		</header>
 		<p v-if="loading" class="manifest-diff__loading">
@@ -45,14 +45,17 @@ export default {
 			type: String,
 			default: '',
 		},
+
 		from: {
 			type: String,
 			default: 'draft',
 		},
+
 		to: {
 			type: String,
 			default: '',
 		},
+
 		/**
 		 * Static mode (spec ai-copilot REQ-OBAIC-003/007): when either of
 		 * `fromManifest`/`toManifest` is provided the component diffs those
@@ -64,21 +67,25 @@ export default {
 			type: Object,
 			default: null,
 		},
+
 		toManifest: {
 			type: Object,
 			default: null,
 		},
+
 		/** Label shown for `from` in static mode (ignored otherwise). */
 		fromLabelText: {
 			type: String,
 			default: '',
 		},
+
 		/** Label shown for `to` in static mode (ignored otherwise). */
 		toLabelText: {
 			type: String,
 			default: '',
 		},
 	},
+
 	data() {
 		return {
 			fromBlob: null,
@@ -87,6 +94,7 @@ export default {
 			error: '',
 		}
 	},
+
 	computed: {
 		/**
 		 * Static mode (spec ai-copilot REQ-OBAIC-003/007): diff two in-memory
@@ -98,6 +106,7 @@ export default {
 		isStaticMode() {
 			return this.fromManifest !== null || this.toManifest !== null
 		},
+
 		/**
 		 * Observed behaviour of `fromLabel` (retrofit annotation).
 		 *
@@ -107,8 +116,11 @@ export default {
 			if (this.isStaticMode) {
 				return this.fromLabelText || t('openbuild', 'Current')
 			}
-			return this.from === 'draft' ? t('openbuild', 'Current draft') : (this.from.slice(0, 8) + '…')
+			return this.from === 'draft'
+				? t('openbuild', 'Current draft')
+				: this.from.slice(0, 8) + '…'
 		},
+
 		/**
 		 * Observed behaviour of `toLabel` (retrofit annotation).
 		 *
@@ -118,22 +130,32 @@ export default {
 			if (this.isStaticMode) {
 				return this.toLabelText || t('openbuild', 'Predicted')
 			}
-			return this.to === 'draft' ? t('openbuild', 'Current draft') : (this.to ? this.to.slice(0, 8) + '…' : '—')
+			return this.to === 'draft'
+				? t('openbuild', 'Current draft')
+				: this.to
+					? this.to.slice(0, 8) + '…'
+					: '—'
 		},
+
 		hasAnyContent() {
 			if (this.isStaticMode) {
 				return this.fromManifest !== null || this.toManifest !== null
 			}
 			return this.fromBlob !== null || this.toBlob !== null
 		},
+
 		/**
 		 * Observed behaviour of `diffParts` (retrofit annotation).
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		diffParts() {
-			const fromSource = this.isStaticMode ? this.fromManifest : this.fromBlob?.manifest
-			const toSource = this.isStaticMode ? this.toManifest : this.toBlob?.manifest
+			const fromSource = this.isStaticMode
+				? this.fromManifest
+				: this.fromBlob?.manifest
+			const toSource = this.isStaticMode
+				? this.toManifest
+				: this.toBlob?.manifest
 			const fromText = this.prettyManifest(fromSource)
 			const toText = this.prettyManifest(toSource)
 			if (!fromText && !toText) {
@@ -142,6 +164,7 @@ export default {
 			return diffLines(fromText, toText)
 		},
 	},
+
 	watch: {
 		/**
 		 * Observed behaviour of `from` (retrofit annotation).
@@ -151,6 +174,7 @@ export default {
 		from() {
 			this.fetch()
 		},
+
 		/**
 		 * Observed behaviour of `to` (retrofit annotation).
 		 *
@@ -159,6 +183,7 @@ export default {
 		to() {
 			this.fetch()
 		},
+
 		/**
 		 * Observed behaviour of `slug` (retrofit annotation).
 		 *
@@ -168,6 +193,7 @@ export default {
 			this.fetch()
 		},
 	},
+
 	/**
 	 * Observed behaviour of `mounted` (retrofit annotation).
 	 *
@@ -181,6 +207,7 @@ export default {
 			this.fetch()
 		}
 	},
+
 	methods: {
 		/**
 		 * Observed behaviour of `fetch` (retrofit annotation).
@@ -194,7 +221,9 @@ export default {
 			this.loading = true
 			this.error = ''
 			try {
-				const url = generateUrl(`/apps/openbuild/api/applications/${this.slug}/versions/diff`)
+				const url = generateUrl(
+					`/apps/openbuild/api/applications/${this.slug}/versions/diff`,
+				)
 				const { data } = await axios.get(url, {
 					params: { from: this.from, to: this.to },
 				})
@@ -208,6 +237,7 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * Observed behaviour of `prettyManifest` (retrofit annotation).
 		 *
@@ -226,6 +256,7 @@ export default {
 			}
 			return JSON.stringify(value, this.sortReplacer.bind(this), 2)
 		},
+
 		/**
 		 * Observed behaviour of `sortReplacer` (retrofit annotation).
 		 *
@@ -250,6 +281,7 @@ export default {
 			}
 			return val
 		},
+
 		/**
 		 * Observed behaviour of `partClass` (retrofit annotation).
 		 *

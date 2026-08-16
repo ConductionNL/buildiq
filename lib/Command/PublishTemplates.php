@@ -32,7 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenBuild\Command;
 
 use OCA\OpenBuild\Service\GitHubAppSyncService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -65,14 +65,14 @@ class PublishTemplates extends Command {
 	 * Constructor.
 	 *
 	 * @param GitHubAppSyncService $syncService The broker-routed GitHub sync service.
-	 * @param ObjectService $objectService OpenRegister object service (template lookup).
+	 * @param ObjectServiceInterface $objectService OpenRegister object service (template lookup).
 	 * @param LoggerInterface $logger PSR logger (secret-free diagnostics only).
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly GitHubAppSyncService $syncService,
-		private readonly ObjectService $objectService,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct();

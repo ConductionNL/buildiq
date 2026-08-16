@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\ApprovalStep;
 use OCA\OpenRegister\Event\ApprovalStepApprovedEvent;
 use OCA\OpenRegister\Event\ApprovalStepRejectedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -45,9 +46,9 @@ use Psr\Log\NullLogger;
  */
 final class ApprovalOutcomeListenerTest extends TestCase {
 	/**
-	 * @var ObjectService&MockObject
+	 * @var ObjectServiceInterface&MockObject
 	 */
-	private ObjectService&MockObject $objectService;
+	private ObjectServiceInterface&MockObject $objectService;
 
 	/**
 	 * @var AutomationCompilerService&MockObject
@@ -72,10 +73,11 @@ final class ApprovalOutcomeListenerTest extends TestCase {
 	 * @return void
 	 */
 	protected function setUp(): void {
-		$this->objectService = $this->createMock(ObjectService::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->compiler = $this->createMock(AutomationCompilerService::class);
 		$this->dispatcher = $this->createMock(RuleActionDispatcher::class);
-		$this->listener = new ApprovalOutcomeListener($this->objectService, $this->compiler, $this->dispatcher, new NullLogger());
+		$this->listener = new ApprovalOutcomeListener($this->objectService, $this->compiler, $this->dispatcher, new NullLogger(),
+		);
 
 	}//end setUp()
 

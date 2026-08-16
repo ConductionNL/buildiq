@@ -29,6 +29,7 @@ namespace OCA\OpenBuild\Tests\Unit\Controller;
 use OCA\OpenBuild\Controller\RulesController;
 use OCA\OpenBuild\Service\RuleEngineService;
 use OCA\OpenBuild\Service\RuleSetVersioningService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -62,9 +63,9 @@ final class RulesControllerTest extends TestCase {
 	private RuleSetVersioningService&MockObject $versioningService;
 
 	/**
-	 * @var ObjectService&MockObject
+	 * @var ObjectServiceInterface&MockObject
 	 */
-	private ObjectService&MockObject $objectService;
+	private ObjectServiceInterface&MockObject $objectService;
 
 	/**
 	 * @var IUserSession&MockObject
@@ -80,7 +81,7 @@ final class RulesControllerTest extends TestCase {
 		$this->request = $this->createMock(IRequest::class);
 		$this->ruleEngine = $this->createMock(RuleEngineService::class);
 		$this->versioningService = $this->createMock(RuleSetVersioningService::class);
-		$this->objectService = $this->createMock(ObjectService::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 
 	}//end setUp()
@@ -97,7 +98,7 @@ final class RulesControllerTest extends TestCase {
 			$this->ruleEngine,
 			$this->versioningService,
 			$this->objectService,
-			$this->userSession
+			$this->userSession,
 		);
 
 	}//end controller()

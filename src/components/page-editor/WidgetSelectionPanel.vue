@@ -18,16 +18,21 @@
 		</p>
 
 		<ul v-else class="widget-selection-panel__list">
-			<li v-for="widget in widgets" :key="widget.id" class="widget-selection-panel__row">
+			<li
+				v-for="widget in widgets"
+				:key="widget.id"
+				class="widget-selection-panel__row">
 				<label>
 					<input
 						type="checkbox"
 						:checked="isSelected(widget.id)"
-						@change="toggle(widget.id)">
+						@change="toggle(widget.id)" />
 					<span class="widget-selection-panel__label">
 						{{ widget.widgetKey || widget.id }}
 					</span>
-					<span class="widget-selection-panel__slot">{{ widget.slot }}</span>
+					<span class="widget-selection-panel__slot">{{
+						widget.slot
+					}}</span>
 				</label>
 			</li>
 		</ul>
@@ -37,16 +42,18 @@
 			class="widget-selection-panel__save-btn"
 			:disabled="selectedIds.length === 0"
 			@click="openSaveDialog">
-			{{ selectedIds.length > 1
-				? t('openbuild', 'Save selected section as block')
-				: t('openbuild', 'Save selected widget as block') }}
+			{{
+				selectedIds.length > 1
+					? t('openbuild', 'Save selected section as block')
+					: t('openbuild', 'Save selected widget as block')
+			}}
 		</button>
 
 		<SaveBlockDialog
 			:open="saveDialogOpen"
 			:application="application"
 			:fragment="captureFragment"
-			:existing-blocks="existingBlocks"
+			:existingBlocks="existingBlocks"
 			@update:open="saveDialogOpen = $event"
 			@saved="onSaved" />
 	</fieldset>
@@ -67,6 +74,7 @@ export default {
 		// Blocks already visible to the caller, for slug-collision checking.
 		existingBlocks: { type: Array, default: () => [] },
 	},
+
 	emits: ['saved'],
 	data() {
 		return {
@@ -74,6 +82,7 @@ export default {
 			saveDialogOpen: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * The fragment `SaveBlockDialog` will capture: the single selected
@@ -84,16 +93,22 @@ export default {
 		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		captureFragment() {
-			const selected = this.widgets.filter((w) => this.selectedIds.includes(w.id))
+			const selected = this.widgets.filter((w) =>
+				this.selectedIds.includes(w.id),
+			)
 			if (selected.length === 0) {
 				return null
 			}
 			if (selected.length === 1) {
 				return selected[0]
 			}
-			return buildSectionFragment(`section-${selected.map((w) => w.id).join('-')}`.slice(0, 60), selected)
+			return buildSectionFragment(
+				`section-${selected.map((w) => w.id).join('-')}`.slice(0, 60),
+				selected,
+			)
 		},
 	},
+
 	watch: {
 		/**
 		 * Drop any selection that no longer exists on the (possibly
@@ -107,6 +122,7 @@ export default {
 			this.selectedIds = this.selectedIds.filter((id) => ids.has(id))
 		},
 	},
+
 	methods: {
 		/**
 		 * Whether a widget id is currently checked.
@@ -117,6 +133,7 @@ export default {
 		isSelected(id) {
 			return this.selectedIds.includes(id)
 		},
+
 		/**
 		 * Toggle a widget's checked state.
 		 *
@@ -129,6 +146,7 @@ export default {
 				? this.selectedIds.filter((existing) => existing !== id)
 				: [...this.selectedIds, id]
 		},
+
 		/**
 		 * Open `SaveBlockDialog` for the current selection.
 		 *
@@ -140,6 +158,7 @@ export default {
 				this.saveDialogOpen = true
 			}
 		},
+
 		/**
 		 * Forward the saved event and reset selection.
 		 *

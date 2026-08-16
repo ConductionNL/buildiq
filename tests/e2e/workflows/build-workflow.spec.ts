@@ -57,9 +57,11 @@ import {
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 const authHeaders = {
 	'OCS-APIRequest': 'true',
-	Authorization: 'Basic ' + Buffer.from(
-		`${process.env.NC_ADMIN_USER ?? 'admin'}:${process.env.NC_ADMIN_PASSWORD ?? 'admin'}`,
-	).toString('base64'),
+	Authorization:
+		'Basic '
+		+ Buffer.from(
+			`${process.env.NC_ADMIN_USER ?? 'admin'}:${process.env.NC_ADMIN_PASSWORD ?? 'admin'}`,
+		).toString('base64'),
 }
 
 /** Resolve a virtual-app uuid by its slug via the OR objects API. */
@@ -72,7 +74,9 @@ async function appUuidBySlug(
 		{ headers: authHeaders },
 	)
 	const body = await res.json()
-	const rows: Array<Record<string, unknown>> = Array.isArray(body) ? body : (body.results ?? [])
+	const rows: Array<Record<string, unknown>> = Array.isArray(body)
+		? body
+		: (body.results ?? [])
 	const match = rows.find((r) => r.slug === slug)
 	return String(match?.id ?? match?.['@self']?.['id'] ?? '')
 }
@@ -89,10 +93,14 @@ async function gotoAppBrowser(page: Page): Promise<void> {
 	await page.goto('/apps/openbuild/applications')
 	await page
 		.waitForResponse(
-			(r) => r.url().includes('/objects/openbuild/application') && r.status() === 200,
+			(r) =>
+				r.url().includes('/objects/openbuild/application')
+				&& r.status() === 200,
 			{ timeout: 20_000 },
 		)
-		.catch(() => { /* possibly cached */ })
+		.catch(() => {
+			/* possibly cached */
+		})
 	await page.waitForTimeout(1500)
 }
 
@@ -101,10 +109,16 @@ test.describe('Build workflow — compose a virtual app with a data model', () =
 		await cleanupByPrefix(request)
 	})
 
-	test('create app via UI + add a 2-property schema → both persist as real artifacts', async ({ page, request }) => {
+	test('create app via UI + add a 2-property schema → both persist as real artifacts', async ({
+		page,
+		request,
+	}) => {
 		const appName = `${E2E_PREFIX} Build ${Math.floor(Math.random() * 1e4)}`
 		// Slug is auto-derived (kebab-case) from the name by the create wizard.
-		const appSlug = appName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+		const appSlug = appName
+			.toLowerCase()
+			.replace(/[^a-z0-9]+/g, '-')
+			.replace(/^-|-$/g, '')
 
 		// --- Step 1: create the virtual app through the real UI create wizard ---
 		// 3-step wizard: App basics (name, slug auto-derives) → version preset
@@ -112,22 +126,36 @@ test.describe('Build workflow — compose a virtual app with a data model', () =
 		await gotoAppBrowser(page)
 		// The button reads "Add app" (src/components/VirtualAppsActions.vue),
 		// not "Add application" — live-verified.
-		await page.getByRole('button', { name: /add app/i }).first().click()
+		await page
+			.getByRole('button', { name: /add app/i })
+			.first()
+			.click()
 		const dialog = page.locator('[role="dialog"], .modal-container').first()
 		await expect(dialog).toBeVisible({ timeout: 8_000 })
 
-		const nameInput = dialog.locator('input[placeholder*="My Permit Tracker" i]').first()
+		const nameInput = dialog
+			.locator('input[placeholder*="My Permit Tracker" i]')
+			.first()
 		await expect(nameInput).toBeVisible({ timeout: 8_000 })
 		await nameInput.fill(appName)
 		await dialog.getByRole('button', { name: /^next$/i }).click()
 
-		await expect(dialog.getByText(/choose a version preset/i)).toBeVisible({ timeout: 8_000 })
-		await dialog.getByRole('button', { name: /Single/i }).first().click()
+		await expect(dialog.getByText(/choose a version preset/i)).toBeVisible({
+			timeout: 8_000,
+		})
+		await dialog
+			.getByRole('button', { name: /Single/i })
+			.first()
+			.click()
 		await dialog.getByRole('button', { name: /^next$/i }).click()
 
-		await expect(dialog.getByText(/review and create/i)).toBeVisible({ timeout: 8_000 })
+		await expect(dialog.getByText(/review and create/i)).toBeVisible({
+			timeout: 8_000,
+		})
 		const createPost = page.waitForResponse(
-			(r) => r.url().includes('/api/applications/wizard') && r.request().method() === 'POST',
+			(r) =>
+				r.url().includes('/api/applications/wizard')
+				&& r.request().method() === 'POST',
 			{ timeout: 20_000 },
 		)
 		await dialog.getByRole('button', { name: /^create$/i }).click()
@@ -135,15 +163,22 @@ test.describe('Build workflow — compose a virtual app with a data model', () =
 		expect([200, 201]).toContain(createResp.status())
 
 		// The app is a real, independently-readable artifact (resolve by slug).
-		await expect.poll(async () => {
-			const res = await request.get(
-				`${BASE_URL}/index.php/apps/openregister/api/objects/openbuild/application?_limit=200`,
-				{ headers: authHeaders },
+		await expect
+			.poll(
+				async () => {
+					const res = await request.get(
+						`${BASE_URL}/index.php/apps/openregister/api/objects/openbuild/application?_limit=200`,
+						{ headers: authHeaders },
+					)
+					const body = await res.json()
+					const rows: Array<Record<string, unknown>> = Array.isArray(body)
+						? body
+						: (body.results ?? [])
+					return rows.some((r) => r.slug === appSlug)
+				},
+				{ timeout: 15_000 },
 			)
-			const body = await res.json()
-			const rows: Array<Record<string, unknown>> = Array.isArray(body) ? body : (body.results ?? [])
-			return rows.some((r) => r.slug === appSlug)
-		}, { timeout: 15_000 }).toBe(true)
+			.toBe(true)
 
 		// --- Step 2: give the app a data model — a schema with 2 typed fields ---
 		const schemaSlug = `${E2E_PREFIX}-build-model-${Math.floor(Math.random() * 1e4)}`
@@ -159,7 +194,10 @@ test.describe('Build workflow — compose a virtual app with a data model', () =
 		// Assert the produced data-model artifact: both fields persisted + typed.
 		const persistedSchema = await findSchema(request, schema.id)
 		expect(persistedSchema, 'schema artifact must be readable').not.toBeNull()
-		const props = (persistedSchema?.properties ?? {}) as Record<string, { type?: string }>
+		const props = (persistedSchema?.properties ?? {}) as Record<
+			string,
+			{ type?: string }
+		>
 		expect(Object.keys(props).sort()).toEqual(['done', 'title'])
 		expect(props.title.type).toBe('string')
 		expect(props.done.type).toBe('boolean')
@@ -172,9 +210,13 @@ test.describe('Build workflow — compose a virtual app with a data model', () =
 		}
 	})
 
-	test('seeded app data model survives an independent read-back (composability)', async ({ request }) => {
+	test('seeded app data model survives an independent read-back (composability)', async ({
+		request,
+	}) => {
 		// Compose: one app + two schemas (a richer data model).
-		const app = await seedVirtualApp(request, { name: `E2E Compose ${E2E_PREFIX}` })
+		const app = await seedVirtualApp(request, {
+			name: `E2E Compose ${E2E_PREFIX}`,
+		})
 		const a = await seedSchema(request, {
 			slug: `${E2E_PREFIX}-compose-a-${Math.floor(Math.random() * 1e4)}`,
 			title: 'Customer',
@@ -190,23 +232,36 @@ test.describe('Build workflow — compose a virtual app with a data model', () =
 		expect(await findVirtualApp(request, app.uuid)).not.toBeNull()
 		const sa = await findSchema(request, a.id)
 		const sb = await findSchema(request, b.id)
-		expect(Object.keys((sa?.properties ?? {}) as object).sort()).toEqual(['email', 'name'])
-		expect(Object.keys((sb?.properties ?? {}) as object).sort()).toEqual(['ref', 'total'])
+		expect(Object.keys((sa?.properties ?? {}) as object).sort()).toEqual([
+			'email',
+			'name',
+		])
+		expect(Object.keys((sb?.properties ?? {}) as object).sort()).toEqual([
+			'ref',
+			'total',
+		])
 
 		await deleteSchema(request, a.id)
 		await deleteSchema(request, b.id)
 		await deleteVirtualApp(request, app.uuid)
 	})
 
-	test('manifest endpoint surfaces the documented no-artifact state for an un-published app', async ({ request }) => {
+	test('manifest endpoint surfaces the documented no-artifact state for an un-published app', async ({
+		request,
+	}) => {
 		// A freshly-created app (no published version) honestly has no manifest.
 		// We assert the REAL backend contract for that state — a 404 with a
 		// not_found / no_manifest envelope — so a future regression (e.g. a 500
 		// from the duplicate-register class of bug, BUG-B, which we cleaned up)
 		// is caught. This is a true backend assertion, not a rendered shell.
-		const app = await seedVirtualApp(request, { name: `E2E Manifest ${E2E_PREFIX}` })
+		const app = await seedVirtualApp(request, {
+			name: `E2E Manifest ${E2E_PREFIX}`,
+		})
 		const { status, body } = await fetchManifest(request, app.slug)
-		expect(status, 'un-published app manifest must be a clean 404, never a 500').toBe(404)
+		expect(
+			status,
+			'un-published app manifest must be a clean 404, never a 500',
+		).toBe(404)
 		expect(JSON.stringify(body)).toMatch(/not_found|no_manifest|no published/i)
 		await deleteVirtualApp(request, app.uuid)
 	})
@@ -220,7 +275,9 @@ test.describe('Build workflow — compose a virtual app with a data model', () =
 	//           resolve a wizard-built app by slug. (The earlier BUG-C
 	//           `register`-property/reserved-key collision no longer reproduces —
 	//           OR persists the version's `register` field intact.)
-	test('BUILD → publish → assert produced manifest artifact', async ({ request }) => {
+	test('BUILD → publish → assert produced manifest artifact', async ({
+		request,
+	}) => {
 		// The wizard atomically creates the app, an ApplicationVersion carrying
 		// the rendered manifest, the BuiltAppRoute index, and the
 		// productionVersion pointer. The manifest endpoint then returns the
@@ -243,10 +300,22 @@ test.describe('Build workflow — compose a virtual app with a data model', () =
 		// A built app's manifest is version-stamped …
 		expect(manifest.version, 'manifest must be version-stamped').toBeTruthy()
 		// … carries its navigation (menu entries) …
-		expect(Array.isArray(manifest.menu), 'manifest must carry a menu array').toBe(true)
-		expect((manifest.menu as unknown[]).length, 'menu must have >=1 entry').toBeGreaterThan(0)
+		expect(
+			Array.isArray(manifest.menu),
+			'manifest must carry a menu array',
+		).toBe(true)
+		expect(
+			(manifest.menu as unknown[]).length,
+			'menu must have >=1 entry',
+		).toBeGreaterThan(0)
 		// … and its composed pages (the rendered surfaces), not an empty husk.
-		expect(Array.isArray(manifest.pages), 'manifest must carry a pages array').toBe(true)
-		expect((manifest.pages as unknown[]).length, 'pages must have >=1 entry').toBeGreaterThan(0)
+		expect(
+			Array.isArray(manifest.pages),
+			'manifest must carry a pages array',
+		).toBe(true)
+		expect(
+			(manifest.pages as unknown[]).length,
+			'pages must have >=1 entry',
+		).toBeGreaterThan(0)
 	})
 })

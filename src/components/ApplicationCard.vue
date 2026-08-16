@@ -12,7 +12,10 @@
   - caller's role.
   -->
 <template>
-	<div v-if="!hiddenByFilter" class="ob-app-card" :class="{ 'ob-app-card--selected': selected }">
+	<div
+		v-if="!hiddenByFilter"
+		class="ob-app-card"
+		:class="{ 'ob-app-card--selected': selected }">
 		<div
 			class="ob-app-card__inner"
 			tabindex="0"
@@ -26,20 +29,34 @@
 					:alt="app.name || app.slug"
 					width="20"
 					height="20"
-					@error="onIconError">
+					@error="onIconError" />
 				<h3 class="ob-app-card__title">
 					{{ app.name || app.slug || t('openbuild', 'Untitled app') }}
 				</h3>
-				<span class="ob-app-card__type" :class="`ob-app-card__type--${appTypeKey}`">{{ appTypeLabel }}</span>
-				<span class="ob-app-card__badge" :class="`ob-app-card__badge--${statusKey}`">{{ statusLabel }}</span>
+				<span
+					class="ob-app-card__type"
+					:class="`ob-app-card__type--${appTypeKey}`"
+					>{{ appTypeLabel }}</span
+				>
+				<span
+					class="ob-app-card__badge"
+					:class="`ob-app-card__badge--${statusKey}`"
+					>{{ statusLabel }}</span
+				>
 			</div>
 			<p v-if="app.description" class="ob-app-card__desc">
 				{{ app.description }}
 			</p>
 			<div class="ob-app-card__meta">
-				<span class="ob-app-card__chip">{{ t('openbuild', 'Version') }} {{ productionSemver }}</span>
-				<span v-if="role !== 'none'" class="ob-app-card__chip">{{ roleLabel }}</span>
-				<span class="ob-app-card__chip ob-app-card__chip--muted">/{{ app.slug }}</span>
+				<span class="ob-app-card__chip"
+					>{{ t('openbuild', 'Version') }} {{ productionSemver }}</span
+				>
+				<span v-if="role !== 'none'" class="ob-app-card__chip">{{
+					roleLabel
+				}}</span>
+				<span class="ob-app-card__chip ob-app-card__chip--muted"
+					>/{{ app.slug }}</span
+				>
 			</div>
 		</div>
 	</div>
@@ -47,10 +64,10 @@
 
 <script>
 import { imagePath } from '@nextcloud/router'
-import { useRole, getCurrentUserGroups } from '../composables/useRole.js'
+import { getCurrentUserGroups, useRole } from '../composables/useRole.js'
 import {
-	productionVersions,
 	ensureProductionVersionsLoaded,
+	productionVersions,
 } from '../store/productionVersions.js'
 
 export default {
@@ -61,6 +78,7 @@ export default {
 		item: { type: Object, default: null },
 		selected: { type: Boolean, default: false },
 	},
+
 	emits: ['click', 'select'],
 	computed: {
 		/**
@@ -71,6 +89,7 @@ export default {
 		app() {
 			return this.object || this.item || {}
 		},
+
 		/**
 		 * Resolve the production ApplicationVersion this card reports on.
 		 *
@@ -112,6 +131,7 @@ export default {
 			}
 			return null
 		},
+
 		/**
 		 * Semver string from the production ApplicationVersion, or '—' while
 		 * loading / when the application has no production version yet.
@@ -122,6 +142,7 @@ export default {
 		productionSemver() {
 			return (this.productionVersion && this.productionVersion.semver) || '—'
 		},
+
 		// CnDetailPage reads :objectId from $route.params, which we set here.
 		// OR returns the canonical id under @self.id; fall back to uuid/id for
 		// objects coming from older mock fixtures or pre-@self responses.
@@ -134,6 +155,7 @@ export default {
 			const self = this.app['@self'] || {}
 			return self.id || this.app.uuid || this.app.id || ''
 		},
+
 		/**
 		 * The app's type discriminator (unify-apps-with-app-type). An absent
 		 * `appType` reads as `virtual` (legacy default), matching the schema.
@@ -144,6 +166,7 @@ export default {
 		appTypeKey() {
 			return this.app.appType === 'hybrid' ? 'hybrid' : 'virtual'
 		},
+
 		/**
 		 * Human-readable label for the app type pill.
 		 *
@@ -155,6 +178,7 @@ export default {
 				? t('openbuild', 'Hybrid')
 				: t('openbuild', 'Virtual')
 		},
+
 		/**
 		 * Whether this card is hidden by the active all/virtual/hybrid filter,
 		 * read from the `?filter=` URL query param (set by VirtualAppsActions and
@@ -165,12 +189,14 @@ export default {
 		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
 		 */
 		hiddenByFilter() {
-			const filter = this.$route && this.$route.query ? this.$route.query.filter : null
+			const filter =
+				this.$route && this.$route.query ? this.$route.query.filter : null
 			if (!filter || filter === 'all') {
 				return false
 			}
 			return filter !== this.appTypeKey
 		},
+
 		/**
 		 * Status key resolved from productionVersion (spec C). Falls back to
 		 * 'draft' when no production version is present so the card has a
@@ -181,8 +207,11 @@ export default {
 		 */
 		statusKey() {
 			const status = this.productionVersion && this.productionVersion.status
-			return ['draft', 'published', 'archived'].includes(status) ? status : 'draft'
+			return ['draft', 'published', 'archived'].includes(status)
+				? status
+				: 'draft'
 		},
+
 		/**
 		 * Observed behaviour of `statusLabel` (retrofit annotation).
 		 *
@@ -195,6 +224,7 @@ export default {
 				archived: t('openbuild', 'Archived'),
 			}[this.statusKey]
 		},
+
 		/**
 		 * Observed behaviour of `role` (retrofit annotation).
 		 *
@@ -203,19 +233,23 @@ export default {
 		role() {
 			return useRole(this.app, getCurrentUserGroups())
 		},
+
 		/**
 		 * Observed behaviour of `roleLabel` (retrofit annotation).
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		roleLabel() {
-			return {
-				owner: t('openbuild', 'Owner'),
-				editor: t('openbuild', 'Editor'),
-				viewer: t('openbuild', 'Viewer'),
-			}[this.role] || ''
+			return (
+				{
+					owner: t('openbuild', 'Owner'),
+					editor: t('openbuild', 'Editor'),
+					viewer: t('openbuild', 'Viewer'),
+				}[this.role] || ''
+			)
 		},
 	},
+
 	/**
 	 * Kick off the page-wide production-version lookup.
 	 *
@@ -229,6 +263,7 @@ export default {
 	created() {
 		ensureProductionVersionsLoaded()
 	},
+
 	methods: {
 		/**
 		 * Observed behaviour of `onIconError` (retrofit annotation).
@@ -255,6 +290,7 @@ export default {
 			}
 			e.target.src = fallback
 		},
+
 		/**
 		 * Observed behaviour of `onCardActivate` (retrofit annotation).
 		 *
@@ -268,7 +304,10 @@ export default {
 		onCardActivate(event) {
 			this.$emit('click', event)
 			if (this.$router) {
-				this.$router.push({ name: 'VirtualAppDetail', params: { objectId: this.appUuid } })
+				this.$router.push({
+					name: 'VirtualAppDetail',
+					params: { objectId: this.appUuid },
+				})
 			}
 		},
 	},
@@ -289,7 +328,9 @@ export default {
 	border-radius: var(--border-radius-large, 8px);
 	cursor: pointer;
 	background: var(--color-main-background, #fff);
-	transition: border-color 0.1s ease, box-shadow 0.1s ease;
+	transition:
+		border-color 0.1s ease,
+		box-shadow 0.1s ease;
 }
 
 .ob-app-card__inner:hover,

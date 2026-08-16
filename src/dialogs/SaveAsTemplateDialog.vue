@@ -21,69 +21,126 @@
 		@closing="onClose">
 		<div class="ob-save-template">
 			<p class="ob-save-template__intro">
-				{{ t('openbuild', 'Publish this application as a reusable template your organisation can build new apps from.') }}
+				{{
+					t(
+						'openbuild',
+						'Publish this application as a reusable template your organisation can build new apps from.',
+					)
+				}}
 			</p>
 
 			<NcTextField
-				:model-value="form.title"
+				:modelValue="form.title"
 				:label="t('openbuild', 'Template title')"
 				@update:modelValue="onTitleInput" />
 			<NcTextField
-				:model-value="form.slug"
+				:modelValue="form.slug"
 				:label="t('openbuild', 'Slug (kebab-case, max 32 chars)')"
 				@update:modelValue="form.slug = $event" />
 			<NcTextField
-				:model-value="form.useCase"
+				:modelValue="form.useCase"
 				:label="t('openbuild', 'Use case (one line)')"
 				@update:modelValue="form.useCase = $event" />
 			<NcTextArea
-				:model-value="form.description"
+				:modelValue="form.description"
 				:label="t('openbuild', 'Description')"
 				@update:modelValue="form.description = $event" />
 			<NcSelect
 				v-model="categoryOption"
-				:input-label="t('openbuild', 'Category')"
+				:inputLabel="t('openbuild', 'Category')"
 				:options="categoryOptions"
 				:clearable="false" />
 			<NcTextField
-				:model-value="form.sourceUrl"
+				:modelValue="form.sourceUrl"
 				:label="t('openbuild', 'Source URL (optional)')"
 				@update:modelValue="form.sourceUrl = $event" />
 
 			<!-- Capture summary -->
 			<section class="ob-save-template__summary">
 				<h3>{{ t('openbuild', 'What will be captured') }}</h3>
-				<p>{{ t('openbuild', 'The application manifest and {count} companion schema(s).', { count: captureSummary.length }) }}</p>
+				<p>
+					{{
+						t(
+							'openbuild',
+							'The application manifest and {count} companion schema(s).',
+							{ count: captureSummary.length },
+						)
+					}}
+				</p>
 				<ul v-if="captureSummary.length" class="ob-save-template__schemas">
 					<li v-for="entry in captureSummary" :key="entry.sourceSlug">
 						<code>{{ entry.slug }}</code>
-						<span v-if="entry.shared" class="ob-save-template__shared-flag">
-							{{ t('openbuild', '(shared schema — captured unchanged, clones receive an independent copy)') }}
+						<span
+							v-if="entry.shared"
+							class="ob-save-template__shared-flag">
+							{{
+								t(
+									'openbuild',
+									'(shared schema — captured unchanged, clones receive an independent copy)',
+								)
+							}}
 						</span>
 					</li>
 				</ul>
 				<p class="ob-save-template__no-rows">
-					{{ t('openbuild', 'No object data (rows) is captured — a template is a definition, not a dataset.') }}
+					{{
+						t(
+							'openbuild',
+							'No object data (rows) is captured — a template is a definition, not a dataset.',
+						)
+					}}
 				</p>
 			</section>
 
 			<!-- Errors -->
 			<p v-if="collisionError" class="ob-save-template__error" role="alert">
-				{{ t('openbuild', 'Two schemas would collide under the same name: {schemas}. Rename one before saving.', { schemas: collisionError }) }}
+				{{
+					t(
+						'openbuild',
+						'Two schemas would collide under the same name: {schemas}. Rename one before saving.',
+						{ schemas: collisionError },
+					)
+				}}
 			</p>
-			<div v-if="validationErrors.length" class="ob-save-template__error" role="alert">
-				<p>{{ t('openbuild', 'The captured manifest is invalid and cannot be published:') }}</p>
+			<div
+				v-if="validationErrors.length"
+				class="ob-save-template__error"
+				role="alert">
+				<p>
+					{{
+						t(
+							'openbuild',
+							'The captured manifest is invalid and cannot be published:',
+						)
+					}}
+				</p>
 				<ul>
 					<li v-for="(err, idx) in validationErrors" :key="idx">
 						{{ err }}
 					</li>
 				</ul>
 			</div>
-			<p v-if="slugError === 'seeded-slug'" class="ob-save-template__error" role="alert">
-				{{ t('openbuild', 'That slug belongs to a Conduction-curated template and cannot be overwritten. Pick another slug.') }}
+			<p
+				v-if="slugError === 'seeded-slug'"
+				class="ob-save-template__error"
+				role="alert">
+				{{
+					t(
+						'openbuild',
+						'That slug belongs to a Conduction-curated template and cannot be overwritten. Pick another slug.',
+					)
+				}}
 			</p>
-			<p v-if="slugError === 'slug-taken'" class="ob-save-template__error" role="alert">
-				{{ t('openbuild', 'That slug is already used by a template you cannot edit. Pick another slug.') }}
+			<p
+				v-if="slugError === 'slug-taken'"
+				class="ob-save-template__error"
+				role="alert">
+				{{
+					t(
+						'openbuild',
+						'That slug is already used by a template you cannot edit. Pick another slug.',
+					)
+				}}
 			</p>
 			<p v-if="saveError" class="ob-save-template__error" role="alert">
 				{{ saveError }}
@@ -91,7 +148,12 @@
 
 			<!-- Update-in-place confirm -->
 			<p v-if="updateMode" class="ob-save-template__update-notice">
-				{{ t('openbuild', 'A template with this slug already exists. Saving will update it and bump its version. Previously cloned applications are not affected.') }}
+				{{
+					t(
+						'openbuild',
+						'A template with this slug already exists. Saving will update it and bump its version. Previously cloned applications are not affected.',
+					)
+				}}
 			</p>
 		</div>
 
@@ -99,10 +161,7 @@
 			<NcButton @click="onClose">
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
-			<NcButton
-				type="primary"
-				:disabled="!canSave || saving"
-				@click="save">
+			<NcButton variant="primary" :disabled="!canSave || saving" @click="save">
 				{{ saveLabel }}
 			</NcButton>
 		</template>
@@ -110,18 +169,23 @@
 </template>
 
 <script>
+import { validateManifest } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcDialog, NcSelect, NcTextField, NcTextArea } from '@nextcloud/vue'
-import { validateManifest } from '@conduction/nextcloud-vue'
-
 import {
-	TEMPLATE_CATEGORIES,
-	captureTemplate,
-	suggestSlug,
+	NcButton,
+	NcDialog,
+	NcSelect,
+	NcTextArea,
+	NcTextField,
+} from '@nextcloud/vue'
+import {
 	bumpMinor,
+	captureTemplate,
 	resolveSaveTarget,
 	SlugCollisionError,
+	suggestSlug,
+	TEMPLATE_CATEGORIES,
 } from '../services/templateCapture.js'
 
 const OR_TEMPLATES = '/apps/openregister/api/objects/openbuild/application-template'
@@ -149,6 +213,7 @@ export default {
 		// OR's per-object writability hint off each record.
 		existingTemplates: { type: Array, default: () => [] },
 	},
+
 	emits: ['update:open', 'saved'],
 	data() {
 		return {
@@ -159,6 +224,7 @@ export default {
 				description: '',
 				sourceUrl: '',
 			},
+
 			categoryOption: null,
 			slugEditedManually: false,
 			saving: false,
@@ -166,6 +232,7 @@ export default {
 			collisionError: '',
 		}
 	},
+
 	computed: {
 		/**
 		 * Category picker options over the REQ-OBTC-001 enum.
@@ -178,6 +245,7 @@ export default {
 				label: t('openbuild', CATEGORY_LABELS[value] || value),
 			}))
 		},
+
 		/**
 		 * The selected category id (or '' when none picked).
 		 *
@@ -186,6 +254,7 @@ export default {
 		selectedCategory() {
 			return this.categoryOption?.id ?? this.categoryOption ?? ''
 		},
+
 		/**
 		 * The capture result — record + summary — or null when capture
 		 * throws a de-namespace collision (surfaced via `collisionError`).
@@ -212,6 +281,7 @@ export default {
 				return null
 			}
 		},
+
 		/**
 		 * Capture summary (companion schema list) for the dialog body.
 		 *
@@ -220,6 +290,7 @@ export default {
 		captureSummary() {
 			return this.capture ? this.capture.summary.companionSchemas : []
 		},
+
 		/**
 		 * Validation errors of the CAPTURED (de-namespaced) manifest — the
 		 * exact blob a clone will consume (REQ-SAT-003).
@@ -239,6 +310,7 @@ export default {
 				return [`validator threw: ${e && e.message ? e.message : e}`]
 			}
 		},
+
 		/**
 		 * Resolve what saving this slug does (create / update / error)
 		 * against the visible templates (REQ-SAT-004).
@@ -246,12 +318,11 @@ export default {
 		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
 		 */
 		saveTarget() {
-			return resolveSaveTarget(
-				this.form.slug,
-				this.existingTemplates,
-				(tpl) => this.isWritable(tpl),
+			return resolveSaveTarget(this.form.slug, this.existingTemplates, (tpl) =>
+				this.isWritable(tpl),
 			)
 		},
+
 		/**
 		 * The slug-collision error code (`seeded-slug` / `slug-taken`) or ''.
 		 *
@@ -260,6 +331,7 @@ export default {
 		slugError() {
 			return this.saveTarget.error || ''
 		},
+
 		/**
 		 * True when saving will update an existing own template in place.
 		 *
@@ -268,28 +340,36 @@ export default {
 		updateMode() {
 			return this.saveTarget.mode === 'update'
 		},
+
 		/**
 		 * Slug well-formedness (mirrors the clone dialog's pattern).
 		 *
 		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
 		 */
 		slugValid() {
-			return /^[a-z0-9]+(-[a-z0-9]+)*$/.test(this.form.slug) && this.form.slug.length <= 32
+			return (
+				/^[a-z0-9]+(-[a-z0-9]+)*$/.test(this.form.slug)
+				&& this.form.slug.length <= 32
+			)
 		},
+
 		/**
 		 * Whether Save is allowed (REQ-SAT-002/003/004 gates).
 		 *
 		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
 		 */
 		canSave() {
-			return this.form.title.trim().length > 0
+			return (
+				this.form.title.trim().length > 0
 				&& this.slugValid
 				&& !!this.selectedCategory
 				&& !!this.capture
 				&& !this.collisionError
 				&& this.validationErrors.length === 0
 				&& !this.slugError
+			)
 		},
+
 		/**
 		 * Save button label — varies for create vs update-in-place.
 		 *
@@ -299,9 +379,12 @@ export default {
 			if (this.saving) {
 				return t('openbuild', 'Saving…')
 			}
-			return this.updateMode ? t('openbuild', 'Update template') : t('openbuild', 'Save as template')
+			return this.updateMode
+				? t('openbuild', 'Update template')
+				: t('openbuild', 'Save as template')
 		},
 	},
+
 	watch: {
 		/**
 		 * Reset the form each time the dialog opens, prefilled from the app.
@@ -317,6 +400,7 @@ export default {
 				this.resetForm()
 			}
 		},
+
 		/**
 		 * Keep the de-namespace collision message in sync with the capture
 		 * attempt (capture throws when two schemas collide).
@@ -330,15 +414,18 @@ export default {
 			handler() {
 				this.recomputeCollision()
 			},
+
 			immediate: true,
 		},
+
 		/**
 		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
 		 */
-		'form.slug'() {
+		'form.slug': function () {
 			this.slugEditedManually = true
 		},
 	},
+
 	/**
 	 * Prefill on mount when already open (the parent renders the dialog
 	 * with `v-if="open"`, so `created` fires with `open: true`).
@@ -351,6 +438,7 @@ export default {
 			this.resetForm()
 		}
 	},
+
 	methods: {
 		/**
 		 * Prefill the form from the source Application.
@@ -363,7 +451,10 @@ export default {
 			this.form = {
 				title: app.name || app.slug || '',
 				slug: suggestSlug(app.name || app.slug || ''),
-				useCase: app.description ? String(app.description).split('\n')[0].slice(0, 120) : '',
+				useCase: app.description
+					? String(app.description).split('\n')[0].slice(0, 120)
+					: '',
+
 				description: app.description || '',
 				sourceUrl: '',
 			}
@@ -373,6 +464,7 @@ export default {
 			this.saveError = ''
 			this.recomputeCollision()
 		},
+
 		/**
 		 * Update the title and auto-suggest the slug until the user edits
 		 * the slug field by hand.
@@ -389,6 +481,7 @@ export default {
 				this.slugEditedManually = false
 			}
 		},
+
 		/**
 		 * Recompute the de-namespace collision message by attempting a
 		 * capture; SlugCollisionError names both colliding schemas.
@@ -398,11 +491,16 @@ export default {
 		 */
 		recomputeCollision() {
 			try {
-				captureTemplate(this.application || {}, this.schemas, this.manifest, {
-					title: this.form.title,
-					slug: this.form.slug,
-					category: this.selectedCategory,
-				})
+				captureTemplate(
+					this.application || {},
+					this.schemas,
+					this.manifest,
+					{
+						title: this.form.title,
+						slug: this.form.slug,
+						category: this.selectedCategory,
+					},
+				)
 				this.collisionError = ''
 			} catch (e) {
 				if (e instanceof SlugCollisionError) {
@@ -412,6 +510,7 @@ export default {
 				}
 			}
 		},
+
 		/**
 		 * Read OR's per-object writability for a template record. OR returns
 		 * an `@self.permissions` / `permissions` hint; we treat an explicit
@@ -430,6 +529,7 @@ export default {
 			}
 			return true
 		},
+
 		/**
 		 * Close the dialog.
 		 *
@@ -442,6 +542,7 @@ export default {
 			}
 			this.$emit('update:open', false)
 		},
+
 		/**
 		 * Persist the captured template via OR REST — create or
 		 * update-in-place per `saveTarget` (REQ-SAT-004, REQ-SAT-006).
@@ -460,9 +561,14 @@ export default {
 				const record = { ...this.capture.record }
 				if (target.mode === 'update') {
 					const existing = target.record
-					const uuid = (existing['@self'] && existing['@self'].id) || existing.uuid || existing.id
+					const uuid =
+						(existing['@self'] && existing['@self'].id)
+						|| existing.uuid
+						|| existing.id
 					record.version = bumpMinor(existing.version)
-					const url = generateUrl(`${OR_TEMPLATES}/${encodeURIComponent(uuid)}`)
+					const url = generateUrl(
+						`${OR_TEMPLATES}/${encodeURIComponent(uuid)}`,
+					)
 					await axios.put(url, { ...existing, ...record })
 				} else {
 					await axios.post(generateUrl(OR_TEMPLATES), record)
@@ -471,7 +577,11 @@ export default {
 				this.$emit('update:open', false)
 			} catch (e) {
 				const data = e?.response?.data
-				this.saveError = data?.detail || data?.error || e?.message || t('openbuild', 'Saving the template failed.')
+				this.saveError =
+					data?.detail
+					|| data?.error
+					|| e?.message
+					|| t('openbuild', 'Saving the template failed.')
 			} finally {
 				this.saving = false
 			}

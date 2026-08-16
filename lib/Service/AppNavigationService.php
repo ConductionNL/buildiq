@@ -41,7 +41,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuild\Service;
 
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\INavigationManager;
@@ -106,7 +106,7 @@ class AppNavigationService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService OpenRegister object service
+	 * @param ObjectServiceInterface $objectService OpenRegister object service
 	 * @param IURLGenerator $urlGenerator URL generator
 	 * @param IUserSession $userSession User session
 	 * @param IGroupManager $groupManager Group manager
@@ -116,7 +116,7 @@ class AppNavigationService {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,

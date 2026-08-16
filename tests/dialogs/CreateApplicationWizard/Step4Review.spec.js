@@ -62,7 +62,6 @@ function mountStep4(payloadOverrides = {}) {
 // ---------------------------------------------------------------------------
 
 describe('Step4Review.vue — spec task 6.5', () => {
-
 	// -------------------------------------------------------------------------
 	// Read-only summary fields
 	// -------------------------------------------------------------------------
@@ -89,8 +88,8 @@ describe('Step4Review.vue — spec task 6.5', () => {
 		// Should not find the description dd element
 		const rows = wrapper.findAll('.wizard-step4__row')
 		// VTU v2 `findAll` returns a plain Array — v1's `.wrappers` is gone.
-		const rowTexts = rows.map(r => r.text())
-		expect(rowTexts.some(t => t.includes('Description'))).toBe(false)
+		const rowTexts = rows.map((r) => r.text())
+		expect(rowTexts.some((t) => t.includes('Description'))).toBe(false)
 	})
 
 	// -------------------------------------------------------------------------
@@ -260,8 +259,10 @@ describe('Step4Review.vue — spec task 6.5', () => {
 	// picker stores a VALUE (`iconValue` / `iconDarkValue`) — raw SVG, or a glyph
 	// key — which Step4Review resolves to SVG markup via `resolveAppIcon`. These
 	// tests drive that contract; there is no `URL.createObjectURL` in the path.
-	const LIGHT_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0z"/></svg>'
-	const DARK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/></svg>'
+	const LIGHT_SVG =
+		'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0z"/></svg>'
+	const DARK_SVG =
+		'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/></svg>'
 
 	it('does not render icons section when neither icon nor iconDark provided', () => {
 		const wrapper = mountStep4({ iconValue: null, iconDarkValue: null })

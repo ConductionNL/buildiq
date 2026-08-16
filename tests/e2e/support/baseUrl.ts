@@ -70,7 +70,8 @@ const CI_DEFAULT_BASE_URL = 'http://localhost:8080'
  * @throws {Error} When no target is configured and this is not a CI runner.
  */
 export function resolveE2EBaseURL(): string {
-	const explicit = process.env.PLAYWRIGHT_BASE_URL
+	const explicit =
+		process.env.PLAYWRIGHT_BASE_URL
 		|| process.env.NC_BASE_URL
 		|| process.env.NEXTCLOUD_URL
 		// Exported by the shared ConductionNL/.github quality workflow.
@@ -84,18 +85,18 @@ export function resolveE2EBaseURL(): string {
 		// eslint-disable-next-line no-console
 		console.warn(
 			'[openbuild e2e] no PLAYWRIGHT_BASE_URL / NEXTCLOUD_URL / NC_BASE_URL / BASE_URL set; '
-			+ `using the CI-local default ${CI_DEFAULT_BASE_URL}.`,
+				+ `using the CI-local default ${CI_DEFAULT_BASE_URL}.`,
 		)
 		return CI_DEFAULT_BASE_URL
 	}
 
 	throw new Error(
 		'[openbuild e2e] No target Nextcloud configured. Set PLAYWRIGHT_BASE_URL (preferred), '
-		+ 'NC_BASE_URL, NEXTCLOUD_URL or BASE_URL to the instance you want to test, e.g.\n\n'
-		+ '    PLAYWRIGHT_BASE_URL=http://localhost:8099 npx playwright test\n\n'
-		+ 'There is deliberately no default off CI: the historic one was http://localhost:8080, '
-		+ 'the SHARED development container, and this suite WRITES (applications, schemas, users) — '
-		+ "running it there corrupts other people's environments while reporting green.",
+			+ 'NC_BASE_URL, NEXTCLOUD_URL or BASE_URL to the instance you want to test, e.g.\n\n'
+			+ '    PLAYWRIGHT_BASE_URL=http://localhost:8099 npx playwright test\n\n'
+			+ 'There is deliberately no default off CI: the historic one was http://localhost:8080, '
+			+ 'the SHARED development container, and this suite WRITES (applications, schemas, users) — '
+			+ "running it there corrupts other people's environments while reporting green.",
 	)
 }
 
