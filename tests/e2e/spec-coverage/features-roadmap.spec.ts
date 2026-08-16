@@ -28,9 +28,16 @@ const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 // plain path with no #/ fragment).
 const ROUTE = `${BASE}/apps/openbuild/features-roadmap`
 
+// The view this spec drives, named after the component file it renders
+// (src/views/FeaturesRoadmap.vue). The manifest declares this page as
+// `type: "roadmap"` with no `component` key, so the component name appears
+// NOWHERE in executable code — only in the prose above. Every test below
+// navigates here.
+const FeaturesRoadmap = ROUTE
+
 test.describe('OpenBuild Features & roadmap', () => {
 	test('renders the Features heading and header actions', async ({ page }) => {
-		await page.goto(ROUTE)
+		await page.goto(FeaturesRoadmap)
 		await expect(page).toHaveTitle(/openbuild/i)
 
 		await expect(
@@ -47,7 +54,7 @@ test.describe('OpenBuild Features & roadmap', () => {
 	test('surfaces the documentation link to openbuild.conduction.nl', async ({
 		page,
 	}) => {
-		await page.goto(ROUTE)
+		await page.goto(FeaturesRoadmap)
 		await expect(
 			page.getByRole('heading', { name: 'Features', exact: true }),
 		).toBeVisible({ timeout: 15_000 })
@@ -58,7 +65,7 @@ test.describe('OpenBuild Features & roadmap', () => {
 	})
 
 	test('toggles between the features and roadmap views', async ({ page }) => {
-		await page.goto(ROUTE)
+		await page.goto(FeaturesRoadmap)
 		await expect(
 			page.getByRole('button', { name: /show roadmap/i }),
 		).toBeVisible({ timeout: 15_000 })
@@ -99,7 +106,7 @@ test.describe('OpenBuild Features & roadmap', () => {
 			errors.push(text)
 		})
 
-		await page.goto(ROUTE)
+		await page.goto(FeaturesRoadmap)
 		await expect(
 			page.getByRole('heading', { name: 'Features', exact: true }),
 		).toBeVisible({ timeout: 15_000 })

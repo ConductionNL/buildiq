@@ -140,6 +140,12 @@ class StoreController extends Controller {
 	 * @return JSONResponse 200 with `{outcome, cards}`; 401 for anonymous.
 	 *
 	 * @spec openspec/specs/openbuild-remote-template-store/spec.md
+	 *
+	 * @no-admin-idor-exempt Addresses no openbuild-owned object: the slug identifies a
+	 *   template in an EXTERNAL catalogue (the configured store registry / a GitHub
+	 *   repo), so there is nothing of another tenant's to reach by guessing it. The
+	 *   install path CREATES a new app owned by the calling user rather than reading
+	 *   an existing one.
 	 */
 	#[NoAdminRequired]
 	public function search(): JSONResponse {
@@ -229,6 +235,12 @@ class StoreController extends Controller {
 	 * @return JSONResponse 201 with the new app; 400/401/404/5xx on failure.
 	 *
 	 * @spec openspec/specs/openbuild-remote-template-store/spec.md
+	 *
+	 * @no-admin-idor-exempt Addresses no openbuild-owned object: the slug identifies a
+	 *   template in an EXTERNAL catalogue (the configured store registry / a GitHub
+	 *   repo), so there is nothing of another tenant's to reach by guessing it. The
+	 *   install path CREATES a new app owned by the calling user rather than reading
+	 *   an existing one.
 	 */
 	#[NoAdminRequired]
 	public function install(string $slug): JSONResponse {
