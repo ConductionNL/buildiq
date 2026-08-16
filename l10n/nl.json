@@ -1,5 +1,7 @@
 {
     "translations": {
+        "Edit flows…": "Flows bewerken…",
+        "/api/objects/:slug/…": "/api/objects/:slug/…",
         "Failed to load flows": "Flows laden mislukt",
         "Flows": "Flows",
         "Flows this app is made of": "Flows waaruit deze app bestaat",

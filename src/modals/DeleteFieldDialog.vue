@@ -24,7 +24,7 @@
 			<NcButton @click="onCancel">
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
-			<NcButton type="error" @click="onConfirm">
+			<NcButton variant="error" @click="onConfirm">
 				{{ t('openbuild', 'Delete property') }}
 			</NcButton>
 		</template>

@@ -33,10 +33,10 @@ const baseStubs = {
 	// `emits: ['click', 'update:pressed']`, so it never fires twice.
 	NcButton: {
 		name: 'NcButton',
-		props: ['type', 'disabled'],
+		props: ['type', 'variant', 'disabled'],
 		emits: ['click'],
 		template:
-			'<button :disabled="disabled" :data-type="type" @click="$emit(\'click\', $event)"><slot /></button>',
+			'<button :disabled="disabled" :data-type="variant || type" @click="$emit(\'click\', $event)"><slot /></button>',
 	},
 	// Vue 3 `v-model` on a component means `modelValue` / `update:modelValue`.
 	// The real NcCheckboxRadioSwitch (@nextcloud/vue 9) follows that; the Vue 2

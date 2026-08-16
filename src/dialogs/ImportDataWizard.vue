@@ -78,7 +78,7 @@
 						:disabled="!schemaOptions.length" />
 					<NcButton
 						v-if="selectedSchema"
-						type="tertiary"
+						variant="tertiary"
 						class="ob-import-wizard__template-btn"
 						@click="downloadTemplate">
 						<template #icon>
@@ -109,7 +109,7 @@
 					class="ob-import-wizard__file-input"
 					accept=".xlsx,.xls,.csv,.json"
 					@change="onFileChosen" />
-				<NcButton type="secondary" @click="pickFile">
+				<NcButton variant="secondary" @click="pickFile">
 					<template #icon>
 						<UploadIcon :size="20" />
 					</template>
@@ -273,7 +273,7 @@
 				</ul>
 				<NcButton
 					v-if="result.errorsCsv"
-					type="tertiary"
+					variant="tertiary"
 					@click="downloadErrorCsv">
 					<template #icon>
 						<DownloadIcon :size="20" />
@@ -286,20 +286,20 @@
 		<template #actions>
 			<NcButton
 				v-if="step > 1 && step < 5 && !importing"
-				type="tertiary"
+				variant="tertiary"
 				@click="back">
 				{{ t('openbuild', 'Back') }}
 			</NcButton>
 			<NcButton
 				v-if="step < 4"
-				type="primary"
+				variant="primary"
 				:disabled="!canAdvance"
 				@click="next">
 				{{ t('openbuild', 'Next') }}
 			</NcButton>
 			<NcButton
 				v-else-if="step === 4"
-				type="primary"
+				variant="primary"
 				:disabled="importing"
 				@click="runImport">
 				{{ t('openbuild', 'Import') }}
@@ -307,7 +307,7 @@
 			<template v-else>
 				<NcButton
 					v-if="result.importJobId"
-					type="warning"
+					variant="warning"
 					:disabled="undoing"
 					@click="undo">
 					{{
@@ -316,7 +316,7 @@
 							: t('openbuild', 'Undo import')
 					}}
 				</NcButton>
-				<NcButton type="primary" @click="onClose">
+				<NcButton variant="primary" @click="onClose">
 					{{ t('openbuild', 'Done') }}
 				</NcButton>
 			</template>

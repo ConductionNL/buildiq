@@ -15,10 +15,16 @@
 	<div class="automations-page">
 		<header class="automations-page__header">
 			<h2>{{ t('openbuild', 'Automations') }}</h2>
-			<NcButton variant="secondary" :disabled="!selectedApp" @click="openFlows">
+			<NcButton
+				variant="secondary"
+				:disabled="!selectedApp"
+				@click="openFlows">
 				{{ t('openbuild', 'Edit flows…') }}
 			</NcButton>
-			<NcButton variant="primary" :disabled="!selectedVersionId" @click="openNew">
+			<NcButton
+				variant="primary"
+				:disabled="!selectedVersionId"
+				@click="openNew">
 				{{ t('openbuild', 'New automation') }}
 			</NcButton>
 		</header>

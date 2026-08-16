@@ -25,10 +25,10 @@
 			</dl>
 		</template>
 		<template #actions>
-			<NcButton type="tertiary" @click="cancel">
+			<NcButton variant="tertiary" @click="cancel">
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
-			<NcButton type="primary" @click="confirm">
+			<NcButton variant="primary" @click="confirm">
 				{{ t('openbuild', 'Roll back') }}
 			</NcButton>
 		</template>

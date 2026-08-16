@@ -84,7 +84,7 @@
 			</ul>
 
 			<div class="openbuild-permission-history__actions">
-				<NcButton type="primary" @click="onClose">
+				<NcButton variant="primary" @click="onClose">
 					{{ t('openbuild', 'Close') }}
 				</NcButton>
 			</div>

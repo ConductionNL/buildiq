@@ -1,5 +1,8 @@
 {
     "translations": {
+        "Edit flows…": "Edit flows…",
+        "/api/objects/:slug/…": "/api/objects/:slug/…",
+        "https://…/markers.json": "https://…/markers.json",
         "Failed to load flows": "Failed to load flows",
         "Flows": "Flows",
         "Flows this app is made of": "Flows this app is made of",

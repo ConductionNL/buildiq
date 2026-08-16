@@ -72,7 +72,7 @@
 			</div>
 
 			<NcButton variant="primary" type="submit" :disabled="saving">
-				{{ saving ? t('openbuild', 'Saving...') : t('openbuild', 'Save') }}
+				{{ saving ? t('openbuild', 'Saving…') : t('openbuild', 'Save') }}
 			</NcButton>
 		</form>
 	</CnSettingsSection>

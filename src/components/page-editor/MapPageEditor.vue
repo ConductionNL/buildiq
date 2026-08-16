@@ -138,7 +138,7 @@
 								&& config.markers.dataSource.url)
 							|| ''
 						"
-						:placeholder="t('openbuild', 'https://.../markers.json')"
+						:placeholder="t('openbuild', 'https://…/markers.json')"
 						@input="
 							updateMarkerDataSourceField('url', $event.target.value)
 						" />

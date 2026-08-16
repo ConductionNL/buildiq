@@ -17,7 +17,7 @@
 			</h3>
 			<div class="ob-theme-section__actions">
 				<NcButton
-					type="secondary"
+					variant="secondary"
 					:disabled="!nldesignAvailable"
 					:title="
 						nldesignAvailable
@@ -30,7 +30,7 @@
 					@click="openPicker">
 					{{ t('openbuild', 'Change') }}
 				</NcButton>
-				<NcButton v-if="theme" type="tertiary" @click="removeTheme">
+				<NcButton v-if="theme" variant="tertiary" @click="removeTheme">
 					{{ t('openbuild', 'Remove') }}
 				</NcButton>
 			</div>

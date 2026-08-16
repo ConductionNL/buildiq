@@ -12,7 +12,7 @@
 	<div class="connector-field-mapper">
 		<div class="connector-field-mapper__toolbar">
 			<NcButton
-				type="tertiary"
+				variant="tertiary"
 				:disabled="refreshing"
 				@click="$emit('refetch-sample')">
 				{{ t('openbuild', 'Re-fetch sample') }}
@@ -107,7 +107,7 @@
 					</td>
 					<td>
 						<NcButton
-							type="tertiary"
+							variant="tertiary"
 							:aria-label="t('openbuild', 'Remove field')"
 							@click="removeField(row.name)">
 							{{ t('openbuild', 'Remove') }}

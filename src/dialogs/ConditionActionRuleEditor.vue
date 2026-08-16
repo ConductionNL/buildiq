@@ -47,11 +47,11 @@
 					v-model="action.type"
 					:inputLabel="t('openbuild', 'Action type')"
 					:options="actionTypes" />
-				<NcButton type="tertiary" @click="removeAction(index)">
+				<NcButton variant="tertiary" @click="removeAction(index)">
 					{{ t('openbuild', 'Remove') }}
 				</NcButton>
 			</div>
-			<NcButton type="secondary" @click="addAction">
+			<NcButton variant="secondary" @click="addAction">
 				{{ t('openbuild', 'Add action') }}
 			</NcButton>
 
@@ -70,8 +70,8 @@
 			<NcButton @click="$emit('close')">
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
-			<NcButton type="primary" :disabled="saving" @click="save">
-				{{ saving ? t('openbuild', 'Saving...') : t('openbuild', 'Save') }}
+			<NcButton variant="primary" :disabled="saving" @click="save">
+				{{ saving ? t('openbuild', 'Saving…') : t('openbuild', 'Save') }}
 			</NcButton>
 		</template>
 	</NcDialog>
