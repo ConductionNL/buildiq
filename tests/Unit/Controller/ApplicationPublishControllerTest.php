@@ -36,6 +36,7 @@ use OCA\OpenBuild\Service\ApplicationDeletionService;
 use OCA\OpenBuild\Service\Credential\VirtualAppCredentialRegistrar;
 use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
 use OCP\IGroupManager;
@@ -56,9 +57,9 @@ class ApplicationPublishControllerTest extends TestCase {
 	private IRequest&MockObject $request;
 
 	/**
-	 * @var ObjectService&MockObject
+	 * @var ObjectServiceInterface&MockObject
 	 */
-	private ObjectService&MockObject $objectService;
+	private ObjectServiceInterface&MockObject $objectService;
 
 	/**
 	 * @var IUserSession&MockObject
@@ -94,7 +95,7 @@ class ApplicationPublishControllerTest extends TestCase {
 		parent::setUp();
 
 		$this->request = $this->createMock(IRequest::class);
-		$this->objectService = $this->createMock(ObjectService::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->groupManager->method('getUserGroups')->willReturn([]);

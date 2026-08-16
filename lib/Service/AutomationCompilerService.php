@@ -117,7 +117,7 @@ use OCA\OpenRegister\Db\ApprovalChainMapper;
 use OCA\OpenRegister\Db\ApprovalStepMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -188,7 +188,7 @@ class AutomationCompilerService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService OpenRegister object service (ADR-022 boundary).
+	 * @param ObjectServiceInterface $objectService OpenRegister object service (ADR-022 boundary).
 	 * @param SchemaMapper $schemaMapper OR schema mapper — mutates schema
 	 *                                   `configuration` (`x-openregister-notifications` /
 	 *                                   `x-openregister-lifecycle`).
@@ -204,7 +204,7 @@ class AutomationCompilerService {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly ApprovalChainMapper $approvalChainMapper,
 		private readonly ApprovalStepMapper $approvalStepMapper,

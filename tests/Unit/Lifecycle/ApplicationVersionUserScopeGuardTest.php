@@ -32,6 +32,7 @@ namespace OCA\OpenBuild\Tests\Unit\Lifecycle;
 use OCA\OpenBuild\Lifecycle\ApplicationVersionOwnerGuard;
 use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -48,9 +49,9 @@ class ApplicationVersionUserScopeGuardTest extends TestCase {
 	/**
 	 * Mocked ObjectService for stub-loading the parent Application.
 	 *
-	 * @var ObjectService&MockObject
+	 * @var ObjectServiceInterface&MockObject
 	 */
-	private ObjectService&MockObject $objectService;
+	private ObjectServiceInterface&MockObject $objectService;
 
 	/**
 	 * Mocked group manager passed to the real PermissionResolver.
@@ -80,7 +81,7 @@ class ApplicationVersionUserScopeGuardTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$this->objectService = $this->createMock(originalClassName: ObjectService::class);
+		$this->objectService = $this->createMock(originalClassName: ObjectServiceInterface::class);
 		$this->groupManager = $this->createMock(originalClassName: IGroupManager::class);
 		$this->userManager = $this->createMock(originalClassName: IUserManager::class);
 		$logger = $this->createMock(originalClassName: LoggerInterface::class);

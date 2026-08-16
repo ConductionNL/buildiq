@@ -35,7 +35,7 @@ use OCA\OpenBuild\Service\ManifestResolverService;
 use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IGroup;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -74,7 +74,7 @@ class ManifestResolverServicePermissionFilterTest extends TestCase {
 		$permissionResolver = new PermissionResolver($groupManager, $this->createMock(LoggerInterface::class));
 
 		return new ManifestResolverService(
-			objectService: $this->createMock(ObjectService::class),
+			objectService: $this->createMock(ObjectServiceInterface::class),
 			registerMapper: $this->createMock(RegisterMapper::class),
 			schemaMapper: $this->createMock(SchemaMapper::class),
 			logger: $this->createMock(LoggerInterface::class),

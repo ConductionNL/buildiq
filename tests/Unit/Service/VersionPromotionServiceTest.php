@@ -37,6 +37,7 @@ use OCA\OpenBuild\Service\VersionPromotionService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -53,9 +54,9 @@ class VersionPromotionServiceTest extends TestCase {
 	private LoggerInterface&MockObject $logger;
 
 	/**
-	 * @var ObjectService&MockObject
+	 * @var ObjectServiceInterface&MockObject
 	 */
-	private ObjectService&MockObject $objectService;
+	private ObjectServiceInterface&MockObject $objectService;
 
 	/**
 	 * @var RegisterMapper&MockObject
@@ -76,7 +77,7 @@ class VersionPromotionServiceTest extends TestCase {
 		parent::setUp();
 
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->objectService = $this->createMock(ObjectService::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 
 		$this->service = new VersionPromotionService(

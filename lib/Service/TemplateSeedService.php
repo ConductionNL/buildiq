@@ -38,7 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuild\Service;
 
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
@@ -80,14 +80,14 @@ class TemplateSeedService {
 	 *
 	 * @param LoggerInterface $logger The logger
 	 * @param IAppManager $appManager The app manager (for the fixtures path)
-	 * @param ObjectService $objectService OpenRegister object service (hard dep via info.xml)
+	 * @param ObjectServiceInterface $objectService OpenRegister object service (hard dep via info.xml)
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private LoggerInterface $logger,
 		private IAppManager $appManager,
-		private ObjectService $objectService,
+		private ObjectServiceInterface $objectService,
 	) {
 	}//end __construct()
 

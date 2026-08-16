@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenBuild\Tests\Unit\Service;
 
 use OCA\OpenBuild\Service\RuleImpactAnalysisService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -40,9 +41,9 @@ final class RuleImpactAnalysisServiceTest extends TestCase {
 	/**
 	 * OpenRegister ObjectService mock.
 	 *
-	 * @var ObjectService&MockObject
+	 * @var ObjectServiceInterface&MockObject
 	 */
-	private ObjectService&MockObject $objectService;
+	private ObjectServiceInterface&MockObject $objectService;
 
 	/**
 	 * The service under test.
@@ -57,7 +58,7 @@ final class RuleImpactAnalysisServiceTest extends TestCase {
 	 * @return void
 	 */
 	protected function setUp(): void {
-		$this->objectService = $this->createMock(originalClassName: ObjectService::class);
+		$this->objectService = $this->createMock(originalClassName: ObjectServiceInterface::class);
 		$this->service = new RuleImpactAnalysisService(
 			objectService: $this->objectService,
 			logger: $this->createMock(originalClassName: LoggerInterface::class)

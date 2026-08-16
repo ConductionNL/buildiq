@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\ApprovalStep;
 use OCA\OpenRegister\Db\ApprovalStepMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -46,9 +47,9 @@ use Psr\Log\NullLogger;
  */
 final class AutomationCompilerServiceTest extends TestCase {
 	/**
-	 * @var ObjectService&MockObject
+	 * @var ObjectServiceInterface&MockObject
 	 */
-	private ObjectService&MockObject $objectService;
+	private ObjectServiceInterface&MockObject $objectService;
 
 	/**
 	 * @var SchemaMapper&MockObject
@@ -83,7 +84,7 @@ final class AutomationCompilerServiceTest extends TestCase {
 	 * @return void
 	 */
 	protected function setUp(): void {
-		$this->objectService = $this->createMock(ObjectService::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->approvalChainMapper = $this->createMock(ApprovalChainMapper::class);
 		$this->approvalStepMapper = $this->createMock(ApprovalStepMapper::class);
@@ -95,7 +96,7 @@ final class AutomationCompilerServiceTest extends TestCase {
 			$this->approvalChainMapper,
 			$this->approvalStepMapper,
 			$this->appManager,
-			new NullLogger()
+			new NullLogger(),
 		);
 
 	}//end setUp()
@@ -854,7 +855,7 @@ final class AutomationCompilerServiceTest extends TestCase {
 			$this->approvalChainMapper,
 			$this->approvalStepMapper,
 			$this->appManager,
-			new NullLogger()
+			new NullLogger(),
 		);
 
 		$automation = [

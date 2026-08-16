@@ -48,7 +48,7 @@ use OCA\OpenBuild\Service\AutomationCompilerService;
 use OCA\OpenBuild\Service\RuleActionDispatcher;
 use OCA\OpenRegister\Event\ApprovalStepApprovedEvent;
 use OCA\OpenRegister\Event\ApprovalStepRejectedEvent;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -71,7 +71,7 @@ class ApprovalOutcomeListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService Resolves the originating automation by slug.
+	 * @param ObjectServiceInterface $objectService Resolves the originating automation by slug.
 	 * @param AutomationCompilerService $compiler Reuses `mapActionToRuleAction()` — the SAME
 	 *                                            action→typed-action mapping the rules backend uses.
 	 * @param RuleActionDispatcher $actionDispatcher Shared side-effect dispatcher (same one `RuleEngineService` wires).
@@ -80,7 +80,7 @@ class ApprovalOutcomeListener implements IEventListener {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly AutomationCompilerService $compiler,
 		private readonly RuleActionDispatcher $actionDispatcher,
 		private readonly LoggerInterface $logger,

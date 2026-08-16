@@ -63,7 +63,7 @@ use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Service\ApprovalService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserSession;
@@ -81,7 +81,7 @@ class AutomationApprovalTriggerListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService Scans the `automation` register for matching triggers.
+	 * @param ObjectServiceInterface $objectService Scans the `automation` register for matching triggers.
 	 * @param SchemaMapper $schemaMapper Resolves a schema slug to its numeric id.
 	 * @param ApprovalChainMapper $chainMapper Resolves the compiled `ApprovalChain` by schema + name.
 	 * @param ApprovalStepMapper $stepMapper Idempotency guard — checks for an
@@ -93,7 +93,7 @@ class AutomationApprovalTriggerListener implements IEventListener {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly ApprovalChainMapper $chainMapper,
 		private readonly ApprovalStepMapper $stepMapper,

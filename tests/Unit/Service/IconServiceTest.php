@@ -28,6 +28,7 @@ namespace OCA\OpenBuild\Tests\Unit\Service;
 use OCA\OpenBuild\Service\IconService;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Files\File;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -41,9 +42,9 @@ class IconServiceTest extends TestCase {
 	/**
 	 * Mock ObjectService.
 	 *
-	 * @var ObjectService&MockObject
+	 * @var ObjectServiceInterface&MockObject
 	 */
-	private ObjectService&MockObject $objectService;
+	private ObjectServiceInterface&MockObject $objectService;
 
 	/**
 	 * Mock FileService.
@@ -72,7 +73,7 @@ class IconServiceTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 
-		$this->objectService = $this->createMock(ObjectService::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->fileService = $this->createMock(FileService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
@@ -81,7 +82,7 @@ class IconServiceTest extends TestCase {
 			$this->objectService,
 			$this->fileService,
 			$this->logger,
-			sys_get_temp_dir()
+			sys_get_temp_dir(),
 		);
 	}//end setUp()
 

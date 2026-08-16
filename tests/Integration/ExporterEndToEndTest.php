@@ -34,7 +34,7 @@ use OCA\OpenBuild\Service\ExportService;
 use OCA\OpenBuild\Service\PlaceholderResolver;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\Files\IAppData;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -287,7 +287,7 @@ final class ExporterEndToEndTest extends TestCase {
 		$bundler = new DataRegisterExportBundler(
 			$this->createStub(RegisterMapper::class),
 			$this->createStub(SchemaMapper::class),
-			$this->createStub(ObjectService::class),
+			$this->createStub(ObjectServiceInterface::class),
 			new NullLogger()
 		);
 

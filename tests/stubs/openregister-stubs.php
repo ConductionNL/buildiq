@@ -44,7 +44,7 @@ namespace OCA\OpenRegister\Db {
 		 * Stub ObjectEntity — real call surface (`getObject`, `jsonSerialize`,
 		 * plus `getUuid()`/`getRegister()`/`getSchema()` via Entity's `__call`).
 		 */
-		class ObjectEntity extends \OCP\AppFramework\Db\Entity {
+		class ObjectEntity extends \OCP\AppFramework\Db\Entity implements \OCA\OpenRegister\Contract\ObjectEntityInterface {
 
 			/**
 			 * Stub uuid column.
@@ -156,6 +156,13 @@ namespace OCA\OpenRegister\Db {
 			/**
 			 * @return string|null
 			 */
+			/**
+			 * @return string|null
+			 */
+			public function getOrganisation(): ?string {
+				return $this->organisation ?? null;
+			}
+
 			public function getOwner(): ?string {
 				return $this->owner;
 			}//end getOwner()

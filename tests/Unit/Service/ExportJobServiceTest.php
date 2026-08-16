@@ -34,7 +34,7 @@ use OCA\OpenBuild\AppInfo\Application;
 use OCA\OpenBuild\Service\ExportJobService;
 use OCA\OpenBuild\Service\JobOwnerImpersonator;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\BackgroundJob\IJobList;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -138,7 +138,7 @@ final class ExportJobServiceTest extends TestCase {
 	 */
 	public function testQueueRecordsCredentialReferenceForGithubTarget(): void {
 		$container = $this->createMock(ContainerInterface::class);
-		$objectService = $this->createMock(ObjectService::class);
+		$objectService = $this->createMock(ObjectServiceInterface::class);
 		$container->method('has')->willReturn(true);
 		$container->method('get')->willReturn($objectService);
 
@@ -209,7 +209,7 @@ final class ExportJobServiceTest extends TestCase {
 	 */
 	public function testQueueThrowsAndSchedulesNothingWhenTheRecordCannotBePersisted(): void {
 		$container = $this->createMock(ContainerInterface::class);
-		$objectService = $this->createMock(ObjectService::class);
+		$objectService = $this->createMock(ObjectServiceInterface::class);
 		$container->method('has')->willReturn(true);
 		$container->method('get')->willReturn($objectService);
 
@@ -283,7 +283,7 @@ final class ExportJobServiceTest extends TestCase {
 	 */
 	public function testQueuePersistsSanitisedDataRegisters(): void {
 		$container = $this->createMock(ContainerInterface::class);
-		$objectService = $this->createMock(ObjectService::class);
+		$objectService = $this->createMock(ObjectServiceInterface::class);
 		$container->method('has')->willReturn(true);
 		$container->method('get')->willReturn($objectService);
 
@@ -337,7 +337,7 @@ final class ExportJobServiceTest extends TestCase {
 	 */
 	public function testQueueDefaultsDataRegistersToEmptyArrayWhenOmitted(): void {
 		$container = $this->createMock(ContainerInterface::class);
-		$objectService = $this->createMock(ObjectService::class);
+		$objectService = $this->createMock(ObjectServiceInterface::class);
 		$container->method('has')->willReturn(true);
 		$container->method('get')->willReturn($objectService);
 
@@ -403,7 +403,7 @@ final class ExportJobServiceTest extends TestCase {
 	 */
 	public function testPersistJobPassesExplicitRegisterSchemaAndUuidToSaveObject(): void {
 		$container = $this->createMock(ContainerInterface::class);
-		$objectService = $this->createMock(ObjectService::class);
+		$objectService = $this->createMock(ObjectServiceInterface::class);
 		$container->method('has')->willReturn(true);
 		$container->method('get')->willReturn($objectService);
 
@@ -448,7 +448,7 @@ final class ExportJobServiceTest extends TestCase {
 	 */
 	public function testMergeJobFieldsPassesExplicitRegisterSchemaAndUuidToSaveObject(): void {
 		$container = $this->createMock(ContainerInterface::class);
-		$objectService = $this->createMock(ObjectService::class);
+		$objectService = $this->createMock(ObjectServiceInterface::class);
 		$container->method('has')->willReturn(true);
 		$container->method('get')->willReturn($objectService);
 
@@ -563,7 +563,7 @@ final class ExportJobServiceTest extends TestCase {
 		$existing->setSchema('export-job');
 		$existing->setObject(['status' => 'running']);
 
-		$objectService = $this->createMock(ObjectService::class);
+		$objectService = $this->createMock(ObjectServiceInterface::class);
 		$objectService->method('find')->willReturn($existing);
 
 		$captured = null;

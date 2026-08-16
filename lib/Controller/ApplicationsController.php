@@ -61,7 +61,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -96,7 +96,7 @@ class ApplicationsController extends Controller {
 	 *
 	 * @param IRequest $request The current HTTP request
 	 * @param LoggerInterface $logger PSR logger for diagnostics
-	 * @param ObjectService $objectService OpenRegister object service (hard dep via info.xml)
+	 * @param ObjectServiceInterface $objectService OpenRegister object service (hard dep via info.xml)
 	 * @param RegisterMapper $registerMapper Resolves slugs/UUIDs to numeric register IDs
 	 * @param SchemaMapper $schemaMapper Resolves slugs/UUIDs to numeric schema IDs
 	 * @param IUserSession $userSession Current Nextcloud user session
@@ -111,7 +111,7 @@ class ApplicationsController extends Controller {
 	public function __construct(
 		IRequest $request,
 		private readonly LoggerInterface $logger,
-		private readonly ObjectService $objectService,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly IUserSession $userSession,

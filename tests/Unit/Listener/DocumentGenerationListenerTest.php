@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -46,9 +47,9 @@ use RuntimeException;
  */
 final class DocumentGenerationListenerTest extends TestCase {
 	/**
-	 * @var ObjectService&MockObject
+	 * @var ObjectServiceInterface&MockObject
 	 */
-	private ObjectService&MockObject $objectService;
+	private ObjectServiceInterface&MockObject $objectService;
 
 	/**
 	 * @var DocumentGenerationService&MockObject
@@ -68,13 +69,13 @@ final class DocumentGenerationListenerTest extends TestCase {
 	 * @return void
 	 */
 	protected function setUp(): void {
-		$this->objectService = $this->createMock(ObjectService::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->documentGenerator = $this->createMock(DocumentGenerationService::class);
 
 		$this->listener = new DocumentGenerationListener(
 			$this->objectService,
 			$this->documentGenerator,
-			new NullLogger()
+			new NullLogger(),
 		);
 
 	}//end setUp()

@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
@@ -73,9 +74,9 @@ class CreateFromTemplateTest extends TestCase {
 	/**
 	 * Mock OR ObjectService.
 	 *
-	 * @var ObjectService&MockObject
+	 * @var ObjectServiceInterface&MockObject
 	 */
-	private ObjectService&MockObject $objectService;
+	private ObjectServiceInterface&MockObject $objectService;
 
 	/**
 	 * Mock RegisterMapper.
@@ -155,7 +156,7 @@ class CreateFromTemplateTest extends TestCase {
 		$this->manifestResolver = $this->createMock(ManifestResolverService::class);
 		$this->channelApplier = $this->createMock(AppChannelApplier::class);
 
-		$this->objectService = $this->createMock(ObjectService::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 
 		// RegisterMapper mock chain: find()->getId(), create + update.
 		$registerEntity = $this->getMockBuilder(Register::class)

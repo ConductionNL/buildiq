@@ -52,7 +52,7 @@ declare(strict_types=1);
 namespace OCA\OpenBuild\Service;
 
 use OCA\OpenRegister\Exception\ObjectExistsException;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -117,7 +117,7 @@ class AppChannelApplier {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService OpenRegister object read/write.
+	 * @param ObjectServiceInterface $objectService OpenRegister object read/write.
 	 * @param DataRegisterProvisioner $registerProvisioner The data-registers channel.
 	 * @param SkillChannelDelegate $skillDelegate The skills channel (delegated to hermiq).
 	 * @param IAppManager $appManager Optional-dependency detection.
@@ -126,7 +126,7 @@ class AppChannelApplier {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly DataRegisterProvisioner $registerProvisioner,
 		private readonly SkillChannelDelegate $skillDelegate,
 		private readonly IAppManager $appManager,

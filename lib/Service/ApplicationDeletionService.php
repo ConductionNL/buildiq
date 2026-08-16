@@ -32,7 +32,7 @@ namespace OCA\OpenBuild\Service;
 
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\RegisterService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -59,7 +59,7 @@ class ApplicationDeletionService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService OR object surface (find + delete)
+	 * @param ObjectServiceInterface $objectService OR object surface (find + delete)
 	 * @param RegisterService $registerService OR register-level service (delete)
 	 * @param RegisterMapper $registerMapper OR register lookup (by slug)
 	 * @param LoggerInterface $logger PSR logger
@@ -67,7 +67,7 @@ class ApplicationDeletionService {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly RegisterService $registerService,
 		private readonly RegisterMapper $registerMapper,
 		private readonly LoggerInterface $logger,

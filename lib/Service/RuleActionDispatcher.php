@@ -64,7 +64,7 @@ declare(strict_types=1);
 namespace OCA\OpenBuild\Service;
 
 use DateTime;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\Http\Client\IClientService;
 use OCP\IUserSession;
 use OCP\Notification\IManager;
@@ -84,7 +84,7 @@ class RuleActionDispatcher {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService OpenRegister object service (object-op).
+	 * @param ObjectServiceInterface $objectService OpenRegister object service (object-op).
 	 * @param IManager $notificationManager NC notification manager (send-notification).
 	 * @param IClientService $httpClientService NC HTTP client factory (webhook).
 	 * @param IUserSession $userSession Current NC user session (notification actor + object-op attribution).
@@ -96,7 +96,7 @@ class RuleActionDispatcher {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly IManager $notificationManager,
 		private readonly IClientService $httpClientService,
 		private readonly IUserSession $userSession,
