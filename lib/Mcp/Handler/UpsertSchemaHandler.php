@@ -62,6 +62,30 @@ class UpsertSchemaHandler extends AbstractToolHandler {
 		$registerSlug = 'openbuild-' . $appSlug . '-' . $versionSlug;
 
 		try {
+			// ADR-083 rule 1: establish availability BEFORE the reach.
+			//
+			// Unlike every other handler here, this one cannot use the
+			// constructor-injected ObjectServiceInterface: OpenRegister
+			// publishes no contract for SchemaMapper/RegisterMapper (its
+			// lib/Contract/ holds only ObjectServiceInterface and
+			// ObjectEntityInterface), and type-hinting the concrete mappers
+			// would violate ADR-084. So the lookup stays and the availability
+			// question is asked out loud instead.
+			//
+			// class_exists() is the same question NC's container would answer
+			// — `SimpleContainer::has()` IS `isset(...) || class_exists($id)`
+			// (server/lib/private/AppFramework/Utility/SimpleContainer.php:50)
+			// — but asking it here turns an opaque `internal_error` into a
+			// stated reason.
+			if (class_exists('\OCA\OpenRegister\Db\SchemaMapper') === false
+				|| class_exists('\OCA\OpenRegister\Db\RegisterMapper') === false
+			) {
+				return $this->errorResult(
+					error: 'openregister_unavailable',
+					message: 'OpenRegister is not installed on this instance, so schemas cannot be authored.'
+				);
+			}
+
 			$schemaMapper = $this->container->get('OCA\OpenRegister\Db\SchemaMapper');
 			$registerMapper = $this->container->get('OCA\OpenRegister\Db\RegisterMapper');
 
