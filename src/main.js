@@ -94,6 +94,12 @@ const RoutePageRenderer = { ...CnPageRenderer }
 // settingsSection) is the single declarative home for future navigation-IA
 // changes; it ships all-empty today, so `buildManifest()` reproduces the prior
 // pages/menu concatenation exactly.
+// `require.context` is a WEBPACK build-time API, not CommonJS `require`: the
+// bundler rewrites this call at compile time and no `require` exists at
+// runtime. eslint's browser globals therefore report `no-undef` correctly —
+// the code is right and the linter is right. Scoped to this one identifier so
+// a genuinely undefined name elsewhere in the file still fails.
+/* global require */
 const manifestFragmentContext = require.context('./manifest.d/', false, /\.json$/)
 const manifestFragments = manifestFragmentContext
 	.keys()

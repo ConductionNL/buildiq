@@ -220,11 +220,6 @@
       "count": 1
     }
   },
-  "src/main.js": {
-    "no-undef": {
-      "count": 1
-    }
-  },
   "src/modals/AppSettingsModal.vue": {
     "vue/custom-event-name-casing": {
       "count": 3
