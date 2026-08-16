@@ -124,6 +124,7 @@ class WriteHandlerValidationTest extends TestCase {
 			$this->groupManager,
 			$this->container,
 			$this->logger,
+			$this->createMock(ObjectServiceInterface::class),
 		);
 
 	}//end setUp()

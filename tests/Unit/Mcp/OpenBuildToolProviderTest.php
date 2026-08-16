@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuild\Tests\Unit\Mcp;
 
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenBuild\Mcp\OpenBuildToolProvider;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -92,6 +93,7 @@ class OpenBuildToolProviderTest extends TestCase {
 			$this->groupManager,
 			$this->container,
 			$this->logger,
+			$this->createMock(ObjectServiceInterface::class),
 		);
 
 	}//end setUp()
