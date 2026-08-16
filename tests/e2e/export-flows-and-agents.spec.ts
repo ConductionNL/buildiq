@@ -63,11 +63,45 @@ const EXPORT_JOB_CLASS = 'OCA\\OpenBuild\\BackgroundJob\\RunExportJob'
  *
  * @return {string} A one-line account of the attempt, for the failure message.
  */
+function jobCensus(occ: string): string {
+	try {
+		const listed = execFileSync(
+			'php',
+			[occ, 'background-job:list', '--output=json'],
+			{ encoding: 'utf8', stdio: 'pipe', timeout: 60_000 },
+		)
+		const jobs = JSON.parse(String(listed)) as Array<{ class?: string }>
+		const mine = jobs.filter((job) =>
+			String(job.class || '').includes('RunExportJob'),
+		).length
+		return `${jobs.length} total, ${mine} RunExportJob`
+	} catch (listError) {
+		return `job list failed: ${String(listError).slice(0, 160)}`
+	}
+}
+
 function runExportJobWorker(): string {
 	const occ = resolve(process.cwd(), '../../occ')
 	if (existsSync(occ) === false) {
 		return `no occ at ${occ} (cwd ${process.cwd()}) — the job was never driven`
 	}
+
+	// ⚠️ THE CENSUS MUST COME FIRST, AND IT DID NOT.
+	// "no output, exit 0" is ALSO what `background-job:worker` prints when it
+	// finds no job of that class, so the worker's silence alone cannot tell
+	// "the job was never enqueued" from "the worker ran it". The job list was
+	// added to disambiguate — but it was taken AFTER the worker pass, and a
+	// `QueuedJob` is DELETED from `oc_jobs` once it executes. So the after
+	// census reads `0 RunExportJob` in BOTH cases and answers nothing. That is
+	// exactly the shape this spec exists to close, in the helper written to
+	// close it: `job list: 112 total, 0 RunExportJob` was read as proof that
+	// the enqueue never happened, and it is not proof of anything.
+	//
+	// Both censuses are reported. `before` non-zero + `after` zero = the worker
+	// consumed our job, so a status still on "queued" means the transition did
+	// not fire. `before` zero with a non-zero total (occ shares the web
+	// server's database) = the enqueue genuinely did not happen.
+	const before = jobCensus(occ)
 
 	try {
 		const out = execFileSync(
@@ -76,38 +110,70 @@ function runExportJobWorker(): string {
 			{ encoding: 'utf8', stdio: 'pipe', timeout: 60_000 },
 		)
 
-		// ⚠️ "no output, exit 0" is ALSO what this command prints when it finds
-		// no job of that class — verified against a live instance. So the
-		// worker's silence alone cannot tell "the job was never enqueued" from
-		// "this occ is looking at a different database". The job list
-		// disambiguates: if occ shares the web server's database it sees the
-		// OTHER queued jobs, and then a zero count for ours means the enqueue
-		// genuinely did not happen — which would be a product defect, not a
-		// test one.
-		let census = 'job list unavailable'
-		try {
-			const listed = execFileSync(
-				'php',
-				[occ, 'background-job:list', '--output=json'],
-				{ encoding: 'utf8', stdio: 'pipe', timeout: 60_000 },
-			)
-			const jobs = JSON.parse(String(listed)) as Array<{ class?: string }>
-			const mine = jobs.filter((job) =>
-				String(job.class || '').includes('RunExportJob'),
-			).length
-			census = `job list: ${jobs.length} total, ${mine} RunExportJob`
-		} catch (listError) {
-			census = `job list failed: ${String(listError).slice(0, 160)}`
-		}
-
-		return `worker ok: ${String(out).trim().slice(0, 200) || '(no output)'}; ${census}`
+		return (
+			`worker ok: ${String(out).trim().slice(0, 200) || '(no output)'}; `
+			+ `job list before: ${before}; after: ${jobCensus(occ)}`
+		)
 	} catch (error) {
 		const e = error as { status?: number; stdout?: string; stderr?: string }
-		return `worker failed (exit ${e.status ?? '?'}): ${String(
+		return `worker failed (exit ${e.status ?? '?'}) [job list before: ${before}]: ${String(
 			e.stderr || e.stdout || error,
 		)
 			.trim()
 			.slice(0, 300)}`
+	}
+}
+
+/**
+ * Report whether the DEPLOYED `exportJob` schema carries the lifecycle the
+ * status transition needs, and at what version.
+ *
+ * `ExportJobService::transitionJob()` drives OpenRegister's `TransitionEngine`,
+ * which looks the transition up in the schema's `x-openregister-lifecycle`. If
+ * that block is not on the STORED schema the engine finds no state machine and
+ * returns without doing anything — `RunExportJob` runs, its `oc_jobs` row is
+ * consumed, and the object sits at `status: queued` with no log line. A schema
+ * whose deployed version is >= the declared one never receives an
+ * annotation-only change (`ImportHandler` skips the import, and its
+ * `schemaContentDiffers()` escape hatch compares only properties, required and
+ * authorization), which is ConductionNL/openbuild#219.
+ *
+ * This is read from the schema API rather than from the object: this
+ * OpenRegister build does not expose `available-actions` on an object read at
+ * all — measured, including with `?_extend=all` — so a probe for that key would
+ * report "absent" on a perfectly healthy instance and read as evidence.
+ *
+ * @param page Playwright page (for its authenticated request context).
+ * @return {Promise<string>} A one-line account, for the failure message.
+ */
+async function describeExportJobSchema(page: Page): Promise<string> {
+	try {
+		const resp = await page.request.get(
+			`${BASE}/index.php/apps/openregister/api/schemas?_limit=1000`,
+			{ headers: { Accept: 'application/json' } },
+		)
+		if (resp.ok() === false) {
+			return `schema probe unreadable (HTTP ${resp.status()})`
+		}
+		const rows = (await resp.json())?.results ?? []
+		const schema = rows.find(
+			(s: { slug?: string }) =>
+				String(s?.slug ?? '')
+					.toLowerCase()
+					.replace(/-/g, '') === 'exportjob',
+		)
+		if (schema === undefined) {
+			return 'no exportJob schema is deployed on this instance'
+		}
+		const hasLifecycle =
+			JSON.stringify(schema).includes('x-openregister-lifecycle') === true
+		return (
+			`deployed exportJob schema v${schema.version ?? '?'}, `
+			+ `x-openregister-lifecycle ${hasLifecycle ? 'PRESENT' : 'MISSING'}`
+			+ `${hasLifecycle ? '' : ' — see ConductionNL/openbuild#219'}`
+		)
+	} catch (error) {
+		return `schema probe threw: ${String(error).slice(0, 160)}`
 	}
 }
 
@@ -483,9 +549,13 @@ test.describe('Exporting the flows an app is made of', () => {
 			await page.waitForTimeout(2_000)
 		}
 		expect(jobUuid, 'the export job must exist').toBeTruthy()
+		// Only probed when the poll did not reach a terminal state, so a green
+		// run pays nothing for it.
+		const schemaAccount =
+			status === 'succeeded' ? '' : `; ${await describeExportJobSchema(page)}`
 		expect(
 			status,
-			`the export job must finish — last status "${status}"; last worker pass: ${workerAccount}`,
+			`the export job must finish — last status "${status}"; last worker pass: ${workerAccount}${schemaAccount}`,
 		).toBe('succeeded')
 
 		const download = await page.request.get(
