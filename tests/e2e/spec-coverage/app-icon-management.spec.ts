@@ -44,7 +44,8 @@ const HELLO_WORLD_SLUG = 'hello-world'
 const OR_OBJECT_PATH = 'apps/openregister/api/objects/openbuild/application'
 
 /** A minimal but genuinely valid SVG — OR writes the content verbatim. */
-const MINIMAL_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">'
+const MINIMAL_SVG =
+	'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">'
 	+ '<rect width="16" height="16" fill="#0b5fff"/></svg>'
 
 /**
@@ -56,15 +57,25 @@ const MINIMAL_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"
  * @param request Playwright API request context.
  * @return {Promise<{objectId: string, app: Record<string, any>}>} The record.
  */
-async function resolveApp(request: APIRequestContext): Promise<{ objectId: string, app: Record<string, any> }> {
-	const res = await request.get(`${BASE}/index.php/apps/openbuild/api/applications`, {
-		headers: { 'OCS-APIRequest': 'true' },
-	})
+async function resolveApp(
+	request: APIRequestContext,
+): Promise<{ objectId: string; app: Record<string, any> }> {
+	const res = await request.get(
+		`${BASE}/index.php/apps/openbuild/api/applications`,
+		{
+			headers: { 'OCS-APIRequest': 'true' },
+		},
+	)
 	expect(res.ok(), 'the applications API must answer').toBeTruthy()
 	const body = await res.json()
-	const rows: Array<Record<string, any>> = Array.isArray(body) ? body : (body.results ?? [])
+	const rows: Array<Record<string, any>> = Array.isArray(body)
+		? body
+		: (body.results ?? [])
 	const app = rows.find((a) => (a.slug ?? a['@self']?.slug) === HELLO_WORLD_SLUG)
-	expect(app, `the seeded "${HELLO_WORLD_SLUG}" Application must exist`).toBeTruthy()
+	expect(
+		app,
+		`the seeded "${HELLO_WORLD_SLUG}" Application must exist`,
+	).toBeTruthy()
 	const found = app as Record<string, any>
 	const objectId = found['@self']?.id || found.uuid || found.id
 	expect(objectId, 'the Application must carry an object id').toBeTruthy()
@@ -84,7 +95,9 @@ async function resolveApp(request: APIRequestContext): Promise<{ objectId: strin
  * @return {Promise<void>}
  */
 async function openIconsTab(page: Page, objectId: string): Promise<void> {
-	await page.goto(`/apps/openbuild/applications/${objectId}`, { waitUntil: 'domcontentloaded' })
+	await page.goto(`/apps/openbuild/applications/${objectId}`, {
+		waitUntil: 'domcontentloaded',
+	})
 	await expect(
 		page.locator('.ob-detail-header__name'),
 		'the detail header must render before the sidebar is driven',
@@ -94,9 +107,14 @@ async function openIconsTab(page: Page, objectId: string): Promise<void> {
 	if (!(await sidebar.isVisible().catch(() => false))) {
 		await page.locator('.app-sidebar__toggle').first().click()
 	}
-	await expect(sidebar, 'the object sidebar must open').toBeVisible({ timeout: 15_000 })
+	await expect(sidebar, 'the object sidebar must open').toBeVisible({
+		timeout: 15_000,
+	})
 
-	await page.getByRole('tab', { name: /^icons$/i }).first().click()
+	await page
+		.getByRole('tab', { name: /^icons$/i })
+		.first()
+		.click()
 	await expect(
 		page.locator('[data-testid="cn-object-sidebar-tab-icons"]'),
 		'the Icons tab panel must render',
@@ -119,8 +137,11 @@ async function openIconsTab(page: Page, objectId: string): Promise<void> {
  * @return The row locator.
  */
 function iconRow(page: Page, variant: 'Light' | 'Dark') {
-	return page.locator('.ob-icon-section__row')
-		.filter({ has: page.locator('.ob-icon-section__label', { hasText: `${variant} icon` }) })
+	return page.locator('.ob-icon-section__row').filter({
+		has: page.locator('.ob-icon-section__label', {
+			hasText: `${variant} icon`,
+		}),
+	})
 }
 
 test.describe('app-icon-management — removing an icon (REQ-OBICON-004)', () => {
@@ -140,7 +161,10 @@ test.describe('app-icon-management — removing an icon (REQ-OBICON-004)', () =>
 	})
 
 	// @e2e app-icon-management::user-removes-the-dark-icon
-	test('Remove in the dark slot deletes the OR attachment and clears iconDark.ref', async ({ page, request }) => {
+	test('Remove in the dark slot deletes the OR attachment and clears iconDark.ref', async ({
+		page,
+		request,
+	}) => {
 		// Two navigations plus two write round-trips; the 30s project default is
 		// sized for single-navigation tests.
 		test.setTimeout(120_000)
@@ -151,22 +175,43 @@ test.describe('app-icon-management — removing an icon (REQ-OBICON-004)', () =>
 		// Remove button renders behind `v-if="darkRef"`, so without this the test
 		// would "pass" by never finding a button to click — the exact shape of a
 		// test that measures nothing.
-		const seedUpload = await request.post(`${BASE}/index.php/${OR_OBJECT_PATH}/${objectId}/files`, {
-			data: { name: 'app-icon-dark.svg', content: MINIMAL_SVG },
-		})
-		expect(seedUpload.ok(), 'seeding the dark attachment must succeed').toBeTruthy()
+		const seedUpload = await request.post(
+			`${BASE}/index.php/${OR_OBJECT_PATH}/${objectId}/files`,
+			{
+				data: { name: 'app-icon-dark.svg', content: MINIMAL_SVG },
+			},
+		)
+		expect(
+			seedUpload.ok(),
+			'seeding the dark attachment must succeed',
+		).toBeTruthy()
 		// A LIGHT icon is seeded too, deliberately: the scenario's last clause is
 		// that the dark slot falls back to the light icon, and that fallback is
 		// only meaningful if a light icon exists. Without this the test would be
 		// order-dependent on whichever suite last uploaded one.
-		const seedLight = await request.post(`${BASE}/index.php/${OR_OBJECT_PATH}/${objectId}/files`, {
-			data: { name: 'app-icon.svg', content: MINIMAL_SVG },
-		})
-		expect(seedLight.ok(), 'seeding the light attachment must succeed').toBeTruthy()
-		const seedPatch = await request.patch(`${BASE}/index.php/${OR_OBJECT_PATH}/${objectId}`, {
-			data: { icon: { ref: 'app-icon.svg' }, iconDark: { ref: 'app-icon-dark.svg' } },
-		})
-		expect(seedPatch.ok(), 'seeding icon + iconDark refs must succeed').toBeTruthy()
+		const seedLight = await request.post(
+			`${BASE}/index.php/${OR_OBJECT_PATH}/${objectId}/files`,
+			{
+				data: { name: 'app-icon.svg', content: MINIMAL_SVG },
+			},
+		)
+		expect(
+			seedLight.ok(),
+			'seeding the light attachment must succeed',
+		).toBeTruthy()
+		const seedPatch = await request.patch(
+			`${BASE}/index.php/${OR_OBJECT_PATH}/${objectId}`,
+			{
+				data: {
+					icon: { ref: 'app-icon.svg' },
+					iconDark: { ref: 'app-icon-dark.svg' },
+				},
+			},
+		)
+		expect(
+			seedPatch.ok(),
+			'seeding icon + iconDark refs must succeed',
+		).toBeTruthy()
 
 		await openIconsTab(page, objectId)
 
@@ -186,12 +231,15 @@ test.describe('app-icon-management — removing an icon (REQ-OBICON-004)', () =>
 		// HTML 404 page. Asserting the numeric shape here is what stops that
 		// regression from coming back looking like a passing test.
 		const deleteDone = page.waitForResponse(
-			(r) => new RegExp(`${OR_OBJECT_PATH}/${objectId}/files/\\d+$`).test(new URL(r.url()).pathname)
-				&& r.request().method() === 'DELETE',
+			(r) =>
+				new RegExp(`${OR_OBJECT_PATH}/${objectId}/files/\\d+$`).test(
+					new URL(r.url()).pathname,
+				) && r.request().method() === 'DELETE',
 			{ timeout: 30_000 },
 		)
 		const patchDone = page.waitForResponse(
-			(r) => r.url().includes(`${OR_OBJECT_PATH}/${objectId}`)
+			(r) =>
+				r.url().includes(`${OR_OBJECT_PATH}/${objectId}`)
 				&& r.request().method() === 'PATCH',
 			{ timeout: 30_000 },
 		)
@@ -200,8 +248,14 @@ test.describe('app-icon-management — removing an icon (REQ-OBICON-004)', () =>
 
 		// "the frontend calls OR's delete-attachment endpoint for the iconDark file"
 		const deleteRes = await deleteDone
-		expect(deleteRes.status(), 'the delete-attachment call must answer 2xx').toBeGreaterThanOrEqual(200)
-		expect(deleteRes.status(), 'the delete-attachment call must answer 2xx').toBeLessThan(300)
+		expect(
+			deleteRes.status(),
+			'the delete-attachment call must answer 2xx',
+		).toBeGreaterThanOrEqual(200)
+		expect(
+			deleteRes.status(),
+			'the delete-attachment call must answer 2xx',
+		).toBeLessThan(300)
 
 		// "and clears the top-level iconDark.ref from the Application"
 		const patchRes = await patchDone
@@ -209,7 +263,10 @@ test.describe('app-icon-management — removing an icon (REQ-OBICON-004)', () =>
 			patchRes.request().postDataJSON(),
 			'the PATCH must null the top-level iconDark ref, not replace the object',
 		).toEqual({ iconDark: null })
-		expect(patchRes.status(), 'the ref-clearing PATCH must answer 2xx').toBeLessThan(300)
+		expect(
+			patchRes.status(),
+			'the ref-clearing PATCH must answer 2xx',
+		).toBeLessThan(300)
 
 		// The button is bound to `v-if="darkRef"`, so its disappearance is the
 		// component's own statement that the ref is gone.
@@ -228,7 +285,9 @@ test.describe('app-icon-management — removing an icon (REQ-OBICON-004)', () =>
 		// spec excludes to PHPUnit. So what belongs here is the DOM-observable
 		// half: the slot still shows something rather than collapsing.
 		await expect(
-			dark.locator('.ob-icon-section__preview--dark img.ob-icon-section__preview-img'),
+			dark.locator(
+				'.ob-icon-section__preview--dark img.ob-icon-section__preview-img',
+			),
 			'the dark slot must keep showing a preview (the light-icon fallback), not go blank',
 		).toHaveCount(1, { timeout: 15_000 })
 		await expect(
@@ -238,9 +297,14 @@ test.describe('app-icon-management — removing an icon (REQ-OBICON-004)', () =>
 
 		// And the record really lost it — read it back rather than trusting
 		// optimistic UI state.
-		await expect.poll(async () => {
-			const { app: reloaded } = await resolveApp(request)
-			return reloaded.iconDark ?? null
-		}, { timeout: 30_000 }).toBeFalsy()
+		await expect
+			.poll(
+				async () => {
+					const { app: reloaded } = await resolveApp(request)
+					return reloaded.iconDark ?? null
+				},
+				{ timeout: 30_000 },
+			)
+			.toBeFalsy()
 	})
 })
