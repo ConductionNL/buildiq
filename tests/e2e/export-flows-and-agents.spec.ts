@@ -47,31 +47,42 @@ const FIXTURE_FLOW_NAME = 'PW export fixture agentic'
 const EXPORT_JOB_CLASS = 'OCA\\OpenBuild\\BackgroundJob\\RunExportJob'
 
 /**
- * Run one pass of the export background job, if `occ` is reachable.
+ * Run one pass of the export background job and SAY WHAT HAPPENED.
  *
  * Playwright's cwd is the app directory (`server/apps/openbuild` in CI), so
- * the server root — and `occ` — is two levels up. When it is not there the
- * call is a no-op and the job-status assertion below still decides the test;
- * this is deliberately NOT a skip guard, which would turn "the export never
- * ran" into a silent pass.
+ * the server root — and `occ` — is two levels up.
  *
- * @return {void}
+ * ⚠️ THIS RETURNS ITS OUTCOME ON PURPOSE. The first version swallowed every
+ * error so a bad worker pass could not fail the test on its own. That was the
+ * wrong trade: the run then produced NO evidence about whether `occ` ran at
+ * all, and a missing binary, a wrong path and a job the worker declined were
+ * indistinguishable from each other — the same "a check that did not run looks
+ * like one that passed" shape this spec was written to close. The job's own
+ * status is still the assertion; this string is folded into its message so the
+ * next failure names its cause instead of hiding it.
+ *
+ * @return {string} A one-line account of the attempt, for the failure message.
  */
-function runExportJobWorker(): void {
+function runExportJobWorker(): string {
 	const occ = resolve(process.cwd(), '../../occ')
 	if (existsSync(occ) === false) {
-		return
+		return `no occ at ${occ} (cwd ${process.cwd()}) — the job was never driven`
 	}
 
 	try {
-		execFileSync(
+		const out = execFileSync(
 			'php',
 			[occ, 'background-job:worker', '--once', EXPORT_JOB_CLASS],
-			{ stdio: 'pipe', timeout: 60_000 },
+			{ encoding: 'utf8', stdio: 'pipe', timeout: 60_000 },
 		)
-	} catch {
-		// A worker pass that errors must not fail the test by itself — the
-		// job's own status is the assertion.
+		return `worker ok: ${String(out).trim().slice(0, 300) || '(no output)'}`
+	} catch (error) {
+		const e = error as { status?: number; stdout?: string; stderr?: string }
+		return `worker failed (exit ${e.status ?? '?'}): ${String(
+			e.stderr || e.stdout || error,
+		)
+			.trim()
+			.slice(0, 300)}`
 	}
 }
 
@@ -418,6 +429,7 @@ test.describe('Exporting the flows an app is made of', () => {
 
 		let status = ''
 		let jobUuid = ''
+		let workerAccount = 'the worker never ran'
 		const deadline = Date.now() + POLL_TIMEOUT_MS
 		while (Date.now() < deadline) {
 			// ⚠️ RUN OUR JOB, DO NOT TICK THE QUEUE. The export is an
@@ -432,7 +444,7 @@ test.describe('Exporting the flows an app is made of', () => {
 			//
 			// `background-job:worker` takes the job CLASSES to look for, so it
 			// runs ours and ignores the backlog entirely.
-			runExportJobWorker()
+			workerAccount = runExportJobWorker()
 
 			const rows =
 				(await (await page.request.get(jobsUrl)).json()).results || []
@@ -448,7 +460,7 @@ test.describe('Exporting the flows an app is made of', () => {
 		expect(jobUuid, 'the export job must exist').toBeTruthy()
 		expect(
 			status,
-			`the export job must finish (last status "${status}" — if it is still "queued", the background queue was not drained)`,
+			`the export job must finish — last status "${status}"; last worker pass: ${workerAccount}`,
 		).toBe('succeeded')
 
 		const download = await page.request.get(
