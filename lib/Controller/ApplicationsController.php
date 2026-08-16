@@ -387,6 +387,27 @@ class ApplicationsController extends Controller {
 				);
 			}
 
+			// A manifest the runtime cannot render must not be persisted.
+			//
+			// The Design tab already refuses to save one (REQ-OBPD-009 puts the
+			// guarantee in the client: the Save button is disabled and a tooltip
+			// states why), but the guarantee stopped at the browser — an API
+			// caller could PUT `{version, menu}` with no `pages` and get a 200,
+			// leaving the app with a manifest that renders nothing. Nothing on
+			// the read path repairs that.
+			//
+			// These are the SAME two rules the GitHub-import path has always
+			// enforced in AppRepoParser::validateManifest() — a string `version`
+			// and an array `pages`. Applying them here makes one endpoint agree
+			// with the other rather than inventing a new contract.
+			$manifestError = $this->manifestShapeError(manifest: $manifest);
+			if ($manifestError !== null) {
+				return new JSONResponse(
+					data: ['error' => 'manifest_invalid', 'message' => $manifestError],
+					statusCode: Http::STATUS_BAD_REQUEST
+				);
+			}
+
 			// Never let a manifest body inject/overwrite the permissions roster.
 			unset($manifest['permissions']);
 
@@ -453,6 +474,36 @@ class ApplicationsController extends Controller {
 			);
 		}//end try
 	}//end saveManifest()
+
+	/**
+	 * Return why a manifest cannot be rendered, or null when its shape is sound.
+	 *
+	 * Deliberately the SAME two rules AppRepoParser::validateManifest() applies
+	 * to an imported manifest.json — a string `version` and an array `pages`.
+	 * Structural only: it says nothing about whether an individual page is
+	 * well-formed, which is the renderer's business.
+	 *
+	 * @param array<string,mixed> $manifest The decoded manifest body.
+	 *
+	 * @return string|null Reason the manifest is unusable, or null when it is fine.
+	 *
+	 * @spec openspec/specs/openbuild-page-designer/spec.md
+	 */
+	private function manifestShapeError(array $manifest): ?string {
+		if ($manifest === []) {
+			return 'The manifest is an empty object; a virtual app manifest must declare version + pages.';
+		}
+
+		if (is_string($manifest['version'] ?? null) === false) {
+			return 'The manifest is missing a string `version` property.';
+		}
+
+		if (is_array($manifest['pages'] ?? null) === false) {
+			return 'The manifest is missing a `pages` array.';
+		}
+
+		return null;
+	}//end manifestShapeError()
 
 	/**
 	 * Delegate to ManifestResolverService for versioned-manifest access.
