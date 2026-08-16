@@ -41,10 +41,10 @@
 			</p>
 
 			<div class="ob-user-delta-modal__actions">
-				<NcButton type="tertiary" @click="onClose">
+				<NcButton variant="tertiary" @click="onClose">
 					{{ t('openbuild', 'Cancel') }}
 				</NcButton>
-				<NcButton type="primary" :disabled="saving" @click="save">
+				<NcButton variant="primary" :disabled="saving" @click="save">
 					{{
 						saving
 							? t('openbuild', 'Saving…')

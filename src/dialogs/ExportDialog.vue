@@ -102,7 +102,7 @@
 			<NcButton :disabled="submitting" @click="onClose">
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
-			<NcButton type="primary" :disabled="submitting" @click="submit">
+			<NcButton variant="primary" :disabled="submitting" @click="submit">
 				{{ t('openbuild', 'Start export') }}
 			</NcButton>
 		</template>

@@ -24,7 +24,7 @@
 		<!-- List mode -->
 		<template v-if="!schemaId">
 			<div v-if="canImport" class="openbuild-schema-designer__toolbar">
-				<NcButton type="secondary" @click="showImportWizard = true">
+				<NcButton variant="secondary" @click="showImportWizard = true">
 					{{ t('openbuild', 'Import data') }}
 				</NcButton>
 			</div>
@@ -40,7 +40,7 @@
 		<div v-else class="openbuild-schema-designer__detail">
 			<header class="openbuild-schema-designer__detail-header">
 				<div>
-					<NcButton type="tertiary" @click="goToList">
+					<NcButton variant="tertiary" @click="goToList">
 						<template #icon>
 							<ArrowLeftIcon :size="20" />
 						</template>
@@ -52,7 +52,7 @@
 				</div>
 				<div class="openbuild-schema-designer__detail-actions">
 					<NcButton
-						type="tertiary"
+						variant="tertiary"
 						:disabled="!canUndo"
 						:title="t('openbuild', 'Undo (Ctrl+Z)')"
 						@click="undo">
@@ -62,7 +62,7 @@
 						{{ t('openbuild', 'Undo') }}
 					</NcButton>
 					<NcButton
-						type="tertiary"
+						variant="tertiary"
 						:disabled="!canRedo"
 						:title="t('openbuild', 'Redo (Ctrl+Shift+Z / Ctrl+Y)')"
 						@click="redo">
@@ -76,10 +76,10 @@
 						@click="discardChanges">
 						{{ t('openbuild', 'Discard staged edits') }}
 					</NcButton>
-					<NcButton type="primary" :disabled="!canSave" @click="save">
+					<NcButton variant="primary" :disabled="!canSave" @click="save">
 						{{
 							saving
-								? t('openbuild', 'Saving...')
+								? t('openbuild', 'Saving…')
 								: t('openbuild', 'Save')
 						}}
 					</NcButton>

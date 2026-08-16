@@ -109,7 +109,7 @@
 							}}
 						</NcButton>
 						<NcButton
-							type="primary"
+							variant="primary"
 							:disabled="!canPublish"
 							@click="openPublish">
 							{{ t('openbuild', 'Publish') }}

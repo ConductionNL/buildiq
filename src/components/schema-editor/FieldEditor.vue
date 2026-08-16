@@ -41,7 +41,7 @@
 				class="openbuild-field-editor__row">
 				<div class="openbuild-field-editor__handle">
 					<NcButton
-						type="tertiary"
+						variant="tertiary"
 						:aria-label="t('openbuild', 'Move up')"
 						:disabled="index === 0"
 						@click="moveUp(index)">
@@ -50,7 +50,7 @@
 						</template>
 					</NcButton>
 					<NcButton
-						type="tertiary"
+						variant="tertiary"
 						:aria-label="t('openbuild', 'Move down')"
 						:disabled="index === fields.length - 1"
 						@click="moveDown(index)">
@@ -285,7 +285,7 @@
 				</div>
 
 				<div class="openbuild-field-editor__actions">
-					<NcButton type="error" @click="requestRemove(index)">
+					<NcButton variant="error" @click="requestRemove(index)">
 						<template #icon>
 							<DeleteIcon :size="20" />
 						</template>

@@ -5,12 +5,12 @@
 		<div class="wt-designer__bar">
 			<div class="wt-designer__modes" role="tablist">
 				<NcButton
-					:type="mode === 'walkthrough' ? 'primary' : 'tertiary'"
+					:variant="mode === 'walkthrough' ? 'primary' : 'tertiary'"
 					@click="mode = 'walkthrough'">
 					{{ t('openbuild', 'Walkthrough') }}
 				</NcButton>
 				<NcButton
-					:type="mode === 'setup' ? 'primary' : 'tertiary'"
+					:variant="mode === 'setup' ? 'primary' : 'tertiary'"
 					@click="mode = 'setup'">
 					{{ t('openbuild', 'Setup wizard') }}
 				</NcButton>
@@ -31,7 +31,7 @@
 				{{ t('openbuild', 'Enabled') }}
 			</NcCheckboxRadioSwitch>
 			<NcButton
-				type="primary"
+				variant="primary"
 				:disabled="!valid"
 				@click="$emit('save-and-preview')">
 				{{ t('openbuild', 'Save & preview') }}
@@ -51,7 +51,7 @@
 		<div v-if="mode === 'setup'" class="wt-designer__setup">
 			<div class="wt-designer__steps-head">
 				<strong>{{ t('openbuild', 'Setup steps') }}</strong>
-				<NcButton type="secondary" @click="addSetupStep">
+				<NcButton variant="secondary" @click="addSetupStep">
 					<template #icon>
 						<Plus :size="20" />
 					</template>
@@ -70,7 +70,7 @@
 							:modelValue="step.id || ''"
 							@update:modelValue="(v) => setSetupStep(si, 'id', v)" />
 						<NcButton
-							type="tertiary"
+							variant="tertiary"
 							:disabled="si === 0"
 							:aria-label="t('openbuild', 'Move up')"
 							@click="moveSetupStep(si, -1)">
@@ -79,7 +79,7 @@
 							</template>
 						</NcButton>
 						<NcButton
-							type="tertiary"
+							variant="tertiary"
 							:disabled="si === setupSteps.length - 1"
 							:aria-label="t('openbuild', 'Move down')"
 							@click="moveSetupStep(si, 1)">
@@ -88,7 +88,7 @@
 							</template>
 						</NcButton>
 						<NcButton
-							type="tertiary"
+							variant="tertiary"
 							:aria-label="t('openbuild', 'Delete step')"
 							@click="deleteSetupStep(si)">
 							<template #icon>
@@ -145,7 +145,7 @@
 						<div class="wt-designer__options-head">
 							<span>{{ t('openbuild', 'Options') }}</span>
 							<NcButton
-								type="tertiary"
+								variant="tertiary"
 								:aria-label="t('openbuild', 'Add option')"
 								@click="addSetupOption(si)">
 								<template #icon>
@@ -172,7 +172,7 @@
 									(v) => setSetupOption(si, oi, 'label', v)
 								" />
 							<NcButton
-								type="tertiary"
+								variant="tertiary"
 								:aria-label="t('openbuild', 'Remove option')"
 								@click="deleteSetupOption(si, oi)">
 								<template #icon>
@@ -229,7 +229,7 @@
 				<div class="wt-designer__rail-head">
 					<strong>{{ t('openbuild', 'Tours') }}</strong>
 					<NcButton
-						type="tertiary"
+						variant="tertiary"
 						:aria-label="t('openbuild', 'Add tour')"
 						@click="addTour">
 						<template #icon>
@@ -292,7 +292,7 @@
 						:label="t('openbuild', 'Min app version')"
 						:modelValue="activeTour.minAppVersion || ''"
 						@update:modelValue="(v) => setTour('minAppVersion', v)" />
-					<NcButton type="error" @click="deleteTour">
+					<NcButton variant="error" @click="deleteTour">
 						{{ t('openbuild', 'Delete tour') }}
 					</NcButton>
 				</div>
@@ -302,14 +302,14 @@
 					<span class="wt-designer__spacer" />
 					<NcButton
 						v-if="appSlug"
-						type="secondary"
+						variant="secondary"
 						@click="recording = true">
 						<template #icon>
 							<RecordCircleOutline :size="20" />
 						</template>
 						{{ t('openbuild', 'Record from app') }}
 					</NcButton>
-					<NcButton type="secondary" @click="addStep">
+					<NcButton variant="secondary" @click="addStep">
 						<template #icon>
 							<Plus :size="20" />
 						</template>
@@ -329,7 +329,7 @@
 								:modelValue="step.id || ''"
 								@update:modelValue="(v) => setStep(si, 'id', v)" />
 							<NcButton
-								type="tertiary"
+								variant="tertiary"
 								:disabled="si === 0"
 								:aria-label="t('openbuild', 'Move up')"
 								@click="moveStep(si, -1)">
@@ -338,7 +338,7 @@
 								</template>
 							</NcButton>
 							<NcButton
-								type="tertiary"
+								variant="tertiary"
 								:disabled="si === activeTour.steps.length - 1"
 								:aria-label="t('openbuild', 'Move down')"
 								@click="moveStep(si, 1)">
@@ -347,7 +347,7 @@
 								</template>
 							</NcButton>
 							<NcButton
-								type="tertiary"
+								variant="tertiary"
 								:aria-label="t('openbuild', 'Delete step')"
 								@click="deleteStep(si)">
 								<template #icon>

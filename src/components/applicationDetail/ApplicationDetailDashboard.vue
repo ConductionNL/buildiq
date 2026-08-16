@@ -27,7 +27,7 @@
 		<!-- 1. Banner -->
 		<section v-if="banner" class="ob-detail-dashboard__banner" role="alert">
 			<p>{{ banner.message }}</p>
-			<NcButton v-if="banner.action" type="primary" @click="banner.action">
+			<NcButton v-if="banner.action" variant="primary" @click="banner.action">
 				{{ banner.actionLabel }}
 			</NcButton>
 		</section>
@@ -44,7 +44,7 @@
 					<NcButton
 						v-for="opt in windowOptions"
 						:key="opt"
-						:type="selectedWindow === opt ? 'primary' : 'tertiary'"
+						:variant="selectedWindow === opt ? 'primary' : 'tertiary'"
 						:aria-pressed="selectedWindow === opt"
 						@click="selectedWindow = opt">
 						{{ opt }}
