@@ -41,6 +41,12 @@ import { dismissWalkthrough } from '../support/overlays'
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 
+// The view this spec drives, named after the component file it renders
+// (src/views/DashboardIndex.vue, the manifest's `Dashboard` page at `/`).
+// The name was only ever in the prose above, so nothing reading executable
+// code could tell this view was covered — it is, by every test below.
+const DashboardIndex = `${BASE}/apps/openbuild/`
+
 // In-app nav link scoped by its openbuild href (avoids the NC top-bar).
 // History-mode router => plain path hrefs, no `#` segment.
 //
@@ -74,7 +80,7 @@ const navLink = (page: import('@playwright/test').Page, path: string) => {
 
 test.describe('OpenBuild Dashboard', () => {
 	test('renders the KPI and table widget titles', async ({ page }) => {
-		await page.goto(`${BASE}/apps/openbuild/`)
+		await page.goto(DashboardIndex)
 		await expect(page).toHaveTitle(/openbuild/i)
 
 		// Widget titles come from DashboardIndex's `widgets` definition and are
@@ -96,7 +102,7 @@ test.describe('OpenBuild Dashboard', () => {
 	test('exposes the in-app navigation entries (Dashboard, Apps, Store, Features & roadmap)', async ({
 		page,
 	}) => {
-		await page.goto(`${BASE}/apps/openbuild/`)
+		await page.goto(DashboardIndex)
 
 		for (const [label, path] of [
 			['Dashboard', '/'],
@@ -121,7 +127,7 @@ test.describe('OpenBuild Dashboard', () => {
 	test('clicking the Apps nav entry routes to the applications index', async ({
 		page,
 	}) => {
-		await page.goto(`${BASE}/apps/openbuild/`)
+		await page.goto(DashboardIndex)
 		await expect(navLink(page, '/applications')).toBeVisible({ timeout: 15_000 })
 		// The first-visit tour's full-viewport dim swallows this click.
 		await dismissWalkthrough(page)
@@ -156,7 +162,7 @@ test.describe('OpenBuild Dashboard', () => {
 			errors.push(text)
 		})
 
-		await page.goto(`${BASE}/apps/openbuild/`)
+		await page.goto(DashboardIndex)
 		await expect(
 			page.getByRole('heading', { name: 'Apps', exact: true }),
 		).toBeVisible({ timeout: 15_000 })

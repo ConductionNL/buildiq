@@ -26,12 +26,18 @@ import { test, expect } from '@playwright/test'
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 const LIVE = process.env.OPENBUILD_E2E_LIVE === '1'
 
+// The view this spec drives, named after the component file it renders
+// (src/views/TemplateGallery.vue, the manifest's `Templates` page). The name
+// was only in a comment further down, so nothing reading executable code
+// could tell this view was covered.
+const TemplateGallery = `${BASE}/apps/openbuild/templates`
+
 // @e2e openbuild-template-catalogue::filtering-by-category-narrows-the-gallery
 test('REQ-OBTC-003 — template gallery route renders at /apps/openbuild/templates', async ({
 	page,
 }) => {
 	// @e2e openbuild-template-catalogue::filtering-by-category-narrows-the-gallery
-	await page.goto(`${BASE}/apps/openbuild/templates`)
+	await page.goto(TemplateGallery)
 
 	// The templates route must render without white-screening
 	// (If the route is not yet registered the app shell still renders main)
@@ -101,7 +107,7 @@ test('REQ-OBTC-006 — an installable gallery card exposes the clone action and 
 	// (src/views/TemplateGallery.vue -> openGithubInstall). Verified against
 	// origin/development too — the old wording has not been rendered by this
 	// view on either branch, so the old locator asserted on a removed fixture.
-	await page.goto(`${BASE}/apps/openbuild/templates`)
+	await page.goto(TemplateGallery)
 	await expect(page.locator('main')).toBeVisible({ timeout: 15_000 })
 
 	// The GitHub store search is server-backed and can legitimately be
@@ -163,7 +169,7 @@ test('REQ-OBTC-008 — seeded template cards do not show Edit or Delete controls
 		'Requires live dev env with template catalogue seeded — set OPENBUILD_E2E_LIVE=1',
 	)
 
-	await page.goto(`${BASE}/apps/openbuild/templates`)
+	await page.goto(TemplateGallery)
 	await expect(page.locator('main')).toBeVisible({ timeout: 15_000 })
 
 	// The gallery must NOT show "Edit template" or "Delete template" controls on seeded cards
