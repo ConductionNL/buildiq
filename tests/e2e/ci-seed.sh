@@ -523,7 +523,24 @@ fi
 # 31040914410: 13,552,436 bytes) so it fires on a truncation or an empty file
 # without becoming a second, silently-drifting size budget to maintain.
 BUNDLE_MIN_BYTES=100000
-if [ "${GITHUB_ACTIONS:-}" = "true" ] || [ "${CI:-}" = "true" ]; then
+#
+# SEED_REQUIRE_BUNDLE=0 — for API-ONLY consumers of this script.
+#
+# The Newman job seeds with this same script (so there is one fixture set, not
+# two that can drift), but it never loads the SPA: it makes HTTP calls against
+# the REST API and asserts on JSON. It also does not run the frontend build, so
+# there is no bundle for it to serve. Requiring one there would fail the seed on
+# an artefact that suite neither needs nor produces.
+#
+# The default is 1 — ENFORCE. Playwright is unchanged, and the gate below stays
+# exactly as able to fail as it was. The opt-out has to be set deliberately by
+# the caller, and when it is, the skip is ANNOUNCED: a gate that quietly stops
+# checking is the failure this whole file was written to prevent, so a skipped
+# bundle check must never be mistakable for a passed one.
+if [ "${SEED_REQUIRE_BUNDLE:-1}" != "1" ]; then
+	echo "[ci-seed] SEED_REQUIRE_BUNDLE=0 — SPA bundle NOT verified by this run."
+	echo "[ci-seed] The API fixtures above ARE seeded; only the browser artefact is unchecked."
+elif [ "${GITHUB_ACTIONS:-}" = "true" ] || [ "${CI:-}" = "true" ]; then
 	case "$BUNDLE_INFO" in
 		*javascript*)
 			echo "[ci-seed] bundle verified as JavaScript."

@@ -27,6 +27,11 @@
 			"type": "string"
 		},
 		{
+			"key": "route_uuid",
+			"value": "",
+			"type": "string"
+		},
+		{
 			"key": "admin_user",
 			"value": "admin",
 			"type": "string"
@@ -408,6 +413,43 @@
 					]
 				},
 				{
+					"name": "POST register the BuiltAppRoute so the slug is resolvable",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"newman-roundtrip\",\n  \"applicationUuid\": \"{{created_uuid}}\"\n}"
+						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/built-app-route",
+						"description": "THE STEP THIS ROUND-TRIP WAS MISSING.\n\nApplicationsController::resolveApplicationBySlug() does not search Applications by slug — it resolves the slug through the `built-app-route` schema. A published Application with a productionVersion pointer is still unreachable by slug until a route exists, which is why `GET /api/applications/newman-roundtrip/manifest` returned 404 after every preceding step in this folder had succeeded (Application 201, version 201, pointer 200, transition 200). Three assertions failed on it and the cause was in none of them.\n\nThis folder deliberately drives the RAW OpenRegister object API (ADR-022) rather than POST /api/applications/wizard, and the wizard is what normally creates this route — so the round-trip has to create it itself. lib/Command/SeedHelloWorldFixture.php does exactly the same for hello-world, as its step 4."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('BuiltAppRoute created', function () {",
+									"    pm.expect([200, 201]).to.include(pm.response.code);",
+									"});",
+									"pm.test('the route points at the Application this folder created', function () {",
+									"    const body = pm.response.json();",
+									"    pm.expect(body.slug).to.eql('newman-roundtrip');",
+									"    pm.expect(body.applicationUuid, 'a route pointing at the wrong or an empty Application resolves nothing').to.eql(pm.collectionVariables.get('created_uuid'));",
+									"});",
+									"const routeUuid = (pm.response.json()['@self'] || {}).id || pm.response.json().uuid || pm.response.json().id;",
+									"pm.collectionVariables.set('route_uuid', String(routeUuid));"
+								]
+							}
+						}
+					]
+				},
+				{
 					"name": "GET the manifest endpoint after publish (newman-roundtrip)",
 					"request": {
 						"method": "GET",
@@ -447,7 +489,7 @@
 					]
 				},
 				{
-					"name": "DELETE cleans up the round-trip ApplicationVersion",
+					"name": "DELETE the PRODUCTION version is refused with 422 (REQ-OBV-108 guard)",
 					"request": {
 						"method": "DELETE",
 						"header": [
@@ -460,8 +502,8 @@
 								"value": "true"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/newman-roundtrip/versions/production?strategy=hard",
-						"description": "Drop the version + its per-version register first so the parent Application can be safely deleted."
+						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/newman-roundtrip/versions/production?strategy=delete-now",
+						"description": "THIS STEP WAS A BROKEN TEARDOWN; IT IS NOW A REAL ASSERTION.\n\nIt used to send `strategy=hard` — not a strategy at all (the enum is delete-now | orphan-grace | keep-register) — and got a 400, so its 'returns 200 or 204' failed for a reason that had nothing to do with deletion.\n\nWith a valid strategy the answer is 422, and 422 is CORRECT: ApplicationVersionsController::destroy()'s own docblock says 'Attempts to delete the parent Application's production version yield 422', and this round-trip pointed the Application's productionVersion at exactly this row three steps earlier. Deleting it first was never going to work.\n\nSo the teardown is reordered — the Application goes first, then the version row via OR's object API — and the attempt itself is kept as the assertion it should always have been. That matters beyond tidiness: openbuild-application-versions carries a test named 'DESTROY — reject production version deletion (422)' which SKIPS ('production_version_slug not set — seed step not run'), so this guard had no executing coverage anywhere in the suite."
 					},
 					"event": [
 						{
@@ -469,8 +511,20 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('returns 200 or 204', function () {",
-									"    pm.expect([200, 204]).to.include(pm.response.code);",
+									"// 422, and 422 is the CORRECT answer — see the request description.",
+									"// A 400 here would mean the strategy is being rejected before the",
+									"// guard is ever reached, which is the bug this step used to have.",
+									"pm.test('deleting the production version is refused with 422', function () {",
+									"    pm.expect(pm.response.code, pm.response.code === 400",
+									"        ? 'got 400 — the strategy was rejected before the production guard ran; it must be one of delete-now | orphan-grace | keep-register'",
+									"        : 'a version an Application still points at as productionVersion must not be deletable').to.eql(422);",
+									"});",
+									"pm.test('the refusal is the production guard, not a generic failure', function () {",
+									"    // Assert on WHICH refusal. Without this, any 422 from any cause —",
+									"    // a broken strategy, a missing register — would satisfy the test",
+									"    // above and read as 'the guard works'.",
+									"    const body = pm.response.json();",
+									"    pm.expect(String(body.code || body.error || ''), 'expected the delete to be refused, not merely to fail').to.match(/delete_failed|production/i);",
 									"});"
 								]
 							}
@@ -493,6 +547,56 @@
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{created_uuid}}",
 						"description": "Tear down the round-trip Application so re-runs stay idempotent. OR returns 200 or 204."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 200 or 204', function () {",
+									"    pm.expect([200, 204]).to.include(pm.response.code);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "DELETE cleans up the round-trip ApplicationVersion (after the Application)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/applicationVersion/{{created_version_uuid}}",
+						"description": "Now that the Application (and therefore its productionVersion pointer) is gone, the version row can be removed. Via OR's object API rather than openbuild's versions route, because that route resolves the version THROUGH its parent Application — which no longer exists — so it could only 404 here.\n\nOrdering, not preference: the openbuild route is the right surface while the app is alive, and it is exercised as such by the 422 guard assertion above."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 200 or 204', function () {",
+									"    pm.expect([200, 204]).to.include(pm.response.code);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "DELETE cleans up the round-trip BuiltAppRoute",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/built-app-route/{{route_uuid}}",
+						"description": "MUST be torn down, not merely tidy.\n\nA leftover route means the next run creates a SECOND built-app-route for `newman-roundtrip`, and resolveApplicationBySlug() resolves a single object per slug — so an ambiguous set makes the slug 404 on a run where everything else was correct. lib/Command/SeedHelloWorldFixture.php carries the same warning about duplicate hello-world rows making loadApplication() 404."
 					},
 					"event": [
 						{
