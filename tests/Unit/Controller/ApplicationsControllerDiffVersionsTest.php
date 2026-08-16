@@ -44,7 +44,7 @@ use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Http;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -75,7 +75,7 @@ class ApplicationsControllerDiffVersionsTest extends TestCase
     /**
      * OpenRegister object service mock.
      *
-     * @var ObjectService&MockObject
+     * @var ObjectServiceInterface&MockObject
      */
     private $objectService;
 
@@ -115,7 +115,7 @@ class ApplicationsControllerDiffVersionsTest extends TestCase
     protected function setUp(): void
     {
         $this->request        = $this->createMock(IRequest::class);
-        $this->objectService  = $this->createMock(ObjectService::class);
+        $this->objectService  = $this->createMock(ObjectServiceInterface::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->schemaMapper   = $this->createMock(SchemaMapper::class);
         $this->userSession    = $this->createMock(IUserSession::class);

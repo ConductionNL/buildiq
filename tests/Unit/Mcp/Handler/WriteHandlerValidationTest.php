@@ -89,6 +89,20 @@ class WriteHandlerValidationTest extends TestCase {
 	private LoggerInterface&MockObject $logger;
 
 	/**
+	 * OR object read/write double.
+	 *
+	 * Shared deliberately: the RBAC gate in AbstractToolHandler reads the
+	 * INJECTED ObjectServiceInterface (ADR-084) while the handler bodies still
+	 * resolve one from the container. Wiring only the container leaves the gate
+	 * looking at an unstubbed mock, which answers `not_found` — the same code
+	 * several tests here assert for a downstream reason, so the assertion would
+	 * pass without the gate ever being cleared.
+	 *
+	 * @var ObjectServiceInterface&MockObject
+	 */
+	private ObjectServiceInterface&MockObject $objectService;
+
+	/**
 	 * An admin-user mock.
 	 *
 	 * @var IUser&MockObject
@@ -112,6 +126,7 @@ class WriteHandlerValidationTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->container = $this->createMock(ContainerInterface::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 
 		$this->adminUser = $this->createMock(IUser::class);
 		$this->adminUser->method('getUID')->willReturn('admin-user');
@@ -124,7 +139,7 @@ class WriteHandlerValidationTest extends TestCase {
 			$this->groupManager,
 			$this->container,
 			$this->logger,
-			$this->createMock(ObjectServiceInterface::class),
+			$this->objectService,
 		);
 
 	}//end setUp()
@@ -388,7 +403,7 @@ class WriteHandlerValidationTest extends TestCase {
 		$this->groupManager->method('getUserGroups')->willReturn([]);
 
 		$callCount = 0;
-		$objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+		$objectService = $this->objectService;
 		$objectService->method('searchObjectsBySlug')
 			->willReturnCallback(function () use (&$callCount) {
 				$callCount++;
@@ -574,7 +589,7 @@ class WriteHandlerValidationTest extends TestCase {
 
 		// Return app (RBAC OK) + version with empty pages (page not found).
 		$callCount = 0;
-		$objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+		$objectService = $this->objectService;
 		$objectService->method('searchObjectsBySlug')
 			->willReturnCallback(function () use (&$callCount) {
 				$callCount++;
@@ -685,10 +700,10 @@ class WriteHandlerValidationTest extends TestCase {
 	 * @param string $uid The user UID to place in owners.
 	 * @param string $appSlug The app slug.
 	 *
-	 * @return \OCA\OpenRegister\Service\ObjectServiceInterface&MockObject
+	 * @return ObjectServiceInterface&MockObject
 	 */
-	private function buildOwnerObjectService(string $uid, string $appSlug): object {
-		$objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+	private function buildOwnerObjectService(string $uid, string $appSlug): ObjectServiceInterface {
+		$objectService = $this->objectService;
 		$objectService->method('searchObjectsBySlug')
 			->willReturnCallback(function (string $register, string $schema, array $filters) use ($uid, $appSlug) {
 				if ($schema === 'application' && ($filters['slug'] ?? '') === $appSlug) {
@@ -709,7 +724,7 @@ class WriteHandlerValidationTest extends TestCase {
 	 * @return object A handler with a public callRecordAdminBypass() shim.
 	 */
 	private function bypassHandler(?AuditTrailMapper $auditMapper): object {
-		return new class($this->userSession, $this->container, $this->logger, $this->groupManager, null, $auditMapper) extends AbstractToolHandler {
+		return new class($this->userSession, $this->container, $this->logger, $this->groupManager, $this->objectService, null, $auditMapper) extends AbstractToolHandler {
 			public function handle(array $args): array {
 				return [];
 			}
@@ -754,48 +769,32 @@ class WriteHandlerValidationTest extends TestCase {
 	}//end testAdminBypassFallsBackToLogWhenNoMapper()
 
 	/**
-	 * Build an AbstractToolHandler exposing requireWriteRole, wired to a container
-	 * whose ObjectService returns $searchResult from searchObjectsBySlug and
-	 * $findEntity from find().
+	 * Build an AbstractToolHandler exposing requireWriteRole, wired to an object
+	 * service that returns $searchResult from searchObjectsBySlug and $findEntity
+	 * from find().
+	 *
+	 * The double is BOTH injected into the handler (requireWriteRole reads the
+	 * injected ObjectServiceInterface per ADR-084) and returned by the container
+	 * (the handler bodies still resolve one from it). Wiring only the container
+	 * would leave the gate reading an unstubbed service, which returns
+	 * `not_found` — indistinguishable here from the outcomes these tests assert.
 	 *
 	 * @param AuditTrailMapper|null $auditMapper The audit mapper (or null).
 	 * @param array<int,mixed> $searchResult What searchObjectsBySlug returns (may be rendered arrays).
-	 * @param mixed $findEntity What ObjectService::find() returns (an ObjectEntity when hydrated).
+	 * @param mixed $findEntity What find() returns (an ObjectEntity when hydrated).
 	 *
 	 * @return object A handler with a public callRequireWriteRole() shim.
 	 */
 	private function writeRoleHandler(?AuditTrailMapper $auditMapper, array $searchResult, mixed $findEntity): object {
-		$objectService = new class($searchResult, $findEntity) {
-			/**
-			 * @param array<int,mixed> $searchResult The search result.
-			 * @param mixed $findEntity The find() return value.
-			 */
-			public function __construct(
-				private array $searchResult,
-				private mixed $findEntity,
-			) {
-			}//end __construct()
-
-			/**
-			 * @return array<int,mixed>
-			 */
-			public function searchObjectsBySlug(string $register, string $schema, array $filters = [], bool $_rbac = true, bool $_multitenancy = true): array {
-				return $this->searchResult;
-			}//end searchObjectsBySlug()
-
-			/**
-			 * @return mixed
-			 */
-			public function find(string $id): mixed {
-				return $this->findEntity;
-			}//end find()
-		};
+		$objectService = $this->objectService;
+		$objectService->method('searchObjectsBySlug')->willReturn($searchResult);
+		$objectService->method('find')->willReturn($findEntity);
 
 		$this->container->method('get')
 			->with('OCA\OpenRegister\Service\ObjectService')
 			->willReturn($objectService);
 
-		return new class($this->userSession, $this->container, $this->logger, $this->groupManager, null, $auditMapper) extends AbstractToolHandler {
+		return new class($this->userSession, $this->container, $this->logger, $this->groupManager, $objectService, null, $auditMapper) extends AbstractToolHandler {
 			public function handle(array $args): array {
 				return [];
 			}

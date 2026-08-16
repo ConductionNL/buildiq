@@ -998,10 +998,6 @@ class ApplicationVersionService {
 			return [];
 		}
 
-		if (is_array($results) === false) {
-			return [];
-		}
-
 		$normalised = [];
 		foreach ($results as $row) {
 			$normalised[] = $this->normaliseObjectArray(object: $row);

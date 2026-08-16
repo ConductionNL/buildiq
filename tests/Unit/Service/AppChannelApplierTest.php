@@ -43,7 +43,6 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Service\ObjectService;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -137,7 +136,6 @@ class AppChannelApplierTest extends TestCase {
 			),
 			$this->appManager,
 			$this->createMock(LoggerInterface::class),
-			objectService: $this->createMock(ObjectServiceInterface::class),
 		);
 
 	}//end applier()
@@ -239,18 +237,27 @@ class AppChannelApplierTest extends TestCase {
 
 		$this->objectService->expects(self::once())
 			->method('saveObject')
+			// Positional, because that is how the mock reports a named-argument
+			// call. The list must name EVERY parameter of
+			// ObjectServiceInterface::saveObject — the contract carries a
+			// `$_validation` parameter between `$silent` and `$uploadedFiles`
+			// that the pre-contract signature did not, and a list one short
+			// silently shifts `failIfExists` onto `$currentUser`, so the
+			// expectation never matches and the never-overwrite guarantee below
+			// stops being asserted.
 			->with(
-				self::anything(),
-				self::anything(),
-				'openconnector',
-				'source',
-				self::NIL_UUID,
-				false,
-				false,
-				false,
-				null,
-				null,
-				true
+				self::anything(), // object
+				self::anything(), // extend
+				'openconnector',  // register
+				'source',         // schema
+				self::NIL_UUID,   // uuid
+				false,            // _rbac
+				false,            // _multitenancy
+				false,            // silent
+				true,             // _validation (contract default)
+				null,             // uploadedFiles
+				null,             // currentUser
+				true              // failIfExists — the never-overwrite guarantee
 			);
 
 		$report = $this->applier()->apply(

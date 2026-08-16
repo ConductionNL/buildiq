@@ -1864,7 +1864,7 @@ class AutomationCompilerService {
 			return null;
 		}
 
-		if (is_array($results) === false || $results === []) {
+		if ($results === []) {
 			return null;
 		}
 

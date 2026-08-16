@@ -28,6 +28,7 @@ namespace OCA\OpenBuild\Command;
 use OCA\OpenBuild\Service\ApplicationVersionService;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -402,9 +403,9 @@ class SeedHelloWorldFixture extends Command {
 	 * @param array<string, mixed> $data The object data.
 	 * @param string|null $uuid Optional UUID to update an existing object.
 	 *
-	 * @return \OCA\OpenRegister\Db\ObjectEntity The saved object.
+	 * @return ObjectEntityInterface The saved object.
 	 */
-	private function create(string $register, string $schema, array $data, ?string $uuid = null): \OCA\OpenRegister\Db\ObjectEntity {
+	private function create(string $register, string $schema, array $data, ?string $uuid = null): ObjectEntityInterface {
 		return $this->objectService->saveObject(
 			$data,
 			register: $register,
