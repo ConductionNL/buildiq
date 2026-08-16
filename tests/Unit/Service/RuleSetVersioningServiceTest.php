@@ -68,7 +68,6 @@ final class RuleSetVersioningServiceTest extends TestCase {
 			$this->objectService,
 			$this->ruleEngine,
 			$this->createMock(LoggerInterface::class),
-			objectService: $this->createMock(ObjectServiceInterface::class),
 		);
 
 	}//end setUp()

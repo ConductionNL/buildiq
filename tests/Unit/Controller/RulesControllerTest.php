@@ -99,7 +99,6 @@ final class RulesControllerTest extends TestCase {
 			$this->versioningService,
 			$this->objectService,
 			$this->userSession,
-			objectService: $this->createMock(ObjectServiceInterface::class),
 		);
 
 	}//end controller()

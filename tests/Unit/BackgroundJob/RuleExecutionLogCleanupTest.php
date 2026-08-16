@@ -62,7 +62,6 @@ final class RuleExecutionLogCleanupTest extends TestCase {
 			$this->createMock(ITimeFactory::class),
 			$this->objectService,
 			$this->createMock(LoggerInterface::class),
-			objectService: $this->createMock(ObjectServiceInterface::class),
 		);
 
 	}//end setUp()

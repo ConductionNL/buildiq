@@ -78,7 +78,6 @@ class PublishTemplatesTest extends TestCase {
 			$this->syncService,
 			$this->objectService,
 			$this->createMock(LoggerInterface::class),
-			objectService: $this->createMock(ObjectServiceInterface::class),
 		);
 	}//end setUp()
 

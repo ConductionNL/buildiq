@@ -97,7 +97,6 @@ final class AutomationCompilerServiceTest extends TestCase {
 			$this->approvalStepMapper,
 			$this->appManager,
 			new NullLogger(),
-			objectService: $current,
 		);
 
 	}//end setUp()
@@ -857,7 +856,6 @@ final class AutomationCompilerServiceTest extends TestCase {
 			$this->approvalStepMapper,
 			$this->appManager,
 			new NullLogger(),
-			objectService: $current,
 		);
 
 		$automation = [

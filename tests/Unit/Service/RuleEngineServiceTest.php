@@ -108,7 +108,6 @@ final class RuleEngineServiceTest extends TestCase {
 			$this->userSession,
 			$this->createMock(LoggerInterface::class),
 			$this->actionDispatcher,
-			objectService: $this->createMock(ObjectServiceInterface::class),
 		);
 
 	}//end setUp()
@@ -306,7 +305,6 @@ final class RuleEngineServiceTest extends TestCase {
 			$this->userSession,
 			$this->createMock(LoggerInterface::class),
 			$this->actionDispatcher,
-			objectService: $this->createMock(ObjectServiceInterface::class),
 		);
 
 		$this->objectService->method('searchObjectsBySlug')->willReturnCallback(
@@ -354,7 +352,6 @@ final class RuleEngineServiceTest extends TestCase {
 			$this->userSession,
 			$this->createMock(LoggerInterface::class),
 			$this->actionDispatcher,
-			objectService: $this->createMock(ObjectServiceInterface::class),
 		);
 
 		$this->objectService->method('searchObjectsBySlug')->willReturnCallback(

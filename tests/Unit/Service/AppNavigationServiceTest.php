@@ -126,7 +126,6 @@ class AppNavigationServiceTest extends TestCase {
 			$this->groupManager,
 			$this->appConfig,
 			$this->logger,
-			objectService: $this->createMock(ObjectServiceInterface::class),
 		);
 	}//end setUp()
 
@@ -499,7 +498,6 @@ class AppNavigationServiceTest extends TestCase {
 			$this->groupManager,
 			$this->appConfig,
 			$this->logger,
-			objectService: $this->createMock(ObjectServiceInterface::class),
 		);
 
 		$user = $this->createMock(IUser::class);
