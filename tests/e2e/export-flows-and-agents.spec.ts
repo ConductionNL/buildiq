@@ -39,6 +39,25 @@ import { E2E_BASE_URL as BASE } from './support/baseUrl'
 const TEST_SLUG = 'hello-world'
 const POLL_TIMEOUT_MS = 90_000
 
+/** The fixture flow's name. One constant: the creating POST and the picker
+ * assertion must not be able to drift apart. */
+const FIXTURE_FLOW_NAME = 'PW export fixture agentic'
+
+/**
+ * Build a regex tolerant of the vue-select match-highlight quirk: an option's
+ * rendered text can be fragmented into several inline nodes mid-word, and
+ * Playwright's accessible-name computation joins those fragments with a
+ * synthesized space, so a literal-text match fails wherever the split lands.
+ * Same helper agents.spec.ts and automations.spec.ts already carry.
+ *
+ * @param text The option's literal display text.
+ * @return {RegExp} A whitespace-tolerant, case-insensitive regex.
+ */
+function looseOptionName(text: string): RegExp {
+	const escaped = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+	return new RegExp(escaped.split('').join('\\s*'), 'i')
+}
+
 /**
  * List the entries inside a ZIP.
  *
@@ -148,7 +167,7 @@ test.describe('Exporting the flows an app is made of', () => {
 			page,
 			'/index.php/apps/openregister/api/flows',
 			{
-				name: 'PW export fixture agentic',
+				name: FIXTURE_FLOW_NAME,
 				description: 'Bound through the UI and exported.',
 				enabled: false,
 				nodes: [
@@ -224,9 +243,29 @@ test.describe('Exporting the flows an app is made of', () => {
 			'App settings must offer a flow PICKER — a UUID cannot be typed into a text field',
 		).toBeVisible({ timeout: 20_000 })
 
-		await picker.click()
+		// The list must actually have loaded. Asserted separately from the
+		// option click so the two failures are told apart: an empty picker is
+		// a PRODUCT bug (the loader was never called — see the
+		// `onSettingsOpen` wiring), while a present-but-unopenable picker is a
+		// TEST bug. Chasing the second while looking at the first cost a full
+		// CI cycle.
+		await expect(
+			page.getByText(/No flows exist on this instance yet/i),
+			'the flow list must be loaded by the time the modal is open',
+		).toHaveCount(0)
+
+		// ⚠️ CLICK THE COMBOBOX, NOT THE WRAPPER. `data-test` sits on a
+		// wrapper div because NcSelect does not forward stray attributes;
+		// clicking that div lands on padding and does NOT open the dropdown,
+		// so the option never renders and the test times out looking for it.
+		// Every other NcSelect in this suite (agents.spec.ts,
+		// automations.spec.ts) drives the control by its `combobox` role,
+		// named from `inputLabel`.
 		await page
-			.getByRole('option', { name: 'PW export fixture agentic' })
+			.getByRole('combobox', { name: /flows this app is made of/i })
+			.click()
+		await page
+			.getByRole('option', { name: looseOptionName(FIXTURE_FLOW_NAME) })
 			.first()
 			.click()
 
