@@ -30,9 +30,9 @@ import type { Page } from '@playwright/test'
 
 import { expect, test } from '@playwright/test'
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { dismissOverlays } from './support/appFixture'
 import { E2E_BASE_URL as BASE } from './support/baseUrl'
 
@@ -42,6 +42,38 @@ const POLL_TIMEOUT_MS = 90_000
 /** The fixture flow's name. One constant: the creating POST and the picker
  * assertion must not be able to drift apart. */
 const FIXTURE_FLOW_NAME = 'PW export fixture agentic'
+
+/** The background job that turns a queued ExportJob into a ZIP. */
+const EXPORT_JOB_CLASS = 'OCA\\OpenBuild\\BackgroundJob\\RunExportJob'
+
+/**
+ * Run one pass of the export background job, if `occ` is reachable.
+ *
+ * Playwright's cwd is the app directory (`server/apps/openbuild` in CI), so
+ * the server root — and `occ` — is two levels up. When it is not there the
+ * call is a no-op and the job-status assertion below still decides the test;
+ * this is deliberately NOT a skip guard, which would turn "the export never
+ * ran" into a silent pass.
+ *
+ * @return {void}
+ */
+function runExportJobWorker(): void {
+	const occ = resolve(process.cwd(), '../../occ')
+	if (existsSync(occ) === false) {
+		return
+	}
+
+	try {
+		execFileSync(
+			'php',
+			[occ, 'background-job:worker', '--once', EXPORT_JOB_CLASS],
+			{ stdio: 'pipe', timeout: 60_000 },
+		)
+	} catch {
+		// A worker pass that errors must not fail the test by itself — the
+		// job's own status is the assertion.
+	}
+}
 
 /**
  * Build a regex tolerant of the vue-select match-highlight quirk: an option's
@@ -388,20 +420,19 @@ test.describe('Exporting the flows an app is made of', () => {
 		let jobUuid = ''
 		const deadline = Date.now() + POLL_TIMEOUT_MS
 		while (Date.now() < deadline) {
-			// ⚠️ DRIVE THE QUEUE. The export is an `IJobList` background job —
-			// there is no synchronous run path — and nothing on the test
-			// instance ticks it on our schedule. Nextcloud's own ajax ticker
-			// does call `/cron.php`, but on ITS interval, and each web
-			// invocation runs exactly ONE job (`CronService::runWeb()`), so
-			// with unrelated jobs already queued the export was still
-			// `queued` when the 90 s budget ran out.
+			// ⚠️ RUN OUR JOB, DO NOT TICK THE QUEUE. The export is an
+			// `IJobList` background job with no synchronous path, and the
+			// obvious approach — calling `/cron.php` in the loop — does not
+			// work here. `CronService::runWeb()` executes exactly ONE job per
+			// call, and this instance's queue is poisoned: OpenRegister's
+			// `ObjectTextExtractionJob` throws on every object
+			// ("organization is not a valid attribute") and is re-queued, so
+			// ~90 cron calls never reached ours and the status stayed
+			// "queued" for the whole 90 s budget.
 			//
-			// Two calls per iteration drains ~90 jobs over the poll, which
-			// reaches ours. Failures here are deliberately ignored: cron.php
-			// answers non-200 in some modes, and that must not fail the test
-			// on its own — the job status below is the assertion.
-			await page.request.get(`${BASE}/cron.php`).catch(() => undefined)
-			await page.request.get(`${BASE}/cron.php`).catch(() => undefined)
+			// `background-job:worker` takes the job CLASSES to look for, so it
+			// runs ours and ignores the backlog entirely.
+			runExportJobWorker()
 
 			const rows =
 				(await (await page.request.get(jobsUrl)).json()).results || []
