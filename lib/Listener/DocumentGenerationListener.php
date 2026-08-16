@@ -53,6 +53,8 @@ use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -68,19 +70,48 @@ class DocumentGenerationListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectServiceInterface $objectService Scans the `automation` register for matching triggers.
+	 * @param ContainerInterface $container Resolves OpenRegister's object service at USE time, to scan
+	 *                                      the `automation` register — see objectService() for why a
+	 *                                      listener cannot constructor-inject it.
 	 * @param DocumentGenerationService $documentGenerator Calls Docudesk + writes the configured output(s).
 	 * @param LoggerInterface $logger PSR logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectServiceInterface $objectService,
+		private readonly ContainerInterface $container,
 		private readonly DocumentGenerationService $documentGenerator,
 		private readonly LoggerInterface $logger,
 	) {
 
 	}//end __construct()
+
+	/**
+	 * Resolve OpenRegister's object service, lazily.
+	 *
+	 * ⚠️ An event listener CANNOT constructor-inject a published interface.
+	 * Nextcloud's `ServiceEventListener` builds the listener from the SERVER
+	 * container ("TODO: fetch from the app containers" — its own source), which
+	 * never sees this app's `registerServiceAlias()`. The constructor parameter
+	 * therefore could not be built, and the exception propagated out of
+	 * `dispatch()` into whichever app emitted the event.
+	 *
+	 * Resolves the CONCRETE class on purpose — asking the same container for
+	 * `ObjectServiceInterface::class` here would fail identically. Nextcloud
+	 * autowires concrete classes across apps; the declared type stays the
+	 * published contract.
+	 *
+	 * @return ObjectServiceInterface OpenRegister's published object contract.
+	 *
+	 * @throws ContainerExceptionInterface When OpenRegister is absent or disabled.
+	 */
+	private function objectService(): ObjectServiceInterface {
+		/** @var ObjectServiceInterface $service */
+		$service = $this->container->get('OCA\OpenRegister\Service\ObjectService');
+
+		return $service;
+
+	}//end objectService()
 
 	/**
 	 * Handle a dispatched object event, generating a document for every
@@ -214,7 +245,7 @@ class DocumentGenerationListener implements IEventListener {
 	 */
 	private function findMatchingAutomations(string $triggerType, string $schemaSlug, ?string $transitionAction): array {
 		try {
-			$results = $this->objectService->findAll(
+			$results = $this->objectService()->findAll(
 				config: [
 					'filters' => [
 						'register' => AutomationCompilerService::REGISTER_SLUG,
