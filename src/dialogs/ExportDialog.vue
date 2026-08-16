@@ -2,7 +2,7 @@
 <template>
 	<NcDialog
 		:name="t('openbuild', 'Export application')"
-		:canClose="!submitting"
+		:noClose="submitting"
 		size="normal"
 		@closing="onClose">
 		<form class="export-dialog" @submit.prevent="submit">
