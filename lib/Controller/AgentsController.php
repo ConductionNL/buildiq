@@ -187,9 +187,26 @@ class AgentsController extends Controller {
 	 * agent is expected to stay small (design.md Risks — retention is a
 	 * follow-up, not a v1 blocker).
 	 *
+	 * PROPAGATION IS DELIBERATE, AND IT IS THE SAFER OF THE TWO OPTIONS.
+	 * `RegisterMapper::find()` / `SchemaMapper::find()` throw
+	 * `DoesNotExistException` when the `openbuild` register or the `agentRun`
+	 * schema is not installed, and `\Exception` when their RBAC check refuses
+	 * — both are deployment faults, not "this agent has no runs". Swallowing
+	 * them here and returning `[]` would render an empty run list that is
+	 * indistinguishable from a genuinely empty history, in the one endpoint
+	 * whose whole purpose is that agent runs are "transparently logged and
+	 * reviewable". So they travel to `runs()`, whose `catch (Throwable)` logs
+	 * the cause and answers HTTP 500 — the honest status for a broken
+	 * install. This is why the sibling `loadAgent()` / `loadApplication()`
+	 * helpers may return `null` and this one may not: there, `null` is
+	 * translated to a 404 the caller can act on.
+	 *
 	 * @param string $agentUuid The Agent object uuid.
 	 *
 	 * @return array<int, array<string, mixed>>
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When the openbuild register or the agentRun schema is absent.
+	 * @throws \Exception When the register/schema RBAC check refuses, or the object search fails.
 	 */
 	private function loadRunsForAgent(string $agentUuid): array {
 		$registerId = $this->registerMapper->find(self::REGISTER_SLUG, _multitenancy: false)->getId();
