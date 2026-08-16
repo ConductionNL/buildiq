@@ -342,7 +342,7 @@ class AppRepoSerializer {
 				continue;
 			}
 
-			$object = $this->findConnector(kind: $kind, uuid: $uuid);
+			$object = $this->findConnector(kind: $kind, uuid: $uuid, resolvedUuid: $realUuid);
 			if ($object === null) {
 				// Counted, not silently skipped: "declared 25, missing 25" is a
 				// diagnosable artefact; "declared 0" is indistinguishable from an
@@ -352,18 +352,36 @@ class AppRepoSerializer {
 				continue;
 			}
 
+			// Keyed on the object's OWN resolved identity (from the
+			// ObjectEntity, via findConnector()'s $resolvedUuid out-param) —
+			// never the raw reference string a caller supplied: a
+			// synchronization's `sourceId` is commonly a SLUG ("tenderned"),
+			// while a top-level declared binding's `uuid` field is a real UUID.
+			// Two different spellings of the same identifier must dedupe to the
+			// SAME entry. This ALSO has to be checked here, not only in the
+			// reference-resolution loop below: a synchronization binding
+			// processed EARLIER in `$bindings` can resolve this exact object
+			// first (via its slug-shaped sourceId) and already have written it
+			// under a different filename — the declared path used to write
+			// unconditionally regardless, installing the same source twice
+			// (live-verified: `norway-doffin.json` AND `bc2d32cc-….json` both
+			// present for one object before this check existed).
+			$identity = ($realUuid !== '' ? $realUuid : $uuid);
+			if (isset($seen[$kind . '/' . $identity]) === true) {
+				continue;
+			}
+
 			$name = $this->connectorFileName(binding: $binding, object: $object, uuid: $uuid);
 			$sanitised = $this->stripSecrets(data: $object, stripped: $stripped);
 
 			$files[$kind . '/' . $name . '.json'] = $sanitised;
-			$seen[$kind . '/' . $uuid] = true;
+			$seen[$kind . '/' . $identity] = true;
 			$declared++;
 
 			// ONE level of dependency resolution, and no further.
 			foreach ($this->directReferences(kind: $kind, object: $object) as $refKind => $refUuids) {
 				foreach ($refUuids as $refUuid) {
-					$key = $refKind . '/' . $refUuid;
-					if (isset($seen[$key]) === true || count($files) >= self::MAX_CHANNEL_ENTRIES) {
+					if (count($files) >= self::MAX_CHANNEL_ENTRIES) {
 						continue;
 					}
 
@@ -371,8 +389,13 @@ class AppRepoSerializer {
 						continue;
 					}
 
-					$refObject = $this->findConnector(kind: $refKind, uuid: $refUuid);
+					$refObject = $this->findConnector(kind: $refKind, uuid: $refUuid, resolvedUuid: $realRefUuid);
 					if ($refObject === null) {
+						continue;
+					}
+
+					$key = $refKind . '/' . ($realRefUuid !== '' ? $realRefUuid : $refUuid);
+					if (isset($seen[$key]) === true) {
 						continue;
 					}
 
@@ -400,11 +423,22 @@ class AppRepoSerializer {
 	 * register.
 	 *
 	 * @param string $kind The connector kind.
-	 * @param string $uuid The object UUID.
+	 * @param string $uuid The object UUID (or slug — `find(id:)` accepts either).
+	 * @param string|null $resolvedUuid OUT: the object's OWN real UUID, from the
+	 *                                  ObjectEntity, never from its payload — a
+	 *                                  connector's `object` JSON blob does not
+	 *                                  reliably carry its own identity as a
+	 *                                  property (that is OpenRegister metadata,
+	 *                                  not authored data), so a caller needing
+	 *                                  the true identity (e.g. to dedupe two
+	 *                                  different spellings of one reference)
+	 *                                  MUST read it from here, not from the
+	 *                                  returned array.
 	 *
 	 * @return array<string,mixed>|null The object payload, or null when absent.
 	 */
-	private function findConnector(string $kind, string $uuid): ?array {
+	private function findConnector(string $kind, string $uuid, ?string &$resolvedUuid = null): ?array {
+		$resolvedUuid = null;
 		if ($this->objectService === null) {
 			return null;
 		}
@@ -438,6 +472,7 @@ class AppRepoSerializer {
 		// getObject() is the object payload. The array branch this used to carry
 		// was unreachable against that contract — the service never hands back a
 		// bare array here — so it is gone rather than left as dead cover.
+		$resolvedUuid = (string)$found->getUuid();
 		return $found->getObject();
 	}//end findConnector()
 
