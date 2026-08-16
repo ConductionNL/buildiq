@@ -770,7 +770,7 @@
         },
         "slug": "export-job",
         "icon": "PackageVariant",
-        "version": "0.1.0",
+        "version": "1.1.0",
         "title": "Export Job",
         "description": "Asynchronous pipeline that turns a published Application into a standalone Nextcloud app — delivered as a ZIP download or pushed to GitHub. Lifecycle is declarative per ADR-031; the file-generation surface is an ADR-031 §Exceptions(3) imperative path.",
         "authorization": {
