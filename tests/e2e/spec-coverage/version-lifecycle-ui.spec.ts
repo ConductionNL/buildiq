@@ -80,11 +80,14 @@ async function openManifestDetail(page: Page, objectId: string): Promise<void> {
 async function appObjectId(page: Page): Promise<string> {
 	const res = await page.request.get(
 		`${BASE}/index.php/apps/openregister/api/objects/openbuild/application`
-		+ `?slug=${encodeURIComponent(SLUG)}&_limit=1`,
+			+ `?slug=${encodeURIComponent(SLUG)}&_limit=1`,
 	)
 	expect(res.ok(), 'the Application lookup must succeed').toBeTruthy()
 	const rows = (await res.json()).results || []
-	expect(rows.length, `the "${SLUG}" fixture Application must exist`).toBeGreaterThan(0)
+	expect(
+		rows.length,
+		`the "${SLUG}" fixture Application must exist`,
+	).toBeGreaterThan(0)
 	const id = rows[0]['@self']?.id || rows[0].uuid || rows[0].id
 	expect(id, 'the Application must carry an object id').toBeTruthy()
 	return String(id)
@@ -92,8 +95,11 @@ async function appObjectId(page: Page): Promise<string> {
 
 /** The row locator for a version addressed by its visible name. */
 function rowFor(page: Page, versionName: string) {
-	return page.locator('.version-history__row')
-		.filter({ has: page.locator('.version-history__row-title', { hasText: versionName }) })
+	return page.locator('.version-history__row').filter({
+		has: page.locator('.version-history__row-title', {
+			hasText: versionName,
+		}),
+	})
 }
 
 test.describe('version-lifecycle-ui — the version list on the Manifest detail page', () => {
@@ -109,14 +115,17 @@ test.describe('version-lifecycle-ui — the version list on the Manifest detail 
 
 	// @e2e version-lifecycle-ui::slug-is-passed-to-the-version-list
 	// @e2e version-lifecycle-ui::versions-render-for-an-app-with-at-least-one-version
-	test('REQ-OBV-VLU-001 — the list is fetched by SLUG and renders one row per version', async ({ page }) => {
+	test('REQ-OBV-VLU-001 — the list is fetched by SLUG and renders one row per version', async ({
+		page,
+	}) => {
 		const objectId = await appObjectId(page)
 
 		// The scenario is specifically that the SLUG-based endpoint is called —
 		// the bug it guards is the view falling back to applicationUuid. Arm the
 		// wait BEFORE navigating so the request cannot be missed.
 		const versionsCall = page.waitForResponse(
-			(r) => r.url().includes(`/apps/openbuild/api/applications/${SLUG}/versions`)
+			(r) =>
+				r.url().includes(`/apps/openbuild/api/applications/${SLUG}/versions`)
 				&& r.request().method() === 'GET',
 			{ timeout: 30_000 },
 		)
@@ -126,11 +135,17 @@ test.describe('version-lifecycle-ui — the version list on the Manifest detail 
 		})
 
 		const res = await versionsCall
-		expect(res.status(), 'the slug-based versions endpoint must answer 2xx').toBeLessThan(300)
+		expect(
+			res.status(),
+			'the slug-based versions endpoint must answer 2xx',
+		).toBeLessThan(300)
 
 		// "the version list renders one row per version (not the empty state)"
 		const expected = await listVersions(page, SLUG)
-		expect(expected.length, 'the fixture must carry at least one version').toBeGreaterThan(0)
+		expect(
+			expected.length,
+			'the fixture must carry at least one version',
+		).toBeGreaterThan(0)
 
 		await expect(
 			page.locator('.version-history__empty'),
@@ -143,7 +158,9 @@ test.describe('version-lifecycle-ui — the version list on the Manifest detail 
 	})
 
 	// @e2e version-lifecycle-ui::production-version-is-marked
-	test('REQ-OBV-VLU-004 — exactly one row carries the production marker', async ({ page }) => {
+	test('REQ-OBV-VLU-004 — exactly one row carries the production marker', async ({
+		page,
+	}) => {
 		const objectId = await appObjectId(page)
 		await openManifestDetail(page, objectId)
 
@@ -157,18 +174,25 @@ test.describe('version-lifecycle-ui — the version list on the Manifest detail 
 		// The marker must be ON the production row, not merely present somewhere:
 		// the row that carries it is also the one flagged `--current`.
 		await expect(
-			page.locator('.version-history__row--current .version-history__badge--production'),
+			page.locator(
+				'.version-history__row--current .version-history__badge--production',
+			),
 			'the marker must sit on the row the view considers production',
 		).toHaveCount(1)
 
 		// And the other rows must NOT carry it — a marker on every row would
 		// satisfy a naive "is it visible" check while marking nothing.
 		const rows = await page.locator('.version-history__row').count()
-		expect(rows, 'the fixture chain must give more than one row').toBeGreaterThan(1)
+		expect(
+			rows,
+			'the fixture chain must give more than one row',
+		).toBeGreaterThan(1)
 	})
 
 	// @e2e version-lifecycle-ui::click-a-non-production-version-opens-it-scoped
-	test('REQ-OBV-VLU-002 — activating a non-production row opens the builder scoped to it', async ({ page }) => {
+	test('REQ-OBV-VLU-002 — activating a non-production row opens the builder scoped to it', async ({
+		page,
+	}) => {
 		// THREE page loads: the fixture provisioning in beforeEach, the manifest
 		// detail page, and then the builder — which is a SEPARATE webpack entry
 		// (`src/builder.js`), so it is a cold bundle fetch, not an SPA route
@@ -184,23 +208,32 @@ test.describe('version-lifecycle-ui — the version list on the Manifest detail 
 
 		// `staging` is a draft in the fixture chain, so it is never production.
 		const staging = rowFor(page, 'staging')
-		await expect(staging, 'the fixture must render a "staging" row').toHaveCount(1, { timeout: 20_000 })
+		await expect(staging, 'the fixture must render a "staging" row').toHaveCount(
+			1,
+			{ timeout: 20_000 },
+		)
 		await expect(
 			staging.locator('.version-history__badge--production'),
 			'"staging" must not be the production row, or this scenario tests nothing',
 		).toHaveCount(0)
 
-		await staging.locator('.version-history__btn', { hasText: 'Open' }).first().click()
+		await staging
+			.locator('.version-history__btn', { hasText: 'Open' })
+			.first()
+			.click()
 
 		await page.waitForURL(
-			(url) => url.pathname.endsWith(`/apps/openbuild/builder/${SLUG}`)
+			(url) =>
+				url.pathname.endsWith(`/apps/openbuild/builder/${SLUG}`)
 				&& url.searchParams.get('_version') === 'staging',
 			{ timeout: 30_000 },
 		)
 	})
 
 	// @e2e version-lifecycle-ui::click-the-production-version-opens-the-canonical-url
-	test('REQ-OBV-VLU-002 — activating the production row opens the canonical URL with no _version', async ({ page }) => {
+	test('REQ-OBV-VLU-002 — activating the production row opens the canonical URL with no _version', async ({
+		page,
+	}) => {
 		// Three page loads, one of them the standalone builder bundle — see the
 		// note on the non-production case above.
 		test.setTimeout(120_000)
@@ -209,19 +242,28 @@ test.describe('version-lifecycle-ui — the version list on the Manifest detail 
 		await openManifestDetail(page, objectId)
 
 		const production = page.locator('.version-history__row--current')
-		await expect(production, 'the production row must be identifiable').toHaveCount(1, { timeout: 20_000 })
+		await expect(
+			production,
+			'the production row must be identifiable',
+		).toHaveCount(1, { timeout: 20_000 })
 
-		await production.locator('.version-history__btn', { hasText: 'Open' }).first().click()
+		await production
+			.locator('.version-history__btn', { hasText: 'Open' })
+			.first()
+			.click()
 
 		await page.waitForURL(
-			(url) => url.pathname.endsWith(`/apps/openbuild/builder/${SLUG}`)
+			(url) =>
+				url.pathname.endsWith(`/apps/openbuild/builder/${SLUG}`)
 				&& !url.searchParams.has('_version'),
 			{ timeout: 30_000 },
 		)
 	})
 
 	// @e2e version-lifecycle-ui::edit-a-version-opens-the-designer-with-the-version-param
-	test('REQ-OBV-VLU-003 — per-row Edit opens the designer carrying ?_version=', async ({ page }) => {
+	test('REQ-OBV-VLU-003 — per-row Edit opens the designer carrying ?_version=', async ({
+		page,
+	}) => {
 		// Three page loads, the last being the page designer — see the note on
 		// the non-production case above.
 		test.setTimeout(120_000)
@@ -241,14 +283,17 @@ test.describe('version-lifecycle-ui — the version list on the Manifest detail 
 		await edit.first().click()
 
 		await page.waitForURL(
-			(url) => url.pathname.endsWith(`/apps/openbuild/builder/${SLUG}/pages`)
+			(url) =>
+				url.pathname.endsWith(`/apps/openbuild/builder/${SLUG}/pages`)
 				&& url.searchParams.get('_version') === 'staging',
 			{ timeout: 30_000 },
 		)
 	})
 
 	// @e2e version-lifecycle-ui::new-draft-clones-production-manifest-and-shares-its-register
-	test('REQ-OBV-VLU-005 — New draft posts a draft that clones production manifest and shares its register', async ({ page }) => {
+	test('REQ-OBV-VLU-005 — New draft posts a draft that clones production manifest and shares its register', async ({
+		page,
+	}) => {
 		// A navigation, a list round-trip and a create round-trip.
 		test.setTimeout(120_000)
 
@@ -257,7 +302,10 @@ test.describe('version-lifecycle-ui — the version list on the Manifest detail 
 
 		const before = await listVersions(page, SLUG)
 		const productionRow = before.find((v) => v?.slug === 'production')
-		expect(productionRow, 'the fixture must carry a production version').toBeTruthy()
+		expect(
+			productionRow,
+			'the fixture must carry a production version',
+		).toBeTruthy()
 
 		const newDraft = page.getByRole('button', { name: 'New draft' })
 		await expect(
@@ -268,7 +316,8 @@ test.describe('version-lifecycle-ui — the version list on the Manifest detail 
 		// Arm the create BEFORE the click. The button also triggers a GET of the
 		// version list first, so the predicate pins the method as well as the URL.
 		const created = page.waitForResponse(
-			(r) => r.url().includes(`/apps/openbuild/api/applications/${SLUG}/versions`)
+			(r) =>
+				r.url().includes(`/apps/openbuild/api/applications/${SLUG}/versions`)
 				&& r.request().method() === 'POST',
 			{ timeout: 45_000 },
 		)
@@ -280,15 +329,18 @@ test.describe('version-lifecycle-ui — the version list on the Manifest detail 
 
 		const sent = res.request().postDataJSON()
 		expect(sent.status, 'the created version must be a draft').toBe('draft')
-		expect(sent.application, 'the draft must point at the parent Application uuid').toBe(objectId)
+		expect(
+			sent.application,
+			'the draft must point at the parent Application uuid',
+		).toBe(objectId)
 		expect(
 			sent.manifest,
 			'the draft manifest must be a clone of the production version manifest',
 		).toEqual(productionRow?.manifest ?? {})
 		expect(
 			Object.prototype.hasOwnProperty.call(sent, 'register'),
-			'the payload must OMIT register so the backend inherits production\'s — '
-			+ 'sending one is how a per-version register gets minted by accident',
+			"the payload must OMIT register so the backend inherits production's — "
+				+ 'sending one is how a per-version register gets minted by accident',
 		).toBe(false)
 
 		// "the version list re-renders showing the new draft"
@@ -300,7 +352,9 @@ test.describe('version-lifecycle-ui — the version list on the Manifest detail 
 		// The register really is shared, read back from the server rather than
 		// inferred from the absent request field.
 		const after = await listVersions(page, SLUG)
-		const draft = after.find((v) => !before.some((b) => (b?.id ?? b?.uuid) === (v?.id ?? v?.uuid)))
+		const draft = after.find(
+			(v) => !before.some((b) => (b?.id ?? b?.uuid) === (v?.id ?? v?.uuid)),
+		)
 		expect(draft, 'the new draft must be listed').toBeTruthy()
 		expect(
 			draft?.register,
