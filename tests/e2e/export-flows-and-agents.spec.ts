@@ -75,7 +75,32 @@ function runExportJobWorker(): string {
 			[occ, 'background-job:worker', '--once', EXPORT_JOB_CLASS],
 			{ encoding: 'utf8', stdio: 'pipe', timeout: 60_000 },
 		)
-		return `worker ok: ${String(out).trim().slice(0, 300) || '(no output)'}`
+
+		// ⚠️ "no output, exit 0" is ALSO what this command prints when it finds
+		// no job of that class — verified against a live instance. So the
+		// worker's silence alone cannot tell "the job was never enqueued" from
+		// "this occ is looking at a different database". The job list
+		// disambiguates: if occ shares the web server's database it sees the
+		// OTHER queued jobs, and then a zero count for ours means the enqueue
+		// genuinely did not happen — which would be a product defect, not a
+		// test one.
+		let census = 'job list unavailable'
+		try {
+			const listed = execFileSync(
+				'php',
+				[occ, 'background-job:list', '--output=json'],
+				{ encoding: 'utf8', stdio: 'pipe', timeout: 60_000 },
+			)
+			const jobs = JSON.parse(String(listed)) as Array<{ class?: string }>
+			const mine = jobs.filter((job) =>
+				String(job.class || '').includes('RunExportJob'),
+			).length
+			census = `job list: ${jobs.length} total, ${mine} RunExportJob`
+		} catch (listError) {
+			census = `job list failed: ${String(listError).slice(0, 160)}`
+		}
+
+		return `worker ok: ${String(out).trim().slice(0, 200) || '(no output)'}; ${census}`
 	} catch (error) {
 		const e = error as { status?: number; stdout?: string; stderr?: string }
 		return `worker failed (exit ${e.status ?? '?'}): ${String(
