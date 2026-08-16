@@ -367,7 +367,7 @@ class AppRepoSerializer {
 						continue;
 					}
 
-					if ($this->isSafeUuid(uuid: $refUuid) === false) {
+					if ($this->isSafeUuid(uuid: $refUuid) === false && $this->isSafeSlug(slug: $refUuid) === false) {
 						continue;
 					}
 
@@ -447,9 +447,16 @@ class AppRepoSerializer {
 	 * @param string $kind The declared entry's kind.
 	 * @param array<string,mixed> $object The declared entry's payload.
 	 *
-	 * @return array<string,array<int,string>> Referenced UUIDs keyed by kind. A
-	 *                                         synchronization's `sourceId` / `source_target_mapping` fields already
-	 *                                         carry UUIDs, so this needs no translation.
+	 * @return array<string,array<int,string>> Referenced UUIDs OR slugs keyed by
+	 *                                         kind. A synchronization's `sourceId` /
+	 *                                         `source_target_mapping` fields carry
+	 *                                         whichever identifier the object was
+	 *                                         authored with — measured live: sources
+	 *                                         are commonly slug-referenced (e.g.
+	 *                                         `sourceId: "tenderned"`), not UUID —
+	 *                                         so the caller must resolve either shape
+	 *                                         (OpenRegister's `find(id:)` accepts
+	 *                                         both).
 	 */
 	private function directReferences(string $kind, array $object): array {
 		if ($kind !== 'synchronization') {

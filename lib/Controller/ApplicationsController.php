@@ -1445,6 +1445,9 @@ class ApplicationsController extends Controller {
 	 * @param string $name Human-readable name for the new app.
 	 * @param string $newSlug The new (kebab-case, pre-validated) app slug.
 	 * @param string $ownerUid The owner UID (becomes the app owner).
+	 * @param string|null $sourceOwner GitHub owner the template was fetched from, when applicable — forwarded to the skills channel so a private-repo Hermiq bundle fetch can authenticate.
+	 * @param string|null $sourceRepo GitHub repo the template was fetched from, when applicable.
+	 * @param string|null $credentialId Broker credential UUID used for the original fetch, when applicable.
 	 *
 	 * @return array{status:int,data:array<string,mixed>} 201 + app on success; 409/500/503 on failure.
 	 *
@@ -1455,6 +1458,9 @@ class ApplicationsController extends Controller {
 		string $name,
 		string $newSlug,
 		string $ownerUid,
+		?string $sourceOwner = null,
+		?string $sourceRepo = null,
+		?string $credentialId = null,
 	): array {
 		$ctx = $this->resolveSharedContext();
 		if ($ctx === null) {
@@ -1510,9 +1516,20 @@ class ApplicationsController extends Controller {
 		// Apply the app-repo-format-v2 channels. Until this call existed, the four
 		// channels were parsed and then dropped, so an installed app arrived with
 		// its manifest and nothing that makes it run — and reported success.
+		//
+		// owner/repo/credentialId are forwarded (both null for the local-template
+		// and remote-registry callers) because the skills channel delegates to
+		// Hermiq's own bundle installer, which does an INDEPENDENT GitHub fetch —
+		// it does not reuse the file map already fetched for `$template`. Without
+		// these, that fetch runs anonymous and 404s on any private source repo,
+		// which is indistinguishable from "this repo has no skill bundle" and was
+		// being reported as a clean `skipped` rather than a credential gap.
 		$channels = $this->channelApplier->apply(
 			template: $template,
-			actingUserId: $ownerUid
+			owner: $sourceOwner,
+			repo: $sourceRepo,
+			actingUserId: $ownerUid,
+			credentialId: $credentialId
 		);
 
 		return [

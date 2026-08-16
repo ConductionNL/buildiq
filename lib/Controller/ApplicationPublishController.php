@@ -261,6 +261,7 @@ class ApplicationPublishController extends Controller {
 				$slug = (string)($application['slug'] ?? '');
 				if ($slug !== '') {
 					$this->credentialRegistrar->onPublish(slug: $slug, caller: $user);
+					$this->ensureBuiltAppRoute(slug: $slug, applicationUuid: $appUuid);
 				}
 			}
 
@@ -287,6 +288,58 @@ class ApplicationPublishController extends Controller {
 			);
 		}//end try
 	}//end setStatus()
+
+	/**
+	 * Idempotently ensure a BuiltAppRoute index object exists for this slug.
+	 *
+	 * `ApplicationsController::getManifest` resolves a virtual-app slug to its
+	 * Application UUID through this object — without it a published app is
+	 * still unreachable by slug (404 `not_found` from the manifest/builder
+	 * endpoints) even though its status says published. Only the app-creation
+	 * WIZARD created this object (at creation time, atomically with going
+	 * live); any app that starts as a draft and is published later — via the
+	 * local-template, remote-registry, or GitHub-shop install paths — never
+	 * got one. This closes that gap at the one place every publish path goes
+	 * through: the explicit publish action itself.
+	 *
+	 * Best-effort + never-throw, matching {@see credentialRegistrar->onPublish()}
+	 * immediately above this call — a routing hiccup must not fail the publish
+	 * itself; the app is simply not reachable by slug until a retry succeeds.
+	 *
+	 * @param string $slug The application's kebab-case slug.
+	 * @param string $applicationUuid The Application UUID the route should point at.
+	 *
+	 * @return void
+	 */
+	private function ensureBuiltAppRoute(string $slug, string $applicationUuid): void {
+		try {
+			$existing = $this->objectService->find(
+				id: $slug,
+				register: VersionPromotionService::REGISTER_SLUG,
+				schema: 'built-app-route'
+			);
+			$existingData = $this->normaliseObject(object: $existing);
+			$existingTarget = (string)($existingData['applicationUuid'] ?? '');
+			if ($existingTarget === $applicationUuid) {
+				return;
+			}
+		} catch (Throwable $e) {
+			// No existing route for this slug — fall through to create one.
+		}
+
+		try {
+			$this->objectService->saveObject(
+				object: ['slug' => $slug, 'applicationUuid' => $applicationUuid],
+				register: VersionPromotionService::REGISTER_SLUG,
+				schema: 'built-app-route'
+			);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'OpenBuild: built-app-route upsert failed on publish for slug {slug}: {message}',
+				['slug' => $slug, 'message' => $e->getMessage(), 'exception' => $e]
+			);
+		}
+	}//end ensureBuiltAppRoute()
 
 	/**
 	 * Load the Application object by UUID.
