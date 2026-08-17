@@ -116,6 +116,9 @@ class ExportService {
 	 *                                                       tree (data-registers-runtime) — a dedicated
 	 *                                                       collaborator so this class's own coupling/
 	 *                                                       complexity stays within PHPMD's thresholds.
+	 * @param FlowAndAgentExportBundler $flowAndAgentBundler Bundles the application's flows and the
+	 *                                                       agents that point at it into the exported
+	 *                                                       tree, for the same reason.
 	 */
 	public function __construct(
 		private IAppData $appData,
@@ -149,6 +152,10 @@ class ExportService {
 	 *                                        (data-registers-runtime design.md Decision 5).
 	 *                                        Default `[]`. Untrusted shape — see
 	 *                                        bundleDataRegisterSchemas().
+	 * @param array<int,mixed> $flows `Application.flows` bindings, passed straight to
+	 *                                {@see FlowAndAgentExportBundler::bundle()}. Default `[]`.
+	 * @param string $applicationSlug Slug of the application whose agents to collect.
+	 *                                Default `''`.
 	 *
 	 * @return string Absolute (local) path to the produced ZIP.
 	 *
@@ -225,6 +232,9 @@ class ExportService {
 	 *
 	 * @param array<string,mixed> $context Placeholder context: appId, appNamespace, appName, appVersion, authorName, authorEmail, license.
 	 * @param array<int,mixed> $dataRegisters Optional bound data-register schemas to bundle.
+	 * @param array<int,mixed> $flows `Application.flows` bindings, bundled only when non-empty.
+	 *                                Default `[]`.
+	 * @param string $applicationSlug Slug of the application whose agents to collect. Default `''`.
 	 *
 	 * @return array<string,string> Ordered `path => contents` map of the resolved scaffold.
 	 *
