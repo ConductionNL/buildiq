@@ -1496,7 +1496,9 @@ class ApplicationsController extends Controller {
 	 * @param string $name Human-readable name for the new app.
 	 * @param string $newSlug The new (kebab-case, pre-validated) app slug.
 	 * @param string $ownerUid The owner UID (becomes the app owner).
-	 * @param string|null $sourceOwner GitHub owner the template was fetched from, when applicable — forwarded to the skills channel so a private-repo Hermiq bundle fetch can authenticate.
+	 * @param string|null $sourceOwner GitHub owner the template was fetched from, when
+	 *                                 applicable — forwarded to the skills channel so a
+	 *                                 private-repo Hermiq bundle fetch can authenticate.
 	 * @param string|null $sourceRepo GitHub repo the template was fetched from, when applicable.
 	 * @param string|null $credentialId Broker credential UUID used for the original fetch, when applicable.
 	 *
@@ -1534,58 +1536,18 @@ class ApplicationsController extends Controller {
 			];
 		}
 
-		// Prepare manifest + companion-schema clone map.
-		$companionInput = $this->extractCompanionSchemas(template: $template);
-		$rewriteMap = $this->buildRewriteMap(companions: $companionInput, newSlug: $newSlug);
-		$manifest = $this->buildClonedManifest(template: $template, rewriteMap: $rewriteMap);
-
-		// Provision per-app register + clone companion schemas into it.
-		$cloneResult = $this->provisionPerAppArtifacts(
-			newSlug: $newSlug,
-			ownerUid: $ownerUid,
-			companions: $companionInput,
-			rewriteMap: $rewriteMap
-		);
-		if (isset($cloneResult['error']) === true) {
-			return ['status' => $cloneResult['status'], 'data' => $cloneResult['error']];
-		}
-
-		// Persist the Application record (shared register), tagged with owner.
-		$persistResult = $this->persistApplication(
+		// Clone the template into a live, manifest-resolvable Application:
+		// companion-schema namespacing, per-app register provisioning, the
+		// owner-tagged Application record, and its production ApplicationVersion.
+		$built = $this->materialiseApplication(
+			template: $template,
 			name: $name,
 			newSlug: $newSlug,
 			ownerUid: $ownerUid,
-			manifest: $manifest,
-			template: $template,
-			templateSlug: (string)($template['slug'] ?? $newSlug),
 			ctx: $ctx
 		);
-		if (isset($persistResult['error']) === true) {
-			return ['status' => $persistResult['status'], 'data' => $persistResult['error']];
-		}
-
-		// Create the ApplicationVersion the manifest actually lives on and wire
-		// productionVersion to it. `persistApplication()` above stores a
-		// `manifest` key directly on the Application object, but the `application`
-		// schema does not declare that property — OpenRegister silently drops it
-		// on save (confirmed live: a freshly cloned Application has NO `manifest`
-		// key at all). `getManifest()` resolves via `productionVersion` →
-		// ApplicationVersion.manifest (ADR-002); its application-level fallback
-		// can therefore never fire. Without this step every template-installed
-		// app (local, remote-registry, or GitHub-shop) publishes successfully
-		// but its manifest/builder endpoints permanently 404 `no_manifest` —
-		// live-verified on a fresh instance for both spectr and hydra-console
-		// before this fix.
-		$newAppUuid = (string)($persistResult['uuid'] ?? '');
-		if ($newAppUuid !== '') {
-			$this->linkProductionVersion(
-				appUuid: $newAppUuid,
-				appSlug: $newSlug,
-				appName: $name,
-				manifest: $manifest,
-				registerSlug: $cloneResult['register']->getSlug(),
-				ownerUid: $ownerUid
-			);
+		if (isset($built['error']) === true) {
+			return ['status' => $built['status'], 'data' => $built['error']];
 		}
 
 		// Apply the app-repo-format-v2 channels. Until this call existed, the four
@@ -1610,14 +1572,98 @@ class ApplicationsController extends Controller {
 		return [
 			'status' => Http::STATUS_CREATED,
 			'data' => [
-				'uuid' => $persistResult['uuid'],
+				'uuid' => $built['uuid'],
 				'slug' => $newSlug,
-				'register' => $cloneResult['register']->getSlug(),
-				'companionSchemas' => $cloneResult['schemaIds'],
+				'register' => $built['registerSlug'],
+				'companionSchemas' => $built['schemaIds'],
 				'channels' => $channels,
 			],
 		];
 	}//end installFromTemplateArray()
+
+	/**
+	 * Clone a template into a persisted, manifest-resolvable Application.
+	 *
+	 * The whole "turn a template array into live artefacts" half of
+	 * {@see installFromTemplateArray()}: companion-schema namespacing, manifest
+	 * rewrite, per-app register provisioning, the owner-tagged Application
+	 * record, and the ApplicationVersion its manifest actually lives on. The
+	 * caller keeps the parts that are about the REQUEST — validating it,
+	 * applying the app-repo channels, and shaping the response.
+	 *
+	 * @param array<string,mixed> $template The template record (local or remote payload).
+	 * @param string $name Human-readable name for the new app.
+	 * @param string $newSlug The new (kebab-case, pre-validated) app slug.
+	 * @param string $ownerUid The owner UID (becomes the app owner).
+	 * @param array{register:int,templateSchema:int,applicationSchema:int} $ctx Shared context.
+	 *
+	 * @return array{uuid:string|null,registerSlug:string,schemaIds:array<int,int>}|array{error:array<string,mixed>,status:int}
+	 */
+	private function materialiseApplication(
+		array $template,
+		string $name,
+		string $newSlug,
+		string $ownerUid,
+		array $ctx,
+	): array {
+		// Prepare manifest + companion-schema clone map.
+		$companionInput = $this->extractCompanionSchemas(template: $template);
+		$rewriteMap = $this->buildRewriteMap(companions: $companionInput, newSlug: $newSlug);
+		$manifest = $this->buildClonedManifest(template: $template, rewriteMap: $rewriteMap);
+
+		// Provision per-app register + clone companion schemas into it.
+		$cloneResult = $this->provisionPerAppArtifacts(
+			newSlug: $newSlug,
+			ownerUid: $ownerUid,
+			companions: $companionInput,
+			rewriteMap: $rewriteMap
+		);
+		if (isset($cloneResult['error']) === true) {
+			return ['status' => $cloneResult['status'], 'error' => $cloneResult['error']];
+		}
+
+		// Persist the Application record (shared register), tagged with owner.
+		$persistResult = $this->persistApplication(
+			name: $name,
+			newSlug: $newSlug,
+			ownerUid: $ownerUid,
+			manifest: $manifest,
+			template: $template,
+			templateSlug: (string)($template['slug'] ?? $newSlug),
+			ctx: $ctx
+		);
+		if (isset($persistResult['error']) === true) {
+			return ['status' => $persistResult['status'], 'error' => $persistResult['error']];
+		}
+
+		// Create the ApplicationVersion the manifest actually lives on and wire
+		// productionVersion to it. `persistApplication()` above stores a
+		// `manifest` key directly on the Application object, but the `application`
+		// schema does not declare that property — OpenRegister silently drops it
+		// on save (confirmed live: a freshly cloned Application has NO `manifest`
+		// key at all). `getManifest()` resolves via `productionVersion` →
+		// ApplicationVersion.manifest (ADR-002); its application-level fallback
+		// can therefore never fire. Without this step every template-installed
+		// app (local, remote-registry, or GitHub-shop) publishes successfully
+		// but its manifest/builder endpoints permanently 404 `no_manifest` —
+		// live-verified on a fresh instance for both spectr and hydra-console
+		// before this fix.
+		$newAppUuid = (string)($persistResult['uuid'] ?? '');
+		if ($newAppUuid !== '') {
+			$this->linkProductionVersion(
+				application: ($persistResult['application'] ?? []),
+				appUuid: $newAppUuid,
+				manifest: $manifest,
+				registerSlug: $cloneResult['register']->getSlug()
+			);
+		}
+
+		return [
+			'uuid' => $persistResult['uuid'],
+			'registerSlug' => $cloneResult['register']->getSlug(),
+			'schemaIds' => $cloneResult['schemaIds'],
+		];
+	}//end materialiseApplication()
 
 	/**
 	 * Build a uniform error response.
@@ -1733,7 +1779,7 @@ class ApplicationsController extends Controller {
 	 * @param string $templateSlug The source template slug
 	 * @param array{register:int,templateSchema:int,applicationSchema:int} $ctx Shared context
 	 *
-	 * @return array{uuid:string|null}|array{error:array<string,mixed>,status:int}
+	 * @return array{uuid:string|null,application:array<string,mixed>}|array{error:array<string,mixed>,status:int}
 	 *
 	 * Exception contract: the save is wrapped in `catch (Throwable)`, which
 	 * deliberately covers OpenRegister's ValidationException and
@@ -1792,7 +1838,13 @@ class ApplicationsController extends Controller {
 		}//end try
 
 		$createdArray = $this->normaliseObject(object: $created);
-		return ['uuid' => ($createdArray['uuid'] ?? $createdArray['id'] ?? null)];
+		return [
+			'uuid' => ($createdArray['uuid'] ?? $createdArray['id'] ?? null),
+			// The STORED payload, handed back so a follow-up write can patch one
+			// field without dropping the rest — OpenRegister's saveObject() is
+			// PUT, not PATCH (see linkProductionVersion()).
+			'application' => $createdArray,
+		];
 	}//end persistApplication()
 
 	/**
@@ -1804,23 +1856,20 @@ class ApplicationsController extends Controller {
 	 * for follow-up rather than failing the whole install over a step that
 	 * only affects manifest resolution, not data/connectors/skills.
 	 *
+	 * @param array<string,mixed> $application The Application payload as persistApplication() stored it.
 	 * @param string $appUuid The just-created Application's UUID.
-	 * @param string $appSlug The application's slug.
-	 * @param string $appName The application's display name.
 	 * @param array<string,mixed> $manifest The cloned manifest.
 	 * @param string $registerSlug The per-app register slug already provisioned for this install.
-	 * @param string $ownerUid The owner UID.
 	 *
 	 * @return void
 	 */
 	private function linkProductionVersion(
+		array $application,
 		string $appUuid,
-		string $appSlug,
-		string $appName,
 		array $manifest,
 		string $registerSlug,
-		string $ownerUid,
 	): void {
+		$appSlug = (string)($application['slug'] ?? '');
 		try {
 			$versionPayload = [
 				'name' => 'Production',
@@ -1843,21 +1892,22 @@ class ApplicationsController extends Controller {
 				return;
 			}
 
-			// Full-payload re-save, not a partial PATCH: OR runs full-schema
-			// `required[]` validation on saveObject even with a uuid set
-			// (the same constraint ApplicationCreationService's chain-wiring
-			// and productionVersion steps already work around).
+			// Re-save the WHOLE stored Application with productionVersion patched
+			// in — never a hand-built subset. OpenRegister's saveObject() is PUT,
+			// not PATCH: on the update path `SaveObject::prepareObjectForUpdate()`
+			// calls `fillMissingSchemaPropertiesWithNull()`, which NULLs every
+			// schema property absent from the payload, then `setObject()` replaces
+			// the stored data outright — there is no merge with the existing
+			// object anywhere in that path. A four-field payload here therefore
+			// wiped `owner`, `status`, `version` and `templateOrigin` off the
+			// record persistApplication() had just written, one statement earlier.
+			// Mirrors ApplicationPublishController::setStatus(): take the stored
+			// object, drop the OR-managed envelope, patch the one field.
+			unset($application['@self']);
+			$application['productionVersion'] = $versionUuid;
+
 			$this->objectService->saveObject(
-				object: [
-					'slug' => $appSlug,
-					'name' => $appName,
-					'permissions' => [
-						'owners' => ['user:' . $ownerUid],
-						'editors' => [],
-						'viewers' => [],
-					],
-					'productionVersion' => $versionUuid,
-				],
+				object: $application,
 				register: ApplicationVersionService::REGISTER_SLUG,
 				schema: ApplicationVersionService::APPLICATION_SCHEMA,
 				uuid: $appUuid

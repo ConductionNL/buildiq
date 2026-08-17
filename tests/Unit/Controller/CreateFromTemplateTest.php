@@ -49,6 +49,7 @@ use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\MockObject\Rule\InvocationOrder;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
@@ -267,6 +268,68 @@ class CreateFromTemplateTest extends TestCase {
 	}//end savedEntity()
 
 	/**
+	 * Record every saveObject() call and answer each with a usable entity.
+	 *
+	 * A successful template install writes THREE objects, in this order:
+	 *   1. the Application            (shared register, numeric ctx ids)
+	 *   2. its production ApplicationVersion — where the manifest actually lives
+	 *   3. the Application again, patched with `productionVersion`
+	 * Step 3 exists because OpenRegister resolves a manifest through
+	 * `productionVersion`, never through a `manifest` key on the Application.
+	 *
+	 * PHPUnit resolves the controller's NAMED arguments against
+	 * `ObjectServiceInterface::saveObject()`'s OWN signature and then invokes
+	 * this callback POSITIONALLY, so the parameters below must mirror that
+	 * signature's order exactly: (object, extend, register, schema, uuid, …).
+	 * Verified against the live interface with ReflectionMethod.
+	 *
+	 * The expected call count is configured on THIS matcher, never as a second
+	 * `expects()` on the same method: PHPUnit answers a call from the first
+	 * matching matcher only, so a separate `expects(...)->method('saveObject')`
+	 * would shadow this one and return null for every save.
+	 *
+	 * @param array<int,array<string,mixed>> $calls OUT: one entry per call.
+	 * @param InvocationOrder|null $matcher Expected invocation count, or null for no count assertion.
+	 *
+	 * @return void
+	 */
+	private function recordSaves(array &$calls, ?InvocationOrder $matcher = null): void {
+		$stub = ($matcher === null)
+			? $this->objectService->method('saveObject')
+			: $this->objectService->expects($matcher)->method('saveObject');
+
+		$stub->willReturnCallback(
+			function (
+				array $object,
+				?array $extend = [],
+				string|int|null $register = null,
+				string|int|null $schema = null,
+				?string $uuid = null,
+			) use (&$calls): ObjectEntity {
+				$calls[] = [
+					'object' => $object,
+					'register' => $register,
+					'schema' => $schema,
+					'uuid' => $uuid,
+				];
+
+				// Echo the persisted object back, the way OpenRegister does —
+				// saveObject() answers with the STORED entity, not a bare id.
+				// A double that returned only `['uuid' => …]` would make the
+				// controller's read-modify-write look lossless no matter what
+				// it actually sent.
+				$isVersion = ($schema === 'applicationVersion');
+				return $this->savedEntity(
+					array_merge(
+						$object,
+						['uuid' => ($isVersion === true ? 'new-version-1' : 'new-uuid-1')]
+					)
+				);
+			}
+		);
+	}//end recordSaves()
+
+	/**
 	 * Register an authenticated user for the test.
 	 *
 	 * Cloning a template provisions an OpenRegister register (admin-only,
@@ -407,9 +470,8 @@ class CreateFromTemplateTest extends TestCase {
 			))
 			->willReturn($this->schemaWithId(7777));
 
-		$this->objectService->expects(self::once())
-			->method('saveObject')
-			->willReturn($this->savedEntity(['uuid' => 'new-uuid-1', 'slug' => 'my-permits']));
+		$calls = [];
+		$this->recordSaves($calls, self::exactly(3));
 
 		$result = $this->controller->createFromTemplate(templateSlug: self::TEMPLATE_SLUG);
 
@@ -419,7 +481,73 @@ class CreateFromTemplateTest extends TestCase {
 		self::assertSame('my-permits', $body['slug']);
 		self::assertSame('openbuild-my-permits', $body['register']);
 		self::assertSame([7777], $body['companionSchemas']);
+
+		// The three writes, in order, with the arguments that make each of them
+		// the write it claims to be — a count on its own would pass for any
+		// three saves at all.
+		self::assertCount(3, $calls);
+
+		// 1) the Application, into the shared register by numeric ctx id, no uuid
+		//    (a create).
+		self::assertSame(1636, $calls[0]['schema']);
+		self::assertSame(926, $calls[0]['register']);
+		self::assertNull($calls[0]['uuid']);
+		self::assertSame('my-permits', $calls[0]['object']['slug']);
+
+		// 2) the production ApplicationVersion, carrying the manifest.
+		self::assertSame('applicationVersion', $calls[1]['schema']);
+		self::assertNull($calls[1]['uuid']);
+		self::assertSame('new-uuid-1', $calls[1]['object']['application']);
+		self::assertArrayHasKey('manifest', $calls[1]['object']);
+
+		// 3) the Application again, now pointing at that version.
+		self::assertSame('application', $calls[2]['schema']);
+		self::assertSame('new-uuid-1', $calls[2]['uuid']);
+		self::assertSame('new-version-1', $calls[2]['object']['productionVersion']);
 	}//end testSuccessCreatesApplicationAndPerAppArtifacts()
+
+	/**
+	 * Regression: the productionVersion re-save must PRESERVE the Application.
+	 *
+	 * OpenRegister's `saveObject()` is PUT, not PATCH — on the update path it
+	 * NULLs every schema property absent from the payload. The third write must
+	 * therefore carry the whole stored object with one field patched in, not a
+	 * hand-built subset; an earlier revision sent only slug/name/permissions/
+	 * productionVersion and so wiped `owner`, `status`, `version` and
+	 * `templateOrigin` off the record created one statement earlier.
+	 *
+	 * @return void
+	 */
+	public function testProductionVersionLinkPreservesTheStoredApplication(): void {
+		$this->authenticateAs('alice');
+		$this->withRequestParams(['name' => 'My permits', 'slug' => 'my-permits']);
+
+		$this->objectService->method('searchObjects')->willReturnOnConsecutiveCalls(
+			[$this->templateRecord(self::TEMPLATE_SLUG)],
+			[]
+		);
+		$this->schemaMapper->method('createFromArray')->willReturn($this->schemaWithId(7777));
+
+		$calls = [];
+		$this->recordSaves($calls);
+
+		$result = $this->controller->createFromTemplate(templateSlug: self::TEMPLATE_SLUG);
+		self::assertSame(Http::STATUS_CREATED, $result->getStatus());
+
+		self::assertCount(3, $calls);
+		$created = $calls[0]['object'];
+		$relinked = $calls[2]['object'];
+
+		self::assertSame('new-version-1', $relinked['productionVersion']);
+		foreach (['owner', 'status', 'version', 'templateOrigin', 'permissions'] as $key) {
+			self::assertArrayHasKey(
+				$key,
+				$relinked,
+				'the productionVersion re-save must not drop "' . $key . '" — saveObject() is a full replace'
+			);
+			self::assertSame($created[$key], $relinked[$key], 'field "' . $key . '" changed across the re-save');
+		}
+	}//end testProductionVersionLinkPreservesTheStoredApplication()
 
 	/**
 	 * Test 4 — Manifest schema-refs are rewritten with the new-slug prefix.
@@ -437,18 +565,17 @@ class CreateFromTemplateTest extends TestCase {
 
 		$this->schemaMapper->method('createFromArray')->willReturn($this->schemaWithId(7777));
 
-		$savedPayload = null;
-		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object) use (&$savedPayload): ObjectEntity {
-				$savedPayload = $object;
-				return $this->savedEntity(['uuid' => 'new-uuid-2']);
-			}
-		);
+		$calls = [];
+		$this->recordSaves($calls);
 
 		$result = $this->controller->createFromTemplate(templateSlug: self::TEMPLATE_SLUG);
 		self::assertSame(Http::STATUS_CREATED, $result->getStatus());
 
-		self::assertIsArray($savedPayload, 'saveObject should have been invoked with the cloned Application payload');
+		// The FIRST write is the Application create. Asserting on "the last
+		// payload seen" would silently retarget onto the productionVersion
+		// re-save, which legitimately carries no rewritten manifest.
+		self::assertNotEmpty($calls, 'saveObject should have been invoked with the cloned Application payload');
+		$savedPayload = $calls[0]['object'];
 		$manifest = $savedPayload['manifest'] ?? [];
 		$pages = $manifest['pages'] ?? [];
 		self::assertCount(2, $pages);
@@ -477,19 +604,18 @@ class CreateFromTemplateTest extends TestCase {
 
 		$this->schemaMapper->method('createFromArray')->willReturn($this->schemaWithId(8888));
 
-		$savedPayload = null;
-		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object) use (&$savedPayload): ObjectEntity {
-				$savedPayload = $object;
-				return $this->savedEntity(['uuid' => 'new-uuid-3']);
-			}
-		);
+		$calls = [];
+		$this->recordSaves($calls);
 
 		$result = $this->controller->createFromTemplate(templateSlug: self::TEMPLATE_SLUG);
 		self::assertSame(Http::STATUS_CREATED, $result->getStatus());
 
-		self::assertIsArray($savedPayload);
-		self::assertSame('bob', $savedPayload['owner'] ?? null);
+		// Asserted on the Application create specifically — and again on the
+		// final write, because a re-save that drops `owner` un-owns the app just
+		// as effectively as never setting it.
+		self::assertNotEmpty($calls);
+		self::assertSame('bob', $calls[0]['object']['owner'] ?? null);
+		self::assertSame('bob', $calls[count($calls) - 1]['object']['owner'] ?? null);
 	}//end testOwnerFieldSetToAuthenticatedUid()
 
 	/**

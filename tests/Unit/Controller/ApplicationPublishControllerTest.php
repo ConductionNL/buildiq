@@ -179,11 +179,23 @@ class ApplicationPublishControllerTest extends TestCase {
 		]);
 		$this->objectService->method('find')->willReturn($app);
 
-		$captured = null;
-		$this->objectService->expects($this->once())
+		// Publishing writes TWICE: the status flip, then the BuiltAppRoute index
+		// that makes the app reachable by slug (without it a published app 404s
+		// from the manifest endpoint). Both are asserted by their arguments —
+		// PHPUnit resolves the controller's NAMED arguments against
+		// ObjectServiceInterface::saveObject()'s own signature and invokes this
+		// callback POSITIONALLY, so the parameter order below mirrors it.
+		$calls = [];
+		$this->objectService->expects($this->exactly(2))
 			->method('saveObject')
-			->willReturnCallback(function (array $object) use (&$captured) {
-				$captured = $object;
+			->willReturnCallback(function (
+				array $object,
+				?array $extend = [],
+				string|int|null $register = null,
+				string|int|null $schema = null,
+				?string $uuid = null,
+			) use (&$calls): ObjectEntity {
+				$calls[] = ['object' => $object, 'schema' => $schema, 'uuid' => $uuid];
 				return $this->buildEntity(payload: $object);
 			});
 
@@ -191,8 +203,19 @@ class ApplicationPublishControllerTest extends TestCase {
 
 		self::assertSame(Http::STATUS_OK, $response->getStatus());
 		self::assertSame('published', $response->getData()['status']);
-		self::assertSame('published', $captured['status']);
-		self::assertArrayNotHasKey('@self', $captured, '@self must be stripped before saving');
+
+		self::assertCount(2, $calls);
+
+		// 1) the status flip, on the Application itself.
+		self::assertSame('application', $calls[0]['schema']);
+		self::assertSame('u-app', $calls[0]['uuid']);
+		self::assertSame('published', $calls[0]['object']['status']);
+		self::assertArrayNotHasKey('@self', $calls[0]['object'], '@self must be stripped before saving');
+
+		// 2) the slug → Application route index.
+		self::assertSame('built-app-route', $calls[1]['schema']);
+		self::assertSame('demo', $calls[1]['object']['slug']);
+		self::assertSame('u-app', $calls[1]['object']['applicationUuid']);
 	}//end testPublishSetsStatusPublished()
 
 	/**
