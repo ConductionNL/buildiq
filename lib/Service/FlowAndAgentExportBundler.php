@@ -233,7 +233,11 @@ class FlowAndAgentExportBundler {
 		}
 
 		foreach ($agents as $agent) {
-			$record = is_array($agent) === true ? $agent : $agent->jsonSerialize();
+			$record = $agent;
+			if (is_array($agent) === false) {
+				$record = $agent->jsonSerialize();
+			}
+
 			$uuid = (string)($record['@self']['id'] ?? '');
 			unset($record['@self']);
 

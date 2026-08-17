@@ -100,11 +100,12 @@ class TemplateSeedService {
 	 * touched. A slug at or below the stored version is skipped (idempotent).
 	 *
 	 * @return array{seeded:int,updated:int,skipped:int,errors:array<int,string>,deferred?:bool} Per-run
-	 *                                                                                           counts and collected errors. `seeded` counts new rows, `updated` counts in-place version
-	 *                                                                                           upgrades, `skipped` counts up-to-date/admin rows. `deferred` is set when the register/schema
-	 *                                                                                           is not provisioned yet (install ordering) — the caller re-runs on the next repair rather than
-	 *                                                                                           failing the install. It was returned but never declared, so SeedApplicationTemplates' check
-	 *                                                                                           for it read as statically impossible.
+	 *         counts and collected errors. `seeded` counts new rows, `updated` counts in-place
+	 *         version upgrades, `skipped` counts up-to-date/admin rows. `deferred` is set when
+	 *         the register/schema is not provisioned yet (install ordering) — the caller
+	 *         re-runs on the next repair rather than failing the install. It was returned but
+	 *         never declared, so SeedApplicationTemplates' check for it read as statically
+	 *         impossible.
 	 *
 	 * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-11
 	 */
