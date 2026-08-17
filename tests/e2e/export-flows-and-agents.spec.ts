@@ -136,7 +136,13 @@ function runExportJobWorker(): string {
  * whose deployed version is >= the declared one never receives an
  * annotation-only change (`ImportHandler` skips the import, and its
  * `schemaContentDiffers()` escape hatch compares only properties, required and
- * authorization), which is ConductionNL/openbuild#219.
+ * authorization) — ConductionNL/openbuild#219.
+ *
+ * #229 shipped that bump (`exportJob` 0.1.0 -> 1.1.0), so on a converged
+ * instance the block IS present. That makes this probe MORE useful, not less:
+ * a `MISSING` reading now means the instance under test never converged onto
+ * the bumped schema, which is a different and narrower fault than the one #219
+ * described. Do not read `MISSING` as "#219 is unfixed".
  *
  * This is read from the schema API rather than from the object: this
  * OpenRegister build does not expose `available-actions` on an object read at
@@ -170,7 +176,7 @@ async function describeExportJobSchema(page: Page): Promise<string> {
 		return (
 			`deployed exportJob schema v${schema.version ?? '?'}, `
 			+ `x-openregister-lifecycle ${hasLifecycle ? 'PRESENT' : 'MISSING'}`
-			+ `${hasLifecycle ? '' : ' — see ConductionNL/openbuild#219'}`
+			+ `${hasLifecycle ? '' : ' — this instance never converged onto the bumped schema (#219 / #229)'}`
 		)
 	} catch (error) {
 		return `schema probe threw: ${String(error).slice(0, 160)}`
