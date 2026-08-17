@@ -281,9 +281,10 @@ async function openVersionHistory(
 	// hiding its own rows. Nothing is weakened: the condition asserted is
 	// identical, and `.version-history__empty` stops counting as success for
 	// callers that specifically need a chain.
-	const panelBody = options.requireRows === true
-		? page.locator('.version-history__row').first()
-		: page.locator('.version-history__row, .version-history__empty').first()
+	const panelBody =
+		options.requireRows === true
+			? page.locator('.version-history__row').first()
+			: page.locator('.version-history__row, .version-history__empty').first()
 	await expect(async () => {
 		if (!(await tab.isVisible().catch(() => false))) {
 			await openSidebar.click({ timeout: 10_000 })
