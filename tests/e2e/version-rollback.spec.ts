@@ -212,6 +212,7 @@ async function putActiveManifest(
 async function openVersionHistory(
 	page: import('@playwright/test').Page,
 	uuid: string,
+	options: { requireRows?: boolean } = {},
 ): Promise<void> {
 	await page.goto(`${BASE_URL}/apps/openbuild/applications/${uuid}`, {
 		waitUntil: 'domcontentloaded',
@@ -262,9 +263,28 @@ async function openVersionHistory(
 		name: 'Open sidebar',
 		exact: true,
 	})
-	const panelBody = page
-		.locator('.version-history__row, .version-history__empty')
-		.first()
+	// ⚠️ WHEN THE CALLER NEEDS ROWS, REQUIRE THEM *INSIDE* THIS RETRY.
+	//
+	// The either/or below is right for a caller that only needs the panel open,
+	// but it made the row check the CALLER's problem — and a caller asserting
+	// `.version-history__row` visibility after this helper returns has no way to
+	// re-open anything. Measured on CI at 6349aa6a: the two E2E runs of the SAME
+	// sha disagreed. One passed this spec in 49.7s; the other failed it in 36.6s
+	// with the row `hidden` on all 36 polls of a 20s wait, the locator resolving
+	// to a real `<li class="version-history__row version-history__row--current">`
+	// the whole time. That is the sidebar re-mount described above landing AFTER
+	// the helper had already succeeded — exactly the case this toPass() exists to
+	// absorb, happening one statement too late to be absorbed.
+	//
+	// Passing `requireRows` moves the same assertion inside the loop, so a
+	// re-mount is re-opened and retried instead of being reported as the app
+	// hiding its own rows. Nothing is weakened: the condition asserted is
+	// identical, and `.version-history__empty` stops counting as success for
+	// callers that specifically need a chain.
+	const panelBody =
+		options.requireRows === true
+			? page.locator('.version-history__row').first()
+			: page.locator('.version-history__row, .version-history__empty').first()
 	await expect(async () => {
 		if (!(await tab.isVisible().catch(() => false))) {
 			await openSidebar.click({ timeout: 10_000 })
@@ -314,9 +334,8 @@ test.describe('openbuild-versioning — rollback (REQ-OBV-003)', () => {
 	test('rolling back RESTORES the snapshot manifest onto the active version', async ({
 		page,
 	}) => {
-		await openVersionHistory(page, await appUuid(page))
-		await expect(page.locator('.version-history__row').first()).toBeVisible({
-			timeout: 20_000,
+		await openVersionHistory(page, await appUuid(page), {
+			requireRows: true,
 		})
 
 		// "Roll back" only renders on a NON-production row (`v-if="!isProduction(row)"`),
@@ -376,9 +395,8 @@ test.describe('openbuild-versioning — rollback (REQ-OBV-003)', () => {
 		).toEqual(planted.menu)
 
 		await page.reload({ waitUntil: 'domcontentloaded' })
-		await openVersionHistory(page, await appUuid(page))
-		await expect(page.locator('.version-history__row').first()).toBeVisible({
-			timeout: 20_000,
+		await openVersionHistory(page, await appUuid(page), {
+			requireRows: true,
 		})
 		await page.locator('.version-history__btn--danger').first().click()
 
