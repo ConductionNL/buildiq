@@ -114,7 +114,16 @@ class ExportsController extends Controller {
 		}
 
 		try {
-			if ($this->container->has('OCA\\OpenRegister\\Service\\ObjectService') === false) {
+			// ADR-083 rule 1: state the availability check in the idiom the
+			// fleet (and hydra gate-66) recognises. This is not a behaviour
+			// change — NC's `SimpleContainer::has()` IS
+			// `isset($this->container[$id]) || class_exists($id)`
+			// (server/lib/private/AppFramework/Utility/SimpleContainer.php:50),
+			// so the previous `container->has()` probe answered the same
+			// question. Spelling it as class_exists() makes the optional reach
+			// visible to a reader without routing the answer through the
+			// container.
+			if (class_exists('\OCA\OpenRegister\Service\ObjectService') === false) {
 				return false;
 			}
 
@@ -207,7 +216,10 @@ class ExportsController extends Controller {
 		}
 
 		try {
-			if ($this->container->has('OCA\\OpenRegister\\Service\\ObjectService') === false) {
+			// See isAuthorisedForApplication() for why this is class_exists()
+			// and not container->has() — same question, stated in the idiom
+			// ADR-083 rule 1 recognises.
+			if (class_exists('\OCA\OpenRegister\Service\ObjectService') === false) {
 				return false;
 			}
 
