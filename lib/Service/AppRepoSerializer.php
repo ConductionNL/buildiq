@@ -342,7 +342,8 @@ class AppRepoSerializer {
 				continue;
 			}
 
-			$object = $this->findConnector(kind: $kind, uuid: $uuid);
+			$realUuid = null;
+			$object = $this->findConnector(kind: $kind, uuid: $uuid, resolvedUuid: $realUuid);
 			if ($object === null) {
 				// Counted, not silently skipped: "declared 25, missing 25" is a
 				// diagnosable artefact; "declared 0" is indistinguishable from an
@@ -352,37 +353,39 @@ class AppRepoSerializer {
 				continue;
 			}
 
+			// Keyed on the object's OWN resolved identity (findConnector()'s
+			// $resolvedUuid out-param), never the raw reference string — see
+			// exportReferencedConnector(). The check is needed HERE too, not
+			// only on the reference path: a synchronization binding processed
+			// EARLIER can resolve this exact object first via its slug-shaped
+			// sourceId and already have written it under a different filename,
+			// and the declared path used to write unconditionally regardless
+			// (live-verified: `norway-doffin.json` AND `bc2d32cc-….json` both
+			// present for one object before this check existed).
+			$identity = (string)($realUuid ?? '');
+			if ($identity === '') {
+				$identity = $uuid;
+			}
+
+			if (isset($seen[$kind . '/' . $identity]) === true) {
+				continue;
+			}
+
 			$name = $this->connectorFileName(binding: $binding, object: $object, uuid: $uuid);
 			$sanitised = $this->stripSecrets(data: $object, stripped: $stripped);
 
 			$files[$kind . '/' . $name . '.json'] = $sanitised;
-			$seen[$kind . '/' . $uuid] = true;
+			$seen[$kind . '/' . $identity] = true;
 			$declared++;
 
 			// ONE level of dependency resolution, and no further.
-			foreach ($this->directReferences(kind: $kind, object: $object) as $refKind => $refUuids) {
-				foreach ($refUuids as $refUuid) {
-					$key = $refKind . '/' . $refUuid;
-					if (isset($seen[$key]) === true || count($files) >= self::MAX_CHANNEL_ENTRIES) {
-						continue;
-					}
-
-					if ($this->isSafeUuid(uuid: $refUuid) === false) {
-						continue;
-					}
-
-					$refObject = $this->findConnector(kind: $refKind, uuid: $refUuid);
-					if ($refObject === null) {
-						continue;
-					}
-
-					$refName = $this->connectorFileName(binding: [], object: $refObject, uuid: $refUuid);
-
-					$files[$refKind . '/' . $refName . '.json'] = $this->stripSecrets(data: $refObject, stripped: $stripped);
-					$seen[$key] = true;
-					$resolved++;
-				}//end foreach
-			}//end foreach
+			$resolved += $this->collectDirectReferences(
+				kind: $kind,
+				object: $object,
+				files: $files,
+				seen: $seen,
+				stripped: $stripped
+			);
 		}//end foreach
 
 		return [
@@ -396,15 +399,124 @@ class AppRepoSerializer {
 	}//end collectConnectors()
 
 	/**
+	 * Export the objects one declared connector DIRECTLY references — one level,
+	 * never a transitive graph walk.
+	 *
+	 * A synchronization without its source, mapping and target installs into
+	 * something that cannot run, so those are pulled in alongside the declared
+	 * entry. What they in turn reference is NOT followed — one level is the
+	 * contract. `$files`/`$seen`/`$stripped` are by-reference because a resolved
+	 * object must count against the SAME MAX_CHANNEL_ENTRIES budget and dedupe
+	 * against the SAME declared entries as its caller.
+	 *
+	 * @param string $kind The declared entry's connector kind.
+	 * @param array<string,mixed> $object The declared entry's payload.
+	 * @param array<string,array<string,mixed>> $files IN/OUT: the export file map.
+	 * @param array<string,bool> $seen IN/OUT: dedupe index, keyed `kind/resolved-identity`.
+	 * @param int $stripped IN/OUT: running count of stripped secrets.
+	 *
+	 * @return int How many referenced objects were newly exported.
+	 */
+	private function collectDirectReferences(
+		string $kind,
+		array $object,
+		array &$files,
+		array &$seen,
+		int &$stripped,
+	): int {
+		$resolved = 0;
+
+		foreach ($this->directReferences(kind: $kind, object: $object) as $refKind => $refUuids) {
+			foreach ($refUuids as $refUuid) {
+				if (count($files) >= self::MAX_CHANNEL_ENTRIES) {
+					continue;
+				}
+
+				$exported = $this->exportReferencedConnector(
+					refKind: $refKind,
+					refUuid: $refUuid,
+					files: $files,
+					seen: $seen,
+					stripped: $stripped
+				);
+				if ($exported === true) {
+					$resolved++;
+				}
+			}//end foreach
+		}//end foreach
+
+		return $resolved;
+	}//end collectDirectReferences()
+
+	/**
+	 * Resolve, dedupe and export ONE referenced connector object.
+	 *
+	 * Split out of {@see collectDirectReferences()} so "which references do we
+	 * follow" and "is this object safe, real and not already exported" read apart.
+	 *
+	 * @param string $refKind The referenced object's connector kind.
+	 * @param string $refUuid The reference as authored — a UUID *or* a slug.
+	 * @param array<string,array<string,mixed>> $files IN/OUT: the export file map.
+	 * @param array<string,bool> $seen IN/OUT: dedupe index, keyed `kind/resolved-identity`.
+	 * @param int $stripped IN/OUT: running count of stripped secrets.
+	 *
+	 * @return bool True when this call added a new file to the export.
+	 */
+	private function exportReferencedConnector(
+		string $refKind,
+		string $refUuid,
+		array &$files,
+		array &$seen,
+		int &$stripped,
+	): bool {
+		if ($this->isSafeUuid(uuid: $refUuid) === false && $this->isSafeSlug(slug: $refUuid) === false) {
+			return false;
+		}
+
+		$realRefUuid = null;
+		$refObject = $this->findConnector(kind: $refKind, uuid: $refUuid, resolvedUuid: $realRefUuid);
+		if ($refObject === null) {
+			return false;
+		}
+
+		// Keyed on the object's OWN resolved identity, never the raw reference:
+		// a synchronization's `sourceId` is commonly a SLUG ("tenderned") while
+		// a declared binding's `uuid` is a real UUID, and two spellings of one
+		// identifier must dedupe to the SAME entry.
+		$refIdentity = (string)($realRefUuid ?? '');
+		if ($refIdentity === '') {
+			$refIdentity = $refUuid;
+		}
+
+		$key = $refKind . '/' . $refIdentity;
+		if (isset($seen[$key]) === true) {
+			return false;
+		}
+
+		$refName = $this->connectorFileName(binding: [], object: $refObject, uuid: $refUuid);
+
+		$files[$refKind . '/' . $refName . '.json'] = $this->stripSecrets(data: $refObject, stripped: $stripped);
+		$seen[$key] = true;
+		return true;
+	}//end exportReferencedConnector()
+
+	/**
 	 * Resolve one connector object by kind + UUID from the shared `openconnector`
 	 * register.
 	 *
 	 * @param string $kind The connector kind.
-	 * @param string $uuid The object UUID.
+	 * @param string $uuid The object UUID (or slug — `find(id:)` accepts either).
+	 * @param string|null $resolvedUuid OUT: the object's OWN real UUID, read from
+	 *                                  the ObjectEntity, never from its payload —
+	 *                                  identity is OpenRegister metadata, not
+	 *                                  authored data, so a caller deduping two
+	 *                                  spellings of one reference MUST read it
+	 *                                  here rather than from the returned array.
 	 *
 	 * @return array<string,mixed>|null The object payload, or null when absent.
 	 */
-	private function findConnector(string $kind, string $uuid): ?array {
+	private function findConnector(string $kind, string $uuid, ?string &$resolvedUuid = null): ?array {
+		$resolvedUuid = null;
 		if ($this->objectService === null) {
 			return null;
 		}
@@ -438,6 +550,7 @@ class AppRepoSerializer {
 		// getObject() is the object payload. The array branch this used to carry
 		// was unreachable against that contract — the service never hands back a
 		// bare array here — so it is gone rather than left as dead cover.
+		$resolvedUuid = (string)$found->getUuid();
 		return $found->getObject();
 	}//end findConnector()
 
@@ -447,9 +560,14 @@ class AppRepoSerializer {
 	 * @param string $kind The declared entry's kind.
 	 * @param array<string,mixed> $object The declared entry's payload.
 	 *
-	 * @return array<string,array<int,string>> Referenced UUIDs keyed by kind. A
-	 *                                         synchronization's `sourceId` / `source_target_mapping` fields already
-	 *                                         carry UUIDs, so this needs no translation.
+	 * @return array<string,array<int,string>> Referenced UUIDs OR slugs keyed by
+	 *                                         kind. A synchronization's `sourceId` /
+	 *                                         `source_target_mapping` carry whichever
+	 *                                         identifier the object was authored with
+	 *                                         — measured live, sources are commonly
+	 *                                         slug-referenced (`sourceId: "tenderned"`)
+	 *                                         — so the caller must resolve either
+	 *                                         shape (`find(id:)` accepts both).
 	 */
 	private function directReferences(string $kind, array $object): array {
 		if ($kind !== 'synchronization') {
