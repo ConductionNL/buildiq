@@ -257,4 +257,64 @@ class ApplicationsControllerSaveManifestTest extends TestCase {
 
 	}//end testSaveManifestForbidsViewer()
 
+	/**
+	 * An owner may write, but not a manifest the runtime cannot render.
+	 *
+	 * The Design tab already refuses to save one — REQ-OBPD-009 puts the
+	 * guarantee in the CLIENT (Save is disabled, with a tooltip). That
+	 * guarantee stopped at the browser: an API caller could PUT `{version,
+	 * menu}` with no `pages` and get a 200, leaving the app with a manifest
+	 * that renders nothing, and nothing on the read path repairs it. Newman's
+	 * `4. PUT invalid manifest — assert 4xx` was measuring exactly this and
+	 * had been red on `development`.
+	 *
+	 * Pinned on the AUTHORISED path deliberately: a caller who could not write
+	 * anyway would be refused for the wrong reason and the assertion would pass
+	 * without the shape check ever running.
+	 *
+	 * @return void
+	 */
+	public function testSaveManifestRefusesAManifestWithNoPages(): void {
+		$this->authenticate(uid: 'alice');
+
+		$register = new \OCA\OpenRegister\Db\Register();
+		$register->setId(1);
+		$this->registerMapper->method('find')->willReturn($register);
+
+		$schema = new \OCA\OpenRegister\Db\Schema();
+		$schema->setId(2);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$this->objectService->method('searchObjects')->willReturn(
+			[['id' => 'route-1', 'slug' => 'permit-tracker', 'applicationUuid' => 'app-uuid']]
+		);
+		$this->objectService->method('find')->willReturn(
+			$this->buildEntity(
+				[
+					'id' => 'app-uuid',
+					'slug' => 'permit-tracker',
+					'permissions' => ['owners' => ['user:alice']],
+				]
+			)
+		);
+
+		// `menu` but no `pages` — structurally unrenderable.
+		$this->request->method('getParam')->willReturn(['version' => '0.1.0', 'menu' => []]);
+
+		// The refusal must happen BEFORE the write, not be undone after it.
+		$this->objectService->expects(self::never())->method('saveObject');
+
+		$response = $this->controller()->saveManifest(slug: 'permit-tracker');
+
+		self::assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$data = $response->getData();
+		self::assertSame('manifest_invalid', $data['error']);
+		self::assertStringContainsString(
+			'pages',
+			$data['message'],
+			'the refusal must name what is wrong — a bare 400 sends the caller back to guess'
+		);
+
+	}//end testSaveManifestRefusesAManifestWithNoPages()
+
 }//end class

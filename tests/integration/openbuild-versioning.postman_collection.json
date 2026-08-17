@@ -307,51 +307,6 @@
 			]
 		},
 		{
-			"name": "REQ-OBV-005 — diff endpoint returns both manifest blobs",
-			"description": "⚠️ STILL RED, DELIBERATELY, AND NOT BECAUSE OF ANYTHING ABOVE.\n\nThis folder diffs two SIBLING SNAPSHOT ROWS (v1_uuid vs v2_uuid). Those rows are precisely what ADR-002 retired — see REQ-OBV-002 in openspec/specs/openbuild-version-snapshots/spec.md — so `v2_uuid` is never set and the request goes out with an empty `to`.\n\nThe 500 that used to come back was a PRODUCT defect and is fixed: ApplicationsController::resolveVersionBlob() documented 'returns null on miss so the caller can surface 404' while ObjectService::find() THREW, so both of diffVersions()'s 404 branches were dead code and the throw became a 500 `internal_error`. It now answers 404, which is the documented behaviour.\n\nWhat remains is a genuine SPEC-vs-CONTROLLER divergence that needs its own change, not a test edit. REQ-OBV-005 defines the endpoint's parameters as an ApplicationVersion SLUG (e.g. `staging`), or `current:<versionSlug>`, or `history:<versionSlug>:<revisionId>` — the canonical case being 'two historical states of one ApplicationVersion'. resolveVersionBlob() implements none of that grammar: it accepts the literal `draft` or an ApplicationVersion UUID and nothing else.\n\nSo this folder cannot be made green by pointing it at different values; the ref grammar the spec defines does not exist yet. Filed rather than papered over — rewriting these three assertions to match today's UUID behaviour would lock in the divergence and delete the only evidence of it.",
-			"item": [
-				{
-					"name": "2.1 GET diff between v1.0.0 and v1.1.0",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions/diff?from={{v1_uuid}}&to={{v2_uuid}}",
-							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openbuild", "api", "applications", "{{test_slug}}", "versions", "diff"],
-							"query": [
-								{ "key": "from", "value": "{{v1_uuid}}" },
-								{ "key": "to", "value": "{{v2_uuid}}" }
-							]
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('Diff endpoint returns 200', function () { pm.response.to.have.status(200); });",
-									"const body = pm.response.json();",
-									"pm.test('Response shape is { from, to } with manifest + version + publishedAt', function () {",
-									"    pm.expect(body).to.have.property('from');",
-									"    pm.expect(body).to.have.property('to');",
-									"    pm.expect(body.from).to.have.property('manifest');",
-									"    pm.expect(body.from).to.have.property('version');",
-									"    pm.expect(body.to).to.have.property('manifest');",
-									"    pm.expect(body.to).to.have.property('version');",
-									"});",
-									"pm.test('Versions match the requested UUIDs', function () {",
-									"    pm.expect(body.from.version).to.equal('1.0.0');",
-									"    pm.expect(body.to.version).to.equal('1.1.0');",
-									"});"
-								]
-							}
-						}
-					]
-				}
-			]
-		},
-		{
 			"name": "REQ-OBR-009 — rollback action appends a new snapshot row",
 			"description": "Rollback is implemented as a re-publish whose payload is the old manifest blob. We PUT the v1.0.0 manifest back onto the Application (with a draft→published transition) and assert that a THIRD ApplicationVersion row appears — history is append-only per design.md Decision 3.",
 			"item": [

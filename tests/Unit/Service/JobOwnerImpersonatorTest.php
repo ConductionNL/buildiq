@@ -282,4 +282,103 @@ final class JobOwnerImpersonatorTest extends TestCase {
 
 		self::assertTrue($workRan, 'work must still run even when the object cannot be found');
 	}//end testRunAsOwnerDoesNotImpersonateWhenObjectNotFound()
+
+	/**
+	 * The owner lookup MUST bypass RBAC and multitenancy.
+	 *
+	 * It runs BEFORE the impersonation it exists to set up, so the caller is
+	 * still the background job's session — nobody. An RBAC-checked read is
+	 * therefore evaluated as `Anonymous` and refused by any schema that does
+	 * not grant anonymous `read`, which is a chicken-and-egg rather than a
+	 * permission decision: you cannot read the object to learn its owner
+	 * without already being someone.
+	 *
+	 * Observed in CI and on a live instance before this was fixed — every
+	 * export sat at `status: queued` because the `start` transition could not
+	 * fire, and the `fail` transition that should have recorded why was
+	 * refused for the same reason:
+	 *
+	 *   OpenBuild: owner impersonation lookup failed for object <uuid>:
+	 *   User 'Anonymous' does not have permission to 'read' objects in schema
+	 *   'Export Job'
+	 *
+	 * Pinned as an explicit assertion because the failure it prevents is
+	 * SILENT at the unit layer: with RBAC on, a mocked service still returns
+	 * an object and every other test in this file keeps passing.
+	 *
+	 * @return void
+	 */
+	public function testOwnerLookupBypassesRbacAndMultitenancy(): void {
+		$object = new ObjectEntity();
+		$object->setOwner('alice');
+
+		// ⚠️ A HAND-WRITTEN FAKE, NOT A PHPUnit MOCK. The production call uses
+		// NAMED arguments (`_rbac: false`), and a generated mock cannot observe
+		// those: when named arguments skip intermediate positions, PHP hands the
+		// mock only the positional ones, so a `willReturnCallback` sees its OWN
+		// defaults — `_rbac => true` — whether or not the fix is present. That
+		// test would pass on broken code and fail on fixed code, which is worse
+		// than no test. A real method binds named arguments correctly, and the
+		// impersonator resolves the service duck-typed
+		// (`method_exists($service, 'find')`) rather than by type, so a
+		// one-method fake is a faithful stand-in.
+		$objectService = new class ($object) {
+			/**
+			 * Flags the production call actually passed.
+			 *
+			 * @var array<string, bool>
+			 */
+			public array $captured = [];
+
+			/**
+			 * Constructor.
+			 *
+			 * @param object $object Object `find()` hands back.
+			 */
+			public function __construct(private object $object) {
+			}//end __construct()
+
+			/**
+			 * Mirror of OR's ObjectService::find() signature.
+			 *
+			 * @param int|string $id Object identifier.
+			 * @param array<int, string>|null $_extend Extend list.
+			 * @param bool $files Whether to hydrate files.
+			 * @param string|int|null $register Register scope.
+			 * @param string|int|null $schema Schema scope.
+			 * @param bool $_rbac Whether RBAC is enforced.
+			 * @param bool $_multitenancy Whether multitenancy scoping is enforced.
+			 *
+			 * @return object The configured object.
+			 */
+			public function find(
+				int|string $id,
+				?array $_extend=[],
+				bool $files=false,
+				string|int|null $register=null,
+				string|int|null $schema=null,
+				bool $_rbac=true,
+				bool $_multitenancy=true
+			): object {
+				$this->captured = ['_rbac' => $_rbac, '_multitenancy' => $_multitenancy];
+
+				return $this->object;
+			}//end find()
+		};
+
+		$this->container->method('has')->willReturn(true);
+		$this->container->method('get')->willReturn($objectService);
+		$this->userManager->method('get')->willReturn($this->createMock(IUser::class));
+		$this->userSession->method('getUser')->willReturn(null);
+
+		$this->buildImpersonator()->runAsOwner('object-uuid', static function (): void {
+		});
+
+		self::assertSame(
+			['_rbac' => false, '_multitenancy' => false],
+			$objectService->captured,
+			'the owner lookup must run with RBAC and multitenancy OFF — it precedes the impersonation it sets up, '
+			. 'so an RBAC-checked read is evaluated as Anonymous and refused, leaving the job stuck at "queued"'
+		);
+	}//end testOwnerLookupBypassesRbacAndMultitenancy()
 }//end class
