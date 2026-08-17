@@ -20,7 +20,7 @@
 <template>
 	<NcDialog
 		:name="t('openbuild', 'Import data')"
-		:canClose="!importing"
+		:noClose="importing"
 		size="large"
 		@closing="onClose">
 		<div class="ob-import-wizard">

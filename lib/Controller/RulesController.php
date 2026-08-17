@@ -103,6 +103,13 @@ class RulesController extends Controller {
 	 * @return JSONResponse 200 with the result, 404 on miss, 408 on timeout, 422 on bad input.
 	 *
 	 * @spec openspec/changes/business-rules-engine/tasks.md#9.1
+	 *
+	 * @no-admin-idor-exempt Authorization is delegated to OpenRegister's schema RBAC:
+	 *   every read here goes through this controller's private `query()`, which calls
+	 *   `searchObjectsBySlug(..., _rbac: true, _multitenancy: false)`. The tenancy
+	 *   opt-out is deliberate and documented there — `openbuild` is a SYSTEM-WIDE
+	 *   register, not org-scoped, so a true org filter would throw and break
+	 *   resolution for every caller. `_rbac: true` is the guard, and it is explicit.
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 60, period: 60)]
@@ -176,6 +183,13 @@ class RulesController extends Controller {
 	 * @return JSONResponse 200 with the schema metadata, or 404.
 	 *
 	 * @spec openspec/changes/business-rules-engine/tasks.md#9.1
+	 *
+	 * @no-admin-idor-exempt Authorization is delegated to OpenRegister's schema RBAC:
+	 *   every read here goes through this controller's private `query()`, which calls
+	 *   `searchObjectsBySlug(..., _rbac: true, _multitenancy: false)`. The tenancy
+	 *   opt-out is deliberate and documented there — `openbuild` is a SYSTEM-WIDE
+	 *   register, not org-scoped, so a true org filter would throw and break
+	 *   resolution for every caller. `_rbac: true` is the guard, and it is explicit.
 	 */
 	#[NoAdminRequired]
 	public function schema(string $ruleSetSlug): JSONResponse {
@@ -209,6 +223,13 @@ class RulesController extends Controller {
 	 * @return JSONResponse 200 with the test summary, or 404.
 	 *
 	 * @spec openspec/changes/business-rules-engine/tasks.md#9.1
+	 *
+	 * @no-admin-idor-exempt Authorization is delegated to OpenRegister's schema RBAC:
+	 *   every read here goes through this controller's private `query()`, which calls
+	 *   `searchObjectsBySlug(..., _rbac: true, _multitenancy: false)`. The tenancy
+	 *   opt-out is deliberate and documented there — `openbuild` is a SYSTEM-WIDE
+	 *   register, not org-scoped, so a true org filter would throw and break
+	 *   resolution for every caller. `_rbac: true` is the guard, and it is explicit.
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 20, period: 60)]

@@ -167,11 +167,6 @@
       "count": 1
     }
   },
-  "src/dialogs/CopilotGenerateDialog.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    }
-  },
   "src/dialogs/CreateApplicationWizard.vue": {
     "no-console": {
       "count": 1
@@ -188,20 +183,7 @@
     }
   },
   "src/dialogs/ExportDialog.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "src/dialogs/ImportDataWizard.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    }
-  },
-  "src/dialogs/PromoteVersionDialog.vue": {
-    "@nextcloud/no-deprecated-library-props": {
       "count": 1
     }
   },

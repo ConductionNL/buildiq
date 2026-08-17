@@ -3,7 +3,7 @@
 <template>
 	<NcDialog
 		:name="t('openbuild', 'Promote version')"
-		:canClose="true"
+		:noClose="false"
 		size="normal"
 		@closing="onCancel">
 		<!-- No-target state -->

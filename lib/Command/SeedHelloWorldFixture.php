@@ -28,7 +28,9 @@ namespace OCA\OpenBuild\Command;
 use OCA\OpenBuild\Service\ApplicationVersionService;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use stdClass;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -402,9 +404,9 @@ class SeedHelloWorldFixture extends Command {
 	 * @param array<string, mixed> $data The object data.
 	 * @param string|null $uuid Optional UUID to update an existing object.
 	 *
-	 * @return \OCA\OpenRegister\Db\ObjectEntity The saved object.
+	 * @return ObjectEntityInterface The saved object.
 	 */
-	private function create(string $register, string $schema, array $data, ?string $uuid = null): \OCA\OpenRegister\Db\ObjectEntity {
+	private function create(string $register, string $schema, array $data, ?string $uuid = null): ObjectEntityInterface {
 		return $this->objectService->saveObject(
 			$data,
 			register: $register,
@@ -482,13 +484,7 @@ class SeedHelloWorldFixture extends Command {
 					'title' => 'Messages',
 					'config' => ['register' => $reg, 'schema' => 'hello-message', 'columns' => ['title', 'body', '@self.created']],
 				],
-				[
-					'id' => 'MessageDetail',
-					'route' => '/messages/:id',
-					'type' => 'detail',
-					'title' => 'Message',
-					'config' => ['register' => $reg, 'schema' => 'hello-message'],
-				],
+				$this->buildMessageDetailPage(registerSlug: $reg),
 				[
 					'id' => 'MessageCreate',
 					'route' => '/messages/new',
@@ -526,6 +522,83 @@ class SeedHelloWorldFixture extends Command {
 			],
 		];
 	}//end buildManifest()
+
+	/**
+	 * The `MessageDetail` page, with its body grid EJECTED on purpose.
+	 *
+	 * ⚠️ AN AUTO-BODY DETAIL PAGE LOSES ITS DATA WIDGET ON A LOST RACE.
+	 *
+	 * A `type: detail` page with no widgets/layout takes nc-vue's auto-body
+	 * path. `CnDetailPage` fires `Promise.all([fetchObject(), fetchSchema()])`,
+	 * but `shouldRenderAutoBody` flips as soon as the OBJECT lands — it does
+	 * not wait for the schema — the watcher materialises the grid EXACTLY
+	 * ONCE, and `materializeAutoBody()` DROPS the Data widget when
+	 * `currentSchema` is still null. Nothing rebuilds it when the schema
+	 * arrives, and `fetchSchema` fails silently, so there is no error state
+	 * either: the page renders its header and "Related" and simply has no data
+	 * on it.
+	 *
+	 * Measured in CI (job 95207190738, playwright-traces): the object response
+	 * completed at 16.171 s and the schema at 16.181 s — ten milliseconds
+	 * apart, object first — and the captured page snapshot has no Data widget.
+	 * That is the whole of the builder-host "detail page must render the seeded
+	 * body text" failure. It passes on a developer box because the schema
+	 * usually wins the race.
+	 *
+	 * Ejecting the default grid takes the explicit-grid path instead
+	 * (`hasGridLayout` wins over the auto-body), where the widget's schema
+	 * arrives through `CnPageRenderer`'s read-through detail context and fills
+	 * in reactively. The shape below is byte-for-byte nc-vue's own
+	 * `defaultDetailGrid()`, which is also exactly what OpenBuild's edit button
+	 * writes the moment anyone edits this page — so this changes no pixels, it
+	 * only removes the race.
+	 *
+	 * The underlying nc-vue defect is NOT fixed by this: any other auto-body
+	 * detail page still has it.
+	 *
+	 * @param string $registerSlug Register the page and its Data widget read from.
+	 *
+	 * @return array<string, mixed> The manifest page definition.
+	 *
+	 * @spec openspec/specs/openbuild-page-designer/spec.md
+	 */
+	private function buildMessageDetailPage(string $registerSlug): array {
+		return [
+			'id' => 'MessageDetail',
+			'route' => '/messages/:id',
+			'type' => 'detail',
+			'title' => 'Message',
+			'config' => [
+				'register' => $registerSlug,
+				'schema' => 'hello-message',
+				'widgets' => [
+					[
+						'id' => 'data',
+						'widgetId' => 'data',
+						'type' => 'data',
+						'title' => 'Data',
+						'content' => [
+							'register' => $registerSlug,
+							'schema' => 'hello-message',
+							'columns' => 3,
+							'overrides' => new stdClass(),
+						],
+					],
+					[
+						'id' => 'related',
+						'widgetId' => 'related',
+						'type' => 'related',
+						'title' => 'Related',
+						'content' => ['title' => '', 'groups' => []],
+					],
+				],
+				'layout' => [
+					['id' => 'data', 'widgetId' => 'data', 'gridX' => 0, 'gridY' => 0, 'gridWidth' => 12, 'gridHeight' => 6, 'showTitle' => false],
+					['id' => 'related', 'widgetId' => 'related', 'gridX' => 0, 'gridY' => 6, 'gridWidth' => 12, 'gridHeight' => 5, 'showTitle' => false],
+				],
+			],
+		];
+	}//end buildMessageDetailPage()
 
 	/**
 	 * The three sample HelloMessage objects rendered by the index page.

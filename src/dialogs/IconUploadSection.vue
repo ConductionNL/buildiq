@@ -410,15 +410,18 @@ export default {
 					`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}/files`,
 				)
 				const listed = await axios.get(filesUrl)
-				const attachment = (listed?.data?.results || [])
-					.find((f) => f?.title === filename)
+				const attachment = (listed?.data?.results || []).find(
+					(f) => f?.title === filename,
+				)
 
 				if (!attachment?.id) {
 					// The ref points at a file OR no longer holds. Nothing to
 					// detach — fall through and clear the ref so the record stops
 					// advertising an attachment that is not there.
 					// eslint-disable-next-line no-console
-					console.warn(`[openbuild] no OR attachment named ${filename}; clearing the ref only`)
+					console.warn(
+						`[openbuild] no OR attachment named ${filename}; clearing the ref only`,
+					)
 				} else {
 					const deleteUrl = generateUrl(
 						`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}/files/${attachment.id}`,

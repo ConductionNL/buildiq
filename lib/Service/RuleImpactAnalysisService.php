@@ -141,10 +141,6 @@ class RuleImpactAnalysisService {
 			return [];
 		}
 
-		if (is_array($results) === false) {
-			return [];
-		}
-
 		$logs = [];
 		foreach ($results as $row) {
 			$entry = $this->normalise(object: $row);

@@ -91,6 +91,10 @@
       "name": "3. OpenRegister approval-steps list is reachable directly (My Approvals data source)",
       "request": {
         "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "OCS-APIRequest", "value": "true" }
+        ],
         "url": {
           "raw": "{{baseUrl}}/apps/openregister/api/approval-steps?status=pending",
           "host": ["{{baseUrl}}"],
@@ -126,8 +130,14 @@
           "listen": "test",
           "script": {
             "exec": [
-              "pm.test('OpenBuild has no approve pass-through route (404, not routed)', () => {",
-              "    pm.expect(pm.response.code).to.equal(404);",
+              "// 405, not 404: openregister's AppHost::Routes::standard() appends the",
+              "// SPA catch-all at `/{path}` as a GET route, so a POST to an unrouted",
+              "// path matches that pattern but not its verb and Nextcloud answers",
+              "// Method Not Allowed. Either code proves the same thing — this app",
+              "// serves no approve endpoint — and a bare 404 would only hold in an app",
+              "// with no catch-all.",
+              "pm.test('OpenBuild has no approve pass-through route (not routed)', () => {",
+              "    pm.expect([404, 405]).to.include(pm.response.code);",
               "});"
             ],
             "type": "text/javascript"

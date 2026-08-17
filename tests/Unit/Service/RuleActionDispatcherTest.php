@@ -97,7 +97,6 @@ final class RuleActionDispatcherTest extends TestCase {
 			$this->createMock(JobOwnerImpersonator::class),
 			$this->createMock(ContainerInterface::class),
 			new NullLogger(),
-			objectService: $entity,
 		);
 
 	}//end setUp()

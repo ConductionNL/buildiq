@@ -164,6 +164,12 @@ class ShopController extends Controller {
 	 * @return JSONResponse 201 with the new Application; 400/401/404/422 on failure.
 	 *
 	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
+	 *
+	 * @no-admin-idor-exempt Addresses no openbuild-owned object: the slug identifies a
+	 *   template in an EXTERNAL catalogue (the configured store registry / a GitHub
+	 *   repo), so there is nothing of another tenant's to reach by guessing it. The
+	 *   install path CREATES a new app owned by the calling user rather than reading
+	 *   an existing one.
 	 */
 	#[NoAdminRequired]
 	public function githubInstall(): JSONResponse {

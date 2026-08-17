@@ -434,15 +434,11 @@ class AppRepoSerializer {
 			return null;
 		}
 
-		if (is_object($found) === true && method_exists($found, 'getObject') === true) {
-			return (array)$found->getObject();
-		}
-
-		if (is_array($found) === true) {
-			return $found;
-		}
-
-		return null;
+		// `find()` answers with an ObjectEntityInterface (ADR-084), whose
+		// getObject() is the object payload. The array branch this used to carry
+		// was unreachable against that contract — the service never hands back a
+		// bare array here — so it is gone rather than left as dead cover.
+		return $found->getObject();
 	}//end findConnector()
 
 	/**

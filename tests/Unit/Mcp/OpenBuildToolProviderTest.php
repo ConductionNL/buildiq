@@ -78,6 +78,22 @@ class OpenBuildToolProviderTest extends TestCase {
 	private LoggerInterface&MockObject $logger;
 
 	/**
+	 * OR object read/write double.
+	 *
+	 * This is now the ONLY way a handler reaches OpenRegister: the per-Application
+	 * RBAC gate and the handler bodies both read the INJECTED
+	 * ObjectServiceInterface (ADR-084). They used to disagree — the gate read the
+	 * injected contract while the bodies resolved a second instance out of the
+	 * container by string name (ADR-083 rule 1, hydra gate-66) — so this double
+	 * had to be handed to BOTH or the gate would look at an unstubbed service.
+	 * The container stub below is still wired because handlers resolve OpenBuild's
+	 * own services (and OR's mappers, which publish no contract) through it.
+	 *
+	 * @var ObjectServiceInterface&MockObject
+	 */
+	private ObjectServiceInterface&MockObject $objectService;
+
+	/**
 	 * Set up mocks and the provider instance.
 	 *
 	 * @return void
@@ -87,13 +103,14 @@ class OpenBuildToolProviderTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->container = $this->createMock(ContainerInterface::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 
 		$this->provider = new OpenBuildToolProvider(
 			$this->userSession,
 			$this->groupManager,
 			$this->container,
 			$this->logger,
-			$this->createMock(ObjectServiceInterface::class),
+			$this->objectService,
 		);
 
 	}//end setUp()
@@ -255,9 +272,14 @@ class OpenBuildToolProviderTest extends TestCase {
 		$user->method('getUID')->willReturn('alice');
 		$this->userSession->method('getUser')->willReturn($user);
 
-		// No ObjectService available — handler should fail closed with internal_error,
-		// proving the auth gate passed and business logic was reached.
-		$this->container->method('get')->willThrowException(new \RuntimeException('no ObjectService in test'));
+		// The OR read blows up — the handler should fail closed with
+		// internal_error, proving the auth gate passed and business logic was
+		// reached. The throw is wired on the INJECTED contract, not the
+		// container: since the ADR-083 rule 1 fix the handler bodies no longer
+		// resolve ObjectService by string name, so a throwing container would
+		// never be touched and this test would assert nothing.
+		$this->objectService->method('searchObjectsBySlug')
+			->willThrowException(new \RuntimeException('no ObjectService in test'));
 
 		$result = $this->provider->invokeTool('openbuild.listApps', []);
 
@@ -376,7 +398,7 @@ class OpenBuildToolProviderTest extends TestCase {
 		$this->groupManager->method('getUserGroups')->willReturn([]);
 
 		// App exists but bob is not an owner/editor.
-		$objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+		$objectService = $this->objectService;
 		$objectService->method('searchObjectsBySlug')->willReturn([
 			['uuid' => 'app-uuid-1', 'slug' => 'my-app', 'permissions' => ['owners' => ['user:alice'], 'editors' => []]],
 		]);
@@ -416,7 +438,7 @@ class OpenBuildToolProviderTest extends TestCase {
 		$this->groupManager->method('getUserGroups')->willReturn([]);
 
 		$callCount = 0;
-		$objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+		$objectService = $this->objectService;
 		$objectService->method('searchObjectsBySlug')
 			->willReturnCallback(function () use (&$callCount) {
 				$callCount++;
@@ -465,7 +487,7 @@ class OpenBuildToolProviderTest extends TestCase {
 		$this->groupManager->method('isAdmin')->with('bob')->willReturn(false);
 		$this->groupManager->method('getUserGroups')->willReturn([]);
 
-		$objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+		$objectService = $this->objectService;
 		$objectService->method('searchObjectsBySlug')->willReturn([
 			['uuid' => 'app-uuid-1', 'slug' => 'my-app', 'permissions' => ['owners' => ['user:alice'], 'editors' => []]],
 		]);
@@ -498,7 +520,7 @@ class OpenBuildToolProviderTest extends TestCase {
 		$this->groupManager->method('isAdmin')->with('bob')->willReturn(false);
 		$this->groupManager->method('getUserGroups')->willReturn([]);
 
-		$objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+		$objectService = $this->objectService;
 		$objectService->method('searchObjectsBySlug')->willReturn([
 			['uuid' => 'app-uuid-1', 'slug' => 'my-app', 'permissions' => ['owners' => ['user:alice'], 'editors' => []]],
 		]);
@@ -534,7 +556,7 @@ class OpenBuildToolProviderTest extends TestCase {
 		$this->groupManager->method('isAdmin')->with('admin-user')->willReturn(true);
 		$this->groupManager->method('getUserGroups')->willReturn([]);
 
-		$objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+		$objectService = $this->objectService;
 		$objectService->method('searchObjectsBySlug')->willReturn([
 			['uuid' => 'app-uuid-1', 'slug' => 'my-app', 'permissions' => ['owners' => ['user:alice'], 'editors' => []]],
 		]);
@@ -572,7 +594,7 @@ class OpenBuildToolProviderTest extends TestCase {
 		$this->groupManager->method('getUserGroups')->willReturn([]);
 
 		$callCount = 0;
-		$objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+		$objectService = $this->objectService;
 		$objectService->method('searchObjectsBySlug')
 			->willReturnCallback(function () use (&$callCount) {
 				$callCount++;

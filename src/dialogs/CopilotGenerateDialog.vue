@@ -14,7 +14,7 @@
 	<NcModal
 		v-if="open"
 		:name="t('openbuild', 'Generate an app with AI')"
-		:canClose="state !== 'planning' && state !== 'executing'"
+		:noClose="state === 'planning' || state === 'executing'"
 		@close="onCancel">
 		<div class="copilot-generate">
 			<h2 class="copilot-generate__title">

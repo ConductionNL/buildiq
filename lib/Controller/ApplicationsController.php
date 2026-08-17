@@ -61,6 +61,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -386,6 +387,27 @@ class ApplicationsController extends Controller {
 				);
 			}
 
+			// A manifest the runtime cannot render must not be persisted.
+			//
+			// The Design tab already refuses to save one (REQ-OBPD-009 puts the
+			// guarantee in the client: the Save button is disabled and a tooltip
+			// states why), but the guarantee stopped at the browser — an API
+			// caller could PUT `{version, menu}` with no `pages` and get a 200,
+			// leaving the app with a manifest that renders nothing. Nothing on
+			// the read path repairs that.
+			//
+			// These are the SAME two rules the GitHub-import path has always
+			// enforced in AppRepoParser::validateManifest() — a string `version`
+			// and an array `pages`. Applying them here makes one endpoint agree
+			// with the other rather than inventing a new contract.
+			$manifestError = $this->manifestShapeError(manifest: $manifest);
+			if ($manifestError !== null) {
+				return new JSONResponse(
+					data: ['error' => 'manifest_invalid', 'message' => $manifestError],
+					statusCode: Http::STATUS_BAD_REQUEST
+				);
+			}
+
 			// Never let a manifest body inject/overwrite the permissions roster.
 			unset($manifest['permissions']);
 
@@ -452,6 +474,36 @@ class ApplicationsController extends Controller {
 			);
 		}//end try
 	}//end saveManifest()
+
+	/**
+	 * Return why a manifest cannot be rendered, or null when its shape is sound.
+	 *
+	 * Deliberately the SAME two rules AppRepoParser::validateManifest() applies
+	 * to an imported manifest.json — a string `version` and an array `pages`.
+	 * Structural only: it says nothing about whether an individual page is
+	 * well-formed, which is the renderer's business.
+	 *
+	 * @param array<string,mixed> $manifest The decoded manifest body.
+	 *
+	 * @return string|null Reason the manifest is unusable, or null when it is fine.
+	 *
+	 * @spec openspec/specs/openbuild-page-designer/spec.md
+	 */
+	private function manifestShapeError(array $manifest): ?string {
+		if ($manifest === []) {
+			return 'The manifest is an empty object; a virtual app manifest must declare version + pages.';
+		}
+
+		if (is_string($manifest['version'] ?? null) === false) {
+			return 'The manifest is missing a string `version` property.';
+		}
+
+		if (is_array($manifest['pages'] ?? null) === false) {
+			return 'The manifest is missing a `pages` array.';
+		}
+
+		return null;
+	}//end manifestShapeError()
 
 	/**
 	 * Delegate to ManifestResolverService for versioned-manifest access.
@@ -722,13 +774,17 @@ class ApplicationsController extends Controller {
 	 * Resolve a virtual-app slug to the Application object + array form + uuid.
 	 *
 	 * Returns either a `JSONResponse` (404 / 500) when resolution fails, or a
-	 * tuple `[ObjectEntity|array, array, string]` of (raw entity, normalised
-	 * data, applicationUuid) for the happy path. Splitting this out keeps
-	 * `getManifest` below PHPMD's 100-line method-length budget.
+	 * tuple `[ObjectEntityInterface|array, array, string]` of (raw entity,
+	 * normalised data, applicationUuid) for the happy path. Splitting this out
+	 * keeps `getManifest` below PHPMD's 100-line method-length budget.
+	 *
+	 * Element 0 is whatever `ObjectServiceInterface::find()` returns, i.e. an
+	 * `ObjectEntityInterface` (ADR-084). The callers that need the concrete
+	 * `ObjectEntity` for an audit-trail write still narrow with `instanceof`.
 	 *
 	 * @param string $slug The virtual-app slug from the URL
 	 *
-	 * @return JSONResponse|array{0: ObjectEntity|array<string, mixed>, 1: array<string, mixed>, 2: string}
+	 * @return JSONResponse|array{0: ObjectEntityInterface|array<string, mixed>, 1: array<string, mixed>, 2: string}
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
 	 */
