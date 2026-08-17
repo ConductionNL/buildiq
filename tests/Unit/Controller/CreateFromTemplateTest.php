@@ -619,6 +619,98 @@ class CreateFromTemplateTest extends TestCase {
 	}//end testOwnerFieldSetToAuthenticatedUid()
 
 	/**
+	 * The productionVersion link is best-effort: a failure there must not fail
+	 * the install.
+	 *
+	 * `linkProductionVersion()` documents itself as never-throwing — the app is
+	 * installed and published either way, it is only unreachable by slug until
+	 * a retry succeeds. Losing the whole install (and the register and schemas
+	 * already provisioned for it) over a manifest-resolution step would be far
+	 * worse than the 404 it guards against.
+	 *
+	 * @return void
+	 */
+	public function testInstallSucceedsWhenTheProductionVersionLinkFails(): void {
+		$this->authenticateAs('alice');
+		$this->withRequestParams(['name' => 'My permits', 'slug' => 'my-permits']);
+
+		$this->objectService->method('searchObjects')->willReturnOnConsecutiveCalls(
+			[$this->templateRecord(self::TEMPLATE_SLUG)],
+			[]
+		);
+		$this->schemaMapper->method('createFromArray')->willReturn($this->schemaWithId(7777));
+
+		$seen = 0;
+		$this->objectService->method('saveObject')->willReturnCallback(
+			function (
+				array $object,
+				?array $extend = [],
+				string|int|null $register = null,
+				string|int|null $schema = null,
+				?string $uuid = null,
+			) use (&$seen): ObjectEntity {
+				$seen++;
+				if ($schema === 'applicationVersion') {
+					throw new \RuntimeException('OR unavailable');
+				}
+
+				return $this->savedEntity(array_merge($object, ['uuid' => 'new-uuid-1']));
+			}
+		);
+
+		$result = $this->controller->createFromTemplate(templateSlug: self::TEMPLATE_SLUG);
+
+		self::assertSame(Http::STATUS_CREATED, $result->getStatus());
+		self::assertSame('new-uuid-1', $result->getData()['uuid']);
+		// The Application create, then the version attempt that threw. The
+		// re-save must NOT run: there is no version to point at.
+		self::assertSame(2, $seen);
+	}//end testInstallSucceedsWhenTheProductionVersionLinkFails()
+
+	/**
+	 * A version save that yields no UUID must not trigger the Application re-save.
+	 *
+	 * Re-saving the app with an empty `productionVersion` would overwrite a
+	 * working pointer with nothing, so the link step returns early instead.
+	 *
+	 * @return void
+	 */
+	public function testNoApplicationRelinkWhenTheVersionSaveYieldsNoUuid(): void {
+		$this->authenticateAs('alice');
+		$this->withRequestParams(['name' => 'My permits', 'slug' => 'my-permits']);
+
+		$this->objectService->method('searchObjects')->willReturnOnConsecutiveCalls(
+			[$this->templateRecord(self::TEMPLATE_SLUG)],
+			[]
+		);
+		$this->schemaMapper->method('createFromArray')->willReturn($this->schemaWithId(7777));
+
+		$calls = [];
+		$this->objectService->method('saveObject')->willReturnCallback(
+			function (
+				array $object,
+				?array $extend = [],
+				string|int|null $register = null,
+				string|int|null $schema = null,
+				?string $uuid = null,
+			) use (&$calls): ObjectEntity {
+				$calls[] = $schema;
+				if ($schema === 'applicationVersion') {
+					// An entity carrying neither `uuid` nor `id`.
+					return $this->savedEntity(['name' => 'Production']);
+				}
+
+				return $this->savedEntity(array_merge($object, ['uuid' => 'new-uuid-1']));
+			}
+		);
+
+		$result = $this->controller->createFromTemplate(templateSlug: self::TEMPLATE_SLUG);
+
+		self::assertSame(Http::STATUS_CREATED, $result->getStatus());
+		self::assertSame([1636, 'applicationVersion'], $calls, 'the Application re-save must be skipped');
+	}//end testNoApplicationRelinkWhenTheVersionSaveYieldsNoUuid()
+
+	/**
 	 * Test 6 — Cross-user slug collision is now REJECTED (WF1 fix).
 	 *
 	 * With the global slug uniqueness check in place, a second user attempting
