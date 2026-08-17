@@ -432,6 +432,108 @@ set_pref() {
 set_pref 'walkthrough_completed_version' '999.0.0'
 set_pref 'support-dialog-seen' '1'
 
+# ── 3d. Configure Docudesk's template register, when Docudesk is installed ───
+#
+# WHY THIS IS HERE AND NOT IN global-setup.ts. It WAS only there
+# (`seedDocudeskTemplateFixtures()`), and `global-setup.ts` is a Playwright
+# hook — the Newman leg never runs it. So the `Integration Tests (Newman)` job
+# booted a Docudesk whose `template_register`/`template_schema` were unset, and
+# `openbuild-docudesk-documents.postman_collection.json` items 4 and 6 got a
+# **500**, not the 4xx they assert:
+#
+#   OCA\DocuDesk\Exception\RegisterNotConfiguredException
+#   "Template register/schema not configured"
+#   OpenRegisterResolver.php:68 → TemplateService.php:171
+#     → CorrespondenceService.php:200 → CorrespondenceController.php:107
+#
+# Item 1 passed throughout, which is what made this look like an openbuild
+# defect: Docudesk's TemplatesController CATCHES that exception and answers
+# `{results: [], total: 0, notConfigured: true}`, while CorrespondenceController
+# has no such catch and lets it escape as a 500. Same missing configuration,
+# two different-looking symptoms.
+#
+# Configuring it makes "unknown templateId" mean what the assertion says it
+# means — a template that is not there — rather than "this instance has no
+# template storage at all".
+#
+# Docudesk is OPTIONAL. A 404/501 on the settings probe is a clean skip, not a
+# failure: openbuild's own specs must not require a sibling app to be present.
+DD_BODY="$(mktemp)"
+DD_CODE="$(api_get "$DD_BODY" "/index.php/apps/docudesk/api/settings")"
+if [ "$DD_CODE" = "404" ] || [ "$DD_CODE" = "501" ]; then
+	echo "[ci-seed] docudesk not installed (HTTP ${DD_CODE}) — template register not configured, skipping."
+elif [ "$DD_CODE" != "200" ]; then
+	echo "[ci-seed] docudesk settings probe returned HTTP ${DD_CODE} — template register not configured, skipping."
+else
+	# Resolve Docudesk's own register and its `template` schema BY SLUG. The
+	# settings payload already carries the register list with nested schemas, and
+	# slugs are stable across instances where the numeric ids are not.
+	DD_IDS="$(python3 - "$DD_BODY" <<'PY'
+import json, sys
+try:
+    with open(sys.argv[1]) as fh:
+        body = json.load(fh)
+except Exception:
+    sys.exit(0)
+cfg = body.get('configuration') or {}
+if cfg.get('template_register') and cfg.get('template_schema'):
+    print('ALREADY')
+    sys.exit(0)
+register = next(
+    (r for r in (body.get('availableRegisters') or [])
+     if isinstance(r, dict) and r.get('slug') == 'docudesk'),
+    None,
+)
+if register is None:
+    sys.exit(0)
+schema = next(
+    (s for s in (register.get('schemas') or [])
+     if isinstance(s, dict) and s.get('slug') == 'template'),
+    None,
+)
+if schema is None:
+    sys.exit(0)
+print(f"{register.get('id')} {schema.get('id')}")
+PY
+)"
+	if [ "$DD_IDS" = "ALREADY" ]; then
+		echo "[ci-seed] docudesk template register already configured — nothing to do."
+	elif [ -z "$DD_IDS" ]; then
+		echo "[ci-seed] docudesk register or its 'template' schema not found — template register not configured."
+	else
+		DD_REG="${DD_IDS% *}"
+		DD_SCH="${DD_IDS#* }"
+		DD_WRITE="$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
+			-u "${USER_NAME}:${USER_PASS}" -H 'OCS-APIRequest: true' \
+			-H 'Content-Type: application/json' \
+			-d "{\"template_register\":\"${DD_REG}\",\"template_schema\":\"${DD_SCH}\",\"template_source\":\"openregister\"}" \
+			"${BASE}/index.php/apps/docudesk/api/settings" || echo 000)"
+		echo "[ci-seed] docudesk template register configured (register=${DD_REG}, schema=${DD_SCH}, HTTP ${DD_WRITE})."
+		# Read it BACK. A 200 on the write is not evidence the value stuck — this
+		# is the same class of mistake as trusting an import's success message.
+		DD_CHECK="$(mktemp)"
+		DD_CHECK_CODE="$(api_get "$DD_CHECK" "/index.php/apps/docudesk/api/settings")"
+		python3 - "$DD_CHECK" "$DD_CHECK_CODE" <<'PY'
+import json, sys
+path, code = sys.argv[1], sys.argv[2]
+if code != '200':
+    print(f'::warning::docudesk settings re-read returned HTTP {code}; template configuration unverified.')
+    sys.exit(0)
+try:
+    with open(path) as fh:
+        cfg = (json.load(fh).get('configuration') or {})
+except Exception:
+    print('::warning::docudesk settings re-read was not JSON; template configuration unverified.')
+    sys.exit(0)
+if cfg.get('template_register') and cfg.get('template_schema'):
+    print('[ci-seed] docudesk template configuration verified on read-back.')
+else:
+    print('::warning::docudesk accepted the settings write but the values did not stick — '
+          'correspondence generate will still answer 500 for an unknown templateId.')
+PY
+	fi
+fi
+
 # ── 3c. GATE: the SERVED page must actually advertise pretty URLs ────────────
 #
 # Setting `htaccess.IgnoreFrontController` above is not evidence that the SPA

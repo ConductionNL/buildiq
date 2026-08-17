@@ -103,22 +103,50 @@ async function openIconsTab(page: Page, objectId: string): Promise<void> {
 		'the detail header must render before the sidebar is driven',
 	).toBeVisible({ timeout: 20_000 })
 
+	// ⚠️ THE DETAIL PAGE CLOSES THE SIDEBAR AGAIN WHILE IT IS STILL HYDRATING,
+	// SO OPENING IT ONCE IS NOT ENOUGH.
+	//
+	// From the CI trace of the failing run (job 95207190738), monotonic ms:
+	//
+	//   1148711  click .app-sidebar__toggle                    -> landed
+	//   1148937  expect [data-testid=cn-object-sidebar] visible -> PASSED
+	//   1148979  click role=tab[/^icons$/i]                     -> never returned
+	//
+	// and the page snapshot captured 120 s later contains no sidebar and no
+	// tablist at all — it ends on a `button "Open sidebar"`. The sidebar had
+	// re-closed within about a second of being opened. The tab BUTTON stayed in
+	// the DOM, which is why the call log reads "element is not stable" (the
+	// NcAppSidebar slide transition) and then "element is not visible" for the
+	// rest of the budget, rather than the honest "not found".
+	//
+	// `.app-sidebar__toggle` is a TOGGLE and `isVisible()` is an instant probe
+	// with no waiting, so the original code could also click the sidebar SHUT.
+	// Retrying the whole open-and-click as one idempotent step is what makes
+	// this survive whichever way the race lands.
+	//
+	// The twin helper in tests/e2e/iconUpload.spec.ts is not doing anything
+	// smarter — it happens to call dismissFirstVisitOverlays() first, which
+	// burns ~4 s waiting for an overlay that ci-seed.sh has already suppressed,
+	// and by then the page has settled. That is luck, not a guard.
 	const sidebar = page.locator('[data-testid="cn-object-sidebar"]')
-	if (!(await sidebar.isVisible().catch(() => false))) {
-		await page.locator('.app-sidebar__toggle').first().click()
-	}
-	await expect(sidebar, 'the object sidebar must open').toBeVisible({
-		timeout: 15_000,
-	})
+	await expect(async () => {
+		if (!(await sidebar.isVisible().catch(() => false))) {
+			await page.locator('.app-sidebar__toggle').first().click()
+			await expect(sidebar, 'the object sidebar must open').toBeVisible({
+				timeout: 10_000,
+			})
+		}
 
-	await page
-		.getByRole('tab', { name: /^icons$/i })
-		.first()
-		.click()
-	await expect(
-		page.locator('[data-testid="cn-object-sidebar-tab-icons"]'),
-		'the Icons tab panel must render',
-	).toBeVisible({ timeout: 15_000 })
+		await page
+			.getByRole('tab', { name: /^icons$/i })
+			.first()
+			.click({ timeout: 10_000 })
+		await expect(
+			page.locator('[data-testid="cn-object-sidebar-tab-icons"]'),
+			'the Icons tab panel must render',
+		).toBeVisible({ timeout: 10_000 })
+	}).toPass({ timeout: 90_000 })
+
 	await expect(
 		page.locator('.ob-icon-section'),
 		'ApplicationIconTab must mount IconUploadSection',

@@ -60,6 +60,7 @@ abstract class AbstractToolHandler {
 	 * @param ContainerInterface $container DI container used to resolve OpenRegister services lazily.
 	 * @param LoggerInterface $logger PSR logger used for non-fatal warnings and error logging.
 	 * @param IGroupManager $groupManager Group manager used for admin and group membership checks.
+	 * @param ObjectServiceInterface $objectService OpenRegister's published object contract (ADR-084) — the ONE way a handler reaches OR data.
 	 * @param PermissionResolver $permissionResolver Shared permission-grammar resolver (H1 fix).
 	 * @param AuditTrailMapper|null $auditTrailMapper Optional OR audit-trail writer for admin-bypass parity (L2).
 	 */
@@ -68,7 +69,12 @@ abstract class AbstractToolHandler {
 		protected readonly ContainerInterface $container,
 		protected readonly LoggerInterface $logger,
 		protected readonly IGroupManager $groupManager,
-		private readonly ObjectServiceInterface $objectService,
+		// PROTECTED, not private: subclasses used to resolve the very same
+		// service out of the container by string name (ADR-083 rule 1
+		// violation — the dependency was declared nowhere a reader or a gate
+		// could see it) while this constructor-injected contract sat unused
+		// beside them. One injected dependency, one way in.
+		protected readonly ObjectServiceInterface $objectService,
 		protected readonly ?PermissionResolver $permissionResolver = null,
 		protected readonly ?AuditTrailMapper $auditTrailMapper = null,
 	) {

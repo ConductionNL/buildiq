@@ -266,7 +266,11 @@ class ExportJobService {
 	 */
 	public function persistJob(array $job): void {
 		try {
-			if ($this->container->has('OCA\\OpenRegister\\Service\\ObjectService') === false) {
+			// ADR-083 rule 1: the availability check spelled in the idiom the
+			// fleet recognises. Not a behaviour change — NC's
+			// `SimpleContainer::has()` IS `isset(...) || class_exists($id)`
+			// (server/lib/private/AppFramework/Utility/SimpleContainer.php:50).
+			if (class_exists('\OCA\OpenRegister\Service\ObjectService') === false) {
 				$this->logger->info('OpenBuild export job persisted (logger fallback): ' . $job['uuid']);
 				return;
 			}
@@ -417,7 +421,9 @@ class ExportJobService {
 		}
 
 		try {
-			if ($this->container->has('OCA\\OpenRegister\\Service\\ObjectService') === false) {
+			// See persistJob() for why this is class_exists() rather than
+			// container->has() — same question, ADR-083 rule 1 idiom.
+			if (class_exists('\OCA\OpenRegister\Service\ObjectService') === false) {
 				return;
 			}
 

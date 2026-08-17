@@ -128,7 +128,11 @@ class JobOwnerImpersonator {
 	 */
 	private function impersonate(string $objectId): array {
 		try {
-			if ($this->container->has('OCA\\OpenRegister\\Service\\ObjectService') === false) {
+			// ADR-083 rule 1: the availability check spelled in the idiom the
+			// fleet recognises. Not a behaviour change — NC's
+			// `SimpleContainer::has()` IS `isset(...) || class_exists($id)`
+			// (server/lib/private/AppFramework/Utility/SimpleContainer.php:50).
+			if (class_exists('\OCA\OpenRegister\Service\ObjectService') === false) {
 				return [null, false];
 			}
 
@@ -137,7 +141,38 @@ class JobOwnerImpersonator {
 				return [null, false];
 			}
 
-			$object = $service->find($objectId);
+			// ⚠️ RBAC IS DELIBERATELY OFF FOR THIS ONE READ, AND ONLY THIS ONE.
+			//
+			// This lookup exists to discover WHO to impersonate, so it
+			// necessarily runs BEFORE the impersonation — the caller is still
+			// the background job's session, which is nobody. An RBAC-checked
+			// read is therefore evaluated as `Anonymous` and refused by any
+			// schema that does not grant anonymous `read`:
+			//
+			//   OpenBuild: owner impersonation lookup failed for object <uuid>:
+			//   User 'Anonymous' does not have permission to 'read' objects in
+			//   schema 'Export Job'
+			//
+			// That is a chicken-and-egg, not a permission decision: you cannot
+			// read the object to learn its owner without already being someone.
+			// Observed live and in CI — every export sat at `status: queued`
+			// because the `start` transition could not fire, and the `fail`
+			// transition that should have recorded why was refused for the same
+			// reason, so the job never even reached `failed`.
+			//
+			// Why this is safe rather than a hole:
+			//   * the id is not user input — it is the argument the pipeline
+			//     itself enqueued for a job it created;
+			//   * exactly ONE field is consumed from the result, `getOwner()`;
+			//   * the outcome is strictly MORE restrictive, not less: the work
+			//     then runs AS that owner, and every write inside `$work` is
+			//     RBAC-checked against them. Failing this lookup does not deny
+			//     the write — it runs the job as Anonymous instead, which is
+			//     the weaker identity.
+			//
+			// `_multitenancy` is off for the same structural reason: a
+			// session-less job has no organisation context to scope by.
+			$object = $service->find($objectId, _rbac: false, _multitenancy: false);
 			if ($object === null) {
 				return [null, false];
 			}

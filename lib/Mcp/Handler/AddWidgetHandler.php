@@ -92,7 +92,9 @@ class AddWidgetHandler extends AbstractToolHandler {
 		}
 
 		try {
-			$objectService = $this->container->get('OCA\OpenRegister\Service\ObjectService');
+			// ADR-083 rule 1 / ADR-084: use the constructor-injected contract
+			// rather than reaching into the container by string name.
+			$objectService = $this->objectService;
 
 			$loaded = $this->loadVersion(objectService: $objectService, appSlug: $appSlug, versionSlug: $versionSlug);
 			if (isset($loaded['error']) === true) {
