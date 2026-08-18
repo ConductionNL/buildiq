@@ -144,6 +144,12 @@
 		  treats the literal id "new" as "start blank", so this always opens
 		  usably even before the app has a first flow.
 		-->
+		<FlowPickerDialog
+			v-if="flowPickerOpen"
+			:app="selectedApp ? selectedApp.slug : null"
+			@pick="onFlowPicked"
+			@close="flowPickerOpen = false" />
+
 		<CnFlowEditModal
 			v-if="flowModalOpen"
 			:flowId="editingFlowId"
@@ -180,6 +186,7 @@ import {
 } from '@nextcloud/vue'
 import AutomationEditDialog from '../dialogs/AutomationEditDialog.vue'
 import ConfirmActionDialog from '../dialogs/ConfirmActionDialog.vue'
+import FlowPickerDialog from '../dialogs/FlowPickerDialog.vue'
 import AutomationTestPanelModal from '../modals/AutomationTestPanelModal.vue'
 
 export default {
@@ -195,6 +202,7 @@ export default {
 		AutomationTestPanelModal,
 		ConfirmActionDialog,
 		CnFlowEditModal,
+		FlowPickerDialog,
 	},
 
 	data() {
@@ -210,6 +218,7 @@ export default {
 			statusByUuid: {},
 			errorMessage: '',
 			editDialogOpen: false,
+			flowPickerOpen: false,
 			flowModalOpen: false,
 			editingFlowId: 'new',
 			editingAutomation: null,
@@ -455,16 +464,28 @@ export default {
 		},
 
 		/**
-		 * Open the shared flow canvas for the selected application.
+		 * Offer the selected application's flows: pick one to edit, or start a
+		 * new one.
 		 *
-		 * `flow-engine-unification` task 6.4. Always opens "new" — this is a
-		 * single entry point, not a list; a picker over this application's
-		 * existing flows can be added if more than one turns out to be needed.
+		 * `flow-engine-unification` task 6.4. This used to hard-code `new`,
+		 * which made the modal a creator that could never edit — a flow saved a
+		 * minute earlier was unreachable from this surface.
 		 *
 		 * @return {void}
 		 */
 		openFlows() {
-			this.editingFlowId = 'new'
+			this.flowPickerOpen = true
+		},
+
+		/**
+		 * Open the flow the picker chose on the shared canvas.
+		 *
+		 * @param {string} id The flow id, or the literal `new`.
+		 * @return {void}
+		 */
+		onFlowPicked(id) {
+			this.editingFlowId = id
+			this.flowPickerOpen = false
 			this.flowModalOpen = true
 		},
 
@@ -612,7 +633,7 @@ export default {
 		/**
 		 * Normalise an OR REST list response to a plain array.
 		 *
-		 * @param {*} data - the raw axios response body.
+		 * @param {object|Array} data - the raw axios response body.
 		 * @return {Array}
 		 */
 		extractResults(data) {
