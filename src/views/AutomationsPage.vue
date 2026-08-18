@@ -472,6 +472,7 @@ export default {
 		 * minute earlier was unreachable from this surface.
 		 *
 		 * @return {void}
+		 * @spec openspec/specs/automation-designer/spec.md#req-autd-001
 		 */
 		openFlows() {
 			this.flowPickerOpen = true
@@ -482,6 +483,7 @@ export default {
 		 *
 		 * @param {string} id The flow id, or the literal `new`.
 		 * @return {void}
+		 * @spec openspec/specs/automation-designer/spec.md#req-autd-001
 		 */
 		onFlowPicked(id) {
 			this.editingFlowId = id

@@ -12,11 +12,19 @@
   - it up here would race the modal's own `open('new')`.
   -->
 <template>
-	<NcDialog :name="t('openbuild', 'Flows')" size="normal" @closing="$emit('close')">
+	<NcDialog
+		:name="t('openbuild', 'Flows')"
+		size="normal"
+		@closing="$emit('close')">
 		<NcLoadingIcon v-if="loading" :size="32" />
 
 		<NcNoteCard v-else-if="error" type="error">
-			{{ t('openbuild', 'The flows could not be loaded. This does not mean there are none.') }}
+			{{
+				t(
+					'openbuild',
+					'The flows could not be loaded. This does not mean there are none.',
+				)
+			}}
 		</NcNoteCard>
 
 		<p v-else-if="!flows.length" class="flow-picker__hint">
@@ -25,9 +33,13 @@
 
 		<ul v-else class="flow-picker__list">
 			<li v-for="flow in flows" :key="flow.id">
-				<button class="flow-picker__row" @click="$emit('pick', String(flow.id))">
+				<button
+					class="flow-picker__row"
+					@click="$emit('pick', String(flow.id))">
 					<strong>{{ flow.name }}</strong>
-					<span v-if="flow.description" class="flow-picker__hint">{{ flow.description }}</span>
+					<span v-if="flow.description" class="flow-picker__hint">{{
+						flow.description
+					}}</span>
 				</button>
 			</li>
 		</ul>
@@ -93,11 +105,20 @@ export default {
 		}
 	},
 
+	/**
+	 * Fetch the application's flows once, on open.
+	 *
+	 * @return {Promise<void>}
+	 * @spec openspec/specs/automation-designer/spec.md#req-autd-001
+	 */
 	async mounted() {
 		try {
-			const response = await axios.get(generateUrl('/apps/openregister/api/flows'), {
-				params: this.app ? { app: this.app } : {},
-			})
+			const response = await axios.get(
+				generateUrl('/apps/openregister/api/flows'),
+				{
+					params: this.app ? { app: this.app } : {},
+				},
+			)
 			this.flows = response.data?.results || []
 		} catch (error) {
 			this.error = error
