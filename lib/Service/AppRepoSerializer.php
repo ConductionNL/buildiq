@@ -80,31 +80,6 @@ class AppRepoSerializer {
 	private const CONNECTOR_KINDS = ['source', 'mapping', 'synchronization', 'job'];
 
 	/**
-	 * Object keys whose VALUE is stripped before export.
-	 *
-	 * Defence in depth rather than the primary control: credentials live in
-	 * OpenRegister's credential broker and configs reference them by UUID
-	 * (`credential`/`credentialRef`), so a well-formed config carries no secret
-	 * to begin with. This exists so a future config that DOES inline one cannot
-	 * reach a repository, and every strip is recorded rather than silent.
-	 *
-	 * @var array<int,string>
-	 */
-	private const SECRET_KEYS = [
-		'password',
-		'secret',
-		'apikey',
-		'api_key',
-		'token',
-		'accesstoken',
-		'refreshtoken',
-		'authorization',
-		'connectionstring',
-		'privatekey',
-		'clientsecret',
-	];
-
-	/**
 	 * Maximum entries collected per channel, so one application cannot declare
 	 * the whole instance into its repository.
 	 *
@@ -122,6 +97,17 @@ class AppRepoSerializer {
 	 * @param ObjectServiceInterface|null $objectService Reads connector + automation objects (app-repo-format-v2).
 	 *                                          Nullable so the v1 construction shape still works and the
 	 *                                          new channels simply collect nothing when it is absent.
+	 * @param FlowAgentChannelCollector|null $flowAgentCollector Resolves an application's bound flows
+	 *                                          and the agents that point at it, adapted into the
+	 *                                          `path => contents` map convention this class uses
+	 *                                          everywhere else. Nullable so the v1 construction shape
+	 *                                          and every existing test still build without it,
+	 *                                          degrading the flows and agents channels to empty exactly
+	 *                                          like `objectService` absent degrades connectors/automations.
+	 * @param AppRepoPayloadSafety $payloadSafety Path-safety and secret-redaction primitives, stateless
+	 *                                          so a default instance is safe to construct here — every
+	 *                                          existing caller and test keeps building this class
+	 *                                          without naming it.
 	 *
 	 * @return void
 	 */
@@ -131,6 +117,8 @@ class AppRepoSerializer {
 		private readonly LoggerInterface $logger,
 		private readonly TemplateRepoSerializer $templateSerializer,
 		private readonly ?ObjectServiceInterface $objectService = null,
+		private readonly ?FlowAgentChannelCollector $flowAgentCollector = null,
+		private readonly AppRepoPayloadSafety $payloadSafety = new AppRepoPayloadSafety(),
 	) {
 	}//end __construct()
 
@@ -151,60 +139,25 @@ class AppRepoSerializer {
 			$manifest = $version['manifest'];
 		}
 
+		// App-repo-format-v2 channels. Every collector is TOTAL — a missing or
+		// unreadable source yields no entries and a debug log, never an
+		// exception, so serialisation never becomes the thing that blocks a
+		// publish. The counter-measure against that silently producing an
+		// empty artefact is the descriptor's channel counts, below.
+		$channels = $this->collectChannels(application: $application, slug: $slug);
+
 		$files = [];
-
-		$companions = $this->collectCompanionSchemas(slug: $slug);
-		ksort($companions);
-
-		// App-repo-format-v2 channels. Every collector is TOTAL in the same way
-		// collectCompanionSchemas() is — a missing or unreadable source yields no
-		// entries and a debug log, never an exception, so serialisation never
-		// becomes the thing that blocks a publish. The counter-measure against
-		// that silently producing an empty artefact is the descriptor's channel
-		// counts, written below.
-		$dataRegisters = $this->collectDataRegisters(application: $application);
-		$connectors = $this->collectConnectors(application: $application);
-		$automations = $this->collectAutomations(slug: $slug);
-		ksort($dataRegisters);
-		ksort($automations);
-
 		$files['openbuild-app.json'] = $this->encode(
 			data: $this->buildDescriptor(
 				application: $application,
 				version: $version,
 				manifest: $manifest,
-				channels: [
-					'schemas' => count($companions),
-					'dataRegisters' => count($dataRegisters),
-					'connectors' => [
-						'declared' => $connectors['declaredCount'],
-						'resolved' => $connectors['resolvedCount'],
-						'stripped' => $connectors['strippedCount'],
-						'missing' => $connectors['missingCount'],
-					],
-					'automations' => count($automations),
-				]
+				channels: $this->descriptorChannelCounts(channels: $channels)
 			)
 		);
 		$files['manifest.json'] = $this->encode(data: $manifest);
 
-		foreach ($companions as $schemaSlug => $blob) {
-			$files['schemas/' . $schemaSlug . '.json'] = $this->encode(data: $blob);
-		}
-
-		foreach ($dataRegisters as $registerSlug => $blob) {
-			$files['data-registers/' . $registerSlug . '.json'] = $this->encode(data: $blob);
-		}
-
-		$connectorFiles = $connectors['files'];
-		ksort($connectorFiles);
-		foreach ($connectorFiles as $path => $blob) {
-			$files['connectors/' . $path] = $this->encode(data: $blob);
-		}
-
-		foreach ($automations as $automationSlug => $blob) {
-			$files['automations/' . $automationSlug . '.json'] = $this->encode(data: $blob);
-		}
+		$this->appendChannelFiles(files: $files, channels: $channels);
 
 		$readme = $this->buildReadme(application: $application);
 		if ($readme !== null) {
@@ -213,6 +166,106 @@ class AppRepoSerializer {
 
 		return $files;
 	}//end serialize()
+
+	/**
+	 * Run every channel collector once, so `serialize()` only orchestrates.
+	 *
+	 * @param array<string,mixed> $application The Application object.
+	 * @param string $slug The Application slug.
+	 *
+	 * @return array<string,mixed> Every collector's raw output, keyed by channel.
+	 */
+	private function collectChannels(array $application, string $slug): array {
+		$companions = $this->collectCompanionSchemas(slug: $slug);
+		ksort($companions);
+
+		$dataRegisters = $this->collectDataRegisters(application: $application);
+		$connectors = $this->collectConnectors(application: $application);
+		$automations = $this->collectAutomations(slug: $slug);
+		$flowsAndAgents = $this->collectFlowsAndAgents(application: $application);
+		ksort($dataRegisters);
+		ksort($automations);
+
+		return [
+			'companions' => $companions,
+			'dataRegisters' => $dataRegisters,
+			'connectors' => $connectors,
+			'automations' => $automations,
+			'flowsAndAgents' => $flowsAndAgents,
+		];
+	}//end collectChannels()
+
+	/**
+	 * The per-channel entry counts the descriptor records — see
+	 * `buildDescriptor()`'s own note on why an empty channel must stay visible.
+	 *
+	 * @param array<string,mixed> $channels {@see collectChannels()}'s output.
+	 *
+	 * @return array<string,mixed> The descriptor `channels` block.
+	 */
+	private function descriptorChannelCounts(array $channels): array {
+		$connectors = $channels['connectors'];
+		$flowsAndAgents = $channels['flowsAndAgents'];
+
+		return [
+			'schemas' => count($channels['companions']),
+			'dataRegisters' => count($channels['dataRegisters']),
+			'connectors' => [
+				'declared' => $connectors['declaredCount'],
+				'resolved' => $connectors['resolvedCount'],
+				'stripped' => $connectors['strippedCount'],
+				'missing' => $connectors['missingCount'],
+			],
+			'automations' => count($channels['automations']),
+			'flows' => [
+				'declared' => $flowsAndAgents['declaredFlows'],
+				'exported' => count($flowsAndAgents['flows']),
+				'skipped' => count($flowsAndAgents['skipped']),
+			],
+			'agents' => count($flowsAndAgents['agents']),
+		];
+	}//end descriptorChannelCounts()
+
+	/**
+	 * Write every channel's entries into the file map, in the deterministic
+	 * order the class docblock promises (a stable diff for the tree push).
+	 *
+	 * @param array<string,string> $files IN/OUT: the file map.
+	 * @param array<string,mixed> $channels {@see collectChannels()}'s output.
+	 *
+	 * @return void
+	 */
+	private function appendChannelFiles(array &$files, array $channels): void {
+		foreach ($channels['companions'] as $schemaSlug => $blob) {
+			$files['schemas/' . $schemaSlug . '.json'] = $this->encode(data: $blob);
+		}
+
+		foreach ($channels['dataRegisters'] as $registerSlug => $blob) {
+			$files['data-registers/' . $registerSlug . '.json'] = $this->encode(data: $blob);
+		}
+
+		$connectorFiles = $channels['connectors']['files'];
+		ksort($connectorFiles);
+		foreach ($connectorFiles as $path => $blob) {
+			$files['connectors/' . $path] = $this->encode(data: $blob);
+		}
+
+		foreach ($channels['automations'] as $automationSlug => $blob) {
+			$files['automations/' . $automationSlug . '.json'] = $this->encode(data: $blob);
+		}
+
+		$flowFiles = $channels['flowsAndAgents']['flows'];
+		ksort($flowFiles);
+		foreach ($flowFiles as $flowUuid => $blob) {
+			$files['flows/' . $flowUuid . '.json'] = $this->encode(data: $blob);
+		}
+
+		$agentFiles = $channels['flowsAndAgents']['agents'];
+		ksort($agentFiles);
+		foreach ($agentFiles as $agentUuid => $blob) {
+			$files['agents/' . $agentUuid . '.json'] = $this->encode(data: $blob);
+		}
+	}//end appendChannelFiles()
 
 	/**
 	 * Collect the shared data registers this application binds, as schema
@@ -238,7 +291,7 @@ class AppRepoSerializer {
 			}
 
 			$registerSlug = (string)($binding['register'] ?? '');
-			if ($this->isSafeSlug(slug: $registerSlug) === false) {
+			if ($this->payloadSafety->isSafeSlug(slug: $registerSlug) === false) {
 				$this->logger->warning(
 					'OpenBuild AppRepoSerializer: rejected unsafe data-register slug.',
 					['slug' => $registerSlug]
@@ -334,7 +387,7 @@ class AppRepoSerializer {
 
 			$kind = (string)($binding['kind'] ?? '');
 			$uuid = (string)($binding['uuid'] ?? '');
-			if (in_array($kind, self::CONNECTOR_KINDS, true) === false || $this->isSafeUuid(uuid: $uuid) === false) {
+			if (in_array($kind, self::CONNECTOR_KINDS, true) === false || $this->payloadSafety->isSafeUuid(uuid: $uuid) === false) {
 				$this->logger->warning(
 					'OpenBuild AppRepoSerializer: rejected unsafe connector binding.',
 					['kind' => $kind, 'uuid' => $uuid]
@@ -371,8 +424,8 @@ class AppRepoSerializer {
 				continue;
 			}
 
-			$name = $this->connectorFileName(binding: $binding, object: $object, uuid: $uuid);
-			$sanitised = $this->stripSecrets(data: $object, stripped: $stripped);
+			$name = $this->payloadSafety->connectorFileName(binding: $binding, object: $object, uuid: $uuid);
+			$sanitised = $this->payloadSafety->stripSecrets(data: $object, stripped: $stripped);
 
 			$files[$kind . '/' . $name . '.json'] = $sanitised;
 			$seen[$kind . '/' . $identity] = true;
@@ -469,7 +522,7 @@ class AppRepoSerializer {
 		array &$seen,
 		int &$stripped,
 	): bool {
-		if ($this->isSafeUuid(uuid: $refUuid) === false && $this->isSafeSlug(slug: $refUuid) === false) {
+		if ($this->payloadSafety->isSafeUuid(uuid: $refUuid) === false && $this->payloadSafety->isSafeSlug(slug: $refUuid) === false) {
 			return false;
 		}
 
@@ -493,9 +546,9 @@ class AppRepoSerializer {
 			return false;
 		}
 
-		$refName = $this->connectorFileName(binding: [], object: $refObject, uuid: $refUuid);
+		$refName = $this->payloadSafety->connectorFileName(binding: [], object: $refObject, uuid: $refUuid);
 
-		$files[$refKind . '/' . $refName . '.json'] = $this->stripSecrets(data: $refObject, stripped: $stripped);
+		$files[$refKind . '/' . $refName . '.json'] = $this->payloadSafety->stripSecrets(data: $refObject, stripped: $stripped);
 		$seen[$key] = true;
 		return true;
 	}//end exportReferencedConnector()
@@ -639,7 +692,7 @@ class AppRepoSerializer {
 			}
 
 			$automationSlug = (string)($payload['slug'] ?? '');
-			if ($this->isSafeSlug(slug: $automationSlug) === false) {
+			if ($this->payloadSafety->isSafeSlug(slug: $automationSlug) === false) {
 				continue;
 			}
 
@@ -650,105 +703,26 @@ class AppRepoSerializer {
 	}//end collectAutomations()
 
 	/**
-	 * Recursively strip secret-bearing VALUES from an exported payload.
+	 * Collect the application's bound flows and the agents that point at it.
 	 *
-	 * Defence in depth, not the primary control: credentials live in
-	 * OpenRegister's credential broker and configs reference them by UUID, so a
-	 * well-formed config carries no secret. Credential REFERENCES are preserved —
-	 * stripping them would break the installed app for no security gain.
+	 * Delegated to {@see FlowAgentChannelCollector}, which adapts
+	 * {@see FlowAndAgentExportBundler} — the same reader `ExportService` uses
+	 * for the openbuild-exporter's standalone app scaffold — into the
+	 * `path => contents` map convention every collector here returns.
 	 *
-	 * @param array<string,mixed> $data The payload.
-	 * @param int $stripped Running strip counter (by reference).
+	 * @param array<string,mixed> $application The Application object.
 	 *
-	 * @return array<string,mixed> The sanitised payload.
+	 * @return array{flows:array<string,array<string,mixed>>,agents:array<string,array<string,mixed>>,declaredFlows:int,skipped:array<int,array<string,mixed>>}
 	 *
-	 * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-credential-values-never-leave-the-instance
+	 * @spec openspec/changes/app-repo-format-flow-agent-export/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-bound-flows-and-agents
 	 */
-	private function stripSecrets(array $data, int &$stripped): array {
-		$out = [];
-		foreach ($data as $key => $value) {
-			if (is_array($value) === true) {
-				$out[$key] = $this->stripSecrets(data: $value, stripped: $stripped);
-				continue;
-			}
-
-			$normalised = strtolower(str_replace(['-', '_'], '', (string)$key));
-			if (in_array($normalised, array_map(static fn ($k): string => str_replace('_', '', $k), self::SECRET_KEYS), true) === true
-				&& is_string($value) === true && $value !== ''
-			) {
-				$out[$key] = '';
-				$stripped++;
-				continue;
-			}
-
-			// An inline `scheme://user:pass@host` credential in any string value.
-			if (is_string($value) === true && preg_match('#://[^:/@\s]+:[^@\s]+@#', $value) === 1) {
-				$out[$key] = preg_replace('#://[^:/@\s]+:[^@\s]+@#', '://', $value);
-				$stripped++;
-				continue;
-			}
-
-			$out[$key] = $value;
-		}//end foreach
-
-		return $out;
-	}//end stripSecrets()
-
-	/**
-	 * Whether a value is safe to use as a path component.
-	 *
-	 * Validated BEFORE any concatenation, so a crafted slug never reaches a path.
-	 *
-	 * @param string $slug The candidate slug.
-	 *
-	 * @return bool True when safe.
-	 *
-	 * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-every-channel-path-is-validated-before-use
-	 */
-	private function isSafeSlug(string $slug): bool {
-		return (preg_match('/^[a-z0-9][a-z0-9-]{0,62}[a-z0-9]$/', $slug) === 1);
-	}//end isSafeSlug()
-
-	/**
-	 * Whether a value is a well-formed UUID, and therefore safe as a path component.
-	 *
-	 * A UUID is a stricter path component than a free-form slug — the character set
-	 * admits no separator, traversal segment or extension — so validating here is
-	 * both the identity check and the path guard.
-	 *
-	 * @param string $uuid The candidate UUID.
-	 *
-	 * @return bool True when well-formed.
-	 *
-	 * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-every-channel-path-is-validated-before-use
-	 */
-	private function isSafeUuid(string $uuid): bool {
-		return (preg_match('/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/', $uuid) === 1);
-	}//end isSafeUuid()
-
-	/**
-	 * The filename a connector is exported under.
-	 *
-	 * Prefers a human-readable slug — a diff of `connectors/source/ted-source.json`
-	 * is reviewable in a way `connectors/source/9f1c….json` is not — but falls back
-	 * to the UUID, which every object has. Resolution is always by UUID; this only
-	 * decides the name.
-	 *
-	 * @param array<string,mixed> $binding The declared binding (may be empty for a resolved dependency).
-	 * @param array<string,mixed> $object The resolved connector payload.
-	 * @param string $uuid The connector UUID.
-	 *
-	 * @return string The safe filename stem.
-	 */
-	private function connectorFileName(array $binding, array $object, string $uuid): string {
-		foreach ([(string)($binding['slug'] ?? ''), (string)($object['slug'] ?? '')] as $candidate) {
-			if ($this->isSafeSlug(slug: $candidate) === true) {
-				return $candidate;
-			}
+	private function collectFlowsAndAgents(array $application): array {
+		if ($this->flowAgentCollector === null) {
+			return ['flows' => [], 'agents' => [], 'declaredFlows' => 0, 'skipped' => []];
 		}
 
-		return $uuid;
-	}//end connectorFileName()
+		return $this->flowAgentCollector->collect(application: $application);
+	}//end collectFlowsAndAgents()
 
 	/**
 	 * Serialise a seeded `application-template` object into the same repo file

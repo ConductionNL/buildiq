@@ -521,7 +521,9 @@ class GitHubAppSyncService {
 			repo: $name,
 			ref: $ref,
 			actingUserId: $actingUserId,
-			credentialId: $credentialId
+			credentialId: $credentialId,
+			applicationUuid: $appUuid,
+			applicationSlug: $appSlug
 		);
 
 		return [
