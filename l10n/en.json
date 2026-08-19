@@ -1416,7 +1416,10 @@
         "This page has no widgets yet.": "This page has no widgets yet.",
         "Visible only to group (optional)": "Visible only to group (optional)",
         "Widgets on this page": "Widgets on this page",
-        "Page {position}": "Page {position}"
+        "Page {position}": "Page {position}",
+        "New flow": "New flow",
+        "The flows could not be loaded. This does not mean there are none.": "The flows could not be loaded. This does not mean there are none.",
+        "This application has no flows yet.": "This application has no flows yet."
     },
     "plurals": ""
 }
