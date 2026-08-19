@@ -171,7 +171,16 @@ class SeedHelloWorldFixture extends Command {
 					'permissions' => self::SEED_PERMISSIONS,
 				]
 			);
+			// `ObjectEntityInterface::getUuid()` is nullable. A stored object with
+			// no uuid would leave every reference below (the version's
+			// `application`, the route's `applicationUuid`, the update's `uuid:`)
+			// pointing at nothing, and the command would report success on a
+			// fixture that is not wired together. Fail loudly instead.
 			$applicationUuid = $application->getUuid();
+			if ($applicationUuid === null) {
+				$output->writeln('<error>Seed aborted: the Application was stored without a uuid.</error>');
+				return Command::FAILURE;
+			}
 
 			// 2. Published version carrying the manifest.
 			$version = $this->create(
