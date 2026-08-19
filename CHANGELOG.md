@@ -7,7 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.10.0] - 2026-08-05
 
+### Added
+- Published `buildiq-*` app repositories (app-repo-format-v2) now carry an
+  application's bound OpenRegister flows and the agents that point at it —
+  `flows/<uuid>.json` and `agents/<uuid>.json`, alongside the existing
+  data-registers/connectors/automations/skills channels. Export reuses
+  `FlowAndAgentExportBundler` (openbuild-exporter) unmodified via a new
+  adapter, `FlowAgentChannelCollector`. Import creates each flow through
+  `FlowService::save()` and rebinds it onto the local application's
+  `flows[]` with the published uuid tracked as `sourceUuid` (a new OPTIONAL
+  schema property, declared before it is written), and writes each agent at
+  its published uuid with `applicationSlug` always overwritten to the local
+  application's own slug. Both channels skip-if-already-applied on a repeat
+  pull, matching every other v2 channel.
+
 ### Fixed
+- `GitHubCatalogService::fetchChannelFiles()`'s fetch-side channel-prefix
+  allowlist was never extended when the flows/agents channels were added to
+  `AppRepoParser`, so `github/pull` (and the shop-install path, which shares
+  this method) silently never downloaded either channel from a published
+  repository — the exact "parser can read it, fetch never downloaded it"
+  defect this method's own docblock already warned about once, for
+  data-registers/connectors/automations/skills. Found live during round-trip
+  verification: a repository publishing both channels pulled back with both
+  declared `0` until the two missing prefixes were added.
 - **Every app OpenBuild has ever generated was born declaring the wrong licence.**
   The embedded template snapshot's `appinfo/info.xml` hardcoded
   `<licence>agpl</licence>` while the very same file's description read "Free and

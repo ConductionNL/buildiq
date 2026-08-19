@@ -1566,7 +1566,9 @@ class ApplicationsController extends Controller {
 			owner: $sourceOwner,
 			repo: $sourceRepo,
 			actingUserId: $ownerUid,
-			credentialId: $credentialId
+			credentialId: $credentialId,
+			applicationUuid: (string)($built['uuid'] ?? ''),
+			applicationSlug: $newSlug
 		);
 
 		return [
