@@ -230,6 +230,7 @@
 
 <script>
 import axios from '@nextcloud/axios'
+import { showWarning } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
@@ -445,7 +446,27 @@ export default {
 		 */
 		onInstalled(created) {
 			this.cloneOpen = false
+			// The install still succeeds (best-effort, no atomicity — see
+			// app-channel-application), but a warning (e.g. a credential
+			// missing the scope the skills channel's hermiq delegation
+			// needs) must not silently vanish just because this handler
+			// redirects immediately afterwards.
+			this.showInstallWarnings(created)
 			this.redirectAfterClone(created)
+		},
+
+		/**
+		 * Toast any top-level `warnings` the install response carries.
+		 *
+		 * @param {{warnings?: Array<{message: string}>}} created The install response.
+		 * @return {void}
+		 * @spec openspec/changes/surface-hermiq-credential-scope-requirement/specs/app-channel-application/spec.md
+		 */
+		showInstallWarnings(created) {
+			const warnings = Array.isArray(created?.warnings) ? created.warnings : []
+			warnings.forEach((warning) => {
+				showWarning(warning.message)
+			})
 		},
 
 		/**

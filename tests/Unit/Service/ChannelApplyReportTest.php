@@ -139,4 +139,46 @@ class ChannelApplyReportTest extends TestCase {
 		self::assertSame(['source/a', 'source/b'], $out['needsCredentials']['doffin']);
 
 	}//end testNeedsCredentialsAreCollected()
+
+	/**
+	 * A recorded warning renders verbatim at the top level, distinct from
+	 * `needsCredentials` — a warning is about the credential used for the
+	 * REQUEST ITSELF lacking a scope, not a data-level `credentialRef`.
+	 *
+	 * @return void
+	 */
+	public function testWarningsRenderAtTheTopLevel(): void {
+		$report = new ChannelApplyReport();
+		$report->declareChannel(channel: 'skills', declared: 3);
+		$report->skipChannel(channel: 'skills', reason: 'credential-missing-hermiq-scope');
+		$report->addWarning(
+			code: 'credential-missing-hermiq-scope',
+			channel: 'skills',
+			message: 'This repository declares 3 skill(s) but the credential lacks hermiq scope.'
+		);
+
+		$out = $report->toArray();
+
+		self::assertCount(1, $out['warnings']);
+		self::assertSame('credential-missing-hermiq-scope', $out['warnings'][0]['code']);
+		self::assertSame('skills', $out['warnings'][0]['channel']);
+		self::assertStringContainsString('hermiq scope', $out['warnings'][0]['message']);
+
+	}//end testWarningsRenderAtTheTopLevel()
+
+	/**
+	 * A report with no warnings still renders an empty (not missing) list, so
+	 * a caller never has to guess whether the key is present.
+	 *
+	 * @return void
+	 */
+	public function testNoWarningsRendersEmptyList(): void {
+		$report = new ChannelApplyReport();
+		$report->declareChannel(channel: 'connectors', declared: 0);
+
+		$out = $report->toArray();
+
+		self::assertSame([], $out['warnings']);
+
+	}//end testNoWarningsRendersEmptyList()
 }//end class

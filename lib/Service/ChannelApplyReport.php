@@ -98,6 +98,16 @@ class ChannelApplyReport {
 	private array $needsCredentials = [];
 
 	/**
+	 * Structured, actionable warnings a caller should surface prominently —
+	 * distinct from `needsCredentials`, which is a data-level `credentialRef`
+	 * that never resolves. A warning here is about the credential USED FOR
+	 * THE REQUEST ITSELF lacking a scope a delegated channel needs.
+	 *
+	 * @var array<int,array{code:string,channel:string,message:string}>
+	 */
+	private array $warnings = [];
+
+	/**
 	 * Open a channel and fix the number of items it declared.
 	 *
 	 * The declared count is recorded even when the channel is subsequently
@@ -310,6 +320,28 @@ class ChannelApplyReport {
 	}//end needsCredential()
 
 	/**
+	 * Record a top-level, actionable warning.
+	 *
+	 * Unlike a per-channel `reason`, a warning is meant to be visible WITHOUT
+	 * a caller having to know which channel to look inside — both
+	 * `ApplicationsController::installFromTemplateArray()` and
+	 * `GitHubAppSyncService::pull()` copy this list onto the top level of
+	 * their own response.
+	 *
+	 * @param string $code Machine-readable warning code (e.g. `credential-missing-hermiq-scope`).
+	 * @param string $channel The channel the warning concerns.
+	 * @param string $message Human-readable, actionable text.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/surface-hermiq-credential-scope-requirement/specs/app-channel-application/spec.md#requirement-application-is-best-effort-with-a-complete-per-item-outcome-report
+	 */
+	public function addWarning(string $code, string $channel, string $message): void {
+		$this->warnings[] = ['code' => $code, 'channel' => $channel, 'message' => $message];
+
+	}//end addWarning()
+
+	/**
 	 * Render the report, asserting the balance identity for every channel.
 	 *
 	 * @return array<string,mixed> The report.
@@ -341,6 +373,7 @@ class ChannelApplyReport {
 		return [
 			'channels' => $out,
 			'needsCredentials' => $this->needsCredentials,
+			'warnings' => $this->warnings,
 		];
 
 	}//end toArray()
