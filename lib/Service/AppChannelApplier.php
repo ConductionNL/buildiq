@@ -3,9 +3,12 @@
 /**
  * OpenBuild AppChannelApplier
  *
- * Applies a parsed v2 app-repo template's four channels — `dataRegisters`,
- * `connectors`, `automations` and `skills` — onto this instance
- * (app-channel-application).
+ * Applies a parsed v2 app-repo template's channels — `dataRegisters`,
+ * `connectors`, `automations`, `skills`, `flows` and `agents` — onto this
+ * instance (app-channel-application). The last two (app-repo-format-flow-agent-
+ * export) reuse the same OpenRegister `Flow` entity and `agent`
+ * (`applicationSlug`) store `FlowAndAgentExportBundler` reads on the export
+ * side — see `FlowChannelProvisioner` and `AgentChannelProvisioner`.
  *
  * Six steps carry an app from one instance to another: serialize → bind → push →
  * fetch → parse → apply. The first five were built; this class is the sixth. Until
@@ -61,6 +64,9 @@ use Throwable;
  * Applies a parsed v2 app repo's channels onto this instance.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ *
+ * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md
+ * @spec openspec/changes/app-repo-format-flow-agent-export/specs/app-channel-application/spec.md
  */
 class AppChannelApplier {
 
@@ -107,6 +113,7 @@ class AppChannelApplier {
 	 */
 	private const MAX_AUTOMATIONS = 512;
 
+
 	/**
 	 * Reason recorded when OpenConnector is not available.
 	 *
@@ -120,6 +127,8 @@ class AppChannelApplier {
 	 * @param ObjectServiceInterface $objectService OpenRegister object read/write.
 	 * @param DataRegisterProvisioner $registerProvisioner The data-registers channel.
 	 * @param SkillChannelDelegate $skillDelegate The skills channel (delegated to hermiq).
+	 * @param FlowChannelProvisioner $flowProvisioner The flows channel (app-repo-format-flow-agent-export).
+	 * @param AgentChannelProvisioner $agentProvisioner The agents channel (app-repo-format-flow-agent-export).
 	 * @param IAppManager $appManager Optional-dependency detection.
 	 * @param LoggerInterface $logger PSR logger (secret-free diagnostics).
 	 *
@@ -129,6 +138,8 @@ class AppChannelApplier {
 		private readonly ObjectServiceInterface $objectService,
 		private readonly DataRegisterProvisioner $registerProvisioner,
 		private readonly SkillChannelDelegate $skillDelegate,
+		private readonly FlowChannelProvisioner $flowProvisioner,
+		private readonly AgentChannelProvisioner $agentProvisioner,
 		private readonly IAppManager $appManager,
 		private readonly LoggerInterface $logger,
 	) {
@@ -151,10 +162,18 @@ class AppChannelApplier {
 	 * @param string|null $ref Optional git ref.
 	 * @param string|null $actingUserId The session UID.
 	 * @param string|null $credentialId Optional broker credential UUID.
+	 * @param string|null $applicationUuid The LOCAL Application's own uuid — needed by the flows channel to
+	 *                                     rebind newly created flows. Null on a caller with no local
+	 *                                     Application context yet, in which case the flows channel degrades
+	 *                                     with a stated reason like any other missing context.
+	 * @param string|null $applicationSlug The LOCAL Application's own slug — needed by the agents channel
+	 *                                     to tag newly created agents with THIS instance's slug, never the
+	 *                                     source instance's.
 	 *
 	 * @return array<string,mixed> The channel report.
 	 *
 	 * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md#requirement-every-install-path-applies-the-v2-channels
+	 * @spec openspec/changes/app-repo-format-flow-agent-export/specs/app-channel-application/spec.md#requirement-published-flows-are-created-and-rebound-onto-the-local-application
 	 */
 	public function apply(
 		array $template,
@@ -163,6 +182,8 @@ class AppChannelApplier {
 		?string $ref = null,
 		?string $actingUserId = null,
 		?string $credentialId = null,
+		?string $applicationUuid = null,
+		?string $applicationSlug = null,
 	): array {
 		$report = new ChannelApplyReport();
 
@@ -180,6 +201,18 @@ class AppChannelApplier {
 
 		$this->applyAutomations(
 			automations: $this->channelOf(template: $template, name: 'automations'),
+			report: $report
+		);
+
+		$this->flowProvisioner->apply(
+			flows: $this->channelOf(template: $template, name: 'flows'),
+			applicationUuid: $applicationUuid,
+			report: $report
+		);
+
+		$this->agentProvisioner->apply(
+			agents: $this->channelOf(template: $template, name: 'agents'),
+			applicationSlug: $applicationSlug,
 			report: $report
 		);
 
