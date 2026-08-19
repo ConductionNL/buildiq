@@ -39,6 +39,7 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 
 /**
@@ -76,7 +77,18 @@ final class ApprovalOutcomeListenerTest extends TestCase {
 		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->compiler = $this->createMock(AutomationCompilerService::class);
 		$this->dispatcher = $this->createMock(RuleActionDispatcher::class);
-		$this->listener = new ApprovalOutcomeListener($this->objectService, $this->compiler, $this->dispatcher, new NullLogger(),
+		// Resolved through the container at USE time — Nextcloud builds event
+		// listeners from the SERVER container, which never carries an app's
+		// registerServiceAlias(), so a constructor-injected interface cannot be
+		// built. The mock is unchanged; only the delivery route is.
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturn($this->objectService);
+
+		$this->listener = new ApprovalOutcomeListener(
+			$container,
+			$this->compiler,
+			$this->dispatcher,
+			new NullLogger(),
 		);
 
 	}//end setUp()

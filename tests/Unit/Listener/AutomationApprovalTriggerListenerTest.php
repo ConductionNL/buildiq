@@ -41,6 +41,7 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 
 /**
@@ -94,8 +95,17 @@ final class AutomationApprovalTriggerListenerTest extends TestCase {
 		$userSession = $this->createMock(\OCP\IUserSession::class);
 		$userSession->method('getUser')->willReturn(null);
 
+		// The listener resolves OpenRegister's object service through the container
+		// at USE time rather than injecting it — Nextcloud builds event listeners
+		// from the SERVER container, which never carries an app's
+		// registerServiceAlias(), so a constructor-injected interface cannot be
+		// built at all. The mock is still an ObjectServiceInterface: only the
+		// delivery route changed, not the contract under test.
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturn($this->objectService);
+
 		$this->listener = new AutomationApprovalTriggerListener(
-			$this->objectService,
+			$container,
 			$this->schemaMapper,
 			$this->chainMapper,
 			$this->stepMapper,

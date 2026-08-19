@@ -67,6 +67,8 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserSession;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -81,7 +83,11 @@ class AutomationApprovalTriggerListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectServiceInterface $objectService Scans the `automation` register for matching triggers.
+	 * @param ContainerInterface $container Resolves OpenRegister's object service lazily — see objectService(),
+	 *                                     which scans the `automation` register for matching triggers. The
+	 *                                     interface cannot be constructor-injected here: a listener is built
+	 *                                     during event dispatch, before OpenRegister's DI registrations are
+	 *                                     guaranteed to be available.
 	 * @param SchemaMapper $schemaMapper Resolves a schema slug to its numeric id.
 	 * @param ApprovalChainMapper $chainMapper Resolves the compiled `ApprovalChain` by schema + name.
 	 * @param ApprovalStepMapper $stepMapper Idempotency guard — checks for an
@@ -93,7 +99,7 @@ class AutomationApprovalTriggerListener implements IEventListener {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectServiceInterface $objectService,
+		private readonly ContainerInterface $container,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly ApprovalChainMapper $chainMapper,
 		private readonly ApprovalStepMapper $stepMapper,
@@ -103,6 +109,58 @@ class AutomationApprovalTriggerListener implements IEventListener {
 	) {
 
 	}//end __construct()
+
+	/**
+	 * Resolve OpenRegister's object service, lazily.
+	 *
+	 * ⚠️ AN EVENT LISTENER CANNOT CONSTRUCTOR-INJECT A PUBLISHED INTERFACE.
+	 *
+	 * ADR-084 has consumers type-hint `ObjectServiceInterface` and bind it with
+	 * `registerServiceAlias()` in their own composition root, which this app does
+	 * (Application::register()). That works for controllers and services, because
+	 * they are built from the APP container where the alias lives.
+	 *
+	 * Listeners are not. Nextcloud's `OC\EventDispatcher\ServiceEventListener`
+	 * resolves the listener class from the SERVER container and says so in its own
+	 * source: "TODO: fetch from the app containers, otherwise any custom services".
+	 * The server container has never seen this app's alias, so the constructor
+	 * parameter could not be built and the listener threw
+	 * `Could not resolve OCA\OpenRegister\Contract\ObjectServiceInterface!`.
+	 *
+	 * The failure is worse than a dead listener: the exception propagates out of
+	 * `EventDispatcher::dispatch()` into whoever emitted the event. Measured
+	 * 2026-08-16, an `ObjectCreatedEvent` raised while Hermiq was persisting a chat
+	 * conversation aborted the whole chat turn — a Hermiq request killed by an
+	 * OpenBuild listener neither app's author would think to look at.
+	 *
+	 * The fix asks the container for the CONCRETE class, not the interface. That
+	 * distinction is the whole repair and it is easy to get wrong: the container
+	 * injected into a listener is the same server container, so resolving
+	 * `ObjectServiceInterface::class` here would fail in exactly the same way and
+	 * merely move the error later. Nextcloud autowires concrete classes across
+	 * apps — this app's own composition root says so — so
+	 * `Service\ObjectService::class` resolves where the alias cannot.
+	 *
+	 * The DECLARED TYPE stays the published contract: `ObjectService` implements
+	 * it, so every call site and test still sees only ADR-084's interface. The
+	 * concrete name appears once, here, at the container boundary — which is the
+	 * same shape DocuDesk uses in `DocumentObjectServiceResolver`.
+	 *
+	 * @return ObjectServiceInterface OpenRegister's published object contract.
+	 *
+	 * @throws ContainerExceptionInterface When OpenRegister is absent or disabled.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) `::class` on a sibling app's concrete
+	 *   service is a string, not a call — it triggers no autoload, so an instance
+	 *   without OpenRegister still boots (ADR-083 rule 3).
+	 */
+	private function objectService(): ObjectServiceInterface {
+		/** @var ObjectServiceInterface $service */
+		$service = $this->container->get('OCA\OpenRegister\Service\ObjectService');
+
+		return $service;
+
+	}//end objectService()
 
 	/**
 	 * Handle a dispatched object event, initialising every matching
@@ -221,7 +279,7 @@ class AutomationApprovalTriggerListener implements IEventListener {
 	 */
 	private function findMatchingAutomations(string $triggerType, string $schemaSlug, ?string $transitionAction): array {
 		try {
-			$results = $this->objectService->findAll(
+			$results = $this->objectService()->findAll(
 				config: [
 					'filters' => [
 						'register' => AutomationCompilerService::REGISTER_SLUG,

@@ -39,6 +39,7 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
 
@@ -72,8 +73,15 @@ final class DocumentGenerationListenerTest extends TestCase {
 		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->documentGenerator = $this->createMock(DocumentGenerationService::class);
 
+		// Resolved through the container at USE time — Nextcloud builds event
+		// listeners from the SERVER container, which never carries an app's
+		// registerServiceAlias(), so a constructor-injected interface cannot be
+		// built. The mock is unchanged; only the delivery route is.
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturn($this->objectService);
+
 		$this->listener = new DocumentGenerationListener(
-			$this->objectService,
+			$container,
 			$this->documentGenerator,
 			new NullLogger(),
 		);
