@@ -69,18 +69,33 @@ use Throwable;
 class FlowAndAgentExportBundler {
 
 	/**
-	 * Register holding OpenBuild's own objects.
+	 * Slug of the register holding OpenBuild's own objects.
 	 *
-	 * @var int
+	 * A SLUG, not the numeric register id: the id is an auto-increment
+	 * column assigned per instance and is not stable across a fresh
+	 * install, while the slug is openbuild's own fixed identity for this
+	 * register (`register.d/*.json`). `ObjectService::findAll()` resolves
+	 * a string filter value through `RegisterMapper`, which supports slug
+	 * lookup — see `AgentsController::REGISTER_SLUG` and
+	 * `ObjectSchemaSlugResolver::REGISTER_SLUG` for the same constant
+	 * elsewhere in this codebase.
+	 *
+	 * @var string
 	 */
-	private const OPENBUILD_REGISTER = 206;
+	private const OPENBUILD_REGISTER = 'openbuild';
 
 	/**
-	 * Schema of an `agent` object.
+	 * Slug of the `agent` schema.
 	 *
-	 * @var int
+	 * A SLUG, not the numeric schema id, for the same reason as
+	 * {@see self::OPENBUILD_REGISTER}. Resolved register-scoped (register
+	 * is set before schema in `ObjectService::prepareFindAllConfig()`),
+	 * which matters because schema slugs are not globally unique on this
+	 * instance.
+	 *
+	 * @var string
 	 */
-	private const AGENT_SCHEMA = 5060;
+	private const AGENT_SCHEMA = 'agent';
 
 	/**
 	 * Constructor.
@@ -233,7 +248,11 @@ class FlowAndAgentExportBundler {
 		}
 
 		foreach ($agents as $agent) {
-			$record = is_array($agent) === true ? $agent : $agent->jsonSerialize();
+			$record = $agent;
+			if (is_array($agent) === false) {
+				$record = $agent->jsonSerialize();
+			}
+
 			$uuid = (string)($record['@self']['id'] ?? '');
 			unset($record['@self']);
 

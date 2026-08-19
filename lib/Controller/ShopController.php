@@ -226,7 +226,10 @@ class ShopController extends Controller {
 			template: $template,
 			name: $name,
 			newSlug: $newSlug,
-			ownerUid: $user->getUID()
+			ownerUid: $user->getUID(),
+			sourceOwner: $owner,
+			sourceRepo: $repo,
+			credentialId: $this->credentialParam()
 		);
 
 		return new JSONResponse(data: $result['data'], statusCode: $result['status']);
