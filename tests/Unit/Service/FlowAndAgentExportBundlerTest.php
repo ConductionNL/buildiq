@@ -271,6 +271,16 @@ final class FlowAndAgentExportBundlerTest extends TestCase {
 			actual: ($captured['filters']['applicationSlug'] ?? null),
 			message: 'agents must be looked up by the application they point at'
 		);
+		$this->assertSame(
+			expected: 'openbuild',
+			actual: ($captured['filters']['register'] ?? null),
+			message: 'register must be filtered by SLUG — a numeric id is not stable across instances'
+		);
+		$this->assertSame(
+			expected: 'agent',
+			actual: ($captured['filters']['schema'] ?? null),
+			message: 'schema must be filtered by SLUG — a numeric id is not stable across instances'
+		);
 		$this->assertFileExists($this->root . '/lib/Settings/agents/agent-uuid-1.json');
 
 		$written = json_decode((string)file_get_contents($this->root . '/lib/Settings/agents/agent-uuid-1.json'), true);
