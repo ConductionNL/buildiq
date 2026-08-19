@@ -41,21 +41,22 @@ if (is_dir($ocpStubs)) {
 	});
 }
 
-// OpenRegister types are referenced by hard-typed constructor parameters in
-// controllers, services, repair steps and listeners.  When the real
-// OpenRegister sources are not on the autoload path (CI / out-of-container)
-// load the minimal stub set so PHPUnit's MockBuilder can resolve the types.
-// The stubs are guarded by class_exists() so they are a no-op when the real
-// classes ARE available (in-container run).
-require_once __DIR__ . '/stubs/openregister-stubs.php';
-
-// Same guard for the IMcpToolProvider interface which ships with OR but may
-// not be present until OR#1466 merges.
-require_once __DIR__ . '/Stubs/Mcp/IMcpToolProvider.php';
-
 // Bootstrap Nextcloud if available. Inside the docker container we'll get
-// the full NC runtime; outside (CI / local dev) we fall back to the
+// the full NC runtime — including the REAL OpenRegister classes, loaded via
+// OC_App::loadApps() below; outside (CI / local dev) we fall back to the
 // vendor/nextcloud/ocp stubs and run only the pure-unit subset.
+//
+// MUST run before the OpenRegister stub require below: `OC_App::loadApps()`
+// is what makes `OCA\OpenRegister\Contract\ObjectEntityInterface` (and every
+// other real OR type) resolvable via NC's own autoloader. The stub file's
+// `class_exists(ObjectEntity::class, autoload: false)` guard only checks
+// whether ITS OWN stub class already exists — it does not, and cannot, wait
+// for classes it has not tried to load yet — so if the stub file runs FIRST,
+// its `implements \OCA\OpenRegister\Contract\ObjectEntityInterface` clause
+// fatals with "Interface not found" even in-container, because the real
+// interface has not been autoloaded at that point. Loading NC first means
+// the guard sees the REAL classes already defined and skips the stub
+// entirely — exactly the in-container behaviour the guard is meant to select.
 if (!defined('OC_CONSOLE')) {
 	$ncBase = __DIR__ . '/../../../lib/base.php';
 	if (file_exists($ncBase)) {
@@ -76,3 +77,15 @@ if (!defined('OC_CONSOLE')) {
 		}
 	}
 }
+
+// OpenRegister types are referenced by hard-typed constructor parameters in
+// controllers, services, repair steps and listeners.  When the real
+// OpenRegister sources are not on the autoload path (CI / out-of-container)
+// load the minimal stub set so PHPUnit's MockBuilder can resolve the types.
+// The stubs are guarded by class_exists() so they are a no-op when the real
+// classes ARE available (in-container run, now bootstrapped above).
+require_once __DIR__ . '/stubs/openregister-stubs.php';
+
+// Same guard for the IMcpToolProvider interface which ships with OR but may
+// not be present until OR#1466 merges.
+require_once __DIR__ . '/Stubs/Mcp/IMcpToolProvider.php';
