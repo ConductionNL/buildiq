@@ -117,6 +117,25 @@
                 <referencedClass name="OCA\OpenRegister\Db\ApprovalStepMapper"/>
                 <referencedClass name="OCA\OpenRegister\Service\ApprovalService"/>
                 <referencedClass name="OCA\OpenRegister\Service\ObjectService"/>
+                <!-- The interface ObjectService implements — used wherever a
+                     class types its collaborator against the contract rather
+                     than the concrete class (ADR-022). Pre-existing across
+                     ~10 files (VersionPromotionService, RuleEngineService,
+                     GitHubAppSyncService, IconService, ManifestResolverService
+                     among them) that were already red before this entry;
+                     app-repo-format-flow-agent-export adds more of the same
+                     usage rather than a new class of error. -->
+                <referencedClass name="OCA\OpenRegister\Contract\ObjectServiceInterface"/>
+                <!-- The per-object counterpart of the above — ObjectEntity's
+                     own contract, e.g. ObjectService::find()'s return type.
+                     Pre-existing in SeedHelloWorldFixture.php, already red
+                     before this entry. -->
+                <referencedClass name="OCA\OpenRegister\Contract\ObjectEntityInterface"/>
+                <!-- The sanctioned single entry point for flows (ADR-022) —
+                     consumed by FlowChannelProvisioner so applying a published
+                     `flows/` channel creates a real OpenRegister Flow entity
+                     rather than a second, drift-prone flow store. -->
+                <referencedClass name="OCA\OpenRegister\Service\Flow\FlowService"/>
                 <!-- Thrown by ObjectService::saveObject(failIfExists: true) and
                      caught BY TYPE in AppChannelApplier — matching the message
                      text instead let an unrelated PHP error masquerade as a
