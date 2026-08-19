@@ -266,6 +266,15 @@ ExportJob object, in plaintext logs, or in any
 scoped to the single export run; the credential record SHALL be
 deleted on job terminal state (succeeded or failed).
 
+Every GitHub call made on this path SHALL be relayed through
+OpenRegister's credential broker (`CredentialBrokerService::request()`).
+On any broker-relayed call failure — a non-2xx upstream response or a
+broker-level exception — the resulting `errorMessage` SHALL include the
+real upstream HTTP status code and a truncated, scrubbed excerpt of the
+response body or failure reason, so the cause is diagnosable without a
+blind retry. Any GitHub PAT-shaped token SHALL be redacted from that
+detail before it reaches `errorMessage` or a log line.
+
 #### Scenario: GitHub export creates repo + PR
 
 - **WHEN** the user submits an export with `target: github`, org
@@ -290,7 +299,19 @@ deleted on job terminal state (succeeded or failed).
   contains a human-readable auth-failure summary (without echoing
   the PAT), and no repo is created.
 
----
+#### Scenario: Upstream failure detail surfaces in errorMessage
+
+- **WHEN** any broker-relayed GitHub call in the push flow (create-repo,
+  blob/tree/commit/ref creation, pull-request creation) fails — whether
+  GitHub returns a non-2xx status (e.g. `403` missing the `workflow`
+  scope, `404` for a typo'd org, `422` for a malformed payload, a `429`/
+  secondary-rate-limit response) or the broker call itself throws
+- **THEN** the job transitions to `failed` and `errorMessage` includes
+  the upstream HTTP status code and a truncated, scrubbed excerpt of the
+  response body (or the scrubbed failure reason for a broker-level
+  exception), instead of a bare, content-free failure string
+- **AND** no GitHub PAT-shaped token appears anywhere in `errorMessage`
+  or in the corresponding log line
 
 ### Requirement: Export is asynchronous via Nextcloud's IJob
 
