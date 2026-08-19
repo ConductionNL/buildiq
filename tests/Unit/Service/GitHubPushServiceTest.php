@@ -154,8 +154,6 @@ final class GitHubPushServiceTest extends TestCase {
 		$treeDir = $this->makeTree();
 		$service = new GitHubPushService(new NullLogger());
 
-		$this->expectException(RuntimeException::class);
-
 		try {
 			$service->push(
 				jobUuid: 'job-123',
@@ -164,6 +162,27 @@ final class GitHubPushServiceTest extends TestCase {
 				org: 'acme',
 				repo: 'app',
 				visibility: 'public'
+			);
+			self::fail('push() must throw when the broker cannot serve the call.');
+		} catch (RuntimeException $e) {
+			// Regression for the swallowed-error-detail bug: `Server::get()` cannot
+			// resolve a real container in a unit test, so `brokerCall()` hits its
+			// transport-exception path — the thrown message must now carry that
+			// detail, not just the bare "GitHub create-repo failed." string.
+			self::assertNotSame(
+				'GitHub create-repo failed.',
+				$e->getMessage(),
+				'The exception message must include diagnostic detail, not just the bare fixed string'
+			);
+			self::assertStringContainsString(
+				'GitHub create-repo failed.',
+				$e->getMessage(),
+				'The original context must still be present'
+			);
+			self::assertStringContainsString(
+				'transport error:',
+				$e->getMessage(),
+				'A broker-resolution failure must surface as transport-error detail'
 			);
 		} finally {
 			$this->removeTree($treeDir);
@@ -209,4 +228,101 @@ final class GitHubPushServiceTest extends TestCase {
 			$this->removeTree($treeDir);
 		}
 	}//end testPushRefusesAnEmptyCredential()
+
+	/**
+	 * Regression for the swallowed-error-detail bug: a non-2xx broker response's
+	 * status and (scrubbed) body must be assembled into the failure detail that
+	 * flows into `postJson()`/`createRepo()`'s thrown message — not discarded.
+	 *
+	 * Exercised directly against the pulled-out assembly method, decoupled from
+	 * `Server::get()`, which cannot resolve a real container in a unit test.
+	 *
+	 * @return void
+	 */
+	public function testFailureDetailFromStatusIncludesStatusAndBody(): void {
+		$service = new GitHubPushService(new NullLogger());
+		$method = new \ReflectionMethod(GitHubPushService::class, 'failureDetailFromStatus');
+		$method->setAccessible(true);
+
+		$detail = $method->invoke($service, 422, '{"message":"Validation Failed","errors":[{"code":"custom"}]}');
+
+		self::assertStringContainsString('HTTP 422', $detail, 'The upstream status must be present');
+		self::assertStringContainsString('Validation Failed', $detail, 'The upstream body detail must be present');
+	}//end testFailureDetailFromStatusIncludesStatusAndBody()
+
+	/**
+	 * An empty upstream body must not leave a dangling `: ` in the detail.
+	 *
+	 * @return void
+	 */
+	public function testFailureDetailFromStatusOmitsBodySuffixWhenBodyIsEmpty(): void {
+		$service = new GitHubPushService(new NullLogger());
+		$method = new \ReflectionMethod(GitHubPushService::class, 'failureDetailFromStatus');
+		$method->setAccessible(true);
+
+		$detail = $method->invoke($service, 404, '');
+
+		self::assertSame('HTTP 404', $detail);
+	}//end testFailureDetailFromStatusOmitsBodySuffixWhenBodyIsEmpty()
+
+	/**
+	 * A GitHub error body larger than the cap must be truncated, so an
+	 * oversized upstream body cannot bloat `errorMessage`.
+	 *
+	 * @return void
+	 */
+	public function testFailureDetailFromStatusTruncatesAnOversizedBody(): void {
+		$service = new GitHubPushService(new NullLogger());
+		$method = new \ReflectionMethod(GitHubPushService::class, 'failureDetailFromStatus');
+		$method->setAccessible(true);
+
+		$detail = $method->invoke($service, 500, str_repeat('x', 1000));
+
+		self::assertLessThan(1000, strlen($detail), 'The detail must be capped, not carry the full 1000-char body');
+		self::assertStringEndsWith('…', $detail, 'A truncated body must be marked with an ellipsis');
+	}//end testFailureDetailFromStatusTruncatesAnOversizedBody()
+
+	/**
+	 * `scrub()` is the redaction the whole fix leans on: verify it actually
+	 * strips a GitHub PAT-shaped token out of a failure-detail string before
+	 * that string could reach `errorMessage` or a log line.
+	 *
+	 * @return void
+	 */
+	public function testScrubRedactsAGitHubPatShapedToken(): void {
+		$service = new GitHubPushService(new NullLogger());
+		$method = new \ReflectionMethod(GitHubPushService::class, 'scrub');
+		$method->setAccessible(true);
+
+		$leaky = 'upstream rejected credential ghp_' . str_repeat('a', 36);
+		$scrubbed = $method->invoke($service, $leaky);
+
+		self::assertStringNotContainsString('ghp_', $scrubbed, 'A PAT-shaped token must never survive scrub()');
+		self::assertStringContainsString('[redacted-token]', $scrubbed);
+	}//end testScrubRedactsAGitHubPatShapedToken()
+
+	/**
+	 * `failureSuffix()` is what `postJson()`/`createRepo()` append to their
+	 * generic message — pin its exact formatting (a leading `' — '`, nothing
+	 * when there is no captured detail).
+	 *
+	 * @return void
+	 */
+	public function testFailureSuffixFormatsTheCapturedDetail(): void {
+		$service = new GitHubPushService(new NullLogger());
+
+		$detailProperty = new \ReflectionProperty(GitHubPushService::class, 'lastFailureDetail');
+		$detailProperty->setAccessible(true);
+
+		$suffixMethod = new \ReflectionMethod(GitHubPushService::class, 'failureSuffix');
+		$suffixMethod->setAccessible(true);
+
+		self::assertSame('', $suffixMethod->invoke($service), 'No captured detail must mean no suffix');
+
+		$detailProperty->setValue($service, 'HTTP 403: Resource not accessible by personal access token');
+		self::assertSame(
+			' — HTTP 403: Resource not accessible by personal access token',
+			$suffixMethod->invoke($service)
+		);
+	}//end testFailureSuffixFormatsTheCapturedDetail()
 }//end class
