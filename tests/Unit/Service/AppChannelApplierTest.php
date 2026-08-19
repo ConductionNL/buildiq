@@ -33,16 +33,21 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuild\Tests\Unit\Service;
 
+use OCA\OpenBuild\Service\AgentChannelProvisioner;
 use OCA\OpenBuild\Service\AppChannelApplier;
 use OCA\OpenBuild\Service\AppRepoParser;
 use OCA\OpenBuild\Service\ChannelApplyReport;
 use OCA\OpenBuild\Service\ContainerLocator;
 use OCA\OpenBuild\Service\DataRegisterProvisioner;
+use OCA\OpenBuild\Service\FlowChannelProvisioner;
 use OCA\OpenBuild\Service\SkillChannelDelegate;
+use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ObjectExistsException;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowService;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -97,6 +102,13 @@ class AppChannelApplierTest extends TestCase {
 	private ContainerLocator&MockObject $locator;
 
 	/**
+	 * Flow-creation double — the sanctioned single entry point for flows.
+	 *
+	 * @var FlowService&MockObject
+	 */
+	private FlowService&MockObject $flowService;
+
+	/**
 	 * Build the collaborators.
 	 *
 	 * @return void
@@ -107,6 +119,7 @@ class AppChannelApplierTest extends TestCase {
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->appManager = $this->createMock(IAppManager::class);
 		$this->locator = $this->createMock(ContainerLocator::class);
+		$this->flowService = $this->createMock(FlowService::class);
 
 	}//end setUp()
 
@@ -134,11 +147,61 @@ class AppChannelApplierTest extends TestCase {
 				$this->locator,
 				$this->createMock(LoggerInterface::class)
 			),
+			// A REAL provisioner over a mocked FlowService and the shared
+			// mocked objectService: the flows channel's declared-count and
+			// degradation behaviour is asserted below, same reasoning as the
+			// two providers/delegates above.
+			new FlowChannelProvisioner(
+				$this->flowService,
+				$this->objectService,
+				$this->createMock(LoggerInterface::class)
+			),
+			// A REAL provisioner over the shared mocked objectService: the
+			// agents channel's tagging and skip-if-exists behaviour is
+			// asserted below, same reasoning as the two providers above.
+			new AgentChannelProvisioner(
+				$this->objectService,
+				$this->createMock(LoggerInterface::class)
+			),
 			$this->appManager,
 			$this->createMock(LoggerInterface::class),
 		);
 
 	}//end applier()
+
+	/**
+	 * Build a REAL Flow entity with the given uuid.
+	 *
+	 * `getUuid()`/`setUuid()` resolve through `Entity::__call()` (magic
+	 * accessors, no declared method PHPUnit can configure a mock expectation
+	 * against — `FlowAndAgentExportBundlerTest` uses the same real-entity
+	 * approach for the identical reason), so this stands in for what
+	 * `FlowService::save()` would hand back rather than mocking it.
+	 *
+	 * @param string $uuid The uuid `FlowService::save()` "minted".
+	 *
+	 * @return Flow
+	 */
+	private function mockedFlow(string $uuid): Flow {
+		$flow = new Flow();
+		$flow->setUuid($uuid);
+
+		return $flow;
+	}//end mockedFlow()
+
+	/**
+	 * Build a mocked ObjectEntityInterface wrapping a plain payload.
+	 *
+	 * @param array<string,mixed> $payload The object payload `getObject()` returns.
+	 *
+	 * @return ObjectEntityInterface&MockObject
+	 */
+	private function mockedEntity(array $payload): ObjectEntityInterface&MockObject {
+		$entity = $this->createMock(ObjectEntityInterface::class);
+		$entity->method('getObject')->willReturn($payload);
+
+		return $entity;
+	}//end mockedEntity()
 
 	/**
 	 * A template declaring one connector of the given kind.
@@ -475,4 +538,199 @@ class AppChannelApplierTest extends TestCase {
 		self::assertSame([], $report['needsCredentials']);
 
 	}//end testInconclusiveCredentialLookupIsNotReportedAsMissing()
+
+	/**
+	 * A template with declared flows/agents but no local application context
+	 * degrades both channels with a stated reason instead of guessing or
+	 * throwing — there is nothing to rebind flows onto, and nothing to tag an
+	 * agent's `applicationSlug` with.
+	 *
+	 * @return void
+	 */
+	public function testFlowsAndAgentsDegradeWithoutLocalApplicationContext(): void {
+		$this->flowService->expects(self::never())->method('save');
+		$this->objectService->expects(self::never())->method('saveObject');
+
+		$report = $this->applier()->apply(
+			template: [
+				'templateOrigin' => ['repo' => 'ConductionNL/example-app'],
+				'channels' => [
+					'flows' => ['11111111-1111-4111-8111-111111111111' => ['name' => 'Sequencer']],
+					'agents' => ['22222222-2222-4222-8222-222222222222' => ['name' => 'Reviewer']],
+				],
+			]
+		);
+
+		self::assertSame(1, $report['channels']['flows']['declared']);
+		self::assertSame(1, $report['channels']['flows']['skipped']);
+		self::assertSame('no-local-application-context', $report['channels']['flows']['reason']);
+
+		self::assertSame(1, $report['channels']['agents']['declared']);
+		self::assertSame(1, $report['channels']['agents']['skipped']);
+		self::assertSame('no-local-application-context', $report['channels']['agents']['reason']);
+
+	}//end testFlowsAndAgentsDegradeWithoutLocalApplicationContext()
+
+	/**
+	 * A published flow is created through `FlowService::save()` — the
+	 * sanctioned single entry point, never a raw insert — and the newly minted
+	 * local uuid is rebound onto the local application's `flows[]`, carrying
+	 * the published uuid forward as `sourceUuid`.
+	 *
+	 * @return void
+	 */
+	public function testAFlowIsCreatedAndReboundOntoTheLocalApplication(): void {
+		$applicationUuid = '33333333-3333-4333-8333-333333333333';
+		$sourceUuid = '11111111-1111-4111-8111-111111111111';
+		$mintedUuid = '44444444-4444-4444-8444-444444444444';
+
+		$this->objectService->method('find')->willReturn($this->mockedEntity(['flows' => []]));
+		$this->flowService->expects(self::once())->method('save')
+			// Both parameters of FlowService::save(array $data, ?string $uuid = null)
+			// named explicitly — a create call passes no uuid, and asserting that
+			// is the point: seeding a caller-chosen uuid would ask save() to
+			// UPDATE, which goes through find() and fails for a flow that does
+			// not exist yet on this instance.
+			->with(self::callback(static fn (array $data): bool => ($data['name'] ?? null) === 'Sequencer'), null)
+			->willReturn($this->mockedFlow(uuid: $mintedUuid));
+
+		$this->objectService->expects(self::once())->method('saveObject')
+			->with(
+				self::callback(
+					static function (array $object) use ($mintedUuid, $sourceUuid): bool {
+						$bindings = ($object['flows'] ?? []);
+						return count($bindings) === 1
+							&& $bindings[0]['flow'] === $mintedUuid
+							&& $bindings[0]['sourceUuid'] === $sourceUuid;
+					}
+				),
+				self::anything(),
+				'openbuild',
+				'application',
+				$applicationUuid,
+				false,
+				false,
+				false,
+				true,
+				null,
+				null,
+				false
+			);
+
+		$report = $this->applier()->apply(
+			template: [
+				'templateOrigin' => ['repo' => 'ConductionNL/example-app'],
+				'channels' => ['flows' => [$sourceUuid => ['name' => 'Sequencer']]],
+			],
+			applicationUuid: $applicationUuid,
+			applicationSlug: 'hydra-console'
+		);
+
+		self::assertSame(1, $report['channels']['flows']['created']);
+
+	}//end testAFlowIsCreatedAndReboundOntoTheLocalApplication()
+
+	/**
+	 * Re-applying the same published repository is idempotent: a binding whose
+	 * `sourceUuid` already matches is skipped, and `FlowService::save()` is
+	 * never called a second time for it.
+	 *
+	 * @return void
+	 */
+	public function testARepeatApplyOfTheSamePublishedFlowIsSkipped(): void {
+		$applicationUuid = '33333333-3333-4333-8333-333333333333';
+		$sourceUuid = '11111111-1111-4111-8111-111111111111';
+
+		$this->objectService->method('find')->willReturn(
+			$this->mockedEntity(['flows' => [['flow' => 'already-local', 'sourceUuid' => $sourceUuid]]])
+		);
+		$this->flowService->expects(self::never())->method('save');
+		$this->objectService->expects(self::never())->method('saveObject');
+
+		$report = $this->applier()->apply(
+			template: [
+				'templateOrigin' => ['repo' => 'ConductionNL/example-app'],
+				'channels' => ['flows' => [$sourceUuid => ['name' => 'Sequencer']]],
+			],
+			applicationUuid: $applicationUuid,
+			applicationSlug: 'hydra-console'
+		);
+
+		self::assertSame(0, $report['channels']['flows']['created']);
+		self::assertSame(1, $report['channels']['flows']['skipped']);
+		self::assertSame(
+			ChannelApplyReport::REASON_EXISTS,
+			$report['channels']['flows']['items'][0]['reason']
+		);
+
+	}//end testARepeatApplyOfTheSamePublishedFlowIsSkipped()
+
+	/**
+	 * A published agent is tagged with the LOCAL application's own slug, never
+	 * the slug published in the blob — the same class of bug as carrying a
+	 * hybrid app's locked identity fields across a boundary they were not
+	 * authored for.
+	 *
+	 * @return void
+	 */
+	public function testAgentIsTaggedWithTheLocalApplicationSlugNotTheSourceSlug(): void {
+		$uuid = self::NIL_UUID;
+
+		$this->objectService->expects(self::once())->method('saveObject')
+			->with(
+				self::callback(static fn (array $object): bool => ($object['applicationSlug'] ?? null) === 'local-app'),
+				self::anything(),
+				'openbuild',
+				'agent',
+				$uuid,
+				false,
+				false,
+				false,
+				true,
+				null,
+				null,
+				true
+			);
+
+		$report = $this->applier()->apply(
+			template: [
+				'templateOrigin' => ['repo' => 'ConductionNL/example-app'],
+				'channels' => [
+					'agents' => [$uuid => ['name' => 'Reviewer', 'applicationSlug' => 'source-instance-app']],
+				],
+			],
+			applicationUuid: '33333333-3333-4333-8333-333333333333',
+			applicationSlug: 'local-app'
+		);
+
+		self::assertSame(1, $report['channels']['agents']['created']);
+
+	}//end testAgentIsTaggedWithTheLocalApplicationSlugNotTheSourceSlug()
+
+	/**
+	 * A colliding agent uuid is skipped, never overwritten — same guarantee as
+	 * connectors.
+	 *
+	 * @return void
+	 */
+	public function testCollidingAgentIsSkippedNotOverwritten(): void {
+		$this->objectService->method('saveObject')->willThrowException(new ObjectExistsException('taken'));
+
+		$report = $this->applier()->apply(
+			template: [
+				'templateOrigin' => ['repo' => 'ConductionNL/example-app'],
+				'channels' => ['agents' => [self::NIL_UUID => ['name' => 'Reviewer']]],
+			],
+			applicationUuid: '33333333-3333-4333-8333-333333333333',
+			applicationSlug: 'local-app'
+		);
+
+		self::assertSame(0, $report['channels']['agents']['created']);
+		self::assertSame(1, $report['channels']['agents']['skipped']);
+		self::assertSame(
+			ChannelApplyReport::REASON_EXISTS,
+			$report['channels']['agents']['items'][0]['reason']
+		);
+
+	}//end testCollidingAgentIsSkippedNotOverwritten()
 }//end class
