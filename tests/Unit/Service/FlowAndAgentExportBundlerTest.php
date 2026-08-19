@@ -31,6 +31,7 @@ use OCA\OpenBuild\Service\FlowAndAgentExportBundler;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\App\IAppManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -54,6 +55,13 @@ final class FlowAndAgentExportBundlerTest extends TestCase {
 	 * @var ObjectService&MockObject
 	 */
 	private $objectService;
+
+	/**
+	 * Detects whether hermiq is installed, gating the fallback lookup.
+	 *
+	 * @var IAppManager&MockObject
+	 */
+	private $appManager;
 
 	/**
 	 * Subject.
@@ -80,10 +88,16 @@ final class FlowAndAgentExportBundlerTest extends TestCase {
 	protected function setUp(): void {
 		$this->flowMapper = $this->createMock(originalClassName: FlowMapper::class);
 		$this->objectService = $this->createMock(originalClassName: ObjectService::class);
+		$this->appManager = $this->createMock(originalClassName: IAppManager::class);
+		// Default: hermiq not installed. Tests exercising the hermiq-register
+		// fallback override this explicitly — most fixtures never need it, since
+		// openbuild's own schema already answers with agents.
+		$this->appManager->method('isEnabledForUser')->willReturn(false);
 
 		$this->bundler = new FlowAndAgentExportBundler(
 			$this->flowMapper,
 			$this->objectService,
+			$this->appManager,
 			$this->createMock(originalClassName: LoggerInterface::class)
 		);
 
@@ -307,4 +321,165 @@ final class FlowAndAgentExportBundlerTest extends TestCase {
 		$this->assertDirectoryDoesNotExist($this->root . '/lib/Settings/agents');
 
 	}//end testAnApplicationWithNothingBoundWritesNothing()
+
+	/**
+	 * 🔴 THE NEGATIVE CONTROL for the hermiq-register fallback: openbuild's own
+	 * `agent` schema query is scoped to `register: openbuild` explicitly, so it
+	 * structurally cannot see a row living in hermiq's own register no matter
+	 * what `applicationSlug` it carries. Without the fallback added by
+	 * agent-export-hermiq-register, an agent that lives ONLY in hermiq's
+	 * register is invisible to the export — this pins that the OLD single-query
+	 * behaviour, exercised in isolation, finds nothing.
+	 *
+	 * @return void
+	 */
+	public function testOpenbuildsOwnQueryAloneCannotSeeAHermiqRegisterAgent(): void {
+		$captured = [];
+		$this->objectService->method('findAll')->willReturnCallback(
+			function (array $config) use (&$captured): array {
+				$captured[] = $config;
+				// Simulates the real ObjectService: a query scoped to
+				// register=openbuild simply never matches a row that lives in
+				// the hermiq register, regardless of applicationSlug.
+				return [];
+			}
+		);
+		// hermiq not installed on this call — proves the first query alone,
+		// with no fallback reachable at all, already returns nothing.
+
+		$skipped = $this->bundler->bundle($this->root, [], 'hydra-console');
+
+		$this->assertSame(expected: [], actual: $skipped);
+		$this->assertDirectoryDoesNotExist(
+			$this->root . '/lib/Settings/agents',
+			'the negative control: openbuild-scoped-only, an agent living solely in hermiq\'s register is invisible'
+		);
+		$this->assertCount(1, $captured, 'without the fallback only the openbuild-scoped query is ever issued');
+		$this->assertSame('openbuild', $captured[0]['filters']['register']);
+
+	}//end testOpenbuildsOwnQueryAloneCannotSeeAHermiqRegisterAgent()
+
+	/**
+	 * 🔴 THE FIX: when openbuild's own schema finds nothing AND hermiq is
+	 * installed, a second query is issued against hermiq's OWN register
+	 * (`register: hermiq`, `schema: agent`) for the same `applicationSlug`, and
+	 * an agent found there is bundled exactly like an openbuild-native one.
+	 *
+	 * @return void
+	 */
+	public function testAnAgentLivingOnlyInHermiqsRegisterIsFoundByTheFallback(): void {
+		$this->appManager = $this->createMock(originalClassName: IAppManager::class);
+		$this->appManager->method('isEnabledForUser')->with('hermiq')->willReturn(true);
+		$this->bundler = new FlowAndAgentExportBundler(
+			$this->flowMapper,
+			$this->objectService,
+			$this->appManager,
+			$this->createMock(originalClassName: LoggerInterface::class)
+		);
+
+		$captured = [];
+		$this->objectService->method('findAll')->willReturnCallback(
+			function (array $config) use (&$captured): array {
+				$captured[] = $config;
+				if (($config['filters']['register'] ?? null) === 'openbuild') {
+					// openbuild's own schema has nothing for this application.
+					return [];
+				}
+
+				// hermiq's own register DOES have this application's agent.
+				$this->assertSame('hermiq', $config['filters']['register'] ?? null);
+				$this->assertSame('agent', $config['filters']['schema'] ?? null);
+				$this->assertSame('hydra-console', $config['filters']['applicationSlug'] ?? null);
+
+				return [
+					[
+						'@self' => ['id' => 'hermiq-agent-uuid'],
+						'name' => 'Hydra Triage',
+						'applicationSlug' => 'hydra-console',
+						'prompt' => 'a real hermiq prompt, much richer than openbuild\'s own agent schema',
+						'tools' => ['hydra.change.*', 'hydra.stage.*'],
+					],
+				];
+			}
+		);
+
+		$skipped = $this->bundler->bundle($this->root, [], 'hydra-console');
+
+		$this->assertSame(expected: [], actual: $skipped);
+		$this->assertCount(2, $captured, 'both the openbuild query and the hermiq fallback must have been issued');
+
+		$path = $this->root . '/lib/Settings/agents/hermiq-agent-uuid.json';
+		$this->assertFileExists($path, 'the hermiq-register agent must be bundled into the export');
+
+		$written = json_decode((string)file_get_contents($path), true);
+		$this->assertSame('Hydra Triage', $written['name']);
+		$this->assertArrayHasKey(
+			'tools',
+			$written,
+			'hermiq\'s richer shape (tools, prompt) must travel unmodified — never coerced into openbuild\'s own '
+			. 'narrower agent schema on the way out'
+		);
+		$this->assertArrayNotHasKey('@self', $written, 'the OR envelope is instance-local and must not travel');
+
+	}//end testAnAgentLivingOnlyInHermiqsRegisterIsFoundByTheFallback()
+
+	/**
+	 * 🔑 NEGATIVE CONTROL for the guard itself: with hermiq NOT installed, the
+	 * fallback must never be attempted even when openbuild's own schema finds
+	 * nothing — hermiq is an optional dependency, and this class must not
+	 * assume its register exists.
+	 *
+	 * @return void
+	 */
+	public function testTheFallbackIsNeverAttemptedWhenHermiqIsNotInstalled(): void {
+		// setUp() already wires isEnabledForUser() to return false.
+		$captured = [];
+		$this->objectService->method('findAll')->willReturnCallback(
+			function (array $config) use (&$captured): array {
+				$captured[] = $config;
+				return [];
+			}
+		);
+
+		$this->bundler->bundle($this->root, [], 'hydra-console');
+
+		$this->assertCount(
+			1,
+			$captured,
+			'with hermiq not installed, only the openbuild-scoped query may ever be issued'
+		);
+		$this->assertSame('openbuild', $captured[0]['filters']['register']);
+
+	}//end testTheFallbackIsNeverAttemptedWhenHermiqIsNotInstalled()
+
+	/**
+	 * When openbuild's own schema ALREADY found agents, the hermiq fallback
+	 * must not be consulted at all — this is a fallback, not a merge, and the
+	 * common case (agents in openbuild's own store) must stay a single query.
+	 *
+	 * @return void
+	 */
+	public function testTheFallbackIsSkippedWhenOpenbuildsOwnSchemaAlreadyFoundAgents(): void {
+		$this->appManager = $this->createMock(originalClassName: IAppManager::class);
+		$this->appManager->expects($this->never())->method('isEnabledForUser');
+		$this->bundler = new FlowAndAgentExportBundler(
+			$this->flowMapper,
+			$this->objectService,
+			$this->appManager,
+			$this->createMock(originalClassName: LoggerInterface::class)
+		);
+
+		$captured = [];
+		$this->objectService->method('findAll')->willReturnCallback(
+			function (array $config) use (&$captured): array {
+				$captured[] = $config;
+				return [['@self' => ['id' => 'ob-agent-uuid'], 'name' => 'Code reviewer', 'applicationSlug' => 'hydra-console']];
+			}
+		);
+
+		$this->bundler->bundle($this->root, [], 'hydra-console');
+
+		$this->assertCount(1, $captured, 'openbuild\'s own schema already answered — the fallback must not run');
+
+	}//end testTheFallbackIsSkippedWhenOpenbuildsOwnSchemaAlreadyFoundAgents()
 }//end class
