@@ -476,6 +476,17 @@ class GitHubCatalogService {
 			AppRepoParser::CONNECTORS_PREFIX,
 			AppRepoParser::AUTOMATIONS_PREFIX,
 			AppRepoParser::SKILLS_PREFIX,
+			// App-repo-format-flow-agent-export: AppRepoParser::parseChannels()
+			// has read these two since that change landed, but this fetch-side
+			// allowlist was never extended to match — the exact "parser can read
+			// it, fetch never downloaded it" defect this method's own docblock
+			// warns about (verified live: buildiq-spectr fetched 2 files and
+			// parsed 0 data-registers before that fix). Confirmed live again
+			// here: a repo publishing flows/<uuid>.json and agents/<uuid>.json
+			// pulled back with both channels declared 0 until these two lines
+			// were added.
+			AppRepoParser::FLOWS_PREFIX,
+			AppRepoParser::AGENTS_PREFIX,
 		];
 
 		$files = [];

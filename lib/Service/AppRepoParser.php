@@ -108,6 +108,31 @@ class AppRepoParser {
 	public const SKILLS_PREFIX = 'skills/';
 
 	/**
+	 * V2 flows channel prefix (app-repo-format-flow-agent-export).
+	 *
+	 * @var string
+	 */
+	public const FLOWS_PREFIX = 'flows/';
+
+	/**
+	 * V2 agents channel prefix (app-repo-format-flow-agent-export).
+	 *
+	 * @var string
+	 */
+	public const AGENTS_PREFIX = 'agents/';
+
+	/**
+	 * The UUID pattern flow and agent entries are filed under — mirrors
+	 * `AppRepoSerializer::isSafeUuid()`. Flows and agents have no slug
+	 * (`FlowAndAgentExportBundler`'s own docblock: "the Flow entity has no
+	 * slug"), so, unlike every other channel, these are UUID-keyed rather than
+	 * SLUG_PATTERN-keyed.
+	 *
+	 * @var string
+	 */
+	private const UUID_PATTERN = '/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/';
+
+	/**
 	 * The connector kinds a v2 repository may carry, mirroring the serializer's
 	 * enum so an unknown directory is ignored rather than trusted.
 	 *
@@ -321,7 +346,7 @@ class AppRepoParser {
 
 	/**
 	 * Parse the app-repo-format-v2 channels: data-registers, connectors,
-	 * automations and skills.
+	 * automations, skills, flows and agents.
 	 *
 	 * Deliberately LENIENT where `parseCompanionSchemas()` is strict. A companion
 	 * schema is load-bearing — a malformed one means the app cannot work, so it
@@ -343,6 +368,8 @@ class AppRepoParser {
 			'connectors' => [],
 			'automations' => [],
 			'skills' => [],
+			'flows' => [],
+			'agents' => [],
 		];
 
 		$paths = array_keys($files);
@@ -388,6 +415,30 @@ class AppRepoParser {
 					$blob = $this->decodeChannelEntry(contents: $files[$path]);
 					if ($blob !== null) {
 						$channels['automations'][$slug] = $blob;
+					}
+				}
+
+				continue;
+			}
+
+			if (str_starts_with($path, self::FLOWS_PREFIX) === true && str_ends_with($path, '.json') === true) {
+				$uuid = substr($path, strlen(self::FLOWS_PREFIX), -strlen('.json'));
+				if (preg_match(self::UUID_PATTERN, $uuid) === 1) {
+					$blob = $this->decodeChannelEntry(contents: $files[$path]);
+					if ($blob !== null) {
+						$channels['flows'][$uuid] = $blob;
+					}
+				}
+
+				continue;
+			}
+
+			if (str_starts_with($path, self::AGENTS_PREFIX) === true && str_ends_with($path, '.json') === true) {
+				$uuid = substr($path, strlen(self::AGENTS_PREFIX), -strlen('.json'));
+				if (preg_match(self::UUID_PATTERN, $uuid) === 1) {
+					$blob = $this->decodeChannelEntry(contents: $files[$path]);
+					if ($blob !== null) {
+						$channels['agents'][$uuid] = $blob;
 					}
 				}
 
