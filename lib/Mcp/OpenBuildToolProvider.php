@@ -78,6 +78,8 @@ class OpenBuildToolProvider implements IMcpToolProvider {
 	private const TOOL_DESCRIPTORS = [
 		[
 			'id' => 'openbuild.listApps',
+			'subject' => 'app',
+			'action' => 'list',
 			'name' => 'List virtual apps',
 			'description' => 'List the virtual apps built with OpenBuild in your organisation.',
 			'inputSchema' => [
@@ -91,6 +93,8 @@ class OpenBuildToolProvider implements IMcpToolProvider {
 		],
 		[
 			'id' => 'openbuild.getAppManifest',
+			'subject' => 'appManifest',
+			'action' => 'get',
 			'name' => 'Get virtual app manifest',
 			'description' => 'Fetch the runtime manifest blob for one published virtual app by slug.',
 			'inputSchema' => [
@@ -103,6 +107,8 @@ class OpenBuildToolProvider implements IMcpToolProvider {
 		],
 		[
 			'id' => 'openbuild.createApp',
+			'subject' => 'app',
+			'action' => 'create',
 			'name' => 'Create a new virtual app',
 			'description' => 'Create a new OpenBuild virtual app with an initial draft ApplicationVersion.'
 				. ' Preset chooses the version chain: "single", "dev-prod" or "dev-staging-prod".',
@@ -119,6 +125,11 @@ class OpenBuildToolProvider implements IMcpToolProvider {
 		],
 		[
 			'id' => 'openbuild.promoteVersion',
+			// `promote`, not `update`: it advances a version through a release
+			// pipeline. A grant reading "may update apps" should not silently
+			// carry the right to push a version to production.
+			'subject' => 'version',
+			'action' => 'promote',
 			'name' => 'Promote a virtual app version',
 			'description' => 'Promote a virtual app from one version (e.g. development) to the next (e.g. production).'
 				. ' Strategy "empty-start" (default, safest) leaves the target empty.',
@@ -138,6 +149,8 @@ class OpenBuildToolProvider implements IMcpToolProvider {
 		],
 		[
 			'id' => 'openbuild.upsertSchema',
+			'subject' => 'schema',
+			'action' => 'upsert',
 			'name' => 'Create or update a schema in a virtual app',
 			'description' => 'Create or update a JSON Schema in the given app version\'s per-version OR register.'
 				. ' Slug is automatically namespaced with appSlug+versionSlug.'
@@ -159,6 +172,8 @@ class OpenBuildToolProvider implements IMcpToolProvider {
 		],
 		[
 			'id' => 'openbuild.upsertPage',
+			'subject' => 'page',
+			'action' => 'upsert',
 			'name' => 'Create or update a page in a virtual app',
 			'description' => 'Create or update a page in the draft manifest.'
 				. ' pageId is the unique key; if it exists it is replaced.'
@@ -181,6 +196,8 @@ class OpenBuildToolProvider implements IMcpToolProvider {
 		],
 		[
 			'id' => 'openbuild.addWidget',
+			'subject' => 'widget',
+			'action' => 'create',
 			'name' => 'Add a widget to a page',
 			'description' => 'Append a widget to a page\'s config.widgets array in the draft manifest.'
 				. ' widgetType is e.g. "stat", "chart", "table". widgetConfig is widget-type-specific.'
@@ -199,6 +216,8 @@ class OpenBuildToolProvider implements IMcpToolProvider {
 		],
 		[
 			'id' => 'openbuild.upsertMenuItem',
+			'subject' => 'menuItem',
+			'action' => 'upsert',
 			'name' => 'Create or update a menu item',
 			'description' => 'Create or update a top-level menu item in the draft manifest.'
 				. ' id is the unique key; if it exists it is replaced. route should match a page id.'
