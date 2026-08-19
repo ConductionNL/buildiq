@@ -37,34 +37,6 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Contract {
-
-	// The real interface (`OCA\OpenRegister\Contract\ObjectEntityInterface`,
-	// see openregister/lib/Contract/ObjectEntityInterface.php) is what the
-	// stub `ObjectEntity` below declares `implements`. Out-of-container (no
-	// real OpenRegister source on the autoload path) that `implements`
-	// clause fatals with "Interface not found" unless a stub of the
-	// interface itself exists too — the class being guarded by
-	// `class_exists(..., autoload: false)` only skips the CLASS
-	// declaration when the real one is already loaded; it does nothing for
-	// the interface name the class body references. Guarded the same way so
-	// an in-container run (real interface already autoloaded) is a no-op.
-	if (interface_exists(ObjectEntityInterface::class, autoload: false) === false) {
-		/**
-		 * Stub ObjectEntityInterface — mirrors the real interface's full method
-		 * surface (openregister/lib/Contract/ObjectEntityInterface.php).
-		 */
-		interface ObjectEntityInterface extends \JsonSerializable {
-			public function getUuid(): ?string;
-			public function getObject(): array;
-			public function getRegister(): ?string;
-			public function getSchema(): ?string;
-			public function getOrganisation(): ?string;
-			public function getOwner(): ?string;
-		}
-	}
-}
-
 namespace OCA\OpenRegister\Db {
 
 	if (class_exists(ObjectEntity::class, autoload: false) === false) {
