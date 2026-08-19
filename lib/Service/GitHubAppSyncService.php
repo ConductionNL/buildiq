@@ -535,6 +535,11 @@ class GitHubAppSyncService {
 			'status' => 'draft',
 			'register' => $registerSlug,
 			'channels' => $channels,
+			// Copied onto the top level — same reasoning as
+			// ApplicationsController::installFromTemplateArray(): a caller
+			// should not have to know to look inside `channels.<name>.reason`
+			// to find an actionable degradation.
+			'warnings' => ($channels['warnings'] ?? []),
 		];
 	}//end pull()
 

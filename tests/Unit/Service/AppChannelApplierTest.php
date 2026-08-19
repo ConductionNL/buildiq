@@ -451,6 +451,164 @@ class AppChannelApplierTest extends TestCase {
 
 	}//end testAnIdempotentSourceReportingOnlyUnchangedIsNotTreatedAsUnaccountedFor()
 
+	/**
+	 * The core failure mode this file exists to close: a credential scoped
+	 * only to `openbuild` (the obvious, natural scope — the only one any
+	 * part of the shop UI hints is needed) attempting an install of a repo
+	 * that declares a skills channel. hermiq's bundle installer performs an
+	 * INDEPENDENT GitHub fetch under its OWN app identity ("hermiq"), so that
+	 * credential is denied by the broker for that one call — but ONLY that
+	 * call, since search/fetch on the openbuild side use openbuild's own app
+	 * identity and work fine with the exact same credential.
+	 *
+	 * Before this fix, that denial was only discoverable as the generic
+	 * `hermiq-install-failed` after an attempted (and failing) call. This
+	 * test asserts the applier now detects the gap BEFOREHAND from the
+	 * credential's own `allowedApps` and never even attempts the hermiq
+	 * call — proven by asserting the locator that would resolve hermiq's
+	 * installer is never invoked.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/surface-hermiq-credential-scope-requirement/specs/app-channel-application/spec.md#requirement-skills-are-delegated-to-hermiq-by-repository-coordinates
+	 */
+	public function testSkillsAreSkippedWithASpecificReasonWhenTheCredentialLacksHermiqScope(): void {
+		$this->appManager->method('isEnabledForUser')->willReturn(true);
+		$this->objectService->method('find')->willReturn(
+			$this->mockedEntity(['allowedApps' => ['openbuild']])
+		);
+		// The whole point: hermiq's installer is never even resolved, let
+		// alone called, once the credential is already known to lack scope.
+		$this->locator->expects(self::never())->method('get');
+
+		$report = $this->applier()->apply(
+			template: [
+				'templateOrigin' => ['repo' => 'ConductionNL/example-app'],
+				'channels' => [
+					'skills' => [
+						'alpha' => ['SKILL.md' => '# alpha'],
+						'beta' => ['SKILL.md' => '# beta'],
+					],
+				],
+			],
+			credentialId: 'a-github-credential-uuid'
+		);
+
+		$skills = $report['channels']['skills'];
+		self::assertSame(2, $skills['declared']);
+		self::assertSame(2, $skills['skipped']);
+		self::assertSame('credential-missing-hermiq-scope', $skills['reason']);
+
+		self::assertCount(1, $report['warnings']);
+		self::assertSame('credential-missing-hermiq-scope', $report['warnings'][0]['code']);
+		self::assertSame('skills', $report['warnings'][0]['channel']);
+		self::assertStringContainsString('hermiq', $report['warnings'][0]['message']);
+
+	}//end testSkillsAreSkippedWithASpecificReasonWhenTheCredentialLacksHermiqScope()
+
+	/**
+	 * Regression guard: a credential that DOES carry hermiq's scope is
+	 * delegated to exactly as before — the proactive check must never block
+	 * a call that would in fact have been admitted.
+	 *
+	 * @return void
+	 */
+	public function testSkillsAreDelegatedWhenTheCredentialDoesCarryHermiqScope(): void {
+		$this->appManager->method('isEnabledForUser')->willReturn(true);
+		$this->objectService->method('find')->willReturn(
+			$this->mockedEntity(['allowedApps' => ['openbuild', 'hermiq']])
+		);
+
+		$installer = new class {
+			public function installFromRepo(
+				string $owner,
+				string $repo,
+				?string $ref = null,
+				?string $actingUserId = null,
+				?string $credentialId = null,
+			): array {
+				return [
+					'installed' => 2,
+					'updated' => 0,
+					'unchanged' => 0,
+					'skipped' => 0,
+					'failed' => 0,
+					'truncated' => false,
+				];
+			}
+		};
+		$this->locator->expects(self::once())->method('get')->willReturn($installer);
+
+		$report = $this->applier()->apply(
+			template: [
+				'templateOrigin' => ['repo' => 'ConductionNL/example-app'],
+				'channels' => [
+					'skills' => [
+						'alpha' => ['SKILL.md' => '# alpha'],
+						'beta' => ['SKILL.md' => '# beta'],
+					],
+				],
+			],
+			credentialId: 'a-github-credential-uuid'
+		);
+
+		self::assertSame(2, $report['channels']['skills']['created']);
+		self::assertSame([], $report['warnings']);
+
+	}//end testSkillsAreDelegatedWhenTheCredentialDoesCarryHermiqScope()
+
+	/**
+	 * An inconclusive credential-scope lookup (credential not found, or the
+	 * lookup itself throws) must NOT be treated as a scope gap — same
+	 * "absence claim manufactured by a failing lookup is worse than no
+	 * claim" reasoning as {@see testInconclusiveCredentialLookupIsNotReportedAsMissing()}.
+	 * Behaviour falls through to the delegate exactly as it would with no
+	 * check at all.
+	 *
+	 * @return void
+	 */
+	public function testInconclusiveScopeLookupFallsThroughToTheDelegate(): void {
+		$this->appManager->method('isEnabledForUser')->willReturn(true);
+		$this->objectService->method('find')->willThrowException(new RuntimeException('broker unavailable'));
+
+		$installer = new class {
+			public function installFromRepo(
+				string $owner,
+				string $repo,
+				?string $ref = null,
+				?string $actingUserId = null,
+				?string $credentialId = null,
+			): array {
+				return [
+					'installed' => 2,
+					'updated' => 0,
+					'unchanged' => 0,
+					'skipped' => 0,
+					'failed' => 0,
+					'truncated' => false,
+				];
+			}
+		};
+		$this->locator->expects(self::once())->method('get')->willReturn($installer);
+
+		$report = $this->applier()->apply(
+			template: [
+				'templateOrigin' => ['repo' => 'ConductionNL/example-app'],
+				'channels' => [
+					'skills' => [
+						'alpha' => ['SKILL.md' => '# alpha'],
+						'beta' => ['SKILL.md' => '# beta'],
+					],
+				],
+			],
+			credentialId: 'a-github-credential-uuid'
+		);
+
+		self::assertSame(2, $report['channels']['skills']['created']);
+		self::assertSame([], $report['warnings']);
+
+	}//end testInconclusiveScopeLookupFallsThroughToTheDelegate()
+
 	public function testSkillsDegradeWhenHermiqIsAbsent(): void {
 		$this->appManager->method('isEnabledForUser')->willReturn(false);
 		$this->locator->method('get')->willReturn(null);

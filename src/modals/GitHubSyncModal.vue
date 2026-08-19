@@ -137,6 +137,12 @@
 							)
 						}}
 					</NcNoteCard>
+					<NcNoteCard
+						v-for="(warning, index) in pullWarnings"
+						:key="'pull-warning-' + index"
+						type="warning">
+						{{ warning.message }}
+					</NcNoteCard>
 					<NcNoteCard v-if="error" type="error">
 						{{ error }}
 					</NcNoteCard>
@@ -221,6 +227,18 @@ export default {
 		 */
 		linked() {
 			return !!(this.status && this.status.githubRepo)
+		},
+
+		/**
+		 * Actionable warnings from the last pull (e.g. a credential that
+		 * lacks a scope a delegated channel needs), surfaced alongside the
+		 * pull-success note card rather than buried in `channels.<name>.reason`.
+		 *
+		 * @return {Array<{code: string, channel: string, message: string}>}
+		 * @spec openspec/changes/surface-hermiq-credential-scope-requirement/specs/app-channel-application/spec.md
+		 */
+		pullWarnings() {
+			return (this.pullResult && this.pullResult.warnings) || []
 		},
 
 		/**

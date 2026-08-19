@@ -122,6 +122,24 @@ class AppChannelApplier {
 	private const REASON_NO_OPENCONNECTOR = 'openconnector-unavailable';
 
 	/**
+	 * Reason recorded when the skills channel is skipped because the supplied
+	 * credential's own `allowedApps` does not include hermiq — hermiq fetches
+	 * the skill bundle itself, under ITS OWN app identity, so a credential
+	 * scoped only to `openbuild` cannot be used for that call.
+	 *
+	 * @var string
+	 */
+	private const REASON_CREDENTIAL_MISSING_HERMIQ_SCOPE = 'credential-missing-hermiq-scope';
+
+	/**
+	 * The app id hermiq identifies itself with to the credential broker
+	 * (`GitHubTemplateCatalogService::APP_ID` on the hermiq side).
+	 *
+	 * @var string
+	 */
+	private const HERMIQ_APP_ID = 'hermiq';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectServiceInterface $objectService OpenRegister object read/write.
@@ -216,7 +234,7 @@ class AppChannelApplier {
 			report: $report
 		);
 
-		$this->skillDelegate->apply(
+		$this->applySkillsChannel(
 			skills: $this->channelOf(template: $template, name: 'skills'),
 			owner: $owner,
 			repo: $repo,
@@ -230,6 +248,124 @@ class AppChannelApplier {
 	}//end apply()
 
 	/**
+	 * Apply the skills channel — delegating to hermiq, unless the supplied
+	 * credential is already known to lack hermiq's scope.
+	 *
+	 * Hermiq's bundle installer does its OWN GitHub fetch, authenticating as
+	 * app "hermiq" — independent of which app the credential was scoped for.
+	 * A credential that works for every other channel here (openbuild's own
+	 * search/fetch, all scoped as "openbuild") can still be denied by the
+	 * broker for this one delegated call. Checking the credential's own
+	 * `allowedApps` here — the SAME register/schema `credentialExists()`
+	 * reads — catches that BEFORE attempting (and failing) the call, rather
+	 * than after, so the report carries a specific, actionable reason instead
+	 * of the generic `hermiq-install-failed` a caught Throwable produces.
+	 *
+	 * @param array<string,mixed> $skills The declared skills channel.
+	 * @param string $owner Repo owner (for the delegation).
+	 * @param string $repo Repo name (for the delegation).
+	 * @param string|null $ref Optional git ref.
+	 * @param string|null $actingUserId The session UID.
+	 * @param string|null $credentialId Optional broker credential UUID.
+	 * @param ChannelApplyReport $report The report to write into.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/surface-hermiq-credential-scope-requirement/specs/app-channel-application/spec.md#requirement-skills-are-delegated-to-hermiq-by-repository-coordinates
+	 */
+	private function applySkillsChannel(
+		array $skills,
+		string $owner,
+		string $repo,
+		?string $ref,
+		?string $actingUserId,
+		?string $credentialId,
+		ChannelApplyReport $report,
+	): void {
+		if ($skills !== [] && in_array($credentialId, [null, ''], true) === false
+			&& $this->credentialAllowsApp(credentialId: $credentialId, appId: self::HERMIQ_APP_ID) === false
+		) {
+			$declared = count($skills);
+
+			$report->declareChannel(channel: 'skills', declared: $declared);
+			$report->skipChannel(channel: 'skills', reason: self::REASON_CREDENTIAL_MISSING_HERMIQ_SCOPE);
+			$report->addWarning(
+				code: self::REASON_CREDENTIAL_MISSING_HERMIQ_SCOPE,
+				channel: 'skills',
+				message: 'This repository declares ' . $declared . ' skill(s), but the GitHub credential used '
+					. 'for this install is not authorised for hermiq. Skills are fetched by hermiq itself, '
+					. 'under its own app identity, so a credential scoped only to "openbuild" cannot be used '
+					. 'for that fetch. Add "hermiq" to the credential\'s allowed apps and re-run the GitHub '
+					. 'sync to install the skills.'
+			);
+
+			return;
+		}
+
+		$this->skillDelegate->apply(
+			skills: $skills,
+			owner: $owner,
+			repo: $repo,
+			ref: $ref,
+			actingUserId: $actingUserId,
+			credentialId: $credentialId,
+			report: $report
+		);
+
+	}//end applySkillsChannel()
+
+	/**
+	 * Whether a broker credential's own `allowedApps` includes the given app id.
+	 *
+	 * A plain metadata read of a document the acting user's own request
+	 * already names, not a use of the credential — so this is NOT in tension
+	 * with the broker's own fail-closed "never tell the caller which guard
+	 * failed" contract (that governs what the BROKER tells a caller trying to
+	 * USE a credential; it says nothing about reading the credential's own
+	 * `allowedApps` field before deciding whether to even attempt a
+	 * downstream call with it).
+	 *
+	 * A lookup failure MUST NOT be reported as a confident "does not allow" —
+	 * same reasoning as {@see credentialExists()}: an inconclusive answer here
+	 * can only ever suppress the generic post-hoc failure this method exists
+	 * to avoid, never introduce a NEW block that did not exist before it.
+	 *
+	 * @param string $credentialId The credential UUID.
+	 * @param string $appId The app id to check for.
+	 *
+	 * @return bool|null True/false when conclusive, null when the credential is absent or the lookup failed.
+	 *
+	 * @spec openspec/changes/surface-hermiq-credential-scope-requirement/specs/app-channel-application/spec.md#requirement-skills-are-delegated-to-hermiq-by-repository-coordinates
+	 */
+	private function credentialAllowsApp(string $credentialId, string $appId): ?bool {
+		try {
+			$credential = $this->objectService->find(
+				id: $credentialId,
+				register: self::CREDENTIAL_REGISTER,
+				schema: self::CREDENTIAL_SCHEMA,
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (Throwable $e) {
+			$this->logger->debug(
+				'OpenBuild channel apply: credential scope lookup for "' . $credentialId . '" was inconclusive: '
+				. $e->getMessage()
+			);
+
+			return null;
+		}//end try
+
+		// `?->` folds "no credential found" into the same absent-data path as
+		// a malformed `allowedApps` — both are "inconclusive", not "denied".
+		$allowedApps = ($credential?->getObject()['allowedApps'] ?? null);
+		if (is_array($allowedApps) === false) {
+			return null;
+		}
+
+		return in_array($appId, $allowedApps, true);
+	}//end credentialAllowsApp()
+
+	/**
 	 * Resolve the repo coordinates, falling back to the template's own origin.
 	 *
 	 * @param array<string,mixed> $template The parsed template.
@@ -239,7 +375,7 @@ class AppChannelApplier {
 	 * @return array{0:string,1:string} Owner and repo name, possibly empty.
 	 */
 	private function coordinatesFor(array $template, ?string $owner, ?string $repo): array {
-		if ($owner !== null && $owner !== '' && $repo !== null && $repo !== '') {
+		if (in_array($owner, [null, ''], true) === false && in_array($repo, [null, ''], true) === false) {
 			return [$owner, $repo];
 		}
 

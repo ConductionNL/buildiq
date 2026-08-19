@@ -1579,6 +1579,11 @@ class ApplicationsController extends Controller {
 				'register' => $built['registerSlug'],
 				'companionSchemas' => $built['schemaIds'],
 				'channels' => $channels,
+				// Copied onto the top level so a caller does not have to know
+				// to look inside `channels.<name>.reason` to find an
+				// actionable degradation — e.g. a credential missing the
+				// scope the skills channel's hermiq delegation needs.
+				'warnings' => ($channels['warnings'] ?? []),
 			],
 		];
 	}//end installFromTemplateArray()
