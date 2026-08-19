@@ -93,6 +93,27 @@ class GitHubPushService {
 	private const BOOTSTRAP_BRANCH = 'bootstrap';
 
 	/**
+	 * Cap on the failure detail text folded into a thrown exception / log line,
+	 * so an oversized GitHub error body cannot bloat `errorMessage`.
+	 *
+	 * @var int
+	 */
+	private const MAX_FAILURE_DETAIL_LENGTH = 300;
+
+	/**
+	 * The real reason the most recent {@see brokerCall()} returned `null` —
+	 * `HTTP {status}: {body excerpt}` for a completed non-2xx response, or
+	 * `transport error: {message}` for a caught broker exception. Reset to
+	 * `null` at the top of every `brokerCall()`, so a caller reading it
+	 * immediately after its own call never sees a stale value from an
+	 * earlier, unrelated failure (e.g. `assertRepoAbsent()`'s quiet 404).
+	 * Always scrubbed of GitHub PAT-shaped tokens before being set.
+	 *
+	 * @var string|null
+	 */
+	private ?string $lastFailureDetail = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * No HTTP client: this service no longer makes outbound calls of its own.
@@ -272,7 +293,7 @@ class GitHubPushService {
 		);
 
 		if ($created === null) {
-			throw new RuntimeException('GitHub create-repo failed.');
+			throw new RuntimeException('GitHub create-repo failed.' . $this->failureSuffix());
 		}
 
 		return $created;
@@ -450,7 +471,9 @@ class GitHubPushService {
 		);
 
 		if ($decoded === null) {
-			throw new RuntimeException('GitHub API call failed: POST ' . $path);
+			throw new RuntimeException(
+				'GitHub API call failed: POST ' . $path . $this->failureSuffix()
+			);
 		}
 
 		return $decoded;
@@ -485,6 +508,8 @@ class GitHubPushService {
 		?string $actingUserId,
 		bool $failQuietly = false,
 	): ?array {
+		$this->lastFailureDetail = null;
+
 		$encoded = null;
 		if ($body !== null) {
 			$encoded = (string)json_encode($body);
@@ -502,12 +527,15 @@ class GitHubPushService {
 				$actingUserId
 			);
 		} catch (\Throwable $e) {
+			// The broker never puts the secret in its exception messages, but this
+			// path is also reached for transport errors, so scrub anyway.
+			$scrubbed = $this->scrub(message: $e->getMessage());
+			$this->lastFailureDetail = 'transport error: ' . $scrubbed;
+
 			if ($failQuietly === false) {
-				// The broker never puts the secret in its exception messages, but this
-				// path is also reached for transport errors, so scrub anyway.
 				$this->logger->warning(
 					'OpenBuild GitHub push: broker call failed for ' . $method . ' ' . $path
-					. ': ' . $this->scrub(message: $e->getMessage())
+					. ': ' . $scrubbed
 				);
 			}
 
@@ -516,9 +544,14 @@ class GitHubPushService {
 
 		$status = (int)($response['status'] ?? 0);
 		if ($status < 200 || $status >= 300) {
+			$this->lastFailureDetail = $this->failureDetailFromStatus(
+				status: $status,
+				body: (string)($response['body'] ?? '')
+			);
+
 			if ($failQuietly === false) {
 				$this->logger->warning(
-					'OpenBuild GitHub push: ' . $method . ' ' . $path . ' returned HTTP ' . $status
+					'OpenBuild GitHub push: ' . $method . ' ' . $path . ' returned ' . $this->lastFailureDetail
 				);
 			}
 
@@ -527,6 +560,32 @@ class GitHubPushService {
 
 		return $this->decode(body: (string)($response['body'] ?? ''));
 	}//end brokerCall()
+
+	/**
+	 * Build the `HTTP {status}: {body excerpt}` failure detail from a completed
+	 * non-2xx broker response, scrubbing any GitHub PAT-shaped token and
+	 * truncating the body to {@see MAX_FAILURE_DETAIL_LENGTH}.
+	 *
+	 * Pulled out of {@see brokerCall()} so the detail-assembly logic is testable
+	 * without a live broker (`Server::get()` cannot resolve a real container in
+	 * a unit test).
+	 *
+	 * @param int $status The upstream HTTP status code.
+	 * @param string $body The raw (unscrubbed) upstream response body.
+	 *
+	 * @return string The `HTTP {status}` detail, with a scrubbed/truncated body
+	 *                excerpt appended when the body is non-empty.
+	 */
+	private function failureDetailFromStatus(int $status, string $body): string {
+		$scrubbedBody = $this->truncate(value: $this->scrub(message: $body));
+
+		$detail = 'HTTP ' . $status;
+		if ($scrubbedBody !== '') {
+			$detail .= ': ' . $scrubbedBody;
+		}
+
+		return $detail;
+	}//end failureDetailFromStatus()
 
 	/**
 	 * Whether OpenRegister's credential broker is installed.
@@ -589,4 +648,36 @@ class GitHubPushService {
 	private function scrub(string $message): string {
 		return (string)preg_replace('/gh[pousr]_[A-Za-z0-9]{20,}/', '[redacted-token]', $message);
 	}//end scrub()
+
+	/**
+	 * Truncate a string to {@see MAX_FAILURE_DETAIL_LENGTH}, so a large GitHub
+	 * error body cannot bloat an exception message or a log line.
+	 *
+	 * @param string $value The (already-scrubbed) string to cap.
+	 *
+	 * @return string The capped string, with a trailing ellipsis when cut.
+	 */
+	private function truncate(string $value): string {
+		if (strlen($value) <= self::MAX_FAILURE_DETAIL_LENGTH) {
+			return $value;
+		}
+
+		return substr($value, 0, self::MAX_FAILURE_DETAIL_LENGTH) . '…';
+	}//end truncate()
+
+	/**
+	 * The `' — {detail}'` suffix to append to a generic failure message, built
+	 * from the most recent {@see brokerCall()} failure — or `''` when no
+	 * detail was captured (should not normally happen once `brokerCall()` has
+	 * returned `null`, but a caller must never throw on a missing detail).
+	 *
+	 * @return string
+	 */
+	private function failureSuffix(): string {
+		if ($this->lastFailureDetail === null || $this->lastFailureDetail === '') {
+			return '';
+		}
+
+		return ' — ' . $this->lastFailureDetail;
+	}//end failureSuffix()
 }//end class
