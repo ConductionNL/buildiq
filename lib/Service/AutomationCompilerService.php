@@ -1043,7 +1043,7 @@ class AutomationCompilerService {
 				],
 			],
 			default => ['type' => $type, 'parameters' => []],
-		};//end match
+		};// End match.
 
 	}//end mapActionToRuleAction()
 
