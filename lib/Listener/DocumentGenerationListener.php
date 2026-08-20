@@ -118,11 +118,18 @@ class DocumentGenerationListener implements IEventListener {
 		// degrades exactly as it does today. What changes is that the
 		// dependency is now declared where a reader — and the gate — can see
 		// it, instead of being implied by a catch several methods away.
+		//
+		// Untestable in a unit test: the stub OpenRegister classes the test
+		// bootstrap declares (tests/stubs/openregister-stubs.php) make
+		// class_exists() true unconditionally in this suite, so this branch
+		// only ever fires on a real instance genuinely missing OpenRegister.
+		// @codeCoverageIgnoreStart
 		if (class_exists('OCA\OpenRegister\Service\ObjectService') === false) {
 			throw new RuntimeException(
 				'openbuild requires the OpenRegister app, which is not installed on this instance.'
 			);
 		}
+		// @codeCoverageIgnoreEnd
 
 		$service = $this->container->get('OCA\OpenRegister\Service\ObjectService');
 		// An assert(), not a `/** @var */` docblock: phpcs forbids an inline doc
