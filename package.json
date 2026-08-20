@@ -54,7 +54,7 @@
 		"@vueuse/core": "^14.3.0",
 		"axe-core": "^4.10.0",
 		"dexie": "^4.0.8",
-		"diff": "^5.2.0",
+		"diff": "^9.0.0",
 		"dompurify": "^3.4.2",
 		"floating-vue": "^5.2.2",
 		"gridstack": "^12.6.0",
