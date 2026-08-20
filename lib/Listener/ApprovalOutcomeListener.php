@@ -111,7 +111,7 @@ class ApprovalOutcomeListener implements IEventListener {
 	 * @throws ContainerExceptionInterface When OpenRegister is absent or disabled.
 	 */
 	private function objectService(): ObjectServiceInterface {
-		/** @var ObjectServiceInterface $service */
+		/* @var ObjectServiceInterface $service */
 		$service = $this->container->get('OCA\OpenRegister\Service\ObjectService');
 
 		return $service;

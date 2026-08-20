@@ -155,7 +155,7 @@ class AutomationApprovalTriggerListener implements IEventListener {
 	 *   without OpenRegister still boots (ADR-083 rule 3).
 	 */
 	private function objectService(): ObjectServiceInterface {
-		/** @var ObjectServiceInterface $service */
+		/* @var ObjectServiceInterface $service */
 		$service = $this->container->get('OCA\OpenRegister\Service\ObjectService');
 
 		return $service;
