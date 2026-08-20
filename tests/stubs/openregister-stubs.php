@@ -1425,6 +1425,43 @@ namespace OCA\OpenRegister\Service {
 	}//end if
 }
 
+namespace OCA\OpenRegister\Service\Flow {
+
+	if (class_exists(FlowService::class, autoload: false) === false) {
+		/**
+		 * Stub FlowService — the sanctioned single entry point for creating and
+		 * reading flows (ADR-065), which FlowChannelProvisioner calls into. The
+		 * `save()`/`find()` signatures mirror the real class so a caller passing
+		 * the wrong argument shape fails identically against the stub and the
+		 * real class.
+		 */
+		class FlowService {
+			/**
+			 * Persist a flow, creating it if `$uuid` is omitted.
+			 *
+			 * @param array<string, mixed> $data The flow payload.
+			 * @param string|null $uuid The existing flow's uuid, when updating.
+			 *
+			 * @return \OCA\OpenRegister\Db\Flow The saved flow.
+			 */
+			public function save(array $data, ?string $uuid = null): \OCA\OpenRegister\Db\Flow {
+				return new \OCA\OpenRegister\Db\Flow();
+			}//end save()
+
+			/**
+			 * Look up a single flow by uuid.
+			 *
+			 * @param string $uuid The flow's uuid.
+			 *
+			 * @return \OCA\OpenRegister\Db\Flow The found flow.
+			 */
+			public function find(string $uuid): \OCA\OpenRegister\Db\Flow {
+				return new \OCA\OpenRegister\Db\Flow();
+			}//end find()
+		}//end class
+	}//end if
+}
+
 namespace OCA\OpenRegister\Service\Credential {
 
 	if (class_exists(CredentialBrokerService::class, autoload: false) === false) {
