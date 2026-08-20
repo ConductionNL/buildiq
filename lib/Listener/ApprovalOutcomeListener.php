@@ -51,7 +51,10 @@ use OCA\OpenRegister\Event\ApprovalStepRejectedEvent;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -71,7 +74,8 @@ class ApprovalOutcomeListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectServiceInterface $objectService Resolves the originating automation by slug.
+	 * @param ContainerInterface $container Resolves OpenRegister's object service at USE time —
+	 *                                      see objectService() for why a listener cannot inject it.
 	 * @param AutomationCompilerService $compiler Reuses `mapActionToRuleAction()` — the SAME
 	 *                                            action→typed-action mapping the rules backend uses.
 	 * @param RuleActionDispatcher $actionDispatcher Shared side-effect dispatcher (same one `RuleEngineService` wires).
@@ -80,13 +84,68 @@ class ApprovalOutcomeListener implements IEventListener {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectServiceInterface $objectService,
+		private readonly ContainerInterface $container,
 		private readonly AutomationCompilerService $compiler,
 		private readonly RuleActionDispatcher $actionDispatcher,
 		private readonly LoggerInterface $logger,
 	) {
 
 	}//end __construct()
+
+	/**
+	 * Resolve OpenRegister's object service, lazily.
+	 *
+	 * ⚠️ An event listener CANNOT constructor-inject a published interface.
+	 * Nextcloud's `ServiceEventListener` builds the listener from the SERVER
+	 * container ("TODO: fetch from the app containers" — its own source), which
+	 * never sees this app's `registerServiceAlias()`. The constructor parameter
+	 * therefore could not be built, and the exception propagated out of
+	 * `dispatch()` into whichever app emitted the event.
+	 *
+	 * Resolves the CONCRETE class on purpose — asking the same container for
+	 * `ObjectServiceInterface::class` here would fail identically. Nextcloud
+	 * autowires concrete classes across apps; the declared type stays the
+	 * published contract.
+	 *
+	 * @return ObjectServiceInterface OpenRegister's published object contract.
+	 *
+	 * @throws ContainerExceptionInterface When OpenRegister is absent or disabled.
+	 */
+	private function objectService(): ObjectServiceInterface {
+		// ADR-083: establish availability before reaching. class_exists()
+		// rather than SettingsService, because this listener injects no
+		// settings service and adding a constructor dependency purely to ask a
+		// yes/no question is the wrong trade — it answers the same question the
+		// container would otherwise have answered fatally.
+		//
+		// Behaviour is unchanged: every caller already wraps this in a catch
+		// that logs and returns null, so an instance without OpenRegister
+		// degrades exactly as it does today. What changes is that the
+		// dependency is now declared where a reader — and the gate — can see
+		// it, instead of being implied by a catch several methods away.
+		//
+		// Untestable in a unit test: the stub OpenRegister classes the test
+		// bootstrap declares (tests/stubs/openregister-stubs.php) make
+		// class_exists() true unconditionally in this suite, so this branch
+		// only ever fires on a real instance genuinely missing OpenRegister.
+		// @codeCoverageIgnoreStart
+		if (class_exists('OCA\OpenRegister\Service\ObjectService') === false) {
+			throw new RuntimeException(
+				'openbuild requires the OpenRegister app, which is not installed on this instance.'
+			);
+		}
+		// @codeCoverageIgnoreEnd
+
+		$service = $this->container->get('OCA\OpenRegister\Service\ObjectService');
+		// An assert(), not a `/** @var */` docblock: phpcs forbids an inline doc
+		// block inside a method body, while psalm needs the narrowing or the
+		// declared return type is a MixedReturnStatement. assert() satisfies
+		// both, and costs nothing in production where zend.assertions is off.
+		assert($service instanceof ObjectServiceInterface);
+
+		return $service;
+
+	}//end objectService()
 
 	/**
 	 * Handle an approval outcome event, dispatching the resolved automation's
@@ -244,7 +303,7 @@ class ApprovalOutcomeListener implements IEventListener {
 	 */
 	private function findAutomationBySlug(string $slug): ?array {
 		try {
-			$results = $this->objectService->findAll(
+			$results = $this->objectService()->findAll(
 				config: [
 					'filters' => [
 						'register' => AutomationCompilerService::REGISTER_SLUG,

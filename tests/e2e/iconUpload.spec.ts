@@ -104,22 +104,44 @@ async function openIconsTab(page: Page, objectId: string): Promise<void> {
 		'the detail header must render before the sidebar is driven',
 	).toBeVisible({ timeout: 20_000 })
 
+	// ⚠️ THE DETAIL PAGE CLOSES THE SIDEBAR AGAIN WHILE IT IS STILL HYDRATING,
+	// so opening it once is not enough — see the twin of this helper in
+	// spec-coverage/app-icon-management.spec.ts, which carries the CI trace.
+	//
+	// This copy used to open-and-click straight through, and passed only because
+	// `dismissFirstVisitOverlays()` above burns a few seconds first and the page
+	// had usually settled by the time it ran. That is luck, not a guard, and the
+	// twin already failed on the same race (job 96246052128) once its own timing
+	// shifted. `.app-sidebar__toggle` is a TOGGLE and `isVisible()` is an instant
+	// probe that does not wait, so the old shape could also click the sidebar
+	// SHUT. Retrying the whole open-click-assert as one idempotent step is what
+	// makes it survive whichever way the race lands.
 	const sidebar = page.locator('[data-testid="cn-object-sidebar"]')
-	if (!(await sidebar.isVisible().catch(() => false))) {
-		await page.locator('.app-sidebar__toggle').first().click()
-	}
-	await expect(sidebar, 'the object sidebar must open').toBeVisible({
-		timeout: 15_000,
-	})
+	await expect(async () => {
+		if (!(await sidebar.isVisible().catch(() => false))) {
+			await page.locator('.app-sidebar__toggle').first().click()
+			await expect(sidebar, 'the object sidebar must open').toBeVisible({
+				timeout: 10_000,
+			})
+		}
 
-	await page
-		.getByRole('tab', { name: /^icons$/i })
-		.first()
-		.click()
-	await expect(
-		page.locator('[data-testid="cn-object-sidebar-tab-icons"]'),
-		'the Icons tab panel must render',
-	).toBeVisible({ timeout: 15_000 })
+		await page
+			.getByRole('tab', { name: /^icons$/i })
+			.first()
+			.click({ timeout: 10_000 })
+		await expect(
+			page.locator('[data-testid="cn-object-sidebar-tab-icons"]'),
+			'the Icons tab panel must render',
+		).toBeVisible({ timeout: 10_000 })
+
+		// Inside the retry deliberately: a section that is present but hidden
+		// means the sidebar re-closed after the panel was seen, and only
+		// reopening it recovers that.
+		await expect(
+			page.locator('.ob-icon-section'),
+			'ApplicationIconTab must mount IconUploadSection',
+		).toBeVisible({ timeout: 10_000 })
+	}).toPass({ timeout: 90_000 })
 }
 
 test.describe('Icon upload on the Application detail page (spec A task 7.5)', () => {

@@ -145,12 +145,31 @@ async function openIconsTab(page: Page, objectId: string): Promise<void> {
 			page.locator('[data-testid="cn-object-sidebar-tab-icons"]'),
 			'the Icons tab panel must render',
 		).toBeVisible({ timeout: 10_000 })
-	}).toPass({ timeout: 90_000 })
 
-	await expect(
-		page.locator('.ob-icon-section'),
-		'ApplicationIconTab must mount IconUploadSection',
-	).toBeVisible({ timeout: 15_000 })
+		// THE SECTION ASSERTION BELONGS INSIDE THIS RETRY, NOT AFTER IT.
+		//
+		// The race documented above does not stop once the panel has been seen.
+		// If the detail page re-closes the sidebar in the window between the
+		// assertion above and this one, the section is still in the DOM but sits
+		// inside a closed sidebar, so it is present-and-hidden — and an assertion
+		// placed after `.toPass()` has no way to reopen anything. It can only
+		// wait, which is exactly what it did in the failing CI run (job
+		// 96246052128):
+		//
+		//     30 × locator resolved to <div class="ob-icon-section">…</div>
+		//        - unexpected value "hidden"
+		//
+		// Thirty resolutions is the tell: "hidden", never "not found", so the
+		// component HAD mounted and the wait was hopeless from the first poll.
+		//
+		// Moving it in here does not soften the check — the section must still
+		// become visible — it just lets the same idempotent open-and-click that
+		// already guards the tab recover the sidebar when it closes late.
+		await expect(
+			page.locator('.ob-icon-section'),
+			'ApplicationIconTab must mount IconUploadSection',
+		).toBeVisible({ timeout: 10_000 })
+	}).toPass({ timeout: 90_000 })
 }
 
 /**

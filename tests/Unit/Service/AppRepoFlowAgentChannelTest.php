@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\App\IAppManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -96,7 +97,7 @@ class AppRepoFlowAgentChannelTest extends TestCase {
 			new TemplateRepoSerializer($schemaMapper, $logger),
 			null,
 			new FlowAgentChannelCollector(
-				new FlowAndAgentExportBundler($flowMapper, $objectService, $logger),
+				new FlowAndAgentExportBundler($flowMapper, $objectService, $this->createMock(IAppManager::class), $logger),
 				$logger
 			)
 		);

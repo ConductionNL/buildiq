@@ -516,16 +516,16 @@
         },
         {
             "name": "conduction/hydra-gates",
-            "version": "v1.8.0",
+            "version": "v1.8.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/ConductionNL/.github.git",
-                "reference": "9fc64ab93f7a20b69f6b5912745ef9fc456c1cee"
+                "reference": "8e0e9857e54d6c680e157939e78a468e58d3751a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ConductionNL/.github/zipball/9fc64ab93f7a20b69f6b5912745ef9fc456c1cee",
-                "reference": "9fc64ab93f7a20b69f6b5912745ef9fc456c1cee",
+                "url": "https://api.github.com/repos/ConductionNL/.github/zipball/8e0e9857e54d6c680e157939e78a468e58d3751a",
+                "reference": "8e0e9857e54d6c680e157939e78a468e58d3751a",
                 "shasum": ""
             },
             "require": {
@@ -569,9 +569,9 @@
             "support": {
                 "docs": "https://github.com/ConductionNL/.github/blob/main/hydra-gates/README.md",
                 "issues": "https://github.com/ConductionNL/.github/issues",
-                "source": "https://github.com/ConductionNL/.github/tree/v1.8.0"
+                "source": "https://github.com/ConductionNL/.github/tree/v1.8.1"
             },
-            "time": "2026-08-15T06:24:48+00:00"
+            "time": "2026-08-20T05:07:22+00:00"
         },
         {
             "name": "consolidation/annotated-command",
@@ -1934,16 +1934,16 @@
         },
         {
             "name": "nextcloud/ocp",
-            "version": "v34.0.2",
+            "version": "v34.0.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nextcloud-deps/ocp.git",
-                "reference": "81cbb2c594afe0fa978885bf7accd0440199520a"
+                "reference": "3fb764be792476e4dcf1593101d978fc1dc8ac9a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nextcloud-deps/ocp/zipball/81cbb2c594afe0fa978885bf7accd0440199520a",
-                "reference": "81cbb2c594afe0fa978885bf7accd0440199520a",
+                "url": "https://api.github.com/repos/nextcloud-deps/ocp/zipball/3fb764be792476e4dcf1593101d978fc1dc8ac9a",
+                "reference": "3fb764be792476e4dcf1593101d978fc1dc8ac9a",
                 "shasum": ""
             },
             "require": {
@@ -1977,9 +1977,9 @@
             "description": "Composer package containing Nextcloud's public OCP API and the unstable NCU API",
             "support": {
                 "issues": "https://github.com/nextcloud-deps/ocp/issues",
-                "source": "https://github.com/nextcloud-deps/ocp/tree/v34.0.2"
+                "source": "https://github.com/nextcloud-deps/ocp/tree/v34.0.3"
             },
-            "time": "2026-07-16T01:28:13+00:00"
+            "time": "2026-08-07T02:03:36+00:00"
         },
         {
             "name": "nikic/php-parser",
@@ -3060,16 +3060,16 @@
         },
         {
             "name": "phpmetrics/phpmetrics",
-            "version": "v2.9.1",
+            "version": "v2.11.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpmetrics/PhpMetrics.git",
-                "reference": "e2e68ddd1543bc3f44402c383f7bccb62de1ece3"
+                "reference": "55c5e23b34afb8fa9b6c6ea95cbd59b710160235"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpmetrics/PhpMetrics/zipball/e2e68ddd1543bc3f44402c383f7bccb62de1ece3",
-                "reference": "e2e68ddd1543bc3f44402c383f7bccb62de1ece3",
+                "url": "https://api.github.com/repos/phpmetrics/PhpMetrics/zipball/55c5e23b34afb8fa9b6c6ea95cbd59b710160235",
+                "reference": "55c5e23b34afb8fa9b6c6ea95cbd59b710160235",
                 "shasum": ""
             },
             "require": {
@@ -3118,7 +3118,7 @@
             ],
             "support": {
                 "issues": "https://github.com/PhpMetrics/PhpMetrics/issues",
-                "source": "https://github.com/phpmetrics/PhpMetrics/tree/v2.9.1"
+                "source": "https://github.com/phpmetrics/PhpMetrics/tree/v2.11.0"
             },
             "funding": [
                 {
@@ -3126,7 +3126,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-09-25T05:21:02+00:00"
+            "time": "2026-08-09T06:58:42+00:00"
         },
         {
             "name": "phpowermove/docblock",
@@ -7905,16 +7905,16 @@
         },
         {
             "name": "twig/twig",
-            "version": "v3.27.1",
+            "version": "v3.28.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/twigphp/Twig.git",
-                "reference": "ae2071bffb38f04847fc0864d730c94b9cb8ab74"
+                "reference": "597c12ed286fb9d1701a36684ce6e0cbe28ebc8b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/twigphp/Twig/zipball/ae2071bffb38f04847fc0864d730c94b9cb8ab74",
-                "reference": "ae2071bffb38f04847fc0864d730c94b9cb8ab74",
+                "url": "https://api.github.com/repos/twigphp/Twig/zipball/597c12ed286fb9d1701a36684ce6e0cbe28ebc8b",
+                "reference": "597c12ed286fb9d1701a36684ce6e0cbe28ebc8b",
                 "shasum": ""
             },
             "require": {
@@ -7969,7 +7969,7 @@
             ],
             "support": {
                 "issues": "https://github.com/twigphp/Twig/issues",
-                "source": "https://github.com/twigphp/Twig/tree/v3.27.1"
+                "source": "https://github.com/twigphp/Twig/tree/v3.28.0"
             },
             "funding": [
                 {
@@ -7981,7 +7981,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-05-30T17:09:26+00:00"
+            "time": "2026-07-03T20:44:34+00:00"
         },
         {
             "name": "vimeo/psalm",

@@ -416,7 +416,8 @@ final class ExportServiceTest extends TestCase {
 			new \OCA\OpenBuild\Service\FlowAndAgentExportBundler(
 				$this->createMock(\OCA\OpenRegister\Db\FlowMapper::class),
 				$this->createMock(\OCA\OpenRegister\Service\ObjectService::class),
-				new NullLogger()
+				appManager: $this->createMock(originalClassName: \OCP\App\IAppManager::class),
+				logger: new NullLogger()
 			)
 		);
 	}//end buildService()
