@@ -10,4 +10,8 @@
  */
 
 export const getRequestToken = () => 'test-request-token'
-export const getCurrentUser = () => ({ uid: 'test-admin', displayName: 'Test Admin', isAdmin: true })
+export const getCurrentUser = () => ({
+	uid: 'test-admin',
+	displayName: 'Test Admin',
+	isAdmin: true,
+})

@@ -13,21 +13,24 @@
 		size="small"
 		@update:open="onOpenUpdate">
 		<p class="openbuild-delete-schema-dialog__warning">
-			{{ t('openbuild', 'You are about to delete the schema {slug}. All objects of this schema may be affected. Type the schema slug below to confirm.', { slug: schemaSlug }) }}
+			{{
+				t(
+					'openbuild',
+					'You are about to delete the schema {slug}. All objects of this schema may be affected. Type the schema slug below to confirm.',
+					{ slug: schemaSlug },
+				)
+			}}
 		</p>
 		<NcTextField
-			:value="typed"
+			:modelValue="typed"
 			:label="t('openbuild', 'Type the slug to confirm')"
 			:placeholder="schemaSlug"
-			@update:value="typed = $event" />
+			@update:modelValue="typed = $event" />
 		<template #actions>
 			<NcButton @click="onCancel">
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
-			<NcButton
-				type="error"
-				:disabled="!canDelete"
-				@click="onConfirm">
+			<NcButton variant="error" :disabled="!canDelete" @click="onConfirm">
 				{{ t('openbuild', 'Delete schema') }}
 			</NcButton>
 		</template>
@@ -44,12 +47,14 @@ export default {
 		open: { type: Boolean, default: false },
 		schemaSlug: { type: String, default: '' },
 	},
+
 	emits: ['confirm', 'cancel', 'update:open'],
 	data() {
 		return {
 			typed: '',
 		}
 	},
+
 	computed: {
 		/**
 		 * Enable delete only when the typed slug matches the target exactly.
@@ -61,6 +66,7 @@ export default {
 			return this.typed === this.schemaSlug && this.schemaSlug !== ''
 		},
 	},
+
 	watch: {
 		/**
 		 * Clear the typed confirmation when the dialog closes.
@@ -75,6 +81,7 @@ export default {
 			}
 		},
 	},
+
 	methods: {
 		/**
 		 * Confirm deletion only when the confirmation gate is met.
@@ -89,6 +96,7 @@ export default {
 			this.$emit('confirm')
 			this.typed = ''
 		},
+
 		/**
 		 * Cancel deletion and reset the confirmation input.
 		 *
@@ -99,6 +107,7 @@ export default {
 			this.typed = ''
 			this.$emit('cancel')
 		},
+
 		/**
 		 * Sync modal open state and emit cancel when closed.
 		 *

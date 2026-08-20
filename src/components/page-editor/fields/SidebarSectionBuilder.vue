@@ -5,25 +5,31 @@
   -->
 <template>
 	<div class="sidebar-section-builder">
-		<div v-for="(section, index) in localSections" :key="index" class="sidebar-section-builder__row">
+		<div
+			v-for="(section, index) in localSections"
+			:key="index"
+			class="sidebar-section-builder__row">
 			<input
 				:value="section.id || ''"
 				type="text"
 				class="sidebar-section-builder__field"
 				:placeholder="t('openbuild', 'Section id')"
-				@input="updateField(index, 'id', $event.target.value)">
+				:aria-label="t('openbuild', 'Section id')"
+				@input="updateField(index, 'id', $event.target.value)" />
 			<input
 				:value="section.label || ''"
 				type="text"
 				class="sidebar-section-builder__field"
 				:placeholder="t('openbuild', 'Label')"
-				@input="updateField(index, 'label', $event.target.value)">
+				:aria-label="t('openbuild', 'Label')"
+				@input="updateField(index, 'label', $event.target.value)" />
 			<input
 				:value="(section.columns || []).join(',')"
 				type="text"
 				class="sidebar-section-builder__field"
 				:placeholder="t('openbuild', 'Columns (comma-separated)')"
-				@input="updateColumns(index, $event.target.value)">
+				:aria-label="t('openbuild', 'Columns (comma-separated)')"
+				@input="updateColumns(index, $event.target.value)" />
 			<button
 				type="button"
 				class="sidebar-section-builder__remove"
@@ -32,7 +38,10 @@
 				✕
 			</button>
 		</div>
-		<button type="button" class="sidebar-section-builder__add" @click="addSection">
+		<button
+			type="button"
+			class="sidebar-section-builder__add"
+			@click="addSection">
 			+ {{ t('openbuild', 'Add section') }}
 		</button>
 	</div>
@@ -47,6 +56,7 @@ export default {
 			default: () => [],
 		},
 	},
+
 	emits: ['update:modelValue'],
 	computed: {
 		/**
@@ -58,10 +68,16 @@ export default {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
 		},
 	},
+
 	methods: {
 		/**
 		 * Observed behaviour of `updateField` (retrofit annotation).
 		 *
+		 * @param {number} index - position of the section in the `sidebar.columnGroups` array.
+		 * @param {'id'|'label'|'columns'} key - the sidebarSection property to write.
+		 * @param {string|string[]} value - the input's new text for `id`/`label`, or
+		 *   the already-split column-key list forwarded by `updateColumns`. Written
+		 *   verbatim, so emptied inputs keep the key with an empty value.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		updateField(index, key, value) {
@@ -70,15 +86,23 @@ export default {
 			next[index] = { ...current, [key]: value }
 			this.$emit('update:modelValue', next)
 		},
+
 		/**
 		 * Observed behaviour of `updateColumns` (retrofit annotation).
 		 *
+		 * @param {number} index - position of the section whose `columns` list is replaced.
+		 * @param {string} value - the raw comma-separated column-key text typed by the
+		 *   author; split on commas, trimmed, and blank entries dropped before storing.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		updateColumns(index, value) {
-			const cols = value.split(',').map((s) => s.trim()).filter(Boolean)
+			const cols = value
+				.split(',')
+				.map((s) => s.trim())
+				.filter(Boolean)
 			this.updateField(index, 'columns', cols)
 		},
+
 		/**
 		 * Observed behaviour of `addSection` (retrofit annotation).
 		 *
@@ -89,9 +113,11 @@ export default {
 			next.push({ id: '', label: '', columns: [] })
 			this.$emit('update:modelValue', next)
 		},
+
 		/**
 		 * Observed behaviour of `removeSection` (retrofit annotation).
 		 *
+		 * @param {number} index - position of the section to drop from the `columnGroups` array.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		removeSection(index) {

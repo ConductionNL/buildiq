@@ -1,5 +1,7 @@
 # business-rules-engine Specification
 
+**OpenSpec changes**: [harden-xss-dos-csrf](../../changes/harden-xss-dos-csrf/), [harden-rules-authz-and-audit-parity](../../changes/harden-rules-authz-and-audit-parity/)
+
 ## Purpose
 TBD - created by archiving change business-rules-engine. Update Purpose after archive.
 ## Requirements

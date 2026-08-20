@@ -105,6 +105,22 @@
 					"pm.test('generate without dataRefs is a 4xx (dataRefs is required)', () => { pm.expect(pm.response.code).to.be.at.least(400); pm.expect(pm.response.code).to.be.below(500); });"
 				] } }
 			]
+		},
+		{
+			"name": "6. Automation-triggered generate uses the SAME pinned route (automation-document-action)",
+			"request": {
+				"method": "POST",
+				"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}" }, { "key": "password", "value": "{{adminPass}}" } ] },
+				"header": [ { "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
+				"body": { "mode": "raw", "raw": "{\n  \"templateId\": \"00000000-0000-0000-0000-000000000000\",\n  \"dataRefs\": [ { \"register\": \"openbuild\", \"schema\": \"permit-application\", \"id\": \"00000000-0000-0000-0000-000000000000\" } ],\n  \"options\": { \"format\": \"pdf\" },\n  \"filename\": \"document-00000000-0000-0000-0000-000000000000.pdf\"\n}" },
+				"url": { "raw": "{{baseUrl}}/apps/docudesk/api/correspondence/generate", "host": [ "{{baseUrl}}" ], "path": [ "apps", "docudesk", "api", "correspondence", "generate" ] },
+				"description": "DocumentGenerationService issues this EXACT request shape (single dataRefs entry naming {register, schema, id}; options.format; a `document-<uuid>.pdf` filename) against the SAME pinned route item #4 already asserts — the only difference at runtime is the caller's auth (owner-impersonated via a short-lived internal login token, instead of the interactive browser session Basic-Auth'd here). This item pins that shared contract stays intact; it does NOT exercise the full trigger-fire path (Application + Automation + object transition setup is out of this lightweight contract collection's scope — covered by DocumentGenerationServiceTest/DocumentGenerationListenerTest instead)."
+			},
+			"event": [
+				{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+					"pm.test('automation-shaped generate request (single dataRefs entry) hits the same pinned route and yields the documented 4xx for an unknown templateId', () => { pm.expect(pm.response.code).to.be.at.least(400); pm.expect(pm.response.code).to.be.below(500); });"
+				] } }
+			]
 		}
 	]
 }

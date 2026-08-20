@@ -116,9 +116,7 @@ export function flattenSample(value, basePath = '', maxDepth = 8) {
 		if (isLeaf || depth >= maxDepth) {
 			return
 		}
-		const keys = isArray
-			? node.map((_, i) => String(i))
-			: Object.keys(node)
+		const keys = isArray ? node.map((_, i) => String(i)) : Object.keys(node)
 		for (const key of keys) {
 			const childPath = path ? `${path}.${key}` : key
 			walk(node[key], childPath, depth + 1)

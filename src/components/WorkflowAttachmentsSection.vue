@@ -15,27 +15,40 @@
 			<h3 class="ob-workflows-section__title">
 				{{ t('openbuild', 'Workflows') }}
 			</h3>
-			<NcButton type="secondary" @click="openAdd">
+			<NcButton variant="secondary" @click="openAdd">
 				{{ t('openbuild', 'Attach case type') }}
 			</NcButton>
 		</header>
 
 		<p v-if="attachments.length === 0" class="ob-workflows-section__empty">
-			{{ t('openbuild', 'No Procest case types are attached yet. Attach one to start a case when an object is created.') }}
+			{{
+				t(
+					'openbuild',
+					'No Procest case types are attached yet. Attach one to start a case when an object is created.',
+				)
+			}}
 		</p>
 		<ul v-else class="ob-workflows-section__list">
-			<li v-for="wf in attachments" :key="wf.id" class="ob-workflows-section__item">
+			<li
+				v-for="wf in attachments"
+				:key="wf.id"
+				class="ob-workflows-section__item">
 				<div class="ob-workflows-section__item-main">
 					<strong>{{ wf.caseTypeName }}</strong>
 					<span class="ob-workflows-section__item-meta">
-						{{ t('openbuild', 'on schema {schema} → {property}', { schema: wf.schema, property: wf.linkProperty }) }}
+						{{
+							t('openbuild', 'on schema {schema} → {property}', {
+								schema: wf.schema,
+								property: wf.linkProperty,
+							})
+						}}
 					</span>
 				</div>
 				<div class="ob-workflows-section__item-actions">
-					<NcButton type="tertiary" @click="openEdit(wf)">
+					<NcButton variant="tertiary" @click="openEdit(wf)">
 						{{ t('openbuild', 'Edit') }}
 					</NcButton>
-					<NcButton type="tertiary" @click="detach(wf)">
+					<NcButton variant="tertiary" @click="detach(wf)">
 						{{ t('openbuild', 'Detach') }}
 					</NcButton>
 				</div>
@@ -43,66 +56,104 @@
 		</ul>
 
 		<WorkflowAttachmentDialog
-			:open.sync="dialogOpen"
+			v-model:open="dialogOpen"
 			:schemas="schemas"
-			:attached-schemas="attachedSchemas"
+			:attachedSchemas="attachedSchemas"
 			:attachment="editingAttachment"
-			:procest-available="procestAvailable"
+			:procestAvailable="procestAvailable"
 			@save="onDialogSave"
-			@create-link-property="$emit('create-link-property', $event)" />
+			@createLinkProperty="$emit('create-link-property', $event)" />
+
+		<ConfirmActionDialog
+			v-model:open="confirmDetachOpen"
+			:name="t('openbuild', 'Detach case type')"
+			:message="
+				t(
+					'openbuild',
+					'Detach this case type? Existing linked cases are NOT deleted and object links are kept.',
+				)
+			"
+			:confirmLabel="t('openbuild', 'Detach')"
+			destructive
+			@confirm="onConfirmDetach" />
 	</section>
 </template>
 
 <script>
 import { NcButton } from '@nextcloud/vue'
+import ConfirmActionDialog from '../dialogs/ConfirmActionDialog.vue'
 import WorkflowAttachmentDialog from '../dialogs/WorkflowAttachmentDialog.vue'
 
 export default {
 	name: 'WorkflowAttachmentsSection',
-	components: { NcButton, WorkflowAttachmentDialog },
+	components: { NcButton, WorkflowAttachmentDialog, ConfirmActionDialog },
 	props: {
 		manifest: {
 			type: Object,
 			default: () => ({}),
 		},
+
 		// The app's schemas, passed through to the dialog's pickers.
 		schemas: {
 			type: Array,
-			default: () => ([]),
+			default: () => [],
 		},
+
 		procestAvailable: {
 			type: Boolean,
 			default: true,
 		},
 	},
+
 	emits: ['update:manifest', 'create-link-property'],
 	data() {
 		return {
 			dialogOpen: false,
 			editingAttachment: null,
+			confirmDetachOpen: false,
+			pendingDetach: null,
 		}
 	},
+
 	computed: {
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		attachments() {
-			return (this.manifest && this.manifest.runtime && this.manifest.runtime.workflows) || []
+			return (
+				(this.manifest
+					&& this.manifest.runtime
+					&& this.manifest.runtime.workflows)
+				|| []
+			)
 		},
+
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		attachedSchemas() {
 			return this.attachments.map((wf) => wf.schema)
 		},
 	},
+
 	methods: {
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		openAdd() {
 			this.editingAttachment = null
 			this.dialogOpen = true
 		},
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
+
+		/**
+		 * Open the attachment dialog on an existing entry.
+		 *
+		 * @param {{id: string, schema: string, caseTypeUuid: string,
+		 *   caseTypeName: string, trigger: string, linkProperty: string,
+		 *   descriptionTemplate?: string}} wf - The `runtime.workflows[]` entry the
+		 *   user clicked. Passed to the dialog as-is to prefill it; the edit is written
+		 *   back through `onDialogSave`, matched on `id`.
+		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002
+		 */
 		openEdit(wf) {
 			this.editingAttachment = wf
 			this.dialogOpen = true
 		},
+
 		/**
 		 * Persist an added/edited attachment into `runtime.workflows[]`.
 		 *
@@ -124,6 +175,7 @@ export default {
 			}
 			this.$emit('update:manifest', next)
 		},
+
 		/**
 		 * Detach an attachment (existing linked cases are unaffected).
 		 *
@@ -131,15 +183,30 @@ export default {
 		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002
 		 */
 		detach(wf) {
-			const ok = typeof window !== 'undefined' && window.confirm
-				? window.confirm(t('openbuild', 'Detach this case type? Existing linked cases are NOT deleted and object links are kept.'))
-				: true
-			if (!ok) {
+			this.pendingDetach = wf
+			this.confirmDetachOpen = true
+		},
+
+		/**
+		 * Detach the pending attachment once the user has confirmed.
+		 *
+		 * Held in `pendingDetach` rather than removed optimistically, so
+		 * cancelling or closing the dialog leaves the manifest untouched.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002
+		 */
+		onConfirmDetach() {
+			const wf = this.pendingDetach
+			this.confirmDetachOpen = false
+			this.pendingDetach = null
+			if (!wf) {
 				return
 			}
 			const list = this.attachments.filter((a) => a.id !== wf.id)
 			this.$emit('update:manifest', this.withWorkflows(list))
 		},
+
 		/**
 		 * Return a manifest copy with the given workflows list set (or the
 		 * `runtime.workflows` key removed when empty so zero-attachment
@@ -164,6 +231,7 @@ export default {
 			}
 			return next
 		},
+
 		/**
 		 * Inject a `procest-case-status` tab into the detail page that targets
 		 * the attachment's schema, if such a page exists and lacks one.
@@ -177,14 +245,22 @@ export default {
 			const next = { ...manifest, pages: (manifest.pages || []).slice() }
 			next.pages = next.pages.map((page) => {
 				const cfg = page && page.config
-				const isDetail = page && (page.type === 'detail') && cfg && cfg.schema === entry.schema
+				const isDetail =
+					page
+					&& page.type === 'detail'
+					&& cfg
+					&& cfg.schema === entry.schema
 				if (!isDetail) {
 					return page
 				}
 				const sidebarProps = { ...(cfg.sidebarProps || {}) }
 				const tabs = (sidebarProps.tabs || []).slice()
 				if (!tabs.some((t2) => t2.component === 'procest-case-status')) {
-					tabs.push({ id: 'procest-case-status', label: 'Case', component: 'procest-case-status' })
+					tabs.push({
+						id: 'procest-case-status',
+						label: 'Case',
+						component: 'procest-case-status',
+					})
 				}
 				sidebarProps.tabs = tabs
 				return { ...page, config: { ...cfg, sidebarProps } }
@@ -202,17 +278,21 @@ export default {
 	justify-content: space-between;
 	margin-bottom: 8px;
 }
+
 .ob-workflows-section__title {
 	margin: 0;
 }
+
 .ob-workflows-section__empty {
 	color: var(--color-text-maxcontrast);
 }
+
 .ob-workflows-section__list {
 	list-style: none;
 	padding: 0;
 	margin: 0;
 }
+
 .ob-workflows-section__item {
 	display: flex;
 	align-items: center;
@@ -220,6 +300,7 @@ export default {
 	padding: 8px 0;
 	border-bottom: 1px solid var(--color-border);
 }
+
 .ob-workflows-section__item-meta {
 	color: var(--color-text-maxcontrast);
 	margin-left: 8px;

@@ -25,12 +25,9 @@
 <template>
 	<div class="ob-detail-dashboard">
 		<!-- 1. Banner -->
-		<section
-			v-if="banner"
-			class="ob-detail-dashboard__banner"
-			role="alert">
+		<section v-if="banner" class="ob-detail-dashboard__banner" role="alert">
 			<p>{{ banner.message }}</p>
-			<NcButton v-if="banner.action" type="primary" @click="banner.action">
+			<NcButton v-if="banner.action" variant="primary" @click="banner.action">
 				{{ banner.actionLabel }}
 			</NcButton>
 		</section>
@@ -47,7 +44,7 @@
 					<NcButton
 						v-for="opt in windowOptions"
 						:key="opt"
-						:type="selectedWindow === opt ? 'primary' : 'tertiary'"
+						:variant="selectedWindow === opt ? 'primary' : 'tertiary'"
 						:aria-pressed="selectedWindow === opt"
 						@click="selectedWindow = opt">
 						{{ opt }}
@@ -62,7 +59,9 @@
 				     The wrapper makes the whole card a clickable OpenRegister link. -->
 				<div
 					class="ob-detail-dashboard__kpi-link"
-					:class="{ 'ob-detail-dashboard__kpi-link--clickable': !!registerSlug }"
+					:class="{
+						'ob-detail-dashboard__kpi-link--clickable': !!registerSlug,
+					}"
 					role="button"
 					tabindex="0"
 					:title="t('openbuild', 'Open in OpenRegister')"
@@ -74,15 +73,17 @@
 						:icon="iconUsers"
 						:title="t('openbuild', 'Active users')"
 						:count="kpis.activeUsers"
-						:count-label="t('openbuild', 'users')"
+						:countLabel="t('openbuild', 'users')"
 						variant="primary"
 						:loading="!loaded"
-						:loading-label="t('openbuild', 'Loading…')"
-						:show-zero-count="loaded" />
+						:loadingLabel="t('openbuild', 'Loading…')"
+						:showZeroCount="loaded" />
 				</div>
 				<div
 					class="ob-detail-dashboard__kpi-link"
-					:class="{ 'ob-detail-dashboard__kpi-link--clickable': !!registerSlug }"
+					:class="{
+						'ob-detail-dashboard__kpi-link--clickable': !!registerSlug,
+					}"
 					role="button"
 					tabindex="0"
 					:title="t('openbuild', 'Open in OpenRegister')"
@@ -94,11 +95,11 @@
 						:icon="iconObjects"
 						:title="t('openbuild', 'Object count')"
 						:count="kpis.objectCount"
-						:count-label="t('openbuild', 'objects')"
+						:countLabel="t('openbuild', 'objects')"
 						variant="primary"
 						:loading="!loaded"
-						:loading-label="t('openbuild', 'Loading…')"
-						:show-zero-count="loaded" />
+						:loadingLabel="t('openbuild', 'Loading…')"
+						:showZeroCount="loaded" />
 				</div>
 				<!-- Storage: the KPI value is the SUM of attached-file sizes (bytes)
 				     from the audit trail, NOT a file count — so we label it Storage and
@@ -107,7 +108,9 @@
 				     one keeps CnStatsBlock's built-in spinner. -->
 				<div
 					class="ob-detail-dashboard__kpi-link"
-					:class="{ 'ob-detail-dashboard__kpi-link--clickable': !!registerSlug }"
+					:class="{
+						'ob-detail-dashboard__kpi-link--clickable': !!registerSlug,
+					}"
 					role="button"
 					tabindex="0"
 					:title="t('openbuild', 'Open in OpenRegister')"
@@ -120,9 +123,9 @@
 						:icon="iconStorage"
 						:title="t('openbuild', 'Storage')"
 						:count="kpis.filesCount"
-						:count-label="''"
+						countLabel=""
 						variant="success"
-						show-zero-count>
+						showZeroCount>
 						<template #value="{ count }">
 							{{ formatBytes(count) }}
 						</template>
@@ -136,11 +139,13 @@
 						:count="0"
 						variant="success"
 						loading
-						:loading-label="t('openbuild', 'Loading…')" />
+						:loadingLabel="t('openbuild', 'Loading…')" />
 				</div>
 				<div
 					class="ob-detail-dashboard__kpi-link"
-					:class="{ 'ob-detail-dashboard__kpi-link--clickable': !!registerSlug }"
+					:class="{
+						'ob-detail-dashboard__kpi-link--clickable': !!registerSlug,
+					}"
 					role="button"
 					tabindex="0"
 					:title="t('openbuild', 'Open in OpenRegister')"
@@ -152,20 +157,28 @@
 						:icon="iconAudit"
 						:title="t('openbuild', 'Audit events')"
 						:count="kpis.auditEventCount"
-						:count-label="t('openbuild', 'events')"
+						:countLabel="t('openbuild', 'events')"
 						variant="warning"
 						:loading="!loaded"
-						:loading-label="t('openbuild', 'Loading…')"
-						:show-zero-count="loaded" />
+						:loadingLabel="t('openbuild', 'Loading…')"
+						:showZeroCount="loaded" />
 				</div>
 			</div>
 		</section>
 
 		<!-- 3. Activity graph -->
 		<section class="ob-detail-dashboard__activity">
-			<div v-if="activity && activity.length > 0" class="ob-detail-dashboard__activity-card">
+			<div
+				v-if="activity && activity.length > 0"
+				class="ob-detail-dashboard__activity-card">
 				<header class="ob-detail-dashboard__activity-header">
-					<h3>{{ t('openbuild', 'Activity ({window})', { window: selectedWindow }) }}</h3>
+					<h3>
+						{{
+							t('openbuild', 'Activity ({window})', {
+								window: selectedWindow,
+							})
+						}}
+					</h3>
 				</header>
 				<svg
 					class="ob-detail-dashboard__activity-chart"
@@ -180,7 +193,12 @@
 						stroke-width="0.5" />
 				</svg>
 				<p class="ob-detail-dashboard__activity-summary">
-					{{ t('openbuild', '{count} buckets, {sum} total events', { count: activity.length, sum: totalActivityEvents }) }}
+					{{
+						t('openbuild', '{count} buckets, {sum} total events', {
+							count: activity.length,
+							sum: totalActivityEvents,
+						})
+					}}
 				</p>
 			</div>
 			<p v-else class="ob-detail-dashboard__activity-empty">
@@ -196,50 +214,60 @@
 		     (layered-versioned-app-deltas). -->
 		<section class="ob-detail-dashboard__widgets">
 			<ManifestWidget
-				:app-slug="appSlug"
-				:is-hybrid="isHybrid"
-				:allow-user-overrides="allowUserOverrides"
-				:admin-label="adminVersionLabel"
-				:admin-status="adminVersionStatus"
-				@open-detail="openManifestDetail"
-				@edit-override="showUserDeltaModal = true"
+				:appSlug="appSlug"
+				:isHybrid="isHybrid"
+				:allowUserOverrides="allowUserOverrides"
+				:adminLabel="adminVersionLabel"
+				:adminStatus="adminVersionStatus"
+				@openDetail="openManifestDetail"
+				@editOverride="showUserDeltaModal = true"
 				@changed="onUserDeltaChanged" />
 			<RegisterWidget
-				:app-slug="appSlug"
-				:version-slug="activeVersionSlug"
-				:register-slug-override="registerSlug"
-				:is-hybrid="isHybrid" />
+				:appSlug="appSlug"
+				:versionSlug="activeVersionSlug"
+				:registerSlugOverride="registerSlug"
+				:isHybrid="isHybrid"
+				:canImport="canImport"
+				@importData="onImportData" />
 			<GroupsWidget
 				:application="application"
-				@open-permissions="onOpenPermissions" />
+				@openPermissions="onOpenPermissions" />
 		</section>
 
 		<UserDeltaEditModal
-			:open.sync="showUserDeltaModal"
-			:app-slug="appSlug"
+			v-model:open="showUserDeltaModal"
+			:appSlug="appSlug"
 			:delta="userDeltaContent"
 			@saved="onUserDeltaChanged" />
+
+		<ImportDataWizard
+			v-if="showImportWizard"
+			:registerId="registerSlug"
+			:schemas="importSchemas"
+			@imported="onImported"
+			@close="showImportWizard = false" />
 	</div>
 </template>
 
 <script>
+import { CnStatsBlock } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-
-import { CnStatsBlock } from '@conduction/nextcloud-vue'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
+import NcButton from '@nextcloud/vue/components/NcButton'
 import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOutline.vue'
 import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
 import Harddisk from 'vue-material-design-icons/Harddisk.vue'
 import History from 'vue-material-design-icons/History.vue'
-
+import ImportDataWizard from '../../dialogs/ImportDataWizard.vue'
+import UserDeltaEditModal from '../../modals/UserDeltaEditModal.vue'
 import GroupsWidget from './widgets/GroupsWidget.vue'
 import ManifestWidget from './widgets/ManifestWidget.vue'
 import RegisterWidget from './widgets/RegisterWidget.vue'
-import UserDeltaEditModal from '../../modals/UserDeltaEditModal.vue'
-
-import { buildVersionedRoute } from '../../router/helpers.js'
+import { fetchApplicationRecord } from '../../composables/useApplicationRecord.js'
 import { useInsightsWindow } from '../../composables/useInsightsWindow.js'
+import { useRegisterPicker } from '../../composables/useRegisterPicker.js'
+import { useRole } from '../../composables/useRole.js'
+import { buildVersionedRoute } from '../../router/helpers.js'
 
 export default {
 	name: 'ApplicationDetailDashboard',
@@ -250,13 +278,16 @@ export default {
 		ManifestWidget,
 		RegisterWidget,
 		UserDeltaEditModal,
+		ImportDataWizard,
 	},
+
 	props: {
 		// CnDetailPage's #before-body slot forwards the resolved record as
 		// `object` plus the route-resolved `objectId`.
 		object: { type: Object, default: null },
 		objectId: { type: String, default: '' },
 	},
+
 	/**
 	 * Expose the shared insights-window ref (driven by the header toggle) so the
 	 * KPI/activity widgets re-fetch when the user changes 7d/30d/90d — plus the
@@ -275,12 +306,19 @@ export default {
 			iconAudit: History,
 		}
 	},
+
 	data() {
 		return {
 			application: this.object || null,
 			versions: [],
 			selectedVersionUuid: null,
-			kpis: { activeUsers: 0, objectCount: 0, filesCount: 0, auditEventCount: 0 },
+			kpis: {
+				activeUsers: 0,
+				objectCount: 0,
+				filesCount: 0,
+				auditEventCount: 0,
+			},
+
 			activity: [],
 			versionNoLongerAccessible: false,
 			loading: false,
@@ -292,8 +330,12 @@ export default {
 			// Layered-delta UI state (layered-versioned-app-deltas).
 			showUserDeltaModal: false,
 			userDeltaContent: {},
+			// Import-data wizard state (openbuild-data-import-wizard).
+			showImportWizard: false,
+			importSchemas: [],
 		}
 	},
+
 	computed: {
 		/**
 		 * App slug from the resolved Application record.
@@ -304,6 +346,7 @@ export default {
 		appSlug() {
 			return (this.application && this.application.slug) || ''
 		},
+
 		/**
 		 * Production version UUID resolved from the Application record.
 		 *
@@ -316,6 +359,7 @@ export default {
 			if (typeof pv === 'string') return pv
 			return pv.uuid || pv.id || null
 		},
+
 		/**
 		 * Versions ordered along the promotesTo chain (most-upstream first).
 		 *
@@ -327,7 +371,9 @@ export default {
 			if (all.length === 0) return []
 			const byUuid = new Map()
 			all.forEach((v) => byUuid.set(v.uuid, v))
-			const roots = all.filter((v) => !all.some((u) => u.promotesTo === v.uuid))
+			const roots = all.filter(
+				(v) => !all.some((u) => u.promotesTo === v.uuid),
+			)
 			const ordered = []
 			const visited = new Set()
 			const walk = (v) => {
@@ -342,6 +388,7 @@ export default {
 			all.forEach((v) => walk(v))
 			return ordered
 		},
+
 		/**
 		 * Currently active version (selected, or production, or first).
 		 *
@@ -350,10 +397,14 @@ export default {
 		 */
 		activeVersion() {
 			if (!this.selectedVersionUuid) {
-				return this.productionVersion || (this.orderedVersions[0] || null)
+				return this.productionVersion || this.orderedVersions[0] || null
 			}
-			return this.orderedVersions.find((v) => v.uuid === this.selectedVersionUuid) || null
+			return (
+				this.orderedVersions.find((v) => v.uuid === this.selectedVersionUuid)
+				|| null
+			)
 		},
+
 		/**
 		 * Active version UUID.
 		 *
@@ -363,6 +414,7 @@ export default {
 		activeVersionUuid() {
 			return this.activeVersion ? this.activeVersion.uuid : ''
 		},
+
 		/**
 		 * Active version slug.
 		 *
@@ -372,6 +424,7 @@ export default {
 		activeVersionSlug() {
 			return this.activeVersion ? this.activeVersion.slug : ''
 		},
+
 		/**
 		 * Manifest of the active version.
 		 *
@@ -381,6 +434,7 @@ export default {
 		activeManifest() {
 			return (this.activeVersion && this.activeVersion.manifest) || {}
 		},
+
 		/**
 		 * Pages declared in the active version's manifest.
 		 *
@@ -391,6 +445,7 @@ export default {
 			const pages = this.activeManifest.pages
 			return Array.isArray(pages) ? pages : []
 		},
+
 		/**
 		 * Menu items declared in the active version's manifest.
 		 *
@@ -401,6 +456,7 @@ export default {
 			const menu = this.activeManifest.menu
 			return Array.isArray(menu) ? menu : []
 		},
+
 		/**
 		 * Distinct schemas referenced by the active version's pages.
 		 *
@@ -419,6 +475,7 @@ export default {
 			})
 			return out
 		},
+
 		/**
 		 * The production version row (for the chain/star resolution).
 		 *
@@ -427,8 +484,13 @@ export default {
 		 */
 		productionVersion() {
 			if (!this.productionVersionUuid) return null
-			return this.orderedVersions.find((v) => v.uuid === this.productionVersionUuid) || null
+			return (
+				this.orderedVersions.find(
+					(v) => v.uuid === this.productionVersionUuid,
+				) || null
+			)
 		},
+
 		/**
 		 * Total activity events across all buckets.
 		 *
@@ -436,8 +498,12 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		totalActivityEvents() {
-			return this.activity.reduce((acc, b) => acc + ((b && Number(b.eventCount)) || 0), 0)
+			return this.activity.reduce(
+				(acc, b) => acc + ((b && Number(b.eventCount)) || 0),
+				0,
+			)
 		},
+
 		/**
 		 * SVG polyline points for the activity sparkline.
 		 *
@@ -446,13 +512,23 @@ export default {
 		 */
 		sparklinePoints() {
 			if (!this.activity || this.activity.length === 0) return '0,30 100,30'
-			const max = this.activity.reduce((m, b) => Math.max(m, Number(b.eventCount) || 0), 1) || 1
-			return this.activity.map((b, idx) => {
-				const x = this.activity.length > 1 ? (idx / (this.activity.length - 1)) * 100 : 50
-				const y = 30 - ((Number(b.eventCount) || 0) / max) * 28
-				return `${x.toFixed(2)},${y.toFixed(2)}`
-			}).join(' ')
+			const max =
+				this.activity.reduce(
+					(m, b) => Math.max(m, Number(b.eventCount) || 0),
+					1,
+				) || 1
+			return this.activity
+				.map((b, idx) => {
+					const x =
+						this.activity.length > 1
+							? (idx / (this.activity.length - 1)) * 100
+							: 50
+					const y = 30 - ((Number(b.eventCount) || 0) / max) * 28
+					return `${x.toFixed(2)},${y.toFixed(2)}`
+				})
+				.join(' ')
 		},
+
 		/**
 		 * The "version no longer accessible" banner descriptor, or null.
 		 *
@@ -468,13 +544,18 @@ export default {
 			}
 			if (this.versionNoLongerAccessible) {
 				return {
-					message: t('openbuild', 'This version is no longer accessible. Switch to production?'),
+					message: t(
+						'openbuild',
+						'This version is no longer accessible. Switch to production?',
+					),
+
 					actionLabel: t('openbuild', 'Switch to production'),
 					action: () => this.switchToProduction(),
 				}
 			}
 			return null
 		},
+
 		/**
 		 * Whether this is a hybrid app (mirrors an installed Nextcloud app).
 		 *
@@ -484,6 +565,7 @@ export default {
 		isHybrid() {
 			return (this.application && this.application.appType) === 'hybrid'
 		},
+
 		/**
 		 * Whether this app allows per-user manifest overrides
 		 * (layered-versioned-app-deltas).
@@ -493,6 +575,7 @@ export default {
 		allowUserOverrides() {
 			return !!(this.application && this.application.allowUserOverrides)
 		},
+
 		/**
 		 * Human label for the admin delta's current version (the production
 		 * version's name/semver, falling back to the active version).
@@ -504,6 +587,7 @@ export default {
 			if (!v) return t('openbuild', 'current')
 			return v.semver || v.name || v.slug || t('openbuild', 'current')
 		},
+
 		/**
 		 * Lifecycle status of the admin delta's current version.
 		 *
@@ -513,6 +597,7 @@ export default {
 			const v = this.productionVersion || this.activeVersion
 			return (v && v.status) || ''
 		},
+
 		/**
 		 * Slug of the OpenRegister register the KPIs reflect. Hybrid apps use the
 		 * installed fleet app's register (== appSlug); virtual apps use the
@@ -533,7 +618,22 @@ export default {
 			if (!this.activeVersionSlug) return ''
 			return `openbuild-${this.appSlug}-${this.activeVersionSlug}`
 		},
+
+		/**
+		 * Whether the caller holds a build/manage role (owner or editor) on this
+		 * Application. Gates the "Import data" affordance (REQ: the import is
+		 * authorised on both sides — the write is independently re-gated by
+		 * OpenRegister's own register manage-permission).
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.2
+		 */
+		canImport() {
+			const role = useRole(this.application)
+			return role === 'owner' || role === 'editor'
+		},
 	},
+
 	watch: {
 		/**
 		 * Re-bind to a freshly resolved record and reload its versions.
@@ -548,14 +648,17 @@ export default {
 				this.loadVersions()
 			}
 		},
-		'$route.query._version'(newSlug) {
+
+		'$route.query._version': function (newSlug) {
 			if (!newSlug) {
-				if (this.productionVersionUuid) this.selectedVersionUuid = this.productionVersionUuid
+				if (this.productionVersionUuid)
+					this.selectedVersionUuid = this.productionVersionUuid
 				return
 			}
 			const match = this.orderedVersions.find((v) => v.slug === newSlug)
 			if (match) this.selectedVersionUuid = match.uuid
 		},
+
 		/**
 		 * Re-fetch insights when the active version changes.
 		 *
@@ -565,6 +668,7 @@ export default {
 		activeVersionUuid() {
 			this.scheduleInsightsFetch()
 		},
+
 		/**
 		 * Re-fetch insights when the shared window selection changes.
 		 *
@@ -575,6 +679,7 @@ export default {
 			this.scheduleInsightsFetch()
 		},
 	},
+
 	/**
 	 * Load the version list (and seed the active version) on mount.
 	 *
@@ -588,18 +693,20 @@ export default {
 			this.loadVersions()
 		}
 	},
+
 	/**
 	 * Clear the pending insights debounce timer on teardown.
 	 *
 	 * @return {void}
 	 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 	 */
-	beforeDestroy() {
+	beforeUnmount() {
 		if (this.insightsDebounce) {
 			clearTimeout(this.insightsDebounce)
 			this.insightsDebounce = null
 		}
 	},
+
 	methods: {
 		/**
 		 * Deep-link a KPI into OpenRegister — the system of record behind the
@@ -614,12 +721,15 @@ export default {
 		 */
 		openInRegister(tab) {
 			if (!this.registerSlug) return
-			let url = generateUrl(`/apps/openregister/registers/${encodeURIComponent(this.registerSlug)}`)
+			let url = generateUrl(
+				`/apps/openregister/registers/${encodeURIComponent(this.registerSlug)}`,
+			)
 			if (typeof tab === 'string' && tab !== '') {
 				url += `?tab=${encodeURIComponent(tab)}`
 			}
 			window.location.href = url
 		},
+
 		/**
 		 * Format a byte count as a human-readable storage size (e.g. 517 KB).
 		 *
@@ -635,7 +745,7 @@ export default {
 			const units = ['KB', 'MB', 'GB', 'TB', 'PB']
 			let value = n / 1024
 			let i = 0
-			while (value >= 1024 && i < (units.length - 1)) {
+			while (value >= 1024 && i < units.length - 1) {
 				value /= 1024
 				i++
 			}
@@ -656,15 +766,58 @@ export default {
 		},
 
 		/**
+		 * Open the Import-data wizard for the active version's register. Fetches
+		 * the register's schemas so the wizard can offer them as existing-schema
+		 * targets — only schemas in THIS register (the active version's own
+		 * per-version register) are fetched, so shared bound `dataRegisters` are
+		 * never offered as import targets.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.2
+		 */
+		async onImportData() {
+			if (!this.registerSlug) {
+				return
+			}
+			try {
+				const { fetchSchemas } = useRegisterPicker({ appSlug: this.appSlug })
+				this.importSchemas = await fetchSchemas(this.registerSlug)
+			} catch (e) {
+				this.importSchemas = []
+			}
+			this.showImportWizard = true
+		},
+
+		/**
+		 * Refresh the insights/KPIs after a successful import (or rollback) so
+		 * the object counts reflect the freshly imported rows.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.2
+		 */
+		onImported() {
+			if (typeof this.fetchInsights === 'function') {
+				this.fetchInsights()
+			}
+		},
+
+		/**
 		 * Navigate to the routed Manifest detail page for this app
 		 * (layered-versioned-app-deltas).
 		 *
 		 * @return {void}
 		 */
 		openManifestDetail() {
-			const uuid = (this.application && (this.application.uuid || this.application.id)) || this.objectId
+			const uuid =
+				(this.application && (this.application.uuid || this.application.id))
+				|| this.objectId
 			if (this.$router && uuid) {
-				this.$router.push({ name: 'ApplicationManifestDetail', params: { objectId: uuid } }).catch(() => {})
+				this.$router
+					.push({
+						name: 'ApplicationManifestDetail',
+						params: { objectId: uuid },
+					})
+					.catch(() => {})
 			}
 		},
 
@@ -689,7 +842,10 @@ export default {
 				return
 			}
 			try {
-				const url = generateUrl('/apps/openbuild/api/app-overrides/{appId}/user', { appId: this.appSlug })
+				const url = generateUrl(
+					'/apps/openbuild/api/app-overrides/{appId}/user',
+					{ appId: this.appSlug },
+				)
 				const { data } = await axios.get(url)
 				this.userDeltaContent = (data && data.manifestDelta) || {}
 			} catch (e) {
@@ -714,7 +870,9 @@ export default {
 				prod.slug,
 			)
 			if (this.$router) {
-				this.$router.replace(route).catch(() => { /* ignore duplicate nav */ })
+				this.$router.replace(route).catch(() => {
+					/* ignore duplicate nav */
+				})
 			}
 		},
 
@@ -726,14 +884,26 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		async refreshApplication() {
-			const uuid = this.objectId || (this.$route && this.$route.params && this.$route.params.objectId) || ''
+			const uuid =
+				this.objectId
+				|| (this.$route && this.$route.params && this.$route.params.objectId)
+				|| ''
 			if (!uuid) return
+
+			// Latest-request-wins if the uuid changes mid-flight (route change).
+			const seq = (this._appReqSeq || 0) + 1
+			this._appReqSeq = seq
+
 			try {
-				const url = generateUrl(`/apps/openregister/api/objects/openbuild/application/${encodeURIComponent(uuid)}`)
-				const { data } = await axios.get(url)
-				this.application = data ? { ...data, '@self': data['@self'] || {} } : null
+				// Shared with ApplicationDetailHeader — both components resolve
+				// the same record, and each has several triggers, so without
+				// coalescing one page load issued ten identical GETs (#49).
+				const record = await fetchApplicationRecord(uuid)
+				if (seq !== this._appReqSeq) return
+				this.application = record
 				this.loadVersions()
 			} catch (e) {
+				if (seq !== this._appReqSeq) return
 				this.error = e instanceof Error ? e : new Error(String(e))
 			}
 		},
@@ -747,19 +917,27 @@ export default {
 		async loadVersions() {
 			if (!this.appSlug) return
 			try {
-				const url = generateUrl(`/apps/openbuild/api/applications/${encodeURIComponent(this.appSlug)}/versions`)
+				const url = generateUrl(
+					`/apps/openbuild/api/applications/${encodeURIComponent(this.appSlug)}/versions`,
+				)
 				const { data } = await axios.get(url)
 				const list = Array.isArray(data)
 					? data
-					: (data && Array.isArray(data.results) ? data.results : [])
+					: data && Array.isArray(data.results)
+						? data.results
+						: []
 				this.versions = list.map((v) => ({
 					...v,
 					uuid: v.uuid || v.id || (v['@self'] && v['@self'].id) || null,
 				}))
 
-				const versionSlugFromRoute = (this.$route && this.$route.query && this.$route.query._version) || ''
+				const versionSlugFromRoute =
+					(this.$route && this.$route.query && this.$route.query._version)
+					|| ''
 				const match = versionSlugFromRoute
-					? this.orderedVersions.find((v) => v.slug === versionSlugFromRoute)
+					? this.orderedVersions.find(
+							(v) => v.slug === versionSlugFromRoute,
+						)
 					: null
 				if (match) {
 					this.selectedVersionUuid = match.uuid
@@ -795,7 +973,9 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		async fetchInsights() {
-			const appUuid = (this.application && (this.application.uuid || this.application.id)) || this.objectId
+			const appUuid =
+				(this.application && (this.application.uuid || this.application.id))
+				|| this.objectId
 			if (!appUuid || !this.activeVersionUuid) return
 			this.loading = true
 			this.error = null
@@ -804,16 +984,29 @@ export default {
 				const url = generateUrl(
 					`/apps/openbuild/api/applications/${encodeURIComponent(appUuid)}/versions/${encodeURIComponent(this.activeVersionUuid)}/insights`,
 				)
-				const { data } = await axios.get(url, { params: { window: this.selectedWindow } })
+				const { data } = await axios.get(url, {
+					params: { window: this.selectedWindow },
+				})
 				if (data && typeof data === 'object') {
-					this.kpis = { activeUsers: 0, objectCount: 0, filesCount: 0, auditEventCount: 0, ...(data.kpis || {}) }
+					this.kpis = {
+						activeUsers: 0,
+						objectCount: 0,
+						filesCount: 0,
+						auditEventCount: 0,
+						...(data.kpis || {}),
+					}
 					this.activity = Array.isArray(data.activity) ? data.activity : []
 				}
 			} catch (e) {
 				const status = (e && e.response && e.response.status) || 0
 				if (status === 404) {
 					this.versionNoLongerAccessible = true
-					this.kpis = { activeUsers: 0, objectCount: 0, filesCount: 0, auditEventCount: 0 }
+					this.kpis = {
+						activeUsers: 0,
+						objectCount: 0,
+						filesCount: 0,
+						auditEventCount: 0,
+					}
 					this.activity = []
 				} else {
 					this.error = e instanceof Error ? e : new Error(String(e))

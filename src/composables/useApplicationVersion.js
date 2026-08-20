@@ -28,9 +28,9 @@
 // frontend. All four builder views delegate to it rather than duplicating the
 // lookup (REQ-OBVR-005).
 
-import { ref } from 'vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { ref } from 'vue'
 
 /**
  * Pure function: from a list of ApplicationVersion records, find the
@@ -55,7 +55,7 @@ export function defaultEditableVersion(versions, productionUuid) {
 
 	// Find all versions that no other version promotes-to (upstream-most nodes).
 	const upstreamMost = versions.filter(
-		(v) => !versions.some((u) => u.promotesTo === v.uuid)
+		(v) => !versions.some((u) => u.promotesTo === v.uuid),
 	)
 
 	// Prefer an upstream-most version that is NOT the production version.
@@ -104,7 +104,7 @@ export function useApplicationVersion(appSlug, versionSlug) {
 		error.value = null
 		try {
 			const url = generateUrl(
-				`/apps/openbuild/api/applications/${encodeURIComponent(appSlug)}/versions/${encodeURIComponent(versionSlug)}`
+				`/apps/openbuild/api/applications/${encodeURIComponent(appSlug)}/versions/${encodeURIComponent(versionSlug)}`,
 			)
 			const { data } = await axios.get(url)
 			applicationVersion.value = data || null
@@ -130,12 +130,14 @@ export function useApplicationVersion(appSlug, versionSlug) {
 		try {
 			// Fetch all versions for this app (spec C REQ-OBV-107 list endpoint).
 			const versionsUrl = generateUrl(
-				`/apps/openbuild/api/applications/${encodeURIComponent(appSlug)}/versions`
+				`/apps/openbuild/api/applications/${encodeURIComponent(appSlug)}/versions`,
 			)
 			const { data: versionsData } = await axios.get(versionsUrl)
 			const versions = Array.isArray(versionsData)
 				? versionsData
-				: (versionsData && Array.isArray(versionsData.results) ? versionsData.results : [])
+				: versionsData && Array.isArray(versionsData.results)
+					? versionsData.results
+					: []
 
 			if (versions.length === 0) {
 				applicationVersion.value = null
@@ -146,22 +148,35 @@ export function useApplicationVersion(appSlug, versionSlug) {
 			// Uses OR's objects endpoint — the application-level slug lookup.
 			let productionUuid = null
 			try {
-				const appUrl = generateUrl('/apps/openregister/api/objects/openbuild/application')
-				const { data: appData } = await axios.get(appUrl, { params: { slug: appSlug, _limit: 1 } })
-				const apps = (appData && Array.isArray(appData.results))
-					? appData.results
-					: (Array.isArray(appData) ? appData : [])
+				const appUrl = generateUrl(
+					'/apps/openregister/api/objects/openbuild/application',
+				)
+				const { data: appData } = await axios.get(appUrl, {
+					params: { slug: appSlug, _limit: 1 },
+				})
+				const apps =
+					appData && Array.isArray(appData.results)
+						? appData.results
+						: Array.isArray(appData)
+							? appData
+							: []
 				const app = apps.find((a) => a && a.slug === appSlug) || null
 				if (app) {
 					const pv = app.productionVersion
-					productionUuid = typeof pv === 'string' ? pv : (pv && (pv.uuid || pv.id)) || null
+					productionUuid =
+						typeof pv === 'string'
+							? pv
+							: (pv && (pv.uuid || pv.id)) || null
 				}
 			} catch (appErr) {
 				// Degraded: can't read productionVersion — fallback rule still works
 				// but won't distinguish production from non-production.
 			}
 
-			applicationVersion.value = defaultEditableVersion(versions, productionUuid)
+			applicationVersion.value = defaultEditableVersion(
+				versions,
+				productionUuid,
+			)
 		} catch (e) {
 			error.value = e instanceof Error ? e : new Error(String(e))
 			applicationVersion.value = null
@@ -170,12 +185,18 @@ export function useApplicationVersion(appSlug, versionSlug) {
 		}
 	}
 
-	// Kick off the appropriate fetch immediately.
-	if (versionSlug && versionSlug !== '') {
-		fetchBySlug()
-	} else {
-		fetchDefaultVersion()
-	}
+	// Kick off the appropriate fetch immediately, and KEEP the promise. Callers
+	// that must read `applicationVersion` (rather than merely render it
+	// reactively) have to know when it is settled: `PageDesignerHost.load()`
+	// seeds the editor FROM this value exactly once, so consuming it while the
+	// fetch is still in flight silently yields an empty manifest.
+	//
+	// `fetchDefaultVersion()` makes TWO sequential round trips (/versions, then
+	// the Application record for productionVersion), so it reliably settles LATER
+	// than a single-request caller — the race is not theoretical, it is the
+	// common case (#174).
+	const ready =
+		versionSlug && versionSlug !== '' ? fetchBySlug() : fetchDefaultVersion()
 
-	return { applicationVersion, loading, error }
+	return { applicationVersion, loading, error, ready }
 }

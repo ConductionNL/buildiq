@@ -27,8 +27,9 @@ declare(strict_types=1);
 namespace OCA\OpenBuild\Tests\Unit\Service;
 
 use OCA\OpenBuild\Service\AppNavigationService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
-use OCP\IGroup;
+use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\INavigationManager;
 use OCP\IURLGenerator;
@@ -41,412 +42,487 @@ use Psr\Log\LoggerInterface;
 /**
  * Tests for {@see AppNavigationService}.
  */
-class AppNavigationServiceTest extends TestCase
-{
-    /**
-     * Mock ObjectService.
-     *
-     * @var ObjectService&MockObject
-     */
-    private ObjectService&MockObject $objectService;
-
-    /**
-     * Mock URL generator.
-     *
-     * @var IURLGenerator&MockObject
-     */
-    private IURLGenerator&MockObject $urlGenerator;
-
-    /**
-     * Mock user session.
-     *
-     * @var IUserSession&MockObject
-     */
-    private IUserSession&MockObject $userSession;
-
-    /**
-     * Mock group manager.
-     *
-     * @var IGroupManager&MockObject
-     */
-    private IGroupManager&MockObject $groupManager;
-
-    /**
-     * Mock logger.
-     *
-     * @var LoggerInterface&MockObject
-     */
-    private LoggerInterface&MockObject $logger;
-
-    /**
-     * Service under test.
-     */
-    private AppNavigationService $service;
-
-    /**
-     * Build shared mocks + SUT.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->objectService = $this->createMock(ObjectService::class);
-        $this->urlGenerator  = $this->createMock(IURLGenerator::class);
-        $this->userSession   = $this->createMock(IUserSession::class);
-        $this->groupManager  = $this->createMock(IGroupManager::class);
-        $this->logger        = $this->createMock(LoggerInterface::class);
-
-        $this->urlGenerator
-            ->method('linkToRouteAbsolute')
-            ->willReturnCallback(fn ($route, $params) => '/icon/'.$params['slug'].'.svg');
-
-        $this->service = new AppNavigationService(
-            $this->objectService,
-            $this->urlGenerator,
-            $this->userSession,
-            $this->groupManager,
-            $this->logger
-        );
-    }//end setUp()
-
-    // -------------------------------------------------------------------------
-    // registerNavEntries — published-only filter
-    // -------------------------------------------------------------------------
-
-    /**
-     * Only published Applications produce nav entries; draft/archived excluded
-     * by the status == published filter in the OR query.
-     *
-     * @return void
-     */
-    public function testRegisterNavEntriesRegistersPublishedAppsOnly(): void
-    {
-        $publishedApp = [
-            'slug'        => 'hello-world',
-            'name'        => 'Hello World',
-            'status'      => 'published',
-            'permissions' => ['owners' => ['group:*'], 'editors' => [], 'viewers' => []],
-        ];
-
-        // ObjectService returns ONLY published apps (filter is applied by
-        // the service itself in the findAll config). We simulate that here.
-        $this->objectService
-            ->expects($this->once())
-            ->method('findAll')
-            ->willReturn([$publishedApp]);
-
-        $registeredCallables = [];
-        $nav = $this->createMock(INavigationManager::class);
-        $nav->expects($this->once())
-            ->method('add')
-            ->willReturnCallback(function ($callable) use (&$registeredCallables): void {
-                $registeredCallables[] = $callable;
-            });
-
-        $this->service->registerNavEntries($nav);
-
-        $this->assertCount(1, $registeredCallables);
-    }//end testRegisterNavEntriesRegistersPublishedAppsOnly()
-
-    // -------------------------------------------------------------------------
-    // registerNavEntries — empty result → no entries
-    // -------------------------------------------------------------------------
-
-    /**
-     * When OR returns no published Applications, no nav entries are registered.
-     *
-     * @return void
-     */
-    public function testRegisterNavEntriesNoneWhenNoPublishedApps(): void
-    {
-        $this->objectService
-            ->method('findAll')
-            ->willReturn([]);
-
-        $nav = $this->createMock(INavigationManager::class);
-        $nav->expects($this->never())->method('add');
-
-        $this->service->registerNavEntries($nav);
-    }//end testRegisterNavEntriesNoneWhenNoPublishedApps()
-
-    // -------------------------------------------------------------------------
-    // isVisibleForCurrentUser — group:* wildcard
-    // -------------------------------------------------------------------------
-
-    /**
-     * When group:* is in owners, every signed-in user sees the entry.
-     *
-     * @return void
-     */
-    public function testIsVisibleForCurrentUserWithWildcardOwner(): void
-    {
-        $permissions = ['owners' => ['group:*'], 'editors' => [], 'viewers' => []];
-
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('charlie');
-
-        $this->userSession->method('getUser')->willReturn($user);
-
-        // groupManager should NOT be consulted — wildcard short-circuits.
-        $this->groupManager->expects($this->never())->method('getUserGroupIds');
-
-        $result = $this->service->isVisibleForCurrentUser(
-            $permissions,
-            $this->userSession,
-            $this->groupManager
-        );
-
-        $this->assertTrue($result);
-    }//end testIsVisibleForCurrentUserWithWildcardOwner()
-
-    /**
-     * When group:* is in viewers, every signed-in user sees the entry.
-     *
-     * @return void
-     */
-    public function testIsVisibleForCurrentUserWithWildcardViewer(): void
-    {
-        $permissions = ['owners' => [], 'editors' => [], 'viewers' => ['group:*']];
-
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('bob');
-
-        $this->userSession->method('getUser')->willReturn($user);
-        $this->groupManager->expects($this->never())->method('getUserGroupIds');
-
-        $result = $this->service->isVisibleForCurrentUser(
-            $permissions,
-            $this->userSession,
-            $this->groupManager
-        );
-
-        $this->assertTrue($result);
-    }//end testIsVisibleForCurrentUserWithWildcardViewer()
-
-    // -------------------------------------------------------------------------
-    // isVisibleForCurrentUser — user:<uid> match
-    // -------------------------------------------------------------------------
-
-    /**
-     * User matches an explicit user:<uid> entry in owners.
-     *
-     * @return void
-     */
-    public function testIsVisibleForCurrentUserWithDirectUidMatch(): void
-    {
-        $permissions = [
-            'owners'  => ['user:alice'],
-            'editors' => [],
-            'viewers' => [],
-        ];
-
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('alice');
-
-        $this->userSession->method('getUser')->willReturn($user);
-
-        $result = $this->service->isVisibleForCurrentUser(
-            $permissions,
-            $this->userSession,
-            $this->groupManager
-        );
-
-        $this->assertTrue($result);
-    }//end testIsVisibleForCurrentUserWithDirectUidMatch()
-
-    // -------------------------------------------------------------------------
-    // isVisibleForCurrentUser — group:<gid> match
-    // -------------------------------------------------------------------------
-
-    /**
-     * User is a member of a group that matches group:<gid> in viewers.
-     *
-     * @return void
-     */
-    public function testIsVisibleForCurrentUserWithGroupMatch(): void
-    {
-        $permissions = [
-            'owners'  => [],
-            'editors' => [],
-            'viewers' => ['group:viewers-alpha'],
-        ];
-
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('bob');
-
-        $this->userSession->method('getUser')->willReturn($user);
-        $this->groupManager
-            ->method('getUserGroupIds')
-            ->willReturn(['viewers-alpha', 'all-users']);
-        $this->groupManager->method('isAdmin')->willReturn(false);
-
-        $result = $this->service->isVisibleForCurrentUser(
-            $permissions,
-            $this->userSession,
-            $this->groupManager
-        );
-
-        $this->assertTrue($result);
-    }//end testIsVisibleForCurrentUserWithGroupMatch()
-
-    // -------------------------------------------------------------------------
-    // isVisibleForCurrentUser — non-member, no wildcard → false
-    // -------------------------------------------------------------------------
-
-    /**
-     * User has no matching UID, group, or wildcard — not visible.
-     *
-     * @return void
-     */
-    public function testIsVisibleForCurrentUserReturnsFalseForNonMember(): void
-    {
-        $permissions = [
-            'owners'  => ['user:alice'],
-            'editors' => [],
-            'viewers' => ['group:viewers-alpha'],
-        ];
-
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('eve');
-
-        $this->userSession->method('getUser')->willReturn($user);
-        $this->groupManager->method('getUserGroupIds')->willReturn(['other-group']);
-        $this->groupManager->method('isAdmin')->willReturn(false);
-
-        $result = $this->service->isVisibleForCurrentUser(
-            $permissions,
-            $this->userSession,
-            $this->groupManager
-        );
-
-        $this->assertFalse($result);
-    }//end testIsVisibleForCurrentUserReturnsFalseForNonMember()
-
-    // -------------------------------------------------------------------------
-    // isVisibleForCurrentUser — Nextcloud admin bypass
-    // -------------------------------------------------------------------------
-
-    /**
-     * Nextcloud admins always see published entries regardless of permissions.
-     *
-     * @return void
-     */
-    public function testIsVisibleForCurrentUserAdminAlwaysSees(): void
-    {
-        $permissions = ['owners' => [], 'editors' => [], 'viewers' => []];
-
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('admin');
-
-        $this->userSession->method('getUser')->willReturn($user);
-        $this->groupManager->method('getUserGroupIds')->willReturn([]);
-        $this->groupManager->method('isAdmin')->with('admin')->willReturn(true);
-
-        $result = $this->service->isVisibleForCurrentUser(
-            $permissions,
-            $this->userSession,
-            $this->groupManager
-        );
-
-        $this->assertTrue($result);
-    }//end testIsVisibleForCurrentUserAdminAlwaysSees()
-
-    // -------------------------------------------------------------------------
-    // isVisibleForCurrentUser — unauthenticated session → false
-    // -------------------------------------------------------------------------
-
-    /**
-     * No session user → not visible.
-     *
-     * @return void
-     */
-    public function testIsVisibleForCurrentUserReturnsFalseWhenNoSession(): void
-    {
-        $this->userSession->method('getUser')->willReturn(null);
-
-        $result = $this->service->isVisibleForCurrentUser(
-            ['owners' => ['group:*']],
-            $this->userSession,
-            $this->groupManager
-        );
-
-        $this->assertFalse($result);
-    }//end testIsVisibleForCurrentUserReturnsFalseWhenNoSession()
-
-    // -------------------------------------------------------------------------
-    // registerNavEntries — OR failure → logs warning, registers no entries
-    // -------------------------------------------------------------------------
-
-    /**
-     * When OR throws, registerNavEntries catches it, logs, and registers nothing.
-     *
-     * @return void
-     */
-    public function testRegisterNavEntriesHandlesOrFailureGracefully(): void
-    {
-        $this->objectService
-            ->method('findAll')
-            ->willThrowException(new \RuntimeException('OR offline'));
-
-        $this->logger->expects($this->once())->method('warning');
-
-        $nav = $this->createMock(INavigationManager::class);
-        $nav->expects($this->never())->method('add');
-
-        $this->service->registerNavEntries($nav);
-    }//end testRegisterNavEntriesHandlesOrFailureGracefully()
-
-    // -------------------------------------------------------------------------
-    // Closure shape — published entry returns expected array keys
-    // -------------------------------------------------------------------------
-
-    /**
-     * The closure registered for a published app returns the expected shape
-     * including id, name, href, icon, order, and enabled.
-     *
-     * @return void
-     */
-    public function testRegisteredClosureReturnsExpectedShape(): void
-    {
-        $publishedApp = [
-            'slug'        => 'hello-world',
-            'name'        => 'Hello World',
-            'status'      => 'published',
-            'permissions' => ['owners' => ['group:*'], 'editors' => [], 'viewers' => []],
-        ];
-
-        $this->objectService
-            ->method('findAll')
-            ->willReturn([$publishedApp]);
-
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('admin');
-
-        $this->userSession->method('getUser')->willReturn($user);
-        $this->groupManager->method('getUserGroupIds')->willReturn([]);
-        $this->groupManager->method('isAdmin')->willReturn(false);
-
-        $registeredClosures = [];
-        $nav = $this->createMock(INavigationManager::class);
-        $nav->method('add')
-            ->willReturnCallback(function ($callable) use (&$registeredClosures): void {
-                $registeredClosures[] = $callable;
-            });
-
-        $this->service->registerNavEntries($nav);
-
-        $this->assertCount(1, $registeredClosures);
-
-        $entry = ($registeredClosures[0])();
-
-        $this->assertSame('openbuild-app-hello-world', $entry['id']);
-        $this->assertSame('Hello World', $entry['name']);
-        // Nav links target the standalone runtime page (/builder/{slug}), not
-        // the bare app root — see AppNavigationService + DashboardController::builder.
-        $this->assertStringContainsString('/apps/openbuild/builder/hello-world', $entry['href']);
-        $this->assertArrayHasKey('order', $entry);
-        $this->assertArrayHasKey('enabled', $entry);
-    }//end testRegisteredClosureReturnsExpectedShape()
+class AppNavigationServiceTest extends TestCase {
+	/**
+	 * Mock ObjectService.
+	 *
+	 * @var ObjectServiceInterface&MockObject
+	 */
+	private ObjectServiceInterface&MockObject $objectService;
+
+	/**
+	 * Mock URL generator.
+	 *
+	 * @var IURLGenerator&MockObject
+	 */
+	private IURLGenerator&MockObject $urlGenerator;
+
+	/**
+	 * Mock user session.
+	 *
+	 * @var IUserSession&MockObject
+	 */
+	private IUserSession&MockObject $userSession;
+
+	/**
+	 * Mock group manager.
+	 *
+	 * @var IGroupManager&MockObject
+	 */
+	private IGroupManager&MockObject $groupManager;
+
+	/**
+	 * Mock app config — the nav-order base override.
+	 *
+	 * @var IAppConfig&MockObject
+	 */
+	private IAppConfig&MockObject $appConfig;
+
+	/**
+	 * Mock logger.
+	 *
+	 * @var LoggerInterface&MockObject
+	 */
+	private LoggerInterface&MockObject $logger;
+
+	/**
+	 * Service under test.
+	 */
+	private AppNavigationService $service;
+
+	/**
+	 * Build shared mocks + SUT.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
+		$this->urlGenerator = $this->createMock(IURLGenerator::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->appConfig = $this->createMock(IAppConfig::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
+
+		$this->urlGenerator
+			->method('linkToRouteAbsolute')
+			->willReturnCallback(fn ($route, $params) => '/icon/' . $params['slug'] . '.svg');
+
+		// The nav entry href is generated via linkToRoute (not a hand-built
+		// string); mock it to return an /index.php-prefixed path, as a
+		// front-controller-required instance would produce.
+		$this->urlGenerator
+			->method('linkToRoute')
+			->willReturnCallback(fn ($route, $params) => '/index.php/apps/openbuild/builder/' . $params['slug']);
+
+		// Pre-existing break, fixed here: AppNavigationService gained an $appConfig
+		// constructor parameter (the nav-order base override) and this test was never
+		// updated, so all 11 of its cases have simply been erroring on a TypeError.
+		$this->service = new AppNavigationService(
+			$this->objectService,
+			$this->urlGenerator,
+			$this->userSession,
+			$this->groupManager,
+			$this->appConfig,
+			$this->logger,
+		);
+	}//end setUp()
+
+	// -------------------------------------------------------------------------
+	// registerNavEntries — published-only filter
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Only published Applications produce nav entries; draft/archived excluded
+	 * by the status == published filter in the OR query.
+	 *
+	 * @return void
+	 */
+	public function testRegisterNavEntriesRegistersPublishedAppsOnly(): void {
+		$publishedApp = [
+			'slug' => 'hello-world',
+			'name' => 'Hello World',
+			'status' => 'published',
+			'permissions' => ['owners' => ['group:*'], 'editors' => [], 'viewers' => []],
+		];
+
+		// ObjectService returns ONLY published apps (filter is applied by
+		// the service itself in the findAll config). We simulate that here.
+		$this->objectService
+			->expects($this->once())
+			->method('findAll')
+			->willReturn([$publishedApp]);
+
+		$registeredCallables = [];
+		$nav = $this->createMock(INavigationManager::class);
+		$nav->expects($this->once())
+			->method('add')
+			->willReturnCallback(function ($callable) use (&$registeredCallables): void {
+				$registeredCallables[] = $callable;
+			});
+
+		$this->service->registerNavEntries($nav);
+
+		$this->assertCount(1, $registeredCallables);
+	}//end testRegisterNavEntriesRegistersPublishedAppsOnly()
+
+	// -------------------------------------------------------------------------
+	// registerNavEntries — empty result → no entries
+	// -------------------------------------------------------------------------
+
+	/**
+	 * When OR returns no published Applications, no nav entries are registered.
+	 *
+	 * @return void
+	 */
+	public function testRegisterNavEntriesNoneWhenNoPublishedApps(): void {
+		$this->objectService
+			->method('findAll')
+			->willReturn([]);
+
+		$nav = $this->createMock(INavigationManager::class);
+		$nav->expects($this->never())->method('add');
+
+		$this->service->registerNavEntries($nav);
+	}//end testRegisterNavEntriesNoneWhenNoPublishedApps()
+
+	// -------------------------------------------------------------------------
+	// isVisibleForCurrentUser — group:* wildcard
+	// -------------------------------------------------------------------------
+
+	/**
+	 * When group:* is in owners, every signed-in user sees the entry.
+	 *
+	 * @return void
+	 */
+	public function testIsVisibleForCurrentUserWithWildcardOwner(): void {
+		$permissions = ['owners' => ['group:*'], 'editors' => [], 'viewers' => []];
+
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('charlie');
+
+		$this->userSession->method('getUser')->willReturn($user);
+
+		// groupManager should NOT be consulted — wildcard short-circuits.
+		$this->groupManager->expects($this->never())->method('getUserGroupIds');
+
+		$result = $this->service->isVisibleForCurrentUser(
+			$permissions,
+			$this->userSession,
+			$this->groupManager
+		);
+
+		$this->assertTrue($result);
+	}//end testIsVisibleForCurrentUserWithWildcardOwner()
+
+	/**
+	 * When group:* is in viewers, every signed-in user sees the entry.
+	 *
+	 * @return void
+	 */
+	public function testIsVisibleForCurrentUserWithWildcardViewer(): void {
+		$permissions = ['owners' => [], 'editors' => [], 'viewers' => ['group:*']];
+
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('bob');
+
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->groupManager->expects($this->never())->method('getUserGroupIds');
+
+		$result = $this->service->isVisibleForCurrentUser(
+			$permissions,
+			$this->userSession,
+			$this->groupManager
+		);
+
+		$this->assertTrue($result);
+	}//end testIsVisibleForCurrentUserWithWildcardViewer()
+
+	// -------------------------------------------------------------------------
+	// isVisibleForCurrentUser — user:<uid> match
+	// -------------------------------------------------------------------------
+
+	/**
+	 * User matches an explicit user:<uid> entry in owners.
+	 *
+	 * @return void
+	 */
+	public function testIsVisibleForCurrentUserWithDirectUidMatch(): void {
+		$permissions = [
+			'owners' => ['user:alice'],
+			'editors' => [],
+			'viewers' => [],
+		];
+
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+
+		$this->userSession->method('getUser')->willReturn($user);
+
+		$result = $this->service->isVisibleForCurrentUser(
+			$permissions,
+			$this->userSession,
+			$this->groupManager
+		);
+
+		$this->assertTrue($result);
+	}//end testIsVisibleForCurrentUserWithDirectUidMatch()
+
+	// -------------------------------------------------------------------------
+	// isVisibleForCurrentUser — group:<gid> match
+	// -------------------------------------------------------------------------
+
+	/**
+	 * User is a member of a group that matches group:<gid> in viewers.
+	 *
+	 * @return void
+	 */
+	public function testIsVisibleForCurrentUserWithGroupMatch(): void {
+		$permissions = [
+			'owners' => [],
+			'editors' => [],
+			'viewers' => ['group:viewers-alpha'],
+		];
+
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('bob');
+
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->groupManager
+			->method('getUserGroupIds')
+			->willReturn(['viewers-alpha', 'all-users']);
+		$this->groupManager->method('isAdmin')->willReturn(false);
+
+		$result = $this->service->isVisibleForCurrentUser(
+			$permissions,
+			$this->userSession,
+			$this->groupManager
+		);
+
+		$this->assertTrue($result);
+	}//end testIsVisibleForCurrentUserWithGroupMatch()
+
+	// -------------------------------------------------------------------------
+	// isVisibleForCurrentUser — non-member, no wildcard → false
+	// -------------------------------------------------------------------------
+
+	/**
+	 * User has no matching UID, group, or wildcard — not visible.
+	 *
+	 * @return void
+	 */
+	public function testIsVisibleForCurrentUserReturnsFalseForNonMember(): void {
+		$permissions = [
+			'owners' => ['user:alice'],
+			'editors' => [],
+			'viewers' => ['group:viewers-alpha'],
+		];
+
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('eve');
+
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->groupManager->method('getUserGroupIds')->willReturn(['other-group']);
+		$this->groupManager->method('isAdmin')->willReturn(false);
+
+		$result = $this->service->isVisibleForCurrentUser(
+			$permissions,
+			$this->userSession,
+			$this->groupManager
+		);
+
+		$this->assertFalse($result);
+	}//end testIsVisibleForCurrentUserReturnsFalseForNonMember()
+
+	// -------------------------------------------------------------------------
+	// isVisibleForCurrentUser — Nextcloud admin bypass
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Nextcloud admins always see published entries regardless of permissions.
+	 *
+	 * @return void
+	 */
+	public function testIsVisibleForCurrentUserAdminAlwaysSees(): void {
+		$permissions = ['owners' => [], 'editors' => [], 'viewers' => []];
+
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('admin');
+
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->groupManager->method('getUserGroupIds')->willReturn([]);
+		$this->groupManager->method('isAdmin')->with('admin')->willReturn(true);
+
+		$result = $this->service->isVisibleForCurrentUser(
+			$permissions,
+			$this->userSession,
+			$this->groupManager
+		);
+
+		$this->assertTrue($result);
+	}//end testIsVisibleForCurrentUserAdminAlwaysSees()
+
+	// -------------------------------------------------------------------------
+	// isVisibleForCurrentUser — unauthenticated session → false
+	// -------------------------------------------------------------------------
+
+	/**
+	 * No session user → not visible.
+	 *
+	 * @return void
+	 */
+	public function testIsVisibleForCurrentUserReturnsFalseWhenNoSession(): void {
+		$this->userSession->method('getUser')->willReturn(null);
+
+		$result = $this->service->isVisibleForCurrentUser(
+			['owners' => ['group:*']],
+			$this->userSession,
+			$this->groupManager
+		);
+
+		$this->assertFalse($result);
+	}//end testIsVisibleForCurrentUserReturnsFalseWhenNoSession()
+
+	// -------------------------------------------------------------------------
+	// registerNavEntries — OR failure → logs warning, registers no entries
+	// -------------------------------------------------------------------------
+
+	/**
+	 * When OR throws, registerNavEntries catches it, logs, and registers nothing.
+	 *
+	 * @return void
+	 */
+	public function testRegisterNavEntriesHandlesOrFailureGracefully(): void {
+		$this->objectService
+			->method('findAll')
+			->willThrowException(new \RuntimeException('OR offline'));
+
+		$this->logger->expects($this->once())->method('warning');
+
+		$nav = $this->createMock(INavigationManager::class);
+		$nav->expects($this->never())->method('add');
+
+		$this->service->registerNavEntries($nav);
+	}//end testRegisterNavEntriesHandlesOrFailureGracefully()
+
+	// -------------------------------------------------------------------------
+	// Closure shape — published entry returns expected array keys
+	// -------------------------------------------------------------------------
+
+	/**
+	 * The closure registered for a published app returns the expected shape
+	 * including id, name, href, icon, order, and enabled.
+	 *
+	 * @return void
+	 */
+	public function testRegisteredClosureReturnsExpectedShape(): void {
+		$publishedApp = [
+			'slug' => 'hello-world',
+			'name' => 'Hello World',
+			'status' => 'published',
+			'permissions' => ['owners' => ['group:*'], 'editors' => [], 'viewers' => []],
+		];
+
+		$this->objectService
+			->method('findAll')
+			->willReturn([$publishedApp]);
+
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('admin');
+
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->groupManager->method('getUserGroupIds')->willReturn([]);
+		$this->groupManager->method('isAdmin')->willReturn(false);
+
+		$registeredClosures = [];
+		$nav = $this->createMock(INavigationManager::class);
+		$nav->method('add')
+			->willReturnCallback(function ($callable) use (&$registeredClosures): void {
+				$registeredClosures[] = $callable;
+			});
+
+		$this->service->registerNavEntries($nav);
+
+		$this->assertCount(1, $registeredClosures);
+
+		$entry = ($registeredClosures[0])();
+
+		$this->assertSame('openbuild-app-hello-world', $entry['id']);
+		$this->assertSame('Hello World', $entry['name']);
+		// Nav links target the standalone runtime page (/builder/{slug}), not
+		// the bare app root — see AppNavigationService + DashboardController::builder.
+		$this->assertStringContainsString('/apps/openbuild/builder/hello-world', $entry['href']);
+		$this->assertArrayHasKey('order', $entry);
+		$this->assertArrayHasKey('enabled', $entry);
+	}//end testRegisteredClosureReturnsExpectedShape()
+
+	/**
+	 * REQ-OBNAV-001 / #32-Fix-A: the nav entry `href` is generated via
+	 * `IURLGenerator::linkToRoute('openbuild.dashboard.builder', ...)`, NOT a
+	 * hand-built string. This makes the link include the `/index.php`
+	 * front-controller segment on instances that require it (no URL rewriting),
+	 * so the top-bar menu link does not 404 there.
+	 *
+	 * @return void
+	 */
+	public function testNavEntryHrefIsGeneratedViaLinkToRoute(): void {
+		$publishedApp = [
+			'slug' => 'hello-world',
+			'name' => 'Hello World',
+			'status' => 'published',
+			'permissions' => ['owners' => ['group:*'], 'editors' => [], 'viewers' => []],
+		];
+
+		$this->objectService->method('findAll')->willReturn([$publishedApp]);
+
+		// Capture the linkToRoute arguments to prove the correct route + slug are used.
+		$capturedRoute = null;
+		$capturedParams = null;
+		$urlGenerator = $this->createMock(IURLGenerator::class);
+		$urlGenerator->method('linkToRouteAbsolute')
+			->willReturnCallback(fn ($route, $params) => '/icon/' . $params['slug'] . '.svg');
+		$urlGenerator->method('linkToRoute')
+			->willReturnCallback(
+				function (string $route, array $params) use (&$capturedRoute, &$capturedParams): string {
+					$capturedRoute = $route;
+					$capturedParams = $params;
+					return '/index.php/apps/openbuild/builder/' . $params['slug'];
+				}
+			);
+
+		$service = new AppNavigationService(
+			$this->objectService,
+			$urlGenerator,
+			$this->userSession,
+			$this->groupManager,
+			$this->appConfig,
+			$this->logger,
+		);
+
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('admin');
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->groupManager->method('getUserGroupIds')->willReturn([]);
+		$this->groupManager->method('isAdmin')->willReturn(false);
+
+		$registeredClosures = [];
+		$nav = $this->createMock(INavigationManager::class);
+		$nav->method('add')->willReturnCallback(
+			function ($callable) use (&$registeredClosures): void {
+				$registeredClosures[] = $callable;
+			}
+		);
+
+		$service->registerNavEntries($nav);
+		$entry = ($registeredClosures[0])();
+
+		// Route + slug forwarded correctly to linkToRoute.
+		$this->assertSame('openbuild.dashboard.builder', $capturedRoute);
+		$this->assertSame(['slug' => 'hello-world'], $capturedParams);
+		// The href IS the linkToRoute output (includes the /index.php segment),
+		// not a hand-built '/apps/openbuild/builder/...' string.
+		$this->assertSame('/index.php/apps/openbuild/builder/hello-world', $entry['href']);
+		$this->assertStringStartsWith('/index.php/', $entry['href']);
+	}//end testNavEntryHrefIsGeneratedViaLinkToRoute()
 }//end class

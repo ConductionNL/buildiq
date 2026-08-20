@@ -35,7 +35,11 @@ import { test, expect } from '@playwright/test'
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 const TEST_SLUG = process.env.NC_TEST_SLUG ?? 'hello-world'
 
-async function loginAs(page: import('@playwright/test').Page, user: string, pass: string): Promise<void> {
+async function loginAs(
+	page: import('@playwright/test').Page,
+	user: string,
+	pass: string,
+): Promise<void> {
 	await page.goto(`${BASE}/index.php/login`)
 	await page.locator('input[name="user"]').fill(user)
 	await page.locator('input[name="password"]').fill(pass)
@@ -46,12 +50,49 @@ async function loginAs(page: import('@playwright/test').Page, user: string, pass
 // ---------------------------------------------------------------------------
 // Tests that require a live call site — SKIPPED until spec B ships
 // ---------------------------------------------------------------------------
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no detail / editor / version / diff / rollback UI; Schemas page misconfigured. Re-enable when #41 is fixed.
-test.describe.skip('PromoteVersionDialog — e2e with live call site (pending spec B / openbuild-app-detail-overview)', () => {
-
+// STILL SKIPPED — and the reason is now VERIFIED against a real multi-version
+// chain (tests/e2e/support/versionChain.ts), not inferred:
+//
+//   - the chain renders correctly: pills read `development`, `staging`,
+//     `* production`, and `.ob-detail-header__pill-promote` appears on exactly
+//     the two non-terminal pills (REQ-OBADO-012 is covered in
+//     applicationDetailOverview.spec.ts);
+//   - clicking that affordance opens NOTHING. `onPromoteClick()` looks for
+//     `window.openbuild.openPromoteDialog`, which is defined nowhere in src/,
+//     then falls back to emitting a `promote` event that no parent handles, and
+//     logs `console.debug('openbuild: promote dialog not registered —
+//     deferred')`. PromoteVersionDialog.vue is fully built and unit-tested
+//     (tests/dialogs/PromoteVersionDialog.spec.js) but is imported by nothing.
+//
+// So the affordance ships to users and no-ops. That is unfinished work rather
+// than a regression ("deferred" is the code's own word), and wiring the call
+// site is a feature change with destructive promotion semantics — not something
+// to do from a test file. Un-quarantining waits on that call site.
+//
+// One further caution for whoever writes it: these scenarios end by CLICKING
+// Confirm, which performs a real promotion (empty-start wipes the target
+// register). Against a fixture chain that makes the suite non-idempotent — the
+// gating assertions are the valuable part and should stop at Cancel.
+//
+// The original note follows; its diagnosis was right.
+// The real
+// blocker is this file's own TODO: every scenario below reaches the dialog
+// through
+//     TODO_PROMOTE_BUTTON_SELECTOR = '[data-testid="promote-version-btn"], button:has-text("Promote")'
+// and `promote-version-btn` exists nowhere in src/. The dialog itself ships
+// (src/dialogs/PromoteVersionDialog.vue, asserted by the static block below) and
+// its gate logic is unit-tested in tests/dialogs/PromoteVersionDialog.spec.js;
+// what is missing is the call site that opens it. ApplicationDetailHeader.vue
+// does render a `.ob-detail-header__pill-promote` affordance — wiring these
+// scenarios to THAT selector is the un-quarantine, and it needs a multi-version
+// chain to have a non-terminal pill to promote from, which this instance has
+// not got (hello-world has exactly one version, `production`).
+test.describe
+	.skip('PromoteVersionDialog — e2e with live call site (pending spec B / openbuild-app-detail-overview)', () => {
 	// TODO: Replace this selector with the actual Promote button once spec B
 	// wires the dialog into the ApplicationVersion list in the detail page.
-	const TODO_PROMOTE_BUTTON_SELECTOR = '[data-testid="promote-version-btn"], button:has-text("Promote")'
+	const TODO_PROMOTE_BUTTON_SELECTOR =
+		'[data-testid="promote-version-btn"], button:has-text("Promote")'
 
 	test.use({ storageState: { cookies: [], origins: [] } })
 
@@ -59,10 +100,15 @@ test.describe.skip('PromoteVersionDialog — e2e with live call site (pending sp
 		await loginAs(page, 'admin', 'admin')
 	})
 
-	test('5.1 — empty-start: Confirm is disabled until exact slug is typed', async ({ page }) => {
-		// Navigate to the detail page for hello-world.
-		await page.goto(`${BASE}/index.php/apps/openbuild/builder/${TEST_SLUG}`)
-		await page.waitForLoadState('networkidle', { timeout: 20_000 })
+	test('5.1 — empty-start: Confirm is disabled until exact slug is typed', async ({
+		page,
+	}) => {
+		// Navigate to the detail page for hello-world. `networkidle` never
+		// settles on Nextcloud (ADR-074 rule 4); the Promote button becoming
+		// visible is the readiness signal these scenarios actually need.
+		await page.goto(`${BASE}/index.php/apps/openbuild/builder/${TEST_SLUG}`, {
+			waitUntil: 'domcontentloaded',
+		})
 
 		// Open the Promote dialog (call site added by spec B).
 		const promoteBtn = page.locator(TODO_PROMOTE_BUTTON_SELECTOR).first()
@@ -74,23 +120,33 @@ test.describe.skip('PromoteVersionDialog — e2e with live call site (pending sp
 		await expect(dialog).toBeVisible({ timeout: 5_000 })
 
 		// Select the "empty-start" strategy radio.
-		const emptyStartRadio = dialog.locator('input[type="radio"][value="empty-start"]')
+		const emptyStartRadio = dialog
+			.locator('input[type="radio"][value="empty-start"]')
 			.or(dialog.getByText(/empty start/i))
 		await emptyStartRadio.click()
 
 		// Confirm button must be DISABLED with empty input.
 		const confirmBtn = dialog.getByRole('button', { name: /promote|confirm/i })
-		await expect(confirmBtn, 'Confirm must be disabled when empty-start is selected and input is empty').toBeDisabled()
+		await expect(
+			confirmBtn,
+			'Confirm must be disabled when empty-start is selected and input is empty',
+		).toBeDisabled()
 
 		// Type wrong slug.
 		const slugInput = dialog.locator('input[type="text"]').last()
 		await slugInput.fill('wrong-slug')
-		await expect(confirmBtn, 'Confirm must still be disabled with wrong slug').toBeDisabled()
+		await expect(
+			confirmBtn,
+			'Confirm must still be disabled with wrong slug',
+		).toBeDisabled()
 
 		// Clear and type exact slug.
 		await slugInput.fill('')
 		await slugInput.fill(TEST_SLUG)
-		await expect(confirmBtn, 'Confirm must be enabled when exact app slug is typed').toBeEnabled()
+		await expect(
+			confirmBtn,
+			'Confirm must be enabled when exact app slug is typed',
+		).toBeEnabled()
 
 		// Click Confirm — the dialog emits confirm event and closes.
 		await confirmBtn.click()
@@ -98,43 +154,61 @@ test.describe.skip('PromoteVersionDialog — e2e with live call site (pending sp
 		await expect(dialog).not.toBeVisible({ timeout: 5_000 })
 	})
 
-	test('5.2 — start-with-source-data: Confirm is enabled by default', async ({ page }) => {
-		await page.goto(`${BASE}/index.php/apps/openbuild/builder/${TEST_SLUG}`)
-		await page.waitForLoadState('networkidle', { timeout: 20_000 })
+	test('5.2 — start-with-source-data: Confirm is enabled by default', async ({
+		page,
+	}) => {
+		await page.goto(`${BASE}/index.php/apps/openbuild/builder/${TEST_SLUG}`, {
+			waitUntil: 'domcontentloaded',
+		})
 
 		const promoteBtn = page.locator(TODO_PROMOTE_BUTTON_SELECTOR).first()
+		await expect(promoteBtn).toBeVisible({ timeout: 10_000 })
 		await promoteBtn.click()
 
 		const dialog = page.locator('[role="dialog"]')
 		await expect(dialog).toBeVisible({ timeout: 5_000 })
 
 		// start-with-source-data should be available.
-		const startWithSourceRadio = dialog.locator('input[type="radio"][value="start-with-source-data"]')
-		if (await startWithSourceRadio.count() > 0) {
+		const startWithSourceRadio = dialog.locator(
+			'input[type="radio"][value="start-with-source-data"]',
+		)
+		if ((await startWithSourceRadio.count()) > 0) {
 			await startWithSourceRadio.click()
 		}
 
 		const confirmBtn = dialog.getByRole('button', { name: /promote|confirm/i })
-		await expect(confirmBtn, 'Confirm must be enabled by default for start-with-source-data').toBeEnabled()
+		await expect(
+			confirmBtn,
+			'Confirm must be enabled by default for start-with-source-data',
+		).toBeEnabled()
 	})
 
-	test('5.2 — migrate-existing-data: Confirm is enabled by default', async ({ page }) => {
-		await page.goto(`${BASE}/index.php/apps/openbuild/builder/${TEST_SLUG}`)
-		await page.waitForLoadState('networkidle', { timeout: 20_000 })
+	test('5.2 — migrate-existing-data: Confirm is enabled by default', async ({
+		page,
+	}) => {
+		await page.goto(`${BASE}/index.php/apps/openbuild/builder/${TEST_SLUG}`, {
+			waitUntil: 'domcontentloaded',
+		})
 
 		const promoteBtn = page.locator(TODO_PROMOTE_BUTTON_SELECTOR).first()
+		await expect(promoteBtn).toBeVisible({ timeout: 10_000 })
 		await promoteBtn.click()
 
 		const dialog = page.locator('[role="dialog"]')
 		await expect(dialog).toBeVisible({ timeout: 5_000 })
 
-		const migrateRadio = dialog.locator('input[type="radio"][value="migrate-existing-data"]')
-		if (await migrateRadio.count() > 0) {
+		const migrateRadio = dialog.locator(
+			'input[type="radio"][value="migrate-existing-data"]',
+		)
+		if ((await migrateRadio.count()) > 0) {
 			await migrateRadio.click()
 		}
 
 		const confirmBtn = dialog.getByRole('button', { name: /promote|confirm/i })
-		await expect(confirmBtn, 'Confirm must be enabled by default for migrate-existing-data').toBeEnabled()
+		await expect(
+			confirmBtn,
+			'Confirm must be enabled by default for migrate-existing-data',
+		).toBeEnabled()
 	})
 })
 
@@ -142,7 +216,11 @@ test.describe.skip('PromoteVersionDialog — e2e with live call site (pending sp
 // Component-smoke test via the router (no describe.skip — runs immediately)
 // ---------------------------------------------------------------------------
 // QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no detail / editor / version / diff / rollback UI; Schemas page misconfigured. Re-enable when #41 is fixed.
-test.describe.skip('PromoteVersionDialog — component available (static assertion)', () => {
+// UN-QUARANTINED 2026-07-30. Quarantining this block was spurious: it opens no
+// browser and touches no OpenBuild UI — it is an fs.stat on
+// src/dialogs/PromoteVersionDialog.vue asserting the ADR-004 modal-isolation
+// placement. A broken admin UI could never have affected it.
+test.describe('PromoteVersionDialog — component available (static assertion)', () => {
 	test('PromoteVersionDialog.vue exists in src/dialogs/ (ADR-004 modal-isolation)', async ({}) => {
 		// This is a file-system assertion: confirm the dialog lives in the
 		// correct location per ADR-004. No browser needed.
@@ -152,7 +230,13 @@ test.describe.skip('PromoteVersionDialog — component available (static asserti
 			process.cwd(),
 			'src/dialogs/PromoteVersionDialog.vue',
 		)
-		const exists = await fs.stat(dialogPath).then(() => true).catch(() => false)
-		expect(exists, 'PromoteVersionDialog.vue must be in src/dialogs/ (ADR-004)').toBe(true)
+		const exists = await fs
+			.stat(dialogPath)
+			.then(() => true)
+			.catch(() => false)
+		expect(
+			exists,
+			'PromoteVersionDialog.vue must be in src/dialogs/ (ADR-004)',
+		).toBe(true)
 	})
 })

@@ -8,6 +8,8 @@
     <summary lang="nl">Een sjabloon voor het maken van nieuwe Nextcloud-apps</summary>
     <description lang="en"><![CDATA[A starting point for building Nextcloud apps following ConductionNL conventions.
 
+**Requires:** [OpenRegister](https://apps.nextcloud.com/apps/openregister) — the data layer this app runs on. Install it from the Nextcloud App Store; the app's install repair step imports its registers and schemas into OpenRegister.
+
 **Key Features**
 
 - **Vue 2 + Pinia frontend** — Modern reactive UI with state management
@@ -35,7 +37,7 @@ Vrij en open source onder de EUPL-1.2-licentie.
 **Ondersteuning:** Voor ondersteuning, neem contact op via support@conduction.nl.
     ]]></description>
     <version>0.1.0</version>
-    <licence>agpl</licence>
+    <licence>{{license}}</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>AppTemplate</namespace>
     <documentation>

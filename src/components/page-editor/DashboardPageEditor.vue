@@ -16,7 +16,7 @@
 		<fieldset class="dashboard-page-editor__fieldset">
 			<legend>{{ t('openbuild', 'Widgets') }}</legend>
 			<WidgetBuilder
-				:model-value="config.widgets || []"
+				:modelValue="config.widgets || []"
 				@update:modelValue="update('widgets', $event)" />
 			<InlineFieldMark :error="markFor('widgets')" />
 		</fieldset>
@@ -24,7 +24,7 @@
 		<fieldset class="dashboard-page-editor__fieldset">
 			<legend>{{ t('openbuild', 'Layout') }}</legend>
 			<LayoutItemBuilder
-				:model-value="config.layout || []"
+				:modelValue="config.layout || []"
 				@update:modelValue="update('layout', $event)" />
 			<InlineFieldMark :error="markFor('layout')" />
 		</fieldset>
@@ -32,34 +32,44 @@
 </template>
 
 <script>
-import WidgetBuilder from './fields/WidgetBuilder.vue'
-import LayoutItemBuilder from './fields/LayoutItemBuilder.vue'
-import InlineFieldMark from './fields/InlineFieldMark.vue'
 import DataSourceOriginToggle from './DataSourceOriginToggle.vue'
+import InlineFieldMark from './fields/InlineFieldMark.vue'
+import LayoutItemBuilder from './fields/LayoutItemBuilder.vue'
+import WidgetBuilder from './fields/WidgetBuilder.vue'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'DashboardPageEditor',
-	components: { WidgetBuilder, LayoutItemBuilder, InlineFieldMark, DataSourceOriginToggle },
+	components: {
+		WidgetBuilder,
+		LayoutItemBuilder,
+		InlineFieldMark,
+		DataSourceOriginToggle,
+	},
+
 	mixins: [pageEditorValidationMixin],
 	props: {
 		config: {
 			type: Object,
 			default: () => ({}),
 		},
+
 		pageType: {
 			type: String,
 			default: 'dashboard',
 		},
+
 		appSlug: {
 			type: String,
 			default: '',
 		},
+
 		parentRoute: {
 			type: String,
 			default: '',
 		},
 	},
+
 	emits: ['update:config'],
 	computed: {
 		/**
@@ -71,10 +81,15 @@ export default {
 			return ['widgets', 'layout']
 		},
 	},
+
 	methods: {
 		/**
-		 * Observed behaviour of `update` (retrofit annotation).
+		 * Write one key on the page's `config` block. Only the named key is
+		 * touched, so config keys this editor does not surface round-trip
+		 * losslessly.
 		 *
+		 * @param {string} key - the config key being written: `widgets` or `layout`.
+		 * @param {Array<object>} value - the rebuilt list from WidgetBuilder / LayoutItemBuilder. Any falsy value or an empty array deletes the key rather than storing `[]`.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		update(key, value) {
@@ -86,6 +101,7 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
 		 * Persist a `dataSource` change from the origin toggle onto the
 		 * dashboard config (REQ-OCAS-002).

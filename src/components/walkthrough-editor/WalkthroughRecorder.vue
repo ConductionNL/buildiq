@@ -3,18 +3,37 @@
 <template>
 	<div class="wt-recorder">
 		<div class="wt-recorder__bar">
-			<NcCheckboxRadioSwitch type="switch" :checked="recording" @update:checked="setRecording">
-				{{ recording ? t('openbuild', 'Recording — click an element to capture its target') : t('openbuild', 'Paused — navigate the app, then resume recording') }}
+			<NcCheckboxRadioSwitch
+				type="switch"
+				:modelValue="recording"
+				@update:modelValue="setRecording">
+				{{
+					recording
+						? t(
+								'openbuild',
+								'Recording — click an element to capture its target',
+							)
+						: t(
+								'openbuild',
+								'Paused — navigate the app, then resume recording',
+							)
+				}}
 			</NcCheckboxRadioSwitch>
 			<span class="wt-recorder__spacer" />
 			<span v-if="lastPick" class="wt-recorder__last">
-				{{ t('openbuild', 'Last:') }} <code>{{ lastPick.kind }}{{ lastPick.ref ? (' · ' + lastPick.ref) : '' }}</code>
+				{{ t('openbuild', 'Last:') }}
+				<code
+					>{{ lastPick.kind
+					}}{{ lastPick.ref ? ' · ' + lastPick.ref : '' }}</code
+				>
 			</span>
-			<NcButton type="tertiary" @click="$emit('close')">
+			<NcButton variant="tertiary" @click="$emit('close')">
 				{{ t('openbuild', 'Done recording') }}
 			</NcButton>
 		</div>
-		<div class="wt-recorder__frame-wrap" :class="{ 'wt-recorder__frame-wrap--armed': recording }">
+		<div
+			class="wt-recorder__frame-wrap"
+			:class="{ 'wt-recorder__frame-wrap--armed': recording }">
 			<iframe
 				ref="frame"
 				class="wt-recorder__frame"
@@ -61,7 +80,9 @@ export default {
 	computed: {
 		iframeSrc() {
 			const base = generateUrl(`/apps/openbuild/builder/${this.appSlug}`)
-			return this.versionSlug ? `${base}?_version=${encodeURIComponent(this.versionSlug)}` : base
+			return this.versionSlug
+				? `${base}?_version=${encodeURIComponent(this.versionSlug)}`
+				: base
 		},
 	},
 
@@ -72,7 +93,7 @@ export default {
 		this.boundClick = null
 	},
 
-	beforeDestroy() {
+	beforeUnmount() {
 		this.detach()
 	},
 
@@ -81,6 +102,7 @@ export default {
 		setRecording(v) {
 			this.recording = v
 		},
+
 		/**
 		 * Attach the capture-phase click listener to the (same-origin) iframe
 		 * document once it loads. SPA navigation inside the iframe keeps the same
@@ -91,7 +113,10 @@ export default {
 		onIframeLoad() {
 			this.detach()
 			try {
-				const doc = this.$refs.frame && this.$refs.frame.contentWindow && this.$refs.frame.contentWindow.document
+				const doc =
+					this.$refs.frame
+					&& this.$refs.frame.contentWindow
+					&& this.$refs.frame.contentWindow.document
 				if (!doc) return
 				this.boundDoc = doc
 				this.boundClick = (e) => this.handleDocClick(e)
@@ -100,6 +125,7 @@ export default {
 				// Cross-origin (shouldn't happen for the same-origin runtime) — ignore.
 			}
 		},
+
 		/**
 		 * Handle a click inside the iframe: while recording, swallow it and emit
 		 * the resolved target instead of letting the app act on it.
@@ -113,6 +139,7 @@ export default {
 			e.stopPropagation()
 			this.handlePick(e.target)
 		},
+
 		/**
 		 * Resolve an element to a target and emit it.
 		 *
@@ -129,6 +156,7 @@ export default {
 			 */
 			this.$emit('pick', target)
 		},
+
 		/**
 		 * Remove the iframe click listener.
 		 *
@@ -136,7 +164,11 @@ export default {
 		 */
 		detach() {
 			if (this.boundDoc && this.boundClick) {
-				try { this.boundDoc.removeEventListener('click', this.boundClick, true) } catch (e) { /* noop */ }
+				try {
+					this.boundDoc.removeEventListener('click', this.boundClick, true)
+				} catch (e) {
+					/* noop */
+				}
 			}
 			this.boundDoc = null
 			this.boundClick = null
@@ -146,11 +178,43 @@ export default {
 </script>
 
 <style scoped>
-.wt-recorder { display: flex; flex-direction: column; gap: 8px; }
-.wt-recorder__bar { display: flex; align-items: center; gap: 12px; }
-.wt-recorder__spacer { flex: 1 1 auto; }
-.wt-recorder__last code { background: var(--color-background-dark); padding: 2px 6px; border-radius: var(--border-radius); }
-.wt-recorder__frame-wrap { border: 2px solid var(--color-border); border-radius: var(--border-radius-large); overflow: hidden; height: 70vh; }
-.wt-recorder__frame-wrap--armed { border-color: var(--color-primary-element); box-shadow: 0 0 0 2px var(--color-primary-element-light); }
-.wt-recorder__frame { width: 100%; height: 100%; border: 0; }
+.wt-recorder {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.wt-recorder__bar {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.wt-recorder__spacer {
+	flex: 1 1 auto;
+}
+
+.wt-recorder__last code {
+	background: var(--color-background-dark);
+	padding: 2px 6px;
+	border-radius: var(--border-radius);
+}
+
+.wt-recorder__frame-wrap {
+	border: 2px solid var(--color-border);
+	border-radius: var(--border-radius-large);
+	overflow: hidden;
+	height: 70vh;
+}
+
+.wt-recorder__frame-wrap--armed {
+	border-color: var(--color-primary-element);
+	box-shadow: 0 0 0 2px var(--color-primary-element-light);
+}
+
+.wt-recorder__frame {
+	width: 100%;
+	height: 100%;
+	border: 0;
+}
 </style>

@@ -14,9 +14,16 @@
 			<h3>{{ t('openbuild', 'Notifications') }}</h3>
 		</header>
 		<NcNoteCard type="info">
-			{{ t('openbuild', 'The notification editor ships in v1.1 (see design Decision 7). Existing notifications declared on this schema are shown read-only below.') }}
+			{{
+				t(
+					'openbuild',
+					'The notification editor ships in v1.1 (see design Decision 7). Existing notifications declared on this schema are shown read-only below.',
+				)
+			}}
 		</NcNoteCard>
-		<pre v-if="notifications" class="openbuild-notification-editor__readonly">{{ formatted }}</pre>
+		<pre v-if="notifications" class="openbuild-notification-editor__readonly">{{
+			formatted
+		}}</pre>
 		<p v-else class="openbuild-notification-editor__empty">
 			{{ t('openbuild', 'No notifications declared on this schema.') }}
 		</p>
@@ -32,6 +39,7 @@ export default {
 	props: {
 		notifications: { type: [Object, Array], default: null },
 	},
+
 	computed: {
 		/**
 		 * Render the notifications block as pretty JSON for read-only display.

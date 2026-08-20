@@ -25,10 +25,25 @@ import { test, expect } from '@playwright/test'
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 const LIVE = process.env.OPENBUILD_E2E_LIVE === '1'
 
-// @e2e openbuild-rbac::viewer-cannot-save-manifest-edits
 // QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no application detail / icon / template-clone UI renders. Re-enable when #41 is fixed.
-test.skip('REQ-OBRBAC-004 — owner sees edit controls on the application detail page', async ({ page }) => {
-	// @e2e openbuild-rbac::viewer-cannot-save-manifest-edits
+//
+// THE TWO TRACEABILITY ANCHORS THAT SAT HERE ARE REMOVED, and deliberately not
+// replaced. This test drives the shared ADMIN session and asserts that `main`
+// and the app name render; the requirement it claimed is about a user holding
+// ONLY the viewer role seeing a read-only textarea (or no Save). It asserts the
+// opposite role and none of the behaviour.
+//
+// Removing them changes no number today, because a skipped test is not credited.
+// That is exactly the hazard: un-skipping — the obvious way to burn gate-19 down
+// — would have scored the claim as covered with no new assertion anywhere.
+// Measured on this tree: un-skipping the seven anchors of this shape moved
+// covered 98 → 105 and uncovered 160 → 153, restored on revert.
+//
+// Writing this honestly needs a session for the `rbac-viewer` fixture user,
+// which tests/e2e/global-setup.ts already mints, plus a viewer grant on the app.
+test.skip('REQ-OBRBAC-004 — owner sees edit controls on the application detail page', async ({
+	page,
+}) => {
 	// As admin (owner), the editor must show Save/Publish controls
 	await page.goto(`${BASE}/apps/openbuild/applications`)
 
@@ -45,16 +60,28 @@ test.skip('REQ-OBRBAC-004 — owner sees edit controls on the application detail
 
 	// Admin/owner role — confirm the page renders (full owner controls tested by
 	// application-detail-ui spec; this test confirms no fatal render failure for owner)
-	await expect(
-		page.getByText('Hello World').first(),
-	).toBeVisible({ timeout: 10_000 })
+	await expect(page.getByText('Hello World').first()).toBeVisible({
+		timeout: 10_000,
+	})
 })
 
-// @e2e openbuild-rbac::editor-cannot-publish
 // QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no application detail / icon / template-clone UI renders. Re-enable when #41 is fixed.
-test.skip('REQ-OBRBAC-004 — admin sees Publish capability (owner role confirmed)', async ({ page }) => {
-	// @e2e openbuild-rbac::editor-cannot-publish
-	test.skip(!LIVE, 'Requires live dev env with a draft Application — set OPENBUILD_E2E_LIVE=1')
+//
+// ANCHORS REMOVED, and this one is worse than its neighbour on two counts. The
+// requirement is that an EDITOR sees Save and does NOT see Publish; the test is
+// titled for the ADMIN and drives the admin session. And its only assertion is
+// `expect(count).toBeGreaterThanOrEqual(0)` on a locator count — a count is
+// never negative, so the assertion CANNOT FAIL. The trailing note below says so
+// in its own words ("the test passes because the gate logic is still in place").
+// A tag on an unfalsifiable assertion is the purest form of the .github#343
+// defect: the tag is not the test.
+test.skip('REQ-OBRBAC-004 — admin sees Publish capability (owner role confirmed)', async ({
+	page,
+}) => {
+	test.skip(
+		!LIVE,
+		'Requires live dev env with a draft Application — set OPENBUILD_E2E_LIVE=1',
+	)
 
 	await page.goto(`${BASE}/apps/openbuild/applications`)
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
@@ -65,28 +92,44 @@ test.skip('REQ-OBRBAC-004 — admin sees Publish capability (owner role confirme
 	// Owner (admin) should see a Publish / action bar button
 	const publishButton = page.locator('button').filter({ hasText: /publish/i })
 	const actionCount = await publishButton.count()
-	expect(actionCount, 'owner must see at least one action button on the detail page').toBeGreaterThanOrEqual(0)
+	expect(
+		actionCount,
+		'owner must see at least one action button on the detail page',
+	).toBeGreaterThanOrEqual(0)
 	// NOTE: if no Publish button found it means the app may already be published —
 	// the test passes because the gate logic is still in place
 })
 
 // @e2e openbuild-rbac::admin-restricts-the-navigation-entry-to-one-group
-test('REQ-OBRBAC-006 — OpenBuild navigation entry is present for admin', async ({ page }) => {
+test('REQ-OBRBAC-006 — OpenBuild navigation entry is present for admin', async ({
+	page,
+}) => {
 	// @e2e openbuild-rbac::admin-restricts-the-navigation-entry-to-one-group
 	// The global nav entry test — admin always sees OpenBuild in the nav
 	// Navigate directly to the OpenBuild app to confirm the admin has access
 	await page.goto(`${BASE}/apps/openbuild/`)
-	await expect(page.locator('main'), 'OpenBuild main content must be reachable for admin').toBeVisible({ timeout: 15_000 })
+	await expect(
+		page.locator('main'),
+		'OpenBuild main content must be reachable for admin',
+	).toBeVisible({ timeout: 15_000 })
 
 	// OpenBuild navigation sidebar should be visible for the admin user
 	// (The spec says an admin can restrict the nav entry per group; this verifies the
 	//  app is reachable for the unrestricted admin baseline — proxy for nav entry present)
-	const openbuildNav = page.locator('nav, [role="navigation"]').filter({ has: page.locator('a[href*="openbuild"]') }).first()
-	await expect(openbuildNav, 'OpenBuild navigation must be present for admin').toBeVisible({ timeout: 10_000 })
+	const openbuildNav = page
+		.locator('nav, [role="navigation"]')
+		.filter({ has: page.locator('a[href*="openbuild"]') })
+		.first()
+	await expect(
+		openbuildNav,
+		'OpenBuild navigation must be present for admin',
+	).toBeVisible({ timeout: 10_000 })
 })
 
 // @e2e openbuild-rbac::admin-bypass-is-audited
-test('REQ-OBRBAC-006 — admin can reach OpenBuild app (admin bypass baseline)', async ({ page }) => {
+test('REQ-OBRBAC-006 — admin can reach OpenBuild app (admin bypass baseline)', async ({
+	page,
+}) => {
 	// @e2e openbuild-rbac::admin-bypass-is-audited
 	// The admin bypass is a PHP-side audit event; here we verify admin can reach the app
 	// (the audit trail itself is verified by Newman/PHPUnit)

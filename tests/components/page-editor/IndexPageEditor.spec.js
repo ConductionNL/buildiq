@@ -31,46 +31,78 @@ const fetchSchemaProperties = vi.fn(async () => ({
 	title: { type: 'string' },
 	route: { type: 'string' },
 }))
+// Spies on the composable factory call itself — asserts the `dataRegisters`
+// prop is forwarded into useRegisterPicker's opts (data-registers-runtime
+// task 2.4), separate from the returned fetch-fn spies above.
+const useRegisterPickerSpy = vi.fn()
 
 vi.mock('../../../src/composables/useRegisterPicker.js', () => ({
-	useRegisterPicker: () => ({
-		fetchRegisters,
-		fetchSchemas,
-		fetchSchemaProperties,
-		resolveAppRegister: () => 'openbuild-hello-world',
-	}),
+	useRegisterPicker: (opts) => {
+		useRegisterPickerSpy(opts)
+		return {
+			fetchRegisters,
+			fetchSchemas,
+			fetchSchemaProperties,
+			resolveAppRegister: () => 'openbuild-hello-world',
+		}
+	},
 }))
 
 // Stub the field builders — they have their own specs; here we only
 // verify that update:config propagates through them.
-vi.mock('../../../src/components/page-editor/fields/ColumnBuilder.vue', () => ({
-	default: {
-		name: 'ColumnBuilder',
-		props: ['modelValue', 'schemaProperties'],
-		render(h) { return h('div', { staticClass: 'column-builder-stub' }) },
+// `vi.mock` factories are hoisted above the imports, so `h` is pulled in with
+// a lazy dynamic import inside each (async) factory. Vue 3 does not pass `h`
+// into render(), and vnode classes use `class`, not Vue 2's `staticClass`.
+vi.mock('../../../src/components/page-editor/fields/ColumnBuilder.vue', async () => {
+	const { h } = await import('vue')
+	return {
+		default: {
+			name: 'ColumnBuilder',
+			props: ['modelValue', 'schemaProperties'],
+			render() {
+				return h('div', { class: 'column-builder-stub' })
+			},
+		},
+	}
+})
+vi.mock('../../../src/components/page-editor/fields/ActionBuilder.vue', async () => {
+	const { h } = await import('vue')
+	return {
+		default: {
+			name: 'ActionBuilder',
+			props: ['modelValue'],
+			render() {
+				return h('div', { class: 'action-builder-stub' })
+			},
+		},
+	}
+})
+vi.mock(
+	'../../../src/components/page-editor/fields/SidebarSectionBuilder.vue',
+	async () => {
+		const { h } = await import('vue')
+		return {
+			default: {
+				name: 'SidebarSectionBuilder',
+				props: ['modelValue'],
+				render() {
+					return h('div', { class: 'sidebar-section-builder-stub' })
+				},
+			},
+		}
 	},
-}))
-vi.mock('../../../src/components/page-editor/fields/ActionBuilder.vue', () => ({
-	default: {
-		name: 'ActionBuilder',
-		props: ['modelValue'],
-		render(h) { return h('div', { staticClass: 'action-builder-stub' }) },
-	},
-}))
-vi.mock('../../../src/components/page-editor/fields/SidebarSectionBuilder.vue', () => ({
-	default: {
-		name: 'SidebarSectionBuilder',
-		props: ['modelValue'],
-		render(h) { return h('div', { staticClass: 'sidebar-section-builder-stub' }) },
-	},
-}))
+)
 
-const IndexPageEditor = (await import('../../../src/components/page-editor/IndexPageEditor.vue')).default
+const IndexPageEditor = (
+	await import('../../../src/components/page-editor/IndexPageEditor.vue')
+).default
 
-function mountEditor(config = {}, appSlug = 'hello-world') {
-	return mount(IndexPageEditor, {
-		propsData: { config, appSlug },
-	})
+function mountEditor(config = {}, appSlug = 'hello-world', dataRegisters) {
+	const propsData = { config, appSlug }
+	if (dataRegisters !== undefined) {
+		propsData.dataRegisters = dataRegisters
+	}
+	return mount(IndexPageEditor, { propsData })
 }
 
 describe('IndexPageEditor', () => {
@@ -78,6 +110,7 @@ describe('IndexPageEditor', () => {
 		fetchRegisters.mockClear()
 		fetchSchemas.mockClear()
 		fetchSchemaProperties.mockClear()
+		useRegisterPickerSpy.mockClear()
 	})
 
 	it('renders the editor title', () => {
@@ -95,8 +128,9 @@ describe('IndexPageEditor', () => {
 		const wrapper = mountEditor()
 		await new Promise((r) => setTimeout(r, 0))
 		await wrapper.vm.$nextTick()
-		const options = wrapper.findAll('option')
-		const slugs = options.wrappers.map((w) => w.element.value)
+		// VTU v2 returns a plain array from findAll() — the v1 `.wrappers`
+		// property no longer exists.
+		const slugs = wrapper.findAll('option').map((w) => w.element.value)
 		expect(slugs).toContain('openbuild-hello-world')
 		expect(slugs).toContain('openbuild')
 	})
@@ -116,7 +150,10 @@ describe('IndexPageEditor', () => {
 	})
 
 	it('picking a register clears the previously-set schema', async () => {
-		const wrapper = mountEditor({ register: 'openbuild-hello-world', schema: 'page' })
+		const wrapper = mountEditor({
+			register: 'openbuild-hello-world',
+			schema: 'page',
+		})
 		wrapper.vm.update('register', 'openbuild')
 		await wrapper.vm.$nextTick()
 		const emitted = wrapper.emitted('update:config')
@@ -137,7 +174,11 @@ describe('IndexPageEditor', () => {
 	})
 
 	it('clearing columns to [] deletes the key from config', async () => {
-		const wrapper = mountEditor({ register: 'r', schema: 's', columns: [{ key: 'foo' }] })
+		const wrapper = mountEditor({
+			register: 'r',
+			schema: 's',
+			columns: [{ key: 'foo' }],
+		})
 		const cb = wrapper.findComponent({ name: 'ColumnBuilder' })
 		cb.vm.$emit('update:modelValue', [])
 		await wrapper.vm.$nextTick()
@@ -181,5 +222,25 @@ describe('IndexPageEditor', () => {
 		await wrapper.vm.$nextTick()
 		const next = wrapper.emitted('update:config')[0][0]
 		expect(next.cardComponent).toBe('OpenBuildDefaultCard')
+	})
+
+	// data-registers-runtime task 2.4/2.1: dataRegisters prop pass-through.
+	it('forwards the dataRegisters prop into useRegisterPicker', () => {
+		const dataRegisters = [
+			{ register: 'spectr', label: 'Spectr market intelligence data' },
+		]
+		mountEditor({}, 'hello-world', dataRegisters)
+		expect(useRegisterPickerSpy).toHaveBeenCalledWith({
+			appSlug: 'hello-world',
+			dataRegisters,
+		})
+	})
+
+	it('defaults dataRegisters to [] when the prop is not passed', () => {
+		mountEditor({}, 'hello-world')
+		expect(useRegisterPickerSpy).toHaveBeenCalledWith({
+			appSlug: 'hello-world',
+			dataRegisters: [],
+		})
 	})
 })

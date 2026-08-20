@@ -20,10 +20,12 @@ describe('registerSlugForApp — register slug construction (REQ-OBVR-007)', () 
 
 		// Mock createObjectStore so we can import the module without Pinia setup
 		vi.doMock('@conduction/nextcloud-vue', () => ({
-			createObjectStore: vi.fn(() => vi.fn(() => ({
-				objectTypeRegistry: {},
-				registerObjectType: vi.fn(),
-			}))),
+			createObjectStore: vi.fn(() =>
+				vi.fn(() => ({
+					objectTypeRegistry: {},
+					registerObjectType: vi.fn(),
+				})),
+			),
 		}))
 
 		const mod = await import('../../src/store/schemas.js')
@@ -35,7 +37,9 @@ describe('registerSlugForApp — register slug construction (REQ-OBVR-007)', () 
 	})
 
 	it('returns openbuild-{appSlug} when versionSlug is undefined', () => {
-		expect(registerSlugForApp('hello-world', undefined)).toBe('openbuild-hello-world')
+		expect(registerSlugForApp('hello-world', undefined)).toBe(
+			'openbuild-hello-world',
+		)
 	})
 
 	it('returns openbuild-{appSlug} when versionSlug is empty string', () => {
@@ -43,15 +47,21 @@ describe('registerSlugForApp — register slug construction (REQ-OBVR-007)', () 
 	})
 
 	it('returns openbuild-{appSlug}-{versionSlug} when versionSlug is provided (spec C)', () => {
-		expect(registerSlugForApp('hello-world', 'staging')).toBe('openbuild-hello-world-staging')
+		expect(registerSlugForApp('hello-world', 'staging')).toBe(
+			'openbuild-hello-world-staging',
+		)
 	})
 
 	it('handles multi-segment slugs correctly', () => {
-		expect(registerSlugForApp('my-complex-app', 'v2-beta')).toBe('openbuild-my-complex-app-v2-beta')
+		expect(registerSlugForApp('my-complex-app', 'v2-beta')).toBe(
+			'openbuild-my-complex-app-v2-beta',
+		)
 	})
 
 	it('handles production version slug', () => {
-		expect(registerSlugForApp('my-app', 'production')).toBe('openbuild-my-app-production')
+		expect(registerSlugForApp('my-app', 'production')).toBe(
+			'openbuild-my-app-production',
+		)
 	})
 })
 
@@ -73,12 +83,9 @@ describe('useSchemasStore — re-registers when register changes', () => {
 
 		useSchemasStore('hello-world', 'staging')
 
-		expect(registerObjectType).toHaveBeenCalledWith(
-			'schema',
-			'schemas',
-			'api',
-			{ registerSlug: 'openbuild-hello-world-staging' },
-		)
+		expect(registerObjectType).toHaveBeenCalledWith('schema', 'schemas', 'api', {
+			registerSlug: 'openbuild-hello-world-staging',
+		})
 	})
 
 	it('registers to the legacy register when versionSlug is absent', async () => {
@@ -98,12 +105,9 @@ describe('useSchemasStore — re-registers when register changes', () => {
 
 		useSchemasStore('hello-world')
 
-		expect(registerObjectType).toHaveBeenCalledWith(
-			'schema',
-			'schemas',
-			'api',
-			{ registerSlug: 'openbuild-hello-world' },
-		)
+		expect(registerObjectType).toHaveBeenCalledWith('schema', 'schemas', 'api', {
+			registerSlug: 'openbuild-hello-world',
+		})
 	})
 
 	it('re-registers when called again with a different register', async () => {
@@ -132,7 +136,9 @@ describe('useSchemasStore — re-registers when register changes', () => {
 		)
 
 		// Simulate version change — objectTypeRegistry now has the old register recorded
-		fakeStore.objectTypeRegistry.schema = { slugs: { registerSlug: 'openbuild-hello-world-staging' } }
+		fakeStore.objectTypeRegistry.schema = {
+			slugs: { registerSlug: 'openbuild-hello-world-staging' },
+		}
 
 		// Second call with different version — should re-register
 		useSchemasStore('hello-world', 'production')

@@ -39,7 +39,8 @@ export function caseUuidFromReference(reference) {
 	if (typeof reference !== 'string' || reference === '') {
 		return ''
 	}
-	const uuidRe = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/
+	const uuidRe =
+		/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/
 	const match = reference.match(uuidRe)
 	return match ? match[0] : ''
 }

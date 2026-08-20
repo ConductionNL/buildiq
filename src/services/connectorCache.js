@@ -79,7 +79,7 @@ export async function readThrough(key, ttlMs, loader, now = Date.now) {
 	const t = now()
 
 	// Fresh hit.
-	if (entry && entry.data !== undefined && (t - entry.fetchedAt) < entry.ttlMs) {
+	if (entry && entry.data !== undefined && t - entry.fetchedAt < entry.ttlMs) {
 		return { data: entry.data, isStale: false }
 	}
 
@@ -110,7 +110,7 @@ export async function readThrough(key, ttlMs, loader, now = Date.now) {
 			ttlMs,
 			inflight: null,
 		})
-		if (prev && prev.data !== undefined && (now() - prev.fetchedAt) < (ttlMs * 10)) {
+		if (prev && prev.data !== undefined && now() - prev.fetchedAt < ttlMs * 10) {
 			return { data: prev.data, isStale: true }
 		}
 		throw err

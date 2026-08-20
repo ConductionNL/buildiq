@@ -25,7 +25,7 @@
 						type="radio"
 						:checked="transportShape === 'conversationSource'"
 						value="conversationSource"
-						@change="setTransportShape('conversationSource')">
+						@change="setTransportShape('conversationSource')" />
 					{{ t('openbuild', 'conversationSource (message stream)') }}
 				</label>
 				<label class="chat-page-editor__inline">
@@ -33,18 +33,24 @@
 						type="radio"
 						:checked="transportShape === 'postUrl'"
 						value="postUrl"
-						@change="setTransportShape('postUrl')">
+						@change="setTransportShape('postUrl')" />
 					{{ t('openbuild', 'postUrl (send endpoint)') }}
 				</label>
 			</div>
-			<label v-if="transportShape === 'conversationSource'" class="chat-page-editor__group-row">
+			<label
+				v-if="transportShape === 'conversationSource'"
+				class="chat-page-editor__group-row">
 				{{ t('openbuild', 'conversationSource') }}
 				<input
 					type="text"
 					:value="config.conversationSource || ''"
-					:placeholder="t('openbuild', '/api/objects/:slug/messages or a stream URL')"
+					:placeholder="
+						t('openbuild', '/api/objects/:slug/messages or a stream URL')
+					"
 					:aria-invalid="isInvalid('conversationSource')"
-					@input="setTransport('conversationSource', $event.target.value)">
+					@input="
+						setTransport('conversationSource', $event.target.value)
+					" />
 				<InlineFieldMark :error="markFor('conversationSource')" />
 			</label>
 			<label v-else class="chat-page-editor__group-row">
@@ -54,11 +60,16 @@
 					:value="config.postUrl || ''"
 					:placeholder="t('openbuild', '/api/objects/:slug/messages')"
 					:aria-invalid="isInvalid('postUrl')"
-					@input="setTransport('postUrl', $event.target.value)">
+					@input="setTransport('postUrl', $event.target.value)" />
 				<InlineFieldMark :error="markFor('postUrl')" />
 			</label>
 			<p class="chat-page-editor__hint">
-				{{ t('openbuild', 'Exactly one of conversationSource or postUrl must be set.') }}
+				{{
+					t(
+						'openbuild',
+						'Exactly one of conversationSource or postUrl must be set.',
+					)
+				}}
 			</p>
 		</fieldset>
 
@@ -71,7 +82,7 @@
 					:value="config.schema || ''"
 					:placeholder="t('openbuild', 'e.g. message')"
 					:aria-invalid="isInvalid('schema')"
-					@input="update('schema', $event.target.value)">
+					@input="update('schema', $event.target.value)" />
 				<InlineFieldMark :error="markFor('schema')" />
 			</label>
 		</fieldset>
@@ -91,19 +102,23 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
 		pageType: {
 			type: String,
 			default: 'chat',
 		},
+
 		appSlug: {
 			type: String,
 			default: '',
 		},
+
 		parentRoute: {
 			type: String,
 			default: '',
 		},
 	},
+
 	emits: ['update:config'],
 	computed: {
 		/**
@@ -114,6 +129,7 @@ export default {
 		validatedConfigKeys() {
 			return ['conversationSource', 'postUrl', 'schema']
 		},
+
 		/**
 		 * Observed behaviour of `transportShape` (retrofit annotation).
 		 *
@@ -126,10 +142,16 @@ export default {
 			return 'conversationSource'
 		},
 	},
+
 	methods: {
 		/**
-		 * Observed behaviour of `update` (retrofit annotation).
+		 * Write one key on the page's `config` block. Only the named key is
+		 * touched, so config keys this editor does not surface round-trip
+		 * losslessly. Transport keys go through `setTransport` instead, which
+		 * also enforces the one-of.
 		 *
+		 * @param {string} key - the config key being written; from the template only `schema`, the optional message-record schema slug.
+		 * @param {string} value - the new value from the bound input; `''` (or `null`) deletes the key.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		update(key, value) {
@@ -141,9 +163,14 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
-		 * Observed behaviour of `setTransportShape` (retrofit annotation).
+		 * Switch between the two mutually exclusive transports by deleting
+		 * the key of the branch being left, so the emitted config never
+		 * carries both halves of the one-of. The value of the abandoned key
+		 * is lost.
 		 *
+		 * @param {'conversationSource'|'postUrl'} shape - the radio's value: `postUrl` drops `conversationSource`, anything else drops `postUrl`.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setTransportShape(shape) {
@@ -155,9 +182,14 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
-		 * Observed behaviour of `setTransport` (retrofit annotation).
+		 * Write the active transport endpoint and clear its partner in the
+		 * same emit, so typing in one branch can never leave a stale value in
+		 * the other half of the one-of.
 		 *
+		 * @param {'conversationSource'|'postUrl'} key - which transport is being typed into; the other of the two is deleted.
+		 * @param {string} value - the endpoint / stream URL from the bound input; `''` deletes the key too, leaving neither branch set.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setTransport(key, value) {

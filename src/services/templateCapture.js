@@ -107,9 +107,11 @@ export function rewriteSchemaRefs(node, map) {
 	}
 	const out = {}
 	for (const [key, value] of Object.entries(node)) {
-		if ((key === 'schema' || key === 'relatedSchema')
+		if (
+			(key === 'schema' || key === 'relatedSchema')
 			&& typeof value === 'string'
-			&& Object.prototype.hasOwnProperty.call(map, value)) {
+			&& Object.hasOwn(map, value)
+		) {
 			out[key] = map[value]
 			continue
 		}
@@ -124,22 +126,20 @@ export function rewriteSchemaRefs(node, map) {
  * break the round-trip, so it fails loudly (REQ-SAT-002).
  */
 export class SlugCollisionError extends Error {
-
 	/**
 	 * @param {string} canonicalSlug - the colliding canonical slug.
 	 * @param {string[]} sourceSlugs - the two source slugs that collided.
 	 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
 	 */
 	constructor(canonicalSlug, sourceSlugs) {
-
-		super(`openbuild.templates.saveAs.error.slug-collision: ${sourceSlugs.join(', ')} → ${canonicalSlug}`)
+		super(
+			`openbuild.templates.saveAs.error.slug-collision: ${sourceSlugs.join(', ')} → ${canonicalSlug}`,
+		)
 		this.name = 'SlugCollisionError'
 		this.code = 'slug-collision'
 		this.canonicalSlug = canonicalSlug
 		this.sourceSlugs = sourceSlugs
-
 	}
-
 }
 
 /**
@@ -177,9 +177,14 @@ export function captureTemplate(application, schemas, manifest, metadata) {
 			continue
 		}
 		const { slug: canonical, shared } = deNamespaceSlug(sourceSlug, appSlug)
-		if (Object.prototype.hasOwnProperty.call(canonicalToSource, canonical)
-			&& canonicalToSource[canonical] !== sourceSlug) {
-			throw new SlugCollisionError(canonical, [canonicalToSource[canonical], sourceSlug])
+		if (
+			Object.hasOwn(canonicalToSource, canonical)
+			&& canonicalToSource[canonical] !== sourceSlug
+		) {
+			throw new SlugCollisionError(canonical, [
+				canonicalToSource[canonical],
+				sourceSlug,
+			])
 		}
 		canonicalToSource[canonical] = sourceSlug
 		rewriteMap[sourceSlug] = canonical
@@ -256,8 +261,9 @@ export function bumpMinor(version) {
  * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
  */
 export function resolveSaveTarget(slug, existingTemplates, canWrite) {
-	const match = (Array.isArray(existingTemplates) ? existingTemplates : [])
-		.find((tpl) => tpl && tpl.slug === slug)
+	const match = (Array.isArray(existingTemplates) ? existingTemplates : []).find(
+		(tpl) => tpl && tpl.slug === slug,
+	)
 	if (!match) {
 		return { mode: 'create' }
 	}

@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenBuild\Tests\Unit\Repair;
 
 use OCA\OpenBuild\Repair\PopulateApplicationPermissions;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -32,180 +33,212 @@ use Psr\Log\LoggerInterface;
 /**
  * Tests for PopulateApplicationPermissions::run.
  */
-class PopulateApplicationPermissionsTest extends TestCase
-{
-    /**
-     * Mock logger.
-     *
-     * @var LoggerInterface&MockObject
-     */
-    private LoggerInterface&MockObject $logger;
+class PopulateApplicationPermissionsTest extends TestCase {
+	/**
+	 * Mock logger.
+	 *
+	 * @var LoggerInterface&MockObject
+	 */
+	private LoggerInterface&MockObject $logger;
 
-    /**
-     * Mock OR ObjectService.
-     *
-     * @var ObjectService&MockObject
-     */
-    private ObjectService&MockObject $objectService;
+	/**
+	 * Mock OR ObjectService.
+	 *
+	 * @var ObjectServiceInterface&MockObject
+	 */
+	private ObjectServiceInterface&MockObject $objectService;
 
-    /**
-     * Mock IOutput.
-     *
-     * @var IOutput&MockObject
-     */
-    private IOutput&MockObject $output;
+	/**
+	 * Mock IOutput.
+	 *
+	 * @var IOutput&MockObject
+	 */
+	private IOutput&MockObject $output;
 
-    /**
-     * Set up test fixtures.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Set up test fixtures.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->logger        = $this->createMock(LoggerInterface::class);
-        $this->output        = $this->createMock(IOutput::class);
-        $this->objectService = $this->createMock(ObjectService::class);
-    }//end setUp()
+		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->output = $this->createMock(IOutput::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 
-    /**
-     * Test that getName returns a non-empty descriptive name.
-     *
-     * @return void
-     */
-    public function testGetNameReturnsDescriptiveName(): void
-    {
-        $step = new PopulateApplicationPermissions(
-            logger: $this->logger,
-            objectService: $this->objectService
-        );
+		// `ObjectService::runAsSystem()` really invokes the given callable and
+		// returns its result — mirrors the real elevation, which is
+		// transparent to the caller.
+		$this->objectService->method('runAsSystem')->willReturnCallback(
+			static fn (callable $operation) => $operation()
+		);
+	}//end setUp()
 
-        self::assertNotEmpty($step->getName());
-        self::assertStringContainsString('permissions', $step->getName());
-    }//end testGetNameReturnsDescriptiveName()
+	/**
+	 * Test that getName returns a non-empty descriptive name.
+	 *
+	 * @return void
+	 */
+	public function testGetNameReturnsDescriptiveName(): void {
+		$step = new PopulateApplicationPermissions(
+			logger: $this->logger,
+			objectService: $this->objectService
+		);
 
-    /**
-     * Applications without `permissions` get patched; those with non-empty
-     * `permissions.owners` are skipped (idempotent).
-     *
-     * @return void
-     */
-    public function testRunPatchesOnlyApplicationsMissingPermissions(): void
-    {
-        $missing = [
-            '@self'    => ['id' => 'uuid-missing'],
-            'slug'     => 'legacy',
-            'manifest' => ['version' => '1.0.0'],
-        ];
-        $populated = [
-            '@self'       => ['id' => 'uuid-populated'],
-            'slug'        => 'modern',
-            'manifest'    => ['version' => '1.0.0'],
-            'permissions' => [
-                'owners'  => ['team-alpha'],
-                'editors' => [],
-                'viewers' => [],
-            ],
-        ];
+		self::assertNotEmpty($step->getName());
+		self::assertStringContainsString('permissions', $step->getName());
+	}//end testGetNameReturnsDescriptiveName()
 
-        $this->objectService->expects(self::once())
-            ->method('findAll')
-            ->willReturn([$missing, $populated]);
+	/**
+	 * Applications without `permissions` get patched; those with non-empty
+	 * `permissions.owners` are skipped (idempotent).
+	 *
+	 * @return void
+	 */
+	public function testRunPatchesOnlyApplicationsMissingPermissions(): void {
+		$missing = [
+			'@self' => ['id' => 'uuid-missing'],
+			'slug' => 'legacy',
+			'manifest' => ['version' => '1.0.0'],
+		];
+		$populated = [
+			'@self' => ['id' => 'uuid-populated'],
+			'slug' => 'modern',
+			'manifest' => ['version' => '1.0.0'],
+			'permissions' => [
+				'owners' => ['team-alpha'],
+				'editors' => [],
+				'viewers' => [],
+			],
+		];
 
-        $this->objectService->expects(self::once())
-            ->method('saveObject')
-            ->with(
-                self::callback(static function (array $object): bool {
-                    return ($object['@self']['id'] ?? null) === 'uuid-missing'
-                        && ($object['permissions']['owners'] ?? null) === ['admin']
-                        && ($object['permissions']['editors'] ?? null) === []
-                        && ($object['permissions']['viewers'] ?? null) === [];
-                })
-            );
+		$this->objectService->expects(self::once())
+			->method('findAll')
+			->willReturn([$missing, $populated]);
 
-        $step = new PopulateApplicationPermissions(
-            logger: $this->logger,
-            objectService: $this->objectService
-        );
-        $step->run($this->output);
-    }//end testRunPatchesOnlyApplicationsMissingPermissions()
+		$this->objectService->expects(self::once())
+			->method('saveObject')
+			->with(
+				self::callback(static function (array $object): bool {
+					return ($object['@self']['id'] ?? null) === 'uuid-missing'
+						&& ($object['permissions']['owners'] ?? null) === ['admin']
+						&& ($object['permissions']['editors'] ?? null) === []
+						&& ($object['permissions']['viewers'] ?? null) === [];
+				})
+			);
 
-    /**
-     * Re-running the migration on a fully populated install is a no-op.
-     *
-     * @return void
-     */
-    public function testRunIsIdempotentWhenAllPopulated(): void
-    {
-        $populated = [
-            '@self'       => ['id' => 'uuid-populated'],
-            'slug'        => 'modern',
-            'permissions' => [
-                'owners'  => ['team-alpha'],
-                'editors' => [],
-                'viewers' => [],
-            ],
-        ];
+		$step = new PopulateApplicationPermissions(
+			logger: $this->logger,
+			objectService: $this->objectService
+		);
+		$step->run($this->output);
+	}//end testRunPatchesOnlyApplicationsMissingPermissions()
 
-        $this->objectService->expects(self::once())
-            ->method('findAll')
-            ->willReturn([$populated]);
-        $this->objectService->expects(self::never())->method('saveObject');
+	/**
+	 * Re-running the migration on a fully populated install is a no-op.
+	 *
+	 * @return void
+	 */
+	public function testRunIsIdempotentWhenAllPopulated(): void {
+		$populated = [
+			'@self' => ['id' => 'uuid-populated'],
+			'slug' => 'modern',
+			'permissions' => [
+				'owners' => ['team-alpha'],
+				'editors' => [],
+				'viewers' => [],
+			],
+		];
 
-        $step = new PopulateApplicationPermissions(
-            logger: $this->logger,
-            objectService: $this->objectService
-        );
-        $step->run($this->output);
-    }//end testRunIsIdempotentWhenAllPopulated()
+		$this->objectService->expects(self::once())
+			->method('findAll')
+			->willReturn([$populated]);
+		$this->objectService->expects(self::never())->method('saveObject');
 
-    /**
-     * Applications with `permissions.owners = []` are treated as needing
-     * migration (they'd be unreachable otherwise — REQ-OBRBAC-005).
-     *
-     * @return void
-     */
-    public function testRunPatchesWhenOwnersArrayIsEmpty(): void
-    {
-        $orphan = [
-            '@self'       => ['id' => 'uuid-orphan'],
-            'slug'        => 'orphan',
-            'permissions' => [
-                'owners'  => [],
-                'editors' => ['team-alpha'],
-                'viewers' => [],
-            ],
-        ];
+		$step = new PopulateApplicationPermissions(
+			logger: $this->logger,
+			objectService: $this->objectService
+		);
+		$step->run($this->output);
+	}//end testRunIsIdempotentWhenAllPopulated()
 
-        $this->objectService->expects(self::once())
-            ->method('findAll')
-            ->willReturn([$orphan]);
-        $this->objectService->expects(self::once())->method('saveObject');
+	/**
+	 * Applications with `permissions.owners = []` are treated as needing
+	 * migration (they'd be unreachable otherwise — REQ-OBRBAC-005).
+	 *
+	 * @return void
+	 */
+	public function testRunPatchesWhenOwnersArrayIsEmpty(): void {
+		$orphan = [
+			'@self' => ['id' => 'uuid-orphan'],
+			'slug' => 'orphan',
+			'permissions' => [
+				'owners' => [],
+				'editors' => ['team-alpha'],
+				'viewers' => [],
+			],
+		];
 
-        $step = new PopulateApplicationPermissions(
-            logger: $this->logger,
-            objectService: $this->objectService
-        );
-        $step->run($this->output);
-    }//end testRunPatchesWhenOwnersArrayIsEmpty()
+		$this->objectService->expects(self::once())
+			->method('findAll')
+			->willReturn([$orphan]);
+		$this->objectService->expects(self::once())->method('saveObject');
 
-    /**
-     * Empty Application list — no-op without exception.
-     *
-     * @return void
-     */
-    public function testRunSucceedsOnEmptyApplicationList(): void
-    {
-        $this->objectService->expects(self::once())
-            ->method('findAll')
-            ->willReturn([]);
-        $this->objectService->expects(self::never())->method('saveObject');
+		$step = new PopulateApplicationPermissions(
+			logger: $this->logger,
+			objectService: $this->objectService
+		);
+		$step->run($this->output);
+	}//end testRunPatchesWhenOwnersArrayIsEmpty()
 
-        $step = new PopulateApplicationPermissions(
-            logger: $this->logger,
-            objectService: $this->objectService
-        );
-        $step->run($this->output);
-    }//end testRunSucceedsOnEmptyApplicationList()
+	/**
+	 * Empty Application list — no-op without exception.
+	 *
+	 * @return void
+	 */
+	public function testRunSucceedsOnEmptyApplicationList(): void {
+		$this->objectService->expects(self::once())
+			->method('findAll')
+			->willReturn([]);
+		$this->objectService->expects(self::never())->method('saveObject');
+
+		$step = new PopulateApplicationPermissions(
+			logger: $this->logger,
+			objectService: $this->objectService
+		);
+		$step->run($this->output);
+	}//end testRunSucceedsOnEmptyApplicationList()
+
+	/**
+	 * The find-and-patch body runs elevated: the repair step has no user
+	 * session (Anonymous), and without `runAsSystem()` OpenRegister RBAC
+	 * denies the `find`/`update` calls outright ("User 'Anonymous' does not
+	 * have permission to ... objects in schema 'Application'").
+	 *
+	 * @return void
+	 */
+	public function testRunWrapsFindAndPatchInSystemContext(): void {
+		// Fresh mock, scoped to this test: a single matcher owns both the
+		// "called exactly once" assertion and the invoke-the-callable
+		// behaviour, so there is no ambiguity with setUp()'s default stub.
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
+
+		$missing = [
+			'@self' => ['id' => 'uuid-missing'],
+			'slug' => 'legacy',
+		];
+		$this->objectService->method('findAll')->willReturn([$missing]);
+		$this->objectService->expects(self::once())->method('saveObject');
+
+		$this->objectService->expects(self::once())
+			->method('runAsSystem')
+			->willReturnCallback(static fn (callable $operation) => $operation());
+
+		$step = new PopulateApplicationPermissions(
+			logger: $this->logger,
+			objectService: $this->objectService
+		);
+		$step->run($this->output);
+	}//end testRunWrapsFindAndPatchInSystemContext()
 }//end class

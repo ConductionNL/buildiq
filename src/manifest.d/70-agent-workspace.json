@@ -1,0 +1,14 @@
+{
+	"_comment": "ADR-037 manifest fragment — agent-workspace. Registers the Agents page only; NO top-level menu entry, mirroring 40-automations.json's off-nav posture. Agents exist only as part of an app (reached from within the app builder), so the standalone /agents page stays routable for deep-links but is intentionally off the main nav. src/main.js mergeManifestFragments() concatenates pages onto src/manifest.json.",
+	"menu": [],
+	"pages": [
+		{
+			"id": "Agents",
+			"route": "/agents",
+			"type": "custom",
+			"title": "Agents",
+			"component": "AgentsPageView",
+			"_note": "Custom page hosting the Agent Workspace (AgentsPage.vue) — Agent CRUD, per-agent chat (reusing CopilotPanel.vue scoped to that agent's agentId/enabledTools), and the transparent run-history list (AgentRunHistory.vue). type:custom because the chat panel + run-log viewer are bespoke and no built-in page type covers them."
+		}
+	]
+}

@@ -24,13 +24,15 @@ const baseStubs = {
 	NcDialog: {
 		name: 'NcDialog',
 		props: ['name', 'canClose'],
-		template: '<div class="nc-dialog-stub"><slot /><div class="nc-dialog-actions"><slot name="actions" /></div></div>',
+		template:
+			'<div class="nc-dialog-stub"><slot /><div class="nc-dialog-actions"><slot name="actions" /></div></div>',
 		emits: ['closing'],
 	},
 	NcButton: {
 		name: 'NcButton',
-		props: ['type', 'disabled'],
-		template: '<button :disabled="disabled || false" :data-type="type" @click="$emit(\'click\', $event)"><slot /></button>',
+		props: ['type', 'variant', 'disabled'],
+		template:
+			'<button :disabled="disabled || false" :data-type="variant || type" @click="$emit(\'click\', $event)"><slot /></button>',
 	},
 	NcCheckboxRadioSwitch: {
 		name: 'NcCheckboxRadioSwitch',
@@ -53,7 +55,8 @@ const baseStubs = {
 		name: 'NcTextField',
 		props: ['value', 'label', 'placeholder', 'helperText', 'autocomplete'],
 		// Use both :value and v-model-like binding to support .sync / v-model
-		template: '<input class="nc-textfield-stub" :data-label="label" :value="value" @input="$emit(\'update:value\', $event.target.value)" />',
+		template:
+			'<input class="nc-textfield-stub" :data-label="label" :value="value" @input="$emit(\'update:value\', $event.target.value)" />',
 		emits: ['update:value'],
 	},
 }
@@ -105,7 +108,6 @@ function mountDialog(props = {}) {
 }
 
 describe('PromoteVersionDialog.vue (spec D task 4.9)', () => {
-
 	// -----------------------------------------------------------------------
 	// Default strategy rule (REQ-OBVP-011)
 	// -----------------------------------------------------------------------
@@ -134,7 +136,7 @@ describe('PromoteVersionDialog.vue (spec D task 4.9)', () => {
 	})
 
 	it('never defaults to empty-start (spec REQ-OBVP-011 — empty-start is always user-initiated)', () => {
-		const strategies = [TARGET_PRODUCTION, TARGET_MIDCHAIN].map(target => {
+		const strategies = [TARGET_PRODUCTION, TARGET_MIDCHAIN].map((target) => {
 			const w = mountDialog({ targetVersion: target })
 			return w.vm.selectedStrategy
 		})
@@ -161,7 +163,10 @@ describe('PromoteVersionDialog.vue (spec D task 4.9)', () => {
 		// selectedStrategy defaults to start-with-source-data
 		const confirmBtn = wrapper.find('button[data-type="primary"]')
 		expect(confirmBtn.exists()).toBe(true)
-		expect(confirmBtn.attributes('disabled')).toBeFalsy()
+		// `toBeUndefined`, not `toBeFalsy`: under Vue 3 a *disabled* button
+		// renders `disabled=""`, which is itself falsy — only absence proves
+		// the button is enabled.
+		expect(confirmBtn.attributes('disabled')).toBeUndefined()
 	})
 
 	it('isDestructiveGateMet is false for empty-start with empty typedSlug', () => {
@@ -179,14 +184,18 @@ describe('PromoteVersionDialog.vue (spec D task 4.9)', () => {
 	})
 
 	it('isDestructiveGateMet is true for empty-start when typedSlug matches app.slug exactly', () => {
-		const wrapper = mountDialog({ application: { slug: 'hello-world', productionVersion: 'prod-uuid-001' } })
+		const wrapper = mountDialog({
+			application: { slug: 'hello-world', productionVersion: 'prod-uuid-001' },
+		})
 		wrapper.vm.selectedStrategy = 'empty-start'
 		wrapper.vm.typedSlug = 'hello-world'
 		expect(wrapper.vm.isDestructiveGateMet).toBe(true)
 	})
 
 	it('isDestructiveGateMet is false for empty-start with wrong-case slug (case-sensitive check)', () => {
-		const wrapper = mountDialog({ application: { slug: 'hello-world', productionVersion: 'prod-uuid-001' } })
+		const wrapper = mountDialog({
+			application: { slug: 'hello-world', productionVersion: 'prod-uuid-001' },
+		})
 		wrapper.vm.selectedStrategy = 'empty-start'
 		wrapper.vm.typedSlug = 'Hello-World'
 		expect(wrapper.vm.isDestructiveGateMet).toBe(false)
@@ -198,23 +207,34 @@ describe('PromoteVersionDialog.vue (spec D task 4.9)', () => {
 		wrapper.vm.typedSlug = ''
 		await wrapper.vm.$nextTick()
 		const confirmBtn = wrapper.find('button[data-type="primary"]')
-		expect(confirmBtn.attributes('disabled')).toBeTruthy()
+		// Vue 3 renders a true boolean attribute as `disabled=""`, not Vue 2's
+		// `disabled="disabled"`, so the value is the falsy empty string —
+		// presence, not truthiness, is what says "disabled".
+		expect(confirmBtn.attributes('disabled')).toBeDefined()
 	})
 
 	it('Confirm button enables when empty-start selected and exact slug typed', async () => {
-		const wrapper = mountDialog({ application: { slug: 'hello-world', productionVersion: 'prod-uuid-001' } })
+		const wrapper = mountDialog({
+			application: { slug: 'hello-world', productionVersion: 'prod-uuid-001' },
+		})
 		wrapper.vm.selectedStrategy = 'empty-start'
 		wrapper.vm.typedSlug = 'hello-world'
 		await wrapper.vm.$nextTick()
 		const confirmBtn = wrapper.find('button[data-type="primary"]')
-		expect(confirmBtn.attributes('disabled')).toBeFalsy()
+		// `toBeUndefined`, not `toBeFalsy`: under Vue 3 a *disabled* button
+		// renders `disabled=""`, which is itself falsy — only absence proves
+		// the button is enabled.
+		expect(confirmBtn.attributes('disabled')).toBeUndefined()
 	})
 
 	// -----------------------------------------------------------------------
 	// Event emission
 	// -----------------------------------------------------------------------
 	it('emits confirm with chosen strategy on Confirm click when gate is met', async () => {
-		const wrapper = mountDialog({ targetVersion: TARGET_MIDCHAIN, application: APP_PRODUCTION })
+		const wrapper = mountDialog({
+			targetVersion: TARGET_MIDCHAIN,
+			application: APP_PRODUCTION,
+		})
 		wrapper.vm.selectedStrategy = 'start-with-source-data'
 		await wrapper.vm.$nextTick()
 

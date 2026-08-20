@@ -4,13 +4,17 @@
   -->
 <template>
 	<div class="layout-item-builder">
-		<div v-for="(item, index) in localItems" :key="index" class="layout-item-builder__row">
+		<div
+			v-for="(item, index) in localItems"
+			:key="index"
+			class="layout-item-builder__row">
 			<input
 				:value="item.widgetId || ''"
 				type="text"
 				class="layout-item-builder__field"
 				:placeholder="t('openbuild', 'widget id')"
-				@input="updateField(index, 'widgetId', $event.target.value)">
+				:aria-label="t('openbuild', 'widget id')"
+				@input="updateField(index, 'widgetId', $event.target.value)" />
 			<label class="layout-item-builder__pair">
 				X
 				<input
@@ -18,7 +22,7 @@
 					type="number"
 					min="0"
 					class="layout-item-builder__num"
-					@input="updateNum(index, 'gridX', $event.target.value)">
+					@input="updateNum(index, 'gridX', $event.target.value)" />
 			</label>
 			<label class="layout-item-builder__pair">
 				Y
@@ -27,7 +31,7 @@
 					type="number"
 					min="0"
 					class="layout-item-builder__num"
-					@input="updateNum(index, 'gridY', $event.target.value)">
+					@input="updateNum(index, 'gridY', $event.target.value)" />
 			</label>
 			<label class="layout-item-builder__pair">
 				W
@@ -36,7 +40,7 @@
 					type="number"
 					min="1"
 					class="layout-item-builder__num"
-					@input="updateNum(index, 'gridWidth', $event.target.value)">
+					@input="updateNum(index, 'gridWidth', $event.target.value)" />
 			</label>
 			<label class="layout-item-builder__pair">
 				H
@@ -45,7 +49,7 @@
 					type="number"
 					min="1"
 					class="layout-item-builder__num"
-					@input="updateNum(index, 'gridHeight', $event.target.value)">
+					@input="updateNum(index, 'gridHeight', $event.target.value)" />
 			</label>
 			<button
 				type="button"
@@ -70,6 +74,7 @@ export default {
 			default: () => [],
 		},
 	},
+
 	emits: ['update:modelValue'],
 	computed: {
 		/**
@@ -81,10 +86,15 @@ export default {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
 		},
 	},
+
 	methods: {
 		/**
 		 * Observed behaviour of `updateField` (retrofit annotation).
 		 *
+		 * @param {number} index - position of the layout item in the `layout` array.
+		 * @param {'widgetId'|'gridX'|'gridY'|'gridWidth'|'gridHeight'} key - the layoutItem property to write.
+		 * @param {string|number} value - the `widgetId` text straight from the input,
+		 *   or the already-parsed grid integer forwarded by `updateNum`.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		updateField(index, key, value) {
@@ -92,15 +102,21 @@ export default {
 			next[index] = { ...next[index], [key]: value }
 			this.$emit('update:modelValue', next)
 		},
+
 		/**
 		 * Observed behaviour of `updateNum` (retrofit annotation).
 		 *
+		 * @param {number} index - position of the layout item in the `layout` array.
+		 * @param {'gridX'|'gridY'|'gridWidth'|'gridHeight'} key - which grid coordinate the number input edits.
+		 * @param {string} value - the number input's raw string; parsed as a base-10
+		 *   integer, with a cleared or non-numeric input stored as `0`.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		updateNum(index, key, value) {
 			const num = parseInt(value, 10)
 			this.updateField(index, key, Number.isNaN(num) ? 0 : num)
 		},
+
 		/**
 		 * Observed behaviour of `addItem` (retrofit annotation).
 		 *
@@ -108,12 +124,21 @@ export default {
 		 */
 		addItem() {
 			const next = this.localItems.slice()
-			next.push({ id: next.length + 1, widgetId: '', gridX: 0, gridY: 0, gridWidth: 6, gridHeight: 2 })
+			next.push({
+				id: next.length + 1,
+				widgetId: '',
+				gridX: 0,
+				gridY: 0,
+				gridWidth: 6,
+				gridHeight: 2,
+			})
 			this.$emit('update:modelValue', next)
 		},
+
 		/**
 		 * Observed behaviour of `removeItem` (retrofit annotation).
 		 *
+		 * @param {number} index - position of the layout item to drop from the `layout` array.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		removeItem(index) {

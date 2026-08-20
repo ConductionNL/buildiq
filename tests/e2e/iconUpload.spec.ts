@@ -1,152 +1,285 @@
 // SPDX-License-Identifier: EUPL-1.2
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
-import path from 'path'
-import { test, expect } from '@playwright/test'
-
 /**
- * Playwright e2e — Icon upload on the Application detail page (spec A task 7.5).
+ * Playwright e2e — icon upload on the Application detail page (spec A task 7.5).
  *
- * Covers:
- *   spec A task 7.5  — detail page Icon tab:
- *     - upload an SVG
- *     - preview area updates (src changes to the icon-serving URL)
- *     - remove button clears the preview
+ * UN-QUARANTINED AND REWRITTEN 2026-07-30. The file sat behind
+ * `test.describe.skip` blaming Conduction/openbuild#41 ("no application detail
+ * page renders"). The detail page renders fine; what was actually broken was
+ * this file's own idea of the surface:
  *
- * Preconditions:
- *   - Nextcloud reachable with openbuild enabled (admin:admin).
- *   - SeedHelloWorld repair step has produced the hello-world virtual app.
- *   - The Application detail page includes an "Icon" tab / section wired to
- *     IconUploadSection.vue (spec A task 5.1 — src/dialogs/IconUploadSection.vue).
+ *   - it looked for `.ob-icon-preview img` / `[data-testid="icon-preview"] img`,
+ *     neither of which exists in src/. The real markup is
+ *     `src/dialogs/IconUploadSection.vue` — `.ob-icon-section__preview-img`,
+ *     `.ob-icon-section__file-input`, `.ob-icon-section__remove-btn`,
+ *     `.ob-icon-section__error` — mounted by `ApplicationIconTab.vue`;
+ *   - it never opened the sidebar, so the Icons tab could not have been in the
+ *     DOM under any circumstances;
+ *   - consequently its own `if (!iconUiExists) test.skip(...)` escape hatch
+ *     fired every run, and two of its three tests were permanent no-op
+ *     `test.skip('…pending deploy')` bodies;
+ *   - it clicked `[data-slug="hello-world"]` — an attribute ApplicationCard.vue
+ *     does not render — falling back to `.ob-app-card.first()`, i.e. an
+ *     arbitrary app.
  *
- * The SVG test fixture is a minimal valid SVG string generated inline so the
- * test is self-contained without an on-disk asset file.
+ * Covers, against the real surface:
+ *   - the Icons tab mounts the section with both variants and an SVG-only picker
+ *   - a non-SVG pick is rejected inline and sends no upload
+ *   - an SVG upload persists on the Application and the preview points at the
+ *     icon-serving endpoint
  *
- * NOTE: This test requires the icon-upload UI to be accessible from the detail
- * page (spec A task 5.1 wires it into SchemaDesigner or a dedicated tab).
- * If the UI mount point has not yet been built, the test will skip gracefully.
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
  */
+
+import { test, expect, type Page, type APIRequestContext } from '@playwright/test'
+import { E2E_BASE_URL as BASE } from './support/baseUrl'
+import { dismissFirstVisitOverlays } from './support/overlays'
 
 const HELLO_WORLD_SLUG = process.env.NC_TEST_SLUG ?? 'hello-world'
 
 /**
- * Minimal valid SVG content used as the upload fixture.
- *
- * Deliberately simple — the icon controller only validates Content-Type
- * and that the file is non-empty.
+ * Minimal valid SVG used as the upload fixture. Kept inline so the spec needs
+ * no on-disk asset.
  */
 const MINIMAL_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
   <circle cx="12" cy="12" r="10" fill="#4376fc"/>
 </svg>`
 
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no application detail / editor / version pages render. Re-enable when #41 is fixed.
-test.describe.skip('Icon upload on Application detail page (spec A task 7.5)', () => {
+/**
+ * Resolve the seeded Application and its OR object id.
+ *
+ * The detail route is `/applications/:objectId` — keyed on the object id, not
+ * the slug. Several older specs in this suite navigate with the slug and land
+ * on a not-found page; this resolves it properly.
+ *
+ * @param request Playwright request context carrying the admin session.
+ * @return {Promise<object>} `{ objectId, app }` for the seeded application.
+ */
+async function resolveApp(
+	request: APIRequestContext,
+): Promise<{ objectId: string; app: Record<string, any> }> {
+	const res = await request.get(
+		`${BASE}/index.php/apps/openbuild/api/applications`,
+		{
+			headers: { 'OCS-APIRequest': 'true' },
+		},
+	)
+	expect(res.ok(), 'the applications API must answer').toBeTruthy()
+	const body = await res.json()
+	const rows: Array<Record<string, any>> = Array.isArray(body)
+		? body
+		: (body.results ?? [])
+	const app = rows.find((a) => (a.slug ?? a['@self']?.slug) === HELLO_WORLD_SLUG)
+	expect(
+		app,
+		`the seeded "${HELLO_WORLD_SLUG}" Application must exist`,
+	).toBeTruthy()
+	const found = app as Record<string, any>
+	const objectId = found['@self']?.id || found.uuid || found.id
+	expect(objectId, 'the Application must carry an object id').toBeTruthy()
+	return { objectId: String(objectId), app: found }
+}
 
-	test('Icon tab is accessible from the Application detail page', async ({ page }) => {
-		// Navigate to the Applications list, then open the hello-world detail.
-		// Land on the Virtual apps index — the ApplicationCards live at
-		// `/applications`, not at the app root (which redirects to the
-		// Dashboard widget page).
-		await page.goto('/apps/openbuild/applications')
-		await expect(page.locator('.ob-app-card, [data-testid*="app-card"]').first()).toBeVisible({ timeout: 15_000 })
+/**
+ * Open the Application detail page, expand the sidebar, and activate the Icons
+ * tab so `IconUploadSection` is mounted.
+ *
+ * CnDetailPage seeds `sidebarOpen: false`, so the manifest-declared tabs are
+ * absent from the DOM until NcAppSidebar's own `.app-sidebar__toggle` is
+ * clicked — the step the previous version of this file was missing entirely.
+ *
+ * @param page Playwright page.
+ * @param objectId The Application's OR object id.
+ * @return {Promise<void>}
+ */
+async function openIconsTab(page: Page, objectId: string): Promise<void> {
+	await page.goto(`/apps/openbuild/applications/${objectId}`, {
+		waitUntil: 'domcontentloaded',
+	})
+	await dismissFirstVisitOverlays(page)
+	await expect(
+		page.locator('.ob-detail-header__name'),
+		'the detail header must render before the sidebar is driven',
+	).toBeVisible({ timeout: 20_000 })
 
-		// Navigate to the hello-world detail page. The card links to
-		// /builder/hello-world or /apps/openbuild#/applications/{uuid}.
-		// We use the ApplicationCard click as the nav trigger.
-		const helloCard = page.locator(`[data-slug="${HELLO_WORLD_SLUG}"]`).first()
-			.or(page.locator('.ob-app-card').first())
-		await helloCard.click()
-
-		// Wait for the detail view to appear. The detail page renders either
-		// the builder tabs or a generic detail component. Check for any
-		// recognisable icon-related UI element.
-		const iconTabOrSection = page
-			.getByRole('tab', { name: /icon/i })
-			.or(page.getByText(/icon/i, { exact: false }).first())
-		const iconUiExists = await iconTabOrSection.isVisible({ timeout: 10_000 }).catch(() => false)
-
-		if (!iconUiExists) {
-			// The icon tab requires spec A task 5.1's UI to be deployed.
-			// Skip gracefully — the PHPUnit + component tests cover the
-			// back-end and the render logic independently.
-			test.skip('Icon tab not yet visible on detail page — spec A task 5.1 UI pending deploy')
-			return
+	// ⚠️ THE DETAIL PAGE CLOSES THE SIDEBAR AGAIN WHILE IT IS STILL HYDRATING,
+	// so opening it once is not enough — see the twin of this helper in
+	// spec-coverage/app-icon-management.spec.ts, which carries the CI trace.
+	//
+	// This copy used to open-and-click straight through, and passed only because
+	// `dismissFirstVisitOverlays()` above burns a few seconds first and the page
+	// had usually settled by the time it ran. That is luck, not a guard, and the
+	// twin already failed on the same race (job 96246052128) once its own timing
+	// shifted. `.app-sidebar__toggle` is a TOGGLE and `isVisible()` is an instant
+	// probe that does not wait, so the old shape could also click the sidebar
+	// SHUT. Retrying the whole open-click-assert as one idempotent step is what
+	// makes it survive whichever way the race lands.
+	const sidebar = page.locator('[data-testid="cn-object-sidebar"]')
+	await expect(async () => {
+		if (!(await sidebar.isVisible().catch(() => false))) {
+			await page.locator('.app-sidebar__toggle').first().click()
+			await expect(sidebar, 'the object sidebar must open').toBeVisible({
+				timeout: 10_000,
+			})
 		}
 
-		// If we reach here, the icon tab / section exists. Click it if it's a tab.
-		const iconTab = page.getByRole('tab', { name: /icon/i })
-		if (await iconTab.isVisible({ timeout: 2_000 }).catch(() => false)) {
-			await iconTab.click()
-		}
+		await page
+			.getByRole('tab', { name: /^icons$/i })
+			.first()
+			.click({ timeout: 10_000 })
+		await expect(
+			page.locator('[data-testid="cn-object-sidebar-tab-icons"]'),
+			'the Icons tab panel must render',
+		).toBeVisible({ timeout: 10_000 })
 
-		// Assert the icon upload section is rendered.
-		const uploadInput = page.locator('input[type="file"][accept*=".svg"], input[type="file"][accept*="svg"]')
-		await expect(uploadInput.first(), 'SVG file input must be present in icon section').toBeVisible({ timeout: 5_000 })
+		// Inside the retry deliberately: a section that is present but hidden
+		// means the sidebar re-closed after the panel was seen, and only
+		// reopening it recovers that.
+		await expect(
+			page.locator('.ob-icon-section'),
+			'ApplicationIconTab must mount IconUploadSection',
+		).toBeVisible({ timeout: 10_000 })
+	}).toPass({ timeout: 90_000 })
+}
+
+test.describe('Icon upload on the Application detail page (spec A task 7.5)', () => {
+	test('the Icons tab mounts the upload section with light + dark variants and an SVG-only picker', async ({
+		page,
+		request,
+	}) => {
+		const { objectId } = await resolveApp(request)
+		await openIconsTab(page, objectId)
+
+		await expect(
+			page.locator('.ob-icon-section'),
+			'ApplicationIconTab must mount IconUploadSection',
+		).toBeVisible({ timeout: 15_000 })
+
+		// Both variants are part of the contract — the section writes `icon`
+		// and `iconDark` on the Application.
+		await expect(page.locator('.ob-icon-section__preview--light')).toBeVisible()
+		await expect(page.locator('.ob-icon-section__preview--dark')).toBeVisible()
+
+		// The picker must be constrained to SVG. Unconditional: two inputs,
+		// both accepting .svg.
+		const inputs = page.locator('.ob-icon-section__file-input')
+		await expect(inputs, 'one file input per icon variant').toHaveCount(2)
+		await expect(inputs.nth(0)).toHaveAttribute('accept', '.svg')
+		await expect(inputs.nth(1)).toHaveAttribute('accept', '.svg')
 	})
 
-	test('uploading a minimal SVG updates the preview src', async ({ page }) => {
-		// Land on the Virtual apps index — the ApplicationCards live at
-		// `/applications`, not at the app root (which redirects to the
-		// Dashboard widget page).
-		await page.goto('/apps/openbuild/applications')
-		await expect(page.locator('.ob-app-card, [data-testid*="app-card"]').first()).toBeVisible({ timeout: 15_000 })
-
-		// Open the hello-world detail.
-		const helloCard = page.locator(`[data-slug="${HELLO_WORLD_SLUG}"]`).first()
-			.or(page.locator('.ob-app-card').first())
-		await helloCard.click()
-
-		// Locate the icon tab.
-		const iconTab = page.getByRole('tab', { name: /icon/i })
-		const tabVisible = await iconTab.isVisible({ timeout: 10_000 }).catch(() => false)
-		if (!tabVisible) {
-			test.skip('Icon tab not yet deployed — spec A task 5.1 pending')
-			return
-		}
-		await iconTab.click()
-
-		// Locate the light-icon upload input.
-		const fileInput = page.locator('input[type="file"]').first()
-		await expect(fileInput).toBeVisible({ timeout: 5_000 })
-
-		// Write the SVG fixture to a temp file and upload it.
-		// Playwright's setInputFiles accepts a Buffer directly.
-		const svgBuffer = Buffer.from(MINIMAL_SVG, 'utf-8')
-		await fileInput.setInputFiles({
-			name: 'test-icon.svg',
-			mimeType: 'image/svg+xml',
-			buffer: svgBuffer,
+	// @e2e app-icon-management::non-svg-file-is-rejected-client-side
+	//
+	// The scenario is "the uploader displays an inline error message and does not
+	// submit the file to OR". Both halves are asserted below: the inline error by
+	// its literal text, and the negative half by recording every POST the page
+	// issues and requiring the list to be empty.
+	test('a non-SVG pick is rejected inline and never reaches the server', async ({
+		page,
+		request,
+	}) => {
+		const { objectId } = await resolveApp(request)
+		await openIconsTab(page, objectId)
+		await expect(page.locator('.ob-icon-section')).toBeVisible({
+			timeout: 15_000,
 		})
 
-		// Wait for the preview to update. The preview <img> in IconUploadSection
-		// should switch its src to the icon-serving endpoint URL after upload.
-		const previewImg = page.locator('.ob-icon-preview img, [data-testid="icon-preview"] img').first()
-		if (await previewImg.isVisible({ timeout: 5_000 }).catch(() => false)) {
-			const src = await previewImg.getAttribute('src')
-			expect(src, 'preview src must point to the icon endpoint after upload').toMatch(/\/icons\//)
-		} else {
-			// Preview element not yet wired — acceptable while spec A task 5.1
-			// is being rolled out. The upload input test above already confirmed
-			// the section exists.
-		}
+		// The rejection must be client-side: nothing may be POSTed.
+		const uploads: string[] = []
+		page.on('request', (r) => {
+			if (r.method() === 'POST' && /\/files|\/objects\//.test(r.url())) {
+				uploads.push(`${r.method()} ${r.url()}`)
+			}
+		})
+
+		await page
+			.locator('.ob-icon-section__file-input')
+			.first()
+			.setInputFiles({
+				name: 'not-an-icon.png',
+				mimeType: 'image/png',
+				// A PNG magic header is enough — validation is on the extension.
+				buffer: Buffer.from('89504e470d0a1a0a', 'hex'),
+			})
+
+		const error = page.locator('.ob-icon-section__error').first()
+		await expect(
+			error,
+			'a non-SVG pick must surface the inline rejection',
+		).toBeVisible({ timeout: 10_000 })
+		await expect(error).toContainText(/only \.svg files are accepted/i)
+
+		await page.waitForTimeout(1_500)
+		expect(uploads, 'a rejected file must not be uploaded').toEqual([])
 	})
 
-	test.skip('removing the uploaded icon clears the preview (spec A task 7.5, pending remove-button wire-up)', async ({ page }) => {
-		// TODO: This test requires the Remove button to be wired in
-		// IconUploadSection.vue (spec A task 5.1 sub-task). The button
-		// must clear the Application's icon.ref and reset the preview src.
-		// Enable once the remove-button affordance is deployed.
-		await page.goto('/apps/openbuild')
-		const helloCard = page.locator('.ob-app-card').first()
-		await helloCard.click()
-		const removeBtn = page.getByRole('button', { name: /remove.*icon|clear.*icon/i }).first()
-		await removeBtn.click()
-		const previewImg = page.locator('.ob-icon-preview img').first()
-		// After remove, preview should fall back to the default app icon or
-		// be hidden.
-		const src = await previewImg.getAttribute('src').catch(() => null)
-		if (src) {
-			expect(src, 'after remove, src should be the fallback icon or empty').not.toMatch(/OR.*files/)
-		}
+	// @e2e app-icon-management::user-uploads-a-light-icon
+	//
+	// The scenario's three clauses map onto the assertions below: the file is
+	// POSTed to OR's attachment endpoint and `icon.ref` is patched (proven by
+	// reading the Application back independently rather than trusting optimistic
+	// UI state), and the light-background preview renders the SVG.
+	test('uploading an SVG persists it on the Application and shows it in the preview', async ({
+		page,
+		request,
+	}) => {
+		// Two navigations plus an upload round-trip. The 30s project default is
+		// sized for single-navigation tests; every assertion below keeps its own
+		// tight timeout.
+		test.setTimeout(90_000)
+
+		const { objectId } = await resolveApp(request)
+
+		await openIconsTab(page, objectId)
+		await expect(page.locator('.ob-icon-section')).toBeVisible({
+			timeout: 15_000,
+		})
+
+		await page
+			.locator('.ob-icon-section__file-input')
+			.first()
+			.setInputFiles({
+				name: 'app-icon.svg',
+				mimeType: 'image/svg+xml',
+				buffer: Buffer.from(MINIMAL_SVG, 'utf8'),
+			})
+
+		// The preview swaps from the em-dash placeholder to an <img> pointed at
+		// the icon-serving endpoint.
+		const preview = page.locator(
+			'.ob-icon-section__preview--light .ob-icon-section__preview-img',
+		)
+		await expect(
+			preview,
+			'the light preview must render the uploaded icon',
+		).toBeVisible({ timeout: 30_000 })
+		const src = await preview.getAttribute('src')
+		expect(src, 'the preview must point at the icon-serving endpoint').toMatch(
+			/\/apps\/openbuild\/icons\//,
+		)
+
+		// No error was raised on the happy path.
+		await expect(page.locator('.ob-icon-section__error')).toHaveCount(0)
+		await expect(page.locator('.ob-icon-section__global-error')).toHaveCount(0)
+
+		// The write actually persisted — read the Application back independently
+		// rather than trusting optimistic UI state.
+		await expect
+			.poll(
+				async () => {
+					const { app: reloaded } = await resolveApp(request)
+					return reloaded.icon ?? null
+				},
+				{ timeout: 30_000 },
+			)
+			.toBeTruthy()
+
+		// A Remove control appears once an icon is stored (`v-if="lightRef"`).
+		await expect(
+			page.locator('.ob-icon-section__remove-btn').first(),
+			'a stored icon must offer a Remove action',
+		).toBeVisible({ timeout: 10_000 })
 	})
 })

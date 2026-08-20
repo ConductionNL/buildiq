@@ -1,3 +1,5 @@
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
 // SPDX-License-Identifier: EUPL-1.2
 /**
  * useAppStatus — soft capability check: is a sibling Nextcloud app
@@ -21,8 +23,6 @@
  * @spec openspec/changes/openconnector-api-sources/tasks.md#task-2.2
  */
 import { ref } from 'vue'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
 
 /** @type {Map<string, boolean>} */
 const statusCache = new Map()
@@ -78,7 +78,11 @@ export function useAppStatus(appId, opts = {}) {
 			const status = e && e.response && e.response.status
 			// 404 / 501 → route does not exist → app absent/disabled.
 			// Any other status (incl. 400/401/403) means the app answered.
-			available.value = !(status === 404 || status === 501 || status === undefined)
+			available.value = !(
+				status === 404
+				|| status === 501
+				|| status === undefined
+			)
 		}
 		checked.value = true
 		statusCache.set(appId, available.value)

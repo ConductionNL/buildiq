@@ -33,11 +33,20 @@ describe('useApplicationInsights', () => {
 	it('fetches on mount and exposes the KPI payload', async () => {
 		axios.get.mockResolvedValueOnce({
 			data: {
-				kpis: { activeUsers: 5, objectCount: 10, filesCount: 3, auditEventCount: 50 },
+				kpis: {
+					activeUsers: 5,
+					objectCount: 10,
+					filesCount: 3,
+					auditEventCount: 50,
+				},
 				activity: [{ timestamp: '2026-05-08T00:00:00Z', eventCount: 12 }],
 			},
 		})
-		const { kpis, activity, loading } = useApplicationInsights('app-uuid', 'version-uuid', '7d')
+		const { kpis, activity, loading } = useApplicationInsights(
+			'app-uuid',
+			'version-uuid',
+			'7d',
+		)
 		await wait(0)
 		await wait(0)
 		expect(loading.value).toBe(false)
@@ -53,7 +62,11 @@ describe('useApplicationInsights', () => {
 
 	it('sets versionNoLongerAccessible on 404', async () => {
 		axios.get.mockRejectedValueOnce({ response: { status: 404 } })
-		const { versionNoLongerAccessible } = useApplicationInsights('app-uuid', 'version-uuid', '7d')
+		const { versionNoLongerAccessible } = useApplicationInsights(
+			'app-uuid',
+			'version-uuid',
+			'7d',
+		)
 		await wait(0)
 		await wait(0)
 		expect(versionNoLongerAccessible.value).toBe(true)

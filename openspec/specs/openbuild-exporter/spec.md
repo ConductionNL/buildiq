@@ -15,8 +15,11 @@ schema bundle, no per-slug endpoint workaround, no nested mount — the exported
 **is** the top-level app. Closes the loop on the hybrid model committed to in
 `bootstrap-openbuild`.
 
-## Requirements
+**OpenSpec changes**: [data-registers-runtime](../../changes/data-registers-runtime/), [harden-rules-authz-and-audit-parity](../../changes/harden-rules-authz-and-audit-parity/)
 
+**Status**: in-progress
+
+## Requirements
 
 ### Requirement: ExportJob schema declaration
 
@@ -263,6 +266,15 @@ ExportJob object, in plaintext logs, or in any
 scoped to the single export run; the credential record SHALL be
 deleted on job terminal state (succeeded or failed).
 
+Every GitHub call made on this path SHALL be relayed through
+OpenRegister's credential broker (`CredentialBrokerService::request()`).
+On any broker-relayed call failure — a non-2xx upstream response or a
+broker-level exception — the resulting `errorMessage` SHALL include the
+real upstream HTTP status code and a truncated, scrubbed excerpt of the
+response body or failure reason, so the cause is diagnosable without a
+blind retry. Any GitHub PAT-shaped token SHALL be redacted from that
+detail before it reaches `errorMessage` or a log line.
+
 #### Scenario: GitHub export creates repo + PR
 
 - **WHEN** the user submits an export with `target: github`, org
@@ -287,7 +299,19 @@ deleted on job terminal state (succeeded or failed).
   contains a human-readable auth-failure summary (without echoing
   the PAT), and no repo is created.
 
----
+#### Scenario: Upstream failure detail surfaces in errorMessage
+
+- **WHEN** any broker-relayed GitHub call in the push flow (create-repo,
+  blob/tree/commit/ref creation, pull-request creation) fails — whether
+  GitHub returns a non-2xx status (e.g. `403` missing the `workflow`
+  scope, `404` for a typo'd org, `422` for a malformed payload, a `429`/
+  secondary-rate-limit response) or the broker call itself throws
+- **THEN** the job transitions to `failed` and `errorMessage` includes
+  the upstream HTTP status code and a truncated, scrubbed excerpt of the
+  response body (or the scrubbed failure reason for a broker-level
+  exception), instead of a bare, content-free failure string
+- **AND** no GitHub PAT-shaped token appears anywhere in `errorMessage`
+  or in the corresponding log line
 
 ### Requirement: Export is asynchronous via Nextcloud's IJob
 
@@ -400,3 +424,27 @@ runtime dependencies. The exported `composer.json`,
 - **THEN** none of them contains the substring `openbuild`
   (case-insensitive) as a dependency reference.
 
+### Requirement: An app's agents are resolved WITHOUT a binding
+
+The exporter MUST resolve an application's agents by querying `agent`
+objects whose `applicationSlug` matches the application's slug, filtered to
+the `openbuild` register and `agent` schema BY SLUG, never by numeric
+register/schema id.
+
+Numeric register/schema ids in OpenRegister are auto-increment columns
+assigned per instance at creation time. They are NOT stable across a fresh
+install — the `openbuild` register and `agent` schema get whatever ids
+happen to be next on a given instance. A resolver pinned to one instance's
+numeric ids matches nothing on any other instance: the underlying
+`findAll()` call returns an empty result rather than an error, so the
+export completes successfully having silently bundled zero agents.
+
+@e2e exclude pure-backend register/schema-id-vs-slug resolution contract — verified by `FlowAndAgentExportBundlerTest::testAgentsAreResolvedByApplicationSlugRatherThanABinding`, which asserts the `findAll()` filter carries the slugs, and by a live docker-compose round trip on a fresh instance (see tasks.md #4); no Playwright-testable UI surface distinguishes a numeric-id lookup from a slug lookup — both produce the same UI when they happen to agree, which is exactly the defect this requirement guards against
+
+#### Scenario: Agent resolution is portable across instances
+- **WHEN** an application's agents are resolved for export
+- **THEN** the register/schema filter MUST identify the `openbuild`
+  register and `agent` schema by their SLUGS
+- **AND** the resolution MUST succeed identically regardless of what
+  numeric ids those register and schema rows happen to have on the running
+  instance

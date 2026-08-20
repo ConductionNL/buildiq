@@ -27,7 +27,18 @@ vi.mock('@nextcloud/router', () => ({ generateUrl: (url) => url }))
 
 const CnWizardDialogStub = {
 	name: 'CnWizardDialog',
-	props: ['steps', 'defaults', 'validate', 'dialogTitle', 'cancelLabel', 'backLabel', 'nextLabel', 'submitLabel', 'closeLabel', 'successText'],
+	props: [
+		'steps',
+		'defaults',
+		'validate',
+		'dialogTitle',
+		'cancelLabel',
+		'backLabel',
+		'nextLabel',
+		'submitLabel',
+		'closeLabel',
+		'successText',
+	],
 	methods: { setError() {} },
 	template: '<div class="wizard-stub" />',
 }
@@ -60,21 +71,33 @@ describe('CreateApplicationWizard', () => {
 
 	it('lists basics → preset → review by default (no Custom step)', () => {
 		const w = mountWizard()
-		expect(w.vm.wizardSteps.map((s) => s.id)).toEqual(['basics', 'preset', 'review'])
+		expect(w.vm.wizardSteps.map((s) => s.id)).toEqual([
+			'basics',
+			'preset',
+			'review',
+		])
 	})
 
 	it('inserts the Custom step only for the custom preset', async () => {
 		const w = mountWizard()
 		w.vm.presetSelected = 'custom'
 		await w.vm.$nextTick()
-		expect(w.vm.wizardSteps.map((s) => s.id)).toEqual(['basics', 'preset', 'custom', 'review'])
+		expect(w.vm.wizardSteps.map((s) => s.id)).toEqual([
+			'basics',
+			'preset',
+			'custom',
+			'review',
+		])
 	})
 
 	it('onPresetUpdate forwards the partial and tracks the preset', () => {
 		const w = mountWizard()
 		const setStepData = vi.fn()
 		w.vm.onPresetUpdate({ preset: 'custom', _step2Valid: true }, setStepData)
-		expect(setStepData).toHaveBeenCalledWith({ preset: 'custom', _step2Valid: true })
+		expect(setStepData).toHaveBeenCalledWith({
+			preset: 'custom',
+			_step2Valid: true,
+		})
 		expect(w.vm.presetSelected).toBe('custom')
 
 		// A partial without a preset key must not clear the tracked preset.
@@ -84,35 +107,65 @@ describe('CreateApplicationWizard', () => {
 
 	it('validateStep gates on the per-step validity flags', () => {
 		const w = mountWizard()
-		expect(typeof w.vm.validateStep('basics', { _step1Valid: false })).toBe('string')
+		expect(typeof w.vm.validateStep('basics', { _step1Valid: false })).toBe(
+			'string',
+		)
 		expect(w.vm.validateStep('basics', { _step1Valid: true })).toBe(true)
-		expect(typeof w.vm.validateStep('preset', { _step2Valid: false })).toBe('string')
+		expect(typeof w.vm.validateStep('preset', { _step2Valid: false })).toBe(
+			'string',
+		)
 		expect(w.vm.validateStep('preset', { _step2Valid: true })).toBe(true)
-		expect(typeof w.vm.validateStep('custom', { _step3Valid: false })).toBe('string')
+		expect(typeof w.vm.validateStep('custom', { _step3Valid: false })).toBe(
+			'string',
+		)
 		expect(w.vm.validateStep('custom', { _step3Valid: true })).toBe(true)
 		expect(w.vm.validateStep('review', {})).toBe(true)
 	})
 
 	it('onSubmit posts and emits created + closes on success', async () => {
-		axios.post.mockResolvedValue({ status: 201, data: { applicationUuid: 'uuid-1' } })
+		axios.post.mockResolvedValue({
+			status: 201,
+			data: { applicationUuid: 'uuid-1' },
+		})
 		const w = mountWizard()
-		await w.vm.onSubmit({ name: 'X', slug: 'x', description: '', preset: 'single', versions: [] })
+		await w.vm.onSubmit({
+			name: 'X',
+			slug: 'x',
+			description: '',
+			preset: 'single',
+			versions: [],
+		})
 
 		expect(axios.post).toHaveBeenCalledWith(
 			'/apps/openbuild/api/applications/wizard',
-			{ name: 'X', slug: 'x', description: '', preset: 'single', versions: [] },
+			{
+				name: 'X',
+				slug: 'x',
+				description: '',
+				preset: 'single',
+				versions: [],
+			},
 		)
 		expect(w.emitted('created')).toEqual([['uuid-1']])
 		expect(w.emitted('update:show')).toEqual([[false]])
 	})
 
 	it('onSubmit surfaces a recoverable error via setError on failure', async () => {
-		axios.post.mockResolvedValue({ status: 200, data: { message: 'Slug taken' } })
+		axios.post.mockResolvedValue({
+			status: 200,
+			data: { message: 'Slug taken' },
+		})
 		const w = mountWizard()
 		const setError = vi.fn()
 		w.vm.$refs.wizard.setError = setError
 
-		await w.vm.onSubmit({ name: 'X', slug: 'x', description: '', preset: 'single', versions: [] })
+		await w.vm.onSubmit({
+			name: 'X',
+			slug: 'x',
+			description: '',
+			preset: 'single',
+			versions: [],
+		})
 
 		expect(setError).toHaveBeenCalledTimes(1)
 		expect(setError.mock.calls[0][0]).toContain('Slug taken')
@@ -125,7 +178,13 @@ describe('CreateApplicationWizard', () => {
 		const setError = vi.fn()
 		w.vm.$refs.wizard.setError = setError
 
-		await w.vm.onSubmit({ name: 'X', slug: 'x', description: '', preset: 'single', versions: [] })
+		await w.vm.onSubmit({
+			name: 'X',
+			slug: 'x',
+			description: '',
+			preset: 'single',
+			versions: [],
+		})
 		expect(setError).toHaveBeenCalledTimes(1)
 		expect(setError.mock.calls[0][0]).toContain('Boom')
 	})

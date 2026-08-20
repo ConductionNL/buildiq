@@ -18,41 +18,55 @@
 		@update:open="onClose">
 		<div class="openbuild-permissions-modal">
 			<p class="openbuild-permissions-modal__help">
-				{{ t('openbuild', 'Configure which Nextcloud groups can view, edit, or own this app. Members of any of these groups will see the app in their list; only owners may publish, archive, delete, transfer ownership, or change these permissions.') }}
+				{{
+					t(
+						'openbuild',
+						'Configure which Nextcloud groups can view, edit, or own this app. Members of any of these groups will see the app in their list; only owners may publish, archive, delete, transfer ownership, or change these permissions.',
+					)
+				}}
 			</p>
 
 			<NcSelect
 				v-model="ownersModel"
 				:options="groupOptions"
 				:multiple="true"
-				:input-label="t('openbuild', 'Owners (full control)')"
+				:inputLabel="t('openbuild', 'Owners (full control)')"
 				label="label"
-				track-by="value" />
+				trackBy="value" />
 			<NcSelect
 				v-model="editorsModel"
 				:options="groupOptions"
 				:multiple="true"
-				:input-label="t('openbuild', 'Editors (can save drafts)')"
+				:inputLabel="t('openbuild', 'Editors (can save drafts)')"
 				label="label"
-				track-by="value" />
+				trackBy="value" />
 			<NcSelect
 				v-model="viewersModel"
 				:options="groupOptions"
 				:multiple="true"
-				:input-label="t('openbuild', 'Viewers (read-only)')"
+				:inputLabel="t('openbuild', 'Viewers (read-only)')"
 				label="label"
-				track-by="value" />
+				trackBy="value" />
 
 			<div v-if="orphanError" class="openbuild-permissions-modal__error">
-				{{ t('openbuild', 'At least one owner group is required — saving with no owners would orphan this application.') }}
+				{{
+					t(
+						'openbuild',
+						'At least one owner group is required — saving with no owners would orphan this application.',
+					)
+				}}
 			</div>
 
 			<div class="openbuild-permissions-modal__actions">
-				<NcButton type="tertiary" @click="onClose">
+				<NcButton variant="tertiary" @click="onClose">
 					{{ t('openbuild', 'Cancel') }}
 				</NcButton>
-				<NcButton type="primary" :disabled="saving" @click="save">
-					{{ saving ? t('openbuild', 'Saving permissions…') : t('openbuild', 'Save permissions') }}
+				<NcButton variant="primary" :disabled="saving" @click="save">
+					{{
+						saving
+							? t('openbuild', 'Saving permissions…')
+							: t('openbuild', 'Save permissions')
+					}}
 				</NcButton>
 			</div>
 		</div>
@@ -60,9 +74,9 @@
 </template>
 
 <script>
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcDialog from '@nextcloud/vue/dist/Components/NcDialog.js'
-import NcSelect from '@nextcloud/vue/dist/Components/NcSelect.js'
+import NcButton from '@nextcloud/vue/components/NcButton'
+import NcDialog from '@nextcloud/vue/components/NcDialog'
+import NcSelect from '@nextcloud/vue/components/NcSelect'
 
 export default {
 	name: 'PermissionsModal',
@@ -71,20 +85,24 @@ export default {
 		NcDialog,
 		NcSelect,
 	},
+
 	props: {
 		open: {
 			type: Boolean,
 			required: true,
 		},
+
 		application: {
 			type: Object,
 			default: null,
 		},
+
 		availableGroups: {
 			type: Array,
 			default: () => [],
 		},
 	},
+
 	emits: ['update:open', 'save'],
 	data() {
 		return {
@@ -95,6 +113,7 @@ export default {
 			saving: false,
 		}
 	},
+
 	computed: {
 		/**
 		 * Observed behaviour of `groupOptions` (retrofit annotation).
@@ -102,14 +121,21 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
 		 */
 		groupOptions() {
-			return this.availableGroups.map(gid => ({ label: gid, value: gid }))
+			return this.availableGroups.map((gid) => ({ label: gid, value: gid }))
 		},
 	},
+
 	watch: {
 		application: {
 			immediate: true,
 			/**
 			 * Observed behaviour of `handler` (retrofit annotation).
+			 *
+			 * @param {{permissions?: {owners?: string[], editors?: string[],
+			 *   viewers?: string[]}}|null} app - The incoming `application` prop.
+			 *   Re-seeds the three group pickers from the server record whenever the
+			 *   modal is pointed at a different application. Runs immediately, and is
+			 *   `null` until the parent has a record.
 			 *
 			 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
 			 */
@@ -118,20 +144,40 @@ export default {
 			},
 		},
 	},
+
 	methods: {
 		/**
 		 * Observed behaviour of `syncFromApplication` (retrofit annotation).
+		 *
+		 * Rebuilds the local NcSelect models from the record and drops any unsaved
+		 * edit state (orphan warning, in-flight save flag).
+		 *
+		 * @param {{permissions?: {owners?: string[], editors?: string[],
+		 *   viewers?: string[]}}|null} app - The Application whose permissions to show.
+		 *   Its three role buckets hold plain Nextcloud group ids, which are wrapped
+		 *   into the `{label, value}` option objects NcSelect binds to. A `null` app
+		 *   (or one with no `permissions`) yields three empty pickers.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
 		 */
 		syncFromApplication(app) {
 			const perms = (app && app.permissions) || {}
-			this.ownersModel = (perms.owners || []).map(g => ({ label: g, value: g }))
-			this.editorsModel = (perms.editors || []).map(g => ({ label: g, value: g }))
-			this.viewersModel = (perms.viewers || []).map(g => ({ label: g, value: g }))
+			this.ownersModel = (perms.owners || []).map((g) => ({
+				label: g,
+				value: g,
+			}))
+			this.editorsModel = (perms.editors || []).map((g) => ({
+				label: g,
+				value: g,
+			}))
+			this.viewersModel = (perms.viewers || []).map((g) => ({
+				label: g,
+				value: g,
+			}))
 			this.orphanError = false
 			this.saving = false
 		},
+
 		/**
 		 * Observed behaviour of `onClose` (retrofit annotation).
 		 *
@@ -140,15 +186,16 @@ export default {
 		onClose() {
 			this.$emit('update:open', false)
 		},
+
 		/**
 		 * Observed behaviour of `save` (retrofit annotation).
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
 		 */
 		async save() {
-			const owners = this.ownersModel.map(o => o.value)
-			const editors = this.editorsModel.map(o => o.value)
-			const viewers = this.viewersModel.map(o => o.value)
+			const owners = this.ownersModel.map((o) => o.value)
+			const editors = this.editorsModel.map((o) => o.value)
+			const viewers = this.viewersModel.map((o) => o.value)
 			if (owners.length === 0) {
 				// Orphan-check guard per REQ-OBRBAC-005 — frontend rejects
 				// the save before sending. OR REST returns 4xx if bypassed.

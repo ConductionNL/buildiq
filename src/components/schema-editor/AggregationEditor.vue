@@ -14,9 +14,16 @@
 			<h3>{{ t('openbuild', 'Aggregations') }}</h3>
 		</header>
 		<NcNoteCard type="info">
-			{{ t('openbuild', 'The aggregation editor ships in v1.1 (see design Decision 7). Existing aggregations declared on this schema are shown read-only below.') }}
+			{{
+				t(
+					'openbuild',
+					'The aggregation editor ships in v1.1 (see design Decision 7). Existing aggregations declared on this schema are shown read-only below.',
+				)
+			}}
 		</NcNoteCard>
-		<pre v-if="aggregations" class="openbuild-aggregation-editor__readonly">{{ formatted }}</pre>
+		<pre v-if="aggregations" class="openbuild-aggregation-editor__readonly">{{
+			formatted
+		}}</pre>
 		<p v-else class="openbuild-aggregation-editor__empty">
 			{{ t('openbuild', 'No aggregations declared on this schema.') }}
 		</p>
@@ -32,6 +39,7 @@ export default {
 	props: {
 		aggregations: { type: [Object, Array], default: null },
 	},
+
 	computed: {
 		/**
 		 * Render the aggregations block as pretty JSON for read-only display.

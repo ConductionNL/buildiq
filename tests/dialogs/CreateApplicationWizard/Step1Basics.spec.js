@@ -17,9 +17,23 @@
  *   - description input emits update:payload
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+
+// Step1Basics probes AI-copilot health on created() (spec ai-copilot
+// REQ-OBAIC-001/006) via useCopilot -> services/copilot.js -> axios. Mock
+// both so the existing suite stays network-free and deterministic.
+vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => p }))
+vi.mock('@nextcloud/axios', () => ({
+	default: { get: vi.fn(() => Promise.reject(new Error('no provider in tests'))) },
+}))
+
 import Step1Basics from '../../../src/dialogs/CreateApplicationWizard/Step1Basics.vue'
+import { clearCopilotHealthCache } from '../../../src/composables/useCopilot.js'
+
+beforeEach(() => {
+	clearCopilotHealthCache()
+})
 
 /**
  * Build a default payload.
@@ -54,7 +68,6 @@ function mountStep1(payloadOverrides = {}) {
 }
 
 describe('Step1Basics.vue — spec task 6.2', () => {
-
 	// -------------------------------------------------------------------------
 	// Name → slug auto-derivation
 	// -------------------------------------------------------------------------
@@ -216,11 +229,13 @@ describe('Step1Basics.vue — spec task 6.2', () => {
 		const wrapper = mountStep1({ name: '', slug: '' })
 
 		// Simulate child event that would set payload externally — instead mutate vm
-		await wrapper.setProps({ payload: makePayload({ name: 'Good App', slug: 'good-app' }) })
+		await wrapper.setProps({
+			payload: makePayload({ name: 'Good App', slug: 'good-app' }),
+		})
 		await wrapper.vm.$nextTick()
 		// The watcher on isValid fires and emits
 		const emitted = wrapper.emitted('update:payload') || []
-		const validEmit = emitted.find(e => '_step1Valid' in e[0])
+		const validEmit = emitted.find((e) => '_step1Valid' in e[0])
 		expect(validEmit).toBeTruthy()
 		expect(validEmit[0]._step1Valid).toBe(true)
 	})

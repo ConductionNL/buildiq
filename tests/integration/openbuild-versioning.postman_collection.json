@@ -20,7 +20,9 @@
 		{ "key": "application_uuid", "value": "", "type": "string" },
 		{ "key": "v1_uuid", "value": "", "type": "string" },
 		{ "key": "v2_uuid", "value": "", "type": "string" },
-		{ "key": "original_manifest", "value": "", "type": "string" }
+		{ "key": "original_manifest", "value": "", "type": "string" },
+		{ "key": "application_full", "value": "", "type": "string" },
+		{ "key": "merged_body", "value": "", "type": "string" }
 	],
 	"item": [
 		{
@@ -52,10 +54,10 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application?filter[slug]={{test_slug}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application?_limit=100",
 							"host": ["{{base_url}}"],
 							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application"],
-							"query": [{ "key": "filter[slug]", "value": "{{test_slug}}" }]
+							"query": [{ "key": "_limit", "value": "100" }]
 						}
 					},
 					"event": [
@@ -67,12 +69,35 @@
 									"pm.test('OR returns the seeded Application', function () { pm.response.to.have.status(200); });",
 									"const body = pm.response.json();",
 									"const rows = (body && body.results) || (Array.isArray(body) ? body : []);",
-									"const app = rows.find(r => (r.slug === pm.collectionVariables.get('test_slug') || (r['@self'] && r['@self'].slug === pm.collectionVariables.get('test_slug'))));",
+									"const want = pm.collectionVariables.get('test_slug');",
+									"const app = rows.find(r => (r.slug === want || (r['@self'] && r['@self'].slug === want)));",
+									"// Fetched UNFILTERED and matched here, because OpenRegister's",
+									"// property-filter dialect differs between builds and this suite must",
+									"// not depend on which one is installed. Log the shape on a miss: an",
+									"// empty application_uuid leaves every later URL in this collection",
+									"// interpolating an empty path segment.",
+									"if (!app) { console.log('[diag] want=' + want + ' rows=' + rows.length); rows.slice(0, 8).forEach(function (r, i) { console.log('[diag' + i + '] slug=' + r.slug + ' self=' + ((r['@self'] || {}).slug) + ' k=' + Object.keys(r).slice(0, 8).join(',')); }); }",
 									"pm.test('hello-world present', function () { pm.expect(app, 'expected to find hello-world').to.not.be.undefined; });",
 									"if (app) {",
 									"    const uuid = app.uuid || (app['@self'] && app['@self'].id) || app.id;",
 									"    pm.collectionVariables.set('application_uuid', String(uuid));",
+									"    pm.collectionVariables.set('application_id', String(app.id || (app['@self'] && app['@self'].id) || uuid));",
 									"    pm.collectionVariables.set('original_manifest', JSON.stringify(app.manifest || {}));",
+									"    // STASH THE WHOLE RECORD, not just the manifest.",
+									"    //",
+									"    // OpenRegister's saveObject() is PUT-SEMANTIC, not PATCH:",
+									"    // fillMissingSchemaPropertiesWithNull() sets every schema property",
+									"    // absent from the body to null. The Application schema declares",
+									"    // `required: ['slug', 'name']`, so the partial bodies this collection",
+									"    // used to PUT ({version, status, manifest} and nothing else) asked OR",
+									"    // to null out both required fields — and OR refused the whole write",
+									"    // with 400 Bad request. Three assertions failed on that, and none of",
+									"    // them was about versioning at all.",
+									"    //",
+									"    // `@self` is dropped: it is server-owned metadata, not writable state.",
+									"    const full = JSON.parse(JSON.stringify(app));",
+									"    delete full['@self'];",
+									"    pm.collectionVariables.set('application_full', JSON.stringify(full));",
 									"}"
 								]
 							}
@@ -84,10 +109,10 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application-version?filter[applicationUuid]={{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/applicationVersion?_limit=5000",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application-version"],
-							"query": [{ "key": "filter[applicationUuid]", "value": "{{application_uuid}}" }]
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "applicationVersion"],
+							"query": [{ "key": "_limit", "value": "5000" }]
 						}
 					},
 					"event": [
@@ -100,7 +125,35 @@
 									"const body = pm.response.json();",
 									"const rows = (body && body.results) || (Array.isArray(body) ? body : []);",
 									"pm.test('Seeded v1.0.0 ApplicationVersion exists', function () {",
-									"    const v1 = rows.find(r => r.version === '1.0.0' && r.applicationUuid === pm.collectionVariables.get('application_uuid'));",
+									"    // The Application object exposes more than one identifier (`id`,",
+									"    // `uuid`, `@self.id`) and the seed links the version by the OR uuid.",
+									"    // Accept any of the captured ones rather than betting on which field",
+									"    // the REST layer surfaces — a wrong guess here reads as 'the seed did",
+									"    // not run', which is the misdiagnosis this suite already made once.",
+									"    // ⚠️ FETCHED UNFILTERED — `?application={{uuid}}` RETURNS ZERO ROWS.",
+									"    //",
+									"    // OpenRegister does not match a RELATION property as a plain",
+									"    // query-string data filter. Measured against a live instance:",
+									"    //",
+									"    //   applicationVersion?_limit=5000        -> 119 rows",
+									"    //   applicationVersion?semver=1.0.0       ->  20 rows  (scalar prop: works)",
+									"    //   applicationVersion?application=<uuid> ->   0 rows  (relation: does NOT)",
+									"    //",
+									"    // and the third query used a uuid taken straight out of row 1 of the",
+									"    // first, so the value was demonstrably present. `application` is an",
+									"    // x-openregister-relation; the filter is simply not applied to it.",
+									"    //",
+									"    // An empty result from a filter that CANNOT match looks exactly like a",
+									"    // true zero — here, exactly like 'the seed never ran'. Step 0.2 already",
+									"    // fetches unfiltered and matches in-script for this reason; 0.3, 1.2 and",
+									"    // 3.2 did not, and five assertions in this collection failed as a result.",
+									"    const ids = [pm.collectionVariables.get('application_uuid'), pm.collectionVariables.get('application_id')].filter(Boolean);",
+									"    // Record how many rows this Application owns BEFORE the publish.",
+									"    // REQ-OBV-002 is asserted as 'this number does not change', which is",
+									"    // only meaningful if the number is also known to be non-zero — see 1.2.",
+									"    pm.collectionVariables.set('versions_before_publish', String(rows.filter(r => ids.indexOf(String(r.application)) !== -1).length));",
+									"    const v1 = rows.find(r => r.semver === '1.0.0' && ids.indexOf(String(r.application)) !== -1);",
+									"    if (!v1) { console.log('[diagv] ids=' + JSON.stringify(ids) + ' rows=' + rows.length); rows.slice(0, 5).forEach(function (r, i) { console.log('[diagv' + i + '] semver=' + r.semver + ' app=' + r.application + ' slug=' + r.slug); }); }",
 									"    pm.expect(v1, 'expected the seeded v1.0.0 row from the SeedHelloWorld repair step').to.not.be.undefined;",
 									"    if (v1) {",
 									"        const uuid = v1.uuid || (v1['@self'] && v1['@self'].id) || v1.id;",
@@ -125,7 +178,7 @@
 						"header": [{ "key": "Content-Type", "value": "application/json" }],
 						"body": {
 							"mode": "raw",
-							"raw": "{\"version\":\"1.1.0\",\"status\":\"published\",\"manifest\":{\"version\":\"1.1.0\",\"dependencies\":[\"openregister\"],\"menu\":[{\"id\":\"Messages\",\"label\":\"openbuild.helloworld.menu.messages\",\"icon\":\"icon-comment\",\"route\":\"Messages\",\"order\":1}],\"pages\":[{\"id\":\"Messages\",\"route\":\"/\",\"type\":\"index\",\"title\":\"openbuild.helloworld.title.messages\",\"config\":{\"register\":\"openbuild\",\"schema\":\"hello-message\",\"columns\":[\"title\",\"body\",\"@self.created\"]}},{\"id\":\"About\",\"route\":\"/about\",\"type\":\"detail\",\"title\":\"openbuild.helloworld.title.about\",\"config\":{\"register\":\"openbuild\",\"schema\":\"hello-message\"}}]}}"
+							"raw": "{{merged_body}}"
 						},
 						"url": {
 							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{application_uuid}}",
@@ -135,12 +188,55 @@
 					},
 					"event": [
 						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// MERGE INTO THE WHOLE RECORD — OR's PUT IS NOT A PATCH.",
+									"//",
+									"// This request used to send only {version, status, manifest}.",
+									"// OpenRegister's saveObject() nulls every schema property the body",
+									"// omits, the Application schema declares `required: ['slug', 'name']`,",
+									"// and the write was therefore refused with 400 Bad request. Nothing in",
+									"// that failure mentions slug or name, so it read as a versioning bug;",
+									"// three assertions in this collection failed on it.",
+									"//",
+									"// The same trap is spelled out in lib/Command/SeedHelloWorldFixture.php",
+									"// ('⚠️ `permissions` IS REPEATED HERE ON PURPOSE — DO NOT TRIM IT') and",
+									"// in tests/e2e/support/appRoles.ts. This is the third place it has cost",
+									"// something.",
+									"const base = JSON.parse(pm.collectionVariables.get('application_full') || '{}');",
+									"const manifest = {",
+									"    version: '1.1.0',",
+									"    dependencies: ['openregister'],",
+									"    menu: [{ id: 'Messages', label: 'openbuild.helloworld.menu.messages', icon: 'icon-comment', route: 'Messages', order: 1 }],",
+									"    pages: [",
+									"        { id: 'Messages', route: '/', type: 'index', title: 'openbuild.helloworld.title.messages', config: { register: 'openbuild', schema: 'hello-message', columns: ['title', 'body', '@self.created'] } },",
+									"        { id: 'About', route: '/about', type: 'detail', title: 'openbuild.helloworld.title.about', config: { register: 'openbuild', schema: 'hello-message' } }",
+									"    ]",
+									"};",
+									"pm.collectionVariables.set('merged_body', JSON.stringify(Object.assign({}, base, { version: '1.1.0', status: 'published', manifest: manifest })));"
+								]
+							}
+						},
+						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
 									"pm.test('Publish PUT accepted', function () {",
-									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+									"    pm.expect(pm.response.code, pm.response.code === 400",
+									"        ? 'got 400 — OR PUT is PUT-semantic, so a partial body nulls the required slug/name; send the merged full record'",
+									"        : 'the publish write must be accepted').to.be.oneOf([200, 201, 204]);",
+									"});",
+									"// Assert the MERGE actually held, not merely that the write returned 200.",
+									"// Without this, trimming the merge back to a partial body would fail",
+									"// somewhere else entirely and this request would still look fine.",
+									"pm.test('slug and name survived the write (PUT semantics did not null them)', function () {",
+									"    const base = JSON.parse(pm.collectionVariables.get('application_full') || '{}');",
+									"    const body = pm.response.json();",
+									"    pm.expect(body.slug, 'slug must still be the seeded one after the publish').to.eql(base.slug);",
+									"    pm.expect(body.name, 'name must still be the seeded one after the publish').to.eql(base.name);",
 									"});"
 								]
 							}
@@ -152,10 +248,10 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application-version?filter[applicationUuid]={{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/applicationVersion?_limit=5000",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application-version"],
-							"query": [{ "key": "filter[applicationUuid]", "value": "{{application_uuid}}" }]
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "applicationVersion"],
+							"query": [{ "key": "_limit", "value": "5000" }]
 						}
 					},
 					"event": [
@@ -167,62 +263,41 @@
 									"pm.test('Versions list returns 200', function () { pm.response.to.have.status(200); });",
 									"const body = pm.response.json();",
 									"const rows = (body && body.results) || (Array.isArray(body) ? body : []);",
-									"pm.test('v1.1.0 snapshot row created by the listener', function () {",
-									"    const v2 = rows.find(r => r.version === '1.1.0' && r.applicationUuid === pm.collectionVariables.get('application_uuid'));",
-									"    pm.expect(v2, 'listener must have appended a v1.1.0 row').to.not.be.undefined;",
-									"    if (v2) {",
-									"        const uuid = v2.uuid || (v2['@self'] && v2['@self'].id) || v2.id;",
-									"        pm.collectionVariables.set('v2_uuid', String(uuid));",
-									"    }",
+									"// ⚠️ THIS ASSERTION USED TO DEMAND THE OPPOSITE OF THE SPECIFICATION.",
+									"//",
+									"// It required 'the listener must have appended a v1.1.0 row'. The",
+									"// canonical spec — openspec/specs/openbuild-version-snapshots/spec.md,",
+									"// status: done — says the reverse, in these words:",
+									"//",
+									"//   REQ-OBV-002: 'The system SHALL NOT spawn sibling ApplicationVersion",
+									"//   rows on draft → published transitions. Snapshot-on-publish writeback",
+									"//   is retired under ADR-002.'",
+									"//   'The system SHALL NOT subscribe any PHP listener",
+									"//   (ApplicationVersionSnapshotListener or any successor)...'",
+									"//   Scenario: 'Publishing does NOT create a sibling ApplicationVersion'.",
+									"//",
+									"// And there is no such listener: lib/Listener/ holds six listeners and",
+									"// none is it; the only references left are an archived change proposal,",
+									"// two PHPUnit files and this collection. This collection was written",
+									"// against `openbuild-versioning` (archived 2026-05-12) and never updated",
+									"// when `openbuild-version-snapshots` superseded it.",
+									"//",
+									"// So the ONLY way the old assertion could have gone green was for the",
+									"// product to regress to an architecture the spec explicitly forbids.",
+									"// It now asserts REQ-OBV-002 as written.",
+									"pm.test('REQ-OBV-002: publishing does NOT spawn a sibling ApplicationVersion row', function () {",
+									"    const before = Number(pm.collectionVariables.get('versions_before_publish'));",
+									"    const own = rows.filter(r => r.application === pm.collectionVariables.get('application_uuid'));",
+									"    // Non-vacuous on BOTH sides: a broken list read would leave `own`",
+									"    // empty, and 'unchanged' would then be trivially true against a",
+									"    // `before` that was also zero. Require a real row first.",
+									"    pm.expect(before, 'the setup step must have seen at least one ApplicationVersion — otherwise \"unchanged\" proves nothing').to.be.at.least(1);",
+									"    pm.expect(own.length, 'the publish must not have appended a sibling row (REQ-OBV-002)').to.eql(before);",
+									"    pm.expect(own.find(r => r.semver === '1.1.0'), 'a v1.1.0 SIBLING row is exactly what ADR-002 retired').to.be.undefined;",
 									"});",
 									"pm.test('Append-only — v1.0.0 row still present (history not rewritten)', function () {",
-									"    const v1 = rows.find(r => r.version === '1.0.0' && r.applicationUuid === pm.collectionVariables.get('application_uuid'));",
+									"    const v1 = rows.find(r => r.semver === '1.0.0' && r.application === pm.collectionVariables.get('application_uuid'));",
 									"    pm.expect(v1, 'v1.0.0 must NOT have been deleted by the publish').to.not.be.undefined;",
-									"});"
-								]
-							}
-						}
-					]
-				}
-			]
-		},
-		{
-			"name": "REQ-OBV-005 — diff endpoint returns both manifest blobs",
-			"description": "GET the thin-glue diff endpoint. With v1_uuid + v2_uuid known we expect a 200 with { from, to } shape where from.version='1.0.0' and to.version='1.1.0'.",
-			"item": [
-				{
-					"name": "2.1 GET diff between v1.0.0 and v1.1.0",
-					"request": {
-						"method": "GET",
-						"url": {
-							"raw": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions/diff?from={{v1_uuid}}&to={{v2_uuid}}",
-							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openbuild", "api", "applications", "{{test_slug}}", "versions", "diff"],
-							"query": [
-								{ "key": "from", "value": "{{v1_uuid}}" },
-								{ "key": "to", "value": "{{v2_uuid}}" }
-							]
-						}
-					},
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('Diff endpoint returns 200', function () { pm.response.to.have.status(200); });",
-									"const body = pm.response.json();",
-									"pm.test('Response shape is { from, to } with manifest + version + publishedAt', function () {",
-									"    pm.expect(body).to.have.property('from');",
-									"    pm.expect(body).to.have.property('to');",
-									"    pm.expect(body.from).to.have.property('manifest');",
-									"    pm.expect(body.from).to.have.property('version');",
-									"    pm.expect(body.to).to.have.property('manifest');",
-									"    pm.expect(body.to).to.have.property('version');",
-									"});",
-									"pm.test('Versions match the requested UUIDs', function () {",
-									"    pm.expect(body.from.version).to.equal('1.0.0');",
-									"    pm.expect(body.to.version).to.equal('1.1.0');",
 									"});"
 								]
 							}
@@ -242,7 +317,7 @@
 						"header": [{ "key": "Content-Type", "value": "application/json" }],
 						"body": {
 							"mode": "raw",
-							"raw": "{\"version\":\"1.0.0-rb1\",\"status\":\"published\",\"manifest\":{\"version\":\"1.0.0\",\"dependencies\":[\"openregister\"],\"menu\":[{\"id\":\"Messages\",\"label\":\"openbuild.helloworld.menu.messages\",\"icon\":\"icon-comment\",\"route\":\"Messages\",\"order\":1}],\"pages\":[{\"id\":\"Messages\",\"route\":\"/\",\"type\":\"index\",\"title\":\"openbuild.helloworld.title.messages\",\"config\":{\"register\":\"openbuild\",\"schema\":\"hello-message\",\"columns\":[\"title\",\"body\",\"@self.created\"]}}]}}"
+							"raw": "{{merged_body}}"
 						},
 						"url": {
 							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{application_uuid}}",
@@ -252,12 +327,34 @@
 					},
 					"event": [
 						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Same merge as 1.1 — OR's PUT nulls whatever the body omits, and",
+									"// `slug`/`name` are required. See 1.1's pre-request script.",
+									"const base = JSON.parse(pm.collectionVariables.get('application_full') || '{}');",
+									"const manifest = {",
+									"    version: '1.0.0',",
+									"    dependencies: ['openregister'],",
+									"    menu: [{ id: 'Messages', label: 'openbuild.helloworld.menu.messages', icon: 'icon-comment', route: 'Messages', order: 1 }],",
+									"    pages: [",
+									"        { id: 'Messages', route: '/', type: 'index', title: 'openbuild.helloworld.title.messages', config: { register: 'openbuild', schema: 'hello-message', columns: ['title', 'body', '@self.created'] } }",
+									"    ]",
+									"};",
+									"pm.collectionVariables.set('merged_body', JSON.stringify(Object.assign({}, base, { version: '1.0.0-rb1', status: 'published', manifest: manifest })));"
+								]
+							}
+						},
+						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
 									"pm.test('Rollback (re-publish) accepted', function () {",
-									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+									"    pm.expect(pm.response.code, pm.response.code === 400",
+									"        ? 'got 400 — OR PUT is PUT-semantic, so a partial body nulls the required slug/name; send the merged full record'",
+									"        : 'the rollback write must be accepted').to.be.oneOf([200, 201, 204]);",
 									"});"
 								]
 							}
@@ -269,10 +366,10 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application-version?filter[applicationUuid]={{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/applicationVersion?_limit=5000",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application-version"],
-							"query": [{ "key": "filter[applicationUuid]", "value": "{{application_uuid}}" }]
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "applicationVersion"],
+							"query": [{ "key": "_limit", "value": "5000" }]
 						}
 					},
 					"event": [
@@ -284,13 +381,26 @@
 									"pm.test('Versions list returns 200', function () { pm.response.to.have.status(200); });",
 									"const body = pm.response.json();",
 									"const rows = (body && body.results) || (Array.isArray(body) ? body : []);",
-									"const own = rows.filter(r => r.applicationUuid === pm.collectionVariables.get('application_uuid'));",
-									"pm.test('At least three ApplicationVersion rows after rollback (1.0.0 + 1.1.0 + rollback)', function () {",
-									"    pm.expect(own.length).to.be.at.least(3);",
+									"const own = rows.filter(r => r.application === pm.collectionVariables.get('application_uuid'));",
+									"// ⚠️ BOTH OF THESE ALSO ASSERTED THE RETIRED APPEND-ONLY MODEL.",
+									"//",
+									"// 'At least three rows (1.0.0 + 1.1.0 + rollback)' and 'a rollback row",
+									"// like 1.0.0-rb1' both require the sibling-snapshot behaviour that",
+									"// REQ-OBV-002 says the system SHALL NOT have, and that REQ-OBV-003",
+									"// replaces: 'restoring a previous state of an ApplicationVersion MUST",
+									"// NOT be implemented by copying from a sibling snapshot row (the",
+									"// append-only snapshot model is retired under ADR-002)'. History lives",
+									"// in OR's object-time-travel ON the row, not in extra rows beside it.",
+									"//",
+									"// The row COUNT is therefore the invariant, not a growing tally.",
+									"pm.test('REQ-OBV-003: rollback does not append rows — history lives in OR time-travel', function () {",
+									"    const before = Number(pm.collectionVariables.get('versions_before_publish'));",
+									"    pm.expect(before, 'the setup step must have seen at least one ApplicationVersion — otherwise \"unchanged\" proves nothing').to.be.at.least(1);",
+									"    pm.expect(own.length, 'neither the publish nor the rollback may spawn sibling ApplicationVersion rows').to.eql(before);",
 									"});",
-									"pm.test('Rollback row carries the old manifest version (1.0.0)', function () {",
-									"    const rollback = own.find(r => (r.version || '').startsWith('1.0.0') && r.version !== '1.0.0');",
-									"    pm.expect(rollback, 'expected an append-only rollback row with version like 1.0.0-rb1').to.not.be.undefined;",
+									"pm.test('no append-only rollback row (e.g. 1.0.0-rb1) was created', function () {",
+									"    const rollback = own.find(r => (r.semver || '').startsWith('1.0.0') && r.semver !== '1.0.0');",
+									"    pm.expect(rollback, 'a 1.0.0-rb1 style sibling row is exactly what ADR-002 retired').to.be.undefined;",
 									"});"
 								]
 							}
@@ -310,7 +420,7 @@
 						"header": [{ "key": "Content-Type", "value": "application/json" }],
 						"body": {
 							"mode": "raw",
-							"raw": "{\"version\":\"1.0.0\",\"status\":\"published\",\"manifest\":{\"version\":\"1.0.0\",\"dependencies\":[\"openregister\"],\"menu\":[{\"id\":\"Messages\",\"label\":\"openbuild.helloworld.menu.messages\",\"icon\":\"icon-comment\",\"route\":\"Messages\",\"order\":1}],\"pages\":[{\"id\":\"Messages\",\"route\":\"/\",\"type\":\"index\",\"title\":\"openbuild.helloworld.title.messages\",\"config\":{\"register\":\"openbuild\",\"schema\":\"hello-message\",\"columns\":[\"title\",\"body\",\"@self.created\"]}}]}}"
+							"raw": "{{merged_body}}"
 						},
 						"url": {
 							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{application_uuid}}",
@@ -320,12 +430,27 @@
 					},
 					"event": [
 						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Restore the ORIGINAL manifest captured in 0.2, merged into the full",
+									"// record for the same PUT-semantics reason as 1.1 and 3.1.",
+									"const base = JSON.parse(pm.collectionVariables.get('application_full') || '{}');",
+									"const original = JSON.parse(pm.collectionVariables.get('original_manifest') || '{}');",
+									"pm.collectionVariables.set('merged_body', JSON.stringify(Object.assign({}, base, { version: '1.0.0', status: 'published', manifest: original })));"
+								]
+							}
+						},
+						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
 									"pm.test('Teardown PUT accepted', function () {",
-									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+									"    pm.expect(pm.response.code, pm.response.code === 400",
+									"        ? 'got 400 — OR PUT is PUT-semantic, so a partial body nulls the required slug/name; send the merged full record'",
+									"        : 'the teardown write must be accepted').to.be.oneOf([200, 201, 204]);",
 									"});"
 								]
 							}

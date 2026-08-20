@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\RegisterService;
 use OCP\IUser;
@@ -51,459 +52,442 @@ use RuntimeException;
 /**
  * Tests for ApplicationCreationService.
  */
-class ApplicationCreationServiceTest extends TestCase
-{
-    /**
-     * @var LoggerInterface&MockObject
-     */
-    private LoggerInterface&MockObject $logger;
+class ApplicationCreationServiceTest extends TestCase {
+	/**
+	 * @var LoggerInterface&MockObject
+	 */
+	private LoggerInterface&MockObject $logger;
 
-    /**
-     * @var ObjectService&MockObject
-     */
-    private ObjectService&MockObject $objectService;
+	/**
+	 * @var ObjectServiceInterface&MockObject
+	 */
+	private ObjectServiceInterface&MockObject $objectService;
 
-    /**
-     * @var RegisterService&MockObject
-     */
-    private RegisterService&MockObject $registerService;
+	/**
+	 * @var RegisterService&MockObject
+	 */
+	private RegisterService&MockObject $registerService;
 
-    /**
-     * @var RegisterMapper&MockObject
-     */
-    private RegisterMapper&MockObject $registerMapper;
+	/**
+	 * @var RegisterMapper&MockObject
+	 */
+	private RegisterMapper&MockObject $registerMapper;
 
-    /**
-     * @var SchemaMapper&MockObject
-     */
-    private SchemaMapper&MockObject $schemaMapper;
+	/**
+	 * @var SchemaMapper&MockObject
+	 */
+	private SchemaMapper&MockObject $schemaMapper;
 
-    /**
-     * @var IUserSession&MockObject
-     */
-    private IUserSession&MockObject $userSession;
+	/**
+	 * @var IUserSession&MockObject
+	 */
+	private IUserSession&MockObject $userSession;
 
-    /**
-     * @var SlugValidator
-     */
-    private SlugValidator $slugValidator;
+	/**
+	 * @var SlugValidator
+	 */
+	private SlugValidator $slugValidator;
 
-    /**
-     * Service under test.
-     */
-    private ApplicationCreationService $service;
+	/**
+	 * Service under test.
+	 */
+	private ApplicationCreationService $service;
 
-    /**
-     * Set up shared mocks + the SUT.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
+	/**
+	 * Set up shared mocks + the SUT.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
 
-        $this->logger          = $this->createMock(LoggerInterface::class);
-        $this->objectService   = $this->createMock(ObjectService::class);
-        $this->registerService = $this->createMock(RegisterService::class);
-        $this->registerMapper  = $this->createMock(RegisterMapper::class);
-        $this->schemaMapper    = $this->createMock(SchemaMapper::class);
-        $this->userSession     = $this->createMock(IUserSession::class);
-        $this->slugValidator   = new SlugValidator();
+		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
+		$this->registerService = $this->createMock(RegisterService::class);
+		$this->registerMapper = $this->createMock(RegisterMapper::class);
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->slugValidator = new SlugValidator();
 
-        $this->service = new ApplicationCreationService(
-            logger: $this->logger,
-            objectService: $this->objectService,
-            registerService: $this->registerService,
-            registerMapper: $this->registerMapper,
-            schemaMapper: $this->schemaMapper,
-            userSession: $this->userSession,
-            slugValidator: $this->slugValidator,
-        );
+		$this->service = new ApplicationCreationService(
+			logger: $this->logger,
+			objectService: $this->objectService,
+			registerService: $this->registerService,
+			registerMapper: $this->registerMapper,
+			schemaMapper: $this->schemaMapper,
+			userSession: $this->userSession,
+			slugValidator: $this->slugValidator,
+		);
 
-        // Default: caller is 'admin'.
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('admin');
-        $this->userSession->method('getUser')->willReturn($user);
+		// Default: caller is 'admin'.
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('admin');
+		$this->userSession->method('getUser')->willReturn($user);
 
-        // Default: no existing apps (slug-uniqueness check passes).
-        $this->objectService->method('searchObjects')->willReturn([]);
-    }//end setUp()
+		// Default: no existing apps (slug-uniqueness check passes).
+		$this->objectService->method('searchObjects')->willReturn([]);
+	}//end setUp()
 
-    // -------------------------------------------------------------------------
-    // Slug-substitute helper
-    // -------------------------------------------------------------------------
+	// -------------------------------------------------------------------------
+	// Slug-substitute helper
+	// -------------------------------------------------------------------------
 
-    /**
-     * @test
-     *
-     * @return void
-     */
-    public function substituteRegisterSlugReplacesTokenInPagesConfig(): void
-    {
-        $manifest = [
-            'pages' => [
-                ['id' => 'Dashboard', 'config' => ['widgets' => []]],
-                ['id' => 'Messages', 'config' => ['register' => '{registerSlug}', 'schema' => 'hello-message']],
-            ],
-        ];
+	/**
+	 * @test
+	 *
+	 * @return void
+	 */
+	public function substituteRegisterSlugReplacesTokenInPagesConfig(): void {
+		$manifest = [
+			'pages' => [
+				['id' => 'Dashboard', 'config' => ['widgets' => []]],
+				['id' => 'Messages', 'config' => ['register' => '{registerSlug}', 'schema' => 'hello-message']],
+			],
+		];
 
-        $result = $this->service->substituteRegisterSlug(manifest: $manifest, registerSlug: 'openbuild-my-app-production');
+		$result = $this->service->substituteRegisterSlug(manifest: $manifest, registerSlug: 'openbuild-my-app-production');
 
-        self::assertSame('openbuild-my-app-production', $result['pages'][1]['config']['register']);
-    }//end substituteRegisterSlugReplacesTokenInPagesConfig()
+		self::assertSame('openbuild-my-app-production', $result['pages'][1]['config']['register']);
+	}//end substituteRegisterSlugReplacesTokenInPagesConfig()
 
-    /**
-     * @test
-     *
-     * @return void
-     */
-    public function substituteRegisterSlugDoesNotTouchNonTokenFields(): void
-    {
-        $manifest = [
-            'pages' => [
-                ['id' => 'Messages', 'config' => ['register' => 'some-other-register', 'schema' => 'foo']],
-            ],
-        ];
+	/**
+	 * @test
+	 *
+	 * @return void
+	 */
+	public function substituteRegisterSlugDoesNotTouchNonTokenFields(): void {
+		$manifest = [
+			'pages' => [
+				['id' => 'Messages', 'config' => ['register' => 'some-other-register', 'schema' => 'foo']],
+			],
+		];
 
-        $result = $this->service->substituteRegisterSlug(manifest: $manifest, registerSlug: 'openbuild-my-app-production');
+		$result = $this->service->substituteRegisterSlug(manifest: $manifest, registerSlug: 'openbuild-my-app-production');
 
-        // Field without the placeholder token must remain unchanged.
-        self::assertSame('some-other-register', $result['pages'][0]['config']['register']);
-    }//end substituteRegisterSlugDoesNotTouchNonTokenFields()
+		// Field without the placeholder token must remain unchanged.
+		self::assertSame('some-other-register', $result['pages'][0]['config']['register']);
+	}//end substituteRegisterSlugDoesNotTouchNonTokenFields()
 
-    /**
-     * substituteVersionContext rewrites both register AND schema.
-     *
-     * openbuild#75 — without this the KPI / insights cards aggregate
-     * against `hello-message` (the un-namespaced template slug), which
-     * doesn't exist in the per-version register, so counts leak the
-     * same numbers across all tiers.
-     *
-     * @test
-     *
-     * @return void
-     */
-    public function substituteVersionContextNamespacesSchemaSlugAlongsideRegister(): void
-    {
-        $manifest = [
-            'pages' => [
-                ['id' => 'Dashboard', 'config' => ['widgets' => []]],
-                ['id' => 'Messages', 'config' => ['register' => '{registerSlug}', 'schema' => 'hello-message']],
-            ],
-        ];
+	/**
+	 * substituteVersionContext rewrites both register AND schema.
+	 *
+	 * openbuild#75 — without this the KPI / insights cards aggregate
+	 * against `hello-message` (the un-namespaced template slug), which
+	 * doesn't exist in the per-version register, so counts leak the
+	 * same numbers across all tiers.
+	 *
+	 * @test
+	 *
+	 * @return void
+	 */
+	public function substituteVersionContextNamespacesSchemaSlugAlongsideRegister(): void {
+		$manifest = [
+			'pages' => [
+				['id' => 'Dashboard', 'config' => ['widgets' => []]],
+				['id' => 'Messages', 'config' => ['register' => '{registerSlug}', 'schema' => 'hello-message']],
+			],
+		];
 
-        $result = $this->service->substituteVersionContext(
-            manifest: $manifest,
-            registerSlug: 'openbuild-permit-flow-development',
-            schemaSlugPrefix: 'permit-flow-development-'
-        );
+		$result = $this->service->substituteVersionContext(
+			manifest: $manifest,
+			registerSlug: 'openbuild-permit-flow-development',
+			schemaSlugPrefix: 'permit-flow-development-'
+		);
 
-        self::assertSame('openbuild-permit-flow-development', $result['pages'][1]['config']['register']);
-        self::assertSame('permit-flow-development-hello-message', $result['pages'][1]['config']['schema']);
-    }//end substituteVersionContextNamespacesSchemaSlugAlongsideRegister()
+		self::assertSame('openbuild-permit-flow-development', $result['pages'][1]['config']['register']);
+		self::assertSame('permit-flow-development-hello-message', $result['pages'][1]['config']['schema']);
+	}//end substituteVersionContextNamespacesSchemaSlugAlongsideRegister()
 
-    /**
-     * substituteVersionContext is idempotent: re-running with the same
-     * prefix MUST NOT double-prefix the schema slug.
-     *
-     * @test
-     *
-     * @return void
-     */
-    public function substituteVersionContextIsIdempotentOnAlreadyNamespacedSlugs(): void
-    {
-        $manifest = [
-            'pages' => [
-                [
-                    'id'     => 'Messages',
-                    'config' => [
-                        'register' => 'openbuild-permit-flow-development',
-                        'schema'   => 'permit-flow-development-hello-message',
-                    ],
-                ],
-            ],
-        ];
+	/**
+	 * substituteVersionContext is idempotent: re-running with the same
+	 * prefix MUST NOT double-prefix the schema slug.
+	 *
+	 * @test
+	 *
+	 * @return void
+	 */
+	public function substituteVersionContextIsIdempotentOnAlreadyNamespacedSlugs(): void {
+		$manifest = [
+			'pages' => [
+				[
+					'id' => 'Messages',
+					'config' => [
+						'register' => 'openbuild-permit-flow-development',
+						'schema' => 'permit-flow-development-hello-message',
+					],
+				],
+			],
+		];
 
-        $result = $this->service->substituteVersionContext(
-            manifest: $manifest,
-            registerSlug: 'openbuild-permit-flow-development',
-            schemaSlugPrefix: 'permit-flow-development-'
-        );
+		$result = $this->service->substituteVersionContext(
+			manifest: $manifest,
+			registerSlug: 'openbuild-permit-flow-development',
+			schemaSlugPrefix: 'permit-flow-development-'
+		);
 
-        // Schema must NOT become `permit-flow-development-permit-flow-development-hello-message`.
-        self::assertSame('permit-flow-development-hello-message', $result['pages'][0]['config']['schema']);
-    }//end substituteVersionContextIsIdempotentOnAlreadyNamespacedSlugs()
+		// Schema must NOT become `permit-flow-development-permit-flow-development-hello-message`.
+		self::assertSame('permit-flow-development-hello-message', $result['pages'][0]['config']['schema']);
+	}//end substituteVersionContextIsIdempotentOnAlreadyNamespacedSlugs()
 
-    /**
-     * substituteVersionContext leaves schema alone when no prefix is provided
-     * (backwards-compat with the legacy substituteRegisterSlug entry point).
-     *
-     * @test
-     *
-     * @return void
-     */
-    public function substituteVersionContextLeavesSchemaAloneWhenPrefixEmpty(): void
-    {
-        $manifest = [
-            'pages' => [
-                ['id' => 'Messages', 'config' => ['register' => '{registerSlug}', 'schema' => 'hello-message']],
-            ],
-        ];
+	/**
+	 * substituteVersionContext leaves schema alone when no prefix is provided
+	 * (backwards-compat with the legacy substituteRegisterSlug entry point).
+	 *
+	 * @test
+	 *
+	 * @return void
+	 */
+	public function substituteVersionContextLeavesSchemaAloneWhenPrefixEmpty(): void {
+		$manifest = [
+			'pages' => [
+				['id' => 'Messages', 'config' => ['register' => '{registerSlug}', 'schema' => 'hello-message']],
+			],
+		];
 
-        $result = $this->service->substituteVersionContext(
-            manifest: $manifest,
-            registerSlug: 'openbuild-my-app-production',
-            schemaSlugPrefix: ''
-        );
+		$result = $this->service->substituteVersionContext(
+			manifest: $manifest,
+			registerSlug: 'openbuild-my-app-production',
+			schemaSlugPrefix: ''
+		);
 
-        self::assertSame('hello-message', $result['pages'][0]['config']['schema']);
-    }//end substituteVersionContextLeavesSchemaAloneWhenPrefixEmpty()
+		self::assertSame('hello-message', $result['pages'][0]['config']['schema']);
+	}//end substituteVersionContextLeavesSchemaAloneWhenPrefixEmpty()
 
-    // -------------------------------------------------------------------------
-    // resolveVersionChain
-    // -------------------------------------------------------------------------
+	// -------------------------------------------------------------------------
+	// resolveVersionChain
+	// -------------------------------------------------------------------------
 
-    /**
-     * @test
-     *
-     * @return void
-     */
-    public function resolveVersionChainReturnsSinglePreset(): void
-    {
-        $chain = $this->service->resolveVersionChain(['preset' => 'single']);
-        self::assertCount(1, $chain);
-        self::assertSame('production', $chain[0]['slug']);
-    }//end resolveVersionChainReturnsSinglePreset()
+	/**
+	 * @test
+	 *
+	 * @return void
+	 */
+	public function resolveVersionChainReturnsSinglePreset(): void {
+		$chain = $this->service->resolveVersionChain(['preset' => 'single']);
+		self::assertCount(1, $chain);
+		self::assertSame('production', $chain[0]['slug']);
+	}//end resolveVersionChainReturnsSinglePreset()
 
-    /**
-     * @test
-     *
-     * @return void
-     */
-    public function resolveVersionChainReturnsDevProdPreset(): void
-    {
-        $chain = $this->service->resolveVersionChain(['preset' => 'dev-prod']);
-        self::assertCount(2, $chain);
-        self::assertSame('development', $chain[0]['slug']);
-        self::assertSame('production', $chain[1]['slug']);
-    }//end resolveVersionChainReturnsDevProdPreset()
+	/**
+	 * @test
+	 *
+	 * @return void
+	 */
+	public function resolveVersionChainReturnsDevProdPreset(): void {
+		$chain = $this->service->resolveVersionChain(['preset' => 'dev-prod']);
+		self::assertCount(2, $chain);
+		self::assertSame('development', $chain[0]['slug']);
+		self::assertSame('production', $chain[1]['slug']);
+	}//end resolveVersionChainReturnsDevProdPreset()
 
-    /**
-     * @test
-     *
-     * @return void
-     */
-    public function resolveVersionChainReturnsDevStagingProdPreset(): void
-    {
-        $chain = $this->service->resolveVersionChain(['preset' => 'dev-staging-prod']);
-        self::assertCount(3, $chain);
-        self::assertSame('development', $chain[0]['slug']);
-        self::assertSame('staging', $chain[1]['slug']);
-        self::assertSame('production', $chain[2]['slug']);
-    }//end resolveVersionChainReturnsDevStagingProdPreset()
+	/**
+	 * @test
+	 *
+	 * @return void
+	 */
+	public function resolveVersionChainReturnsDevStagingProdPreset(): void {
+		$chain = $this->service->resolveVersionChain(['preset' => 'dev-staging-prod']);
+		self::assertCount(3, $chain);
+		self::assertSame('development', $chain[0]['slug']);
+		self::assertSame('staging', $chain[1]['slug']);
+		self::assertSame('production', $chain[2]['slug']);
+	}//end resolveVersionChainReturnsDevStagingProdPreset()
 
-    /**
-     * @test
-     *
-     * @return void
-     */
-    public function resolveVersionChainReturnsCustomVersions(): void
-    {
-        $payload = [
-            'preset'   => 'custom',
-            'versions' => [
-                ['name' => 'Alpha', 'slug' => 'alpha'],
-                ['name' => 'Beta',  'slug' => 'beta'],
-                ['name' => 'Main',  'slug' => 'main'],
-            ],
-        ];
-        $chain = $this->service->resolveVersionChain($payload);
-        self::assertCount(3, $chain);
-        self::assertSame('alpha', $chain[0]['slug']);
-        self::assertSame('main', $chain[2]['slug']);
-    }//end resolveVersionChainReturnsCustomVersions()
+	/**
+	 * @test
+	 *
+	 * @return void
+	 */
+	public function resolveVersionChainReturnsCustomVersions(): void {
+		$payload = [
+			'preset' => 'custom',
+			'versions' => [
+				['name' => 'Alpha', 'slug' => 'alpha'],
+				['name' => 'Beta',  'slug' => 'beta'],
+				['name' => 'Main',  'slug' => 'main'],
+			],
+		];
+		$chain = $this->service->resolveVersionChain($payload);
+		self::assertCount(3, $chain);
+		self::assertSame('alpha', $chain[0]['slug']);
+		self::assertSame('main', $chain[2]['slug']);
+	}//end resolveVersionChainReturnsCustomVersions()
 
-    // -------------------------------------------------------------------------
-    // Validation failure
-    // -------------------------------------------------------------------------
+	// -------------------------------------------------------------------------
+	// Validation failure
+	// -------------------------------------------------------------------------
 
-    /**
-     * @test
-     *
-     * @return void
-     */
-    public function createApplicationThrowsWizardExceptionOnInvalidSlug(): void
-    {
-        $this->expectException(WizardCreationException::class);
+	/**
+	 * @test
+	 *
+	 * @return void
+	 */
+	public function createApplicationThrowsWizardExceptionOnInvalidSlug(): void {
+		$this->expectException(WizardCreationException::class);
 
-        try {
-            $this->service->createApplication([
-                'name'   => 'My App',
-                'slug'   => '!nope',
-                'preset' => 'single',
-            ]);
-        } catch (WizardCreationException $e) {
-            self::assertSame('validate', $e->getFailedAtStep());
-            self::assertSame('none', $e->getRollbackStatus());
-            throw $e;
-        }
-    }//end createApplicationThrowsWizardExceptionOnInvalidSlug()
+		try {
+			$this->service->createApplication([
+				'name' => 'My App',
+				'slug' => '!nope',
+				'preset' => 'single',
+			]);
+		} catch (WizardCreationException $e) {
+			self::assertSame('validate', $e->getFailedAtStep());
+			self::assertSame('none', $e->getRollbackStatus());
+			throw $e;
+		}
+	}//end createApplicationThrowsWizardExceptionOnInvalidSlug()
 
-    /**
-     * @test
-     *
-     * @return void
-     */
-    public function createApplicationThrowsOnDuplicateVersionSlugs(): void
-    {
-        $this->expectException(WizardCreationException::class);
+	/**
+	 * @test
+	 *
+	 * @return void
+	 */
+	public function createApplicationThrowsOnDuplicateVersionSlugs(): void {
+		$this->expectException(WizardCreationException::class);
 
-        try {
-            $this->service->createApplication([
-                'name'     => 'My App',
-                'slug'     => 'my-app',
-                'preset'   => 'custom',
-                'versions' => [
-                    ['name' => 'Staging',    'slug' => 'staging'],
-                    ['name' => 'Also Staging', 'slug' => 'staging'],
-                ],
-            ]);
-        } catch (WizardCreationException $e) {
-            self::assertSame('validate', $e->getFailedAtStep());
-            throw $e;
-        }
-    }//end createApplicationThrowsOnDuplicateVersionSlugs()
+		try {
+			$this->service->createApplication([
+				'name' => 'My App',
+				'slug' => 'my-app',
+				'preset' => 'custom',
+				'versions' => [
+					['name' => 'Staging',    'slug' => 'staging'],
+					['name' => 'Also Staging', 'slug' => 'staging'],
+				],
+			]);
+		} catch (WizardCreationException $e) {
+			self::assertSame('validate', $e->getFailedAtStep());
+			throw $e;
+		}
+	}//end createApplicationThrowsOnDuplicateVersionSlugs()
 
-    /**
-     * @test
-     *
-     * @return void
-     */
-    public function createApplicationThrowsWhenAppNameEmpty(): void
-    {
-        $this->expectException(WizardCreationException::class);
+	/**
+	 * @test
+	 *
+	 * @return void
+	 */
+	public function createApplicationThrowsWhenAppNameEmpty(): void {
+		$this->expectException(WizardCreationException::class);
 
-        try {
-            $this->service->createApplication(['name' => '', 'slug' => 'my-app', 'preset' => 'single']);
-        } catch (WizardCreationException $e) {
-            self::assertSame('validate', $e->getFailedAtStep());
-            throw $e;
-        }
-    }//end createApplicationThrowsWhenAppNameEmpty()
+		try {
+			$this->service->createApplication(['name' => '', 'slug' => 'my-app', 'preset' => 'single']);
+		} catch (WizardCreationException $e) {
+			self::assertSame('validate', $e->getFailedAtStep());
+			throw $e;
+		}
+	}//end createApplicationThrowsWhenAppNameEmpty()
 
-    // -------------------------------------------------------------------------
-    // Rollback simulation: app-create failure
-    // -------------------------------------------------------------------------
+	// -------------------------------------------------------------------------
+	// Rollback simulation: app-create failure
+	// -------------------------------------------------------------------------
 
-    /**
-     * @test
-     *
-     * @return void
-     */
-    public function rollbackIsCompleteWhenAppCreateFails(): void
-    {
-        $this->objectService->method('saveObject')
-            ->willThrowException(new RuntimeException('DB unavailable'));
+	/**
+	 * @test
+	 *
+	 * @return void
+	 */
+	public function rollbackIsCompleteWhenAppCreateFails(): void {
+		$this->objectService->method('saveObject')
+			->willThrowException(new RuntimeException('DB unavailable'));
 
-        $this->expectException(WizardCreationException::class);
+		$this->expectException(WizardCreationException::class);
 
-        try {
-            $this->service->createApplication(['name' => 'Test', 'slug' => 'test-app', 'preset' => 'single']);
-        } catch (WizardCreationException $e) {
-            self::assertSame('create-application', $e->getFailedAtStep());
-            // Nothing was created — orphanedResources should be empty.
-            self::assertSame([], $e->getOrphanedResources());
-            throw $e;
-        }
-    }//end rollbackIsCompleteWhenAppCreateFails()
+		try {
+			$this->service->createApplication(['name' => 'Test', 'slug' => 'test-app', 'preset' => 'single']);
+		} catch (WizardCreationException $e) {
+			self::assertSame('create-application', $e->getFailedAtStep());
+			// Nothing was created — orphanedResources should be empty.
+			self::assertSame([], $e->getOrphanedResources());
+			throw $e;
+		}
+	}//end rollbackIsCompleteWhenAppCreateFails()
 
-    // -------------------------------------------------------------------------
-    // Happy path: single preset creates application + returns UUID
-    // -------------------------------------------------------------------------
+	// -------------------------------------------------------------------------
+	// Happy path: single preset creates application + returns UUID
+	// -------------------------------------------------------------------------
 
-    /**
-     * @test
-     *
-     * @return void
-     */
-    public function createApplicationReturnUuidOnSinglePresetSuccess(): void
-    {
-        $this->stubSuccessfulCreation(appUuid: 'app-uuid-001', versionUuids: ['production' => 'ver-uuid-001']);
+	/**
+	 * @test
+	 *
+	 * @return void
+	 */
+	public function createApplicationReturnUuidOnSinglePresetSuccess(): void {
+		$this->stubSuccessfulCreation(appUuid: 'app-uuid-001', versionUuids: ['production' => 'ver-uuid-001']);
 
-        $uuid = $this->service->createApplication([
-            'name'   => 'Hello World',
-            'slug'   => 'hello-world',
-            'preset' => 'single',
-        ]);
+		$uuid = $this->service->createApplication([
+			'name' => 'Hello World',
+			'slug' => 'hello-world',
+			'preset' => 'single',
+		]);
 
-        self::assertSame('app-uuid-001', $uuid);
-    }//end createApplicationReturnUuidOnSinglePresetSuccess()
+		self::assertSame('app-uuid-001', $uuid);
+	}//end createApplicationReturnUuidOnSinglePresetSuccess()
 
-    // -------------------------------------------------------------------------
-    // Stubs
-    // -------------------------------------------------------------------------
+	// -------------------------------------------------------------------------
+	// Stubs
+	// -------------------------------------------------------------------------
 
-    /**
-     * Wire saveObject to return deterministic UUIDs for the given chain.
-     *
-     * The first call to saveObject returns the Application UUID; subsequent
-     * calls return version UUIDs in order; final calls for wiring + setting
-     * productionVersion return the last saved version.
-     *
-     * @param string              $appUuid      UUID to assign to the Application
-     * @param array<string,string> $versionUuids Map of versionSlug → UUID
-     *
-     * @return void
-     */
-    private function stubSuccessfulCreation(string $appUuid, array $versionUuids): void
-    {
-        // Build the mock register. Register::getId() is now an explicit stub method
-        // (declared in tests/stubs/openregister-stubs.php) so use onlyMethods().
-        $mockRegister = $this->getMockBuilder(Register::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['getSchemas', 'setSchemas', 'getId'])
-            ->getMock();
-        $mockRegister->method('getSchemas')->willReturn([]);
-        $mockRegister->method('getId')->willReturn(1);
+	/**
+	 * Wire saveObject to return deterministic UUIDs for the given chain.
+	 *
+	 * The first call to saveObject returns the Application UUID; subsequent
+	 * calls return version UUIDs in order; final calls for wiring + setting
+	 * productionVersion return the last saved version.
+	 *
+	 * @param string $appUuid UUID to assign to the Application
+	 * @param array<string,string> $versionUuids Map of versionSlug → UUID
+	 *
+	 * @return void
+	 */
+	private function stubSuccessfulCreation(string $appUuid, array $versionUuids): void {
+		// Build the mock register. Register::getId() is now an explicit stub method
+		// (declared in tests/stubs/openregister-stubs.php) so use onlyMethods().
+		$mockRegister = $this->getMockBuilder(Register::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['getSchemas', 'setSchemas', 'getId'])
+			->getMock();
+		$mockRegister->method('getSchemas')->willReturn([]);
+		$mockRegister->method('getId')->willReturn(1);
 
-        $this->registerMapper->method('find')->willReturn($mockRegister);
-        $this->registerMapper->method('createFromArray')->willReturn($mockRegister);
-        $this->registerMapper->method('update')->willReturn($mockRegister);
+		$this->registerMapper->method('find')->willReturn($mockRegister);
+		$this->registerMapper->method('createFromArray')->willReturn($mockRegister);
+		$this->registerMapper->method('update')->willReturn($mockRegister);
 
-        // Build mock schema. Schema::getId() is now an explicit stub method
-        // (declared in tests/stubs/openregister-stubs.php) so use onlyMethods().
-        $mockSchema = $this->getMockBuilder(Schema::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['getId'])
-            ->getMock();
-        $mockSchema->method('getId')->willReturn(1);
-        $this->schemaMapper->method('find')->willReturn($mockSchema);
-        $this->schemaMapper->method('createFromArray')->willReturn($mockSchema);
+		// Build mock schema. Schema::getId() is now an explicit stub method
+		// (declared in tests/stubs/openregister-stubs.php) so use onlyMethods().
+		$mockSchema = $this->getMockBuilder(Schema::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['getId'])
+			->getMock();
+		$mockSchema->method('getId')->willReturn(1);
+		$this->schemaMapper->method('find')->willReturn($mockSchema);
+		$this->schemaMapper->method('createFromArray')->willReturn($mockSchema);
 
-        // Build ObjectEntity mocks for saveObject return values.
-        // saveObject() must return an ObjectEntity; normaliseObject() calls jsonSerialize()
-        // on the result to extract the UUID, so each mock's jsonSerialize() returns the payload.
-        $makeEntity = function (array $payload): \OCA\OpenRegister\Db\ObjectEntity {
-            $entity = $this->createMock(\OCA\OpenRegister\Db\ObjectEntity::class);
-            $entity->method('jsonSerialize')->willReturn($payload);
-            return $entity;
-        };
+		// Build ObjectEntity mocks for saveObject return values.
+		// saveObject() must return an ObjectEntity; normaliseObject() calls jsonSerialize()
+		// on the result to extract the UUID, so each mock's jsonSerialize() returns the payload.
+		$makeEntity = function (array $payload): \OCA\OpenRegister\Db\ObjectEntity {
+			$entity = $this->createMock(\OCA\OpenRegister\Db\ObjectEntity::class);
+			$entity->method('jsonSerialize')->willReturn($payload);
+			return $entity;
+		};
 
-        $appEntity      = $makeEntity(['id' => $appUuid, 'uuid' => $appUuid]);
-        $versionEntities = [];
-        foreach ($versionUuids as $slug => $uuid) {
-            $versionEntities[] = $makeEntity(['id' => $uuid, 'uuid' => $uuid, 'slug' => $slug]);
-        }
+		$appEntity = $makeEntity(['id' => $appUuid, 'uuid' => $appUuid]);
+		$versionEntities = [];
+		foreach ($versionUuids as $slug => $uuid) {
+			$versionEntities[] = $makeEntity(['id' => $uuid, 'uuid' => $uuid, 'slug' => $slug]);
+		}
 
-        // Map saveObject call sequence: app, then versions (×2 for create+wiring), then productionVersion update.
-        $callQueue = [$appEntity, ...$versionEntities, ...array_fill(0, count($versionUuids), $appEntity), $appEntity];
+		// Map saveObject call sequence: app, then versions (×2 for create+wiring), then productionVersion update.
+		$callQueue = [$appEntity, ...$versionEntities, ...array_fill(0, count($versionUuids), $appEntity), $appEntity];
 
-        $callIndex = 0;
-        $this->objectService->method('saveObject')
-            ->willReturnCallback(function () use ($callQueue, &$callIndex) {
-                $result = $callQueue[$callIndex] ?? $callQueue[count($callQueue) - 1];
-                $callIndex++;
-                return $result;
-            });
-    }//end stubSuccessfulCreation()
+		$callIndex = 0;
+		$this->objectService->method('saveObject')
+			->willReturnCallback(function () use ($callQueue, &$callIndex) {
+				$result = $callQueue[$callIndex] ?? $callQueue[count($callQueue) - 1];
+				$callIndex++;
+				return $result;
+			});
+	}//end stubSuccessfulCreation()
 }//end class

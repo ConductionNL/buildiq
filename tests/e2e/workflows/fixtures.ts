@@ -35,7 +35,8 @@ import { type APIRequestContext, expect } from '@playwright/test'
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 const ADMIN_USER = process.env.NC_ADMIN_USER ?? 'admin'
-const ADMIN_PASS = process.env.NC_ADMIN_PASSWORD ?? process.env.NC_ADMIN_PASS ?? 'admin'
+const ADMIN_PASS =
+	process.env.NC_ADMIN_PASSWORD ?? process.env.NC_ADMIN_PASS ?? 'admin'
 
 /** OpenRegister register slug that owns OpenBuild virtual apps. */
 export const OPENBUILD_REGISTER_SLUG = 'openbuild'
@@ -75,26 +76,35 @@ export interface SeededSchema {
  * verb (GET /api/registers). Throws if the slug is missing or ambiguous
  * (a duplicate-slug register is a real environment bug, not something to mask).
  */
-export async function resolveRegisterId(request: APIRequestContext, slug: string): Promise<number> {
+export async function resolveRegisterId(
+	request: APIRequestContext,
+	slug: string,
+): Promise<number> {
 	// See resolveSchemaId: a shared dev instance can hold many registers, so
 	// pull a generous page to keep the client-side slug filter exhaustive.
-	const res = await request.get(`${BASE_URL}/index.php/apps/openregister/api/registers?_limit=5000`, {
-		headers: authHeaders,
-	})
+	const res = await request.get(
+		`${BASE_URL}/index.php/apps/openregister/api/registers?_limit=5000`,
+		{
+			headers: authHeaders,
+		},
+	)
 	expect(res.ok(), `register list must succeed (got ${res.status()})`).toBeTruthy()
 	const body = await res.json()
-	const rows: Array<Record<string, unknown>> = Array.isArray(body) ? body : (body.results ?? [])
+	const rows: Array<Record<string, unknown>> = Array.isArray(body)
+		? body
+		: (body.results ?? [])
 	const matches = rows.filter((r) => r.slug === slug)
-	expect(matches.length, `at least one register must own slug "${slug}" (found ${matches.length})`).toBeGreaterThanOrEqual(1)
+	expect(
+		matches.length,
+		`at least one register must own slug "${slug}" (found ${matches.length})`,
+	).toBeGreaterThanOrEqual(1)
 	// The shared dev instance can transiently hold >1 register for a slug when
 	// the app install/repair seed re-runs (the extra registers are empty and
 	// get merged by `occ openregister:registers:dedupe`). Resolve to the
 	// canonical lowest-id register — the same register OR's dedupe keeps — so
 	// the suite is robust to that env churn without masking a real conflict
 	// (which would surface as data on the wrong register, caught downstream).
-	const canonical = matches
-		.map((r) => Number(r.id))
-		.sort((a, b) => a - b)[0]
+	const canonical = matches.map((r) => Number(r.id)).sort((a, b) => a - b)[0]
 	return canonical
 }
 
@@ -102,25 +112,34 @@ export async function resolveRegisterId(request: APIRequestContext, slug: string
  * Resolve an OpenRegister schema slug → numeric id via `findAll`
  * (GET /api/schemas). Throws on missing/ambiguous slug.
  */
-export async function resolveSchemaId(request: APIRequestContext, slug: string): Promise<number> {
+export async function resolveSchemaId(
+	request: APIRequestContext,
+	slug: string,
+): Promise<number> {
 	// _limit must exceed the schema count of a long-lived shared dev instance
 	// (the fleet env accumulates 1000+ schemas across apps); the OpenRegister
 	// schemas endpoint has no server-side slug filter, so the resolver pulls
 	// the full set and filters client-side. A page cap that drops the target
 	// slug surfaces as a false "found 0".
-	const res = await request.get(`${BASE_URL}/index.php/apps/openregister/api/schemas?_limit=5000`, {
-		headers: authHeaders,
-	})
+	const res = await request.get(
+		`${BASE_URL}/index.php/apps/openregister/api/schemas?_limit=5000`,
+		{
+			headers: authHeaders,
+		},
+	)
 	expect(res.ok(), `schema list must succeed (got ${res.status()})`).toBeTruthy()
 	const body = await res.json()
-	const rows: Array<Record<string, unknown>> = Array.isArray(body) ? body : (body.results ?? [])
+	const rows: Array<Record<string, unknown>> = Array.isArray(body)
+		? body
+		: (body.results ?? [])
 	const matches = rows.filter((r) => r.slug === slug)
-	expect(matches.length, `at least one schema must own slug "${slug}" (found ${matches.length})`).toBeGreaterThanOrEqual(1)
+	expect(
+		matches.length,
+		`at least one schema must own slug "${slug}" (found ${matches.length})`,
+	).toBeGreaterThanOrEqual(1)
 	// Resolve to the canonical lowest-id schema — robust to a transient
 	// duplicate left by a re-run install/repair seed (see resolveRegisterId).
-	return matches
-		.map((r) => Number(r.id))
-		.sort((a, b) => a - b)[0]
+	return matches.map((r) => Number(r.id)).sort((a, b) => a - b)[0]
 }
 
 /**
@@ -129,7 +148,7 @@ export async function resolveSchemaId(request: APIRequestContext, slug: string):
  */
 export async function seedVirtualApp(
 	request: APIRequestContext,
-	opts: { slug?: string, name?: string, description?: string } = {},
+	opts: { slug?: string; name?: string; description?: string } = {},
 ): Promise<SeededApp> {
 	const registerId = await resolveRegisterId(request, OPENBUILD_REGISTER_SLUG)
 	const schemaId = await resolveSchemaId(request, APPLICATION_SCHEMA_SLUG)
@@ -142,7 +161,10 @@ export async function seedVirtualApp(
 		`${BASE_URL}/index.php/apps/openregister/api/objects/${registerId}/${schemaId}`,
 		{ headers: authHeaders, data: { slug, name, description } },
 	)
-	expect(res.ok(), `seedVirtualApp must succeed (got ${res.status()})`).toBeTruthy()
+	expect(
+		res.ok(),
+		`seedVirtualApp must succeed (got ${res.status()})`,
+	).toBeTruthy()
 	const obj = await res.json()
 	const uuid = String(obj.id ?? obj['@self']?.id ?? '')
 	expect(uuid, 'seeded app must carry a uuid').not.toBe('')
@@ -155,18 +177,26 @@ export async function seedVirtualApp(
  */
 export async function seedSchema(
 	request: APIRequestContext,
-	opts: { slug?: string, title?: string, properties?: Record<string, unknown> } = {},
+	opts: {
+		slug?: string
+		title?: string
+		properties?: Record<string, unknown>
+	} = {},
 ): Promise<SeededSchema> {
-	const slug = opts.slug ?? `${E2E_PREFIX}-schema-${Math.floor(Math.random() * 1e4)}`
+	const slug =
+		opts.slug ?? `${E2E_PREFIX}-schema-${Math.floor(Math.random() * 1e4)}`
 	const title = opts.title ?? `E2E Schema ${slug}`
 	const properties = opts.properties ?? {
 		label: { type: 'string', title: 'Label' },
 		count: { type: 'integer', title: 'Count' },
 	}
-	const res = await request.post(`${BASE_URL}/index.php/apps/openregister/api/schemas`, {
-		headers: authHeaders,
-		data: { slug, title, properties },
-	})
+	const res = await request.post(
+		`${BASE_URL}/index.php/apps/openregister/api/schemas`,
+		{
+			headers: authHeaders,
+			data: { slug, title, properties },
+		},
+	)
 	expect(res.ok(), `seedSchema must succeed (got ${res.status()})`).toBeTruthy()
 	const obj = await res.json()
 	return { id: obj.id, slug, title }
@@ -186,7 +216,10 @@ export async function findVirtualApp(
 	if (res.status() === 404) {
 		return null
 	}
-	expect(res.ok(), `findVirtualApp must succeed (got ${res.status()})`).toBeTruthy()
+	expect(
+		res.ok(),
+		`findVirtualApp must succeed (got ${res.status()})`,
+	).toBeTruthy()
 	return res.json()
 }
 
@@ -195,9 +228,12 @@ export async function findSchema(
 	request: APIRequestContext,
 	id: number | string,
 ): Promise<Record<string, unknown> | null> {
-	const res = await request.get(`${BASE_URL}/index.php/apps/openregister/api/schemas/${id}`, {
-		headers: authHeaders,
-	})
+	const res = await request.get(
+		`${BASE_URL}/index.php/apps/openregister/api/schemas/${id}`,
+		{
+			headers: authHeaders,
+		},
+	)
 	if (res.status() === 404) {
 		return null
 	}
@@ -206,7 +242,10 @@ export async function findSchema(
 }
 
 /** Delete one virtual-app object (the `deleteObject` verb). Idempotent. */
-export async function deleteVirtualApp(request: APIRequestContext, uuid: string): Promise<void> {
+export async function deleteVirtualApp(
+	request: APIRequestContext,
+	uuid: string,
+): Promise<void> {
 	const registerId = await resolveRegisterId(request, OPENBUILD_REGISTER_SLUG)
 	const schemaId = await resolveSchemaId(request, APPLICATION_SCHEMA_SLUG)
 	await request.delete(
@@ -216,10 +255,16 @@ export async function deleteVirtualApp(request: APIRequestContext, uuid: string)
 }
 
 /** Delete one schema by id. Idempotent. */
-export async function deleteSchema(request: APIRequestContext, id: number | string): Promise<void> {
-	await request.delete(`${BASE_URL}/index.php/apps/openregister/api/schemas/${id}`, {
-		headers: authHeaders,
-	})
+export async function deleteSchema(
+	request: APIRequestContext,
+	id: number | string,
+): Promise<void> {
+	await request.delete(
+		`${BASE_URL}/index.php/apps/openregister/api/schemas/${id}`,
+		{
+			headers: authHeaders,
+		},
+	)
 }
 
 /**
@@ -227,7 +272,10 @@ export async function deleteSchema(request: APIRequestContext, id: number | stri
  * starts with the suite's `e2e-<runId>` prefix. Safe to call in afterAll even
  * if individual specs already cleaned up their own entities.
  */
-export async function cleanupByPrefix(request: APIRequestContext, prefix: string = E2E_PREFIX): Promise<void> {
+export async function cleanupByPrefix(
+	request: APIRequestContext,
+	prefix: string = E2E_PREFIX,
+): Promise<void> {
 	// --- application objects ---
 	try {
 		const registerId = await resolveRegisterId(request, OPENBUILD_REGISTER_SLUG)
@@ -238,10 +286,18 @@ export async function cleanupByPrefix(request: APIRequestContext, prefix: string
 		)
 		if (res.ok()) {
 			const body = await res.json()
-			const rows: Array<Record<string, unknown>> = Array.isArray(body) ? body : (body.results ?? [])
+			const rows: Array<Record<string, unknown>> = Array.isArray(body)
+				? body
+				: (body.results ?? [])
 			for (const row of rows) {
-				const slug = String(row.slug ?? (row['@self'] as Record<string, unknown>)?.slug ?? '')
-				const uuid = String(row.id ?? (row['@self'] as Record<string, unknown>)?.id ?? '')
+				const slug = String(
+					row.slug
+						?? (row['@self'] as Record<string, unknown>)?.slug
+						?? '',
+				)
+				const uuid = String(
+					row.id ?? (row['@self'] as Record<string, unknown>)?.id ?? '',
+				)
 				if (slug.startsWith(prefix) && uuid !== '') {
 					await deleteVirtualApp(request, uuid)
 				}
@@ -253,12 +309,17 @@ export async function cleanupByPrefix(request: APIRequestContext, prefix: string
 
 	// --- schemas ---
 	try {
-		const res = await request.get(`${BASE_URL}/index.php/apps/openregister/api/schemas?_limit=1000`, {
-			headers: authHeaders,
-		})
+		const res = await request.get(
+			`${BASE_URL}/index.php/apps/openregister/api/schemas?_limit=1000`,
+			{
+				headers: authHeaders,
+			},
+		)
 		if (res.ok()) {
 			const body = await res.json()
-			const rows: Array<Record<string, unknown>> = Array.isArray(body) ? body : (body.results ?? [])
+			const rows: Array<Record<string, unknown>> = Array.isArray(body)
+				? body
+				: (body.results ?? [])
 			for (const row of rows) {
 				const slug = String(row.slug ?? '')
 				if (slug.startsWith(prefix) && row.id != null) {
@@ -279,7 +340,7 @@ export async function cleanupByPrefix(request: APIRequestContext, prefix: string
 export async function fetchManifest(
 	request: APIRequestContext,
 	slug: string,
-): Promise<{ status: number, body: unknown }> {
+): Promise<{ status: number; body: unknown }> {
 	const res = await request.get(
 		`${BASE_URL}/index.php/apps/openbuild/api/applications/${slug}/manifest`,
 		{ headers: authHeaders },
@@ -294,12 +355,15 @@ export async function fetchManifest(
 export async function wizardCreate(
 	request: APIRequestContext,
 	payload: Record<string, unknown>,
-): Promise<{ status: number, body: Record<string, unknown> }> {
+): Promise<{ status: number; body: Record<string, unknown> }> {
 	const res = await request.post(
 		`${BASE_URL}/index.php/apps/openbuild/api/applications/wizard`,
 		{ headers: authHeaders, data: payload },
 	)
-	return { status: res.status(), body: (await res.json().catch(() => ({}))) as Record<string, unknown> }
+	return {
+		status: res.status(),
+		body: (await res.json().catch(() => ({}))) as Record<string, unknown>,
+	}
 }
 
 export { BASE_URL, authHeaders }

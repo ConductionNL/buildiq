@@ -1,80 +1,148 @@
 [
   {
-    "slug": "app-icon-management",
-    "title": "app-icon-management",
-    "summary": "Lets an operator brand each published OpenBuild virtual app with per-app SVG icons (light + dark) so the published app surfaces with its own identity in the Nextcloud top bar and in OpenBuild's own card grid. Adds top-level `icon` / `iconDark` ref fields to the `Application` schema (sibling to `slug`, `name`, `manifest`, `permissions`), thin icon-serving endpoints with a clear fallback chain, and the upload / preview / remove UX on the Application detail page — all routed through OR's existing files-attached-to-object mechanism (ADR-001) so no new openbuild-side file storage is introduced.",
-    "docsUrl": "openspec/specs/app-icon-management/spec.md"
-  },
-  {
-    "slug": "app-nav-entries",
-    "title": "app-nav-entries",
-    "summary": "@e2e exclude mixed spec — INavigationManager registration, RBAC visibility closure, per-request re-evaluation and group-wildcard filtering are PHP boot-time contracts verified by PHPUnit/Newman; published app top-bar appearance requires a published app + boot-cycle which is not reproducible in isolation in Playwright without a lifecycle trigger that is itself part of the app; scenarios tested by playwright UI are covered in the openbuild-runtime spec tests",
-    "docsUrl": "openspec/specs/app-nav-entries/spec.md"
-  },
-  {
-    "slug": "application-creation-wizard",
-    "title": "application-creation-wizard",
-    "summary": "Replaces the legacy single-form \"Add Application\" dialog with a four-step wizard that provisions the full ADR-002 chain in one atomic backend call: an `Application` row + N `ApplicationVersion` rows + N per-version registers (named `openbuild-{appSlug}-{versionSlug}`), each pre-seeded with the default `hello-message` schema and the default manifest. Supports `single | dev-prod | dev-staging-prod | custom` presets, enforces unique slugs per chain (leading-`_` reserved for openbuild system use), provides full rollback on any provisioning failure, sets the caller as sole owner, and retires install-time auto-seed (`SeedHelloWorld` does not return) — fresh installs are empty until the admin runs the wizard.",
-    "docsUrl": "openspec/specs/application-creation-wizard/spec.md"
-  },
-  {
-    "slug": "application-detail-overview",
-    "title": "application-detail-overview",
-    "summary": "Replaces the generic `CnDetailPage` main area on `/applications/:objectId` with a purpose-built maintainer cockpit registered as the `headerComponent` on the `VirtualAppDetail` page entry. Renders six stacked rows — hero strip (icon, name, description, status, role, production semver), version pill tabs (chain order, production starred, non-authorised hidden, Promote affordance on each non-terminal pill), a 7d/30d/90d window toggle, a four-card KPI grid (active users, object count, files count, audit events), an activity-graph card, and a five-card structural-widget grid (Register / Schemas / Groups / Pages / Menu) that deep-links into the existing builder views and OpenRegister. Consumes the insights endpoint owned by `application-insights` for KPI + activity data.",
-    "docsUrl": "openspec/specs/application-detail-overview/spec.md"
-  },
-  {
-    "slug": "application-insights",
-    "title": "application-insights",
-    "summary": "@e2e exclude pure-backend API/aggregation spec — all scenarios are REST endpoint contracts and service-layer aggregation logic verified by Newman/PHPUnit; no UI surface in this spec",
-    "docsUrl": "openspec/specs/application-insights/spec.md"
-  },
-  {
-    "slug": "application-versions",
-    "title": "application-versions",
-    "summary": "@e2e exclude pure-backend schema/lifecycle/CRUD spec — all scenarios are OR REST contracts and service-layer logic verified by Newman/PHPUnit; no UI surface in this spec",
-    "docsUrl": "openspec/specs/application-versions/spec.md"
-  },
-  {
-    "slug": "deep-link-registration",
-    "title": "deep-link-registration",
-    "summary": "@e2e exclude pure-backend event-listener spec — listener registration, event wiring, URL template, and short-circuit guards verified by PHPUnit; no UI surface testable via Playwright (deep-link integration requires OR to dispatch events, not exercisable in isolation)",
-    "docsUrl": "openspec/specs/deep-link-registration/spec.md"
-  },
-  {
-    "slug": "green-field-migration",
-    "title": "green-field-migration",
-    "summary": "@e2e exclude pure-backend migration spec — destructive repair step, idempotency guard, logging, and OR API calls verified by PHPUnit; no UI surface in this spec",
-    "docsUrl": "openspec/specs/green-field-migration/spec.md"
+    "slug": "openbuild-runtime",
+    "title": "Build apps without code",
+    "summary": "You compose an app as a manifest and run it live, with no deployment step.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/openbuild-runtime/spec.md",
+    "title_nl": "Bouw apps zonder code",
+    "summary_nl": "Je stelt een app samen als een manifest en draait hem direct live, zonder uitrol."
   },
   {
     "slug": "openbuild-schema-designer",
-    "title": "openbuild-schema-designer",
-    "summary": "Ships the visual Schema Designer that gives non-technical authors direct authoring power over the data model of their virtual app — replacing the deploy-time `lib/Settings/{app}_register.json` pattern. Scoped to the current virtual app's register namespace, the designer composes a JSON Schema body with declarative `x-openregister-*` extension blocks (lifecycle, aggregations, calculations, notifications, relations, widgets) through typed sub-editors. Every behaviour-shaping field is declarative — no free-text PHP, no JavaScript callbacks, no service-class references; the editor is code, but the product is declarative (canonical ADR-031 example). Persists via OR's runtime schema CRUD endpoint (chain spec `openregister-runtime-schema-api`), surfaces confirm-before-destructive flows for delete-field / delete-schema, and runs live client-side validation that disables Save until the staged change is valid.",
-    "docsUrl": "openspec/specs/openbuild-schema-designer/spec.md"
+    "title": "Design your data model visually",
+    "summary": "You define entities, fields and relations without writing JSON Schema.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/openbuild-schema-designer/spec.md",
+    "title_nl": "Ontwerp je datamodel visueel",
+    "summary_nl": "Je legt entiteiten, velden en relaties vast zonder JSON Schema te schrijven."
   },
   {
-    "slug": "openbuild-template-catalogue",
-    "title": "openbuild-template-catalogue",
-    "summary": "Ships the starter-template gallery that turns OpenBuild's competitor-parity \"day-one templates\" promise into a working surface. Declares an `ApplicationTemplate` schema, seeds four Conduction-curated templates (permit-tracker, stakeholder-consultation, employee-onboarding, incident-reporter) via an idempotent repair step, renders a filterable gallery view, and one-click clones a chosen template into a new draft Application — namespacing every cloned companion schema under the new Application's slug to avoid collisions, recording the source template + version on `templateOrigin` for traceability, and redirecting straight into the page editor for customisation. Clones are one-shot snapshots (no back-propagation); curated templates are read-only via UI; gallery and seed content are fully i18n'd (nl/en minimum).",
-    "docsUrl": "openspec/specs/openbuild-template-catalogue/spec.md"
+    "slug": "openbuild-page-designer",
+    "title": "Build pages and forms visually",
+    "summary": "You create list, detail, form and dashboard screens yourself.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/openbuild-page-designer/spec.md",
+    "title_nl": "Bouw pagina's en formulieren visueel",
+    "summary_nl": "Je maakt zelf lijst-, detail-, formulier- en dashboardschermen."
   },
   {
-    "slug": "openbuild-version-snapshots",
-    "title": "openbuild-version-snapshots",
-    "summary": "@e2e exclude pure-backend spec — snapshot retirement, OR time-travel rollback, and diff endpoint contracts verified by Newman/PHPUnit; no independent UI surface (UI rollback/diff surface covered by version-routing-ui Playwright tests)",
-    "docsUrl": "openspec/specs/openbuild-version-snapshots/spec.md"
+    "slug": "business-rules-engine",
+    "title": "Automate decisions with rules",
+    "summary": "You set conditions and decision tables, with no scripting.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/business-rules-engine/spec.md",
+    "title_nl": "Automatiseer beslissingen met regels",
+    "summary_nl": "Je stelt voorwaarden en beslistabellen in, zonder te scripten."
   },
   {
-    "slug": "version-promotion",
-    "title": "version-promotion",
-    "summary": "@e2e exclude mixed spec — backend promotion endpoint + strategy logic verified by Newman/PHPUnit; UI dialog scenarios (PromoteVersionDialog) covered by version-routing-ui spec Playwright tests",
-    "docsUrl": "openspec/specs/version-promotion/spec.md"
+    "slug": "openbuild-exporter",
+    "title": "Export to a real Nextcloud app",
+    "summary": "You take your app as a clean package, so there is no lock-in.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/openbuild-exporter/spec.md",
+    "title_nl": "Exporteer naar een echte Nextcloud-app",
+    "summary_nl": "Je neemt je app mee als schoon pakket, dus geen lock-in."
   },
   {
-    "slug": "version-routing",
-    "title": "version-routing",
-    "summary": "@e2e exclude mixed spec — server-side RBAC gate, ManifestResolverService, and store/composable contracts verified by Newman/PHPUnit + Vitest; UI-visible version routing behavior covered by version-routing-ui spec Playwright tests",
-    "docsUrl": "openspec/specs/version-routing/spec.md"
+    "slug": "openbuild-rbac",
+    "title": "Control who sees what",
+    "summary": "You grant access per app, per group and per person.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/openbuild-rbac/spec.md",
+    "providedBy": "openregister",
+    "title_nl": "Bepaal wie wat ziet",
+    "summary_nl": "Je geeft toegang per app, per groep en per persoon."
+  },
+  {
+    "slug": "application-versions",
+    "title": "Version, promote and roll back",
+    "summary": "You move an app from dev to production and undo a change.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/application-versions/spec.md",
+    "title_nl": "Versioneer, promoot en draai terug",
+    "summary_nl": "Je tilt een app van dev naar productie en draait een wijziging terug."
+  },
+  {
+    "slug": "application-creation-wizard",
+    "title": "Set up an app in four steps",
+    "summary": "The wizard provisions environments and data in one go.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/application-creation-wizard/spec.md",
+    "title_nl": "Zet een app in vier stappen op",
+    "summary_nl": "De wizard richt in een keer omgevingen en data in."
+  },
+  {
+    "slug": "application-insights",
+    "title": "See how each app is used",
+    "summary": "You track users, objects and activity per app over time.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/application-insights/spec.md",
+    "title_nl": "Zie hoe elke app gebruikt wordt",
+    "summary_nl": "Je volgt gebruikers, objecten en activiteit per app door de tijd."
+  },
+  {
+    "slug": "unified-app-model",
+    "title": "Extend an installed app",
+    "summary": "You layer your own changes over a fleet app without forking it.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/unified-app-model/spec.md",
+    "title_nl": "Breid een geinstalleerde app uit",
+    "summary_nl": "Je legt je eigen wijzigingen over een fleet-app zonder te forken."
+  },
+  {
+    "slug": "app-icon-management",
+    "title": "Brand each app",
+    "summary": "You give every app its own icon, light and dark.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/app-icon-management/spec.md",
+    "title_nl": "Geef elke app een eigen merk",
+    "summary_nl": "Je geeft elke app een eigen icoon, licht en donker."
+  },
+  {
+    "slug": "openbuild-remote-template-store",
+    "title": "Install templates from a remote catalogue",
+    "summary": "You pull curated apps from a shared store into your own instance.",
+    "status": "beta",
+    "docsUrl": "openspec/specs/openbuild-remote-template-store/spec.md",
+    "title_nl": "Installeer sjablonen uit een externe catalogus",
+    "summary_nl": "Je haalt samengestelde apps uit een gedeelde winkel binnen je eigen omgeving."
+  },
+  {
+    "slug": "nldesign-theme-selection",
+    "title": "Match your government theme",
+    "summary": "You apply NL Design styling per app for a consistent public look.",
+    "status": "beta",
+    "docsUrl": "openspec/specs/nldesign-theme-selection/spec.md",
+    "title_nl": "Sluit aan op je overheidshuisstijl",
+    "summary_nl": "Je past per app NL Design-styling toe voor een consistente publieke uitstraling."
+  },
+  {
+    "slug": "docudesk-document-templates",
+    "title": "Generate documents and attach workflows",
+    "summary": "You add DocuDesk templates and Procest steps to an app.",
+    "status": "beta",
+    "docsUrl": "openspec/specs/docudesk-document-templates/spec.md",
+    "title_nl": "Genereer documenten en koppel workflows",
+    "summary_nl": "Je voegt DocuDesk-sjablonen en Procest-stappen toe aan een app."
+  },
+  {
+    "slug": "openconnector-api-sources",
+    "title": "Connect external API data",
+    "summary": "You read and write line-of-business systems from your app.",
+    "status": "soon",
+    "docsUrl": "openspec/specs/openconnector-api-sources/spec.md",
+    "title_nl": "Koppel externe API-data",
+    "summary_nl": "Je leest en schrijft vanuit je app in bedrijfssystemen."
+  },
+  {
+    "slug": "ai-agent-mcp-bridge",
+    "title": "Expose apps to AI agents",
+    "summary": "You let assistants act on your apps over MCP.",
+    "status": "soon",
+    "docsUrl": "openspec/specs/ai-agent-mcp-bridge/spec.md",
+    "providedBy": "openregister",
+    "title_nl": "Open je apps voor AI-agents",
+    "summary_nl": "Je laat assistenten via MCP handelen op je apps."
   }
 ]

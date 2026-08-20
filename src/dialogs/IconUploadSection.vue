@@ -15,11 +15,12 @@
   -
   - Calls:
   -   - POST   /index.php/apps/openregister/api/objects/{register}/{schema}/{uuid}/files
-  -             — upload SVG as multipart/form-data
+  -             — upload the SVG as JSON { name, content }; OR writes content verbatim
   -   - DELETE /index.php/apps/openregister/api/objects/{register}/{schema}/{uuid}/files/{filename}
   -             — remove the attached file
-  -   - PUT    /index.php/apps/openregister/api/objects/{register}/{schema}/{uuid}
-  -             — patch icon / iconDark refs on the Application record
+  -   - PATCH  /index.php/apps/openregister/api/objects/{register}/{schema}/{uuid}
+  -             — partial-merge the icon / iconDark refs on the Application record
+  -             (a PUT would replace the whole object and fail validation)
   -
   - REQ-OBICON-004 / openbuild-nextcloud-nav
   -->
@@ -40,7 +41,7 @@
 					:src="iconLightUrl"
 					:alt="t('openbuild', 'Light icon preview')"
 					class="ob-icon-section__preview-img"
-					@error="onLightPreviewError">
+					@error="onLightPreviewError" />
 				<span v-else class="ob-icon-section__preview-empty">—</span>
 			</div>
 			<label class="ob-icon-section__file-label">
@@ -50,7 +51,7 @@
 					accept=".svg"
 					class="ob-icon-section__file-input"
 					:disabled="uploading"
-					@change="onLightFileChange">
+					@change="onLightFileChange" />
 				<span>{{ t('openbuild', 'Upload SVG') }}</span>
 			</label>
 			<button
@@ -60,7 +61,9 @@
 				@click="removeLightIcon">
 				{{ t('openbuild', 'Remove') }}
 			</button>
-			<span v-if="lightError" class="ob-icon-section__error">{{ lightError }}</span>
+			<span v-if="lightError" class="ob-icon-section__error">{{
+				lightError
+			}}</span>
 		</div>
 
 		<!-- Dark icon -->
@@ -74,7 +77,7 @@
 					:src="iconDarkUrl"
 					:alt="t('openbuild', 'Dark icon preview')"
 					class="ob-icon-section__preview-img"
-					@error="onDarkPreviewError">
+					@error="onDarkPreviewError" />
 				<span v-else class="ob-icon-section__preview-empty">—</span>
 			</div>
 			<label class="ob-icon-section__file-label">
@@ -84,7 +87,7 @@
 					accept=".svg"
 					class="ob-icon-section__file-input"
 					:disabled="uploading"
-					@change="onDarkFileChange">
+					@change="onDarkFileChange" />
 				<span>{{ t('openbuild', 'Upload SVG') }}</span>
 			</label>
 			<button
@@ -94,7 +97,9 @@
 				@click="removeDarkIcon">
 				{{ t('openbuild', 'Remove') }}
 			</button>
-			<span v-if="darkError" class="ob-icon-section__error">{{ darkError }}</span>
+			<span v-if="darkError" class="ob-icon-section__error">{{
+				darkError
+			}}</span>
 		</div>
 
 		<p v-if="uploadError" class="ob-icon-section__global-error">
@@ -144,6 +149,7 @@ export default {
 			const self = this.application['@self'] || {}
 			return self.id || this.application.uuid || this.application.id || ''
 		},
+
 		/**
 		 * Observed behaviour of `iconLightUrl` (retrofit annotation).
 		 *
@@ -153,6 +159,7 @@ export default {
 			if (!this.objectUuid) return null
 			return `/index.php/apps/openbuild/icons/${this.application.slug}.svg?v=${this.lightNonce}`
 		},
+
 		/**
 		 * Observed behaviour of `iconDarkUrl` (retrofit annotation).
 		 *
@@ -170,6 +177,12 @@ export default {
 			/**
 			 * Observed behaviour of `handler` (retrofit annotation).
 			 *
+			 * @param {{icon?: {ref: string}, iconDark?: {ref: string}}} app - The
+			 *   incoming `application` prop; only its two icon refs are mirrored into
+			 *   local state, so the Remove buttons track the server record. Runs
+			 *   immediately, and may receive `undefined` while the parent is still
+			 *   loading the record.
+			 *
 			 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 			 */
 			handler(app) {
@@ -183,13 +196,22 @@ export default {
 		/**
 		 * Observed behaviour of `onLightPreviewError` (retrofit annotation).
 		 *
+		 * @param {Event} e - The `<img>` `error` event fired when the light-icon
+		 *   preview URL 404s (no icon attached yet, or the app-icon route has not
+		 *   picked the upload up); `e.target` is the image, which is hidden so the
+		 *   broken-image glyph never shows.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 		 */
 		onLightPreviewError(e) {
 			e.target.style.display = 'none'
 		},
+
 		/**
 		 * Observed behaviour of `onDarkPreviewError` (retrofit annotation).
+		 *
+		 * @param {Event} e - The `<img>` `error` event for the dark-icon preview; same
+		 *   contract as `onLightPreviewError`.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 		 */
@@ -199,6 +221,11 @@ export default {
 
 		/**
 		 * Observed behaviour of `validateSvgFile` (retrofit annotation).
+		 *
+		 * @param {File|undefined} file - The picked file, or `undefined` when the user
+		 *   dismissed the picker without choosing one.
+		 * @return {boolean} `true` when a file was picked and its name ends in `.svg`.
+		 *   Extension-only — the file's bytes and MIME type are not inspected here.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 		 */
@@ -212,6 +239,11 @@ export default {
 
 		/**
 		 * Observed behaviour of `onLightFileChange` (retrofit annotation).
+		 *
+		 * @param {Event} event - `change` event from the light-icon file input;
+		 *   `event.target.files[0]` is the picked SVG. A non-SVG pick is rejected
+		 *   inline and the input is cleared so the same file can be re-picked.
+		 * @return {Promise<void>}
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 		 */
@@ -229,6 +261,10 @@ export default {
 		/**
 		 * Observed behaviour of `onDarkFileChange` (retrofit annotation).
 		 *
+		 * @param {Event} event - `change` event from the dark-icon file input; same
+		 *   contract as `onLightFileChange`, routed to the `dark` variant.
+		 * @return {Promise<void>}
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 		 */
 		async onDarkFileChange(event) {
@@ -245,33 +281,43 @@ export default {
 		/**
 		 * Observed behaviour of `uploadIcon` (retrofit annotation).
 		 *
+		 * Attaches the SVG to the Application in OpenRegister, points the matching ref
+		 * field at it, then bumps the preview nonce and emits `updated`. Never throws:
+		 * a failed request surfaces in `uploadError`.
+		 *
+		 * @param {File} file - The validated SVG; its text is read client-side and
+		 *   POSTed as the file's `content`.
+		 * @param {'light'|'dark'} variant - Which icon slot is being written. Picks
+		 *   both the stored filename (`app-icon.svg` / `app-icon-dark.svg`) and the
+		 *   Application field (`icon` / `iconDark`) — the filenames are fixed, so
+		 *   re-uploading replaces the previous icon rather than accumulating files.
+		 * @return {Promise<void>}
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 		 */
 		async uploadIcon(file, variant) {
 			if (!this.objectUuid) return
 			this.uploading = true
 			this.uploadError = ''
-			const filename = variant === 'dark' ? 'app-icon-dark.svg' : 'app-icon.svg'
+			const filename =
+				variant === 'dark' ? 'app-icon-dark.svg' : 'app-icon.svg'
 
 			try {
-				// 1. Upload the file to OR's files-attached-to-object endpoint.
-				const formData = new FormData()
-				formData.append('file', file, filename)
-
+				// 1. Upload the SVG to OR's files#create endpoint, which takes
+				//    JSON { name, content } and writes the content verbatim.
+				const content = await file.text()
 				const uploadUrl = generateUrl(
 					`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}/files`,
 				)
-				await axios.post(uploadUrl, formData, {
-					headers: { 'Content-Type': 'multipart/form-data' },
-				})
+				await axios.post(uploadUrl, { name: filename, content })
 
-				// 2. Patch the Application record with the new icon ref.
+				// 2. PATCH (partial merge) the icon ref — a PUT would replace the
+				//    whole object and fail validation on the missing name/slug.
 				const field = variant === 'dark' ? 'iconDark' : 'icon'
-				const payload = { [field]: { ref: filename } }
 				const patchUrl = generateUrl(
 					`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}`,
 				)
-				await axios.put(patchUrl, payload)
+				await axios.patch(patchUrl, { [field]: { ref: filename } })
 
 				// 3. Update local state and notify parent.
 				if (variant === 'dark') {
@@ -284,7 +330,8 @@ export default {
 
 				this.$emit('updated', { field, ref: filename })
 			} catch (error) {
-				this.uploadError = error?.response?.data?.message
+				this.uploadError =
+					error?.response?.data?.message
 					|| t('openbuild', 'Upload failed — please try again')
 			} finally {
 				this.uploading = false
@@ -317,27 +364,76 @@ export default {
 		/**
 		 * Observed behaviour of `removeIcon` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 * Detaches the stored SVG from the Application and clears the ref field, then
+		 * emits `updated` with a `null` ref. Never throws: a failed request surfaces in
+		 * `uploadError`.
+		 *
+		 * ⚠️ THE DELETE IS ADDRESSED BY NUMERIC FILE ID, NOT BY FILENAME.
+		 *
+		 * This method used to call
+		 * `DELETE .../objects/{register}/{schema}/{uuid}/files/app-icon-dark.svg`.
+		 * OpenRegister's route for that verb is
+		 *
+		 *   ['name' => 'files#delete',
+		 *    'url'  => '/api/objects/{register}/{schema}/{id}/files/{fileId}',
+		 *    'verb' => 'DELETE',
+		 *    'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']]
+		 *
+		 * — `fileId` is constrained to `\d+`, so a filename never matched the
+		 * route at all and Nextcloud answered its HTML **404** page. The
+		 * `catch` below then painted the generic "Remove failed" string, so the
+		 * button looked implemented and could never work. Measured both ways on
+		 * a live instance: DELETE by filename → 404; DELETE by the numeric id
+		 * from `GET .../files` → 200 and the attachment is gone.
+		 *
+		 * The id is therefore resolved from the object's own file index, where
+		 * each entry carries `{ id: <int>, title: '<filename>' }`.
+		 *
+		 * @param {'light'|'dark'} variant - Which icon slot to clear; selects both the
+		 *   attached filename to delete (`app-icon.svg` / `app-icon-dark.svg`) and the
+		 *   Application field to null out (`icon` / `iconDark`).
+		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/app-icon-management/spec.md#user-removes-the-dark-icon
 		 */
 		async removeIcon(variant) {
 			if (!this.objectUuid) return
 			this.uploading = true
 			this.uploadError = ''
-			const filename = variant === 'dark' ? 'app-icon-dark.svg' : 'app-icon.svg'
+			const filename =
+				variant === 'dark' ? 'app-icon-dark.svg' : 'app-icon.svg'
 			const field = variant === 'dark' ? 'iconDark' : 'icon'
 
 			try {
-				// 1. Delete the file from OR.
-				const deleteUrl = generateUrl(
-					`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}/files/${filename}`,
+				// 1. Resolve the attachment's NUMERIC id, then delete by it.
+				const filesUrl = generateUrl(
+					`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}/files`,
 				)
-				await axios.delete(deleteUrl)
+				const listed = await axios.get(filesUrl)
+				const attachment = (listed?.data?.results || []).find(
+					(f) => f?.title === filename,
+				)
 
-				// 2. Clear the ref on the Application.
+				if (!attachment?.id) {
+					// The ref points at a file OR no longer holds. Nothing to
+					// detach — fall through and clear the ref so the record stops
+					// advertising an attachment that is not there.
+					// eslint-disable-next-line no-console
+					console.warn(
+						`[openbuild] no OR attachment named ${filename}; clearing the ref only`,
+					)
+				} else {
+					const deleteUrl = generateUrl(
+						`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}/files/${attachment.id}`,
+					)
+					await axios.delete(deleteUrl)
+				}
+
+				// 2. Clear the ref on the Application (partial merge, not replace).
 				const patchUrl = generateUrl(
 					`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}`,
 				)
-				await axios.put(patchUrl, { [field]: null })
+				await axios.patch(patchUrl, { [field]: null })
 
 				// 3. Update local state.
 				if (variant === 'dark') {
@@ -350,7 +446,8 @@ export default {
 
 				this.$emit('updated', { field, ref: null })
 			} catch (error) {
-				this.uploadError = error?.response?.data?.message
+				this.uploadError =
+					error?.response?.data?.message
 					|| t('openbuild', 'Remove failed — please try again')
 			} finally {
 				this.uploading = false
@@ -395,11 +492,13 @@ export default {
 	flex-shrink: 0;
 }
 
+/* intentional: simulated light/dark canvas for icon preview — must NOT track the theme */
 .ob-icon-section__preview--light {
 	background: #ffffff;
 	border: 1px solid var(--color-border, #ddd);
 }
 
+/* intentional: simulated light/dark canvas for icon preview — must NOT track the theme */
 .ob-icon-section__preview--dark {
 	background: #1c1c1e;
 	border: 1px solid var(--color-border, #ddd);
@@ -425,7 +524,7 @@ export default {
 	padding: 4px 10px;
 	border-radius: var(--border-radius, 4px);
 	background: var(--color-primary-element, #0082c9);
-	color: #fff;
+	color: var(--color-primary-element-text, #fff);
 	font-size: 12px;
 	user-select: none;
 }

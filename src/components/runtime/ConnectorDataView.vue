@@ -16,9 +16,11 @@
 		<div v-if="loading" class="connector-data-view__state">
 			{{ t('openbuild', 'Loading…') }}
 		</div>
-		<div v-else-if="error" class="connector-data-view__state connector-data-view__state--error">
+		<div
+			v-else-if="error"
+			class="connector-data-view__state connector-data-view__state--error">
 			<p>{{ t('openbuild', 'Could not load data from OpenConnector.') }}</p>
-			<NcButton type="secondary" @click="retry">
+			<NcButton variant="secondary" @click="retry">
 				{{ t('openbuild', 'Retry') }}
 			</NcButton>
 		</div>
@@ -29,7 +31,7 @@
 			<table v-if="rows.length" class="connector-data-view__table">
 				<thead>
 					<tr>
-						<th v-for="col in columns" :key="col">
+						<th v-for="col in columns" :key="col" scope="col">
 							{{ col }}
 						</th>
 					</tr>
@@ -62,12 +64,14 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
 		// The virtual app id (cache namespacing).
 		appId: {
 			type: String,
 			default: '',
 		},
 	},
+
 	/**
 	 * Bind the runtime resolver to the connector block.
 	 *
@@ -79,32 +83,39 @@ export default {
 		const resolver = useConnectorDataSource({ appId: props.appId, binding })
 		return { resolver }
 	},
+
 	computed: {
 		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006 */
 		loading() {
 			return this.resolver.loading.value
 		},
+
 		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006 */
 		error() {
 			return this.resolver.error.value
 		},
+
 		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006 */
 		isStale() {
 			return this.resolver.isStale.value
 		},
+
 		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006 */
 		rows() {
 			return this.resolver.data.value || []
 		},
+
 		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006 */
 		columns() {
 			const connector = (this.dataSource && this.dataSource.connector) || {}
 			return Object.keys(connector.fields || {})
 		},
 	},
+
 	mounted() {
 		this.resolver.load()
 	},
+
 	methods: {
 		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006 */
 		retry() {
@@ -119,17 +130,21 @@ export default {
 	padding: 12px;
 	color: var(--color-text-maxcontrast);
 }
+
 .connector-data-view__state--error {
 	color: var(--color-error);
 }
+
 .connector-data-view__stale {
 	color: var(--color-warning-text, var(--color-warning));
 	margin: 0 0 8px;
 }
+
 .connector-data-view__table {
 	width: 100%;
 	border-collapse: collapse;
 }
+
 .connector-data-view__table th,
 .connector-data-view__table td {
 	text-align: left;

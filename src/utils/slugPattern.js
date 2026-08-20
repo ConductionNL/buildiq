@@ -72,7 +72,8 @@ export function validateSlug(slug) {
 	if (slug.startsWith('_')) {
 		return {
 			valid: false,
-			message: 'Version slugs cannot start with `_` (reserved for openbuild system use).',
+			message:
+				'Version slugs cannot start with `_` (reserved for openbuild system use).',
 		}
 	}
 

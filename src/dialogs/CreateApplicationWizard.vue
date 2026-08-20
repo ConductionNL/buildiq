@@ -21,26 +21,31 @@
 	<CnWizardDialog
 		v-if="show"
 		ref="wizard"
-		:dialog-title="t('openbuild', 'Create app')"
+		:dialogTitle="t('openbuild', 'Create app')"
 		:steps="wizardSteps"
 		:defaults="defaults"
 		:validate="validateStep"
-		:cancel-label="t('openbuild', 'Cancel')"
-		:back-label="t('openbuild', 'Back')"
-		:next-label="t('openbuild', 'Next')"
-		:submit-label="t('openbuild', 'Create')"
-		:close-label="t('openbuild', 'Close')"
-		:success-text="t('openbuild', 'App created.')"
+		:cancelLabel="t('openbuild', 'Cancel')"
+		:backLabel="t('openbuild', 'Back')"
+		:nextLabel="t('openbuild', 'Next')"
+		:submitLabel="t('openbuild', 'Create')"
+		:closeLabel="t('openbuild', 'Close')"
+		:successText="t('openbuild', 'App created.')"
 		@submit="onSubmit"
 		@close="onClose">
 		<template #step-basics="{ stepData, setStepData }">
-			<Step1Basics :payload="stepData" @update:payload="setStepData" />
+			<Step1Basics
+				:payload="stepData"
+				@update:payload="setStepData"
+				@aiAppCreated="onAiAppCreated" />
 		</template>
 
 		<template #step-preset="{ stepData, setStepData }">
 			<Step2Preset
 				:payload="stepData"
-				@update:payload="(partial) => onPresetUpdate(partial, setStepData)" />
+				@update:payload="
+					(partial) => onPresetUpdate(partial, setStepData)
+				" />
 		</template>
 
 		<template #step-custom="{ stepData, setStepData }">
@@ -54,14 +59,14 @@
 </template>
 
 <script>
+import { CnWizardDialog } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { CnWizardDialog } from '@conduction/nextcloud-vue'
-
 import Step1Basics from './CreateApplicationWizard/Step1Basics.vue'
 import Step2Preset from './CreateApplicationWizard/Step2Preset.vue'
 import Step3Custom from './CreateApplicationWizard/Step3Custom.vue'
 import Step4Review from './CreateApplicationWizard/Step4Review.vue'
+import { resolveAppIcon } from '../utils/iconCatalogues.js'
 
 export default {
 	name: 'CreateApplicationWizard',
@@ -103,8 +108,8 @@ export default {
 				name: '',
 				slug: '',
 				description: '',
-				icon: null,
-				iconDark: null,
+				iconValue: null,
+				iconDarkValue: null,
 				preset: '',
 				versions: [],
 				_step1Valid: false,
@@ -144,7 +149,7 @@ export default {
 		 */
 		onPresetUpdate(partial, setStepData) {
 			setStepData(partial)
-			if (partial && Object.prototype.hasOwnProperty.call(partial, 'preset')) {
+			if (partial && Object.hasOwn(partial, 'preset')) {
 				this.presetSelected = partial.preset
 			}
 		},
@@ -159,13 +164,19 @@ export default {
 		 */
 		validateStep(stepId, stepData) {
 			if (stepId === 'basics') {
-				return stepData._step1Valid ? true : t('openbuild', 'Enter a name and a valid slug.')
+				return stepData._step1Valid
+					? true
+					: t('openbuild', 'Enter a name and a valid slug.')
 			}
 			if (stepId === 'preset') {
-				return stepData._step2Valid ? true : t('openbuild', 'Choose a version preset.')
+				return stepData._step2Valid
+					? true
+					: t('openbuild', 'Choose a version preset.')
 			}
 			if (stepId === 'custom') {
-				return stepData._step3Valid ? true : t('openbuild', 'Complete the custom version chain.')
+				return stepData._step3Valid
+					? true
+					: t('openbuild', 'Complete the custom version chain.')
 			}
 			return true
 		},
@@ -192,6 +203,9 @@ export default {
 				const { data, status } = await axios.post(url, body)
 
 				if (status === 201 && data.applicationUuid) {
+					// Attach the chosen icon (best-effort — the app already exists,
+					// so a failure here is recoverable on the detail page).
+					await this.uploadIcons(data.applicationUuid, stepData)
 					this.$emit('created', data.applicationUuid)
 					this.$emit('update:show', false)
 				} else {
@@ -200,6 +214,68 @@ export default {
 			} catch (err) {
 				this.reportError(err.response?.data || {}, err)
 			}
+		},
+
+		/**
+		 * Synthesize and attach the app icon(s) to the freshly-created
+		 * Application. A catalogue pick yields a white light glyph (for the dark
+		 * app header) and a no-fill dark glyph (for light backgrounds); the dark
+		 * variant defaults to the primary icon so IconService's dark fallback
+		 * (iconDark.ref → icon.ref) never serves a white glyph on light.
+		 * Non-fatal: logs and returns on failure so app creation still succeeds.
+		 *
+		 * @param {string} uuid     The created Application UUID.
+		 * @param {object} stepData The accumulated wizard data.
+		 * @return {Promise<void>}
+		 */
+		async uploadIcons(uuid, stepData) {
+			const lightSvg = resolveAppIcon(stepData.iconValue, { dark: false })
+			const darkSource = stepData.iconDarkValue || stepData.iconValue
+			const darkSvg = resolveAppIcon(darkSource, { dark: true })
+			if (!lightSvg && !darkSvg) {
+				return
+			}
+			try {
+				if (lightSvg) {
+					await this.attachIcon(uuid, 'icon', 'app-icon.svg', lightSvg)
+				}
+				if (darkSvg) {
+					await this.attachIcon(
+						uuid,
+						'iconDark',
+						'app-icon-dark.svg',
+						darkSvg,
+					)
+				}
+			} catch (err) {
+				console.error('OpenBuild: failed to attach app icon', err)
+			}
+		},
+
+		/**
+		 * Upload one SVG to the Application object and patch its icon ref, using
+		 * the same OpenRegister files endpoints as the detail-page IconUploadSection.
+		 *
+		 * @param {string} uuid     The Application UUID.
+		 * @param {string} field    The record field to patch (`icon` / `iconDark`).
+		 * @param {string} filename The attachment filename.
+		 * @param {string} svg      The SVG markup to store.
+		 * @return {Promise<void>}
+		 */
+		async attachIcon(uuid, field, filename, svg) {
+			// OR's files#create endpoint takes JSON { name, content } and writes
+			// the content verbatim — no multipart needed for text SVG.
+			const filesUrl = generateUrl(
+				`/apps/openregister/api/objects/openbuild/application/${uuid}/files`,
+			)
+			await axios.post(filesUrl, { name: filename, content: svg })
+
+			// PATCH (partial merge) — a PUT would replace the whole object and fail
+			// validation on the now-missing required name/slug.
+			const patchUrl = generateUrl(
+				`/apps/openregister/api/objects/openbuild/application/${uuid}`,
+			)
+			await axios.patch(patchUrl, { [field]: { ref: filename } })
 		},
 
 		/**
@@ -213,11 +289,17 @@ export default {
 		reportError(data, err) {
 			let message = data.message || data.detail
 			if (!message && err) message = err.message
-			if (!message) message = t('openbuild', 'Failed to create the application.')
-			if (Array.isArray(data.orphanedResources) && data.orphanedResources.length > 0) {
-				message += ' ' + t('openbuild', 'Some resources need manual cleanup: {list}', {
-					list: data.orphanedResources.join(', '),
-				})
+			if (!message)
+				message = t('openbuild', 'Failed to create the application.')
+			if (
+				Array.isArray(data.orphanedResources)
+				&& data.orphanedResources.length > 0
+			) {
+				message +=
+					' '
+					+ t('openbuild', 'Some resources need manual cleanup: {list}', {
+						list: data.orphanedResources.join(', '),
+					})
 			}
 			if (this.$refs.wizard) {
 				this.$refs.wizard.setError(message)
@@ -232,6 +314,28 @@ export default {
 		onClose() {
 			this.presetSelected = ''
 			this.$emit('update:show', false)
+		},
+
+		/**
+		 * Handle a copilot-created app (spec ai-copilot REQ-OBAIC-006): close
+		 * the wizard and route to the new application's page designer, mirroring
+		 * the manual-creation `created` event's "route to it" contract.
+		 *
+		 * @param {string} appSlug - the newly-created app's slug.
+		 * @return {void}
+		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 */
+		onAiAppCreated(appSlug) {
+			this.onClose()
+			if (this.$router && appSlug) {
+				this.$router
+					.push({ name: 'PageDesigner', params: { slug: appSlug } })
+					.catch(() => {})
+			}
+			// Emit with no uuid so a parent's `created(applicationUuid)` handler
+			// (e.g. DashboardIndex.onAppCreated) refreshes its listing instead of
+			// navigating a second time with a slug where it expects a UUID.
+			this.$emit('created')
 		},
 	},
 }

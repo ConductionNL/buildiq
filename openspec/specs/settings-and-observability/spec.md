@@ -4,6 +4,8 @@ retrofit: true
 
 # settings-and-observability Specification
 
+**OpenSpec changes**: [harden-xss-dos-csrf](../../changes/harden-xss-dos-csrf/)
+
 ## Purpose
 
 OpenBuild exposes a small administrative surface that lets the frontend
@@ -122,28 +124,114 @@ through the repair output / logger.
 
 ### REQ-OBS-005: Liveness and metrics probe endpoints
 
-`HealthController::index()` SHALL return `{"status":"ok"}` with HTTP
-200 for an authenticated caller and `{"error":"Unauthenticated."}`
-with HTTP 401 otherwise. `MetricsController::index()` SHALL return a
-Prometheus-shaped payload — currently `{"metrics":[]}` — with HTTP 200
-for an authenticated caller and HTTP 401 otherwise. Both endpoints are
-declared `#[NoAdminRequired] #[NoCSRFRequired]` so probes can reach
-them without admin rights or a CSRF token, but they still require an
-authenticated session.
+Both probe endpoints are served by OpenRegister's AppHost observability
+engine (ADR-040 adoption, ADR-006 contract), driven by the declarative
+`observability` block of `src/manifest.json`. OpenBuild no longer owns a
+concrete `HealthController` / `MetricsController`; `AppInfo\Application`
+binds the leaf controller names to `GenericHealthController` /
+`GenericMetricsController` via lazy service factories. Those factories are
+themselves registered by `Bootstrap::register()`, which only runs once
+OpenRegister's PSR-4 prefix is on the autoloader — see REQ-OBS-006.
+
+`health#index` SHALL return JSON `{status, app, version, checks}` where
+`status` is `ok` when every manifest health check passes, with the HTTP
+code chosen by the manifest's `statusCodePolicy` (`adr006`).
+
+`metrics#index` SHALL return a Prometheus text exposition (format 0.0.4,
+`Content-Type: text/plain; version=0.0.4`) rendering each gauge declared
+in `observability.metrics`, with HTTP 200 for an authorised caller. The
+engine namespaces every series with the app id, so the manifest's
+`applications_total` is exposed as `openbuild_applications_total`, and it
+adds the implicit `openbuild_info` and `openbuild_up` series.
 
 #### Scenario: Health probe
 
 - **WHEN** an authenticated caller hits the health endpoint
-- **THEN** the response is `{"status":"ok"}` with HTTP 200
+- **THEN** the response is JSON with `status: "ok"` and HTTP 200
 
 #### Scenario: Metrics probe
 
 - **WHEN** an authenticated caller hits the metrics endpoint
-- **THEN** the response is `{"metrics":[]}` with HTTP 200
+- **THEN** the response is a `text/plain` Prometheus exposition with HTTP
+  200, containing `# HELP` / `# TYPE` lines for `openbuild_export_jobs_total`,
+  `openbuild_applications_total` and `openbuild_application_versions_total`,
+  plus the implicit `openbuild_up` series
 
-**Notes:** The metrics payload is intentionally empty in the current
-phase; counters/gauges for export-job throughput and nav-entry counts
-are planned but not yet implemented. Both probes require an
-authenticated session even though they are CSRF/admin-exempt, which is
-stricter than a typical anonymous orchestrator probe — flagged as
-observed behaviour, not aspirational.
+**Notes:** This requirement previously described OpenBuild's own probe
+controllers returning a placeholder `{"metrics":[]}` JSON payload. That
+implementation was removed by the ADR-040 AppHost adoption but the
+requirement text was not updated with it, leaving the spec — and the e2e
+tests written against it — asserting a contract the code had stopped
+serving. The text above now tracks the AppHost engine's actual behaviour.
+
+### REQ-OBS-006: The AppHost adoption registers OpenRegister's autoloader first
+
+`AppInfo\Application::register()` SHALL put OpenRegister's PSR-4 prefix on
+the composer autoloader — via `OpenRegisterAutoloader::register()`, which
+calls `OC_App::registerAutoloading('openregister', …)` — BEFORE it
+references any `OCA\OpenRegister\AppHost\…` name, including the
+`class_exists()` guard around `Bootstrap::register()`.
+
+Nextcloud registers apps in sorted order: `OC_App::getEnabledApps()` does
+`sort($apps)` and `Coordinator::registerApps()` walks that list calling
+`OC_App::registerAutoloading($appId, $path)` and then `$app->register()`
+for one app at a time. `openbuild` sorts before `openregister`, so every
+`OCA\OpenRegister\…` name is unresolvable inside OpenBuild's `register()`
+on a perfectly healthy instance with OpenRegister enabled.
+
+`OC_App::registerAutoloading()` is idempotent and touches only the
+autoloader. `IAppManager::loadApp('openregister')` MUST NOT be used
+instead: it marks OpenRegister loaded and calls `Coordinator::bootApp()`,
+booting OpenRegister before its own `register()` has run.
+
+The prelude MUST NOT throw under any instance state — an exception escaping
+it would abort the whole of `register()`, which is a strictly worse failure
+than the one it exists to prevent.
+
+#### Scenario: The AppHost-bound observability routes actually dispatch
+
+- **GIVEN** an instance with OpenRegister enabled, and OpenBuild's
+  `register()` running at its sorted position ahead of `openregister`
+- **WHEN** `GET /apps/openbuild/api/health` is called
+- **THEN** the response MUST be HTTP 200 with the engine's canonical
+  `{status, app, version, checks}` shape and `app = "openbuild"` — which is
+  only possible if `class_exists(Bootstrap::class)` answered `true` and
+  `Bootstrap::register()` ran, because OpenBuild ships no concrete
+  `HealthController` and `health#index` exists ONLY as a Bootstrap DI alias
+- **AND** `GET /apps/openbuild/api/metrics` MUST NOT return a 5xx: an
+  anonymous caller must be turned away by the auth middleware, which only
+  runs once the route resolves to a bound controller
+- **AND** the log line `OpenRegister AppHost\Bootstrap is not autoloadable`
+  MUST NOT be emitted
+
+The absent-OpenRegister path has no scenario of its own on purpose: it is not
+reachable from a browser or an HTTP client, because an instance without
+OpenRegister cannot serve OpenBuild's OpenRegister-backed surface at all. It is
+asserted directly at the unit level, in
+`tests/Unit/AppInfo/OpenRegisterAutoloaderTest.php`, which runs the prelude in
+an environment where `\OCP\Server::get()` resolves nothing and requires that
+control still returns to the caller.
+
+**Notes:** Measured 2026-08-06 against the E2E workflow, and the measurement
+is narrower than the load-order argument alone predicts — both halves are
+recorded here because the difference is not yet explained.
+
+Before the prelude (run 31081906401, job 92555103075): `OpenBuild:
+OpenRegister AppHost\Bootstrap is not autoloadable` was logged **3 times**,
+once for each `occ` invocation in `tests/e2e/ci-seed.sh`, while
+`lib/AppHost/Bootstrap.php` existed on OpenRegister the whole time. So under
+the CLI SAPI the guard was answering `false` on a healthy instance and the
+generic plumbing was silently skipped — for every `occ` command, background
+job and repair step.
+
+In the *same* run, `GET /api/health` returned 200 with `status: ok` and
+`GET /api/metrics` rendered the manifest's gauges. OpenBuild ships no
+concrete `HealthController`/`MetricsController`, and `health#index` exists
+only as a `Bootstrap::register()` DI alias — so under the **web** SAPI the
+guard was answering `true` and the plumbing *was* registered. The mechanism
+behind the CLI/web divergence has not been established, so no claim is made
+here about web requests being degraded; what is claimed, and measured, is
+that the CLI path was.
+
+After the prelude (run 31085597692): the log line appears **0 times**, and
+both observability routes still answer 200.

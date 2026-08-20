@@ -1,4 +1,5 @@
 <?php
+
 // SPDX-License-Identifier: EUPL-1.2
 
 /**
@@ -30,43 +31,39 @@ use OCP\IRequest;
 /**
  * Controller for the main AppTemplate dashboard page.
  */
-class DashboardController extends Controller
-{
-    /**
-     * Constructor for the DashboardController.
-     *
-     * @param IRequest $request The request object
-     *
-     * @return void
-     */
-    public function __construct(IRequest $request)
-    {
-        parent::__construct(appName: Application::APP_ID, request: $request);
-    }//end __construct()
+class DashboardController extends Controller {
+	/**
+	 * Constructor for the DashboardController.
+	 *
+	 * @param IRequest $request The request object
+	 *
+	 * @return void
+	 */
+	public function __construct(IRequest $request) {
+		parent::__construct(appName: Application::APP_ID, request: $request);
+	}//end __construct()
 
-    /**
-     * Render the main dashboard page.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return TemplateResponse
-     */
-    public function page(): TemplateResponse
-    {
-        return new TemplateResponse(Application::APP_ID, 'index');
-    }//end page()
+	/**
+	 * Render the main dashboard page.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @return TemplateResponse
+	 */
+	public function page(): TemplateResponse {
+		return new TemplateResponse(Application::APP_ID, 'index');
+	}//end page()
 
-    /**
-     * Serve the SPA for deep links (Vue history mode). Delegates to {@see page()}.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return TemplateResponse
-     */
-    public function catchAll(): TemplateResponse
-    {
-        return $this->page();
-    }//end catchAll()
+	/**
+	 * Serve the SPA for deep links (Vue history mode). Delegates to {@see page()}.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @return TemplateResponse
+	 */
+	public function catchAll(): TemplateResponse {
+		return $this->page();
+	}//end catchAll()
 }//end class

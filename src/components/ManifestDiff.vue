@@ -13,8 +13,8 @@
 		<header class="manifest-diff__header">
 			<h3>{{ t('openbuild', 'Manifest diff') }}</h3>
 			<small class="manifest-diff__pair">
-				{{ t('openbuild', 'From') }}: <code>{{ fromLabel }}</code>
-				→ {{ t('openbuild', 'To') }}: <code>{{ toLabel }}</code>
+				{{ t('openbuild', 'From') }}: <code>{{ fromLabel }}</code> →
+				{{ t('openbuild', 'To') }}: <code>{{ toLabel }}</code>
 			</small>
 		</header>
 		<p v-if="loading" class="manifest-diff__loading">
@@ -43,17 +43,49 @@ export default {
 	props: {
 		slug: {
 			type: String,
-			required: true,
+			default: '',
 		},
+
 		from: {
 			type: String,
 			default: 'draft',
 		},
+
 		to: {
 			type: String,
 			default: '',
 		},
+
+		/**
+		 * Static mode (spec ai-copilot REQ-OBAIC-003/007): when either of
+		 * `fromManifest`/`toManifest` is provided the component diffs those
+		 * blobs directly instead of fetching `slug`'s stored versions —
+		 * used by the copilot's proposal card to preview a not-yet-saved
+		 * predicted manifest.
+		 */
+		fromManifest: {
+			type: Object,
+			default: null,
+		},
+
+		toManifest: {
+			type: Object,
+			default: null,
+		},
+
+		/** Label shown for `from` in static mode (ignored otherwise). */
+		fromLabelText: {
+			type: String,
+			default: '',
+		},
+
+		/** Label shown for `to` in static mode (ignored otherwise). */
+		toLabelText: {
+			type: String,
+			default: '',
+		},
 	},
+
 	data() {
 		return {
 			fromBlob: null,
@@ -62,40 +94,77 @@ export default {
 			error: '',
 		}
 	},
+
 	computed: {
+		/**
+		 * Static mode (spec ai-copilot REQ-OBAIC-003/007): diff two in-memory
+		 * manifest blobs instead of fetching stored versions by slug.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 */
+		isStaticMode() {
+			return this.fromManifest !== null || this.toManifest !== null
+		},
+
 		/**
 		 * Observed behaviour of `fromLabel` (retrofit annotation).
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		fromLabel() {
-			return this.from === 'draft' ? t('openbuild', 'Current draft') : (this.from.slice(0, 8) + '…')
+			if (this.isStaticMode) {
+				return this.fromLabelText || t('openbuild', 'Current')
+			}
+			return this.from === 'draft'
+				? t('openbuild', 'Current draft')
+				: this.from.slice(0, 8) + '…'
 		},
+
 		/**
 		 * Observed behaviour of `toLabel` (retrofit annotation).
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		toLabel() {
-			return this.to === 'draft' ? t('openbuild', 'Current draft') : (this.to ? this.to.slice(0, 8) + '…' : '—')
+			if (this.isStaticMode) {
+				return this.toLabelText || t('openbuild', 'Predicted')
+			}
+			return this.to === 'draft'
+				? t('openbuild', 'Current draft')
+				: this.to
+					? this.to.slice(0, 8) + '…'
+					: '—'
 		},
+
 		hasAnyContent() {
+			if (this.isStaticMode) {
+				return this.fromManifest !== null || this.toManifest !== null
+			}
 			return this.fromBlob !== null || this.toBlob !== null
 		},
+
 		/**
 		 * Observed behaviour of `diffParts` (retrofit annotation).
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		diffParts() {
-			const fromText = this.prettyManifest(this.fromBlob?.manifest)
-			const toText = this.prettyManifest(this.toBlob?.manifest)
+			const fromSource = this.isStaticMode
+				? this.fromManifest
+				: this.fromBlob?.manifest
+			const toSource = this.isStaticMode
+				? this.toManifest
+				: this.toBlob?.manifest
+			const fromText = this.prettyManifest(fromSource)
+			const toText = this.prettyManifest(toSource)
 			if (!fromText && !toText) {
 				return []
 			}
 			return diffLines(fromText, toText)
 		},
 	},
+
 	watch: {
 		/**
 		 * Observed behaviour of `from` (retrofit annotation).
@@ -105,6 +174,7 @@ export default {
 		from() {
 			this.fetch()
 		},
+
 		/**
 		 * Observed behaviour of `to` (retrofit annotation).
 		 *
@@ -113,6 +183,7 @@ export default {
 		to() {
 			this.fetch()
 		},
+
 		/**
 		 * Observed behaviour of `slug` (retrofit annotation).
 		 *
@@ -122,16 +193,21 @@ export default {
 			this.fetch()
 		},
 	},
+
 	/**
 	 * Observed behaviour of `mounted` (retrofit annotation).
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 	 */
 	mounted() {
+		if (this.isStaticMode) {
+			return
+		}
 		if (this.slug && this.to) {
 			this.fetch()
 		}
 	},
+
 	methods: {
 		/**
 		 * Observed behaviour of `fetch` (retrofit annotation).
@@ -139,13 +215,15 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		async fetch() {
-			if (!this.slug || !this.to) {
+			if (this.isStaticMode || !this.slug || !this.to) {
 				return
 			}
 			this.loading = true
 			this.error = ''
 			try {
-				const url = generateUrl(`/apps/openbuild/api/applications/${this.slug}/versions/diff`)
+				const url = generateUrl(
+					`/apps/openbuild/api/applications/${this.slug}/versions/diff`,
+				)
 				const { data } = await axios.get(url, {
 					params: { from: this.from, to: this.to },
 				})
@@ -159,8 +237,16 @@ export default {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * Observed behaviour of `prettyManifest` (retrofit annotation).
+		 *
+		 * @param {object|null|undefined} value - One side's manifest blob (the `from`
+		 *   or `to` version). `null`/`undefined` — a version with no manifest yet —
+		 *   renders as an empty side rather than the string `"null"`.
+		 * @return {string} The manifest as 2-space-indented JSON with every object's
+		 *   keys sorted, so the line diff reflects real content changes and not
+		 *   serialisation order.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
@@ -170,8 +256,18 @@ export default {
 			}
 			return JSON.stringify(value, this.sortReplacer.bind(this), 2)
 		},
+
 		/**
 		 * Observed behaviour of `sortReplacer` (retrofit annotation).
+		 *
+		 * `JSON.stringify` replacer that makes serialisation key-order-independent.
+		 *
+		 * @param {string} _key - The property name being serialised. Unused: the
+		 *   rewrite depends only on the value's shape, never on where it sits.
+		 * @param {*} val - The value being serialised. Plain objects are returned with
+		 *   their keys sorted; arrays (order is meaningful in a manifest) and
+		 *   primitives pass through untouched.
+		 * @return {*} The value to serialise in place of `val`.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
@@ -185,8 +281,15 @@ export default {
 			}
 			return val
 		},
+
 		/**
 		 * Observed behaviour of `partClass` (retrofit annotation).
+		 *
+		 * @param {{value: string, added?: boolean, removed?: boolean, count?: number}} part - One
+		 *   hunk from jsdiff's `diffLines()` output. `added`/`removed` are `undefined`
+		 *   (not `false`) on an unchanged hunk, and are never both set.
+		 * @return {string} The `manifest-diff__part` class list for that hunk, with the
+		 *   `--added` / `--removed` / `--unchanged` modifier that colours it.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */

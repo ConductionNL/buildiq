@@ -23,22 +23,57 @@ const { axiosMock } = vi.hoisted(() => ({
 vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => p }))
 vi.mock('@nextcloud/axios', () => ({ default: axiosMock }))
 
-const { validateMock } = vi.hoisted(() => ({ validateMock: vi.fn(() => ({ valid: true, errors: [] })) }))
+const { validateMock } = vi.hoisted(() => ({
+	validateMock: vi.fn(() => ({ valid: true, errors: [] })),
+}))
 vi.mock('@conduction/nextcloud-vue', () => ({ validateManifest: validateMock }))
 
 import SaveAsTemplateDialog from '../../src/dialogs/SaveAsTemplateDialog.vue'
 
 const STUBS = {
-	NcDialog: { name: 'NcDialog', props: ['open', 'name'], template: '<div class="nc-dialog-stub"><slot /><slot name="actions" /></div>' },
-	NcButton: { name: 'NcButton', props: ['disabled', 'type'], template: '<button :disabled="disabled" @click="$emit(\'click\')"><slot /></button>' },
-	NcTextField: { name: 'NcTextField', props: ['value', 'label'], template: '<input :value="value" @input="$emit(\'update:value\', $event.target.value)" />' },
-	NcTextArea: { name: 'NcTextArea', props: ['value', 'label'], template: '<textarea :value="value" @input="$emit(\'update:value\', $event.target.value)" />' },
-	NcSelect: { name: 'NcSelect', props: ['value', 'options'], template: '<select />' },
+	NcDialog: {
+		name: 'NcDialog',
+		props: ['open', 'name'],
+		template:
+			'<div class="nc-dialog-stub"><slot /><slot name="actions" /></div>',
+	},
+	NcButton: {
+		name: 'NcButton',
+		props: ['disabled', 'type'],
+		template:
+			'<button :disabled="disabled" @click="$emit(\'click\')"><slot /></button>',
+	},
+	NcTextField: {
+		name: 'NcTextField',
+		props: ['value', 'label'],
+		template:
+			'<input :value="value" @input="$emit(\'update:value\', $event.target.value)" />',
+	},
+	NcTextArea: {
+		name: 'NcTextArea',
+		props: ['value', 'label'],
+		template:
+			'<textarea :value="value" @input="$emit(\'update:value\', $event.target.value)" />',
+	},
+	NcSelect: {
+		name: 'NcSelect',
+		props: ['value', 'options'],
+		template: '<select />',
+	},
 }
 
-const app = { slug: 'my-permits', name: 'My permits', version: '0.3.0', description: 'Permits app' }
-const schemas = [{ slug: 'my-permits-permit-application', title: 'Permit', properties: {} }]
-const manifest = { pages: [{ id: 'idx', config: { schema: 'my-permits-permit-application' } }] }
+const app = {
+	slug: 'my-permits',
+	name: 'My permits',
+	version: '0.3.0',
+	description: 'Permits app',
+}
+const schemas = [
+	{ slug: 'my-permits-permit-application', title: 'Permit', properties: {} },
+]
+const manifest = {
+	pages: [{ id: 'idx', config: { schema: 'my-permits-permit-application' } }],
+}
 
 /**
  * @param {object} props prop overrides.
@@ -80,7 +115,9 @@ describe('SaveAsTemplateDialog.vue', () => {
 
 		expect(axiosMock.post).toHaveBeenCalledTimes(1)
 		const [url, payload] = axiosMock.post.mock.calls[0]
-		expect(url).toContain('/apps/openregister/api/objects/openbuild/application-template')
+		expect(url).toContain(
+			'/apps/openregister/api/objects/openbuild/application-template',
+		)
 		expect(payload.isSeeded).toBe(false)
 		expect(payload.slug).toBe('my-permits')
 		expect(payload.companionSchemas[0].slug).toBe('permit-application')
@@ -89,7 +126,10 @@ describe('SaveAsTemplateDialog.vue', () => {
 	})
 
 	it('disables Save when the captured manifest is invalid (REQ-SAT-003)', async () => {
-		validateMock.mockReturnValue({ valid: false, errors: ['/pages/0: bad page type'] })
+		validateMock.mockReturnValue({
+			valid: false,
+			errors: ['/pages/0: bad page type'],
+		})
 		const wrapper = mountDialog()
 		await wrapper.vm.$nextTick()
 
@@ -110,7 +150,14 @@ describe('SaveAsTemplateDialog.vue', () => {
 	})
 
 	it('updates-in-place against an own org-local slug, bumping the version (REQ-SAT-004)', async () => {
-		const existing = [{ slug: 'my-permits', isSeeded: false, version: '1.0.0', '@self': { id: 'tpl-existing' } }]
+		const existing = [
+			{
+				slug: 'my-permits',
+				isSeeded: false,
+				version: '1.0.0',
+				'@self': { id: 'tpl-existing' },
+			},
+		]
 		const wrapper = mountDialog({ existingTemplates: existing })
 		await wrapper.vm.$nextTick()
 
@@ -137,7 +184,9 @@ describe('SaveAsTemplateDialog.vue', () => {
 	})
 
 	it('rejects a non-writable org-local slug with slug-taken (ownership guard)', async () => {
-		const existing = [{ slug: 'my-permits', isSeeded: false, '@self': { canWrite: false } }]
+		const existing = [
+			{ slug: 'my-permits', isSeeded: false, '@self': { canWrite: false } },
+		]
 		const wrapper = mountDialog({ existingTemplates: existing })
 		await wrapper.vm.$nextTick()
 

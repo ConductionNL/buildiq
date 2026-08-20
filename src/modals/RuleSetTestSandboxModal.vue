@@ -10,20 +10,30 @@
 <template>
 	<NcModal size="large" @close="$emit('close')">
 		<div class="rule-set-test-sandbox">
-			<h2>{{ t('openbuild', 'Test sandbox') }} — {{ ruleSet.naam }}</h2>
+			<h2>{{ t('openbuild', 'Test sandbox') }} — {{ ruleSet.name }}</h2>
 
 			<div class="rule-set-test-sandbox__toolbar">
-				<NcButton type="primary" :disabled="running" @click="runAll">
-					{{ running ? t('openbuild', 'Running...') : t('openbuild', 'Run all tests') }}
+				<NcButton variant="primary" :disabled="running" @click="runAll">
+					{{
+						running
+							? t('openbuild', 'Running…')
+							: t('openbuild', 'Run all tests')
+					}}
 				</NcButton>
-				<NcButton type="secondary" @click="showAdd = !showAdd">
+				<NcButton variant="secondary" @click="showAdd = !showAdd">
 					{{ t('openbuild', 'Add test case') }}
 				</NcButton>
 			</div>
 
-			<div v-if="summary" class="rule-set-test-sandbox__summary" data-testid="test-summary">
-				{{ t('openbuild', 'Passed') }}: {{ summary.passed }} / {{ summary.total }}
-				<span v-if="summary.failed > 0" class="rule-set-test-sandbox__failed">
+			<div
+				v-if="summary"
+				class="rule-set-test-sandbox__summary"
+				data-testid="test-summary">
+				{{ t('openbuild', 'Passed') }}: {{ summary.passed }} /
+				{{ summary.total }}
+				<span
+					v-if="summary.failed > 0"
+					class="rule-set-test-sandbox__failed">
 					({{ summary.failed }} {{ t('openbuild', 'failed') }})
 				</span>
 			</div>
@@ -33,17 +43,28 @@
 			<table v-else class="rule-set-test-sandbox__table">
 				<thead>
 					<tr>
-						<th>{{ t('openbuild', 'Name') }}</th>
-						<th>{{ t('openbuild', 'Description') }}</th>
-						<th>{{ t('openbuild', 'Last result') }}</th>
+						<th scope="col">
+							{{ t('openbuild', 'Name') }}
+						</th>
+						<th scope="col">
+							{{ t('openbuild', 'Description') }}
+						</th>
+						<th scope="col">
+							{{ t('openbuild', 'Last result') }}
+						</th>
 					</tr>
 				</thead>
 				<tbody>
-					<tr v-for="tc in testCases" :key="tc.slug || tc.naam" data-testid="test-case-row">
-						<td>{{ tc.naam }}</td>
-						<td>{{ tc.beschrijving }}</td>
+					<tr
+						v-for="tc in testCases"
+						:key="tc.slug || tc.name"
+						data-testid="test-case-row">
+						<td>{{ tc.name }}</td>
+						<td>{{ tc.description }}</td>
 						<td>
-							<span class="rule-set-test-sandbox__result" :class="resultClass(tc)">
+							<span
+								class="rule-set-test-sandbox__result"
+								:class="resultClass(tc)">
 								{{ resultLabel(tc) }}
 							</span>
 						</td>
@@ -52,10 +73,16 @@
 			</table>
 
 			<div v-if="showAdd" class="rule-set-test-sandbox__add">
-				<NcTextField v-model="draft.naam" :label="t('openbuild', 'Test case name')" />
-				<NcTextArea v-model="draft.inputPayloadText" :label="t('openbuild', 'Input payload (JSON)')" />
-				<NcTextArea v-model="draft.expectedText" :label="t('openbuild', 'Expected result (JSON)')" />
-				<NcButton type="primary" :disabled="saving" @click="addTestCase">
+				<NcTextField
+					v-model="draft.name"
+					:label="t('openbuild', 'Test case name')" />
+				<NcTextArea
+					v-model="draft.inputPayloadText"
+					:label="t('openbuild', 'Input payload (JSON)')" />
+				<NcTextArea
+					v-model="draft.expectedText"
+					:label="t('openbuild', 'Expected result (JSON)')" />
+				<NcButton variant="primary" :disabled="saving" @click="addTestCase">
 					{{ t('openbuild', 'Save test case') }}
 				</NcButton>
 			</div>
@@ -70,7 +97,14 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcLoadingIcon, NcModal, NcNoteCard, NcTextArea, NcTextField } from '@nextcloud/vue'
+import {
+	NcButton,
+	NcLoadingIcon,
+	NcModal,
+	NcNoteCard,
+	NcTextArea,
+	NcTextField,
+} from '@nextcloud/vue'
 
 export default {
 	name: 'RuleSetTestSandboxModal',
@@ -82,12 +116,14 @@ export default {
 		NcTextArea,
 		NcTextField,
 	},
+
 	props: {
 		ruleSet: {
 			type: Object,
 			required: true,
 		},
 	},
+
 	emits: ['close'],
 	data() {
 		return {
@@ -100,34 +136,43 @@ export default {
 			errorMessage: '',
 			failedNames: [],
 			draft: {
-				naam: '',
+				name: '',
 				inputPayloadText: '{}',
 				expectedText: '{}',
 			},
 		}
 	},
+
 	mounted() {
 		this.fetchTestCases()
 	},
+
 	methods: {
 		async fetchTestCases() {
 			this.loading = true
 			try {
-				const url = generateUrl('/apps/openregister/api/objects/openbuild/rule-test-case')
+				const url = generateUrl(
+					'/apps/openregister/api/objects/openbuild/rule-test-case',
+				)
 				const { data } = await axios.get(url)
-				const all = Array.isArray(data) ? data : (data.results || [])
-				this.testCases = all.filter((tc) => tc.ruleSetId === this.ruleSet.slug)
+				const all = Array.isArray(data) ? data : data.results || []
+				this.testCases = all.filter(
+					(tc) => tc.ruleSetId === this.ruleSet.slug,
+				)
 			} catch (error) {
 				this.errorMessage = t('openbuild', 'Could not load test cases.')
 			} finally {
 				this.loading = false
 			}
 		},
+
 		async runAll() {
 			this.running = true
 			this.errorMessage = ''
 			try {
-				const url = generateUrl(`/apps/openbuild/api/rules/${this.ruleSet.slug}/test-all`)
+				const url = generateUrl(
+					`/apps/openbuild/api/rules/${this.ruleSet.slug}/test-all`,
+				)
 				const { data } = await axios.post(url, {})
 				this.summary = data
 				this.failedNames = data.failures || []
@@ -137,8 +182,16 @@ export default {
 				this.running = false
 			}
 		},
+
+		/**
+		 * CSS modifier for a test case's last-run outcome.
+		 *
+		 * @param {object} tc - the test case.
+		 * @return {string}
+		 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-004-test-case-driven-sandbox-validation
+		 */
 		resultClass(tc) {
-			if (this.failedNames.includes(tc.naam)) {
+			if (this.failedNames.includes(tc.name)) {
 				return 'rule-set-test-sandbox__result--fail'
 			}
 			if (this.summary) {
@@ -146,8 +199,16 @@ export default {
 			}
 			return 'rule-set-test-sandbox__result--unknown'
 		},
+
+		/**
+		 * Human-readable label for a test case's last-run outcome.
+		 *
+		 * @param {object} tc - the test case.
+		 * @return {string}
+		 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-004-test-case-driven-sandbox-validation
+		 */
 		resultLabel(tc) {
-			if (this.failedNames.includes(tc.naam)) {
+			if (this.failedNames.includes(tc.name)) {
 				return t('openbuild', 'Failed')
 			}
 			if (this.summary) {
@@ -155,25 +216,37 @@ export default {
 			}
 			return t('openbuild', 'Not run')
 		},
+
+		/**
+		 * Create a new TestCase against the current RuleSet.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-004-test-case-driven-sandbox-validation
+		 */
 		async addTestCase() {
 			this.saving = true
 			this.errorMessage = ''
 			try {
 				const payload = JSON.parse(this.draft.inputPayloadText || '{}')
 				const expected = JSON.parse(this.draft.expectedText || '{}')
-				const url = generateUrl('/apps/openregister/api/objects/openbuild/rule-test-case')
+				const url = generateUrl(
+					'/apps/openregister/api/objects/openbuild/rule-test-case',
+				)
 				await axios.post(url, {
 					ruleSetId: this.ruleSet.slug,
-					naam: this.draft.naam,
+					name: this.draft.name,
 					inputPayload: payload,
-					verwachtResultaat: expected,
-					laatsteTestResultaat: 'niet-uitgevoerd',
+					expectedResult: expected,
+					lastTestResult: 'not-run',
 				})
 				this.showAdd = false
-				this.draft = { naam: '', inputPayloadText: '{}', expectedText: '{}' }
+				this.draft = { name: '', inputPayloadText: '{}', expectedText: '{}' }
 				this.fetchTestCases()
 			} catch (error) {
-				this.errorMessage = t('openbuild', 'Could not save the test case — check the JSON is valid.')
+				this.errorMessage = t(
+					'openbuild',
+					'Could not save the test case — check the JSON is valid.',
+				)
 			} finally {
 				this.saving = false
 			}

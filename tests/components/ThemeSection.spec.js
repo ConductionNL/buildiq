@@ -13,20 +13,31 @@ import ThemeSection from '../../src/components/ThemeSection.vue'
 const NcButtonStub = {
 	name: 'NcButton',
 	props: ['type', 'disabled', 'title'],
-	template: '<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
+	template:
+		'<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
 }
 
 const stubs = {
 	NcButton: NcButtonStub,
-	ThemePickerDialog: { name: 'ThemePickerDialog', template: '<div class="picker-stub" />' },
+	ThemePickerDialog: {
+		name: 'ThemePickerDialog',
+		props: ['open', 'theme', 'nldesignAvailable', 'previewAvailable'],
+		template: '<div class="picker-stub" />',
+	},
 }
 
-const theme = { source: 'nldesign', tokenSet: 'amsterdam', tokenSetName: 'Gemeente Amsterdam', preview: { primaryColor: '#004699', backgroundColor: '#FFFFFF' } }
+const theme = {
+	source: 'nldesign',
+	tokenSet: 'amsterdam',
+	tokenSetName: 'Gemeente Amsterdam',
+	preview: { primaryColor: '#004699', backgroundColor: '#FFFFFF' },
+}
 
-const factory = (manifest, props = {}) => mount(ThemeSection, {
-	propsData: { manifest, ...props },
-	stubs,
-})
+const factory = (manifest, props = {}) =>
+	mount(ThemeSection, {
+		propsData: { manifest, ...props },
+		stubs,
+	})
 
 describe('ThemeSection', () => {
 	it('renders the Default (Nextcloud) state when no theme is set', () => {
@@ -49,12 +60,22 @@ describe('ThemeSection', () => {
 		expect(emitted.dependencies).toEqual(['procest'])
 	})
 
-	it('removing the theme deletes runtime.theme and keeps themeless manifests clean', () => {
-		window.confirm = vi.fn(() => true)
+	it('removing the theme asks first and emits nothing until confirmed', () => {
 		const wrapper = factory({ runtime: { theme } })
 		wrapper.vm.removeTheme()
+		// The destructive step MUST NOT have run yet — this is the property the
+		// old window.confirm gave us and the dialog has to preserve.
+		expect(wrapper.vm.confirmRemoveOpen).toBe(true)
+		expect(wrapper.emitted()['update:manifest']).toBeUndefined()
+	})
+
+	it('removing the theme deletes runtime.theme once confirmed and keeps themeless manifests clean', () => {
+		const wrapper = factory({ runtime: { theme } })
+		wrapper.vm.removeTheme()
+		wrapper.vm.onConfirmRemoveTheme()
 		const emitted = wrapper.emitted()['update:manifest'][0][0]
 		expect(emitted.runtime).toBeUndefined()
+		expect(wrapper.vm.confirmRemoveOpen).toBe(false)
 	})
 
 	it('disables Change when nldesign is absent but keeps the theme removable', () => {
@@ -69,5 +90,14 @@ describe('ThemeSection', () => {
 		const wrapper = factory({})
 		wrapper.vm.$emit('preview', theme)
 		expect(wrapper.emitted().preview[0][0]).toEqual(theme)
+	})
+
+	it('forwards previewAvailable to ThemePickerDialog (design.md OQ-1, task 3.3)', () => {
+		const wrapper = factory({}, { previewAvailable: false })
+		expect(
+			wrapper
+				.findComponent({ name: 'ThemePickerDialog' })
+				.props('previewAvailable'),
+		).toBe(false)
 	})
 })

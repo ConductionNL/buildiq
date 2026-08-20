@@ -7,7 +7,10 @@
  * Spec: docudesk-document-templates (REQ-DDT-001).
  */
 import { describe, it, expect } from 'vitest'
-import { validateDocumentAttachments, DOCUMENT_FORMATS } from '../../src/services/manifestValidation/documentAttachments.js'
+import {
+	validateDocumentAttachments,
+	DOCUMENT_FORMATS,
+} from '../../src/services/manifestValidation/documentAttachments.js'
 
 const UUID = '11111111-2222-3333-4444-555555555555'
 
@@ -34,63 +37,82 @@ describe('validateDocumentAttachments', () => {
 	})
 
 	it('accepts two attachments on the same schema with distinct labels', () => {
-		const errs = validateDocumentAttachments(baseManifest([
-			validEntry,
-			{ ...validEntry, id: 'kap-besluit', label: 'Generate besluit' },
-		]))
+		const errs = validateDocumentAttachments(
+			baseManifest([
+				validEntry,
+				{ ...validEntry, id: 'kap-besluit', label: 'Generate besluit' },
+			]),
+		)
 		expect(errs).toEqual([])
 	})
 
 	it('rejects a duplicate (schema, label) pair on both entries', () => {
-		const errs = validateDocumentAttachments(baseManifest([
-			validEntry,
-			{ ...validEntry, id: 'kap-2' },
-		]))
+		const errs = validateDocumentAttachments(
+			baseManifest([validEntry, { ...validEntry, id: 'kap-2' }]),
+		)
 		const dup = errs.filter((e) => e.includes('duplicate-label'))
 		expect(dup.length).toBe(2)
 	})
 
 	it('rejects a duplicate id', () => {
-		const errs = validateDocumentAttachments(baseManifest([
-			validEntry,
-			{ ...validEntry, schema: 'kapaanvraag', label: 'Other' },
-		]))
+		const errs = validateDocumentAttachments(
+			baseManifest([
+				validEntry,
+				{ ...validEntry, schema: 'kapaanvraag', label: 'Other' },
+			]),
+		)
 		expect(errs.some((e) => e.includes('duplicate-id'))).toBe(true)
 	})
 
 	it('rejects a foreign schema', () => {
-		const errs = validateDocumentAttachments(baseManifest([{ ...validEntry, schema: 'not-in-this-app' }]))
+		const errs = validateDocumentAttachments(
+			baseManifest([{ ...validEntry, schema: 'not-in-this-app' }]),
+		)
 		expect(errs.some((e) => e.includes('unknown-schema'))).toBe(true)
 	})
 
 	it('rejects a non-UUID templateId', () => {
-		const errs = validateDocumentAttachments(baseManifest([{ ...validEntry, templateId: 'not-a-uuid' }]))
+		const errs = validateDocumentAttachments(
+			baseManifest([{ ...validEntry, templateId: 'not-a-uuid' }]),
+		)
 		expect(errs.some((e) => e.includes('template-id-invalid'))).toBe(true)
 	})
 
 	it('rejects an empty label', () => {
-		const errs = validateDocumentAttachments(baseManifest([{ ...validEntry, label: '  ' }]))
+		const errs = validateDocumentAttachments(
+			baseManifest([{ ...validEntry, label: '  ' }]),
+		)
 		expect(errs.some((e) => e.includes('label-required'))).toBe(true)
 	})
 
 	it('rejects a missing templateName', () => {
-		const errs = validateDocumentAttachments(baseManifest([{ ...validEntry, templateName: '' }]))
+		const errs = validateDocumentAttachments(
+			baseManifest([{ ...validEntry, templateName: '' }]),
+		)
 		expect(errs.some((e) => e.includes('template-name-required'))).toBe(true)
 	})
 
 	it('rejects a format outside the pinned set', () => {
-		const errs = validateDocumentAttachments(baseManifest([{ ...validEntry, format: 'rtf' }]))
+		const errs = validateDocumentAttachments(
+			baseManifest([{ ...validEntry, format: 'rtf' }]),
+		)
 		expect(errs.some((e) => e.includes('format-unsupported'))).toBe(true)
 	})
 
 	it('accepts every pinned format', () => {
 		DOCUMENT_FORMATS.forEach((format) => {
-			expect(validateDocumentAttachments(baseManifest([{ ...validEntry, format }]))).toEqual([])
+			expect(
+				validateDocumentAttachments(
+					baseManifest([{ ...validEntry, format }]),
+				),
+			).toEqual([])
 		})
 	})
 
 	it('rejects an unknown key', () => {
-		const errs = validateDocumentAttachments(baseManifest([{ ...validEntry, foo: 'bar' }]))
+		const errs = validateDocumentAttachments(
+			baseManifest([{ ...validEntry, foo: 'bar' }]),
+		)
 		expect(errs.some((e) => e.includes('unknown-key'))).toBe(true)
 	})
 
@@ -100,8 +122,16 @@ describe('validateDocumentAttachments', () => {
 	})
 
 	it('accepts an optional filenameTemplate string and rejects a non-string', () => {
-		expect(validateDocumentAttachments(baseManifest([{ ...validEntry, filenameTemplate: 'x-{{dossiernummer}}.pdf' }]))).toEqual([])
-		const errs = validateDocumentAttachments(baseManifest([{ ...validEntry, filenameTemplate: 42 }]))
+		expect(
+			validateDocumentAttachments(
+				baseManifest([
+					{ ...validEntry, filenameTemplate: 'x-{{dossiernummer}}.pdf' },
+				]),
+			),
+		).toEqual([])
+		const errs = validateDocumentAttachments(
+			baseManifest([{ ...validEntry, filenameTemplate: 42 }]),
+		)
 		expect(errs.some((e) => e.includes('filename-template-invalid'))).toBe(true)
 	})
 })

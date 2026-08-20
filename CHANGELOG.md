@@ -5,6 +5,194 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-08-05
+
+### Added
+- Published `buildiq-*` app repositories (app-repo-format-v2) now carry an
+  application's bound OpenRegister flows and the agents that point at it —
+  `flows/<uuid>.json` and `agents/<uuid>.json`, alongside the existing
+  data-registers/connectors/automations/skills channels. Export reuses
+  `FlowAndAgentExportBundler` (openbuild-exporter) unmodified via a new
+  adapter, `FlowAgentChannelCollector`. Import creates each flow through
+  `FlowService::save()` and rebinds it onto the local application's
+  `flows[]` with the published uuid tracked as `sourceUuid` (a new OPTIONAL
+  schema property, declared before it is written), and writes each agent at
+  its published uuid with `applicationSlug` always overwritten to the local
+  application's own slug. Both channels skip-if-already-applied on a repeat
+  pull, matching every other v2 channel.
+
+### Fixed
+- `GitHubCatalogService::fetchChannelFiles()`'s fetch-side channel-prefix
+  allowlist was never extended when the flows/agents channels were added to
+  `AppRepoParser`, so `github/pull` (and the shop-install path, which shares
+  this method) silently never downloaded either channel from a published
+  repository — the exact "parser can read it, fetch never downloaded it"
+  defect this method's own docblock already warned about once, for
+  data-registers/connectors/automations/skills. Found live during round-trip
+  verification: a repository publishing both channels pulled back with both
+  declared `0` until the two missing prefixes were added.
+- **Every app OpenBuild has ever generated was born declaring the wrong licence.**
+  The embedded template snapshot's `appinfo/info.xml` hardcoded
+  `<licence>agpl</licence>` while the very same file's description read "Free and
+  open source under the EUPL-1.2 license". It now reads `<licence>{{license}}</licence>`,
+  so the `license` value the export already carried end to end
+  (`ExportJobService` → `RunExportJob` → `PlaceholderResolver`, defaulting to
+  `EUPL-1.2` at all three layers) finally reaches the file that declares it, and
+  a caller who picks a different licence gets the licence they picked. Verified
+  against the Nextcloud appstore schema
+  (`https://apps.nextcloud.com/schema/apps/info.xsd`): the `licence` enumeration
+  **does** include `EUPL-1.2`. It does **not** include `eupl`.
+
+### Added
+- `ExporterEndToEndTest::testGeneratedAppDeclaresTheRequestedLicence()` — asserts
+  a really-exported app's `appinfo/info.xml` declares `EUPL-1.2` and does not
+  declare `agpl`, and that `src/manifest.json` and `composer.json` agree. Shown
+  to fail against the pre-fix snapshot before it was made to pass. Nothing in the
+  suite covered the generated app's licence declaration until now: the existing
+  unresolved-placeholder assertion matches `/\{\{[a-zA-Z]+\}\}/`, and a hardcoded
+  wrong value contains no placeholder.
+
+### Changed
+- `lib/Resources/template/.snapshot-meta.json` and `docs/releasing.md` now record
+  that the embedded template is a **fork**, not a snapshot, and that the
+  documented `rsync -a --delete` refresh is unsafe to run as written — it would
+  revert OpenBuild-only fixes (including "the generated app could not be built at
+  all", #39) and swap OpenBuild's `{{token}}` placeholder dialect for upstream's
+  `{APP_NAME}` dialect, which `PlaceholderResolver` does not resolve and no test
+  would catch. `docs/releasing.md` also now records that the "CI drift check" it
+  describes **does not exist**.
+- `lib/Resources/template/.path-manifest.txt` no longer lists `.snapshot-meta.json`;
+  the regeneration command in `docs/releasing.md` excludes it, so the checked-in
+  manifest disagreed with its own generator.
+
+## [0.8.0] - 2026-07-25
+
+### Changed
+- **Theme picker now consumes nldesign's published catalogue**
+  (theme-picker-consumes-nldesign) — bumps `@conduction/nextcloud-vue` to
+  `^1.0.0-beta.221`, which ships `useScopedTheme()` and wires `CnAppRoot` to
+  self-apply `manifest.runtime.theme`. `ThemePickerDialog.vue` collapses its
+  old three-tier admin/probe/free-text catalogue fallback to a single
+  `useScopedTheme().listTokenSets()` call against nldesign's real non-admin
+  `GET /api/token-sets` endpoint, and adds a warn-only WCAG contrast preview
+  via `evaluateContrast()` that never blocks Save. Live theme preview now
+  retargets the page-designer's sandboxed live-preview-pane `CnAppRoot`
+  instance instead of a separate OpenBuild-owned applier.
+
+### Removed
+- `src/composables/useAppTheme.js` — OpenBuild's own scoped-CSS
+  `:root`-rewriter and injector; `CnAppRoot`'s own `useScopedTheme` watcher
+  now owns runtime theme application end-to-end, with zero OpenBuild-side
+  wiring in `BuilderHost.vue` or `PageDesignerHost.vue`.
+- `src/services/manifestValidation/theme.js` — OpenBuild's own
+  `runtime.theme` shape validator; `@conduction/nextcloud-vue`'s
+  `validateManifest()` (schema 2.21.0, `$defs/runtimeTheme`) is now the
+  single source for this validation.
+
+## [0.7.7] - 2026-07-24
+
+### Added
+- **Runtime group-scoped access** (runtime-group-scoped-access) — a manifest
+  `menu[]`/`pages[]` entry may declare a `permission: "group:<gid>"`; the
+  runtime resolves the caller's Nextcloud group context server-side and
+  `ManifestResolverService::filterManifestForCaller()` strips any entry the
+  caller does not hold the permission for from the manifest response BEFORE
+  it leaves the server — the authoritative gate, not client-side hiding.
+  Admins and callers with an owner/editor role on the Application see the
+  manifest unfiltered. A group-scoped dashboard page is promoted to the
+  landing position for members who satisfy it, falling back to the default
+  dashboard otherwise. `PermissionGroupField.vue` adds a group picker to the
+  menu-item and page editors. Client-side `CnAppNav` filtering mirrors the
+  server decision as defense in depth, not the only defense. Documented
+  boundary: this hides navigation only — object-level access for the
+  underlying data remains OpenRegister schema `authorization`'s job.
+
+- **Agent workspace** (agent-workspace) — named, tool-scoped AI agents
+  layered on the existing `ai-copilot` plan/execute engine (ADR-022
+  consume-not-rebuild): an `Agent` (instructions, an explicit subset of the
+  eight `OpenBuildToolProvider` tools, `maxActionsPerRun`) is never a wider
+  capability surface than the bare copilot — enforced server-side as a
+  narrowed intersection of the existing eight-tool catalogue on every
+  plan/execute request, never trusted from the client.
+- Transparent per-run log (`AgentRun`): every plan+execute/discard turn
+  persists the prompt, plan, every tool call's arguments and result, and the
+  outcome (`applied`/`rolled-back`/`discarded`/`plan-rejected`) — the Retool
+  tool-chip transparency pattern, addressing the market-wide "trust gap"
+  evidence directly.
+- `AgentsPage.vue` (CRUD list), `AgentEditDialog.vue`, and a run-history
+  view (`AgentRunHistory.vue`) restricted server-side to owners/editors of
+  the agent's parent Application; `CopilotPanel.vue` gains optional
+  `agentId`/`name`/`instructions`/`enabledTools` props, fully
+  backwards-compatible with the existing bare-copilot surfaces.
+- No autonomous/automation-triggered agent runs in v1 — an agent acts only
+  inside a human-initiated chat turn.
+- **Component blocks** (component-blocks) — capture a configured widget, or
+  a selected multi-widget page section, from the page designer into a
+  named, reusable `ComponentBlock` (new `componentBlock` OR schema,
+  `lib/Settings/register.d/60-component-blocks.json`).
+- Block-library panel (`NcAppSidebar`) in the page designer listing every
+  org-wide block, filterable by category, with insert support.
+- Insert deep-copies the fragment and mints fresh widget ids, so repeated
+  insertions never collide and editing the source block never affects an
+  already-inserted copy.
+- Schema-dependency remap prompt (`BlockRemapDialog.vue`) on a cross-app
+  insert whose schemas don't exact-match — never a silent guess, never a
+  silently dropped binding.
+- Blocks export/import as standalone JSON.
+- Template-catalogue gallery gains a "Blocks" filter alongside full-app
+  templates.
+
+## [0.7.5] - 2026-07-24
+
+### Added
+- **Document-generation automation action** (automation-document-action) — a
+  new `generateDocument` action kind on `object-created`/`object-updated`/
+  `object-deleted`/`lifecycle-transition` triggers, compiling to no
+  compile-time artifact (Docudesk's `correspondence/generate` route is
+  stateless) and dispatching at trigger-fire time through a new
+  `DocumentGenerationListener` → `DocumentGenerationService`.
+- `DocumentGenerationService` calls Docudesk's existing, Newman-pinned
+  `POST /apps/docudesk/api/correspondence/generate` route — never a
+  `OCA\DocuDesk\*` PHP class import — impersonating the owning
+  Application's owner (via the existing `JobOwnerImpersonator`) for the
+  duration of exactly one internal call, authenticated with a short-lived
+  Nextcloud login token minted through `OC\Authentication\Token\IProvider`
+  and invalidated immediately after use.
+- Three output modes: `attach` (writes the generated document to Nextcloud
+  Files and sets a `{ "ref": "<fileId>" }` reference on the triggering
+  object's `generatedDocument` field), `download-link` (a short-lived,
+  ~24h signed URL served by the new `GeneratedDocumentController` from
+  OpenBuild's own app-private storage — never the user's Files tree), and
+  `notify` (reuses the existing `RuleActionDispatcher` send-notification
+  path; must be paired with `attach` and/or `download-link`).
+- `AutomationEditDialog` gains the `generateDocument` action editor: a
+  Docudesk template picker (via the new shared `useDocudeskTemplates.js`
+  composable, also adopted by `DocumentTemplateAttachmentDialog` so the
+  template-list fetch has exactly one implementation) and an output-mode
+  multi-select, disabled with a missing-app hint when Docudesk is absent.
+- Compile-time validation (`AutomationCompilerService`): `templateId`
+  required, `output` a known non-empty set, `notify` never alone, and a
+  fail-closed `UnsupportedAutomationCombinationException` naming the
+  missing `docudesk` dependency when Docudesk is not installed.
+
+## [0.7.4] - 2026-07-23
+
+### Added
+- **Approval automation action** (automation-approval-steps) — a new `approval`
+  action kind on `object-created`/`object-updated`/`object-deleted`/
+  `lifecycle-transition` triggers, group-only assignee, compiling to an
+  OpenRegister `ApprovalChain` instantiated against the trigger object
+  (consume-not-rebuild, ADR-022 — no new approval engine in OpenBuild).
+- On-approve/on-reject follow-up actions, composed from the same typed-action
+  vocabulary (send-notification/object-op/webhook), dispatched by a typed
+  listener on OR's `ApprovalStepApprovedEvent`/`ApprovalStepRejectedEvent`.
+- **"My approvals" runtime widget** — lists the viewer's pending approval
+  steps (filtered client-side by NC group membership) with approve/reject
+  actions calling OpenRegister's `/api/approval-steps` endpoints directly.
+- `AutomationsController::status()` and the dry-run test panel now report
+  `approvalState: none|pending|approved|rejected` for automations carrying an
+  `approval` action.
+
 ## [0.5.40] - 2026-06-26
 
 ### Added

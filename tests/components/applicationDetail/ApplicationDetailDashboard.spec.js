@@ -27,7 +27,11 @@ const t = (app, key, vars) => {
 }
 
 const router = { push: vi.fn(), replace: vi.fn().mockResolvedValue(undefined) }
-const route = { name: 'VirtualAppDetail', params: { objectId: 'app-uuid' }, query: {} }
+const route = {
+	name: 'VirtualAppDetail',
+	params: { objectId: 'app-uuid' },
+	query: {},
+}
 
 /**
  * Spec: openbuild-app-detail-overview / application-detail-overview.
@@ -46,10 +50,11 @@ describe('ApplicationDetailDashboard', () => {
 		permissions: { owners: ['user:alice'], editors: [], viewers: [] },
 	}
 
-	const factory = () => shallowMount(ApplicationDetailDashboard, {
-		propsData: { object: application, objectId: 'app-uuid' },
-		mocks: { t, $router: router, $route: route },
-	})
+	const factory = () =>
+		shallowMount(ApplicationDetailDashboard, {
+			propsData: { object: application, objectId: 'app-uuid' },
+			mocks: { t, $router: router, $route: route },
+		})
 
 	beforeEach(() => {
 		useInsightsWindow().selectedWindow.value = '7d'
@@ -62,8 +67,15 @@ describe('ApplicationDetailDashboard', () => {
 		// formatted byte size; before data loads it is the loading variant.)
 		const kpis = wrapper.findAll('.ob-detail-dashboard__kpi')
 		expect(kpis.length).toBe(4)
-		const titles = kpis.wrappers.map((w) => w.attributes('title'))
-		expect(titles).toEqual(['Active users', 'Object count', 'Storage', 'Audit events'])
+		// VTU v2 returns a plain array from findAll(); the v1 `.wrappers`
+		// accessor no longer exists.
+		const titles = kpis.map((w) => w.attributes('title'))
+		expect(titles).toEqual([
+			'Active users',
+			'Object count',
+			'Storage',
+			'Audit events',
+		])
 	})
 
 	it('shows the empty-state activity message when activity is empty (REQ-OBADO-005)', () => {

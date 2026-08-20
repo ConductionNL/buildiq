@@ -29,11 +29,17 @@ vi.mock('../../src/composables/useRole.js', () => ({
 	useRole: roleMock,
 	getCurrentUserGroups: () => ['group1'],
 }))
+const { useRegisterPickerSpy } = vi.hoisted(() => ({
+	useRegisterPickerSpy: vi.fn(),
+}))
 vi.mock('../../src/composables/useRegisterPicker.js', () => ({
-	useRegisterPicker: () => ({
-		fetchSchemas: fetchSchemasMock,
-		resolveAppRegister: () => 'openbuild-my-permits',
-	}),
+	useRegisterPicker: (opts) => {
+		useRegisterPickerSpy(opts)
+		return {
+			fetchSchemas: fetchSchemasMock,
+			resolveAppRegister: () => 'openbuild-my-permits',
+		}
+	},
 }))
 
 import ApplicationDetailActions from '../../src/components/ApplicationDetailActions.vue'
@@ -45,6 +51,9 @@ const application = {
 	status: 'draft',
 	manifest: { pages: [] },
 	permissions: { owners: ['group1'], editors: [], viewers: [] },
+	dataRegisters: [
+		{ register: 'spectr', label: 'Spectr market intelligence data' },
+	],
 }
 
 const t = (app, key, vars) => {
@@ -66,7 +75,13 @@ function mountActions(role) {
 	return shallowMount(ApplicationDetailActions, {
 		propsData: { object: application, objectId: 'app-uuid' },
 		mocks: { t, $router: { push: vi.fn() } },
-		stubs: { NcButton: true, PermissionsModal: true, PermissionHistoryModal: true, SaveAsTemplateDialog: true, ExportDialog: true },
+		stubs: {
+			NcButton: true,
+			PermissionsModal: true,
+			PermissionHistoryModal: true,
+			SaveAsTemplateDialog: true,
+			ExportDialog: true,
+		},
 	})
 }
 
@@ -75,6 +90,7 @@ describe('ApplicationDetailActions — Save as template action (REQ-SAT-001)', (
 		axiosMock.get.mockReset()
 		axiosMock.post.mockReset()
 		fetchSchemasMock.mockClear()
+		useRegisterPickerSpy.mockClear()
 	})
 
 	it('offers the action to owners', () => {
@@ -100,14 +116,60 @@ describe('ApplicationDetailActions — Save as template action (REQ-SAT-001)', (
 	it('openSaveAsTemplate gathers schemas + templates and opens the dialog', async () => {
 		const wrapper = mountActions('owner')
 		await wrapper.vm.$nextTick()
-		axiosMock.get.mockResolvedValueOnce({ data: { results: [{ slug: 'permit-pack', isSeeded: false }] } })
+
+		// This used to queue a single `mockResolvedValueOnce(...)` and rely on
+		// it landing on the templates read. `openSaveAsTemplate()` now makes
+		// TWO GETs — it resolves the manifest from
+		// `/api/applications/{slug}/manifest` first, then reads the templates —
+		// so the one-shot response was consumed by the MANIFEST call and the
+		// templates read fell through to the generic `{ data: application }`
+		// default, which has no `results` array, leaving `existingTemplates`
+		// empty.
+		//
+		// The production change that added the manifest GET is correct and
+		// deliberate (see the comment in ApplicationDetailActions.vue: an
+		// Application record carries neither `manifest` nor `currentVersion`,
+		// so the old `obApp.manifest` read always fell through to `{}` and
+		// saving ANY app as a template was impossible). It is the test that
+		// was left behind — and it could only regress silently because no
+		// app's JS unit suite had ever run in CI.
+		//
+		// Routing the mock by URL instead of by call order removes the
+		// ordering dependency entirely and lets both responses be asserted.
+		axiosMock.get.mockImplementation((url) => {
+			if (url.includes('/manifest')) {
+				return Promise.resolve({ data: { pages: [] } })
+			}
+			if (url.includes('application-template')) {
+				return Promise.resolve({
+					data: { results: [{ slug: 'permit-pack', isSeeded: false }] },
+				})
+			}
+			return Promise.resolve({ data: application })
+		})
 
 		await wrapper.vm.openSaveAsTemplate()
 
+		// The manifest comes from the resolving endpoint, not from the
+		// Application record.
+		expect(axiosMock.get).toHaveBeenCalledWith(
+			'/apps/openbuild/api/applications/my-permits/manifest',
+		)
 		expect(fetchSchemasMock).toHaveBeenCalled()
-		expect(wrapper.vm.saveTemplateSchemas).toEqual([{ slug: 'my-permits-permit-application' }])
-		expect(wrapper.vm.existingTemplates).toEqual([{ slug: 'permit-pack', isSeeded: false }])
+		expect(wrapper.vm.saveTemplateSchemas).toEqual([
+			{ slug: 'my-permits-permit-application' },
+		])
+		expect(wrapper.vm.existingTemplates).toEqual([
+			{ slug: 'permit-pack', isSeeded: false },
+		])
 		expect(wrapper.vm.saveTemplateOpen).toBe(true)
 		expect(wrapper.vm.saveTemplateManifest).toEqual({ pages: [] })
+		// data-registers-runtime task 2.3: the Application's declared
+		// dataRegisters are forwarded into the picker used to resolve
+		// saveTemplateSchemas.
+		expect(useRegisterPickerSpy).toHaveBeenCalledWith({
+			appSlug: 'my-permits',
+			dataRegisters: application.dataRegisters,
+		})
 	})
 })

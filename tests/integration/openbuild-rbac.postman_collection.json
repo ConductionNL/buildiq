@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "openbuild-rbac-collection",
 		"name": "OpenBuild RBAC — REQ-OBRBAC-002..007",
-		"description": "Newman integration suite for the openbuild-rbac OpenSpec change. Exercises the manifest-endpoint security boundary (403 before 404 disambiguation, viewer/editor/owner read paths, audited admin bypass, transfer-ownership, list-endpoint IDOR closure) over real HTTP against a live Nextcloud instance with the `openbuild` app enabled. The collection is self-contained: a Setup folder provisions a fresh seed Application, two test users, and a viewer/editor group; a Teardown folder removes every artefact so the suite is idempotent. Reuses the `admin/admin` credentials from the dev compose (memory rule).",
+		"description": "Newman integration suite for the openbuild-rbac OpenSpec change. Exercises the manifest-endpoint security boundary (403 before 404 disambiguation, viewer/editor/owner read paths, audited admin bypass, transfer-ownership, list-endpoint IDOR closure) over real HTTP against a live Nextcloud instance with the `openbuild` app enabled. The collection is self-contained: a Setup folder provisions a fresh seed Application, two test users, and a viewer/editor group; a Teardown folder removes every artefact so the suite is idempotent. Reuses the `admin/admin` credentials from the dev compose (memory rule).\n\n⚠️ A PER-REQUEST BASIC AUTH OVERRIDE DOES NOT CHANGE WHO THE REQUEST IS.\n\nNewman keeps ONE cookie jar per `newman run`, keyed by origin. Nextcloud only consults the `Authorization:` header when there is no session — `OC::handleRequest()` calls `handleLogin()` (and through it `tryBasicAuthLogin()`) exclusively in the `else` branch of `if (Server::get(IUserSession::class)->isLoggedIn())`, server/lib/base.php:1054-1066. The Setup folder authenticates as admin, so by the time a later request carries `{{outsider_user}}` credentials for the SAME origin, Newman is already holding an admin session cookie and the request executes AS ADMIN. The override is silently ignored.\n\nThat is not a hypothetical: it is why `2.3` and `3.1` were red in CI while `2.1`, `2.2` and `3.2` were green. Admin sees every app (list bypass, ApplicationsController::listMine) and clears getManifest via the audited admin bypass (ApplicationsController:1268-1271) — so the outsider assertions saw admin's answers, and the viewer/editor assertions PASSED VACUOUSLY, measuring admin rather than the role they name.\n\nThe fix is the same one openbuild-application-versions.postman_collection.json documents and measures for the anonymous case: reach the SAME server by its OTHER name. `{{outsiderBase}}` is `http://127.0.0.1:8080`, a distinct origin whose cookie jar is empty, so the outsider's Basic credentials are the only thing there and Nextcloud authenticates them fresh. Request `2.2b` is the positive control — it asserts the acting user really is `rbac-outsider` before any conclusion is drawn from `2.3`/`3.1`. Without it, this collection could go back to measuring admin and report green.\n\n📋 KNOWN LIMITATION, STATED RATHER THAN HIDDEN. Only two origins are usable here (`localhost` and `127.0.0.1`; both are trusted domains, a third alias is not). The outsider needs one of them, so `2.1`, `2.2`, `3.2` and `4.2` still run as admin and remain vacuous — they pass, but they are NOT evidence about the viewer or editor role. Tracked as work, not as coverage.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"auth": {
@@ -14,6 +14,7 @@
 	},
 	"variable": [
 		{ "key": "base_url", "value": "http://localhost:8080", "type": "string" },
+		{ "key": "outsiderBase", "value": "http://127.0.0.1:8080", "type": "string" },
 		{ "key": "admin_user", "value": "admin", "type": "string" },
 		{ "key": "admin_password", "value": "admin", "type": "string" },
 		{ "key": "viewer_user", "value": "rbac-viewer", "type": "string" },
@@ -26,7 +27,9 @@
 		{ "key": "editor_group", "value": "openbuild-rbac-editors", "type": "string" },
 		{ "key": "test_slug", "value": "hello-world", "type": "string" },
 		{ "key": "absent_slug", "value": "this-slug-definitely-does-not-exist", "type": "string" },
-		{ "key": "application_uuid", "value": "", "type": "string" }
+		{ "key": "application_uuid", "value": "", "type": "string" },
+		{ "key": "application_full", "value": "", "type": "string" },
+		{ "key": "merged_body", "value": "", "type": "string" }
 	],
 	"item": [
 		{
@@ -301,11 +304,11 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application?filter[slug]={{test_slug}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application?slug={{test_slug}}",
 							"host": ["{{base_url}}"],
 							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application"],
 							"query": [
-								{ "key": "filter[slug]", "value": "{{test_slug}}" }
+								{ "key": "slug", "value": "{{test_slug}}" }
 							]
 						}
 					},
@@ -327,6 +330,16 @@
 									"if (app) {",
 									"    const uuid = app.uuid || (app['@self'] && app['@self'].id) || app.id;",
 									"    pm.collectionVariables.set('application_uuid', String(uuid));",
+									"    // Stash the WHOLE record — the three permission PUTs below merge",
+									"    // into it. OR's saveObject() is PUT-semantic and nulls every schema",
+									"    // property the body omits; Application.required is ['slug','name'];",
+									"    // so a bare {\"permissions\": {...}} body asked OR to null both",
+									"    // required fields and was refused with 400 Bad request. Nothing in",
+									"    // that failure mentions slug or name, so it read as an RBAC bug.",
+									"    // `@self` is server-owned metadata, not writable state.",
+									"    const full = JSON.parse(JSON.stringify(app));",
+									"    delete full['@self'];",
+									"    pm.collectionVariables.set('application_full', JSON.stringify(full));",
 									"}"
 								]
 							}
@@ -342,7 +355,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\"permissions\":{\"owners\":[\"admin\"],\"editors\":[\"{{editor_group}}\"],\"viewers\":[\"{{viewer_group}}\"]}}"
+							"raw": "{{merged_body}}"
 						},
 						"url": {
 							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{application_uuid}}",
@@ -352,12 +365,64 @@
 					},
 					"event": [
 						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// TWO DEFECTS IN ONE BODY.",
+									"//",
+									"// (1) It was a bare {\"permissions\": {...}}. OR's saveObject() is",
+									"//     PUT-semantic and nulls every schema property the body omits;",
+									"//     Application.required is ['slug','name']; so OR refused the",
+									"//     write with 400 and said nothing about slug or name. Three",
+									"//     assertions failed on that — and the three that follow were",
+									"//     then measuring an Application whose permissions had never",
+									"//     been written at all.",
+									"//",
+									"// (2) The principals were BARE. PermissionResolver::matchesCaller()",
+									"//     classifies principals by a `user:` / `group:` PREFIX. That is",
+									"//     the grammar SeedHelloWorldFixture.php writes",
+									"//     (owners: ['user:admin']) and the one appRoles.ts writes",
+									"//     (editors: ['group:rbac-editors']). A bare \"admin\" or a bare",
+									"//     group name matches nothing, so even a write that LANDED",
+									"//     would have granted no one — and the later 'outsider' checks",
+									"//     would still have been comparing against an app nobody could",
+									"//     reach by role.",
+									"const base = JSON.parse(pm.collectionVariables.get('application_full') || '{}');",
+									"const permissions = {",
+									"    owners: ['user:' + pm.collectionVariables.get('admin_user')],",
+									"    editors: ['group:' + pm.collectionVariables.get('editor_group')],",
+									"    viewers: ['group:' + pm.collectionVariables.get('viewer_group')]",
+									"};",
+									"pm.collectionVariables.set('merged_body', JSON.stringify(Object.assign({}, base, { permissions: permissions })));"
+								]
+							}
+						},
+						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
 									"pm.test('Permissions block written', function () {",
-									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+									"    pm.expect(pm.response.code, pm.response.code === 400",
+									"        ? 'got 400 — OR PUT is PUT-semantic, so a bare {permissions} body nulls the required slug/name; send the merged full record'",
+									"        : 'the permissions write must be accepted').to.be.oneOf([200, 201, 204]);",
+									"});",
+									"// Assert the grant actually READ BACK, and in the prefixed grammar.",
+									"// Without this the collection could go green on a write that landed",
+									"// but granted nobody — which is exactly what the bare principals did.",
+									"pm.test('the permissions read back with user:/group: principals', function () {",
+									"    const body = pm.response.json();",
+									"    const perms = (body && body.permissions) || {};",
+									"    pm.expect(perms.owners, 'owners must carry a user:-prefixed principal').to.include('user:' + pm.collectionVariables.get('admin_user'));",
+									"    pm.expect(perms.editors, 'editors must carry a group:-prefixed principal').to.include('group:' + pm.collectionVariables.get('editor_group'));",
+									"    pm.expect(perms.viewers, 'viewers must carry a group:-prefixed principal').to.include('group:' + pm.collectionVariables.get('viewer_group'));",
+									"});",
+									"pm.test('slug and name survived the write (PUT semantics did not null them)', function () {",
+									"    const base = JSON.parse(pm.collectionVariables.get('application_full') || '{}');",
+									"    const body = pm.response.json();",
+									"    pm.expect(body.slug).to.eql(base.slug);",
+									"    pm.expect(body.name).to.eql(base.name);",
 									"});"
 								]
 							}
@@ -449,6 +514,45 @@
 					]
 				},
 				{
+					"name": "2.2b POSITIVE CONTROL — the outsider origin really acts as the outsider",
+					"description": "Everything 2.3 and 3.1 conclude depends on the request being the OUTSIDER's. A per-request Basic override alone cannot achieve that (see the collection description: Nextcloud ignores Authorization once a session cookie exists), so this probe pins the acting identity BEFORE any RBAC conclusion is drawn from it. If this fails, 2.3 and 3.1 are measuring somebody else and their verdicts mean nothing — which is exactly the failure mode that made them red in CI while looking like an RBAC defect.",
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{ "key": "username", "value": "{{outsider_user}}", "type": "string" },
+								{ "key": "password", "value": "{{outsider_password}}", "type": "string" }
+							]
+						},
+						"method": "GET",
+						"header": [
+							{ "key": "OCS-APIRequest", "value": "true" },
+							{ "key": "Accept", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{outsiderBase}}/ocs/v2.php/cloud/user?format=json",
+							"host": ["{{outsiderBase}}"],
+							"path": ["ocs", "v2.php", "cloud", "user"],
+							"query": [{ "key": "format", "value": "json" }]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('the outsider origin resolves', function () { pm.response.to.have.status(200); });",
+									"pm.test('the acting user IS the outsider, not admin', function () {",
+									"    const id = pm.response.json().ocs.data.id;",
+									"    pm.expect(id, 'a value of \"admin\" here means the session cookie won and every outsider assertion below is measuring admin').to.equal(pm.collectionVariables.get('outsider_user'));",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
 					"name": "2.3 Outsider GET /api/applications returns empty list (no leak)",
 					"request": {
 						"auth": {
@@ -464,8 +568,8 @@
 							{ "key": "Accept", "value": "application/json" }
 						],
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openbuild/api/applications",
-							"host": ["{{base_url}}"],
+							"raw": "{{outsiderBase}}/index.php/apps/openbuild/api/applications",
+							"host": ["{{outsiderBase}}"],
 							"path": ["index.php", "apps", "openbuild", "api", "applications"]
 						}
 					},
@@ -509,8 +613,8 @@
 							{ "key": "Accept", "value": "application/json" }
 						],
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/manifest",
-							"host": ["{{base_url}}"],
+							"raw": "{{outsiderBase}}/index.php/apps/openbuild/api/applications/{{test_slug}}/manifest",
+							"host": ["{{outsiderBase}}"],
 							"path": ["index.php", "apps", "openbuild", "api", "applications", "{{test_slug}}", "manifest"]
 						}
 					},
@@ -654,7 +758,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\"permissions\":{\"owners\":[\"{{editor_group}}\"],\"editors\":[],\"viewers\":[\"{{viewer_group}}\"]}}"
+							"raw": "{{merged_body}}"
 						},
 						"url": {
 							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{application_uuid}}",
@@ -663,6 +767,25 @@
 						}
 					},
 					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Same two fixes as 1.10: merge into the full record (OR's PUT is",
+									"// not a PATCH and slug/name are required) and use `group:`-prefixed",
+									"// principals, which is what PermissionResolver::matchesCaller()",
+									"// classifies on.",
+									"const base = JSON.parse(pm.collectionVariables.get('application_full') || '{}');",
+									"const permissions = {",
+									"    owners: ['group:' + pm.collectionVariables.get('editor_group')],",
+									"    editors: [],",
+									"    viewers: ['group:' + pm.collectionVariables.get('viewer_group')]",
+									"};",
+									"pm.collectionVariables.set('merged_body', JSON.stringify(Object.assign({}, base, { permissions: permissions })));"
+								]
+							}
+						},
 						{
 							"listen": "test",
 							"script": {
@@ -720,7 +843,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\"permissions\":{\"owners\":[\"admin\"],\"editors\":[\"{{editor_group}}\"],\"viewers\":[\"{{viewer_group}}\"]}}"
+							"raw": "{{merged_body}}"
 						},
 						"url": {
 							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{application_uuid}}",
@@ -729,6 +852,22 @@
 						}
 					},
 					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Restore 1.10's grant — same merge, same prefixed grammar.",
+									"const base = JSON.parse(pm.collectionVariables.get('application_full') || '{}');",
+									"const permissions = {",
+									"    owners: ['user:' + pm.collectionVariables.get('admin_user')],",
+									"    editors: ['group:' + pm.collectionVariables.get('editor_group')],",
+									"    viewers: ['group:' + pm.collectionVariables.get('viewer_group')]",
+									"};",
+									"pm.collectionVariables.set('merged_body', JSON.stringify(Object.assign({}, base, { permissions: permissions })));"
+								]
+							}
+						},
 						{
 							"listen": "test",
 							"script": {

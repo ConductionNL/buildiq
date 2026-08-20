@@ -22,6 +22,10 @@ This capability is observed behaviour of the `PageDesigner`,
 `page-editor/fields/*` builders. It is the frontend half of the
 `openbuild-page-designer` backend capability.
 
+**OpenSpec changes**: [data-registers-runtime](../../changes/data-registers-runtime/)
+
+**Status**: in-progress
+
 ## Requirements
 
 ### Requirement: Controlled designer orchestrates pages, menu, undo/redo and save

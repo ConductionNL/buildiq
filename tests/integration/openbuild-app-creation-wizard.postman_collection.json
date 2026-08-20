@@ -14,6 +14,7 @@
 	},
 	"variable": [
 		{ "key": "base_url",        "value": "http://localhost:8080", "type": "string" },
+		{ "key": "noAuthBase",      "value": "http://127.0.0.1:8080", "type": "string" },
 		{ "key": "admin_user",      "value": "admin",                 "type": "string" },
 		{ "key": "admin_password",  "value": "admin",                 "type": "string" },
 		{ "key": "created_uuid",    "value": "",                      "type": "string" },
@@ -163,7 +164,7 @@
 							"mode": "raw",
 							"raw": "{\n  \"name\": \"Anon App\",\n  \"slug\": \"anon-app\",\n  \"description\": \"\",\n  \"preset\": \"single\",\n  \"versions\": []\n}"
 						},
-						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/wizard"
+						"url": "{{noAuthBase}}/index.php/apps/openbuild/api/applications/wizard"
 					},
 					"event": [
 						{
@@ -171,8 +172,16 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"pm.test('unauthenticated request returns 401 or 403', function () {",
-									"    pm.expect([401, 403]).to.include(pm.response.code);",
+									"// {{noAuthBase}}, NOT {{base_url}} — `auth: noauth` removes the",
+									"// Authorization header but NOT the session cookie Newman already",
+									"// holds for that origin, so the probe stays logged in and Nextcloud",
+									"// answers 412 (CSRF), not 401. Measured with newman --verbose:",
+									"// noauth on {{base_url}} sends 9 headers / 576B (Cookie present),",
+									"// noauth on {{noAuthBase}} sends 8 headers / 285B (no Cookie).",
+									"pm.test('unauthenticated request returns 401', function () {",
+									"    pm.expect(pm.response.code, pm.response.code === 412",
+									"        ? 'got 412 (CSRF) — this probe carried a session cookie, so it was NOT anonymous; it must use {{noAuthBase}}'",
+									"        : 'an anonymous wizard POST must be refused with 401').to.eql(401);",
 									"});"
 								]
 							}

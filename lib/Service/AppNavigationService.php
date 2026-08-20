@@ -41,7 +41,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuild\Service;
 
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\INavigationManager;
 use OCP\IURLGenerator;
@@ -55,329 +56,367 @@ use Psr\Log\LoggerInterface;
  * evaluated by INavigationManager on every request boot cycle so draft→published
  * transitions are picked up automatically without any writeback (REQ-OBNAV-004).
  */
-class AppNavigationService
-{
-    /**
-     * Register slug that hosts Application objects.
-     */
-    private const REGISTER_SLUG = 'openbuild';
+class AppNavigationService {
+	/**
+	 * Prefix of every per-published-app nav entry id; the runtime host
+	 * (DashboardController::builder) uses it to mark the entry active.
+	 */
+	public const ENTRY_ID_PREFIX = 'openbuild-app-';
 
-    /**
-     * Schema slug for Application objects.
-     */
-    private const APPLICATION_SCHEMA = 'application';
+	/**
+	 * Register slug that hosts Application objects.
+	 */
+	private const REGISTER_SLUG = 'openbuild';
 
-    /**
-     * Status value that indicates a published Application.
-     */
-    private const STATUS_PUBLISHED = 'published';
+	/**
+	 * Schema slug for Application objects.
+	 */
+	private const APPLICATION_SCHEMA = 'application';
 
-    /**
-     * Group:* sentinel — when present in any role array, the entry is
-     * visible to all signed-in users (REQ-OBNAV-003).
-     */
-    private const WILDCARD = 'group:*';
+	/**
+	 * Status value that indicates a published Application.
+	 */
+	private const STATUS_PUBLISHED = 'published';
 
-    /**
-     * Cache of published applications fetched this request (per-request).
-     *
-     * @var array<array<string,mixed>>|null
-     */
-    private ?array $cachedApplications = null;
+	/**
+	 * Group:* sentinel — when present in any role array, the entry is
+	 * visible to all signed-in users (REQ-OBNAV-003).
+	 */
+	private const WILDCARD = 'group:*';
 
-    /**
-     * Constructor.
-     *
-     * @param ObjectService   $objectService OpenRegister object service
-     * @param IURLGenerator   $urlGenerator  URL generator
-     * @param IUserSession    $userSession   User session
-     * @param IGroupManager   $groupManager  Group manager
-     * @param LoggerInterface $logger        PSR logger
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly ObjectService $objectService,
-        private readonly IURLGenerator $urlGenerator,
-        private readonly IUserSession $userSession,
-        private readonly IGroupManager $groupManager,
-        private readonly LoggerInterface $logger,
-    ) {
-    }//end __construct()
+	/**
+	 * App-config key overriding the base nav order of virtual-app entries.
+	 */
+	private const ORDER_BASE_CONFIG_KEY = 'nav_order_base';
 
-    /**
-     * Register one INavigationManager entry per published Application.
-     *
-     * Each entry carries a gating closure evaluated per request.  Draft and
-     * archived Applications are excluded by the `status == published` filter
-     * applied here — no writeback needed when status changes (REQ-OBNAV-004).
-     *
-     * @param INavigationManager $nav The Nextcloud navigation manager.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-4
-     */
-    public function registerNavEntries(INavigationManager $nav): void
-    {
-        try {
-            $applications = $this->getPublishedApplications();
-        } catch (\Throwable $e) {
-            $this->logger->warning(
-                'AppNavigationService: failed to query published applications: '.$e->getMessage()
-            );
-            return;
-        }
+	/**
+	 * Default base order for virtual-app entries. Nextcloud gives apps without
+	 * an explicit order 100, so published virtual apps land right after the
+	 * default-ordered apps instead of dead last in the menu.
+	 */
+	private const ORDER_BASE_DEFAULT = 100;
 
-        foreach ($applications as $application) {
-            $slug = ($application['slug'] ?? null);
-            $name = ($application['name'] ?? null);
+	/**
+	 * Cache of published applications fetched this request (per-request).
+	 *
+	 * @var array<array<string,mixed>>|null
+	 */
+	private ?array $cachedApplications = null;
 
-            if (is_string($slug) === false || $slug === '') {
-                continue;
-            }
+	/**
+	 * Constructor.
+	 *
+	 * @param ObjectServiceInterface $objectService OpenRegister object service
+	 * @param IURLGenerator $urlGenerator URL generator
+	 * @param IUserSession $userSession User session
+	 * @param IGroupManager $groupManager Group manager
+	 * @param IAppConfig $appConfig App config (nav order base override)
+	 * @param LoggerInterface $logger PSR logger
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly ObjectServiceInterface $objectService,
+		private readonly IURLGenerator $urlGenerator,
+		private readonly IUserSession $userSession,
+		private readonly IGroupManager $groupManager,
+		private readonly IAppConfig $appConfig,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-            if (is_string($name) === false || $name === '') {
-                $name = $slug;
-            }
+	/**
+	 * Register one INavigationManager entry per published Application.
+	 *
+	 * Each entry carries a gating closure evaluated per request.  Draft and
+	 * archived Applications are excluded by the `status == published` filter
+	 * applied here — no writeback needed when status changes (REQ-OBNAV-004).
+	 *
+	 * @param INavigationManager $nav The Nextcloud navigation manager.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-4
+	 */
+	public function registerNavEntries(INavigationManager $nav): void {
+		try {
+			$applications = $this->getPublishedApplications();
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				'AppNavigationService: failed to query published applications: ' . $e->getMessage()
+			);
+			return;
+		}
 
-            $permissions = ($application['permissions'] ?? []);
-            if (is_array($permissions) === false) {
-                $permissions = [];
-            }
+		$orderBase = $this->appConfig->getValueInt(
+			'openbuild',
+			self::ORDER_BASE_CONFIG_KEY,
+			self::ORDER_BASE_DEFAULT
+		);
 
-            $iconUrl = $this->urlGenerator->linkToRouteAbsolute(
-                'openbuild.icon.iconLight',
-                ['slug' => $slug]
-            );
+		foreach ($applications as $application) {
+			$slug = ($application['slug'] ?? null);
+			$name = ($application['name'] ?? null);
 
-            // Point at the virtual-app runtime host (/builder/{slug}) which mounts
-            // a nested CnAppRoot rendering THIS app's own manifest (menu + pages),
-            // not OpenBuild's apps list. The bare `/apps/openbuild/{slug}` had no
-            // route and fell through to OpenBuild's own shell.
-            $appUrl  = '/apps/openbuild/builder/'.$slug;
-            $entryId = 'openbuild-app-'.$slug;
-            $order   = 1000 + (abs(crc32($slug)) % 1000);
+			if (is_string($slug) === false || $slug === '') {
+				continue;
+			}
 
-            // Capture variables for the closure — PHP closures close over
-            // variables by reference unless 'use' explicitly binds them by value.
-            $capturedPermissions = $permissions;
-            $userSession         = $this->userSession;
-            $groupManager        = $this->groupManager;
+			if (is_string($name) === false || $name === '') {
+				$name = $slug;
+			}
 
-            $nav->add(
-                    function () use (
-                        $entryId,
-                        $name,
-                        $appUrl,
-                        $iconUrl,
-                        $order,
-                        $capturedPermissions,
-                        $userSession,
-                        $groupManager
-                    ): array {
-                        $visible = $this->isVisibleForCurrentUser(
-                        permissions: $capturedPermissions,
-                        userSession: $userSession,
-                        groupManager: $groupManager
-                        );
+			$permissions = ($application['permissions'] ?? []);
+			if (is_array($permissions) === false) {
+				$permissions = [];
+			}
 
-                        return [
-                            'id'      => $entryId,
-                            'name'    => $name,
-                            'href'    => $appUrl,
-                            'icon'    => $iconUrl,
-                            'order'   => $order,
-                            'type'    => 'link',
-                            'active'  => false,
-                            'classes' => '',
-                            'enabled' => $visible,
-                        ];
-                    }
-                    );
-        }//end foreach
-    }//end registerNavEntries()
+			$iconUrl = $this->urlGenerator->linkToRouteAbsolute(
+				'openbuild.icon.iconLight',
+				['slug' => $slug]
+			);
 
-    /**
-     * Determine whether the currently-signed-in user should see a nav entry.
-     *
-     * Evaluation order per REQ-OBNAV-002:
-     *   1. group:* wildcard in any role → always visible.
-     *   2. user:<uid> match in any role.
-     *   3. group:<gid> / bare GID match against user's group memberships.
-     *   4. Nextcloud admin bypass.
-     *
-     * @param array<string,mixed> $permissions  The Application's permissions block.
-     * @param IUserSession        $userSession  The user session.
-     * @param IGroupManager       $groupManager The group manager.
-     *
-     * @return bool True when the entry should be visible.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-5
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-6
-     */
-    public function isVisibleForCurrentUser(
-        array $permissions,
-        IUserSession $userSession,
-        IGroupManager $groupManager,
-    ): bool {
-        $user = $userSession->getUser();
-        if ($user === null) {
-            return false;
-        }
+			// Point at the virtual-app runtime host (/builder/{slug}). Generate the
+			// href via IURLGenerator (not a hand-built string) so linkToRoute adds
+			// the `/index.php` front-controller segment exactly when the instance
+			// requires it — the link then resolves on both instance kinds.
+			$appUrl = $this->urlGenerator->linkToRoute('openbuild.dashboard.builder', ['slug' => $slug]);
+			$entryId = self::ENTRY_ID_PREFIX . $slug;
+			$order = $orderBase + (abs(crc32($slug)) % 100);
 
-        $uid           = $user->getUID();
-        $allPrincipals = $this->flattenPermissions(permissions: $permissions);
+			// Capture variables for the closure — PHP closures close over
+			// variables by reference unless 'use' explicitly binds them by value.
+			$capturedPermissions = $permissions;
+			$userSession = $this->userSession;
+			$groupManager = $this->groupManager;
 
-        // 1. Wildcard sentinel — visible to everyone signed in.
-        if (in_array(self::WILDCARD, $allPrincipals, strict: true) === true) {
-            return true;
-        }
+			$nav->add(
+				function () use (
+					$entryId,
+					$name,
+					$appUrl,
+					$iconUrl,
+					$order,
+					$capturedPermissions,
+					$userSession,
+					$groupManager
+				): array {
+					$visible = $this->isVisibleForCurrentUser(
+						permissions: $capturedPermissions,
+						userSession: $userSession,
+						groupManager: $groupManager
+					);
 
-        // 2. Direct UID match.
-        if (in_array('user:'.$uid, $allPrincipals, strict: true) === true) {
-            return true;
-        }
+					// NavigationManager has no 'enabled' concept — entries
+					// are filtered by 'type' (getAll('link')). Returning a
+					// non-'link' type is the only way a closure entry can
+					// hide itself from the app menu per user.
+					$entryType = 'openbuild-hidden';
+					if ($visible === true) {
+						$entryType = 'link';
+					}
 
-        // 3. Group-based match.
-        $userGroups = $groupManager->getUserGroupIds(user: $user);
-        if ($this->principalsMatchGroups(principals: $allPrincipals, userGroups: $userGroups) === true) {
-            return true;
-        }
+					return [
+						'id' => $entryId,
+						'name' => $name,
+						'href' => $appUrl,
+						'icon' => $iconUrl,
+						'order' => $order,
+						'type' => $entryType,
+						'active' => false,
+						'classes' => '',
+						'enabled' => $visible,
+					];
+				}
+			);
+		}//end foreach
+	}//end registerNavEntries()
 
-        // 4. Nextcloud admin always sees all entries.
-        return $groupManager->isAdmin($uid);
-    }//end isVisibleForCurrentUser()
+	/**
+	 * Determine whether the currently-signed-in user should see a nav entry.
+	 *
+	 * Evaluation order per REQ-OBNAV-002:
+	 *   1. group:* wildcard in any role → always visible.
+	 *   2. user:<uid> match in any role.
+	 *   3. group:<gid> / bare GID match against user's group memberships.
+	 *   4. Nextcloud admin bypass.
+	 *
+	 * @param array<string,mixed> $permissions The Application's permissions block.
+	 * @param IUserSession $userSession The user session.
+	 * @param IGroupManager $groupManager The group manager.
+	 *
+	 * @return bool True when the entry should be visible.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-5
+	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-6
+	 */
+	public function isVisibleForCurrentUser(
+		array $permissions,
+		IUserSession $userSession,
+		IGroupManager $groupManager,
+	): bool {
+		$user = $userSession->getUser();
+		if ($user === null) {
+			return false;
+		}
 
-    /**
-     * Flatten the three permission role arrays into a single principal list.
-     *
-     * @param array<string,mixed> $permissions The Application's permissions block.
-     *
-     * @return array<mixed> All principals from owners + editors + viewers.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-5
-     */
-    private function flattenPermissions(array $permissions): array
-    {
-        $owners  = ($permissions['owners'] ?? []);
-        $editors = ($permissions['editors'] ?? []);
-        $viewers = ($permissions['viewers'] ?? []);
+		$uid = $user->getUID();
+		$allPrincipals = $this->flattenPermissions(permissions: $permissions);
 
-        if (is_array($owners) === false) {
-            $owners = [];
-        }
+		// 1. Wildcard sentinel — visible to everyone signed in.
+		if (in_array(self::WILDCARD, $allPrincipals, strict: true) === true) {
+			return true;
+		}
 
-        if (is_array($editors) === false) {
-            $editors = [];
-        }
+		// 2. Direct UID match.
+		if (in_array('user:' . $uid, $allPrincipals, strict: true) === true) {
+			return true;
+		}
 
-        if (is_array($viewers) === false) {
-            $viewers = [];
-        }
+		// 3. Group-based match.
+		$userGroups = $groupManager->getUserGroupIds(user: $user);
+		if ($this->principalsMatchGroups(principals: $allPrincipals, userGroups: $userGroups) === true) {
+			return true;
+		}
 
-        return array_merge($owners, $editors, $viewers);
-    }//end flattenPermissions()
+		// 4. Nextcloud admin always sees all entries.
+		return $groupManager->isAdmin($uid);
+	}//end isVisibleForCurrentUser()
 
-    /**
-     * Check whether any principal in the list matches one of the user's groups.
-     *
-     * @param array<mixed>  $principals All principals from the permissions block.
-     * @param array<string> $userGroups The calling user's group IDs.
-     *
-     * @return bool True when a group match is found.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-5
-     */
-    private function principalsMatchGroups(array $principals, array $userGroups): bool
-    {
-        foreach ($principals as $principal) {
-            if (is_string($principal) === false) {
-                continue;
-            }
+	/**
+	 * Flatten the three permission role arrays into a single principal list.
+	 *
+	 * @param array<string,mixed> $permissions The Application's permissions block.
+	 *
+	 * @return array<mixed> All principals from owners + editors + viewers.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-5
+	 */
+	private function flattenPermissions(array $permissions): array {
+		$owners = ($permissions['owners'] ?? []);
+		$editors = ($permissions['editors'] ?? []);
+		$viewers = ($permissions['viewers'] ?? []);
 
-            // Strip "group:" prefix for the normalised comparison.
-            $gid = $principal;
-            if (str_starts_with($principal, 'group:') === true) {
-                $gid = substr($principal, strlen('group:'));
-            }
+		if (is_array($owners) === false) {
+			$owners = [];
+		}
 
-            if ($gid === '*') {
-                // Already handled by the wildcard sentinel in the caller.
-                continue;
-            }
+		if (is_array($editors) === false) {
+			$editors = [];
+		}
 
-            if (in_array($gid, $userGroups, strict: true) === true) {
-                return true;
-            }
-        }//end foreach
+		if (is_array($viewers) === false) {
+			$viewers = [];
+		}
 
-        return false;
-    }//end principalsMatchGroups()
+		return array_merge($owners, $editors, $viewers);
+	}//end flattenPermissions()
 
-    /**
-     * Fetch (and cache per-request) all published Applications from OR.
-     *
-     * @return array<array<string,mixed>> List of normalised Application arrays.
-     *
-     * @throws \Throwable When the OR query fails.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-4
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-7
-     */
-    private function getPublishedApplications(): array
-    {
-        if ($this->cachedApplications !== null) {
-            return $this->cachedApplications;
-        }
+	/**
+	 * Check whether any principal in the list matches one of the user's groups.
+	 *
+	 * @param array<mixed> $principals All principals from the permissions block.
+	 * @param array<string> $userGroups The calling user's group IDs.
+	 *
+	 * @return bool True when a group match is found.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-5
+	 */
+	private function principalsMatchGroups(array $principals, array $userGroups): bool {
+		foreach ($principals as $principal) {
+			if (is_string($principal) === false) {
+				continue;
+			}
 
-        $results = $this->objectService->findAll(
-            config: [
-                'filters' => [
-                    'register' => self::REGISTER_SLUG,
-                    'schema'   => self::APPLICATION_SCHEMA,
-                    'status'   => self::STATUS_PUBLISHED,
-                ],
-                'limit'   => 1000,
-            ]
-        );
+			// Strip "group:" prefix for the normalised comparison.
+			$gid = $principal;
+			if (str_starts_with($principal, 'group:') === true) {
+				$gid = substr($principal, strlen('group:'));
+			}
 
-        $applications = [];
-        foreach ($results as $item) {
-            $applications[] = $this->normaliseObject(object: $item);
-        }
+			if ($gid === '*') {
+				// Already handled by the wildcard sentinel in the caller.
+				continue;
+			}
 
-        $this->cachedApplications = $applications;
-        return $applications;
-    }//end getPublishedApplications()
+			if (in_array($gid, $userGroups, strict: true) === true) {
+				return true;
+			}
+		}//end foreach
 
-    /**
-     * Coerce an OR result entry (ObjectEntity or array) to an associative array.
-     *
-     * @param mixed $object The OR object/result entry.
-     *
-     * @return array<string,mixed>
-     */
-    private function normaliseObject(mixed $object): array
-    {
-        if (is_array($object) === true) {
-            return $object;
-        }
+		return false;
+	}//end principalsMatchGroups()
 
-        if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-            $serialised = $object->jsonSerialize();
-            if (is_array($serialised) === true) {
-                return $serialised;
-            }
-        }
+	/**
+	 * Fetch (and cache per-request) all published Applications from OR.
+	 *
+	 * @return array<array<string,mixed>> List of normalised Application arrays.
+	 *
+	 * @throws \Throwable When the OR query fails.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-4
+	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-7
+	 */
+	private function getPublishedApplications(): array {
+		if ($this->cachedApplications !== null) {
+			return $this->cachedApplications;
+		}
 
-        if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-            $inner = $object->getObject();
-            if (is_array($inner) === true) {
-                return $inner;
-            }
-        }
+		// RBAC + multitenancy are disabled here on purpose: this runs during
+		// app boot, where the user session is often NOT yet resolved (OCS
+		// navigation requests, WebDAV, cron). With the default filters the
+		// query silently returned 0 rows on those requests and no nav entries
+		// were ever registered. Per-user visibility is enforced later, inside
+		// each entry's closure (isVisibleForCurrentUser, REQ-OBNAV-002), which
+		// runs when the user IS known.
+		$results = $this->objectService->findAll(
+			config: [
+				'filters' => [
+					'register' => self::REGISTER_SLUG,
+					'schema' => self::APPLICATION_SCHEMA,
+					'status' => self::STATUS_PUBLISHED,
+				],
+				'limit' => 1000,
+			],
+			_rbac: false,
+			_multitenancy: false
+		);
 
-        return [];
-    }//end normaliseObject()
+		$applications = [];
+		foreach ($results as $item) {
+			$applications[] = $this->normaliseObject(object: $item);
+		}
+
+		$this->cachedApplications = $applications;
+		return $applications;
+	}//end getPublishedApplications()
+
+	/**
+	 * Coerce an OR result entry (ObjectEntity or array) to an associative array.
+	 *
+	 * @param mixed $object The OR object/result entry.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function normaliseObject(mixed $object): array {
+		if (is_array($object) === true) {
+			return $object;
+		}
+
+		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
+			$serialised = $object->jsonSerialize();
+			if (is_array($serialised) === true) {
+				return $serialised;
+			}
+		}
+
+		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
+			$inner = $object->getObject();
+			if (is_array($inner) === true) {
+				return $inner;
+			}
+		}
+
+		return [];
+	}//end normaliseObject()
 }//end class

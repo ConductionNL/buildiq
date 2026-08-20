@@ -4,13 +4,19 @@
 import { describe, it, expect, vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 
-const { axiosGetMock } = vi.hoisted(() => ({ axiosGetMock: vi.fn(async () => ({ data: { results: [] } })) }))
+const { axiosGetMock } = vi.hoisted(() => ({
+	axiosGetMock: vi.fn(async () => ({ data: { results: [] } })),
+}))
 vi.mock('@nextcloud/axios', () => ({ default: { get: axiosGetMock } }))
-vi.mock('@nextcloud/router', () => ({ generateUrl: (p, params) => {
-	let out = p
-	Object.entries(params || {}).forEach(([k, v]) => { out = out.replace(`{${k}}`, v) })
-	return out
-} }))
+vi.mock('@nextcloud/router', () => ({
+	generateUrl: (p, params) => {
+		let out = p
+		Object.entries(params || {}).forEach(([k, v]) => {
+			out = out.replace(`{${k}}`, v)
+		})
+		return out
+	},
+}))
 
 import RegisterWidget from '../../../src/components/applicationDetail/widgets/RegisterWidget.vue'
 import SchemasWidget from '../../../src/components/applicationDetail/widgets/SchemasWidget.vue'
@@ -45,8 +51,47 @@ describe('applicationDetail widgets', () => {
 		expect(text).not.toContain('Files')
 	})
 
+	it('RegisterWidget hides the Import data affordance for non-builders (canImport=false)', () => {
+		const wrapper = shallowMount(RegisterWidget, {
+			propsData: {
+				appSlug: 'hello-world',
+				versionSlug: 'production',
+				canImport: false,
+			},
+			mocks: { t, n: (app, s, p, num) => (num === 1 ? s : p) },
+		})
+		expect(wrapper.text()).not.toContain('Import data')
+	})
+
+	it('RegisterWidget shows Import data + emits import-data when canImport=true', async () => {
+		const wrapper = shallowMount(RegisterWidget, {
+			propsData: {
+				appSlug: 'hello-world',
+				versionSlug: 'production',
+				canImport: true,
+			},
+			mocks: { t, n: (app, s, p, num) => (num === 1 ? s : p) },
+			stubs: {
+				NcButton: {
+					name: 'NcButton',
+					props: ['type'],
+					template: '<button @click="$emit(\'click\')"><slot /></button>',
+				},
+			},
+		})
+		expect(wrapper.text()).toContain('Import data')
+		wrapper.findAllComponents({ name: 'NcButton' }).at(0).vm.$emit('click')
+		await wrapper.vm.$nextTick()
+		expect(wrapper.emitted('import-data')).toBeTruthy()
+		expect(wrapper.emitted('import-data')[0][0].registerSlug).toBe(
+			'openbuild-hello-world-production',
+		)
+	})
+
 	it('SchemasWidget renders schema names + emits add-schema event', async () => {
-		const schemas = [{ id: 's1', name: 'Customer', objectCount: 5, status: 'active' }]
+		const schemas = [
+			{ id: 's1', name: 'Customer', objectCount: 5, status: 'active' },
+		]
 		const wrapper = shallowMount(SchemasWidget, {
 			propsData: { appSlug: 'hello-world', versionSlug: 'staging', schemas },
 			mocks: { t, $router: router, $route: route },
@@ -69,11 +114,13 @@ describe('applicationDetail widgets', () => {
 			mocks: { t, $router: router, $route: route },
 		})
 		await wrapper.find('.ob-schemas-widget__row').trigger('click')
-		expect(router.push).toHaveBeenCalledWith(expect.objectContaining({
-			name: 'SchemaDesigner',
-			params: { slug: 'hello-world', schemaId: 's1' },
-			query: { _version: 'staging' },
-		}))
+		expect(router.push).toHaveBeenCalledWith(
+			expect.objectContaining({
+				name: 'SchemaDesigner',
+				params: { slug: 'hello-world', schemaId: 's1' },
+				query: { _version: 'staging' },
+			}),
+		)
 	})
 
 	it('GroupsWidget flattens permissions buckets into role-tagged rows', () => {
@@ -98,18 +145,30 @@ describe('applicationDetail widgets', () => {
 	})
 
 	it('PagesWidget row click pushes a versioned route with pageId', async () => {
-		const pages = [{ id: 'customers-list', route: '/customers', type: 'index', title: 'Customers' }]
+		const pages = [
+			{
+				id: 'customers-list',
+				route: '/customers',
+				type: 'index',
+				title: 'Customers',
+			},
+		]
 		router.push.mockReset()
 		const wrapper = shallowMount(PagesWidget, {
 			propsData: { appSlug: 'hello-world', versionSlug: 'development', pages },
 			mocks: { t, $router: router, $route: route },
 		})
 		await wrapper.find('.ob-pages-widget__row').trigger('click')
-		expect(router.push).toHaveBeenCalledWith(expect.objectContaining({
-			name: 'PageDesigner',
-			params: { slug: 'hello-world' },
-			query: expect.objectContaining({ _version: 'development', pageId: 'customers-list' }),
-		}))
+		expect(router.push).toHaveBeenCalledWith(
+			expect.objectContaining({
+				name: 'PageDesigner',
+				params: { slug: 'hello-world' },
+				query: expect.objectContaining({
+					_version: 'development',
+					pageId: 'customers-list',
+				}),
+			}),
+		)
 	})
 
 	it('MenuWidget row click pushes a versioned route with focus=menu', async () => {
@@ -120,10 +179,15 @@ describe('applicationDetail widgets', () => {
 			mocks: { t, $router: router, $route: route },
 		})
 		await wrapper.find('.ob-menu-widget__row').trigger('click')
-		expect(router.push).toHaveBeenCalledWith(expect.objectContaining({
-			name: 'PageDesigner',
-			params: { slug: 'hello-world' },
-			query: expect.objectContaining({ _version: 'production', focus: 'menu' }),
-		}))
+		expect(router.push).toHaveBeenCalledWith(
+			expect.objectContaining({
+				name: 'PageDesigner',
+				params: { slug: 'hello-world' },
+				query: expect.objectContaining({
+					_version: 'production',
+					focus: 'menu',
+				}),
+			}),
+		)
 	})
 })

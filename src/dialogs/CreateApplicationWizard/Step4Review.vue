@@ -14,7 +14,12 @@
 			{{ t('openbuild', 'Review and create') }}
 		</h3>
 		<p class="wizard-step4__description">
-			{{ t('openbuild', 'Review the settings below. Clicking Create will provision your app, all version registers, and seed them with the default schema.') }}
+			{{
+				t(
+					'openbuild',
+					'Review the settings below. Clicking Create will provision your app, all version registers, and seed them with the default schema.',
+				)
+			}}
 		</p>
 
 		<dl class="wizard-step4__summary">
@@ -24,7 +29,9 @@
 			</div>
 			<div class="wizard-step4__row">
 				<dt>{{ t('openbuild', 'Slug') }}</dt>
-				<dd><code>{{ payload.slug || '—' }}</code></dd>
+				<dd>
+					<code>{{ payload.slug || '—' }}</code>
+				</dd>
 			</div>
 			<div v-if="payload.description" class="wizard-step4__row">
 				<dt>{{ t('openbuild', 'Description') }}</dt>
@@ -45,18 +52,22 @@
 			</p>
 		</div>
 
-		<!-- Icon previews when uploaded -->
-		<div v-if="payload.icon || payload.iconDark" class="wizard-step4__icons">
+		<!-- Icon previews when a glyph was chosen -->
+		<div v-if="lightIconSvg || darkIconSvg" class="wizard-step4__icons">
 			<h4 class="wizard-step4__subheading">
 				{{ t('openbuild', 'Icons') }}
 			</h4>
 			<div class="wizard-step4__icon-previews">
-				<figure v-if="iconLightUrl" class="wizard-step4__icon-preview">
-					<img :src="iconLightUrl" :alt="t('openbuild', 'Light icon preview')" class="wizard-step4__icon-img">
+				<figure v-if="lightIconSvg" class="wizard-step4__icon-preview">
+					<!-- eslint-disable-next-line vue/no-v-html -->
+					<span class="wizard-step4__icon-img" v-html="lightIconSvg" />
 					<figcaption>{{ t('openbuild', 'Light') }}</figcaption>
 				</figure>
-				<figure v-if="iconDarkUrl" class="wizard-step4__icon-preview wizard-step4__icon-preview--dark">
-					<img :src="iconDarkUrl" :alt="t('openbuild', 'Dark icon preview')" class="wizard-step4__icon-img">
+				<figure
+					v-if="darkIconSvg"
+					class="wizard-step4__icon-preview wizard-step4__icon-preview--dark">
+					<!-- eslint-disable-next-line vue/no-v-html -->
+					<span class="wizard-step4__icon-img" v-html="darkIconSvg" />
 					<figcaption>{{ t('openbuild', 'Dark') }}</figcaption>
 				</figure>
 			</div>
@@ -65,6 +76,8 @@
 </template>
 
 <script>
+import { resolveAppIcon } from '../../utils/iconCatalogues.js'
+
 export default {
 	name: 'Step4Review',
 
@@ -95,7 +108,7 @@ export default {
 		 */
 		chainDisplay() {
 			if (this.versions.length === 0) return '—'
-			return this.versions.map(v => v.slug || v.name || '?').join(' → ')
+			return this.versions.map((v) => v.slug || v.name || '?').join(' → ')
 		},
 
 		/**
@@ -110,21 +123,23 @@ export default {
 		},
 
 		/**
-		 * Observed behaviour of `iconLightUrl` (retrofit annotation).
+		 * The resolved light app-icon SVG (white glyph) for the review preview.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 * @return {string|null} SVG markup, or null when no icon was chosen.
 		 */
-		iconLightUrl() {
-			return this.payload.icon ? URL.createObjectURL(this.payload.icon) : null
+		lightIconSvg() {
+			return resolveAppIcon(this.payload.iconValue, { dark: false })
 		},
 
 		/**
-		 * Observed behaviour of `iconDarkUrl` (retrofit annotation).
+		 * The resolved dark app-icon SVG (no fill), defaulting to the primary
+		 * icon so it mirrors what the wizard attaches on submit.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 * @return {string|null} SVG markup, or null when no icon was chosen.
 		 */
-		iconDarkUrl() {
-			return this.payload.iconDark ? URL.createObjectURL(this.payload.iconDark) : null
+		darkIconSvg() {
+			const source = this.payload.iconDarkValue || this.payload.iconValue
+			return resolveAppIcon(source, { dark: true })
 		},
 	},
 }
@@ -222,24 +237,38 @@ export default {
 	border: 1px solid var(--color-border, #ddd);
 	border-radius: 8px;
 	margin: 0;
+	/* The light icon is a white glyph meant for the dark app header, so
+	   preview it on a dark background (else it's white-on-white). */
+	background: #1c1c1e;
+	color: #fff;
 }
 
+/* intentional: simulated dark canvas for icon preview — must NOT track the theme */
 .wizard-step4__icon-preview--dark {
-	background: #1a1a2e;
+	/* The dark icon is a dark glyph meant for light backgrounds, so preview
+	   it on white (else it's black-on-black). */
+	background: #ffffff;
+	color: #1c1c1e;
 }
 
 .wizard-step4__icon-img {
+	display: inline-flex;
 	width: 48px;
 	height: 48px;
-	object-fit: contain;
+}
+
+.wizard-step4__icon-img :deep(svg) {
+	width: 100%;
+	height: 100%;
 }
 
 .wizard-step4__icon-preview figcaption {
 	font-size: 0.75rem;
-	color: var(--color-text-maxcontrast, #555);
+	color: #ccc;
 }
 
+/* intentional: caption inside the simulated dark icon-preview canvas — must NOT track the theme */
 .wizard-step4__icon-preview--dark figcaption {
-	color: #aaa;
+	color: var(--color-text-maxcontrast, #555);
 }
 </style>

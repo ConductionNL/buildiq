@@ -18,9 +18,20 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
     [
         // App-creation wizard endpoint (openbuild-app-creation-wizard REQ-OBWIZ-001).
         // POST /api/applications/wizard — atomic creation of Application + N versions + N registers.
-        // #[NoAdminRequired] on the controller method; RBAC is implicit (caller becomes owner).
+        // ADMIN-ONLY (issue #157): #[AuthorizedAdminSetting(AdminSettings::class)] on the controller
+        // method so NC's middleware refuses before dispatch, plus an in-body isAdmin() gate as
+        // defence in depth. The caller becomes the sole owner of the new Application.
         // Must precede the {slug} + collection routes so it does not shadow them.
         ['name' => 'applicationCreation#wizard', 'url' => '/api/applications/wizard', 'verb' => 'POST'],
+
+        // First-time-setup contract (openbuild-first-time-setup, ADR-042) — the
+        // fleet-wide CnSetupWizard endpoints. Admin-only via
+        // #[AuthorizedAdminSetting] on each controller method (CSRF enforced).
+        // The run-action step seeds the bundled ApplicationTemplate records
+        // idempotently. Specific-first, before the SPA catch-all (ADR-016/029).
+        ['name' => 'setup#status', 'url' => '/api/setup/status', 'verb' => 'GET'],
+        ['name' => 'setup#saveConfig', 'url' => '/api/setup/config', 'verb' => 'POST'],
+        ['name' => 'setup#runAction', 'url' => '/api/setup/action/{actionId}', 'verb' => 'POST'],
 
         // RBAC-filtered Application list (openbuild-rbac REQ-OBRBAC-002 / REQ-OBR-007).
         // OR's schema-level read rule is a coarse group ACL — not a row-level filter on the
@@ -107,11 +118,9 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // Owner-only full delete (Application + versions + per-version registers + routes).
         ['name' => 'applicationPublish#destroy', 'url' => '/api/applications/{appUuid}', 'verb' => 'DELETE', 'requirements' => ['appUuid' => '[a-f0-9-]{8,}']],
 
-        // Standalone runtime page for a published virtual app. The slug pattern
-        // excludes slashes, so ONLY the bare /builder/{slug} matches here — the
-        // designer sub-routes (/builder/{slug}/pages, /schemas) fall through to
-        // the SPA catch-all. Placed before the catch-all (Routes::standard
-        // appends it) so this specific page wins.
+        // Standalone runtime page for a published virtual app — the bare
+        // /builder/{slug} (no sub-path). Placed before the catch-all
+        // (Routes::standard appends it) so this specific page wins.
         ['name' => 'dashboard#builder', 'url' => '/builder/{slug}', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Same page with a trailing slash — browsers and pasted links often add one.
@@ -121,27 +130,106 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // builder()) — the AppHost Routes::standard() guard throws on duplicate names.
         ['name' => 'dashboard#builderSlash', 'url' => '/builder/{slug}/', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
+        // Reserved OpenBuild designer sub-paths (openbuild-deep-links #100 fix).
+        // `pages`, `schemas`, `schemas/{schemaId}` and `walkthrough` are
+        // OpenBuild's OWN designer surfaces (src/manifest.json: PageDesigner,
+        // SchemaDesignerList, SchemaDesigner, WalkthroughDesigner) — matched by
+        // the SPA's OWN vue-router (main.js) before its BuilderHost wildcard.
+        // They must keep serving the OpenBuild SPA shell (dashboard#builderDesigner
+        // renders the same page as catchAll()), NOT the standalone virtual-app
+        // runtime that dashboard#builderPath now serves below. MUST precede
+        // builderPath so this more-specific literal alternation wins
+        // (NC/Symfony route matching is order-sensitive, first-match-wins).
+        //
+        // MAINTENANCE: this alternation duplicates the /builder/:slug/* designer
+        // pages declared in src/manifest.json. When you add a designer surface
+        // there, extend this `designerPath` requirement too, or the new URL
+        // silently falls through to the runtime (builderPath). RoutesTest
+        // (testManifestDesignerRoutesAllResolveToTheDesigner) derives the list
+        // from src/manifest.json and FAILS if the two drift, so the omission is
+        // caught in CI rather than by a user report.
+        ['name' => 'dashboard#builderDesigner', 'url' => '/builder/{slug}/{designerPath}', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'designerPath' => 'pages|schemas|schemas/[^/]+|walkthrough']],
+
+        // ANY OTHER /builder/{slug}/... sub-path is a page defined by the
+        // DEPLOYED virtual app's OWN manifest (openbuild-deep-links #100).
+        // Direct navigation (fresh load / refresh / bookmark) previously fell
+        // through to the SPA catch-all — the wrong shell, nesting the app
+        // inside OpenBuild's own chrome/router instead of letting the app's
+        // own client-side router (builder.js, history mode) resolve it, the
+        // way clicking within the app already does. `path` allows slashes
+        // (requirement '.*', same trick as the SPA catch-all's `.+`) so
+        // nested app pages (e.g. /tenders/{id}) deep-link correctly too.
+        ['name' => 'dashboard#builderPath', 'url' => '/builder/{slug}/{path}', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'path' => '.*']],
+
         // Icon-serving endpoints (openbuild-nextcloud-nav REQ-OBICON-002 / REQ-OBICON-003).
-        // Both are #[NoAdminRequired] on the controller. The dark route uses a longer
-        // URL pattern ("{slug}-dark.svg") that is unambiguous — it cannot shadow the
-        // light route because slugs are kebab-case [a-z0-9-] and never end in "-dark".
-        // Placed before the SPA catch-all; after exports so slug patterns don't collide.
-        ['name' => 'icon#iconLight', 'url' => '/icons/{slug}.svg',      'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        // Both are #[NoAdminRequired] on the controller. ORDER MATTERS: iconDark's
+        // pattern ("{slug}-dark.svg") is a SUBSET of iconLight's ("{slug}.svg") because
+        // {slug} matches hyphens — so "foo-dark.svg" matches BOTH (iconDark with
+        // slug="foo", OR iconLight with slug="foo-dark"). Routes match in registration
+        // order (first wins), so iconDark MUST come first; otherwise every dark-icon
+        // request is captured by the light route (slug="foo-dark" → no such app → light
+        // default) and dark icons never resolve. Light requests ("foo.svg") lack the
+        // "-dark.svg" suffix so they never match iconDark — dark-first is safe (assumes
+        // no app slug itself ends in "-dark"). Placed before the SPA catch-all; after
+        // exports so slug patterns don't collide.
         ['name' => 'icon#iconDark',  'url' => '/icons/{slug}-dark.svg', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'icon#iconLight', 'url' => '/icons/{slug}.svg',      'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Export pipeline (Phase-2 graduation).
         ['name' => 'exports#submit',   'url' => '/api/applications/{slug}/exports', 'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'exports#download', 'url' => '/api/exports/{uuid}/download',     'verb' => 'GET'],
 
         // Business-rules engine (spec business-rules-engine REQ-BRE-006 / REQ-BRE-004).
-        // All three carry #[NoAdminRequired] on the controller; multi-tenant isolation
-        // is enforced server-side in RuleEngineService (a slug owned by another tenant
-        // resolves to 404 — no IDOR). evaluate/test-all are POST so they cannot collide
+        // All three carry #[NoAdminRequired] on the controller; resolution goes
+        // through searchObjectsBySlug (schema RBAC applied). `openbuild` is a
+        // system-wide register, so this is NOT per-owner/per-org read isolation
+        // (writes stay admin-gated at the schema). evaluate/test-all are POST so they cannot collide
         // with the GET SPA catch-all; the GET schema route's `/schema` suffix makes it
         // strictly more specific than `/{path}`. Slugs are kebab-case.
         ['name' => 'rules#evaluate', 'url' => '/api/rules/{ruleSetSlug}/evaluate', 'verb' => 'POST', 'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'rules#schema',   'url' => '/api/rules/{ruleSetSlug}/schema',   'verb' => 'GET',  'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'rules#testAll',  'url' => '/api/rules/{ruleSetSlug}/test-all', 'verb' => 'POST', 'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+
+        // Automation designer (spec automation-designer REQ-AUTD-005/006/007/008).
+        //
+        // ⚠️ CRUD ON `automation` LIVES HERE, NOT ON OR REST — and that is a
+        // deliberate departure from the ADR-022 "consume OR abstractions"
+        // default, scoped to this one schema. Conduction/openbuild#173.
+        //
+        // ADR-022 holds wherever OR's own authorization can express the
+        // requirement. For `automation` it cannot. OR gates writes with a
+        // COARSE, schema-level group ACL — `lib/Settings/register.d/40-automations.json`
+        // declares `authorization.create/update/delete: ["admin"]` — while
+        // REQ-AUTD-008 needs a FINE-GRAINED, per-object rule: "an editor of
+        // THIS Application, or an owner when the version is production".
+        // Those are not the same shape, and the two ways of reconciling them
+        // are not equivalent:
+        //
+        //   (a) widen the schema to `create/update: ["authenticated"]` — then
+        //       ANY authenticated user could rewrite ANY automation on ANY
+        //       application straight over OR REST, with no per-application
+        //       filter anywhere. That is a real regression.
+        //   (b) route the writes through this controller, which authorises per
+        //       application and then writes in system context, leaving the OR
+        //       schema gate SHUT for direct callers.
+        //
+        // (b) is what these routes are. The schema stays admin-only on
+        // purpose: it is the backstop that makes the check below the only way
+        // in for a non-admin, so the authorization boundary is one place
+        // instead of two.
+        //
+        // Every route is `#[NoAdminRequired]` and every one runs
+        // PermissionResolver::matchesCaller() with `allowAdminBypass: false`
+        // BEFORE any write or compile side effect. The uuid requirement guards
+        // against a kebab-case slug accidentally matching another route.
+        ['name' => 'automations#create',   'url' => '/api/automations',                'verb' => 'POST'],
+        ['name' => 'automations#update',   'url' => '/api/automations/{uuid}',         'verb' => 'PUT',    'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
+        ['name' => 'automations#destroy',  'url' => '/api/automations/{uuid}',         'verb' => 'DELETE', 'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
+        ['name' => 'automations#compile',  'url' => '/api/automations/{uuid}/compile',  'verb' => 'POST', 'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
+        ['name' => 'automations#enable',   'url' => '/api/automations/{uuid}/enable',   'verb' => 'POST', 'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
+        ['name' => 'automations#disable',  'url' => '/api/automations/{uuid}/disable',  'verb' => 'POST', 'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
+        ['name' => 'automations#dryRun',   'url' => '/api/automations/{uuid}/dry-run',  'verb' => 'POST', 'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
+        ['name' => 'automations#status',   'url' => '/api/automations/{uuid}/status',   'verb' => 'GET',  'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
 
         // App-override store-and-serve (openbuild-inline-edit-persistence,
         // spec app-override-persistence). Per-instance shared manifest delta for
@@ -174,6 +262,55 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // shared ApplicationsController install seam.
         ['name' => 'store#search',  'url' => '/api/store/templates',                  'verb' => 'GET'],
         ['name' => 'store#install', 'url' => '/api/store/templates/{slug}/install',   'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+
+        // GitHub shop source (github-shop-catalogue REQ-GHSC-005 / REQ-GHSC-006).
+        // Both #[NoAdminRequired] with an in-body 401 guard; search is an
+        // instance-shared read, install parses the repo via AppRepoParser then
+        // reuses ApplicationsController::installFromTemplateArray. Specific-first,
+        // before the engine-appended SPA catch-all.
+        ['name' => 'shop#githubSearch',  'url' => '/api/shop/github/search',  'verb' => 'GET'],
+        ['name' => 'shop#githubInstall', 'url' => '/api/shop/github/install', 'verb' => 'POST'],
+
+        // GitHub owner round-trip (github-app-sync REQ-GHAS-001..004). All four
+        // #[NoAdminRequired] with a per-object owner guard (status viewer-readable).
+        // The trailing `/github/{action}` literal disambiguates from the slug-based
+        // CRUD + versions routes above; `{slug}` carries the kebab-case constraint.
+        // Registered specific-first before the SPA catch-all.
+        ['name' => 'gitHubSync#link',   'url' => '/api/applications/{slug}/github/link',   'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'gitHubSync#push',   'url' => '/api/applications/{slug}/github/push',   'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'gitHubSync#pull',   'url' => '/api/applications/{slug}/github/pull',   'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'gitHubSync#status', 'url' => '/api/applications/{slug}/github/status', 'verb' => 'GET',  'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+
+        // AI copilot / prompt-to-app (spec `ai-copilot` REQ-OBAIC-001/002/004),
+        // extended with optional agent-scoping (spec `agent-workspace`). All
+        // four #[NoAdminRequired]; per-object RBAC (existing-app owners/
+        // editors, hybrid-app rejection, agent resolution) is enforced inside
+        // CopilotService, not via a route attribute. `plan` performs zero
+        // builder writes; `execute` re-validates and dispatches through
+        // OpenBuildToolProvider::invokeTool(); `discard` only ever runs for
+        // the agent-scoped chat surface (logs a discarded AgentRun).
+        // Specific-first, before the engine-appended SPA catch-all.
+        ['name' => 'copilot#health',  'url' => '/api/copilot/health',  'verb' => 'GET'],
+        ['name' => 'copilot#plan',    'url' => '/api/copilot/plan',    'verb' => 'POST'],
+        ['name' => 'copilot#execute', 'url' => '/api/copilot/execute', 'verb' => 'POST'],
+        ['name' => 'copilot#discard', 'url' => '/api/copilot/discard', 'verb' => 'POST'],
+
+        // Agent run-history (spec `agent-workspace`). #[NoAdminRequired] with a
+        // per-object owners/editors guard enforced inside AgentsController —
+        // AgentRun rows are NEVER served through the generic OpenRegister REST
+        // surface (no row-level RBAC there; see AgentsController docblock).
+        // Agent CRUD itself rides OR's generic REST surface (ADR-022), mirroring
+        // AutomationsController's posture for the `automation` object.
+        ['name' => 'agents#runs', 'url' => '/api/agents/{uuid}/runs', 'verb' => 'GET'],
+
+        // Anonymous download-link resolver for the `generateDocument`
+        // automation action's `download-link` output mode
+        // (automation-document-action, `GeneratedDocumentController`).
+        // `#[PublicPage]` — the random token IS the authorization.
+        // `/api/generated-documents/` is disjoint from every other route in
+        // this file so ordering relative to them is immaterial; declared
+        // before the SPA catch-all.
+        ['name' => 'generatedDocument#download', 'url' => '/api/generated-documents/{token}', 'verb' => 'GET'],
 
         // NB: the SPA catch-all (dashboard#catchAll) is appended by
         // \OCA\OpenRegister\AppHost\Routes::standard() — do NOT add it here.

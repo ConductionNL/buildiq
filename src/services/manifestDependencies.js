@@ -62,8 +62,10 @@ export function hasConnectorBinding(manifest) {
 		if (cfg.dataSource && cfg.dataSource.connector) {
 			return true
 		}
-		return Array.isArray(cfg.widgets)
+		return (
+			Array.isArray(cfg.widgets)
 			&& cfg.widgets.some((w) => w && w.dataSource && w.dataSource.connector)
+		)
 	})
 }
 

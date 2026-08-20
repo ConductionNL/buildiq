@@ -503,6 +503,49 @@
 							{ "key": "Content-Type", "value": "application/json" },
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
+						"body": { "mode": "raw", "raw": "{\n  \"target\": \"zip\",\n  \"applicationVersion\": \"1.0.0\"\n}" },
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openbuild/api/applications/{{appSlug}}/exports", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openbuild", "api", "applications", "{{appSlug}}", "exports" ] }
+					}
+				},
+				{
+					"name": "export submit validation: applicationVersion must be a semver (422, not 500)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// REGRESSION GUARD for the 500 this folder used to produce.",
+									"//",
+									"// `exportJob.applicationVersion` is declared in openbuild_register.json",
+									"// as a SEMVER (`pattern: ^\\d+\\.\\d+\\.\\d+...`), and ExportDialog.vue",
+									"// sends one. This collection used to send the version SLUG",
+									"// \"production\" instead — which the controller accepted (it only",
+									"// checked non-empty), OpenRegister then refused, and",
+									"// ExportJobService::queue() rethrew as a RuntimeException. The caller",
+									"// got HTTP 500 and no indication of which field was wrong; four",
+									"// assertions in the request above failed on that one cause.",
+									"//",
+									"// The submitted value is now a real semver, and this request keeps a",
+									"// bad one on purpose so the 4xx stays proven rather than assumed.",
+									"pm.test('non-semver applicationVersion -> 422, never 500', () => {",
+									"  pm.expect(pm.response.code, 'a malformed client field is a 4xx; a 500 means it reached the data layer unvalidated').to.eql(422);",
+									"});",
+									"pm.test('the error names the offending field', () => {",
+									"  pm.expect(String(pm.response.text())).to.include('applicationVersion');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
 						"body": { "mode": "raw", "raw": "{\n  \"target\": \"zip\",\n  \"applicationVersion\": \"production\"\n}" },
 						"url": { "raw": "{{baseUrl}}/index.php/apps/openbuild/api/applications/{{appSlug}}/exports", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openbuild", "api", "applications", "{{appSlug}}", "exports" ] }
 					}
@@ -534,7 +577,7 @@
 							{ "key": "Content-Type", "value": "application/json" },
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
-						"body": { "mode": "raw", "raw": "{\n  \"target\": \"not-a-real-target\",\n  \"applicationVersion\": \"production\"\n}" },
+						"body": { "mode": "raw", "raw": "{\n  \"target\": \"not-a-real-target\",\n  \"applicationVersion\": \"1.0.0\"\n}" },
 						"url": { "raw": "{{baseUrl}}/index.php/apps/openbuild/api/applications/{{appSlug}}/exports", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openbuild", "api", "applications", "{{appSlug}}", "exports" ] }
 					}
 				},

@@ -21,10 +21,18 @@
 				@click="openEntry()"
 				@keyup.enter="openEntry()"
 				@keyup.space="openEntry()">
-				<span class="ob-menu-widget__row-label">{{ entry.label || entry.id || '—' }}</span>
-				<span class="ob-menu-widget__row-route"><code>{{ entry.route || '—' }}</code></span>
-				<span class="ob-menu-widget__row-order">{{ entry.order != null ? entry.order : '—' }}</span>
-				<span class="ob-menu-widget__row-section">{{ entry.section || t('openbuild', 'main') }}</span>
+				<span class="ob-menu-widget__row-label">{{
+					entry.label || entry.id || '—'
+				}}</span>
+				<span class="ob-menu-widget__row-route"
+					><code>{{ entry.route || '—' }}</code></span
+				>
+				<span class="ob-menu-widget__row-order">{{
+					entry.order != null ? entry.order : '—'
+				}}</span>
+				<span class="ob-menu-widget__row-section">{{
+					entry.section || t('openbuild', 'main')
+				}}</span>
 			</li>
 		</ul>
 		<p v-else class="ob-menu-widget__empty">
@@ -43,6 +51,7 @@ export default {
 		versionSlug: { type: String, default: '' },
 		menu: { type: Array, default: () => [] },
 	},
+
 	methods: {
 		/**
 		 * Open the page designer with the menu pane focused (REQ-OBADO-010).

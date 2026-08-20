@@ -1,3 +1,5 @@
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
 // SPDX-License-Identifier: EUPL-1.2
 /**
  * useConnectorDataSource — runtime resolver for a `dataSource.connector`
@@ -22,10 +24,8 @@
  * @spec openspec/changes/openconnector-api-sources/tasks.md#task-4.1
  */
 import { ref } from 'vue'
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
+import { cacheKey, readThrough, ttlToMs } from '../services/connectorCache.js'
 import { extractItems, projectFields } from '../services/selectors.js'
-import { cacheKey, ttlToMs, readThrough } from '../services/connectorCache.js'
 
 /**
  * Resolve a connector binding into reactive render state.
@@ -60,7 +60,7 @@ export function useConnectorDataSource(opts = {}) {
 		// eslint-disable-next-line no-console
 		console.warn(
 			`[openbuild] connector field "${fieldName}" selector "${selector}" `
-			+ `resolved to no value for endpoint "${binding.endpointPath}"`,
+				+ `resolved to no value for endpoint "${binding.endpointPath}"`,
 		)
 	}
 
@@ -107,7 +107,11 @@ export function useConnectorDataSource(opts = {}) {
 		const key = cacheKey(appId, binding.endpointPath, binding.query)
 		const ttlMs = ttlToMs(binding.cacheTtl)
 		try {
-			const { data: raw, isStale: stale } = await readThrough(key, ttlMs, fetchRaw)
+			const { data: raw, isStale: stale } = await readThrough(
+				key,
+				ttlMs,
+				fetchRaw,
+			)
 			data.value = project(raw)
 			isStale.value = stale
 		} catch (e) {

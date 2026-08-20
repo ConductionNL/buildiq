@@ -17,34 +17,59 @@
 				{{ t('openbuild', 'Documents') }}
 			</h3>
 			<NcButton
-				type="secondary"
+				variant="secondary"
 				:disabled="!docudeskAvailable"
-				:title="docudeskAvailable ? '' : t('openbuild', 'Docudesk is not installed or enabled on this instance.')"
+				:title="
+					docudeskAvailable
+						? ''
+						: t(
+								'openbuild',
+								'Docudesk is not installed or enabled on this instance.',
+							)
+				"
 				@click="openAdd">
 				{{ t('openbuild', 'Attach template') }}
 			</NcButton>
 		</header>
 
 		<p v-if="!docudeskAvailable" class="ob-documents-section__hint">
-			{{ t('openbuild', 'Docudesk is not available. Existing attachments stay viewable and removable, but you cannot add new ones.') }}
+			{{
+				t(
+					'openbuild',
+					'Docudesk is not available. Existing attachments stay viewable and removable, but you cannot add new ones.',
+				)
+			}}
 		</p>
 
 		<p v-if="attachments.length === 0" class="ob-documents-section__empty">
-			{{ t('openbuild', 'No Docudesk templates are attached yet. Attach one to let users generate a branded document from an object.') }}
+			{{
+				t(
+					'openbuild',
+					'No Docudesk templates are attached yet. Attach one to let users generate a branded document from an object.',
+				)
+			}}
 		</p>
 		<ul v-else class="ob-documents-section__list">
-			<li v-for="doc in attachments" :key="doc.id" class="ob-documents-section__item">
+			<li
+				v-for="doc in attachments"
+				:key="doc.id"
+				class="ob-documents-section__item">
 				<div class="ob-documents-section__item-main">
 					<strong>{{ doc.label }}</strong>
 					<span class="ob-documents-section__item-meta">
-						{{ t('openbuild', '{template} on schema {schema}', { template: doc.templateName, schema: doc.schema }) }}
+						{{
+							t('openbuild', '{template} on schema {schema}', {
+								template: doc.templateName,
+								schema: doc.schema,
+							})
+						}}
 					</span>
 				</div>
 				<div class="ob-documents-section__item-actions">
-					<NcButton type="tertiary" @click="openEdit(doc)">
+					<NcButton variant="tertiary" @click="openEdit(doc)">
 						{{ t('openbuild', 'Edit') }}
 					</NcButton>
-					<NcButton type="tertiary" @click="detach(doc)">
+					<NcButton variant="tertiary" @click="detach(doc)">
 						{{ t('openbuild', 'Detach') }}
 					</NcButton>
 				</div>
@@ -52,50 +77,76 @@
 		</ul>
 
 		<DocumentTemplateAttachmentDialog
-			:open.sync="dialogOpen"
+			v-model:open="dialogOpen"
 			:schemas="schemas"
 			:attachments="attachments"
 			:attachment="editingAttachment"
-			:docudesk-available="docudeskAvailable"
+			:docudeskAvailable="docudeskAvailable"
 			@save="onDialogSave" />
+
+		<ConfirmActionDialog
+			v-model:open="confirmDetachOpen"
+			:name="t('openbuild', 'Detach template')"
+			:message="
+				t(
+					'openbuild',
+					'Detach this template? Previously generated documents are NOT deleted.',
+				)
+			"
+			:confirmLabel="t('openbuild', 'Detach')"
+			destructive
+			@confirm="onConfirmDetach" />
 	</section>
 </template>
 
 <script>
 import { NcButton } from '@nextcloud/vue'
+import ConfirmActionDialog from '../dialogs/ConfirmActionDialog.vue'
 import DocumentTemplateAttachmentDialog from '../dialogs/DocumentTemplateAttachmentDialog.vue'
 
 export default {
 	name: 'DocumentAttachmentsSection',
-	components: { NcButton, DocumentTemplateAttachmentDialog },
+	components: { NcButton, DocumentTemplateAttachmentDialog, ConfirmActionDialog },
 	props: {
 		manifest: {
 			type: Object,
 			default: () => ({}),
 		},
+
 		// The app's schemas, passed through to the dialog's pickers.
 		schemas: {
 			type: Array,
-			default: () => ([]),
+			default: () => [],
 		},
+
 		docudeskAvailable: {
 			type: Boolean,
 			default: true,
 		},
 	},
+
 	emits: ['update:manifest'],
 	data() {
 		return {
 			dialogOpen: false,
 			editingAttachment: null,
+			confirmDetachOpen: false,
+			pendingDetach: null,
 		}
 	},
+
 	computed: {
 		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		attachments() {
-			return (this.manifest && this.manifest.runtime && this.manifest.runtime.documents) || []
+			return (
+				(this.manifest
+					&& this.manifest.runtime
+					&& this.manifest.runtime.documents)
+				|| []
+			)
 		},
 	},
+
 	methods: {
 		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		openAdd() {
@@ -105,11 +156,22 @@ export default {
 			this.editingAttachment = null
 			this.dialogOpen = true
 		},
-		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
+
+		/**
+		 * Open the attachment dialog on an existing entry.
+		 *
+		 * @param {{id: string, schema: string, templateId: string,
+		 *   templateName: string, label: string, format?: string,
+		 *   filenameTemplate?: string}} doc - The `runtime.documents[]` entry the user
+		 *   clicked. Passed to the dialog as-is to prefill it; the edit is written back
+		 *   through `onDialogSave`, matched on `id`.
+		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
+		 */
 		openEdit(doc) {
 			this.editingAttachment = doc
 			this.dialogOpen = true
 		},
+
 		/**
 		 * Persist an added/edited attachment into `runtime.documents[]`.
 		 *
@@ -131,6 +193,7 @@ export default {
 			}
 			this.$emit('update:manifest', next)
 		},
+
 		/**
 		 * Detach an attachment (previously generated documents are unaffected).
 		 *
@@ -138,15 +201,30 @@ export default {
 		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
 		 */
 		detach(doc) {
-			const ok = typeof window !== 'undefined' && window.confirm
-				? window.confirm(t('openbuild', 'Detach this template? Previously generated documents are NOT deleted.'))
-				: true
-			if (!ok) {
+			this.pendingDetach = doc
+			this.confirmDetachOpen = true
+		},
+
+		/**
+		 * Detach the pending attachment once the user has confirmed.
+		 *
+		 * Held in `pendingDetach` rather than removed optimistically, so
+		 * cancelling or closing the dialog leaves the manifest untouched.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
+		 */
+		onConfirmDetach() {
+			const doc = this.pendingDetach
+			this.confirmDetachOpen = false
+			this.pendingDetach = null
+			if (!doc) {
 				return
 			}
 			const list = this.attachments.filter((a) => a.id !== doc.id)
 			this.$emit('update:manifest', this.withDocuments(list))
 		},
+
 		/**
 		 * Return a manifest copy with the given documents list set (or the
 		 * `runtime.documents` key removed when empty so zero-attachment
@@ -171,6 +249,7 @@ export default {
 			}
 			return next
 		},
+
 		/**
 		 * Inject a `docudesk-document-actions` tab into the detail page that
 		 * targets the attachment's schema, if such a page exists and lacks one.
@@ -184,14 +263,24 @@ export default {
 			const next = { ...manifest, pages: (manifest.pages || []).slice() }
 			next.pages = next.pages.map((page) => {
 				const cfg = page && page.config
-				const isDetail = page && (page.type === 'detail') && cfg && cfg.schema === entry.schema
+				const isDetail =
+					page
+					&& page.type === 'detail'
+					&& cfg
+					&& cfg.schema === entry.schema
 				if (!isDetail) {
 					return page
 				}
 				const sidebarProps = { ...(cfg.sidebarProps || {}) }
 				const tabs = (sidebarProps.tabs || []).slice()
-				if (!tabs.some((t2) => t2.component === 'docudesk-document-actions')) {
-					tabs.push({ id: 'docudesk-document-actions', label: 'Documents', component: 'docudesk-document-actions' })
+				if (
+					!tabs.some((t2) => t2.component === 'docudesk-document-actions')
+				) {
+					tabs.push({
+						id: 'docudesk-document-actions',
+						label: 'Documents',
+						component: 'docudesk-document-actions',
+					})
 				}
 				sidebarProps.tabs = tabs
 				return { ...page, config: { ...cfg, sidebarProps } }
@@ -209,18 +298,22 @@ export default {
 	justify-content: space-between;
 	margin-bottom: 8px;
 }
+
 .ob-documents-section__title {
 	margin: 0;
 }
+
 .ob-documents-section__empty,
 .ob-documents-section__hint {
 	color: var(--color-text-maxcontrast);
 }
+
 .ob-documents-section__list {
 	list-style: none;
 	padding: 0;
 	margin: 0;
 }
+
 .ob-documents-section__item {
 	display: flex;
 	align-items: center;
@@ -228,6 +321,7 @@ export default {
 	padding: 8px 0;
 	border-bottom: 1px solid var(--color-border);
 }
+
 .ob-documents-section__item-meta {
 	color: var(--color-text-maxcontrast);
 	margin-left: 8px;

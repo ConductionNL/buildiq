@@ -20,7 +20,12 @@ function mountEditor(config = {}) {
 	// Stub the heavy widget/layout builders + the inline mark — DashboardPageEditor
 	// only owns the `update()` round-trip; the children are tested separately.
 	return mount(DashboardPageEditor, {
-		propsData: { config, pageType: 'dashboard', appSlug: 'hello-world', parentRoute: '/' },
+		propsData: {
+			config,
+			pageType: 'dashboard',
+			appSlug: 'hello-world',
+			parentRoute: '/',
+		},
 		stubs: {
 			WidgetBuilder: { template: '<div class="widget-builder-stub" />' },
 			LayoutItemBuilder: { template: '<div class="layout-builder-stub" />' },

@@ -4,17 +4,15 @@
  *
  * Vitest unit tests for `src/views/TemplateGallery.vue`.
  *
+ * The store is GitHub-only (github-only-store): there are no Local or Registry
+ * source tabs. This spec covers the store shell + the install→redirect flow;
+ * the GitHub search + card behaviour lives in TemplateGalleryGithub.spec.js.
+ *
  * Covers:
- *   - REQ-OBTC-003: render the four seeded ApplicationTemplate cards
- *   - REQ-OBTC-006: filter by category (government-services) leaves only
- *     `permit-tracker` visible
- *   - REQ-OBTC-006: free-text search over title/useCase/description narrows
- *     the visible set
- *   - REQ-OBTC-004: "Use this template" CTA triggers an axios POST to
- *     `/apps/openbuild/api/applications/from-template/{slug}` with the
- *     payload from the clone dialog
- *   - REQ-OBTC-008: on successful clone, the gallery navigates to the
- *     page editor surface for the newly cloned application
+ *   - the store runs a GitHub search on mount (empty query) and renders cards
+ *   - "Install" on a GitHub card opens CloneTemplateDialog in GitHub mode
+ *   - on a successful install, the store navigates to the page editor surface
+ *     for the newly created application (REQ-OBTC-008)
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
@@ -35,66 +33,66 @@ vi.mock('@nextcloud/axios', () => ({
 vi.mock('../../src/modals/CloneTemplateDialog.vue', () => ({
 	default: {
 		name: 'CloneTemplateDialog',
-		props: ['open', 'template'],
-		emits: ['close', 'submit'],
-		methods: { setError(message) { this.lastError = message } },
-		render() { return null },
+		props: ['open', 'template', 'github', 'githubRepo'],
+		emits: ['close', 'installed'],
+		render() {
+			return null
+		},
 	},
 }))
 
 import TemplateGallery from '../../src/views/TemplateGallery.vue'
 
-const seededTemplates = [
+const githubCards = [
 	{
-		uuid: 'tpl-1',
-		slug: 'permit-tracker',
-		title: 'Permit Tracker',
-		useCase: 'Municipal building-permit workflow',
-		description: 'Index + form + kanban for permits.',
-		category: 'government-services',
-		screenshotUrl: 'img/templates/permit-tracker.svg',
-		isSeeded: true,
-	},
-	{
-		uuid: 'tpl-2',
-		slug: 'stakeholder-consultation',
-		title: 'Stakeholder Consultation',
-		useCase: 'Public consultation rounds',
-		description: 'Collect citizen feedback on draft policies.',
-		category: 'citizen-engagement',
-		isSeeded: true,
-	},
-	{
-		uuid: 'tpl-3',
-		slug: 'employee-onboarding',
-		title: 'Employee Onboarding',
-		useCase: 'New-hire checklist tracker',
-		description: 'Steps + documents + signoffs.',
+		owner: 'conduction',
+		repo: 'petstore',
+		slug: 'petstore',
+		name: 'Pet Store',
+		description: 'A pet store app',
 		category: 'internal-operations',
-		isSeeded: true,
-	},
-	{
-		uuid: 'tpl-4',
-		slug: 'incident-reporter',
-		title: 'Incident Reporter',
-		useCase: 'Field-team incident logging',
-		description: 'Capture + triage + route to teams.',
-		category: 'field-work',
-		isSeeded: true,
+		appType: 'virtual',
+		version: '1.0.0',
+		stars: 12,
+		installable: true,
+		unparseable: false,
+		credentials: [],
 	},
 ]
 
 /**
- * Mount helper that injects a $router stub and the seeded fetch response.
+ * Mount helper that injects a $router stub and the mount-time GitHub search.
  *
  * @param {object} routerOverrides optional stub overrides
- * @return {Promise<import('@vue/test-utils').Wrapper>}
+ * @return {Promise<{wrapper: import('@vue/test-utils').Wrapper, $router: object}>}
  */
 async function mountGallery(routerOverrides = {}) {
-	axiosMock.get.mockResolvedValueOnce({ data: { results: seededTemplates } })
+	// mounted() fires two GETs: the GitHub search (searchGithub) and the github
+	// credential probe (fetchGithubCredentials). Dispatch by URL.
+	axiosMock.get.mockImplementation((url) => {
+		const u = String(url)
+		if (u.includes('shop/github/search')) {
+			return Promise.resolve({
+				data: { outcome: 'ok', cards: githubCards, rateLimited: false },
+			})
+		}
+		if (u.includes('credentials')) {
+			return Promise.resolve({ data: [] })
+		}
+		return Promise.resolve({ data: {} })
+	})
 
 	const $router = {
-		resolve: vi.fn().mockReturnValue({ resolved: { matched: [{}], fullPath: '/applications/my-permits' } }),
+		// redirectAfterClone probes registered route names via hasRoute(), which
+		// reads $router.options.routes (routes are built flat from the manifest
+		// with name = page.id). Provide the surfaces it feature-detects.
+		options: {
+			routes: [
+				{ name: 'PageEditor' },
+				{ name: 'VirtualApps' },
+				{ name: 'Dashboard' },
+			],
+		},
 		push: vi.fn(),
 		...routerOverrides,
 	}
@@ -106,30 +104,38 @@ async function mountGallery(routerOverrides = {}) {
 		stubs: {
 			NcButton: {
 				name: 'NcButton',
-				template: '<button class="nc-button-stub" @click="$emit(\'click\', $event)"><slot /></button>',
+				props: ['type', 'disabled'],
+				template:
+					'<button class="nc-button-stub" @click="$emit(\'click\', $event)"><slot /></button>',
 			},
 			NcTextField: {
 				name: 'NcTextField',
 				props: ['value', 'label', 'placeholder'],
-				template: '<input class="nc-textfield-stub" :value="value" @input="$emit(\'update:value\', $event.target.value)" />',
-			},
-			NcSelect: {
-				name: 'NcSelect',
-				props: ['value', 'options'],
-				template: '<select class="nc-select-stub" @change="$emit(\'input\', { id: $event.target.value })"><option v-for="o in options" :key="o.id" :value="o.id">{{ o.label }}</option></select>',
+				template:
+					'<input class="nc-textfield-stub" :value="value" @input="$emit(\'update:value\', $event.target.value)" />',
 			},
 			NcLoadingIcon: true,
-			NcEmptyContent: { name: 'NcEmptyContent', props: ['name'], template: '<div class="nc-empty-stub">{{ name }}</div>' },
+			NcEmptyContent: {
+				name: 'NcEmptyContent',
+				props: ['name'],
+				template: '<div class="nc-empty-stub">{{ name }}</div>',
+			},
+			NcNoteCard: {
+				name: 'NcNoteCard',
+				props: ['type'],
+				template:
+					'<div class="nc-note-stub" :data-type="type"><slot /></div>',
+			},
 		},
 	})
 
-	// Wait for the mounted() axios call to resolve.
+	// Wait for the mounted() axios calls to resolve.
 	await new Promise((resolve) => setTimeout(resolve, 0))
 	await wrapper.vm.$nextTick()
 	return { wrapper, $router }
 }
 
-describe('TemplateGallery.vue', () => {
+describe('TemplateGallery.vue — GitHub-only store', () => {
 	beforeEach(() => {
 		axiosMock.get.mockReset()
 		axiosMock.post.mockReset()
@@ -139,80 +145,46 @@ describe('TemplateGallery.vue', () => {
 		vi.restoreAllMocks()
 	})
 
-	it('renders the four seeded templates after mount', async () => {
+	it('searches GitHub on mount and renders the returned cards', async () => {
 		const { wrapper } = await mountGallery()
 
-		expect(axiosMock.get).toHaveBeenCalledTimes(1)
-		expect(axiosMock.get.mock.calls[0][0]).toContain('/apps/openregister/api/objects/openbuild/application-template')
-
-		const cards = wrapper.findAll('.template-card')
-		expect(cards.length).toBe(4)
-		const titles = cards.wrappers.map((c) => c.find('.template-card__title').text())
-		expect(titles).toEqual(
-			expect.arrayContaining([
-				'Permit Tracker',
-				'Stakeholder Consultation',
-				'Employee Onboarding',
-				'Incident Reporter',
-			]),
-		)
-	})
-
-	it('filters by category — only permit-tracker remains when government-services is selected', async () => {
-		const { wrapper } = await mountGallery()
-
-		// The component stores categoryFilter as `{ id }` (from NcSelect). Set it directly.
-		wrapper.vm.categoryFilter = { id: 'government-services' }
-		await wrapper.vm.$nextTick()
+		expect(axiosMock.get).toHaveBeenCalled()
+		const urls = axiosMock.get.mock.calls.map((c) => String(c[0]))
+		expect(
+			urls.some((u) => u.includes('/apps/openbuild/api/shop/github/search')),
+		).toBe(true)
 
 		const cards = wrapper.findAll('.template-card')
 		expect(cards.length).toBe(1)
-		expect(cards.at(0).find('.template-card__title').text()).toBe('Permit Tracker')
+		expect(cards.at(0).find('.template-card__title').text()).toBe('Pet Store')
 	})
 
-	it('free-text search narrows by title/useCase/description', async () => {
+	it('"Install" opens CloneTemplateDialog in GitHub mode seeded with the repo', async () => {
 		const { wrapper } = await mountGallery()
 
-		wrapper.vm.search = 'incident'
+		wrapper.vm.openGithubInstall(githubCards[0])
 		await wrapper.vm.$nextTick()
 
-		const cards = wrapper.findAll('.template-card')
-		expect(cards.length).toBe(1)
-		expect(cards.at(0).find('.template-card__title').text()).toBe('Incident Reporter')
-	})
-
-	it('"Use this template" CTA fires axios POST to createFromTemplate endpoint', async () => {
-		const { wrapper } = await mountGallery()
-
-		axiosMock.post.mockResolvedValueOnce({ data: { uuid: 'new-app', slug: 'my-permits' } })
-
-		// Trigger the clone flow on the first template (permit-tracker).
-		wrapper.vm.openClone(seededTemplates[0])
-		await wrapper.vm.$nextTick()
 		expect(wrapper.vm.cloneOpen).toBe(true)
-		expect(wrapper.vm.cloneTarget.slug).toBe('permit-tracker')
-
-		await wrapper.vm.onCloneSubmit({ name: 'My permits', slug: 'my-permits' })
-
-		expect(axiosMock.post).toHaveBeenCalledTimes(1)
-		const [url, payload] = axiosMock.post.mock.calls[0]
-		expect(url).toContain('/apps/openbuild/api/applications/from-template/permit-tracker')
-		expect(payload).toEqual({ name: 'My permits', slug: 'my-permits' })
+		expect(wrapper.vm.cloneGithubRepo).toEqual({
+			owner: 'conduction',
+			repo: 'petstore',
+		})
+		expect(wrapper.vm.cloneTarget.slug).toBe('petstore')
 	})
 
-	it('on clone success, redirects to the page editor surface', async () => {
+	it('on install success, redirects to the page editor surface', async () => {
 		const { wrapper, $router } = await mountGallery()
 
-		axiosMock.post.mockResolvedValueOnce({ data: { uuid: 'new-app', slug: 'my-permits' } })
+		// The dialog owns the POST and emits `installed` with the created app.
+		wrapper.vm.onInstalled({ uuid: 'new-app', slug: 'my-petstore' })
 
-		wrapper.vm.openClone(seededTemplates[0])
-		await wrapper.vm.onCloneSubmit({ name: 'My permits', slug: 'my-permits' })
-
-		// PageEditor route resolves (stubbed) → push is invoked with its fullPath.
-		expect($router.resolve).toHaveBeenCalled()
+		// PageEditor is a registered route, so redirectAfterClone navigates there
+		// by name (no $router.resolve() probing — that logs a vue-router warning
+		// for unknown names).
 		expect($router.push).toHaveBeenCalled()
-		const firstResolveArgs = $router.resolve.mock.calls[0][0]
-		expect(firstResolveArgs.name).toBe('PageEditor')
-		expect(firstResolveArgs.params.slug).toBe('my-permits')
+		const firstPushArgs = $router.push.mock.calls[0][0]
+		expect(firstPushArgs.name).toBe('PageEditor')
+		expect(firstPushArgs.params.slug).toBe('my-petstore')
 	})
 })

@@ -22,10 +22,7 @@
   - skeleton; the real manifest arrives from the backend merge.
   -->
 <template>
-	<div
-		class="openbuild-builder-host"
-		data-testid="openbuild-builder-host"
-		:data-openbuild-theme-scope="slug">
+	<div class="openbuild-builder-host" data-testid="openbuild-builder-host">
 		<!-- REQ-OBVR-009: show version-not-found when useApplicationVersion resolved to 404 -->
 		<div
 			v-if="versionNotFound"
@@ -37,9 +34,11 @@
 		<CnAppRoot
 			v-else
 			:key="cacheKey"
-			:app-id="appId"
-			:bundled-manifest="placeholderManifest"
+			:appId="appId"
+			:aiCompanion="true"
+			:bundledManifest="placeholderManifest"
 			:registry="runtimeRegistry"
+			:data-sources-loader="dataSourcesLoader"
 			:options="manifestOptions" />
 	</div>
 </template>
@@ -47,22 +46,23 @@
 <script>
 import { CnAppRoot } from '@conduction/nextcloud-vue'
 import { generateUrl } from '@nextcloud/router'
-
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
-import { useAppTheme } from '../composables/useAppTheme.js'
-import { runtimeRegistry } from '../runtimeRegistry.js'
+import {
+	registerScope,
+	useRegisterPicker,
+} from '../composables/useRegisterPicker.js'
 import placeholderManifest from '../manifests/placeholder.json'
+import { runtimeRegistry } from '../runtimeRegistry.js'
+import { registerSlugForApp } from '../store/schemas.js'
 
 export default {
 	name: 'BuilderHost',
 	components: {
 		CnAppRoot,
 	},
+
 	data() {
 		return {
-			// REQ-NTS-003: scoped NL Design theme applier. Bound once; apply()
-			// runs against the resolved version manifest, teardown() on leave.
-			appTheme: useAppTheme(),
 			// REQ-OBVR-004: reactive version state from useApplicationVersion.
 			applicationVersion: null,
 			versionLoading: false,
@@ -74,6 +74,7 @@ export default {
 			runtimeRegistry,
 		}
 	},
+
 	computed: {
 		/**
 		 * Observed behaviour of `slug` (retrofit annotation).
@@ -83,6 +84,7 @@ export default {
 		slug() {
 			return this.$route.params.slug
 		},
+
 		/**
 		 * REQ-OBVR-004: read `?_version=` from the URL query.
 		 * Underscore-prefix to avoid colliding with user-defined `?version=` params.
@@ -93,6 +95,7 @@ export default {
 		versionSlug() {
 			return this.$route.query._version || undefined
 		},
+
 		/**
 		 * Observed behaviour of `appId` (retrofit annotation).
 		 *
@@ -101,6 +104,7 @@ export default {
 		appId() {
 			return `openbuild-${this.slug}`
 		},
+
 		/**
 		 * Cache key forces CnAppRoot remount when slug OR version changes.
 		 *
@@ -110,6 +114,7 @@ export default {
 		cacheKey() {
 			return `${this.slug}:${this.versionSlug || 'default'}`
 		},
+
 		/**
 		 * REQ-OBVR-009: true when the version fetch completed with an error
 		 * (e.g. 404 for unknown or unauthorised version). The view renders a
@@ -120,8 +125,13 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		versionNotFound() {
-			return !this.versionLoading && this.versionError !== null && this.applicationVersion === null
+			return (
+				!this.versionLoading
+				&& this.versionError !== null
+				&& this.applicationVersion === null
+			)
 		},
+
 		/**
 		 * Observed behaviour of `placeholderManifest` (retrofit annotation).
 		 *
@@ -130,6 +140,7 @@ export default {
 		placeholderManifest() {
 			return placeholderManifest
 		},
+
 		/**
 		 * Observed behaviour of `manifestOptions` (retrofit annotation).
 		 *
@@ -138,7 +149,9 @@ export default {
 		manifestOptions() {
 			// Forward `?_version=` to the manifest endpoint so the server resolves
 			// the correct ApplicationVersion manifest (REQ-OBVR-001).
-			const endpoint = generateUrl(`/apps/openbuild/api/applications/${this.slug}/manifest`)
+			const endpoint = generateUrl(
+				`/apps/openbuild/api/applications/${this.slug}/manifest`,
+			)
 			return {
 				endpoint: this.versionSlug
 					? `${endpoint}?_version=${encodeURIComponent(this.versionSlug)}`
@@ -146,6 +159,7 @@ export default {
 			}
 		},
 	},
+
 	watch: {
 		/**
 		 * Observed behaviour of `slug` (retrofit annotation).
@@ -155,6 +169,7 @@ export default {
 		slug() {
 			this.resolveVersion()
 		},
+
 		/**
 		 * Observed behaviour of `versionSlug` (retrofit annotation).
 		 *
@@ -164,6 +179,7 @@ export default {
 			this.resolveVersion()
 		},
 	},
+
 	/**
 	 * Observed behaviour of `created` (retrofit annotation).
 	 *
@@ -175,15 +191,10 @@ export default {
 		// and break bookmarkability (REQ-OBVR-008).
 		this.resolveVersion()
 	},
-	/**
-	 * REQ-NTS-003: remove the managed scoped-theme style element when leaving
-	 * the app, so the previous app's theme never bleeds into the next one.
-	 *
-	 * @spec openspec/changes/nldesign-theme-selection/specs/nldesign-theme-selection/spec.md#req-nts-003
-	 */
-	beforeDestroy() {
-		this.appTheme.teardown(this.slug)
-	},
+
+	// REQ-NTS-003: no beforeDestroy teardown needed — CnAppRoot owns its own
+	// scoped-theme lifecycle (mount-apply/unmount-teardown) via `useScopedTheme`,
+	// with zero OpenBuild-side wiring (theme-picker-consumes-nldesign).
 	methods: {
 		/**
 		 * Kick off useApplicationVersion and mirror reactive state into component data.
@@ -199,41 +210,53 @@ export default {
 			)
 			this.applicationVersion = applicationVersion.value
 			this.versionLoading = loading.value
-			this.applyTheme(applicationVersion.value)
-			const unwatch = this.$watch(() => applicationVersion.value, (v) => {
-				this.applicationVersion = v
-				this.applyTheme(v)
-			})
-			const unwatchLoading = this.$watch(() => loading.value, (v) => {
-				this.versionLoading = v
-				if (!v) {
-					unwatch()
-					unwatchLoading()
-					this.versionError = error.value
-				}
-			})
+			// REQ-NTS-003/004: no app-side theme apply call here — CnAppRoot's own
+			// `useScopedTheme` watcher re-applies `runtime.theme` whenever the
+			// manifest it receives changes, including a version switch.
+			// No data-source prefetch here: `dataSourcesLoader` reads the current
+			// manifest when an editor modal actually opens.
+			const unwatch = this.$watch(
+				() => applicationVersion.value,
+				(v) => {
+					this.applicationVersion = v
+				},
+			)
+			const unwatchLoading = this.$watch(
+				() => loading.value,
+				(v) => {
+					this.versionLoading = v
+					if (!v) {
+						unwatch()
+						unwatchLoading()
+						this.versionError = error.value
+					}
+				},
+			)
 		},
 
 		/**
-		 * REQ-NTS-003 / REQ-NTS-004: apply the resolved version's NL Design
-		 * theme to this app's scoped render root. The version object carries
-		 * the resolved (possibly `?_version=`-routed) manifest, so version
-		 * preview renders the previewed version's theme. nldesign absent ⇒ the
-		 * applier's fetch fails and it degrades to default styling (no gate).
+		 * Load the `dataSources` for the nested CnAppRoot's in-app pages editor
+		 * (ADR-041), so its Register / Schema / Columns pickers render as populated
+		 * dropdowns instead of free-text fields.
 		 *
-		 * @param {?object} version - the resolved ApplicationVersion.
-		 * @return {void}
-		 * @spec openspec/changes/nldesign-theme-selection/specs/nldesign-theme-selection/spec.md#req-nts-003
+		 * Passed to CnAppRoot as `dataSourcesLoader` and re-invoked every time an
+		 * editor modal opens, so a schema created after the app booted appears
+		 * without a reload. Reads the CURRENT manifest at call time, and shares
+		 * `useRegisterPicker` with builder.js so the two hosts cannot drift apart.
+		 *
+		 * @return {Promise<object>} - the `{ registers: [...] }` data-sources map.
 		 */
-		applyTheme(version) {
-			const manifest = version && version.manifest && typeof version.manifest === 'object'
-				? version.manifest
-				: null
-			if (!manifest) {
-				this.appTheme.teardown(this.slug)
-				return
-			}
-			this.appTheme.apply(manifest, this.slug)
+		async dataSourcesLoader() {
+			const version = this.applicationVersion
+			const manifest =
+				version && version.manifest && typeof version.manifest === 'object'
+					? version.manifest
+					: null
+			const scope = registerScope(
+				registerSlugForApp(this.slug, this.versionSlug),
+				manifest,
+			)
+			return useRegisterPicker({ appSlug: this.slug }).fetchDataSources(scope)
 		},
 	},
 }
