@@ -13,28 +13,31 @@
 -->
 <template>
 	<CnAppRoot
-		app-id="openbuild"
+		appId="openbuild"
+		:aiCompanion="true"
 		:manifest="manifest"
 		:registry="registry"
-		:custom-components="flatRegistry"
-		:page-types="pageTypes"
+		:customComponents="flatRegistry"
+		:pageTypes="pageTypes"
 		:translate="translateForApp"
 		:permissions="permissions">
 		<template #dependency-missing>
 			<NcAppContent class="open-register-missing">
 				<NcEmptyContent
 					:name="t('openbuild', 'OpenRegister is required')"
-					:description="t('openbuild', 'This app needs OpenRegister to store and manage data. Please install OpenRegister from the app store to get started.')">
+					:description="
+						t(
+							'openbuild',
+							'This app needs OpenRegister to store and manage data. Please install OpenRegister from the app store to get started.',
+						)
+					">
 					<template #icon>
-						<img :src="appIcon"
-							alt=""
-							width="64"
-							height="64">
+						<img :src="appIcon" alt="" width="64" height="64" />
 					</template>
 					<template #action>
 						<NcButton
 							v-if="isAdmin"
-							type="primary"
+							variant="primary"
 							:href="appStoreUrl">
 							{{ t('openbuild', 'Install OpenRegister') }}
 						</NcButton>
@@ -46,12 +49,12 @@
 </template>
 
 <script>
+import { CnAppRoot } from '@conduction/nextcloud-vue'
 import { translate as ncT } from '@nextcloud/l10n'
 import { generateUrl, imagePath } from '@nextcloud/router'
-import { CnAppRoot } from '@conduction/nextcloud-vue'
 import { NcAppContent, NcButton, NcEmptyContent } from '@nextcloud/vue'
-import { initializeStores } from './store/store.js'
 import { useSettingsStore } from './store/modules/settings.js'
+import { initializeStores } from './store/store.js'
 
 export default {
 	name: 'App',
@@ -75,6 +78,7 @@ export default {
 			type: Object,
 			required: true,
 		},
+
 		/**
 		 * V2 kind-tagged registry (ADR-036) — map of registry key →
 		 * `{ kind: "page", component }`. CnPageRenderer resolves every
@@ -89,6 +93,7 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
 		/**
 		 * Page-type registry — `{ index, detail, dashboard, custom, ... }`.
 		 * Wired through to descendant CnPageRenderer instances.
@@ -129,9 +134,10 @@ export default {
 		flatRegistry() {
 			const out = {}
 			for (const [name, entry] of Object.entries(this.registry || {})) {
-				const component = entry && typeof entry === 'object' && 'component' in entry
-					? entry.component
-					: entry
+				const component =
+					entry && typeof entry === 'object' && 'component' in entry
+						? entry.component
+						: entry
 				if (component) {
 					out[name] = component
 				}
@@ -160,7 +166,9 @@ export default {
 			try {
 				return useSettingsStore().getIsAdmin === true
 			} catch (e) {
-				return typeof window.OC?.isUserAdmin === 'function' ? window.OC.isUserAdmin() : false
+				return typeof window.OC?.isUserAdmin === 'function'
+					? window.OC.isUserAdmin()
+					: false
 			}
 		},
 

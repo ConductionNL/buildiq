@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: EUPL-1.2
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
-import { test, expect } from '@playwright/test'
+import { test, expect, request as playwrightRequest } from '@playwright/test'
+import { suppressSupportDialog, suppressSetupWizard } from './support/appFixture'
+import { ensureVersionChain } from './support/versionChain'
+import { grantAppRoles } from './support/appRoles'
 
 /**
  * Playwright e2e — Version routing (spec E, openbuild-version-routing).
@@ -29,47 +32,66 @@ import { test, expect } from '@playwright/test'
  */
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
-const ADMIN = { user: process.env.NC_ADMIN_USER ?? 'admin', pass: process.env.NC_ADMIN_PASSWORD ?? 'admin' }
-const VIEWER = { user: process.env.NC_VIEWER_USER ?? 'rbac-viewer', pass: process.env.NC_VIEWER_PASS ?? 'RbacViewer-1!' }
-const TEST_SLUG = process.env.NC_TEST_SLUG ?? 'hello-world'
+// Every session comes from globalSetup — admin here, and one per rbac-* fixture
+// role for 9.2. No spec form-logs-in: consecutive logins trip Nextcloud's
+// brute-force throttle and turn a whole run red.
+const ADMIN_STATE = 'tests/e2e/.auth/admin.json'
+// A DEDICATED fixture app carrying development -> staging -> production.
+// hello-world ships exactly one version (`production`), which is why every
+// block here used to skip itself; see tests/e2e/support/versionChain.ts.
+const TEST_SLUG = process.env.NC_TEST_SLUG ?? 'pw-verchain'
 const STAGING_VERSION = process.env.NC_STAGING_VERSION ?? 'staging'
-
-async function loginAs(page: import('@playwright/test').Page, user: string, pass: string): Promise<void> {
-	await page.goto(`${BASE}/index.php/login`)
-	await page.locator('input[name="user"]').fill(user)
-	await page.locator('input[name="password"]').fill(pass)
-	await page.locator('button[type="submit"]').first().click()
-	await page.waitForSelector('#header, header.header', { timeout: 20_000 })
-	if (/\/login(\?|$|\/)/.test(page.url())) {
-		throw new Error(`Login as ${user} failed — still on ${page.url()}`)
-	}
-}
 
 // ---------------------------------------------------------------------------
 // 9.1 — Bookmarkability / reload preserves ?_version=
 // ---------------------------------------------------------------------------
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no detail / editor / version / diff / rollback UI; Schemas page misconfigured. Re-enable when #41 is fixed.
-test.describe.skip('9.1 Bookmarkability — reload preserves ?_version= (REQ-OBVR-008)', () => {
-	test.use({ storageState: { cookies: [], origins: [] } })
-
+// STILL SKIPPED (all three blocks), with the true reason replacing the #41 one.
+//
+// Shared blocker: every block needs an ApplicationVersion chain this instance
+// does not have. hello-world ships exactly one version, slug `production`;
+// 9.1 needs a `staging` row, 9.3 needs `development → staging → production`.
+// 9.2 additionally needs the `rbac-viewer` user from the Newman RBAC setup
+// collection, which this suite does not run.
+//
+// Second blocker, which would make 9.1/9.3 green-but-dead even with the chain:
+// they locate the designer with `[data-testid="schema-designer"]`,
+// `.ob-schema-designer`, `.ob-schema-list` and `[data-app-version="…"]`. None of
+// those exist in src/ — SchemaDesigner.vue emits none of them (9.3's own comment
+// already admits it, suggesting someone "consider adding a data-app-version
+// attribute"). Retarget these before re-enabling, or the chain will be seeded
+// and the assertions will still be measuring nothing.
+//
+// REQ-OBVR-009 (the version-not-found state BuilderHost renders) is NOT blocked
+// by any of this and is exercised elsewhere.
+test.describe('9.1 Bookmarkability — reload preserves ?_version= (REQ-OBVR-008)', () => {
 	test.beforeEach(async ({ page }) => {
-		await loginAs(page, ADMIN.user, ADMIN.pass)
+		await suppressSupportDialog(page)
+		await suppressSetupWizard(page)
+		await ensureVersionChain(page, TEST_SLUG, 'PW Version Chain')
 	})
 
-	test('navigating to /builder/{slug}/schemas?_version=staging preserves the param after reload', async ({ page }) => {
-		// Check whether a "staging" version is accessible — if not, skip.
-		const manifestCheck = await page.request.get(
-			`${BASE}/index.php/apps/openbuild/api/applications/${TEST_SLUG}/versions/${STAGING_VERSION}`,
-			{ headers: { 'OCS-APIRequest': 'true' } },
-		)
-		if (manifestCheck.status() !== 200) {
-			test.skip(`SKIP 9.1: ApplicationVersion "${STAGING_VERSION}" not found — seed a version with this slug first`)
-			return
-		}
+	test('navigating to /builder/{slug}/schemas?_version=staging preserves the param after reload', async ({
+		page,
+	}) => {
+		// No `/index.php` prefix: every other spec navigates the pretty form, and the
+		// SPA's router base is resolved from it.
+		const targetUrl = `${BASE}/apps/openbuild/builder/${TEST_SLUG}/schemas?_version=${STAGING_VERSION}`
+		await page.goto(targetUrl, { waitUntil: 'domcontentloaded' })
 
-		const targetUrl = `${BASE}/index.php/apps/openbuild/builder/${TEST_SLUG}/schemas?_version=${STAGING_VERSION}`
-		await page.goto(targetUrl)
-		await page.waitForLoadState('networkidle', { timeout: 20_000 })
+		// The mount assertion comes FIRST and is now the readiness signal. It
+		// used to sit behind `waitForLoadState('networkidle', 20s)`, which never
+		// settles on Nextcloud (ADR-074 rule 4): the wait always ran to its full
+		// budget and the URL was then read at an arbitrary moment that only
+		// happened to be after SPA init. Waiting for the router-rendered panel
+		// makes "after SPA init" the thing actually observed.
+		//
+		// The original looked for `[data-testid="schema-designer"]` /
+		// `.ob-schema-designer`, neither of which exists in src/, with an
+		// `h2, h3` text fallback — so it would have passed on any page with a
+		// matching heading. The real panel is `.openbuild-schema-list`.
+		await expect(page.locator('.openbuild-schema-list')).toBeVisible({
+			timeout: 30_000,
+		})
 
 		// Assert the URL still contains ?_version= after SPA init.
 		expect(
@@ -77,96 +99,210 @@ test.describe.skip('9.1 Bookmarkability — reload preserves ?_version= (REQ-OBV
 			`URL must still contain ?_version=${STAGING_VERSION} after initial navigation`,
 		).toContain(`_version=${STAGING_VERSION}`)
 
-		// Assert the SchemaDesigner view is mounted (any schema-related heading
-		// or the schema list panel).
-		const schemaSurface = page
-			.locator('[data-testid="schema-designer"], .ob-schema-designer, h2, h3')
-			.filter({ hasText: /schema|design|version/i })
-			.first()
-		await expect(schemaSurface).toBeVisible({ timeout: 10_000 })
-
-		// Reload and re-check.
-		await page.reload()
-		await page.waitForLoadState('networkidle', { timeout: 20_000 })
+		// Reload and re-check. The schema designer must still be mounted after
+		// the reload — the point of the requirement is that a bookmarked version
+		// URL is fully usable — and its render is again what proves the URL is
+		// being read after the SPA has had its say.
+		await page.reload({ waitUntil: 'domcontentloaded' })
+		await expect(page.locator('.openbuild-schema-list')).toBeVisible({
+			timeout: 30_000,
+		})
 
 		expect(
 			page.url(),
 			`URL must still contain ?_version=${STAGING_VERSION} after page reload`,
 		).toContain(`_version=${STAGING_VERSION}`)
-
-		// The schema designer should still be visible after reload.
-		await expect(
-			page.locator('[data-testid="schema-designer"], .ob-schema-designer, h2, h3')
-				.filter({ hasText: /schema|design|version/i })
-				.first(),
-		).toBeVisible({ timeout: 15_000 })
 	})
 })
 
 // ---------------------------------------------------------------------------
-// 9.2 — 404 for unauthorised on non-production version
+// 9.2 — non-production version access is role-gated (REQ-OBVR-003)
 // ---------------------------------------------------------------------------
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no detail / editor / version / diff / rollback UI; Schemas page misconfigured. Re-enable when #41 is fixed.
-test.describe.skip('9.2 Unauthorised access to non-production version shows 404 UI (REQ-OBVR-001 / REQ-OBVR-003)', () => {
-	test.use({ storageState: { cookies: [], origins: [] } })
-
-	test.beforeEach(async ({ page }) => {
-		await loginAs(page, VIEWER.user, VIEWER.pass).catch(() => {
-			// Viewer user may not exist in this environment.
-		})
+// PREVIOUSLY SKIPPED, now enabled. Two things unblocked it:
+//
+//  1. The fixture users. globalSetup provisions rbac-owner/-editor/-viewer/
+//     -outsider and mints one storageState each, so no spec form-logs-in (four
+//     consecutive logins is exactly what trips Nextcloud's brute-force throttle).
+//     `loginAs` is gone from this block for that reason.
+//  2. OpenRegister-level visibility. Until openbuild#76 every non-admin saw ZERO
+//     objects — a schema authorization block with no `read` key fails closed to
+//     owner-only rows — so "viewer gets 404" passed for the wrong reason and any
+//     200 assertion was unreachable. `read: ["authenticated"]` fixed that, which
+//     is what makes the editor-gets-200 row below meaningful as a control.
+//
+// The old body asserted almost nothing: it located the schema list with
+// `.ob-schema-list` / `[data-testid="schema-list"]`, neither of which exists in
+// src/, so "must NOT be visible" was true on any page including a correct one;
+// and it downgraded the missing not-found UI to a console.warn. All four
+// REQ-OBVR-003 scenarios are now asserted directly, with the editor row as the
+// positive control that proves the 404s are the gate and not a broken fixture.
+test.describe('9.2 Non-production version access is role-gated (REQ-OBVR-003)', () => {
+	// Setup runs as admin (the default storageState); the per-role assertions
+	// below each open their own request context.
+	test.beforeAll(async ({ browser }) => {
+		const context = await browser.newContext({ storageState: ADMIN_STATE })
+		const page = await context.newPage()
+		try {
+			await suppressSupportDialog(page)
+			await page.goto(`${BASE}/apps/openbuild/`, {
+				waitUntil: 'domcontentloaded',
+			})
+			await ensureVersionChain(page, TEST_SLUG, 'PW Version Chain')
+			// Without this the roles below are all "non-member" and the editor
+			// control cannot distinguish a working gate from a broken fixture.
+			await grantAppRoles(page, TEST_SLUG, {
+				editors: ['group:rbac-editors'],
+				viewers: ['group:rbac-viewers'],
+			})
+		} finally {
+			await context.close()
+		}
 	})
 
-	test('viewer navigating to ?_version=staging sees version-not-found UI, not a stack trace', async ({ page }) => {
-		// If the viewer login failed (user doesn't exist), skip.
-		if (/\/login(\?|$|\/)/.test(page.url())) {
-			test.skip('SKIP 9.2: viewer user not found — run Newman RBAC setup collection first')
-			return
-		}
+	/**
+	 * A request context carrying one fixture role's stored session.
+	 *
+	 * @param role The rbac-* fixture user id.
+	 * @return {Promise<import('@playwright/test').APIRequestContext>} the context.
+	 */
+	async function asRole(role: string) {
+		return playwrightRequest.newContext({
+			baseURL: BASE,
+			storageState: `tests/e2e/.auth/${role}.json`,
+			extraHTTPHeaders: { 'OCS-APIRequest': 'true' },
+		})
+	}
 
-		// The viewer is not in permissions.editors — they cannot see non-production
-		// versions. ManifestResolverService returns null → 404 JSON.
-		const manifestResp = await page.request.get(
-			`${BASE}/index.php/apps/openbuild/api/applications/${TEST_SLUG}/manifest?_version=${STAGING_VERSION}`,
-			{ headers: { 'OCS-APIRequest': 'true' } },
-		).catch(() => null)
-
-		if (manifestResp) {
-			expect(
-				manifestResp.status(),
-				'manifest endpoint must return 404 for viewer accessing non-production version (REQ-OBVR-003)',
-			).toBe(404)
-
-			const body = await manifestResp.json().catch(() => null)
-			if (body) {
-				expect(body, 'no existence leak — 404 must not expose whether the version exists').not.toHaveProperty('data')
-				expect(body.status ?? body.error ?? body.message, 'body must indicate not_found').toBeDefined()
+	/**
+	 * GET the manifest for a version slug as the given role.
+	 *
+	 * @param role    The rbac-* fixture user id.
+	 * @param version The `?_version=` value.
+	 * @return {Promise<{status: number, body: unknown}>} status and parsed body.
+	 */
+	async function manifestAs(role: string, version: string) {
+		const api = await asRole(role)
+		try {
+			const resp = await api.get(
+				`/index.php/apps/openbuild/api/applications/${TEST_SLUG}/manifest?_version=${version}`,
+			)
+			return {
+				status: resp.status(),
+				body: await resp.json().catch(() => null),
 			}
+		} finally {
+			await api.dispose()
 		}
+	}
 
-		// Navigate to the builder with the staging version.
-		await page.goto(`${BASE}/apps/openbuild/builder/${TEST_SLUG}/schemas?_version=${STAGING_VERSION}`)
-		await page.waitForLoadState('networkidle', { timeout: 20_000 }).catch(() => {})
+	test('a viewer gets 404 with the exact no-leak envelope for a non-production version', async () => {
+		const { status, body } = await manifestAs('rbac-viewer', STAGING_VERSION)
 
-		// The view must show a "not found" UI — no schema list, no stack trace,
-		// no "forbidden" / "403" language (the spec mandates 404, not 403).
-		const notFoundSurface = page.getByText(
-			/(not found|version not found|could not find|no version|no access)/i,
-		).first()
-		const hasNotFound = await notFoundSurface.isVisible({ timeout: 10_000 }).catch(() => false)
+		expect(status, 'REQ-OBVR-003: viewer must receive 404, not 403').toBe(404)
+		// The spec pins the body exactly — "no mention of authorisation", so that a
+		// 404 for "unauthorised" is indistinguishable from one for "no such version".
+		expect(body).toEqual({ status: 404, message: 'Version not found' })
+		expect(
+			JSON.stringify(body),
+			'the 404 must not hint that authorisation was the reason',
+		).not.toMatch(/forbid|denied|permission|unauthoris|unauthoriz|role/i)
+	})
 
-		// The builder host (schema list / page list) must NOT be visible.
-		const schemaList = page.locator('[data-testid="schema-list"], .ob-schema-list, .ob-schema-designer__list')
-		const schemaListVisible = await schemaList.isVisible({ timeout: 3_000 }).catch(() => false)
-		expect(schemaListVisible, 'schema list must NOT be visible for unauthorised version access').toBe(false)
+	test('a non-member gets the identical 404 — no existence leak', async () => {
+		const viewer = await manifestAs('rbac-viewer', STAGING_VERSION)
+		const outsider = await manifestAs('rbac-outsider', STAGING_VERSION)
 
-		// At minimum the test confirms no stack trace or raw error dump is shown.
-		const stackTrace = page.getByText(/Stack trace|Exception|Uncaught/i)
-		await expect(stackTrace, 'no stack trace must be visible to viewer').toHaveCount(0)
+		expect(outsider.status, 'REQ-OBVR-003: non-member must receive 404').toBe(
+			404,
+		)
+		// The point of the requirement: a caller must not be able to tell a
+		// version they may not see from one that does not exist. Byte-identical.
+		expect(
+			outsider.body,
+			'non-member and viewer responses must be indistinguishable',
+		).toEqual(viewer.body)
 
-		if (!hasNotFound) {
-			// The "not found" copy is implementation-dependent; log a warning
-			// but don't fail — the main assertion is no schema leakage + no stack trace.
-			console.warn('9.2: version-not-found UI copy not matched — verify BuilderHost renders an error state for null applicationVersion')
+		const unknown = await manifestAs('rbac-outsider', 'no-such-version-xyz')
+		expect(
+			unknown.body,
+			'an unknown version must answer identically to a forbidden one',
+		).toEqual(outsider.body)
+	})
+
+	test('an editor gets 200 for the same non-production version (positive control)', async () => {
+		const { status, body } = await manifestAs('rbac-editor', STAGING_VERSION)
+
+		// Without this row the 404s above prove nothing: a broken fixture, a
+		// missing version chain or a blanket denial would produce them too.
+		expect(
+			status,
+			'REQ-OBVR-003: an editor must receive the staging manifest',
+		).toBe(200)
+		expect(body, 'the editor must receive an actual manifest').toHaveProperty(
+			'version',
+		)
+	})
+
+	// This test previously asserted `.openbuild-schema-list` has count 0 for the
+	// viewer. That assertion was wrong twice over, and worth recording because
+	// both failure modes are easy to repeat:
+	//
+	//  1. It PASSED for the wrong reason. Before the setup-wizard fix
+	//     (@conduction/nextcloud-vue 2.1.0-vue3.15) a non-admin never reached
+	//     the builder at all — they got "Set up this app" — so "no schema list"
+	//     held because nothing rendered for anyone.
+	//  2. It cannot distinguish the roles anyway. Measured side by side, the
+	//     viewer (DENIED staging) and the editor (ALLOWED staging) render the
+	//     IDENTICAL surface: `.openbuild-schema-list` count 1, reading
+	//     "No schemas yet". The builder shows the same empty designer either
+	//     way, so the selector carries no information about the gate.
+	//
+	// No data leaks — the list is empty for both — so this is a UX gap, not a
+	// security one: the builder renders no version-not-found state for a version
+	// the caller may not see. The GATE itself is asserted properly by the three
+	// request-level tests above, which is where it is actually enforced.
+	test('the viewer UI leaks no schema data and no stack trace on a forbidden version', async ({
+		browser,
+	}) => {
+		const context = await browser.newContext({
+			storageState: 'tests/e2e/.auth/rbac-viewer.json',
+		})
+		const page = await context.newPage()
+		try {
+			await page.goto(
+				`${BASE}/apps/openbuild/builder/${TEST_SLUG}/schemas?_version=${STAGING_VERSION}`,
+				{ waitUntil: 'domcontentloaded' },
+			)
+
+			// What actually matters: no schema of the forbidden version is named.
+			// `.openbuild-schema-list` renders as empty chrome; asserting its
+			// ABSENCE measured nothing, asserting its emptiness measures the leak.
+			//
+			// Wait for that panel to RENDER before reading it. The old
+			// `waitForLoadState('networkidle', 20s).catch(() => {})` never settles
+			// on Nextcloud (ADR-074 rule 4) — it burned the full 20s and swallowed
+			// the timeout — and the `innerText().catch(() => '')` under it turned
+			// an unrendered page into an empty string that passes the assertion
+			// below trivially. Measured (see the note above this test): the viewer
+			// gets the same `.openbuild-schema-list` the editor does, empty, so its
+			// visibility is a signal both roles genuinely reach.
+			const list = page.locator('.openbuild-schema-list')
+			await expect(
+				list,
+				'the builder must render for the viewer — otherwise the leak assertion below reads an empty page',
+			).toBeVisible({ timeout: 30_000 })
+			const listText = await list.innerText()
+			expect(
+				listText,
+				'the builder must not name any schema belonging to a version the caller may not see',
+			).not.toMatch(new RegExp(`${TEST_SLUG}-${STAGING_VERSION}-`, 'i'))
+
+			await expect(
+				page.getByText(/Stack trace|Fatal error|Uncaught/i),
+				'a denied version must not surface a stack trace',
+			).toHaveCount(0)
+		} finally {
+			await context.close()
 		}
 	})
 })
@@ -174,66 +310,51 @@ test.describe.skip('9.2 Unauthorised access to non-production version shows 404 
 // ---------------------------------------------------------------------------
 // 9.3 — Default version is most-upstream-non-production fallback
 // ---------------------------------------------------------------------------
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no detail / editor / version / diff / rollback UI; Schemas page misconfigured. Re-enable when #41 is fixed.
-test.describe.skip('9.3 Default version resolution — most-upstream-non-production fallback (REQ-OBVR-004)', () => {
-	test.use({ storageState: { cookies: [], origins: [] } })
-
+// See the block comment on 9.1 for the true reason (version chain + absent selectors).
+// 9.3 — Default version resolution (REQ-OBVR-004)
+//
+// The "most-upstream non-production fallback" rule itself is NOT assertable
+// through this UI, and the original test knew it: it accepted any of three
+// possible signals, ended on `expect(productionActive).toBe(false)` — which
+// passes when NO signal exists at all — and then `console.warn`ed that the
+// signal was missing. That is green-but-dead; it would report coverage of
+// REQ-OBVR-004 while proving nothing.
+//
+// Measured against the built app: navigating to /builder/{slug} with no
+// `?_version=` leaves the URL untouched and issues a manifest request that
+// carries no version marker either, so the resolved version is invisible from
+// the outside. The rule is unit-covered, properly, in
+// tests/composables/useApplicationVersion.spec.js (it is pure logic over the
+// promotesTo graph).
+//
+// What IS worth asserting end-to-end, and is asserted here: a version-less URL
+// still resolves to SOMETHING and renders the builder rather than erroring —
+// the regression that would actually hurt a user who drops the query param.
+test.describe('9.3 Default version resolution — a version-less URL still renders (REQ-OBVR-004)', () => {
 	test.beforeEach(async ({ page }) => {
-		await loginAs(page, ADMIN.user, ADMIN.pass)
+		await suppressSupportDialog(page)
+		await ensureVersionChain(page, TEST_SLUG, 'PW Version Chain')
 	})
 
-	test('navigating without ?_version= resolves the development (upstream-most) version, not production', async ({ page }) => {
-		// This test assumes a three-version chain: development → staging → production.
-		// Check that all three exist before proceeding.
-		const [devResp, stagingResp] = await Promise.all([
-			page.request.get(
-				`${BASE}/index.php/apps/openbuild/api/applications/${TEST_SLUG}/versions/development`,
-				{ headers: { 'OCS-APIRequest': 'true' } },
-			).catch(() => null),
-			page.request.get(
-				`${BASE}/index.php/apps/openbuild/api/applications/${TEST_SLUG}/versions/staging`,
-				{ headers: { 'OCS-APIRequest': 'true' } },
-			).catch(() => null),
-		])
+	test('navigating without ?_version= resolves a version and renders the builder', async ({
+		page,
+	}) => {
+		await page.goto(`${BASE}/apps/openbuild/builder/${TEST_SLUG}/schemas`, {
+			waitUntil: 'domcontentloaded',
+		})
 
-		const chainExists = (devResp?.status() === 200) && (stagingResp?.status() === 200)
-		if (!chainExists) {
-			test.skip('SKIP 9.3: development+staging chain not seeded — create ApplicationVersions development → staging → production first')
-			return
-		}
+		// It must resolve to a usable designer without a version in the URL.
+		await expect(page.locator('.openbuild-schema-list')).toBeVisible({
+			timeout: 30_000,
+		})
 
-		// Navigate to the builder root (no ?_version=).
-		await page.goto(`${BASE}/apps/openbuild/builder/${TEST_SLUG}`)
-		await page.waitForLoadState('networkidle', { timeout: 20_000 })
-
-		// The composable (useApplicationVersion) should resolve "development"
-		// as the most-upstream non-production version and either:
-		//   a) Append ?_version=development to the URL, OR
-		//   b) Expose it via a data attribute on the builder root element, OR
-		//   c) Show a heading/breadcrumb containing "development".
-		// Accept any of these signals.
-
-		const urlContainsDev = page.url().includes('_version=development')
-		const devHeading = page.getByText(/development/i, { exact: false }).first()
-		const devHeadingVisible = await devHeading.isVisible({ timeout: 8_000 }).catch(() => false)
-		const builderRoot = page.locator('[data-version="development"], [data-app-version="development"]')
-		const builderRootVisible = await builderRoot.isVisible({ timeout: 2_000 }).catch(() => false)
-
-		// Assert that "production" (the terminal version) is NOT the active one
-		// (which would be the wrong fallback per REQ-OBVR-004 Scenario 2).
-		const productionActive = page.url().includes('_version=production')
-			|| (await page.locator('[data-version="production"]').isVisible({ timeout: 1_000 }).catch(() => false))
-
+		// And it must not have silently rewritten itself onto production: when a
+		// non-production upstream exists, production is the WRONG fallback
+		// (REQ-OBVR-004 Scenario 2). This is the one part of the original
+		// assertion that carries meaning, kept deliberately.
 		expect(
-			productionActive,
-			'production version must NOT be selected as the default when a non-production upstream exists',
-		).toBe(false)
-
-		if (!urlContainsDev && !devHeadingVisible && !builderRootVisible) {
-			// The signal is not yet exposed — log a note. The composable
-			// unit tests in tests/composables/useApplicationVersion.spec.js
-			// cover the fallback logic in isolation.
-			console.warn('9.3: no explicit "development" signal found in the DOM/URL — composable unit tests cover this path; consider adding a data-app-version attribute to BuilderHost for e2e discoverability')
-		}
+			page.url(),
+			'production must not be selected while an upstream version exists',
+		).not.toContain('_version=production')
 	})
 })

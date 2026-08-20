@@ -91,13 +91,56 @@
                 <referencedClass name="OCA\OpenRegister\Db\AuditTrail"/>
                 <referencedClass name="OCA\OpenRegister\Db\RegisterMapper"/>
                 <referencedClass name="OCA\OpenRegister\Db\SchemaMapper"/>
+                <!-- The flow ENTITY the engine executes, and its mapper. Read by
+                     FlowAndAgentExportBundler so an exported app carries the
+                     flows it is made of. -->
+                <referencedClass name="OCA\OpenRegister\Db\FlowMapper"/>
+                <referencedClass name="OCA\OpenRegister\Db\Flow"/>
+                <!-- Schema itself was missing while its Mapper was listed, so
+                     AutomationCompilerService's 7 uses of it were simply red. -->
+                <referencedClass name="OCA\OpenRegister\Db\Schema"/>
                 <referencedClass name="OCA\OpenRegister\Event\DeepLinkRegistrationEvent"/>
                 <referencedClass name="OCA\OpenRegister\Event\ObjectCreatingEvent"/>
                 <referencedClass name="OCA\OpenRegister\Event\ObjectCreatedEvent"/>
                 <referencedClass name="OCA\OpenRegister\Event\ObjectUpdatingEvent"/>
                 <referencedClass name="OCA\OpenRegister\Event\ObjectUpdatedEvent"/>
                 <referencedClass name="OCA\OpenRegister\Event\ObjectDeletedEvent"/>
+                <!-- automation-approval-steps: consumes OR's approval-chain
+                     engine directly (ApprovalChainMapper/ApprovalStepMapper/
+                     ApprovalService) per ADR-022 — never a new engine. -->
+                <referencedClass name="OCA\OpenRegister\Event\ObjectTransitionedEvent"/>
+                <referencedClass name="OCA\OpenRegister\Event\ApprovalStepApprovedEvent"/>
+                <referencedClass name="OCA\OpenRegister\Event\ApprovalStepRejectedEvent"/>
+                <referencedClass name="OCA\OpenRegister\Db\ApprovalChain"/>
+                <referencedClass name="OCA\OpenRegister\Db\ApprovalChainMapper"/>
+                <referencedClass name="OCA\OpenRegister\Db\ApprovalStep"/>
+                <referencedClass name="OCA\OpenRegister\Db\ApprovalStepMapper"/>
+                <referencedClass name="OCA\OpenRegister\Service\ApprovalService"/>
                 <referencedClass name="OCA\OpenRegister\Service\ObjectService"/>
+                <!-- The interface ObjectService implements — used wherever a
+                     class types its collaborator against the contract rather
+                     than the concrete class (ADR-022). Pre-existing across
+                     ~10 files (VersionPromotionService, RuleEngineService,
+                     GitHubAppSyncService, IconService, ManifestResolverService
+                     among them) that were already red before this entry;
+                     app-repo-format-flow-agent-export adds more of the same
+                     usage rather than a new class of error. -->
+                <referencedClass name="OCA\OpenRegister\Contract\ObjectServiceInterface"/>
+                <!-- The per-object counterpart of the above — ObjectEntity's
+                     own contract, e.g. ObjectService::find()'s return type.
+                     Pre-existing in SeedHelloWorldFixture.php, already red
+                     before this entry. -->
+                <referencedClass name="OCA\OpenRegister\Contract\ObjectEntityInterface"/>
+                <!-- The sanctioned single entry point for flows (ADR-022) —
+                     consumed by FlowChannelProvisioner so applying a published
+                     `flows/` channel creates a real OpenRegister Flow entity
+                     rather than a second, drift-prone flow store. -->
+                <referencedClass name="OCA\OpenRegister\Service\Flow\FlowService"/>
+                <!-- Thrown by ObjectService::saveObject(failIfExists: true) and
+                     caught BY TYPE in AppChannelApplier — matching the message
+                     text instead let an unrelated PHP error masquerade as a
+                     benign collision (apply-v2-channels). -->
+                <referencedClass name="OCA\OpenRegister\Exception\ObjectExistsException"/>
                 <referencedClass name="OCA\OpenRegister\Service\ConfigurationService"/>
                 <referencedClass name="OCA\OpenRegister\Service\RegisterService"/>
                 <referencedClass name="OCA\OpenRegister\Service\FileService"/>
@@ -110,6 +153,15 @@
                 <referencedClass name="OCA\OpenRegister\AppHost\Routes"/>
                 <referencedClass name="OCA\OpenRegister\AppHost\Settings\GenericAdminSettings"/>
                 <referencedClass name="OCA\OpenRegister\AppHost\Settings\GenericSettingsSection"/>
+                <!-- Bound by Application::register() as STRING class names inside
+                     lazy closures (so nothing touches the OCA\OpenRegister
+                     namespace at boot) and resolved by the DI container at
+                     request time, when OR's autoloader is registered. Same
+                     cross-app situation as the entries above — these two were
+                     simply omitted, which is why `composer psalm` reported two
+                     UndefinedClass errors. -->
+                <referencedClass name="OCA\OpenRegister\AppHost\Controller\GenericHealthController"/>
+                <referencedClass name="OCA\OpenRegister\AppHost\Controller\GenericMetricsController"/>
                 <!-- Additional OCP infrastructure types used across the fleet -->
                 <referencedClass name="OCP\AppFramework\Bootstrap\IBootContext"/>
                 <referencedClass name="OCP\AppFramework\Bootstrap\IRegistrationContext"/>

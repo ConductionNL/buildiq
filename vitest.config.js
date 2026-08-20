@@ -2,14 +2,14 @@
  * SPDX-FileCopyrightText: 2026 ConductionNL / OpenBuild Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Vitest configuration for OpenBuild Vue 2.7 unit tests.
+ * Vitest configuration for OpenBuild Vue 3 unit tests.
  *
  * Tests live under `tests/components/**` and `tests/views/**` and run in
  * a jsdom environment so DOM assertions (`wrapper.find`, `wrapper.text`,
  * event firing) work without a real browser.
  *
  * Notes:
- *  - `@vitejs/plugin-vue2` compiles single-file components for Vite/Vitest
+ *  - `@vitejs/plugin-vue` compiles single-file components for Vite/Vitest
  *    (separate from webpack's `vue-loader`).
  *  - `*.css` side-effect imports from `@nextcloud/vue` and related
  *    packages do not exist on disk in unit-test mode (they are produced
@@ -23,7 +23,7 @@
  */
 
 const path = require('path')
-const vue2 = require('@vitejs/plugin-vue2')
+const vue = require('@vitejs/plugin-vue')
 
 const cssNoop = {
 	name: 'openbuild-css-noop',
@@ -43,15 +43,18 @@ const cssNoop = {
 }
 
 module.exports = {
-	plugins: [
-		cssNoop,
-		vue2.default ? vue2.default() : vue2(),
-	],
+	plugins: [cssNoop, vue.default ? vue.default() : vue()],
 	test: {
 		environment: 'jsdom',
 		globals: false,
 		include: ['tests/**/*.spec.{js,ts}'],
-		exclude: ['tests/e2e/**', 'tests/integration/**', 'tests/Unit/**', 'tests/unit/**', 'node_modules/**'],
+		exclude: [
+			'tests/e2e/**',
+			'tests/integration/**',
+			'tests/Unit/**',
+			'tests/unit/**',
+			'node_modules/**',
+		],
 		setupFiles: [path.resolve(__dirname, 'tests/vitest/setup.js')],
 		server: {
 			deps: {
@@ -73,9 +76,22 @@ module.exports = {
 	resolve: {
 		alias: [
 			{ find: '@', replacement: path.resolve(__dirname, 'src') },
+			// VTU v2 silently ignores v1's top-level stubs/provide/mocks. This
+			// adapter hoists them into `global` so the legacy specs keep the
+			// isolation they were written with. See the file's docblock.
+			{
+				find: /^@vue\/test-utils$/,
+				replacement: path.resolve(
+					__dirname,
+					'tests/vitest/vueTestUtilsCompat.js',
+				),
+			},
 			{
 				find: /^@conduction\/nextcloud-vue$/,
-				replacement: path.resolve(__dirname, 'tests/vitest/stubs/conduction-nextcloud-vue.js'),
+				replacement: path.resolve(
+					__dirname,
+					'tests/vitest/stubs/conduction-nextcloud-vue.js',
+				),
 			},
 			// vuedraggable uses SortableJS + a live DOM that jsdom can't
 			// satisfy; the page-list / menu-tree specs mock it per-test
@@ -83,7 +99,10 @@ module.exports = {
 			// passthrough stub that just renders the default slot.
 			{
 				find: /^vuedraggable$/,
-				replacement: path.resolve(__dirname, 'tests/vitest/stubs/vuedraggable.js'),
+				replacement: path.resolve(
+					__dirname,
+					'tests/vitest/stubs/vuedraggable.js',
+				),
 			},
 		],
 	},

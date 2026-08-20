@@ -17,7 +17,7 @@
 			<h3 class="ob-schemas-widget__title">
 				{{ t('openbuild', 'Schemas') }}
 			</h3>
-			<NcButton type="tertiary" @click="addSchema">
+			<NcButton variant="tertiary" @click="addSchema">
 				{{ t('openbuild', '+ Add schema') }}
 			</NcButton>
 		</header>
@@ -31,10 +31,16 @@
 				@click="openSchema(schema)"
 				@keyup.enter="openSchema(schema)"
 				@keyup.space="openSchema(schema)">
-				<span class="ob-schemas-widget__row-name">{{ schema.name || schema.title || schema.slug }}</span>
+				<span class="ob-schemas-widget__row-name">{{
+					schema.name || schema.title || schema.slug
+				}}</span>
 				<span class="ob-schemas-widget__row-meta">
-					<span class="ob-schemas-widget__row-count">{{ formatCount(schema.objectCount) }}</span>
-					<span class="ob-schemas-widget__row-status">{{ schema.status || t('openbuild', 'active') }}</span>
+					<span class="ob-schemas-widget__row-count">{{
+						formatCount(schema.objectCount)
+					}}</span>
+					<span class="ob-schemas-widget__row-status">{{
+						schema.status || t('openbuild', 'active')
+					}}</span>
 				</span>
 			</li>
 		</ul>
@@ -45,7 +51,7 @@
 </template>
 
 <script>
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
+import NcButton from '@nextcloud/vue/components/NcButton'
 import { buildVersionedRoute } from '../../../router/helpers.js'
 
 export default {
@@ -56,6 +62,7 @@ export default {
 		versionSlug: { type: String, default: '' },
 		schemas: { type: Array, default: () => [] },
 	},
+
 	methods: {
 		/**
 		 * Format an object-count value for inline display.
@@ -82,11 +89,13 @@ export default {
 			if (!id) {
 				return
 			}
-			this.$router.push(buildVersionedRoute(
-				'SchemaDesigner',
-				{ slug: this.appSlug, schemaId: String(id) },
-				this.versionSlug || undefined,
-			))
+			this.$router.push(
+				buildVersionedRoute(
+					'SchemaDesigner',
+					{ slug: this.appSlug, schemaId: String(id) },
+					this.versionSlug || undefined,
+				),
+			)
 		},
 
 		/**
@@ -98,17 +107,28 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
 		 */
 		addSchema() {
-			const opener = (typeof window !== 'undefined' && window.openbuild && typeof window.openbuild.openAddSchemaDialog === 'function')
-				? window.openbuild.openAddSchemaDialog
-				: null
+			const opener =
+				typeof window !== 'undefined'
+				&& window.openbuild
+				&& typeof window.openbuild.openAddSchemaDialog === 'function'
+					? window.openbuild.openAddSchemaDialog
+					: null
 			if (opener) {
 				opener({ appSlug: this.appSlug, versionSlug: this.versionSlug })
 				return
 			}
-			if (typeof console !== 'undefined' && typeof console.debug === 'function') {
-				console.debug('openbuild: schema-create dialog not yet registered — deferred to schema-designer spec')
+			if (
+				typeof console !== 'undefined'
+				&& typeof console.debug === 'function'
+			) {
+				console.debug(
+					'openbuild: schema-create dialog not yet registered — deferred to schema-designer spec',
+				)
 			}
-			this.$emit('add-schema', { appSlug: this.appSlug, versionSlug: this.versionSlug })
+			this.$emit('add-schema', {
+				appSlug: this.appSlug,
+				versionSlug: this.versionSlug,
+			})
 		},
 	},
 }

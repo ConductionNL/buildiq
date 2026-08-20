@@ -16,21 +16,58 @@
 <template>
 	<NcDialog
 		:open="open"
-		:name="editing ? t('openbuild', 'Edit document attachment') : t('openbuild', 'Attach a Docudesk template')"
+		:name="
+			editing
+				? t('openbuild', 'Edit document attachment')
+				: t('openbuild', 'Attach a Docudesk template')
+		"
 		size="normal"
 		@update:open="$emit('update:open', $event)"
 		@closing="onClose">
 		<div class="ob-document-attach">
+			<!--
+				EXACTLY ONE of these may render. They are mutually exclusive
+				claims about the same thing and they were `v-if`/`v-if`, so both
+				rendered together the moment `docudeskAvailable` flipped false
+				after the dialog had already opened — which is the normal case,
+				because `PageDesignerHost` initialises the flag to `true` and
+				resolves the real value asynchronously (PageDesignerHost.vue
+				`docudeskAvailable: true` → `docudeskStatus.available`). The
+				dialog's `open` watcher therefore ran the snapshot refresh, got a
+				404 from a route that does not exist, set `templateMissing`, and
+				then the late `false` added the second paragraph on top.
+
+				The result told the user two contradictory things at once — "the
+				app is not installed" and "your template was deleted from it" —
+				and the second is not knowable when the first is true: a 404 from
+				an absent app is the router saying the ROUTE is missing, not
+				Docudesk saying the TEMPLATE is. `v-else-if` makes the absence
+				message win, which is both the honest reading and the actionable
+				one.
+			-->
 			<p v-if="!docudeskAvailable" class="ob-document-attach__warn">
-				{{ t('openbuild', 'Docudesk is not installed or enabled on this instance. The template list cannot be loaded.') }}
+				{{
+					t(
+						'openbuild',
+						'Docudesk is not installed or enabled on this instance. The template list cannot be loaded.',
+					)
+				}}
 			</p>
-			<p v-if="templateMissing" class="ob-document-attach__warn" role="alert">
-				{{ t('openbuild', 'The attached template no longer exists in Docudesk. Pick another template or detach.') }}
+			<p
+				v-else-if="templateMissing"
+				class="ob-document-attach__warn"
+				role="alert">
+				{{
+					t(
+						'openbuild',
+						'The attached template no longer exists in Docudesk. Pick another template or detach.',
+					)
+				}}
 			</p>
 
 			<NcSelect
 				v-model="templateOption"
-				:input-label="t('openbuild', 'Template')"
+				:inputLabel="t('openbuild', 'Template')"
 				:options="templateOptions"
 				:loading="loadingTemplates"
 				:disabled="!docudeskAvailable"
@@ -38,55 +75,88 @@
 
 			<NcSelect
 				v-model="schemaOption"
-				:input-label="t('openbuild', 'Schema')"
+				:inputLabel="t('openbuild', 'Schema')"
 				:options="schemaOptions"
 				label="label" />
 
 			<NcTextField
-				:value="label"
+				:modelValue="label"
 				:label="t('openbuild', 'Action label')"
 				:placeholder="t('openbuild', 'e.g. Generate confirmation letter')"
-				@update:value="label = $event" />
+				@update:modelValue="label = $event" />
 
 			<NcSelect
 				v-model="formatOption"
-				:input-label="t('openbuild', 'Output format (optional)')"
+				:inputLabel="t('openbuild', 'Output format (optional)')"
 				:options="formatOptions"
 				label="label" />
 
 			<NcTextField
-				:value="filenameTemplate"
+				:modelValue="filenameTemplate"
 				:label="t('openbuild', 'Filename template (optional)')"
-				:placeholder="t('openbuild', 'e.g. bevestiging-{{dossiernummer}}.pdf')"
-				@update:value="filenameTemplate = $event" />
+				:placeholder="
+					t('openbuild', 'e.g. bevestiging-{{dossiernummer}}.pdf')
+				"
+				@update:modelValue="filenameTemplate = $event" />
 
 			<label class="ob-document-attach__toggle">
-				<input v-model="addActionsTab" type="checkbox">
-				{{ t('openbuild', 'Add document actions to this schema\'s detail page') }}
+				<input v-model="addActionsTab" type="checkbox" />
+				{{
+					t(
+						'openbuild',
+						"Add document actions to this schema's detail page",
+					)
+				}}
 			</label>
 
 			<div class="ob-document-attach__preview">
 				<NcButton
-					type="secondary"
+					variant="secondary"
 					:disabled="!canPreview || previewing"
 					@click="onPreview">
-					{{ previewing ? t('openbuild', 'Rendering preview…') : t('openbuild', 'Preview with sample data') }}
+					{{
+						previewing
+							? t('openbuild', 'Rendering preview…')
+							: t('openbuild', 'Preview with sample data')
+					}}
 				</NcButton>
-				<p v-if="previewError" class="ob-document-attach__error" role="alert">
-					{{ t('openbuild', 'Preview failed. The template could not be rendered.') }}
+				<p
+					v-if="previewError"
+					class="ob-document-attach__error"
+					role="alert">
+					{{
+						t(
+							'openbuild',
+							'Preview failed. The template could not be rendered.',
+						)
+					}}
 				</p>
-				<div v-if="previewContent" class="ob-document-attach__preview-body" v-html="previewContent" />
+				<!-- Rendering a Docudesk template preview as markup is the point of
+				     this pane, so v-html is required. It is safe here because
+				     `previewContent` has exactly two assignments — `''` and
+				     `DOMPurify.sanitize(raw)` in onPreview() — so no unsanitised
+				     value can ever reach this binding. Verified, not assumed. -->
+				<!-- eslint-disable-next-line vue/no-v-html -->
+				<div
+					v-if="previewContent"
+					class="ob-document-attach__preview-body"
+					v-html="previewContent" />
 			</div>
 
 			<p v-if="duplicateLabel" class="ob-document-attach__error" role="alert">
-				{{ t('openbuild', 'An attachment with this label already exists on this schema. Choose a different label.') }}
+				{{
+					t(
+						'openbuild',
+						'An attachment with this label already exists on this schema. Choose a different label.',
+					)
+				}}
 			</p>
 		</div>
 		<template #actions>
 			<NcButton @click="onClose">
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
-			<NcButton type="primary" :disabled="!canSave" @click="onSave">
+			<NcButton variant="primary" :disabled="!canSave" @click="onSave">
 				{{ t('openbuild', 'Save') }}
 			</NcButton>
 		</template>
@@ -94,9 +164,14 @@
 </template>
 
 <script>
-import { NcDialog, NcButton, NcSelect, NcTextField } from '@nextcloud/vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { NcButton, NcDialog, NcSelect, NcTextField } from '@nextcloud/vue'
+import DOMPurify from 'dompurify'
+import {
+	fetchDocudeskTemplates,
+	templateToOption,
+} from '../composables/useDocudeskTemplates.js'
 import { DOCUMENT_FORMATS } from '../services/manifestValidation/documentAttachments.js'
 
 export default {
@@ -107,27 +182,32 @@ export default {
 			type: Boolean,
 			default: false,
 		},
+
 		// The app's schemas as `[{ slug, title, properties }]`.
 		schemas: {
 			type: Array,
-			default: () => ([]),
+			default: () => [],
 		},
+
 		// Existing attachments (for the (schema,label) uniqueness check).
 		attachments: {
 			type: Array,
-			default: () => ([]),
+			default: () => [],
 		},
+
 		// Existing attachment when editing (null when adding).
 		attachment: {
 			type: Object,
 			default: null,
 		},
+
 		// Soft capability flag for Docudesk.
 		docudeskAvailable: {
 			type: Boolean,
 			default: true,
 		},
 	},
+
 	emits: ['update:open', 'save'],
 	data() {
 		return {
@@ -145,40 +225,51 @@ export default {
 			templateMissing: false,
 		}
 	},
+
 	computed: {
 		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		editing() {
 			return !!this.attachment
 		},
-		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
+
+		/**
+		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
+		 * @spec openspec/changes/automation-document-action/specs/automation-document-action/spec.md
+		 */
 		templateOptions() {
-			return this.templates.map((tpl) => ({
-				label: tpl.name || tpl.title || tpl.id,
-				uuid: tpl.id || tpl.uuid,
-				name: tpl.name || tpl.title || '',
-			}))
+			return this.templates.map(templateToOption)
 		},
+
 		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		schemaOptions() {
-			return this.schemas.map((s) => ({ label: s.title || s.slug, slug: s.slug }))
+			return this.schemas.map((s) => ({
+				label: s.title || s.slug,
+				slug: s.slug,
+			}))
 		},
+
 		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-001 */
 		formatOptions() {
-			return [{ label: t('openbuild', 'Template default'), value: '' }]
-				.concat(DOCUMENT_FORMATS.map((f) => ({ label: f.toUpperCase(), value: f })))
+			return [{ label: t('openbuild', 'Template default'), value: '' }].concat(
+				DOCUMENT_FORMATS.map((f) => ({ label: f.toUpperCase(), value: f })),
+			)
 		},
+
 		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		selectedSchemaSlug() {
 			return this.schemaOption ? this.schemaOption.slug : ''
 		},
+
 		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		selectedTemplateId() {
 			return this.templateOption ? this.templateOption.uuid : ''
 		},
+
 		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		canPreview() {
 			return this.docudeskAvailable && !!this.selectedTemplateId
 		},
+
 		/**
 		 * True when the (schema, label) pair already exists on another
 		 * attachment (REQ-DDT-001 uniqueness, surfaced before save).
@@ -193,16 +284,34 @@ export default {
 				return false
 			}
 			const editingId = this.attachment && this.attachment.id
-			return this.attachments.some((a) =>
-				a && a.schema === schema && a.label === label && a.id !== editingId)
+			return this.attachments.some(
+				(a) =>
+					a
+					&& a.schema === schema
+					&& a.label === label
+					&& a.id !== editingId,
+			)
 		},
+
 		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		canSave() {
-			return !!(this.templateOption && this.schemaOption && this.label.trim() && !this.duplicateLabel)
+			return !!(
+				this.templateOption
+				&& this.schemaOption
+				&& this.label.trim()
+				&& !this.duplicateLabel
+			)
 		},
 	},
+
 	watch: {
-		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
+		/**
+		 * @param {boolean} isOpen - The dialog's new `open` state. Opening re-seeds the
+		 *   form from the attachment being edited and (when Docudesk is installed)
+		 *   refetches the template list, so a template renamed or deleted since the
+		 *   last open is reflected. Closing is not acted on.
+		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
+		 */
 		open(isOpen) {
 			if (isOpen) {
 				this.hydrate()
@@ -215,6 +324,7 @@ export default {
 			}
 		},
 	},
+
 	methods: {
 		/**
 		 * Seed the form from an existing attachment when editing.
@@ -226,11 +336,21 @@ export default {
 			this.previewError = false
 			this.templateMissing = false
 			if (this.attachment) {
-				this.templateOption = { label: this.attachment.templateName, uuid: this.attachment.templateId, name: this.attachment.templateName }
-				this.schemaOption = { label: this.attachment.schema, slug: this.attachment.schema }
+				this.templateOption = {
+					label: this.attachment.templateName,
+					uuid: this.attachment.templateId,
+					name: this.attachment.templateName,
+				}
+				this.schemaOption = {
+					label: this.attachment.schema,
+					slug: this.attachment.schema,
+				}
 				this.label = this.attachment.label || ''
 				this.formatOption = this.attachment.format
-					? { label: this.attachment.format.toUpperCase(), value: this.attachment.format }
+					? {
+							label: this.attachment.format.toUpperCase(),
+							value: this.attachment.format,
+						}
 					: { label: t('openbuild', 'Template default'), value: '' }
 				this.filenameTemplate = this.attachment.filenameTemplate || ''
 				this.addActionsTab = false
@@ -238,30 +358,30 @@ export default {
 				this.templateOption = null
 				this.schemaOption = null
 				this.label = ''
-				this.formatOption = { label: t('openbuild', 'Template default'), value: '' }
+				this.formatOption = {
+					label: t('openbuild', 'Template default'),
+					value: '',
+				}
 				this.filenameTemplate = ''
 				this.addActionsTab = false
 			}
 		},
+
 		/**
-		 * Load templates from Docudesk's template index.
+		 * Load templates from Docudesk's template index — the SHARED fetch
+		 * also used by AutomationEditDialog's `generateDocument` template
+		 * picker (automation-document-action).
 		 *
 		 * @return {Promise<void>}
 		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
+		 * @spec openspec/changes/automation-document-action/specs/automation-document-action/spec.md
 		 */
 		async fetchTemplates() {
 			this.loadingTemplates = true
-			try {
-				const url = generateUrl('/apps/docudesk/api/templates')
-				const { data } = await axios.get(url)
-				const list = (data && (data.results || data.templates || data)) || []
-				this.templates = Array.isArray(list) ? list : []
-			} catch {
-				this.templates = []
-			} finally {
-				this.loadingTemplates = false
-			}
+			this.templates = await fetchDocudeskTemplates()
+			this.loadingTemplates = false
 		},
+
 		/**
 		 * On edit, refresh the template-name snapshot via the show endpoint and
 		 * flag a missing template (404).
@@ -289,6 +409,7 @@ export default {
 				}
 			}
 		},
+
 		/**
 		 * Render a preview of the selected template without saving.
 		 *
@@ -303,15 +424,23 @@ export default {
 			this.previewError = false
 			this.previewContent = ''
 			try {
-				const url = generateUrl(`/apps/docudesk/api/templates/${this.selectedTemplateId}/preview`)
+				const url = generateUrl(
+					`/apps/docudesk/api/templates/${this.selectedTemplateId}/preview`,
+				)
 				const { data } = await axios.post(url, {})
-				this.previewContent = (data && (data.html || data.content || data.preview)) || ''
+				const raw =
+					(data && (data.html || data.content || data.preview)) || ''
+				// Sanitize before the v-html binding: the preview is authored in a
+				// (possibly shared) Docudesk template and renders in this user's
+				// session, so it is an untrusted cross-user XSS sink (harden-xss-dos-csrf).
+				this.previewContent = DOMPurify.sanitize(raw)
 			} catch {
 				this.previewError = true
 			} finally {
 				this.previewing = false
 			}
 		},
+
 		/**
 		 * Assemble + emit the document-attachment entry.
 		 *
@@ -321,7 +450,8 @@ export default {
 			if (!this.canSave) {
 				return
 			}
-			const id = (this.attachment && this.attachment.id)
+			const id =
+				(this.attachment && this.attachment.id)
 				|| `doc-${this.schemaOption.slug}-${Date.now()}`
 			const entry = {
 				id,
@@ -340,6 +470,7 @@ export default {
 			this.$emit('save', { entry, addActionsTab: this.addActionsTab })
 			this.$emit('update:open', false)
 		},
+
 		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		onClose() {
 			this.$emit('update:open', false)
@@ -354,22 +485,27 @@ export default {
 	flex-direction: column;
 	gap: 12px;
 }
+
 .ob-document-attach__warn {
 	color: var(--color-warning-text, var(--color-warning));
 }
+
 .ob-document-attach__error {
 	color: var(--color-error);
 }
+
 .ob-document-attach__toggle {
 	display: flex;
 	gap: 8px;
 	align-items: center;
 }
+
 .ob-document-attach__preview {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
 }
+
 .ob-document-attach__preview-body {
 	max-height: 240px;
 	overflow: auto;

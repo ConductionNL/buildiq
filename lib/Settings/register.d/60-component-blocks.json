@@ -1,0 +1,99 @@
+{
+	"_comment": "ADR-037 register fragment — component-blocks. Adds a NEW disjoint schema key `componentBlock` to the shared `openbuild` register's components.schemas map (key-union merge — no existing schema is touched). A ComponentBlock is a reusable, named manifest fragment (a single captured widgetEntry, or a multi-widget page-section wrapper `{ id, widgets: [...] }`) plus capture metadata: `schemaDependencies` (de-namespaced schema slugs the fragment's `schema`/`relatedSchema` references point at, using the exact `deNamespaceSlug`/`rewriteSchemaRefs` machinery `save-as-template`'s templateCapture.js already ships) and `sourceApplicationSlug` (provenance only, never a live link). Org-scoped via OR's standard `organisation` field (D3) — no new property needed. Declarative schema metadata only (ADR-031); the capture/insert/remap logic is imperative frontend code under the structural-transform exception (see design.md's declarative-vs-imperative decision). See design.md Decisions 1-4 and specs/component-blocks/spec.md.",
+	"components": {
+		"schemas": {
+			"componentBlock": {
+				"x-schema-org": "schema:CreativeWork",
+				"slug": "component-block",
+				"icon": "PuzzleOutline",
+				"version": "0.1.0",
+				"title": "Component Block",
+				"description": "A named, reusable manifest fragment captured from a configured widget or a multi-widget page section, insertable into any page/app the caller has editor rights on. Never contains object data (record rows) — only structure, matching the ApplicationTemplate 'never captures rows' guarantee. Insert always deep-copies the fragment and mints fresh widget ids; there is no live link back to the source block (explicit v1 non-goal — see proposal.md).",
+				"authorization": {
+					"read": [
+						"authenticated"
+					],
+					"create": [
+						"admin"
+					],
+					"update": [
+						"admin"
+					],
+					"delete": [
+						"admin"
+					]
+				},
+				"type": "object",
+				"required": [
+					"slug",
+					"name",
+					"description",
+					"category",
+					"fragment",
+					"sourceApplicationSlug"
+				],
+				"properties": {
+					"uuid": {
+						"title": "UUID",
+						"type": "string",
+						"description": "OpenRegister-assigned unique identifier for this block record. Not supplied by the client on create; mirrors `@self.id`."
+					},
+					"slug": {
+						"title": "Block Slug",
+						"type": "string",
+						"description": "Kebab-case unique slug for the block within its organisation.",
+						"pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+						"minLength": 2,
+						"maxLength": 48,
+						"example": "status-badge-widget"
+					},
+					"name": {
+						"title": "Block Name",
+						"type": "string",
+						"description": "Human-readable name shown in the block-library panel and template-catalogue Blocks filter.",
+						"example": "Status badge"
+					},
+					"description": {
+						"title": "Block Description",
+						"type": "string",
+						"description": "One-line plain-English summary of what the block does.",
+						"example": "Colour-coded status badge widget bound to a record's status field."
+					},
+					"category": {
+						"title": "Category",
+						"type": "string",
+						"description": "Free-text category label used for filtering in the block-library panel and gallery (e.g. display, layout, form, navigation, data). Unlike ApplicationTemplate.category this is not a closed enum — a block's shape is more varied than a full-app template's.",
+						"maxLength": 48,
+						"example": "display"
+					},
+					"schemaDependencies": {
+						"title": "Schema Dependencies",
+						"type": "array",
+						"default": [],
+						"description": "De-namespaced schema slugs the fragment's `schema`/`relatedSchema` bindings reference (captured via the same `deNamespaceSlug` logic save-as-template uses for companion schemas). Insert compares this list against the target app's schema slugs; an exact match needs no prompt, a mismatch opens BlockRemapDialog.",
+						"items": {
+							"type": "string"
+						}
+					},
+					"fragment": {
+						"title": "Fragment",
+						"type": "object",
+						"description": "The captured manifest subtree. A single-widget capture stores the widgetEntry object itself (carrying its original `id`, kept only for reference — insert always mints a fresh one). A page-section capture stores a wrapper `{ id, widgets: [...widgetEntry] }` preserving the widgets' relative layout (their `slot`/`gridX`/`gridY`/`gridWidth`/`gridHeight`). Never contains object data — structure only.",
+						"additionalProperties": true
+					},
+					"sourceApplicationSlug": {
+						"title": "Source Application Slug",
+						"type": "string",
+						"description": "The slug of the Application this block was captured from. Provenance only — recorded for traceability, never a live reference; deleting or renaming the source app does not affect an already-saved block.",
+						"example": "vergunning-app"
+					},
+					"createdBy": {
+						"title": "Created By",
+						"type": "string",
+						"description": "Nextcloud user id of the editor who saved this block. Set by the frontend at save time from the current user; not a live-updating owner pointer."
+					}
+				}
+			}
+		}
+	}
+}

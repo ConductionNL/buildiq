@@ -32,41 +32,39 @@ use Throwable;
 /**
  * 500-mapped — promotion partially or wholly failed; target is archived.
  */
-final class PromotionFailedException extends VersionPromotionException
-{
+final class PromotionFailedException extends VersionPromotionException {
 
-    /**
-     * The strategy the admin chose when the promotion failed.
-     *
-     * @var string
-     */
-    private string $strategy;
+	/**
+	 * The strategy the admin chose when the promotion failed.
+	 *
+	 * @var string
+	 */
+	private string $strategy;
 
-    /**
-     * Constructor.
-     *
-     * @param string         $strategy The strategy value that was being run
-     * @param string         $message  Captured OR/PHP error message
-     * @param Throwable|null $previous Wrapped causal exception
-     *
-     * @return void
-     */
-    public function __construct(
-        string $strategy,
-        string $message='Promotion failed; target was archived.',
-        ?Throwable $previous=null
-    ) {
-        parent::__construct(errorCode: 'promotion_failed', message: $message, previous: $previous);
-        $this->strategy = $strategy;
-    }//end __construct()
+	/**
+	 * Constructor.
+	 *
+	 * @param string $strategy The strategy value that was being run
+	 * @param string $message Captured OR/PHP error message
+	 * @param Throwable|null $previous Wrapped causal exception
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		string $strategy,
+		string $message = 'Promotion failed; target was archived.',
+		?Throwable $previous = null,
+	) {
+		parent::__construct(errorCode: 'promotion_failed', message: $message, previous: $previous);
+		$this->strategy = $strategy;
+	}//end __construct()
 
-    /**
-     * Get the strategy that was being run at failure time.
-     *
-     * @return string
-     */
-    public function getStrategy(): string
-    {
-        return $this->strategy;
-    }//end getStrategy()
+	/**
+	 * Get the strategy that was being run at failure time.
+	 *
+	 * @return string
+	 */
+	public function getStrategy(): string {
+		return $this->strategy;
+	}//end getStrategy()
 }//end class

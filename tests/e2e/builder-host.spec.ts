@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
 import { test, expect } from '@playwright/test'
+import { dismissFirstVisitOverlays } from './support/overlays'
 
 /**
  * E2E — BuilderHost mounts the seeded hello-world virtual app and the
@@ -13,9 +14,16 @@ import { test, expect } from '@playwright/test'
  *  - OpenBuild enabled (`docker exec nextcloud php occ app:enable openbuild`).
  *  - SeedHelloWorld has run (post-migration repair step).
  */
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — builder host blank (BuilderHostView unresolved by nc-vue CnPageRenderer) / no detail/editor/version pages. Re-enable when #41 is fixed.
-test.describe.skip('BuilderHost — hello-world journey', () => {
-	test('loads /builder/hello-world and renders the seeded index page', async ({ page }) => {
+// UN-QUARANTINED 2026-07-30. The old reason — "builder host blank
+// (BuilderHostView unresolved by nc-vue CnPageRenderer)" — no longer holds:
+// `/builder/hello-world` mounts the nested CnAppRoot and renders the seeded
+// index page. The bodies below were already real (three named seeded titles, a
+// URL assertion on the inner router's path, and the seeded body text), so they
+// are un-skipped as written rather than rewritten.
+test.describe('BuilderHost — hello-world journey', () => {
+	test('loads /builder/hello-world and renders the seeded index page', async ({
+		page,
+	}) => {
 		await page.goto('/apps/openbuild/builder/hello-world')
 
 		await expect(page).toHaveURL(/\/apps\/openbuild\/builder\/hello-world/)
@@ -37,16 +45,26 @@ test.describe.skip('BuilderHost — hello-world journey', () => {
 
 	test('navigates to a hello-message detail page', async ({ page }) => {
 		await page.goto('/apps/openbuild/builder/hello-world')
+		// The NESTED CnAppRoot mounts with appId `openbuild-hello-world`, so
+		// nc-vue's first-visit support dialog has never been seen for THAT app id
+		// and opens over the virtual app. It is a real modal (aria-modal, backdrop),
+		// so it correctly swallows the click below — measured: 55 retries, all
+		// "cn-support-dialog subtree intercepts pointer events". Clear it first.
+		await dismissFirstVisitOverlays(page)
 
 		// Click the first seeded message — the manifest defines the detail
 		// page at /messages/:id so the inner router forwards us there.
-		const firstMessage = page.getByText('Welcome to OpenBuild', { exact: false }).first()
+		const firstMessage = page
+			.getByText('Welcome to OpenBuild', { exact: false })
+			.first()
 		await expect(firstMessage).toBeVisible({ timeout: 15_000 })
 		await firstMessage.click()
 
 		// The URL should now include /messages/<uuid> (the inner router's path,
 		// captured by BuilderHost's :pathMatch wildcard).
-		await expect(page).toHaveURL(/\/builder\/hello-world\/messages\//, { timeout: 10_000 })
+		await expect(page).toHaveURL(/\/builder\/hello-world\/messages\//, {
+			timeout: 10_000,
+		})
 
 		// And the detail page must show the message body.
 		await expect(
@@ -63,12 +81,38 @@ test.describe.skip('BuilderHost — hello-world journey', () => {
 
 		await expect(page).toHaveURL(/\/builder\/hello-world\/messages\/new/)
 
-		// The form page renders a form for the hello-message schema —
-		// it must expose at least one input for the `title` field.
-		const titleInput = page.locator('input[name="title"], textarea[name="title"], [data-field="title"] input').first()
+		await dismissFirstVisitOverlays(page)
+
+		// The form page renders a form for the hello-message schema — it must
+		// expose an editable control for the `title` field the manifest declares.
+		//
+		// Selector corrected 2026-07-30: the old one looked for `input[name="title"]`
+		// / `[data-field="title"] input`. nc-vue's CnFormPage renders each field in a
+		// wrapper carrying `data-field-key="<key>"` and names the control
+		// `field-<key>` — neither of the old forms is ever emitted.
+		await expect(
+			page.locator('[data-testid="cn-form-page"]'),
+			'the manifest form page must render',
+		).toBeVisible({ timeout: 15_000 })
+		const titleField = page.locator('[data-field-key="title"]')
+		await expect(
+			titleField,
+			'form page must render the title field declared in the hello-message schema',
+		).toBeVisible({ timeout: 15_000 })
+		// …and it must be an editable control, not just a labelled wrapper.
+		const titleInput = titleField.locator('input, textarea').first()
 		await expect(
 			titleInput,
-			'form page must render an input for the title field declared in the hello-message schema',
-		).toBeVisible({ timeout: 15_000 })
+			'the title field must expose an editable control',
+		).toBeVisible({ timeout: 10_000 })
+		await expect(titleInput).toBeEditable()
+
+		// The form is the manifest's `MessageCreate` page, so it must also carry
+		// the second declared field and a submit affordance — proving the whole
+		// declared form rendered, not one stray input.
+		await expect(
+			page.locator('[data-field-key="body"]'),
+			'the body field declared alongside title must render too',
+		).toBeVisible({ timeout: 10_000 })
 	})
 })

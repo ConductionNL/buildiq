@@ -16,15 +16,28 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 
-vi.mock('../../../src/components/page-editor/fields/SettingsSectionBuilder.vue', () => ({
-	default: {
-		name: 'SettingsSectionBuilder',
-		props: ['modelValue'],
-		render(h) { return h('div', { staticClass: 'settings-section-builder-stub' }) },
+// `vi.mock` factories are hoisted above the imports, so `h` is pulled in with
+// a lazy dynamic import inside the (async) factory. Vue 3 does not pass `h`
+// into render(), and vnode classes use `class`, not Vue 2's `staticClass`.
+vi.mock(
+	'../../../src/components/page-editor/fields/SettingsSectionBuilder.vue',
+	async () => {
+		const { h } = await import('vue')
+		return {
+			default: {
+				name: 'SettingsSectionBuilder',
+				props: ['modelValue'],
+				render() {
+					return h('div', { class: 'settings-section-builder-stub' })
+				},
+			},
+		}
 	},
-}))
+)
 
-const SettingsPageEditor = (await import('../../../src/components/page-editor/SettingsPageEditor.vue')).default
+const SettingsPageEditor = (
+	await import('../../../src/components/page-editor/SettingsPageEditor.vue')
+).default
 
 function mountEditor(config = {}) {
 	return mount(SettingsPageEditor, { propsData: { config } })
@@ -39,10 +52,14 @@ describe('SettingsPageEditor', () => {
 		const wrapper = mountEditor({})
 		wrapper.vm.update('saveEndpoint', '/api/x/settings')
 		await wrapper.vm.$nextTick()
-		expect(wrapper.emitted('update:config')[0][0].saveEndpoint).toBe('/api/x/settings')
+		expect(wrapper.emitted('update:config')[0][0].saveEndpoint).toBe(
+			'/api/x/settings',
+		)
 		wrapper.vm.update('saveEndpoint', '')
 		await wrapper.vm.$nextTick()
-		expect(wrapper.emitted('update:config')[1][0]).not.toHaveProperty('saveEndpoint')
+		expect(wrapper.emitted('update:config')[1][0]).not.toHaveProperty(
+			'saveEndpoint',
+		)
 	})
 
 	it('defaults to the flat-sections layout', () => {
@@ -64,7 +81,9 @@ describe('SettingsPageEditor', () => {
 	})
 
 	it('switching to flat mode drops tabs and seeds sections:[]', async () => {
-		const wrapper = mountEditor({ tabs: [{ id: 'a', label: 'A', sections: [] }] })
+		const wrapper = mountEditor({
+			tabs: [{ id: 'a', label: 'A', sections: [] }],
+		})
 		wrapper.vm.setLayoutShape('sections')
 		await wrapper.vm.$nextTick()
 		const next = wrapper.emitted('update:config')[0][0]
@@ -74,8 +93,14 @@ describe('SettingsPageEditor', () => {
 
 	it('SettingsSectionBuilder forwards through update:config in flat mode', async () => {
 		const wrapper = mountEditor({ sections: [] })
-		wrapper.findComponent({ name: 'SettingsSectionBuilder' }).vm
-			.$emit('update:modelValue', [{ title: 'General', fields: [{ key: 'name', label: 'Name', type: 'string' }] }])
+		wrapper
+			.findComponent({ name: 'SettingsSectionBuilder' })
+			.vm.$emit('update:modelValue', [
+				{
+					title: 'General',
+					fields: [{ key: 'name', label: 'Name', type: 'string' }],
+				},
+			])
 		await wrapper.vm.$nextTick()
 		const next = wrapper.emitted('update:config')[0][0]
 		expect(next.sections).toHaveLength(1)

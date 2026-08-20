@@ -29,33 +29,61 @@
 				v-if="iconUrl"
 				:src="iconUrl"
 				class="ob-detail-header__icon"
-				alt="">
+				alt="" />
 			<div class="ob-detail-header__hero-text">
 				<h1 class="ob-detail-header__name">
 					{{ applicationName }}
 				</h1>
-				<p v-if="applicationDescription" class="ob-detail-header__description">
+				<p
+					v-if="applicationDescription"
+					class="ob-detail-header__description">
 					{{ applicationDescription }}
 				</p>
 				<div class="ob-detail-header__hero-meta">
 					<span
 						class="ob-detail-header__badge ob-detail-header__badge--type"
-						:class="`ob-detail-header__badge--type-${appTypeKey}`">{{ appTypeLabel }}</span>
-					<span class="ob-detail-header__badge ob-detail-header__badge--status">{{ applicationStatus }}</span>
-					<span v-if="callerRole" class="ob-detail-header__badge ob-detail-header__badge--role">{{ callerRole }}</span>
-					<span v-if="productionSemver" class="ob-detail-header__badge ob-detail-header__badge--semver">
+						:class="`ob-detail-header__badge--type-${appTypeKey}`"
+						>{{ appTypeLabel }}</span
+					>
+					<span
+						class="ob-detail-header__badge ob-detail-header__badge--status"
+						>{{ applicationStatus }}</span
+					>
+					<span
+						v-if="callerRole"
+						class="ob-detail-header__badge ob-detail-header__badge--role"
+						>{{ callerRole }}</span
+					>
+					<span
+						v-if="productionSemver"
+						class="ob-detail-header__badge ob-detail-header__badge--semver">
 						v{{ productionSemver }}
 					</span>
 				</div>
 				<p v-if="isHybrid" class="ob-detail-header__hybrid-note">
-					{{ t('openbuild', 'This is a hybrid app — its name and id mirror the installed Nextcloud app and are read-only. You can still customize its pages, widgets, and menu.') }}
+					{{
+						t(
+							'openbuild',
+							'This is a hybrid app — its name and id mirror the installed Nextcloud app and are read-only. You can still customize its pages, widgets, and menu.',
+						)
+					}}
 				</p>
 				<!-- Hybrid apps ARE the live installed Nextcloud app — surface a
 				     direct "Open app" link so it's obvious it's accessible. -->
-				<p v-if="isHybrid && installedAppUrl" class="ob-detail-header__open-app">
-					<a class="ob-detail-header__open-app-link" :href="installedAppUrl">
-						<OpenInNew :size="16" class="ob-detail-header__open-app-icon" />
-						{{ t('openbuild', 'Open {name}', { name: applicationName }) }}
+				<p
+					v-if="isHybrid && installedAppUrl"
+					class="ob-detail-header__open-app">
+					<a
+						class="ob-detail-header__open-app-link"
+						:href="installedAppUrl"
+						target="_blank"
+						rel="noopener noreferrer">
+						<OpenInNew
+							:size="16"
+							class="ob-detail-header__open-app-icon" />
+						{{
+							t('openbuild', 'Open {name}', { name: applicationName })
+						}}
 					</a>
 				</p>
 			</div>
@@ -63,24 +91,40 @@
 
 		<!-- 2 + 3. Version pills and window toggle row -->
 		<section class="ob-detail-header__controls">
-			<div class="ob-detail-header__pills" role="tablist" :aria-label="t('openbuild', 'Version selection')">
+			<div
+				class="ob-detail-header__pills"
+				role="tablist"
+				:aria-label="t('openbuild', 'Version selection')">
 				<div
 					v-for="version in visibleVersions"
 					:key="version.uuid"
 					class="ob-detail-header__pill-group">
 					<button
-						:class="['ob-detail-header__pill', isActiveVersion(version) ? 'ob-detail-header__pill--active' : '']"
+						class="ob-detail-header__pill"
+						:class="[
+							isActiveVersion(version)
+								? 'ob-detail-header__pill--active'
+								: '',
+						]"
 						role="tab"
 						:aria-selected="isActiveVersion(version) ? 'true' : 'false'"
 						type="button"
 						@click="selectVersion(version)">
-						<span v-if="isProductionVersion(version)" class="ob-detail-header__pill-star">*</span>
+						<span
+							v-if="isProductionVersion(version)"
+							class="ob-detail-header__pill-star"
+							>*</span
+						>
 						{{ version.name || version.slug }}
 					</button>
 					<button
 						v-if="hasPromoteTarget(version)"
 						class="ob-detail-header__pill-promote"
-						:aria-label="t('openbuild', 'Promote {name}', { name: version.name || version.slug })"
+						:aria-label="
+							t('openbuild', 'Promote {name}', {
+								name: version.name || version.slug,
+							})
+						"
 						type="button"
 						@click.stop="onPromoteClick(version)">
 						›
@@ -94,9 +138,8 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
-
+import { fetchApplicationRecord } from '../../composables/useApplicationRecord.js'
 import { buildVersionedRoute } from '../../router/helpers.js'
 
 export default {
@@ -109,6 +152,7 @@ export default {
 		object: { type: Object, default: null },
 		objectId: { type: String, default: '' },
 	},
+
 	/**
 	 * Local component state. The insights time-range control now lives in the
 	 * body dashboard (ApplicationDetailDashboard), not the header.
@@ -122,9 +166,12 @@ export default {
 			versions: [],
 			selectedVersionUuid: null,
 			error: null,
-			callerUid: (typeof window !== 'undefined' && window.OC && window.OC.currentUser) || '',
+			callerUid:
+				(typeof window !== 'undefined' && window.OC && window.OC.currentUser)
+				|| '',
 		}
 	},
+
 	computed: {
 		/**
 		 * App slug from the resolved Application record.
@@ -135,6 +182,7 @@ export default {
 		appSlug() {
 			return (this.application && this.application.slug) || ''
 		},
+
 		/**
 		 * Display name of the application.
 		 *
@@ -142,8 +190,13 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		applicationName() {
-			return (this.application && this.application.name) || this.appSlug || t('openbuild', 'Untitled application')
+			return (
+				(this.application && this.application.name)
+				|| this.appSlug
+				|| t('openbuild', 'Untitled application')
+			)
 		},
+
 		/**
 		 * Application description.
 		 *
@@ -153,15 +206,34 @@ export default {
 		applicationDescription() {
 			return (this.application && this.application.description) || ''
 		},
+
 		/**
-		 * Application status label.
+		 * Application lifecycle label for the header badge.
+		 *
+		 * Reads the PRODUCTION VERSION's status first. Spec C moved `status` off
+		 * the Application and onto the ApplicationVersion, so the Application-level
+		 * field is the legacy one — reading it made this badge disagree with the
+		 * list row, which REQ-OBR-007b requires to carry "the same badge".
+		 * Measured before the fix: hello-world's card read "Published" (from its
+		 * production version) while this header read "Draft" (from the stale
+		 * Application field) for the very same app.
+		 *
+		 * The Application-level value is kept as the fallback for legacy rows that
+		 * predate the versioned model and have no resolvable production version.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/specs/openbuild-runtime/spec.md#req-obr-007b
 		 */
 		applicationStatus() {
-			return (this.application && this.application.status) || t('openbuild', 'draft')
+			const fromVersion =
+				this.productionVersion && this.productionVersion.status
+			return (
+				fromVersion
+				|| (this.application && this.application.status)
+				|| t('openbuild', 'draft')
+			)
 		},
+
 		/**
 		 * The app's type discriminator (unify-apps-with-app-type). Absent reads
 		 * as 'virtual' (legacy default), matching the schema.
@@ -170,8 +242,11 @@ export default {
 		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
 		 */
 		appTypeKey() {
-			return (this.application && this.application.appType) === 'hybrid' ? 'hybrid' : 'virtual'
+			return (this.application && this.application.appType) === 'hybrid'
+				? 'hybrid'
+				: 'virtual'
 		},
+
 		/**
 		 * Human-readable label for the app-type badge.
 		 *
@@ -179,8 +254,11 @@ export default {
 		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
 		 */
 		appTypeLabel() {
-			return this.appTypeKey === 'hybrid' ? t('openbuild', 'Hybrid') : t('openbuild', 'Virtual')
+			return this.appTypeKey === 'hybrid'
+				? t('openbuild', 'Hybrid')
+				: t('openbuild', 'Virtual')
 		},
+
 		/**
 		 * Whether this is a hybrid app whose identity metadata (name/slug) is
 		 * read-only — it mirrors the installed Nextcloud app it customizes.
@@ -191,6 +269,7 @@ export default {
 		isHybrid() {
 			return this.appTypeKey === 'hybrid'
 		},
+
 		/**
 		 * URL of the app's icon SVG.
 		 *
@@ -199,8 +278,11 @@ export default {
 		 */
 		iconUrl() {
 			if (!this.appSlug) return ''
-			return generateUrl(`/apps/openbuild/icons/${encodeURIComponent(this.appSlug)}.svg`)
+			return generateUrl(
+				`/apps/openbuild/icons/${encodeURIComponent(this.appSlug)}.svg`,
+			)
 		},
+
 		/**
 		 * URL of the live installed Nextcloud app a hybrid app mirrors. A hybrid
 		 * app's slug equals the installed app id, so it is always reachable at
@@ -213,6 +295,7 @@ export default {
 			if (this.isHybrid === false || !this.appSlug) return ''
 			return generateUrl(`/apps/${encodeURIComponent(this.appSlug)}/`)
 		},
+
 		/**
 		 * Production version UUID resolved from the Application record.
 		 *
@@ -225,6 +308,7 @@ export default {
 			if (typeof pv === 'string') return pv
 			return pv.uuid || pv.id || null
 		},
+
 		/**
 		 * Currently active version (selected, or production, or first).
 		 *
@@ -233,10 +317,14 @@ export default {
 		 */
 		activeVersion() {
 			if (!this.selectedVersionUuid) {
-				return this.productionVersion || (this.orderedVersions[0] || null)
+				return this.productionVersion || this.orderedVersions[0] || null
 			}
-			return this.orderedVersions.find((v) => v.uuid === this.selectedVersionUuid) || null
+			return (
+				this.orderedVersions.find((v) => v.uuid === this.selectedVersionUuid)
+				|| null
+			)
 		},
+
 		/**
 		 * Active version UUID.
 		 *
@@ -246,6 +334,7 @@ export default {
 		activeVersionUuid() {
 			return this.activeVersion ? this.activeVersion.uuid : ''
 		},
+
 		/**
 		 * The production version row (for the chain/star resolution).
 		 *
@@ -254,8 +343,13 @@ export default {
 		 */
 		productionVersion() {
 			if (!this.productionVersionUuid) return null
-			return this.orderedVersions.find((v) => v.uuid === this.productionVersionUuid) || null
+			return (
+				this.orderedVersions.find(
+					(v) => v.uuid === this.productionVersionUuid,
+				) || null
+			)
 		},
+
 		/**
 		 * Semver of the production version (badge in the hero).
 		 *
@@ -265,6 +359,7 @@ export default {
 		productionSemver() {
 			return (this.productionVersion && this.productionVersion.semver) || ''
 		},
+
 		/**
 		 * The caller's role on this application (owner / editor / viewer).
 		 *
@@ -272,15 +367,19 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		callerRole() {
-			const permissions = (this.application && this.application.permissions) || {}
+			const permissions =
+				(this.application && this.application.permissions) || {}
 			const uid = this.callerUid
 			if (!uid) return ''
-			const inBucket = (bucket) => Array.isArray(bucket) && bucket.some((p) => p === `user:${uid}` || p === uid)
+			const inBucket = (bucket) =>
+				Array.isArray(bucket)
+				&& bucket.some((p) => p === `user:${uid}` || p === uid)
 			if (inBucket(permissions.owners)) return t('openbuild', 'owner')
 			if (inBucket(permissions.editors)) return t('openbuild', 'editor')
 			if (inBucket(permissions.viewers)) return t('openbuild', 'viewer')
 			return ''
 		},
+
 		/**
 		 * Versions ordered along the promotesTo chain (most-upstream first).
 		 *
@@ -292,7 +391,9 @@ export default {
 			if (all.length === 0) return []
 			const byUuid = new Map()
 			all.forEach((v) => byUuid.set(v.uuid, v))
-			const roots = all.filter((v) => !all.some((u) => u.promotesTo === v.uuid))
+			const roots = all.filter(
+				(v) => !all.some((u) => u.promotesTo === v.uuid),
+			)
 			const ordered = []
 			const visited = new Set()
 			const walk = (v) => {
@@ -307,6 +408,7 @@ export default {
 			all.forEach((v) => walk(v))
 			return ordered
 		},
+
 		/**
 		 * Versions visible as pills — production is always shown; non-production
 		 * versions are shown to editors/owners only.
@@ -316,15 +418,21 @@ export default {
 		 */
 		visibleVersions() {
 			const uid = this.callerUid
-			const permissions = (this.application && this.application.permissions) || {}
-			const inEditorOrOwner = (bucket) => Array.isArray(bucket) && bucket.some((p) => p === `user:${uid}` || p === uid)
-			const isEditorOrOwner = inEditorOrOwner(permissions.editors) || inEditorOrOwner(permissions.owners)
+			const permissions =
+				(this.application && this.application.permissions) || {}
+			const inEditorOrOwner = (bucket) =>
+				Array.isArray(bucket)
+				&& bucket.some((p) => p === `user:${uid}` || p === uid)
+			const isEditorOrOwner =
+				inEditorOrOwner(permissions.editors)
+				|| inEditorOrOwner(permissions.owners)
 			return this.orderedVersions.filter((v) => {
 				if (v.uuid === this.productionVersionUuid) return true
 				return isEditorOrOwner
 			})
 		},
 	},
+
 	watch: {
 		/**
 		 * Re-bind to a freshly resolved record and reload its versions.
@@ -339,6 +447,7 @@ export default {
 				this.loadVersions()
 			}
 		},
+
 		/**
 		 * Re-load when the route's objectId changes.
 		 *
@@ -348,15 +457,18 @@ export default {
 		objectId() {
 			this.refreshApplication()
 		},
-		'$route.query._version'(newSlug) {
+
+		'$route.query._version': function (newSlug) {
 			if (!newSlug) {
-				if (this.productionVersionUuid) this.selectedVersionUuid = this.productionVersionUuid
+				if (this.productionVersionUuid)
+					this.selectedVersionUuid = this.productionVersionUuid
 				return
 			}
 			const match = this.orderedVersions.find((v) => v.slug === newSlug)
 			if (match) this.selectedVersionUuid = match.uuid
 		},
 	},
+
 	/**
 	 * Fetch the Application + versions on mount.
 	 *
@@ -370,6 +482,7 @@ export default {
 			this.loadVersions()
 		}
 	},
+
 	methods: {
 		/**
 		 * Check whether a given version is the currently selected one.
@@ -388,7 +501,10 @@ export default {
 		 * @return {boolean}
 		 */
 		isProductionVersion(version) {
-			return this.productionVersionUuid && version.uuid === this.productionVersionUuid
+			return (
+				this.productionVersionUuid
+				&& version.uuid === this.productionVersionUuid
+			)
 		},
 
 		/**
@@ -419,7 +535,9 @@ export default {
 				version.slug,
 			)
 			if (this.$router) {
-				this.$router.replace(route).catch(() => { /* ignore duplicate nav */ })
+				this.$router.replace(route).catch(() => {
+					/* ignore duplicate nav */
+				})
 			}
 		},
 
@@ -432,17 +550,26 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		onPromoteClick(version) {
-			const opener = (typeof window !== 'undefined' && window.openbuild && typeof window.openbuild.openPromoteDialog === 'function')
-				? window.openbuild.openPromoteDialog
-				: null
+			const opener =
+				typeof window !== 'undefined'
+				&& window.openbuild
+				&& typeof window.openbuild.openPromoteDialog === 'function'
+					? window.openbuild.openPromoteDialog
+					: null
 			if (opener) {
 				opener({ sourceVersion: version, application: this.application })
 				return
 			}
-			if (typeof console !== 'undefined' && typeof console.debug === 'function') {
+			if (
+				typeof console !== 'undefined'
+				&& typeof console.debug === 'function'
+			) {
 				console.debug('openbuild: promote dialog not registered — deferred')
 			}
-			this.$emit('promote', { sourceVersion: version, application: this.application })
+			this.$emit('promote', {
+				sourceVersion: version,
+				application: this.application,
+			})
 		},
 
 		/**
@@ -452,18 +579,28 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		async refreshApplication() {
-			const uuid = this.objectId || (this.$route && this.$route.params && this.$route.params.objectId) || ''
+			const uuid =
+				this.objectId
+				|| (this.$route && this.$route.params && this.$route.params.objectId)
+				|| ''
 			if (!uuid) return
+
+			// Staleness token: if the uuid changes while a request is in flight
+			// (route change), the older response must not overwrite the newer
+			// record — latest-request-wins, not last-response-wins.
+			const seq = (this._appReqSeq || 0) + 1
+			this._appReqSeq = seq
+
 			try {
-				const url = generateUrl(`/apps/openregister/api/objects/openbuild/application/${encodeURIComponent(uuid)}`)
-				const { data } = await axios.get(url)
-				// Keep user-visible fields from `data` and stash OR's internal
-				// metadata block separately (see issue #73).
-				this.application = data
-					? { ...data, '@self': data['@self'] || {} }
-					: null
+				// Shared with ApplicationDetailDashboard so the two components —
+				// and this component's own three triggers — collapse onto ONE
+				// request instead of ten (#49).
+				const record = await fetchApplicationRecord(uuid)
+				if (seq !== this._appReqSeq) return // superseded — drop it
+				this.application = record
 				this.loadVersions()
 			} catch (e) {
+				if (seq !== this._appReqSeq) return
 				this.error = e instanceof Error ? e : new Error(String(e))
 			}
 		},
@@ -477,19 +614,27 @@ export default {
 		async loadVersions() {
 			if (!this.appSlug) return
 			try {
-				const url = generateUrl(`/apps/openbuild/api/applications/${encodeURIComponent(this.appSlug)}/versions`)
+				const url = generateUrl(
+					`/apps/openbuild/api/applications/${encodeURIComponent(this.appSlug)}/versions`,
+				)
 				const { data } = await axios.get(url)
 				const list = Array.isArray(data)
 					? data
-					: (data && Array.isArray(data.results) ? data.results : [])
+					: data && Array.isArray(data.results)
+						? data.results
+						: []
 				this.versions = list.map((v) => ({
 					...v,
 					uuid: v.uuid || v.id || (v['@self'] && v['@self'].id) || null,
 				}))
 
-				const versionSlugFromRoute = (this.$route && this.$route.query && this.$route.query._version) || ''
+				const versionSlugFromRoute =
+					(this.$route && this.$route.query && this.$route.query._version)
+					|| ''
 				const match = versionSlugFromRoute
-					? this.orderedVersions.find((v) => v.slug === versionSlugFromRoute)
+					? this.orderedVersions.find(
+							(v) => v.slug === versionSlugFromRoute,
+						)
 					: null
 				if (match) {
 					this.selectedVersionUuid = match.uuid
@@ -553,18 +698,18 @@ export default {
 }
 
 .ob-detail-header__badge--status {
-	background: rgba(67, 118, 252, 0.15);
-	color: #2e5ed9;
+	background: var(--color-primary-element-light);
+	color: var(--color-primary-element);
 }
 
 .ob-detail-header__badge--role {
-	background: rgba(120, 120, 120, 0.15);
-	color: #555;
+	background: var(--color-background-dark);
+	color: var(--color-text-maxcontrast);
 }
 
 .ob-detail-header__badge--semver {
-	background: rgba(46, 184, 102, 0.15);
-	color: #246b3d;
+	background: var(--color-success-hover);
+	color: var(--color-success-text);
 }
 
 .ob-detail-header__badge--type-virtual {
@@ -573,8 +718,8 @@ export default {
 }
 
 .ob-detail-header__badge--type-hybrid {
-	background: rgba(120, 120, 120, 0.18);
-	color: #444;
+	background: var(--color-background-dark);
+	color: var(--color-text-maxcontrast);
 }
 
 .ob-detail-header__hybrid-note {

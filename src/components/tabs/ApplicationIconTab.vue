@@ -14,17 +14,14 @@
 		<NcNoteCard v-if="!obApp" type="info">
 			{{ t('openbuild', 'Loading application…') }}
 		</NcNoteCard>
-		<IconUploadSection
-			v-else
-			:application="obApp"
-			@updated="onIconUpdated" />
+		<IconUploadSection v-else :application="obApp" @updated="onIconUpdated" />
 	</div>
 </template>
 
 <script>
 import { NcNoteCard } from '@nextcloud/vue'
-import applicationContext from '../../mixins/applicationContext.js'
 import IconUploadSection from '../../dialogs/IconUploadSection.vue'
+import applicationContext from '../../mixins/applicationContext.js'
 
 export default {
 	name: 'ApplicationIconTab',
@@ -36,6 +33,11 @@ export default {
 	methods: {
 		/**
 		 * Observed behaviour of `onIconUpdated` (retrofit annotation).
+		 *
+		 * @param {{field: 'icon'|'iconDark', ref: string|null}} payload - What
+		 *   IconUploadSection just wrote on the Application: which icon field changed,
+		 *   and the attached filename (`null` when the icon was removed). Re-emitted
+		 *   unchanged so the detail page can refresh the record.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
 		 */

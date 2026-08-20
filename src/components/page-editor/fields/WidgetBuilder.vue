@@ -4,25 +4,31 @@
   -->
 <template>
 	<div class="widget-builder">
-		<div v-for="(widget, index) in localWidgets" :key="index" class="widget-builder__row">
+		<div
+			v-for="(widget, index) in localWidgets"
+			:key="index"
+			class="widget-builder__row">
 			<input
 				:value="widget.id || ''"
 				type="text"
 				class="widget-builder__field"
 				:placeholder="t('openbuild', 'Widget id')"
-				@input="updateField(index, 'id', $event.target.value)">
+				:aria-label="t('openbuild', 'Widget id')"
+				@input="updateField(index, 'id', $event.target.value)" />
 			<input
 				:value="widget.title || ''"
 				type="text"
 				class="widget-builder__field"
 				:placeholder="t('openbuild', 'Title')"
-				@input="updateField(index, 'title', $event.target.value)">
+				:aria-label="t('openbuild', 'Title')"
+				@input="updateField(index, 'title', $event.target.value)" />
 			<input
 				:value="widget.type || ''"
 				type="text"
 				class="widget-builder__field widget-builder__field--narrow"
 				:placeholder="t('openbuild', 'Type')"
-				@input="updateField(index, 'type', $event.target.value)">
+				:aria-label="t('openbuild', 'Type')"
+				@input="updateField(index, 'type', $event.target.value)" />
 			<button
 				type="button"
 				class="widget-builder__remove"
@@ -46,6 +52,7 @@ export default {
 			default: () => [],
 		},
 	},
+
 	emits: ['update:modelValue'],
 	computed: {
 		/**
@@ -57,10 +64,15 @@ export default {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
 		},
 	},
+
 	methods: {
 		/**
 		 * Observed behaviour of `updateField` (retrofit annotation).
 		 *
+		 * @param {number} index - position of the widget in the `widgets` array.
+		 * @param {'id'|'title'|'type'} key - the widgetDef property the edited input is bound to.
+		 * @param {string} value - the input's new text; written verbatim, so an
+		 *   emptied input keeps the key with an empty string rather than dropping it.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		updateField(index, key, value) {
@@ -69,6 +81,7 @@ export default {
 			next[index] = { ...current, [key]: value }
 			this.$emit('update:modelValue', next)
 		},
+
 		/**
 		 * Observed behaviour of `addWidget` (retrofit annotation).
 		 *
@@ -79,9 +92,11 @@ export default {
 			next.push({ id: '', title: '', type: 'custom' })
 			this.$emit('update:modelValue', next)
 		},
+
 		/**
 		 * Observed behaviour of `removeWidget` (retrofit annotation).
 		 *
+		 * @param {number} index - position of the widget to drop from the `widgets` array.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		removeWidget(index) {

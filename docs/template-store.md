@@ -4,9 +4,10 @@ The **template store** lets you discover and install apps from a *remote*
 OpenRegister-backed template catalogue, on top of the built-in templates that
 ship with OpenBuild.
 
-It is **consume-only** in this release: you can search a remote catalogue and
-install a template into your instance, but publishing your own apps to a
-catalogue is not part of this cut.
+It is **consume-only**: you can search a remote OpenRegister catalogue and
+install a template into your instance. To *publish* your own apps and install
+them again anywhere — a full round-trip backed by GitHub — see the
+[GitHub store](./github-store.md).
 
 ## How it works
 

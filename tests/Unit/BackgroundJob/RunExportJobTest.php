@@ -40,339 +40,419 @@ use Psr\Log\NullLogger;
 /**
  * Tests for {@see RunExportJob} — lifecycle + PAT cleanup contract.
  */
-final class RunExportJobTest extends TestCase
-{
-    /**
-     * Time factory mock (required by the QueuedJob base class).
-     *
-     * @var ITimeFactory&MockObject
-     */
-    private ITimeFactory&MockObject $time;
+final class RunExportJobTest extends TestCase {
+	/**
+	 * Time factory mock (required by the QueuedJob base class).
+	 *
+	 * @var ITimeFactory&MockObject
+	 */
+	private ITimeFactory&MockObject $time;
 
-    /**
-     * Export pipeline mock.
-     *
-     * @var ExportService&MockObject
-     */
-    private ExportService&MockObject $exportService;
+	/**
+	 * Export pipeline mock.
+	 *
+	 * @var ExportService&MockObject
+	 */
+	private ExportService&MockObject $exportService;
 
-    /**
-     * Orchestration helper mock — owns transitions + PAT plumbing.
-     *
-     * @var ExportJobService&MockObject
-     */
-    private ExportJobService&MockObject $exportJobService;
+	/**
+	 * Orchestration helper mock — owns transitions + PAT plumbing.
+	 *
+	 * @var ExportJobService&MockObject
+	 */
+	private ExportJobService&MockObject $exportJobService;
 
-    /**
-     * GitHub delivery target mock.
-     *
-     * @var GitHubPushService&MockObject
-     */
-    private GitHubPushService&MockObject $githubPushService;
+	/**
+	 * GitHub delivery target mock.
+	 *
+	 * @var GitHubPushService&MockObject
+	 */
+	private GitHubPushService&MockObject $githubPushService;
 
-    /**
-     * Build mocks shared across every test.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->time              = $this->createMock(ITimeFactory::class);
-        $this->exportService     = $this->createMock(ExportService::class);
-        $this->exportJobService  = $this->createMock(ExportJobService::class);
-        $this->githubPushService = $this->createMock(GitHubPushService::class);
-    }//end setUp()
+	/**
+	 * Build mocks shared across every test.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+		$this->time = $this->createMock(ITimeFactory::class);
+		$this->exportService = $this->createMock(ExportService::class);
+		$this->exportJobService = $this->createMock(ExportJobService::class);
+		$this->githubPushService = $this->createMock(GitHubPushService::class);
+	}//end setUp()
 
-    /**
-     * Invoke the protected `run()` method via Reflection so tests don't
-     * need the full Nextcloud cron harness.
-     *
-     * @param RunExportJob $job      Job under test.
-     * @param mixed        $argument Argument payload (commonly ['jobUuid' => ...]).
-     *
-     * @return void
-     */
-    private function invokeRun(RunExportJob $job, $argument): void
-    {
-        $method = new \ReflectionMethod($job, 'run');
-        $method->setAccessible(true);
-        $method->invoke($job, $argument);
-    }//end invokeRun()
+	/**
+	 * Invoke the protected `run()` method via Reflection so tests don't
+	 * need the full Nextcloud cron harness.
+	 *
+	 * @param RunExportJob $job Job under test.
+	 * @param mixed $argument Argument payload (commonly ['jobUuid' => ...]).
+	 *
+	 * @return void
+	 */
+	private function invokeRun(RunExportJob $job, $argument): void {
+		$method = new \ReflectionMethod($job, 'run');
+		$method->setAccessible(true);
+		$method->invoke($job, $argument);
+	}//end invokeRun()
 
-    /**
-     * Build the job with a custom logger so log-output assertions are
-     * possible. Default tests use NullLogger().
-     *
-     * @param \Psr\Log\LoggerInterface|null $logger Optional logger.
-     *
-     * @return RunExportJob
-     */
-    private function buildJob(?\Psr\Log\LoggerInterface $logger=null): RunExportJob
-    {
-        return new RunExportJob(
-            $this->time,
-            $this->exportService,
-            $this->exportJobService,
-            $this->githubPushService,
-            $logger ?? new NullLogger()
-        );
-    }//end buildJob()
+	/**
+	 * Build the job with a custom logger so log-output assertions are
+	 * possible. Default tests use NullLogger().
+	 *
+	 * @param \Psr\Log\LoggerInterface|null $logger Optional logger.
+	 *
+	 * @return RunExportJob
+	 */
+	private function buildJob(?\Psr\Log\LoggerInterface $logger = null): RunExportJob {
+		return new RunExportJob(
+			$this->time,
+			$this->exportService,
+			$this->exportJobService,
+			$this->githubPushService,
+			$logger ?? new NullLogger()
+		);
+	}//end buildJob()
 
-    /**
-     * Standard ExportJob fixture returned by the loadJob mock.
-     *
-     * @param string $applicationUuid Optional application UUID override.
-     *
-     * @return array<string,mixed>
-     */
-    private function jobFixture(string $applicationUuid='app-uuid-test'): array
-    {
-        return [
-            'applicationUuid'    => $applicationUuid,
-            'applicationVersion' => '1.0.0',
-            'applicationSlug'    => 'test-app',
-            'license'            => 'EUPL-1.2',
-        ];
-    }//end jobFixture()
+	/**
+	 * Standard ExportJob fixture returned by the loadJob mock.
+	 *
+	 * @param string $applicationUuid Optional application UUID override.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function jobFixture(string $applicationUuid = 'app-uuid-test'): array {
+		return [
+			'applicationUuid' => $applicationUuid,
+			'applicationVersion' => '1.0.0',
+			'applicationSlug' => 'test-app',
+			'license' => 'EUPL-1.2',
+		];
+	}//end jobFixture()
 
-    /**
-     * Happy path: the job transitions queued → running → succeeded via
-     * the declarative TransitionEngine (proxied through ExportJobService).
-     *
-     * Specifically asserts both `start` and `succeed` transitions fire —
-     * any regression to direct status writes would break this.
-     *
-     * @return void
-     */
-    public function testRunTransitionsThroughRunningToSucceeded(): void
-    {
-        $jobUuid = 'job-success-uuid';
+	/**
+	 * Happy path: the job transitions queued → running → succeeded via
+	 * the declarative TransitionEngine (proxied through ExportJobService).
+	 *
+	 * Specifically asserts both `start` and `succeed` transitions fire —
+	 * any regression to direct status writes would break this.
+	 *
+	 * @return void
+	 */
+	public function testRunTransitionsThroughRunningToSucceeded(): void {
+		$jobUuid = 'job-success-uuid';
 
-        $this->exportJobService->method('loadJob')->willReturn($this->jobFixture());
+		$this->exportJobService->method('loadJob')->willReturn($this->jobFixture());
 
-        $this->exportJobService
-            ->expects(self::exactly(2))
-            ->method('transitionJob')
-            ->willReturnCallback(function (string $uuid, string $action, array $extra=[]) use ($jobUuid): bool {
-                static $calls = 0;
-                $calls++;
-                if ($calls === 1) {
-                    self::assertSame($jobUuid, $uuid);
-                    self::assertSame('start', $action);
-                } else {
-                    self::assertSame($jobUuid, $uuid);
-                    self::assertSame('succeed', $action);
-                    self::assertArrayHasKey('downloadUrl', $extra);
-                }
+		$this->exportJobService
+			->expects(self::exactly(2))
+			->method('transitionJob')
+			->willReturnCallback(function (string $uuid, string $action, array $extra = []) use ($jobUuid): bool {
+				static $calls = 0;
+				$calls++;
+				if ($calls === 1) {
+					self::assertSame($jobUuid, $uuid);
+					self::assertSame('start', $action);
+				} else {
+					self::assertSame($jobUuid, $uuid);
+					self::assertSame('succeed', $action);
+					self::assertArrayHasKey('downloadUrl', $extra);
+				}
 
-                return true;
-            });
+				return true;
+			});
 
-        $this->exportJobService->method('fetchPat')->willReturn(null);
+		$this->exportService
+			->expects(self::once())
+			->method('generateAppZip')
+			->willReturn('/tmp/openbuild-exports/' . $jobUuid . '.zip');
 
-        $this->exportService
-            ->expects(self::once())
-            ->method('generateAppZip')
-            ->willReturn('/tmp/openbuild-exports/'.$jobUuid.'.zip');
+		// GitHub push must NOT fire for a ZIP-only job.
+		$this->githubPushService->expects(self::never())->method('push');
 
-        // GitHub push must NOT fire when no PAT is present (ZIP-only).
-        $this->githubPushService->expects(self::never())->method('push');
+		$this->invokeRun($this->buildJob(), ['jobUuid' => $jobUuid]);
+	}//end testRunTransitionsThroughRunningToSucceeded()
 
-        // Terminal-state clear MUST fire even on success.
-        $this->exportJobService->expects(self::once())->method('clearPat')->with($jobUuid);
+	/**
+	 * Failure path: when ExportService::generateAppZip throws, the job
+	 * transitions to `failed` (NOT auto-retries — memory rule: crashes
+	 * → needs-input), and the error message is merged onto the record.
+	 *
+	 * @return void
+	 */
+	public function testRunTransitionsToFailedOnException(): void {
+		$jobUuid = 'job-fail-uuid';
 
-        $this->invokeRun($this->buildJob(), ['jobUuid' => $jobUuid]);
-    }//end testRunTransitionsThroughRunningToSucceeded()
+		$this->exportJobService->method('loadJob')->willReturn($this->jobFixture());
 
-    /**
-     * Failure path: when ExportService::generateAppZip throws, the job
-     * transitions to `failed` (NOT auto-retries — memory rule: crashes
-     * → needs-input), and the error message is merged onto the record.
-     *
-     * @return void
-     */
-    public function testRunTransitionsToFailedOnException(): void
-    {
-        $jobUuid = 'job-fail-uuid';
+		$this->exportService
+			->method('generateAppZip')
+			->willThrowException(new \RuntimeException('disk full'));
 
-        $this->exportJobService->method('loadJob')->willReturn($this->jobFixture());
+		$sawFail = false;
+		$this->exportJobService
+			->expects(self::exactly(2))
+			->method('transitionJob')
+			->willReturnCallback(function (string $uuid, string $action, array $extra = []) use ($jobUuid, &$sawFail): bool {
+				if ($action === 'fail') {
+					self::assertSame($jobUuid, $uuid);
+					self::assertArrayHasKey('errorMessage', $extra);
+					self::assertSame('disk full', $extra['errorMessage']);
+					$sawFail = true;
+				}
 
-        $this->exportService
-            ->method('generateAppZip')
-            ->willThrowException(new \RuntimeException('disk full'));
+				return true;
+			});
 
-        $sawFail = false;
-        $this->exportJobService
-            ->expects(self::exactly(2))
-            ->method('transitionJob')
-            ->willReturnCallback(function (string $uuid, string $action, array $extra=[]) use ($jobUuid, &$sawFail): bool {
-                if ($action === 'fail') {
-                    self::assertSame($jobUuid, $uuid);
-                    self::assertArrayHasKey('errorMessage', $extra);
-                    self::assertSame('disk full', $extra['errorMessage']);
-                    $sawFail = true;
-                }
+		$this->invokeRun($this->buildJob(), ['jobUuid' => $jobUuid]);
 
-                return true;
-            });
+		self::assertTrue($sawFail, 'fail transition MUST be invoked on exception');
+	}//end testRunTransitionsToFailedOnException()
 
-        // PAT cleared even on failure.
-        $this->exportJobService->expects(self::once())->method('clearPat')->with($jobUuid);
+	/**
+	 * A GitHub export with no broker credential fails closed — it does NOT push.
+	 *
+	 * This replaces the old pair of `clearPat()` tests. Those guaranteed the PAT was
+	 * deleted from ICredentialsManager on every terminal state, which mattered only
+	 * because OpenBuild held a PAT at all. It no longer does, so there is nothing to
+	 * clear; what matters now is that a job which cannot authenticate through the
+	 * broker refuses to run rather than proceeding.
+	 *
+	 * @return void
+	 */
+	public function testGithubExportWithoutCredentialFailsClosed(): void {
+		$jobUuid = 'github-no-credential';
 
-        $this->invokeRun($this->buildJob(), ['jobUuid' => $jobUuid]);
+		$job = $this->jobFixture();
+		$job['target'] = 'github';
+		$job['githubOrg'] = 'acme-co';
+		$job['githubRepo'] = 'hello-world';
+		$job['githubCredentialId'] = '';
 
-        self::assertTrue($sawFail, 'fail transition MUST be invoked on exception');
-    }//end testRunTransitionsToFailedOnException()
+		$this->exportJobService->method('loadJob')->willReturn($job);
+		$this->exportService->method('generateAppZip')->willReturn('/tmp/x.zip');
 
-    /**
-     * The clearPat() call MUST fire on the success path — wired through
-     * the `finally` block so it executes regardless of pipeline outcome.
-     *
-     * This is the security-critical PAT-leak guard: a regression here
-     * would leave a long-lived PAT in ICredentialsManager after every
-     * successful GitHub export.
-     *
-     * @return void
-     */
-    public function testClearPatAlwaysCalledOnSuccess(): void
-    {
-        $jobUuid = 'pat-cleanup-success';
-        $this->exportJobService->method('loadJob')->willReturn($this->jobFixture());
-        $this->exportService->method('generateAppZip')->willReturn('/tmp/x.zip');
-        $this->exportJobService->method('fetchPat')->willReturn(null);
-        $this->exportJobService->method('transitionJob')->willReturn(true);
+		// The whole point: no push is attempted without a credential.
+		$this->githubPushService->expects(self::never())->method('push');
 
-        $this->exportJobService
-            ->expects(self::once())
-            ->method('clearPat')
-            ->with(self::equalTo($jobUuid));
+		$sawFail = false;
+		$this->exportJobService
+			->method('transitionJob')
+			->willReturnCallback(function (string $uuid, string $action, array $extra = []) use (&$sawFail): bool {
+				if ($action === 'fail') {
+					$sawFail = true;
+					self::assertStringContainsString('broker credential', (string)$extra['errorMessage']);
+				}
 
-        $this->invokeRun($this->buildJob(), ['jobUuid' => $jobUuid]);
-    }//end testClearPatAlwaysCalledOnSuccess()
+				return true;
+			});
 
-    /**
-     * Symmetric guarantee on the failure path: clearPat() MUST still fire.
-     *
-     * Without this, a failed export leaves the PAT in ICredentialsManager
-     * indefinitely — the exact security incident Decision 3 is designed to
-     * prevent.
-     *
-     * @return void
-     */
-    public function testClearPatAlwaysCalledOnFailure(): void
-    {
-        $jobUuid = 'pat-cleanup-failure';
+		$this->invokeRun($this->buildJob(), ['jobUuid' => $jobUuid]);
 
-        $this->exportJobService->method('loadJob')->willReturn($this->jobFixture());
-        $this->exportService
-            ->method('generateAppZip')
-            ->willThrowException(new \RuntimeException('boom'));
-        $this->exportJobService->method('transitionJob')->willReturn(true);
+		self::assertTrue($sawFail, 'a GitHub export without a credential MUST fail');
+	}//end testGithubExportWithoutCredentialFailsClosed()
 
-        $this->exportJobService
-            ->expects(self::once())
-            ->method('clearPat')
-            ->with(self::equalTo($jobUuid));
+	/**
+	 * A GitHub export hands the push service the credential UUID and the queueing
+	 * user's UID — never a token, which this process does not have.
+	 *
+	 * @return void
+	 */
+	public function testGithubExportPassesCredentialAndActingUserToPush(): void {
+		$jobUuid = 'github-with-credential';
 
-        $this->invokeRun($this->buildJob(), ['jobUuid' => $jobUuid]);
-    }//end testClearPatAlwaysCalledOnFailure()
+		$job = $this->jobFixture();
+		$job['target'] = 'github';
+		$job['githubOrg'] = 'acme-co';
+		$job['githubRepo'] = 'hello-world';
+		$job['githubCredentialId'] = 'cred-uuid-1234';
+		$job['requestedBy'] = 'alice';
 
-    /**
-     * Re-running a job with the same UUID must invoke the pipeline with
-     * identical arguments — the path through generateAppZip is parameterised
-     * only by jobUuid + applicationUuid + version + context, so two runs
-     * produce equivalent calls. This pins idempotency at the job-orchestration
-     * layer (REQ-OBEX-008 byte-equivalence is the ExportService's contract;
-     * here we lock that the job itself doesn't inject any per-run entropy).
-     *
-     * @return void
-     */
-    public function testRerunWithSameParamsProducesEquivalentInvocations(): void
-    {
-        $jobUuid = 'idempotent-rerun-uuid';
+		$this->exportJobService->method('loadJob')->willReturn($job);
+		$this->exportJobService->method('transitionJob')->willReturn(true);
+		$this->exportService->method('generateAppZip')->willReturn('/tmp/x.zip');
+		$this->exportService->method('scratchTreeDir')->willReturn('/tmp/tree');
 
-        $this->exportJobService->method('loadJob')->willReturn($this->jobFixture('app-uuid-idempotent'));
+		$this->githubPushService
+			->expects(self::once())
+			->method('push')
+			->with(
+				self::anything(),
+				self::anything(),
+				self::equalTo('cred-uuid-1234'),
+				self::equalTo('acme-co'),
+				self::equalTo('hello-world'),
+				self::anything(),
+				self::equalTo('alice')
+			)
+			->willReturn(
+				[
+					'repoUrl' => 'https://github.com/acme-co/hello-world',
+					'pullRequestUrl' => 'https://github.com/acme-co/hello-world/pull/1',
+				]
+			);
 
-        $captured = [];
-        $this->exportService
-            ->expects(self::exactly(2))
-            ->method('generateAppZip')
-            ->willReturnCallback(function (
-                string $applicationUuid,
-                string $versionSlug,
-                array $context,
-                string $jobUuidArg
-            ) use (&$captured): string {
-                $captured[] = [
-                    'applicationUuid' => $applicationUuid,
-                    'versionSlug'     => $versionSlug,
-                    'context'         => $context,
-                    'jobUuid'         => $jobUuidArg,
-                ];
+		$this->invokeRun($this->buildJob(), ['jobUuid' => $jobUuid]);
+	}//end testGithubExportPassesCredentialAndActingUserToPush()
 
-                return '/tmp/out.zip';
-            });
-        $this->exportJobService->method('fetchPat')->willReturn(null);
-        $this->exportJobService->method('transitionJob')->willReturn(true);
+	/**
+	 * Re-running a job with the same UUID must invoke the pipeline with
+	 * identical arguments — the path through generateAppZip is parameterised
+	 * only by jobUuid + applicationUuid + version + context, so two runs
+	 * produce equivalent calls. This pins idempotency at the job-orchestration
+	 * layer (REQ-OBEX-008 byte-equivalence is the ExportService's contract;
+	 * here we lock that the job itself doesn't inject any per-run entropy).
+	 *
+	 * @return void
+	 */
+	public function testRerunWithSameParamsProducesEquivalentInvocations(): void {
+		$jobUuid = 'idempotent-rerun-uuid';
 
-        $job = $this->buildJob();
-        $this->invokeRun($job, ['jobUuid' => $jobUuid]);
-        $this->invokeRun($job, ['jobUuid' => $jobUuid]);
+		$this->exportJobService->method('loadJob')->willReturn($this->jobFixture('app-uuid-idempotent'));
 
-        self::assertCount(2, $captured);
-        self::assertSame($captured[0], $captured[1], 'Two invocations with the same jobUuid must produce identical arguments');
-    }//end testRerunWithSameParamsProducesEquivalentInvocations()
+		$captured = [];
+		$this->exportService
+			->expects(self::exactly(2))
+			->method('generateAppZip')
+			->willReturnCallback(function (
+				string $applicationUuid,
+				string $versionSlug,
+				array $context,
+				string $jobUuidArg,
+			) use (&$captured): string {
+				$captured[] = [
+					'applicationUuid' => $applicationUuid,
+					'versionSlug' => $versionSlug,
+					'context' => $context,
+					'jobUuid' => $jobUuidArg,
+				];
 
-    /**
-     * The PAT MUST NEVER appear in a log line. This test captures every
-     * log line emitted during a run that fetches a PAT and dispatches a
-     * push, then asserts the PAT marker is absent across all of them.
-     *
-     * Security-critical: even a debug-level log of the PAT defeats the
-     * Decision 3 contract.
-     *
-     * @return void
-     */
-    public function testCredentialNeverLogged(): void
-    {
-        $jobUuid = 'pat-no-log-uuid';
-        $pat     = 'ghp_marker_token_must_not_appear';
+				return '/tmp/out.zip';
+			});
+		$this->exportJobService->method('transitionJob')->willReturn(true);
 
-        $captured = [];
-        $logger   = new class ($captured) extends AbstractLogger {
-            /**
-             * @var list<string>
-             */
-            private array $sink;
+		$job = $this->buildJob();
+		$this->invokeRun($job, ['jobUuid' => $jobUuid]);
+		$this->invokeRun($job, ['jobUuid' => $jobUuid]);
 
-            public function __construct(array &$captured)
-            {
-                $this->sink = &$captured;
-            }
+		self::assertCount(2, $captured);
+		self::assertSame($captured[0], $captured[1], 'Two invocations with the same jobUuid must produce identical arguments');
+	}//end testRerunWithSameParamsProducesEquivalentInvocations()
 
-            public function log($level, \Stringable|string $message, array $context=[]): void
-            {
-                $this->sink[] = (string) $message.' '.json_encode($context);
-            }
-        };
+	/**
+	 * The loaded ExportJob's `dataRegisters` choice is forwarded verbatim
+	 * into `ExportService::generateAppZip()` (data-registers-runtime task
+	 * 4.3). Absent on the job record — defaults to `[]`, not omitted/null.
+	 *
+	 * @return void
+	 */
+	public function testForwardsDataRegistersFromLoadedJobIntoGenerateAppZip(): void {
+		$jobUuid = 'job-data-registers-uuid';
+		$dataRegisters = [
+			['register' => 'spectr', 'includeData' => true],
+			['register' => 'bag-adressen', 'includeData' => false],
+		];
 
-        $this->exportJobService->method('loadJob')->willReturn($this->jobFixture());
-        $this->exportService->method('generateAppZip')->willReturn('/tmp/out.zip');
-        $this->exportJobService->method('fetchPat')->willReturn($pat);
-        $this->exportJobService->method('transitionJob')->willReturn(true);
-        $this->githubPushService
-            ->method('push')
-            ->willReturn(['repoUrl' => 'https://github.com/x/y', 'pullRequestUrl' => 'https://github.com/x/y/pull/1']);
+		$job = $this->jobFixture();
+		$job['dataRegisters'] = $dataRegisters;
+		$this->exportJobService->method('loadJob')->willReturn($job);
+		$this->exportJobService->method('transitionJob')->willReturn(true);
 
-        $this->invokeRun($this->buildJob($logger), ['jobUuid' => $jobUuid]);
+		$captured = null;
+		$this->exportService
+			->expects(self::once())
+			->method('generateAppZip')
+			->willReturnCallback(function (...$args) use (&$captured): string {
+				$captured = $args;
+				return '/tmp/out.zip';
+			});
 
-        foreach ($captured as $line) {
-            self::assertStringNotContainsString(
-                $pat,
-                $line,
-                'PAT must NEVER appear in any log line — found in: '.$line
-            );
-        }
-    }//end testCredentialNeverLogged()
+		$this->invokeRun($this->buildJob(), ['jobUuid' => $jobUuid]);
+
+		self::assertSame($dataRegisters, $captured[4] ?? null, 'dataRegisters must be forwarded as the 5th argument');
+	}//end testForwardsDataRegistersFromLoadedJobIntoGenerateAppZip()
+
+	/**
+	 * A job record predating this property (no `dataRegisters` key at all)
+	 * forwards `[]` — additive, backward compatible.
+	 *
+	 * @return void
+	 */
+	public function testForwardsEmptyDataRegistersWhenJobRecordPredatesTheProperty(): void {
+		$jobUuid = 'job-no-data-registers-uuid';
+
+		$this->exportJobService->method('loadJob')->willReturn($this->jobFixture());
+		$this->exportJobService->method('transitionJob')->willReturn(true);
+
+		$captured = null;
+		$this->exportService
+			->expects(self::once())
+			->method('generateAppZip')
+			->willReturnCallback(function (...$args) use (&$captured): string {
+				$captured = $args;
+				return '/tmp/out.zip';
+			});
+
+		$this->invokeRun($this->buildJob(), ['jobUuid' => $jobUuid]);
+
+		self::assertSame([], $captured[4] ?? null);
+	}//end testForwardsEmptyDataRegistersWhenJobRecordPredatesTheProperty()
+
+	/**
+	 * Nothing token-shaped may reach a log line.
+	 *
+	 * This used to inject a real PAT via `fetchPat()` and assert it never surfaced.
+	 * The job no longer has a token to leak, so the test now drives a full GitHub run
+	 * and asserts no GitHub-token-shaped string appears anywhere in the log — a guard
+	 * that stays meaningful if someone reintroduces a secret on this path.
+	 *
+	 * @return void
+	 */
+	public function testNoTokenShapedStringIsEverLogged(): void {
+		$jobUuid = 'github-log-scan';
+
+		$captured = [];
+		$logger = new class($captured) extends AbstractLogger {
+			/**
+			 * @var list<string>
+			 */
+			private array $sink;
+
+			public function __construct(array &$captured) {
+				$this->sink = &$captured;
+			}
+
+			public function log($level, \Stringable|string $message, array $context = []): void {
+				$this->sink[] = (string)$message . ' ' . json_encode($context);
+			}
+		};
+
+		$job = $this->jobFixture();
+		$job['target'] = 'github';
+		$job['githubOrg'] = 'acme-co';
+		$job['githubRepo'] = 'hello-world';
+		$job['githubCredentialId'] = 'cred-uuid-1234';
+		$job['requestedBy'] = 'alice';
+
+		$this->exportJobService->method('loadJob')->willReturn($job);
+		$this->exportService->method('generateAppZip')->willReturn('/tmp/out.zip');
+		$this->exportService->method('scratchTreeDir')->willReturn('/tmp/tree');
+		$this->exportJobService->method('transitionJob')->willReturn(true);
+		$this->githubPushService
+			->method('push')
+			->willReturn(['repoUrl' => 'https://github.com/x/y', 'pullRequestUrl' => 'https://github.com/x/y/pull/1']);
+
+		$this->invokeRun($this->buildJob($logger), ['jobUuid' => $jobUuid]);
+
+		self::assertNotEmpty($captured, 'the run must emit at least one log line for this scan to mean anything');
+
+		foreach ($captured as $line) {
+			self::assertDoesNotMatchRegularExpression(
+				'/gh[pousr]_[A-Za-z0-9]{10,}/',
+				$line,
+				'No GitHub token may ever appear in a log line — found in: ' . $line
+			);
+		}
+	}//end testNoTokenShapedStringIsEverLogged()
 }//end class

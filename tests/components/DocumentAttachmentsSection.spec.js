@@ -13,20 +13,31 @@ import DocumentAttachmentsSection from '../../src/components/DocumentAttachments
 const NcButtonStub = {
 	name: 'NcButton',
 	props: ['type', 'disabled', 'title'],
-	template: '<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
+	template:
+		'<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
 }
 
 const stubs = {
 	NcButton: NcButtonStub,
-	DocumentTemplateAttachmentDialog: { name: 'DocumentTemplateAttachmentDialog', template: '<div class="dialog-stub" />' },
+	DocumentTemplateAttachmentDialog: {
+		name: 'DocumentTemplateAttachmentDialog',
+		template: '<div class="dialog-stub" />',
+	},
 }
 
-const entry = { id: 'doc-1', schema: 'kapaanvraag', templateId: 'u', templateName: 'Bevestigingsbrief', label: 'Generate confirmation letter' }
+const entry = {
+	id: 'doc-1',
+	schema: 'kapaanvraag',
+	templateId: 'u',
+	templateName: 'Bevestigingsbrief',
+	label: 'Generate confirmation letter',
+}
 
-const factory = (manifest, props = {}) => mount(DocumentAttachmentsSection, {
-	propsData: { manifest, schemas: [], ...props },
-	stubs,
-})
+const factory = (manifest, props = {}) =>
+	mount(DocumentAttachmentsSection, {
+		propsData: { manifest, schemas: [], ...props },
+		stubs,
+	})
 
 describe('DocumentAttachmentsSection', () => {
 	it('renders the empty state with no attachments', () => {
@@ -50,29 +61,46 @@ describe('DocumentAttachmentsSection', () => {
 
 	it('allows two attachments on the same schema with distinct labels', () => {
 		const wrapper = factory({ runtime: { documents: [entry] } })
-		wrapper.vm.onDialogSave({ entry: { ...entry, id: 'doc-2', label: 'Generate besluit' }, addActionsTab: false })
+		wrapper.vm.onDialogSave({
+			entry: { ...entry, id: 'doc-2', label: 'Generate besluit' },
+			addActionsTab: false,
+		})
 		const emitted = wrapper.emitted()['update:manifest'][0][0]
 		expect(emitted.runtime.documents).toHaveLength(2)
 	})
 
-	it('detaching removes the entry and keeps zero-attachment manifests clean', () => {
-		window.confirm = vi.fn(() => true)
+	it('detaching asks first and emits nothing until confirmed', () => {
 		const wrapper = factory({ runtime: { documents: [entry] } })
 		wrapper.vm.detach(entry)
+		expect(wrapper.vm.confirmDetachOpen).toBe(true)
+		expect(wrapper.emitted()['update:manifest']).toBeUndefined()
+	})
+
+	it('detaching removes the entry once confirmed and keeps zero-attachment manifests clean', () => {
+		const wrapper = factory({ runtime: { documents: [entry] } })
+		wrapper.vm.detach(entry)
+		wrapper.vm.onConfirmDetach()
 		const emitted = wrapper.emitted()['update:manifest'][0][0]
 		expect(emitted.runtime).toBeUndefined()
 	})
 
 	it('injects a docudesk-document-actions tab into a matching detail page when toggled', () => {
-		const wrapper = factory({ pages: [{ type: 'detail', config: { schema: 'kapaanvraag' } }] })
+		const wrapper = factory({
+			pages: [{ type: 'detail', config: { schema: 'kapaanvraag' } }],
+		})
 		wrapper.vm.onDialogSave({ entry, addActionsTab: true })
 		const emitted = wrapper.emitted()['update:manifest'][0][0]
 		const tabs = emitted.pages[0].config.sidebarProps.tabs
-		expect(tabs.some((t) => t.component === 'docudesk-document-actions')).toBe(true)
+		expect(tabs.some((t) => t.component === 'docudesk-document-actions')).toBe(
+			true,
+		)
 	})
 
 	it('disables Add when Docudesk is absent but keeps rows removable', () => {
-		const wrapper = factory({ runtime: { documents: [entry] } }, { docudeskAvailable: false })
+		const wrapper = factory(
+			{ runtime: { documents: [entry] } },
+			{ docudeskAvailable: false },
+		)
 		const addBtn = wrapper.findAll('button').at(0)
 		expect(addBtn.attributes('disabled')).toBeDefined()
 		expect(wrapper.find('.ob-documents-section__hint').exists()).toBe(true)

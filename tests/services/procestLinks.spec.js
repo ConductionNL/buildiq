@@ -10,7 +10,10 @@ import { describe, it, expect, vi } from 'vitest'
 
 vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => p }))
 
-import { buildProcestCaseUrl, caseUuidFromReference } from '../../src/services/procestLinks.js'
+import {
+	buildProcestCaseUrl,
+	caseUuidFromReference,
+} from '../../src/services/procestLinks.js'
 
 const UUID = '11111111-2222-3333-4444-555555555555'
 
@@ -25,7 +28,11 @@ describe('procestLinks', () => {
 		expect(caseUuidFromReference(UUID)).toBe(UUID)
 	})
 	it('extracts a UUID from a full zaak URL', () => {
-		expect(caseUuidFromReference(`https://host/apps/procest/api/zgw/zaken/v1/zaken/${UUID}`)).toBe(UUID)
+		expect(
+			caseUuidFromReference(
+				`https://host/apps/procest/api/zgw/zaken/v1/zaken/${UUID}`,
+			),
+		).toBe(UUID)
 	})
 	it('returns empty for a reference with no UUID', () => {
 		expect(caseUuidFromReference('not-a-uuid')).toBe('')

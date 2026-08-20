@@ -26,7 +26,12 @@
 		</header>
 
 		<p v-if="fields.length === 0" class="openbuild-field-editor__empty">
-			{{ t('openbuild', 'No fields yet. Add the first property to your schema.') }}
+			{{
+				t(
+					'openbuild',
+					'No fields yet. Add the first property to your schema.',
+				)
+			}}
 		</p>
 
 		<ul v-else class="openbuild-field-editor__rows">
@@ -36,7 +41,7 @@
 				class="openbuild-field-editor__row">
 				<div class="openbuild-field-editor__handle">
 					<NcButton
-						type="tertiary"
+						variant="tertiary"
 						:aria-label="t('openbuild', 'Move up')"
 						:disabled="index === 0"
 						@click="moveUp(index)">
@@ -45,7 +50,7 @@
 						</template>
 					</NcButton>
 					<NcButton
-						type="tertiary"
+						variant="tertiary"
 						:aria-label="t('openbuild', 'Move down')"
 						:disabled="index === fields.length - 1"
 						@click="moveDown(index)">
@@ -57,119 +62,230 @@
 
 				<div class="openbuild-field-editor__row-grid">
 					<NcTextField
-						:value="field.name"
+						:modelValue="field.name"
 						:label="t('openbuild', 'Name')"
 						:error="!!nameError(field, index)"
-						:helper-text="nameError(field, index)"
-						@update:value="updateField(index, 'name', $event)" />
+						:helperText="nameError(field, index)"
+						@update:modelValue="updateField(index, 'name', $event)" />
 
 					<NcSelect
-						:input-label="t('openbuild', 'Type')"
-						:value="typeOption(field.type)"
+						:inputLabel="t('openbuild', 'Type')"
+						:modelValue="typeOption(field.type)"
 						:options="typeOptions"
 						:clearable="false"
 						label="label"
-						track-by="value"
-						@input="updateField(index, 'type', $event ? $event.value : 'string')" />
+						trackBy="value"
+						@update:modelValue="
+							updateField(
+								index,
+								'type',
+								$event ? $event.value : 'string',
+							)
+						" />
 
 					<NcCheckboxRadioSwitch
-						:checked="!!field.required"
+						:modelValue="!!field.required"
 						type="switch"
-						@update:checked="updateField(index, 'required', $event)">
+						@update:modelValue="updateField(index, 'required', $event)">
 						{{ t('openbuild', 'Required') }}
 					</NcCheckboxRadioSwitch>
 
 					<NcTextField
-						:value="field.description || ''"
+						:modelValue="field.description || ''"
 						:label="t('openbuild', 'Description')"
-						@update:value="updateField(index, 'description', $event)" />
+						@update:modelValue="
+							updateField(index, 'description', $event)
+						" />
 				</div>
 
 				<div class="openbuild-field-editor__validation">
 					<!-- string -->
 					<template v-if="field.type === 'string'">
 						<NcTextField
-							:value="field.validation.format || ''"
+							:modelValue="field.validation.format || ''"
 							:label="t('openbuild', 'Format (optional)')"
-							:placeholder="'email, uri, date, …'"
-							@update:value="updateValidation(index, 'format', $event)" />
+							placeholder="email, uri, date, …"
+							@update:modelValue="
+								updateValidation(index, 'format', $event)
+							" />
 						<NcTextField
-							:value="field.validation.pattern || ''"
+							:modelValue="field.validation.pattern || ''"
 							:label="t('openbuild', 'Pattern (regex, optional)')"
-							@update:value="updateValidation(index, 'pattern', $event)" />
+							@update:modelValue="
+								updateValidation(index, 'pattern', $event)
+							" />
 						<NcTextField
-							:value="field.validation.minLength != null ? String(field.validation.minLength) : ''"
+							:modelValue="
+								field.validation.minLength != null
+									? String(field.validation.minLength)
+									: ''
+							"
 							:label="t('openbuild', 'Min length')"
-							@update:value="updateValidation(index, 'minLength', toIntOrNull($event))" />
+							@update:modelValue="
+								updateValidation(
+									index,
+									'minLength',
+									toIntOrNull($event),
+								)
+							" />
 						<NcTextField
-							:value="field.validation.maxLength != null ? String(field.validation.maxLength) : ''"
+							:modelValue="
+								field.validation.maxLength != null
+									? String(field.validation.maxLength)
+									: ''
+							"
 							:label="t('openbuild', 'Max length')"
-							@update:value="updateValidation(index, 'maxLength', toIntOrNull($event))" />
+							@update:modelValue="
+								updateValidation(
+									index,
+									'maxLength',
+									toIntOrNull($event),
+								)
+							" />
 					</template>
 
 					<!-- number / integer -->
-					<template v-else-if="field.type === 'number' || field.type === 'integer'">
+					<template
+						v-else-if="
+							field.type === 'number' || field.type === 'integer'
+						">
 						<NcTextField
-							:value="field.validation.minimum != null ? String(field.validation.minimum) : ''"
+							:modelValue="
+								field.validation.minimum != null
+									? String(field.validation.minimum)
+									: ''
+							"
 							:label="t('openbuild', 'Minimum')"
-							@update:value="updateValidation(index, 'minimum', toNumberOrNull($event))" />
+							@update:modelValue="
+								updateValidation(
+									index,
+									'minimum',
+									toNumberOrNull($event),
+								)
+							" />
 						<NcTextField
-							:value="field.validation.maximum != null ? String(field.validation.maximum) : ''"
+							:modelValue="
+								field.validation.maximum != null
+									? String(field.validation.maximum)
+									: ''
+							"
 							:label="t('openbuild', 'Maximum')"
-							@update:value="updateValidation(index, 'maximum', toNumberOrNull($event))" />
+							@update:modelValue="
+								updateValidation(
+									index,
+									'maximum',
+									toNumberOrNull($event),
+								)
+							" />
 						<NcTextField
-							:value="field.validation.multipleOf != null ? String(field.validation.multipleOf) : ''"
+							:modelValue="
+								field.validation.multipleOf != null
+									? String(field.validation.multipleOf)
+									: ''
+							"
 							:label="t('openbuild', 'Multiple of')"
-							@update:value="updateValidation(index, 'multipleOf', toNumberOrNull($event))" />
+							@update:modelValue="
+								updateValidation(
+									index,
+									'multipleOf',
+									toNumberOrNull($event),
+								)
+							" />
 					</template>
 
 					<!-- array -->
 					<template v-else-if="field.type === 'array'">
 						<NcSelect
-							:input-label="t('openbuild', 'Items type')"
-							:value="typeOption(field.validation.itemsType || 'string')"
+							:inputLabel="t('openbuild', 'Items type')"
+							:modelValue="
+								typeOption(field.validation.itemsType || 'string')
+							"
 							:options="itemsTypeOptions"
 							:clearable="false"
 							label="label"
-							track-by="value"
-							@input="updateValidation(index, 'itemsType', $event ? $event.value : 'string')" />
+							trackBy="value"
+							@update:modelValue="
+								updateValidation(
+									index,
+									'itemsType',
+									$event ? $event.value : 'string',
+								)
+							" />
 						<NcTextField
-							:value="field.validation.minItems != null ? String(field.validation.minItems) : ''"
+							:modelValue="
+								field.validation.minItems != null
+									? String(field.validation.minItems)
+									: ''
+							"
 							:label="t('openbuild', 'Min items')"
-							@update:value="updateValidation(index, 'minItems', toIntOrNull($event))" />
+							@update:modelValue="
+								updateValidation(
+									index,
+									'minItems',
+									toIntOrNull($event),
+								)
+							" />
 						<NcTextField
-							:value="field.validation.maxItems != null ? String(field.validation.maxItems) : ''"
+							:modelValue="
+								field.validation.maxItems != null
+									? String(field.validation.maxItems)
+									: ''
+							"
 							:label="t('openbuild', 'Max items')"
-							@update:value="updateValidation(index, 'maxItems', toIntOrNull($event))" />
+							@update:modelValue="
+								updateValidation(
+									index,
+									'maxItems',
+									toIntOrNull($event),
+								)
+							" />
 					</template>
 
 					<!-- relation -->
 					<template v-else-if="field.type === 'relation'">
 						<NcSelect
-							:input-label="t('openbuild', 'Target schema')"
-							:value="schemaOption(field.validation.target)"
+							:inputLabel="t('openbuild', 'Target schema')"
+							:modelValue="schemaOption(field.validation.target)"
 							:options="schemaOptions"
 							:clearable="false"
 							label="label"
-							track-by="value"
-							@input="updateValidation(index, 'target', $event ? $event.value : '')" />
+							trackBy="value"
+							@update:modelValue="
+								updateValidation(
+									index,
+									'target',
+									$event ? $event.value : '',
+								)
+							" />
 						<NcSelect
-							:input-label="t('openbuild', 'Cardinality')"
-							:value="cardinalityOption(field.validation.cardinality || 'one')"
+							:inputLabel="t('openbuild', 'Cardinality')"
+							:modelValue="
+								cardinalityOption(
+									field.validation.cardinality || 'one',
+								)
+							"
 							:options="cardinalityOptions"
 							:clearable="false"
 							label="label"
-							track-by="value"
-							@input="updateValidation(index, 'cardinality', $event ? $event.value : 'one')" />
+							trackBy="value"
+							@update:modelValue="
+								updateValidation(
+									index,
+									'cardinality',
+									$event ? $event.value : 'one',
+								)
+							" />
 						<NcTextField
-							:value="field.validation.inverseOf || ''"
+							:modelValue="field.validation.inverseOf || ''"
 							:label="t('openbuild', 'Inverse-of property (optional)')"
-							@update:value="updateValidation(index, 'inverseOf', $event)" />
+							@update:modelValue="
+								updateValidation(index, 'inverseOf', $event)
+							" />
 					</template>
 				</div>
 
 				<div class="openbuild-field-editor__actions">
-					<NcButton type="error" @click="requestRemove(index)">
+					<NcButton variant="error" @click="requestRemove(index)">
 						<template #icon>
 							<DeleteIcon :size="20" />
 						</template>
@@ -181,7 +297,7 @@
 
 		<DeleteFieldDialog
 			:open="removeDialogOpen"
-			:field-name="pendingRemoveName"
+			:fieldName="pendingRemoveName"
 			@confirm="confirmRemove"
 			@cancel="cancelRemove"
 			@update:open="removeDialogOpen = $event" />
@@ -189,21 +305,36 @@
 </template>
 
 <script>
-import { NcButton, NcCheckboxRadioSwitch, NcSelect, NcTextField } from '@nextcloud/vue'
+import {
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcSelect,
+	NcTextField,
+} from '@nextcloud/vue'
 import ChevronDownIcon from 'vue-material-design-icons/ChevronDown.vue'
 import ChevronUpIcon from 'vue-material-design-icons/ChevronUp.vue'
 import DeleteIcon from 'vue-material-design-icons/Delete.vue'
 import PlusIcon from 'vue-material-design-icons/Plus.vue'
-
 import DeleteFieldDialog from '../../modals/DeleteFieldDialog.vue'
 
 const FIELD_NAME_PATTERN = /^[a-zA-Z][a-zA-Z0-9_-]*$/
 
-const SUPPORTED_TYPES = ['string', 'number', 'integer', 'boolean', 'array', 'object', 'relation']
+const SUPPORTED_TYPES = [
+	'string',
+	'number',
+	'integer',
+	'boolean',
+	'array',
+	'object',
+	'relation',
+]
 const ITEMS_TYPES = ['string', 'number', 'integer', 'boolean', 'object']
 const CARDINALITIES = ['one', 'many']
 
 let keyCounter = 0
+/**
+ *
+ */
 function nextKey() {
 	keyCounter += 1
 	return `field-${keyCounter}`
@@ -222,10 +353,12 @@ export default {
 		NcTextField,
 		PlusIcon,
 	},
+
 	props: {
 		fields: { type: Array, default: () => [] },
 		schemaSlugs: { type: Array, default: () => [] },
 	},
+
 	emits: ['update:fields'],
 	data() {
 		return {
@@ -234,6 +367,7 @@ export default {
 			pendingRemoveName: '',
 		}
 	},
+
 	computed: {
 		/**
 		 * Build the field-type picker options.
@@ -247,6 +381,7 @@ export default {
 				label: this.t('openbuild', value),
 			}))
 		},
+
 		/**
 		 * Build the array-items-type picker options.
 		 *
@@ -259,6 +394,7 @@ export default {
 				label: this.t('openbuild', value),
 			}))
 		},
+
 		/**
 		 * Build relation target-schema picker options.
 		 *
@@ -268,6 +404,7 @@ export default {
 		schemaOptions() {
 			return this.schemaSlugs.map((slug) => ({ value: slug, label: slug }))
 		},
+
 		/**
 		 * Build cardinality picker options (one/many).
 		 *
@@ -277,12 +414,14 @@ export default {
 		cardinalityOptions() {
 			return CARDINALITIES.map((value) => ({
 				value,
-				label: value === 'one'
-					? this.t('openbuild', 'One')
-					: this.t('openbuild', 'Many'),
+				label:
+					value === 'one'
+						? this.t('openbuild', 'One')
+						: this.t('openbuild', 'Many'),
 			}))
 		},
 	},
+
 	methods: {
 		/**
 		 * Resolve the selected field-type option.
@@ -292,8 +431,11 @@ export default {
 		 * @return {object} Matching option.
 		 */
 		typeOption(type) {
-			return this.typeOptions.find((o) => o.value === type) || this.typeOptions[0]
+			return (
+				this.typeOptions.find((o) => o.value === type) || this.typeOptions[0]
+			)
 		},
+
 		/**
 		 * Resolve the selected target-schema option.
 		 *
@@ -304,6 +446,7 @@ export default {
 		schemaOption(value) {
 			return this.schemaOptions.find((o) => o.value === value) || null
 		},
+
 		/**
 		 * Resolve the selected cardinality option.
 		 *
@@ -312,8 +455,12 @@ export default {
 		 * @return {object} Matching option.
 		 */
 		cardinalityOption(value) {
-			return this.cardinalityOptions.find((o) => o.value === value) || this.cardinalityOptions[0]
+			return (
+				this.cardinalityOptions.find((o) => o.value === value)
+				|| this.cardinalityOptions[0]
+			)
 		},
+
 		/**
 		 * Validate a field name: presence, pattern, and uniqueness.
 		 *
@@ -327,14 +474,21 @@ export default {
 				return this.t('openbuild', 'Name is required.')
 			}
 			if (!FIELD_NAME_PATTERN.test(field.name)) {
-				return this.t('openbuild', 'Name must start with a letter and use letters, digits, underscores, or hyphens only.')
+				return this.t(
+					'openbuild',
+					'Name must start with a letter and use letters, digits, underscores, or hyphens only.',
+				)
 			}
-			const duplicate = this.fields.some((other, otherIndex) => otherIndex !== index && other.name === field.name)
+			const duplicate = this.fields.some(
+				(other, otherIndex) =>
+					otherIndex !== index && other.name === field.name,
+			)
 			if (duplicate) {
 				return this.t('openbuild', 'Name must be unique within the schema.')
 			}
 			return ''
 		},
+
 		/**
 		 * Coerce an input to an integer or null.
 		 *
@@ -349,6 +503,7 @@ export default {
 			const parsed = parseInt(value, 10)
 			return Number.isFinite(parsed) ? parsed : null
 		},
+
 		/**
 		 * Coerce an input to a number or null.
 		 *
@@ -363,6 +518,7 @@ export default {
 			const parsed = Number(value)
 			return Number.isFinite(parsed) ? parsed : null
 		},
+
 		/**
 		 * Emit the updated fields array to the parent.
 		 *
@@ -373,6 +529,7 @@ export default {
 		emitFields(next) {
 			this.$emit('update:fields', next)
 		},
+
 		/**
 		 * Append a new blank field row.
 		 *
@@ -392,6 +549,7 @@ export default {
 			})
 			this.emitFields(next)
 		},
+
 		/**
 		 * Update a single field property; resets validation on type change.
 		 *
@@ -413,6 +571,7 @@ export default {
 			next[index] = current
 			this.emitFields(next)
 		},
+
 		/**
 		 * Set or clear a single validation slot on a field.
 		 *
@@ -435,6 +594,7 @@ export default {
 			next[index] = current
 			this.emitFields(next)
 		},
+
 		/**
 		 * Move a field up one position.
 		 *
@@ -451,6 +611,7 @@ export default {
 			next.splice(index - 1, 0, moved)
 			this.emitFields(next)
 		},
+
 		/**
 		 * Move a field down one position.
 		 *
@@ -467,6 +628,7 @@ export default {
 			next.splice(index + 1, 0, moved)
 			this.emitFields(next)
 		},
+
 		/**
 		 * Open the remove-field confirmation dialog.
 		 *
@@ -476,9 +638,11 @@ export default {
 		 */
 		requestRemove(index) {
 			this.pendingRemoveIndex = index
-			this.pendingRemoveName = this.fields[index]?.name || this.t('openbuild', '(unnamed)')
+			this.pendingRemoveName =
+				this.fields[index]?.name || this.t('openbuild', '(unnamed)')
 			this.removeDialogOpen = true
 		},
+
 		/**
 		 * Confirm removal of the pending field.
 		 *
@@ -495,6 +659,7 @@ export default {
 			this.emitFields(next)
 			this.cancelRemove()
 		},
+
 		/**
 		 * Cancel the pending field removal and reset state.
 		 *
@@ -521,10 +686,11 @@ export default {
  */
 export function schemaToFields(schema) {
 	const properties = (schema && schema.properties) || {}
-	const required = (schema && Array.isArray(schema.required)) ? schema.required : []
-	const order = (schema && Array.isArray(schema['x-property-order']))
-		? schema['x-property-order']
-		: Object.keys(properties)
+	const required = schema && Array.isArray(schema.required) ? schema.required : []
+	const order =
+		schema && Array.isArray(schema['x-property-order'])
+			? schema['x-property-order']
+			: Object.keys(properties)
 	const fields = []
 	for (const name of order) {
 		if (!(name in properties)) {
@@ -536,16 +702,22 @@ export function schemaToFields(schema) {
 	// Append any properties that weren't in the explicit order.
 	for (const name of Object.keys(properties)) {
 		if (!order.includes(name)) {
-			fields.push(fieldFromProperty(name, properties[name], required.includes(name)))
+			fields.push(
+				fieldFromProperty(name, properties[name], required.includes(name)),
+			)
 		}
 	}
 	return fields
 }
 
+/**
+ *
+ * @param name
+ * @param prop
+ * @param isRequired
+ */
 function fieldFromProperty(name, prop, isRequired) {
-	const type = prop['x-openregister-relation']
-		? 'relation'
-		: (prop.type || 'string')
+	const type = prop['x-openregister-relation'] ? 'relation' : prop.type || 'string'
 	const validation = {}
 	if (type === 'string') {
 		if (prop.format) validation.format = prop.format
@@ -602,6 +774,10 @@ export function fieldsToSchema(fields) {
 	return { properties, required, order }
 }
 
+/**
+ *
+ * @param field
+ */
 function propertyFromField(field) {
 	const prop = {}
 	if (field.description) {
@@ -612,43 +788,43 @@ function propertyFromField(field) {
 	}
 	const v = field.validation || {}
 	switch (field.type) {
-	case 'string':
-		prop.type = 'string'
-		if (v.format) prop.format = v.format
-		if (v.pattern) prop.pattern = v.pattern
-		if (v.minLength != null) prop.minLength = v.minLength
-		if (v.maxLength != null) prop.maxLength = v.maxLength
-		break
-	case 'number':
-	case 'integer':
-		prop.type = field.type
-		if (v.minimum != null) prop.minimum = v.minimum
-		if (v.maximum != null) prop.maximum = v.maximum
-		if (v.multipleOf != null) prop.multipleOf = v.multipleOf
-		break
-	case 'boolean':
-		prop.type = 'boolean'
-		break
-	case 'array':
-		prop.type = 'array'
-		prop.items = { type: v.itemsType || 'string' }
-		if (v.minItems != null) prop.minItems = v.minItems
-		if (v.maxItems != null) prop.maxItems = v.maxItems
-		break
-	case 'object':
-		prop.type = 'object'
-		break
-	case 'relation':
-		prop.type = 'string'
-		prop['x-openregister-relation'] = {
-			target: v.target || '',
-			cardinality: v.cardinality || 'one',
-			...(v.inverseOf ? { inverseOf: v.inverseOf } : {}),
-		}
-		break
-	default:
-		prop.type = 'string'
-		break
+		case 'string':
+			prop.type = 'string'
+			if (v.format) prop.format = v.format
+			if (v.pattern) prop.pattern = v.pattern
+			if (v.minLength != null) prop.minLength = v.minLength
+			if (v.maxLength != null) prop.maxLength = v.maxLength
+			break
+		case 'number':
+		case 'integer':
+			prop.type = field.type
+			if (v.minimum != null) prop.minimum = v.minimum
+			if (v.maximum != null) prop.maximum = v.maximum
+			if (v.multipleOf != null) prop.multipleOf = v.multipleOf
+			break
+		case 'boolean':
+			prop.type = 'boolean'
+			break
+		case 'array':
+			prop.type = 'array'
+			prop.items = { type: v.itemsType || 'string' }
+			if (v.minItems != null) prop.minItems = v.minItems
+			if (v.maxItems != null) prop.maxItems = v.maxItems
+			break
+		case 'object':
+			prop.type = 'object'
+			break
+		case 'relation':
+			prop.type = 'string'
+			prop['x-openregister-relation'] = {
+				target: v.target || '',
+				cardinality: v.cardinality || 'one',
+				...(v.inverseOf ? { inverseOf: v.inverseOf } : {}),
+			}
+			break
+		default:
+			prop.type = 'string'
+			break
 	}
 	return prop
 }

@@ -2,9 +2,14 @@
 <template>
 	<div class="app-template-dashboard">
 		<header class="app-template-dashboard__header">
-			<h2>{{ t('app-template', 'Dashboard') }}</h2>
+			<h2>{{ t("app-template", "Dashboard") }}</h2>
 			<p class="app-template-dashboard__lead">
-				{{ t('app-template', 'Starter overview with sample KPIs and activity placeholders. Replace this view with your own data.') }}
+				{{
+					t(
+						"app-template",
+						"Starter overview with sample KPIs and activity placeholders. Replace this view with your own data.",
+					)
+				}}
 			</p>
 		</header>
 
@@ -15,42 +20,67 @@
 				:count-label="t('app-template', 'sample')"
 				:icon="FolderOutline"
 				variant="primary"
-				horizontal />
+				horizontal
+			/>
 			<CnStatsBlock
 				:title="t('app-template', 'Due this week')"
 				:count="5"
 				:count-label="t('app-template', 'sample')"
 				:icon="CalendarClock"
 				variant="warning"
-				horizontal />
+				horizontal
+			/>
 			<CnStatsBlock
 				:title="t('app-template', 'Completed')"
 				:count="48"
 				:count-label="t('app-template', 'sample')"
 				:icon="CheckCircleOutline"
 				variant="success"
-				horizontal />
+				horizontal
+			/>
 			<CnStatsBlock
 				:title="t('app-template', 'Team members')"
 				:count="7"
 				:count-label="t('app-template', 'sample')"
 				:icon="AccountGroupOutline"
 				variant="default"
-				horizontal />
+				horizontal
+			/>
 		</CnKpiGrid>
 
 		<div class="app-template-dashboard__columns">
 			<CnConfigurationCard :title="t('app-template', 'Recent activity')">
 				<ul class="app-template-dashboard__placeholder-list">
-					<li>{{ t('app-template', 'Placeholder: user opened a record') }}</li>
-					<li>{{ t('app-template', 'Placeholder: status changed to Review') }}</li>
-					<li>{{ t('app-template', 'Placeholder: comment added') }}</li>
+					<li>
+						{{
+							t(
+								"app-template",
+								"Placeholder: user opened a record",
+							)
+						}}
+					</li>
+					<li>
+						{{
+							t(
+								"app-template",
+								"Placeholder: status changed to Review",
+							)
+						}}
+					</li>
+					<li>
+						{{ t("app-template", "Placeholder: comment added") }}
+					</li>
 				</ul>
 			</CnConfigurationCard>
 
 			<CnConfigurationCard :title="t('app-template', 'Quick actions')">
 				<p class="app-template-dashboard__hint">
-					{{ t('app-template', 'Wire buttons here to create records, open lists, or deep links. Use the sidebar for Settings and Documentation.') }}
+					{{
+						t(
+							"app-template",
+							"Wire buttons here to create records, open lists, or deep links. Use the sidebar for Settings and Documentation.",
+						)
+					}}
 				</p>
 			</CnConfigurationCard>
 		</div>
@@ -58,14 +88,18 @@
 </template>
 
 <script>
-import { CnConfigurationCard, CnKpiGrid, CnStatsBlock } from '@conduction/nextcloud-vue'
-import AccountGroupOutline from 'vue-material-design-icons/AccountGroupOutline.vue'
-import CalendarClock from 'vue-material-design-icons/CalendarClock.vue'
-import CheckCircleOutline from 'vue-material-design-icons/CheckCircleOutline.vue'
-import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
+import {
+	CnConfigurationCard,
+	CnKpiGrid,
+	CnStatsBlock,
+} from "@conduction/nextcloud-vue";
+import AccountGroupOutline from "vue-material-design-icons/AccountGroupOutline.vue";
+import CalendarClock from "vue-material-design-icons/CalendarClock.vue";
+import CheckCircleOutline from "vue-material-design-icons/CheckCircleOutline.vue";
+import FolderOutline from "vue-material-design-icons/FolderOutline.vue";
 
 export default {
-	name: 'Dashboard',
+	name: "Dashboard",
 	components: {
 		CnConfigurationCard,
 		CnKpiGrid,
@@ -77,9 +111,9 @@ export default {
 			CalendarClock,
 			CheckCircleOutline,
 			AccountGroupOutline,
-		}
+		};
 	},
-}
+};
 </script>
 
 <style scoped>

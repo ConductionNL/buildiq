@@ -17,28 +17,41 @@
 			</h3>
 			<div class="ob-theme-section__actions">
 				<NcButton
-					type="secondary"
+					variant="secondary"
 					:disabled="!nldesignAvailable"
-					:title="nldesignAvailable ? '' : t('openbuild', 'NL Design is not installed or enabled on this instance.')"
+					:title="
+						nldesignAvailable
+							? ''
+							: t(
+									'openbuild',
+									'NL Design is not installed or enabled on this instance.',
+								)
+					"
 					@click="openPicker">
 					{{ t('openbuild', 'Change') }}
 				</NcButton>
-				<NcButton
-					v-if="theme"
-					type="tertiary"
-					@click="removeTheme">
+				<NcButton v-if="theme" variant="tertiary" @click="removeTheme">
 					{{ t('openbuild', 'Remove') }}
 				</NcButton>
 			</div>
 		</header>
 
 		<p v-if="!nldesignAvailable" class="ob-theme-section__hint">
-			{{ t('openbuild', 'NL Design is not available. An existing theme stays visible and removable, but you cannot change it.') }}
+			{{
+				t(
+					'openbuild',
+					'NL Design is not available. An existing theme stays visible and removable, but you cannot change it.',
+				)
+			}}
 		</p>
 
 		<div v-if="theme" class="ob-theme-section__current">
-			<span class="ob-theme-section__swatch" :style="{ background: primaryColor }" />
-			<span class="ob-theme-section__swatch" :style="{ background: backgroundColor }" />
+			<span
+				class="ob-theme-section__swatch"
+				:style="{ background: primaryColor }" />
+			<span
+				class="ob-theme-section__swatch"
+				:style="{ background: backgroundColor }" />
 			<strong>{{ theme.tokenSetName || theme.tokenSet }}</strong>
 		</div>
 		<p v-else class="ob-theme-section__default">
@@ -46,52 +59,96 @@
 		</p>
 
 		<ThemePickerDialog
-			:open.sync="dialogOpen"
+			v-model:open="dialogOpen"
 			:theme="theme"
-			:nldesign-available="nldesignAvailable"
+			:nldesignAvailable="nldesignAvailable"
+			:previewAvailable="previewAvailable"
 			@save="onSave"
 			@clear="removeTheme"
 			@preview="$emit('preview', $event)" />
+
+		<ConfirmActionDialog
+			v-model:open="confirmRemoveOpen"
+			:name="t('openbuild', 'Remove theme')"
+			:message="
+				t(
+					'openbuild',
+					'Remove the theme? This app will render in the default Nextcloud styling.',
+				)
+			"
+			:confirmLabel="t('openbuild', 'Remove')"
+			destructive
+			@confirm="onConfirmRemoveTheme" />
 	</section>
 </template>
 
 <script>
 import { NcButton } from '@nextcloud/vue'
+import ConfirmActionDialog from '../dialogs/ConfirmActionDialog.vue'
 import ThemePickerDialog from '../dialogs/ThemePickerDialog.vue'
 
 export default {
 	name: 'ThemeSection',
-	components: { NcButton, ThemePickerDialog },
+	components: { NcButton, ThemePickerDialog, ConfirmActionDialog },
 	props: {
 		manifest: {
 			type: Object,
 			default: () => ({}),
 		},
+
 		nldesignAvailable: {
 			type: Boolean,
 			default: true,
 		},
+
+		// REQ-NTS-002 (design.md OQ-1, task 3.3): whether the page-designer
+		// live-preview-pane's sandboxed CnAppRoot is mounted — forwarded to
+		// ThemePickerDialog so its live-preview toggle disables with a hint
+		// rather than silently no-op'ing when the pane is unavailable.
+		previewAvailable: {
+			type: Boolean,
+			default: true,
+		},
 	},
+
 	emits: ['update:manifest', 'preview'],
 	data() {
 		return {
 			dialogOpen: false,
+			confirmRemoveOpen: false,
 		}
 	},
+
 	computed: {
 		/** @spec openspec/changes/nldesign-theme-selection/specs/nldesign-theme-selection/spec.md#req-nts-002 */
 		theme() {
-			return (this.manifest && this.manifest.runtime && this.manifest.runtime.theme) || null
+			return (
+				(this.manifest
+					&& this.manifest.runtime
+					&& this.manifest.runtime.theme)
+				|| null
+			)
 		},
+
 		/** @spec openspec/changes/nldesign-theme-selection/specs/nldesign-theme-selection/spec.md#req-nts-002 */
 		primaryColor() {
-			return (this.theme && this.theme.preview && this.theme.preview.primaryColor) || 'var(--color-primary-element)'
+			return (
+				(this.theme && this.theme.preview && this.theme.preview.primaryColor)
+				|| 'var(--color-primary-element)'
+			)
 		},
+
 		/** @spec openspec/changes/nldesign-theme-selection/specs/nldesign-theme-selection/spec.md#req-nts-002 */
 		backgroundColor() {
-			return (this.theme && this.theme.preview && this.theme.preview.backgroundColor) || 'var(--color-main-background)'
+			return (
+				(this.theme
+					&& this.theme.preview
+					&& this.theme.preview.backgroundColor)
+				|| 'var(--color-main-background)'
+			)
 		},
 	},
+
 	methods: {
 		/** @spec openspec/changes/nldesign-theme-selection/specs/nldesign-theme-selection/spec.md#req-nts-002 */
 		openPicker() {
@@ -100,6 +157,7 @@ export default {
 			}
 			this.dialogOpen = true
 		},
+
 		/**
 		 * Persist the chosen theme into `runtime.theme`.
 		 *
@@ -109,20 +167,31 @@ export default {
 		onSave(theme) {
 			this.$emit('update:manifest', this.withTheme(theme))
 		},
+
 		/**
 		 * Remove the theme (delete `runtime.theme` entirely).
 		 *
 		 * @spec openspec/changes/nldesign-theme-selection/specs/nldesign-theme-selection/spec.md#req-nts-002
 		 */
 		removeTheme() {
-			const ok = typeof window !== 'undefined' && window.confirm
-				? window.confirm(t('openbuild', 'Remove the theme? This app will render in the default Nextcloud styling.'))
-				: true
-			if (!ok) {
-				return
-			}
+			this.confirmRemoveOpen = true
+		},
+
+		/**
+		 * Apply the removal once the user has confirmed it in the dialog.
+		 *
+		 * Split from removeTheme() so the destructive step runs ONLY on an
+		 * explicit confirm — closing or cancelling the dialog emits nothing
+		 * and therefore leaves the manifest untouched.
+		 *
+		 * @return {void}
+		 * @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-002
+		 */
+		onConfirmRemoveTheme() {
+			this.confirmRemoveOpen = false
 			this.$emit('update:manifest', this.withTheme(null))
 		},
+
 		/**
 		 * Return a manifest copy with `runtime.theme` set (or removed when null
 		 * so themeless manifests serialize byte-identically). Never touches
@@ -158,22 +227,27 @@ export default {
 	justify-content: space-between;
 	margin-bottom: 8px;
 }
+
 .ob-theme-section__title {
 	margin: 0;
 }
+
 .ob-theme-section__actions {
 	display: flex;
 	gap: 8px;
 }
+
 .ob-theme-section__hint,
 .ob-theme-section__default {
 	color: var(--color-text-maxcontrast);
 }
+
 .ob-theme-section__current {
 	display: flex;
 	align-items: center;
 	gap: 8px;
 }
+
 .ob-theme-section__swatch {
 	width: 24px;
 	height: 24px;

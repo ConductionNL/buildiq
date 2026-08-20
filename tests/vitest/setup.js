@@ -7,14 +7,17 @@
  * them resolve to the bare key string. Loaded automatically via
  * `test.setupFiles` in `vitest.config.js`.
  *
- * The helpers are exposed two ways because Vue 2's template compiler
- * emits `_vm.t(...)` (looking on the component instance), while plain
- * script code calls `t(...)` (looking on the global). We register them
- * as a global mixin so every mounted component has them on `this`, AND
- * on `globalThis` so direct script-level calls resolve.
+ * The helpers are exposed two ways because a compiled template looks them up
+ * on the component instance, while plain script code calls `t(...)` on the
+ * global. They are registered on `globalThis` AND, for mounted components,
+ * through Vue Test Utils' global mount config.
+ *
+ * Vue 3 has no global `Vue` constructor, so the previous `Vue.mixin({...})`
+ * is gone — `config.global.mocks` is the per-mount equivalent and applies to
+ * every component mounted in the suite.
  */
 
-import Vue from 'vue'
+import { config } from '@vue/test-utils'
 
 const tStub = (_app, key, _vars) => key
 const nStub = (_app, singular, plural, count) => (count === 1 ? singular : plural)
@@ -22,9 +25,8 @@ const nStub = (_app, singular, plural, count) => (count === 1 ? singular : plura
 globalThis.t = tStub
 globalThis.n = nStub
 
-Vue.mixin({
-	methods: {
-		t: tStub,
-		n: nStub,
-	},
-})
+config.global.mocks = {
+	...config.global.mocks,
+	t: tStub,
+	n: nStub,
+}

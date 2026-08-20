@@ -22,10 +22,11 @@ const t = (app, str) => str
  * with class `ob-app-card__chip--live` or text "Live" should appear.
  */
 describe('ApplicationCard', () => {
-	const factory = (object, extra = {}) => shallowMount(ApplicationCard, {
-		propsData: { object, ...extra },
-		mocks: { t, $router: { push: vi.fn() } },
-	})
+	const factory = (object, extra = {}) =>
+		shallowMount(ApplicationCard, {
+			propsData: { object, ...extra },
+			mocks: { t, $router: { push: vi.fn() } },
+		})
 
 	// --- name / slug / icon ------------------------------------------------
 
@@ -36,7 +37,9 @@ describe('ApplicationCard', () => {
 		expect(text).toContain('/hello-world')
 		// icon <img> is always rendered (falls back to app.svg on error)
 		expect(w.find('img.ob-app-card__icon').exists()).toBe(true)
-		expect(w.find('img.ob-app-card__icon').attributes('src')).toMatch(/icons\/hello-world\.svg$/)
+		expect(w.find('img.ob-app-card__icon').attributes('src')).toMatch(
+			/icons\/hello-world\.svg$/,
+		)
 	})
 
 	it('falls back to the slug when there is no name', () => {
@@ -80,14 +83,24 @@ describe('ApplicationCard', () => {
 	it('never shows a "Live" chip regardless of currentVersion field', () => {
 		// Pre-spec-A objects may still carry currentVersion in OR; the card
 		// must ignore it now that the field has moved to ApplicationVersion.
-		expect(factory({ slug: 'x', status: 'draft', currentVersion: 'snap-uuid' }).text()).not.toContain('Live')
+		expect(
+			factory({
+				slug: 'x',
+				status: 'draft',
+				currentVersion: 'snap-uuid',
+			}).text(),
+		).not.toContain('Live')
 		expect(factory({ slug: 'x', status: 'draft' }).text()).not.toContain('Live')
-		expect(factory({ slug: 'x', currentVersion: null }).find('.ob-app-card__chip--live').exists()).toBe(false)
+		expect(
+			factory({ slug: 'x', currentVersion: null })
+				.find('.ob-app-card__chip--live')
+				.exists(),
+		).toBe(false)
 	})
 
 	// --- RBAC role label ---------------------------------------------------
 
-	it('shows the caller\'s role when they have one', () => {
+	it("shows the caller's role when they have one", () => {
 		const owned = factory({ slug: 'x', permissions: { owners: ['team-alpha'] } })
 		expect(owned.text()).toContain('Owner')
 		const none = factory({ slug: 'x', permissions: { owners: ['other-team'] } })

@@ -27,74 +27,70 @@ namespace OCA\OpenRegister\Lifecycle;
 /**
  * Allow/deny verdict value object returned by a lifecycle guard.
  */
-final class GuardResult
-{
-    /**
-     * Construct a verdict value object.
-     *
-     * @param bool        $allowed Whether the transition is allowed.
-     * @param string|null $message Optional deny message.
-     */
-    private function __construct(private bool $allowed, private ?string $message)
-    {
-    }//end __construct()
+final class GuardResult {
+	/**
+	 * Construct a verdict value object.
+	 *
+	 * @param bool $allowed Whether the transition is allowed.
+	 * @param string|null $message Optional deny message.
+	 */
+	private function __construct(
+		private bool $allowed,
+		private ?string $message,
+	) {
+	}//end __construct()
 
-    /**
-     * Return an allow verdict.
-     *
-     * @return self
-     */
-    public static function allow(): self
-    {
-        return new self(true, null);
-    }//end allow()
+	/**
+	 * Return an allow verdict.
+	 *
+	 * @return self
+	 */
+	public static function allow(): self {
+		return new self(true, null);
+	}//end allow()
 
-    /**
-     * Return a deny verdict with the given message.
-     *
-     * @param string $message Deny reason.
-     *
-     * @return self
-     */
-    public static function deny(string $message): self
-    {
-        return new self(false, $message);
-    }//end deny()
+	/**
+	 * Return a deny verdict with the given message.
+	 *
+	 * @param string $message Deny reason.
+	 *
+	 * @return self
+	 */
+	public static function deny(string $message): self {
+		return new self(false, $message);
+	}//end deny()
 
-    /**
-     * Return whether the verdict allows the transition.
-     *
-     * @return bool
-     */
-    public function isAllowed(): bool
-    {
-        return $this->allowed;
-    }//end isAllowed()
+	/**
+	 * Return whether the verdict allows the transition.
+	 *
+	 * @return bool
+	 */
+	public function isAllowed(): bool {
+		return $this->allowed;
+	}//end isAllowed()
 
-    /**
-     * Return the deny message, or null for allow verdicts.
-     *
-     * @return string|null
-     */
-    public function getMessage(): ?string
-    {
-        return $this->message;
-    }//end getMessage()
+	/**
+	 * Return the deny message, or null for allow verdicts.
+	 *
+	 * @return string|null
+	 */
+	public function getMessage(): ?string {
+		return $this->message;
+	}//end getMessage()
 }//end class
 
 /**
  * Contract apps implement to authorise a lifecycle transition.
  */
-interface LifecycleGuardInterface
-{
-    /**
-     * Authorise a lifecycle transition.
-     *
-     * @param array<string, mixed> $object The object payload.
-     * @param string               $action The transition action.
-     * @param string               $userId The acting user UID.
-     *
-     * @return GuardResult
-     */
-    public function check(array $object, string $action, string $userId): GuardResult;
+interface LifecycleGuardInterface {
+	/**
+	 * Authorise a lifecycle transition.
+	 *
+	 * @param array<string, mixed> $object The object payload.
+	 * @param string $action The transition action.
+	 * @param string $userId The acting user UID.
+	 *
+	 * @return GuardResult
+	 */
+	public function check(array $object, string $action, string $userId): GuardResult;
 }//end interface

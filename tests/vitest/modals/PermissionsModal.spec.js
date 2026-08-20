@@ -23,68 +23,91 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 
-// Inline mocks for NcDialog + NcSelect — vi.mock is hoisted above the
-// imports below. We deliberately stub NcDialog as a transparent slot
+// Inline mocks for NcDialog + NcButton + NcSelect — vi.mock is hoisted above
+// the imports below. We deliberately stub NcDialog as a transparent slot
 // passthrough so the modal renders its inner controls regardless of the
 // `:open` prop (real NcDialog skips the slot when closed).
 //
-// All stubs use render functions (not template strings) because the
-// runtime-only Vue 2 build vite ships doesn't include the template
-// compiler — template strings throw at mount time.
-vi.mock('@nextcloud/vue/dist/Components/NcDialog.js', () => ({
-	default: {
-		name: 'NcDialog',
-		props: ['name', 'open', 'size'],
-		render(h) {
-			return h('div', { class: 'nc-dialog-stub' }, this.$slots.default)
+// Four Vue-2-isms had to go here:
+//   1. The module ids. @nextcloud/vue 9 (the Vue 3 line) publishes
+//      `@nextcloud/vue/components/NcX`; the old `dist/Components/NcX.js`
+//      paths these mocks named no longer resolve to anything the component
+//      imports, so all three mocks were DEAD and the real components mounted.
+//   2. `render(h)` — Vue 3 does not pass `h` to a render function; it is
+//      imported from `vue`. The import happens inside the (async) factory
+//      because vitest hoists `vi.mock` above the file's own imports.
+//   3. Flat vnode data: `attrs: { … }` / `on: { click }` are Vue 2 shapes.
+//      Vue 3 wants top-level attributes and an `onClick` listener.
+//   4. `this.$slots.default` is a FUNCTION in Vue 3 — it must be called.
+//   5. NcSelect's `v-model` is `modelValue` + `update:modelValue` in Vue 3,
+//      not the Vue 2 `value` + `input` pair the old stub declared.
+vi.mock('@nextcloud/vue/components/NcDialog', async () => {
+	const { h } = await import('vue')
+	return {
+		default: {
+			name: 'NcDialog',
+			props: ['name', 'open', 'size'],
+			emits: ['update:open'],
+			render() {
+				return h('div', { class: 'nc-dialog-stub' }, this.$slots.default?.())
+			},
 		},
-	},
-}))
+	}
+})
 
-vi.mock('@nextcloud/vue/dist/Components/NcButton.js', () => ({
-	default: {
-		name: 'NcButton',
-		props: ['type', 'disabled'],
-		render(h) {
-			return h(
-				'button',
-				{
-					attrs: { disabled: this.disabled, 'data-type': this.type },
-					on: { click: (e) => this.$emit('click', e) },
-				},
-				this.$slots.default,
-			)
+vi.mock('@nextcloud/vue/components/NcButton', async () => {
+	const { h } = await import('vue')
+	return {
+		default: {
+			name: 'NcButton',
+			props: ['type', 'disabled'],
+			emits: ['click'],
+			render() {
+				return h(
+					'button',
+					{
+						disabled: this.disabled,
+						'data-type': this.type,
+						onClick: (e) => this.$emit('click', e),
+					},
+					this.$slots.default?.(),
+				)
+			},
 		},
-	},
-}))
+	}
+})
 
-vi.mock('@nextcloud/vue/dist/Components/NcSelect.js', () => ({
-	default: {
-		name: 'NcSelect',
-		props: {
-			value: { default: () => [] },
-			options: { default: () => [] },
-			multiple: Boolean,
-			inputLabel: String,
-			label: String,
-			trackBy: String,
+vi.mock('@nextcloud/vue/components/NcSelect', async () => {
+	const { h } = await import('vue')
+	return {
+		default: {
+			name: 'NcSelect',
+			props: {
+				modelValue: { default: () => [] },
+				options: { default: () => [] },
+				multiple: Boolean,
+				inputLabel: String,
+				label: String,
+				trackBy: String,
+			},
+			emits: ['update:modelValue'],
+			// Render the input-label as a data-attribute probe surface + a
+			// span listing the currently selected option values so tests can
+			// read them.
+			render() {
+				const values = (this.modelValue || []).map((v) => v.value).join(',')
+				return h(
+					'div',
+					{ class: 'nc-select-stub', 'data-label': this.inputLabel },
+					[
+						h('label', this.inputLabel),
+						h('span', { class: 'nc-select-stub__values' }, values),
+					],
+				)
+			},
 		},
-		// Render the input-label as a data-attribute probe surface + a
-		// span listing the currently selected option values so tests can
-		// read them.
-		render(h) {
-			const values = (this.value || []).map(v => v.value).join(',')
-			return h(
-				'div',
-				{ class: 'nc-select-stub', attrs: { 'data-label': this.inputLabel } },
-				[
-					h('label', this.inputLabel),
-					h('span', { class: 'nc-select-stub__values' }, values),
-				],
-			)
-		},
-	},
-}))
+	}
+})
 
 import PermissionsModal from '../../../src/modals/PermissionsModal.vue'
 
@@ -96,7 +119,10 @@ import PermissionsModal from '../../../src/modals/PermissionsModal.vue'
  * @return The first matching wrapper (or an empty wrapper if absent).
  */
 function findSelectByLabel(wrapper, label) {
-	return wrapper.findAll('.nc-select-stub').wrappers.find(w => w.attributes('data-label') === label)
+	// VTU v2 returns a plain array from findAll(); `.wrappers` is gone.
+	return wrapper
+		.findAll('.nc-select-stub')
+		.find((w) => w.attributes('data-label') === label)
 }
 
 describe('PermissionsModal — REQ-OBRBAC-005 / REQ-OBRBAC-007', () => {
@@ -122,7 +148,9 @@ describe('PermissionsModal — REQ-OBRBAC-005 / REQ-OBRBAC-007', () => {
 				propsData: { open: true, application, availableGroups },
 			})
 			expect(findSelectByLabel(wrapper, 'Owners (full control)')).toBeTruthy()
-			expect(findSelectByLabel(wrapper, 'Editors (can save drafts)')).toBeTruthy()
+			expect(
+				findSelectByLabel(wrapper, 'Editors (can save drafts)'),
+			).toBeTruthy()
 			expect(findSelectByLabel(wrapper, 'Viewers (read-only)')).toBeTruthy()
 		})
 
@@ -130,20 +158,32 @@ describe('PermissionsModal — REQ-OBRBAC-005 / REQ-OBRBAC-007', () => {
 			const wrapper = mount(PermissionsModal, {
 				propsData: { open: true, application, availableGroups },
 			})
-			expect(findSelectByLabel(wrapper, 'Owners (full control)').text()).toContain('team-alpha')
-			expect(findSelectByLabel(wrapper, 'Editors (can save drafts)').text()).toContain('team-beta')
-			expect(findSelectByLabel(wrapper, 'Viewers (read-only)').text()).toContain('team-gamma')
+			expect(
+				findSelectByLabel(wrapper, 'Owners (full control)').text(),
+			).toContain('team-alpha')
+			expect(
+				findSelectByLabel(wrapper, 'Editors (can save drafts)').text(),
+			).toContain('team-beta')
+			expect(
+				findSelectByLabel(wrapper, 'Viewers (read-only)').text(),
+			).toContain('team-gamma')
 		})
 
 		it('renders zero entries when the application has no permissions block', () => {
 			const wrapper = mount(PermissionsModal, {
 				propsData: {
 					open: true,
-					application: { uuid: 'fresh', slug: 'fresh', permissions: undefined },
+					application: {
+						uuid: 'fresh',
+						slug: 'fresh',
+						permissions: undefined,
+					},
 					availableGroups,
 				},
 			})
-			expect(findSelectByLabel(wrapper, 'Owners (full control)').text()).not.toContain('team-')
+			expect(
+				findSelectByLabel(wrapper, 'Owners (full control)').text(),
+			).not.toContain('team-')
 		})
 	})
 
@@ -181,7 +221,10 @@ describe('PermissionsModal — REQ-OBRBAC-005 / REQ-OBRBAC-007', () => {
 			})
 			const buttons = wrapper.findAll('button')
 			await buttons.at(buttons.length - 1).trigger('click')
-			expect(wrapper.emitted('save')[0][0].owners).toEqual(['team-alpha', 'team-delta'])
+			expect(wrapper.emitted('save')[0][0].owners).toEqual([
+				'team-alpha',
+				'team-delta',
+			])
 		})
 	})
 
@@ -199,8 +242,12 @@ describe('PermissionsModal — REQ-OBRBAC-005 / REQ-OBRBAC-007', () => {
 			// No save event must be emitted.
 			expect(wrapper.emitted('save')).toBeFalsy()
 			// The inline orphan-error must be visible.
-			expect(wrapper.find('.openbuild-permissions-modal__error').exists()).toBe(true)
-			expect(wrapper.find('.openbuild-permissions-modal__error').text()).toMatch(/owner/i)
+			expect(
+				wrapper.find('.openbuild-permissions-modal__error').exists(),
+			).toBe(true)
+			expect(
+				wrapper.find('.openbuild-permissions-modal__error').text(),
+			).toMatch(/owner/i)
 		})
 
 		it('clears the orphan error when the application prop is re-supplied', async () => {
@@ -210,7 +257,9 @@ describe('PermissionsModal — REQ-OBRBAC-005 / REQ-OBRBAC-007', () => {
 			await wrapper.setData({ ownersModel: [] })
 			const buttons = wrapper.findAll('button')
 			await buttons.at(buttons.length - 1).trigger('click')
-			expect(wrapper.find('.openbuild-permissions-modal__error').exists()).toBe(true)
+			expect(
+				wrapper.find('.openbuild-permissions-modal__error').exists(),
+			).toBe(true)
 
 			// Re-supply application — the watcher re-syncs from props and
 			// resets `orphanError` to false.
@@ -218,10 +267,16 @@ describe('PermissionsModal — REQ-OBRBAC-005 / REQ-OBRBAC-007', () => {
 				application: {
 					uuid: 'app-uuid-2',
 					slug: 'fresh',
-					permissions: { owners: ['team-omega'], editors: [], viewers: [] },
+					permissions: {
+						owners: ['team-omega'],
+						editors: [],
+						viewers: [],
+					},
 				},
 			})
-			expect(wrapper.find('.openbuild-permissions-modal__error').exists()).toBe(false)
+			expect(
+				wrapper.find('.openbuild-permissions-modal__error').exists(),
+			).toBe(false)
 		})
 	})
 

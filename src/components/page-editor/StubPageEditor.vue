@@ -1,9 +1,12 @@
 <!-- SPDX-License-Identifier: EUPL-1.2 -->
 <!--
-  - StubPageEditor — Coming-in-v1.1 placeholder used by the five page-type
-  - sub-editors that ship as stubs (logs, settings, chat, files, custom).
-  - Round-trips the config block losslessly via a raw-JSON textarea so the
-  - editor never blanks externally authored manifests for the deferred types.
+  - StubPageEditor — fallback for page types absent from `SUB_EDITOR_MAP`
+  - (unknown/future types only; every canonical v2 type has a dedicated
+  - sub-editor as of REQ-PEC-001). Round-trips the config block losslessly
+  - via a raw-JSON textarea so the editor never blanks externally authored
+  - manifests for a type it doesn't recognise. `title` / `message` are
+  - required props — `PageDesigner.vue`'s dispatch binding supplies both
+  - whenever this component mounts.
   -->
 <template>
 	<div class="stub-page-editor">
@@ -15,6 +18,7 @@
 			class="stub-page-editor__textarea"
 			spellcheck="false"
 			:value="jsonDraft"
+			:aria-label="t('openbuild', 'Raw page configuration (JSON)')"
 			@input="onInput($event.target.value)" />
 		<p v-if="parseError" class="stub-page-editor__error" role="alert">
 			{{ parseError }}
@@ -30,15 +34,18 @@ export default {
 			type: String,
 			required: true,
 		},
+
 		message: {
 			type: String,
 			required: true,
 		},
+
 		config: {
 			type: Object,
 			default: () => ({}),
 		},
 	},
+
 	emits: ['update:config'],
 	data() {
 		return {
@@ -46,12 +53,17 @@ export default {
 			parseError: '',
 		}
 	},
+
 	watch: {
 		config: {
 			deep: true,
 			/**
-			 * Observed behaviour of `handler` (retrofit annotation).
+			 * Re-seed the JSON textarea when the config changes from the
+			 * outside (page switch, manifest reload). The re-stringified text
+			 * is compared against the current draft first, so the author's
+			 * caret and half-typed JSON survive their own keystrokes.
 			 *
+			 * @param {?object} val - the new raw config block for the page; nullish renders as `{}`.
 			 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 			 */
 			handler(val) {
@@ -66,10 +78,14 @@ export default {
 			},
 		},
 	},
+
 	methods: {
 		/**
-		 * Observed behaviour of `onInput` (retrofit annotation).
+		 * Parse the raw-config textarea on every keystroke. Invalid JSON only
+		 * sets `parseError` and does NOT emit, so a half-typed config never
+		 * replaces the page's config block; the last valid parse stands.
 		 *
+		 * @param {string} value - the raw textarea contents; must parse to the whole replacement config block for this page (note that `''` is invalid JSON, so clearing the textarea shows an error rather than emptying the config).
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		onInput(value) {

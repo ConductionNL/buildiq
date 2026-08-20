@@ -19,10 +19,14 @@ vi.mock('@conduction/nextcloud-vue', () => ({
 	validateManifest: (...args) => validateSpy(...args),
 }))
 
-const { useManifestValidator } = await import('../../src/composables/useManifestValidator.js')
+const { useManifestValidator } =
+	await import('../../src/composables/useManifestValidator.js')
 
 function withErrors(v, errors) {
-	validateSpy.mockImplementationOnce(() => ({ valid: errors.length === 0, errors }))
+	validateSpy.mockImplementationOnce(() => ({
+		valid: errors.length === 0,
+		errors,
+	}))
 	v.validate({})
 	vi.advanceTimersByTime(300)
 }
@@ -57,13 +61,18 @@ describe('useManifestValidator — inline marks', () => {
 		v.register('/pages/0/config/columns')
 		withErrors(v, ['/pages/0/config/columns/0/key is invalid'])
 		expect(v.errorFor('/pages/0/config/columns').hasError).toBe(true)
-		expect(v.errorFor('/pages/0/config/columns').message).toContain('columns/0/key')
+		expect(v.errorFor('/pages/0/config/columns').message).toContain(
+			'columns/0/key',
+		)
 	})
 
 	it('errorFor returns the empty bag for an unregistered prefix', () => {
 		const v = useManifestValidator()
 		withErrors(v, ['/pages/0/config/register bad'])
-		expect(v.errorFor('/pages/0/config/register')).toEqual({ hasError: false, message: '' })
+		expect(v.errorFor('/pages/0/config/register')).toEqual({
+			hasError: false,
+			message: '',
+		})
 	})
 
 	it('a registered prefix with no matching error has hasError:false', () => {
@@ -103,7 +112,10 @@ describe('useManifestValidator — inline marks', () => {
 		v.unregister('/pages/0/config/source')
 		withErrors(v, ['/pages/0/config/source bad'])
 		expect(v.errorMap.value.has('/pages/0/config/source')).toBe(false)
-		expect(v.errorFor('/pages/0/config/source')).toEqual({ hasError: false, message: '' })
+		expect(v.errorFor('/pages/0/config/source')).toEqual({
+			hasError: false,
+			message: '',
+		})
 	})
 
 	it('register(prefix, fieldRef) keeps backward-compatible two-arg form', () => {

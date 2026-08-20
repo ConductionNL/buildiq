@@ -35,37 +35,53 @@ vi.mock('@nextcloud/router', () => ({
 // RollbackConfirmModal — replace with a transparent stub so we can read
 // :open and click the inner buttons by class. The stub re-emits the parent
 // contract verbatim.
-vi.mock('../../../src/modals/RollbackConfirmModal.vue', () => ({
-	default: {
-		name: 'RollbackConfirmModal',
-		props: ['open', 'version'],
-		emits: ['confirm', 'cancel', 'update:open'],
-		render(h) {
-			return h(
-				'div',
-				{ class: 'rollback-confirm-modal-stub', attrs: { 'data-open': this.open ? 'true' : 'false' } },
-				[
-					h(
-						'button',
-						{
-							class: 'rollback-confirm-modal-stub__confirm',
-							on: { click: () => this.$emit('confirm', this.version) },
-						},
-						'Confirm',
-					),
-					h(
-						'button',
-						{
-							class: 'rollback-confirm-modal-stub__cancel',
-							on: { click: () => this.$emit('cancel') },
-						},
-						'Cancel',
-					),
-				],
-			)
+//
+// Vue 3 render-function contract, which differs from Vue 2 on three points
+// this stub used to rely on:
+//   - `h` is no longer passed as the render argument; it is imported from
+//     `vue`. The import happens inside the factory because vitest hoists
+//     `vi.mock` above the file's own imports.
+//   - vnode data is flat: `attrs: { 'data-open': … }` becomes a top-level
+//     key, otherwise it renders a literal `attrs` attribute and
+//     `attributes('data-open')` reads undefined.
+//   - listeners are `onClick`, not `on: { click }`.
+vi.mock('../../../src/modals/RollbackConfirmModal.vue', async () => {
+	const { h } = await import('vue')
+	return {
+		default: {
+			name: 'RollbackConfirmModal',
+			props: ['open', 'version'],
+			emits: ['confirm', 'cancel', 'update:open'],
+			render() {
+				return h(
+					'div',
+					{
+						class: 'rollback-confirm-modal-stub',
+						'data-open': this.open ? 'true' : 'false',
+					},
+					[
+						h(
+							'button',
+							{
+								class: 'rollback-confirm-modal-stub__confirm',
+								onClick: () => this.$emit('confirm', this.version),
+							},
+							'Confirm',
+						),
+						h(
+							'button',
+							{
+								class: 'rollback-confirm-modal-stub__cancel',
+								onClick: () => this.$emit('cancel'),
+							},
+							'Cancel',
+						),
+					],
+				)
+			},
 		},
-	},
-}))
+	}
+})
 
 import VersionHistory from '../../../src/views/VersionHistory.vue'
 
@@ -169,7 +185,9 @@ describe('VersionHistory — REQ-OBR-008 / REQ-OBR-009', () => {
 		await rollbackBtn.trigger('click')
 		await wrapper.vm.$nextTick()
 
-		expect(wrapper.find('.rollback-confirm-modal-stub').attributes('data-open')).toBe('true')
+		expect(
+			wrapper.find('.rollback-confirm-modal-stub').attributes('data-open'),
+		).toBe('true')
 		// rollbackTarget is seeded with the row's blob.
 		expect(wrapper.vm.rollbackTarget).toMatchObject({
 			uuid: 'snap-1',
@@ -200,11 +218,15 @@ describe('VersionHistory — REQ-OBR-008 / REQ-OBR-009', () => {
 
 		await wrapper.find('.version-history__btn--danger').trigger('click')
 		await wrapper.vm.$nextTick()
-		expect(wrapper.find('.rollback-confirm-modal-stub').attributes('data-open')).toBe('true')
+		expect(
+			wrapper.find('.rollback-confirm-modal-stub').attributes('data-open'),
+		).toBe('true')
 
 		await wrapper.find('.rollback-confirm-modal-stub__cancel').trigger('click')
 		await wrapper.vm.$nextTick()
-		expect(wrapper.find('.rollback-confirm-modal-stub').attributes('data-open')).toBe('false')
+		expect(
+			wrapper.find('.rollback-confirm-modal-stub').attributes('data-open'),
+		).toBe('false')
 		// No `rollback` event emitted on cancel.
 		expect(wrapper.emitted('rollback')).toBeFalsy()
 		// Target cleared so the next open isn't pre-seeded with the prior pick.
@@ -247,6 +269,8 @@ describe('VersionHistory — REQ-OBR-008 / REQ-OBR-009', () => {
 			manifest: { v: 1, pages: [] },
 		})
 		// Modal closed after confirm.
-		expect(wrapper.find('.rollback-confirm-modal-stub').attributes('data-open')).toBe('false')
+		expect(
+			wrapper.find('.rollback-confirm-modal-stub').attributes('data-open'),
+		).toBe('false')
 	})
 })

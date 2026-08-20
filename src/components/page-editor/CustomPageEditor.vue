@@ -32,14 +32,19 @@
 					list="custom-page-editor-component-suggestions"
 					:placeholder="t('openbuild', 'e.g. LaunchPadboard')"
 					:aria-invalid="isInvalid('component')"
-					@input="update('component', $event.target.value)">
+					@input="update('component', $event.target.value)" />
 				<datalist id="custom-page-editor-component-suggestions">
 					<option v-for="key in registryKeys" :key="key" :value="key" />
 				</datalist>
 				<InlineFieldMark :error="markFor('component')" />
 			</label>
 			<p v-if="!registryKeys.length" class="custom-page-editor__hint">
-				{{ t('openbuild', 'The component must be registered in the consuming app’s customComponents map. The key is resolved at render time, so it is entered free-form here.') }}
+				{{
+					t(
+						'openbuild',
+						'The component must be registered in the consuming app’s customComponents map. The key is resolved at render time, so it is entered free-form here.',
+					)
+				}}
 			</p>
 		</fieldset>
 
@@ -49,6 +54,7 @@
 				class="custom-page-editor__textarea"
 				spellcheck="false"
 				:value="propsDraft"
+				:aria-label="t('openbuild', 'Props (JSON, optional)')"
 				:aria-invalid="!!propsError || isInvalid('props')"
 				@input="onPropsInput($event.target.value)" />
 			<p v-if="propsError" class="custom-page-editor__error" role="alert">
@@ -58,15 +64,16 @@
 		</fieldset>
 
 		<p v-if="otherKeys.length" class="custom-page-editor__other">
-			{{ t('openbuild', 'Other config keys preserved on save:') }} {{ otherKeys.join(', ') }}
+			{{ t('openbuild', 'Other config keys preserved on save:') }}
+			{{ otherKeys.join(', ') }}
 		</p>
 	</div>
 </template>
 
 <script>
 import InlineFieldMark from './fields/InlineFieldMark.vue'
-import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 import { useLivePreview } from '../../composables/useLivePreview.js'
+import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'CustomPageEditor',
@@ -77,19 +84,23 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
 		pageType: {
 			type: String,
 			default: 'custom',
 		},
+
 		appSlug: {
 			type: String,
 			default: '',
 		},
+
 		parentRoute: {
 			type: String,
 			default: '',
 		},
 	},
+
 	emits: ['update:config'],
 	/**
 	 * Observed behaviour of `setup` (retrofit annotation).
@@ -103,12 +114,14 @@ export default {
 		const preview = useLivePreview()
 		return { preview }
 	},
+
 	data() {
 		return {
 			propsDraft: this.stringifyProps(this.config && this.config.props),
 			propsError: '',
 		}
 	},
+
 	computed: {
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
@@ -118,6 +131,7 @@ export default {
 		validatedConfigKeys() {
 			return ['component', 'props']
 		},
+
 		/**
 		 * Observed behaviour of `registryKeys` (retrofit annotation).
 		 *
@@ -133,20 +147,28 @@ export default {
 			}
 			return []
 		},
+
 		/**
 		 * Observed behaviour of `otherKeys` (retrofit annotation).
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
 		 */
 		otherKeys() {
-			return Object.keys(this.config || {}).filter((k) => k !== 'component' && k !== 'props')
+			return Object.keys(this.config || {}).filter(
+				(k) => k !== 'component' && k !== 'props',
+			)
 		},
 	},
+
 	watch: {
 		'config.props': {
 			/**
-			 * Observed behaviour of `handler` (retrofit annotation).
+			 * Re-seed the JSON textarea when `config.props` changes from the
+			 * outside (page switch, manifest reload). The re-stringified text
+			 * is compared against the current draft first, so the author's
+			 * caret and half-typed JSON survive their own keystrokes.
 			 *
+			 * @param {?object} val - the new `config.props` prop bag; `null`/`undefined` empties the textarea.
 			 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
 			 */
 			handler(val) {
@@ -158,10 +180,13 @@ export default {
 			},
 		},
 	},
+
 	methods: {
 		/**
-		 * Observed behaviour of `stringifyProps` (retrofit annotation).
+		 * Render a prop bag as the pretty-printed JSON shown in the textarea.
 		 *
+		 * @param {?object} value - the `config.props` prop bag; `null`/`undefined` (or anything JSON.stringify chokes on, e.g. a cyclic object) yields an empty textarea rather than throwing.
+		 * @return {string} - the indented JSON, or `''`.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
 		 */
 		stringifyProps(value) {
@@ -174,9 +199,14 @@ export default {
 				return ''
 			}
 		},
+
 		/**
-		 * Observed behaviour of `update` (retrofit annotation).
+		 * Write one key on the page's `config` block. Only the named key is
+		 * touched, which is what lets the arbitrary extra keys a custom page
+		 * carries (listed read-only under "Other config keys") survive.
 		 *
+		 * @param {string} key - the config key being written: `component` (the customComponents registry key) or `props`.
+		 * @param {string|object|undefined} value - the new value: the registry key from the text input, or the parsed prop bag from the JSON textarea. `''`, `null` and `undefined` delete the key — that is how an emptied textarea removes `props`.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
 		 */
 		update(key, value) {
@@ -188,9 +218,13 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
+
 		/**
-		 * Observed behaviour of `onPropsInput` (retrofit annotation).
+		 * Parse the props textarea on every keystroke. Invalid JSON only sets
+		 * `propsError` and does NOT emit, so a half-typed object can never
+		 * blank the live page; the last valid parse stays in the manifest.
 		 *
+		 * @param {string} value - the raw textarea contents. Blank/whitespace-only clears the error and removes `config.props` entirely.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
 		 */
 		onPropsInput(value) {

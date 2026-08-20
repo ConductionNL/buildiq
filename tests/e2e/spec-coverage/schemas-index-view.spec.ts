@@ -25,9 +25,10 @@
 import { test, expect } from '@playwright/test'
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
-// The app router runs in hash mode — deep-link via the hash fragment so the
-// SPA mounts the Schemas index instead of booting at the default Dashboard.
-const ROUTE = `${BASE}/apps/openbuild/#/schemas`
+// The app router runs in path mode (not hash mode — that assumption was
+// stale; live-verified http://localhost:8099/apps/openbuild/schemas renders
+// the Schemas index directly, no #/ fragment).
+const ROUTE = `${BASE}/apps/openbuild/schemas`
 
 test.describe('OpenBuild Schemas index view', () => {
 	test('renders the Schemas heading without white-screening', async ({ page }) => {
@@ -39,17 +40,28 @@ test.describe('OpenBuild Schemas index view', () => {
 		).toBeVisible({ timeout: 15_000 })
 	})
 
-	test('exposes a primary create action labelled "Add schema"', async ({ page }) => {
+	test('exposes a primary create action labelled "Add schema"', async ({
+		page,
+	}) => {
 		await page.goto(ROUTE)
-		await expect(page.getByRole('heading', { name: 'Schemas', exact: true }).first()).toBeVisible({ timeout: 15_000 })
+		await expect(
+			page.getByRole('heading', { name: 'Schemas', exact: true }).first(),
+		).toBeVisible({ timeout: 15_000 })
 
 		// The primary action must read "Add schema" (the native schema-create
 		// flow), NOT "Add Application". This locks in the fix: if the page
 		// regresses to the generic application index, the assertion fails.
-		const addSchemaBtn = page.getByRole('button', { name: /add schema/i }).first()
-		await expect(addSchemaBtn, 'Schemas index must expose an "Add schema" action').toBeVisible({ timeout: 10_000 })
+		const addSchemaBtn = page
+			.getByRole('button', { name: /add schema/i })
+			.first()
+		await expect(
+			addSchemaBtn,
+			'Schemas index must expose an "Add schema" action',
+		).toBeVisible({ timeout: 10_000 })
 
 		// Guard against regression to the application-create button.
-		await expect(page.getByRole('button', { name: /add application/i })).toHaveCount(0)
+		await expect(
+			page.getByRole('button', { name: /add application/i }),
+		).toHaveCount(0)
 	})
 })

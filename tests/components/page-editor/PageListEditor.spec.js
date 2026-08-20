@@ -19,13 +19,13 @@
 
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import PageListEditor, { PAGE_TYPES } from '../../../src/components/page-editor/PageListEditor.vue'
-
-const stubDraggable = {
-	name: 'Draggable',
-	props: ['value', 'options'],
-	render(h) { return h('div', { staticClass: 'vuedraggable-stub' }, this.$slots.default) },
-}
+import PageListEditor, {
+	PAGE_TYPES,
+} from '../../../src/components/page-editor/PageListEditor.vue'
+// The shared stub mirrors vuedraggable v4 (`modelValue` + `#item` scoped
+// slot). The v2-shaped local stub this replaced never invoked `#item`, so
+// every row silently vanished from the render.
+import stubDraggable from '../../vitest/stubs/vuedraggable.js'
 
 function mountEditor(pages = [], selectedIndex = -1) {
 	return mount(PageListEditor, {
@@ -40,11 +40,15 @@ describe('PageListEditor', () => {
 		expect(wrapper.text()).toContain('No pages yet')
 	})
 
-	it('exports the canonical PAGE_TYPES enum (9 entries)', () => {
-		expect(PAGE_TYPES).toHaveLength(9)
+	it('exports the canonical PAGE_TYPES enum (13 entries, incl. REQ-PEC-002 additions)', () => {
+		expect(PAGE_TYPES).toHaveLength(13)
 		expect(PAGE_TYPES).toContain('index')
 		expect(PAGE_TYPES).toContain('form')
 		expect(PAGE_TYPES).toContain('custom')
+		expect(PAGE_TYPES).toContain('map')
+		expect(PAGE_TYPES).toContain('roadmap')
+		expect(PAGE_TYPES).toContain('search')
+		expect(PAGE_TYPES).toContain('wiki')
 	})
 
 	it('clicking Add reveals the type picker', async () => {
@@ -79,6 +83,41 @@ describe('PageListEditor', () => {
 		expect(next[0].type).toBe('form')
 		expect(next[0].config.submitMethod).toBe('POST')
 		expect(next[0].config.mode).toBe('public')
+	})
+
+	it('confirmAdd for map-type seeds the pinned map-shaped default config (REQ-PEC-002)', async () => {
+		const wrapper = mountEditor([])
+		wrapper.vm.startAdd()
+		wrapper.vm.addingType = 'map'
+		wrapper.vm.confirmAdd()
+		await wrapper.vm.$nextTick()
+		const next = wrapper.emitted('update:pages')[0][0]
+		expect(next[0].type).toBe('map')
+		expect(next[0].route).toBe('/map')
+		expect(next[0].config).toEqual({
+			center: [52.1326, 5.2913],
+			zoom: 7,
+			layers: [],
+			markers: {},
+		})
+	})
+
+	it('confirmAdd for roadmap/search/wiki types seeds their pinned default configs', async () => {
+		const cases = [
+			{ type: 'roadmap', config: {} },
+			{ type: 'search', config: { register: '', schema: '', facets: [] } },
+			{ type: 'wiki', config: { register: '', schema: '' } },
+		]
+		for (const { type, config } of cases) {
+			const wrapper = mountEditor([])
+			wrapper.vm.startAdd()
+			wrapper.vm.addingType = type
+			wrapper.vm.confirmAdd()
+			await wrapper.vm.$nextTick()
+			const next = wrapper.emitted('update:pages')[0][0]
+			expect(next[0].type).toBe(type)
+			expect(next[0].config).toEqual(config)
+		}
 	})
 
 	it('confirmAdd is a no-op when type is empty', () => {
@@ -138,9 +177,7 @@ describe('PageListEditor', () => {
 	})
 
 	it('removePage of the selected row emits select(-1)', async () => {
-		const wrapper = mountEditor([
-			{ id: 'a', type: 'index' },
-		], 0)
+		const wrapper = mountEditor([{ id: 'a', type: 'index' }], 0)
 		wrapper.vm.removePage(0)
 		await wrapper.vm.$nextTick()
 		expect(wrapper.emitted('select')).toContainEqual([-1])
@@ -167,6 +204,45 @@ describe('PageListEditor', () => {
 		])
 		await wrapper.findAll('.page-list-editor__row').at(1).trigger('click')
 		expect(wrapper.emitted('select')[0][0]).toBe(1)
+	})
+
+	// ---------------------------------------------------------------------
+	// Keyboard parity (WCAG 2.2 AA 2.1.1 Keyboard).
+	//
+	// Every field inside a row carries `@click.stop`, so the row's own
+	// `@click` never fires for a user who reaches the fields with Tab — they
+	// were editing a page that had never been selected. `@focusin` closes
+	// that: focus reaching any descendant selects the row, which is the same
+	// outcome the mouse always had.
+	//
+	// Asserted on the EMITTED EVENT, not on the presence of the attribute:
+	// an `aria-*`/`tabindex` assertion would pass over a handler that does
+	// nothing.
+	// ---------------------------------------------------------------------
+	it('focusing a field inside a row emits select(index) — keyboard parity with click', async () => {
+		const wrapper = mountEditor([
+			{ id: 'a', type: 'index' },
+			{ id: 'b', type: 'detail' },
+		])
+		const secondRow = wrapper.findAll('.page-list-editor__row').at(1)
+
+		// The field's own click is stopped, so this is genuinely the only
+		// path a keyboard user has.
+		await secondRow.findAll('input').at(0).trigger('click')
+		expect(wrapper.emitted('select')).toBeUndefined()
+
+		await secondRow.findAll('input').at(0).trigger('focusin')
+		expect(wrapper.emitted('select')[0][0]).toBe(1)
+	})
+
+	it('a row is a named group rather than a button, so its inputs stay exposed', () => {
+		const wrapper = mountEditor([{ id: 'a', type: 'index' }])
+		const row = wrapper.findAll('.page-list-editor__row').at(0)
+
+		// role="button" would make the row's children presentational and hide
+		// the inputs from assistive technology — the wrong fix for gate-32.
+		expect(row.attributes('role')).toBe('group')
+		expect(row.attributes('aria-label')).toBeTruthy()
 	})
 
 	it('cancelAdd hides the picker without emitting', async () => {

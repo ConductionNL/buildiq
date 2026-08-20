@@ -1,0 +1,13 @@
+# Playwright artefacts written by tests/e2e/playwright.config.ts.
+#
+# The repo-root .gitignore already carries `/playwright-report/` and
+# `/test-results/`, but both are ROOT-ANCHORED and therefore do not match the
+# `tests/e2e/…` locations this config writes to. Committed here BEFORE the
+# artefacts can appear, so a CI run's report can never be accidentally staged.
+playwright-report/
+test-results/
+
+# Storage states minted by global-setup.ts (admin + the rbac-* fixture users).
+# Also covered by the root .gitignore's `tests/e2e/.auth/`; repeated so this
+# directory is self-contained.
+.auth/

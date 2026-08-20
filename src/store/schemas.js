@@ -96,9 +96,11 @@ export function useSchemasStore(appSlug, versionSlug) {
 	// We keep the per-version OR register name on `slugs.registerSlug`
 	// so the consumer can filter the global schema collection client-side
 	// to only the schemas owned by the selected version's register.
-	if (!store.objectTypeRegistry[type]
+	if (
+		!store.objectTypeRegistry[type]
 		|| !store.objectTypeRegistry[type].slugs
-		|| store.objectTypeRegistry[type].slugs.registerSlug !== register) {
+		|| store.objectTypeRegistry[type].slugs.registerSlug !== register
+	) {
 		store.registerObjectType(type, 'schemas', 'api', { registerSlug: register })
 	}
 	return store

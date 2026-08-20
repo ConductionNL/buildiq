@@ -47,7 +47,6 @@ function mountStep2(payloadOverrides = {}) {
 }
 
 describe('Step2Preset.vue — spec task 6.3', () => {
-
 	// -------------------------------------------------------------------------
 	// Rendering
 	// -------------------------------------------------------------------------
@@ -60,7 +59,9 @@ describe('Step2Preset.vue — spec task 6.3', () => {
 
 	it('no card is selected when preset is empty', () => {
 		const wrapper = mountStep2()
-		expect(wrapper.find('.wizard-step2__preset-card--selected').exists()).toBe(false)
+		expect(wrapper.find('.wizard-step2__preset-card--selected').exists()).toBe(
+			false,
+		)
 	})
 
 	// -------------------------------------------------------------------------
@@ -164,7 +165,10 @@ describe('Step2Preset.vue — spec task 6.3', () => {
 		const wrapper = mountStep2({ preset: 'dev-prod' })
 		await wrapper.vm.$nextTick()
 		const allCards = wrapper.findAll('.wizard-step2__preset-card')
-		const pressedCards = allCards.wrappers.filter(c => c.attributes('aria-pressed') === 'true')
+		// VTU v2 `findAll` returns a plain Array — v1's `.wrappers` is gone.
+		const pressedCards = allCards.filter(
+			(c) => c.attributes('aria-pressed') === 'true',
+		)
 		expect(pressedCards.length).toBe(1)
 	})
 
@@ -188,7 +192,7 @@ describe('Step2Preset.vue — spec task 6.3', () => {
 		await wrapper.vm.$nextTick()
 
 		const emitted = wrapper.emitted('update:payload') || []
-		const validEmit = emitted.find(e => '_step2Valid' in e[0])
+		const validEmit = emitted.find((e) => '_step2Valid' in e[0])
 		expect(validEmit).toBeTruthy()
 		expect(validEmit[0]._step2Valid).toBe(true)
 	})
@@ -199,7 +203,7 @@ describe('Step2Preset.vue — spec task 6.3', () => {
 		await wrapper.vm.$nextTick()
 
 		const emitted = wrapper.emitted('update:payload') || []
-		const validEmit = emitted.find(e => e[0]._step2Valid === false)
+		const validEmit = emitted.find((e) => e[0]._step2Valid === false)
 		expect(validEmit).toBeTruthy()
 	})
 

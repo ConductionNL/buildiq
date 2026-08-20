@@ -22,7 +22,12 @@
 				{{ t('openbuild', 'Edit your override') }}
 			</h2>
 			<p class="ob-user-delta-modal__hint">
-				{{ t('openbuild', 'This personal delta is layered on top of the shared admin delta. Use the keyed delta format (pages by id, widgets by id, "$op":"remove" to delete).') }}
+				{{
+					t(
+						'openbuild',
+						'This personal delta is layered on top of the shared admin delta. Use the keyed delta format (pages by id, widgets by id, "$op":"remove" to delete).',
+					)
+				}}
 			</p>
 
 			<CnJsonViewer
@@ -36,11 +41,15 @@
 			</p>
 
 			<div class="ob-user-delta-modal__actions">
-				<NcButton type="tertiary" @click="onClose">
+				<NcButton variant="tertiary" @click="onClose">
 					{{ t('openbuild', 'Cancel') }}
 				</NcButton>
-				<NcButton type="primary" :disabled="saving" @click="save">
-					{{ saving ? t('openbuild', 'Saving…') : t('openbuild', 'Save override') }}
+				<NcButton variant="primary" :disabled="saving" @click="save">
+					{{
+						saving
+							? t('openbuild', 'Saving…')
+							: t('openbuild', 'Save override')
+					}}
 				</NcButton>
 			</div>
 		</div>
@@ -48,11 +57,11 @@
 </template>
 
 <script>
+import { CnJsonViewer } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import NcModal from '@nextcloud/vue/dist/Components/NcModal.js'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import { CnJsonViewer } from '@conduction/nextcloud-vue'
+import NcButton from '@nextcloud/vue/components/NcButton'
+import NcModal from '@nextcloud/vue/components/NcModal'
 
 export default {
 	name: 'UserDeltaEditModal',
@@ -65,6 +74,7 @@ export default {
 		/** The current user-delta object to seed the editor with. */
 		delta: { type: Object, default: () => ({}) },
 	},
+
 	emits: ['update:open', 'saved'],
 	data() {
 		return {
@@ -73,6 +83,7 @@ export default {
 			error: '',
 		}
 	},
+
 	watch: {
 		open(isOpen) {
 			if (isOpen) {
@@ -81,6 +92,7 @@ export default {
 			}
 		},
 	},
+
 	methods: {
 		/**
 		 * Close the modal (sync the open prop back to the parent).
@@ -90,6 +102,7 @@ export default {
 		onClose() {
 			this.$emit('update:open', false)
 		},
+
 		/**
 		 * Validate the JSON, PUT the user delta, and emit `saved` on success.
 		 *
@@ -104,7 +117,11 @@ export default {
 				this.error = t('openbuild', 'The delta is not valid JSON.')
 				return
 			}
-			if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+			if (
+				parsed === null
+				|| typeof parsed !== 'object'
+				|| Array.isArray(parsed)
+			) {
 				this.error = t('openbuild', 'The delta must be a JSON object.')
 				return
 			}
@@ -112,12 +129,19 @@ export default {
 			this.saving = true
 			this.error = ''
 			try {
-				const url = generateUrl('/apps/openbuild/api/app-overrides/{appId}/user', { appId: this.appSlug })
+				const url = generateUrl(
+					'/apps/openbuild/api/app-overrides/{appId}/user',
+					{ appId: this.appSlug },
+				)
 				await axios.put(url, parsed)
 				this.$emit('saved')
 				this.onClose()
 			} catch (e) {
-				const detail = e && e.response && e.response.data && (e.response.data.detail || e.response.data.error)
+				const detail =
+					e
+					&& e.response
+					&& e.response.data
+					&& (e.response.data.detail || e.response.data.error)
 				this.error = detail
 					? `${t('openbuild', 'Could not save your override')}: ${detail}`
 					: t('openbuild', 'Could not save your override')

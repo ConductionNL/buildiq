@@ -1,0 +1,14 @@
+{
+	"_comment": "ADR-037 manifest fragment — automation-designer. Registers the Automations page only; NO top-level menu entry, mirroring 20-business-rules.json's off-nav posture. Automations exist only as part of an app (reached from within the app builder), so the standalone /automations page stays routable for deep-links but is intentionally off the main nav. src/main.js mergeManifestFragments() concatenates pages onto src/manifest.json.",
+	"menu": [],
+	"pages": [
+		{
+			"id": "Automations",
+			"route": "/automations",
+			"type": "custom",
+			"title": "Automations",
+			"component": "AutomationsPageView",
+			"_note": "Custom page hosting the unified trigger→condition→actions automation designer (AutomationsPage.vue). Lists automations per ApplicationVersion and opens AutomationEditDialog / AutomationTestPanelModal. type:custom because the composer UI and dry-run sandbox are bespoke and no built-in page type covers them."
+		}
+	]
+}

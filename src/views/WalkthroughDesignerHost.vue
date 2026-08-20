@@ -28,23 +28,28 @@
 			</NcNoteCard>
 			<WalkthroughDesigner
 				:manifest="manifest"
-				:app-slug="routeSlug"
-				:version-slug="versionSlug || ''"
+				:appSlug="routeSlug"
+				:versionSlug="versionSlug || ''"
 				@update:manifest="onManifestUpdate"
-				@save-and-preview="save" />
+				@saveAndPreview="save" />
 		</template>
 	</div>
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
+import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcEmptyContent, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 import WalkthroughDesigner from '../components/walkthrough-editor/WalkthroughDesigner.vue'
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 
-const EMPTY_MANIFEST = { version: '1.0.0', menu: [], pages: [], walkthrough: { enabled: true, tours: [] } }
+const EMPTY_MANIFEST = {
+	version: '1.0.0',
+	menu: [],
+	pages: [],
+	walkthrough: { enabled: true, tours: [] },
+}
 
 export default {
 	name: 'WalkthroughDesignerHost',
@@ -68,14 +73,20 @@ export default {
 		routeSlug() {
 			return this.$route.params.slug || ''
 		},
+
 		/** The optional version slug from `?_version=`. */
 		versionSlug() {
 			return this.$route.query._version || undefined
 		},
+
 		/** The Application object's OR uuid (persist fallback target). */
 		applicationUuid() {
 			const self = this.application && this.application['@self']
-			return (self && self.id) || (this.application && this.application.uuid) || ''
+			return (
+				(self && self.id)
+				|| (this.application && this.application.uuid)
+				|| ''
+			)
 		},
 	},
 
@@ -84,6 +95,7 @@ export default {
 			this.resolveVersion()
 			this.load()
 		},
+
 		versionSlug() {
 			this.resolveVersion()
 			this.load()
@@ -105,10 +117,19 @@ export default {
 		 */
 		resolveVersion() {
 			if (!this.routeSlug) return
-			const { applicationVersion } = useApplicationVersion(this.routeSlug, this.versionSlug)
+			const { applicationVersion } = useApplicationVersion(
+				this.routeSlug,
+				this.versionSlug,
+			)
 			this.applicationVersion = applicationVersion.value
-			this.$watch(() => applicationVersion.value, (v) => { this.applicationVersion = v })
+			this.$watch(
+				() => applicationVersion.value,
+				(v) => {
+					this.applicationVersion = v
+				},
+			)
 		},
+
 		/**
 		 * Load the Application and seed the editor manifest from the resolved
 		 * version's manifest (falling back to the Application's manifest).
@@ -120,24 +141,42 @@ export default {
 			this.error = ''
 			this.toast = ''
 			try {
-				const url = generateUrl('/apps/openregister/api/objects/openbuild/application')
+				const url = generateUrl(
+					'/apps/openregister/api/objects/openbuild/application',
+				)
 				const { data } = await axios.get(url, { params: { _limit: 100 } })
-				const apps = (data && data.results) ? data.results : (Array.isArray(data) ? data : [])
-				this.application = apps.find((a) => a && a.slug === this.routeSlug) || null
-				const versionManifest = this.applicationVersion
+				const apps =
+					data && data.results
+						? data.results
+						: Array.isArray(data)
+							? data
+							: []
+				this.application =
+					apps.find((a) => a && a.slug === this.routeSlug) || null
+				const versionManifest =
+					this.applicationVersion
 					&& typeof this.applicationVersion.manifest === 'object'
-					? this.applicationVersion.manifest
-					: null
-				const seed = versionManifest
-					|| (this.application && typeof this.application.manifest === 'object' ? this.application.manifest : null)
-				this.manifest = seed ? JSON.parse(JSON.stringify(seed)) : { ...EMPTY_MANIFEST }
+						? this.applicationVersion.manifest
+						: null
+				const seed =
+					versionManifest
+					|| (this.application
+					&& typeof this.application.manifest === 'object'
+						? this.application.manifest
+						: null)
+				this.manifest = seed
+					? JSON.parse(JSON.stringify(seed))
+					: { ...EMPTY_MANIFEST }
 			} catch (e) {
 				this.application = null
-				this.error = t('openbuild', 'Failed to load the app: {error}', { error: (e && e.message) || String(e) })
+				this.error = t('openbuild', 'Failed to load the app: {error}', {
+					error: (e && e.message) || String(e),
+				})
 			} finally {
 				this.loading = false
 			}
 		},
+
 		/**
 		 * Receive the edited manifest from the controlled designer.
 		 *
@@ -147,6 +186,7 @@ export default {
 		onManifestUpdate(next) {
 			this.manifest = next
 		},
+
 		/**
 		 * Persist the manifest onto the active ApplicationVersion (or the
 		 * Application object for un-migrated apps) — surgical-merge so version
@@ -168,12 +208,22 @@ export default {
 				// with OpenRegister's reserved system field (a no-op round-trip PUT to
 				// /api/objects/.../applicationVersion 400s "register missing").
 				const version = this.applicationVersion
-				const versionSlug = version && (version.slug || (version['@self'] && version['@self'].slug))
+				const versionSlug =
+					version
+					&& (version.slug || (version['@self'] && version['@self'].slug))
 				if (version && versionSlug && this.routeSlug) {
-					const url = generateUrl(`/apps/openbuild/api/applications/${this.routeSlug}/versions/${versionSlug}`)
-					const { data } = await axios.put(url, { manifest: this.manifest })
-					const saved = (data && typeof data === 'object') ? (data.version || data.data || data) : null
-					if (saved && typeof saved === 'object') this.applicationVersion = saved
+					const url = generateUrl(
+						`/apps/openbuild/api/applications/${this.routeSlug}/versions/${versionSlug}`,
+					)
+					const { data } = await axios.put(url, {
+						manifest: this.manifest,
+					})
+					const saved =
+						data && typeof data === 'object'
+							? data.version || data.data || data
+							: null
+					if (saved && typeof saved === 'object')
+						this.applicationVersion = saved
 					this.toast = t('openbuild', 'Walkthrough saved.')
 					return
 				}
@@ -182,12 +232,19 @@ export default {
 					this.error = t('openbuild', 'No app to save to.')
 					return
 				}
-				const url = generateUrl(`/apps/openregister/api/objects/openbuild/application/${this.applicationUuid}`)
-				const { data } = await axios.put(url, { ...this.application, manifest: this.manifest })
+				const url = generateUrl(
+					`/apps/openregister/api/objects/openbuild/application/${this.applicationUuid}`,
+				)
+				const { data } = await axios.put(url, {
+					...this.application,
+					manifest: this.manifest,
+				})
 				if (data && typeof data === 'object') this.application = data
 				this.toast = t('openbuild', 'Walkthrough saved.')
 			} catch (e) {
-				this.error = t('openbuild', 'Failed to save: {error}', { error: (e && e.message) || String(e) })
+				this.error = t('openbuild', 'Failed to save: {error}', {
+					error: (e && e.message) || String(e),
+				})
 			} finally {
 				this.saving = false
 			}
@@ -197,5 +254,7 @@ export default {
 </script>
 
 <style scoped>
-.wt-host { padding: 8px 0; }
+.wt-host {
+	padding: 8px 0;
+}
 </style>

@@ -16,6 +16,7 @@
 	   the right of the toggle, so no clearance is needed here. */
 	padding-inline-start: 0;
 }
+
 .app-openbuild .cn-detail-page__header > :first-child {
 	flex-basis: 100%;
 }
@@ -24,6 +25,7 @@
 .app-openbuild .ob-detail-header {
 	padding-inline: 0;
 }
+
 .app-openbuild .cn-detail-page__header-actions {
 	position: absolute;
 	top: 0;

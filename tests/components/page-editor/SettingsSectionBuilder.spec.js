@@ -17,15 +17,28 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 
-vi.mock('../../../src/components/page-editor/fields/FormFieldBuilder.vue', () => ({
-	default: {
-		name: 'FormFieldBuilder',
-		props: ['modelValue'],
-		render(h) { return h('div', { staticClass: 'form-field-builder-stub' }) },
+// `vi.mock` factories are hoisted above the imports, so `h` is pulled in with
+// a lazy dynamic import inside the (async) factory. Vue 3 does not pass `h`
+// into render(), and vnode classes use `class`, not Vue 2's `staticClass`.
+vi.mock(
+	'../../../src/components/page-editor/fields/FormFieldBuilder.vue',
+	async () => {
+		const { h } = await import('vue')
+		return {
+			default: {
+				name: 'FormFieldBuilder',
+				props: ['modelValue'],
+				render() {
+					return h('div', { class: 'form-field-builder-stub' })
+				},
+			},
+		}
 	},
-}))
+)
 
-const SettingsSectionBuilder = (await import('../../../src/components/page-editor/fields/SettingsSectionBuilder.vue')).default
+const SettingsSectionBuilder = (
+	await import('../../../src/components/page-editor/fields/SettingsSectionBuilder.vue')
+).default
 
 function mountBuilder(modelValue = []) {
 	return mount(SettingsSectionBuilder, { propsData: { modelValue } })
@@ -59,7 +72,9 @@ describe('SettingsSectionBuilder', () => {
 	})
 
 	it('setBodyKind(component) drops fields/widgets and seeds component:""', async () => {
-		const wrapper = mountBuilder([{ id: 'sec', title: 't', fields: [{ key: 'x' }] }])
+		const wrapper = mountBuilder([
+			{ id: 'sec', title: 't', fields: [{ key: 'x' }] },
+		])
 		wrapper.vm.setBodyKind(0, 'component')
 		await wrapper.vm.$nextTick()
 		const next = wrapper.emitted('update:modelValue')[0][0]
@@ -71,7 +86,9 @@ describe('SettingsSectionBuilder', () => {
 	})
 
 	it('setBodyKind(widgets) drops fields/component and seeds widgets:[]', async () => {
-		const wrapper = mountBuilder([{ title: 't', component: 'X', props: { a: 1 } }])
+		const wrapper = mountBuilder([
+			{ title: 't', component: 'X', props: { a: 1 } },
+		])
 		wrapper.vm.setBodyKind(0, 'widgets')
 		await wrapper.vm.$nextTick()
 		const next = wrapper.emitted('update:modelValue')[0][0]
@@ -89,7 +106,9 @@ describe('SettingsSectionBuilder', () => {
 	})
 
 	it('updateWidget changes a widget type and forwards componentName', async () => {
-		const wrapper = mountBuilder([{ title: 't', widgets: [{ type: 'version-info' }] }])
+		const wrapper = mountBuilder([
+			{ title: 't', widgets: [{ type: 'version-info' }] },
+		])
 		wrapper.vm.updateWidget(0, 0, 'type', 'component')
 		await wrapper.vm.$nextTick()
 		let next = wrapper.emitted('update:modelValue')[0][0]
@@ -101,7 +120,12 @@ describe('SettingsSectionBuilder', () => {
 	})
 
 	it('removeWidget drops a widget', async () => {
-		const wrapper = mountBuilder([{ title: 't', widgets: [{ type: 'version-info' }, { type: 'register-mapping' }] }])
+		const wrapper = mountBuilder([
+			{
+				title: 't',
+				widgets: [{ type: 'version-info' }, { type: 'register-mapping' }],
+			},
+		])
 		wrapper.vm.removeWidget(0, 0)
 		await wrapper.vm.$nextTick()
 		const next = wrapper.emitted('update:modelValue')[0][0]
@@ -110,8 +134,11 @@ describe('SettingsSectionBuilder', () => {
 
 	it('FormFieldBuilder forwards through update:modelValue', async () => {
 		const wrapper = mountBuilder([{ title: 't', fields: [] }])
-		wrapper.findComponent({ name: 'FormFieldBuilder' }).vm
-			.$emit('update:modelValue', [{ key: 'name', label: 'Name', type: 'string' }])
+		wrapper
+			.findComponent({ name: 'FormFieldBuilder' })
+			.vm.$emit('update:modelValue', [
+				{ key: 'name', label: 'Name', type: 'string' },
+			])
 		await wrapper.vm.$nextTick()
 		const next = wrapper.emitted('update:modelValue')[0][0]
 		expect(next[0].fields).toHaveLength(1)
@@ -127,7 +154,9 @@ describe('SettingsSectionBuilder', () => {
 	})
 
 	it('blank component props clears the key', async () => {
-		const wrapper = mountBuilder([{ title: 't', component: 'X', props: { foo: 1 } }])
+		const wrapper = mountBuilder([
+			{ title: 't', component: 'X', props: { foo: 1 } },
+		])
 		wrapper.vm.onPropsInput(0, '   ')
 		await wrapper.vm.$nextTick()
 		const next = wrapper.emitted('update:modelValue')[0][0]

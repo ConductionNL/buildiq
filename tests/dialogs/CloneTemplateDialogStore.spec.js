@@ -22,7 +22,8 @@ const { axiosMock } = vi.hoisted(() => ({
 
 vi.mock('@nextcloud/router', () => ({
 	// Mirror the real generateUrl path-template expansion of `{slug}`.
-	generateUrl: (path, params = {}) => path.replace(/\{(\w+)\}/g, (_, k) => (params[k] ?? `{${k}}`)),
+	generateUrl: (path, params = {}) =>
+		path.replace(/\{(\w+)\}/g, (_, k) => params[k] ?? `{${k}}`),
 }))
 
 vi.mock('@nextcloud/axios', () => ({
@@ -45,9 +46,22 @@ async function mountDialog(props = {}) {
 			...props,
 		},
 		stubs: {
-			NcModal: { name: 'NcModal', template: '<div class="nc-modal-stub"><slot /></div>' },
-			NcButton: { name: 'NcButton', props: ['disabled'], template: '<button class="nc-button-stub" :disabled="disabled" @click="$emit(\'click\', $event)"><slot /></button>' },
-			NcTextField: { name: 'NcTextField', props: ['value', 'label', 'placeholder'], template: '<input class="nc-textfield-stub" :value="value" @input="$emit(\'update:value\', $event.target.value)" />' },
+			NcModal: {
+				name: 'NcModal',
+				template: '<div class="nc-modal-stub"><slot /></div>',
+			},
+			NcButton: {
+				name: 'NcButton',
+				props: ['disabled'],
+				template:
+					'<button class="nc-button-stub" :disabled="disabled" @click="$emit(\'click\', $event)"><slot /></button>',
+			},
+			NcTextField: {
+				name: 'NcTextField',
+				props: ['value', 'label', 'placeholder'],
+				template:
+					'<input class="nc-textfield-stub" :value="value" @input="$emit(\'update:value\', $event.target.value)" />',
+			},
 		},
 	})
 	await wrapper.vm.$nextTick()
@@ -65,7 +79,10 @@ describe('CloneTemplateDialog.vue — remote store install', () => {
 	})
 
 	it('POSTs to the store install endpoint and emits installed + close on success (remote)', async () => {
-		const wrapper = await mountDialog({ remote: true, remoteSlug: 'permit-tracker' })
+		const wrapper = await mountDialog({
+			remote: true,
+			remoteSlug: 'permit-tracker',
+		})
 
 		// Provide a valid name + slug.
 		wrapper.vm.localName = 'My Permits'
@@ -80,7 +97,9 @@ describe('CloneTemplateDialog.vue — remote store install', () => {
 
 		expect(axiosMock.post).toHaveBeenCalledTimes(1)
 		const [url, payload] = axiosMock.post.mock.calls[0]
-		expect(url).toBe('/apps/openbuild/api/store/templates/permit-tracker/install')
+		expect(url).toBe(
+			'/apps/openbuild/api/store/templates/permit-tracker/install',
+		)
 		expect(payload).toEqual({ name: 'My Permits', slug: 'my-permits' })
 
 		expect(wrapper.emitted('installed')).toBeTruthy()
@@ -91,13 +110,18 @@ describe('CloneTemplateDialog.vue — remote store install', () => {
 	})
 
 	it('surfaces a generic error and re-enables submit on a failed remote install', async () => {
-		const wrapper = await mountDialog({ remote: true, remoteSlug: 'permit-tracker' })
+		const wrapper = await mountDialog({
+			remote: true,
+			remoteSlug: 'permit-tracker',
+		})
 
 		wrapper.vm.localName = 'My Permits'
 		wrapper.vm.localSlug = 'my-permits'
 		await wrapper.vm.$nextTick()
 
-		axiosMock.post.mockRejectedValueOnce({ response: { data: { error: 'template_not_found' } } })
+		axiosMock.post.mockRejectedValueOnce({
+			response: { data: { error: 'template_not_found' } },
+		})
 
 		await wrapper.vm.submit()
 
@@ -116,12 +140,18 @@ describe('CloneTemplateDialog.vue — remote store install', () => {
 		await wrapper.vm.submit()
 
 		expect(wrapper.emitted('submit')).toBeTruthy()
-		expect(wrapper.emitted('submit')[0][0]).toEqual({ name: 'My Permits', slug: 'my-permits' })
+		expect(wrapper.emitted('submit')[0][0]).toEqual({
+			name: 'My Permits',
+			slug: 'my-permits',
+		})
 		expect(axiosMock.post).not.toHaveBeenCalled()
 	})
 
 	it('blocks submit on an invalid slug and sets a validation error (remote)', async () => {
-		const wrapper = await mountDialog({ remote: true, remoteSlug: 'permit-tracker' })
+		const wrapper = await mountDialog({
+			remote: true,
+			remoteSlug: 'permit-tracker',
+		})
 
 		wrapper.vm.localName = 'My Permits'
 		wrapper.vm.localSlug = 'Not Valid Slug'

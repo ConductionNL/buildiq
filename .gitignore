@@ -11,9 +11,12 @@
 /.phpunit.cache
 .phpunit.cache/
 
-/node_modules/
-/website/node_modules/
-/website/.docusaurus/
+# Un-anchored: these must match at any depth. The root-anchored /website/ and
+# /docusaurus/ rules stopped matching when the docs moved to docs/, which let
+# 40k files (559 MB) of node_modules be committed in 0c0d29b6f.
+node_modules/
+.docusaurus/
+docs/build/
 /js/
 /custom_apps/
 /config/
@@ -55,6 +58,33 @@ phpqa_output.log
 **/setup*
 !tests/vitest/setup.js
 !tests/e2e/global-setup.ts
+
+# ...but NEVER swallow real source.
+#
+# The block above is a scaffold inheritance aimed at stray notes-to-self with
+# odd or absent extensions ("PR notes", "endpoints list", a bare `references`).
+# The patterns are substring globs, so they also match source files whose NAME
+# happens to contain the word:
+#
+#   `**/*references*`  matches  lib/Controller/P-references-Controller.php
+#                      and      tests/Unit/Controller/PreferencesControllerTest.php
+#
+# Both of those are tracked, so git keeps versioning them and nothing complains
+# day to day. The damage is silent and shows up later: `git ls-files` in a fresh
+# clone-and-re-add, an archive round-trip, or any flow that untracks and re-adds
+# drops them, and a tool that enumerates the repo via `git ls-files` — which is
+# how the hydra-gates runner enumerates controllers — simply cannot see them.
+# Measured 2026-08-08: gate-14 reported 7 findings against the working tree and
+# 5 against a `git archive`-and-re-add copy of the SAME commit, because
+# PreferencesController.php was absent from the second. Two different numbers
+# for one tree.
+#
+# `git ls-files -i -c --exclude-standard` is the check: it lists tracked files
+# that the ignore rules match. Source directories must contribute zero.
+!lib/**
+!src/**
+!appinfo/**
+!tests/**
 
 # Temporary test files that shouldn't be committed
 simple-solr-test.php
@@ -98,4 +128,9 @@ openspec/test-site-results/**/*.webp
 tests/e2e/.auth/
 /coverage-vitest/
 /coverage/
-.hydra
+
+# Nested hydra tooling repo (separate repo + secrets) — never track here
+.hydra/
+
+# docs build artefacts (never track)
+docs/node_modules/

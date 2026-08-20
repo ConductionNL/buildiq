@@ -96,10 +96,13 @@ export function useRole(application, userGroups) {
 	// grammar the backend PermissionResolver enforces. The previous group-only
 	// check silently denied a user-principal owner (e.g. owners: ['user:admin'])
 	// every role-gated action.
-	const intersects = (bucket) => Array.isArray(bucket) && bucket.some(
-		(p) => groups.includes(p)
-			|| (uid !== '' && (p === `user:${uid}` || p === uid)),
-	)
+	const intersects = (bucket) =>
+		Array.isArray(bucket)
+		&& bucket.some(
+			(p) =>
+				groups.includes(p)
+				|| (uid !== '' && (p === `user:${uid}` || p === uid)),
+		)
 
 	if (intersects(permissions.owners)) {
 		return 'owner'

@@ -17,14 +17,32 @@ import { test, expect } from '@playwright/test'
  *  - Playwright browsers installed (`npx playwright install --with-deps`).
  */
 test.describe('bootstrap-openbuild hello-world', () => {
-	// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — builder host blank (BuilderHostView unresolved by nc-vue CnPageRenderer) / no detail/editor/version pages. Re-enable when #41 is fixed.
-	test.skip('renders the three seeded hello-message objects on the index page', async ({ page }) => {
+	// UN-QUARANTINED 2026-08-06. The recorded reason — "#41: builder host blank
+	// (BuilderHostView unresolved by nc-vue CnPageRenderer)" — is the SAME
+	// sentence builder-host.spec.ts carries above its own un-quarantine note
+	// saying it "no longer holds". builder-host.spec.ts's first test performs
+	// this identical journey (goto /apps/openbuild/builder/hello-world, then
+	// assert the same three seeded titles) and PASSES in CI — measured in run
+	// 31083894467. One of the two files was simply never revisited.
+	test('renders the three seeded hello-message objects on the index page', async ({
+		page,
+	}) => {
 		await page.goto('/apps/openbuild/builder/hello-world')
 
 		// The SPA needs a moment to fetch the manifest and resolve the index page.
 		// The hello-world manifest's index page lists `hello-message` objects with
 		// the title, body and @self.created columns.
-		await expect(page).toHaveURL(/\/index\.php\/apps\/openbuild\/builder\/hello-world/)
+		//
+		// The `/index.php` prefix is OPTIONAL and is not what this test is about.
+		// Nextcloud emits it only when `htaccess.IgnoreFrontController` is off;
+		// CI turns it ON (tests/e2e/ci-seed.sh gates on the served page reporting
+		// `modRewriteWorking:true`), so the pretty form is what the router
+		// produces there and the old anchored regex could not have matched. The
+		// app path is still asserted in full — only the webroot style, an
+		// instance-configuration artifact, is allowed to vary.
+		await expect(page).toHaveURL(
+			/(\/index\.php)?\/apps\/openbuild\/builder\/hello-world/,
+		)
 
 		// Seed bodies — anchored on the canonical strings written by
 		// SeedHelloWorld::buildSampleMessages(). At minimum the page must
@@ -47,9 +65,16 @@ test.describe('bootstrap-openbuild hello-world', () => {
 	// API/contract is covered by tests/integration/*.postman_collection.json
 	// ("GET hello-world manifest returns 200 with version/menu/pages").
 	// Playwright is UI-only.
-	test.skip('returns the seeded manifest from the public endpoint', async ({ request }) => {
-		const response = await request.get('/index.php/apps/openbuild/api/applications/hello-world/manifest')
-		expect(response.status(), 'manifest endpoint must return 200 for the seeded slug').toBe(200)
+	test.skip('returns the seeded manifest from the public endpoint', async ({
+		request,
+	}) => {
+		const response = await request.get(
+			'/index.php/apps/openbuild/api/applications/hello-world/manifest',
+		)
+		expect(
+			response.status(),
+			'manifest endpoint must return 200 for the seeded slug',
+		).toBe(200)
 
 		const body = await response.json()
 		expect(body).toHaveProperty('version')

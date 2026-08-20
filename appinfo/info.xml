@@ -6,7 +6,7 @@
     <name lang="nl">OpenBuild</name>
     <summary lang="en">Citizen-developer app builder for Nextcloud — compose apps from registers, connectors, workflows, and documents without code.</summary>
     <summary lang="nl">App builder voor Nextcloud — stel apps samen uit registers, connectors, processen en documenten zonder code.</summary>
-    <description lang="en"><![CDATA[OpenBuild is a citizen-developer app builder for Nextcloud. It lets non-technical users compose apps from the Conduction ecosystem — OpenRegister schemas, OpenConnector APIs, Procest workflows, Docudesk documents, NL Design themes, LaunchPad dashboards — through a visual interface, without scaffolding PHP for each new app.
+    <description lang="en"><![CDATA[OpenBuild is a citizen-developer app builder for Nextcloud. It lets non-technical users compose apps from the Technical Core — OpenRegister schemas, OpenConnector APIs, Procest workflows, Docudesk documents, NL Design themes — through a visual interface, without scaffolding PHP for each new app.
 
 Per ADR-024 (app manifest), each built app is rendered at runtime by mounting CnAppRoot with the app's manifest, which lives as a JSON blob in OpenBuild's own OpenRegister namespace. Per ADR-031 (schema-declarative business logic), behaviour like state machines, aggregations, calculations, and notifications is declared as schema metadata in the register file instead of service code. Built apps are virtual at first (records in OpenBuild's register, rendered inside the OpenBuild shell at `/apps/openbuild/{slug}`); a Phase-2 export generates a real Nextcloud app from a virtual app.
 
@@ -14,7 +14,7 @@ Free and open source under the EUPL-1.2 license.
 
 **Support:** For support, contact support@conduction.nl.
     ]]></description>
-    <description lang="nl"><![CDATA[OpenBuild is een citizen-developer app builder voor Nextcloud. Niet-technische gebruikers stellen apps samen uit het Conduction-ecosysteem — OpenRegister-schema's, OpenConnector-API's, Procest-processen, Docudesk-documenten, NL Design-thema's, LaunchPad-dashboards — via een visuele interface, zonder voor elke nieuwe app PHP te hoeven schrijven.
+    <description lang="nl"><![CDATA[OpenBuild is een citizen-developer app builder voor Nextcloud. Niet-technische gebruikers stellen apps samen uit de Technical Core — OpenRegister-schema's, OpenConnector-API's, Procest-processen, Docudesk-documenten, NL Design-thema's — via een visuele interface, zonder voor elke nieuwe app PHP te hoeven schrijven.
 
 Conform ADR-024 (app-manifest) wordt elke gebouwde app tijdens runtime gerenderd door CnAppRoot te monteren met het manifest, dat als JSON-blob in OpenBuild's eigen OpenRegister-namespace staat. Conform ADR-031 (schema-declaratieve businesslogica) wordt gedrag zoals state machines, aggregaties, berekeningen en notificaties als schema-metadata in het registerbestand gedeclareerd in plaats van als servicecode. Gebouwde apps zijn in eerste instantie virtueel (records in OpenBuild's register, gerenderd binnen de OpenBuild-shell op `/apps/openbuild/{slug}`); een Phase-2 export genereert een echte Nextcloud-app uit een virtuele app.
 
@@ -22,8 +22,8 @@ Vrij en open source onder de EUPL-1.2-licentie.
 
 **Ondersteuning:** Voor ondersteuning, neem contact op via support@conduction.nl.
     ]]></description>
-    <version>0.5.58</version>
-    <licence>agpl</licence>
+    <version>0.6.1-unstable.20260819215516</version>
+    <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenBuild</namespace>
     <documentation>
@@ -40,9 +40,107 @@ Vrij en open source onder de EUPL-1.2-licentie.
     <screenshot>https://codeberg.org/Conduction/openbuild/raw/branch/main/img/app-store.svg</screenshot>
 
     <dependencies>
-        <nextcloud min-version="28" max-version="34"/>
+        <!--
+        App dependency: openregister. Recorded as prose, not as an element. The
+        App Store schema (info.xsd) has no app child under dependencies, so
+        shipping one fails App Store validation; Nextcloud's DependencyAnalyzer
+        does not read it either (it handles only php, database, command, lib,
+        os, architecture and the server version), so the element never enforced
+        anything at install time. src/manifest.json is where the requirement is
+        declared machine-readably.
+        -->
         <php min-version="8.3"/>
+        <!--
+        min-version is 32 by product decision: the fleet standardises on
+        Nextcloud 32 so it can require PHP 8.3, which `<php min-version>` above
+        already declares. opencatalogi, openconnector and docudesk are already
+        at 32; this brings OpenBuild in line.
+
+        The openconnector#1172/#1173 dependency-floor rule ALSO requires 32 now.
+        That rule says an app's min-version must be >= the max of every app
+        dependency's floor, and the openregister dependency noted above is a
+        HARD dependency. openregister's floor has moved three times in two days:
+        raised to 32 in openregister#2378, reverted to 28 in #2380 (after #2372
+        removed every eager reference to its ContextChat provider), and raised
+        back to 32 in openregister#2384, merged 2026-08-08T10:45Z and deliberately
+        fleet-wide. Re-measured against the canonical repo immediately before this
+        merge, `ConductionNL/openregister@development` declares a nextcloud
+        min-version of 32 (max-version 34).
+
+        Deliberately spelled out in prose, with no angle brackets anywhere in
+        this comment: writing that dependency's declaration as a literal XML
+        element here would add a second match to the nextcloud-element COUNT
+        that check:nc-floor asserts, and the check reads raw file text, comments
+        included. To a regex a commented-out example is indistinguishable from a
+        real declaration — that is precisely how procest's and doriath's floors
+        were misread as 28 by a reviewer grepping this file.
+
+        So 32 here is not merely >= the dependency floor, it is EQUAL to it: 28
+        would now advertise an App Store range this app cannot deliver, because
+        below 32 openregister refuses to install and every OpenBuild entity is
+        an OpenRegister object.
+
+        Note that `openregister@main` still declares 28 — the fleet is mid-rollout
+        and main trails development by ~1000 commits. Do not read that as a
+        contradiction, and do not lower this floor to match it.
+
+        The comment that stood here previously asserted "min-version is 32" while
+        the attribute said 28: #146 lowered the value and left the prose behind.
+        That is the failure this block is written to avoid — a floor comment is
+        only worth anything if it is true at MERGE time, so re-measure the
+        dependency's floor rather than repeating what this text says.
+        `check:nc-floor` (scripts/check-nc-floor.js, wired into the
+        frontend-checks matrix) enforces the value; only the prose can drift.
+
+        The floor is enforced at INSTALL time, so it must not exceed what this
+        repo's own CI installs on. `.github/workflows/code-quality.yml` runs
+        `nextcloud-test-refs: ["stable32", "stable33"]` — stable31 was already
+        removed — so no CI leg targets NC < 32.
+
+        max-version stays 34, which is the fleet value everywhere except
+        openconnector (35).
+        -->
+        <nextcloud min-version="32" max-version="34"/>
     </dependencies>
+
+    <background-jobs>
+        <job>OCA\OpenBuild\BackgroundJob\CleanupExpiredExports</job>
+        <job>OCA\OpenBuild\BackgroundJob\RuleExecutionLogCleanup</job>
+    </background-jobs>
+
+    <repair-steps>
+        <post-migration>
+            <step>OCA\OpenBuild\Repair\InitializeSettings</step>
+            <step>OCA\OpenBuild\Repair\MigrateToVersionedModel</step>
+            <step>OCA\OpenBuild\Repair\MigrateAppOverridesToHybrid</step>
+            <step>OCA\OpenBuild\Repair\PopulateApplicationPermissions</step>
+            <step>OCA\OpenBuild\Repair\SeedApplicationTemplates</step>
+            <step>OCA\OpenBuild\Repair\FlagRegistryTokenSensitive</step>
+            <!--
+                Must run AFTER the register sync that adds the English columns, so
+                it can detect the "mapper already added an empty column" case and
+                back-fill rather than rename. Idempotent; safe to re-run.
+            -->
+            <step>OCA\OpenBuild\Repair\RenameDutchRuleColumns</step>
+        </post-migration>
+        <install>
+            <step>OCA\OpenBuild\Repair\InitializeSettings</step>
+            <step>OCA\OpenBuild\Repair\MigrateToVersionedModel</step>
+            <step>OCA\OpenBuild\Repair\MigrateAppOverridesToHybrid</step>
+            <step>OCA\OpenBuild\Repair\PopulateApplicationPermissions</step>
+            <step>OCA\OpenBuild\Repair\SeedApplicationTemplates</step>
+        </install>
+    </repair-steps>
+
+    <commands>
+        <command>OCA\OpenBuild\Command\SeedHelloWorldFixture</command>
+        <command>OCA\OpenBuild\Command\PublishTemplates</command>
+    </commands>
+
+    <settings>
+        <admin>OCA\OpenBuild\Settings\AdminSettings</admin>
+        <admin-section>OCA\OpenBuild\Sections\SettingsSection</admin-section>
+    </settings>
 
     <!--
         openbuild.use navigation-entry gate (REQ-OBRBAC-006).
@@ -74,35 +172,4 @@ Vrij en open source onder de EUPL-1.2-licentie.
             <icon>app.svg</icon>
         </navigation>
     </navigations>
-
-    <settings>
-        <admin>OCA\OpenBuild\Settings\AdminSettings</admin>
-        <admin-section>OCA\OpenBuild\Sections\SettingsSection</admin-section>
-    </settings>
-
-    <repair-steps>
-        <install>
-            <step>OCA\OpenBuild\Repair\InitializeSettings</step>
-            <step>OCA\OpenBuild\Repair\MigrateToVersionedModel</step>
-            <step>OCA\OpenBuild\Repair\MigrateAppOverridesToHybrid</step>
-            <step>OCA\OpenBuild\Repair\PopulateApplicationPermissions</step>
-            <step>OCA\OpenBuild\Repair\SeedApplicationTemplates</step>
-        </install>
-        <post-migration>
-            <step>OCA\OpenBuild\Repair\InitializeSettings</step>
-            <step>OCA\OpenBuild\Repair\MigrateToVersionedModel</step>
-            <step>OCA\OpenBuild\Repair\MigrateAppOverridesToHybrid</step>
-            <step>OCA\OpenBuild\Repair\PopulateApplicationPermissions</step>
-            <step>OCA\OpenBuild\Repair\SeedApplicationTemplates</step>
-        </post-migration>
-    </repair-steps>
-
-    <background-jobs>
-        <job>OCA\OpenBuild\BackgroundJob\CleanupExpiredExports</job>
-        <job>OCA\OpenBuild\BackgroundJob\RuleExecutionLogCleanup</job>
-    </background-jobs>
-
-    <commands>
-        <command>OCA\OpenBuild\Command\SeedHelloWorldFixture</command>
-    </commands>
 </info>

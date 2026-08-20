@@ -33,7 +33,10 @@ function mountEditor(config = {}, propsOverrides = {}) {
 
 describe('StubPageEditor', () => {
 	it('renders the supplied title + message', () => {
-		const wrapper = mountEditor({}, { title: 'Logs editor', message: 'Hold tight' })
+		const wrapper = mountEditor(
+			{},
+			{ title: 'Logs editor', message: 'Hold tight' },
+		)
 		expect(wrapper.text()).toContain('Logs editor')
 		expect(wrapper.text()).toContain('Hold tight')
 	})
@@ -68,7 +71,9 @@ describe('StubPageEditor', () => {
 		const wrapper = mountEditor({ register: 'r' })
 		await wrapper.setProps({ config: { register: 'r-updated', extra: 1 } })
 		await wrapper.vm.$nextTick()
-		const seeded = JSON.parse(wrapper.find('.stub-page-editor__textarea').element.value)
+		const seeded = JSON.parse(
+			wrapper.find('.stub-page-editor__textarea').element.value,
+		)
 		expect(seeded).toEqual({ register: 'r-updated', extra: 1 })
 	})
 

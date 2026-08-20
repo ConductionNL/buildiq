@@ -5,25 +5,31 @@
   -->
 <template>
 	<div class="action-builder">
-		<div v-for="(act, index) in localActions" :key="index" class="action-builder__row">
+		<div
+			v-for="(act, index) in localActions"
+			:key="index"
+			class="action-builder__row">
 			<input
 				:value="act.id || ''"
 				type="text"
 				class="action-builder__field"
 				:placeholder="t('openbuild', 'Action id (e.g. edit)')"
-				@input="updateField(index, 'id', $event.target.value)">
+				:aria-label="t('openbuild', 'Action id (e.g. edit)')"
+				@input="updateField(index, 'id', $event.target.value)" />
 			<input
 				:value="act.label || ''"
 				type="text"
 				class="action-builder__field"
 				:placeholder="t('openbuild', 'Label (i18n key)')"
-				@input="updateField(index, 'label', $event.target.value)">
+				:aria-label="t('openbuild', 'Label (i18n key)')"
+				@input="updateField(index, 'label', $event.target.value)" />
 			<input
 				:value="act.icon || ''"
 				type="text"
 				class="action-builder__field action-builder__field--narrow"
 				:placeholder="t('openbuild', 'Icon')"
-				@input="updateField(index, 'icon', $event.target.value)">
+				:aria-label="t('openbuild', 'Icon')"
+				@input="updateField(index, 'icon', $event.target.value)" />
 			<select
 				:value="act.target || ''"
 				class="action-builder__field action-builder__field--narrow"
@@ -31,15 +37,9 @@
 				<option value="">
 					{{ t('openbuild', '— target —') }}
 				</option>
-				<option value="navigate">
-					navigate
-				</option>
-				<option value="emit">
-					emit
-				</option>
-				<option value="none">
-					none
-				</option>
+				<option value="navigate">navigate</option>
+				<option value="emit">emit</option>
+				<option value="none">none</option>
 			</select>
 			<button
 				type="button"
@@ -64,6 +64,7 @@ export default {
 			default: () => [],
 		},
 	},
+
 	emits: ['update:modelValue'],
 	computed: {
 		/**
@@ -75,10 +76,16 @@ export default {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
 		},
 	},
+
 	methods: {
 		/**
 		 * Observed behaviour of `updateField` (retrofit annotation).
 		 *
+		 * @param {number} index - position of the action in the `actions` array.
+		 * @param {'id'|'label'|'icon'|'target'} key - the action property the bound control edits.
+		 * @param {string} value - the control's new value (input text, or the
+		 *   `<select>` option for `target`). An empty value DELETES the key so the
+		 *   manifest stays minimal — except for `id`, which is always written.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		updateField(index, key, value) {
@@ -92,6 +99,7 @@ export default {
 			}
 			this.$emit('update:modelValue', next)
 		},
+
 		/**
 		 * Observed behaviour of `addAction` (retrofit annotation).
 		 *
@@ -102,9 +110,11 @@ export default {
 			next.push({ id: '', label: '' })
 			this.$emit('update:modelValue', next)
 		},
+
 		/**
 		 * Observed behaviour of `removeAction` (retrofit annotation).
 		 *
+		 * @param {number} index - position of the action to drop from the `actions` array.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		removeAction(index) {

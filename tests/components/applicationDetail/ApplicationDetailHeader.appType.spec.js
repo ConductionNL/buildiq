@@ -28,7 +28,11 @@ const t = (app, key, vars) => {
 }
 
 const router = { push: vi.fn(), replace: vi.fn().mockResolvedValue(undefined) }
-const route = { name: 'VirtualAppDetail', params: { objectId: 'app-uuid' }, query: {} }
+const route = {
+	name: 'VirtualAppDetail',
+	params: { objectId: 'app-uuid' },
+	query: {},
+}
 
 /**
  * Spec: unify-apps-with-app-type / unified-app-model.
@@ -47,10 +51,11 @@ describe('ApplicationDetailHeader — appType badge + hybrid note', () => {
 		permissions: { owners: ['user:alice'], editors: [], viewers: [] },
 	}
 
-	const factory = (application) => shallowMount(ApplicationDetailHeader, {
-		propsData: { object: application, objectId: 'app-uuid' },
-		mocks: { t, $router: router, $route: route },
-	})
+	const factory = (application) =>
+		shallowMount(ApplicationDetailHeader, {
+			propsData: { object: application, objectId: 'app-uuid' },
+			mocks: { t, $router: router, $route: route },
+		})
 
 	it('renders a "Virtual" type badge when appType is absent', () => {
 		const w = factory({ ...baseApp })

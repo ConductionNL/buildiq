@@ -16,7 +16,11 @@ import { buildVersionedRoute } from '../../src/router/helpers.js'
 
 describe('buildVersionedRoute (REQ-OBVR-006 — version forwarding)', () => {
 	it('includes _version in query when currentVersion is provided', () => {
-		const result = buildVersionedRoute('SchemaDesignerList', { slug: 'hello-world' }, 'staging')
+		const result = buildVersionedRoute(
+			'SchemaDesignerList',
+			{ slug: 'hello-world' },
+			'staging',
+		)
 		expect(result).toEqual({
 			name: 'SchemaDesignerList',
 			params: { slug: 'hello-world' },
@@ -25,12 +29,20 @@ describe('buildVersionedRoute (REQ-OBVR-006 — version forwarding)', () => {
 	})
 
 	it('returns empty query when currentVersion is undefined', () => {
-		const result = buildVersionedRoute('SchemaDesignerList', { slug: 'hello-world' }, undefined)
+		const result = buildVersionedRoute(
+			'SchemaDesignerList',
+			{ slug: 'hello-world' },
+			undefined,
+		)
 		expect(result.query).toEqual({})
 	})
 
 	it('returns empty query when currentVersion is an empty string', () => {
-		const result = buildVersionedRoute('SchemaDesignerList', { slug: 'hello-world' }, '')
+		const result = buildVersionedRoute(
+			'SchemaDesignerList',
+			{ slug: 'hello-world' },
+			'',
+		)
 		expect(result.query).toEqual({})
 	})
 

@@ -27,30 +27,43 @@
 				:key="relation._key"
 				class="openbuild-relation-editor__row">
 				<NcTextField
-					:value="relation.name"
+					:modelValue="relation.name"
 					:label="t('openbuild', 'Relation name')"
-					@update:value="updateRelation(index, 'name', $event)" />
+					@update:modelValue="updateRelation(index, 'name', $event)" />
 				<NcSelect
-					:input-label="t('openbuild', 'Target schema')"
-					:value="schemaOption(relation.target)"
+					:inputLabel="t('openbuild', 'Target schema')"
+					:modelValue="schemaOption(relation.target)"
 					:options="schemaOptions"
 					:clearable="false"
 					label="label"
-					track-by="value"
-					@input="updateRelation(index, 'target', $event ? $event.value : '')" />
+					trackBy="value"
+					@update:modelValue="
+						updateRelation(index, 'target', $event ? $event.value : '')
+					" />
 				<NcSelect
-					:input-label="t('openbuild', 'Cardinality')"
-					:value="cardinalityOption(relation.cardinality)"
+					:inputLabel="t('openbuild', 'Cardinality')"
+					:modelValue="cardinalityOption(relation.cardinality)"
 					:options="cardinalityOptions"
 					:clearable="false"
 					label="label"
-					track-by="value"
-					@input="updateRelation(index, 'cardinality', $event ? $event.value : 'one')" />
+					trackBy="value"
+					@update:modelValue="
+						updateRelation(
+							index,
+							'cardinality',
+							$event ? $event.value : 'one',
+						)
+					" />
 				<NcTextField
-					:value="relation.inverseOf || ''"
+					:modelValue="relation.inverseOf || ''"
 					:label="t('openbuild', 'Inverse-of (optional)')"
-					@update:value="updateRelation(index, 'inverseOf', $event)" />
-				<NcButton type="error" @click="removeRelation(index)">
+					@update:modelValue="
+						updateRelation(index, 'inverseOf', $event)
+					" />
+				<NcButton
+					variant="error"
+					:aria-label="t('openbuild', 'Remove relation')"
+					@click="removeRelation(index)">
 					<template #icon>
 						<DeleteIcon :size="20" />
 					</template>
@@ -68,6 +81,9 @@ import PlusIcon from 'vue-material-design-icons/Plus.vue'
 const CARDINALITIES = ['one', 'many']
 
 let keyCounter = 0
+/**
+ *
+ */
 function nextKey() {
 	keyCounter += 1
 	return `rel-${keyCounter}`
@@ -80,6 +96,7 @@ export default {
 		relations: { type: Array, default: () => [] },
 		schemaSlugs: { type: Array, default: () => [] },
 	},
+
 	emits: ['update:relations'],
 	computed: {
 		/**
@@ -91,6 +108,7 @@ export default {
 		schemaOptions() {
 			return this.schemaSlugs.map((slug) => ({ value: slug, label: slug }))
 		},
+
 		/**
 		 * Build cardinality picker options (one/many) with translated labels.
 		 *
@@ -100,12 +118,14 @@ export default {
 		cardinalityOptions() {
 			return CARDINALITIES.map((value) => ({
 				value,
-				label: value === 'one'
-					? this.t('openbuild', 'One')
-					: this.t('openbuild', 'Many'),
+				label:
+					value === 'one'
+						? this.t('openbuild', 'One')
+						: this.t('openbuild', 'Many'),
 			}))
 		},
 	},
+
 	methods: {
 		/**
 		 * Resolve the selected target-schema option for a value.
@@ -117,6 +137,7 @@ export default {
 		schemaOption(value) {
 			return this.schemaOptions.find((o) => o.value === value) || null
 		},
+
 		/**
 		 * Resolve the selected cardinality option for a value.
 		 *
@@ -125,8 +146,12 @@ export default {
 		 * @return {object} The matching option (defaults to first).
 		 */
 		cardinalityOption(value) {
-			return this.cardinalityOptions.find((o) => o.value === value) || this.cardinalityOptions[0]
+			return (
+				this.cardinalityOptions.find((o) => o.value === value)
+				|| this.cardinalityOptions[0]
+			)
 		},
+
 		/**
 		 * Emit the updated relations array to the parent.
 		 *
@@ -137,6 +162,7 @@ export default {
 		emitRelations(next) {
 			this.$emit('update:relations', next)
 		},
+
 		/**
 		 * Append a new blank relation row.
 		 *
@@ -154,6 +180,7 @@ export default {
 			})
 			this.emitRelations(next)
 		},
+
 		/**
 		 * Update a single field of a relation row.
 		 *
@@ -168,6 +195,7 @@ export default {
 			next[index] = { ...next[index], [key]: value }
 			this.emitRelations(next)
 		},
+
 		/**
 		 * Remove a relation row by index.
 		 *

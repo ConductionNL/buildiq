@@ -6,31 +6,38 @@
   -->
 <template>
 	<div class="sidebar-tab-builder">
-		<div v-for="(tab, index) in localTabs" :key="index" class="sidebar-tab-builder__row">
+		<div
+			v-for="(tab, index) in localTabs"
+			:key="index"
+			class="sidebar-tab-builder__row">
 			<input
 				:value="tab.id || ''"
 				type="text"
 				class="sidebar-tab-builder__field"
 				:placeholder="t('openbuild', 'Tab id')"
-				@input="updateField(index, 'id', $event.target.value)">
+				:aria-label="t('openbuild', 'Tab id')"
+				@input="updateField(index, 'id', $event.target.value)" />
 			<input
 				:value="tab.label || ''"
 				type="text"
 				class="sidebar-tab-builder__field"
 				:placeholder="t('openbuild', 'Label (i18n key)')"
-				@input="updateField(index, 'label', $event.target.value)">
+				:aria-label="t('openbuild', 'Label (i18n key)')"
+				@input="updateField(index, 'label', $event.target.value)" />
 			<input
 				:value="tab.icon || ''"
 				type="text"
 				class="sidebar-tab-builder__field sidebar-tab-builder__field--narrow"
 				:placeholder="t('openbuild', 'Icon')"
-				@input="updateField(index, 'icon', $event.target.value)">
+				:aria-label="t('openbuild', 'Icon')"
+				@input="updateField(index, 'icon', $event.target.value)" />
 			<input
 				:value="tab.component || ''"
 				type="text"
 				class="sidebar-tab-builder__field"
 				:placeholder="t('openbuild', 'Component (registry key)')"
-				@input="updateField(index, 'component', $event.target.value)">
+				:aria-label="t('openbuild', 'Component (registry key)')"
+				@input="updateField(index, 'component', $event.target.value)" />
 			<button
 				type="button"
 				class="sidebar-tab-builder__remove"
@@ -43,7 +50,12 @@
 			+ {{ t('openbuild', 'Add tab') }}
 		</button>
 		<p class="sidebar-tab-builder__hint">
-			{{ t('openbuild', 'Each tab declares either a list of widgets OR a component (mutually exclusive).') }}
+			{{
+				t(
+					'openbuild',
+					'Each tab declares either a list of widgets OR a component (mutually exclusive).',
+				)
+			}}
 		</p>
 	</div>
 </template>
@@ -57,6 +69,7 @@ export default {
 			default: () => [],
 		},
 	},
+
 	emits: ['update:modelValue'],
 	computed: {
 		/**
@@ -68,10 +81,16 @@ export default {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
 		},
 	},
+
 	methods: {
 		/**
 		 * Observed behaviour of `updateField` (retrofit annotation).
 		 *
+		 * @param {number} index - position of the tab in the `tabs` array.
+		 * @param {'id'|'label'|'icon'|'component'} key - the sidebarTab property the bound input edits.
+		 * @param {string} value - the input's new text. An empty value DELETES the
+		 *   key — unlike ActionBuilder this also applies to `id`, so clearing every
+		 *   input leaves the tab as an empty object.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		updateField(index, key, value) {
@@ -85,6 +104,7 @@ export default {
 			}
 			this.$emit('update:modelValue', next)
 		},
+
 		/**
 		 * Observed behaviour of `addTab` (retrofit annotation).
 		 *
@@ -95,9 +115,11 @@ export default {
 			next.push({ id: '', label: '' })
 			this.$emit('update:modelValue', next)
 		},
+
 		/**
 		 * Observed behaviour of `removeTab` (retrofit annotation).
 		 *
+		 * @param {number} index - position of the tab to drop from the `tabs` array.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		removeTab(index) {

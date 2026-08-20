@@ -34,12 +34,14 @@ const stubs = {
 	NcButton: {
 		name: 'NcButton',
 		props: ['type', 'disabled'],
-		template: '<button :disabled="disabled" @click="$emit(\'click\', $event)"><slot name="icon" /><slot /></button>',
+		template:
+			'<button :disabled="disabled" @click="$emit(\'click\', $event)"><slot name="icon" /><slot /></button>',
 	},
 	NcTextField: {
 		name: 'NcTextField',
 		props: ['value', 'label', 'error', 'helperText'],
-		template: '<label><input :value="value" @input="$emit(\'update:value\', $event.target.value)" /></label>',
+		template:
+			'<label><input :value="value" @input="$emit(\'update:value\', $event.target.value)" /></label>',
 	},
 	NcSelect: {
 		name: 'NcSelect',
@@ -49,7 +51,8 @@ const stubs = {
 	NcCheckboxRadioSwitch: {
 		name: 'NcCheckboxRadioSwitch',
 		props: ['checked', 'type', 'value', 'name'],
-		template: '<label><input type="checkbox" :checked="checked" @change="$emit(\'update:checked\', $event.target.checked)" /><slot /></label>',
+		template:
+			'<label><input type="checkbox" :checked="checked" @change="$emit(\'update:checked\', $event.target.checked)" /><slot /></label>',
 	},
 }
 
@@ -69,7 +72,9 @@ describe('LifecycleEditor', () => {
 	it('REQ-OBSD-004: addState — subsequent states are NOT initial by default', () => {
 		const wrapper = mount(LifecycleEditor, {
 			propsData: {
-				states: [{ _key: 'a', name: 'draft', label: 'Draft', initial: true }],
+				states: [
+					{ _key: 'a', name: 'draft', label: 'Draft', initial: true },
+				],
 				transitions: [],
 			},
 			stubs,
@@ -85,7 +90,12 @@ describe('LifecycleEditor', () => {
 			propsData: {
 				states: [
 					{ _key: 'a', name: 'draft', label: 'Draft', initial: true },
-					{ _key: 'b', name: 'published', label: 'Published', initial: false },
+					{
+						_key: 'b',
+						name: 'published',
+						label: 'Published',
+						initial: false,
+					},
 				],
 				transitions: [],
 			},
@@ -103,7 +113,12 @@ describe('LifecycleEditor', () => {
 			propsData: {
 				states: [
 					{ _key: 'a', name: 'draft', label: 'Draft', initial: true },
-					{ _key: 'b', name: 'published', label: 'Published', initial: true },
+					{
+						_key: 'b',
+						name: 'published',
+						label: 'Published',
+						initial: true,
+					},
 				],
 				transitions: [],
 			},
@@ -117,7 +132,12 @@ describe('LifecycleEditor', () => {
 			propsData: {
 				states: [
 					{ _key: 'a', name: 'draft', label: 'Draft', initial: true },
-					{ _key: 'b', name: 'published', label: 'Published', initial: false },
+					{
+						_key: 'b',
+						name: 'published',
+						label: 'Published',
+						initial: false,
+					},
 				],
 				transitions: [],
 			},
@@ -126,7 +146,11 @@ describe('LifecycleEditor', () => {
 		wrapper.vm.addTransition()
 		const next = wrapper.emitted('update:transitions')[0][0]
 		expect(next).toHaveLength(1)
-		expect(next[0]).toMatchObject({ from: 'draft', to: 'published', actions: [] })
+		expect(next[0]).toMatchObject({
+			from: 'draft',
+			to: 'published',
+			actions: [],
+		})
 	})
 
 	it('REQ-OBSD-004 + ADR-031: addAction defaults to the audit-event-emit enum value (no free-text type)', () => {
@@ -134,10 +158,21 @@ describe('LifecycleEditor', () => {
 			propsData: {
 				states: [
 					{ _key: 'a', name: 'draft', label: 'Draft', initial: true },
-					{ _key: 'b', name: 'published', label: 'Published', initial: false },
+					{
+						_key: 'b',
+						name: 'published',
+						label: 'Published',
+						initial: false,
+					},
 				],
 				transitions: [
-					{ _key: 't1', from: 'draft', to: 'published', label: '', actions: [] },
+					{
+						_key: 't1',
+						from: 'draft',
+						to: 'published',
+						label: '',
+						actions: [],
+					},
 				],
 			},
 			stubs,
@@ -167,14 +202,24 @@ describe('LifecycleEditor', () => {
 	it('REQ-OBSD-004: updateAction can change an action type and rewrite its payload', () => {
 		const wrapper = mount(LifecycleEditor, {
 			propsData: {
-				states: [{ _key: 'a', name: 'draft', label: 'Draft', initial: true }],
-				transitions: [{
-					_key: 't1',
-					from: 'draft',
-					to: 'draft',
-					label: '',
-					actions: [{ _key: 'act1', type: 'audit-event-emit', payload: 'draft.created' }],
-				}],
+				states: [
+					{ _key: 'a', name: 'draft', label: 'Draft', initial: true },
+				],
+				transitions: [
+					{
+						_key: 't1',
+						from: 'draft',
+						to: 'draft',
+						label: '',
+						actions: [
+							{
+								_key: 'act1',
+								type: 'audit-event-emit',
+								payload: 'draft.created',
+							},
+						],
+					},
+				],
 			},
 			stubs,
 		})
@@ -217,8 +262,14 @@ describe('LifecycleEditor', () => {
 						label: 'Publish',
 						on_transition: {
 							actions: [
-								{ type: 'audit-event-emit', payload: 'draft.published' },
-								{ type: 'notification-send', payload: 'tpl.publish' },
+								{
+									type: 'audit-event-emit',
+									payload: 'draft.published',
+								},
+								{
+									type: 'notification-send',
+									payload: 'tpl.publish',
+								},
 							],
 						},
 					},
@@ -254,7 +305,13 @@ describe('LifecycleEditor', () => {
 				[{ _key: 'a', name: 'draft', label: 'Draft', initial: true }],
 				[
 					{ _key: 't1', from: 'draft', to: '', label: '', actions: [] },
-					{ _key: 't2', from: 'draft', to: 'draft', label: '', actions: [] },
+					{
+						_key: 't2',
+						from: 'draft',
+						to: 'draft',
+						label: '',
+						actions: [],
+					},
 				],
 			)
 			expect(result.transitions).toHaveLength(1)

@@ -6,12 +6,17 @@
   - property count, and lifecycle-state count. Owns the Add Schema and
   - per-row Open / Rename / Delete actions. Delete is gated by the
   - DeleteSchemaDialog modal (REQ-OBSD-008).
+  -
+  - Rows also show a "Restricted" badge (REQ-OBDSA-005) for any schema
+  - carrying a schema-level `authorization` block — the compact summary
+  - is derived by the pure exported `scopeSummary()` helper so it stays
+  - unit-testable without mounting.
   -->
 <template>
 	<div class="openbuild-schema-list">
 		<header class="openbuild-schema-list__header">
 			<h2>{{ t('openbuild', 'Schemas') }}</h2>
-			<NcButton type="primary" @click="addOpen = true">
+			<NcButton variant="primary" @click="addOpen = true">
 				<template #icon>
 					<PlusIcon :size="20" />
 				</template>
@@ -26,12 +31,17 @@
 		<div v-else-if="schemas.length === 0" class="openbuild-schema-list__empty">
 			<NcEmptyContent
 				:name="t('openbuild', 'No schemas yet')"
-				:description="t('openbuild', 'Add your first schema to start designing the data model for this app.')">
+				:description="
+					t(
+						'openbuild',
+						'Add your first schema to start designing the data model for this app.',
+					)
+				">
 				<template #icon>
 					<DatabaseIcon :size="64" />
 				</template>
 				<template #action>
-					<NcButton type="primary" @click="addOpen = true">
+					<NcButton variant="primary" @click="addOpen = true">
 						{{ t('openbuild', 'Add schema') }}
 					</NcButton>
 				</template>
@@ -52,9 +62,27 @@
 					</span>
 					<span class="openbuild-schema-list__row-meta">
 						<code>{{ getSlug(schema) }}</code>
-						<span>{{ t('openbuild', 'v{version}', { version: schema.version || '—' }) }}</span>
-						<span>{{ n('openbuild', '{n} property', '{n} properties', propertyCount(schema), { n: propertyCount(schema) }) }}</span>
+						<span>{{
+							t('openbuild', 'v{version}', {
+								version: schema.version || '—',
+							})
+						}}</span>
+						<span>{{
+							n(
+								'openbuild',
+								'{n} property',
+								'{n} properties',
+								propertyCount(schema),
+								{ n: propertyCount(schema) },
+							)
+						}}</span>
 						<span>{{ lifecycleLabel(schema) }}</span>
+						<span
+							v-if="scopeSummary(schema)"
+							class="openbuild-schema-list__badge"
+							:title="scopeSummary(schema).title">
+							{{ scopeSummary(schema).label }}
+						</span>
 					</span>
 				</button>
 				<NcActions>
@@ -77,14 +105,14 @@
 		<AddSchemaDialog
 			:open="addOpen"
 			:submitting="addSubmitting"
-			:slug-error="addSlugError"
+			:slugError="addSlugError"
 			@confirm="onAddConfirm"
 			@cancel="addOpen = false"
 			@update:open="addOpen = $event" />
 
 		<DeleteSchemaDialog
 			:open="deleteOpen"
-			:schema-slug="pendingDeleteSlug"
+			:schemaSlug="pendingDeleteSlug"
 			@confirm="onDeleteConfirm"
 			@cancel="cancelDelete"
 			@update:open="deleteOpen = $event" />
@@ -92,14 +120,60 @@
 </template>
 
 <script>
-import { NcActionButton, NcActions, NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
+import {
+	NcActionButton,
+	NcActions,
+	NcButton,
+	NcEmptyContent,
+	NcLoadingIcon,
+} from '@nextcloud/vue'
 import DatabaseIcon from 'vue-material-design-icons/Database.vue'
 import DeleteIcon from 'vue-material-design-icons/Delete.vue'
 import PencilIcon from 'vue-material-design-icons/Pencil.vue'
 import PlusIcon from 'vue-material-design-icons/Plus.vue'
-
 import AddSchemaDialog from '../../modals/AddSchemaDialog.vue'
 import DeleteSchemaDialog from '../../modals/DeleteSchemaDialog.vue'
+
+/** Operations summarised by `scopeSummary`, in display order. */
+const SCOPE_OPS = ['read', 'create', 'update', 'delete']
+
+/**
+ * Derive a compact "Restricted" badge for a schema carrying a
+ * schema-level `authorization` block (REQ-OBDSA-005). Pure and
+ * exported so it is unit-testable without mounting the panel.
+ *
+ * Returns `null` for a schema with no `authorization` block (or an
+ * empty one). Otherwise returns `{ label, title }` where `title` is a
+ * semicolon-joined per-operation summary (e.g. `read: vets; delete:
+ * admin`) suitable for the badge's accessible title attribute — every
+ * scope kind the Access sub-editor can produce is covered: plain group
+ * lists, the `@creator` sentinel, and `authorization.conditions.<op>`.
+ *
+ * @param {object} schema Schema record (may carry `authorization`).
+ * @return {{label: string, title: string}|null} Badge, or null.
+ * @spec openspec/specs/data-scopes-authoring/spec.md#req-obdsa-005
+ */
+export function scopeSummary(schema) {
+	const auth = schema && schema.authorization
+	if (!auth || typeof auth !== 'object' || Object.keys(auth).length === 0) {
+		return null
+	}
+	const parts = []
+	SCOPE_OPS.forEach((op) => {
+		const list = auth[op]
+		if (Array.isArray(list) && list.length > 0) {
+			parts.push(`${op}: ${list.join(', ')}`)
+			return
+		}
+		const condition = auth.conditions && auth.conditions[op]
+		if (condition) {
+			parts.push(`${op}: condition(${(condition && condition.field) || '?'})`)
+		}
+	})
+	const title =
+		parts.length > 0 ? parts.join('; ') : 'Custom authorization metadata'
+	return { label: 'Restricted', title }
+}
 
 export default {
 	name: 'SchemaListPanel',
@@ -116,10 +190,12 @@ export default {
 		PencilIcon,
 		PlusIcon,
 	},
+
 	props: {
 		schemas: { type: Array, default: () => [] },
 		loading: { type: Boolean, default: false },
 	},
+
 	emits: ['add', 'open', 'delete'],
 	data() {
 		return {
@@ -130,10 +206,29 @@ export default {
 			pendingDeleteSlug: '',
 		}
 	},
+
 	methods: {
 		getSlug(schema) {
-			return schema.slug || (schema['@self'] && schema['@self'].slug) || schema.id || ''
+			return (
+				schema.slug
+				|| (schema['@self'] && schema['@self'].slug)
+				|| schema.id
+				|| ''
+			)
 		},
+
+		/**
+		 * Expose the pure `scopeSummary` helper as an instance method so
+		 * the template can call it directly (REQ-OBDSA-005).
+		 *
+		 * @spec openspec/specs/data-scopes-authoring/spec.md#req-obdsa-005
+		 * @param {object} schema Schema record.
+		 * @return {{label: string, title: string}|null} Badge, or null.
+		 */
+		scopeSummary(schema) {
+			return scopeSummary(schema)
+		},
+
 		/**
 		 * Count the declared properties on a schema row.
 		 *
@@ -147,6 +242,7 @@ export default {
 			}
 			return Object.keys(schema.properties).length
 		},
+
 		/**
 		 * Build a human-readable lifecycle-state-count label.
 		 *
@@ -156,11 +252,22 @@ export default {
 		 */
 		lifecycleLabel(schema) {
 			const lifecycle = schema && schema['x-openregister-lifecycle']
-			if (!lifecycle || !Array.isArray(lifecycle.states) || lifecycle.states.length === 0) {
+			if (
+				!lifecycle
+				|| !Array.isArray(lifecycle.states)
+				|| lifecycle.states.length === 0
+			) {
 				return this.t('openbuild', 'No lifecycle')
 			}
-			return this.n('openbuild', '{n} lifecycle state', '{n} lifecycle states', lifecycle.states.length, { n: lifecycle.states.length })
+			return this.n(
+				'openbuild',
+				'{n} lifecycle state',
+				'{n} lifecycle states',
+				lifecycle.states.length,
+				{ n: lifecycle.states.length },
+			)
 		},
+
 		/**
 		 * Emit an open event for the activated schema row.
 		 *
@@ -171,6 +278,7 @@ export default {
 		onOpen(schema) {
 			this.$emit('open', this.getSlug(schema))
 		},
+
 		/**
 		 * Confirm the add-schema dialog: emit add and surface slug conflicts.
 		 *
@@ -189,14 +297,20 @@ export default {
 				return result
 			} catch (e) {
 				if (e && e.status === 409) {
-					this.addSlugError = this.t('openbuild', 'A schema with this slug already exists in this app.')
+					this.addSlugError = this.t(
+						'openbuild',
+						'A schema with this slug already exists in this app.',
+					)
 				} else {
-					this.addSlugError = (e && e.message) || this.t('openbuild', 'Failed to add schema.')
+					this.addSlugError =
+						(e && e.message)
+						|| this.t('openbuild', 'Failed to add schema.')
 				}
 			} finally {
 				this.addSubmitting = false
 			}
 		},
+
 		/**
 		 * Open the delete-confirmation dialog for a schema.
 		 *
@@ -208,6 +322,7 @@ export default {
 			this.pendingDeleteSlug = this.getSlug(schema)
 			this.deleteOpen = true
 		},
+
 		/**
 		 * Confirm deletion: emit delete and reset the pending state.
 		 *
@@ -219,6 +334,7 @@ export default {
 			this.deleteOpen = false
 			this.pendingDeleteSlug = ''
 		},
+
 		/**
 		 * Cancel the pending deletion.
 		 *
@@ -312,5 +428,13 @@ export default {
 
 .openbuild-schema-list__row-meta code {
 	font-family: monospace;
+}
+
+.openbuild-schema-list__badge {
+	padding: 0 6px;
+	border-radius: var(--border-radius-pill, 10px);
+	background: var(--color-warning, #ffbb33);
+	color: var(--color-main-background, #fff);
+	font-weight: 600;
 }
 </style>

@@ -124,6 +124,20 @@ The wizard SHALL auto-derive slugs from names client-side via a `toKebabCase` fu
 
 The slug pattern (enforced both client-side and server-side) SHALL be `^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$`. Leading underscores SHALL be rejected with the user-facing message: "Version slugs cannot start with `_` (reserved for openbuild system use)."
 
+While a step is invalid the wizard SHALL refuse to advance past it and SHALL
+render the reason. `CnWizardDialog` (the shared `@conduction/nextcloud-vue`
+shell) is a **validate-on-advance** wizard: its `validate(stepId, stepData)` prop
+runs when the primary action is pressed, and a `string` outcome both blocks the
+step transition and is rendered as the step-level explanation alongside the
+offending row's own inline error.
+
+The primary action itself is NOT disabled. It binds `:disabled="loading"` only
+and the component exposes no validity input, so no consumer can disable it —
+this has never been true on any branch. Disabling the primary action until the
+current step is valid is recorded as a **future `CnWizardDialog` enhancement**;
+it is a presentational improvement over the refusal-plus-explanation guarantee
+above, not a gap in it, and nothing depends on it.
+
 **ID:** REQ-OBWIZ-005
 
 #### Scenario: Slug auto-derives from app name
@@ -136,7 +150,9 @@ The slug pattern (enforced both client-side and server-side) SHALL be `^(?!_)[a-
 - **WHEN** the admin opens the Advanced toggle and types `_internal` as a version slug
 - **THEN** an inline error appears: "Version slugs cannot start with `_` (reserved for
   openbuild system use)"
-- **AND** the wizard's Next / Create button is disabled until the slug is corrected
+- **AND** the row's slug chip is marked as errored
+- **AND** pressing Next does NOT leave the step, and the wizard renders "Complete the
+  custom version chain."
 
 #### Scenario: Slug with invalid characters is rejected
 
@@ -161,9 +177,11 @@ rows).
 
 - **WHEN** the admin's chain in step 3 contains two rows both named `Staging` (auto-derived
   slug `staging`)
-- **THEN** the second row displays an inline error: "Slug `staging` is already used in this
-  chain"
-- **AND** the wizard's Create button is disabled until the duplicate is resolved
+- **THEN** BOTH colliding rows display an inline error: "Slug `staging` is already used in
+  this chain"
+- **AND** pressing Next does NOT leave the step, and the wizard renders "Complete the
+  custom version chain." (validate-on-advance — see REQ-OBWIZ-005 on why the primary
+  action is not itself disabled)
 
 #### Scenario: Server-side duplicate-slug rejection
 

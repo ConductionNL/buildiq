@@ -38,10 +38,14 @@ const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 const LIVE = process.env.OPENBUILD_E2E_LIVE === '1'
 
 // @e2e application-creation-wizard::clicking-add-application-opens-the-wizard
-test('REQ-OBWIZ-001 — applications page renders and Add Application button is present', async ({ page }) => {
+test('REQ-OBWIZ-001 — applications page renders and Add Application button is present', async ({
+	page,
+}) => {
 	// @e2e application-creation-wizard::clicking-add-application-opens-the-wizard
 	await page.goto(`${BASE}/apps/openbuild/applications`)
-	await expect(page.locator('main'), 'main content must load').toBeVisible({ timeout: 15_000 })
+	await expect(page.locator('main'), 'main content must load').toBeVisible({
+		timeout: 15_000,
+	})
 
 	// The page must not be a white screen
 	await expect(page).toHaveTitle(/openbuild/i)
@@ -62,24 +66,37 @@ test('REQ-OBWIZ-001 — applications page renders and Add Application button is 
 	).toBe(true)
 	// If an add button is found, verify it is visible (confirms wizard entry point)
 	if (btnCount > 0) {
-		await expect(addButton, 'Add Application button must be visible for admin').toBeVisible({ timeout: 5_000 })
+		await expect(
+			addButton,
+			'Add Application button must be visible for admin',
+		).toBeVisible({ timeout: 5_000 })
 	}
 })
 
 // @e2e application-creation-wizard::selecting-a-canned-preset-skips-the-custom-step
-test('REQ-OBWIZ-002 — wizard preset step skips custom chain composer for canned presets', async ({ page }) => {
+test('REQ-OBWIZ-002 — wizard preset step skips custom chain composer for canned presets', async ({
+	page,
+}) => {
 	// @e2e application-creation-wizard::selecting-a-canned-preset-skips-the-custom-step
-	test.skip(!LIVE, 'Requires live dev env with wizard built and accessible — set OPENBUILD_E2E_LIVE=1')
+	test.skip(
+		!LIVE,
+		'Requires live dev env with wizard built and accessible — set OPENBUILD_E2E_LIVE=1',
+	)
 
 	await page.goto(`${BASE}/apps/openbuild/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 15_000 })
 
 	// Open the wizard
-	const addBtn = page.locator('button').filter({ hasText: /add|new|create/i }).first()
+	const addBtn = page
+		.locator('button')
+		.filter({ hasText: /add|new|create/i })
+		.first()
 	await addBtn.click()
 
 	// Wait for the wizard modal
-	const modal = page.locator('[role="dialog"], .nc-modal, [class*="modal"]').first()
+	const modal = page
+		.locator('[role="dialog"], .nc-modal, [class*="modal"]')
+		.first()
 	await expect(modal).toBeVisible({ timeout: 10_000 })
 
 	// Fill in Step 1 basics (name required before Next)
@@ -87,69 +104,129 @@ test('REQ-OBWIZ-002 — wizard preset step skips custom chain composer for canne
 	await nameInput.fill('Test Canned Preset App')
 
 	// Click Next to step 2
-	const nextBtn = modal.locator('button').filter({ hasText: /next|continue/i }).first()
+	const nextBtn = modal
+		.locator('button')
+		.filter({ hasText: /next|continue/i })
+		.first()
 	await nextBtn.click()
 
 	// In step 2, select a non-custom preset (dev-prod, single, etc.)
-	const presetCard = modal.locator('[class*="preset"], [data-preset]').filter({ hasText: /dev.prod|single|dev-prod/i }).first()
+	const presetCard = modal
+		.locator('[class*="preset"], [data-preset]')
+		.filter({ hasText: /dev.prod|single|dev-prod/i })
+		.first()
 	const presetCount = await presetCard.count()
 	if (presetCount > 0) {
 		await presetCard.click()
 		// Click next
-		const nextBtn2 = modal.locator('button').filter({ hasText: /next|continue/i }).first()
+		const nextBtn2 = modal
+			.locator('button')
+			.filter({ hasText: /next|continue/i })
+			.first()
 		await nextBtn2.click()
 		// Should jump to step 4 (Review), not step 3 (Custom chain)
 		// Custom chain composer should NOT be visible
-		const customChain = modal.locator('text=/custom.chain|add.version|custom chain/i')
+		const customChain = modal.locator(
+			'text=/custom.chain|add.version|custom chain/i',
+		)
 		await expect(customChain).not.toBeVisible({ timeout: 3_000 })
 	}
 })
 
 // @e2e application-creation-wizard::selecting-custom-shows-the-custom-chain-composer
-test('REQ-OBWIZ-002 — selecting Custom preset shows the custom-chain composer in step 3', async ({ page }) => {
+test('REQ-OBWIZ-002 — selecting Custom preset shows the custom-chain composer in step 3', async ({
+	page,
+}) => {
 	// @e2e application-creation-wizard::selecting-custom-shows-the-custom-chain-composer
-	test.skip(!LIVE, 'Requires live dev env with wizard built and accessible — set OPENBUILD_E2E_LIVE=1')
+	test.skip(
+		!LIVE,
+		'Requires live dev env with wizard built and accessible — set OPENBUILD_E2E_LIVE=1',
+	)
 
 	await page.goto(`${BASE}/apps/openbuild/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 15_000 })
 
-	const addBtn = page.locator('button').filter({ hasText: /add|new|create/i }).first()
+	const addBtn = page
+		.locator('button')
+		.filter({ hasText: /add|new|create/i })
+		.first()
 	await addBtn.click()
 
-	const modal = page.locator('[role="dialog"], .nc-modal, [class*="modal"]').first()
+	const modal = page
+		.locator('[role="dialog"], .nc-modal, [class*="modal"]')
+		.first()
 	await expect(modal).toBeVisible({ timeout: 10_000 })
 
 	const nameInput = modal.locator('input[type="text"]').first()
 	await nameInput.fill('Test Custom Chain App')
 
-	const nextBtn = modal.locator('button').filter({ hasText: /next|continue/i }).first()
+	const nextBtn = modal
+		.locator('button')
+		.filter({ hasText: /next|continue/i })
+		.first()
 	await nextBtn.click()
 
-	// Select the Custom preset
-	const customPreset = modal.locator('[class*="preset"], [data-preset]').filter({ hasText: /custom/i }).first()
-	const customCount = await customPreset.count()
-	if (customCount > 0) {
-		await customPreset.click()
-		const nextBtn2 = modal.locator('button').filter({ hasText: /next|continue/i }).first()
-		await nextBtn2.click()
-		// Step 3 custom chain composer should be visible
-		const addVersionBtn = modal.locator('button').filter({ hasText: /add version/i }).first()
-		await expect(addVersionBtn, 'custom chain composer must show Add version button').toBeVisible({ timeout: 5_000 })
-	}
+	// Select the Custom preset.
+	//
+	// NOT `[class*="preset"]`: that substring also matches the preset GRID
+	// container `.wizard-step2__presets`, which contains every card's text and
+	// therefore wins a `hasText: /custom/i` filter with `.first()`. Clicking the
+	// grid hit whatever card happened to sit under its centre point, so the
+	// custom preset was never selected and step 3 never appeared — live-verified
+	// (the filter resolved to 3 nodes, `DIV.wizard-step2__presets` first).
+	// Target the card itself, and drop the `if (count > 0)` guard so a missing
+	// card fails loudly instead of passing vacuously.
+	const customPreset = modal
+		.locator('.wizard-step2__preset-card')
+		.filter({ hasText: /custom/i })
+		.first()
+	await expect(customPreset, 'the Custom preset card must be present').toBeVisible(
+		{ timeout: 5_000 },
+	)
+	await customPreset.click()
+	// Settle: selectPreset()'s payload update reaches the parent via an
+	// emit; clicking Next immediately can outrace it and land on a stale
+	// step (Step2Preset.vue / createApplicationWizard.spec.ts hit the same
+	// race — see its "single preset" test for the live-verified writeup).
+	await page.waitForTimeout(300)
+	const nextBtn2 = modal
+		.locator('button')
+		.filter({ hasText: /next|continue/i })
+		.first()
+	await nextBtn2.click()
+	// Step 3 custom chain composer should be visible
+	const addVersionBtn = modal
+		.locator('button')
+		.filter({ hasText: /add version/i })
+		.first()
+	await expect(
+		addVersionBtn,
+		'custom chain composer must show Add version button',
+	).toBeVisible({ timeout: 5_000 })
 })
 
 // @e2e application-creation-wizard::back-navigation-preserves-state
-test('REQ-OBWIZ-002 — back navigation in wizard preserves previously entered state', async ({ page }) => {
+test('REQ-OBWIZ-002 — back navigation in wizard preserves previously entered state', async ({
+	page,
+}) => {
 	// @e2e application-creation-wizard::back-navigation-preserves-state
-	test.skip(!LIVE, 'Requires live dev env with wizard built and accessible — set OPENBUILD_E2E_LIVE=1')
+	test.skip(
+		!LIVE,
+		'Requires live dev env with wizard built and accessible — set OPENBUILD_E2E_LIVE=1',
+	)
 
 	await page.goto(`${BASE}/apps/openbuild/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 15_000 })
 
-	const addBtn = page.locator('button').filter({ hasText: /add|new|create/i }).first()
+	const addBtn = page
+		.locator('button')
+		.filter({ hasText: /add|new|create/i })
+		.first()
 	await addBtn.click()
 
-	const modal = page.locator('[role="dialog"], .nc-modal, [class*="modal"]').first()
+	const modal = page
+		.locator('[role="dialog"], .nc-modal, [class*="modal"]')
+		.first()
 	await expect(modal).toBeVisible({ timeout: 10_000 })
 
 	// Fill in a distinctive name in step 1
@@ -157,230 +234,417 @@ test('REQ-OBWIZ-002 — back navigation in wizard preserves previously entered s
 	await nameInput.fill('Back Navigation Test App')
 
 	// Go to step 2
-	const nextBtn = modal.locator('button').filter({ hasText: /next|continue/i }).first()
+	const nextBtn = modal
+		.locator('button')
+		.filter({ hasText: /next|continue/i })
+		.first()
 	await nextBtn.click()
 
 	// Go back to step 1
-	const backBtn = modal.locator('button').filter({ hasText: /back|previous/i }).first()
+	const backBtn = modal
+		.locator('button')
+		.filter({ hasText: /back|previous/i })
+		.first()
 	await backBtn.click()
 
 	// The name should still be filled in
-	await expect(nameInput, 'name must be preserved after back navigation').toHaveValue('Back Navigation Test App')
+	await expect(
+		nameInput,
+		'name must be preserved after back navigation',
+	).toHaveValue('Back Navigation Test App')
 })
 
 // @e2e application-creation-wizard::admin-composes-a-3-version-chain-by-adding-rows
-test('REQ-OBWIZ-004 — custom chain composer allows adding and reordering version rows', async ({ page }) => {
+test('REQ-OBWIZ-004 — custom chain composer allows adding and reordering version rows', async ({
+	page,
+}) => {
 	// @e2e application-creation-wizard::admin-composes-a-3-version-chain-by-adding-rows
-	test.skip(!LIVE, 'Requires live dev env with wizard built and accessible — set OPENBUILD_E2E_LIVE=1')
+	test.skip(
+		!LIVE,
+		'Requires live dev env with wizard built and accessible — set OPENBUILD_E2E_LIVE=1',
+	)
 
 	await page.goto(`${BASE}/apps/openbuild/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 15_000 })
 
-	const addBtn = page.locator('button').filter({ hasText: /add|new|create/i }).first()
+	const addBtn = page
+		.locator('button')
+		.filter({ hasText: /add|new|create/i })
+		.first()
 	await addBtn.click()
 
-	const modal = page.locator('[role="dialog"], .nc-modal, [class*="modal"]').first()
+	const modal = page
+		.locator('[role="dialog"], .nc-modal, [class*="modal"]')
+		.first()
 	await expect(modal).toBeVisible({ timeout: 10_000 })
 
 	const nameInput = modal.locator('input[type="text"]').first()
 	await nameInput.fill('Chain Composer Test')
-	const nextBtn = modal.locator('button').filter({ hasText: /next|continue/i }).first()
+	const nextBtn = modal
+		.locator('button')
+		.filter({ hasText: /next|continue/i })
+		.first()
 	await nextBtn.click()
 
-	const customPreset = modal.locator('[class*="preset"], [data-preset]').filter({ hasText: /custom/i }).first()
-	if (await customPreset.count() > 0) {
-		await customPreset.click()
-		const nextBtn2 = modal.locator('button').filter({ hasText: /next|continue/i }).first()
-		await nextBtn2.click()
+	// Card, not the `[class*="preset"]` grid container — see the
+	// "selecting Custom preset" test above for the live-verified writeup.
+	const customPreset = modal
+		.locator('.wizard-step2__preset-card')
+		.filter({ hasText: /custom/i })
+		.first()
+	await expect(customPreset, 'the Custom preset card must be present').toBeVisible(
+		{ timeout: 5_000 },
+	)
+	await customPreset.click()
+	// Settle — see the identical note in the "selecting Custom preset" test above.
+	await page.waitForTimeout(300)
+	const nextBtn2 = modal
+		.locator('button')
+		.filter({ hasText: /next|continue/i })
+		.first()
+	await nextBtn2.click()
 
-		// Add a second version row
-		const addVersionBtn = modal.locator('button').filter({ hasText: /add version/i }).first()
-		await expect(addVersionBtn).toBeVisible({ timeout: 5_000 })
-		await addVersionBtn.click()
-
-		// There should now be at least 2 rows
-		const versionRows = modal.locator('[class*="version-row"], [data-version-row], tr').filter({ hasText: /production|staging|development/i })
-		const rowCount = await versionRows.count()
-		expect(rowCount, 'at least one version row must be present').toBeGreaterThanOrEqual(1)
-	}
+	// Add a second version row
+	const addVersionBtn = modal
+		.locator('button')
+		.filter({ hasText: /add version/i })
+		.first()
+	await expect(addVersionBtn).toBeVisible({ timeout: 5_000 })
+	// The composer seeds exactly one row (Production); adding one must yield two.
+	// `[class*="version-row"]` never matched anything — the rows are
+	// `.wizard-step3__row` — so the old row count could only ever be 0 and the
+	// `toBeGreaterThanOrEqual(1)` assertion was unreachable behind the guard.
+	const versionRows = modal.locator('.wizard-step3__row')
+	await expect(versionRows, 'the composer must seed one version row').toHaveCount(
+		1,
+	)
+	await addVersionBtn.click()
+	await expect(
+		versionRows,
+		'adding a row must extend the chain to two versions',
+	).toHaveCount(2, { timeout: 5_000 })
 })
 
 // @e2e application-creation-wizard::composer-cannot-have-zero-rows
-test('REQ-OBWIZ-004 — custom chain composer enforces minimum one version row', async ({ page }) => {
+test('REQ-OBWIZ-004 — custom chain composer enforces minimum one version row', async ({
+	page,
+}) => {
 	// @e2e application-creation-wizard::composer-cannot-have-zero-rows
-	test.skip(!LIVE, 'Requires live dev env with wizard built and accessible — set OPENBUILD_E2E_LIVE=1')
+	test.skip(
+		!LIVE,
+		'Requires live dev env with wizard built and accessible — set OPENBUILD_E2E_LIVE=1',
+	)
 
 	await page.goto(`${BASE}/apps/openbuild/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 15_000 })
 
-	const addBtn = page.locator('button').filter({ hasText: /add|new|create/i }).first()
+	const addBtn = page
+		.locator('button')
+		.filter({ hasText: /add|new|create/i })
+		.first()
 	await addBtn.click()
 
-	const modal = page.locator('[role="dialog"], .nc-modal, [class*="modal"]').first()
+	const modal = page
+		.locator('[role="dialog"], .nc-modal, [class*="modal"]')
+		.first()
 	await expect(modal).toBeVisible({ timeout: 10_000 })
 
 	const nameInput = modal.locator('input[type="text"]').first()
 	await nameInput.fill('Zero Rows Test')
-	const nextBtn = modal.locator('button').filter({ hasText: /next|continue/i }).first()
+	const nextBtn = modal
+		.locator('button')
+		.filter({ hasText: /next|continue/i })
+		.first()
 	await nextBtn.click()
 
-	const customPreset = modal.locator('[class*="preset"], [data-preset]').filter({ hasText: /custom/i }).first()
-	if (await customPreset.count() > 0) {
-		await customPreset.click()
-		const nextBtn2 = modal.locator('button').filter({ hasText: /next|continue/i }).first()
-		await nextBtn2.click()
+	// Card, not the `[class*="preset"]` grid container — see the
+	// "selecting Custom preset" test above for the live-verified writeup. The
+	// nested `if (count > 0)` guards are gone with it: both were unsatisfiable,
+	// so this test asserted nothing at all while reporting green.
+	const customPreset = modal
+		.locator('.wizard-step2__preset-card')
+		.filter({ hasText: /custom/i })
+		.first()
+	await expect(customPreset, 'the Custom preset card must be present').toBeVisible(
+		{ timeout: 5_000 },
+	)
+	await customPreset.click()
+	await page.waitForTimeout(300)
+	const nextBtn2 = modal
+		.locator('button')
+		.filter({ hasText: /next|continue/i })
+		.first()
+	await nextBtn2.click()
 
-		// Try to remove the default Production row
-		const removeBtn = modal.locator('button').filter({ hasText: /×|remove|delete/i }).first()
-		if (await removeBtn.count() > 0) {
-			await removeBtn.click()
-			// Either the row is not removed, or an inline error appears
-			// The test confirms the composer doesn't allow zero rows
-			const errorMsg = modal.locator('text=/required|at least/i').first()
-			const rowsStillPresent = modal.locator('[class*="version-row"], [data-version-row]').first()
-			const errorOrRow = (await errorMsg.count()) + (await rowsStillPresent.count())
-			expect(
-				errorOrRow,
-				'either an error message or the row must remain — zero rows not allowed',
-			).toBeGreaterThanOrEqual(1)
-		}
-	}
+	const versionRows = modal.locator('.wizard-step3__row')
+	await expect(
+		versionRows,
+		'the composer must seed exactly one version row',
+	).toHaveCount(1, { timeout: 5_000 })
+
+	// Try to remove the only row — the composer must refuse and say why.
+	await modal.locator('.wizard-step3__btn-remove').first().click()
+	await expect(
+		versionRows,
+		'the last remaining version row must not be removable',
+	).toHaveCount(1)
+	await expect(
+		modal
+			.locator('.wizard-step3__error-msg')
+			.filter({ hasText: /at least one/i })
+			.first(),
+		'refusing to drop the last row must surface an explanation',
+	).toBeVisible({ timeout: 5_000 })
 })
 
 // @e2e application-creation-wizard::slug-auto-derives-from-app-name
-test('REQ-OBWIZ-005 — app name input auto-derives a kebab-case slug', async ({ page }) => {
+test('REQ-OBWIZ-005 — app name input auto-derives a kebab-case slug', async ({
+	page,
+}) => {
 	// @e2e application-creation-wizard::slug-auto-derives-from-app-name
-	test.skip(!LIVE, 'Requires live dev env with wizard built and accessible — set OPENBUILD_E2E_LIVE=1')
+	test.skip(
+		!LIVE,
+		'Requires live dev env with wizard built and accessible — set OPENBUILD_E2E_LIVE=1',
+	)
 
 	await page.goto(`${BASE}/apps/openbuild/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 15_000 })
 
-	const addBtn = page.locator('button').filter({ hasText: /add|new|create/i }).first()
+	const addBtn = page
+		.locator('button')
+		.filter({ hasText: /add|new|create/i })
+		.first()
 	await addBtn.click()
 
-	const modal = page.locator('[role="dialog"], .nc-modal, [class*="modal"]').first()
+	const modal = page
+		.locator('[role="dialog"], .nc-modal, [class*="modal"]')
+		.first()
 	await expect(modal).toBeVisible({ timeout: 10_000 })
 
 	// Type a multi-word name
-	const nameInput = modal.locator('input').filter({ hasAttribute: 'name', has: page.locator('[name*="name"]') }).first()
-		|| modal.locator('input[type="text"]').first()
+	// NOT `locator(...).filter(...) || locator(...)` — a Locator is always
+	// truthy, so `||` between two Locator objects always evaluates to the
+	// FIRST operand; the intended fallback was dead code. Worse, `hasAttribute`
+	// isn't a real Playwright filter option (only has/hasText/hasNotText/
+	// hasNot are), and `<input>` is a void element that can never contain a
+	// descendant, so `filter({ has: ... })` on it could never match anything
+	// — this locator was permanently empty. Match the plain-text-input
+	// pattern every other test in this file already uses.
+	const nameInput = modal.locator('input[type="text"]').first()
 	await nameInput.fill('My Cool App')
 
-	// A slug chip or slug input should show the derived value
-	const slugChip = modal.locator('[class*="slug"], input[name*="slug"], [data-slug]').first()
-	const slugCount = await slugChip.count()
-	if (slugCount > 0) {
-		const slugValue = await slugChip.inputValue().catch(() => slugChip.textContent())
-		expect(
-			slugValue,
-			'slug must auto-derive to my-cool-app from "My Cool App"',
-		).toMatch(/my-cool-app/)
-	}
+	// The derived slug is rendered in the always-visible chip
+	// (`.wizard-step1__slug-chip` in Step1Basics.vue). The old
+	// `[class*="slug"]`-plus-`if (count > 0)` shape both matched the wrapping
+	// `.wizard-step1__field--slug` row and swallowed a miss, so this assertion
+	// could report green without ever running.
+	await expect(
+		modal.locator('.wizard-step1__slug-chip'),
+		'slug must auto-derive to my-cool-app from "My Cool App"',
+	).toHaveText('my-cool-app', { timeout: 5_000 })
 })
 
 // @e2e application-creation-wizard::leading-underscore-slug-is-rejected
-test('REQ-OBWIZ-005 — leading-underscore slug shows inline error and disables Next', async ({ page }) => {
+test('REQ-OBWIZ-005 — leading-underscore slug shows inline error and blocks advancing', async ({
+	page,
+}) => {
 	// @e2e application-creation-wizard::leading-underscore-slug-is-rejected
-	test.skip(!LIVE, 'Requires live dev env with wizard built and accessible — set OPENBUILD_E2E_LIVE=1')
+	test.skip(
+		!LIVE,
+		'Requires live dev env with wizard built and accessible — set OPENBUILD_E2E_LIVE=1',
+	)
 
 	await page.goto(`${BASE}/apps/openbuild/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 15_000 })
 
-	const addBtn = page.locator('button').filter({ hasText: /add|new|create/i }).first()
+	const addBtn = page
+		.locator('button')
+		.filter({ hasText: /add|new|create/i })
+		.first()
 	await addBtn.click()
 
-	const modal = page.locator('[role="dialog"], .nc-modal, [class*="modal"]').first()
+	const modal = page
+		.locator('[role="dialog"], .nc-modal, [class*="modal"]')
+		.first()
 	await expect(modal).toBeVisible({ timeout: 10_000 })
 
-	// Try to enter a slug with a leading underscore directly
-	const slugInput = modal.locator('input[name*="slug"], [data-slug] input').first()
-	if (await slugInput.count() > 0) {
-		await slugInput.fill('_internal')
-		// Error message should appear
-		const error = modal.locator('text=/_|reserved|underscore/i').first()
-		const nextBtn = modal.locator('button').filter({ hasText: /next|continue/i }).first()
-		// Either error appears or Next is disabled
-		const nextDisabled = await nextBtn.isDisabled().catch(() => true)
-		const errorVisible = await error.isVisible().catch(() => false)
-		expect(
-			nextDisabled || errorVisible,
-			'leading-underscore slug must either show error or disable Next',
-		).toBe(true)
-	}
+	// The step-1 slug input lives behind the Advanced toggle
+	// (`v-if="showAdvanced"` in Step1Basics.vue) and has no `name` attribute,
+	// so `input[name*="slug"]` never matched and the `if (count > 0)` guard
+	// meant this test asserted nothing while reporting green.
+	await modal.locator('input[type="text"]').first().fill('Underscore Slug Test')
+	await modal.locator('.wizard-step1__advanced-toggle').first().click()
+	const slugInput = modal.locator('#wizard-app-slug')
+	await expect(slugInput).toBeVisible({ timeout: 5_000 })
+	await slugInput.fill('_internal')
+
+	await expect(
+		modal
+			.locator('.wizard-step1__error-msg')
+			.filter({ hasText: /cannot start with/i })
+			.first(),
+		'leading-underscore slug must show the reserved-prefix error',
+	).toBeVisible({ timeout: 5_000 })
+	await expect(
+		modal.locator('.wizard-step1__slug-chip--error'),
+		'the slug chip must be flagged as errored',
+	).toBeVisible()
+
+	// `CnWizardDialog` validates on advance rather than disabling its primary
+	// action (see the writeup on `expectStep3BlocksAdvance` in
+	// createApplicationWizard.spec.ts), so assert the guarantee: Next must not
+	// leave step 1 while the slug is invalid.
+	await modal
+		.locator('button')
+		.filter({ hasText: /next|continue/i })
+		.first()
+		.click()
+	await expect(
+		modal.locator('.wizard-step1'),
+		'the wizard must stay on step 1',
+	).toBeVisible()
+	await expect(
+		modal.locator('.wizard-step2'),
+		'the wizard must not reach the preset step',
+	).toHaveCount(0)
 })
 
 // @e2e application-creation-wizard::slug-with-invalid-characters-is-rejected
-test('REQ-OBWIZ-005 — slug with invalid characters shows inline validation error', async ({ page }) => {
+test('REQ-OBWIZ-005 — slug with invalid characters shows inline validation error', async ({
+	page,
+}) => {
 	// @e2e application-creation-wizard::slug-with-invalid-characters-is-rejected
-	test.skip(!LIVE, 'Requires live dev env with wizard built and accessible — set OPENBUILD_E2E_LIVE=1')
+	test.skip(
+		!LIVE,
+		'Requires live dev env with wizard built and accessible — set OPENBUILD_E2E_LIVE=1',
+	)
 
 	await page.goto(`${BASE}/apps/openbuild/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 15_000 })
 
-	const addBtn = page.locator('button').filter({ hasText: /add|new|create/i }).first()
+	const addBtn = page
+		.locator('button')
+		.filter({ hasText: /add|new|create/i })
+		.first()
 	await addBtn.click()
 
-	const modal = page.locator('[role="dialog"], .nc-modal, [class*="modal"]').first()
+	const modal = page
+		.locator('[role="dialog"], .nc-modal, [class*="modal"]')
+		.first()
 	await expect(modal).toBeVisible({ timeout: 10_000 })
 
-	const slugInput = modal.locator('input[name*="slug"], [data-slug] input').first()
-	if (await slugInput.count() > 0) {
-		await slugInput.fill('my app!')
-		const nextBtn = modal.locator('button').filter({ hasText: /next|continue/i }).first()
-		const nextDisabled = await nextBtn.isDisabled().catch(() => true)
-		// Invalid characters must either show error or disable Next
-		expect(
-			nextDisabled,
-			'slug with invalid characters must disable the Next button',
-		).toBe(true)
-	}
+	// See the leading-underscore test above for why the old
+	// `input[name*="slug"]` locator (plus its `if (count > 0)` guard) meant
+	// this test asserted nothing.
+	await modal.locator('input[type="text"]').first().fill('My App')
+	await modal.locator('.wizard-step1__advanced-toggle').first().click()
+	const slugInput = modal.locator('#wizard-app-slug')
+	await expect(slugInput).toBeVisible({ timeout: 5_000 })
+	await slugInput.fill('my app!')
+
+	await expect(
+		modal.locator('.wizard-step1__error-msg').first(),
+		'slug with invalid characters must show an inline validation error',
+	).toBeVisible({ timeout: 5_000 })
+
+	// Validate-on-advance, not a disabled button — see the leading-underscore
+	// test above.
+	await modal
+		.locator('button')
+		.filter({ hasText: /next|continue/i })
+		.first()
+		.click()
+	await expect(
+		modal.locator('.wizard-step1'),
+		'the wizard must stay on step 1',
+	).toBeVisible()
+	await expect(
+		modal.locator('.wizard-step2'),
+		'the wizard must not reach the preset step',
+	).toHaveCount(0)
 })
 
 // @e2e application-creation-wizard::client-side-duplicate-slug-error
-test('REQ-OBWIZ-006 — duplicate version slugs in custom chain shows inline error', async ({ page }) => {
+test('REQ-OBWIZ-006 — duplicate version slugs in custom chain shows inline error', async ({
+	page,
+}) => {
 	// @e2e application-creation-wizard::client-side-duplicate-slug-error
-	test.skip(!LIVE, 'Requires live dev env with wizard built and accessible — set OPENBUILD_E2E_LIVE=1')
+	test.skip(
+		!LIVE,
+		'Requires live dev env with wizard built and accessible — set OPENBUILD_E2E_LIVE=1',
+	)
 
 	await page.goto(`${BASE}/apps/openbuild/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 15_000 })
 
-	const addBtn = page.locator('button').filter({ hasText: /add|new|create/i }).first()
+	const addBtn = page
+		.locator('button')
+		.filter({ hasText: /add|new|create/i })
+		.first()
 	await addBtn.click()
 
-	const modal = page.locator('[role="dialog"], .nc-modal, [class*="modal"]').first()
+	const modal = page
+		.locator('[role="dialog"], .nc-modal, [class*="modal"]')
+		.first()
 	await expect(modal).toBeVisible({ timeout: 10_000 })
 
 	const nameInput = modal.locator('input[type="text"]').first()
 	await nameInput.fill('Duplicate Slug Test')
-	const nextBtn = modal.locator('button').filter({ hasText: /next|continue/i }).first()
+	const nextBtn = modal
+		.locator('button')
+		.filter({ hasText: /next|continue/i })
+		.first()
 	await nextBtn.click()
 
-	const customPreset = modal.locator('[class*="preset"], [data-preset]').filter({ hasText: /custom/i }).first()
-	if (await customPreset.count() > 0) {
-		await customPreset.click()
-		const nextBtn2 = modal.locator('button').filter({ hasText: /next|continue/i }).first()
-		await nextBtn2.click()
+	// Card, not the `[class*="preset"]` grid container — see the
+	// "selecting Custom preset" test above. All three nested `if` guards are
+	// gone: none could be satisfied (`input[name*="version"]` never matched
+	// either — the row inputs are `#wizard-version-name-{i}` with no `name`
+	// attribute), so this test reported green having asserted nothing.
+	const customPreset = modal
+		.locator('.wizard-step2__preset-card')
+		.filter({ hasText: /custom/i })
+		.first()
+	await expect(customPreset, 'the Custom preset card must be present').toBeVisible(
+		{ timeout: 5_000 },
+	)
+	await customPreset.click()
+	await page.waitForTimeout(300)
+	await modal
+		.locator('button')
+		.filter({ hasText: /next|continue/i })
+		.first()
+		.click()
 
-		// Add a second row
-		const addVersionBtn = modal.locator('button').filter({ hasText: /add version/i }).first()
-		if (await addVersionBtn.count() > 0) {
-			await addVersionBtn.click()
+	// Add a second row and give it the same auto-derived slug as the first
+	// (two rows both named "Production" -> both derive `production`), which is
+	// the spec's own scenario shape.
+	const addVersionBtn = modal.locator('.wizard-step3__add-btn')
+	await expect(addVersionBtn).toBeVisible({ timeout: 5_000 })
+	await addVersionBtn.click()
+	await expect(modal.locator('.wizard-step3__row')).toHaveCount(2, {
+		timeout: 5_000,
+	})
+	await modal.locator('#wizard-version-name-1').fill('Production')
 
-			// Try to enter the same slug in the second row
-			const versionInputs = modal.locator('input[name*="version"], input[name*="slug"], [class*="version"] input')
-			const inputCount = await versionInputs.count()
-			if (inputCount >= 2) {
-				await versionInputs.nth(1).fill('production') // same as default first row
-				// Duplicate error or disabled Create button must appear
-				const createBtn = modal.locator('button').filter({ hasText: /create|finish/i }).first()
-				const error = modal.locator('text=/duplicate|already used|used in this/i').first()
-				const createDisabled = await createBtn.isDisabled().catch(() => true)
-				const errorVisible = await error.isVisible().catch(() => false)
-				expect(
-					createDisabled || errorVisible,
-					'duplicate slugs must either show error or disable Create',
-				).toBe(true)
-			}
-		}
-	}
+	await expect(
+		modal.locator('.wizard-step3__slug-chip--duplicate'),
+		'both colliding rows must be flagged as duplicates',
+	).toHaveCount(2, { timeout: 5_000 })
+
+	// Validate-on-advance, not a disabled button — see
+	// `expectStep3BlocksAdvance` in createApplicationWizard.spec.ts.
+	await modal
+		.locator('button')
+		.filter({ hasText: /next|continue/i })
+		.first()
+		.click()
+	await expect(
+		modal.locator('.wizard-step3'),
+		'the wizard must stay on the chain step',
+	).toBeVisible()
+	await expect(
+		modal.locator('.wizard-step4'),
+		'the wizard must not reach Review',
+	).toHaveCount(0)
 })

@@ -19,7 +19,10 @@ import {
 	stripDependencyMarker,
 } from '../../src/services/manifestDependencies.js'
 
-const withWf = () => ({ dependencies: [], runtime: { workflows: [{ id: 'a', schema: 's' }] } })
+const withWf = () => ({
+	dependencies: [],
+	runtime: { workflows: [{ id: 'a', schema: 's' }] },
+})
 
 describe('manifestDependencies (workflow)', () => {
 	it('detects a workflow attachment', () => {
@@ -37,7 +40,10 @@ describe('manifestDependencies (workflow)', () => {
 		expect(m.dependencies).toEqual([])
 	})
 	it('never removes a manually-added procest dependency', () => {
-		const m = reconcileWorkflowDependency({ dependencies: ['procest'], runtime: { workflows: [] } })
+		const m = reconcileWorkflowDependency({
+			dependencies: ['procest'],
+			runtime: { workflows: [] },
+		})
 		expect(m.dependencies).toEqual(['procest'])
 	})
 	it('strips the internal marker before serialization', () => {
@@ -50,38 +56,72 @@ describe('manifestDependencies (workflow)', () => {
 
 describe('manifestDependencies (connector)', () => {
 	it('detects a connector binding on a page or widget', () => {
-		expect(hasConnectorBinding({ pages: [{ config: { register: 'r' } }] })).toBe(false)
-		expect(hasConnectorBinding({ pages: [{ config: { dataSource: { connector: {} } } }] })).toBe(true)
-		expect(hasConnectorBinding({ pages: [{ config: { widgets: [{ dataSource: { connector: {} } }] } }] })).toBe(true)
+		expect(hasConnectorBinding({ pages: [{ config: { register: 'r' } }] })).toBe(
+			false,
+		)
+		expect(
+			hasConnectorBinding({
+				pages: [{ config: { dataSource: { connector: {} } } }],
+			}),
+		).toBe(true)
+		expect(
+			hasConnectorBinding({
+				pages: [
+					{ config: { widgets: [{ dataSource: { connector: {} } }] } },
+				],
+			}),
+		).toBe(true)
 	})
 
 	it('adds openconnector once when a binding exists', () => {
-		const m = reconcileConnectorDependency({ dependencies: [], pages: [{ config: { dataSource: { connector: {} } } }] })
+		const m = reconcileConnectorDependency({
+			dependencies: [],
+			pages: [{ config: { dataSource: { connector: {} } } }],
+		})
 		expect(m.dependencies).toEqual(['openconnector'])
 		const again = reconcileConnectorDependency(m)
 		expect(again.dependencies).toEqual(['openconnector'])
 	})
 
 	it('auto-removes openconnector when the last binding is gone (only if auto-added)', () => {
-		let m = reconcileConnectorDependency({ dependencies: [], pages: [{ config: { dataSource: { connector: {} } } }] })
-		m = reconcileConnectorDependency({ ...m, pages: [{ config: { register: 'r' } }] })
+		let m = reconcileConnectorDependency({
+			dependencies: [],
+			pages: [{ config: { dataSource: { connector: {} } } }],
+		})
+		m = reconcileConnectorDependency({
+			...m,
+			pages: [{ config: { register: 'r' } }],
+		})
 		expect(m.dependencies).toEqual([])
 	})
 
 	it('never removes a manually-added openconnector dependency', () => {
-		const m = reconcileConnectorDependency({ dependencies: ['openconnector'], pages: [{ config: { register: 'r' } }] })
+		const m = reconcileConnectorDependency({
+			dependencies: ['openconnector'],
+			pages: [{ config: { register: 'r' } }],
+		})
 		expect(m.dependencies).toEqual(['openconnector'])
 	})
 
 	it('strips the internal marker before serialization', () => {
-		const m = reconcileConnectorDependency({ dependencies: [], pages: [{ config: { dataSource: { connector: {} } } }] })
+		const m = reconcileConnectorDependency({
+			dependencies: [],
+			pages: [{ config: { dataSource: { connector: {} } } }],
+		})
 		expect(m._openbuildAutoDeps).toBeDefined()
 		stripDependencyMarker(m)
 		expect(m._openbuildAutoDeps).toBeUndefined()
 	})
 })
 
-const withDoc = () => ({ dependencies: [], runtime: { documents: [{ id: 'd', schema: 's', templateId: 'u', templateName: 'T', label: 'L' }] } })
+const withDoc = () => ({
+	dependencies: [],
+	runtime: {
+		documents: [
+			{ id: 'd', schema: 's', templateId: 'u', templateName: 'T', label: 'L' },
+		],
+	},
+})
 
 describe('manifestDependencies (document)', () => {
 	it('detects a document attachment', () => {
@@ -99,7 +139,10 @@ describe('manifestDependencies (document)', () => {
 		expect(m.dependencies).toEqual([])
 	})
 	it('never removes a manually-added docudesk dependency', () => {
-		const m = reconcileDocumentDependency({ dependencies: ['docudesk'], runtime: { documents: [] } })
+		const m = reconcileDocumentDependency({
+			dependencies: ['docudesk'],
+			runtime: { documents: [] },
+		})
 		expect(m.dependencies).toEqual(['docudesk'])
 	})
 })

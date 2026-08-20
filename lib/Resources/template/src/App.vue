@@ -23,11 +23,11 @@
 </template>
 
 <script>
-import { CnAppRoot } from '@conduction/nextcloud-vue'
-import manifest from './manifest.json'
+import { CnAppRoot } from "@conduction/nextcloud-vue";
+import manifest from "./manifest.json";
 
 export default {
-	name: 'App',
+	name: "App",
 	components: {
 		CnAppRoot,
 	},
@@ -35,7 +35,7 @@ export default {
 		return {
 			manifest,
 			appId: manifest.id,
-		}
+		};
 	},
-}
+};
 </script>

@@ -4,116 +4,162 @@
  *
  * Playwright end-to-end coverage for openspec change `openbuild-page-editor`.
  *
- * Implements tasks 7.5 (add-page → save → render) and the tab-roundtrip
- * variant of 7.6 (Design ↔ Raw JSON parity). Task 7.6's "chain spec #2 not
- * installed" affordance is covered indirectly: the seed env runs without
- * chain spec #2, so the "Save & open preview" button is the rendered
- * fallback in scenario 1.
+ * Implements task 7.5 (add-page → save → render).
  *
- * Requirements covered: REQ-OBPD-002, REQ-OBPD-003, REQ-OBPD-009, plus
- * MODIFIED REQ-OBR-005 (tab default + edits survive tab switch).
+ * Requirements covered: REQ-OBPD-002, REQ-OBPD-003, REQ-OBPD-009.
  *
  * NOTE: Playwright binaries are NOT installed by `npm install`. Run
  * `npm run test:e2e:install` once before invoking `npm run test:e2e`.
+ *
+ * UN-QUARANTINED AND REWRITTEN 2026-07-31. The file blamed openbuild#41, but it
+ * was written against a surface that does not exist and never did on this
+ * branch:
+ *
+ *   - it navigated to `/apps/openbuild/applications/hello-world/design`. There
+ *     is no `/design` route — src/manifest.json declares the designer at
+ *     `/builder/:slug/pages` (PageDesignerHost);
+ *   - it asserted `.application-editor__tab--active`,
+ *     `.application-editor__textarea` and `.application-editor__dirty`. No
+ *     `application-editor__*` class exists anywhere in src/.
+ *
+ * The add-page → save → render journey below is now driven against the real
+ * designer. The file's second scenario ("edits survive a Design ↔ Raw JSON tab
+ * switch") is deliberately NOT rewritten: that tab pair is spec drift — the app
+ * never shipped a Design/Raw-JSON toggle in the page designer, and the raw
+ * manifest editor is a sidebar tab on the app DETAIL page
+ * (ApplicationManifestTab). Rewriting it here would invent coverage for a
+ * surface that does not exist; the same drift is recorded at the matching skip
+ * in tests/e2e/spec-coverage/openbuild-runtime.spec.ts, whose REQ-OBR-005 test
+ * covers the real manifest round-trip.
  */
 
 import { test, expect } from '@playwright/test'
+import {
+	ensureApp,
+	dismissOverlays,
+	suppressSupportDialog,
+} from './support/appFixture'
 
-const ADMIN_USER = process.env.NC_ADMIN_USER ?? 'admin'
-const ADMIN_PASS = process.env.NC_ADMIN_PASS ?? 'admin'
+// PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts.
+import { E2E_BASE_URL as BASE_URL } from './support/baseUrl'
 
-// Auth: globalSetup populates storageState; per-spec form login is gone.
-void ADMIN_USER
-void ADMIN_PASS
+const APP_SLUG = 'pw-page-designer'
+const NEW_ROUTE = '/added-by-e2e'
 
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no application detail / editor / version pages render. Re-enable when #41 is fixed.
-test.describe.skip('openbuild page designer', () => {
+test.describe('openbuild page designer', () => {
+	// The designer is a three-pane desktop surface; at the default 1280x720 the
+	// page-list rows land below the fold, where a click never settles.
+	test.use({ viewport: { width: 1600, height: 1200 } })
 
-	test('REQ-OBPD-002 + REQ-OBPD-003 + REQ-OBPD-009: add page → save → renders in builder', async ({ page }) => {
-		// Open the editor pre-focused on the Design tab (router alias from
-		// task 5.3 of the spec).
-		await page.goto('/apps/openbuild/applications/hello-world/design')
-
-		// The application editor mounts asynchronously after the manifest
-		// fetch returns. Wait for the page-list pane to settle before
-		// driving the UI.
-		await page.waitForSelector('.page-designer__left', { timeout: 20_000 })
-
-		// REQ-OBR-005: Design tab is the default.
-		await expect(page.locator('.application-editor__tab--active')).toHaveText(/Design/i)
-
-		// Snapshot current page count so the post-add assertion is robust to
-		// hello-world seed drift.
-		const initialPageCount = await page.locator('.page-list__row, [data-test="page-row"]').count()
-
-		// Open the "Add page" affordance and pick the canonical type. The
-		// exact selector intentionally trades specificity for resilience to
-		// pre-MVP CSS class churn — we look for the visible "Add page"
-		// trigger first, fall back to a button matching the i18n string.
-		const addBtn = page.getByRole('button', { name: /add page/i }).first()
-		await addBtn.click()
-
-		// Pick the `index` type from the closed-enum picker (REQ-OBPD-002 —
-		// "Adding a page SHALL prompt for the page `type` from the canonical
-		// closed enum before any other field is shown").
-		await page.getByRole('option', { name: /index/i }).first().click()
-
-		// Fill required bindings — the IndexPageEditor needs register +
-		// schema before the manifest validator allows save.
-		await page.getByLabel(/register/i).first().fill('openbuild')
-		await page.getByLabel(/schema/i).first().fill('hello-message')
-
-		// The new page row defaults to a placeholder id/route — set a known
-		// route so we can navigate to it below.
-		const routeInput = page.getByLabel(/route/i).first()
-		await routeInput.fill('/added-by-e2e')
-
-		// REQ-OBPD-009: Save flow validates first; the button is disabled
-		// while validator errors are open.
-		const saveBtn = page.getByRole('button', { name: /^save$/i }).first()
-		await expect(saveBtn).toBeEnabled({ timeout: 10_000 })
-		await saveBtn.click()
-
-		// Confirm the new page is reflected in the manifest. The page-list
-		// row count should have grown by one.
-		await expect(page.locator('.page-list__row, [data-test="page-row"]')).toHaveCount(initialPageCount + 1)
-
-		// REQ-OBPD-003: navigate to the built virtual app and assert the
-		// newly-added route renders inside the inner CnAppRoot mount.
-		await page.goto('/apps/openbuild/builder/hello-world/added-by-e2e')
-		await expect(page.locator('#openbuild-builder, .cn-app-root')).toBeVisible({ timeout: 15_000 })
+	test.beforeEach(async ({ page }) => {
+		// The first-open support dialog mounts a mask over the designer and
+		// swallows every click; suppress it before the first navigation.
+		await suppressSupportDialog(page)
+		// A dedicated fixture app: this scenario adds and SAVES a page, which must
+		// not accumulate on the shared hello-world seed other suites assert on.
+		await ensureApp(page, APP_SLUG, 'PW Page Designer')
 	})
 
-	test('REQ-OBR-005: edits survive a Design ↔ Raw JSON tab switch', async ({ page }) => {
-		await page.goto('/apps/openbuild/applications/hello-world/design')
-		await page.waitForSelector('.page-designer__left', { timeout: 20_000 })
-
-		// Switch to the Raw JSON tab and mutate the manifest.
-		await page.getByRole('button', { name: /raw json/i }).click()
-
-		const textarea = page.locator('.application-editor__textarea')
-		await expect(textarea).toBeVisible()
-
-		// Read the current manifest, inject a marker page id, write it back.
-		const raw = await textarea.inputValue()
-		const manifest = JSON.parse(raw)
-		manifest.pages = Array.isArray(manifest.pages) ? manifest.pages : []
-		manifest.pages.push({
-			id: 'e2e-tab-roundtrip',
-			type: 'index',
-			route: '/e2e-tab-roundtrip',
-			config: { register: 'openbuild', schema: 'hello-message' },
+	test('REQ-OBPD-002 + REQ-OBPD-003 + REQ-OBPD-009: add page → save → renders in builder', async ({
+		page,
+	}) => {
+		// Reset to a known baseline so the run is idempotent: this test saves the
+		// page it adds, so a second run would otherwise stack duplicate routes.
+		const manifestUrl = `/index.php/apps/openbuild/api/applications/${APP_SLUG}/manifest`
+		await page.goto(`${BASE_URL}/apps/openbuild/`, {
+			waitUntil: 'domcontentloaded',
 		})
-		await textarea.fill(JSON.stringify(manifest, null, 2))
+		await page.evaluate(
+			async ({ manifestUrl, route }) => {
+				const tok =
+					window.OC?.requestToken
+					|| document
+						.querySelector('head')
+						?.getAttribute('data-requesttoken')
+					|| ''
+				const headers = {
+					requesttoken: tok,
+					'OCS-APIRequest': 'true',
+					'Content-Type': 'application/json',
+				}
+				const current = await (await fetch(manifestUrl, { headers })).json()
+				const pages = (current.pages || []).filter((p) => p.route !== route)
+				await fetch(manifestUrl, {
+					method: 'PUT',
+					headers,
+					body: JSON.stringify({ manifest: { ...current, pages } }),
+				})
+			},
+			{ manifestUrl, route: NEW_ROUTE },
+		)
 
-		// Switch back to Design — the Pinia store is shared, so the new
-		// page must be visible in the left pane without saving.
-		await page.getByRole('button', { name: /^design$/i }).click()
-		await page.waitForSelector('.page-designer__left', { timeout: 10_000 })
+		await page.goto(
+			`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/pages?_version=production`,
+			{
+				waitUntil: 'domcontentloaded',
+			},
+		)
+		await page.waitForSelector('.page-designer__left', { timeout: 60_000 })
+		await dismissOverlays(page)
 
-		await expect(page.getByText('e2e-tab-roundtrip').first()).toBeVisible({ timeout: 5_000 })
+		const rows = page.locator('.page-list-editor__row')
+		const initialPageCount = await rows.count()
 
-		// The unsaved-edits banner from REQ-OBR-005 must also be visible.
-		await expect(page.locator('.application-editor__dirty')).toBeVisible()
+		// REQ-OBPD-002 — adding a page prompts for the `type` from the canonical
+		// closed enum before any other field is shown: the add row exposes only
+		// the type picker, and Confirm stays disabled until a type is chosen.
+		await page.locator('.page-list-editor__add').click()
+		const confirm = page.getByRole('button', { name: /^confirm$/i })
+		await expect(
+			confirm,
+			'Confirm is gated on choosing a page type first',
+		).toBeDisabled()
+		await page.locator('.page-list-editor__select').selectOption('index')
+		await expect(confirm).toBeEnabled()
+		await confirm.click()
+
+		await expect(rows).toHaveCount(initialPageCount + 1)
+
+		// Give the new page a known id + route. Each row renders both as bare
+		// inputs, distinguished by placeholder.
+		const newRow = rows.nth(initialPageCount)
+		await newRow.getByPlaceholder('page id').fill('added-by-e2e')
+		await newRow.getByPlaceholder('/route/:param').fill(NEW_ROUTE)
+
+		// REQ-OBPD-009 — save the draft.
+		await page.getByRole('button', { name: /save pages/i }).click()
+
+		// The save must reach the STORED manifest, not just the editor buffer.
+		await expect
+			.poll(
+				async () => {
+					const stored = await page.evaluate(async (url) => {
+						const resp = await fetch(url, {
+							headers: { 'OCS-APIRequest': 'true' },
+						})
+						return resp.json()
+					}, manifestUrl)
+					return (stored.pages || []).some((p) => p.route === NEW_ROUTE)
+				},
+				{
+					timeout: 30_000,
+					message: 'the added page must be persisted to the manifest',
+				},
+			)
+			.toBe(true)
+
+		// REQ-OBPD-003 — the newly-added route renders in the built virtual app.
+		await page.goto(
+			`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}${NEW_ROUTE}?_version=production`,
+			{
+				waitUntil: 'domcontentloaded',
+			},
+		)
+		await expect(
+			page
+				.locator('#openbuild-builder, .cn-app-root, .cn-page-renderer')
+				.first(),
+			'the saved route must render inside the builder host',
+		).toBeVisible({ timeout: 45_000 })
 	})
 })

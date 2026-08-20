@@ -37,12 +37,19 @@
 			<!-- 1. Base layer (read-only) -->
 			<li class="ob-manifest-widget__layer">
 				<div class="ob-manifest-widget__layer-main">
-					<span class="ob-manifest-widget__layer-name">{{ t('openbuild', 'Base') }}</span>
+					<span class="ob-manifest-widget__layer-name">{{
+						t('openbuild', 'Base')
+					}}</span>
 					<span class="ob-manifest-widget__layer-meta">
-						{{ isHybrid ? t('openbuild', 'Installed app manifest') : t('openbuild', 'Built manifest') }}
+						{{
+							isHybrid
+								? t('openbuild', 'Installed app manifest')
+								: t('openbuild', 'Built manifest')
+						}}
 					</span>
 				</div>
-				<span class="ob-manifest-widget__badge ob-manifest-widget__badge--muted">
+				<span
+					class="ob-manifest-widget__badge ob-manifest-widget__badge--muted">
 					{{ t('openbuild', 'Read-only') }}
 				</span>
 			</li>
@@ -50,9 +57,13 @@
 			<!-- 2. Admin (shared) delta -->
 			<li class="ob-manifest-widget__layer">
 				<div class="ob-manifest-widget__layer-main">
-					<span class="ob-manifest-widget__layer-name">{{ t('openbuild', 'Admin delta') }}</span>
+					<span class="ob-manifest-widget__layer-name">{{
+						t('openbuild', 'Admin delta')
+					}}</span>
 					<span class="ob-manifest-widget__layer-meta">
-						{{ t('openbuild', 'Shared · {label}', { label: adminLabel }) }}
+						{{
+							t('openbuild', 'Shared · {label}', { label: adminLabel })
+						}}
 					</span>
 				</div>
 				<span class="ob-manifest-widget__badge">{{ adminStatusLabel }}</span>
@@ -61,26 +72,34 @@
 			<!-- 3. Your (per-user) delta -->
 			<li class="ob-manifest-widget__layer ob-manifest-widget__layer--user">
 				<div class="ob-manifest-widget__layer-main">
-					<span class="ob-manifest-widget__layer-name">{{ t('openbuild', 'Your delta') }}</span>
-					<span class="ob-manifest-widget__layer-meta">{{ userMeta }}</span>
+					<span class="ob-manifest-widget__layer-name">{{
+						t('openbuild', 'Your delta')
+					}}</span>
+					<span class="ob-manifest-widget__layer-meta">{{
+						userMeta
+					}}</span>
 				</div>
 				<div class="ob-manifest-widget__layer-actions">
 					<NcLoadingIcon v-if="userLoading" :size="20" />
 					<template v-else-if="!allowUserOverrides">
-						<span class="ob-manifest-widget__badge ob-manifest-widget__badge--muted">
+						<span
+							class="ob-manifest-widget__badge ob-manifest-widget__badge--muted">
 							{{ t('openbuild', 'Disabled') }}
 						</span>
 					</template>
 					<template v-else-if="userDelta.exists">
-						<NcButton type="tertiary" @click="$emit('edit-override')">
+						<NcButton variant="tertiary" @click="$emit('edit-override')">
 							{{ t('openbuild', 'Edit') }}
 						</NcButton>
-						<NcButton type="tertiary" @click="resetOverride">
+						<NcButton variant="tertiary" @click="resetOverride">
 							{{ t('openbuild', 'Reset') }}
 						</NcButton>
 					</template>
 					<template v-else>
-						<NcButton type="secondary" :disabled="creating" @click="createOverride">
+						<NcButton
+							variant="secondary"
+							:disabled="creating"
+							@click="createOverride">
 							{{ t('openbuild', 'Create override') }}
 						</NcButton>
 					</template>
@@ -91,14 +110,23 @@
 		<!-- Maintainer-only: how many users have a personal override across the
 		     whole instance. Only resolves (non-null) for an owner/editor/admin
 		     (the endpoint 403s otherwise). Opens the detail page's full list. -->
-		<footer v-if="userOverrideCount !== null" class="ob-manifest-widget__overrides">
+		<footer
+			v-if="userOverrideCount !== null"
+			class="ob-manifest-widget__overrides">
 			<a
 				class="ob-manifest-widget__view-all"
 				role="button"
 				tabindex="0"
 				@click="$emit('open-detail')"
 				@keyup.enter="$emit('open-detail')">
-				{{ n('openbuild', '%n user override', '%n user overrides', userOverrideCount) }}
+				{{
+					n(
+						'openbuild',
+						'%n user override',
+						'%n user overrides',
+						userOverrideCount,
+					)
+				}}
 			</a>
 		</footer>
 
@@ -111,8 +139,8 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
+import NcButton from '@nextcloud/vue/components/NcButton'
+import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
 
 export default {
 	name: 'ManifestWidget',
@@ -129,6 +157,7 @@ export default {
 		/** Lifecycle status of the admin delta's current version. */
 		adminStatus: { type: String, default: '' },
 	},
+
 	emits: ['open-detail', 'edit-override', 'changed'],
 	data() {
 		return {
@@ -141,6 +170,7 @@ export default {
 			userOverrideCount: null,
 		}
 	},
+
 	computed: {
 		/**
 		 * Pre-translated label for the admin delta's lifecycle status.
@@ -155,6 +185,7 @@ export default {
 			}
 			return map[this.adminStatus] || t('openbuild', 'Current')
 		},
+
 		/**
 		 * Pre-translated meta line for the user-delta layer.
 		 *
@@ -162,7 +193,10 @@ export default {
 		 */
 		userMeta() {
 			if (!this.allowUserOverrides) {
-				return t('openbuild', 'Per-user overrides are turned off for this app')
+				return t(
+					'openbuild',
+					'Per-user overrides are turned off for this app',
+				)
 			}
 			if (this.userLoading) {
 				return t('openbuild', 'Loading…')
@@ -172,14 +206,17 @@ export default {
 				: t('openbuild', 'No personal override yet')
 		},
 	},
+
 	watch: {
 		appSlug: 'loadUserDelta',
 		allowUserOverrides: 'loadUserDelta',
 	},
+
 	mounted() {
 		this.loadUserDelta()
 		this.loadOverrideCount()
 	},
+
 	methods: {
 		/**
 		 * Load the count of ALL users' overrides (maintainer-only). Stays null
@@ -190,13 +227,18 @@ export default {
 		async loadOverrideCount() {
 			if (!this.appSlug) return
 			try {
-				const url = generateUrl('/apps/openbuild/api/app-overrides/{appId}/user-deltas', { appId: this.appSlug })
+				const url = generateUrl(
+					'/apps/openbuild/api/app-overrides/{appId}/user-deltas',
+					{ appId: this.appSlug },
+				)
 				const { data } = await axios.get(url)
-				this.userOverrideCount = (data && typeof data.total === 'number') ? data.total : 0
+				this.userOverrideCount =
+					data && typeof data.total === 'number' ? data.total : 0
 			} catch (e) {
 				this.userOverrideCount = null
 			}
 		},
+
 		/**
 		 * Load the calling user's own user-delta state for this app.
 		 *
@@ -207,7 +249,10 @@ export default {
 			this.userLoading = true
 			this.error = ''
 			try {
-				const url = generateUrl('/apps/openbuild/api/app-overrides/{appId}/user', { appId: this.appSlug })
+				const url = generateUrl(
+					'/apps/openbuild/api/app-overrides/{appId}/user',
+					{ appId: this.appSlug },
+				)
 				const { data } = await axios.get(url)
 				this.userDelta = {
 					allowed: !!(data && data.allowed),
@@ -221,6 +266,7 @@ export default {
 				this.userLoading = false
 			}
 		},
+
 		/**
 		 * Create an empty user delta (the "I want my own override" no-op state).
 		 *
@@ -231,16 +277,23 @@ export default {
 			this.creating = true
 			this.error = ''
 			try {
-				const url = generateUrl('/apps/openbuild/api/app-overrides/{appId}/user', { appId: this.appSlug })
+				const url = generateUrl(
+					'/apps/openbuild/api/app-overrides/{appId}/user',
+					{ appId: this.appSlug },
+				)
 				await axios.put(url, {})
 				await this.loadUserDelta()
 				this.$emit('changed')
 			} catch (e) {
-				this.error = this.extractError(e, t('openbuild', 'Could not create your override'))
+				this.error = this.extractError(
+					e,
+					t('openbuild', 'Could not create your override'),
+				)
 			} finally {
 				this.creating = false
 			}
 		},
+
 		/**
 		 * Delete the caller's own user delta.
 		 *
@@ -250,14 +303,21 @@ export default {
 			if (!this.appSlug) return
 			this.error = ''
 			try {
-				const url = generateUrl('/apps/openbuild/api/app-overrides/{appId}/user', { appId: this.appSlug })
+				const url = generateUrl(
+					'/apps/openbuild/api/app-overrides/{appId}/user',
+					{ appId: this.appSlug },
+				)
 				await axios.delete(url)
 				await this.loadUserDelta()
 				this.$emit('changed')
 			} catch (e) {
-				this.error = this.extractError(e, t('openbuild', 'Could not reset your override'))
+				this.error = this.extractError(
+					e,
+					t('openbuild', 'Could not reset your override'),
+				)
 			}
 		},
+
 		/**
 		 * Extract a human error message from an axios failure.
 		 *
@@ -266,7 +326,11 @@ export default {
 		 * @return {string}
 		 */
 		extractError(e, fallback) {
-			const detail = e && e.response && e.response.data && (e.response.data.detail || e.response.data.error)
+			const detail =
+				e
+				&& e.response
+				&& e.response.data
+				&& (e.response.data.detail || e.response.data.error)
 			return detail ? `${fallback}: ${detail}` : fallback
 		},
 	},

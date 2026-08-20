@@ -7,7 +7,13 @@
  * Spec: openconnector-api-sources (REQ-OCAS-006).
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { cacheKey, stableQueryHash, ttlToMs, readThrough, clearConnectorCache } from '../../src/services/connectorCache.js'
+import {
+	cacheKey,
+	stableQueryHash,
+	ttlToMs,
+	readThrough,
+	clearConnectorCache,
+} from '../../src/services/connectorCache.js'
 
 describe('connectorCache helpers', () => {
 	it('hashes queries order-independently', () => {

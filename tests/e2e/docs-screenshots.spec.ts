@@ -1,5 +1,5 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-or-later
+ * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 OpenBuild Contributors
  *
  * Documentation screenshot capture suite — openbuild.
@@ -42,10 +42,19 @@ import { test, expect, type Page } from '@playwright/test'
 import * as path from 'path'
 import * as fs from 'fs'
 
-const SHOT_ROOT = path.resolve(__dirname, '..', '..', 'docs', 'static', 'screenshots', 'tutorials')
+const SHOT_ROOT = path.resolve(
+	__dirname,
+	'..',
+	'..',
+	'docs',
+	'static',
+	'screenshots',
+	'tutorials',
+)
 const APP = '/apps/openbuild'
 const ADMIN_USER = process.env.NC_ADMIN_USER || 'admin'
-const ADMIN_PASS = process.env.NC_ADMIN_PASSWORD || process.env.NC_ADMIN_PASS || 'admin'
+const ADMIN_PASS =
+	process.env.NC_ADMIN_PASSWORD || process.env.NC_ADMIN_PASS || 'admin'
 
 /**
  * Save a viewport screenshot under
@@ -53,12 +62,20 @@ const ADMIN_PASS = process.env.NC_ADMIN_PASSWORD || process.env.NC_ADMIN_PASS ||
  * Lives under `static/` so Docusaurus copies the PNG into the build
  * root — markdown image refs use `/screenshots/...` (root-absolute).
  */
-async function shoot(page: Page, track: 'user' | 'admin', file: string): Promise<void> {
+async function shoot(
+	page: Page,
+	track: 'user' | 'admin',
+	file: string,
+): Promise<void> {
 	const dir = path.join(SHOT_ROOT, track)
 	if (!fs.existsSync(dir)) {
 		fs.mkdirSync(dir, { recursive: true })
 	}
-	await page.screenshot({ path: path.join(dir, file), fullPage: false, type: 'png' })
+	await page.screenshot({
+		path: path.join(dir, file),
+		fullPage: false,
+		type: 'png',
+	})
 }
 
 /** Drive the Nextcloud login form once per test (cheap; no global-setup). */
@@ -73,7 +90,11 @@ async function ensureLoggedIn(page: Page): Promise<void> {
 			await user.fill(ADMIN_USER)
 			await page.locator('input[name="password"]').fill(ADMIN_PASS)
 			await page.locator('button[type="submit"]').first().click()
-			await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 20_000 }).catch(() => {})
+			await page
+				.waitForURL((url) => !url.pathname.includes('/login'), {
+					timeout: 20_000,
+				})
+				.catch(() => {})
 		}
 	}
 }
@@ -86,7 +107,9 @@ async function ensureLoggedIn(page: Page): Promise<void> {
 async function dismissOverlays(page: Page): Promise<void> {
 	const wizard = page.locator('#firstrunwizard')
 	if (await wizard.isVisible().catch(() => false)) {
-		const close = wizard.getByRole('button', { name: /close|got it|finish|skip/i }).first()
+		const close = wizard
+			.getByRole('button', { name: /close|got it|finish|skip/i })
+			.first()
 		if (await close.isVisible().catch(() => false)) {
 			await close.click().catch(() => {})
 		} else {
@@ -95,7 +118,12 @@ async function dismissOverlays(page: Page): Promise<void> {
 		await wizard.waitFor({ state: 'hidden', timeout: 4000 }).catch(() => {})
 	}
 	const stray = page.locator('[role="dialog"]:not(#firstrunwizard)')
-	if (await stray.first().isVisible().catch(() => false)) {
+	if (
+		await stray
+			.first()
+			.isVisible()
+			.catch(() => false)
+	) {
 		await page.keyboard.press('Escape').catch(() => {})
 		await page.waitForTimeout(300)
 	}
@@ -104,9 +132,29 @@ async function dismissOverlays(page: Page): Promise<void> {
 /** Navigate to an OpenBuild (or absolute) route and settle. */
 async function go(page: Page, route: string): Promise<void> {
 	await ensureLoggedIn(page)
-	const url = route.startsWith('/apps/') || route.startsWith('/settings/') ? route : `${APP}${route.startsWith('/') ? route : `/${route}`}`
-	await page.goto(url).catch(() => { /* tolerate a 404 — caller decides */ })
-	await page.waitForLoadState('networkidle').catch(() => { /* idle never fires on some pages */ })
+	const url =
+		route.startsWith('/apps/') || route.startsWith('/settings/')
+			? route
+			: `${APP}${route.startsWith('/') ? route : `/${route}`}`
+	await page.goto(url, { waitUntil: 'domcontentloaded' }).catch(() => {
+		/* tolerate a 404 — caller decides */
+	})
+	// `networkidle` never fires on Nextcloud — the notification poll keeps a
+	// request in flight for the whole session (ADR-074 rule 4) — so the wait
+	// that used to sit here always ran to its full budget before being
+	// swallowed, on every one of this suite's ~60 navigations. `templates/
+	// index.php` ships an empty `<div id="content">`, so the app content region
+	// only acquires a box once the SPA has rendered into it: that is the real
+	// "page is ready to photograph" signal. Best-effort by design — some routes
+	// this suite visits are deliberately 404s that never render one, and the
+	// caller decides what to do about that.
+	await page
+		.locator('main, #app-content, .app-content, #content-vue')
+		.first()
+		.waitFor({ state: 'visible', timeout: 15_000 })
+		.catch(() => {
+			/* an error/404 route renders no app content */
+		})
 	await dismissOverlays(page)
 	await page.waitForTimeout(900)
 }
@@ -116,14 +164,21 @@ async function go(page: Page, route: string): Promise<void> {
  * "Add schema" / "Add page") if the button is present, screenshot it, and
  * close it again. Returns whether the dialog appeared.
  */
-async function captureCreateDialog(page: Page, track: 'user' | 'admin', file: string, namePattern: RegExp = /Add (Application|Item|schema|page|menu)/i): Promise<boolean> {
+async function captureCreateDialog(
+	page: Page,
+	track: 'user' | 'admin',
+	file: string,
+	namePattern: RegExp = /Add (Application|Item|schema|page|menu)/i,
+): Promise<boolean> {
 	const addBtn = page.getByRole('button', { name: namePattern }).first()
 	if (!(await addBtn.isVisible().catch(() => false))) {
 		return false
 	}
 	await addBtn.click().catch(() => {})
 	const dialog = page.locator('[role="dialog"]:not(#firstrunwizard)').first()
-	await dialog.waitFor({ state: 'visible', timeout: 5000 }).catch(() => { /* no dialog */ })
+	await dialog.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {
+		/* no dialog */
+	})
 	await page.waitForTimeout(400)
 	await shoot(page, track, file)
 	const cancel = dialog.getByRole('button', { name: /Cancel/i }).first()
@@ -164,10 +219,14 @@ test.describe('docs: user track', () => {
 		await shoot(page, 'user', '02-create-from-template-01.png')
 		await shoot(page, 'user', '02-create-from-template-02.png')
 		// Click "Use this template" on the first card → clone dialog.
-		const useBtn = page.getByRole('button', { name: /Use this template/i }).first()
+		const useBtn = page
+			.getByRole('button', { name: /Use this template/i })
+			.first()
 		if (await useBtn.isVisible().catch(() => false)) {
 			await useBtn.click().catch(() => {})
-			const dialog = page.locator('[role="dialog"]:not(#firstrunwizard)').first()
+			const dialog = page
+				.locator('[role="dialog"]:not(#firstrunwizard)')
+				.first()
 			await dialog.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {})
 			await page.waitForTimeout(400)
 			await shoot(page, 'user', '02-create-from-template-03.png')
@@ -195,7 +254,12 @@ test.describe('docs: user track', () => {
 		await shoot(page, 'user', '03-design-schema-01.png')
 		await go(page, '/builder/hello-world/schemas')
 		await shoot(page, 'user', '03-design-schema-02.png')
-		const had = await captureCreateDialog(page, 'user', '03-design-schema-03.png', /Add schema|Add property/i)
+		const had = await captureCreateDialog(
+			page,
+			'user',
+			'03-design-schema-03.png',
+			/Add schema|Add property/i,
+		)
 		if (!had) {
 			await shoot(page, 'user', '03-design-schema-03.png')
 		}
@@ -215,7 +279,9 @@ test.describe('docs: user track', () => {
 		await shoot(page, 'user', '04-design-page-03.png')
 		// Scroll to the menu builder, which sits below the pages panel on
 		// narrower viewports.
-		await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight / 2)).catch(() => {})
+		await page
+			.evaluate(() => window.scrollTo(0, document.body.scrollHeight / 2))
+			.catch(() => {})
 		await page.waitForTimeout(300)
 		await shoot(page, 'user', '04-design-page-04.png')
 		await page.evaluate(() => window.scrollTo(0, 0)).catch(() => {})
@@ -264,7 +330,9 @@ test.describe('docs: user track', () => {
 		// docs/tutorials/user/08-export-app.md
 		await go(page, '/exports')
 		await shoot(page, 'user', '08-export-app-01.png')
-		const exportBtn = page.getByRole('button', { name: /Export application|Export/i }).first()
+		const exportBtn = page
+			.getByRole('button', { name: /Export application|Export/i })
+			.first()
 		if (await exportBtn.isVisible().catch(() => false)) {
 			await exportBtn.click().catch(() => {})
 			await page.waitForTimeout(500)

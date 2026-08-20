@@ -33,23 +33,30 @@ declare(strict_types=1);
 
 namespace OCA\OpenBuild\Service;
 
-use FilesystemIterator;
 use OCP\Files\IAppData;
 use OCP\Files\NotFoundException;
 use Psr\Log\LoggerInterface;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
 use RuntimeException;
 use ZipArchive;
 
 /**
  * Generates a real Nextcloud-app tree from an OpenBuild Application + ZIPs it.
  *
- * Public surface:
+ * Public surface — an entry point is public only when production calls it:
  *
- *   - generateAppZip() — orchestrates copy → resolve placeholders → ZIP.
- *   - run()           — used by RunExportJob; handles the full pipeline
- *                       (state transitions + ZIP + optional GitHub push).
+ *   - generateAppZip()  — RunExportJob::run(); orchestrates copy → resolve
+ *                         placeholders → bundle data registers → ZIP.
+ *   - scratchTreeDir()  — RunExportJob::run(); pure path resolver so the
+ *                         GitHub push target can read the generated tree.
+ *   - buildScaffoldMap() — the same pipeline returning an in-memory
+ *                         `path => contents` map instead of a ZIP, for a
+ *                         config-set repo publish.
+ *
+ * Every remaining step (copyTemplate, resolvePlaceholders, packageZip,
+ * listFilesSorted, isBinary, prepareScratchDir, getOrCreateAppDataDir,
+ * rrmdir, bundleDataRegisterSchemas) is an implementation detail of those
+ * three and is private. They were public only so the tests could reach them;
+ * the tests now drive the real entry points instead.
  *
  * Idempotency contract (REQ-OBEX-008):
  *
@@ -64,386 +71,484 @@ use ZipArchive;
  *
  * @spec openspec/changes/openbuild-exporter/tasks.md#task-4.1
  */
-class ExportService
-{
+class ExportService {
 
-    /**
-     * Embedded template snapshot directory.
-     *
-     * @var string
-     */
-    private string $templateRoot;
+	/**
+	 * Embedded template snapshot directory.
+	 *
+	 * @var string
+	 */
+	private string $templateRoot;
 
-    /**
-     * Deterministic ZIP entry timestamp (REQ-OBEX-008).
-     *
-     * @var integer
-     */
-    private int $zipTimestamp;
+	/**
+	 * Filesystem chores for the scratch tree.
+	 *
+	 * @var ExportTreeFiles
+	 */
+	private ExportTreeFiles $treeFiles;
 
-    /**
-     * Constructor.
-     *
-     * @param IAppData            $appData             The app-data area for scratch + exports.
-     * @param PlaceholderResolver $placeholderResolver Pure resolver for {{tokens}}.
-     * @param LoggerInterface     $logger              Logger.
-     */
-    public function __construct(
-        private IAppData $appData,
-        private PlaceholderResolver $placeholderResolver,
-        private LoggerInterface $logger,
-    ) {
-        $this->templateRoot = dirname(__DIR__).'/Resources/template';
-        // 2026-01-01T00:00:00Z — fixed for deterministic ZIPs.
-        $this->zipTimestamp = 1767225600;
-    }//end __construct()
+	/**
+	 * What the last bundling run could not resolve.
+	 *
+	 * Returned to the caller so the export job's RESULT can name it. The
+	 * data-register precedent logs a skip and moves on, which is correct about
+	 * not failing the export and wrong about who finds out: an operator reads
+	 * the finished job, never the log.
+	 *
+	 * @var array<int, array{kind: string, ref: string, reason: string}>
+	 */
+	private array $lastSkipped = [];
 
-    /**
-     * Build the ZIP archive for an Application + version into app-data.
-     *
-     * @param string              $applicationUuid Source Application UUID.
-     * @param string              $versionSlug     Semver of the Application version.
-     * @param array<string,mixed> $context         Placeholder context: appId, appNamespace, etc.
-     * @param string              $jobUuid         ExportJob UUID — used as the ZIP filename.
-     *
-     * @return string Absolute (local) path to the produced ZIP.
-     *
-     * @throws RuntimeException When packaging fails.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
-     */
-    public function generateAppZip(
-        string $applicationUuid,
-        string $versionSlug,
-        array $context,
-        string $jobUuid,
-    ): string {
-        $scratchDir = $this->prepareScratchDir(jobUuid: $jobUuid);
-        $this->copyTemplate(source: $this->templateRoot, dest: $scratchDir);
-        $this->resolvePlaceholders(rootDir: $scratchDir, context: $context);
+	/**
+	 * Deterministic ZIP entry timestamp (REQ-OBEX-008).
+	 *
+	 * @var integer
+	 */
+	private int $zipTimestamp;
 
-        // Audit-trail entry names only the source — never the PAT, never secret values.
-        $this->logger->info(
-            'OpenBuild export: built tree',
-            [
-                'applicationUuid'    => $applicationUuid,
-                'applicationVersion' => $versionSlug,
-                'jobUuid'            => $jobUuid,
-            ]
-        );
+	/**
+	 * Constructor.
+	 *
+	 * @param IAppData $appData The app-data area for scratch + exports.
+	 * @param PlaceholderResolver $placeholderResolver Pure resolver for {{tokens}}.
+	 * @param LoggerInterface $logger Logger.
+	 * @param DataRegisterExportBundler $dataRegisterBundler Bundles bound data registers into the exported
+	 *                                                       tree (data-registers-runtime) — a dedicated
+	 *                                                       collaborator so this class's own coupling/
+	 *                                                       complexity stays within PHPMD's thresholds.
+	 * @param FlowAndAgentExportBundler $flowAndAgentBundler Bundles the application's flows and the
+	 *                                                       agents that point at it into the exported
+	 *                                                       tree, for the same reason.
+	 */
+	public function __construct(
+		private IAppData $appData,
+		private PlaceholderResolver $placeholderResolver,
+		private LoggerInterface $logger,
+		private DataRegisterExportBundler $dataRegisterBundler,
+		private FlowAndAgentExportBundler $flowAndAgentBundler,
+	) {
+		// Constructed rather than injected: it is stateless, has no
+		// dependencies of its own, and is deterministic — so injecting it buys
+		// no seam and costs a constructor dependency, which is what phpmd's
+		// CouplingBetweenObjects was measuring. Extracting it fixed the
+		// complexity finding and created this one; the fix for both is that it
+		// is a helper, not a collaborator.
+		$this->treeFiles = new ExportTreeFiles();
+		$this->templateRoot = dirname(__DIR__) . '/Resources/template';
+		// 2026-01-01T00:00:00Z — fixed for deterministic ZIPs.
+		$this->zipTimestamp = 1767225600;
+	}//end __construct()
 
-        return $this->packageZip(sourceDir: $scratchDir, jobUuid: $jobUuid);
-    }//end generateAppZip()
+	/**
+	 * Build the ZIP archive for an Application + version into app-data.
+	 *
+	 * @param string $applicationUuid Source Application UUID.
+	 * @param string $versionSlug Semver of the Application version.
+	 * @param array<string,mixed> $context Placeholder context: appId, appNamespace, etc.
+	 * @param string $jobUuid ExportJob UUID — used as the ZIP
+	 *                        filename.
+	 * @param array<int,mixed> $dataRegisters Source Application's `dataRegisters` bindings + the
+	 *                                        per-export includeData choice for each
+	 *                                        (data-registers-runtime design.md Decision 5).
+	 *                                        Default `[]`. Untrusted shape — see
+	 *                                        bundleDataRegisterSchemas().
+	 * @param array<int,mixed> $flows `Application.flows` bindings, passed straight to
+	 *                                {@see FlowAndAgentExportBundler::bundle()}. Default `[]`.
+	 * @param string $applicationSlug Slug of the application whose agents to collect.
+	 *                                Default `''`.
+	 *
+	 * @return string Absolute (local) path to the produced ZIP.
+	 *
+	 * @throws RuntimeException When packaging fails.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
+	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.2
+	 */
+	public function generateAppZip(
+		string $applicationUuid,
+		string $versionSlug,
+		array $context,
+		string $jobUuid,
+		array $dataRegisters = [],
+		array $flows = [],
+		string $applicationSlug = '',
+	): string {
+		$scratchDir = $this->prepareScratchDir(jobUuid: $jobUuid);
+		$this->copyTemplate(source: $this->templateRoot, dest: $scratchDir);
+		$this->resolvePlaceholders(rootDir: $scratchDir, context: $context);
+		$this->bundleDataRegisterSchemas(rootDir: $scratchDir, dataRegisters: $dataRegisters);
 
-    /**
-     * Package a directory tree into a deterministic ZIP archive.
-     *
-     * @param string $sourceDir Directory to package.
-     * @param string $jobUuid   ExportJob UUID — filename base.
-     *
-     * @return string Local path to the ZIP file.
-     *
-     * @throws RuntimeException When ZIP creation fails.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
-     */
-    public function packageZip(string $sourceDir, string $jobUuid): string
-    {
-        $exportRoot = $this->getOrCreateAppDataDir(name: 'exports');
-        $zipPath    = $exportRoot.'/'.$jobUuid.'.zip';
+		// The flows the app is composed of, and the agents that point at it.
+		// Skips are RETURNED so the job result can name them — an operator
+		// reads the finished job, not the log.
+		$this->lastSkipped = $this->flowAndAgentBundler->bundle(
+			rootDir: $scratchDir,
+			flows: $flows,
+			applicationSlug: $applicationSlug
+		);
 
-        if (is_dir(dirname($zipPath)) === false) {
-            mkdir(dirname($zipPath), 0o755, true);
-        }
+		// Audit-trail entry names only the source — never the PAT, never secret values.
+		$this->logger->info(
+			'OpenBuild export: built tree',
+			[
+				'applicationUuid' => $applicationUuid,
+				'applicationVersion' => $versionSlug,
+				'jobUuid' => $jobUuid,
+			]
+		);
 
-        if (file_exists($zipPath) === true) {
-            unlink($zipPath);
-        }
+		return $this->packageZip(sourceDir: $scratchDir, jobUuid: $jobUuid);
+	}//end generateAppZip()
 
-        $zip = new ZipArchive();
-        if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            throw new RuntimeException('Unable to open ZIP archive: '.$zipPath);
-        }
+	/**
+	 * What the last export could not resolve.
+	 *
+	 * @return array<int, array{kind: string, ref: string, reason: string}> Skips, empty when everything resolved.
+	 *
+	 * @spec openspec/changes/openbuild-exports-flows-and-agents/specs/app-export-completeness/spec.md#requirement-an-unresolvable-binding-must-be-reported-not-silently-dropped
+	 * @spec openspec/changes/openbuild-exports-flows-and-agents/specs/app-composition-bindings/spec.md#requirement-a-dangling-binding-must-reach-the-operator
+	 */
+	public function lastSkipped(): array {
+		return $this->lastSkipped;
+	}//end lastSkipped()
 
-        $entries = $this->listFilesSorted(baseDir: $sourceDir);
-        foreach ($entries as $relativePath) {
-            $absolute = $sourceDir.'/'.$relativePath;
-            $zip->addFile($absolute, $relativePath);
-            // Fixed timestamp for byte-determinism.
-            $zip->setExternalAttributesName($relativePath, ZipArchive::OPSYS_UNIX, (0o100644 << 16));
-        }
+	/**
+	 * Build the installable NC-app scaffold as an in-memory `path => contents` map.
+	 *
+	 * The same copy → resolve-placeholders pipeline `generateAppZip()` uses, but
+	 * returning the tree as a map instead of a ZIP, so a config-set repo publish
+	 * (GitHubAppSyncService) can fold the scaffold in and produce ONE repo that is
+	 * both the config-set store AND an app-store-installable, standalone
+	 * nc-vue app (info.xml + the manifest runtime + OpenRegister as its data layer).
+	 *
+	 * NOTE — no production caller on this remote yet. The call site
+	 * (`GitHubAppSyncService::scaffoldFor()`, folded into `push()`) exists only
+	 * on the Codeberg line and was NOT part of the rescue that brought this
+	 * method across; GitHub's `GitHubAppSyncService` has diverged since (it
+	 * gained `AppChannelApplier`, `OUTCOME_FORBIDDEN` and richer broker
+	 * logging), so porting it is its own change, not a file-copy. This method
+	 * is therefore public as a designed entry point that is currently unwired,
+	 * NOT because a test needs to reach it. See the follow-up issue.
+	 *
+	 * @param array<string,mixed> $context Placeholder context: appId, appNamespace, appName, appVersion, authorName, authorEmail, license.
+	 * @param array<int,mixed> $dataRegisters Optional bound data-register schemas to bundle.
+	 * @param array<int,mixed> $flows `Application.flows` bindings, bundled only when non-empty.
+	 *                                Default `[]`.
+	 * @param string $applicationSlug Slug of the application whose agents to collect. Default `''`.
+	 *
+	 * @return array<string,string> Ordered `path => contents` map of the resolved scaffold.
+	 *
+	 * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
+	 */
+	public function buildScaffoldMap(array $context, array $dataRegisters = [], array $flows = [], string $applicationSlug = ''): array {
+		$jobUuid = 'scaffold-' . ((string)($context['appId'] ?? 'app')) . '-' . uniqid();
+		$scratch = $this->prepareScratchDir(jobUuid: $jobUuid);
 
-        if ($zip->close() === false) {
-            throw new RuntimeException('Failed to finalise ZIP archive: '.$zipPath);
-        }
+		try {
+			$this->copyTemplate(source: $this->templateRoot, dest: $scratch);
+			$this->resolvePlaceholders(rootDir: $scratch, context: $context);
+			if ($dataRegisters !== []) {
+				$this->bundleDataRegisterSchemas(rootDir: $scratch, dataRegisters: $dataRegisters);
+			}
 
-        // Pin mtime on the file itself for reproducibility.
-        touch($zipPath, $this->zipTimestamp);
+			if ($flows !== [] || $applicationSlug !== '') {
+				$this->lastSkipped = $this->flowAndAgentBundler->bundle(
+					rootDir: $scratch,
+					flows: $flows,
+					applicationSlug: $applicationSlug
+				);
+			}
 
-        return $zipPath;
-    }//end packageZip()
+			$map = [];
+			foreach ($this->treeFiles->listFilesSorted(baseDir: $scratch) as $relative) {
+				$contents = file_get_contents($scratch . '/' . $relative);
+				if ($contents !== false) {
+					$map[$relative] = $contents;
+				}
+			}
 
-    /**
-     * Returns a recursive sorted list of file paths relative to $baseDir.
-     *
-     * Case-sensitive ASCII sort guarantees stable archive ordering.
-     *
-     * @param string $baseDir Directory to walk.
-     *
-     * @return array<int,string> Sorted relative file paths.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-41
-     */
-    public function listFilesSorted(string $baseDir): array
-    {
-        $files = [];
-        if (is_dir($baseDir) === false) {
-            return $files;
-        }
+			return $map;
+		} finally {
+			$this->treeFiles->removeTree(dir: $scratch);
+		}//end try
 
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($baseDir, FilesystemIterator::SKIP_DOTS)
-        );
-        foreach ($iterator as $file) {
-            if ($file->isFile() === true) {
-                $relative = ltrim(str_replace($baseDir, '', (string) $file->getPathname()), '/');
-                $files[]  = $relative;
-            }
-        }
+	}//end buildScaffoldMap()
 
-        sort($files, SORT_STRING);
-        return $files;
-    }//end listFilesSorted()
+	/**
+	 * Bundle every `dataRegisters` binding's schema definitions (always) and
+	 * row data (only when that binding's `includeData` is true) into the
+	 * exported tree (spec openbuild-exporter, ADDED Requirements "Bound
+	 * data registers' schema definitions are bundled into every export" +
+	 * "Per-binding includeData toggle controls data-register row-data
+	 * inclusion"). Delegates to {@see DataRegisterExportBundler} (a
+	 * dedicated collaborator — see design.md Decision 5 and this class's
+	 * own constructor docblock for why), then pins every written file's
+	 * mtime to the same deterministic `$zipTimestamp` every other file in
+	 * the exported tree uses, preserving REQ-OBEX-008 byte-equivalence
+	 * across re-exports.
+	 *
+	 * @param string $rootDir Scratch directory (exported tree root).
+	 * @param array<int,mixed> $dataRegisters Bindings + per-export includeData choice — see
+	 *                                        DataRegisterExportBundler::bundle() for the shape note.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.2
+	 */
+	private function bundleDataRegisterSchemas(string $rootDir, array $dataRegisters): void {
+		$this->dataRegisterBundler->bundle(rootDir: $rootDir, dataRegisters: $dataRegisters);
+		$this->pinDataRegisterFileTimestamps(rootDir: $rootDir);
+	}//end bundleDataRegisterSchemas()
 
-    /**
-     * Resolve placeholders across the scratch tree, in-place.
-     *
-     * Text files only — binary files (img/*) are copied untouched.
-     *
-     * @param string              $rootDir Scratch directory.
-     * @param array<string,mixed> $context Placeholder context.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
-     */
-    public function resolvePlaceholders(string $rootDir, array $context): void
-    {
-        $stringContext = [];
-        foreach ($context as $key => $value) {
-            $stringContext[$key] = (string) $value;
-        }
+	/**
+	 * Pin every file `bundleDataRegisterSchemas()` just wrote to the
+	 * deterministic `$zipTimestamp` (REQ-OBEX-008) — mirrors how every
+	 * other write in this class (`copyTemplate()`, `resolvePlaceholders()`)
+	 * touches its own output. Kept here (not in the bundler) because the
+	 * ZIP-determinism contract is this class's concern, not the bundler's.
+	 *
+	 * @param string $rootDir Scratch directory (exported tree root).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.2
+	 */
+	private function pinDataRegisterFileTimestamps(string $rootDir): void {
+		$targetDir = $rootDir . '/lib/Settings/data-registers';
+		if (is_dir($targetDir) === false) {
+			return;
+		}
 
-        $map = $this->placeholderResolver->buildMap(context: $stringContext);
+		$entries = scandir($targetDir);
+		if ($entries === false) {
+			return;
+		}
 
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($rootDir, FilesystemIterator::SKIP_DOTS)
-        );
-        foreach ($iterator as $file) {
-            if ($file->isFile() === false) {
-                continue;
-            }
+		foreach ($entries as $entry) {
+			if ($entry === '.' || $entry === '..') {
+				continue;
+			}
 
-            $path = (string) $file->getPathname();
-            if ($this->isBinary(path: $path) === true) {
-                continue;
-            }
+			touch($targetDir . '/' . $entry, $this->zipTimestamp);
+		}
+	}//end pinDataRegisterFileTimestamps()
 
-            $original = file_get_contents($path);
-            if ($original === false) {
-                continue;
-            }
+	/**
+	 * Package a directory tree into a deterministic ZIP archive.
+	 *
+	 * @param string $sourceDir Directory to package.
+	 * @param string $jobUuid ExportJob UUID — filename base.
+	 *
+	 * @return string Local path to the ZIP file.
+	 *
+	 * @throws RuntimeException When ZIP creation fails.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
+	 */
+	private function packageZip(string $sourceDir, string $jobUuid): string {
+		$exportRoot = $this->getOrCreateAppDataDir(name: 'exports');
+		$zipPath = $exportRoot . '/' . $jobUuid . '.zip';
 
-            $resolved = $this->placeholderResolver->resolve(content: $original, map: $map);
-            if ($resolved !== $original) {
-                file_put_contents($path, $resolved);
-                touch($path, $this->zipTimestamp);
-            }
-        }//end foreach
-    }//end resolvePlaceholders()
+		if (is_dir(dirname($zipPath)) === false) {
+			mkdir(dirname($zipPath), 0o755, true);
+		}
 
-    /**
-     * Conservative binary-file check by extension.
-     *
-     * @param string $path File path.
-     *
-     * @return bool True when the file should be copied as-is.
-     *
-     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
-     */
-    public function isBinary(string $path): bool
-    {
-        $binaryExtensions = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'ico', 'webp', 'zip', 'gz', 'tar', 'phar'];
-        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-        return in_array($ext, $binaryExtensions, true);
-    }//end isBinary()
+		if (file_exists($zipPath) === true) {
+			unlink($zipPath);
+		}
 
-    /**
-     * Copy the embedded template snapshot into the scratch directory.
-     *
-     * Skips the snapshot-meta + path-manifest helper files; they are
-     * artefacts of OpenBuild, not of the produced app.
-     *
-     * @param string $source Snapshot dir.
-     * @param string $dest   Scratch dir.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
-     */
-    public function copyTemplate(string $source, string $dest): void
-    {
-        if (is_dir($source) === false) {
-            throw new RuntimeException('Template snapshot is missing: '.$source);
-        }
+		$zip = new ZipArchive();
+		if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+			throw new RuntimeException('Unable to open ZIP archive: ' . $zipPath);
+		}
 
-        if (is_dir($dest) === false) {
-            mkdir($dest, 0o755, true);
-        }
+		$entries = $this->treeFiles->listFilesSorted(baseDir: $sourceDir);
+		foreach ($entries as $relativePath) {
+			$absolute = $sourceDir . '/' . $relativePath;
+			$zip->addFile($absolute, $relativePath);
+			// Fixed timestamp for byte-determinism.
+			$zip->setExternalAttributesName($relativePath, ZipArchive::OPSYS_UNIX, (0o100644 << 16));
+		}
 
-        $skip = ['.snapshot-meta.json', '.path-manifest.txt'];
+		if ($zip->close() === false) {
+			throw new RuntimeException('Failed to finalise ZIP archive: ' . $zipPath);
+		}
 
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($source, FilesystemIterator::SKIP_DOTS),
-            RecursiveIteratorIterator::SELF_FIRST
-        );
-        foreach ($iterator as $entry) {
-            $relative = ltrim(str_replace($source, '', (string) $entry->getPathname()), '/');
-            if (in_array($relative, $skip, true) === true) {
-                continue;
-            }
+		// Pin mtime on the file itself for reproducibility.
+		touch($zipPath, $this->zipTimestamp);
 
-            $target = $dest.'/'.$relative;
-            if ($entry->isDir() === true) {
-                if (is_dir($target) === false) {
-                    mkdir($target, 0o755, true);
-                }
+		return $zipPath;
+	}//end packageZip()
 
-                continue;
-            }
 
-            copy((string) $entry->getPathname(), $target);
-            touch($target, $this->zipTimestamp);
-        }
-    }//end copyTemplate()
+	/**
+	 * Resolve placeholders across the scratch tree, in-place.
+	 *
+	 * Text files only — binary files (img/*) are copied untouched.
+	 *
+	 * @param string $rootDir Scratch directory.
+	 * @param array<string,mixed> $context Placeholder context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
+	 */
+	private function resolvePlaceholders(string $rootDir, array $context): void {
+		$stringContext = [];
+		foreach ($context as $key => $value) {
+			$stringContext[$key] = (string)$value;
+		}
 
-    /**
-     * Create + clean a per-job scratch directory under app-data.
-     *
-     * @param string $jobUuid ExportJob UUID.
-     *
-     * @return string Local path to the scratch dir.
-     *
-     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
-     */
-    public function prepareScratchDir(string $jobUuid): string
-    {
-        $scratch = $this->scratchTreeDir(jobUuid: $jobUuid);
+		$map = $this->placeholderResolver->buildMap(context: $stringContext);
 
-        if (is_dir($scratch) === true) {
-            $this->rrmdir(dir: $scratch);
-        }
+		foreach ($this->treeFiles->filePaths(dir: $rootDir) as $path) {
+			if ($this->isBinary(path: $path) === true) {
+				continue;
+			}
 
-        mkdir($scratch, 0o755, true);
-        return $scratch;
-    }//end prepareScratchDir()
+			$original = file_get_contents($path);
+			if ($original === false) {
+				continue;
+			}
 
-    /**
-     * Resolve the work scratch directory path that holds the generated tree
-     * for a job. The GitHub push target reads the tree from here after
-     * generateAppZip() has populated it. This is a pure path resolver — it
-     * does NOT create or wipe the directory (see prepareScratchDir for that).
-     *
-     * @param string $jobUuid ExportJob UUID.
-     *
-     * @return string Absolute path to the scratch tree directory.
-     *
-     * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
-     */
-    public function scratchTreeDir(string $jobUuid): string
-    {
-        return $this->getOrCreateAppDataDir(name: 'work').'/'.$jobUuid;
-    }//end scratchTreeDir()
+			$resolved = $this->placeholderResolver->resolve(content: $original, map: $map);
+			if ($resolved !== $original) {
+				file_put_contents($path, $resolved);
+				touch($path, $this->zipTimestamp);
+			}
+		}//end foreach
+	}//end resolvePlaceholders()
 
-    /**
-     * Ensure an export-staging subdirectory exists and return its local path.
-     *
-     * The exporter does heavy filesystem-level work (recursive copies,
-     * deterministic ZIP packaging, mtime pinning) that ISimpleFolder /
-     * IAppData cannot satisfy without local-path access. ISimpleFolder is a
-     * deliberately storage-opaque abstraction — calling getStorage() /
-     * getInternalPath() on it (as the WIP code did) is invalid and was
-     * flagged by PHPStan.
-     *
-     * We therefore stage on a deterministic local path under
-     * sys_get_temp_dir()/openbuild-{name}, and additionally pin the IAppData
-     * folder existence so the surrounding Nextcloud bookkeeping (quotas,
-     * audit, cleanup) is informed of our use. This satisfies the
-     * security/cleanup contract (CleanupExpiredExports purges by job UUID)
-     * while remaining ISimpleFolder-safe.
-     *
-     * @param string $name Subdir name under appdata's openbuild area.
-     *
-     * @return string Absolute local path.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
-     */
-    public function getOrCreateAppDataDir(string $name): string
-    {
-        // Best-effort: make sure the IAppData folder exists so any
-        // surrounding bookkeeping (quota, cleanup, audit) is aware of the
-        // openbuild namespace. We do NOT rely on it for local-path access —
-        // ISimpleFolder is storage-opaque by design.
-        try {
-            try {
-                $this->appData->getFolder($name);
-            } catch (NotFoundException $e) {
-                $this->appData->newFolder($name);
-            }
-        } catch (\Throwable $e) {
-            $this->logger->debug(
-                'OpenBuild export: IAppData folder hint failed (continuing on local temp)',
-                ['name' => $name, 'reason' => $e->getMessage()]
-            );
-        }//end try
+	/**
+	 * Conservative binary-file check by extension.
+	 *
+	 * @param string $path File path.
+	 *
+	 * @return bool True when the file should be copied as-is.
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
+	 */
+	private function isBinary(string $path): bool {
+		$binaryExtensions = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'ico', 'webp', 'zip', 'gz', 'tar', 'phar'];
+		$ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+		return in_array($ext, $binaryExtensions, true);
+	}//end isBinary()
 
-        $local = sys_get_temp_dir().'/openbuild-'.$name;
-        if (is_dir($local) === false) {
-            mkdir($local, 0o755, true);
-        }
+	/**
+	 * Copy the embedded template snapshot into the scratch directory.
+	 *
+	 * Skips the snapshot-meta + path-manifest helper files; they are
+	 * artefacts of OpenBuild, not of the produced app.
+	 *
+	 * @param string $source Snapshot dir.
+	 * @param string $dest Scratch dir.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
+	 */
+	private function copyTemplate(string $source, string $dest): void {
+		if (is_dir($source) === false) {
+			throw new RuntimeException('Template snapshot is missing: ' . $source);
+		}
 
-        return $local;
-    }//end getOrCreateAppDataDir()
+		if (is_dir($dest) === false) {
+			mkdir($dest, 0o755, true);
+		}
 
-    /**
-     * Recursive directory removal.
-     *
-     * @param string $dir Directory to remove.
-     *
-     * @return void
-     *
-     * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
-     */
-    public function rrmdir(string $dir): void
-    {
-        if (is_dir($dir) === false) {
-            return;
-        }
+		$skip = ['.snapshot-meta.json', '.path-manifest.txt'];
 
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS),
-            RecursiveIteratorIterator::CHILD_FIRST
-        );
-        foreach ($iterator as $entry) {
-            $path = (string) $entry->getPathname();
-            if ($entry->isDir() === true) {
-                rmdir($path);
-                continue;
-            }
+		$this->treeFiles->copyTree(
+			source: $source,
+			dest: $dest,
+			skip: $skip,
+			timestamp: $this->zipTimestamp
+		);
+	}//end copyTemplate()
 
-            unlink($path);
-        }
+	/**
+	 * Create + clean a per-job scratch directory under app-data.
+	 *
+	 * @param string $jobUuid ExportJob UUID.
+	 *
+	 * @return string Local path to the scratch dir.
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
+	 */
+	private function prepareScratchDir(string $jobUuid): string {
+		$scratch = $this->scratchTreeDir(jobUuid: $jobUuid);
 
-        rmdir($dir);
-    }//end rrmdir()
+		if (is_dir($scratch) === true) {
+			$this->treeFiles->removeTree(dir: $scratch);
+		}
+
+		mkdir($scratch, 0o755, true);
+		return $scratch;
+	}//end prepareScratchDir()
+
+	/**
+	 * Resolve the work scratch directory path that holds the generated tree
+	 * for a job. The GitHub push target reads the tree from here after
+	 * generateAppZip() has populated it. This is a pure path resolver — it
+	 * does NOT create or wipe the directory (see prepareScratchDir for that).
+	 *
+	 * @param string $jobUuid ExportJob UUID.
+	 *
+	 * @return string Absolute path to the scratch tree directory.
+	 *
+	 * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
+	 */
+	public function scratchTreeDir(string $jobUuid): string {
+		return $this->getOrCreateAppDataDir(name: 'work') . '/' . $jobUuid;
+	}//end scratchTreeDir()
+
+	/**
+	 * Ensure an export-staging subdirectory exists and return its local path.
+	 *
+	 * The exporter does heavy filesystem-level work (recursive copies,
+	 * deterministic ZIP packaging, mtime pinning) that ISimpleFolder /
+	 * IAppData cannot satisfy without local-path access. ISimpleFolder is a
+	 * deliberately storage-opaque abstraction — calling getStorage() /
+	 * getInternalPath() on it (as the WIP code did) is invalid and was
+	 * flagged by PHPStan.
+	 *
+	 * We therefore stage on a deterministic local path under
+	 * sys_get_temp_dir()/openbuild-{name}, and additionally pin the IAppData
+	 * folder existence so the surrounding Nextcloud bookkeeping (quotas,
+	 * audit, cleanup) is informed of our use. This satisfies the
+	 * security/cleanup contract (CleanupExpiredExports purges by job UUID)
+	 * while remaining ISimpleFolder-safe.
+	 *
+	 * @param string $name Subdir name under appdata's openbuild area.
+	 *
+	 * @return string Absolute local path.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
+	 */
+	private function getOrCreateAppDataDir(string $name): string {
+		// Best-effort: make sure the IAppData folder exists so any
+		// surrounding bookkeeping (quota, cleanup, audit) is aware of the
+		// openbuild namespace. We do NOT rely on it for local-path access —
+		// ISimpleFolder is storage-opaque by design.
+		try {
+			try {
+				$this->appData->getFolder($name);
+			} catch (NotFoundException $e) {
+				$this->appData->newFolder($name);
+			}
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				'OpenBuild export: IAppData folder hint failed (continuing on local temp)',
+				['name' => $name, 'reason' => $e->getMessage()]
+			);
+		}//end try
+
+		$local = sys_get_temp_dir() . '/openbuild-' . $name;
+		if (is_dir($local) === false) {
+			mkdir($local, 0o755, true);
+		}
+
+		return $local;
+	}//end getOrCreateAppDataDir()
+
 }//end class

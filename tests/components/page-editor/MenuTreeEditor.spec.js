@@ -19,12 +19,10 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import MenuTreeEditor from '../../../src/components/page-editor/MenuTreeEditor.vue'
-
-const stubDraggable = {
-	name: 'Draggable',
-	props: ['value', 'options'],
-	render(h) { return h('div', { staticClass: 'vuedraggable-stub' }, this.$slots.default) },
-}
+// The shared stub mirrors vuedraggable v4 (`modelValue` + `#item` scoped
+// slot), which is what MenuTreeEditor is written against. The v2-shaped local
+// stub this replaced never invoked `#item`, so every row vanished.
+import stubDraggable from '../../vitest/stubs/vuedraggable.js'
 
 function mountEditor(menu = []) {
 	return mount(MenuTreeEditor, {
@@ -60,17 +58,9 @@ describe('MenuTreeEditor', () => {
 	})
 
 	it('assigns monotonic `order` integers on every emit', async () => {
-		const wrapper = mountEditor([
-			{ id: 'a' },
-			{ id: 'b' },
-			{ id: 'c' },
-		])
+		const wrapper = mountEditor([{ id: 'a' }, { id: 'b' }, { id: 'c' }])
 		// Re-order via the draggable stub's @input event.
-		wrapper.vm.onTopLevelReorder([
-			{ id: 'c' },
-			{ id: 'a' },
-			{ id: 'b' },
-		])
+		wrapper.vm.onTopLevelReorder([{ id: 'c' }, { id: 'a' }, { id: 'b' }])
 		await wrapper.vm.$nextTick()
 		const next = wrapper.emitted('update:menu')[0][0]
 		expect(next.map((e) => e.id)).toEqual(['c', 'a', 'b'])
@@ -87,9 +77,7 @@ describe('MenuTreeEditor', () => {
 	})
 
 	it('enforces the 2-level depth cap when attempting to add children-of-a-child', async () => {
-		const wrapper = mountEditor([
-			{ id: 'parent', children: [{ id: 'child' }] },
-		])
+		const wrapper = mountEditor([{ id: 'parent', children: [{ id: 'child' }] }])
 		// Try to set `children` on the child — must trigger depth-violation
 		// and the visible error paragraph; must NOT emit update:menu.
 		wrapper.vm.updateChildField(0, 0, 'children', [{ id: 'grandchild' }])
@@ -97,7 +85,9 @@ describe('MenuTreeEditor', () => {
 		expect(wrapper.emitted('depth-violation')).toBeTruthy()
 		expect(wrapper.emitted('update:menu')).toBeUndefined()
 		expect(wrapper.find('.menu-tree-editor__error').exists()).toBe(true)
-		expect(wrapper.find('.menu-tree-editor__error').text()).toContain('Maximum nesting depth is two levels')
+		expect(wrapper.find('.menu-tree-editor__error').text()).toContain(
+			'Maximum nesting depth is two levels',
+		)
 	})
 
 	it('updateField clears the key when value is empty string', async () => {
@@ -109,9 +99,7 @@ describe('MenuTreeEditor', () => {
 	})
 
 	it('setting action clears route + href (mutex rule)', async () => {
-		const wrapper = mountEditor([
-			{ id: 'inbox', route: 'foo', href: '/bar' },
-		])
+		const wrapper = mountEditor([{ id: 'inbox', route: 'foo', href: '/bar' }])
 		wrapper.vm.updateActionField(0, 'user-settings')
 		await wrapper.vm.$nextTick()
 		const next = wrapper.emitted('update:menu')[0][0]
@@ -121,9 +109,7 @@ describe('MenuTreeEditor', () => {
 	})
 
 	it('clearing action restores the ability to set route/href', async () => {
-		const wrapper = mountEditor([
-			{ id: 'inbox', action: 'user-settings' },
-		])
+		const wrapper = mountEditor([{ id: 'inbox', action: 'user-settings' }])
 		wrapper.vm.updateActionField(0, '')
 		await wrapper.vm.$nextTick()
 		const next = wrapper.emitted('update:menu')[0][0]
@@ -131,9 +117,7 @@ describe('MenuTreeEditor', () => {
 	})
 
 	it('removeChild deletes the children array when it becomes empty', async () => {
-		const wrapper = mountEditor([
-			{ id: 'parent', children: [{ id: 'only' }] },
-		])
+		const wrapper = mountEditor([{ id: 'parent', children: [{ id: 'only' }] }])
 		wrapper.vm.removeChild(0, 0)
 		await wrapper.vm.$nextTick()
 		const next = wrapper.emitted('update:menu')[0][0]

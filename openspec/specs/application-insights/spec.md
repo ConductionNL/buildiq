@@ -1,8 +1,10 @@
 ---
-status: done
+status: in-progress
 ---
 
 # application-insights Specification
+
+**OpenSpec changes**: [harden-rules-authz-and-audit-parity](../../changes/harden-rules-authz-and-audit-parity/)
 
 ## Purpose
 

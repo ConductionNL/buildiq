@@ -14,17 +14,21 @@
 		<SchemaHeaderForm
 			ref="form"
 			:value="local"
-			:slug-error="slugError"
+			:slugError="slugError"
 			@input="onInput" />
 		<template #actions>
 			<NcButton @click="onCancel">
 				{{ t('openbuild', 'Cancel') }}
 			</NcButton>
 			<NcButton
-				type="primary"
+				variant="primary"
 				:disabled="!isValid || submitting"
 				@click="onConfirm">
-				{{ submitting ? t('openbuild', 'Saving…') : t('openbuild', 'Add schema') }}
+				{{
+					submitting
+						? t('openbuild', 'Saving…')
+						: t('openbuild', 'Add schema')
+				}}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -45,6 +49,7 @@ export default {
 		submitting: { type: Boolean, default: false },
 		slugError: { type: String, default: '' },
 	},
+
 	emits: ['confirm', 'cancel', 'update:open'],
 	data() {
 		return {
@@ -56,6 +61,7 @@ export default {
 			},
 		}
 	},
+
 	computed: {
 		/**
 		 * Validate the new-schema slug, title, and semver version.
@@ -64,11 +70,14 @@ export default {
 		 * @return {boolean} True when the form is valid.
 		 */
 		isValid() {
-			return SLUG_PATTERN.test(this.local.slug)
+			return (
+				SLUG_PATTERN.test(this.local.slug)
 				&& this.local.title.trim().length > 0
 				&& SEMVER_PATTERN.test(this.local.version)
+			)
 		},
 	},
+
 	watch: {
 		/**
 		 * Reset the local form when the dialog opens.
@@ -79,10 +88,16 @@ export default {
 		 */
 		open(value) {
 			if (value) {
-				this.local = { slug: '', title: '', description: '', version: '0.1.0' }
+				this.local = {
+					slug: '',
+					title: '',
+					description: '',
+					version: '0.1.0',
+				}
 			}
 		},
 	},
+
 	methods: {
 		/**
 		 * Merge partial form input into the local draft.
@@ -94,6 +109,7 @@ export default {
 		onInput(value) {
 			this.local = { ...this.local, ...value }
 		},
+
 		/**
 		 * Confirm only when valid, emitting the new schema payload.
 		 *
@@ -106,6 +122,7 @@ export default {
 			}
 			this.$emit('confirm', { ...this.local })
 		},
+
 		/**
 		 * Emit a cancel event.
 		 *
@@ -115,6 +132,7 @@ export default {
 		onCancel() {
 			this.$emit('cancel')
 		},
+
 		/**
 		 * Sync the modal open state and emit cancel when closed.
 		 *

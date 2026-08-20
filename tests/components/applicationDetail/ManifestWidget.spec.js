@@ -37,12 +37,28 @@ vi.mock('@nextcloud/router', () => ({
 import ManifestWidget from '../../../src/components/applicationDetail/widgets/ManifestWidget.vue'
 
 const stubs = {
-	NcButton: { template: '<button class="ncbtn" @click="$emit(\'click\')"><slot /></button>' },
+	NcButton: {
+		template:
+			'<button class="ncbtn" @click="$emit(\'click\')"><slot /></button>',
+	},
 	NcLoadingIcon: { template: '<span class="ncloading" />' },
 }
 
+/*
+ * Drain the pending async work AND the render that follows it.
+ *
+ * Vue 2 flushed its watcher queue from the same microtask that `nextTick()`
+ * resolved on, so `await Promise.resolve(); await $nextTick()` was enough to
+ * see the DOM produced by a fetch that settled during `mounted()`. Vue 3's
+ * scheduler chains an extra promise hop (`currentFlushPromise = p.then(flushJobs)`),
+ * so the component state was already updated while the DOM still showed the
+ * loading branch — the assertions read a one-frame-stale render.
+ *
+ * A macrotask boundary drains the whole microtask queue regardless of how
+ * many hops the scheduler takes, so this is stable rather than tick-counted.
+ */
 const flush = async (wrapper) => {
-	await Promise.resolve()
+	await new Promise((resolve) => setTimeout(resolve, 0))
 	await wrapper.vm.$nextTick()
 }
 
@@ -51,12 +67,18 @@ describe('ManifestWidget', () => {
 		axiosGetMock.mockReset()
 		axiosPutMock.mockReset()
 		axiosDeleteMock.mockReset()
-		axiosGetMock.mockResolvedValue({ data: { allowed: false, exists: false, versionUuid: null } })
+		axiosGetMock.mockResolvedValue({
+			data: { allowed: false, exists: false, versionUuid: null },
+		})
 	})
 
 	it('renders the three customization layers', async () => {
 		const wrapper = shallowMount(ManifestWidget, {
-			propsData: { appSlug: 'opencatalogi', isHybrid: true, allowUserOverrides: false },
+			propsData: {
+				appSlug: 'opencatalogi',
+				isHybrid: true,
+				allowUserOverrides: false,
+			},
 			stubs,
 		})
 		await flush(wrapper)
@@ -67,9 +89,15 @@ describe('ManifestWidget', () => {
 	})
 
 	it('shows "Create override" only when allowed and no user delta exists', async () => {
-		axiosGetMock.mockResolvedValue({ data: { allowed: true, exists: false, versionUuid: null } })
+		axiosGetMock.mockResolvedValue({
+			data: { allowed: true, exists: false, versionUuid: null },
+		})
 		const wrapper = shallowMount(ManifestWidget, {
-			propsData: { appSlug: 'opencatalogi', isHybrid: true, allowUserOverrides: true },
+			propsData: {
+				appSlug: 'opencatalogi',
+				isHybrid: true,
+				allowUserOverrides: true,
+			},
 			stubs,
 		})
 		await flush(wrapper)
@@ -78,9 +106,15 @@ describe('ManifestWidget', () => {
 	})
 
 	it('shows Edit + Reset once a user delta exists', async () => {
-		axiosGetMock.mockResolvedValue({ data: { allowed: true, exists: true, versionUuid: 'u1' } })
+		axiosGetMock.mockResolvedValue({
+			data: { allowed: true, exists: true, versionUuid: 'u1' },
+		})
 		const wrapper = shallowMount(ManifestWidget, {
-			propsData: { appSlug: 'opencatalogi', isHybrid: true, allowUserOverrides: true },
+			propsData: {
+				appSlug: 'opencatalogi',
+				isHybrid: true,
+				allowUserOverrides: true,
+			},
 			stubs,
 		})
 		await flush(wrapper)
@@ -91,7 +125,11 @@ describe('ManifestWidget', () => {
 
 	it('shows a Disabled badge when the app does not allow user overrides', async () => {
 		const wrapper = shallowMount(ManifestWidget, {
-			propsData: { appSlug: 'intake-tracker', isHybrid: false, allowUserOverrides: false },
+			propsData: {
+				appSlug: 'intake-tracker',
+				isHybrid: false,
+				allowUserOverrides: false,
+			},
 			stubs,
 		})
 		await flush(wrapper)
@@ -101,7 +139,11 @@ describe('ManifestWidget', () => {
 
 	it('emits open-detail when "View versions" is clicked', async () => {
 		const wrapper = shallowMount(ManifestWidget, {
-			propsData: { appSlug: 'opencatalogi', isHybrid: true, allowUserOverrides: false },
+			propsData: {
+				appSlug: 'opencatalogi',
+				isHybrid: true,
+				allowUserOverrides: false,
+			},
 			stubs,
 		})
 		await flush(wrapper)
@@ -110,15 +152,24 @@ describe('ManifestWidget', () => {
 	})
 
 	it('PUTs an empty delta and refetches on "Create override"', async () => {
-		axiosGetMock.mockResolvedValue({ data: { allowed: true, exists: false, versionUuid: null } })
+		axiosGetMock.mockResolvedValue({
+			data: { allowed: true, exists: false, versionUuid: null },
+		})
 		axiosPutMock.mockResolvedValue({ data: { versionUuid: 'new' } })
 		const wrapper = shallowMount(ManifestWidget, {
-			propsData: { appSlug: 'opencatalogi', isHybrid: true, allowUserOverrides: true },
+			propsData: {
+				appSlug: 'opencatalogi',
+				isHybrid: true,
+				allowUserOverrides: true,
+			},
 			stubs,
 		})
 		await flush(wrapper)
 		await wrapper.vm.createOverride()
-		expect(axiosPutMock).toHaveBeenCalledWith('/apps/openbuild/api/app-overrides/opencatalogi/user', {})
+		expect(axiosPutMock).toHaveBeenCalledWith(
+			'/apps/openbuild/api/app-overrides/opencatalogi/user',
+			{},
+		)
 		expect(wrapper.emitted('changed')).toBeTruthy()
 	})
 })

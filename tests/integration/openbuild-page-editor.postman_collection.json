@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "openbuild-page-editor-collection",
 		"name": "OpenBuild Page Editor Integration",
-		"description": "Newman/Postman coverage for openspec change `openbuild-page-editor` (task 7 — integration). Drives the OR REST Application endpoint plus the openbuild manifest endpoint to verify the editor's save flow round-trips correctly, the manifest endpoint reflects mutations, and invalid manifests are rejected with a 4xx. Designed to be idempotent: the final teardown step restores the hello-world manifest captured in the first request.",
+		"description": "Newman/Postman coverage for openspec change `openbuild-page-editor` (task 7 — integration). Reads, mutates and restores the hello-world manifest through openbuild's own manifest endpoint, verifying that a saved page is reflected on the next read and that a manifest the runtime cannot render is refused.\n\n⚠️ THIS COLLECTION USED TO WRITE THE MANIFEST ONTO THE OR `Application` OBJECT, AND THAT IS WHY IT WAS RED.\n\nUnder the pre-ADR-002 model the manifest lived on the Application. It does not any more — lib/Settings/openbuild_register.json declares the `Application` schema with slug/name/description/appType/status/baseRef/productionVersion/icon/iconDark/allowUserOverrides/permissions/githubRepo/githubDefaultBranch and NO `manifest` property; the manifest is a property of `ApplicationVersion`. ApplicationsController:221-236 says so in as many words and reads through ManifestResolverService.\n\nSo `PUT /apps/openregister/api/objects/openbuild/application/{uuid}` with a `manifest` key wrote a property the schema does not carry. OR accepted it (200, and it even echoed the value back, which is why request 2's own assertion passed), but `GET /api/applications/hello-world/manifest` reads the production ApplicationVersion and never saw it. The same absence is why an invalid manifest came back 200: there was no `manifest` property for OR to validate, so there was nothing to reject.\n\nBoth requests now go to `PUT /index.php/apps/openbuild/api/applications/{slug}/manifest` (appinfo/routes.php, applications#saveManifest), which writes onto the production ApplicationVersion — the same record the GET reads. Note the asymmetry the route intends: GET returns the manifest bare, PUT expects it wrapped in `{ manifest }`.\n\nIdempotent: request 5 restores the manifest captured in request 1.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"auth": {
@@ -15,11 +15,16 @@
 	"variable": [
 		{ "key": "base_url", "value": "http://localhost:8080", "type": "string" },
 		{ "key": "admin_user", "value": "admin", "type": "string" },
-		{ "key": "admin_password", "value": "admin", "type": "string" }
+		{ "key": "admin_password", "value": "admin", "type": "string" },
+		{ "key": "test_slug", "value": "hello-world", "type": "string" },
+		{ "key": "original_manifest", "value": "", "type": "string" },
+		{ "key": "mutated_body", "value": "", "type": "string" },
+		{ "key": "invalid_body", "value": "", "type": "string" },
+		{ "key": "restore_body", "value": "", "type": "string" }
 	],
 	"item": [
 		{
-			"name": "1. GET hello-world Application via OR REST",
+			"name": "1. GET the hello-world manifest — capture it for the mutation and the restore",
 			"request": {
 				"method": "GET",
 				"header": [
@@ -27,15 +32,11 @@
 					{ "key": "Accept", "value": "application/json" }
 				],
 				"url": {
-					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application?_filter[slug]=hello-world&_limit=1",
+					"raw": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/manifest",
 					"host": ["{{base_url}}"],
-					"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application"],
-					"query": [
-						{ "key": "_filter[slug]", "value": "hello-world" },
-						{ "key": "_limit", "value": "1" }
-					]
+					"path": ["index.php", "apps", "openbuild", "api", "applications", "{{test_slug}}", "manifest"]
 				},
-				"description": "Locate the seeded hello-world Application object and stash its UUID + original manifest for the mutating steps that follow."
+				"description": "The read side of the pair under test. GET returns the manifest BARE (not wrapped), resolved from the production ApplicationVersion by ManifestResolverService."
 			},
 			"event": [
 				{
@@ -44,45 +45,39 @@
 						"type": "text/javascript",
 						"exec": [
 							"pm.test('200 OK', function () { pm.response.to.have.status(200); });",
-							"const body = pm.response.json();",
-							"const results = body.results || body.data || body;",
-							"pm.test('hello-world Application is present', function () {",
-							"    pm.expect(Array.isArray(results) ? results.length : 1).to.be.greaterThan(0);",
+							"const manifest = pm.response.json();",
+							"pm.test('the seeded manifest is a renderable shape — version + pages', function () {",
+							"    pm.expect(manifest, 'manifest body').to.be.an('object');",
+							"    pm.expect(manifest.version, 'manifest.version').to.be.a('string');",
+							"    pm.expect(manifest.pages, 'manifest.pages').to.be.an('array');",
 							"});",
-							"const app = Array.isArray(results) ? results[0] : results;",
-							"pm.expect(app, 'application object').to.be.an('object');",
-							"// OR REST exposes the canonical id at @self.id; fall back to legacy fields",
-							"// so the collection works against older / non-OR-wrapped responses too.",
-							"const appSelf = app['@self'] || {};",
-							"const appUuid = appSelf.id || appSelf.uuid || app.uuid || app.id;",
-							"pm.expect(appUuid, 'no uuid in application response').to.be.a('string');",
-							"pm.collectionVariables.set('app_uuid', appUuid);",
-							"pm.collectionVariables.set('original_manifest', JSON.stringify(app.manifest));",
-							"pm.collectionVariables.set('original_application', JSON.stringify(app));"
+							"pm.collectionVariables.set('original_manifest', JSON.stringify(manifest));",
+							"pm.collectionVariables.set('restore_body', JSON.stringify({ manifest: manifest }));"
 						]
 					}
 				}
 			]
 		},
 		{
-			"name": "2. PUT hello-world with mutated manifest (add page) — 200",
+			"name": "2. PUT the manifest with an added page — 200",
 			"request": {
 				"method": "PUT",
 				"header": [
 					{ "key": "OCS-APIRequest", "value": "true" },
 					{ "key": "Content-Type", "value": "application/json" },
-					{ "key": "Accept", "value": "application/json" }
+					{ "key": "Accept", "value": "application/json" },
+					{ "key": "requesttoken", "value": "newman-stub" }
 				],
 				"url": {
-					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{app_uuid}}",
+					"raw": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/manifest",
 					"host": ["{{base_url}}"],
-					"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application", "{{app_uuid}}"]
+					"path": ["index.php", "apps", "openbuild", "api", "applications", "{{test_slug}}", "manifest"]
 				},
 				"body": {
 					"mode": "raw",
 					"raw": "{{mutated_body}}"
 				},
-				"description": "Append a new page to the manifest and PUT the full Application object back. The pre-request script clones the original Application, appends a marker page, and stores the serialised body in `mutated_body`."
+				"description": "Append a marker page to the captured manifest and save it. The response names its write target so a silent fallback to the legacy application-level manifest cannot pass unnoticed."
 			},
 			"event": [
 				{
@@ -90,17 +85,15 @@
 					"script": {
 						"type": "text/javascript",
 						"exec": [
-							"const original = JSON.parse(pm.collectionVariables.get('original_application'));",
-							"const mutated = JSON.parse(JSON.stringify(original));",
-							"mutated.manifest = mutated.manifest || { version: '0.1.0', menu: [], pages: [] };",
-							"mutated.manifest.pages = Array.isArray(mutated.manifest.pages) ? mutated.manifest.pages : [];",
-							"mutated.manifest.pages.push({",
+							"const manifest = JSON.parse(pm.collectionVariables.get('original_manifest'));",
+							"manifest.pages = Array.isArray(manifest.pages) ? manifest.pages : [];",
+							"manifest.pages.push({",
 							"    id: 'newman-added',",
 							"    type: 'index',",
 							"    route: '/newman-added',",
 							"    config: { register: 'openbuild', schema: 'hello-message' }",
 							"});",
-							"pm.collectionVariables.set('mutated_body', JSON.stringify(mutated));"
+							"pm.collectionVariables.set('mutated_body', JSON.stringify({ manifest: manifest }));"
 						]
 					}
 				},
@@ -111,11 +104,8 @@
 						"exec": [
 							"pm.test('Save returns 200', function () { pm.response.to.have.status(200); });",
 							"const body = pm.response.json();",
-							"const saved = body.results || body.data || body;",
-							"pm.test('Saved manifest includes newman-added page', function () {",
-							"    const pages = (saved.manifest && saved.manifest.pages) || [];",
-							"    const ids = pages.map(function (p) { return p.id; });",
-							"    pm.expect(ids).to.include('newman-added');",
+							"pm.test('the save reports success', function () {",
+							"    pm.expect(body.status).to.eql('ok');",
 							"});"
 						]
 					}
@@ -131,11 +121,11 @@
 					{ "key": "Accept", "value": "application/json" }
 				],
 				"url": {
-					"raw": "{{base_url}}/index.php/apps/openbuild/api/applications/hello-world/manifest",
+					"raw": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/manifest",
 					"host": ["{{base_url}}"],
-					"path": ["index.php", "apps", "openbuild", "api", "applications", "hello-world", "manifest"]
+					"path": ["index.php", "apps", "openbuild", "api", "applications", "{{test_slug}}", "manifest"]
 				},
-				"description": "Cross-check that the openbuild manifest endpoint serves the mutated manifest the runtime reads. Confirms the save flow + caching layer (if any) propagate correctly."
+				"description": "The write must be visible to the read the runtime actually performs. This is the assertion that was red: the old collection wrote to a property the Application schema does not have, so this endpoint — which resolves the production ApplicationVersion — never saw it."
 			},
 			"event": [
 				{
@@ -146,7 +136,7 @@
 							"pm.test('Manifest endpoint returns 200', function () { pm.response.to.have.status(200); });",
 							"const manifest = pm.response.json();",
 							"pm.test('newman-added page is reflected', function () {",
-							"    const pages = (manifest && manifest.pages) || (manifest && manifest.data && manifest.data.pages) || [];",
+							"    const pages = (manifest && manifest.pages) || [];",
 							"    const ids = pages.map(function (p) { return p.id; });",
 							"    pm.expect(ids).to.include('newman-added');",
 							"});"
@@ -162,18 +152,19 @@
 				"header": [
 					{ "key": "OCS-APIRequest", "value": "true" },
 					{ "key": "Content-Type", "value": "application/json" },
-					{ "key": "Accept", "value": "application/json" }
+					{ "key": "Accept", "value": "application/json" },
+					{ "key": "requesttoken", "value": "newman-stub" }
 				],
 				"url": {
-					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{app_uuid}}",
+					"raw": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/manifest",
 					"host": ["{{base_url}}"],
-					"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application", "{{app_uuid}}"]
+					"path": ["index.php", "apps", "openbuild", "api", "applications", "{{test_slug}}", "manifest"]
 				},
 				"body": {
 					"mode": "raw",
 					"raw": "{{invalid_body}}"
 				},
-				"description": "Send a manifest that omits the required `pages` array. OR's JSON Schema validation should reject the write with a 4xx status (REQ-OBPD-009 + MODIFIED REQ-OBR-005 — Invalid edit is blocked before save)."
+				"description": "Drop the required `pages` array. A manifest with no pages renders nothing, so persisting it bricks the app — and until now the server took it: the Design tab's refusal (REQ-OBPD-009) is a CLIENT guarantee and stopped at the browser, so an API caller got a 200. saveManifest now applies the same two structural rules AppRepoParser::validateManifest() has always applied on the GitHub-import path."
 			},
 			"event": [
 				{
@@ -181,11 +172,7 @@
 					"script": {
 						"type": "text/javascript",
 						"exec": [
-							"const original = JSON.parse(pm.collectionVariables.get('original_application'));",
-							"const invalid = JSON.parse(JSON.stringify(original));",
-							"// Drop the required `pages` array — manifest schema requires version+menu+pages.",
-							"invalid.manifest = { version: '0.1.0', menu: [] };",
-							"pm.collectionVariables.set('invalid_body', JSON.stringify(invalid));"
+							"pm.collectionVariables.set('invalid_body', JSON.stringify({ manifest: { version: '0.1.0', menu: [] } }));"
 						]
 					}
 				},
@@ -196,6 +183,11 @@
 						"exec": [
 							"pm.test('Invalid manifest is rejected with 4xx', function () {",
 							"    pm.expect(pm.response.code).to.be.within(400, 499);",
+							"});",
+							"pm.test('the refusal names the reason, not just the status', function () {",
+							"    const body = pm.response.json();",
+							"    pm.expect(body.error).to.eql('manifest_invalid');",
+							"    pm.expect(body.message).to.be.a('string').and.to.include('pages');",
 							"});"
 						]
 					}
@@ -209,18 +201,19 @@
 				"header": [
 					{ "key": "OCS-APIRequest", "value": "true" },
 					{ "key": "Content-Type", "value": "application/json" },
-					{ "key": "Accept", "value": "application/json" }
+					{ "key": "Accept", "value": "application/json" },
+					{ "key": "requesttoken", "value": "newman-stub" }
 				],
 				"url": {
-					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{app_uuid}}",
+					"raw": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/manifest",
 					"host": ["{{base_url}}"],
-					"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application", "{{app_uuid}}"]
+					"path": ["index.php", "apps", "openbuild", "api", "applications", "{{test_slug}}", "manifest"]
 				},
 				"body": {
 					"mode": "raw",
-					"raw": "{{original_application}}"
+					"raw": "{{restore_body}}"
 				},
-				"description": "Restore the original hello-world Application body captured in step 1 so the suite is idempotent across reruns."
+				"description": "Restore the manifest captured in step 1 so the suite is idempotent across reruns and leaves no `newman-added` page behind for the Playwright suite to trip over."
 			},
 			"event": [
 				{
@@ -228,7 +221,12 @@
 					"script": {
 						"type": "text/javascript",
 						"exec": [
-							"pm.test('Restore returns 200', function () { pm.response.to.have.status(200); });"
+							"pm.test('Restore returns 200', function () { pm.response.to.have.status(200); });",
+							"pm.test('the marker page is gone again', function () {",
+							"    const restored = JSON.parse(pm.collectionVariables.get('original_manifest'));",
+							"    const ids = (restored.pages || []).map(function (p) { return p.id; });",
+							"    pm.expect(ids).to.not.include('newman-added');",
+							"});"
 						]
 					}
 				}
