@@ -70,6 +70,7 @@ use OCP\IUserSession;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -155,6 +156,23 @@ class AutomationApprovalTriggerListener implements IEventListener {
 	 *   without OpenRegister still boots (ADR-083 rule 3).
 	 */
 	private function objectService(): ObjectServiceInterface {
+		// ADR-083: establish availability before reaching. class_exists()
+		// rather than SettingsService, because this listener injects no
+		// settings service and adding a constructor dependency purely to ask a
+		// yes/no question is the wrong trade — it answers the same question the
+		// container would otherwise have answered fatally.
+		//
+		// Behaviour is unchanged: every caller already wraps this in a catch
+		// that logs and returns null, so an instance without OpenRegister
+		// degrades exactly as it does today. What changes is that the
+		// dependency is now declared where a reader — and the gate — can see
+		// it, instead of being implied by a catch several methods away.
+		if (class_exists('OCA\OpenRegister\Service\ObjectService') === false) {
+			throw new RuntimeException(
+				'openbuild requires the OpenRegister app, which is not installed on this instance.'
+			);
+		}
+
 		/** @var ObjectServiceInterface $service */
 		$service = $this->container->get('OCA\OpenRegister\Service\ObjectService');
 
