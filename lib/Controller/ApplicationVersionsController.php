@@ -379,8 +379,11 @@ class ApplicationVersionsController extends Controller {
 
 			// Acquire an optimistic lock before the read-modify-write to prevent
 			// concurrent UI / MCP writes silently losing each other's changes (issue #159).
+			// `lockObject()`/`unlockObject()` are declared on
+			// ObjectServiceInterface, so the method_exists() probes that used to
+			// guard both calls could never be false.
 			$locked = false;
-			if (method_exists($this->objectService, 'lockObject') === true && $currentUuid !== '') {
+			if ($currentUuid !== '') {
 				try {
 					$this->objectService->lockObject(
 						identifier: $currentUuid,
@@ -405,7 +408,7 @@ class ApplicationVersionsController extends Controller {
 					uuid: $currentUuid
 				);
 			} finally {
-				if ($locked === true && method_exists($this->objectService, 'unlockObject') === true) {
+				if ($locked === true) {
 					try {
 						$this->objectService->unlockObject(identifier: $currentUuid);
 					} catch (Throwable $unlockErr) {

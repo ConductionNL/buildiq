@@ -621,14 +621,15 @@ abstract class AbstractToolHandler {
 		// Acquire an OR optimistic lock before the write to prevent last-writer-
 		// wins data loss when two concurrent MCP agents mutate the same version.
 		// H3: guard removed — fail loudly (503) rather than silently skip locking.
-		$locked = false;
+		// A lock failure throws out of this block, so the write below only ever
+		// runs with the lock held — no `$locked` flag is needed to decide whether
+		// the finally must release it.
 		try {
 			$objectService->lockObject(
 				identifier: $versionUuid,
 				process: 'openbuild.mcp-manifest-edit',
 				duration: 30
 			);
-			$locked = true;
 		} catch (\Throwable $lockError) {
 			$this->logger->warning(
 				'OpenBuild MCP: manifest lock contention on version ' . $versionUuid,
@@ -658,15 +659,13 @@ abstract class AbstractToolHandler {
 
 			return $this->toArray(item: $saved);
 		} finally {
-			if ($locked === true) {
-				try {
-					$objectService->unlockObject(identifier: $versionUuid);
-				} catch (\Throwable $unlockError) {
-					$this->logger->warning(
-						'OpenBuild MCP: failed to release manifest lock on ' . $versionUuid,
-						['exception' => $unlockError->getMessage()]
-					);
-				}
+			try {
+				$objectService->unlockObject(identifier: $versionUuid);
+			} catch (\Throwable $unlockError) {
+				$this->logger->warning(
+					'OpenBuild MCP: failed to release manifest lock on ' . $versionUuid,
+					['exception' => $unlockError->getMessage()]
+				);
 			}
 		}//end try
 

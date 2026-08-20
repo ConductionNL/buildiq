@@ -135,7 +135,9 @@ class SettingsService {
 				'openregisters' => $this->isOpenRegisterAvailable(),
 				'isAdmin' => $isAdmin,
 				'registry_token_set' => ($registryToken !== ''),
-				'storeConfigured' => (trim($settings['registry_url'] ?? '') !== ''),
+				// `registry_url` is one of self::CONFIG_KEYS, so the loop above
+				// always set it — the `?? ''` this replaces was unreachable.
+				'storeConfigured' => (trim($settings['registry_url']) !== ''),
 			]
 		);
 	}//end getSettings()
