@@ -1026,13 +1026,13 @@ class ApplicationVersionService {
 		// detectable via method_exists(), same reasoning as
 		// JobOwnerImpersonator::impersonate()) since jsonSerialize()/getObject()
 		// do not reliably merge the uuid into an `id` key on every OR entity shape.
+		// `saveObject()` returns ObjectEntityInterface, so the `is_object()`
+		// guard this replaces could never be false.
 		$newUuid = '';
-		if (is_object($created) === true) {
-			try {
-				$newUuid = (string)$created->getUuid();
-			} catch (Throwable $e) {
-				$newUuid = '';
-			}
+		try {
+			$newUuid = (string)$created->getUuid();
+		} catch (Throwable $e) {
+			$newUuid = '';
 		}
 
 		if ($newUuid === '') {

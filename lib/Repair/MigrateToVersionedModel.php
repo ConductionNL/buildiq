@@ -77,16 +77,6 @@ class MigrateToVersionedModel implements IRepairStep {
 	private const STATE_DONE = 'done';
 
 	/**
-	 * Waiting state: a row could not be deleted while running WITHOUT
-	 * system-context elevation (the installed OpenRegister predates
-	 * `ObjectService::runAsSystem()`). Not terminal — `run()` retries on
-	 * every subsequent invocation until the OpenRegister upgrade ships,
-	 * logging at debug level rather than error since the precondition
-	 * (elevation support) is expected to still be missing.
-	 */
-	private const STATE_BLOCKED = 'blocked';
-
-	/**
 	 * Terminal state: a row still failed to migrate while running WITH
 	 * system-context elevation active — an operator-facing problem, not
 	 * an RBAC gap. `run()` stops retrying; re-arm via the occ command above.
@@ -97,11 +87,6 @@ class MigrateToVersionedModel implements IRepairStep {
 	 * Per-row outcome: migrated (or nothing to migrate for this row).
 	 */
 	private const ROW_OK = 'row_ok';
-
-	/**
-	 * Per-row outcome: failed without elevation available (see STATE_BLOCKED).
-	 */
-	private const ROW_BLOCKED = 'row_blocked';
 
 	/**
 	 * Per-row outcome: failed with elevation active, or unresolvable data
@@ -152,7 +137,7 @@ class MigrateToVersionedModel implements IRepairStep {
 	 *   1. Short-circuit when the schema is already in versioned shape.
 	 *   2. Enumerate every Application row.
 	 *   3. For each row: drop the per-app register (elevated via
-	 *      `ObjectService::runAsSystem()` when available — repair steps run
+	 *      `ObjectService::runAsSystem()` — repair steps run
 	 *      without a user session, so RBAC otherwise denies every write as
 	 *      "Anonymous"); on success delete the Application row; emit one
 	 *      info-line; on failure log and skip the Application row.
@@ -210,33 +195,25 @@ class MigrateToVersionedModel implements IRepairStep {
 			return;
 		}
 
-		$hasSystemContext = method_exists($this->objectService, 'runAsSystem') === true;
-		$sawBlocked = false;
 		$sawFailed = false;
 
 		foreach ($applications as $application) {
 			$rowOutcome = $this->migrateOne(
 				application: $application,
-				output: $output,
-				hasSystemContext: $hasSystemContext
+				output: $output
 			);
 
 			if ($rowOutcome === self::ROW_FAILED) {
 				$sawFailed = true;
-			} elseif ($rowOutcome === self::ROW_BLOCKED) {
-				$sawBlocked = true;
 			}
 		}
 
-		// Precedence unchanged: failed beats blocked beats done. Initialising to
-		// the default and keeping the if/else-if chain drops the bare `else`
-		// without adding a path — two independent ifs would have doubled run()'s
+		// Failed beats done. Initialising to the default and keeping a single
+		// `if` drops the bare `else` without adding a path to run()'s
 		// already-flagged NPath complexity.
 		$state = self::STATE_DONE;
 		if ($sawFailed === true) {
 			$state = self::STATE_FAILED;
-		} elseif ($sawBlocked === true) {
-			$state = self::STATE_BLOCKED;
 		}
 
 		$this->appConfig->setValueString(Application::APP_ID, self::STATE_KEY, $state);
@@ -348,22 +325,19 @@ class MigrateToVersionedModel implements IRepairStep {
 	 *
 	 * The repair step runs without a Nextcloud user session (Anonymous),
 	 * which OpenRegister RBAC denies write access to by default. Both
-	 * OpenRegister mutations are wrapped in `ObjectService::runAsSystem()`
-	 * when the installed OpenRegister ships it, elevating the caller to a
-	 * trusted system principal for the duration of the callable only.
-	 * Guarded with `method_exists()` for back-compat with an OpenRegister
-	 * release that predates the elevation API.
+	 * OpenRegister mutations are wrapped in `ObjectService::runAsSystem()`,
+	 * elevating the caller to a trusted system principal for the duration of
+	 * the callable only.
 	 *
 	 * @param array<string,mixed> $application Application row data
 	 * @param IOutput $output Output channel for progress
-	 * @param bool $hasSystemContext Whether `runAsSystem()` is available on the installed OpenRegister
 	 *
-	 * @return string One of self::ROW_OK, self::ROW_BLOCKED, self::ROW_FAILED
+	 * @return string One of self::ROW_OK, self::ROW_FAILED
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-28
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-29
 	 */
-	private function migrateOne(array $application, IOutput $output, bool $hasSystemContext): string {
+	private function migrateOne(array $application, IOutput $output): string {
 		$slug = (string)($application['slug'] ?? '');
 		if ($slug === '') {
 			$this->logger->warning(
@@ -393,28 +367,6 @@ class MigrateToVersionedModel implements IRepairStep {
 					}
 				);
 			} catch (Throwable $e) {
-				if ($hasSystemContext === false) {
-					// Expected/precondition-absent: no elevation available on
-					// this OpenRegister release. Log at debug — this is not
-					// an operator-facing error, it self-resolves on upgrade.
-					$this->logger->debug(
-						'OpenBuild: MigrateToVersionedModel: register-delete failed without system-context elevation available',
-						[
-							'slug' => $slug,
-							'register' => $perAppRegisterSlug,
-							'exception' => $e->getMessage(),
-						]
-					);
-					$output->info(
-						sprintf(
-							'Migrated-to-versioned-model: register \'%s\' delete needs OpenRegister system-context'
-							. ' elevation, not yet available; will retry on a later run.',
-							$perAppRegisterSlug
-						)
-					);
-					return self::ROW_BLOCKED;
-				}//end if
-
 				$output->warning(
 					sprintf(
 						'Migrated-to-versioned-model: FAILED to drop register \'%s\''
@@ -451,21 +403,6 @@ class MigrateToVersionedModel implements IRepairStep {
 				}
 			);
 		} catch (Throwable $e) {
-			if ($hasSystemContext === false) {
-				$this->logger->debug(
-					'OpenBuild: MigrateToVersionedModel: row-delete failed without system-context elevation available',
-					['slug' => $slug, 'exception' => $e->getMessage()]
-				);
-				$output->info(
-					sprintf(
-						'Migrated-to-versioned-model: dropped register \'%s\' but Application row delete'
-						. ' needs OpenRegister system-context elevation, not yet available; will retry on a later run.',
-						$perAppRegisterSlug
-					)
-				);
-				return self::ROW_BLOCKED;
-			}
-
 			$output->warning(
 				sprintf(
 					'Migrated-to-versioned-model: dropped register \'%s\''
@@ -489,26 +426,21 @@ class MigrateToVersionedModel implements IRepairStep {
 	}//end migrateOne()
 
 	/**
-	 * Run a unit of work under OpenRegister's system context when the installed
-	 * release offers one, and plainly when it does not.
+	 * Run a unit of work under OpenRegister's system context.
 	 *
-	 * Extracted from {@see self::migrateOne()}, which carried the same
-	 * elevate-or-not if/else twice. Folding both into one guarded helper removes
-	 * the else branches AND lowers migrateOne()'s NPath complexity, rather than
-	 * trading one rule for another. The probe is the same `method_exists()` test
-	 * `run()` uses to derive `$hasSystemContext`, so the choice is unchanged.
+	 * Extracted from {@see self::migrateOne()}, which called this twice.
+	 * `runAsSystem()` is declared on ObjectServiceInterface, so the
+	 * `method_exists()` probe that used to guard it could never be false and
+	 * the un-elevated fallback was unreachable — an OpenRegister old enough to
+	 * lack the method also lacks the Contract namespace this class type-hints,
+	 * so the app cannot resolve its dependencies there at all.
 	 *
 	 * @param Closure $work The work to run.
 	 *
 	 * @return void
 	 */
 	private function runElevated(Closure $work): void {
-		if (method_exists($this->objectService, 'runAsSystem') === true) {
-			$this->objectService->runAsSystem($work);
-			return;
-		}
-
-		$work();
+		$this->objectService->runAsSystem($work);
 
 	}//end runElevated()
 

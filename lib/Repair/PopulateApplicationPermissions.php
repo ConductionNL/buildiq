@@ -31,11 +31,9 @@
  *
  * Runs without a Nextcloud user session (Anonymous), which OpenRegister RBAC
  * denies read/write access to by default. The find-and-patch body runs inside
- * `ObjectService::runAsSystem()` when the installed OpenRegister ships it,
- * elevating the caller to a trusted system principal for the callable only.
- * Guarded with `method_exists()` for back-compat with an OpenRegister release
- * that predates the elevation API — the pre-existing `_rbac`/`_multitenancy`
- * bypass on the save call remains as the fallback path.
+ * `ObjectService::runAsSystem()`, elevating the caller to a trusted system
+ * principal for the callable only. The `_rbac`/`_multitenancy` bypass on the
+ * save call remains as defence in depth.
  *
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-30
  */
@@ -117,26 +115,22 @@ class PopulateApplicationPermissions implements IRepairStep {
 	}//end run()
 
 	/**
-	 * Patch every Application, elevating to a system context when the installed
-	 * ObjectService offers one.
+	 * Patch every Application inside OpenRegister's system context.
 	 *
-	 * Extracted from {@see self::run()}: the elevated and plain paths call the
-	 * same worker, so an early return expresses the choice without an else
-	 * branch. Older ObjectService builds have no `runAsSystem()`, hence the
-	 * duck-typed probe.
+	 * Extracted from {@see self::run()} so the whole find-and-patch body can be
+	 * handed to `runAsSystem()` as a single callable.
 	 *
 	 * @param IOutput $output Repair output channel.
 	 *
 	 * @return int|null The number patched, or null when no Applications exist.
 	 */
 	private function patchAllApplications(IOutput $output): ?int {
-		if (method_exists($this->objectService, 'runAsSystem') === true) {
-			return $this->objectService->runAsSystem(
-				fn (): ?int => $this->patchApplicationsMissingPermissions(output: $output)
-			);
-		}
-
-		return $this->patchApplicationsMissingPermissions(output: $output);
+		// `runAsSystem()` is declared on ObjectServiceInterface, so the
+		// method_exists() probe this replaces could never be false and the
+		// un-elevated fallback was unreachable.
+		return $this->objectService->runAsSystem(
+			fn (): ?int => $this->patchApplicationsMissingPermissions(output: $output)
+		);
 	}//end patchAllApplications()
 
 	/**
@@ -186,10 +180,9 @@ class PopulateApplicationPermissions implements IRepairStep {
 				'viewers' => [],
 			];
 
-			// Kept as a defence-in-depth fallback for an OpenRegister release
-			// that predates runAsSystem(): the Application schema's
-			// update:[admin] guard would otherwise deny the Anonymous
-			// repair-step caller.
+			// Defence in depth alongside the runAsSystem() elevation: the
+			// Application schema's update:[admin] guard would otherwise deny
+			// the Anonymous repair-step caller.
 			$this->objectService->saveObject(
 				object: $applicationArray,
 				register: 'openbuild',

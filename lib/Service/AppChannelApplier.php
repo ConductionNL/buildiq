@@ -612,7 +612,9 @@ class AppChannelApplier {
 				_multitenancy: false
 			);
 
-			return (is_array($found) === true && $found !== []);
+			// `findAll()` returns an array, so the `is_array()` conjunct this
+			// replaces could never be false.
+			return ($found !== []);
 		} catch (Throwable $e) {
 			$this->logger->debug(
 				'OpenBuild channel apply: credential lookup for "' . $name . '" was inconclusive: ' . $e->getMessage()

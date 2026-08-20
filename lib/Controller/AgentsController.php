@@ -241,7 +241,9 @@ class AgentsController extends Controller {
 			static fn (array $a, array $b): int => strcmp((string)($b['createdAt'] ?? ''), (string)($a['createdAt'] ?? ''))
 		);
 
-		return array_values($matching);
+		// `$matching` is appended to with `[]=` and usort() reindexes in place,
+		// so it is already a list — the array_values() this replaces was a no-op.
+		return $matching;
 	}//end loadRunsForAgent()
 
 	/**

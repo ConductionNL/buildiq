@@ -763,7 +763,9 @@ class ManifestResolverService {
 			}
 		}
 
-		return array_values($filtered);
+		// `$filtered` is only ever appended to with `[]=`, so it is already a
+		// list — the array_values() this replaces was a no-op.
+		return $filtered;
 	}//end filterEntriesByPermission()
 
 	/**
