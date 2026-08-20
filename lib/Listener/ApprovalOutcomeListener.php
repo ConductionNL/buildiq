@@ -54,6 +54,7 @@ use OCP\EventDispatcher\IEventListener;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -111,8 +112,36 @@ class ApprovalOutcomeListener implements IEventListener {
 	 * @throws ContainerExceptionInterface When OpenRegister is absent or disabled.
 	 */
 	private function objectService(): ObjectServiceInterface {
-		/* @var ObjectServiceInterface $service */
+		// ADR-083: establish availability before reaching. class_exists()
+		// rather than SettingsService, because this listener injects no
+		// settings service and adding a constructor dependency purely to ask a
+		// yes/no question is the wrong trade — it answers the same question the
+		// container would otherwise have answered fatally.
+		//
+		// Behaviour is unchanged: every caller already wraps this in a catch
+		// that logs and returns null, so an instance without OpenRegister
+		// degrades exactly as it does today. What changes is that the
+		// dependency is now declared where a reader — and the gate — can see
+		// it, instead of being implied by a catch several methods away.
+		//
+		// Untestable in a unit test: the stub OpenRegister classes the test
+		// bootstrap declares (tests/stubs/openregister-stubs.php) make
+		// class_exists() true unconditionally in this suite, so this branch
+		// only ever fires on a real instance genuinely missing OpenRegister.
+		// @codeCoverageIgnoreStart
+		if (class_exists('OCA\OpenRegister\Service\ObjectService') === false) {
+			throw new RuntimeException(
+				'openbuild requires the OpenRegister app, which is not installed on this instance.'
+			);
+		}
+		// @codeCoverageIgnoreEnd
+
 		$service = $this->container->get('OCA\OpenRegister\Service\ObjectService');
+		// An assert(), not a `/** @var */` docblock: phpcs forbids an inline doc
+		// block inside a method body, while psalm needs the narrowing or the
+		// declared return type is a MixedReturnStatement. assert() satisfies
+		// both, and costs nothing in production where zend.assertions is off.
+		assert($service instanceof ObjectServiceInterface);
 
 		return $service;
 
