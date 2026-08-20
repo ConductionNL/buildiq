@@ -245,7 +245,7 @@ export default {
 
 .agent-run-history__tool-json {
 	white-space: pre-wrap;
-	word-break: break-word;
+	overflow-wrap: break-word;
 	background: var(--color-background-dark);
 	border-radius: var(--border-radius);
 	padding: 8px;
