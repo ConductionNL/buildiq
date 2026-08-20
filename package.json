@@ -90,7 +90,7 @@
 		"newman": "^6.2.2",
 		"patch-package": "^8.0.1",
 		"path-browserify": "^1.0.1",
-		"postcss-html": "^1.6.0",
+		"postcss-html": "^2.0.0",
 		"prettier": "^3.9.6",
 		"sass": "^1.77.8",
 		"sass-loader": "^17.0.0",
