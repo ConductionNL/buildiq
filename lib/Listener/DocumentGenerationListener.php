@@ -124,8 +124,12 @@ class DocumentGenerationListener implements IEventListener {
 			);
 		}
 
-		/** @var ObjectServiceInterface $service */
 		$service = $this->container->get('OCA\OpenRegister\Service\ObjectService');
+		// An assert(), not a `/** @var */` docblock: phpcs forbids an inline doc
+		// block inside a method body, while psalm needs the narrowing or the
+		// declared return type is a MixedReturnStatement. assert() satisfies
+		// both, and costs nothing in production where zend.assertions is off.
+		assert($service instanceof ObjectServiceInterface);
 
 		return $service;
 
