@@ -15,7 +15,10 @@ import { mount } from '@vue/test-utils'
 vi.mock('@nextcloud/axios', () => ({
 	default: { get: vi.fn(() => Promise.resolve({ data: {} })) },
 }))
-vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => p }))
+vi.mock('@nextcloud/router', async (importOriginal) => ({
+	...(await importOriginal()),
+	generateUrl: (p) => p,
+}))
 
 import CopilotProposal from '../../src/components/copilot/CopilotProposal.vue'
 

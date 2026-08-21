@@ -26,7 +26,8 @@ const axiosGetMock = vi.fn()
 vi.mock('@nextcloud/axios', () => ({
 	default: { get: (...args) => axiosGetMock(...args) },
 }))
-vi.mock('@nextcloud/router', () => ({
+vi.mock('@nextcloud/router', async (importOriginal) => ({
+	...(await importOriginal()),
 	generateUrl: (p) => p,
 }))
 // Partial mock: only `translate` is pinned to the raw key. `@nextcloud/vue`

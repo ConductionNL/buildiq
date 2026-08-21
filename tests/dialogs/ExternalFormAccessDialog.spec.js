@@ -16,7 +16,10 @@ const service = vi.hoisted(() => ({
 	draftPortalPage: vi.fn(),
 }))
 vi.mock('../../src/services/externalFormProvisioningService.js', () => service)
-vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => p }))
+vi.mock('@nextcloud/router', async (importOriginal) => ({
+	...(await importOriginal()),
+	generateUrl: (p) => p,
+}))
 
 import ExternalFormAccessDialog from '../../src/dialogs/ExternalFormAccessDialog.vue'
 

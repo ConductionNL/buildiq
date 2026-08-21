@@ -21,7 +21,8 @@ const { axiosMock } = vi.hoisted(() => ({
 	axiosMock: { get: vi.fn(), post: vi.fn() },
 }))
 vi.mock('@nextcloud/axios', () => ({ default: axiosMock }))
-vi.mock('@nextcloud/router', () => ({
+vi.mock('@nextcloud/router', async (importOriginal) => ({
+	...(await importOriginal()),
 	generateUrl: (p) => p,
 	generateFilePath: (app, prefix, file) => `/${app}/${prefix}/${file}`,
 }))

@@ -18,7 +18,8 @@ vi.mock('@nextcloud/axios', () => ({
 		get: (...args) => axiosGetMock(...args),
 	},
 }))
-vi.mock('@nextcloud/router', () => ({
+vi.mock('@nextcloud/router', async (importOriginal) => ({
+	...(await importOriginal()),
 	generateUrl: (path) => path,
 }))
 
