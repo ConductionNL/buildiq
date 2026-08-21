@@ -20,7 +20,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 
 // Mock axios at module scope (hoisted above imports). The component calls
 // `axios.get(...)` returning a Promise<{ data: { from, to } }>.
@@ -62,8 +62,13 @@ describe('ManifestDiff — design.md Decision 5 (client-side jsdiff)', () => {
 		const wrapper = mount(ManifestDiff, {
 			propsData: { slug: 'hello-world', from: 'snap-a', to: 'snap-b' },
 		})
-		// Directly set the data so we skip the async fetch — the computed
-		// `diffParts` is the only thing under test.
+		// Let the mounted fetch SETTLE before seeding data. The comment here used
+		// to say this "skips the async fetch" — it did not, it raced it. The
+		// mocked axios resolves `{from: null, to: null}`, and whichever of the
+		// two lands second wins. Under vitest 1 setData happened to win; under
+		// vitest 4 the fetch does, and it nulls `fromBlob` straight back out, so
+		// `diffParts` computes over two empty strings and returns [].
+		await flushPromises()
 		await wrapper.setData({
 			fromBlob: sampleFrom,
 			toBlob: sampleTo,
@@ -88,6 +93,7 @@ describe('ManifestDiff — design.md Decision 5 (client-side jsdiff)', () => {
 		const wrapper = mount(ManifestDiff, {
 			propsData: { slug: 'hello-world', from: 'snap-a', to: 'snap-b' },
 		})
+		await flushPromises()
 		await wrapper.setData({
 			fromBlob: identical,
 			toBlob: { ...identical },
@@ -112,6 +118,7 @@ describe('ManifestDiff — design.md Decision 5 (client-side jsdiff)', () => {
 		const wrapper = mount(ManifestDiff, {
 			propsData: { slug: 'hello-world', from: 'snap-a', to: 'snap-b' },
 		})
+		await flushPromises()
 		await wrapper.setData({
 			fromBlob: { manifest: { version: '1.0.0', pages: [] } },
 			toBlob: { manifest: largeManifest },

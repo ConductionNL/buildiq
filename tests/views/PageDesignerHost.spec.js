@@ -247,6 +247,13 @@ describe('PageDesignerHost', () => {
 
 	it('surfaces a load error and clears the application', async () => {
 		const wrapper = mountHost({ appList: [] })
+		// Let the MOUNT-TIME load settle before arming the rejection. mountHost()
+		// mounts the component, whose own mounted hook calls load(); a
+		// `mockRejectedValueOnce` queued before that settles is consumed by the
+		// mount's request instead of the explicit one below, so the assertion
+		// reads a component that loaded fine. vitest 1 happened to order these
+		// the other way round.
+		await flush(wrapper)
 		axiosGetMock.mockRejectedValueOnce(new Error('load boom'))
 		wrapper.vm.load()
 		await flush(wrapper)

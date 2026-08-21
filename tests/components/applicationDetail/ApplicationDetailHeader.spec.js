@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { shallowMount } from '@vue/test-utils'
+import { flushPromises, shallowMount } from '@vue/test-utils'
 
 import { useInsightsWindow } from '../../../src/composables/useInsightsWindow.js'
 
@@ -134,6 +134,12 @@ describe('ApplicationDetailHeader', () => {
 			propsData: { object: viewerApp, objectId: 'app-uuid' },
 			mocks: { t, $router: router, $route: route },
 		})
+		// Let the mounted hook's version fetch settle FIRST. It assigns
+		// `this.versions` itself, so seeding the field while that request is
+		// still in flight just gets overwritten — `visibleVersions` then filters
+		// an empty list and the assertion reads 0. vitest 1 happened to resolve
+		// these in the opposite order.
+		await flushPromises()
 		// Wire the OC currentUser for the viewer.
 		wrapper.vm.callerUid = 'bob'
 		wrapper.vm.versions = versions
