@@ -12,7 +12,10 @@ import { mount } from '@vue/test-utils'
 vi.mock('@nextcloud/axios', () => ({
 	default: { get: vi.fn().mockResolvedValue({ data: {} }) },
 }))
-vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => p }))
+vi.mock('@nextcloud/router', async (importOriginal) => ({
+	...(await importOriginal()),
+	generateUrl: (p) => p,
+}))
 
 import DataSourceOriginToggle from '../../src/components/page-editor/DataSourceOriginToggle.vue'
 
