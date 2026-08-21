@@ -1,5 +1,6 @@
 {
+  "_note": "vitest was 85.18 under coverage-v8 v1 and is 64.72 under v4. The test suite did not change (1378 tests before and after) — the RULER did. v1 reported every physical line of a file as a coverable line: src/App.vue measured 235 lines, exactly its wc -l, counting blank lines, comments and template markup, most of which score as covered for free. v4 remaps through ast-v8-to-istanbul to EXECUTABLE lines only, and the same file measures 24. Across src/** the denominator falls 59333 -> 10097 on the same ~200 files. 64.72 is therefore the stricter and more honest number, not a regression, and re-baselining to it is a recalibration rather than a lowered bar. Do not 'restore' 85.18: under v4 it is unreachable and means nothing.",
   "phpunit": null,
-  "vitest": 85.18,
+  "vitest": 64.72,
   "tolerance": 0.5
 }
