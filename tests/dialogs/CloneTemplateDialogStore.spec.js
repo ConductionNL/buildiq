@@ -20,7 +20,8 @@ const { axiosMock } = vi.hoisted(() => ({
 	axiosMock: { get: vi.fn(), post: vi.fn() },
 }))
 
-vi.mock('@nextcloud/router', () => ({
+vi.mock('@nextcloud/router', async (importOriginal) => ({
+	...(await importOriginal()),
 	// Mirror the real generateUrl path-template expansion of `{slug}`.
 	generateUrl: (path, params = {}) =>
 		path.replace(/\{(\w+)\}/g, (_, k) => params[k] ?? `{${k}}`),

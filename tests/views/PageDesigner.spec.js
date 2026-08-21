@@ -35,7 +35,8 @@ let applicationFixture = null
 vi.mock('@nextcloud/axios', () => ({
 	default: { get: (...args) => axiosGetMock(...args) },
 }))
-vi.mock('@nextcloud/router', () => ({
+vi.mock('@nextcloud/router', async (importOriginal) => ({
+	...(await importOriginal()),
 	generateUrl: (p) => p,
 }))
 

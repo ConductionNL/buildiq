@@ -17,7 +17,10 @@ const axiosPost = vi.fn()
 vi.mock('@nextcloud/axios', () => ({
 	default: { get: (...a) => axiosGet(...a), post: (...a) => axiosPost(...a) },
 }))
-vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => p }))
+vi.mock('@nextcloud/router', async (importOriginal) => ({
+	...(await importOriginal()),
+	generateUrl: (p) => p,
+}))
 
 import CopilotPanel from '../../src/components/copilot/CopilotPanel.vue'
 import { clearCopilotHealthCache } from '../../src/composables/useCopilot.js'

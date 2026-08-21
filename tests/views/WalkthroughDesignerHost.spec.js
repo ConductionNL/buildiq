@@ -26,7 +26,8 @@ vi.mock('@nextcloud/axios', () => ({
 		put: (...a) => axiosPutMock(...a),
 	},
 }))
-vi.mock('@nextcloud/router', () => ({
+vi.mock('@nextcloud/router', async (importOriginal) => ({
+	...(await importOriginal()),
 	generateUrl: (p) => p,
 }))
 
