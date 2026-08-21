@@ -23,7 +23,10 @@ import { mount } from '@vue/test-utils'
 // Step1Basics probes AI-copilot health on created() (spec ai-copilot
 // REQ-OBAIC-001/006) via useCopilot -> services/copilot.js -> axios. Mock
 // both so the existing suite stays network-free and deterministic.
-vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => p }))
+vi.mock('@nextcloud/router', async (importOriginal) => ({
+	...(await importOriginal()),
+	generateUrl: (p) => p,
+}))
 vi.mock('@nextcloud/axios', () => ({
 	default: { get: vi.fn(() => Promise.reject(new Error('no provider in tests'))) },
 }))

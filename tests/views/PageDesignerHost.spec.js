@@ -30,7 +30,8 @@ vi.mock('@nextcloud/axios', () => ({
 		patch: (...a) => axiosPatchMock(...a),
 	},
 }))
-vi.mock('@nextcloud/router', () => ({
+vi.mock('@nextcloud/router', async (importOriginal) => ({
+	...(await importOriginal()),
 	generateUrl: (p) => p,
 }))
 
