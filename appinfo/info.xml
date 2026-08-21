@@ -27,17 +27,17 @@ Vrij en open source onder de EUPL-1.2-licentie.
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenBuild</namespace>
     <documentation>
-        <user>https://codeberg.org/Conduction/openbuild</user>
-        <admin>https://codeberg.org/Conduction/openbuild</admin>
-        <developer>https://codeberg.org/Conduction/openbuild</developer>
+        <user>https://github.com/ConductionNL/buildiq</user>
+        <admin>https://github.com/ConductionNL/buildiq</admin>
+        <developer>https://github.com/ConductionNL/buildiq</developer>
     </documentation>
     <category>tools</category>
-    <website>https://codeberg.org/Conduction/openbuild</website>
-    <discussion>https://codeberg.org/Conduction/openbuild/discussions</discussion>
-    <bugs>https://codeberg.org/Conduction/openbuild/issues</bugs>
-    <repository>https://codeberg.org/Conduction/openbuild</repository>
+    <website>https://github.com/ConductionNL/buildiq</website>
+    <discussion>https://github.com/ConductionNL/buildiq/discussions</discussion>
+    <bugs>https://github.com/ConductionNL/buildiq/issues</bugs>
+    <repository>https://github.com/ConductionNL/buildiq</repository>
 
-    <screenshot>https://codeberg.org/Conduction/openbuild/raw/branch/main/img/app-store.svg</screenshot>
+    <screenshot>https://raw.githubusercontent.com/ConductionNL/buildiq/development/img/app-store.svg</screenshot>
 
     <dependencies>
         <!--
