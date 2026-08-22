@@ -94,7 +94,7 @@
       {
         "id": "OnboardingTaskChecklist",
         "route": "/tasks",
-        "type": "checklist",
+        "type": "index",
         "title": "Onboarding tasks",
         "config": { "schema": "onboarding-task", "groupBy": "status" }
       },
