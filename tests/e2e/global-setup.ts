@@ -312,6 +312,7 @@ async function seedDocudeskTemplateFixtures(
 			(tpl: Record<string, any>) => tpl.name,
 		)
 		const created: string[] = []
+		const failed: string[] = []
 		for (const name of DOCUDESK_TEMPLATE_NAMES) {
 			if (existing.includes(name)) {
 				continue
@@ -331,19 +332,42 @@ async function seedDocudeskTemplateFixtures(
 			if (resp.ok()) {
 				created.push(name)
 			} else {
+				failed.push(`${name} (HTTP ${resp.status()})`)
 				// eslint-disable-next-line no-console
 				console.warn(
 					`[globalSetup] docudesk template "${name}" create returned ${resp.status()}`,
 				)
 			}
 		}
-		// eslint-disable-next-line no-console
-		console.log(
-			`[globalSetup] docudesk templates ready: ${DOCUDESK_TEMPLATE_NAMES.join(', ')}`
-				+ (created.length
-					? ` (created ${created.join(', ')})`
-					: ' (already present)'),
-		)
+		// "READY" HAS TO MEAN READY.
+		//
+		// This line used to read `created.length ? '(created …)' : '(already
+		// present)'`, so a run where every create returned 500 announced
+		// "templates ready: Bevestigingsbrief, Besluit (already present)". It had
+		// created nothing and nothing was present — `created` is empty in both
+		// cases, and the message picked the innocent reading.
+		//
+		// Measured on the drift sweep 2026-08-22: both creates returned HTTP 500,
+		// this line still said "already present", and the failure surfaced 30
+		// minutes later as a Playwright timeout waiting for an option in a picker
+		// whose list was empty. The seeding log had the answer and phrased it as
+		// success.
+		if (failed.length > 0) {
+			// eslint-disable-next-line no-console
+			console.error(
+				`[globalSetup] docudesk templates NOT ready — create failed for ${failed.join(', ')}. `
+					+ 'Specs that attach a template will fail with an empty picker rather than a server error, '
+					+ 'so read THIS line, not the timeout.',
+			)
+		} else {
+			// eslint-disable-next-line no-console
+			console.log(
+				`[globalSetup] docudesk templates ready: ${DOCUDESK_TEMPLATE_NAMES.join(', ')}`
+					+ (created.length
+						? ` (created ${created.join(', ')})`
+						: ' (already present on the instance)'),
+			)
+		}
 	} catch (e) {
 		// eslint-disable-next-line no-console
 		console.warn(
