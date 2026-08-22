@@ -41,6 +41,32 @@ if (is_dir($ocpStubs)) {
 	});
 }
 
+// THE OpenRegister CONTRACT INTERFACES, OPTED INTO RATHER THAN AUTOLOADED.
+//
+// conduction/hydra-gates used to claim `OCA\OpenRegister\Contract\` as a
+// RUNTIME psr-4 prefix, so every consumer got these interfaces implicitly. That
+// prefix is LONGER than openregister's own `OCA\OpenRegister\` -> `lib/`, and
+// PSR-4 is longest-prefix-wins, so whichever app's autoloader registered first
+// defined OpenRegister's contract for the whole process (ConductionNL/.github#531).
+//
+// Asking whether the interface is RESOLVABLE is order-independent, which
+// appending a fallback autoloader is not: spl_autoload_register appends
+// relative to registration order, and registration order across independently
+// loaded apps is exactly what nobody controls.
+//
+// Both are needed here, before the stub file below: it declares
+// `class ObjectEntity ... implements \OCA\OpenRegister\Contract\ObjectEntityInterface`,
+// so the interface must exist by then or PHP fatals in the bootstrap itself.
+// Same shape as the OCP stub guards already used across the fleet.
+foreach (['ObjectEntityInterface', 'ObjectServiceInterface'] as $contract) {
+	if (interface_exists('\\OCA\\OpenRegister\\Contract\\' . $contract) === false) {
+		$shipped = __DIR__ . '/../vendor/conduction/hydra-gates/hydra-gates/contracts/' . $contract . '.php';
+		if (file_exists($shipped)) {
+			require_once $shipped;
+		}
+	}
+}
+
 // OpenRegister types are referenced by hard-typed constructor parameters in
 // controllers, services, repair steps and listeners.  When the real
 // OpenRegister sources are not on the autoload path (CI / out-of-container)
