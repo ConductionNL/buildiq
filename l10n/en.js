@@ -1,5 +1,6 @@
-{
-    "translations": {
+OC.L10N.register(
+    "openbuild",
+    {
         "Edit flows…": "Edit flows…",
         "/api/objects/:slug/…": "/api/objects/:slug/…",
         "https://…/markers.json": "https://…/markers.json",
@@ -1421,6 +1422,5 @@
         "The flows could not be loaded. This does not mean there are none.": "The flows could not be loaded. This does not mean there are none.",
         "This application has no flows yet.": "This application has no flows yet."
     },
-    "plurals": "",
-    "pluralForm": "nplurals=2; plural=(n != 1);"
-}
+    "nplurals=2; plural=(n != 1);"
+)

@@ -1,5 +1,6 @@
-{
-    "translations": {
+OC.L10N.register(
+    "openbuild",
+    {
         "Edit flows…": "Flows bewerken…",
         "/api/objects/:slug/…": "/api/objects/:slug/…",
         "Failed to load flows": "Flows laden mislukt",
@@ -1007,6 +1008,5 @@
         "Could not mint a track-link: {error}": "Kon geen volglink aanmaken: {error}",
         "Link copied.": "Link gekopieerd."
     },
-    "plurals": null,
-    "pluralForm": "nplurals=2; plural=(n != 1);"
-}
+    "nplurals=2; plural=(n != 1);"
+)
