@@ -569,7 +569,7 @@ test('REQ-PEC-006 — Create, configure, save and render a wiki page', async ({
 		.locator('.wiki-page-editor__group-row', { hasText: /^\s*Register\b/ })
 		.locator('select')
 	await expect(
-		registerSelect.locator('option[value="buildiq"]'),
+		registerSelect.locator('option[value="openbuild"]'),
 		"the seeded app's register must be offered by the register picker",
 	).toHaveCount(1, { timeout: 10_000 })
 	await registerSelect.selectOption('openbuild')
