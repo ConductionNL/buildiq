@@ -691,7 +691,7 @@
               ],
               "to": "published",
               "description": "Mark this version as ready to be the parent Application's productionVersion. Relocated from Application schema per ADR-002 — published-ness is per-version now. Authorization (REQ-OBRBAC-004): owner of the parent Application (or a Nextcloud admin) only — enforced by the ApplicationVersionOwnerGuard `requires` tag below, which OR's LifecycleValidationListener runs on this transition.",
-              "requires": "OCA\\OpenBuild\\Lifecycle\\ApplicationVersionOwnerGuard",
+              "requires": "OCA\\Buildiq\\Lifecycle\\ApplicationVersionOwnerGuard",
               "on_transition": {
                 "upsert_relation": {
                   "schema": "openbuild/built-app-route",
@@ -711,7 +711,7 @@
               ],
               "to": "archived",
               "description": "Retire a published version. Operators are responsible for swapping the parent Application's productionVersion off this row first. Authorization (REQ-OBRBAC-004): owner of the parent Application (or a Nextcloud admin) only — enforced by ApplicationVersionOwnerGuard.",
-              "requires": "OCA\\OpenBuild\\Lifecycle\\ApplicationVersionOwnerGuard"
+              "requires": "OCA\\Buildiq\\Lifecycle\\ApplicationVersionOwnerGuard"
             },
             "reopen": {
               "from": [
@@ -719,7 +719,7 @@
               ],
               "to": "draft",
               "description": "Restore an archived ApplicationVersion to draft for further editing. Authorization (REQ-OBRBAC-004): owner of the parent Application (or a Nextcloud admin) only — enforced by ApplicationVersionOwnerGuard.",
-              "requires": "OCA\\OpenBuild\\Lifecycle\\ApplicationVersionOwnerGuard"
+              "requires": "OCA\\Buildiq\\Lifecycle\\ApplicationVersionOwnerGuard"
             }
           }
         }
