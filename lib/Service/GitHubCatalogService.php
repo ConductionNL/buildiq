@@ -221,10 +221,24 @@ class GitHubCatalogService {
 		}
 
 		$decoded = json_decode($result['body'], true);
-		$items = [];
-		if (is_array($decoded) === true && is_array($decoded['items'] ?? null) === true) {
-			$items = $decoded['items'];
+		if (is_array($decoded) === false || is_array($decoded['items'] ?? null) === false) {
+			// A 200 whose body is not the documented search shape means GitHub
+			// never actually answered the query: a proxy error page, a truncated
+			// response, an HTML interstitial. Reporting that as OUTCOME_OK with
+			// zero cards makes the UI say "no apps match your search", which
+			// tells the user their query found nothing when in fact the lookup
+			// failed. A lookup failure must not wear the words of a judgement.
+			// Returning here also skips the cache write below, so one malformed
+			// response is not served to every later caller for the whole TTL.
+			return [
+				'outcome' => self::OUTCOME_UNREACHABLE,
+				'cards' => [],
+				'brokerUsed' => $result['brokerUsed'],
+				'rateLimited' => $result['rateLimited'],
+			];
 		}
+
+		$items = $decoded['items'];
 
 		$cards = [];
 		foreach (array_slice($items, 0, self::MAX_HITS) as $item) {
