@@ -151,7 +151,7 @@ async function saveAndAwaitPersist(
 ): Promise<void> {
 	const saved = page.waitForResponse(
 		(r) =>
-			/\/api\/objects\/buildiq\/(applicationVersion|application)\/[^/]+$/.test(
+			/\/api\/objects\/openbuild\/(applicationVersion|application)\/[^/]+$/.test(
 				r.url(),
 			) && ['PATCH', 'PUT'].includes(r.request().method()),
 		{ timeout: 20_000 },
