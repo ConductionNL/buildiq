@@ -291,7 +291,7 @@ final class AutomationApprovalTriggerListenerTest extends TestCase {
 			from: 'draft',
 			to: 'active',
 			userId: null,
-			register: 'buildiq',
+			register: 'openbuild',
 			schema: 'permit'
 		);
 		$this->listener->handle($event);

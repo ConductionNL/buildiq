@@ -51,7 +51,7 @@ class AppRepoParser {
 	/**
 	 * The descriptor filename that anchors a conforming repo.
 	 */
-	public const DESCRIPTOR_FILE = 'buildiq-app.json';
+	public const DESCRIPTOR_FILE = 'openbuild-app.json';
 
 	/**
 	 * The manifest filename carrying the ApplicationVersion.manifest blob.
@@ -225,7 +225,7 @@ class AppRepoParser {
 		if (array_key_exists(self::DESCRIPTOR_FILE, $files) === false) {
 			throw new AppRepoParseException(
 				errorCode: 'descriptor_missing',
-				message: 'No buildiq-app.json at the repo root — not an Buildiq app repo.',
+				message: 'No openbuild-app.json at the repo root — not an Buildiq app repo.',
 				filePath: self::DESCRIPTOR_FILE
 			);
 		}
@@ -241,7 +241,7 @@ class AppRepoParser {
 		if (in_array($major, [self::SUPPORTED_FORMAT_MAJOR, self::SUPPORTED_FORMAT_MAJOR_V2], true) === false) {
 			throw new AppRepoParseException(
 				errorCode: 'format_version_unsupported',
-				message: 'buildiq-app.json formatVersion "' . $formatVersion . '" is not supported by this Buildiq.',
+				message: 'openbuild-app.json formatVersion "' . $formatVersion . '" is not supported by this Buildiq.',
 				filePath: self::DESCRIPTOR_FILE
 			);
 		}
@@ -250,7 +250,7 @@ class AppRepoParser {
 		if (in_array($appType, self::APP_TYPES, true) === false) {
 			throw new AppRepoParseException(
 				errorCode: 'app_type_unknown',
-				message: 'buildiq-app.json appType "' . $appType . '" is not one of virtual|hybrid.',
+				message: 'openbuild-app.json appType "' . $appType . '" is not one of virtual|hybrid.',
 				filePath: self::DESCRIPTOR_FILE
 			);
 		}
@@ -259,7 +259,7 @@ class AppRepoParser {
 		if (preg_match(self::SLUG_PATTERN, $slug) !== 1) {
 			throw new AppRepoParseException(
 				errorCode: 'app_type_unknown',
-				message: 'buildiq-app.json slug "' . $slug . '" is not a valid kebab-case slug.',
+				message: 'openbuild-app.json slug "' . $slug . '" is not a valid kebab-case slug.',
 				filePath: self::DESCRIPTOR_FILE
 			);
 		}

@@ -89,7 +89,7 @@ class FlowChannelProvisioner {
 	 *
 	 * @var string
 	 */
-	private const REGISTER_SLUG = 'buildiq';
+	private const REGISTER_SLUG = 'openbuild';
 
 	/**
 	 * The Application schema slug.

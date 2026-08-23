@@ -475,7 +475,7 @@ class AppChannelApplierTest extends TestCase {
 	public function testSkillsAreSkippedWithASpecificReasonWhenTheCredentialLacksHermiqScope(): void {
 		$this->appManager->method('isEnabledForUser')->willReturn(true);
 		$this->objectService->method('find')->willReturn(
-			$this->mockedEntity(['allowedApps' => ['buildiq']])
+			$this->mockedEntity(['allowedApps' => ['openbuild']])
 		);
 		// The whole point: hermiq's installer is never even resolved, let
 		// alone called, once the credential is already known to lack scope.
@@ -516,7 +516,7 @@ class AppChannelApplierTest extends TestCase {
 	public function testSkillsAreDelegatedWhenTheCredentialDoesCarryHermiqScope(): void {
 		$this->appManager->method('isEnabledForUser')->willReturn(true);
 		$this->objectService->method('find')->willReturn(
-			$this->mockedEntity(['allowedApps' => ['buildiq', 'hermiq']])
+			$this->mockedEntity(['allowedApps' => ['openbuild', 'hermiq']])
 		);
 
 		$installer = new class {
@@ -763,7 +763,7 @@ class AppChannelApplierTest extends TestCase {
 					}
 				),
 				self::anything(),
-				'buildiq',
+				'openbuild',
 				'application',
 				$applicationUuid,
 				false,
@@ -838,7 +838,7 @@ class AppChannelApplierTest extends TestCase {
 			->with(
 				self::callback(static fn (array $object): bool => ($object['applicationSlug'] ?? null) === 'local-app'),
 				self::anything(),
-				'buildiq',
+				'openbuild',
 				'agent',
 				$uuid,
 				false,

@@ -46,7 +46,7 @@ use Throwable;
  */
 class AgentRunLogger {
 
-	private const REGISTER_SLUG = 'buildiq';
+	private const REGISTER_SLUG = 'openbuild';
 
 	private const AGENT_RUN_SCHEMA = 'agentRun';
 

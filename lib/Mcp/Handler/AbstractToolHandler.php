@@ -44,7 +44,7 @@ use RuntimeException;
  */
 abstract class AbstractToolHandler {
 
-	protected const REGISTER_SLUG = 'buildiq';
+	protected const REGISTER_SLUG = 'openbuild';
 
 	/**
 	 * Roles that grant write access to an Application.

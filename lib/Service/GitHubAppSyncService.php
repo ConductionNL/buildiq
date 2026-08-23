@@ -69,7 +69,7 @@ class GitHubAppSyncService {
 	/**
 	 * The shared Buildiq register slug.
 	 */
-	private const REGISTER_SLUG = 'buildiq';
+	private const REGISTER_SLUG = 'openbuild';
 
 	/**
 	 * The Application schema slug.

@@ -5,7 +5,7 @@
  *
  * Server-side GitHub source for the shop (github-shop-catalogue). Searches GitHub
  * for Buildiq apps by the `topic:buildiq-app` discovery topic, fetches each
- * hit's root `buildiq-app.json` descriptor for a card, and — on install —
+ * hit's root `openbuild-app.json` descriptor for a card, and — on install —
  * fetches the whole repo file map for github-app-repo-format's AppRepoParser.
  *
  * SSRF-safe by construction (design.md Decision 2/9): every outbound host is the
@@ -250,7 +250,7 @@ class GitHubCatalogService {
 	}//end search()
 
 	/**
-	 * Fetch + decode a repo's root `buildiq-app.json` descriptor.
+	 * Fetch + decode a repo's root `openbuild-app.json` descriptor.
 	 *
 	 * @param string $owner Repo owner (pattern-validated).
 	 * @param string $repo Repo name (pattern-validated).
@@ -346,7 +346,7 @@ class GitHubCatalogService {
 
 	/**
 	 * Fetch the repo file map (`path => contents`) AppRepoParser::parse expects:
-	 * `buildiq-app.json`, `manifest.json`, and every `schemas/*.json`.
+	 * `openbuild-app.json`, `manifest.json`, and every `schemas/*.json`.
 	 *
 	 * @param string $owner Repo owner (pattern-validated).
 	 * @param string $repo Repo name (pattern-validated).

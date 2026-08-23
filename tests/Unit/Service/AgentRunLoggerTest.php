@@ -90,7 +90,7 @@ class AgentRunLoggerTest extends TestCase {
 					}
 				),
 				self::anything(),
-				'buildiq',
+				'openbuild',
 				'agentRun'
 			)
 			->willReturn($this->objectEntity(['id' => 'run-1', 'outcome' => 'applied']));
@@ -129,7 +129,7 @@ class AgentRunLoggerTest extends TestCase {
 			->with(
 				self::callback(static fn (array $payload): bool => $payload['agentId'] === 'agent-2' && $payload['applicationSlug'] === ''),
 				self::anything(),
-				'buildiq',
+				'openbuild',
 				'agentRun'
 			)
 			->willReturn($this->objectEntity([]));

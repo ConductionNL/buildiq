@@ -89,7 +89,7 @@ describe('DetailPageEditor', () => {
 	})
 
 	it('update(schema, X) emits with schema set', async () => {
-		const wrapper = mountEditor({ register: 'buildiq' })
+		const wrapper = mountEditor({ register: 'openbuild' })
 		wrapper.vm.update('schema', 'hello-message')
 		await wrapper.vm.$nextTick()
 		const next = wrapper.emitted('update:config').slice(-1)[0][0]

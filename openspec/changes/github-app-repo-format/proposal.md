@@ -29,7 +29,7 @@ that format. This change defines exactly that and nothing more. It is the head o
 a three-change chain:
 
 1. **`github-app-repo-format`** (this change) — the canonical repo layout, the
-   `buildiq-app.json` descriptor, the discovery topic, the `Application` /
+   `openbuild-app.json` descriptor, the discovery topic, the `Application` /
    `ApplicationVersion` linkage fields, and the `AppRepoSerializer` /
    `AppRepoParser` service pair with strict import validation.
 2. **`github-shop-catalogue`** — the shop reads apps from GitHub via search
@@ -47,7 +47,7 @@ installable app on its own — it is a definition that only Buildiq parses.
 
 - **NEW** canonical GitHub repo layout for an Buildiq app (the round-trip
   **data** format, not the exporter's PHP scaffold):
-  - `buildiq-app.json` — the top-level app descriptor: `slug`, `name`,
+  - `openbuild-app.json` — the top-level app descriptor: `slug`, `name`,
     `description`, `category`, `appType` (`virtual` | `hybrid`), `version`
     (the exported ApplicationVersion's semver), optional `icon` / `iconDark`
     refs, and an optional `credentials[]` declaration (provider / reason /
@@ -59,7 +59,7 @@ installable app on its own — it is a definition that only Buildiq parses.
   - optional `README.md` + `img/` (screenshots, icon SVGs referenced by the
     descriptor).
   - **Discovery contract:** a repo is an Buildiq app iff it carries the GitHub
-    **topic `buildiq-app`** and a parseable `buildiq-app.json` at its root.
+    **topic `buildiq-app`** and a parseable `openbuild-app.json` at its root.
 - **NEW** capability `github-app-repo-format`: the format definition above plus a
   serializer/parser service pair:
   - `AppRepoSerializer` — turns a local `Application` + a chosen
@@ -96,7 +96,7 @@ installable app on its own — it is a definition that only Buildiq parses.
 ### New Capabilities
 
 - `github-app-repo-format`: the canonical GitHub repo layout for an Buildiq app
-  (`buildiq-app.json` descriptor, `manifest.json`, `schemas/*.json`, optional
+  (`openbuild-app.json` descriptor, `manifest.json`, `schemas/*.json`, optional
   `README.md` + `img/`), the `buildiq-app` discovery-topic contract, the
   `credentials[]` declaration, and the `AppRepoSerializer` / `AppRepoParser`
   service pair with strict, actionable, all-or-nothing import validation that

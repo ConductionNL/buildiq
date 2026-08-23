@@ -211,7 +211,7 @@ class ObjectSchemaSlugResolverTest extends TestCase {
 	 * @return void
 	 */
 	public function testSchemaSlugResolvesThroughMagicAccessor(): void {
-		$resolver = $this->resolver(['28' => 'application'], ['11' => 'buildiq']);
+		$resolver = $this->resolver(['28' => 'application'], ['11' => 'openbuild']);
 
 		$this->assertSame('application', $resolver->schemaSlug(entity: $this->entity('11', '28')));
 	}//end testSchemaSlugResolvesThroughMagicAccessor()
@@ -222,9 +222,9 @@ class ObjectSchemaSlugResolverTest extends TestCase {
 	 * @return void
 	 */
 	public function testRegisterSlugResolvesThroughMagicAccessor(): void {
-		$resolver = $this->resolver(['28' => 'application'], ['11' => 'buildiq']);
+		$resolver = $this->resolver(['28' => 'application'], ['11' => 'openbuild']);
 
-		$this->assertSame('buildiq', $resolver->registerSlug(entity: $this->entity('11', '28')));
+		$this->assertSame('openbuild', $resolver->registerSlug(entity: $this->entity('11', '28')));
 	}//end testRegisterSlugResolvesThroughMagicAccessor()
 
 	/**
@@ -234,7 +234,7 @@ class ObjectSchemaSlugResolverTest extends TestCase {
 	 * @return void
 	 */
 	public function testIsBuildiqSchemaMatchesBuildiqsOwnObject(): void {
-		$resolver = $this->resolver(['28' => 'application'], ['11' => 'buildiq']);
+		$resolver = $this->resolver(['28' => 'application'], ['11' => 'openbuild']);
 
 		$this->assertTrue(
 			$resolver->isBuildiqSchema(entity: $this->entity('11', '28'), schemaSlug: 'application')
@@ -279,7 +279,7 @@ class ObjectSchemaSlugResolverTest extends TestCase {
 	 * @return void
 	 */
 	public function testPlainObjectWithoutAccessorsYieldsEmptyString(): void {
-		$resolver = $this->resolver(['28' => 'application'], ['11' => 'buildiq']);
+		$resolver = $this->resolver(['28' => 'application'], ['11' => 'openbuild']);
 
 		$this->assertSame('', $resolver->schemaSlug(entity: new \stdClass()));
 		$this->assertSame('', $resolver->registerSlug(entity: new \stdClass()));

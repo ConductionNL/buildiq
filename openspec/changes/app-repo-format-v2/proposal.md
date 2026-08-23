@@ -6,7 +6,7 @@ kind: code
 
 ## Summary
 
-`AppRepoSerializer::serialize()` emits exactly four kinds of file: `buildiq-app.json`, `manifest.json`, `schemas/<slug>.json` (companion schemas of the app's *own* `buildiq-{slug}` register) and `README.md`. Everything else that makes a virtual app work — the shared data registers it binds to, the OpenConnector configs that feed them, its automations, and its skills — is left behind. This change extends the format to v2 so a published app repository carries the app's whole configuration, and the parser reads it back.
+`AppRepoSerializer::serialize()` emits exactly four kinds of file: `openbuild-app.json`, `manifest.json`, `schemas/<slug>.json` (companion schemas of the app's *own* `buildiq-{slug}` register) and `README.md`. Everything else that makes a virtual app work — the shared data registers it binds to, the OpenConnector configs that feed them, its automations, and its skills — is left behind. This change extends the format to v2 so a published app repository carries the app's whole configuration, and the parser reads it back.
 
 ## Motivation
 

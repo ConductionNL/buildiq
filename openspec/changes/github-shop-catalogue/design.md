@@ -10,7 +10,7 @@ takes an `ApplicationTemplate`-shaped array and produces a namespaced local
 `Application` + per-app register.
 
 Change `github-app-repo-format` defined the canonical GitHub repo layout
-(discovery topic `buildiq-app`, root `buildiq-app.json` descriptor,
+(discovery topic `buildiq-app`, root `openbuild-app.json` descriptor,
 `manifest.json`, `schemas/*.json`) and `AppRepoParser::parse(array $files)`, which
 turns a fetched repo file map into exactly that clone-seam array. So the GitHub
 source needs only the network leg: search GitHub, fetch each hit's descriptor for
@@ -81,11 +81,11 @@ Operations:
   `https://api.github.com/search/repositories?q=topic:buildiq-app{+ ' ' + query}`
   with `Accept: application/vnd.github+json`. Returns normalised cards.
 - `fetchDescriptor(string $owner, string $repo, ?string $ref, ?string $actingUserId): ?array`
-  — GET the repo's root `buildiq-app.json` via the contents API; decode for the
+  — GET the repo's root `openbuild-app.json` via the contents API; decode for the
   card. A missing/unparseable descriptor yields a null/unparseable marker (the
   card is shown as non-installable, not dropped).
 - `fetchRepoFiles(string $owner, string $repo, ?string $ref, ?string $actingUserId): array`
-  — fetch the file map needed to install (`buildiq-app.json`, `manifest.json`,
+  — fetch the file map needed to install (`openbuild-app.json`, `manifest.json`,
   every `schemas/*.json`) via the contents API (directory listing + per-file
   fetch, or the git-tree API for efficiency), returning the `path => contents`
   map `AppRepoParser::parse` expects.

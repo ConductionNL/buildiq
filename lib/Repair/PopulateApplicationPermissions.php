@@ -150,7 +150,7 @@ class PopulateApplicationPermissions implements IRepairStep {
 		$applications = $this->objectService->findAll(
 			config: [
 				'filters' => [
-					'register' => 'buildiq',
+					'register' => 'openbuild',
 					'schema' => 'application',
 				],
 				'limit' => 1000,
@@ -185,7 +185,7 @@ class PopulateApplicationPermissions implements IRepairStep {
 			// the Anonymous repair-step caller.
 			$this->objectService->saveObject(
 				object: $applicationArray,
-				register: 'buildiq',
+				register: 'openbuild',
 				schema: 'application',
 				_rbac: false,
 				_multitenancy: false

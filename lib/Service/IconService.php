@@ -53,7 +53,7 @@ class IconService {
 	/**
 	 * Register slug that hosts Application objects.
 	 */
-	private const REGISTER_SLUG = 'buildiq';
+	private const REGISTER_SLUG = 'openbuild';
 
 	/**
 	 * Schema slug for Application objects.

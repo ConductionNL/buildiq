@@ -41,7 +41,7 @@ next change (`github-app-sync`) and is out of scope here.
     Results are **cached server-side** with a short TTL (`ICacheFactory`), because
     the anonymous GitHub search API is rate-limited to ~10 req/min.
   - **Card metadata:** for each hit the service fetches the repo's root
-    `buildiq-app.json` (anonymous contents API, cached) to build a card
+    `openbuild-app.json` (anonymous contents API, cached) to build a card
     (`slug`, `name`, `description`, `category`, `appType`, `version`, declared
     `credentials[]`, repo owner/name, stars) — a repo whose descriptor is missing
     or unparseable is surfaced as a non-installable/unparseable candidate, never

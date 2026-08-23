@@ -180,7 +180,7 @@ class CreateFromTemplateTest extends TestCase {
 		$this->registerMapper->method('find')->willReturnCallback(
 			function (...$args) use ($registerEntity): Register {
 				$slug = (string)($args['id'] ?? $args[0]);
-				if ($slug === 'buildiq') {
+				if ($slug === 'openbuild') {
 					return $registerEntity;
 				}
 				throw new \RuntimeException('register not found: ' . $slug);

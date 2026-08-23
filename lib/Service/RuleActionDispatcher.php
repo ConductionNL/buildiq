@@ -197,7 +197,7 @@ class RuleActionDispatcher {
 			return null;
 		}
 
-		$register = (string)($params['register'] ?? 'buildiq');
+		$register = (string)($params['register'] ?? 'openbuild');
 		$operation = (string)($params['operation'] ?? 'create');
 		$object = [];
 		if (is_array($params['object'] ?? null) === true) {

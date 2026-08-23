@@ -30,7 +30,7 @@ the raw GitHub response body to the caller.
 ### Requirement: Per-hit descriptor fetch builds installable cards
 
 The `GitHubCatalogService` SHALL, for each search hit, fetch the repo's root
-`buildiq-app.json` (via the GitHub contents API on the fixed host) and build a
+`openbuild-app.json` (via the GitHub contents API on the fixed host) and build a
 card carrying `slug`, `name`, `description`, `category`, `appType`, `version`, the
 declared `credentials[]`, and the repo identity (owner / name, optional stars).
 A hit whose descriptor is missing or unparseable SHALL be surfaced as a
@@ -41,13 +41,13 @@ the results.
 
 #### Scenario: A conforming repo yields an installable card
 
-- **WHEN** a search hit's repo has a parseable root `buildiq-app.json`
+- **WHEN** a search hit's repo has a parseable root `openbuild-app.json`
 - **THEN** the card carries the descriptor's `slug`, `name`, `description`,
   `category`, `appType`, and `version`
 
 #### Scenario: A repo without a parseable descriptor is surfaced, not dropped
 
-- **WHEN** a search hit's repo has no parseable `buildiq-app.json`
+- **WHEN** a search hit's repo has no parseable `openbuild-app.json`
 - **THEN** the card is surfaced as a non-installable / unparseable candidate
 - **AND** the hit is not silently removed from the result set
 

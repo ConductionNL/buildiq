@@ -16,7 +16,7 @@ the repo with the `buildiq-app` topic (the store's discovery contract):
 
 | File | Contents |
 |------|----------|
-| `buildiq-app.json` | App descriptor — slug, name, description, category, `appType`, version, icon refs, and the declared `credentials[]`. |
+| `openbuild-app.json` | App descriptor — slug, name, description, category, `appType`, version, icon refs, and the declared `credentials[]`. |
 | `manifest.json` | The `ApplicationVersion` manifest — every page, widget, menu entry, sidebar, and setting. |
 | `schemas/<slug>.json` | The companion schemas that make up the data model. |
 | `README.md` | Generated overview of the app. |
@@ -75,7 +75,7 @@ version-promotion flow.
 
 Go to **Store → GitHub**. The store searches GitHub for the `buildiq-app` topic
 and renders each published app as an installable card built from its
-`buildiq-app.json`. Click **Install**, name the new app, and confirm — the
+`openbuild-app.json`. Click **Install**, name the new app, and confirm — the
 repository is parsed and cloned into a fresh local app through the same seam as
 any template (`ApplicationsController::installFromTemplateArray`), so it is an
 ordinary editable virtual app, not a locked import.

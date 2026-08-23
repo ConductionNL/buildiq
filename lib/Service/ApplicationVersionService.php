@@ -66,7 +66,7 @@ class ApplicationVersionService {
 	/**
 	 * Shared register that hosts both Application and ApplicationVersion.
 	 */
-	public const REGISTER_SLUG = 'buildiq';
+	public const REGISTER_SLUG = 'openbuild';
 
 	/**
 	 * Schema slug of the parent Application object.

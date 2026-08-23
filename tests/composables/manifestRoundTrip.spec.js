@@ -183,7 +183,7 @@ describe('manifest round-trip', () => {
 						type: 'index',
 						title: 'Messages',
 						config: {
-							register: 'buildiq',
+							register: 'openbuild',
 							schema: 'hello-message',
 							columns: ['title', 'body'],
 							sort: { field: 'created', dir: 'desc' },

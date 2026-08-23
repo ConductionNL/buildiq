@@ -28,7 +28,7 @@ The system SHALL define one canonical GitHub repository layout that represents a
 Buildiq app as a round-trippable **data** definition (not the exporter's PHP
 scaffold). A conforming repo SHALL contain, at its root:
 
-- `buildiq-app.json` — the app descriptor (REQ-GARF-002).
+- `openbuild-app.json` — the app descriptor (REQ-GARF-002).
 - `manifest.json` — the `ApplicationVersion.manifest` blob verbatim (the JSON
   consumed by `CnAppRoot` at runtime).
 - `schemas/` — a directory holding one JSON file per companion schema, the file's
@@ -43,20 +43,20 @@ is a definition only Buildiq parses, never an installable Nextcloud app.
 
 #### Scenario: A conforming repo carries descriptor, manifest, and schemas
 
-- **WHEN** a repo file map contains `buildiq-app.json` and `manifest.json` at
+- **WHEN** a repo file map contains `openbuild-app.json` and `manifest.json` at
   the root and one or more `schemas/<slug>.json` files
 - **THEN** the parser (REQ-GARF-006) recognises it as a conforming Buildiq app
   repo and produces an in-memory install payload
 
 #### Scenario: A repo without a root descriptor is not an Buildiq app repo
 
-- **WHEN** a repo file map has no `buildiq-app.json` at its root
+- **WHEN** a repo file map has no `openbuild-app.json` at its root
 - **THEN** the parser rejects it with the `descriptor_missing` error and produces
   no payload
 
-### Requirement: buildiq-app.json descriptor contract
+### Requirement: openbuild-app.json descriptor contract
 
-The `buildiq-app.json` descriptor SHALL declare: `formatVersion` (string,
+The `openbuild-app.json` descriptor SHALL declare: `formatVersion` (string,
 required — the layout version, initially `"1.0"`), `slug` (string, required,
 kebab-case), `name` (string, required), `description` (string, required),
 `category` (string, required), `appType` (string enum `virtual | hybrid`,
@@ -72,7 +72,7 @@ schema blobs (those live in `manifest.json` / `schemas/*.json`).
 
 #### Scenario: A valid descriptor exposes the identity and version fields
 
-- **WHEN** the parser reads an `buildiq-app.json` carrying `formatVersion`,
+- **WHEN** the parser reads an `openbuild-app.json` carrying `formatVersion`,
   `slug`, `name`, `description`, `category`, `appType: virtual`, and `version`
 - **THEN** those fields are mapped onto the in-memory install payload's `slug`,
   `title`, `description`, `category`, and `version`
@@ -88,7 +88,7 @@ schema blobs (those live in `manifest.json` / `schemas/*.json`).
 
 The system SHALL define that a GitHub repository is discoverable as an Buildiq
 app **iff** it carries the GitHub **topic `buildiq-app`** AND exposes a
-parseable `buildiq-app.json` at its root. The topic is the search key that the
+parseable `openbuild-app.json` at its root. The topic is the search key that the
 shop (change `github-shop-catalogue`) queries; the root descriptor is the
 authoritative parse target. A repo carrying the topic but no parseable descriptor
 SHALL be treated as a non-conforming candidate (surfaced as unparseable, not
@@ -100,7 +100,7 @@ silently skipped).
 
 - **WHEN** the format's discovery contract is consulted
 - **THEN** it names the GitHub topic `buildiq-app` as the search key AND a root
-  `buildiq-app.json` as the parse target
+  `openbuild-app.json` as the parse target
 
 ### Requirement: manifest.json carries the ApplicationVersion manifest blob
 
@@ -158,7 +158,7 @@ files resolving to the same slug SHALL be rejected (REQ-GARF-008,
 
 The system SHALL provide an `AppRepoSerializer` service that, given a local
 `Application` and a chosen `ApplicationVersion`, produces the ordered set of repo
-files (`buildiq-app.json`, `manifest.json`, one `schemas/<slug>.json` per
+files (`openbuild-app.json`, `manifest.json`, one `schemas/<slug>.json` per
 companion schema, and an optional `README.md`). The serializer SHALL emit files
 in a deterministic order and canonicalise every JSON file (sorted keys, stable
 indentation, trailing newline) so that re-serialising an unchanged app yields a
@@ -171,7 +171,7 @@ perform no network I/O and no OpenRegister writes.
 
 - **WHEN** `AppRepoSerializer` serialises an Application with two companion
   schemas at a chosen version
-- **THEN** the produced file map contains `buildiq-app.json`, `manifest.json`,
+- **THEN** the produced file map contains `openbuild-app.json`, `manifest.json`,
   and exactly two `schemas/<slug>.json` files
 
 #### Scenario: Re-serialising an unchanged app is byte-stable
@@ -262,7 +262,7 @@ that disagree SHALL NOT fail the parse — the manifest wins.
 
 - **WHEN** the serializer serialises an app whose manifest declares a top-level
   `credentials[]` entry for the `github` provider
-- **THEN** the emitted `buildiq-app.json` carries a matching `credentials`
+- **THEN** the emitted `openbuild-app.json` carries a matching `credentials`
   entry with `provider: "github"`, its `reason`, and its `scopes`
 
 #### Scenario: The manifest is authoritative on parse

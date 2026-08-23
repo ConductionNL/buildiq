@@ -211,8 +211,8 @@
 									"    dependencies: ['openregister'],",
 									"    menu: [{ id: 'Messages', label: 'buildiq.helloworld.menu.messages', icon: 'icon-comment', route: 'Messages', order: 1 }],",
 									"    pages: [",
-									"        { id: 'Messages', route: '/', type: 'index', title: 'buildiq.helloworld.title.messages', config: { register: 'buildiq', schema: 'hello-message', columns: ['title', 'body', '@self.created'] } },",
-									"        { id: 'About', route: '/about', type: 'detail', title: 'buildiq.helloworld.title.about', config: { register: 'buildiq', schema: 'hello-message' } }",
+									"        { id: 'Messages', route: '/', type: 'index', title: 'buildiq.helloworld.title.messages', config: { register: 'openbuild', schema: 'hello-message', columns: ['title', 'body', '@self.created'] } },",
+									"        { id: 'About', route: '/about', type: 'detail', title: 'buildiq.helloworld.title.about', config: { register: 'openbuild', schema: 'hello-message' } }",
 									"    ]",
 									"};",
 									"pm.collectionVariables.set('merged_body', JSON.stringify(Object.assign({}, base, { version: '1.1.0', status: 'published', manifest: manifest })));"
@@ -339,7 +339,7 @@
 									"    dependencies: ['openregister'],",
 									"    menu: [{ id: 'Messages', label: 'buildiq.helloworld.menu.messages', icon: 'icon-comment', route: 'Messages', order: 1 }],",
 									"    pages: [",
-									"        { id: 'Messages', route: '/', type: 'index', title: 'buildiq.helloworld.title.messages', config: { register: 'buildiq', schema: 'hello-message', columns: ['title', 'body', '@self.created'] } }",
+									"        { id: 'Messages', route: '/', type: 'index', title: 'buildiq.helloworld.title.messages', config: { register: 'openbuild', schema: 'hello-message', columns: ['title', 'body', '@self.created'] } }",
 									"    ]",
 									"};",
 									"pm.collectionVariables.set('merged_body', JSON.stringify(Object.assign({}, base, { version: '1.0.0-rb1', status: 'published', manifest: manifest })));"

@@ -5,7 +5,7 @@
  *
  * Turns a local Application object + a chosen ApplicationVersion object into the
  * ordered set of GitHub app-repo files (github-app-repo-format REQ-GARF-006): the
- * `buildiq-app.json` descriptor, `manifest.json` (the version's manifest blob
+ * `openbuild-app.json` descriptor, `manifest.json` (the version's manifest blob
  * verbatim), one `schemas/<slug>.json` per companion schema of the app's per-app
  * register, and an optional `README.md`. Pure transformation — it reads the
  * companion schemas from the app's per-app OpenRegister register but performs NO
@@ -147,7 +147,7 @@ class AppRepoSerializer {
 		$channels = $this->collectChannels(application: $application, slug: $slug);
 
 		$files = [];
-		$files['buildiq-app.json'] = $this->encode(
+		$files['openbuild-app.json'] = $this->encode(
 			data: $this->buildDescriptor(
 				application: $application,
 				version: $version,
@@ -664,7 +664,7 @@ class AppRepoSerializer {
 			$results = $this->objectService->findAll(
 				config: [
 					'filters' => [
-						'register' => 'buildiq',
+						'register' => 'openbuild',
 						'schema' => 'automation',
 						'applicationSlug' => $slug,
 					],
@@ -749,7 +749,7 @@ class AppRepoSerializer {
 	}//end serializeTemplate()
 
 	/**
-	 * Build the `buildiq-app.json` descriptor (REQ-GARF-002, REQ-GARF-009).
+	 * Build the `openbuild-app.json` descriptor (REQ-GARF-002, REQ-GARF-009).
 	 *
 	 * @param array<string,mixed> $application The Application object.
 	 * @param array<string,mixed> $version The chosen ApplicationVersion object.

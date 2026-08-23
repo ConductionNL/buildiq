@@ -91,7 +91,7 @@
 							"    id: 'newman-added',",
 							"    type: 'index',",
 							"    route: '/newman-added',",
-							"    config: { register: 'buildiq', schema: 'hello-message' }",
+							"    config: { register: 'openbuild', schema: 'hello-message' }",
 							"});",
 							"pm.collectionVariables.set('mutated_body', JSON.stringify({ manifest: manifest }));"
 						]

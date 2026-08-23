@@ -23,11 +23,11 @@ By the end you will have stored a GitHub credential, published your app to a pub
 
 1. Add a GitHub credential. Open the app's **user settings → Credentials**, click **Add credential**, choose the **GitHub** provider, paste your token, and allow **buildiq** to use it. The token is stored write-only — it is never shown or returned again.
 
-2. Open your app, then **Actions → GitHub**. Pick your GitHub credential and click **Publish**. Buildiq creates a **public** repository, tags it with the `buildiq-app` topic, and commits the app — `buildiq-app.json`, `manifest.json`, and `schemas/` — in one clean commit. The token never reaches Buildiq; the broker makes the call and returns only the repository it created.
+2. Open your app, then **Actions → GitHub**. Pick your GitHub credential and click **Publish**. Buildiq creates a **public** repository, tags it with the `buildiq-app` topic, and commits the app — `openbuild-app.json`, `manifest.json`, and `schemas/` — in one clean commit. The token never reaches Buildiq; the broker makes the call and returns only the repository it created.
 
    ![The GitHub panel: credential picker with Link repository, Publish, and Pull buttons](/screenshots/tutorials/user/09-publish-to-github-01.png)
 
-3. Go to **Store → GitHub**. The store searches GitHub for the `buildiq-app` topic and shows each published app as an installable card, built from its `buildiq-app.json`. Your app appears there — public apps with no credential at all; add your credential to also see your own private repositories.
+3. Go to **Store → GitHub**. The store searches GitHub for the `buildiq-app` topic and shows each published app as an installable card, built from its `openbuild-app.json`. Your app appears there — public apps with no credential at all; add your credential to also see your own private repositories.
 
    ![The store GitHub tab with a search box and an installable app card](/screenshots/tutorials/user/09-publish-to-github-02.png)
 
@@ -39,7 +39,7 @@ By the end you will have stored a GitHub credential, published your app to a pub
 
 ## Verification
 
-The round-trip is good when: after publishing, the repository exists on GitHub with `buildiq-app.json`, `manifest.json`, and `schemas/`, and carries the `buildiq-app` topic. The strongest test: delete the app locally, search **Store → GitHub**, and install it again — you get the same app back, because it now lives in the repository.
+The round-trip is good when: after publishing, the repository exists on GitHub with `openbuild-app.json`, `manifest.json`, and `schemas/`, and carries the `buildiq-app` topic. The strongest test: delete the app locally, search **Store → GitHub**, and install it again — you get the same app back, because it now lives in the repository.
 
 ## Common issues
 
@@ -48,7 +48,7 @@ The round-trip is good when: after publishing, the repository exists on GitHub w
 | **Publish** is disabled with a hint | No usable GitHub credential, or the OpenRegister broker/allow-rules are not available on this instance. Add a `github` credential in step 1; confirm OpenRegister is up to date (catalogue v1.2.0+). |
 | Published app does not appear in **Store → GitHub** | Anonymous search only sees **public** repositories, and GitHub's public index can lag a minute for a brand-new repo. Pass your credential (the tab uses it automatically when present) to see it immediately, including private repos. |
 | `push_conflict` on re-publish | The remote branch moved since you last synced. **Pull** first (it creates a draft), reconcile, then publish again — publish never force-overwrites. |
-| Install fails naming a file | The repository does not match the expected layout (`buildiq-app.json` + `manifest.json` + `schemas/`). The error names the offending file; fix it in the repo and re-install. |
+| Install fails naming a file | The repository does not match the expected layout (`openbuild-app.json` + `manifest.json` + `schemas/`). The error names the offending file; fix it in the repo and re-install. |
 
 ## Reference
 

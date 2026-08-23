@@ -93,7 +93,7 @@ export default {
 			form: {
 				register: '',
 				registry_url: '',
-				registry_register: 'buildiq',
+				registry_register: 'openbuild',
 				registry_token: '',
 			},
 

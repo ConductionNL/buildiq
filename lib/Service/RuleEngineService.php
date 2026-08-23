@@ -51,7 +51,7 @@ class RuleEngineService {
 	/**
 	 * Shared Buildiq register slug.
 	 */
-	public const REGISTER_SLUG = 'buildiq';
+	public const REGISTER_SLUG = 'openbuild';
 
 	/**
 	 * Schema slugs for the rules-engine objects.

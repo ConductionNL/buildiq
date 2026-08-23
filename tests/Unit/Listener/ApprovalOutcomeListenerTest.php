@@ -148,7 +148,7 @@ final class ApprovalOutcomeListenerTest extends TestCase {
 			static fn (array $a): array => [
 				'type' => $a['type'],
 				'parameters' => match ($a['type']) {
-					'object-op' => ['schema' => $a['schema'], 'operation' => $a['operation'], 'object' => $a['fieldMapping'], 'register' => 'buildiq'],
+					'object-op' => ['schema' => $a['schema'], 'operation' => $a['operation'], 'object' => $a['fieldMapping'], 'register' => 'openbuild'],
 					default => [],
 				},
 			]

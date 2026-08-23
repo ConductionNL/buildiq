@@ -68,7 +68,7 @@ class AgentsController extends Controller {
 	/**
 	 * Shared Buildiq register slug.
 	 */
-	private const REGISTER_SLUG = 'buildiq';
+	private const REGISTER_SLUG = 'openbuild';
 
 	/**
 	 * Schema slug of the Agent object.

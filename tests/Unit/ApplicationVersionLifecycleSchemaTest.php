@@ -15,7 +15,7 @@
  *   - the three transitions are publish (draft→published),
  *     archive (published→archived), reopen (archived→draft)
  *   - the publish transition declares an `upsert_relation` action
- *     targeting `buildiq/built-app-route` (BuiltAppRoute upkeep)
+ *     targeting `openbuild/built-app-route` (BuiltAppRoute upkeep)
  *
  * A real end-to-end transition test requires booted Nextcloud +
  * OpenRegister with a Postgres / MySQL backend (see buildiq#10
@@ -187,7 +187,7 @@ class ApplicationVersionLifecycleSchemaTest extends TestCase {
 		self::assertArrayHasKey('upsert_relation', $transition['on_transition']);
 
 		$upsert = $transition['on_transition']['upsert_relation'];
-		self::assertSame('buildiq/built-app-route', $upsert['schema'] ?? null);
+		self::assertSame('openbuild/built-app-route', $upsert['schema'] ?? null);
 		// The slug-keyed match ensures the route survives republishes
 		// (one row per Application slug).
 		self::assertArrayHasKey('match', $upsert);

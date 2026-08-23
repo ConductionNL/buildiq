@@ -117,7 +117,7 @@ class ApplicationInsightsService {
 	 *
 	 * @var string
 	 */
-	private const REGISTER_SLUG = 'buildiq';
+	private const REGISTER_SLUG = 'openbuild';
 
 	/**
 	 * Constructor.

@@ -51,7 +51,7 @@ class ExportJobService {
 	/**
 	 * OR register slug hosting the ExportJob schema (#104).
 	 */
-	public const REGISTER_SLUG = 'buildiq';
+	public const REGISTER_SLUG = 'openbuild';
 
 	/**
 	 * OR schema SLUG for the ExportJob record (#104). NOTE: this is
@@ -248,7 +248,7 @@ class ExportJobService {
 	 * `register`/`schema` (so `ObjectService::saveObject()` relied on
 	 * whatever register/schema context an EARLIER call in the same request
 	 * left behind — e.g. `ExportsController::isAuthorisedForApplication()`'s
-	 * `searchObjectsBySlug('buildiq', 'application', ...)` call re-anchors
+	 * `searchObjectsBySlug('openbuild', 'application', ...)` call re-anchors
 	 * that ambient state to schema=`application`, which does not accept an
 	 * ExportJob payload's shape) AND `uuid` (so `extractUuidAndNormalizeObject()`
 	 * — which only recognises `@self.id`/`id`, not our own `uuid` data field —

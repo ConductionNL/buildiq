@@ -7,7 +7,7 @@ v1 emits four kinds of file. v2 emits eight, and the four new ones are what turn
 ```
 v1 (today)                          v2 (this change)
 ──────────                          ────────────────
-buildiq-app.json                  buildiq-app.json      formatVersion 2.0 + channel counts
+openbuild-app.json                  openbuild-app.json      formatVersion 2.0 + channel counts
 manifest.json                       manifest.json
 schemas/<slug>.json                 schemas/<slug>.json     per-app register (unchanged)
 README.md                           data-registers/<slug>.json   NEW  shared registers the app binds

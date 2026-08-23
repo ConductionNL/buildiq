@@ -224,7 +224,7 @@ class PublishRollbackTest extends TestCase {
 				'manifest' => $manifestV1,
 				'currentVersion' => 'snap-bootstrap',
 			],
-			register: 'buildiq',
+			register: 'openbuild',
 			schema: 'application'
 		);
 		$appUuid = $appEntity->jsonSerialize()['@self']['id'];
@@ -234,7 +234,7 @@ class PublishRollbackTest extends TestCase {
 				'slug' => 'hello-world',
 				'applicationUuid' => $appUuid,
 			],
-			register: 'buildiq',
+			register: 'openbuild',
 			schema: 'built-app-route'
 		);
 
@@ -247,7 +247,7 @@ class PublishRollbackTest extends TestCase {
 				'publishedAt' => '2026-05-01T10:00:00Z',
 				'publishedBy' => 'system',
 			],
-			register: 'buildiq',
+			register: 'openbuild',
 			schema: 'application-version'
 		);
 

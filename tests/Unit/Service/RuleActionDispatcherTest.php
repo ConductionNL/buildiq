@@ -165,7 +165,7 @@ final class RuleActionDispatcherTest extends TestCase {
 		);
 
 		$this->assertSame(['title' => 'from automation'], $captured[0]);
-		$this->assertSame('buildiq', $captured[2] ?? null);
+		$this->assertSame('openbuild', $captured[2] ?? null);
 		$this->assertSame('permit', $captured[3] ?? null);
 		$this->assertSame('from automation', $result['title']);
 
