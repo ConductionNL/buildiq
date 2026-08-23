@@ -36,7 +36,7 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // RBAC-filtered Application list (buildiq-rbac REQ-OBRBAC-002 / REQ-OBR-007).
         // OR's schema-level read rule is a coarse group ACL — not a row-level filter on the
         // Application's `permissions` block — so the editor list MUST go through this
-        // endpoint, NOT directly through `/apps/openregister/api/objects/buildiq/application`,
+        // endpoint, NOT directly through `/apps/openregister/api/objects/openbuild/application`,
         // which would leak every Application + permissions to every authed user (IDOR).
         // Listed BEFORE the {slug} route so the wildcard does not shadow it (Symfony router
         // is order-sensitive when prefix overlaps).
