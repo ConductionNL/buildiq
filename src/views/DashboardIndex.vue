@@ -325,7 +325,7 @@ export default {
 		 */
 		async fetchTotal(schema, filter = {}) {
 			const url = generateUrl(
-				'/apps/openregister/api/objects/buildiq/{schema}',
+				'/apps/openregister/api/objects/openbuild/{schema}',
 				{ schema },
 			)
 			const { data } = await axios.get(url, {
@@ -345,7 +345,7 @@ export default {
 		 */
 		async fetchObjects(schema, limit) {
 			const url = generateUrl(
-				'/apps/openregister/api/objects/buildiq/{schema}',
+				'/apps/openregister/api/objects/openbuild/{schema}',
 				{ schema },
 			)
 			const { data } = await axios.get(url, {

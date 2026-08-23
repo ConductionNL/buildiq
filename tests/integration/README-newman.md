@@ -20,7 +20,7 @@ legacy `buildiq.postman_collection.json` in this directory, which uses
 | 1. App Creation Wizard | `POST /api/applications/wizard` | **201** + `applicationUuid` (PHASE-0) | 422 missing name, 422 bad slug | 401 no-auth |
 | 2. Manifest | `GET /api/applications/{slug}/manifest` | **200** for a wizard-built app + no `permissions` leak (PHASE-0) | 404 unknown slug | 401 no-auth |
 | 3. Application List | `GET /api/applications` (listMine, RBAC) | 200 flat array containing the wizard app | — | 401 no-auth |
-| 4. Virtual App CRUD | OR `/api/objects/buildiq/application` (ADR-022) | create → read → update → delete with id capture | 404 unknown object | (OR object reads are not buildiq-gated) |
+| 4. Virtual App CRUD | OR `/api/objects/openbuild/application` (ADR-022) | create → read → update → delete with id capture | 404 unknown object | (OR object reads are not buildiq-gated) |
 | 5. Settings | `GET /api/settings` | 200 + contract shape (`register`, `openregisters`) | — | 401 no-auth |
 | 6. Exports | `POST /api/applications/{slug}/exports`, `GET /api/exports/{uuid}/download` | — (see KNOWN BUG) | 403/422 bad-target (4xx not 500), 404 unknown job | 401 no-auth on download |
 | 9. Teardown | OR delete | idempotent cleanup of the wizard app | — | — |

@@ -62,7 +62,8 @@ const PAGE_ID = 'e2e-cb-page'
 /** Every fixture block slug shares this prefix so the baseline reset can find them. */
 const BLOCK_PREFIX = 'pw-cb-'
 /** Blocks live as OpenRegister objects, not in the app manifest. */
-const BLOCKS_API = '/index.php/apps/openregister/api/objects/buildiq/component-block'
+const BLOCKS_API =
+	'/index.php/apps/openregister/api/objects/openbuild/component-block'
 /** blockInsert.js#UNRESOLVED_SCHEMA_PLACEHOLDER — the "needs remap" sentinel. */
 const UNRESOLVED = '__needs-remap__'
 

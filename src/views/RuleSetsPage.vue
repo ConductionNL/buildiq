@@ -166,7 +166,7 @@ export default {
 			this.errorMessage = ''
 			try {
 				const url = generateUrl(
-					'/apps/openregister/api/objects/buildiq/rule-set',
+					'/apps/openregister/api/objects/openbuild/rule-set',
 				)
 				const { data } = await axios.get(url)
 				this.ruleSets = this.extractResults(data)

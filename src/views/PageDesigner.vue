@@ -641,7 +641,7 @@ export default {
 		 * Fetch the Application record for `this.slug` and store its
 		 * `dataRegisters` (default `[]`). Same call shape
 		 * `useApplicationVersion.js` already uses internally
-		 * (`GET /apps/openregister/api/objects/buildiq/application`,
+		 * (`GET /apps/openregister/api/objects/openbuild/application`,
 		 * filtered by `slug` + `_limit: 1`) — see design.md Decision 2 for why
 		 * this is a small dedicated fetch rather than widening that shared
 		 * composable's contract. Failures degrade to `[]` (no bindings)
@@ -654,7 +654,7 @@ export default {
 		async fetchApplicationDataRegisters() {
 			try {
 				const url = generateUrl(
-					'/apps/openregister/api/objects/buildiq/application',
+					'/apps/openregister/api/objects/openbuild/application',
 				)
 				const { data } = await axios.get(url, {
 					params: { slug: this.slug, _limit: 1 },
@@ -701,7 +701,7 @@ export default {
 			}
 			try {
 				const url = generateUrl(
-					'/apps/openregister/api/objects/buildiq/component-block',
+					'/apps/openregister/api/objects/openbuild/component-block',
 				)
 				const { data } = await axios.get(url)
 				this.existingBlocks = Array.isArray(data && data.results)

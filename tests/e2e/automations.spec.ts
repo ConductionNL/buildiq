@@ -36,7 +36,7 @@ const APP_TITLE_PATTERN = new RegExp(APP_SLUG.replace(/-/g, '.?'), 'i')
  * schema slug already claimed by another app on this instance (a CRM
  * automation schema, trigger: string enum `lead_created|...`). OpenRegister
  * resolves `/apps/openregister/api/schemas/automation` and the generic
- * `/apps/openregister/api/objects/buildiq/automation` write path by SLUG,
+ * `/apps/openregister/api/objects/openbuild/automation` write path by SLUG,
  * globally, not scoped to the buildiq register — so `POST` a real
  * automation payload 400s ("Property 'trigger' should be type 'string'").
  * Confirmed live: `GET .../registers/buildiq` lists 15 schemas, none of
@@ -214,7 +214,7 @@ const FIXED_AUTOMATION_NAMES = [
  */
 async function deleteStaleAutomations(request: APIRequestContext): Promise<void> {
 	const resp = await request.get(
-		'/index.php/apps/openregister/api/objects/buildiq/automation',
+		'/index.php/apps/openregister/api/objects/openbuild/automation',
 		{
 			headers: { 'OCS-APIRequest': 'true' },
 		},
@@ -228,7 +228,7 @@ async function deleteStaleAutomations(request: APIRequestContext): Promise<void>
 		if (FIXED_AUTOMATION_NAMES.includes(automation?.name) && automation?.id) {
 			await request
 				.delete(
-					`/index.php/apps/openregister/api/objects/buildiq/automation/${automation.id}`,
+					`/index.php/apps/openregister/api/objects/openbuild/automation/${automation.id}`,
 					{
 						headers: { 'OCS-APIRequest': 'true' },
 					},

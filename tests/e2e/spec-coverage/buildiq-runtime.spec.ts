@@ -296,7 +296,7 @@ test('REQ-OBR-004 — re-running the seed creates no duplicate app or messages',
 	).toBe(1)
 
 	const objects = await request.get(
-		`${BASE}/index.php/apps/openregister/api/objects/buildiq/hello-message?_limit=50`,
+		`${BASE}/index.php/apps/openregister/api/objects/openbuild/hello-message?_limit=50`,
 		{ headers: { 'OCS-APIRequest': 'true' } },
 	)
 	expect(objects.ok()).toBeTruthy()

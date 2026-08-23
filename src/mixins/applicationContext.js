@@ -16,7 +16,7 @@ import { generateUrl } from '@nextcloud/router'
 import { fetchApplicationRecord } from '../composables/useApplicationRecord.js'
 import { getCurrentUserGroups, useRole } from '../composables/useRole.js'
 
-const OR_OBJECTS = '/apps/openregister/api/objects/buildiq/application'
+const OR_OBJECTS = '/apps/openregister/api/objects/openbuild/application'
 
 export default {
 	props: {

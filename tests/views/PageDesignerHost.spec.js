@@ -443,7 +443,7 @@ describe('PageDesignerHost', () => {
 		// PATCH the manifest only — a full-object PUT trips the reserved `register`
 		// property collision on the ApplicationVersion schema.
 		expect(axiosPatchMock).toHaveBeenCalledWith(
-			'/apps/openregister/api/objects/buildiq/applicationVersion/ver-uuid',
+			'/apps/openregister/api/objects/openbuild/applicationVersion/ver-uuid',
 			{ manifest: expect.any(Object) },
 		)
 		expect(axiosPutMock).not.toHaveBeenCalled()
@@ -461,7 +461,7 @@ describe('PageDesignerHost', () => {
 		})
 		await wrapper.vm.save()
 		expect(axiosPutMock).toHaveBeenCalledWith(
-			'/apps/openregister/api/objects/buildiq/application/app-1',
+			'/apps/openregister/api/objects/openbuild/application/app-1',
 			expect.objectContaining({ manifest: expect.any(Object) }),
 		)
 		expect(wrapper.vm.toast).toBe('Pages saved.')

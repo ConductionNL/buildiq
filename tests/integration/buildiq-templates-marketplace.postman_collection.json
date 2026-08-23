@@ -30,9 +30,9 @@
 					{ "key": "OCS-APIRequest", "value": "true" }
 				],
 				"url": {
-					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application-template",
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application-template",
 					"host": ["{{base_url}}"],
-					"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "application-template"]
+					"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application-template"]
 				},
 				"description": "Read the seeded ApplicationTemplate records directly from OpenRegister (REQ-OBTC-003)."
 			},

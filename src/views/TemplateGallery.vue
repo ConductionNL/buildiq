@@ -242,7 +242,7 @@ import {
 } from '@nextcloud/vue'
 import CloneTemplateDialog from '../modals/CloneTemplateDialog.vue'
 
-const OR_BLOCKS = '/apps/openregister/api/objects/buildiq/component-block'
+const OR_BLOCKS = '/apps/openregister/api/objects/openbuild/component-block'
 
 const CATEGORY_LABELS = {
 	'government-services': 'Government services',

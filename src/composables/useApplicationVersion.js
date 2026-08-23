@@ -149,7 +149,7 @@ export function useApplicationVersion(appSlug, versionSlug) {
 			let productionUuid = null
 			try {
 				const appUrl = generateUrl(
-					'/apps/openregister/api/objects/buildiq/application',
+					'/apps/openregister/api/objects/openbuild/application',
 				)
 				const { data: appData } = await axios.get(appUrl, {
 					params: { slug: appSlug, _limit: 1 },

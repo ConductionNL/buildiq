@@ -155,7 +155,7 @@ export default {
 			this.loading = true
 			try {
 				const url = generateUrl(
-					'/apps/openregister/api/objects/buildiq/rule-test-case',
+					'/apps/openregister/api/objects/openbuild/rule-test-case',
 				)
 				const { data } = await axios.get(url)
 				const all = Array.isArray(data) ? data : data.results || []
@@ -236,7 +236,7 @@ export default {
 				const payload = JSON.parse(this.draft.inputPayloadText || '{}')
 				const expected = JSON.parse(this.draft.expectedText || '{}')
 				const url = generateUrl(
-					'/apps/openregister/api/objects/buildiq/rule-test-case',
+					'/apps/openregister/api/objects/openbuild/rule-test-case',
 				)
 				await axios.post(url, {
 					ruleSetId: this.ruleSet.slug,

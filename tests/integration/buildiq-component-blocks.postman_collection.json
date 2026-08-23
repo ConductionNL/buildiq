@@ -36,9 +36,9 @@
 					"raw": "{\n  \"slug\": \"{{block_slug}}\",\n  \"name\": \"Newman status badge\",\n  \"description\": \"A status badge widget captured for the Newman contract run.\",\n  \"category\": \"display\",\n  \"schemaDependencies\": [\"permit-application\"],\n  \"sourceApplicationSlug\": \"newman-source-app\",\n  \"fragment\": {\n    \"id\": \"status-badge-1\",\n    \"widgetKey\": \"status-badge\",\n    \"slot\": \"body\",\n    \"gridX\": 0,\n    \"gridY\": 0,\n    \"gridWidth\": 4,\n    \"gridHeight\": 2,\n    \"dataSource\": { \"schema\": \"permit-application\" }\n  }\n}"
 				},
 				"url": {
-					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/component-block",
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/component-block",
 					"host": ["{{base_url}}"],
-					"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "component-block"]
+					"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "component-block"]
 				},
 				"description": "Saving a widget captures its config, not its data (REQ) — the created record's fragment carries structure only."
 			},
@@ -91,9 +91,9 @@
 					{ "key": "OCS-APIRequest", "value": "true" }
 				],
 				"url": {
-					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/component-block",
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/component-block",
 					"host": ["{{base_url}}"],
-					"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "component-block"]
+					"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "component-block"]
 				},
 				"description": "Library lists org-wide blocks (REQ) — a block saved by any editor in the organisation is visible to every other editor."
 			},
@@ -130,9 +130,9 @@
 					"raw": "{\n  \"slug\": \"{{block_slug}}\",\n  \"name\": \"Newman status badge (updated)\",\n  \"description\": \"Updated description.\",\n  \"category\": \"display\",\n  \"schemaDependencies\": [\"permit-application\"],\n  \"sourceApplicationSlug\": \"newman-source-app\",\n  \"fragment\": {\n    \"id\": \"status-badge-1\",\n    \"widgetKey\": \"status-badge\",\n    \"slot\": \"body\",\n    \"gridX\": 0,\n    \"gridY\": 0,\n    \"gridWidth\": 4,\n    \"gridHeight\": 2,\n    \"dataSource\": { \"schema\": \"permit-application\" }\n  }\n}"
 				},
 				"url": {
-					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/component-block/{{block_uuid}}",
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/component-block/{{block_uuid}}",
 					"host": ["{{base_url}}"],
-					"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "component-block", "{{block_uuid}}"]
+					"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "component-block", "{{block_uuid}}"]
 				}
 			},
 			"event": [
@@ -166,9 +166,9 @@
 					"raw": "{\n  \"slug\": \"newman-status-badge-imported\",\n  \"name\": \"Newman status badge (imported)\",\n  \"description\": \"Imported from an export envelope { schemaVersion, kind: component-block, block }.\",\n  \"category\": \"display\",\n  \"schemaDependencies\": [\"permit-application\"],\n  \"sourceApplicationSlug\": \"newman-source-app\",\n  \"fragment\": {\n    \"id\": \"status-badge-1\",\n    \"widgetKey\": \"status-badge\",\n    \"slot\": \"body\",\n    \"gridX\": 0,\n    \"gridY\": 0,\n    \"gridWidth\": 4,\n    \"gridHeight\": 2,\n    \"dataSource\": { \"schema\": \"permit-application\" }\n  }\n}"
 				},
 				"url": {
-					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/component-block",
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/component-block",
 					"host": ["{{base_url}}"],
-					"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "component-block"]
+					"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "component-block"]
 				},
 				"description": "Exported block imports into a different organisation (REQ) — the import payload is the export envelope's `block` field (uuid/createdBy stripped, per blockExport.js#parseBlockImport) re-posted as a fresh record."
 			},
@@ -215,9 +215,9 @@
 					{ "key": "requesttoken", "value": "newman-stub" }
 				],
 				"url": {
-					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/component-block/{{imported_block_uuid}}",
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/component-block/{{imported_block_uuid}}",
 					"host": ["{{base_url}}"],
-					"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "component-block", "{{imported_block_uuid}}"]
+					"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "component-block", "{{imported_block_uuid}}"]
 				}
 			},
 			"event": [
@@ -244,9 +244,9 @@
 					{ "key": "requesttoken", "value": "newman-stub" }
 				],
 				"url": {
-					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/component-block/{{block_uuid}}",
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/component-block/{{block_uuid}}",
 					"host": ["{{base_url}}"],
-					"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "component-block", "{{block_uuid}}"]
+					"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "component-block", "{{block_uuid}}"]
 				}
 			},
 			"event": [

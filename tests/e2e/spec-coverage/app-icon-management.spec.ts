@@ -41,7 +41,7 @@ import { suppressSupportDialog, suppressSetupWizard } from '../support/appFixtur
 const HELLO_WORLD_SLUG = 'hello-world'
 
 /** OR register/schema the Application record lives in (IconUploadSection.vue). */
-const OR_OBJECT_PATH = 'apps/openregister/api/objects/buildiq/application'
+const OR_OBJECT_PATH = 'apps/openregister/api/objects/openbuild/application'
 
 /** A minimal but genuinely valid SVG — OR writes the content verbatim. */
 const MINIMAL_SVG =

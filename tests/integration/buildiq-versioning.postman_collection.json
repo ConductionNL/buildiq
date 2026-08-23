@@ -54,9 +54,9 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application?_limit=100",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application?_limit=100",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "application"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application"],
 							"query": [{ "key": "_limit", "value": "100" }]
 						}
 					},
@@ -109,9 +109,9 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/applicationVersion?_limit=5000",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/applicationVersion?_limit=5000",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "applicationVersion"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "applicationVersion"],
 							"query": [{ "key": "_limit", "value": "5000" }]
 						}
 					},
@@ -181,9 +181,9 @@
 							"raw": "{{merged_body}}"
 						},
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application/{{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{application_uuid}}",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "application", "{{application_uuid}}"]
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application", "{{application_uuid}}"]
 						}
 					},
 					"event": [
@@ -248,9 +248,9 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/applicationVersion?_limit=5000",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/applicationVersion?_limit=5000",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "applicationVersion"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "applicationVersion"],
 							"query": [{ "key": "_limit", "value": "5000" }]
 						}
 					},
@@ -320,9 +320,9 @@
 							"raw": "{{merged_body}}"
 						},
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application/{{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{application_uuid}}",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "application", "{{application_uuid}}"]
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application", "{{application_uuid}}"]
 						}
 					},
 					"event": [
@@ -366,9 +366,9 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/applicationVersion?_limit=5000",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/applicationVersion?_limit=5000",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "applicationVersion"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "applicationVersion"],
 							"query": [{ "key": "_limit", "value": "5000" }]
 						}
 					},
@@ -423,9 +423,9 @@
 							"raw": "{{merged_body}}"
 						},
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application/{{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{application_uuid}}",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "application", "{{application_uuid}}"]
+							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application", "{{application_uuid}}"]
 						}
 					},
 					"event": [

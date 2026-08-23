@@ -53,7 +53,7 @@ describe('ExportJobsList — #104 schema-slug fix', () => {
 		const requestedUrl = global.fetch.mock.calls[0][0]
 
 		expect(requestedUrl).toContain(
-			'/apps/openregister/api/objects/buildiq/export-job',
+			'/apps/openregister/api/objects/openbuild/export-job',
 		)
 		expect(requestedUrl).not.toContain('exportJob')
 

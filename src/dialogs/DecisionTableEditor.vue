@@ -256,7 +256,7 @@ export default {
 			this.errorMessage = ''
 			try {
 				const ruleSetUrl = generateUrl(
-					'/apps/openregister/api/objects/buildiq/rule-set',
+					'/apps/openregister/api/objects/openbuild/rule-set',
 				)
 				await axios.post(ruleSetUrl, {
 					slug: this.staged.slug,
@@ -265,7 +265,7 @@ export default {
 					status: this.ruleSet.status || 'draft',
 				})
 				const tableUrl = generateUrl(
-					'/apps/openregister/api/objects/buildiq/decision-table',
+					'/apps/openregister/api/objects/openbuild/decision-table',
 				)
 				await axios.post(tableUrl, {
 					ruleSetId: this.staged.slug,

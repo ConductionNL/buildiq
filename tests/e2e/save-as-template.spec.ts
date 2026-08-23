@@ -39,7 +39,7 @@ import { E2E_BASE_URL as NEXTCLOUD_URL } from './support/baseUrl'
 const SOURCE_APP = 'pw-sat-source'
 const TEMPLATE_SLUG = 'pw-sat-template'
 const OR_TEMPLATES =
-	'/index.php/apps/openregister/api/objects/buildiq/application-template'
+	'/index.php/apps/openregister/api/objects/openbuild/application-template'
 
 // UN-QUARANTINED AND NARROWED 2026-07-31. #41 was not the blocker; the flow this
 // file drove is half live and half deliberately removed.

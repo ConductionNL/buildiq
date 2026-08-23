@@ -182,7 +182,7 @@ describe('AgentsPage', () => {
 		await flush()
 
 		expect(axios.delete).toHaveBeenCalledWith(
-			'/apps/openregister/api/objects/buildiq/agent/agent-1',
+			'/apps/openregister/api/objects/openbuild/agent/agent-1',
 		)
 	})
 

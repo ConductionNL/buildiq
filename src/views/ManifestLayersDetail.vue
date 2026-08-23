@@ -415,7 +415,7 @@ export default {
 			if (!this.appUuid) return
 			try {
 				const url = generateUrl(
-					'/apps/openregister/api/objects/buildiq/application/{uuid}',
+					'/apps/openregister/api/objects/openbuild/application/{uuid}',
 					{ uuid: this.appUuid },
 				)
 				const { data } = await axios.get(url)
@@ -636,7 +636,7 @@ export default {
 		openInOpenRegister(versionUuid) {
 			if (!versionUuid) return
 			const url = generateUrl(
-				'/apps/openregister/objects/buildiq/applicationVersion/{uuid}',
+				'/apps/openregister/objects/openbuild/applicationVersion/{uuid}',
 				{ uuid: versionUuid },
 			)
 			window.location.href = url

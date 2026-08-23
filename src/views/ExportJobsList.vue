@@ -187,7 +187,9 @@ export default {
 				// `applicationSlug` is still the right key for the SUBMIT endpoint
 				// (/api/applications/{slug}/exports), so both props are kept.
 				const url =
-					generateUrl('/apps/openregister/api/objects/buildiq/export-job')
+					generateUrl(
+						'/apps/openregister/api/objects/openbuild/export-job',
+					)
 					+ '?applicationUuid='
 					+ encodeURIComponent(this.applicationUuid)
 				const response = await fetch(url)

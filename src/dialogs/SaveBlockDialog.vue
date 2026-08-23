@@ -130,7 +130,7 @@ import {
 } from '../services/blockCapture.js'
 import { suggestSlug } from '../services/templateCapture.js'
 
-const OR_BLOCKS = '/apps/openregister/api/objects/buildiq/component-block'
+const OR_BLOCKS = '/apps/openregister/api/objects/openbuild/component-block'
 
 export default {
 	name: 'SaveBlockDialog',

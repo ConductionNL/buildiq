@@ -111,7 +111,7 @@ Owners get a second button next to "Manage permissions" labelled
 "Permission history". It opens a read-only modal
 (`src/modals/PermissionHistoryModal.vue`) that:
 
-- Fetches `GET /apps/openregister/api/objects/buildiq/application/{uuid}/audit?filter=permissions,rbac.admin_bypass&limit=50` —
+- Fetches `GET /apps/openregister/api/objects/openbuild/application/{uuid}/audit?filter=permissions,rbac.admin_bypass&limit=50` —
   reuses OR's existing per-object audit endpoint; no new audit REST is
   shipped.
 - Renders one row per event with the actor, timestamp, event label

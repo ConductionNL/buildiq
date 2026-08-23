@@ -163,7 +163,7 @@ async function deleteAutomationsBySlug(page: Page, slugs: string[]): Promise<voi
 				'Content-Type': 'application/json',
 			}
 			const listResp = await fetch(
-				'/index.php/apps/openregister/api/objects/buildiq/automation?_limit=200',
+				'/index.php/apps/openregister/api/objects/openbuild/automation?_limit=200',
 				{ headers },
 			)
 			if (!listResp.ok) {

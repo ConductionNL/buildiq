@@ -144,7 +144,7 @@ export default {
 			this.toast = ''
 			try {
 				const url = generateUrl(
-					'/apps/openregister/api/objects/buildiq/application',
+					'/apps/openregister/api/objects/openbuild/application',
 				)
 				const { data } = await axios.get(url, { params: { _limit: 100 } })
 				const apps =
@@ -237,7 +237,7 @@ export default {
 					return
 				}
 				const url = generateUrl(
-					`/apps/openregister/api/objects/buildiq/application/${this.applicationUuid}`,
+					`/apps/openregister/api/objects/openbuild/application/${this.applicationUuid}`,
 				)
 				const { data } = await axios.put(url, {
 					...this.application,

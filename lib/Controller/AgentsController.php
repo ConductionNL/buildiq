@@ -5,7 +5,7 @@
  *
  * REST surface for the agent-workspace change (spec `agent-workspace`).
  * Agent CRUD itself goes through OpenRegister's generic REST surface
- * (`/apps/openregister/api/objects/buildiq/agent`, ADR-022 — mirrors
+ * (`/apps/openregister/api/objects/openbuild/agent`, ADR-022 — mirrors
  * `AutomationsController`'s posture for the `automation` object), because
  * Agent create/edit/delete carries no Buildiq-specific side effect. This
  * controller owns exactly the one row-level-RBAC-sensitive read the generic

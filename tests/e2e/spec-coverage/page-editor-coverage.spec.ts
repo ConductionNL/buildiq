@@ -63,8 +63,8 @@ const BUILT_PAGE = (slug: string, route: string) =>
  *
  * PageDesignerHost.save() writes through OpenRegister directly, NOT through
  * Buildiq's own `applications/{slug}/manifest` route: it PATCHes
- * `objects/buildiq/applicationVersion/{uuid}` and only falls back to PUTting
- * `objects/buildiq/application/{uuid}` when there is no version. Match either,
+ * `objects/openbuild/applicationVersion/{uuid}` and only falls back to PUTting
+ * `objects/openbuild/application/{uuid}` when there is no version. Match either,
  * or this helper waits for a request that is never sent.
  *
  * @param page Playwright page.
