@@ -76,6 +76,19 @@ cached result exists, the service SHALL serve the cached result with a
 - **THEN** the service surfaces a generic `github_rate_limited` outcome
 - **AND** the raw GitHub response body is not returned to the caller
 
+#### Scenario: A malformed 200 is a lookup failure, not an empty result set
+
+@e2e exclude backend decode contract — the malformed-body branch cannot be driven from a browser without making GitHub itself return a bad 200; verified by PHPUnit (GitHubCatalogServiceTest::testSearchReportsUnreachableWhenTheBodyIsNotTheSearchShape, plus its OK-for-genuinely-empty counterpart). The user-visible consequence is covered by e2e REQ-OBTC-006.
+
+- **GIVEN** GitHub answers a search with HTTP 200 whose body does not carry the
+  documented `items` array (a proxy error page, a truncated response)
+- **WHEN** the service decodes that response
+- **THEN** the service surfaces a `github_unreachable` outcome
+- **AND** the result is not written to the cache
+- **AND** the caller does NOT receive a successful search with zero results,
+  because that would render as "no apps match your search" and tell the user
+  their query found nothing when the lookup never completed
+
 ### Requirement: Automatic broker-credential upgrade for search and fetch
 
 The system SHALL upgrade GitHub search and fetch to an authenticated request when
