@@ -17,7 +17,7 @@
 		{ "key": "admin_user", "value": "admin", "type": "string" },
 		{ "key": "admin_password", "value": "admin", "type": "string" },
 		{ "key": "app_slug", "value": "hello-world", "type": "string" },
-		{ "key": "register_slug", "value": "buildiq-hello-world", "type": "string" },
+		{ "key": "register_slug", "value": "openbuild-hello-world", "type": "string" },
 		{ "key": "schema_slug", "value": "hello-message-integration", "type": "string" },
 		{ "key": "or_api_available", "value": "", "type": "string" }
 	],

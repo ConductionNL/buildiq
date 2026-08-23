@@ -103,7 +103,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"Newman Test Version\",\n  \"slug\": \"newman-test-v1\",\n  \"manifest\": {\n    \"version\": \"0.1.0\",\n    \"menu\": [],\n    \"pages\": [\n      {\n        \"id\": \"Home\",\n        \"route\": \"/\",\n        \"type\": \"index\",\n        \"title\": \"Home\",\n        \"config\": { \"register\": \"buildiq\", \"schema\": \"hello-message\", \"columns\": [\"title\"] }\n      }\n    ]\n  },\n  \"register\": \"buildiq-hello-world-newman-test-v1\",\n  \"semver\": \"0.1.0\",\n  \"status\": \"draft\"\n}"
+							"raw": "{\n  \"name\": \"Newman Test Version\",\n  \"slug\": \"newman-test-v1\",\n  \"manifest\": {\n    \"version\": \"0.1.0\",\n    \"menu\": [],\n    \"pages\": [\n      {\n        \"id\": \"Home\",\n        \"route\": \"/\",\n        \"type\": \"index\",\n        \"title\": \"Home\",\n        \"config\": { \"register\": \"buildiq\", \"schema\": \"hello-message\", \"columns\": [\"title\"] }\n      }\n    ]\n  },\n  \"register\": \"openbuild-hello-world-newman-test-v1\",\n  \"semver\": \"0.1.0\",\n  \"status\": \"draft\"\n}"
 						},
 						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/{{test_slug}}/versions"
 					},
@@ -155,7 +155,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\"name\": \"x\", \"slug\": \"x\", \"manifest\": {}, \"register\": \"buildiq-hello-world-x\", \"semver\": \"0.1.0\"}"
+							"raw": "{\"name\": \"x\", \"slug\": \"x\", \"manifest\": {}, \"register\": \"openbuild-hello-world-x\", \"semver\": \"0.1.0\"}"
 						},
 						"url": "{{noAuthBase}}/index.php/apps/buildiq/api/applications/{{test_slug}}/versions"
 					},
@@ -256,7 +256,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"Newman Test Version (updated)\",\n  \"slug\": \"newman-test-v1\",\n  \"manifest\": {\n    \"version\": \"0.1.0\",\n    \"menu\": [],\n    \"pages\": [\n      {\n        \"id\": \"Home\",\n        \"route\": \"/\",\n        \"type\": \"index\",\n        \"title\": \"Home Updated\",\n        \"config\": { \"register\": \"buildiq\", \"schema\": \"hello-message\", \"columns\": [\"title\", \"body\"] }\n      }\n    ]\n  },\n  \"register\": \"buildiq-hello-world-newman-test-v1\",\n  \"semver\": \"0.1.0\",\n  \"status\": \"draft\"\n}"
+							"raw": "{\n  \"name\": \"Newman Test Version (updated)\",\n  \"slug\": \"newman-test-v1\",\n  \"manifest\": {\n    \"version\": \"0.1.0\",\n    \"menu\": [],\n    \"pages\": [\n      {\n        \"id\": \"Home\",\n        \"route\": \"/\",\n        \"type\": \"index\",\n        \"title\": \"Home Updated\",\n        \"config\": { \"register\": \"buildiq\", \"schema\": \"hello-message\", \"columns\": [\"title\", \"body\"] }\n      }\n    ]\n  },\n  \"register\": \"openbuild-hello-world-newman-test-v1\",\n  \"semver\": \"0.1.0\",\n  \"status\": \"draft\"\n}"
 						},
 						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/{{test_slug}}/versions/{{version_slug}}"
 					},

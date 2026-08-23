@@ -185,9 +185,12 @@ class SeedHelloWorldFixture extends Command {
 					'slug' => self::VERSION_SLUG,
 					'manifest' => $this->buildManifest(),
 					// The version's `register` field names the app's per-app
-					// data register (pattern: buildiq-<slug>). The shared
+					// data register (pattern: openbuild-<slug>). The shared
 					// `hello-message` data + manifest pages live in the main
-					// `buildiq` register, so this is metadata only.
+					// `openbuild` register, so this is metadata only.
+					// Both keep the OLD spelling: the register SLUG did not move
+					// with the app id, and this string is matched against
+					// existing registers.
 					'register' => $register . '-' . self::SEED_SLUG,
 					'semver' => self::SEMVER,
 					'status' => 'published',
