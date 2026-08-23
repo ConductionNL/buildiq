@@ -62,24 +62,14 @@ class SeedHelloWorldFixture extends Command {
 	/**
 	 * Prefix of the PER-VERSION register the creation wizard provisions.
 	 *
-	 * TWO DIFFERENT IDENTIFIERS THAT USED TO SHARE A SPELLING, which is why
-	 * this is spelled out rather than derived. ApplicationVersionService::
-	 * REGISTER_SLUG is the app's MAIN register and moved to `buildiq` with the
-	 * rename. This one names a per-version register, convention
-	 * `openbuild-{appSlug}-{versionSlug}`, and did NOT move: every producer
-	 * still emits it (ApplicationsController, ApplicationCreationService,
-	 * AppRepoSerializer, GitHubAppSyncService, UpsertSchemaHandler) and the
-	 * applicationVersion schema pins it with
-	 * `"pattern": "^openbuild-[a-z0-9][a-z0-9-]*[a-z0-9]$"`.
-	 *
-	 * The fixture used to build this from REGISTER_SLUG, which silently coupled
-	 * the two, so the main rename dragged the per-version name along and the
-	 * seed died on that pattern: "Property 'register' should match pattern
-	 * '^openbuild-…' but 'buildiq-hello-world' does not."
+	 * Aliased to the canonical constant rather than re-declared: a second copy
+	 * of this string is exactly the shape of the bug it exists to prevent.
+	 * See ApplicationVersionService::VERSION_REGISTER_PREFIX for why it is
+	 * separate from REGISTER_SLUG and why it stays `openbuild-`.
 	 *
 	 * @var string
 	 */
-	private const VERSION_REGISTER_PREFIX = 'openbuild-';
+	private const VERSION_REGISTER_PREFIX = ApplicationVersionService::VERSION_REGISTER_PREFIX;
 
 	private const SEED_SLUG = 'hello-world';
 
@@ -335,7 +325,11 @@ class SeedHelloWorldFixture extends Command {
 					],
 				],
 				'baseRef' => $baseRef,
-				'register' => $register . '-' . self::HYBRID_SLUG,
+				// Per-version register, NOT the app's register — see
+				// VERSION_REGISTER_PREFIX. Same coupling as the hello-world
+				// version above; this one is reached only when the hybrid
+				// example is seeded, so it survived the first fix.
+				'register' => self::VERSION_REGISTER_PREFIX . self::HYBRID_SLUG,
 				'semver' => '0.1.0',
 				'status' => 'published',
 				'application' => $applicationUuid,
