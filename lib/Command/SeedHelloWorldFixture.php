@@ -59,6 +59,28 @@ use Throwable;
  * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
  */
 class SeedHelloWorldFixture extends Command {
+	/**
+	 * Prefix of the PER-VERSION register the creation wizard provisions.
+	 *
+	 * TWO DIFFERENT IDENTIFIERS THAT USED TO SHARE A SPELLING, which is why
+	 * this is spelled out rather than derived. ApplicationVersionService::
+	 * REGISTER_SLUG is the app's MAIN register and moved to `buildiq` with the
+	 * rename. This one names a per-version register, convention
+	 * `openbuild-{appSlug}-{versionSlug}`, and did NOT move: every producer
+	 * still emits it (ApplicationsController, ApplicationCreationService,
+	 * AppRepoSerializer, GitHubAppSyncService, UpsertSchemaHandler) and the
+	 * applicationVersion schema pins it with
+	 * `"pattern": "^openbuild-[a-z0-9][a-z0-9-]*[a-z0-9]$"`.
+	 *
+	 * The fixture used to build this from REGISTER_SLUG, which silently coupled
+	 * the two, so the main rename dragged the per-version name along and the
+	 * seed died on that pattern: "Property 'register' should match pattern
+	 * '^openbuild-…' but 'buildiq-hello-world' does not."
+	 *
+	 * @var string
+	 */
+	private const VERSION_REGISTER_PREFIX = 'openbuild-';
+
 	private const SEED_SLUG = 'hello-world';
 
 	private const VERSION_SLUG = 'production';
@@ -184,14 +206,8 @@ class SeedHelloWorldFixture extends Command {
 					'name' => self::SEMVER,
 					'slug' => self::VERSION_SLUG,
 					'manifest' => $this->buildManifest(),
-					// The version's `register` field names the app's per-app
-					// data register (pattern: openbuild-<slug>). The shared
-					// `hello-message` data + manifest pages live in the main
-					// `openbuild` register, so this is metadata only.
-					// Both keep the OLD spelling: the register SLUG did not move
-					// with the app id, and this string is matched against
-					// existing registers.
-					'register' => $register . '-' . self::SEED_SLUG,
+					// NOT $register — see VERSION_REGISTER_PREFIX.
+					'register' => self::VERSION_REGISTER_PREFIX . self::SEED_SLUG,
 					'semver' => self::SEMVER,
 					'status' => 'published',
 					'application' => $applicationUuid,
