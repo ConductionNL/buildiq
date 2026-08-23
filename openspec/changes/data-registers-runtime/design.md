@@ -30,7 +30,7 @@ proposal named as out of scope for itself:
    settings surface (publish toggle, allow-user-overrides toggle), opened from
    `ApplicationDetailActions.vue` and persisted via the `applicationContext`
    mixin's `obPatchApp()` (a shallow-merge PUT to OR's
-   `/apps/openregister/api/objects/openbuild/application/{uuid}` — ADR-022,
+   `/apps/openregister/api/objects/buildiq/application/{uuid}` — ADR-022,
    no new backend route).
 
 **Codebase verification performed for this design** (all read in full before
@@ -151,7 +151,7 @@ Rather than widen `useApplicationVersion`'s contract — which is shared by
 "all four builder views" per its own header comment, only one of which
 (`PageDesigner`) needs `dataRegisters` — this spec adds a small, self-contained
 fetch in `PageDesigner.vue`: `GET
-/apps/openregister/api/objects/openbuild/application?slug=<slug>&_limit=1`
+/apps/openregister/api/objects/buildiq/application?slug=<slug>&_limit=1`
 (the exact call shape `useApplicationVersion.js` already uses internally),
 storing the result's `dataRegisters` (default `[]`) in a new
 `applicationDataRegisters` data field, invoked once in `created()` alongside

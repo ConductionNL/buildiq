@@ -336,8 +336,8 @@ verify "$SCH_BODY" schemas "$SCH_CODE"
 # failure mode has a name here rather than as a timeout on an empty table.
 OBJ_CODE="$(curl -sS -o /dev/null -w '%{http_code}' \
 	-u "${USER_NAME}:${USER_PASS}" -H 'OCS-APIRequest: true' \
-	"${BASE}/index.php/apps/openregister/api/objects/openbuild/application?_limit=1" || echo 000)"
-echo "[ci-seed] objects/openbuild/application probe -> ${OBJ_CODE}"
+	"${BASE}/index.php/apps/openregister/api/objects/buildiq/application?_limit=1" || echo 000)"
+echo "[ci-seed] objects/buildiq/application probe -> ${OBJ_CODE}"
 if [ "$OBJ_CODE" -ge 400 ] 2>/dev/null; then
 	echo "::error::The buildiq application collection is not readable (HTTP ${OBJ_CODE})."
 	exit 1

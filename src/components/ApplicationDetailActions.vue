@@ -224,7 +224,7 @@ const ExportDialog = defineAsyncComponent(
 	() => import('../dialogs/ExportDialog.vue'),
 )
 
-const OR_TEMPLATES = '/apps/openregister/api/objects/openbuild/application-template'
+const OR_TEMPLATES = '/apps/openregister/api/objects/buildiq/application-template'
 
 export default {
 	name: 'ApplicationDetailActions',

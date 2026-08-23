@@ -119,7 +119,7 @@ describe('SaveAsTemplateDialog.vue', () => {
 		expect(axiosMock.post).toHaveBeenCalledTimes(1)
 		const [url, payload] = axiosMock.post.mock.calls[0]
 		expect(url).toContain(
-			'/apps/openregister/api/objects/openbuild/application-template',
+			'/apps/openregister/api/objects/buildiq/application-template',
 		)
 		expect(payload.isSeeded).toBe(false)
 		expect(payload.slug).toBe('my-permits')

@@ -3,7 +3,7 @@
 	"objects": [
 		{
 			"@self": {
-				"register": "openbuild",
+				"register": "buildiq",
 				"schema": "application",
 				"slug": "spectr"
 			},
@@ -22,7 +22,7 @@
 		},
 		{
 			"@self": {
-				"register": "openbuild",
+				"register": "buildiq",
 				"schema": "application",
 				"slug": "vergunningen-<gemeente-slug>"
 			},

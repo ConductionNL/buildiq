@@ -220,7 +220,7 @@ export default {
 			this.errorMessage = ''
 			try {
 				const url = generateUrl(
-					'/apps/openregister/api/objects/openbuild/agent',
+					'/apps/openregister/api/objects/buildiq/agent',
 				)
 				const { data } = await axios.get(url)
 				const all = this.extractResults(data)
@@ -284,7 +284,7 @@ export default {
 		async remove(agent) {
 			try {
 				const url = generateUrl(
-					`/apps/openregister/api/objects/openbuild/agent/${agent.id}`,
+					`/apps/openregister/api/objects/buildiq/agent/${agent.id}`,
 				)
 				await axios.delete(url)
 				if (this.selectedAgent && this.selectedAgent.id === agent.id) {

@@ -71,7 +71,7 @@ test.describe('Application detail — maintainer dashboard (REQ-OBADO-001..012)'
 		page,
 	}) => {
 		const appUuidRes = await page.request.get(
-			`${BASE}/index.php/apps/openregister/api/objects/openbuild/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
+			`${BASE}/index.php/apps/openregister/api/objects/buildiq/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
 		)
 		test.skip(!appUuidRes.ok(), 'hello-world Application not found')
 		const apps = (await appUuidRes.json()).results || []
@@ -105,7 +105,7 @@ test.describe('Application detail — maintainer dashboard (REQ-OBADO-001..012)'
 		page,
 	}) => {
 		const appUuidRes = await page.request.get(
-			`${BASE}/index.php/apps/openregister/api/objects/openbuild/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
+			`${BASE}/index.php/apps/openregister/api/objects/buildiq/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
 		)
 		test.skip(!appUuidRes.ok(), 'app lookup failed')
 		const apps = (await appUuidRes.json()).results || []
@@ -127,7 +127,7 @@ test.describe('Application detail — maintainer dashboard (REQ-OBADO-001..012)'
 		page,
 	}) => {
 		const appUuidRes = await page.request.get(
-			`${BASE}/index.php/apps/openregister/api/objects/openbuild/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
+			`${BASE}/index.php/apps/openregister/api/objects/buildiq/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
 		)
 		test.skip(!appUuidRes.ok(), 'app lookup failed')
 		const apps = (await appUuidRes.json()).results || []
@@ -168,7 +168,7 @@ test.describe('Application detail — maintainer dashboard (REQ-OBADO-001..012)'
 		page,
 	}) => {
 		const appUuidRes = await page.request.get(
-			`${BASE}/index.php/apps/openregister/api/objects/openbuild/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
+			`${BASE}/index.php/apps/openregister/api/objects/buildiq/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
 		)
 		test.skip(!appUuidRes.ok(), 'app lookup failed')
 		const apps = (await appUuidRes.json()).results || []
@@ -214,7 +214,7 @@ test.describe('Application detail overview — content scenarios (14.4/14.5/14.7
 		page: import('@playwright/test').Page,
 	): Promise<string | null> {
 		const lookup = await page.request.get(
-			`${BASE}/index.php/apps/openregister/api/objects/openbuild/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
+			`${BASE}/index.php/apps/openregister/api/objects/buildiq/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
 			{ headers: { 'OCS-APIRequest': 'true' } },
 		)
 		if (!lookup.ok()) return null

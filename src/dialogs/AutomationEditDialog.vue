@@ -1347,7 +1347,7 @@ export default {
 		 * Persist the working automation through Buildiq's own write routes.
 		 *
 		 * This method is the whole reason those routes exist: it used to POST/PUT
-		 * `openregister/api/objects/openbuild/automation` directly, which the
+		 * `openregister/api/objects/buildiq/automation` directly, which the
 		 * `automation` schema's admin-only `create`/`update` ACL refused for every
 		 * editor and owner — precisely the people REQ-AUTD-008 says may author one.
 		 *

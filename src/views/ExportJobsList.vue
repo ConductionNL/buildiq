@@ -188,7 +188,7 @@ export default {
 				// (/api/applications/{slug}/exports), so both props are kept.
 				const url =
 					generateUrl(
-						'/apps/openregister/api/objects/openbuild/export-job',
+						'/apps/openregister/api/objects/buildiq/export-job',
 					)
 					+ '?applicationUuid='
 					+ encodeURIComponent(this.applicationUuid)

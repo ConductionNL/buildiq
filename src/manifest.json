@@ -71,7 +71,7 @@
 					{ "id": "welcome", "sinceVersion": "0.5.9", "placement": "center", "title": "Welcome to Buildiq", "body": "Let's take a quick spin through the app builder — we'll create your first app from a template so you can see how the pieces fit. You'll do each step yourself.", "target": { "kind": "page", "ref": "Dashboard" }, "advanceOn": { "type": "manual" } },
 					{ "id": "go-apps", "sinceVersion": "0.5.9", "placement": "right", "body": "Apps are the heart of Buildiq — every app you build lives here. Open Apps from the menu to see what's already there.", "task": "Click Apps in the menu", "target": { "kind": "nav-item", "ref": "VirtualApps" }, "advanceOn": { "type": "route-match", "route": "VirtualApps" } },
 					{ "id": "go-store", "sinceVersion": "0.5.9", "placement": "right", "body": "The fastest way to start is from a template. Open the Store to browse ready-made apps you can clone and make your own.", "task": "Click Store in the menu", "target": { "kind": "nav-item", "ref": "Templates" }, "advanceOn": { "type": "route-match", "route": "Templates" } },
-					{ "id": "create-app", "sinceVersion": "0.5.9", "placement": "bottom", "allowManualNext": true, "body": "Pick a template and clone it — give your new app a name, then create it. Once it exists you can shape its schemas and pages.", "task": "Clone a template into a new app", "target": { "kind": "page", "ref": "templates-grid" }, "advanceOn": { "type": "object-created", "register": "openbuild", "schema": "application", "capture": { "applicationId": ":id" } } },
+					{ "id": "create-app", "sinceVersion": "0.5.9", "placement": "bottom", "allowManualNext": true, "body": "Pick a template and clone it — give your new app a name, then create it. Once it exists you can shape its schemas and pages.", "task": "Clone a template into a new app", "target": { "kind": "page", "ref": "templates-grid" }, "advanceOn": { "type": "object-created", "register": "buildiq", "schema": "application", "capture": { "applicationId": ":id" } } },
 					{ "id": "done", "sinceVersion": "0.5.9", "placement": "center", "title": "You're all set", "body": "Nicely done — your first app exists. Open it from Apps to design its schemas and pages, and reopen this tour anytime from the … menu.", "target": { "kind": "page", "ref": "Dashboard" }, "advanceOn": { "type": "manual" } }
 				]
 			}
@@ -136,7 +136,7 @@
 				"delete-dialog": "AppDeleteDialogSlot"
 			},
 			"config": {
-				"register": "openbuild",
+				"register": "buildiq",
 				"schema": "application",
 				"viewMode": "cards",
 				"cardComponent": "ApplicationCard",
@@ -175,7 +175,7 @@
 				"before-body": "ApplicationDetailDashboard"
 			},
 			"config": {
-				"register": "openbuild",
+				"register": "buildiq",
 				"schema": "application",
 				"maxWidth": "none",
 				"showRelatedObjects": false,
@@ -241,7 +241,7 @@
 				"default": "SchemaDesignerView"
 			},
 			"config": {
-				"register": "openbuild",
+				"register": "buildiq",
 				"schema": "application",
 				"createForm": "never",
 				"sidebar": {
@@ -258,7 +258,7 @@
 			"title": "Store",
 			"component": "TemplateGallery",
 			"config": {
-				"register": "openbuild",
+				"register": "buildiq",
 				"schema": "application-template",
 				"documentationUrl": "https://openbuild.conduction.nl"
 			},
@@ -273,7 +273,7 @@
 				"default": "SchemaDesignerView"
 			},
 			"config": {
-				"register": "openbuild",
+				"register": "buildiq",
 				"schema": "application",
 				"createForm": "never",
 				"sidebar": {
@@ -289,7 +289,7 @@
 			"type": "detail",
 			"title": "Schema",
 			"config": {
-				"register": "openbuild",
+				"register": "buildiq",
 				"schema": "application",
 				"createForm": "never",
 				"sidebar": {
@@ -308,7 +308,7 @@
 			"type": "detail",
 			"title": "Page designer",
 			"config": {
-				"register": "openbuild",
+				"register": "buildiq",
 				"schema": "application",
 				"createForm": "never",
 				"sidebar": {
@@ -327,7 +327,7 @@
 			"type": "detail",
 			"title": "Walkthrough designer",
 			"config": {
-				"register": "openbuild",
+				"register": "buildiq",
 				"schema": "application",
 				"createForm": "never",
 				"sidebar": {
@@ -346,7 +346,7 @@
 			"type": "index",
 			"title": "Exports",
 			"config": {
-				"register": "openbuild",
+				"register": "buildiq",
 				"schema": "export-job",
 				"viewMode": "table",
 				"sidebar": {
@@ -387,19 +387,19 @@
 				"name": "export_jobs_total",
 				"type": "gauge",
 				"help": "Export jobs by lifecycle status",
-				"source": { "kind": "objectCount", "register": "openbuild", "schema": "export-job", "groupBy": ["status"] }
+				"source": { "kind": "objectCount", "register": "buildiq", "schema": "export-job", "groupBy": ["status"] }
 			},
 			{
 				"name": "applications_total",
 				"type": "gauge",
 				"help": "Virtual applications (one nav entry per published app)",
-				"source": { "kind": "objectCount", "register": "openbuild", "schema": "application" }
+				"source": { "kind": "objectCount", "register": "buildiq", "schema": "application" }
 			},
 			{
 				"name": "application_versions_total",
 				"type": "gauge",
 				"help": "Application versions by lifecycle status",
-				"source": { "kind": "objectCount", "register": "openbuild", "schema": "applicationVersion", "groupBy": ["status"] }
+				"source": { "kind": "objectCount", "register": "buildiq", "schema": "applicationVersion", "groupBy": ["status"] }
 			}
 		]
 	},

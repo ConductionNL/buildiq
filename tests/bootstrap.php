@@ -19,6 +19,15 @@ require_once __DIR__ . '/../vendor/autoload.php';
 // `phpunit.xml` boots THIS file, so it never loaded here. It must come before
 // the OCP resolver below can be triggered, and it is `interface_exists`-guarded
 // so a real in-container Nextcloud still wins.
+// Doctrine placeholders, loaded BEFORE anything can mock an OCP DB interface.
+// IQueryBuilder evaluates class constants referencing Doctrine\DBAL\ParameterType
+// at parse time, and IDBConnection::getQueryBuilder() returns IQueryBuilder — so
+// without these, createMock(IDBConnection::class) dies with
+// `Class "Doctrine\DBAL\ParameterType" not found`, raised from inside
+// createMock(), which reads as a broken test rather than a missing dependency.
+// Only the two CONSTANT HOLDERS are stubbed: stubbing Doctrine\DBAL\Connection
+// as well fatals a full-server run, because OC\DB\Connection extends it.
+require_once __DIR__ . '/stubs/DoctrineStubs.php';
 require_once __DIR__ . '/stubs/nc-hooks-emitter.stub.php';
 
 // vendor/nextcloud/ocp doesn't ship an autoload entry — it's intended as

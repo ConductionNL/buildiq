@@ -435,7 +435,7 @@ class ManifestResolverService {
 		try {
 			$version = $this->objectService->find(
 				id: $uuid,
-				register: 'openbuild',
+				register: 'buildiq',
 				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
 			);
 

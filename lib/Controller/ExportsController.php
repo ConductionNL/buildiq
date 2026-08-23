@@ -132,7 +132,7 @@ class ExportsController extends Controller {
 				return false;
 			}
 
-			$apps = $service->searchObjectsBySlug('openbuild', 'application', ['slug' => $applicationSlug]);
+			$apps = $service->searchObjectsBySlug('buildiq', 'application', ['slug' => $applicationSlug]);
 			if (is_array($apps) === false || $apps === []) {
 				return false;
 			}
@@ -286,7 +286,7 @@ class ExportsController extends Controller {
 				return '';
 			}
 
-			$apps = $service->searchObjectsBySlug('openbuild', 'application', ['slug' => $applicationSlug]);
+			$apps = $service->searchObjectsBySlug('buildiq', 'application', ['slug' => $applicationSlug]);
 			if (is_array($apps) === false || $apps === []) {
 				return '';
 			}

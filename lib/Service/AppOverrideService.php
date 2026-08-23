@@ -61,7 +61,7 @@ class AppOverrideService {
 	/**
 	 * OpenRegister register slug that hosts the Buildiq control schemas.
 	 */
-	public const REGISTER_SLUG = 'openbuild';
+	public const REGISTER_SLUG = 'buildiq';
 
 	/**
 	 * OpenRegister schema slug for the logical app record.

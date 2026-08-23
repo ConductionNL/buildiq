@@ -28,7 +28,7 @@ import { ref, computed } from 'vue'
 // record itself (a small, dedicated fetch — see design.md Decision 2), so
 // axios + generateUrl need a deterministic mock. `fetchApplicationDataRegisters`
 // (created()) and `useApplicationVersion`'s internal lookups (mounted()) both
-// call GET .../objects/openbuild/application — served from the same fixture
+// call GET .../objects/buildiq/application — served from the same fixture
 // below; the versions-list endpoint resolves empty (irrelevant to these specs).
 const axiosGetMock = vi.fn()
 let applicationFixture = null
@@ -584,7 +584,7 @@ describe('PageDesigner', () => {
 			const appLookupCalls = axiosGetMock.mock.calls.filter(
 				([url]) =>
 					typeof url === 'string'
-					&& url.includes('objects/openbuild/application'),
+					&& url.includes('objects/buildiq/application'),
 			)
 			expect(appLookupCalls).toHaveLength(0)
 		})

@@ -427,7 +427,7 @@ class ApplicationsController extends Controller {
 			if (is_string($productionVersion) === true && $productionVersion !== '' && $productionVersion !== 'draft') {
 				$versionEntity = $this->objectService->find(
 					id: $productionVersion,
-					register: 'openbuild',
+					register: 'buildiq',
 					schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
 				);
 				if ($versionEntity !== null) {
@@ -435,7 +435,7 @@ class ApplicationsController extends Controller {
 					$versionArray['manifest'] = $manifest;
 					$this->objectService->saveObject(
 						object: $versionArray,
-						register: 'openbuild',
+						register: 'buildiq',
 						schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
 					);
 					return new JSONResponse(data: ['status' => 'ok', 'target' => 'version'], statusCode: Http::STATUS_OK);
@@ -448,7 +448,7 @@ class ApplicationsController extends Controller {
 				$applicationArray['productionVersion']['manifest'] = $manifest;
 				$this->objectService->saveObject(
 					object: $applicationArray,
-					register: 'openbuild',
+					register: 'buildiq',
 					schema: 'application'
 				);
 				return new JSONResponse(data: ['status' => 'ok', 'target' => 'embedded'], statusCode: Http::STATUS_OK);
@@ -458,7 +458,7 @@ class ApplicationsController extends Controller {
 			$applicationArray['manifest'] = $manifest;
 			$this->objectService->saveObject(
 				object: $applicationArray,
-				register: 'openbuild',
+				register: 'buildiq',
 				schema: 'application'
 			);
 			return new JSONResponse(data: ['status' => 'ok', 'target' => 'application'], statusCode: Http::STATUS_OK);
@@ -625,7 +625,7 @@ class ApplicationsController extends Controller {
 
 			$application = $this->objectService->find(
 				id: $applicationUuid,
-				register: 'openbuild',
+				register: 'buildiq',
 				schema: 'application'
 			);
 
@@ -741,7 +741,7 @@ class ApplicationsController extends Controller {
 		try {
 			$version = $this->objectService->find(
 				id: $token,
-				register: 'openbuild',
+				register: 'buildiq',
 				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
 			);
 		} catch (\Throwable $e) {
@@ -853,7 +853,7 @@ class ApplicationsController extends Controller {
 		// Step 2 — load the Application object.
 		$application = $this->objectService->find(
 			id: $applicationUuid,
-			register: 'openbuild',
+			register: 'buildiq',
 			schema: 'application'
 		);
 

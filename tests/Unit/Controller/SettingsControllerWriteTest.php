@@ -142,7 +142,7 @@ class SettingsControllerWriteTest extends TestCase {
 	 */
 	public function testUpdatePersistsTheRequestParametersAndReturnsTheStoredConfig(): void {
 		$submitted = [
-			'register' => 'openbuild',
+			'register' => 'buildiq',
 			'registry_url' => 'https://store.example.org',
 		];
 
@@ -150,7 +150,7 @@ class SettingsControllerWriteTest extends TestCase {
 		// the submitted shape — asserting on it proves the response comes from
 		// the service rather than being echoed back.
 		$stored = [
-			'register' => 'openbuild',
+			'register' => 'buildiq',
 			'registry_url' => 'https://store.example.org',
 			'openregisters' => true,
 			'isAdmin' => true,
@@ -190,9 +190,9 @@ class SettingsControllerWriteTest extends TestCase {
 	 * @return void
 	 */
 	public function testCreateDelegatesToUpdateAndStillWrites(): void {
-		$submitted = ['register' => 'openbuild'];
+		$submitted = ['register' => 'buildiq'];
 		$stored = [
-			'register' => 'openbuild',
+			'register' => 'buildiq',
 			'isAdmin' => true,
 		];
 

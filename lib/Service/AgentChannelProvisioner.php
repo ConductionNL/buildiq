@@ -74,7 +74,7 @@ class AgentChannelProvisioner {
 	 *
 	 * @var string
 	 */
-	private const AGENT_REGISTER = 'openbuild';
+	private const AGENT_REGISTER = 'buildiq';
 
 	/**
 	 * The agent schema slug.

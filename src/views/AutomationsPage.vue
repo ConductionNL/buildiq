@@ -324,7 +324,7 @@ export default {
 			this.errorMessage = ''
 			try {
 				const url = generateUrl(
-					'/apps/openregister/api/objects/openbuild/automation',
+					'/apps/openregister/api/objects/buildiq/automation',
 				)
 				const { data } = await axios.get(url)
 				const all = this.extractResults(data)

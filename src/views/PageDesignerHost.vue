@@ -605,7 +605,7 @@ export default {
 			this.toast = ''
 			try {
 				const url = generateUrl(
-					'/apps/openregister/api/objects/openbuild/application',
+					'/apps/openregister/api/objects/buildiq/application',
 				)
 				const { data } = await axios.get(url, { params: { _limit: 100 } })
 				const apps =
@@ -706,7 +706,7 @@ export default {
 						|| version.id)
 				if (version && versionUuid) {
 					const url = generateUrl(
-						`/apps/openregister/api/objects/openbuild/applicationVersion/${versionUuid}`,
+						`/apps/openregister/api/objects/buildiq/applicationVersion/${versionUuid}`,
 					)
 					const { data } = await axios.patch(url, {
 						manifest: this.manifest,
@@ -722,7 +722,7 @@ export default {
 					return
 				}
 				const url = generateUrl(
-					`/apps/openregister/api/objects/openbuild/application/${this.applicationUuid}`,
+					`/apps/openregister/api/objects/buildiq/application/${this.applicationUuid}`,
 				)
 				const { data } = await axios.put(url, {
 					...this.application,
