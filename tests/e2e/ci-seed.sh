@@ -283,9 +283,16 @@ verify() {
 import json, sys
 path, kind, code = sys.argv[1], sys.argv[2], sys.argv[3]
 required = {
-    # The register SLUG stays 'openbuild' across the app-id rename: it
-    # addresses the register that already exists. Only the APP id moved.
-    'registers': ['openbuild'],
+    # The register slug moved to 'buildiq' with this change. The note that
+    # used to sit here said the opposite — that the slug stays 'openbuild'
+    # because it addresses a register that already exists — which was true
+    # only while the rename was the APP id alone. This PR renames the register
+    # too, and MigrateRegisterSlug renames the existing row ahead of the
+    # import, so the row this addresses is the same one; it answers to a new
+    # name. The FILE is still openbuild_register.json and is referenced by
+    # path elsewhere in this script: that is a filename, not an identifier
+    # anything resolves.
+    'registers': ['buildiq'],
     'schemas': [
         # lib/Settings/openbuild_register.json
         'application', 'application-template', 'built-app-route',
