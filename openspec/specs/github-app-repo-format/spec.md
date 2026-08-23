@@ -1,7 +1,7 @@
 # GitHub App Repo Format Specification
 
 **Status**: in-progress
-**Scope**: openbuild
+**Scope**: buildiq
 **OpenSpec changes**:
 - [github-app-repo-format](../../changes/github-app-repo-format/)
 - [app-repo-format-v2](../../changes/app-repo-format-v2/)
@@ -9,7 +9,7 @@
 
 ## Purpose
 
-Defines the on-disk layout of a published OpenBuild application repository and
+Defines the on-disk layout of a published Buildiq application repository and
 the rules for reading it back. v1 carried the descriptor, the manifest, the
 app's own companion schemas and a README. v2 additionally carries the shared
 data registers an app binds to, the OpenConnector configuration it declares,
@@ -17,18 +17,18 @@ its automations and its skills — the difference between an artefact that
 describes an app and one that can reconstitute it. The v2 channel set was
 later extended once more to carry the application's bound OpenRegister flows
 and the agents that point at it, reusing `FlowAndAgentExportBundler` — the
-openbuild-exporter's existing, tested reader of this exact question — rather
+buildiq-exporter's existing, tested reader of this exact question — rather
 than adding a second answer to it.
 
 ## Requirements
 
-### Requirement: Canonical GitHub repo layout for an OpenBuild app
+### Requirement: Canonical GitHub repo layout for an Buildiq app
 
 The system SHALL define one canonical GitHub repository layout that represents an
-OpenBuild app as a round-trippable **data** definition (not the exporter's PHP
+Buildiq app as a round-trippable **data** definition (not the exporter's PHP
 scaffold). A conforming repo SHALL contain, at its root:
 
-- `openbuild-app.json` — the app descriptor (REQ-GARF-002).
+- `buildiq-app.json` — the app descriptor (REQ-GARF-002).
 - `manifest.json` — the `ApplicationVersion.manifest` blob verbatim (the JSON
   consumed by `CnAppRoot` at runtime).
 - `schemas/` — a directory holding one JSON file per companion schema, the file's
@@ -37,26 +37,26 @@ scaffold). A conforming repo SHALL contain, at its root:
 A conforming repo MAY additionally contain an optional `README.md` and an
 optional `img/` directory (screenshots + icon SVGs referenced by the descriptor).
 The format SHALL NOT require any PHP, `appinfo/`, or build-tool files — the repo
-is a definition only OpenBuild parses, never an installable Nextcloud app.
+is a definition only Buildiq parses, never an installable Nextcloud app.
 
 **ID:** REQ-GARF-001
 
 #### Scenario: A conforming repo carries descriptor, manifest, and schemas
 
-- **WHEN** a repo file map contains `openbuild-app.json` and `manifest.json` at
+- **WHEN** a repo file map contains `buildiq-app.json` and `manifest.json` at
   the root and one or more `schemas/<slug>.json` files
-- **THEN** the parser (REQ-GARF-006) recognises it as a conforming OpenBuild app
+- **THEN** the parser (REQ-GARF-006) recognises it as a conforming Buildiq app
   repo and produces an in-memory install payload
 
-#### Scenario: A repo without a root descriptor is not an OpenBuild app repo
+#### Scenario: A repo without a root descriptor is not an Buildiq app repo
 
-- **WHEN** a repo file map has no `openbuild-app.json` at its root
+- **WHEN** a repo file map has no `buildiq-app.json` at its root
 - **THEN** the parser rejects it with the `descriptor_missing` error and produces
   no payload
 
-### Requirement: openbuild-app.json descriptor contract
+### Requirement: buildiq-app.json descriptor contract
 
-The `openbuild-app.json` descriptor SHALL declare: `formatVersion` (string,
+The `buildiq-app.json` descriptor SHALL declare: `formatVersion` (string,
 required — the layout version, initially `"1.0"`), `slug` (string, required,
 kebab-case), `name` (string, required), `description` (string, required),
 `category` (string, required), `appType` (string enum `virtual | hybrid`,
@@ -72,7 +72,7 @@ schema blobs (those live in `manifest.json` / `schemas/*.json`).
 
 #### Scenario: A valid descriptor exposes the identity and version fields
 
-- **WHEN** the parser reads an `openbuild-app.json` carrying `formatVersion`,
+- **WHEN** the parser reads an `buildiq-app.json` carrying `formatVersion`,
   `slug`, `name`, `description`, `category`, `appType: virtual`, and `version`
 - **THEN** those fields are mapped onto the in-memory install payload's `slug`,
   `title`, `description`, `category`, and `version`
@@ -84,11 +84,11 @@ schema blobs (those live in `manifest.json` / `schemas/*.json`).
 - **THEN** the parse fails with the `app_type_unknown` error naming the offending
   value
 
-### Requirement: Discovery contract via the openbuild-app topic
+### Requirement: Discovery contract via the buildiq-app topic
 
-The system SHALL define that a GitHub repository is discoverable as an OpenBuild
-app **iff** it carries the GitHub **topic `openbuild-app`** AND exposes a
-parseable `openbuild-app.json` at its root. The topic is the search key that the
+The system SHALL define that a GitHub repository is discoverable as an Buildiq
+app **iff** it carries the GitHub **topic `buildiq-app`** AND exposes a
+parseable `buildiq-app.json` at its root. The topic is the search key that the
 shop (change `github-shop-catalogue`) queries; the root descriptor is the
 authoritative parse target. A repo carrying the topic but no parseable descriptor
 SHALL be treated as a non-conforming candidate (surfaced as unparseable, not
@@ -99,8 +99,8 @@ silently skipped).
 #### Scenario: The topic is the declared discovery key
 
 - **WHEN** the format's discovery contract is consulted
-- **THEN** it names the GitHub topic `openbuild-app` as the search key AND a root
-  `openbuild-app.json` as the parse target
+- **THEN** it names the GitHub topic `buildiq-app` as the search key AND a root
+  `buildiq-app.json` as the parse target
 
 ### Requirement: manifest.json carries the ApplicationVersion manifest blob
 
@@ -158,7 +158,7 @@ files resolving to the same slug SHALL be rejected (REQ-GARF-008,
 
 The system SHALL provide an `AppRepoSerializer` service that, given a local
 `Application` and a chosen `ApplicationVersion`, produces the ordered set of repo
-files (`openbuild-app.json`, `manifest.json`, one `schemas/<slug>.json` per
+files (`buildiq-app.json`, `manifest.json`, one `schemas/<slug>.json` per
 companion schema, and an optional `README.md`). The serializer SHALL emit files
 in a deterministic order and canonicalise every JSON file (sorted keys, stable
 indentation, trailing newline) so that re-serialising an unchanged app yields a
@@ -171,7 +171,7 @@ perform no network I/O and no OpenRegister writes.
 
 - **WHEN** `AppRepoSerializer` serialises an Application with two companion
   schemas at a chosen version
-- **THEN** the produced file map contains `openbuild-app.json`, `manifest.json`,
+- **THEN** the produced file map contains `buildiq-app.json`, `manifest.json`,
   and exactly two `schemas/<slug>.json` files
 
 #### Scenario: Re-serialising an unchanged app is byte-stable
@@ -234,7 +234,7 @@ bad file.
 #### Scenario: An unsupported format version is rejected loudly
 
 - **WHEN** the parser reads a descriptor whose `formatVersion` major is not
-  supported by this OpenBuild
+  supported by this Buildiq
 - **THEN** the parse fails with the `format_version_unsupported` error naming the
   version
 
@@ -262,7 +262,7 @@ that disagree SHALL NOT fail the parse — the manifest wins.
 
 - **WHEN** the serializer serialises an app whose manifest declares a top-level
   `credentials[]` entry for the `github` provider
-- **THEN** the emitted `openbuild-app.json` carries a matching `credentials`
+- **THEN** the emitted `buildiq-app.json` carries a matching `credentials`
   entry with `provider: "github"`, its `reason`, and its `scopes`
 
 #### Scenario: The manifest is authoritative on parse
@@ -361,7 +361,7 @@ The system MUST record `flows` (`declared`/`exported`/`skipped`) and `agents`
 counts in the descriptor's `channels` block. The system MUST resolve flows
 against the OpenRegister `Flow` ENTITY, never a mirror, and MUST resolve
 agents by `applicationSlug`, never a second binding. Export reuses
-`FlowAndAgentExportBundler` (openbuild-exporter, PR #233) unmodified, via
+`FlowAndAgentExportBundler` (buildiq-exporter, PR #233) unmodified, via
 `FlowAgentChannelCollector`'s scratch-directory adapter.
 
 #### Scenario: A bound flow is exported at its channel path
@@ -415,5 +415,5 @@ agents by `applicationSlug`, never a second binding. Export reuses
 - `skills/<name>/…` is byte-for-byte hermiq's `SkillBundleSerializer` layout — one shape, two apps.
 - OpenConnector is read as OpenRegister objects (it has no `lib/Db` and no `openconnector_*` tables), so this introduces no cross-app PHP dependency, per ADR-022.
 - Collectors are total, mirroring `collectCompanionSchemas()`: a missing source yields no entries rather than an exception. The descriptor's channel counts are what stop that becoming a silent empty export.
-- `FlowAndAgentExportBundler.php` and `ExportService.php` (openbuild-exporter) are untouched by the flows/agents channels — reuse is by calling, not by extraction or duplication.
+- `FlowAndAgentExportBundler.php` and `ExportService.php` (buildiq-exporter) are untouched by the flows/agents channels — reuse is by calling, not by extraction or duplication.
 - Fetching a published repository's files (`GitHubCatalogService::fetchChannelFiles()`) must independently enumerate every channel prefix the parser understands — the parser being able to read a channel does not mean the fetch step downloads it. Verified live twice: once for data-registers/connectors/automations/skills (this class's own docblock), and once more for flows/agents during app-repo-format-flow-agent-export's live round-trip verification (fixed 2026-08-19).

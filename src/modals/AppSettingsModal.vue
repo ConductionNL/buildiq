@@ -12,7 +12,7 @@
 <template>
 	<NcModal
 		v-if="open"
-		:name="t('openbuild', 'App settings')"
+		:name="t('buildiq', 'App settings')"
 		@close="$emit('update:open', false)">
 		<div class="app-settings">
 			<h3 class="app-settings__title">
@@ -25,12 +25,12 @@
 					:modelValue="isPublished"
 					:disabled="busy"
 					@update:modelValue="$emit('set-published', $event)">
-					{{ t('openbuild', 'Published') }}
+					{{ t('buildiq', 'Published') }}
 				</NcCheckboxRadioSwitch>
 				<p class="app-settings__hint">
 					{{
 						t(
-							'openbuild',
+							'buildiq',
 							'Published apps appear in the Nextcloud app menu. Drafts are hidden.',
 						)
 					}}
@@ -43,12 +43,12 @@
 					:modelValue="allowUserOverrides"
 					:disabled="busy"
 					@update:modelValue="$emit('update:allow-overrides', $event)">
-					{{ t('openbuild', 'Allow per-user customisation') }}
+					{{ t('buildiq', 'Allow per-user customisation') }}
 				</NcCheckboxRadioSwitch>
 				<p class="app-settings__hint">
 					{{
 						t(
-							'openbuild',
+							'buildiq',
 							'Let each user layer their own manifest changes on top of the shared app.',
 						)
 					}}
@@ -57,12 +57,12 @@
 
 			<div class="app-settings__row">
 				<h4 class="app-settings__subtitle">
-					{{ t('openbuild', 'Data registers') }}
+					{{ t('buildiq', 'Data registers') }}
 				</h4>
 				<p class="app-settings__hint app-settings__hint--inline">
 					{{
 						t(
-							'openbuild',
+							'buildiq',
 							'Shared, non-versioned OpenRegister registers this app binds to alongside its own per-version register (e.g. a dataset fed by OpenConnector). Not owned by this app — promotion and export treat them as reference-only.',
 						)
 					}}
@@ -73,35 +73,35 @@
 					class="app-settings__data-register-row">
 					<NcTextField
 						:modelValue="row.register"
-						:label="t('openbuild', 'Register slug')"
+						:label="t('buildiq', 'Register slug')"
 						:disabled="busy"
 						@update:modelValue="updateRow(index, 'register', $event)" />
 					<NcTextField
 						:modelValue="row.label"
-						:label="t('openbuild', 'Label (optional)')"
+						:label="t('buildiq', 'Label (optional)')"
 						:disabled="busy"
 						@update:modelValue="updateRow(index, 'label', $event)" />
 					<NcButton
 						variant="tertiary"
 						:disabled="busy"
-						:aria-label="t('openbuild', 'Remove data register')"
+						:aria-label="t('buildiq', 'Remove data register')"
 						@click="removeRow(index)">
-						{{ t('openbuild', 'Remove') }}
+						{{ t('buildiq', 'Remove') }}
 					</NcButton>
 				</div>
 				<NcButton variant="secondary" :disabled="busy" @click="addRow">
-					{{ t('openbuild', 'Add data register') }}
+					{{ t('buildiq', 'Add data register') }}
 				</NcButton>
 			</div>
 
 			<div class="app-settings__row">
 				<h4 class="app-settings__subtitle">
-					{{ t('openbuild', 'Flows') }}
+					{{ t('buildiq', 'Flows') }}
 				</h4>
 				<p class="app-settings__hint app-settings__hint--inline">
 					{{
 						t(
-							'openbuild',
+							'buildiq',
 							'The OpenRegister flows this app is made of. Exporting the app carries them, so an installed copy can actually do something. Agents are not listed here: they already belong to an app and are collected automatically.',
 						)
 					}}
@@ -116,7 +116,7 @@
 						:multiple="true"
 						:disabled="busy || loadingFlows"
 						:loading="loadingFlows"
-						:inputLabel="t('openbuild', 'Flows this app is made of')"
+						:inputLabel="t('buildiq', 'Flows this app is made of')"
 						@update:modelValue="onFlowsPicked" />
 				</div>
 				<p
@@ -124,7 +124,7 @@
 					class="app-settings__hint">
 					{{
 						t(
-							'openbuild',
+							'buildiq',
 							'No flows exist on this instance yet. Create one in OpenRegister first.',
 						)
 					}}
@@ -219,7 +219,7 @@ export default {
 					known || {
 						label:
 							binding.label
-							|| this.t('openbuild', '{uuid} (no longer exists)', {
+							|| this.t('buildiq', '{uuid} (no longer exists)', {
 								uuid: binding.flow,
 							}),
 						value: binding.flow,

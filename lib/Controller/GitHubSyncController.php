@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild GitHubSyncController
+ * Buildiq GitHubSyncController
  *
  * Owner-gated HTTP surface for the GitHub owner round-trip (github-app-sync).
  * Four endpoints, all `#[NoAdminRequired]` with a per-object owner/viewer guard in
@@ -15,14 +15,14 @@
  *   - GET  /api/applications/{slug}/github/status — viewer-readable feature/status.
  *
  * Every GitHub write is broker-routed by the service (the token never enters
- * OpenBuild); a broker denial / moved head / parse failure surfaces as a generic,
+ * Buildiq); a broker denial / moved head / parse failure surfaces as a generic,
  * hint-bearing outcome.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
- * @package  OCA\OpenBuild\Controller
+ * @package  OCA\Buildiq\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -37,12 +37,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Controller;
+namespace OCA\Buildiq\Controller;
 
-use OCA\OpenBuild\AppInfo\Application;
-use OCA\OpenBuild\Exception\AppRepoParseException;
-use OCA\OpenBuild\Service\GitHubAppSyncService;
-use OCA\OpenBuild\Service\PermissionResolver;
+use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Exception\AppRepoParseException;
+use OCA\Buildiq\Service\GitHubAppSyncService;
+use OCA\Buildiq\Service\PermissionResolver;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;

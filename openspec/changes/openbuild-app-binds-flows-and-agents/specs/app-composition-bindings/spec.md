@@ -1,6 +1,6 @@
 ## Purpose
 
-Defines what an OpenBuild application declares itself to be composed of. An application is not only a scaffold and a name: it binds the data registers, connectors and flows that make it that application, and its agents point back at it. These relationships are what an export reads, so a part an application has no way to express is a part an export cannot carry — and a part expressed TWICE is two facts that can disagree.
+Defines what an Buildiq application declares itself to be composed of. An application is not only a scaffold and a name: it binds the data registers, connectors and flows that make it that application, and its agents point back at it. These relationships are what an export reads, so a part an application has no way to express is a part an export cannot carry — and a part expressed TWICE is two facts that can disagree.
 
 ## ADDED Requirements
 

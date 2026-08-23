@@ -5,32 +5,32 @@
   CreateApplicationWizard — creates a VIRTUAL app via the shared
   @conduction/nextcloud-vue CnWizardDialog.
 
-  Created apps are virtual by definition (built from scratch in OpenBuild).
+  Created apps are virtual by definition (built from scratch in Buildiq).
   Hybrid apps are NOT created here — they are installed manifest-supporting
-  apps from the App Store that OpenBuild layers customization on top of, so
+  apps from the App Store that Buildiq layers customization on top of, so
   this wizard has no app-type choice.
 
   Steps: Basics → Preset → (Custom, only when preset === 'custom') → Review.
-  On Create: POSTs to /apps/openbuild/api/applications/wizard and emits
+  On Create: POSTs to /apps/buildiq/api/applications/wizard and emits
   `created(applicationUuid)` so the parent can navigate.
 
-  spec: openbuild-app-creation-wizard REQ-OBWIZ-001 through REQ-OBWIZ-010
+  spec: buildiq-app-creation-wizard REQ-OBWIZ-001 through REQ-OBWIZ-010
   ADR-004: a modal/dialog lives in its own file under src/dialogs/.
 -->
 <template>
 	<CnWizardDialog
 		v-if="show"
 		ref="wizard"
-		:dialogTitle="t('openbuild', 'Create app')"
+		:dialogTitle="t('buildiq', 'Create app')"
 		:steps="wizardSteps"
 		:defaults="defaults"
 		:validate="validateStep"
-		:cancelLabel="t('openbuild', 'Cancel')"
-		:backLabel="t('openbuild', 'Back')"
-		:nextLabel="t('openbuild', 'Next')"
-		:submitLabel="t('openbuild', 'Create')"
-		:closeLabel="t('openbuild', 'Close')"
-		:successText="t('openbuild', 'App created.')"
+		:cancelLabel="t('buildiq', 'Cancel')"
+		:backLabel="t('buildiq', 'Back')"
+		:nextLabel="t('buildiq', 'Next')"
+		:submitLabel="t('buildiq', 'Create')"
+		:closeLabel="t('buildiq', 'Close')"
+		:successText="t('buildiq', 'App created.')"
 		@submit="onSubmit"
 		@close="onClose">
 		<template #step-basics="{ stepData, setStepData }">
@@ -127,13 +127,13 @@ export default {
 		 */
 		wizardSteps() {
 			const steps = [
-				{ id: 'basics', label: t('openbuild', 'Basics') },
-				{ id: 'preset', label: t('openbuild', 'Preset') },
+				{ id: 'basics', label: t('buildiq', 'Basics') },
+				{ id: 'preset', label: t('buildiq', 'Preset') },
 			]
 			if (this.presetSelected === 'custom') {
-				steps.push({ id: 'custom', label: t('openbuild', 'Custom') })
+				steps.push({ id: 'custom', label: t('buildiq', 'Custom') })
 			}
-			steps.push({ id: 'review', label: t('openbuild', 'Review') })
+			steps.push({ id: 'review', label: t('buildiq', 'Review') })
 			return steps
 		},
 	},
@@ -166,17 +166,17 @@ export default {
 			if (stepId === 'basics') {
 				return stepData._step1Valid
 					? true
-					: t('openbuild', 'Enter a name and a valid slug.')
+					: t('buildiq', 'Enter a name and a valid slug.')
 			}
 			if (stepId === 'preset') {
 				return stepData._step2Valid
 					? true
-					: t('openbuild', 'Choose a version preset.')
+					: t('buildiq', 'Choose a version preset.')
 			}
 			if (stepId === 'custom') {
 				return stepData._step3Valid
 					? true
-					: t('openbuild', 'Complete the custom version chain.')
+					: t('buildiq', 'Complete the custom version chain.')
 			}
 			return true
 		},
@@ -199,7 +199,7 @@ export default {
 			}
 
 			try {
-				const url = generateUrl('/apps/openbuild/api/applications/wizard')
+				const url = generateUrl('/apps/buildiq/api/applications/wizard')
 				const { data, status } = await axios.post(url, body)
 
 				if (status === 201 && data.applicationUuid) {
@@ -248,7 +248,7 @@ export default {
 					)
 				}
 			} catch (err) {
-				console.error('OpenBuild: failed to attach app icon', err)
+				console.error('Buildiq: failed to attach app icon', err)
 			}
 		},
 
@@ -266,14 +266,14 @@ export default {
 			// OR's files#create endpoint takes JSON { name, content } and writes
 			// the content verbatim — no multipart needed for text SVG.
 			const filesUrl = generateUrl(
-				`/apps/openregister/api/objects/openbuild/application/${uuid}/files`,
+				`/apps/openregister/api/objects/buildiq/application/${uuid}/files`,
 			)
 			await axios.post(filesUrl, { name: filename, content: svg })
 
 			// PATCH (partial merge) — a PUT would replace the whole object and fail
 			// validation on the now-missing required name/slug.
 			const patchUrl = generateUrl(
-				`/apps/openregister/api/objects/openbuild/application/${uuid}`,
+				`/apps/openregister/api/objects/buildiq/application/${uuid}`,
 			)
 			await axios.patch(patchUrl, { [field]: { ref: filename } })
 		},
@@ -289,15 +289,14 @@ export default {
 		reportError(data, err) {
 			let message = data.message || data.detail
 			if (!message && err) message = err.message
-			if (!message)
-				message = t('openbuild', 'Failed to create the application.')
+			if (!message) message = t('buildiq', 'Failed to create the application.')
 			if (
 				Array.isArray(data.orphanedResources)
 				&& data.orphanedResources.length > 0
 			) {
 				message +=
 					' '
-					+ t('openbuild', 'Some resources need manual cleanup: {list}', {
+					+ t('buildiq', 'Some resources need manual cleanup: {list}', {
 						list: data.orphanedResources.join(', '),
 					})
 			}

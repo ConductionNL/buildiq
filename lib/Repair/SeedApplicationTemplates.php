@@ -1,11 +1,11 @@
 <?php
 
 /**
- * OpenBuild Seed Application Templates Repair Step
+ * Buildiq Seed Application Templates Repair Step
  *
  * Idempotent repair step that seeds the four Conduction-curated
  * ApplicationTemplate records on install. Modelled on the canonical
- * SeedHelloWorld.php pattern from chain spec #1 (bootstrap-openbuild).
+ * SeedHelloWorld.php pattern from chain spec #1 (bootstrap-buildiq).
  *
  * Loads four JSON fixtures from lib/Settings/templates/ and writes them
  * into OpenRegister via the standard ObjectService. Per-slug existence
@@ -16,7 +16,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Repair
- * @package  OCA\OpenBuild\Repair
+ * @package  OCA\Buildiq\Repair
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -32,9 +32,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Repair;
+namespace OCA\Buildiq\Repair;
 
-use OCA\OpenBuild\Service\TemplateSeedService;
+use OCA\Buildiq\Service\TemplateSeedService;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use RuntimeException;
@@ -71,7 +71,7 @@ class SeedApplicationTemplates implements IRepairStep {
 	 * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-12
 	 */
 	public function getName(): string {
-		return 'Seed Conduction-curated OpenBuild ApplicationTemplate records';
+		return 'Seed Conduction-curated Buildiq ApplicationTemplate records';
 	}//end getName()
 
 	/**
@@ -96,7 +96,7 @@ class SeedApplicationTemplates implements IRepairStep {
 			// service deferred instead of failing so a fresh install can
 			// complete; the next `occ maintenance:repair` seeds the templates.
 			$output->warning(
-				'OpenBuild register/schema not available yet — deferring template seeding '
+				'Buildiq register/schema not available yet — deferring template seeding '
 				. '(completes on the next repair once the register exists).'
 			);
 			return;
@@ -110,12 +110,12 @@ class SeedApplicationTemplates implements IRepairStep {
 			// Preserve the pre-refactor loud-fail contract: a validation or
 			// write failure must fail the repair step, not pass silently.
 			throw new RuntimeException(
-				'OpenBuild template seeding failed: ' . implode('; ', $result['errors'])
+				'Buildiq template seeding failed: ' . implode('; ', $result['errors'])
 			);
 		}
 
 		$output->info(
-			'OpenBuild template seeding complete. New: ' . $result['seeded']
+			'Buildiq template seeding complete. New: ' . $result['seeded']
 			. ', updated: ' . $result['updated'] . ', skipped: ' . $result['skipped']
 		);
 	}//end run()

@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Service
+ * @package  OCA\Buildiq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,11 +22,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Service;
+namespace OCA\Buildiq\Tests\Unit\Service;
 
-use OCA\OpenBuild\Service\AgentRunLogger;
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\Buildiq\Service\AgentRunLogger;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -62,14 +62,14 @@ class AgentRunLoggerTest extends TestCase {
 
 	/**
 	 * log() persists an `AgentRun` via `ObjectService::saveObject()` in the shared
-	 * `openbuild` register / `agentRun` schema, carrying every field.
+	 * `buildiq` register / `agentRun` schema, carrying every field.
 	 *
 	 * @return void
 	 */
 	public function testLogPersistsAgentRunWithAllFields(): void {
 		$agent = ['id' => 'agent-1', 'applicationSlug' => 'tool-library'];
-		$plan = ['summary' => 'x', 'steps' => [['tool' => 'openbuild.upsertPage', 'arguments' => []]]];
-		$calls = [['tool' => 'openbuild.upsertPage', 'arguments' => [], 'result' => ['success' => true]]];
+		$plan = ['summary' => 'x', 'steps' => [['tool' => 'buildiq.upsertPage', 'arguments' => []]]];
+		$calls = [['tool' => 'buildiq.upsertPage', 'arguments' => [], 'result' => ['success' => true]]];
 
 		// ObjectService::saveObject()'s real signature interleaves several
 		// optional params (extend/register/schema/uuid/...) — with() matches
@@ -90,7 +90,7 @@ class AgentRunLoggerTest extends TestCase {
 					}
 				),
 				self::anything(),
-				'openbuild',
+				'buildiq',
 				'agentRun'
 			)
 			->willReturn($this->objectEntity(['id' => 'run-1', 'outcome' => 'applied']));
@@ -129,7 +129,7 @@ class AgentRunLoggerTest extends TestCase {
 			->with(
 				self::callback(static fn (array $payload): bool => $payload['agentId'] === 'agent-2' && $payload['applicationSlug'] === ''),
 				self::anything(),
-				'openbuild',
+				'buildiq',
 				'agentRun'
 			)
 			->willReturn($this->objectEntity([]));

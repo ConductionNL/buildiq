@@ -14,7 +14,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Lifecycle
+ * @package  OCA\Buildiq\Tests\Unit\Lifecycle
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -27,12 +27,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Lifecycle;
+namespace OCA\Buildiq\Tests\Unit\Lifecycle;
 
-use OCA\OpenBuild\Lifecycle\ApplicationVersionOwnerGuard;
-use OCA\OpenBuild\Service\PermissionResolver;
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\Buildiq\Lifecycle\ApplicationVersionOwnerGuard;
+use OCA\Buildiq\Service\PermissionResolver;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IGroupManager;
 use OCP\IUser;

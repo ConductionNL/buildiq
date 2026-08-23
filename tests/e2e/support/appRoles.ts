@@ -1,5 +1,5 @@
 /**
- * Shared e2e fixture: grant openbuild app roles to the RBAC fixture groups.
+ * Shared e2e fixture: grant buildiq app roles to the RBAC fixture groups.
  *
  * The permission suites need a NON-owner who is nonetheless a member — an
  * editor or a viewer. globalSetup provisions the users and their groups and
@@ -12,7 +12,7 @@
  * user is an outsider, which is why the role-scoped scenarios could only ever
  * assert the blackout path.
  *
- * There is no openbuild permissions endpoint — the Application is an
+ * There is no buildiq permissions endpoint — the Application is an
  * OpenRegister object, so the grant goes through OR's object API.
  *
  * ⚠️ OR saves are PUT-SEMANTIC: properties omitted from the body are dropped,
@@ -20,15 +20,15 @@
  * never PUT a bare `{ permissions }`.
  *
  * ✅ THIS HELPER IS SUFFICIENT ON ITS OWN. An earlier revision of this comment,
- * and issues Conduction/openbuild#171 and #173, claimed the opposite: that a
+ * and issues Conduction/buildiq#171 and #173, claimed the opposite: that a
  * grantee still could not LIST the application. RETRACTED — re-measured
  * 2026-08-11 on a live instance (NC 34, openregister 0.2.17-unstable.36),
  * printing the status code on every probe:
  *
- *   - `GET /apps/openregister/api/objects/openbuild/application` as
+ *   - `GET /apps/openregister/api/objects/buildiq/application` as
  *     `rbac-editor` → 200 with FIVE rows. OR's multitenancy/ownership scoping
  *     does not drop the row, so that hypothesis is dead.
- *   - `GET /apps/openbuild/api/applications` as `rbac-editor`, BEFORE any
+ *   - `GET /apps/buildiq/api/applications` as `rbac-editor`, BEFORE any
  *     grant → 200 `[]`. Correct: the fixture's `permissions` was `null`.
  *   - After PUTting `{owners:['user:rbac-owner'], editors:['user:rbac-editor']}`
  *     onto a WIZARD-CREATED app → `listMine` returns that app for `rbac-editor`
@@ -48,9 +48,9 @@
 
 import type { Page } from '@playwright/test'
 
-/** OR object API for the openbuild Application schema. */
+/** OR object API for the buildiq Application schema. */
 const OR_APPLICATIONS =
-	'/index.php/apps/openregister/api/objects/openbuild/application'
+	'/index.php/apps/openregister/api/objects/buildiq/application'
 
 /**
  * Grant owner / editor / viewer roles on an application to the given principals.

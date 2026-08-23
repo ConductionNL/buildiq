@@ -3,7 +3,7 @@
 /**
  * Unit tests for AppOverrideController auth posture.
  *
- * Covers the openbuild-inline-edit-persistence change (spec
+ * Covers the buildiq-inline-edit-persistence change (spec
  * app-override-persistence): anonymous write rejected (401), out-of-scope
  * write forbidden (403), in-scope write allowed (2xx), GET returns the stored
  * delta or an empty object, malformed body 422, app-blanking delta 422,
@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Controller
+ * @package  OCA\Buildiq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,11 +26,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Controller;
+namespace OCA\Buildiq\Tests\Unit\Controller;
 
-use OCA\OpenBuild\Controller\AppOverrideController;
-use OCA\OpenBuild\Service\AppOverrideService;
-use OCA\OpenBuild\Service\PermissionResolver;
+use OCA\Buildiq\Controller\AppOverrideController;
+use OCA\Buildiq\Service\AppOverrideService;
+use OCA\Buildiq\Service\PermissionResolver;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
@@ -150,7 +150,7 @@ class AppOverrideControllerTest extends TestCase {
 	}//end testAnonymousSaveIsRejected()
 
 	/**
-	 * A logged-in user outside OpenBuild's group-restriction is forbidden (403).
+	 * A logged-in user outside Buildiq's group-restriction is forbidden (403).
 	 *
 	 * @return void
 	 */

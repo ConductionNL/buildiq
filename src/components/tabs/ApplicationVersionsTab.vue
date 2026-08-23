@@ -103,7 +103,7 @@ export default {
 				//
 				// This previously went through `obPatchApp({ manifest, version,
 				// status })`, which PUTs the whole Application object at
-				// `/api/objects/openbuild/application/{uuid}`. The `application`
+				// `/api/objects/buildiq/application/{uuid}`. The `application`
 				// schema declares 15 properties and NEITHER `manifest` NOR
 				// `version` is one of them, so OpenRegister dropped both and only
 				// `status` survived. Rolling back therefore restored NOTHING — it
@@ -120,7 +120,7 @@ export default {
 				// PUT expects it wrapped in `{ manifest }`.
 				await axios.put(
 					generateUrl(
-						`/apps/openbuild/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`,
+						`/apps/buildiq/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`,
 					),
 					{ manifest: version.manifest },
 				)
@@ -133,7 +133,7 @@ export default {
 				// what was broken is that the manifest never came back.
 				await this.obPatchApp({ status: 'draft' })
 			} catch (e) {
-				this.rollbackError = `${t('openbuild', 'Rollback failed')}: ${e.message || e}`
+				this.rollbackError = `${t('buildiq', 'Rollback failed')}: ${e.message || e}`
 			}
 		},
 	},

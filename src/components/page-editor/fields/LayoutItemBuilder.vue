@@ -12,8 +12,8 @@
 				:value="item.widgetId || ''"
 				type="text"
 				class="layout-item-builder__field"
-				:placeholder="t('openbuild', 'widget id')"
-				:aria-label="t('openbuild', 'widget id')"
+				:placeholder="t('buildiq', 'widget id')"
+				:aria-label="t('buildiq', 'widget id')"
 				@input="updateField(index, 'widgetId', $event.target.value)" />
 			<label class="layout-item-builder__pair">
 				X
@@ -54,13 +54,13 @@
 			<button
 				type="button"
 				class="layout-item-builder__remove"
-				:title="t('openbuild', 'Remove layout item')"
+				:title="t('buildiq', 'Remove layout item')"
 				@click="removeItem(index)">
 				✕
 			</button>
 		</div>
 		<button type="button" class="layout-item-builder__add" @click="addItem">
-			+ {{ t('openbuild', 'Add layout item') }}
+			+ {{ t('buildiq', 'Add layout item') }}
 		</button>
 	</div>
 </template>

@@ -12,13 +12,13 @@
 	<NcModal size="normal" @close="$emit('close')">
 		<div class="automation-test-panel">
 			<h2>
-				{{ t('openbuild', 'Test automation') }} —
+				{{ t('buildiq', 'Test automation') }} —
 				{{ automation.name || automation.slug }}
 			</h2>
 
 			<NcTextArea
 				v-model="payloadText"
-				:label="t('openbuild', 'Sample payload (JSON)')"
+				:label="t('buildiq', 'Sample payload (JSON)')"
 				data-testid="dry-run-payload" />
 
 			<NcButton
@@ -26,7 +26,7 @@
 				:disabled="running"
 				data-testid="dry-run-button"
 				@click="run">
-				{{ running ? t('openbuild', 'Running…') : t('openbuild', 'Run') }}
+				{{ running ? t('buildiq', 'Running…') : t('buildiq', 'Run') }}
 			</NcButton>
 
 			<div
@@ -36,7 +36,7 @@
 				<p
 					v-if="result.conditionMatched"
 					class="automation-test-panel__matched">
-					{{ t('openbuild', 'Condition matched — would-be actions:') }}
+					{{ t('buildiq', 'Condition matched — would-be actions:') }}
 				</p>
 				<p
 					v-else
@@ -44,7 +44,7 @@
 					data-testid="dry-run-no-match">
 					{{
 						t(
-							'openbuild',
+							'buildiq',
 							'Condition did not match — no actions would run.',
 						)
 					}}
@@ -68,14 +68,14 @@
 				</p>
 
 				<p class="automation-test-panel__duration">
-					{{ t('openbuild', 'Duration') }}: {{ result.durationMs }}ms
+					{{ t('buildiq', 'Duration') }}: {{ result.durationMs }}ms
 				</p>
 
 				<p
 					v-if="result.approvalState && result.approvalState !== 'none'"
 					class="automation-test-panel__approval-state"
 					data-testid="dry-run-approval-state">
-					{{ t('openbuild', 'Approval state') }}: {{ approvalStateLabel }}
+					{{ t('buildiq', 'Approval state') }}: {{ approvalStateLabel }}
 				</p>
 			</div>
 
@@ -122,9 +122,9 @@ export default {
 		 */
 		approvalStateLabel() {
 			const labels = {
-				pending: t('openbuild', 'Pending'),
-				approved: t('openbuild', 'Approved'),
-				rejected: t('openbuild', 'Rejected'),
+				pending: t('buildiq', 'Pending'),
+				approved: t('buildiq', 'Approved'),
+				rejected: t('buildiq', 'Rejected'),
 			}
 			return (this.result && labels[this.result.approvalState]) || ''
 		},
@@ -145,7 +145,7 @@ export default {
 				payload = JSON.parse(this.payloadText || '{}')
 			} catch (error) {
 				this.errorMessage = t(
-					'openbuild',
+					'buildiq',
 					'The sample payload is not valid JSON.',
 				)
 				this.running = false
@@ -154,12 +154,12 @@ export default {
 
 			try {
 				const url = generateUrl(
-					`/apps/openbuild/api/automations/${this.automation.id}/dry-run`,
+					`/apps/buildiq/api/automations/${this.automation.id}/dry-run`,
 				)
 				const { data } = await axios.post(url, { payload })
 				this.result = data
 			} catch (error) {
-				this.errorMessage = t('openbuild', 'Dry-run failed.')
+				this.errorMessage = t('buildiq', 'Dry-run failed.')
 			} finally {
 				this.running = false
 			}

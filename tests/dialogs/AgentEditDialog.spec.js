@@ -111,7 +111,7 @@ describe('AgentEditDialog', () => {
 			name: 'Page builder assistant',
 			instructions: 'Be helpful.',
 			modelTaskType: 'TextToText',
-			enabledTools: ['openbuild.upsertPage', 'openbuild.addWidget'],
+			enabledTools: ['buildiq.upsertPage', 'buildiq.addWidget'],
 			maxActionsPerRun: 5,
 		}
 		const wrapper = factory(agent)
@@ -119,8 +119,8 @@ describe('AgentEditDialog', () => {
 
 		expect(wrapper.vm.name).toBe('Page builder assistant')
 		expect(wrapper.vm.enabledTools).toEqual([
-			'openbuild.upsertPage',
-			'openbuild.addWidget',
+			'buildiq.upsertPage',
+			'buildiq.addWidget',
 		])
 		expect(wrapper.vm.maxActionsPerRun).toBe(5)
 		expect(wrapper.vm.editing).toBe(true)
@@ -143,7 +143,7 @@ describe('AgentEditDialog', () => {
 		const wrapper = factory(null)
 		await openDialog(wrapper)
 		wrapper.vm.name = 'Page builder assistant'
-		wrapper.vm.enabledTools = ['openbuild.upsertPage']
+		wrapper.vm.enabledTools = ['buildiq.upsertPage']
 		wrapper.vm.maxActionsPerRun = 5
 
 		await wrapper.find('[data-testid="agent-save-button"]').trigger('click')
@@ -151,8 +151,8 @@ describe('AgentEditDialog', () => {
 
 		expect(axios.post).toHaveBeenCalledTimes(1)
 		const [url, payload] = axios.post.mock.calls[0]
-		expect(url).toBe('/apps/openregister/api/objects/openbuild/agent')
-		expect(payload.enabledTools).toEqual(['openbuild.upsertPage'])
+		expect(url).toBe('/apps/openregister/api/objects/buildiq/agent')
+		expect(payload.enabledTools).toEqual(['buildiq.upsertPage'])
 		expect(payload.applicationSlug).toBe('tool-library')
 		expect(wrapper.emitted('saved')).toBeTruthy()
 	})
@@ -161,7 +161,7 @@ describe('AgentEditDialog', () => {
 		const agent = {
 			id: 'agent-1',
 			name: 'Existing agent',
-			enabledTools: ['openbuild.listApps'],
+			enabledTools: ['buildiq.listApps'],
 			maxActionsPerRun: 10,
 		}
 		const wrapper = factory(agent)
@@ -172,7 +172,7 @@ describe('AgentEditDialog', () => {
 
 		expect(axios.put).toHaveBeenCalledTimes(1)
 		expect(axios.put.mock.calls[0][0]).toBe(
-			'/apps/openregister/api/objects/openbuild/agent/agent-1',
+			'/apps/openregister/api/objects/buildiq/agent/agent-1',
 		)
 	})
 
@@ -181,12 +181,12 @@ describe('AgentEditDialog', () => {
 		await openDialog(wrapper)
 
 		wrapper.vm.onEnabledToolsSelect([
-			{ value: 'openbuild.upsertPage' },
-			{ value: 'openbuild.addWidget' },
+			{ value: 'buildiq.upsertPage' },
+			{ value: 'buildiq.addWidget' },
 		])
 		expect(wrapper.vm.enabledTools).toEqual([
-			'openbuild.upsertPage',
-			'openbuild.addWidget',
+			'buildiq.upsertPage',
+			'buildiq.addWidget',
 		])
 
 		wrapper.vm.onEnabledToolsSelect(null)

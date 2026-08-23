@@ -1,7 +1,7 @@
 {
 	"info": {
-		"name": "OpenBuild API Contract Suite (Phase-3)",
-		"description": "Newman/Postman API-contract tests for the OpenBuild Nextcloud app (no-code virtual-app builder). Locks the HTTP contract of openbuild's controllers (appinfo/routes.php + lib/Controller/*): the create-virtual-app WIZARD, the manifest endpoint, the RBAC-filtered Application list (listMine), Virtual App + Schema CRUD via the OpenRegister object API (ADR-022), settings, and the export pipeline. Every endpoint family is exercised for a happy path, an error/validation case (4xx not 500), and an authorization case (no-auth -> 401/403). The suite is self-contained and idempotent: setup creates a virtual app via the wizard, the body of the suite reuses that slug/uuid, and teardown deletes the Application object it created.\n\nAUTH MODEL: collection auth is noauth; every authenticated request carries an EXPLICIT basic-auth block (admin:admin via the adminUser/adminPass variables) plus 'OCS-APIRequest: true' on app-framework POST/PUT/DELETE. No-auth requests target {{noAuthBase}} (127.0.0.1) so the localhost session cookie is host-scoped away from them, keeping authz assertions honest. Combined with --ignore-redirects + 'Accept: application/json', unauthenticated requests resolve to NC's JSON 401 rather than a 303->login 200.\n\nPHASE-0 FIXES LOCKED HERE: (1) the create-virtual-app wizard returns 201 (not 422 — the OpenRegister lockObject advisory-lock fix), asserted in '1. App Creation Wizard -> wizard happy path (201)'; (2) a wizard-built app's manifest returns 200 (not 404 — the BuiltAppRoute publish fix), asserted in '2. Manifest -> wizard-built app manifest (200)'.\n\nQUARANTINED (honest, not a fake pass): the export-submit endpoint returns 403 even for an NC admin on a freshly wizard-built app the admin owns, because ExportsController::isAuthorisedForApplication() returns false (empty searchObjectsBySlug result) BEFORE reaching its NC-admin bypass. The suite asserts the current 403 so it stays green without faking a pass; flip to 202 when the auth ordering is fixed.\n\nThe builder/page-designer nested SPA routes (#41-quarantined) are NOT covered — they are frontend-only and have no JSON API surface.\n\nThis collection is distinct from the legacy openbuild.postman_collection.json (which uses base_url/admin_user/admin_password and a now-removed hello-world seed). It follows the procest Newman pattern: baseUrl/adminUser/adminPass + host-split authz + flock. Run via run-newman.sh.",
+		"name": "Buildiq API Contract Suite (Phase-3)",
+		"description": "Newman/Postman API-contract tests for the Buildiq Nextcloud app (no-code virtual-app builder). Locks the HTTP contract of buildiq's controllers (appinfo/routes.php + lib/Controller/*): the create-virtual-app WIZARD, the manifest endpoint, the RBAC-filtered Application list (listMine), Virtual App + Schema CRUD via the OpenRegister object API (ADR-022), settings, and the export pipeline. Every endpoint family is exercised for a happy path, an error/validation case (4xx not 500), and an authorization case (no-auth -> 401/403). The suite is self-contained and idempotent: setup creates a virtual app via the wizard, the body of the suite reuses that slug/uuid, and teardown deletes the Application object it created.\n\nAUTH MODEL: collection auth is noauth; every authenticated request carries an EXPLICIT basic-auth block (admin:admin via the adminUser/adminPass variables) plus 'OCS-APIRequest: true' on app-framework POST/PUT/DELETE. No-auth requests target {{noAuthBase}} (127.0.0.1) so the localhost session cookie is host-scoped away from them, keeping authz assertions honest. Combined with --ignore-redirects + 'Accept: application/json', unauthenticated requests resolve to NC's JSON 401 rather than a 303->login 200.\n\nPHASE-0 FIXES LOCKED HERE: (1) the create-virtual-app wizard returns 201 (not 422 — the OpenRegister lockObject advisory-lock fix), asserted in '1. App Creation Wizard -> wizard happy path (201)'; (2) a wizard-built app's manifest returns 200 (not 404 — the BuiltAppRoute publish fix), asserted in '2. Manifest -> wizard-built app manifest (200)'.\n\nQUARANTINED (honest, not a fake pass): the export-submit endpoint returns 403 even for an NC admin on a freshly wizard-built app the admin owns, because ExportsController::isAuthorisedForApplication() returns false (empty searchObjectsBySlug result) BEFORE reaching its NC-admin bypass. The suite asserts the current 403 so it stays green without faking a pass; flip to 202 when the auth ordering is fixed.\n\nThe builder/page-designer nested SPA routes (#41-quarantined) are NOT covered — they are frontend-only and have no JSON API surface.\n\nThis collection is distinct from the legacy buildiq.postman_collection.json (which uses base_url/admin_user/admin_password and a now-removed hello-world seed). It follows the procest Newman pattern: baseUrl/adminUser/adminPass + host-split authz + flock. Run via run-newman.sh.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -83,8 +83,8 @@
 							{ "key": "Content-Type", "value": "application/json" },
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
-						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Newman Probe App\",\n  \"slug\": \"{{appSlug}}\",\n  \"description\": \"Created by the openbuild Newman contract suite\",\n  \"preset\": \"single\"\n}" },
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openbuild/api/applications/wizard", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openbuild", "api", "applications", "wizard" ] }
+						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Newman Probe App\",\n  \"slug\": \"{{appSlug}}\",\n  \"description\": \"Created by the buildiq Newman contract suite\",\n  \"preset\": \"single\"\n}" },
+						"url": { "raw": "{{baseUrl}}/index.php/apps/buildiq/api/applications/wizard", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "buildiq", "api", "applications", "wizard" ] }
 					}
 				},
 				{
@@ -114,7 +114,7 @@
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
 						"body": { "mode": "raw", "raw": "{\n  \"slug\": \"newman-no-name\",\n  \"preset\": \"single\"\n}" },
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openbuild/api/applications/wizard", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openbuild", "api", "applications", "wizard" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/buildiq/api/applications/wizard", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "buildiq", "api", "applications", "wizard" ] }
 					}
 				},
 				{
@@ -141,7 +141,7 @@
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
 						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Bad Slug App\",\n  \"slug\": \"Not A Valid Slug!\",\n  \"preset\": \"single\"\n}" },
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openbuild/api/applications/wizard", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openbuild", "api", "applications", "wizard" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/buildiq/api/applications/wizard", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "buildiq", "api", "applications", "wizard" ] }
 					}
 				},
 				{
@@ -165,7 +165,7 @@
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
 						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Anon App\",\n  \"slug\": \"anon-app\",\n  \"preset\": \"single\"\n}" },
-						"url": { "raw": "{{noAuthBase}}/index.php/apps/openbuild/api/applications/wizard", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "openbuild", "api", "applications", "wizard" ] }
+						"url": { "raw": "{{noAuthBase}}/index.php/apps/buildiq/api/applications/wizard", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "buildiq", "api", "applications", "wizard" ] }
 					}
 				}
 			]
@@ -199,7 +199,7 @@
 						"method": "GET",
 						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
 						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openbuild/api/applications/{{appSlug}}/manifest", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openbuild", "api", "applications", "{{appSlug}}", "manifest" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/buildiq/api/applications/{{appSlug}}/manifest", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "buildiq", "api", "applications", "{{appSlug}}", "manifest" ] }
 					}
 				},
 				{
@@ -221,7 +221,7 @@
 						"method": "GET",
 						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
 						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openbuild/api/applications/zzz-no-such-app-zzz/manifest", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openbuild", "api", "applications", "zzz-no-such-app-zzz", "manifest" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/buildiq/api/applications/zzz-no-such-app-zzz/manifest", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "buildiq", "api", "applications", "zzz-no-such-app-zzz", "manifest" ] }
 					}
 				},
 				{
@@ -240,7 +240,7 @@
 					"request": {
 						"method": "GET",
 						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
-						"url": { "raw": "{{noAuthBase}}/index.php/apps/openbuild/api/applications/{{appSlug}}/manifest", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "openbuild", "api", "applications", "{{appSlug}}", "manifest" ] }
+						"url": { "raw": "{{noAuthBase}}/index.php/apps/buildiq/api/applications/{{appSlug}}/manifest", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "buildiq", "api", "applications", "{{appSlug}}", "manifest" ] }
 					}
 				}
 			]
@@ -272,7 +272,7 @@
 						"method": "GET",
 						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
 						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openbuild/api/applications", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openbuild", "api", "applications" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/buildiq/api/applications", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "buildiq", "api", "applications" ] }
 					}
 				},
 				{
@@ -291,14 +291,14 @@
 					"request": {
 						"method": "GET",
 						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
-						"url": { "raw": "{{noAuthBase}}/index.php/apps/openbuild/api/applications", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "openbuild", "api", "applications" ] }
+						"url": { "raw": "{{noAuthBase}}/index.php/apps/buildiq/api/applications", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "buildiq", "api", "applications" ] }
 					}
 				}
 			]
 		},
 		{
 			"name": "4. Virtual App + Schema CRUD (OpenRegister, ADR-022)",
-			"description": "OpenBuild owns no Application-CRUD controller per ADR-022; Application + Schema objects are created/read/updated/deleted through the OpenRegister object API. This folder exercises create -> read -> update -> delete on an Application object in the shared 'openbuild' register / 'application' schema.",
+			"description": "Buildiq owns no Application-CRUD controller per ADR-022; Application + Schema objects are created/read/updated/deleted through the OpenRegister object API. This folder exercises create -> read -> update -> delete on an Application object in the shared 'buildiq' register / 'application' schema.",
 			"item": [
 				{
 					"name": "OR create Application object (201/200)",
@@ -326,7 +326,7 @@
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
 						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Newman CRUD App\",\n  \"slug\": \"newman-crud-app\",\n  \"description\": \"OR-API CRUD probe\"\n}" },
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openbuild/application", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "openbuild", "application" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/buildiq/application", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "buildiq", "application" ] }
 					}
 				},
 				{
@@ -348,7 +348,7 @@
 						"method": "GET",
 						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
 						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openbuild/application/{{crudAppUuid}}", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "openbuild", "application", "{{crudAppUuid}}" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/buildiq/application/{{crudAppUuid}}", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "buildiq", "application", "{{crudAppUuid}}" ] }
 					}
 				},
 				{
@@ -375,7 +375,7 @@
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
 						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Newman CRUD App\",\n  \"slug\": \"newman-crud-app\",\n  \"description\": \"updated by newman\"\n}" },
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openbuild/application/{{crudAppUuid}}", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "openbuild", "application", "{{crudAppUuid}}" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/buildiq/application/{{crudAppUuid}}", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "buildiq", "application", "{{crudAppUuid}}" ] }
 					}
 				},
 				{
@@ -395,7 +395,7 @@
 						"method": "GET",
 						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
 						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openbuild/application/00000000-0000-0000-0000-000000000000", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "openbuild", "application", "00000000-0000-0000-0000-000000000000" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/buildiq/application/00000000-0000-0000-0000-000000000000", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "buildiq", "application", "00000000-0000-0000-0000-000000000000" ] }
 					}
 				},
 				{
@@ -415,7 +415,7 @@
 						"method": "DELETE",
 						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
 						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openbuild/application/{{crudAppUuid}}", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "openbuild", "application", "{{crudAppUuid}}" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/buildiq/application/{{crudAppUuid}}", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "buildiq", "application", "{{crudAppUuid}}" ] }
 					}
 				}
 			]
@@ -445,7 +445,7 @@
 						"method": "GET",
 						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
 						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openbuild/api/settings", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openbuild", "api", "settings" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/buildiq/api/settings", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "buildiq", "api", "settings" ] }
 					}
 				},
 				{
@@ -464,7 +464,7 @@
 					"request": {
 						"method": "GET",
 						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
-						"url": { "raw": "{{noAuthBase}}/index.php/apps/openbuild/api/settings", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "openbuild", "api", "settings" ] }
+						"url": { "raw": "{{noAuthBase}}/index.php/apps/buildiq/api/settings", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "buildiq", "api", "settings" ] }
 					}
 				}
 			]
@@ -504,7 +504,7 @@
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
 						"body": { "mode": "raw", "raw": "{\n  \"target\": \"zip\",\n  \"applicationVersion\": \"1.0.0\"\n}" },
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openbuild/api/applications/{{appSlug}}/exports", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openbuild", "api", "applications", "{{appSlug}}", "exports" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/buildiq/api/applications/{{appSlug}}/exports", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "buildiq", "api", "applications", "{{appSlug}}", "exports" ] }
 					}
 				},
 				{
@@ -547,7 +547,7 @@
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
 						"body": { "mode": "raw", "raw": "{\n  \"target\": \"zip\",\n  \"applicationVersion\": \"production\"\n}" },
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openbuild/api/applications/{{appSlug}}/exports", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openbuild", "api", "applications", "{{appSlug}}", "exports" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/buildiq/api/applications/{{appSlug}}/exports", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "buildiq", "api", "applications", "{{appSlug}}", "exports" ] }
 					}
 				},
 				{
@@ -578,7 +578,7 @@
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
 						"body": { "mode": "raw", "raw": "{\n  \"target\": \"not-a-real-target\",\n  \"applicationVersion\": \"1.0.0\"\n}" },
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openbuild/api/applications/{{appSlug}}/exports", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openbuild", "api", "applications", "{{appSlug}}", "exports" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/buildiq/api/applications/{{appSlug}}/exports", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "buildiq", "api", "applications", "{{appSlug}}", "exports" ] }
 					}
 				},
 				{
@@ -598,7 +598,7 @@
 						"method": "GET",
 						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
 						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openbuild/api/exports/00000000-0000-0000-0000-000000000000/download", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openbuild", "api", "exports", "00000000-0000-0000-0000-000000000000", "download" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/buildiq/api/exports/00000000-0000-0000-0000-000000000000/download", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "buildiq", "api", "exports", "00000000-0000-0000-0000-000000000000", "download" ] }
 					}
 				},
 				{
@@ -617,7 +617,7 @@
 					"request": {
 						"method": "GET",
 						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
-						"url": { "raw": "{{noAuthBase}}/index.php/apps/openbuild/api/exports/00000000-0000-0000-0000-000000000000/download", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "openbuild", "api", "exports", "00000000-0000-0000-0000-000000000000", "download" ] }
+						"url": { "raw": "{{noAuthBase}}/index.php/apps/buildiq/api/exports/00000000-0000-0000-0000-000000000000/download", "host": [ "{{noAuthBase}}" ], "path": [ "index.php", "apps", "buildiq", "api", "exports", "00000000-0000-0000-0000-000000000000", "download" ] }
 					}
 				}
 			]
@@ -642,7 +642,7 @@
 						"method": "DELETE",
 						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
 						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/openbuild/application/{{appUuid}}", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "openbuild", "application", "{{appUuid}}" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/buildiq/application/{{appUuid}}", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "buildiq", "application", "{{appUuid}}" ] }
 					}
 				}
 			]

@@ -26,7 +26,7 @@
 	<div class="form-steps-manager">
 		<div v-if="unassignedKeys.length" class="form-steps-manager__pool">
 			<span class="form-steps-manager__pool-label">{{
-				t('openbuild', 'Unassigned fields:')
+				t('buildiq', 'Unassigned fields:')
 			}}</span>
 			<span
 				v-for="key in unassignedKeys"
@@ -37,7 +37,7 @@
 			<p v-if="localSteps.length" class="form-steps-manager__pool-note">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'Unassigned fields are automatically added to the last step when you save.',
 					)
 				}}
@@ -47,7 +47,7 @@
 		<p v-if="!localSteps.length" class="form-steps-manager__empty">
 			{{
 				t(
-					'openbuild',
+					'buildiq',
 					'This form renders as a single step. Add a step to build a multi-step wizard.',
 				)
 			}}
@@ -62,21 +62,21 @@
 					:value="step.title || ''"
 					type="text"
 					class="form-steps-manager__field"
-					:placeholder="t('openbuild', 'Step title')"
-					:aria-label="t('openbuild', 'Step title')"
+					:placeholder="t('buildiq', 'Step title')"
+					:aria-label="t('buildiq', 'Step title')"
 					@input="onTitleInput(index, $event.target.value)" />
 				<input
 					:value="step.id || ''"
 					type="text"
 					class="form-steps-manager__field form-steps-manager__field--narrow"
-					:placeholder="t('openbuild', 'step-id')"
-					:aria-label="t('openbuild', 'Step id')"
+					:placeholder="t('buildiq', 'step-id')"
+					:aria-label="t('buildiq', 'Step id')"
 					@input="updateStepField(index, 'id', $event.target.value)" />
 				<button
 					type="button"
 					class="form-steps-manager__icon-button"
 					:disabled="index === 0"
-					:title="t('openbuild', 'Move step up')"
+					:title="t('buildiq', 'Move step up')"
 					@click="moveStep(index, -1)">
 					▲
 				</button>
@@ -84,14 +84,14 @@
 					type="button"
 					class="form-steps-manager__icon-button"
 					:disabled="index === localSteps.length - 1"
-					:title="t('openbuild', 'Move step down')"
+					:title="t('buildiq', 'Move step down')"
 					@click="moveStep(index, 1)">
 					▼
 				</button>
 				<button
 					type="button"
 					class="form-steps-manager__remove"
-					:title="t('openbuild', 'Delete step')"
+					:title="t('buildiq', 'Delete step')"
 					@click="removeStep(index)">
 					✕
 				</button>
@@ -100,8 +100,8 @@
 				:value="step.description || ''"
 				type="text"
 				class="form-steps-manager__field form-steps-manager__description"
-				:placeholder="t('openbuild', 'Description (optional)')"
-				:aria-label="t('openbuild', 'Step description')"
+				:placeholder="t('buildiq', 'Description (optional)')"
+				:aria-label="t('buildiq', 'Step description')"
 				@input="
 					updateStepField(index, 'description', $event.target.value)
 				" />
@@ -118,7 +118,7 @@
 					<button
 						type="button"
 						class="form-steps-manager__chip-remove"
-						:title="t('openbuild', 'Remove from step')"
+						:title="t('buildiq', 'Remove from step')"
 						@click="removeFieldFromStep(index, fIndex)">
 						✕
 					</button>
@@ -126,7 +126,7 @@
 				<span
 					v-if="!(step.fields || []).length"
 					class="form-steps-manager__no-fields">
-					{{ t('openbuild', 'No fields assigned yet.') }}
+					{{ t('buildiq', 'No fields assigned yet.') }}
 				</span>
 			</div>
 			<InlineFieldMark :error="danglingMark(step)" />
@@ -135,9 +135,9 @@
 				<select
 					v-model="pendingAssignment[index]"
 					class="form-steps-manager__select"
-					:aria-label="t('openbuild', 'Field to assign')">
+					:aria-label="t('buildiq', 'Field to assign')">
 					<option value="">
-						{{ t('openbuild', '— select field —') }}
+						{{ t('buildiq', '— select field —') }}
 					</option>
 					<option v-for="key in unassignedKeys" :key="key" :value="key">
 						{{ key }}
@@ -147,13 +147,13 @@
 					type="button"
 					:disabled="!pendingAssignment[index]"
 					@click="assignField(index)">
-					{{ t('openbuild', 'Assign') }}
+					{{ t('buildiq', 'Assign') }}
 				</button>
 			</div>
 		</div>
 
 		<button type="button" class="form-steps-manager__add" @click="addStep">
-			+ {{ t('openbuild', 'Add step') }}
+			+ {{ t('buildiq', 'Add step') }}
 		</button>
 	</div>
 </template>
@@ -297,7 +297,7 @@ export default {
 			}
 			return {
 				hasError: true,
-				message: t('openbuild', 'Step references removed field(s): {keys}', {
+				message: t('buildiq', 'Step references removed field(s): {keys}', {
 					keys: dangling.join(', '),
 				}),
 			}
@@ -409,7 +409,7 @@ export default {
 		 */
 		addStep() {
 			const next = this.localSteps.slice()
-			const title = t('openbuild', 'Step {n}', { n: next.length + 1 })
+			const title = t('buildiq', 'Step {n}', { n: next.length + 1 })
 			const id = uniqueSlug(
 				slugify(title),
 				next.map((s) => s && s.id).filter(Boolean),

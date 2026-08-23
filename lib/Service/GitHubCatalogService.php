@@ -1,11 +1,11 @@
 <?php
 
 /**
- * OpenBuild GitHubCatalogService
+ * Buildiq GitHubCatalogService
  *
  * Server-side GitHub source for the shop (github-shop-catalogue). Searches GitHub
- * for OpenBuild apps by the `topic:openbuild-app` discovery topic, fetches each
- * hit's root `openbuild-app.json` descriptor for a card, and — on install —
+ * for Buildiq apps by the `topic:buildiq-app` discovery topic, fetches each
+ * hit's root `buildiq-app.json` descriptor for a card, and — on install —
  * fetches the whole repo file map for github-app-repo-format's AppRepoParser.
  *
  * SSRF-safe by construction (design.md Decision 2/9): every outbound host is the
@@ -14,7 +14,7 @@
  * Browsing is anonymous-first (usable with no credential); when the acting user
  * supplies an allowed broker `github` credential the call is transparently
  * upgraded through OpenRegister's CredentialBrokerService so the token stays
- * broker-side and NEVER enters OpenBuild. The broker is resolved lazily
+ * broker-side and NEVER enters Buildiq. The broker is resolved lazily
  * (`class_exists` + `Server::get`, mirroring RemoteTemplateStoreService) so a
  * missing/older OpenRegister falls back to anonymous cleanly. Results + descriptors
  * are cached short-TTL against the tight anonymous rate limit; the raw GitHub body
@@ -24,7 +24,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -39,7 +39,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 use OCP\Http\Client\IClientService;
 use OCP\ICache;
@@ -60,9 +60,9 @@ class GitHubCatalogService {
 	private const API_BASE = 'https://api.github.com';
 
 	/**
-	 * The discovery topic every conforming OpenBuild app repo carries.
+	 * The discovery topic every conforming Buildiq app repo carries.
 	 */
-	private const DISCOVERY_TOPIC = 'topic:openbuild-app';
+	private const DISCOVERY_TOPIC = 'topic:buildiq-app';
 
 	/**
 	 * The credential-broker service FQCN (resolved lazily; may be absent).
@@ -70,14 +70,14 @@ class GitHubCatalogService {
 	private const BROKER_CLASS = 'OCA\\OpenRegister\\Service\\Credential\\CredentialBrokerService';
 
 	/**
-	 * The broker `appId` OpenBuild identifies itself with.
+	 * The broker `appId` Buildiq identifies itself with.
 	 */
-	private const APP_ID = 'openbuild';
+	private const APP_ID = 'buildiq';
 
 	/**
 	 * Cache namespace for search results + descriptors.
 	 */
-	private const CACHE_NS = 'openbuild_github_catalog';
+	private const CACHE_NS = 'buildiq_github_catalog';
 
 	/**
 	 * Search-result cache TTL (seconds).
@@ -177,7 +177,7 @@ class GitHubCatalogService {
 	}//end isBrokerAvailable()
 
 	/**
-	 * Search GitHub for `topic:openbuild-app` repos and build installable cards.
+	 * Search GitHub for `topic:buildiq-app` repos and build installable cards.
 	 *
 	 * @param string|null $query Optional free-text term appended to the topic query.
 	 * @param string|null $actingUserId The session UID (broker owner-guard identity), or null.
@@ -250,7 +250,7 @@ class GitHubCatalogService {
 	}//end search()
 
 	/**
-	 * Fetch + decode a repo's root `openbuild-app.json` descriptor.
+	 * Fetch + decode a repo's root `buildiq-app.json` descriptor.
 	 *
 	 * @param string $owner Repo owner (pattern-validated).
 	 * @param string $repo Repo name (pattern-validated).
@@ -346,7 +346,7 @@ class GitHubCatalogService {
 
 	/**
 	 * Fetch the repo file map (`path => contents`) AppRepoParser::parse expects:
-	 * `openbuild-app.json`, `manifest.json`, and every `schemas/*.json`.
+	 * `buildiq-app.json`, `manifest.json`, and every `schemas/*.json`.
 	 *
 	 * @param string $owner Repo owner (pattern-validated).
 	 * @param string $repo Repo name (pattern-validated).
@@ -534,7 +534,7 @@ class GitHubCatalogService {
 
 		if ($truncated === true) {
 			$this->logger->warning(
-				'OpenBuild: v2 channel fetch truncated — the installed app will be INCOMPLETE.',
+				'Buildiq: v2 channel fetch truncated — the installed app will be INCOMPLETE.',
 				['owner' => $owner, 'repo' => $repo, 'limit' => self::MAX_CHANNEL_FILES]
 			);
 		}
@@ -757,7 +757,7 @@ class GitHubCatalogService {
 				$actingUserId
 			);
 		} catch (Throwable $e) {
-			$this->logger->debug('OpenBuild GitHub catalog: broker call not admitted, falling back to anonymous.');
+			$this->logger->debug('Buildiq GitHub catalog: broker call not admitted, falling back to anonymous.');
 			return null;
 		}
 
@@ -789,7 +789,7 @@ class GitHubCatalogService {
 					'connect_timeout' => self::TIMEOUT,
 					'headers' => [
 						'Accept' => 'application/vnd.github+json',
-						'User-Agent' => 'OpenBuild-Shop',
+						'User-Agent' => 'Buildiq-Shop',
 					],
 				]
 			);

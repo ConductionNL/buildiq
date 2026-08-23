@@ -15,10 +15,10 @@
 	<div class="ob-groups-widget">
 		<header class="ob-groups-widget__header">
 			<h3 class="ob-groups-widget__title">
-				{{ t('openbuild', 'Groups & users') }}
+				{{ t('buildiq', 'Groups & users') }}
 			</h3>
 			<NcButton variant="tertiary" @click="openEditor">
-				{{ t('openbuild', 'Manage permissions') }}
+				{{ t('buildiq', 'Manage permissions') }}
 			</NcButton>
 		</header>
 		<ul v-if="rows.length > 0" class="ob-groups-widget__list">
@@ -38,7 +38,7 @@
 			</li>
 		</ul>
 		<p v-else class="ob-groups-widget__empty">
-			{{ t('openbuild', 'No permissions configured.') }}
+			{{ t('buildiq', 'No permissions configured.') }}
 		</p>
 	</div>
 </template>
@@ -99,9 +99,9 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
 		 */
 		roleLabel(role) {
-			if (role === 'owners') return t('openbuild', 'Owner')
-			if (role === 'editors') return t('openbuild', 'Editor')
-			return t('openbuild', 'Viewer')
+			if (role === 'owners') return t('buildiq', 'Owner')
+			if (role === 'editors') return t('buildiq', 'Editor')
+			return t('buildiq', 'Viewer')
 		},
 
 		/**
@@ -113,9 +113,9 @@ export default {
 		 */
 		memberLabel(row) {
 			if (!row.isGroup) {
-				return t('openbuild', '1 user')
+				return t('buildiq', '1 user')
 			}
-			return t('openbuild', 'group')
+			return t('buildiq', 'group')
 		},
 
 		/**

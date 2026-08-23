@@ -48,9 +48,9 @@ describe('manifestDependencies (workflow)', () => {
 	})
 	it('strips the internal marker before serialization', () => {
 		const m = reconcileWorkflowDependency(withWf())
-		expect(m._openbuildAutoDeps).toBeDefined()
+		expect(m._buildiqAutoDeps).toBeDefined()
 		stripDependencyMarker(m)
-		expect(m._openbuildAutoDeps).toBeUndefined()
+		expect(m._buildiqAutoDeps).toBeUndefined()
 	})
 })
 
@@ -108,9 +108,9 @@ describe('manifestDependencies (connector)', () => {
 			dependencies: [],
 			pages: [{ config: { dataSource: { connector: {} } } }],
 		})
-		expect(m._openbuildAutoDeps).toBeDefined()
+		expect(m._buildiqAutoDeps).toBeDefined()
 		stripDependencyMarker(m)
-		expect(m._openbuildAutoDeps).toBeUndefined()
+		expect(m._buildiqAutoDeps).toBeUndefined()
 	})
 })
 

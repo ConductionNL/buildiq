@@ -45,7 +45,7 @@ const dialogMocks = vi.hoisted(() => {
 vi.mock('../../../src/store/schemas.js', () => {
 	return {
 		useSchemasStore: () => storeMocks,
-		registerSlugForApp: (appSlug) => `openbuild-${appSlug}`,
+		registerSlugForApp: (appSlug) => `buildiq-${appSlug}`,
 		STORE_ID: 'openbuild-schemas',
 	}
 })

@@ -19,18 +19,18 @@
 <template>
 	<div class="custom-page-editor">
 		<h3 class="custom-page-editor__title">
-			{{ t('openbuild', 'Custom page') }}
+			{{ t('buildiq', 'Custom page') }}
 		</h3>
 
 		<fieldset class="custom-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Component') }}</legend>
+			<legend>{{ t('buildiq', 'Component') }}</legend>
 			<label class="custom-page-editor__group-row">
-				{{ t('openbuild', 'customComponents registry key') }}
+				{{ t('buildiq', 'customComponents registry key') }}
 				<input
 					type="text"
 					:value="config.component || ''"
 					list="custom-page-editor-component-suggestions"
-					:placeholder="t('openbuild', 'e.g. LaunchPadboard')"
+					:placeholder="t('buildiq', 'e.g. LaunchPadboard')"
 					:aria-invalid="isInvalid('component')"
 					@input="update('component', $event.target.value)" />
 				<datalist id="custom-page-editor-component-suggestions">
@@ -41,7 +41,7 @@
 			<p v-if="!registryKeys.length" class="custom-page-editor__hint">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'The component must be registered in the consuming app’s customComponents map. The key is resolved at render time, so it is entered free-form here.',
 					)
 				}}
@@ -49,12 +49,12 @@
 		</fieldset>
 
 		<fieldset class="custom-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Props (JSON, optional)') }}</legend>
+			<legend>{{ t('buildiq', 'Props (JSON, optional)') }}</legend>
 			<textarea
 				class="custom-page-editor__textarea"
 				spellcheck="false"
 				:value="propsDraft"
-				:aria-label="t('openbuild', 'Props (JSON, optional)')"
+				:aria-label="t('buildiq', 'Props (JSON, optional)')"
 				:aria-invalid="!!propsError || isInvalid('props')"
 				@input="onPropsInput($event.target.value)" />
 			<p v-if="propsError" class="custom-page-editor__error" role="alert">
@@ -64,7 +64,7 @@
 		</fieldset>
 
 		<p v-if="otherKeys.length" class="custom-page-editor__other">
-			{{ t('openbuild', 'Other config keys preserved on save:') }}
+			{{ t('buildiq', 'Other config keys preserved on save:') }}
 			{{ otherKeys.join(', ') }}
 		</p>
 	</div>

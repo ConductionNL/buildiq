@@ -1,16 +1,16 @@
 # ai-copilot Specification (delta)
 
 **Status**: in-progress
-**Scope**: openbuild
+**Scope**: buildiq
 **OpenSpec changes**:
-- `openbuild-mcp-adoption` — the Copilot's tool catalogue moves from an `IMcpToolProvider` to a Copilot-owned executor; the flow, the handlers and the rollback semantics are unchanged (kind: code)
+- `buildiq-mcp-adoption` — the Copilot's tool catalogue moves from an `IMcpToolProvider` to a Copilot-owned executor; the flow, the handlers and the rollback semantics are unchanged (kind: code)
 
 ## Purpose
 
 The Copilot is unchanged in behaviour. Only the **ownership** of its tool catalogue changes: the eight
 builder operations stop being MCP tools and become Copilot-internal operations, because ADR-063 and
-`openbuild-mcp-surface` remove OpenBuild's hand-written MCP provider. The Copilot remains the *only*
-path through which an OpenBuild manifest can be authored by an LLM — and it keeps its plan, preview,
+`buildiq-mcp-surface` remove Buildiq's hand-written MCP provider. The Copilot remains the *only*
+path through which an Buildiq manifest can be authored by an LLM — and it keeps its plan, preview,
 human approval and atomic rollback.
 
 ## MODIFIED Requirements
@@ -34,9 +34,9 @@ NOT be reachable from any MCP client. The Copilot is the **sole** LLM-driven pat
 and it SHALL keep a human between the plan and the write: `plan()` performs zero writes and returns a
 predicted manifest for review, and only an explicitly approved plan may be executed.
 
-*Previously: dispatch went through `OpenBuildToolProvider::invokeTool()`, and the same handlers were
+*Previously: dispatch went through `BuildiqToolProvider::invokeTool()`, and the same handlers were
 simultaneously exposed as hand-written MCP tools ("the same handler classes … as the MCP surface").
-That MCP exposure is removed by `openbuild-mcp-surface`; the handlers and the flow are otherwise
+That MCP exposure is removed by `buildiq-mcp-surface`; the handlers and the flow are otherwise
 identical.*
 
 **ID:** REQ-OBAIC-004
@@ -71,7 +71,7 @@ Playwright specs under REQ-OBAIC-006/007, which create and mutate real apps.
 
 #### Scenario: The builder operations are not reachable without a human
 
-- **WHEN** an MCP client attempts to call `openbuild.upsertPage` directly
+- **WHEN** an MCP client attempts to call `buildiq.upsertPage` directly
 - **THEN** no such tool exists in the catalog, because the executor is not an `IMcpToolProvider`
 - **AND** the only way to reach `UpsertPageHandler` is a plan the user has reviewed and approved
 

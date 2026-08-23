@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild RuleImpactAnalysisService
+ * Buildiq RuleImpactAnalysisService
  *
  * Analyses which apps and users have called a RuleSet in the past 30 days
  * (REQ-BRE-010). When a RuleSet is about to be activated, the operator can
@@ -21,7 +21,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -36,7 +36,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Psr\Log\LoggerInterface;
@@ -135,7 +135,7 @@ class RuleImpactAnalysisService {
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
-				'OpenBuild: RuleImpactAnalysisService cannot fetch logs',
+				'Buildiq: RuleImpactAnalysisService cannot fetch logs',
 				['ruleSetId' => $ruleSetId, 'exception' => $e->getMessage()]
 			);
 			return [];

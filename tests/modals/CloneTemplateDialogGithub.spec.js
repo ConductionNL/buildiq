@@ -118,7 +118,7 @@ describe('CloneTemplateDialog.vue — GitHub shop install', () => {
 
 		expect(axiosMock.post).toHaveBeenCalledTimes(1)
 		const [url, body] = axiosMock.post.mock.calls[0]
-		expect(url).toBe('/apps/openbuild/api/shop/github/install')
+		expect(url).toBe('/apps/buildiq/api/shop/github/install')
 		expect(body).toEqual({
 			owner: 'conduction',
 			repo: 'petstore',

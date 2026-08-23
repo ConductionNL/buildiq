@@ -1,9 +1,9 @@
 ---
 sidebar_position: 1
-description: Get started with OpenBuild, the no-code app builder inside Nextcloud. Compose apps from OpenRegister schemas, OpenConnector flows, and Procest workflows.
+description: Get started with Buildiq, the no-code app builder inside Nextcloud. Compose apps from OpenRegister schemas, OpenConnector flows, and Procest workflows.
 ---
 
-# OpenBuild
+# Buildiq
 
 Citizen-developer app builder for Nextcloud. Compose a working app from typed
 registers, connectors, workflows, and document templates — design schemas and
@@ -26,7 +26,7 @@ export it. No code, no second platform.
 - Version snapshots: snapshot the whole app and roll back a bad edit. Export
   the bundle as a ZIP, or **publish the app to a GitHub repository** and install
   it again from the store on any instance — the token stays in Doriath and never
-  reaches OpenBuild (see [GitHub store](./github-store.md)).
+  reaches Buildiq (see [GitHub store](./github-store.md)).
 - RBAC: administrators control who can build, and per-record access is
   enforced through OpenRegister.
 - **AI copilot**: describe the app you want in a sentence or two, review the
@@ -35,13 +35,13 @@ export it. No code, no second platform.
 
 ## Getting started
 
-Install OpenBuild from the Nextcloud app store or enable it in your Nextcloud
+Install Buildiq from the Nextcloud app store or enable it in your Nextcloud
 admin settings. Then open the app, pick a template, and start composing.
 
 For the step-by-step walkthroughs, see the **Tutorials** in the sidebar — the
 **User guide** covers building an app, the **Admin guide** covers RBAC,
-the template catalogue, and OpenBuild settings. The `integrator-guide`,
-`openbuild-rbac`, and `openbuild-runtime` reference pages cover the deeper
+the template catalogue, and Buildiq settings. The `integrator-guide`,
+`buildiq-rbac`, and `buildiq-runtime` reference pages cover the deeper
 mechanics, and [Form logic](./form-logic-authoring.md) covers authoring
 multi-step wizards, conditional visibility, and validation rules on form
 pages.

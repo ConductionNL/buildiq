@@ -1,14 +1,14 @@
-# OpenBuild API-contract tests (Newman)
+# Buildiq API-contract tests (Newman)
 
-Newman/Postman contract tests that exercise openbuild's HTTP controllers
+Newman/Postman contract tests that exercise buildiq's HTTP controllers
 directly, locking the API contract. Per the gate-19 split, **API/contract
 correctness lives in Newman**; Playwright drives the UI only.
 
-This is the **Phase-3** suite (`openbuild-api-contract.postman_collection.json`).
+This is the **Phase-3** suite (`buildiq-api-contract.postman_collection.json`).
 It follows the fleet procest Newman pattern (collection-var `baseUrl` + explicit
 admin basic-auth, host-split authz, `--ignore-redirects`, `OCS-APIRequest: true`,
 self-contained setup→assert→teardown, `flock`). It is **distinct** from the
-legacy `openbuild.postman_collection.json` in this directory, which uses
+legacy `buildiq.postman_collection.json` in this directory, which uses
 `base_url`/`admin_user`/`admin_password` and depends on the now-removed
 `hello-world` seed app.
 
@@ -20,7 +20,7 @@ legacy `openbuild.postman_collection.json` in this directory, which uses
 | 1. App Creation Wizard | `POST /api/applications/wizard` | **201** + `applicationUuid` (PHASE-0) | 422 missing name, 422 bad slug | 401 no-auth |
 | 2. Manifest | `GET /api/applications/{slug}/manifest` | **200** for a wizard-built app + no `permissions` leak (PHASE-0) | 404 unknown slug | 401 no-auth |
 | 3. Application List | `GET /api/applications` (listMine, RBAC) | 200 flat array containing the wizard app | — | 401 no-auth |
-| 4. Virtual App CRUD | OR `/api/objects/openbuild/application` (ADR-022) | create → read → update → delete with id capture | 404 unknown object | (OR object reads are not openbuild-gated) |
+| 4. Virtual App CRUD | OR `/api/objects/buildiq/application` (ADR-022) | create → read → update → delete with id capture | 404 unknown object | (OR object reads are not buildiq-gated) |
 | 5. Settings | `GET /api/settings` | 200 + contract shape (`register`, `openregisters`) | — | 401 no-auth |
 | 6. Exports | `POST /api/applications/{slug}/exports`, `GET /api/exports/{uuid}/download` | — (see KNOWN BUG) | 403/422 bad-target (4xx not 500), 404 unknown job | 401 no-auth on download |
 | 9. Teardown | OR delete | idempotent cleanup of the wizard app | — | — |
@@ -48,7 +48,7 @@ the suite reuses that slug/uuid, and teardown deletes the Application object.
 `POST /api/applications/{slug}/exports` returns **HTTP 403 even for an NC admin
 who owns the freshly wizard-built app**. `ExportsController::submit()` gates on
 `isAuthorisedForApplication()`, which calls
-`ObjectService::searchObjectsBySlug('openbuild','application',['slug'=>$slug])`;
+`ObjectService::searchObjectsBySlug('buildiq','application',['slug'=>$slug])`;
 that returns an empty array for the wizard app, so the method returns `false`
 **before** reaching its NC-admin bypass (the bypass at the end of the method is
 only evaluated when the slug lookup found the app). Result: no caller — not even
@@ -70,7 +70,7 @@ they are frontend-only and expose no JSON API surface.
 ./run-newman.sh
 
 # or directly:
-npx newman run openbuild-api-contract.postman_collection.json \
+npx newman run buildiq-api-contract.postman_collection.json \
   --env-var baseUrl=http://localhost:8080 \
   --env-var adminUser=admin \
   --env-var adminPass=admin \
@@ -78,7 +78,7 @@ npx newman run openbuild-api-contract.postman_collection.json \
 ```
 
 `run-newman.sh` prefers a globally-installed `newman`, falls back to
-`npx newman`, and serialises runs under `flock /tmp/uiaudit-openbuild.lock`
+`npx newman`, and serialises runs under `flock /tmp/uiaudit-buildiq.lock`
 (shared with the Playwright UI audit) to avoid tripping the Nextcloud
 brute-force protection when multiple agents run in parallel.
 
@@ -101,12 +101,12 @@ return 200 instead of 401). Two measures keep the authorization tests honest:
 
 This is the reusable Newman authz pattern for the fleet.
 
-### OpenRegister object reads are not openbuild-gated
+### OpenRegister object reads are not buildiq-gated
 
 Application object CRUD is delegated to OpenRegister (ADR-022). OR's object API
-enforces its own multitenancy/RBAC, not openbuild's, so folder 4 asserts the
-CRUD round-trip and the 404-on-unknown shape rather than an openbuild 401/403 the
-OR API never returns. The openbuild controllers themselves (folders 1, 2, 3, 5,
+enforces its own multitenancy/RBAC, not buildiq's, so folder 4 asserts the
+CRUD round-trip and the 404-on-unknown shape rather than an buildiq 401/403 the
+OR API never returns. The buildiq controllers themselves (folders 1, 2, 3, 5,
 6) **are** auth-gated and return `401`/`403`.
 
 ## Collection variables
@@ -114,5 +114,5 @@ OR API never returns. The openbuild controllers themselves (folders 1, 2, 3, 5,
 `baseUrl`, `noAuthBase`, `adminUser`, `adminPass`, plus the runtime-captured
 `appSlug` (random per run), `appUuid` (the wizard app), and `crudAppUuid` (the
 OR-CRUD probe object). No deployed register/schema IDs are pinned — the suite
-addresses OR by the `openbuild` register slug + `application` schema slug, so it
+addresses OR by the `buildiq` register slug + `application` schema slug, so it
 is not coupled to numeric IDs.

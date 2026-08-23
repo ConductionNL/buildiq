@@ -3,7 +3,7 @@
 ### Requirement: Manifest endpoint per virtual-app slug
 
 The system SHALL expose
-`GET /index.php/apps/openbuild/api/applications/{slug}/manifest`
+`GET /index.php/apps/buildiq/api/applications/{slug}/manifest`
 backed by `ApplicationsController::getManifest`. The endpoint SHALL
 resolve `{slug}` to an `Application` via the `BuiltAppRoute` index,
 return the stored `manifest` JSON blob with `Content-Type:
@@ -31,7 +31,7 @@ stored manifest `name` was not updated to match).
 #### Scenario: Endpoint returns the stored manifest
 
 - **WHEN** an authenticated user requests
-  `/index.php/apps/openbuild/api/applications/hello-world/manifest`
+  `/index.php/apps/buildiq/api/applications/hello-world/manifest`
 - **AND** a published `Application` with `slug: hello-world` exists
   in their organisation
 - **THEN** the response is `200 application/json` and the body is the

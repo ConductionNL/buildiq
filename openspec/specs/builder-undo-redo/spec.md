@@ -198,7 +198,7 @@ history (raw surfaces validate before applying). Raw surfaces that save
 directly (rather than editing the designer's draft) remain governed by
 the REQ-BUR-004 save boundary.
 
-@e2e exclude engine-seam contract — the raw-JSON tab at HEAD (`ApplicationManifestTab.vue`) is a direct-save sidebar surface on the quarantined VirtualAppDetail page (Conduction/openbuild#41) and does not share the designer's draft session; the one-commit-one-entry semantics are a history-engine contract verified by Vitest unit tests pushing whole-manifest replacements
+@e2e exclude engine-seam contract — the raw-JSON tab at HEAD (`ApplicationManifestTab.vue`) is a direct-save sidebar surface on the quarantined VirtualAppDetail page (Conduction/buildiq#41) and does not share the designer's draft session; the one-commit-one-entry semantics are a history-engine contract verified by Vitest unit tests pushing whole-manifest replacements
 
 **ID:** REQ-BUR-006
 
@@ -222,7 +222,7 @@ The history SHALL be bounded to 100 entries per session. When a push
 overflows the bound, the oldest entry SHALL be dropped (the reachable
 undo range shortens from the far end); pushing SHALL never fail and
 redo semantics SHALL be unaffected by trimming. The bound SHALL be
-configured at the OpenBuild integration seam so both designers share
+configured at the Buildiq integration seam so both designers share
 it.
 
 @e2e exclude unit-scale contract — driving 101 distinct UI edits through Playwright proves nothing the engine unit tests do not; the bound, oldest-entry trimming, and never-fail push are verified by Vitest against the manifestEditHistory integration seam

@@ -14,7 +14,7 @@ The system SHALL support a third `dataSource` form, `dataSource.connector`, carr
 - `fields` (object, required, min 1 entry) — map of display-field name → dot-path selector into an item, using the same selector grammar as the existing `dataSource.graphql.selectors`.
 - `cacheTtl` (integer seconds, optional, default 60, bounded 0–3600).
 
-OpenBuild's manifest validation layer (`useManifestValidator` pipeline) SHALL strictly validate this shape and reject unknown keys inside `connector`, exclusivity violations (a `dataSource` declaring `connector` together with `register`/`schema` or `graphql`), and `endpointPath` values containing `://`. A binding MUST NOT carry any credential-bearing key (`headers`, `token`, `apiKey`, `authorization` are explicitly rejected). Codification of the form into the canonical `app-manifest-v2.schema.json` $def is an external `nextcloud-vue` follow-up and NOT part of this requirement.
+Buildiq's manifest validation layer (`useManifestValidator` pipeline) SHALL strictly validate this shape and reject unknown keys inside `connector`, exclusivity violations (a `dataSource` declaring `connector` together with `register`/`schema` or `graphql`), and `endpointPath` values containing `://`. A binding MUST NOT carry any credential-bearing key (`headers`, `token`, `apiKey`, `authorization` are explicitly rejected). Codification of the form into the canonical `app-manifest-v2.schema.json` $def is an external `nextcloud-vue` follow-up and NOT part of this requirement.
 
 #### Scenario: Valid connector binding passes validation
 
@@ -26,7 +26,7 @@ OpenBuild's manifest validation layer (`useManifestValidator` pipeline) SHALL st
 #### Scenario: Credential-bearing key is rejected
 
 - **WHEN** a connector binding (authored via the Raw JSON tab) carries `headers: { Authorization: "Bearer x" }`
-- **THEN** the validator marks the binding with the error `openbuild.connector.error.credentials-forbidden`
+- **THEN** the validator marks the binding with the error `buildiq.connector.error.credentials-forbidden`
 - **AND** the Save button is disabled until the key is removed
 
 #### Scenario: Mixed-form dataSource is rejected
@@ -74,7 +74,7 @@ The system SHALL provide `ConnectorFieldMapper.vue`, mounted under the picker, w
 
 ### Requirement: REQ-OCAS-004 Auth delegated entirely to OpenConnector
 
-OpenBuild SHALL NOT store, render, request, or transmit any external-API credential. All outbound authentication (API keys, OAuth, basic auth, mTLS) lives in OpenConnector Source objects, configured in OpenConnector's own UI. The runtime call from a built app SHALL be a same-origin request to `/apps/openconnector/api/endpoint/{endpointPath}` authenticated only by the caller's Nextcloud session and requesttoken. The picker SHALL display endpoint path and Source *name* only; if OpenConnector's list payload includes credential material, the picker MUST NOT render or persist it. The manifest, the OR-persisted Application object, and openbuild's localStorage/sessionStorage SHALL contain no secret material for connector bindings (enforced by the REQ-OCAS-001 validator and a dedicated test).
+Buildiq SHALL NOT store, render, request, or transmit any external-API credential. All outbound authentication (API keys, OAuth, basic auth, mTLS) lives in OpenConnector Source objects, configured in OpenConnector's own UI. The runtime call from a built app SHALL be a same-origin request to `/apps/openconnector/api/endpoint/{endpointPath}` authenticated only by the caller's Nextcloud session and requesttoken. The picker SHALL display endpoint path and Source *name* only; if OpenConnector's list payload includes credential material, the picker MUST NOT render or persist it. The manifest, the OR-persisted Application object, and buildiq's localStorage/sessionStorage SHALL contain no secret material for connector bindings (enforced by the REQ-OCAS-001 validator and a dedicated test).
 
 #### Scenario: Manifest stays credential-free end to end
 
@@ -91,7 +91,7 @@ OpenBuild SHALL NOT store, render, request, or transmit any external-API credent
 
 ### Requirement: REQ-OCAS-005 Capability check and graceful degradation when OpenConnector is absent
 
-When a virtual app contains at least one connector binding, the system SHALL ensure `"openconnector"` is present in the manifest v2 `dependencies[]` array on save (and SHALL remove it on save when the last connector binding is deleted, unless the builder added it manually). At design time, when `useAppStatus('openconnector')` reports the app missing or disabled, the origin toggle's OpenConnector option SHALL render disabled with the i18n hint `openbuild.connector.hint.openconnector-missing`, and an "enter endpoint path manually" escape hatch SHALL allow authoring an unverified binding (marked with a non-blocking warning). At runtime, a missing OpenConnector SHALL surface through CnAppRoot's standard dependency gate; if a page nevertheless renders (e.g. dependency check bypassed), the resolver's 404 SHALL produce the per-widget error state of REQ-OCAS-006, never a blank page or uncaught exception.
+When a virtual app contains at least one connector binding, the system SHALL ensure `"openconnector"` is present in the manifest v2 `dependencies[]` array on save (and SHALL remove it on save when the last connector binding is deleted, unless the builder added it manually). At design time, when `useAppStatus('openconnector')` reports the app missing or disabled, the origin toggle's OpenConnector option SHALL render disabled with the i18n hint `buildiq.connector.hint.openconnector-missing`, and an "enter endpoint path manually" escape hatch SHALL allow authoring an unverified binding (marked with a non-blocking warning). At runtime, a missing OpenConnector SHALL surface through CnAppRoot's standard dependency gate; if a page nevertheless renders (e.g. dependency check bypassed), the resolver's 404 SHALL produce the per-widget error state of REQ-OCAS-006, never a blank page or uncaught exception.
 
 #### Scenario: Dependency auto-added on save
 

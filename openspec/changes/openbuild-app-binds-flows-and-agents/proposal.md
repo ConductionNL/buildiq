@@ -4,7 +4,7 @@ kind: config
 
 ## Why
 
-An OpenBuild application cannot say which flows it is made of, so an export cannot carry them — and it turns out it can already say which agents it has, which is why only one of the two needs a new binding.
+An Buildiq application cannot say which flows it is made of, so an export cannot carry them — and it turns out it can already say which agents it has, which is why only one of the two needs a new binding.
 
 The `application` schema declares fifteen properties — `slug`, `name`, `description`, `appType`, `status`, `baseRef`, `productionVersion`, `icon`, `iconDark`, `allowUserOverrides`, `permissions`, `githubRepo`, `githubDefaultBranch`, `dataRegisters`, `connectors`. Two of those are bindings to other things the app is composed of. Neither is a flow, and neither is an agent.
 
@@ -26,7 +26,7 @@ A new `register.d` fragment adds ONE array binding to the `application` schema, 
 
 - **`flows`** — each entry `{ label, flow }`, where `flow` is the OpenRegister flow's **UUID**, resolved against the `Flow` entity via `FlowMapper::findByUuid()`.
 
-It is a declarative addition to `lib/Settings/register.d/`. No PHP changes, no export behaviour, no UI. The bundler, the install-time seeding and the e2e coverage are the next spec in the chain (`openbuild-exports-flows-and-agents`), which cannot start until this lands because it has nothing to read until then.
+It is a declarative addition to `lib/Settings/register.d/`. No PHP changes, no export behaviour, no UI. The bundler, the install-time seeding and the e2e coverage are the next spec in the chain (`buildiq-exports-flows-and-agents`), which cannot start until this lands because it has nothing to read until then.
 
 ### Why UUID and not slug — corrected during implementation
 
@@ -45,15 +45,15 @@ So the exporter resolves an app's agents by querying agents whose `applicationSl
 ## Capabilities
 
 ### New Capabilities
-- `app-composition-bindings`: what an OpenBuild application declares itself to be composed of — data registers, connectors, and now flows — and the rules those bindings follow (portably addressed, resolvable against the one flow engine, and not duplicating a relationship that already exists elsewhere).
+- `app-composition-bindings`: what an Buildiq application declares itself to be composed of — data registers, connectors, and now flows — and the rules those bindings follow (portably addressed, resolvable against the one flow engine, and not duplicating a relationship that already exists elsewhere).
 
 ### Modified Capabilities
 <!-- None. This change introduces the binding vocabulary; it modifies no existing requirement. -->
 
 ## Impact
 
-- **`openbuild/lib/Settings/register.d/`** — one new fragment (numbered alongside `20-data-registers.json` / `21-connectors.json`).
-- **The `application` schema** (register `openbuild`, schema 28) gains ONE optional array property. Existing application objects remain valid: the binding is optional and absent means "binds none", which is what all 30 existing applications mean today.
+- **`buildiq/lib/Settings/register.d/`** — one new fragment (numbered alongside `20-data-registers.json` / `21-connectors.json`).
+- **The `application` schema** (register `buildiq`, schema 28) gains ONE optional array property. Existing application objects remain valid: the binding is optional and absent means "binds none", which is what all 30 existing applications mean today.
 - **Nothing for agents.** The app→agent relationship already exists as `agent.applicationSlug`; this change deliberately does not duplicate it.
 - **No runtime behaviour changes.** Nothing reads these bindings until the next spec in the chain.
-- **Downstream:** `openbuild-exports-flows-and-agents` (`kind: code`) depends on this.
+- **Downstream:** `buildiq-exports-flows-and-agents` (`kind: code`) depends on this.

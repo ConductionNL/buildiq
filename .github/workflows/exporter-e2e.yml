@@ -1,6 +1,6 @@
 name: Exporter E2E
 
-# Runs the OpenBuild exporter end-to-end integration test on every PR.
+# Runs the Buildiq exporter end-to-end integration test on every PR.
 # Parallelises with the main Code Quality (PHPUnit/Newman/Playwright) job
 # per ADR-008 so the exporter's tree-generation contract (REQ-OBEX-003 /
 # REQ-OBEX-008 / REQ-OBEX-010) is exercised against the embedded template

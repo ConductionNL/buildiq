@@ -6,7 +6,7 @@ retrofit: true
 
 ## Purpose
 
-The Create Application Wizard is OpenBuild's four-step modal that provisions the
+The Create Application Wizard is Buildiq's four-step modal that provisions the
 full ADR-002 chain (Application + production ApplicationVersion + register +
 schemas) in one atomic backend call. `CreateApplicationWizard` is the host;
 `Step1Basics` captures identity, `Step2Preset` picks a starter, `Step3Custom`

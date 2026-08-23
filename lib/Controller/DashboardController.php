@@ -1,9 +1,9 @@
 <?php
 
 /**
- * OpenBuild Dashboard Controller
+ * Buildiq Dashboard Controller
  *
- * Controller for the main OpenBuild dashboard page. Also publishes
+ * Controller for the main Buildiq dashboard page. Also publishes
  * the caller's Nextcloud group IDs to the frontend via
  * `IInitialState` (REQ-OBR-009) so the editor can derive per-Application
  * roles client-side without DOM data-attribute reads (ADR-004 hard rule
@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
- * @package  OCA\OpenBuild\Controller
+ * @package  OCA\Buildiq\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -28,10 +28,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Controller;
+namespace OCA\Buildiq\Controller;
 
-use OCA\OpenBuild\AppInfo\Application;
-use OCA\OpenBuild\Service\AppNavigationService;
+use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Service\AppNavigationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -43,7 +43,7 @@ use OCP\IRequest;
 use OCP\IUserSession;
 
 /**
- * Controller for the main OpenBuild dashboard page.
+ * Controller for the main Buildiq dashboard page.
  *
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
  */
@@ -72,7 +72,7 @@ class DashboardController extends Controller {
 	/**
 	 * Render the main dashboard page.
 	 *
-	 * Publishes `openbuild.currentUserGroups` to IInitialState so the
+	 * Publishes `buildiq.currentUserGroups` to IInitialState so the
 	 * frontend's `useRole(application)` composable and the
 	 * `ApplicationEditor` list filter can derive per-Application roles
 	 * without DOM data-attribute reads (REQ-OBR-009, ADR-004 hard rule).
@@ -104,7 +104,7 @@ class DashboardController extends Controller {
 	/**
 	 * Render the STANDALONE runtime page for a published virtual app.
 	 *
-	 * Unlike the SPA (which renders apps nested inside OpenBuild's own shell),
+	 * Unlike the SPA (which renders apps nested inside Buildiq's own shell),
 	 * this serves a dedicated template (`builder`) whose JS entry mounts the
 	 * virtual app's CnAppRoot at the top level — its own menu, pages and
 	 * routing from GET /api/applications/{slug}/manifest. The bare
@@ -126,7 +126,7 @@ class DashboardController extends Controller {
 		// Mark the virtual app's own nav entry (registered per published
 		// Application by AppNavigationService) as active — otherwise Nextcloud
 		// resolves the active entry from the URL's app id and the top bar
-		// shows OpenBuild's name and icon instead of the virtual app's.
+		// shows Buildiq's name and icon instead of the virtual app's.
 		$this->navigationManager->setActiveEntry(AppNavigationService::ENTRY_ID_PREFIX . $slug);
 		$this->publishCurrentUserGroups();
 		$this->initialState->provideInitialState('builderSlug', $slug);
@@ -143,7 +143,7 @@ class DashboardController extends Controller {
 	 * Browsers and pasted links often append a `/`, e.g.
 	 * `/builder/{slug}/`. The bare runtime route's slug pattern excludes
 	 * slashes, so the trailing-slash form would otherwise fall through to the
-	 * SPA catch-all and render OpenBuild's own shell instead of the app. This
+	 * SPA catch-all and render Buildiq's own shell instead of the app. This
 	 * alias keeps a DISTINCT route name (the AppHost Routes::standard() guard
 	 * throws on duplicate names) while serving the exact same page.
 	 *
@@ -164,9 +164,9 @@ class DashboardController extends Controller {
 	 *
 	 * Closes #100: direct navigation (fresh load / refresh / bookmark) to a
 	 * deep link like `/builder/{slug}/tenders` previously fell through to the
-	 * OpenBuild SPA catch-all because {@see builder()}'s slug pattern excludes
-	 * slashes. That served the WRONG shell — OpenBuild's own SPA nests the
-	 * virtual app inside its own chrome and shares OpenBuild's router (which
+	 * Buildiq SPA catch-all because {@see builder()}'s slug pattern excludes
+	 * slashes. That served the WRONG shell — Buildiq's own SPA nests the
+	 * virtual app inside its own chrome and shares Buildiq's router (which
 	 * has none of the app's page routes), so the deep-linked page never
 	 * resolved. This route matches ANY `/builder/{slug}/{path}` — except the
 	 * reserved designer literals handled by {@see builderDesigner()}, which is
@@ -174,7 +174,7 @@ class DashboardController extends Controller {
 	 * and serves the SAME standalone `builder` template as the bare
 	 * `/builder/{slug}` route. The path itself is deliberately unused here:
 	 * builder.js boots its OWN history-mode vue-router (base
-	 * `/apps/openbuild/builder/{slug}`) built from the deployed app's manifest,
+	 * `/apps/buildiq/builder/{slug}`) built from the deployed app's manifest,
 	 * and resolves `{path}` client-side exactly like the direct clicking-
 	 * within-the-app case already does.
 	 *
@@ -195,14 +195,14 @@ class DashboardController extends Controller {
 	}//end builderPath()
 
 	/**
-	 * Render the OpenBuild SPA for a reserved designer sub-path.
+	 * Render the Buildiq SPA for a reserved designer sub-path.
 	 *
 	 * `/builder/{slug}/pages`, `/schemas`, `/schemas/{schemaId}` and
-	 * `/walkthrough` are OpenBuild's OWN in-app designer surfaces (page
+	 * `/walkthrough` are Buildiq's OWN in-app designer surfaces (page
 	 * designer, schema designer, walkthrough designer) — declared as regular
 	 * pages in `src/manifest.json` and matched by the SPA's own vue-router
 	 * (`main.js`) BEFORE its `BuilderHost` wildcard. They must keep rendering
-	 * OpenBuild's own SPA shell (identical to {@see catchAll()}), NOT the
+	 * Buildiq's own SPA shell (identical to {@see catchAll()}), NOT the
 	 * standalone virtual-app runtime that {@see builderPath()} now serves for
 	 * every other `/builder/{slug}/...` sub-path. Registered before
 	 * `builderPath()` in `appinfo/routes.php` so these more-specific literal
@@ -230,7 +230,7 @@ class DashboardController extends Controller {
 	/**
 	 * Publish the caller's group IDs via IInitialState.
 	 *
-	 * Per REQ-OBR-009 the frontend consumes `loadState('openbuild',
+	 * Per REQ-OBR-009 the frontend consumes `loadState('buildiq',
 	 * 'currentUserGroups')` to drive per-Application role derivation.
 	 * Empty array is published for an absent user session (defensive).
 	 *

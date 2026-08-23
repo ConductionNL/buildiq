@@ -1,6 +1,6 @@
 # GitHub store — publish and install apps
 
-The **GitHub store** lets you publish an OpenBuild app to a GitHub repository and
+The **GitHub store** lets you publish an Buildiq app to a GitHub repository and
 discover and install apps that others have published — on top of the built-in
 templates and the [remote template store](./template-store.md).
 
@@ -12,11 +12,11 @@ built it.
 ## What a published app looks like
 
 Publishing writes the app to a repository as plain, re-importable files, and tags
-the repo with the `openbuild-app` topic (the store's discovery contract):
+the repo with the `buildiq-app` topic (the store's discovery contract):
 
 | File | Contents |
 |------|----------|
-| `openbuild-app.json` | App descriptor — slug, name, description, category, `appType`, version, icon refs, and the declared `credentials[]`. |
+| `buildiq-app.json` | App descriptor — slug, name, description, category, `appType`, version, icon refs, and the declared `credentials[]`. |
 | `manifest.json` | The `ApplicationVersion` manifest — every page, widget, menu entry, sidebar, and setting. |
 | `schemas/<slug>.json` | The companion schemas that make up the data model. |
 | `README.md` | Generated overview of the app. |
@@ -25,12 +25,12 @@ the repo with the `openbuild-app` topic (the store's discovery contract):
 `AppRepoParser` reads it back with strict, all-or-nothing validation, so a
 malformed repository fails loudly and installs nothing.
 
-## Credentials — the token never reaches OpenBuild
+## Credentials — the token never reaches Buildiq
 
 Every GitHub call is routed through OpenRegister's **credential broker**. You
 store a GitHub personal access token once, in the **Credentials** pane of the
 app's user settings; it is kept in **Doriath**, the encrypted credential vault.
-OpenBuild never receives the token — it asks the broker to make each GitHub call
+Buildiq never receives the token — it asks the broker to make each GitHub call
 (create repo, push commit, set topic, read contents), the token is injected
 server-side, host-locked to `api.github.com`, and only the result comes back.
 
@@ -46,18 +46,18 @@ Use a GitHub **fine-grained** token with exactly three repository permissions:
 allow-rules deny issues, pull-requests, workflows, and webhooks regardless.
 
 The token owner controls access per credential (which apps may use it) and can
-revoke or rotate it in one place — nothing to clean up inside OpenBuild.
+revoke or rotate it in one place — nothing to clean up inside Buildiq.
 
 ## Publishing an app
 
 Open the app, choose **Actions → GitHub**, pick a `github` credential, and select
-**Publish**. OpenBuild:
+**Publish**. Buildiq:
 
 1. Serializes the chosen version to the repo layout.
 2. Creates the repository (via the broker) — **public by default** so it is
    discoverable in the store's anonymous search; pass `visibility: "private"` to
    keep it private.
-3. Sets the `openbuild-app` topic and commits the app in one clean commit via the
+3. Sets the `buildiq-app` topic and commits the app in one clean commit via the
    Git Data API (blob → tree → commit → ref).
 4. Records the resulting `commitSha` and repository on the app.
 
@@ -73,9 +73,9 @@ version-promotion flow.
 
 ## Filling the store from GitHub
 
-Go to **Store → GitHub**. The store searches GitHub for the `openbuild-app` topic
+Go to **Store → GitHub**. The store searches GitHub for the `buildiq-app` topic
 and renders each published app as an installable card built from its
-`openbuild-app.json`. Click **Install**, name the new app, and confirm — the
+`buildiq-app.json`. Click **Install**, name the new app, and confirm — the
 repository is parsed and cloned into a fresh local app through the same seam as
 any template (`ApplicationsController::installFromTemplateArray`), so it is an
 ordinary editable virtual app, not a locked import.
@@ -84,12 +84,12 @@ ordinary editable virtual app, not a locked import.
 
 | Method + path | Purpose |
 |---|---|
-| `GET /index.php/apps/openbuild/api/shop/github/search?q=<term>&credentialId=<uuid?>` | Search GitHub for `openbuild-app` repos. Anonymous by default; `credentialId` broker-upgrades to include private repos. Returns `{ outcome, cards, brokerCredentialAvailable, brokerUsed, rateLimited }`. |
-| `POST /index.php/apps/openbuild/api/shop/github/install` | Install an app from a repo. Body `{ owner, repo, ref?, name?, slug?, credentialId? }` → `201 { uuid, slug, register, companionSchemas }`. |
-| `GET /index.php/apps/openbuild/api/applications/{slug}/github/status` | Linked repo, default branch, last pushed/pulled sha, and feature-detection flags (`brokerCredentialAvailable`, `publishAvailable`). Viewer-readable. |
-| `POST /index.php/apps/openbuild/api/applications/{slug}/github/link` | Link an app to a repo. Body `{ owner, name, org? }`. Owner-only. |
-| `POST /index.php/apps/openbuild/api/applications/{slug}/github/push` | Publish. Body `{ credentialId, versionSlug?, repo?, visibility? }` → `{ outcome, repoUrl, commitSha, branch }`. Owner-only. |
-| `POST /index.php/apps/openbuild/api/applications/{slug}/github/pull` | Pull a ref into a new draft version. Body `{ ref, credentialId? }` → `{ outcome, versionUuid, versionSlug, commitSha, sourceRef, status: 'draft', register }`. Owner-only. |
+| `GET /index.php/apps/buildiq/api/shop/github/search?q=<term>&credentialId=<uuid?>` | Search GitHub for `buildiq-app` repos. Anonymous by default; `credentialId` broker-upgrades to include private repos. Returns `{ outcome, cards, brokerCredentialAvailable, brokerUsed, rateLimited }`. |
+| `POST /index.php/apps/buildiq/api/shop/github/install` | Install an app from a repo. Body `{ owner, repo, ref?, name?, slug?, credentialId? }` → `201 { uuid, slug, register, companionSchemas }`. |
+| `GET /index.php/apps/buildiq/api/applications/{slug}/github/status` | Linked repo, default branch, last pushed/pulled sha, and feature-detection flags (`brokerCredentialAvailable`, `publishAvailable`). Viewer-readable. |
+| `POST /index.php/apps/buildiq/api/applications/{slug}/github/link` | Link an app to a repo. Body `{ owner, name, org? }`. Owner-only. |
+| `POST /index.php/apps/buildiq/api/applications/{slug}/github/push` | Publish. Body `{ credentialId, versionSlug?, repo?, visibility? }` → `{ outcome, repoUrl, commitSha, branch }`. Owner-only. |
+| `POST /index.php/apps/buildiq/api/applications/{slug}/github/pull` | Pull a ref into a new draft version. Body `{ ref, credentialId? }` → `{ outcome, versionUuid, versionSlug, commitSha, sourceRef, status: 'draft', register }`. Owner-only. |
 
 `outcome` values include `ok`, `not_linked`, `broker_unavailable`,
 `broker_denied`, `push_conflict`, `github_rate_limited`, `github_unreachable`.
@@ -108,5 +108,5 @@ ordinary editable virtual app, not a locked import.
   an error message.
 
 See the OpenSpec changes `github-app-repo-format`, `github-shop-catalogue`, and
-`github-app-sync` (OpenBuild) and `github-provider-shop-rules` (OpenRegister) for
+`github-app-sync` (Buildiq) and `github-provider-shop-rules` (OpenRegister) for
 the full specification.

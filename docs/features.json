@@ -1,6 +1,6 @@
 [
   {
-    "slug": "openbuild-runtime",
+    "slug": "buildiq-runtime",
     "title": "Build apps without code",
     "summary": "You compose an app as a manifest and run it live, with no deployment step.",
     "status": "stable",
@@ -9,7 +9,7 @@
     "summary_nl": "Je stelt een app samen als een manifest en draait hem direct live, zonder uitrol."
   },
   {
-    "slug": "openbuild-schema-designer",
+    "slug": "buildiq-schema-designer",
     "title": "Design your data model visually",
     "summary": "You define entities, fields and relations without writing JSON Schema.",
     "status": "stable",
@@ -18,7 +18,7 @@
     "summary_nl": "Je legt entiteiten, velden en relaties vast zonder JSON Schema te schrijven."
   },
   {
-    "slug": "openbuild-page-designer",
+    "slug": "buildiq-page-designer",
     "title": "Build pages and forms visually",
     "summary": "You create list, detail, form and dashboard screens yourself.",
     "status": "stable",
@@ -36,7 +36,7 @@
     "summary_nl": "Je stelt voorwaarden en beslistabellen in, zonder te scripten."
   },
   {
-    "slug": "openbuild-exporter",
+    "slug": "buildiq-exporter",
     "title": "Export to a real Nextcloud app",
     "summary": "You take your app as a clean package, so there is no lock-in.",
     "status": "stable",
@@ -45,7 +45,7 @@
     "summary_nl": "Je neemt je app mee als schoon pakket, dus geen lock-in."
   },
   {
-    "slug": "openbuild-rbac",
+    "slug": "buildiq-rbac",
     "title": "Control who sees what",
     "summary": "You grant access per app, per group and per person.",
     "status": "stable",
@@ -100,7 +100,7 @@
     "summary_nl": "Je geeft elke app een eigen icoon, licht en donker."
   },
   {
-    "slug": "openbuild-remote-template-store",
+    "slug": "buildiq-remote-template-store",
     "title": "Install templates from a remote catalogue",
     "summary": "You pull curated apps from a shared store into your own instance.",
     "status": "beta",

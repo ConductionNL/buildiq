@@ -1,22 +1,22 @@
 <?xml version="1.0"?>
 <info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
-    <id>openbuild</id>
-    <name lang="en">OpenBuild</name>
-    <name lang="nl">OpenBuild</name>
+    <id>buildiq</id>
+    <name lang="en">Buildiq</name>
+    <name lang="nl">Buildiq</name>
     <summary lang="en">Citizen-developer app builder for Nextcloud — compose apps from registers, connectors, workflows, and documents without code.</summary>
     <summary lang="nl">App builder voor Nextcloud — stel apps samen uit registers, connectors, processen en documenten zonder code.</summary>
-    <description lang="en"><![CDATA[OpenBuild is a citizen-developer app builder for Nextcloud. It lets non-technical users compose apps from the Technical Core — OpenRegister schemas, OpenConnector APIs, Procest workflows, Docudesk documents, NL Design themes — through a visual interface, without scaffolding PHP for each new app.
+    <description lang="en"><![CDATA[Buildiq is a citizen-developer app builder for Nextcloud. It lets non-technical users compose apps from the Technical Core — OpenRegister schemas, OpenConnector APIs, Procest workflows, Docudesk documents, NL Design themes — through a visual interface, without scaffolding PHP for each new app.
 
-Per ADR-024 (app manifest), each built app is rendered at runtime by mounting CnAppRoot with the app's manifest, which lives as a JSON blob in OpenBuild's own OpenRegister namespace. Per ADR-031 (schema-declarative business logic), behaviour like state machines, aggregations, calculations, and notifications is declared as schema metadata in the register file instead of service code. Built apps are virtual at first (records in OpenBuild's register, rendered inside the OpenBuild shell at `/apps/openbuild/{slug}`); a Phase-2 export generates a real Nextcloud app from a virtual app.
+Per ADR-024 (app manifest), each built app is rendered at runtime by mounting CnAppRoot with the app's manifest, which lives as a JSON blob in Buildiq's own OpenRegister namespace. Per ADR-031 (schema-declarative business logic), behaviour like state machines, aggregations, calculations, and notifications is declared as schema metadata in the register file instead of service code. Built apps are virtual at first (records in Buildiq's register, rendered inside the Buildiq shell at `/apps/buildiq/{slug}`); a Phase-2 export generates a real Nextcloud app from a virtual app.
 
 Free and open source under the EUPL-1.2 license.
 
 **Support:** For support, contact support@conduction.nl.
     ]]></description>
-    <description lang="nl"><![CDATA[OpenBuild is een citizen-developer app builder voor Nextcloud. Niet-technische gebruikers stellen apps samen uit de Technical Core — OpenRegister-schema's, OpenConnector-API's, Procest-processen, Docudesk-documenten, NL Design-thema's — via een visuele interface, zonder voor elke nieuwe app PHP te hoeven schrijven.
+    <description lang="nl"><![CDATA[Buildiq is een citizen-developer app builder voor Nextcloud. Niet-technische gebruikers stellen apps samen uit de Technical Core — OpenRegister-schema's, OpenConnector-API's, Procest-processen, Docudesk-documenten, NL Design-thema's — via een visuele interface, zonder voor elke nieuwe app PHP te hoeven schrijven.
 
-Conform ADR-024 (app-manifest) wordt elke gebouwde app tijdens runtime gerenderd door CnAppRoot te monteren met het manifest, dat als JSON-blob in OpenBuild's eigen OpenRegister-namespace staat. Conform ADR-031 (schema-declaratieve businesslogica) wordt gedrag zoals state machines, aggregaties, berekeningen en notificaties als schema-metadata in het registerbestand gedeclareerd in plaats van als servicecode. Gebouwde apps zijn in eerste instantie virtueel (records in OpenBuild's register, gerenderd binnen de OpenBuild-shell op `/apps/openbuild/{slug}`); een Phase-2 export genereert een echte Nextcloud-app uit een virtuele app.
+Conform ADR-024 (app-manifest) wordt elke gebouwde app tijdens runtime gerenderd door CnAppRoot te monteren met het manifest, dat als JSON-blob in Buildiq's eigen OpenRegister-namespace staat. Conform ADR-031 (schema-declaratieve businesslogica) wordt gedrag zoals state machines, aggregaties, berekeningen en notificaties als schema-metadata in het registerbestand gedeclareerd in plaats van als servicecode. Gebouwde apps zijn in eerste instantie virtueel (records in Buildiq's register, gerenderd binnen de Buildiq-shell op `/apps/buildiq/{slug}`); een Phase-2 export genereert een echte Nextcloud-app uit een virtuele app.
 
 Vrij en open source onder de EUPL-1.2-licentie.
 
@@ -25,7 +25,7 @@ Vrij en open source onder de EUPL-1.2-licentie.
     <version>0.6.1-unstable.20260819215516</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
-    <namespace>OpenBuild</namespace>
+    <namespace>Buildiq</namespace>
     <documentation>
         <user>https://github.com/ConductionNL/buildiq</user>
         <admin>https://github.com/ConductionNL/buildiq</admin>
@@ -54,7 +54,7 @@ Vrij en open source onder de EUPL-1.2-licentie.
         min-version is 32 by product decision: the fleet standardises on
         Nextcloud 32 so it can require PHP 8.3, which `<php min-version>` above
         already declares. opencatalogi, openconnector and docudesk are already
-        at 32; this brings OpenBuild in line.
+        at 32; this brings Buildiq in line.
 
         The openconnector#1172/#1173 dependency-floor rule ALSO requires 32 now.
         That rule says an app's min-version must be >= the max of every app
@@ -77,7 +77,7 @@ Vrij en open source onder de EUPL-1.2-licentie.
 
         So 32 here is not merely >= the dependency floor, it is EQUAL to it: 28
         would now advertise an App Store range this app cannot deliver, because
-        below 32 openregister refuses to install and every OpenBuild entity is
+        below 32 openregister refuses to install and every Buildiq entity is
         an OpenRegister object.
 
         Note that `openregister@main` still declares 28 — the fleet is mid-rollout
@@ -104,71 +104,71 @@ Vrij en open source onder de EUPL-1.2-licentie.
     </dependencies>
 
     <background-jobs>
-        <job>OCA\OpenBuild\BackgroundJob\CleanupExpiredExports</job>
-        <job>OCA\OpenBuild\BackgroundJob\RuleExecutionLogCleanup</job>
+        <job>OCA\Buildiq\BackgroundJob\CleanupExpiredExports</job>
+        <job>OCA\Buildiq\BackgroundJob\RuleExecutionLogCleanup</job>
     </background-jobs>
 
     <repair-steps>
         <post-migration>
-            <step>OCA\OpenBuild\Repair\InitializeSettings</step>
-            <step>OCA\OpenBuild\Repair\MigrateToVersionedModel</step>
-            <step>OCA\OpenBuild\Repair\MigrateAppOverridesToHybrid</step>
-            <step>OCA\OpenBuild\Repair\PopulateApplicationPermissions</step>
-            <step>OCA\OpenBuild\Repair\SeedApplicationTemplates</step>
-            <step>OCA\OpenBuild\Repair\FlagRegistryTokenSensitive</step>
+            <step>OCA\Buildiq\Repair\InitializeSettings</step>
+            <step>OCA\Buildiq\Repair\MigrateToVersionedModel</step>
+            <step>OCA\Buildiq\Repair\MigrateAppOverridesToHybrid</step>
+            <step>OCA\Buildiq\Repair\PopulateApplicationPermissions</step>
+            <step>OCA\Buildiq\Repair\SeedApplicationTemplates</step>
+            <step>OCA\Buildiq\Repair\FlagRegistryTokenSensitive</step>
             <!--
                 Must run AFTER the register sync that adds the English columns, so
                 it can detect the "mapper already added an empty column" case and
                 back-fill rather than rename. Idempotent; safe to re-run.
             -->
-            <step>OCA\OpenBuild\Repair\RenameDutchRuleColumns</step>
+            <step>OCA\Buildiq\Repair\RenameDutchRuleColumns</step>
         </post-migration>
         <install>
-            <step>OCA\OpenBuild\Repair\InitializeSettings</step>
-            <step>OCA\OpenBuild\Repair\MigrateToVersionedModel</step>
-            <step>OCA\OpenBuild\Repair\MigrateAppOverridesToHybrid</step>
-            <step>OCA\OpenBuild\Repair\PopulateApplicationPermissions</step>
-            <step>OCA\OpenBuild\Repair\SeedApplicationTemplates</step>
+            <step>OCA\Buildiq\Repair\InitializeSettings</step>
+            <step>OCA\Buildiq\Repair\MigrateToVersionedModel</step>
+            <step>OCA\Buildiq\Repair\MigrateAppOverridesToHybrid</step>
+            <step>OCA\Buildiq\Repair\PopulateApplicationPermissions</step>
+            <step>OCA\Buildiq\Repair\SeedApplicationTemplates</step>
         </install>
     </repair-steps>
 
     <commands>
-        <command>OCA\OpenBuild\Command\SeedHelloWorldFixture</command>
-        <command>OCA\OpenBuild\Command\PublishTemplates</command>
+        <command>OCA\Buildiq\Command\SeedHelloWorldFixture</command>
+        <command>OCA\Buildiq\Command\PublishTemplates</command>
     </commands>
 
     <settings>
-        <admin>OCA\OpenBuild\Settings\AdminSettings</admin>
-        <admin-section>OCA\OpenBuild\Sections\SettingsSection</admin-section>
+        <admin>OCA\Buildiq\Settings\AdminSettings</admin>
+        <admin-section>OCA\Buildiq\Sections\SettingsSection</admin-section>
     </settings>
 
     <!--
-        openbuild.use navigation-entry gate (REQ-OBRBAC-006).
+        buildiq.use navigation-entry gate (REQ-OBRBAC-006).
 
-        SPEC INTENT: REQ-OBRBAC-006 calls for a <permission>openbuild.use</permission>
+        SPEC INTENT: REQ-OBRBAC-006 calls for a <permission>buildiq.use</permission>
         child on the <navigation> element so admins can restrict the top-bar
         entry to selected groups. We tried shipping that element and verified on
-        2026-05-11 (running "occ app:enable openbuild" with the force flag, on
+        2026-05-11 (running "occ app:enable buildiq" with the force flag, on
         Nextcloud 32) that the upstream apps/info.xsd schema rejects the
         <permission> child ("appinfo file cannot be read"). The schema does not
         yet expose this sub-element; an upstream issue is filed at:
             https://github.com/nextcloud/server/issues/60310
 
         FALLBACK: per design.md Decision 4 we rely on Nextcloud's standard
-        app-level group restriction ("occ app:enable openbuild" with the groups
+        app-level group restriction ("occ app:enable buildiq" with the groups
         flag, e.g. "groups team-alpha"), which configures group visibility
         outside info.xml. Per-Application RBAC enforced server-side by
         ApplicationsController::getManifest + ::listMine (REQ-OBRBAC-002 /
         REQ-OBR-006) remains the load-bearing security boundary; this gate is
         coarse top-bar visibility only.
 
-        See docs/openbuild-rbac.md for the operator guide.
+        See docs/buildiq-rbac.md for the operator guide.
     -->
     <navigations>
         <navigation>
-            <id>openbuild</id>
-            <name>OpenBuild</name>
-            <route>openbuild.dashboard.page</route>
+            <id>buildiq</id>
+            <name>Buildiq</name>
+            <route>buildiq.dashboard.page</route>
             <icon>app.svg</icon>
         </navigation>
     </navigations>

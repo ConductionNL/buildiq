@@ -13,12 +13,12 @@
 <template>
 	<NcModal
 		v-if="open"
-		:name="t('openbuild', 'Generate an app with AI')"
+		:name="t('buildiq', 'Generate an app with AI')"
 		:noClose="state === 'planning' || state === 'executing'"
 		@close="onCancel">
 		<div class="copilot-generate">
 			<h2 class="copilot-generate__title">
-				{{ t('openbuild', 'Generate an app with AI') }}
+				{{ t('buildiq', 'Generate an app with AI') }}
 			</h2>
 
 			<template
@@ -26,7 +26,7 @@
 				<p class="copilot-generate__hint">
 					{{
 						t(
-							'openbuild',
+							'buildiq',
 							'Describe the app you want to build in a sentence or two. The AI will propose schemas, pages and menu items for you to review before anything is created.',
 						)
 					}}
@@ -34,11 +34,11 @@
 				<NcTextArea
 					v-model="brief"
 					data-testid="copilot-brief-input"
-					:label="t('openbuild', 'Describe your app')"
+					:label="t('buildiq', 'Describe your app')"
 					:disabled="state === 'planning'"
 					:placeholder="
 						t(
-							'openbuild',
+							'buildiq',
 							'e.g. A tool library where members can borrow and return tools',
 						)
 					"
@@ -57,7 +57,7 @@
 					</p>
 
 					<div v-if="schemaSteps.length" class="copilot-generate__group">
-						<h3>{{ t('openbuild', 'Schemas') }}</h3>
+						<h3>{{ t('buildiq', 'Schemas') }}</h3>
 						<ul>
 							<li
 								v-for="(step, idx) in schemaSteps"
@@ -68,7 +68,7 @@
 					</div>
 
 					<div v-if="pageSteps.length" class="copilot-generate__group">
-						<h3>{{ t('openbuild', 'Pages') }}</h3>
+						<h3>{{ t('buildiq', 'Pages') }}</h3>
 						<ul>
 							<li
 								v-for="(step, idx) in pageSteps"
@@ -80,7 +80,7 @@
 					</div>
 
 					<div v-if="menuSteps.length" class="copilot-generate__group">
-						<h3>{{ t('openbuild', 'Menu items') }}</h3>
+						<h3>{{ t('buildiq', 'Menu items') }}</h3>
 						<ul>
 							<li
 								v-for="(step, idx) in menuSteps"
@@ -96,7 +96,7 @@
 						role="alert">
 						{{
 							t(
-								'openbuild',
+								'buildiq',
 								'The proposed manifest did not pass validation, so it cannot be created. Try rephrasing your brief.',
 							)
 						}}
@@ -109,7 +109,7 @@
 					data-testid="copilot-cancel"
 					:disabled="state === 'planning' || state === 'executing'"
 					@click="onCancel">
-					{{ t('openbuild', 'Cancel') }}
+					{{ t('buildiq', 'Cancel') }}
 				</NcButton>
 				<NcButton
 					v-if="
@@ -120,8 +120,8 @@
 					@click="onGenerate">
 					{{
 						state === 'planning'
-							? t('openbuild', 'Generating…')
-							: t('openbuild', 'Generate')
+							? t('buildiq', 'Generating…')
+							: t('buildiq', 'Generate')
 					}}
 				</NcButton>
 				<NcButton
@@ -132,8 +132,8 @@
 					@click="onConfirm">
 					{{
 						state === 'executing'
-							? t('openbuild', 'Creating…')
-							: t('openbuild', 'Confirm & create')
+							? t('buildiq', 'Creating…')
+							: t('buildiq', 'Confirm & create')
 					}}
 				</NcButton>
 			</div>
@@ -218,7 +218,7 @@ export default {
 		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
 		 */
 		schemaSteps() {
-			return this.stepsByTool('openbuild.upsertSchema')
+			return this.stepsByTool('buildiq.upsertSchema')
 		},
 
 		/**
@@ -228,7 +228,7 @@ export default {
 		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
 		 */
 		pageSteps() {
-			return this.stepsByTool('openbuild.upsertPage')
+			return this.stepsByTool('buildiq.upsertPage')
 		},
 
 		/**
@@ -238,7 +238,7 @@ export default {
 		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
 		 */
 		menuSteps() {
-			return this.stepsByTool('openbuild.upsertMenuItem')
+			return this.stepsByTool('buildiq.upsertMenuItem')
 		},
 	},
 
@@ -256,7 +256,7 @@ export default {
 		/**
 		 * Filter the plan's steps by tool id.
 		 *
-		 * @param {string} tool - the tool id, e.g. `openbuild.upsertPage`.
+		 * @param {string} tool - the tool id, e.g. `buildiq.upsertPage`.
 		 * @return {Array<object>}
 		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
 		 */

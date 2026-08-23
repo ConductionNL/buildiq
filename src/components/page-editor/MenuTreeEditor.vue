@@ -7,13 +7,13 @@
 <template>
 	<section class="menu-tree-editor">
 		<header class="menu-tree-editor__header">
-			<h4>{{ t('openbuild', 'Menu') }}</h4>
+			<h4>{{ t('buildiq', 'Menu') }}</h4>
 			<button type="button" class="menu-tree-editor__add" @click="addEntry()">
-				+ {{ t('openbuild', 'Add menu entry') }}
+				+ {{ t('buildiq', 'Add menu entry') }}
 			</button>
 		</header>
 		<p v-if="depthError" class="menu-tree-editor__error" role="alert">
-			{{ t('openbuild', 'Maximum nesting depth is two levels.') }}
+			{{ t('buildiq', 'Maximum nesting depth is two levels.') }}
 		</p>
 		<!-- vuedraggable v4 (Vue 3): v-model instead of :value/@input, sortable
 		     options as plain props, and rows from the `#item` scoped slot — a
@@ -31,22 +31,22 @@
 					<div class="menu-tree-editor__row">
 						<span
 							class="menu-tree-editor__drag-handle"
-							:title="t('openbuild', 'Drag to reorder')">
+							:title="t('buildiq', 'Drag to reorder')">
 							⠿
 						</span>
 						<input
 							:value="entry.id || ''"
 							type="text"
 							class="menu-tree-editor__field"
-							:placeholder="t('openbuild', 'id (e.g. inbox)')"
-							:aria-label="t('openbuild', 'id (e.g. inbox)')"
+							:placeholder="t('buildiq', 'id (e.g. inbox)')"
+							:aria-label="t('buildiq', 'id (e.g. inbox)')"
 							@input="updateField(index, 'id', $event.target.value)" />
 						<input
 							:value="entry.label || ''"
 							type="text"
 							class="menu-tree-editor__field"
-							:placeholder="t('openbuild', 'label (i18n key)')"
-							:aria-label="t('openbuild', 'label (i18n key)')"
+							:placeholder="t('buildiq', 'label (i18n key)')"
+							:aria-label="t('buildiq', 'label (i18n key)')"
 							@input="
 								updateField(index, 'label', $event.target.value)
 							" />
@@ -54,8 +54,8 @@
 							:value="entry.icon || ''"
 							type="text"
 							class="menu-tree-editor__field menu-tree-editor__field--narrow"
-							:placeholder="t('openbuild', 'icon')"
-							:aria-label="t('openbuild', 'icon')"
+							:placeholder="t('buildiq', 'icon')"
+							:aria-label="t('buildiq', 'icon')"
 							@input="
 								updateField(index, 'icon', $event.target.value)
 							" />
@@ -63,8 +63,8 @@
 							:value="entry.route || ''"
 							type="text"
 							class="menu-tree-editor__field"
-							:placeholder="t('openbuild', 'route name')"
-							:aria-label="t('openbuild', 'route name')"
+							:placeholder="t('buildiq', 'route name')"
+							:aria-label="t('buildiq', 'route name')"
 							:disabled="!!entry.action"
 							@input="
 								updateField(index, 'route', $event.target.value)
@@ -73,8 +73,8 @@
 							:value="entry.href || ''"
 							type="text"
 							class="menu-tree-editor__field"
-							:placeholder="t('openbuild', 'href URL')"
-							:aria-label="t('openbuild', 'href URL')"
+							:placeholder="t('buildiq', 'href URL')"
+							:aria-label="t('buildiq', 'href URL')"
 							:disabled="!!entry.action"
 							@input="
 								updateField(index, 'href', $event.target.value)
@@ -93,21 +93,21 @@
 							class="menu-tree-editor__field menu-tree-editor__field--narrow"
 							@change="updateActionField(index, $event.target.value)">
 							<option value="">
-								{{ t('openbuild', '— action —') }}
+								{{ t('buildiq', '— action —') }}
 							</option>
 							<option value="user-settings">user-settings</option>
 						</select>
 						<button
 							type="button"
 							class="menu-tree-editor__icon-btn"
-							:title="t('openbuild', 'Add child')"
+							:title="t('buildiq', 'Add child')"
 							@click="addChild(index)">
 							⤵
 						</button>
 						<button
 							type="button"
 							class="menu-tree-editor__icon-btn menu-tree-editor__icon-btn--remove"
-							:title="t('openbuild', 'Remove entry')"
+							:title="t('buildiq', 'Remove entry')"
 							@click="removeEntry(index)">
 							✕
 						</button>
@@ -115,7 +115,7 @@
 					<p v-if="entry.action" class="menu-tree-editor__note">
 						{{
 							t(
-								'openbuild',
+								'buildiq',
 								'Route and href are ignored when an action is set.',
 							)
 						}}
@@ -144,8 +144,8 @@
 									:value="child.id || ''"
 									type="text"
 									class="menu-tree-editor__field"
-									:placeholder="t('openbuild', 'child id')"
-									:aria-label="t('openbuild', 'child id')"
+									:placeholder="t('buildiq', 'child id')"
+									:aria-label="t('buildiq', 'child id')"
 									@input="
 										updateChildField(
 											index,
@@ -158,8 +158,8 @@
 									:value="child.label || ''"
 									type="text"
 									class="menu-tree-editor__field"
-									:placeholder="t('openbuild', 'label (i18n key)')"
-									:aria-label="t('openbuild', 'label (i18n key)')"
+									:placeholder="t('buildiq', 'label (i18n key)')"
+									:aria-label="t('buildiq', 'label (i18n key)')"
 									@input="
 										updateChildField(
 											index,
@@ -172,8 +172,8 @@
 									:value="child.icon || ''"
 									type="text"
 									class="menu-tree-editor__field menu-tree-editor__field--narrow"
-									:placeholder="t('openbuild', 'icon')"
-									:aria-label="t('openbuild', 'icon')"
+									:placeholder="t('buildiq', 'icon')"
+									:aria-label="t('buildiq', 'icon')"
 									@input="
 										updateChildField(
 											index,
@@ -186,8 +186,8 @@
 									:value="child.route || ''"
 									type="text"
 									class="menu-tree-editor__field"
-									:placeholder="t('openbuild', 'route name')"
-									:aria-label="t('openbuild', 'route name')"
+									:placeholder="t('buildiq', 'route name')"
+									:aria-label="t('buildiq', 'route name')"
 									@input="
 										updateChildField(
 											index,
@@ -199,7 +199,7 @@
 								<button
 									type="button"
 									class="menu-tree-editor__icon-btn menu-tree-editor__icon-btn--remove"
-									:title="t('openbuild', 'Remove child')"
+									:title="t('buildiq', 'Remove child')"
 									@click="removeChild(index, cIndex)">
 									✕
 								</button>
@@ -211,10 +211,7 @@
 		</Draggable>
 		<p v-if="!menu.length" class="menu-tree-editor__empty">
 			{{
-				t(
-					'openbuild',
-					'No menu entries yet. Click "Add menu entry" to start.',
-				)
+				t('buildiq', 'No menu entries yet. Click "Add menu entry" to start.')
 			}}
 		</p>
 	</section>

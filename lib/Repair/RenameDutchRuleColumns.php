@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild RenameDutchRuleColumns Repair Step
+ * Buildiq RenameDutchRuleColumns Repair Step
  *
  * Moves the stored data of the business-rules schemas from their Dutch column
  * names to the English ones the register now declares.
@@ -35,14 +35,14 @@
  * SCOPE. Resolves shard tables at runtime, because their names carry numeric
  * register and schema ids that differ per install. A schema registered in more
  * than one register has one shard table per register and all of them are
- * migrated — openbuild's are in two (observed: registers 206 and 2421), so
+ * migrated — buildiq's are in two (observed: registers 206 and 2421), so
  * handling only the first would migrate half the data.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Repair
- * @package  OCA\OpenBuild\Repair
+ * @package  OCA\Buildiq\Repair
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -55,7 +55,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Repair;
+namespace OCA\Buildiq\Repair;
 
 use OCP\DB\Exception;
 use OCP\IDBConnection;

@@ -1,15 +1,15 @@
 <?php
 
 /**
- * OpenBuild GitHubAppSyncService
+ * Buildiq GitHubAppSyncService
  *
- * The owner round-trip between a local OpenBuild app and its GitHub home
+ * The owner round-trip between a local Buildiq app and its GitHub home
  * (github-app-sync). `push` serialises the chosen ApplicationVersion via
  * github-app-repo-format's AppRepoSerializer and commits it to GitHub by porting
  * the Git Data API tree-push mechanics (blob → tree → commit → ref) from the
  * exporter's GitHubPushService — but routing EVERY outbound HTTP call through
  * OpenRegister's CredentialBrokerService so the credential's token is used by the
- * broker and NEVER reaches OpenBuild (REQ-GHAS-005). `pull` fetches the linked
+ * broker and NEVER reaches Buildiq (REQ-GHAS-005). `pull` fetches the linked
  * repo (github-shop-catalogue's GitHubCatalogService), strictly parses it
  * (AppRepoParser), and creates a NEW DRAFT ApplicationVersion — it never modifies
  * `productionVersion` or any published version.
@@ -25,7 +25,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -40,12 +40,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
-use OCA\OpenBuild\Exception\AppRepoParseException;
+use OCA\Buildiq\Exception\AppRepoParseException;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\Server;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -62,14 +62,14 @@ class GitHubAppSyncService {
 	private const BROKER_CLASS = 'OCA\\OpenRegister\\Service\\Credential\\CredentialBrokerService';
 
 	/**
-	 * The broker `appId` OpenBuild identifies itself with.
+	 * The broker `appId` Buildiq identifies itself with.
 	 */
-	private const APP_ID = 'openbuild';
+	private const APP_ID = 'buildiq';
 
 	/**
-	 * The shared OpenBuild register slug.
+	 * The shared Buildiq register slug.
 	 */
-	private const REGISTER_SLUG = 'openbuild';
+	private const REGISTER_SLUG = 'buildiq';
 
 	/**
 	 * The Application schema slug.
@@ -187,7 +187,7 @@ class GitHubAppSyncService {
 				]
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenBuild GitHub sync: application lookup failed: ' . $e->getMessage());
+			$this->logger->warning('Buildiq GitHub sync: application lookup failed: ' . $e->getMessage());
 			return null;
 		}
 
@@ -263,7 +263,7 @@ class GitHubAppSyncService {
 	}//end push()
 
 	/**
-	 * Serialize a seeded template and publish it to GitHub as an `openbuild-app`
+	 * Serialize a seeded template and publish it to GitHub as an `buildiq-app`
 	 * repo (never-throw). The repo is created (or reused) via the broker, tagged
 	 * with the discovery topic, then the template file map is tree-pushed — the
 	 * SAME create-repo + topic + Git-Data mechanics `push()` uses, so the result
@@ -272,7 +272,7 @@ class GitHubAppSyncService {
 	 * @param array<string,mixed> $template The seeded application-template object.
 	 * @param string $credentialId The allowed `github` credential UUID.
 	 * @param string|null $org Optional org to create the repo under (null = the credential user's account).
-	 * @param string|null $repoName Optional repo name (defaults to `openbuild-{template-slug}`).
+	 * @param string|null $repoName Optional repo name (defaults to `buildiq-{template-slug}`).
 	 * @param string|null $actingUserId The session UID (broker owner-guard identity).
 	 * @param string $visibility Repo visibility for a freshly created repo ('public'|'private'); 'public' by default.
 	 *
@@ -642,7 +642,7 @@ class GitHubAppSyncService {
 				'private' => $isPrivate,
 				'visibility' => $visibility,
 				'auto_init' => true,
-				'description' => 'Published from OpenBuild',
+				'description' => 'Published from Buildiq',
 			],
 			credentialId: $credentialId,
 			actingUserId: $actingUserId
@@ -843,7 +843,7 @@ class GitHubAppSyncService {
 			return ['outcome' => $this->brokerFailureOutcome(result: $tree)];
 		}
 
-		$commitBody = ['message' => 'chore: publish from OpenBuild', 'tree' => (string)($tree['data']['sha'] ?? '')];
+		$commitBody = ['message' => 'chore: publish from Buildiq', 'tree' => (string)($tree['data']['sha'] ?? '')];
 		if ($head !== null && $head['commitSha'] !== '') {
 			$commitBody['parents'] = [$head['commitSha']];
 		}
@@ -952,7 +952,7 @@ class GitHubAppSyncService {
 		try {
 			$register = $this->findOrCreateRegister(slug: $registerSlug, appSlug: $appSlug);
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenBuild GitHub pull: could not provision draft register: ' . $e->getMessage());
+			$this->logger->warning('Buildiq GitHub pull: could not provision draft register: ' . $e->getMessage());
 			return $map;
 		}
 
@@ -976,7 +976,7 @@ class GitHubAppSyncService {
 			try {
 				$createdIds[] = $this->schemaMapper->createFromArray(object: $blob)->getId();
 			} catch (Throwable $e) {
-				$this->logger->warning('OpenBuild GitHub pull: could not clone schema "' . $source . '": ' . $e->getMessage());
+				$this->logger->warning('Buildiq GitHub pull: could not clone schema "' . $source . '": ' . $e->getMessage());
 			}
 		}//end foreach
 
@@ -986,7 +986,7 @@ class GitHubAppSyncService {
 				$register->setSchemas(array_values(array_unique(array_merge($existing, $createdIds))));
 				$this->registerMapper->update($register);
 			} catch (Throwable $e) {
-				$this->logger->warning('OpenBuild GitHub pull: could not attach schemas to draft register: ' . $e->getMessage());
+				$this->logger->warning('Buildiq GitHub pull: could not attach schemas to draft register: ' . $e->getMessage());
 			}
 		}
 
@@ -1011,8 +1011,8 @@ class GitHubAppSyncService {
 		return $this->registerMapper->createFromArray(
 			[
 				'slug' => $slug,
-				'title' => 'OpenBuild — ' . $appSlug . ' (pulled draft)',
-				'description' => 'Draft register for a GitHub-pulled version of OpenBuild app `' . $appSlug . '`.',
+				'title' => 'Buildiq — ' . $appSlug . ' (pulled draft)',
+				'description' => 'Draft register for a GitHub-pulled version of Buildiq app `' . $appSlug . '`.',
 				'version' => '0.1.0',
 				'schemas' => [],
 			]
@@ -1072,7 +1072,7 @@ class GitHubAppSyncService {
 				]
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenBuild GitHub sync: version lookup failed: ' . $e->getMessage());
+			$this->logger->warning('Buildiq GitHub sync: version lookup failed: ' . $e->getMessage());
 			return null;
 		}//end try
 
@@ -1165,7 +1165,7 @@ class GitHubAppSyncService {
 				schema: self::VERSION_SCHEMA
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenBuild GitHub sync: could not stamp commitSha: ' . $e->getMessage());
+			$this->logger->warning('Buildiq GitHub sync: could not stamp commitSha: ' . $e->getMessage());
 		}
 	}//end stampVersionProvenance()
 
@@ -1184,7 +1184,7 @@ class GitHubAppSyncService {
 				schema: self::APPLICATION_SCHEMA
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenBuild GitHub sync: could not persist linkage: ' . $e->getMessage());
+			$this->logger->warning('Buildiq GitHub sync: could not persist linkage: ' . $e->getMessage());
 		}
 	}//end saveApplication()
 
@@ -1221,7 +1221,7 @@ class GitHubAppSyncService {
 			// loglevel, which leaves an operator with a bare 502 and nothing to
 			// go on. The exception message is the whole diagnosis; log it.
 			$this->logger->warning(
-				'OpenBuild GitHub sync: broker call failed for ' . $method . ' ' . $path
+				'Buildiq GitHub sync: broker call failed for ' . $method . ' ' . $path
 				. ' — ' . get_class($e) . ': ' . $e->getMessage()
 			);
 			return ['ok' => false, 'denied' => true, 'status' => 0, 'data' => []];
@@ -1239,7 +1239,7 @@ class GitHubAppSyncService {
 			// notice); discarding it and reporting only `github_unreachable`
 			// sends the reader at the network instead of the real cause.
 			$this->logger->warning(
-				'OpenBuild GitHub sync: ' . $method . ' ' . $path . ' returned ' . $status
+				'Buildiq GitHub sync: ' . $method . ' ' . $path . ' returned ' . $status
 				. ' — ' . substr((string)($response['body'] ?? ''), 0, 300)
 			);
 		}

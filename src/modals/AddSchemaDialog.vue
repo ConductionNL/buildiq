@@ -7,7 +7,7 @@
   -->
 <template>
 	<NcDialog
-		:name="t('openbuild', 'Add schema')"
+		:name="t('buildiq', 'Add schema')"
 		:open="open"
 		size="normal"
 		@update:open="onOpenUpdate">
@@ -18,16 +18,14 @@
 			@input="onInput" />
 		<template #actions>
 			<NcButton @click="onCancel">
-				{{ t('openbuild', 'Cancel') }}
+				{{ t('buildiq', 'Cancel') }}
 			</NcButton>
 			<NcButton
 				variant="primary"
 				:disabled="!isValid || submitting"
 				@click="onConfirm">
 				{{
-					submitting
-						? t('openbuild', 'Saving…')
-						: t('openbuild', 'Add schema')
+					submitting ? t('buildiq', 'Saving…') : t('buildiq', 'Add schema')
 				}}
 			</NcButton>
 		</template>

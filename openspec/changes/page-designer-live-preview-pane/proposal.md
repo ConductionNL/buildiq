@@ -16,7 +16,7 @@ exports `useAppManifest(appIdOrOptions, bundledManifest, options = {})`
 — a 2-required-parameter signature whose `.length` is `2` (the
 `options` param has a default, so it doesn't count toward `Function.length`).
 
-OpenBuild's own feature-detector,
+Buildiq's own feature-detector,
 `src/composables/useLivePreview.js:27-29`, computes `available =
 fnArity >= 2` from exactly that `.length` check — so `available` now
 resolves to `true` in the running app. But `src/views/PageDesigner.vue`
@@ -51,7 +51,7 @@ unimplemented for the now-active branch.
 - Implement the `v-else` branch in `PageDesigner.vue`'s right-hand pane:
   when `previewAvailable` is true, mount a sandboxed `CnAppRoot` using the
   props from `previewProps(slug, manifest)` (`appId:
-  openbuild-preview-{slug}`, the in-flight manifest object, and a `:key`
+  buildiq-preview-{slug}`, the in-flight manifest object, and a `:key`
   bound to the manifest content hash per REQ-OBPD-008's re-mount contract).
 - Keep the existing fallback branch (`v-if="!previewAvailable"`) as the
   degraded path for any environment where the library predates the
@@ -75,10 +75,10 @@ unimplemented for the now-active branch.
 
 ### Modified Capabilities
 
-- `openbuild-page-designer`: REQ-OBPD-008 (live-preview pane) becomes
+- `buildiq-page-designer`: REQ-OBPD-008 (live-preview pane) becomes
   implemented rather than deferred; REQ-OBPD-007's registry-backed
   component picker gains a live source of `customComponents` keys (delta
-  spec at `specs/openbuild-page-designer/spec.md`).
+  spec at `specs/buildiq-page-designer/spec.md`).
 
 ## Impact
 

@@ -6,7 +6,7 @@
 <template>
 	<div class="dashboard-page-editor">
 		<h3 class="dashboard-page-editor__title">
-			{{ t('openbuild', 'Dashboard page') }}
+			{{ t('buildiq', 'Dashboard page') }}
 		</h3>
 
 		<DataSourceOriginToggle
@@ -14,7 +14,7 @@
 			@update:dataSource="onDataSourceUpdate" />
 
 		<fieldset class="dashboard-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Widgets') }}</legend>
+			<legend>{{ t('buildiq', 'Widgets') }}</legend>
 			<WidgetBuilder
 				:modelValue="config.widgets || []"
 				@update:modelValue="update('widgets', $event)" />
@@ -22,7 +22,7 @@
 		</fieldset>
 
 		<fieldset class="dashboard-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Layout') }}</legend>
+			<legend>{{ t('buildiq', 'Layout') }}</legend>
 			<LayoutItemBuilder
 				:modelValue="config.layout || []"
 				@update:modelValue="update('layout', $event)" />

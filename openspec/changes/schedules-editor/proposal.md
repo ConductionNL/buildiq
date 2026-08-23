@@ -6,7 +6,7 @@ depends_on:
 
 ## Why
 
-An OpenBuild manifest already carries a top-level `schedules[]` array — the
+An Buildiq manifest already carries a top-level `schedules[]` array — the
 **apphost-scheduling capability**. Each entry is a declarative scheduled task
 that a generic OpenRegister AppHost reconciler turns into a concrete
 OpenConnector job (run a synchronization on a cadence). The backend
@@ -15,7 +15,7 @@ and live-verified; the schema itself ships from **nextcloud-vue** (added in
 PR #132, off `beta` — NOT this repo).
 
 Today the only way to add a scheduled task to an app is to hand-edit the
-manifest JSON. A citizen developer working in OpenBuild's app editor has no
+manifest JSON. A citizen developer working in Buildiq's app editor has no
 UI surface for it, so the apphost-scheduling loop is only half-closed: the
 runtime can execute schedules, but nobody can author them without dropping to
 raw JSON. This change closes the loop with an **authoring UI only** — no new
@@ -63,9 +63,9 @@ authoring surface that mutates `manifest.schedules` in the page designer.
 
 ### Capabilities
 
-- **ADDED** `openbuild-schedules-authoring` — the visual authoring surface for
-  the manifest `schedules[]` array in OpenBuild's app editor.
+- **ADDED** `buildiq-schedules-authoring` — the visual authoring surface for
+  the manifest `schedules[]` array in Buildiq's app editor.
 
-No existing capability is modified. `openbuild-page-designer` gains a new
+No existing capability is modified. `buildiq-page-designer` gains a new
 section by composition (a mounted sibling component), not by changing its
 existing requirements.

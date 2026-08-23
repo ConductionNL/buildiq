@@ -1,17 +1,17 @@
 /**
- * SPDX-FileCopyrightText: 2026 ConductionNL / OpenBuild Contributors
+ * SPDX-FileCopyrightText: 2026 ConductionNL / Buildiq Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Playwright end-to-end spec for the OpenBuild schema designer
- * (spec #4 — openbuild-schema-editor). Marks parts of cross-spec
+ * Playwright end-to-end spec for the Buildiq schema designer
+ * (spec #4 — buildiq-schema-editor). Marks parts of cross-spec
  * journey #2 (create-virtual-app → design-schema → edit-page →
  * publish-version-1).
  *
  * Flow under test:
  *   1. Log in as admin (NC_ADMIN_USER / NC_ADMIN_PASS env vars).
- *   2. Open the OpenBuild app and create a virtual application
+ *   2. Open the Buildiq app and create a virtual application
  *      (slug `pw-hello`, title "PW Hello"). The smoke spec from
- *      bootstrap-openbuild already exercises this part; we re-use
+ *      bootstrap-buildiq already exercises this part; we re-use
  *      the same UX to land on the application page.
  *   3. Navigate to that virtual app's Schemas tab —
  *      /builder/pw-hello/schemas.
@@ -26,7 +26,7 @@
  *      confirmation. The schema row should disappear from the list.
  *
  * Runs against a live Nextcloud at NC_BASE_URL (default
- * http://localhost:8080) with the OpenBuild app installed AND chain
+ * http://localhost:8080) with the Buildiq app installed AND chain
  * spec #3 (openregister-runtime-schema-api) deployed. Until chain #3
  * lands, the schema CRUD calls return 404 and the test will fail at
  * step 4 — this is the expected gating behaviour documented in spec
@@ -54,7 +54,7 @@ const SCHEMA_SLUG = 'message'
 // so it lands in (and is listed from) the app's per-version register.
 const NAMESPACED_SLUG = `${APP_SLUG}-production-${SCHEMA_SLUG}`
 
-// UN-QUARANTINED 2026-07-28 — openbuild#41 is fixed and this suite is green
+// UN-QUARANTINED 2026-07-28 — buildiq#41 is fixed and this suite is green
 // end to end against a live instance (create app → add schema → add 2 fields →
 // save → reload → edit title → save → delete).
 //
@@ -68,11 +68,11 @@ const NAMESPACED_SLUG = `${APP_SLUG}-production-${SCHEMA_SLUG}`
 //   - CnDetailPage mounted its create-archetype form dialog over the designer
 //     because its "does the page have a body?" guard missed scoped slots
 //     (nc-vue #544/#545 → beta.225; these pages now declare config.createForm
-//     "never" — openbuild #42/#43).
+//     "never" — buildiq #42/#43).
 //   - 🔑 OpenRegister's schema API is READ-BY-SLUG but WRITE-BY-ID: PUT/DELETE
 //     on a slug (or a uuid) 404 "Schema not found". Saving and deleting by slug
 //     silently did nothing — the toast fired, the change never landed.
-test.describe('OpenBuild Schema Designer — end-to-end (REQ-OBSD-001..008)', () => {
+test.describe('Buildiq Schema Designer — end-to-end (REQ-OBSD-001..008)', () => {
 	// 45s inner waits inside the config's 30s per-test budget could never
 	// elapse: the test died first with a bare "Test timeout of 30000ms
 	// exceeded" rather than the assertion's own message, so the guard could
@@ -102,20 +102,20 @@ test.describe('OpenBuild Schema Designer — end-to-end (REQ-OBSD-001..008)', ()
 
 		// Step 3 — navigate to the Schema Designer for this virtual app.
 		// The `?_version=production` marker targets the app's per-version
-		// register (`openbuild-{slug}-production`) that the wizard creates —
-		// without it SchemaDesigner falls back to the legacy `openbuild-{slug}`
+		// register (`buildiq-{slug}-production`) that the wizard creates —
+		// without it SchemaDesigner falls back to the legacy `buildiq-{slug}`
 		// register (which wizard-created apps don't have), so schemas would be
 		// written to / read from the wrong namespace and never resolve. The real
 		// in-app nav carries the same marker via buildVersionedRoute().
 		await page.goto(
-			`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/schemas?_version=production`,
+			`${BASE_URL}/apps/buildiq/builder/${APP_SLUG}/schemas?_version=production`,
 			{
 				waitUntil: 'domcontentloaded',
 			},
 		)
 
 		// Wait for the panel to render — either the empty state or a row list.
-		const panel = page.locator('.openbuild-schema-list')
+		const panel = page.locator('.buildiq-schema-list')
 		await expect(panel).toBeVisible({ timeout: 45_000 })
 		// The onboarding tour mounts a modal a beat after the page settles; its
 		// wrapper intercepts every click on the page beneath it.
@@ -186,7 +186,7 @@ test.describe('OpenBuild Schema Designer — end-to-end (REQ-OBSD-001..008)', ()
 
 		// Back to the list — the row should reflect the new title.
 		await page.getByRole('button', { name: /back to schemas/i }).click()
-		await expect(page.locator('.openbuild-schema-list__rows')).toContainText(
+		await expect(page.locator('.buildiq-schema-list__rows')).toContainText(
 			'Message v2',
 		)
 
@@ -202,7 +202,7 @@ test.describe('OpenBuild Schema Designer — end-to-end (REQ-OBSD-001..008)', ()
 		// schema to `{app}-{version}-{slug}`, and a bare "message" also matches
 		// the seeded "…-hello-message" row.
 		const row = page
-			.locator('.openbuild-schema-list__row')
+			.locator('.buildiq-schema-list__row')
 			.filter({ hasText: NAMESPACED_SLUG })
 		await row
 			.getByRole('button', { name: /actions|more/i })
@@ -229,7 +229,7 @@ test.describe('OpenBuild Schema Designer — end-to-end (REQ-OBSD-001..008)', ()
 		// Row disappears from the list.
 		await expect(
 			page
-				.locator('.openbuild-schema-list__row')
+				.locator('.buildiq-schema-list__row')
 				.filter({ hasText: NAMESPACED_SLUG }),
 		).toHaveCount(0, { timeout: 45_000 })
 	})

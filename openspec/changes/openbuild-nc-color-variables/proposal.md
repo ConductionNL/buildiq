@@ -4,7 +4,7 @@ kind: code
 
 ## Why
 
-ADR-004 (frontend) and ADR-010 (NL Design) require every color in app CSS to come from Nextcloud CSS variables so government theming (`nldesign`) and dark mode work without forks. OpenBuild mostly complies (the same files fall back correctly elsewhere, e.g. `var(--color-primary-element-text, #fff)` at `src/views/VersionHistory.vue:484`), but a badge-styling cluster ships **hardcoded text colors on translucent hardcoded backgrounds**, which is unreadable in dark mode and invisible to NL Design theming:
+ADR-004 (frontend) and ADR-010 (NL Design) require every color in app CSS to come from Nextcloud CSS variables so government theming (`nldesign`) and dark mode work without forks. Buildiq mostly complies (the same files fall back correctly elsewhere, e.g. `var(--color-primary-element-text, #fff)` at `src/views/VersionHistory.vue:484`), but a badge-styling cluster ships **hardcoded text colors on translucent hardcoded backgrounds**, which is unreadable in dark mode and invisible to NL Design theming:
 
 - `src/components/applicationDetail/ApplicationDetailHeader.vue:555-577` — four badge variants: `color: #2e5ed9` on `rgba(67,118,252,.15)` (status), `color: #555` on `rgba(120,120,120,.15)` (role), `color: #246b3d` on `rgba(46,184,102,.15)` (semver), `color: #444` on `rgba(120,120,120,.18)` (type-hybrid). In dark theme `#555`/`#444` text on a near-transparent dark background fails WCAG AA outright.
 - `src/components/applicationDetail/widgets/GroupsWidget.vue:175-187` — the same pattern duplicated for role chips: `#a06900` (owners), `#2e5ed9` (editors), `#555` (viewers), each on a hardcoded `rgba()` wash.

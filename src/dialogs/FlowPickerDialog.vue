@@ -12,23 +12,20 @@
   - it up here would race the modal's own `open('new')`.
   -->
 <template>
-	<NcDialog
-		:name="t('openbuild', 'Flows')"
-		size="normal"
-		@closing="$emit('close')">
+	<NcDialog :name="t('buildiq', 'Flows')" size="normal" @closing="$emit('close')">
 		<NcLoadingIcon v-if="loading" :size="32" />
 
 		<NcNoteCard v-else-if="error" type="error">
 			{{
 				t(
-					'openbuild',
+					'buildiq',
 					'The flows could not be loaded. This does not mean there are none.',
 				)
 			}}
 		</NcNoteCard>
 
 		<p v-else-if="!flows.length" class="flow-picker__hint">
-			{{ t('openbuild', 'This application has no flows yet.') }}
+			{{ t('buildiq', 'This application has no flows yet.') }}
 		</p>
 
 		<ul v-else class="flow-picker__list">
@@ -46,13 +43,13 @@
 
 		<template #actions>
 			<NcButton @click="$emit('close')">
-				{{ t('openbuild', 'Cancel') }}
+				{{ t('buildiq', 'Cancel') }}
 			</NcButton>
 			<NcButton variant="primary" @click="$emit('pick', 'new')">
 				<template #icon>
 					<Plus :size="20" />
 				</template>
-				{{ t('openbuild', 'New flow') }}
+				{{ t('buildiq', 'New flow') }}
 			</NcButton>
 		</template>
 	</NcDialog>

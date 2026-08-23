@@ -2,10 +2,10 @@
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
 /**
- * E2E coverage for the `openbuild-runtime` spec — UI scenarios.
+ * E2E coverage for the `buildiq-runtime` spec — UI scenarios.
  *
  * UN-QUARANTINED 2026-07-30. The whole file used to sit behind a blanket
- * `test.skip` citing Conduction/openbuild#41 ("openbuild admin UI not
+ * `test.skip` citing Conduction/buildiq#41 ("buildiq admin UI not
  * functional in this build — no detail / editor / version / diff / rollback UI;
  * Schemas page misconfigured"). That reason is stale: the detail page, its
  * Manifest / Version history / Diff sidebar tabs, the builder host and the
@@ -51,14 +51,14 @@ import { findMounted, mountedComponentNames } from '../support/componentTree'
 const SLUG = 'hello-world'
 
 /**
- * The three titles the `openbuild:seed-hello-world-fixture` occ command writes
+ * The three titles the `buildiq:seed-hello-world-fixture` occ command writes
  * as `hello-message` objects. globalSetup runs that command before the suite,
  * so they are the deterministic contents of the seeded virtual app's index page.
  */
-const SEEDED_TITLES = ['Welcome to OpenBuild', 'Edit me', 'Built from a manifest']
+const SEEDED_TITLES = ['Welcome to Buildiq', 'Edit me', 'Built from a manifest']
 
 /**
- * Land on an OpenBuild route with the first-visit overlays cleared.
+ * Land on an Buildiq route with the first-visit overlays cleared.
  *
  * The manifest declares a walkthrough whose dismissal persists nothing
  * (documented upstream defect in tests/e2e/support/overlays.ts), and nc-vue's
@@ -70,12 +70,12 @@ const SEEDED_TITLES = ['Welcome to OpenBuild', 'Edit me', 'Built from a manifest
  * @return {Promise<void>}
  */
 async function open(page: Page, path: string): Promise<void> {
-	await page.goto(`/apps/openbuild${path}`, { waitUntil: 'domcontentloaded' })
+	await page.goto(`/apps/buildiq${path}`, { waitUntil: 'domcontentloaded' })
 	await dismissFirstVisitOverlays(page)
 }
 
 /**
- * Read the seeded Application straight from the OpenBuild API.
+ * Read the seeded Application straight from the Buildiq API.
  *
  * Used to derive the detail-page URL (the route is keyed on the OR object id,
  * not the slug) and to cross-check what the UI renders against what the server
@@ -88,7 +88,7 @@ async function fetchApplication(
 	request: APIRequestContext,
 ): Promise<Record<string, any>> {
 	const res = await request.get(
-		`${BASE}/index.php/apps/openbuild/api/applications`,
+		`${BASE}/index.php/apps/buildiq/api/applications`,
 		{
 			headers: { 'OCS-APIRequest': 'true' },
 		},
@@ -180,33 +180,33 @@ async function activateSidebarTab(
 }
 
 // ---------------------------------------------------------------------------
-// REQ-OBR-002 — OpenBuild shell mounts a nested CnAppRoot per virtual app
+// REQ-OBR-002 — Buildiq shell mounts a nested CnAppRoot per virtual app
 // ---------------------------------------------------------------------------
 
-// @e2e openbuild-runtime::navigating-into-a-virtual-app-renders-its-manifest-pages
+// @e2e buildiq-runtime::navigating-into-a-virtual-app-renders-its-manifest-pages
 test.skip('REQ-OBR-002 — builder route mounts a nested CnAppRoot for the virtual app', async () => {
-	// @e2e openbuild-runtime::navigating-into-a-virtual-app-renders-its-manifest-pages
+	// @e2e buildiq-runtime::navigating-into-a-virtual-app-renders-its-manifest-pages
 	//
 	// SUPERSEDED REQUIREMENT — established from source + a live page snapshot, not
 	// inferred. REQ-OBR-002/003 describe `/builder/:slug/*` mounting a NESTED
-	// `CnAppRoot` INSIDE the OpenBuild shell, with the outer `CnAppNav` and chrome
+	// `CnAppRoot` INSIDE the Buildiq shell, with the outer `CnAppNav` and chrome
 	// still visible. The product deliberately does the opposite now:
 	//
 	//   appinfo/routes.php maps the bare `/builder/{slug}` (and `/builder/{slug}/`)
 	//   to `dashboard#builder`, a STANDALONE page that boots `src/builder.js` —
-	//   its own webpack entry (`openbuild-builder.js`). That file's header states
-	//   the reason outright: "It is deliberately NOT the OpenBuild SPA: rendering
-	//   the app inside OpenBuild's shell nests one NcContent in another (double
-	//   chrome) and, worse, shares OpenBuild's router — which has none of the app's
+	//   its own webpack entry (`buildiq-builder.js`). That file's header states
+	//   the reason outright: "It is deliberately NOT the Buildiq SPA: rendering
+	//   the app inside Buildiq's shell nests one NcContent in another (double
+	//   chrome) and, worse, shares Buildiq's router — which has none of the app's
 	//   page routes, so page content never resolves."
 	//
 	// `src/views/BuilderHost.vue` still exists and is still registered, but it only
 	// mounts for builder sub-paths that fall through to the SPA catch-all — never
 	// for the bare runtime route these scenarios navigate to. That is why
-	// `[data-testid="openbuild-builder-host"]` is genuinely absent while the app
+	// `[data-testid="buildiq-builder-host"]` is genuinely absent while the app
 	// itself renders: the failed run's page snapshot shows the virtual app's
 	// "Messages" index with all three seeded rows, under a nav link to
-	// `/apps/openbuild/builder/hello-world/`, and no builder-host wrapper anywhere.
+	// `/apps/buildiq/builder/hello-world/`, and no builder-host wrapper anywhere.
 	//
 	// The BEHAVIOUR both scenarios exist to protect — the seeded app's index and
 	// detail pages resolving from its own manifest — is covered and passing in
@@ -223,9 +223,9 @@ test.skip('REQ-OBR-002 — builder route mounts a nested CnAppRoot for the virtu
 // REQ-OBR-003 — path segments after the slug forward to the inner router
 // ---------------------------------------------------------------------------
 
-// @e2e openbuild-runtime::detail-route-inside-a-virtual-app-resolves
+// @e2e buildiq-runtime::detail-route-inside-a-virtual-app-resolves
 test.skip('REQ-OBR-003 — a detail path after the slug resolves on the inner router', async () => {
-	// @e2e openbuild-runtime::detail-route-inside-a-virtual-app-resolves
+	// @e2e buildiq-runtime::detail-route-inside-a-virtual-app-resolves
 	//
 	// Same superseded premise as REQ-OBR-002 above — there is no OUTER router
 	// forwarding to an INNER one on the bare `/builder/{slug}` route, because the
@@ -241,11 +241,11 @@ test.skip('REQ-OBR-003 — a detail path after the slug resolves on the inner ro
 // REQ-OBR-004 — seeded hello-world Application exercises index, detail, form
 // ---------------------------------------------------------------------------
 
-// @e2e openbuild-runtime::fresh-install-renders-the-seeded-virtual-app
+// @e2e buildiq-runtime::fresh-install-renders-the-seeded-virtual-app
 test('REQ-OBR-004 — the seeded index lists the three sample messages and opens one', async ({
 	page,
 }) => {
-	// @e2e openbuild-runtime::fresh-install-renders-the-seeded-virtual-app
+	// @e2e buildiq-runtime::fresh-install-renders-the-seeded-virtual-app
 	await open(page, `/builder/${SLUG}`)
 
 	for (const title of SEEDED_TITLES) {
@@ -267,19 +267,19 @@ test('REQ-OBR-004 — the seeded index lists the three sample messages and opens
 	).toBeVisible({ timeout: 20_000 })
 })
 
-// @e2e openbuild-runtime::re-running-the-repair-step-is-idempotent
+// @e2e buildiq-runtime::re-running-the-repair-step-is-idempotent
 test('REQ-OBR-004 — re-running the seed creates no duplicate app or messages', async ({
 	request,
 }) => {
-	// @e2e openbuild-runtime::re-running-the-repair-step-is-idempotent
-	// globalSetup runs `openbuild:seed-hello-world-fixture` before every suite
+	// @e2e buildiq-runtime::re-running-the-repair-step-is-idempotent
+	// globalSetup runs `buildiq:seed-hello-world-fixture` before every suite
 	// run against an instance that already holds the fixture from the previous
 	// run — so by the time this assertion executes the seed HAS been re-run on
 	// an already-seeded install, which is exactly the scenario's precondition.
 	// What it asserts is the scenario's THEN: still exactly one Application and
 	// exactly three messages.
 	const res = await request.get(
-		`${BASE}/index.php/apps/openbuild/api/applications`,
+		`${BASE}/index.php/apps/buildiq/api/applications`,
 		{
 			headers: { 'OCS-APIRequest': 'true' },
 		},
@@ -296,7 +296,7 @@ test('REQ-OBR-004 — re-running the seed creates no duplicate app or messages',
 	).toBe(1)
 
 	const objects = await request.get(
-		`${BASE}/index.php/apps/openregister/api/objects/openbuild/hello-message?_limit=50`,
+		`${BASE}/index.php/apps/openregister/api/objects/buildiq/hello-message?_limit=50`,
 		{ headers: { 'OCS-APIRequest': 'true' } },
 	)
 	expect(objects.ok()).toBeTruthy()
@@ -312,17 +312,17 @@ test('REQ-OBR-004 — re-running the seed creates no duplicate app or messages',
 // REQ-OBR-005 — manifest editor validates before saving, and persists
 // ---------------------------------------------------------------------------
 
-// @e2e openbuild-runtime::invalid-edit-is-blocked-before-save
+// @e2e buildiq-runtime::invalid-edit-is-blocked-before-save
 test('REQ-OBR-005 — an invalid manifest is rejected inline and sends no write', async ({
 	page,
 	request,
 }) => {
-	// @e2e openbuild-runtime::invalid-edit-is-blocked-before-save
+	// @e2e buildiq-runtime::invalid-edit-is-blocked-before-save
 	const app = await fetchApplication(request)
 	await openDetailSidebar(page, objectIdOf(app))
 	await activateSidebarTab(page, 'manifest', 'Manifest')
 
-	const textarea = page.locator('[data-testid="openbuild-editor-textarea"]')
+	const textarea = page.locator('[data-testid="buildiq-editor-textarea"]')
 	await expect(textarea).toBeVisible({ timeout: 15_000 })
 	const original = await textarea.inputValue()
 	expect(
@@ -345,7 +345,7 @@ test('REQ-OBR-005 — an invalid manifest is rejected inline and sends no write'
 
 	// A blob missing the required `pages` array — the scenario's exact input.
 	await textarea.fill(JSON.stringify({ version: '9.9.9', menu: [] }, null, 2))
-	await page.locator('[data-testid="openbuild-editor-save"]').click()
+	await page.locator('[data-testid="buildiq-editor-save"]').click()
 
 	await expect(
 		page.locator('.ob-manifest-tab__error'),
@@ -361,7 +361,7 @@ test('REQ-OBR-005 — an invalid manifest is rejected inline and sends no write'
 
 	// And the stored manifest is untouched.
 	const after = await request.get(
-		`${BASE}/index.php/apps/openbuild/api/applications/${SLUG}/manifest`,
+		`${BASE}/index.php/apps/buildiq/api/applications/${SLUG}/manifest`,
 		{ headers: { 'OCS-APIRequest': 'true' } },
 	)
 	expect(
@@ -370,12 +370,12 @@ test('REQ-OBR-005 — an invalid manifest is rejected inline and sends no write'
 	).toBeTruthy()
 })
 
-// @e2e openbuild-runtime::valid-edit-persists-and-reloads
+// @e2e buildiq-runtime::valid-edit-persists-and-reloads
 test('REQ-OBR-005 — a valid edit is PUT to OR and survives a reload', async ({
 	page,
 	request,
 }) => {
-	// @e2e openbuild-runtime::valid-edit-persists-and-reloads
+	// @e2e buildiq-runtime::valid-edit-persists-and-reloads
 	//
 	// This was skipped on a product defect it found: ApplicationManifestTab
 	// seeded its buffer from `app.manifest || {}`, but under the versioned model
@@ -389,7 +389,7 @@ test('REQ-OBR-005 — a valid edit is PUT to OR and survives a reload', async ({
 	await openDetailSidebar(page, objectIdOf(app))
 	await activateSidebarTab(page, 'manifest', 'Manifest')
 
-	const textarea = page.locator('[data-testid="openbuild-editor-textarea"]')
+	const textarea = page.locator('[data-testid="buildiq-editor-textarea"]')
 	await expect(textarea).toBeVisible({ timeout: 15_000 })
 
 	// The editor must show the REAL manifest, not `{}` — the defect above.
@@ -419,14 +419,14 @@ test('REQ-OBR-005 — a valid edit is PUT to OR and survives a reload', async ({
 	await textarea.fill(
 		JSON.stringify({ ...original, description: marker }, null, 2),
 	)
-	await page.locator('[data-testid="openbuild-editor-save"]').click()
+	await page.locator('[data-testid="buildiq-editor-save"]').click()
 
 	// It must reach the SERVER, not just the buffer.
 	await expect
 		.poll(
 			async () => {
 				const resp = await request.get(
-					`${BASE}/index.php/apps/openbuild/api/applications/${SLUG}/manifest`,
+					`${BASE}/index.php/apps/buildiq/api/applications/${SLUG}/manifest`,
 					{ headers: { 'OCS-APIRequest': 'true' } },
 				)
 				return (await resp.json()).description
@@ -455,14 +455,14 @@ test('REQ-OBR-005 — a valid edit is PUT to OR and survives a reload', async ({
 
 	// Leave the fixture as we found it.
 	await request.put(
-		`${BASE}/index.php/apps/openbuild/api/applications/${SLUG}/manifest`,
+		`${BASE}/index.php/apps/buildiq/api/applications/${SLUG}/manifest`,
 		{ headers: { 'OCS-APIRequest': 'true' }, data: { manifest: original } },
 	)
 })
 
-// @e2e openbuild-runtime::default-tab-is-design
+// @e2e buildiq-runtime::default-tab-is-design
 test.skip('REQ-OBR-005 — Design tab is the default sibling of Raw JSON', async () => {
-	// @e2e openbuild-runtime::default-tab-is-design
+	// @e2e buildiq-runtime::default-tab-is-design
 	//
 	// SPEC DRIFT, not an environment limitation. The requirement describes ONE
 	// tabbed editor with "Design" (default) and "Raw JSON" as sibling tabs. The
@@ -480,12 +480,12 @@ test.skip('REQ-OBR-005 — Design tab is the default sibling of Raw JSON', async
 	// surfaces that exist), not in this test.
 })
 
-// @e2e openbuild-runtime::unsaved-edits-survive-a-tab-switch
+// @e2e buildiq-runtime::unsaved-edits-survive-a-tab-switch
 test('REQ-OBR-005 — unsaved manifest edits survive a sidebar tab switch', async ({
 	page,
 	request,
 }) => {
-	// @e2e openbuild-runtime::unsaved-edits-survive-a-tab-switch
+	// @e2e buildiq-runtime::unsaved-edits-survive-a-tab-switch
 	//
 	// The requirement's subject is "the shared in-flight manifest state SHALL
 	// persist across tab switches without saving". The Design/Raw-JSON tab pair
@@ -496,7 +496,7 @@ test('REQ-OBR-005 — unsaved manifest edits survive a sidebar tab switch', asyn
 	await openDetailSidebar(page, objectIdOf(app))
 	await activateSidebarTab(page, 'manifest', 'Manifest')
 
-	const textarea = page.locator('[data-testid="openbuild-editor-textarea"]')
+	const textarea = page.locator('[data-testid="buildiq-editor-textarea"]')
 	await expect(textarea).toBeVisible({ timeout: 15_000 })
 	const original = JSON.parse(await textarea.inputValue())
 
@@ -522,7 +522,7 @@ test('REQ-OBR-005 — unsaved manifest edits survive a sidebar tab switch', asyn
 
 	// Nothing was saved, so the stored manifest must still be the fixture.
 	const stored = await request.get(
-		`${BASE}/index.php/apps/openbuild/api/applications/${SLUG}/manifest`,
+		`${BASE}/index.php/apps/buildiq/api/applications/${SLUG}/manifest`,
 		{ headers: { 'OCS-APIRequest': 'true' } },
 	)
 	expect((await stored.json()).name ?? '').not.toBe(marker)
@@ -532,11 +532,11 @@ test('REQ-OBR-005 — unsaved manifest edits survive a sidebar tab switch', asyn
 // REQ-OBR-006a — schema-designer routes vs. the virtual-app preview route
 // ---------------------------------------------------------------------------
 
-// @e2e openbuild-runtime::schema-list-route-renders-the-designer-not-the-virtual-app
+// @e2e buildiq-runtime::schema-list-route-renders-the-designer-not-the-virtual-app
 test('REQ-OBR-006a — /builder/:slug/schemas renders the designer and does NOT mount the virtual app', async ({
 	page,
 }) => {
-	// @e2e openbuild-runtime::schema-list-route-renders-the-designer-not-the-virtual-app
+	// @e2e buildiq-runtime::schema-list-route-renders-the-designer-not-the-virtual-app
 	await open(page, `/builder/${SLUG}/schemas`)
 
 	const names = await mountedComponentNames(page)
@@ -549,19 +549,17 @@ test('REQ-OBR-006a — /builder/:slug/schemas renders the designer and does NOT 
 	// nested runtime CnAppRoot for the virtual app must NOT be mounted here.
 	// "not mounted" and "mounted but still loading" look identical in the DOM.
 	const roots = await findMounted(page, 'CnAppRoot')
-	const nested = roots.filter((r) => r.props.appId === `openbuild-${SLUG}`)
+	const nested = roots.filter((r) => r.props.appId === `buildiq-${SLUG}`)
 	expect(
 		nested,
 		`the nested CnAppRoot for "${SLUG}" must not mount on the schemas route`,
 	).toHaveLength(0)
-	await expect(page.locator('[data-testid="openbuild-builder-host"]')).toHaveCount(
-		0,
-	)
+	await expect(page.locator('[data-testid="buildiq-builder-host"]')).toHaveCount(0)
 })
 
-// @e2e openbuild-runtime::virtual-app-preview-route-still-mounts-the-nested-cnapproot
+// @e2e buildiq-runtime::virtual-app-preview-route-still-mounts-the-nested-cnapproot
 test.skip('REQ-OBR-006a — /builder/:slug still mounts the nested CnAppRoot', async () => {
-	// @e2e openbuild-runtime::virtual-app-preview-route-still-mounts-the-nested-cnapproot
+	// @e2e buildiq-runtime::virtual-app-preview-route-still-mounts-the-nested-cnapproot
 	//
 	// The nested-mount half of REQ-OBR-006a is superseded for the same reason as
 	// REQ-OBR-002 (see there). The half that still holds — that
@@ -573,9 +571,9 @@ test.skip('REQ-OBR-006a — /builder/:slug still mounts the nested CnAppRoot', a
 // REQ-OBR-007a — Schemas menu entry in the builder context
 // ---------------------------------------------------------------------------
 
-// @e2e openbuild-runtime::schemas-entry-appears-in-the-builder-context
+// @e2e buildiq-runtime::schemas-entry-appears-in-the-builder-context
 test.skip('REQ-OBR-007a — the Schemas entry appears in the builder context', async () => {
-	// @e2e openbuild-runtime::schemas-entry-appears-in-the-builder-context
+	// @e2e buildiq-runtime::schemas-entry-appears-in-the-builder-context
 	//
 	// NOT BUILDABLE AS SPECIFIED. I implemented this entry, then reverted it when
 	// driving it showed the requirement rests on the same superseded premise as
@@ -584,7 +582,7 @@ test.skip('REQ-OBR-007a — the Schemas entry appears in the builder context', a
 	// The requirement says `src/views/BuilderHost.vue` SHALL surface the entry
 	// "while the user is in a virtual app's builder context". But the bare
 	// `/builder/{slug}` route is `dashboard#builder` — a STANDALONE page booting
-	// `src/builder.js`, which is not the OpenBuild SPA and never mounts
+	// `src/builder.js`, which is not the Buildiq SPA and never mounts
 	// `BuilderHost.vue`. An entry published from that component therefore cannot
 	// appear on the only route the requirement is about. My implementation's unit
 	// tests passed and the code was sound; it simply could not trigger, which is
@@ -596,7 +594,7 @@ test.skip('REQ-OBR-007a — the Schemas entry appears in the builder context', a
 	//     `/builder/:slug/schemas`. `item.action` is a fixed library enum, not a
 	//     callback. Only `item.href` can express it, at the cost of a full page
 	//     load instead of a router push.
-	//   - `openbuild.builder.menu.schemas` is absent from `l10n/en.json` and
+	//   - `buildiq.builder.menu.schemas` is absent from `l10n/en.json` and
 	//     `l10n/nl.json`.
 	//
 	// The ROUTE works and is covered: "REQ-OBR-006a — /builder/:slug/schemas
@@ -609,12 +607,12 @@ test.skip('REQ-OBR-007a — the Schemas entry appears in the builder context', a
 // REQ-OBR-006b — publish action
 // ---------------------------------------------------------------------------
 
-// @e2e openbuild-runtime::successful-publish-creates-a-snapshot
+// @e2e buildiq-runtime::successful-publish-creates-a-snapshot
 test('REQ-OBR-006b — the owner-only publish control is reachable and reflects lifecycle state', async ({
 	page,
 	request,
 }) => {
-	// @e2e openbuild-runtime::successful-publish-creates-a-snapshot
+	// @e2e buildiq-runtime::successful-publish-creates-a-snapshot
 	//
 	// The requirement puts Publish "alongside Save" on a single editor view. The
 	// shipped surface splits it in two: the app-level published/draft switch
@@ -656,12 +654,12 @@ test('REQ-OBR-006b — the owner-only publish control is reachable and reflects 
 	).toBe(storedPublished)
 })
 
-// @e2e openbuild-runtime::validation-blocks-publish
+// @e2e buildiq-runtime::validation-blocks-publish
 test('REQ-OBR-006b — an invalid manifest cannot be saved, so it can never be published', async ({
 	page,
 	request,
 }) => {
-	// @e2e openbuild-runtime::validation-blocks-publish
+	// @e2e buildiq-runtime::validation-blocks-publish
 	//
 	// The scenario's contract is "no save or lifecycle call is sent, and the
 	// editor surfaces the validation error inline (same contract as Save)". The
@@ -673,10 +671,10 @@ test('REQ-OBR-006b — an invalid manifest cannot be saved, so it can never be p
 	await openDetailSidebar(page, objectIdOf(app))
 	await activateSidebarTab(page, 'manifest', 'Manifest')
 
-	const textarea = page.locator('[data-testid="openbuild-editor-textarea"]')
+	const textarea = page.locator('[data-testid="buildiq-editor-textarea"]')
 	await expect(textarea).toBeVisible({ timeout: 15_000 })
 	const before = await request.get(
-		`${BASE}/index.php/apps/openbuild/api/applications/${SLUG}/manifest`,
+		`${BASE}/index.php/apps/buildiq/api/applications/${SLUG}/manifest`,
 		{ headers: { 'OCS-APIRequest': 'true' } },
 	)
 	const storedBefore = JSON.stringify(await before.json())
@@ -693,7 +691,7 @@ test('REQ-OBR-006b — an invalid manifest cannot be saved, so it can never be p
 
 	// Not even valid JSON — the harshest input the shared error surface handles.
 	await textarea.fill('{ this is not json')
-	await page.locator('[data-testid="openbuild-editor-save"]').click()
+	await page.locator('[data-testid="buildiq-editor-save"]').click()
 	await expect(page.locator('.ob-manifest-tab__error')).toBeVisible({
 		timeout: 10_000,
 	})
@@ -708,7 +706,7 @@ test('REQ-OBR-006b — an invalid manifest cannot be saved, so it can never be p
 	).toEqual([])
 
 	const after = await request.get(
-		`${BASE}/index.php/apps/openbuild/api/applications/${SLUG}/manifest`,
+		`${BASE}/index.php/apps/buildiq/api/applications/${SLUG}/manifest`,
 		{ headers: { 'OCS-APIRequest': 'true' } },
 	)
 	expect(
@@ -721,12 +719,12 @@ test('REQ-OBR-006b — an invalid manifest cannot be saved, so it can never be p
 // REQ-OBR-007b — draft-vs-published indicator
 // ---------------------------------------------------------------------------
 
-// @e2e openbuild-runtime::newly-published-application-shows-published-badge
+// @e2e buildiq-runtime::newly-published-application-shows-published-badge
 test('REQ-OBR-007b — every ApplicationCard carries a lifecycle status badge', async ({
 	page,
 	request,
 }) => {
-	// @e2e openbuild-runtime::newly-published-application-shows-published-badge
+	// @e2e buildiq-runtime::newly-published-application-shows-published-badge
 	await open(page, '/applications')
 
 	const card = page
@@ -775,18 +773,18 @@ test('REQ-OBR-007b — every ApplicationCard carries a lifecycle status badge', 
 	).toHaveText(new RegExp(`^${detail.status}$`, 'i'), { timeout: 15_000 })
 })
 
-// @e2e openbuild-runtime::edited-draft-shows-modified-indicator
+// @e2e buildiq-runtime::edited-draft-shows-modified-indicator
 test('REQ-OBR-007b — the detail header carries the same status badge as the list row', async ({
 	page,
 	request,
 }) => {
-	// Budget note: this scenario boots the OpenBuild SPA twice times over, and
+	// Budget note: this scenario boots the Buildiq SPA twice times over, and
 	// each boot is a manifest fetch plus register/schema resolution. The 30s
 	// project default is sized for single-navigation tests. This is a realistic
 	// budget for the work the scenario actually does, NOT headroom to absorb a
 	// failure -- every assertion below still carries its own tight timeout.
 	test.setTimeout(60_000)
-	// @e2e openbuild-runtime::edited-draft-shows-modified-indicator
+	// @e2e buildiq-runtime::edited-draft-shows-modified-indicator
 	//
 	// The scenario's second half — a "modified since last publish" marker on the
 	// editor header — is asserted as far as the shipped header goes: it renders
@@ -832,16 +830,16 @@ test('REQ-OBR-007b — the detail header carries the same status badge as the li
 // REQ-OBR-008a — VersionHistory panel
 // ---------------------------------------------------------------------------
 
-// @e2e openbuild-runtime::history-panel-renders-snapshots
+// @e2e buildiq-runtime::history-panel-renders-snapshots
 test.skip('REQ-OBR-008a — the version-history panel renders one row per stored version', async () => {
-	// @e2e openbuild-runtime::history-panel-renders-snapshots
+	// @e2e buildiq-runtime::history-panel-renders-snapshots
 	//
 	// BLOCKED BY A PRODUCT DEFECT this test found, evidenced from the failure
 	// snapshot rather than inferred: the Version history panel renders its EMPTY
 	// state — "No versions yet — create a draft to start a new version." — for an
 	// application that demonstrably has a version.
 	//
-	//   GET /apps/openbuild/api/applications/hello-world/versions
+	//   GET /apps/buildiq/api/applications/hello-world/versions
 	//   → [{ name: "1.0.0", slug: "production", semver: "1.0.0",
 	//        status: "published" }]
 	//
@@ -857,9 +855,9 @@ test.skip('REQ-OBR-008a — the version-history panel renders one row per stored
 	// assertions are already written at this path for whoever picks it up.
 })
 
-// @e2e openbuild-runtime::history-panel-is-empty-for-a-never-published-application
+// @e2e buildiq-runtime::history-panel-is-empty-for-a-never-published-application
 test.skip('REQ-OBR-008a — an application with no versions renders the empty state', async () => {
-	// @e2e openbuild-runtime::history-panel-is-empty-for-a-never-published-application
+	// @e2e buildiq-runtime::history-panel-is-empty-for-a-never-published-application
 	//
 	// NEEDS A FIXTURE THIS INSTANCE DOES NOT HAVE. The scenario is about a
 	// `draft` Application with zero ApplicationVersion rows. I wrote this to hunt
@@ -879,18 +877,18 @@ test.skip('REQ-OBR-008a — an application with no versions renders the empty st
 // REQ-OBR-009a — rollback
 // ---------------------------------------------------------------------------
 
-// @e2e openbuild-runtime::rollback-restores-manifest-and-stays-in-draft
+// @e2e buildiq-runtime::rollback-restores-manifest-and-stays-in-draft
 test.skip('REQ-OBR-009a — rollback copies the snapshot manifest onto the draft and deletes no version', async () => {
-	// @e2e openbuild-runtime::rollback-restores-manifest-and-stays-in-draft
+	// @e2e buildiq-runtime::rollback-restores-manifest-and-stays-in-draft
 	//
 	// Blocked by the SAME defect as REQ-OBR-008a above: rollback is a per-row
 	// action in the version-history panel, and the panel renders no rows, so
 	// there is nothing to click. Fix the panel and this runs as written.
 })
 
-// @e2e openbuild-runtime::cancelling-the-confirmation-aborts-the-rollback
+// @e2e buildiq-runtime::cancelling-the-confirmation-aborts-the-rollback
 test.skip('REQ-OBR-009a — cancelling the confirmation sends no write', async () => {
-	// @e2e openbuild-runtime::cancelling-the-confirmation-aborts-the-rollback
+	// @e2e buildiq-runtime::cancelling-the-confirmation-aborts-the-rollback
 	//
 	// Same blocker as the rollback test above — the confirmation modal is opened
 	// from a version-history row, and the panel renders none.
@@ -900,12 +898,12 @@ test.skip('REQ-OBR-009a — cancelling the confirmation sends no write', async (
 // REQ-OBR-010 — ManifestDiff
 // ---------------------------------------------------------------------------
 
-// @e2e openbuild-runtime::default-diff-shows-current-draft-vs-latest-published
+// @e2e buildiq-runtime::default-diff-shows-current-draft-vs-latest-published
 test('REQ-OBR-010 — the diff view preselects draft → current version and diffs client-side', async ({
 	page,
 	request,
 }) => {
-	// @e2e openbuild-runtime::default-diff-shows-current-draft-vs-latest-published
+	// @e2e buildiq-runtime::default-diff-shows-current-draft-vs-latest-published
 	const app = await fetchApplication(request)
 
 	const diffRequests: string[] = []
@@ -948,9 +946,9 @@ test('REQ-OBR-010 — the diff view preselects draft → current version and dif
 	await expect(page.locator('.manifest-diff__error')).toHaveCount(0)
 })
 
-// @e2e openbuild-runtime::arbitrary-snapshot-pair-can-be-diffed
+// @e2e buildiq-runtime::arbitrary-snapshot-pair-can-be-diffed
 test.skip('REQ-OBR-010 — an arbitrary snapshot pair can be compared', async () => {
-	// @e2e openbuild-runtime::arbitrary-snapshot-pair-can-be-diffed
+	// @e2e buildiq-runtime::arbitrary-snapshot-pair-can-be-diffed
 	//
 	// NOT IMPLEMENTED — verified in source, not inferred. The scenario needs a
 	// "Compare" action on two selected version-history rows. `VersionHistory.vue`
@@ -970,13 +968,13 @@ test.skip('REQ-OBR-010 — an arbitrary snapshot pair can be compared', async ()
 // from UI e2e; kept here as the positive-path contract check only)
 // ---------------------------------------------------------------------------
 
-// @e2e openbuild-runtime::caller-in-any-role-gets-200
+// @e2e buildiq-runtime::caller-in-any-role-gets-200
 test('REQ-OBR-006c — a caller holding a role gets 200 and the stored manifest', async ({
 	request,
 }) => {
-	// @e2e openbuild-runtime::caller-in-any-role-gets-200
+	// @e2e buildiq-runtime::caller-in-any-role-gets-200
 	const res = await request.get(
-		`${BASE}/index.php/apps/openbuild/api/applications/${SLUG}/manifest`,
+		`${BASE}/index.php/apps/buildiq/api/applications/${SLUG}/manifest`,
 		{ headers: { 'OCS-APIRequest': 'true' } },
 	)
 	expect(res.status(), 'admin holds the owner role on the seeded app').toBe(200)
@@ -1000,9 +998,9 @@ test('REQ-OBR-006c — a caller holding a role gets 200 and the stored manifest'
 	).toBe(true)
 })
 
-// @e2e openbuild-runtime::caller-without-a-role-gets-403-not-200-not-404
+// @e2e buildiq-runtime::caller-without-a-role-gets-403-not-200-not-404
 test.skip('REQ-OBR-006c — a caller with no role gets 403 and no metadata leak', async () => {
-	// @e2e openbuild-runtime::caller-without-a-role-gets-403-not-200-not-404
+	// @e2e buildiq-runtime::caller-without-a-role-gets-403-not-200-not-404
 	//
 	// DELIBERATELY NOT DUPLICATED HERE. `openspec/specs/openbuild-runtime/spec.md`
 	// marks REQ-OBR-006c `@e2e exclude backend manifest-403 endpoint — already
@@ -1021,14 +1019,14 @@ test.skip('REQ-OBR-006c — a caller with no role gets 403 and no metadata leak'
 // REQ-OBR-007c — application list filters by the caller's roles
 // ---------------------------------------------------------------------------
 
-// @e2e openbuild-runtime::user-sees-only-authorised-applications
+// @e2e buildiq-runtime::user-sees-only-authorised-applications
 test('REQ-OBR-007c — the list renders exactly the applications the API authorises', async ({
 	page,
 	request,
 }) => {
-	// @e2e openbuild-runtime::user-sees-only-authorised-applications
+	// @e2e buildiq-runtime::user-sees-only-authorised-applications
 	const res = await request.get(
-		`${BASE}/index.php/apps/openbuild/api/applications`,
+		`${BASE}/index.php/apps/buildiq/api/applications`,
 		{
 			headers: { 'OCS-APIRequest': 'true' },
 		},
@@ -1073,9 +1071,9 @@ test('REQ-OBR-007c — the list renders exactly the applications the API authori
 	}
 })
 
-// @e2e openbuild-runtime::empty-list-when-user-has-no-roles
+// @e2e buildiq-runtime::empty-list-when-user-has-no-roles
 test.skip('REQ-OBR-007c — a caller with no roles sees an empty list and the ask-an-owner hint', async () => {
-	// @e2e openbuild-runtime::empty-list-when-user-has-no-roles
+	// @e2e buildiq-runtime::empty-list-when-user-has-no-roles
 	//
 	// Needs a SECOND Nextcloud user holding no role on any Application in the
 	// organisation. This suite runs entirely on the shared admin `storageState`
@@ -1092,18 +1090,18 @@ test.skip('REQ-OBR-007c — a caller with no roles sees an empty list and the as
 // REQ-OBR-008b — editor UIs gate destructive actions per role
 // ---------------------------------------------------------------------------
 
-// @e2e openbuild-runtime::owner-sees-all-controls
+// @e2e buildiq-runtime::owner-sees-all-controls
 test('REQ-OBR-008b — an owner sees the editable manifest, Save, and every owner-only action', async ({
 	page,
 	request,
 }) => {
-	// Budget note: this scenario boots the OpenBuild SPA twice times over, and
+	// Budget note: this scenario boots the Buildiq SPA twice times over, and
 	// each boot is a manifest fetch plus register/schema resolution. The 30s
 	// project default is sized for single-navigation tests. This is a realistic
 	// budget for the work the scenario actually does, NOT headroom to absorb a
 	// failure -- every assertion below still carries its own tight timeout.
 	test.setTimeout(90_000)
-	// @e2e openbuild-runtime::owner-sees-all-controls
+	// @e2e buildiq-runtime::owner-sees-all-controls
 	const app = await fetchApplication(request)
 	const objectId = objectIdOf(app)
 
@@ -1112,14 +1110,14 @@ test('REQ-OBR-008b — an owner sees the editable manifest, Save, and every owne
 
 	// owner ⇒ the textarea is editable and Save is rendered (both are `v-if`d
 	// off for viewer / none).
-	const textarea = page.locator('[data-testid="openbuild-editor-textarea"]')
+	const textarea = page.locator('[data-testid="buildiq-editor-textarea"]')
 	await expect(textarea).toBeVisible({ timeout: 15_000 })
 	await expect(
 		textarea,
 		'an owner must get an editable manifest',
 	).not.toHaveAttribute('readonly', /.*/)
 	await expect(
-		page.locator('[data-testid="openbuild-editor-save"]'),
+		page.locator('[data-testid="buildiq-editor-save"]'),
 		'an owner must see Save',
 	).toBeVisible()
 
@@ -1146,9 +1144,9 @@ test('REQ-OBR-008b — an owner sees the editable manifest, Save, and every owne
 	}
 })
 
-// @e2e openbuild-runtime::editor-sees-save-but-not-publish
+// @e2e buildiq-runtime::editor-sees-save-but-not-publish
 test.skip('REQ-OBR-008b — an editor sees Save but none of the owner-only controls', async () => {
-	// @e2e openbuild-runtime::editor-sees-save-but-not-publish
+	// @e2e buildiq-runtime::editor-sees-save-but-not-publish
 	//
 	// Needs a second Nextcloud user carrying the `editor` role (a group listed in
 	// the Application's `permissions.editors` and in neither `owners` nor

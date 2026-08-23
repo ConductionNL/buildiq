@@ -73,7 +73,7 @@ Quality reminders (not checkboxes): `composer check:strict` (PHPCS, PHPMD, Psalm
 
 ## Applied (2026-08-15)
 
-841 openbuild tests green, run where `ZipArchive` exists — the ad-hoc php:8.3-cli image lacks the zip extension and reported 8 spurious errors that had nothing to do with this change.
+841 buildiq tests green, run where `ZipArchive` exists — the ad-hoc php:8.3-cli image lacks the zip extension and reported 8 spurious errors that had nothing to do with this change.
 
 **Mutation-controlled, each killing exactly the test that guards it:**
 
@@ -145,9 +145,9 @@ Checking whether CI actually RUNS the new spec turned up that three of its calls
 
 | the spec called | the route that exists |
 | --- | --- |
-| `POST /apps/openbuild/api/exports` | `POST /api/applications/{slug}/exports` |
-| `GET /apps/openbuild/api/exports?limit=1` and `/exports/{uuid}` | none — an ExportJob is an OpenRegister OBJECT, read at `/api/objects/openbuild/export-job`, exactly as `ExportJobsList.vue` reads it |
-| `PUT /apps/openbuild/api/applications/…` | `obPatchApp()` PUTs the OR object at `/api/objects/openbuild/application/{uuid}` |
+| `POST /apps/buildiq/api/exports` | `POST /api/applications/{slug}/exports` |
+| `GET /apps/buildiq/api/exports?limit=1` and `/exports/{uuid}` | none — an ExportJob is an OpenRegister OBJECT, read at `/api/objects/buildiq/export-job`, exactly as `ExportJobsList.vue` reads it |
+| `PUT /apps/buildiq/api/applications/…` | `obPatchApp()` PUTs the OR object at `/api/objects/buildiq/application/{uuid}` |
 
 `/api/exports/{uuid}/download` was the one that was right.
 

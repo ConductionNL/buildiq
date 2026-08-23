@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Controller
+ * @package  OCA\Buildiq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,18 +20,18 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Controller;
+namespace OCA\Buildiq\Tests\Unit\Controller;
 
-use OCA\OpenBuild\Controller\ApplicationsController;
-use OCA\OpenBuild\Service\ManifestResolverService;
-use OCA\OpenBuild\Service\PermissionResolver;
+use OCA\Buildiq\Controller\ApplicationsController;
+use OCA\Buildiq\Service\ManifestResolverService;
+use OCA\Buildiq\Service\PermissionResolver;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -46,7 +46,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Tests for ApplicationsController::getManifest, including the RBAC
- * permissions check introduced by the openbuild-rbac change.
+ * permissions check introduced by the buildiq-rbac change.
  */
 class ApplicationsControllerTest extends TestCase {
 	/**
@@ -171,7 +171,7 @@ class ApplicationsControllerTest extends TestCase {
 			groupManager: $this->groupManager,
 			manifestResolver: $this->manifestResolver,
 			permissionResolver: $permissionResolver,
-			channelApplier: $this->createMock(\OCA\OpenBuild\Service\AppChannelApplier::class),
+			channelApplier: $this->createMock(\OCA\Buildiq\Service\AppChannelApplier::class),
 			auditTrailMapper: $this->auditTrailMapper,
 		);
 	}//end buildController()
@@ -296,7 +296,7 @@ class ApplicationsControllerTest extends TestCase {
 		self::assertSame(Http::STATUS_FORBIDDEN, $result->getStatus());
 		$data = $result->getData();
 		self::assertSame('forbidden', $data['error']);
-		self::assertSame('openbuild.rbac.no_role', $data['code']);
+		self::assertSame('buildiq.rbac.no_role', $data['code']);
 		// The 403 body MUST NOT leak any manifest payload (REQ-OBRBAC-002).
 		self::assertArrayNotHasKey('manifest', $data);
 		self::assertArrayNotHasKey('pages', $data);
@@ -585,7 +585,7 @@ class ApplicationsControllerTest extends TestCase {
 	}//end testGetManifestOwnerSignalDegradesGracefullyWithoutApplicationContext()
 
 	/**
-	 * #32 Fix B (openbuild-runtime REQ-OBR-001): a stale, lower-cased manifest
+	 * #32 Fix B (buildiq-runtime REQ-OBR-001): a stale, lower-cased manifest
 	 * blob `name` MUST be overridden by the Application's authoritative cased
 	 * `name`, so the runtime top-bar shows "Pet Store", not the raw slug.
 	 *

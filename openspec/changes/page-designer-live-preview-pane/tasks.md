@@ -16,7 +16,7 @@
       `v-else` (or sibling `v-if="previewAvailable"`) block next to the
       existing fallback `<div v-if="!previewAvailable" ...>` (line 74).
 - [x] 2.2 Mount `CnAppRoot` in that block with the props returned by
-      `previewProps(slug, manifest)`: `appId: openbuild-preview-{slug}`,
+      `previewProps(slug, manifest)`: `appId: buildiq-preview-{slug}`,
       the in-flight `manifest` object, keyed by `previewProps(...).key`
       (the content hash) so edits force a clean re-mount per REQ-OBPD-008.
 - [x] 2.3 Pass the same `registry` / `pageTypes` / `custom-components`

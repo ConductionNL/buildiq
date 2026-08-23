@@ -1,6 +1,6 @@
 ## Context
 
-OpenBuild manifests carry a top-level `schedules[]` array — the
+Buildiq manifests carry a top-level `schedules[]` array — the
 apphost-scheduling capability. Each entry declares a scheduled task (a cadence
 plus an action) that a generic OpenRegister AppHost reconciler translates into
 an OpenConnector job. The reconciler and the `schedules[]` manifest schema are
@@ -9,14 +9,14 @@ already implemented and live-verified. The schema itself ships from
 authoring UI: today `schedules[]` is only hand-editable in raw manifest JSON.
 
 This change adds that UI and nothing else — it is a `kind: code` change scoped
-to the OpenBuild Vue frontend.
+to the Buildiq Vue frontend.
 
 ### Ground-truth architecture (verified)
 
 - **Editor host** — `src/views/PageDesignerHost.vue` holds `this.manifest`
   (data field); `onManifestUpdate()` (~line 410) assigns it; `save()`
   (~lines 420–467) PUTs the whole ApplicationVersion manifest to
-  `PUT /apps/openregister/api/objects/openbuild/applicationVersion/{versionUuid}`
+  `PUT /apps/openregister/api/objects/buildiq/applicationVersion/{versionUuid}`
   (fallback `/application/{uuid}`). The persisted payload is
   `{ ...version, manifest }`, so **any top-level manifest key the editor does
   not touch survives the round-trip**. A schedules editor therefore gets
@@ -170,7 +170,7 @@ validators (side-panel list + the section's inline message).
 
 ## Mixed-spec rationale / Dependencies (cross-repo)
 
-This change is `kind: code` (OpenBuild Vue). The `schedules[]` JSON-schema
+This change is `kind: code` (Buildiq Vue). The `schedules[]` JSON-schema
 *definition* it authors against is a **nextcloud-vue delta already shipped in
 PR #132** (off `beta`) — a separate repo and spec, declared in `depends_on`.
 
@@ -216,7 +216,7 @@ list unchanged.
 
 ## Open Questions
 
-- Capability name `openbuild-schedules-authoring` vs `schedules-editor` — see
+- Capability name `buildiq-schedules-authoring` vs `schedules-editor` — see
   DEFERRED_QUESTIONS in the change summary.
 - Whether to expose the plain number+unit interval field for *every* preset or
   only as the "non-preset interval" escape hatch (currently the latter).

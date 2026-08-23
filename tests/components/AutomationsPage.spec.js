@@ -170,7 +170,7 @@ describe('AutomationsPage', () => {
 		await wrapper.vm.toggleEnabled(automation(), false)
 
 		expect(axios.post).toHaveBeenCalledWith(
-			expect.stringContaining('/apps/openbuild/api/automations/aut-1/disable'),
+			expect.stringContaining('/apps/buildiq/api/automations/aut-1/disable'),
 			{},
 		)
 	})

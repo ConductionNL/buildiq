@@ -11,15 +11,15 @@
   -->
 <template>
 	<NcDialog
-		:name="t('openbuild', 'Permission history')"
+		:name="t('buildiq', 'Permission history')"
 		:open="open"
 		size="large"
 		@update:open="onClose">
-		<div class="openbuild-permission-history">
-			<p class="openbuild-permission-history__help">
+		<div class="buildiq-permission-history">
+			<p class="buildiq-permission-history__help">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						"Read-only view of permission changes and admin-bypass events on this application. Sourced from OpenRegister's per-object audit trail.",
 					)
 				}}
@@ -27,7 +27,7 @@
 
 			<NcEmptyContent
 				v-if="loading"
-				:name="t('openbuild', 'Loading audit trail…')">
+				:name="t('buildiq', 'Loading audit trail…')">
 				<template #icon>
 					<NcLoadingIcon />
 				</template>
@@ -35,10 +35,10 @@
 
 			<NcEmptyContent
 				v-else-if="entries.length === 0"
-				:name="t('openbuild', 'No permission changes recorded')"
+				:name="t('buildiq', 'No permission changes recorded')"
 				:description="
 					t(
-						'openbuild',
+						'buildiq',
 						'Future updates to owners / editors / viewers and any admin-bypass events will appear here.',
 					)
 				">
@@ -47,35 +47,35 @@
 				</template>
 			</NcEmptyContent>
 
-			<ul v-else class="openbuild-permission-history__list">
+			<ul v-else class="buildiq-permission-history__list">
 				<li
 					v-for="entry in entries"
 					:key="entry.id"
-					class="openbuild-permission-history__row"
+					class="buildiq-permission-history__row"
 					:class="rowClass(entry)">
-					<div class="openbuild-permission-history__row-meta">
-						<span class="openbuild-permission-history__row-actor">
-							{{ entry.actor || t('openbuild', 'system') }}
+					<div class="buildiq-permission-history__row-meta">
+						<span class="buildiq-permission-history__row-actor">
+							{{ entry.actor || t('buildiq', 'system') }}
 						</span>
-						<span class="openbuild-permission-history__row-stamp">
+						<span class="buildiq-permission-history__row-stamp">
 							{{ formatStamp(entry.timestamp) }}
 						</span>
 					</div>
-					<div class="openbuild-permission-history__row-event">
+					<div class="buildiq-permission-history__row-event">
 						{{ eventLabel(entry) }}
 					</div>
 					<div
 						v-if="entry.before && entry.after"
-						class="openbuild-permission-history__row-diff">
-						<div class="openbuild-permission-history__row-diff-col">
-							<span class="openbuild-permission-history__row-diff-h">
-								{{ t('openbuild', 'Before') }}
+						class="buildiq-permission-history__row-diff">
+						<div class="buildiq-permission-history__row-diff-col">
+							<span class="buildiq-permission-history__row-diff-h">
+								{{ t('buildiq', 'Before') }}
 							</span>
 							<pre>{{ pretty(entry.before) }}</pre>
 						</div>
-						<div class="openbuild-permission-history__row-diff-col">
-							<span class="openbuild-permission-history__row-diff-h">
-								{{ t('openbuild', 'After') }}
+						<div class="buildiq-permission-history__row-diff-col">
+							<span class="buildiq-permission-history__row-diff-h">
+								{{ t('buildiq', 'After') }}
 							</span>
 							<pre>{{ pretty(entry.after) }}</pre>
 						</div>
@@ -83,9 +83,9 @@
 				</li>
 			</ul>
 
-			<div class="openbuild-permission-history__actions">
+			<div class="buildiq-permission-history__actions">
 				<NcButton variant="primary" @click="onClose">
-					{{ t('openbuild', 'Close') }}
+					{{ t('buildiq', 'Close') }}
 				</NcButton>
 			</div>
 		</div>
@@ -167,7 +167,7 @@ export default {
 				// page (most recent ~50 events) — older history can be
 				// inspected via OR's admin UI.
 				const url = generateUrl(
-					`/apps/openregister/api/objects/openbuild/application/${this.applicationUuid}/audit`,
+					`/apps/openregister/api/objects/buildiq/application/${this.applicationUuid}/audit`,
 				)
 				const res = await axios.get(url, {
 					params: {
@@ -184,9 +184,7 @@ export default {
 					// state; the modal would not be visible to non-owners.
 					this.entries = []
 				} else {
-					showError(
-						this.t('openbuild', 'Failed to load permission history'),
-					)
+					showError(this.t('buildiq', 'Failed to load permission history'))
 				}
 			} finally {
 				this.loading = false
@@ -223,17 +221,17 @@ export default {
 
 		rowClass(entry) {
 			if (entry.event === 'rbac.admin_bypass') {
-				return 'openbuild-permission-history__row--bypass'
+				return 'buildiq-permission-history__row--bypass'
 			}
 			return ''
 		},
 
 		eventLabel(entry) {
 			if (entry.event === 'rbac.admin_bypass') {
-				return this.t('openbuild', 'Administrator bypass')
+				return this.t('buildiq', 'Administrator bypass')
 			}
 			if (entry.event === 'permissions.changed') {
-				return this.t('openbuild', 'Permissions changed')
+				return this.t('buildiq', 'Permissions changed')
 			}
 			return entry.event
 		},
@@ -261,19 +259,19 @@ export default {
 </script>
 
 <style scoped>
-.openbuild-permission-history {
+.buildiq-permission-history {
 	display: flex;
 	flex-direction: column;
 	gap: 16px;
 	min-width: 480px;
 }
 
-.openbuild-permission-history__help {
+.buildiq-permission-history__help {
 	margin: 0;
 	color: var(--color-text-maxcontrast);
 }
 
-.openbuild-permission-history__list {
+.buildiq-permission-history__list {
 	list-style: none;
 	margin: 0;
 	padding: 0;
@@ -284,17 +282,17 @@ export default {
 	overflow-y: auto;
 }
 
-.openbuild-permission-history__row {
+.buildiq-permission-history__row {
 	padding: 12px;
 	background-color: var(--color-background-hover);
 	border-radius: var(--border-radius-large);
 }
 
-.openbuild-permission-history__row--bypass {
+.buildiq-permission-history__row--bypass {
 	border-left: 4px solid var(--color-warning);
 }
 
-.openbuild-permission-history__row-meta {
+.buildiq-permission-history__row-meta {
 	display: flex;
 	justify-content: space-between;
 	font-size: 12px;
@@ -302,22 +300,22 @@ export default {
 	margin-bottom: 4px;
 }
 
-.openbuild-permission-history__row-actor {
+.buildiq-permission-history__row-actor {
 	font-weight: 600;
 }
 
-.openbuild-permission-history__row-event {
+.buildiq-permission-history__row-event {
 	font-weight: 500;
 	margin-bottom: 8px;
 }
 
-.openbuild-permission-history__row-diff {
+.buildiq-permission-history__row-diff {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	gap: 12px;
 }
 
-.openbuild-permission-history__row-diff-h {
+.buildiq-permission-history__row-diff-h {
 	display: block;
 	font-size: 11px;
 	text-transform: uppercase;
@@ -325,7 +323,7 @@ export default {
 	margin-bottom: 4px;
 }
 
-.openbuild-permission-history__row-diff pre {
+.buildiq-permission-history__row-diff pre {
 	background-color: var(--color-background-dark);
 	border-radius: var(--border-radius);
 	padding: 8px;
@@ -335,7 +333,7 @@ export default {
 	margin: 0;
 }
 
-.openbuild-permission-history__actions {
+.buildiq-permission-history__actions {
 	display: flex;
 	justify-content: flex-end;
 	gap: 8px;

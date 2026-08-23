@@ -1,11 +1,11 @@
 <?php
 
 /**
- * OpenBuild Populate Application Permissions Repair Step
+ * Buildiq Populate Application Permissions Repair Step
  *
  * Idempotent migration that populates the `permissions` block on every
  * existing Application whose `permissions` is missing or empty.
- * Per design.md "Migration Plan" of openbuild-rbac, the default is
+ * Per design.md "Migration Plan" of buildiq-rbac, the default is
  * `{ owners: ['admin'], editors: [], viewers: [] }`. The migration
  * skips any Application whose `permissions.owners` is already
  * non-empty (idempotent re-runs).
@@ -19,7 +19,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Repair
- * @package  OCA\OpenBuild\Repair
+ * @package  OCA\Buildiq\Repair
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -40,7 +40,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Repair;
+namespace OCA\Buildiq\Repair;
 
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\Migration\IOutput;
@@ -77,7 +77,7 @@ class PopulateApplicationPermissions implements IRepairStep {
 	 * @return string
 	 */
 	public function getName(): string {
-		return 'Populate permissions on pre-existing OpenBuild Applications';
+		return 'Populate permissions on pre-existing Buildiq Applications';
 	}//end getName()
 
 	/**
@@ -102,13 +102,13 @@ class PopulateApplicationPermissions implements IRepairStep {
 
 			$output->info('Permissions populated on ' . $patched . ' Application(s).');
 			$this->logger->info(
-				'OpenBuild: PopulateApplicationPermissions completed',
+				'Buildiq: PopulateApplicationPermissions completed',
 				['patched' => $patched]
 			);
 		} catch (\Throwable $e) {
 			$output->warning('Could not populate permissions: ' . $e->getMessage());
 			$this->logger->error(
-				'OpenBuild: PopulateApplicationPermissions failed',
+				'Buildiq: PopulateApplicationPermissions failed',
 				['exception' => $e->getMessage()]
 			);
 		}//end try
@@ -150,7 +150,7 @@ class PopulateApplicationPermissions implements IRepairStep {
 		$applications = $this->objectService->findAll(
 			config: [
 				'filters' => [
-					'register' => 'openbuild',
+					'register' => 'buildiq',
 					'schema' => 'application',
 				],
 				'limit' => 1000,
@@ -185,7 +185,7 @@ class PopulateApplicationPermissions implements IRepairStep {
 			// the Anonymous repair-step caller.
 			$this->objectService->saveObject(
 				object: $applicationArray,
-				register: 'openbuild',
+				register: 'buildiq',
 				schema: 'application',
 				_rbac: false,
 				_multitenancy: false

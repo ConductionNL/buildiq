@@ -93,7 +93,7 @@ serve their blob byte-for-byte as it did before this change.
 
 ### Requirement: Editor save persists a minimal delta
 
-The OpenBuild manifest editor SHALL, on save for a delta-mode app, compute the
+The Buildiq manifest editor SHALL, on save for a delta-mode app, compute the
 minimal keyed delta between the resolved base manifest and the edited manifest using
 the canonical JS `diffManifest(base, edited)`, and SHALL persist `{ baseRef,
 manifestDelta }` to the `ApplicationVersion` rather than a whole-manifest blob. The

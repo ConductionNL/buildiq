@@ -22,13 +22,13 @@
   - carry `authorization` through at all).
   -->
 <template>
-	<section class="openbuild-access-editor">
-		<header class="openbuild-access-editor__header">
-			<h3>{{ t('openbuild', 'Access') }}</h3>
-			<p class="openbuild-access-editor__hint">
+	<section class="buildiq-access-editor">
+		<header class="buildiq-access-editor__header">
+			<h3>{{ t('buildiq', 'Access') }}</h3>
+			<p class="buildiq-access-editor__hint">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'Scope who can read, create, update, or delete records of this schema. This is enforced by OpenRegister — it is the actual security boundary, not just navigation hiding.',
 					)
 				}}
@@ -38,24 +38,21 @@
 		<NcNoteCard v-if="readOnly" type="info">
 			{{
 				t(
-					'openbuild',
+					'buildiq',
 					'Access scopes on the production version can only be changed by an owner.',
 				)
 			}}
 		</NcNoteCard>
 
-		<ul class="openbuild-access-editor__rows">
-			<li
-				v-for="row in rows"
-				:key="row.op"
-				class="openbuild-access-editor__row">
-				<h4 class="openbuild-access-editor__row-title">
+		<ul class="buildiq-access-editor__rows">
+			<li v-for="row in rows" :key="row.op" class="buildiq-access-editor__row">
+				<h4 class="buildiq-access-editor__row-title">
 					{{ opLabel(row.op) }}
 				</h4>
 
 				<template v-if="isRepresentable(row)">
 					<NcSelect
-						:inputLabel="t('openbuild', 'Scope')"
+						:inputLabel="t('buildiq', 'Scope')"
 						:modelValue="kindOption(row.kind)"
 						:options="kindOptions"
 						:clearable="false"
@@ -68,7 +65,7 @@
 
 					<NcSelect
 						v-if="row.kind === 'group'"
-						:inputLabel="t('openbuild', 'Groups')"
+						:inputLabel="t('buildiq', 'Groups')"
 						:modelValue="groupOptionsFor(row.groups)"
 						:options="availableGroupOptions"
 						:multiple="true"
@@ -81,9 +78,9 @@
 
 					<div
 						v-if="row.kind === 'condition'"
-						class="openbuild-access-editor__condition">
+						class="buildiq-access-editor__condition">
 						<NcSelect
-							:inputLabel="t('openbuild', 'Field')"
+							:inputLabel="t('buildiq', 'Field')"
 							:modelValue="
 								fieldOption(row.condition && row.condition.field)
 							"
@@ -99,13 +96,13 @@
 								)
 							" />
 						<NcSelect
-							:inputLabel="t('openbuild', 'Operator')"
+							:inputLabel="t('buildiq', 'Operator')"
 							:modelValue="{
 								value: 'equals',
-								label: t('openbuild', 'equals'),
+								label: t('buildiq', 'equals'),
 							}"
 							:options="[
-								{ value: 'equals', label: t('openbuild', 'equals') },
+								{ value: 'equals', label: t('buildiq', 'equals') },
 							]"
 							:clearable="false"
 							:disabled="true"
@@ -115,7 +112,7 @@
 							:modelValue="
 								(row.condition && row.condition.value) || ''
 							"
-							:label="t('openbuild', 'Value (@user.uid or a literal)')"
+							:label="t('buildiq', 'Value (@user.uid or a literal)')"
 							:disabled="readOnly"
 							@update:modelValue="
 								onConditionValueChange(row.op, $event)
@@ -124,31 +121,31 @@
 				</template>
 
 				<template v-else>
-					<p class="openbuild-access-editor__managed-note">
+					<p class="buildiq-access-editor__managed-note">
 						{{
 							t(
-								'openbuild',
+								'buildiq',
 								'Managed outside the designer — this entry is preserved as-is on save.',
 							)
 						}}
 					</p>
-					<pre class="openbuild-access-editor__managed-raw">{{
+					<pre class="buildiq-access-editor__managed-raw">{{
 						rawPreview(row)
 					}}</pre>
 				</template>
 			</li>
 		</ul>
 
-		<div v-if="hasExtraKeys" class="openbuild-access-editor__extra">
+		<div v-if="hasExtraKeys" class="buildiq-access-editor__extra">
 			<h4>
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'Additional authorization metadata (managed outside the designer)',
 					)
 				}}
 			</h4>
-			<pre class="openbuild-access-editor__managed-raw">{{
+			<pre class="buildiq-access-editor__managed-raw">{{
 				extraKeysPreview
 			}}</pre>
 		</div>
@@ -383,20 +380,20 @@ export default {
 			const options = [
 				{
 					value: 'everyone',
-					label: this.t('openbuild', 'Everyone with app access'),
+					label: this.t('buildiq', 'Everyone with app access'),
 				},
-				{ value: 'group', label: this.t('openbuild', 'Specific groups') },
+				{ value: 'group', label: this.t('buildiq', 'Specific groups') },
 			]
 			if (this.capabilityScopes.includes('creator')) {
 				options.push({
 					value: 'own',
-					label: this.t('openbuild', 'Own records (creator)'),
+					label: this.t('buildiq', 'Own records (creator)'),
 				})
 			}
 			if (this.capabilityScopes.includes('condition')) {
 				options.push({
 					value: 'condition',
-					label: this.t('openbuild', 'Condition'),
+					label: this.t('buildiq', 'Condition'),
 				})
 			}
 			return options
@@ -464,10 +461,10 @@ export default {
 		 */
 		opLabel(op) {
 			const labels = {
-				read: this.t('openbuild', 'Read'),
-				create: this.t('openbuild', 'Create'),
-				update: this.t('openbuild', 'Update'),
-				delete: this.t('openbuild', 'Delete'),
+				read: this.t('buildiq', 'Read'),
+				create: this.t('buildiq', 'Create'),
+				update: this.t('buildiq', 'Update'),
+				delete: this.t('buildiq', 'Delete'),
 			}
 			return labels[op] || op
 		},
@@ -659,25 +656,25 @@ export default {
 </script>
 
 <style scoped>
-.openbuild-access-editor {
+.buildiq-access-editor {
 	display: flex;
 	flex-direction: column;
 	gap: 16px;
 }
 
-.openbuild-access-editor__header h3 {
+.buildiq-access-editor__header h3 {
 	margin: 0 0 4px;
 	font-size: 18px;
 	font-weight: 600;
 }
 
-.openbuild-access-editor__hint {
+.buildiq-access-editor__hint {
 	margin: 0;
 	color: var(--color-text-maxcontrast);
 	font-size: 13px;
 }
 
-.openbuild-access-editor__rows {
+.buildiq-access-editor__rows {
 	list-style: none;
 	margin: 0;
 	padding: 0;
@@ -686,7 +683,7 @@ export default {
 	gap: 12px;
 }
 
-.openbuild-access-editor__row {
+.buildiq-access-editor__row {
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius);
 	padding: 12px;
@@ -696,25 +693,25 @@ export default {
 	gap: 8px;
 }
 
-.openbuild-access-editor__row-title {
+.buildiq-access-editor__row-title {
 	margin: 0;
 	font-size: 15px;
 	font-weight: 600;
 }
 
-.openbuild-access-editor__condition {
+.buildiq-access-editor__condition {
 	display: grid;
 	grid-template-columns: 1fr 1fr 1fr;
 	gap: 8px;
 }
 
-.openbuild-access-editor__managed-note {
+.buildiq-access-editor__managed-note {
 	margin: 0;
 	color: var(--color-text-maxcontrast);
 	font-size: 13px;
 }
 
-.openbuild-access-editor__managed-raw {
+.buildiq-access-editor__managed-raw {
 	margin: 0;
 	padding: 8px;
 	background: var(--color-background-dark);
@@ -723,12 +720,12 @@ export default {
 	overflow-x: auto;
 }
 
-.openbuild-access-editor__extra {
+.buildiq-access-editor__extra {
 	border-top: 1px solid var(--color-border);
 	padding-top: 12px;
 }
 
-.openbuild-access-editor__extra h4 {
+.buildiq-access-editor__extra h4 {
 	margin: 0 0 8px;
 	font-size: 14px;
 	font-weight: 600;

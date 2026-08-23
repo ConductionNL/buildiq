@@ -79,7 +79,7 @@ parsing, frontmatter handling or aux-file placement.
 
 ### Requirement: An absent optional dependency degrades with a stated reason
 
-OpenBuild depends only on `openregister`. `openconnector` and `hermiq` are optional. When a
+Buildiq depends only on `openregister`. `openconnector` and `hermiq` are optional. When a
 channel requires an app that is not installed or not enabled, the applier SHALL skip that
 channel with a machine-readable reason and SHALL allow the remaining channels to apply.
 

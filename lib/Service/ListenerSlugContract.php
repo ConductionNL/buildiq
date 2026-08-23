@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Feature gate for openbuild's corrected listener schema matching.
+ * Feature gate for buildiq's corrected listener schema matching.
  *
- * OpenBuild's OpenRegister listeners compared a schema **id** against a schema
+ * Buildiq's OpenRegister listeners compared a schema **id** against a schema
  * **slug** literal, so their handler bodies had never run once. Correcting the
  * comparison is a one-line change, but it is not a behaviour-neutral one: the
  * listeners it wakes include a fail-closed validation guard that starts
@@ -17,10 +17,10 @@
  * which is likewise shipped behind a default-off flag.
  *
  * Default: OFF. Enable per instance, after reviewing each handler body:
- *   occ config:app:set openbuild listener_slug_contract --value=yes
+ *   occ config:app:set buildiq listener_slug_contract --value=yes
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -31,12 +31,12 @@
  *
  * @version GIT: <git-id>
  *
- * @link https://openbuild.nl
+ * @link https://buildiq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 use OCP\IAppConfig;
 
@@ -50,7 +50,7 @@ class ListenerSlugContract {
 	 *
 	 * @var string
 	 */
-	private const APP_ID = 'openbuild';
+	private const APP_ID = 'buildiq';
 
 	/**
 	 * The config key holding the flag.

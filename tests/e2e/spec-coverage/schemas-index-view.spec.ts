@@ -2,10 +2,10 @@
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
 /**
- * E2E coverage for the OpenBuild top-level Schemas index page (manifest
+ * E2E coverage for the Buildiq top-level Schemas index page (manifest
  * page `Schemas`, route `/schemas`, type `custom`). This is distinct from
  * the per-virtual-app schema designer (`/builder/:slug/schemas`, covered by
- * openbuild-schema-designer.spec.ts). The top-level Schemas index had no
+ * buildiq-schema-designer.spec.ts). The top-level Schemas index had no
  * real-UI test before this spec — only a docs-screenshot pass.
  *
  * Observed live behaviour (dev container, admin session):
@@ -26,14 +26,14 @@ import { test, expect } from '@playwright/test'
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 // The app router runs in path mode (not hash mode — that assumption was
-// stale; live-verified http://localhost:8099/apps/openbuild/schemas renders
+// stale; live-verified http://localhost:8099/apps/buildiq/schemas renders
 // the Schemas index directly, no #/ fragment).
-const ROUTE = `${BASE}/apps/openbuild/schemas`
+const ROUTE = `${BASE}/apps/buildiq/schemas`
 
-test.describe('OpenBuild Schemas index view', () => {
+test.describe('Buildiq Schemas index view', () => {
 	test('renders the Schemas heading without white-screening', async ({ page }) => {
 		await page.goto(ROUTE)
-		await expect(page).toHaveTitle(/openbuild/i)
+		await expect(page).toHaveTitle(/buildiq/i)
 
 		await expect(
 			page.getByRole('heading', { name: 'Schemas', exact: true }).first(),

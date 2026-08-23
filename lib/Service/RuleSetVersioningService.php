@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild RuleSetVersioningService
+ * Buildiq RuleSetVersioningService
  *
  * Owns the semver bump applied when a RuleSet transitions test → active
  * (design.md Decision 5). Patch for a rule-condition/action change, minor for a
@@ -17,7 +17,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -32,7 +32,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Psr\Log\LoggerInterface;
@@ -132,7 +132,7 @@ class RuleSetVersioningService {
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: failed to persist promoted RuleSet',
+				'Buildiq: failed to persist promoted RuleSet',
 				['slug' => ($ruleSet['slug'] ?? ''), 'exception' => $e->getMessage()]
 			);
 			throw new RuntimeException('Failed to persist promoted RuleSet: ' . $e->getMessage(), 0, $e);

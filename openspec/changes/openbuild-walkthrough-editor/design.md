@@ -1,4 +1,4 @@
-# Design — openbuild-walkthrough-editor
+# Design — buildiq-walkthrough-editor
 
 ## Builds on
 - `cn-walkthrough-engine` (change 1): the `manifest.walkthrough` schema + the
@@ -9,16 +9,16 @@
 
 ## Flow
 
-1. Owner opens an OpenBuild virtual app, enters edit mode, picks **Edit walkthrough**.
+1. Owner opens an Buildiq virtual app, enters edit mode, picks **Edit walkthrough**.
 2. The recorder overlay arms: hovering highlights resolvable targets; clicking one
    creates a step and opens the step editor panel.
 3. **Target resolution priority:** the clicked element is walked up to the nearest
    element carrying a manifest identity — a menu item's route (`nav-item`), a
    widget's `widgetKey` (`widget`), an action's id (`action`), or a page region
-   (`page`). If none, OpenBuild injects/uses a `data-walkthrough-id` and records
+   (`page`). If none, Buildiq injects/uses a `data-walkthrough-id` and records
    `element`; only if that is impossible does it fall back to a CSS `selector`
    (flagged as brittle in the UI).
-4. **advanceOn recording:** while a step is being recorded, OpenBuild watches the
+4. **advanceOn recording:** while a step is being recorded, Buildiq watches the
    router and the OR object store. If the owner navigates, it suggests
    `route-match` (+ `capture` for an `:id` param); if a new object is created, it
    suggests `object-created` with that register/schema. The owner confirms/edits.
@@ -26,7 +26,7 @@
    sinceVersion (defaults to the app's current `ApplicationVersion`).
 6. **Reorder / tour management:** drag to reorder; add/rename/delete tours.
 7. **Persist:** on save, the `walkthrough` block is merged into the app's manifest
-   delta via the existing OpenBuild persistence endpoint and tagged to the chosen
+   delta via the existing Buildiq persistence endpoint and tagged to the chosen
    `ApplicationVersion`. Live preview reloads `useWalkthrough` so the owner can run
    the tour immediately.
 

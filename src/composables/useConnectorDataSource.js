@@ -12,7 +12,7 @@ import { generateUrl } from '@nextcloud/router'
  *  - Issues `GET /apps/openconnector/api/endpoint/{endpointPath}` with the
  *    binding's `query` parameters, authenticated ONLY by the Nextcloud
  *    session + requesttoken (`@nextcloud/axios` adds the requesttoken). No
- *    external-API credential ever touches openbuild — auth lives in the
+ *    external-API credential ever touches buildiq — auth lives in the
  *    OpenConnector Source object (ADR-022, REQ-OCAS-004).
  *  - Applies `itemsPath` then the `fields` dot-path selectors (shared
  *    `selectors.js` grammar) to produce rows (index) or a value object.
@@ -59,7 +59,7 @@ export function useConnectorDataSource(opts = {}) {
 		warnedFields.add(fieldName)
 		// eslint-disable-next-line no-console
 		console.warn(
-			`[openbuild] connector field "${fieldName}" selector "${selector}" `
+			`[buildiq] connector field "${fieldName}" selector "${selector}" `
 				+ `resolved to no value for endpoint "${binding.endpointPath}"`,
 		)
 	}

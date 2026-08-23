@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Controller
+ * @package  OCA\Buildiq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,11 +22,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Controller;
+namespace OCA\Buildiq\Tests\Unit\Controller;
 
-use OCA\OpenBuild\Controller\CopilotController;
-use OCA\OpenBuild\Exception\CopilotException;
-use OCA\OpenBuild\Service\CopilotService;
+use OCA\Buildiq\Controller\CopilotController;
+use OCA\Buildiq\Exception\CopilotException;
+use OCA\Buildiq\Service\CopilotService;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
 use OCP\IUser;
@@ -277,7 +277,7 @@ class CopilotControllerTest extends TestCase {
 		$this->request->method('getParam')->willReturnMap(
 			[
 				['summary', '', 'x'],
-				['steps', [], [['tool' => 'openbuild.upsertPage', 'arguments' => ['appSlug' => 'hello']]]],
+				['steps', [], [['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'hello']]]],
 			]
 		);
 		$this->copilotService->method('execute')->willThrowException(
@@ -301,7 +301,7 @@ class CopilotControllerTest extends TestCase {
 		$this->request->method('getParam')->willReturnMap(
 			[
 				['summary', '', 'x'],
-				['steps', [], [['tool' => 'openbuild.createApp', 'arguments' => ['slug' => 'my-app', 'name' => 'My App']]]],
+				['steps', [], [['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'my-app', 'name' => 'My App']]]],
 			]
 		);
 		$this->copilotService->method('execute')->willReturn(
@@ -325,7 +325,7 @@ class CopilotControllerTest extends TestCase {
 		$this->request->method('getParam')->willReturnMap(
 			[
 				['summary', '', 'x'],
-				['steps', [], [['tool' => 'openbuild.upsertPage', 'arguments' => []]]],
+				['steps', [], [['tool' => 'buildiq.upsertPage', 'arguments' => []]]],
 			]
 		);
 		$this->copilotService->method('execute')->willThrowException(
@@ -375,7 +375,7 @@ class CopilotControllerTest extends TestCase {
 		$this->request->method('getParam')->willReturnMap(
 			[
 				['summary', '', 'x'],
-				['steps', [], [['tool' => 'openbuild.upsertPage', 'arguments' => ['appSlug' => 'hello']]]],
+				['steps', [], [['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'hello']]]],
 				['agentId', null, 'agent-uuid-1'],
 				['prompt', '', 'Add a page'],
 			]

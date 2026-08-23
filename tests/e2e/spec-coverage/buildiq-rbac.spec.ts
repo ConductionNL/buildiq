@@ -2,13 +2,13 @@
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
 /**
- * E2E coverage for openbuild-rbac spec — UI scenarios only.
+ * E2E coverage for buildiq-rbac spec — UI scenarios only.
  *
  * REQ-OBRBAC-004: role-to-action mapping in editor UIs
  *   - viewer-cannot-save-manifest-edits
  *   - editor-cannot-publish
  *
- * REQ-OBRBAC-006: global openbuild.use navigation-entry permission
+ * REQ-OBRBAC-006: global buildiq.use navigation-entry permission
  *   - admin-restricts-the-navigation-entry-to-one-group
  *   - admin-bypass-is-audited
  *
@@ -17,15 +17,15 @@
  * Note: viewer/editor role scenarios require a user with those roles on the
  * hello-world app. Admin (who has owner role) is used as a proxy to verify
  * the owner sees all controls — which proves the role gate is wired.
- * Tests requiring a created non-admin user guard on OPENBUILD_E2E_LIVE.
+ * Tests requiring a created non-admin user guard on BUILDIQ_E2E_LIVE.
  */
 
 import { test, expect } from '@playwright/test'
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
-const LIVE = process.env.OPENBUILD_E2E_LIVE === '1'
+const LIVE = process.env.BUILDIQ_E2E_LIVE === '1'
 
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no application detail / icon / template-clone UI renders. Re-enable when #41 is fixed.
+// QUARANTINED (Conduction/buildiq#41): buildiq admin UI not functional in this build — no application detail / icon / template-clone UI renders. Re-enable when #41 is fixed.
 //
 // THE TWO TRACEABILITY ANCHORS THAT SAT HERE ARE REMOVED, and deliberately not
 // replaced. This test drives the shared ADMIN session and asserts that `main`
@@ -45,7 +45,7 @@ test.skip('REQ-OBRBAC-004 — owner sees edit controls on the application detail
 	page,
 }) => {
 	// As admin (owner), the editor must show Save/Publish controls
-	await page.goto(`${BASE}/apps/openbuild/applications`)
+	await page.goto(`${BASE}/apps/buildiq/applications`)
 
 	// Cards are <a> tags with href containing /applications/:objectId
 	// The page may show "Hello World" in card headings — click first matching card
@@ -65,7 +65,7 @@ test.skip('REQ-OBRBAC-004 — owner sees edit controls on the application detail
 	})
 })
 
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no application detail / icon / template-clone UI renders. Re-enable when #41 is fixed.
+// QUARANTINED (Conduction/buildiq#41): buildiq admin UI not functional in this build — no application detail / icon / template-clone UI renders. Re-enable when #41 is fixed.
 //
 // ANCHORS REMOVED, and this one is worse than its neighbour on two counts. The
 // requirement is that an EDITOR sees Save and does NOT see Publish; the test is
@@ -80,10 +80,10 @@ test.skip('REQ-OBRBAC-004 — admin sees Publish capability (owner role confirme
 }) => {
 	test.skip(
 		!LIVE,
-		'Requires live dev env with a draft Application — set OPENBUILD_E2E_LIVE=1',
+		'Requires live dev env with a draft Application — set BUILDIQ_E2E_LIVE=1',
 	)
 
-	await page.goto(`${BASE}/apps/openbuild/applications`)
+	await page.goto(`${BASE}/apps/buildiq/applications`)
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
 	await card.click()
@@ -100,44 +100,44 @@ test.skip('REQ-OBRBAC-004 — admin sees Publish capability (owner role confirme
 	// the test passes because the gate logic is still in place
 })
 
-// @e2e openbuild-rbac::admin-restricts-the-navigation-entry-to-one-group
-test('REQ-OBRBAC-006 — OpenBuild navigation entry is present for admin', async ({
+// @e2e buildiq-rbac::admin-restricts-the-navigation-entry-to-one-group
+test('REQ-OBRBAC-006 — Buildiq navigation entry is present for admin', async ({
 	page,
 }) => {
-	// @e2e openbuild-rbac::admin-restricts-the-navigation-entry-to-one-group
-	// The global nav entry test — admin always sees OpenBuild in the nav
-	// Navigate directly to the OpenBuild app to confirm the admin has access
-	await page.goto(`${BASE}/apps/openbuild/`)
+	// @e2e buildiq-rbac::admin-restricts-the-navigation-entry-to-one-group
+	// The global nav entry test — admin always sees Buildiq in the nav
+	// Navigate directly to the Buildiq app to confirm the admin has access
+	await page.goto(`${BASE}/apps/buildiq/`)
 	await expect(
 		page.locator('main'),
-		'OpenBuild main content must be reachable for admin',
+		'Buildiq main content must be reachable for admin',
 	).toBeVisible({ timeout: 15_000 })
 
-	// OpenBuild navigation sidebar should be visible for the admin user
+	// Buildiq navigation sidebar should be visible for the admin user
 	// (The spec says an admin can restrict the nav entry per group; this verifies the
 	//  app is reachable for the unrestricted admin baseline — proxy for nav entry present)
-	const openbuildNav = page
+	const buildiqNav = page
 		.locator('nav, [role="navigation"]')
-		.filter({ has: page.locator('a[href*="openbuild"]') })
+		.filter({ has: page.locator('a[href*="buildiq"]') })
 		.first()
 	await expect(
-		openbuildNav,
-		'OpenBuild navigation must be present for admin',
+		buildiqNav,
+		'Buildiq navigation must be present for admin',
 	).toBeVisible({ timeout: 10_000 })
 })
 
-// @e2e openbuild-rbac::admin-bypass-is-audited
-test('REQ-OBRBAC-006 — admin can reach OpenBuild app (admin bypass baseline)', async ({
+// @e2e buildiq-rbac::admin-bypass-is-audited
+test('REQ-OBRBAC-006 — admin can reach Buildiq app (admin bypass baseline)', async ({
 	page,
 }) => {
-	// @e2e openbuild-rbac::admin-bypass-is-audited
+	// @e2e buildiq-rbac::admin-bypass-is-audited
 	// The admin bypass is a PHP-side audit event; here we verify admin can reach the app
 	// (the audit trail itself is verified by Newman/PHPUnit)
-	await page.goto(`${BASE}/apps/openbuild/applications`)
+	await page.goto(`${BASE}/apps/buildiq/applications`)
 	await expect(
 		page.locator('main'),
-		'admin must be able to reach the OpenBuild applications page',
+		'admin must be able to reach the Buildiq applications page',
 	).toBeVisible({ timeout: 15_000 })
-	// Page title must contain OpenBuild
-	await expect(page).toHaveTitle(/openbuild/i)
+	// Page title must contain Buildiq
+	await expect(page).toHaveTitle(/buildiq/i)
 })

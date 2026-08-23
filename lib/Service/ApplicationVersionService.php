@@ -1,10 +1,10 @@
 <?php
 
 /**
- * OpenBuild ApplicationVersionService
+ * Buildiq ApplicationVersionService
  *
  * Owns the imperative business logic for the versioned-app model
- * (ADR-002 / openbuild-versioning-model):
+ * (ADR-002 / buildiq-versioning-model):
  *
  *   - Semver auto-bump on manifest content change (SHA-256 hash diff
  *     over the canonicalised manifest; ADR-031 §Exceptions(2) — stateful
@@ -25,7 +25,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -43,12 +43,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\RegisterService;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -66,7 +66,7 @@ class ApplicationVersionService {
 	/**
 	 * Shared register that hosts both Application and ApplicationVersion.
 	 */
-	public const REGISTER_SLUG = 'openbuild';
+	public const REGISTER_SLUG = 'buildiq';
 
 	/**
 	 * Schema slug of the parent Application object.
@@ -491,7 +491,7 @@ class ApplicationVersionService {
 
 		$this->logger->info(
 			sprintf(
-				'OpenBuild: released ApplicationVersion %s as production for Application %s (previous %s %s).',
+				'Buildiq: released ApplicationVersion %s as production for Application %s (previous %s %s).',
 				$versionUuid,
 				$applicationUuid,
 				$previousLabel,
@@ -565,7 +565,7 @@ class ApplicationVersionService {
 		) {
 			$this->logger->warning(
 				sprintf(
-					'OpenBuild: delete-now on ApplicationVersion %s downgraded to keep-register — register %s is shared with production.',
+					'Buildiq: delete-now on ApplicationVersion %s downgraded to keep-register — register %s is shared with production.',
 					$versionUuid,
 					$registerSlug
 				)
@@ -584,7 +584,7 @@ class ApplicationVersionService {
 				// No-op on the register — admin retains the data.
 				$this->logger->info(
 					sprintf(
-						'OpenBuild: keep-register strategy on ApplicationVersion %s — register %s left untouched.',
+						'Buildiq: keep-register strategy on ApplicationVersion %s — register %s left untouched.',
 						$versionUuid,
 						$registerSlug
 					)
@@ -732,7 +732,7 @@ class ApplicationVersionService {
 		if ($registerSlug === '') {
 			$this->logger->warning(
 				sprintf(
-					'OpenBuild: ApplicationVersion %s has no register slug; nothing to drop.',
+					'Buildiq: ApplicationVersion %s has no register slug; nothing to drop.',
 					$versionUuid
 				)
 			);
@@ -744,7 +744,7 @@ class ApplicationVersionService {
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				sprintf(
-					'OpenBuild: register %s not found while deleting ApplicationVersion %s (%s) — continuing.',
+					'Buildiq: register %s not found while deleting ApplicationVersion %s (%s) — continuing.',
 					$registerSlug,
 					$versionUuid,
 					$e->getMessage()
@@ -756,7 +756,7 @@ class ApplicationVersionService {
 		$this->registerService->delete(register: $register);
 		$this->logger->info(
 			sprintf(
-				'OpenBuild: dropped per-version register %s for ApplicationVersion %s.',
+				'Buildiq: dropped per-version register %s for ApplicationVersion %s.',
 				$registerSlug,
 				$versionUuid
 			)
@@ -782,7 +782,7 @@ class ApplicationVersionService {
 		if ($registerSlug === '') {
 			$this->logger->warning(
 				sprintf(
-					'OpenBuild: ApplicationVersion %s has no register slug; nothing to orphan-flag.',
+					'Buildiq: ApplicationVersion %s has no register slug; nothing to orphan-flag.',
 					$versionUuid
 				)
 			);
@@ -794,7 +794,7 @@ class ApplicationVersionService {
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				sprintf(
-					'OpenBuild: register %s not found while orphan-flagging for ApplicationVersion %s (%s).',
+					'Buildiq: register %s not found while orphan-flagging for ApplicationVersion %s (%s).',
 					$registerSlug,
 					$versionUuid,
 					$e->getMessage()
@@ -818,7 +818,7 @@ class ApplicationVersionService {
 			$this->registerMapper->update($register);
 			$this->logger->info(
 				sprintf(
-					'OpenBuild: orphan-flagged register %s for ApplicationVersion %s at %s.',
+					'Buildiq: orphan-flagged register %s for ApplicationVersion %s at %s.',
 					$registerSlug,
 					$versionUuid,
 					$metadata['orphanedAt']
@@ -829,7 +829,7 @@ class ApplicationVersionService {
 
 		$this->logger->warning(
 			sprintf(
-				'OpenBuild: Register entity for %s has no setMetadata; falling back to PSR-logged orphan event for %s.',
+				'Buildiq: Register entity for %s has no setMetadata; falling back to PSR-logged orphan event for %s.',
 				$registerSlug,
 				$versionUuid
 			)
@@ -855,7 +855,7 @@ class ApplicationVersionService {
 			);
 		} catch (Throwable $e) {
 			$this->logger->debug(
-				sprintf('OpenBuild: cycle-check lookup for %s failed (%s) — treating as terminal.', $versionUuid, $e->getMessage())
+				sprintf('Buildiq: cycle-check lookup for %s failed (%s) — treating as terminal.', $versionUuid, $e->getMessage())
 			);
 			return null;
 		}
@@ -965,7 +965,7 @@ class ApplicationVersionService {
 			} catch (Throwable $e) {
 				$sourceSlug = (string)($source['slug'] ?? '');
 				$this->logger->error(
-					'OpenBuild: failed to clone automation "' . $sourceSlug . '" onto new version ' . $newVersionUuid . ': ' . $e->getMessage()
+					'Buildiq: failed to clone automation "' . $sourceSlug . '" onto new version ' . $newVersionUuid . ': ' . $e->getMessage()
 				);
 			}
 		}
@@ -994,7 +994,7 @@ class ApplicationVersionService {
 				]
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenBuild: cloneAutomationsToVersion lookup failed: ' . $e->getMessage());
+			$this->logger->warning('Buildiq: cloneAutomationsToVersion lookup failed: ' . $e->getMessage());
 			return [];
 		}
 
@@ -1042,7 +1042,7 @@ class ApplicationVersionService {
 		if ($newUuid === '') {
 			$sourceSlug = (string)($source['slug'] ?? '');
 			$this->logger->warning(
-				'OpenBuild: cloned automation "' . $sourceSlug . '" did not yield a new uuid — skipping recompile.'
+				'Buildiq: cloned automation "' . $sourceSlug . '" did not yield a new uuid — skipping recompile.'
 			);
 			return;
 		}

@@ -7,14 +7,14 @@
   -->
 <template>
 	<NcDialog
-		:name="t('openbuild', 'Delete property')"
+		:name="t('buildiq', 'Delete property')"
 		:open="open"
 		size="small"
 		@update:open="onOpenUpdate">
-		<p class="openbuild-delete-field-dialog__warning">
+		<p class="buildiq-delete-field-dialog__warning">
 			{{
 				t(
-					'openbuild',
+					'buildiq',
 					'You are about to remove the property {name} from this schema. Existing objects of this schema may have data in this property that will become unreachable after Save.',
 					{ name: fieldName },
 				)
@@ -22,10 +22,10 @@
 		</p>
 		<template #actions>
 			<NcButton @click="onCancel">
-				{{ t('openbuild', 'Cancel') }}
+				{{ t('buildiq', 'Cancel') }}
 			</NcButton>
 			<NcButton variant="error" @click="onConfirm">
-				{{ t('openbuild', 'Delete property') }}
+				{{ t('buildiq', 'Delete property') }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -82,7 +82,7 @@ export default {
 </script>
 
 <style scoped>
-.openbuild-delete-field-dialog__warning {
+.buildiq-delete-field-dialog__warning {
 	margin: 0;
 	line-height: 1.5;
 	color: var(--color-text-maxcontrast);

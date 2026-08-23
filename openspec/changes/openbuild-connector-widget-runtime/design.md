@@ -1,4 +1,4 @@
-# Design — openbuild-connector-widget-runtime
+# Design — buildiq-connector-widget-runtime
 
 ## Context
 
@@ -6,8 +6,8 @@ A virtual app can be mounted in two places, by two independent call sites:
 
 | Path | Entry | Route | Registry wiring |
 |---|---|---|---|
-| **Published** | `src/builder.js` | `/apps/openbuild/builder/{slug}` → `DashboardController::builder()` → `templates/builder.php` | `registry: { ...runtimeRegistry }` on the top-level `CnAppRoot` |
-| **Preview** | `src/views/BuilderHost.vue` | inside the OpenBuild SPA (`src/main.js`) | `:registry="runtimeRegistry"` on a nested `CnAppRoot` |
+| **Published** | `src/builder.js` | `/apps/buildiq/builder/{slug}` → `DashboardController::builder()` → `templates/builder.php` | `registry: { ...runtimeRegistry }` on the top-level `CnAppRoot` |
+| **Preview** | `src/views/BuilderHost.vue` | inside the Buildiq SPA (`src/main.js`) | `:registry="runtimeRegistry"` on a nested `CnAppRoot` |
 
 Both were read before this design was written. The resolution chain on the
 published path is:
@@ -23,9 +23,9 @@ published path is:
 
 `connector-data` is registered in `src/runtimeRegistry.js` as
 `widget(ConnectorDataView, ['body', 'sidebar'])`, and `ConnectorDataView`'s own
-template strings survive into the shipped `js/openbuild-builder.js` bundle
+template strings survive into the shipped `js/buildiq-builder.js` bundle
 (checked directly; the deployed snapshot under
-`openregister/custom_apps/openbuild/js/` is byte-identical to the repo bundle).
+`openregister/custom_apps/buildiq/js/` is byte-identical to the repo bundle).
 
 **Conclusion: the published path resolves `connector-data` today.** The change is
 therefore not a repair. It is the defence of an undefended capability, plus the
@@ -54,7 +54,7 @@ obligation in this change is a published-path e2e rather than more unit coverage
 
 - Retiring `connector-data`. It is reachable and it expresses things
   `endpointSource` cannot (see Decision 2).
-- Adding `endpointSource` support to `stats-block` from inside OpenBuild (see
+- Adding `endpointSource` support to `stats-block` from inside Buildiq (see
   Decision 3) — that is an upstream `@conduction/nextcloud-vue` schema change.
 - Changing `useConnectorDataSource`'s fetch, projection, caching or
   stale-on-error behaviour. REQ-OCAS-006 already specifies those and they are
@@ -80,7 +80,7 @@ without a registry. The fleet has already been bitten by exactly that shape
 
 *Alternative considered:* make `CnAppRoot` warn loudly when mounted without a
 registry. Rejected as the primary fix — it is an upstream library change, it
-cannot know whether a given app *needs* a custom registry, and OpenBuild would
+cannot know whether a given app *needs* a custom registry, and Buildiq would
 still be relying on a console warning nobody reads.
 
 ### Decision 2 — Keep `connector-data`; do not standardise on `endpointSource`
@@ -90,7 +90,7 @@ still be relying on a console warning nobody reads.
 express what `dataSource.connector` specifies in REQ-OCAS-001: the
 `itemsPath` + `fields` dot-path projection, the per-binding `cacheTtl`, the
 stale-on-error window (10× TTL) with `isStale`, or the credential-forbidden
-validation OpenBuild enforces in `services/manifestValidation/connectorDataSource.js`.
+validation Buildiq enforces in `services/manifestValidation/connectorDataSource.js`.
 Retiring the working widget would trade a specified, validated, cached binding
 for a thinner one.
 
@@ -117,14 +117,14 @@ one widget whose entries are individually *counted* against an OpenRegister
 schema (`metric`, `field`, `filter`, `hideWhenZero`), so an endpoint binding would
 need its own per-entry response mapping — a genuine upstream design, not a key
 addition. Recorded here as an upstream item with rationale so the next app does
-not re-discover the wall; OpenBuild does not patch the vendored schema.
+not re-discover the wall; Buildiq does not patch the vendored schema.
 
 *Workaround for authors who need endpoint-backed KPIs today:* place individual
 `stat` / `delta` widgets, which do accept `props.content.endpointSource`.
 
 ### Decision 4 — The proof runs on the published route, and console warnings are fatal
 
-The test drives `/apps/openbuild/builder/{slug}` — the real
+The test drives `/apps/buildiq/builder/{slug}` — the real
 `DashboardController::builder()` response — not the SPA preview. It asserts the
 widget's *own* rendered surface (its table, or its error/retry state when
 OpenConnector has nothing to serve), and additionally fails on any
@@ -141,7 +141,7 @@ in the real page.
 This change adds **no** business logic in either form. The binding it protects is
 already declarative: `dataSource.connector` is manifest data, resolved at render
 time by a library-driven registry lookup, and validated declaratively against
-`app-manifest-v2.schema.json` plus OpenBuild's connector validator. No state
+`app-manifest-v2.schema.json` plus Buildiq's connector validator. No state
 machine, aggregation, calculation or notification is introduced, so there is
 nothing to move from a service class into `x-openregister-*` schema metadata.
 
@@ -157,7 +157,7 @@ and is out of scope.
 
 **No OpenRegister schema is introduced or modified by this change**, so ADR-001's
 seed-data obligation does not attach — it falls under the stated exception for
-changes that only touch frontend components and non-schema logic. OpenBuild's
+changes that only touch frontend components and non-schema logic. Buildiq's
 `Application` / `BuiltAppRoute` schemas are untouched.
 
 The e2e does need a **published app fixture** carrying a `connector-data` widget.
@@ -207,8 +207,8 @@ existing published app renders exactly as before. Rollback is reverting the
 commit: the accessor is an internal frontend refactor with no persisted state
 and no API surface.
 
-Deploy order is the ordinary OpenBuild frontend flow — rebuild the bundles and
-redeploy; the published route serves `js/openbuild-builder.js`, so a stale bundle
+Deploy order is the ordinary Buildiq frontend flow — rebuild the bundles and
+redeploy; the published route serves `js/buildiq-builder.js`, so a stale bundle
 would keep the old (working) wiring rather than break.
 
 ## Open Questions

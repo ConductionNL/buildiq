@@ -1,40 +1,40 @@
 <!-- SPDX-License-Identifier: EUPL-1.2 -->
 <template>
 	<NcDialog
-		:name="t('openbuild', 'Export application')"
+		:name="t('buildiq', 'Export application')"
 		:noClose="submitting"
 		size="normal"
 		@closing="onClose">
 		<form class="export-dialog" @submit.prevent="submit">
 			<NcSelect
 				v-model="form.version"
-				:inputLabel="t('openbuild', 'Version')"
+				:inputLabel="t('buildiq', 'Version')"
 				:options="versionOptions"
 				:disabled="submitting" />
 			<NcSelect
 				v-model="form.target"
-				:inputLabel="t('openbuild', 'Target')"
+				:inputLabel="t('buildiq', 'Target')"
 				:options="targetOptions"
 				:disabled="submitting" />
 			<NcSelect
 				v-model="form.license"
-				:inputLabel="t('openbuild', 'License')"
+				:inputLabel="t('buildiq', 'License')"
 				:options="licenseOptions"
 				:disabled="submitting" />
 			<NcCheckboxRadioSwitch
 				v-model="form.includeSeedData"
 				:disabled="submitting">
-				{{ t('openbuild', 'Include seed data') }}
+				{{ t('buildiq', 'Include seed data') }}
 			</NcCheckboxRadioSwitch>
 
 			<template v-if="dataRegisterChoices.length">
 				<h4 class="export-dialog__section-title">
-					{{ t('openbuild', 'Data registers') }}
+					{{ t('buildiq', 'Data registers') }}
 				</h4>
 				<p class="export-dialog__scope-hint">
 					{{
 						t(
-							'openbuild',
+							'buildiq',
 							'This app is bound to shared data registers it does not own. Their schema definitions are always included as reference material. Row data is only bundled for a register when you switch it on below.',
 						)
 					}}
@@ -45,7 +45,7 @@
 					v-model="choice.includeData"
 					:disabled="submitting">
 					{{
-						t('openbuild', 'Include row data for {label}', {
+						t('buildiq', 'Include row data for {label}', {
 							label: choice.label || choice.register,
 						})
 					}}
@@ -54,12 +54,12 @@
 
 			<template v-if="flowChoices.length">
 				<h4 class="export-dialog__section-title">
-					{{ t('openbuild', 'Flows') }}
+					{{ t('buildiq', 'Flows') }}
 				</h4>
 				<p class="export-dialog__scope-hint">
 					{{
 						t(
-							'openbuild',
+							'buildiq',
 							'The flows this app is made of. Included by default — an exported app without them installs and does nothing. They arrive switched off on the importing instance, so nothing runs until somebody enables it there.',
 						)
 					}}
@@ -83,39 +83,39 @@
 			<template v-if="form.target && form.target.value === 'github'">
 				<NcTextField
 					v-model="form.githubOrg"
-					:label="t('openbuild', 'GitHub organisation')"
+					:label="t('buildiq', 'GitHub organisation')"
 					:disabled="submitting" />
 				<NcTextField
 					v-model="form.githubRepo"
-					:label="t('openbuild', 'Repository name')"
+					:label="t('buildiq', 'Repository name')"
 					:disabled="submitting" />
 				<NcSelect
 					v-model="form.githubVisibility"
-					:inputLabel="t('openbuild', 'Visibility')"
+					:inputLabel="t('buildiq', 'Visibility')"
 					:options="visibilityOptions"
 					:disabled="submitting" />
 				<NcSelect
 					v-model="form.githubCredential"
-					:inputLabel="t('openbuild', 'GitHub credential')"
+					:inputLabel="t('buildiq', 'GitHub credential')"
 					:options="githubCredentials"
 					:loading="loadingCredentials"
 					:disabled="submitting"
-					:placeholder="t('openbuild', 'Select a credential')" />
+					:placeholder="t('buildiq', 'Select a credential')" />
 				<p
 					v-if="!loadingCredentials && !githubCredentials.length"
 					class="export-dialog__scope-hint">
 					{{
 						t(
-							'openbuild',
-							'You have no GitHub credential yet. Add one under Personal settings → Additional settings, then reopen this dialog. OpenBuild never sees the token itself — it asks the credential broker to make each GitHub call on your behalf.',
+							'buildiq',
+							'You have no GitHub credential yet. Add one under Personal settings → Additional settings, then reopen this dialog. Buildiq never sees the token itself — it asks the credential broker to make each GitHub call on your behalf.',
 						)
 					}}
 				</p>
 				<p v-else class="export-dialog__scope-hint">
 					{{
 						t(
-							'openbuild',
-							'The token stays in your credential vault. OpenBuild sends only the request it wants made, and the broker injects the token and refuses anything outside the allowed GitHub calls.',
+							'buildiq',
+							'The token stays in your credential vault. Buildiq sends only the request it wants made, and the broker injects the token and refuses anything outside the allowed GitHub calls.',
 						)
 					}}
 				</p>
@@ -128,10 +128,10 @@
 
 		<template #actions>
 			<NcButton :disabled="submitting" @click="onClose">
-				{{ t('openbuild', 'Cancel') }}
+				{{ t('buildiq', 'Cancel') }}
 			</NcButton>
 			<NcButton variant="primary" :disabled="submitting" @click="submit">
-				{{ t('openbuild', 'Start export') }}
+				{{ t('buildiq', 'Start export') }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -197,7 +197,7 @@ export default {
 			submitting: false,
 			errorMessage: '',
 			// The user's `github` broker credentials, as NcSelect options.
-			// OpenBuild only ever learns their UUIDs — never the tokens behind them.
+			// Buildiq only ever learns their UUIDs — never the tokens behind them.
 			githubCredentials: [],
 			loadingCredentials: false,
 			form: {
@@ -206,13 +206,13 @@ export default {
 					value: '0.1.0',
 				},
 
-				target: { label: this.t('openbuild', 'ZIP download'), value: 'zip' },
+				target: { label: this.t('buildiq', 'ZIP download'), value: 'zip' },
 				license: { label: 'EUPL-1.2', value: 'EUPL-1.2' },
 				includeSeedData: false,
 				githubOrg: '',
 				githubRepo: '',
 				githubVisibility: {
-					label: this.t('openbuild', 'Private'),
+					label: this.t('buildiq', 'Private'),
 					value: 'private',
 				},
 
@@ -257,8 +257,8 @@ export default {
 		 */
 		targetOptions() {
 			return [
-				{ label: this.t('openbuild', 'ZIP download'), value: 'zip' },
-				{ label: this.t('openbuild', 'Push to GitHub'), value: 'github' },
+				{ label: this.t('buildiq', 'ZIP download'), value: 'zip' },
+				{ label: this.t('buildiq', 'Push to GitHub'), value: 'github' },
 			]
 		},
 
@@ -282,8 +282,8 @@ export default {
 		 */
 		visibilityOptions() {
 			return [
-				{ label: this.t('openbuild', 'Private'), value: 'private' },
-				{ label: this.t('openbuild', 'Public'), value: 'public' },
+				{ label: this.t('buildiq', 'Private'), value: 'private' },
+				{ label: this.t('buildiq', 'Public'), value: 'public' },
 			]
 		},
 	},
@@ -369,7 +369,7 @@ export default {
 				if (this.form.target.value === 'github') {
 					if (!this.form.githubCredential) {
 						this.errorMessage = this.t(
-							'openbuild',
+							'buildiq',
 							'Pick a GitHub credential to push with.',
 						)
 						this.submitting = false
@@ -382,7 +382,7 @@ export default {
 					payload.githubCredentialId = this.form.githubCredential.value
 				}
 				const url = generateUrl(
-					`/apps/openbuild/api/applications/${encodeURIComponent(this.applicationSlug)}/exports`,
+					`/apps/buildiq/api/applications/${encodeURIComponent(this.applicationSlug)}/exports`,
 				)
 				const response = await axios.post(url, payload)
 				this.$emit('queued', response.data.uuid)
@@ -391,7 +391,7 @@ export default {
 				this.errorMessage =
 					err?.response?.data?.error
 					|| this.t(
-						'openbuild',
+						'buildiq',
 						'GitHub authentication failed. Please check the token scope and try again.',
 					)
 			} finally {

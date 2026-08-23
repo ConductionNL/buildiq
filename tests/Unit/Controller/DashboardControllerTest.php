@@ -7,13 +7,13 @@
  * `/builder/{slug}` route, its trailing-slash alias, the new generic
  * `/builder/{slug}/{path}` deep-link route, and the reserved-designer
  * `/builder/{slug}/{designerPath}` route that must keep serving the
- * OpenBuild SPA shell.
+ * Buildiq SPA shell.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Controller
+ * @package  OCA\Buildiq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,9 +26,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Controller;
+namespace OCA\Buildiq\Tests\Unit\Controller;
 
-use OCA\OpenBuild\Controller\DashboardController;
+use OCA\Buildiq\Controller\DashboardController;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Services\IInitialState;
 use OCP\IGroupManager;
@@ -213,11 +213,11 @@ class DashboardControllerTest extends TestCase {
 	}//end testBuilderPathServesStandaloneTemplateForNestedSubPath()
 
 	// -------------------------------------------------------------------------
-	// builderDesigner() — reserved OpenBuild designer surfaces (#100)
+	// builderDesigner() — reserved Buildiq designer surfaces (#100)
 	// -------------------------------------------------------------------------
 
 	/**
-	 * builderDesigner() serves the OpenBuild SPA's own 'index' template — the
+	 * builderDesigner() serves the Buildiq SPA's own 'index' template — the
 	 * SAME page as catchAll() — for the reserved designer sub-paths, NOT the
 	 * standalone virtual-app runtime.
 	 *

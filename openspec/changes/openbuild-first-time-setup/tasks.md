@@ -1,7 +1,7 @@
 ## 0. Prerequisites
 
 - [x] 0.1 Confirm the consumed `@conduction/nextcloud-vue` version exposes the ADR-042 setup renderer (manifest `setup` block → `CnWizardDialog` flow). CONFIRMED — `CnSetupWizard.vue` ships in the installed lib and POSTs `run-action` to `/api/setup/action/{actionId}`, `config-fields` to `/api/setup/config`, and reads `/api/setup/status`. Endpoints implemented to that exact contract (NOT the ad-hoc `/api/setup/seed-templates` the proposal sketched).
-- [x] 0.2 Confirm no overlap with `openbuild-walkthrough-editor` (that change edits VIRTUAL apps' setup blocks; this one adds OpenBuild's own) — no file overlap; this change only touches OpenBuild's own manifest + backend.
+- [x] 0.2 Confirm no overlap with `buildiq-walkthrough-editor` (that change edits VIRTUAL apps' setup blocks; this one adds Buildiq's own) — no file overlap; this change only touches Buildiq's own manifest + backend.
 
 ## 1. Extract seeding into a service
 
@@ -25,7 +25,7 @@
 
 - [x] 4.1 `SetupController::status()` stamps `setup_completed_version` (= `SETUP_VERSION`) once the required seed step is satisfied. The runtime "SHALL NOT re-trigger while stored version >= setup.version" gate is enforced by nc-vue's `CnAppRoot` boot phase (reads `completionConfigKey`), not this repo.
 - [x] 4.2 Pre-satisfy on already-healthy instances: `status()` derives `seedDone` from `countSeeded() > 0` (existing templates) and stamps completion without any user action — so an already-seeded instance is pre-satisfied on first boot after upgrade.
-- [ ] 4.3 Verify the `openbuild:getting-started` walkthrough starts only after setup completion for admins, and a non-admin on an unconfigured instance gets the standard not-configured state, not the dead-end tour. DEFERRED — the walkthrough-vs-setup phased boot lives in nc-vue's `CnAppRoot`; verifying the interplay needs a live instance.
+- [ ] 4.3 Verify the `buildiq:getting-started` walkthrough starts only after setup completion for admins, and a non-admin on an unconfigured instance gets the standard not-configured state, not the dead-end tour. DEFERRED — the walkthrough-vs-setup phased boot lives in nc-vue's `CnAppRoot`; verifying the interplay needs a live instance.
 
 ## 5. Verification
 

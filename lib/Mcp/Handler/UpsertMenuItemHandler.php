@@ -1,14 +1,14 @@
 <?php
 
 /**
- * Handler for the openbuild.upsertMenuItem MCP tool.
+ * Handler for the buildiq.upsertMenuItem MCP tool.
  *
  * Creates or updates a top-level menu item in the draft manifest of an
  * ApplicationVersion. If an item with the given id already exists it is
  * replaced in-place; otherwise the new item is appended.
  *
  * @category Service
- * @package  OCA\OpenBuild\Mcp\Handler
+ * @package  OCA\Buildiq\Mcp\Handler
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,10 +24,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Mcp\Handler;
+namespace OCA\Buildiq\Mcp\Handler;
 
 /**
- * Handles the openbuild.upsertMenuItem tool invocation.
+ * Handles the buildiq.upsertMenuItem tool invocation.
  *
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-42
  */
@@ -108,7 +108,7 @@ class UpsertMenuItemHandler extends AbstractToolHandler {
 			];
 		} catch (\Throwable $e) {
 			$this->logger->error(
-				'OpenBuild MCP: upsertMenuItem failed',
+				'Buildiq MCP: upsertMenuItem failed',
 				['appSlug' => $appSlug, 'id' => $id, 'exception' => $e->getMessage(), 'trace' => $e->getTraceAsString()]
 			);
 			return $this->errorResult(error: 'upsert_failed', message: 'Failed to upsert menu item. See server logs for details.');

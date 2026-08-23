@@ -8,7 +8,7 @@
   - Export button, and a "··· Actions" overflow menu (Settings — incl.
   - publish/unpublish — GitHub, permissions, Save as template, Delete).
   - Page/walkthrough design happens inside the running app via the in-app
-  - OpenBuild edit menu (CnOpenBuildEditButton, ADR-041), not from here.
+  - Buildiq edit menu (CnBuildiqEditButton, ADR-041), not from here.
   - Reads/writes the Application via OR's REST API (ADR-022) + the dedicated
   - publish/delete endpoints, using the applicationContext mixin. Modals/dialogs
   - live in their own files per ADR-004 gate-modal-isolation.
@@ -26,11 +26,11 @@
 				<template #icon>
 					<OpenInNew :size="20" />
 				</template>
-				{{ t('openbuild', 'Open app') }}
+				{{ t('buildiq', 'Open app') }}
 			</NcButton>
 			<NcActions
 				v-if="openableVersions.length"
-				:menuName="t('openbuild', 'Open a version')"
+				:menuName="t('buildiq', 'Open a version')"
 				:forceMenu="true"
 				class="ob-detail-actions__open-chevron">
 				<!-- Vue 3 requires the v-for key on the <template> itself, not on
@@ -49,18 +49,16 @@
 						<template #icon>
 							<PencilRulerOutline :size="20" />
 						</template>
-						{{
-							t('openbuild', 'Edit {name}', { name: versionLabel(v) })
-						}}
+						{{ t('buildiq', 'Edit {name}', { name: versionLabel(v) }) }}
 					</NcActionButton>
 				</template>
 			</NcActions>
 		</div>
 		<NcButton :disabled="!obApp" @click="exportOpen = true">
-			{{ t('openbuild', 'Export') }}
+			{{ t('buildiq', 'Export') }}
 		</NcButton>
 
-		<NcActions :menuName="t('openbuild', 'Actions')" :forceMenu="true">
+		<NcActions :menuName="t('buildiq', 'Actions')" :forceMenu="true">
 			<NcActionButton
 				v-if="obAppRole === 'owner'"
 				data-test="app-settings-action"
@@ -69,7 +67,7 @@
 				<template #icon>
 					<CogOutline :size="20" />
 				</template>
-				{{ t('openbuild', 'Settings') }}
+				{{ t('buildiq', 'Settings') }}
 			</NcActionButton>
 			<NcActionButton
 				v-if="obApp && obApp.slug"
@@ -78,7 +76,7 @@
 				<template #icon>
 					<Github :size="20" />
 				</template>
-				{{ t('openbuild', 'GitHub') }}
+				{{ t('buildiq', 'GitHub') }}
 			</NcActionButton>
 			<NcActionButton
 				v-if="obAppRole === 'owner'"
@@ -87,7 +85,7 @@
 				<template #icon>
 					<AccountMultipleOutline :size="20" />
 				</template>
-				{{ t('openbuild', 'Manage permissions') }}
+				{{ t('buildiq', 'Manage permissions') }}
 			</NcActionButton>
 			<NcActionButton
 				v-if="obAppRole === 'owner'"
@@ -96,7 +94,7 @@
 				<template #icon>
 					<History :size="20" />
 				</template>
-				{{ t('openbuild', 'Permission history') }}
+				{{ t('buildiq', 'Permission history') }}
 			</NcActionButton>
 			<NcActionButton
 				v-if="canSaveAsTemplate"
@@ -107,8 +105,8 @@
 				</template>
 				{{
 					saveTemplateLoading
-						? t('openbuild', 'Preparing…')
-						: t('openbuild', 'Save as template')
+						? t('buildiq', 'Preparing…')
+						: t('buildiq', 'Save as template')
 				}}
 			</NcActionButton>
 			<NcActionLink
@@ -118,7 +116,7 @@
 				<template #icon>
 					<HelpCircleOutline :size="20" />
 				</template>
-				{{ t('openbuild', 'Documentation') }}
+				{{ t('buildiq', 'Documentation') }}
 			</NcActionLink>
 			<NcActionButton
 				v-if="obAppRole === 'owner'"
@@ -127,7 +125,7 @@
 				<template #icon>
 					<DeleteOutline :size="20" />
 				</template>
-				{{ t('openbuild', 'Delete') }}
+				{{ t('buildiq', 'Delete') }}
 			</NcActionButton>
 		</NcActions>
 
@@ -226,7 +224,7 @@ const ExportDialog = defineAsyncComponent(
 	() => import('../dialogs/ExportDialog.vue'),
 )
 
-const OR_TEMPLATES = '/apps/openregister/api/objects/openbuild/application-template'
+const OR_TEMPLATES = '/apps/openregister/api/objects/buildiq/application-template'
 
 export default {
 	name: 'ApplicationDetailActions',
@@ -291,7 +289,7 @@ export default {
 			if (!this.obApp || !this.obApp.slug) {
 				return ''
 			}
-			return generateUrl(`/apps/openbuild/builder/${this.obApp.slug}`)
+			return generateUrl(`/apps/buildiq/builder/${this.obApp.slug}`)
 		},
 
 		/**
@@ -396,7 +394,7 @@ export default {
 			}
 			try {
 				const url = generateUrl(
-					'/apps/openbuild/api/applications/{slug}/versions',
+					'/apps/buildiq/api/applications/{slug}/versions',
 					{ slug: this.obApp.slug },
 				)
 				const { data } = await axios.get(url)
@@ -444,7 +442,7 @@ export default {
 			const name = (v && (v.name || v.slug)) || ''
 			const semver = v && v.semver ? ` (${v.semver})` : ''
 			const prod = this.isProductionVersion(v)
-				? ` — ${t('openbuild', 'Production')}`
+				? ` — ${t('buildiq', 'Production')}`
 				: ''
 			return `${name}${semver}${prod}`
 		},
@@ -460,7 +458,7 @@ export default {
 			if (!this.obApp || !this.obApp.slug) {
 				return
 			}
-			const base = generateUrl(`/apps/openbuild/builder/${this.obApp.slug}`)
+			const base = generateUrl(`/apps/buildiq/builder/${this.obApp.slug}`)
 			const url = this.isProductionVersion(v)
 				? base
 				: `${base}?_version=${encodeURIComponent(v.slug)}`
@@ -480,7 +478,7 @@ export default {
 				return
 			}
 			const base = generateUrl(
-				`/apps/openbuild/builder/${this.obApp.slug}/pages`,
+				`/apps/buildiq/builder/${this.obApp.slug}/pages`,
 			)
 			window.location.href = this.isProductionVersion(v)
 				? base
@@ -505,7 +503,7 @@ export default {
 				const action = shouldPublish ? 'publish' : 'unpublish'
 				await axios.post(
 					generateUrl(
-						`/apps/openbuild/api/applications/${this.obAppUuid}/${action}`,
+						`/apps/buildiq/api/applications/${this.obAppUuid}/${action}`,
 					),
 					{},
 				)
@@ -514,19 +512,16 @@ export default {
 				// toggle/badge stale until a full page reload.
 				await this.obLoadApp(true)
 				this.toast = shouldPublish
-					? t(
-							'openbuild',
-							'App published — it now appears in the app menu.',
-						)
-					: t('openbuild', 'App unpublished — removed from the app menu.')
+					? t('buildiq', 'App published — it now appears in the app menu.')
+					: t('buildiq', 'App unpublished — removed from the app menu.')
 			} catch (e) {
 				const detail =
 					(e.response && e.response.data && e.response.data.detail)
 					|| e.message
 					|| e
 				this.error = shouldPublish
-					? `${t('openbuild', 'Publish failed')}: ${detail}`
-					: `${t('openbuild', 'Unpublish failed')}: ${detail}`
+					? `${t('buildiq', 'Publish failed')}: ${detail}`
+					: `${t('buildiq', 'Unpublish failed')}: ${detail}`
 			} finally {
 				this.publishing = false
 			}
@@ -546,7 +541,7 @@ export default {
 			try {
 				await this.obPatchApp({ allowUserOverrides: allow })
 			} catch (e) {
-				this.error = `${t('openbuild', 'Failed to save settings')}: ${e.message || e}`
+				this.error = `${t('buildiq', 'Failed to save settings')}: ${e.message || e}`
 			}
 		},
 
@@ -589,7 +584,7 @@ export default {
 					}))
 					.filter((option) => !!option.value)
 			} catch (e) {
-				this.error = `${t('openbuild', 'Failed to load flows')}: ${e.message || e}`
+				this.error = `${t('buildiq', 'Failed to load flows')}: ${e.message || e}`
 			} finally {
 				this.loadingFlows = false
 			}
@@ -609,7 +604,7 @@ export default {
 			try {
 				await this.obPatchApp({ flows })
 			} catch (e) {
-				this.error = `${t('openbuild', 'Failed to save settings')}: ${e.message || e}`
+				this.error = `${t('buildiq', 'Failed to save settings')}: ${e.message || e}`
 			}
 		},
 
@@ -621,7 +616,7 @@ export default {
 			try {
 				await this.obPatchApp({ dataRegisters })
 			} catch (e) {
-				this.error = `${t('openbuild', 'Failed to save settings')}: ${e.message || e}`
+				this.error = `${t('buildiq', 'Failed to save settings')}: ${e.message || e}`
 			}
 		},
 
@@ -642,9 +637,7 @@ export default {
 			this.error = ''
 			try {
 				await axios.delete(
-					generateUrl(
-						`/apps/openbuild/api/applications/${this.obAppUuid}`,
-					),
+					generateUrl(`/apps/buildiq/api/applications/${this.obAppUuid}`),
 					{
 						params: { deleteData: deleteData ? 1 : 0 },
 					},
@@ -653,16 +646,14 @@ export default {
 				if (this.$router) {
 					this.$router.push({ name: 'VirtualApps' }).catch(() => {})
 				} else {
-					window.location.href = generateUrl(
-						'/apps/openbuild/applications',
-					)
+					window.location.href = generateUrl('/apps/buildiq/applications')
 				}
 			} catch (e) {
 				const detail =
 					(e.response && e.response.data && e.response.data.detail)
 					|| e.message
 					|| e
-				this.error = `${t('openbuild', 'Delete failed')}: ${detail}`
+				this.error = `${t('buildiq', 'Delete failed')}: ${detail}`
 			} finally {
 				this.deleting = false
 			}
@@ -683,7 +674,7 @@ export default {
 				await this.obPatchApp({ permissions })
 				this.permissionsOpen = false
 			} catch (e) {
-				this.error = `${t('openbuild', 'Failed to save permissions')}: ${e.message || e}`
+				this.error = `${t('buildiq', 'Failed to save permissions')}: ${e.message || e}`
 			}
 		},
 
@@ -716,7 +707,7 @@ export default {
 				// disabled. Saving an app as a template was impossible for EVERY
 				// application.
 				const manifestUrl = generateUrl(
-					`/apps/openbuild/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`,
+					`/apps/buildiq/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`,
 				)
 				const { data: resolvedManifest } = await axios.get(manifestUrl)
 				this.saveTemplateManifest =
@@ -735,7 +726,7 @@ export default {
 				this.existingTemplates = await this.loadExistingTemplates()
 				this.saveTemplateOpen = true
 			} catch (e) {
-				this.error = `${t('openbuild', 'Could not prepare template capture')}: ${e.message || e}`
+				this.error = `${t('buildiq', 'Could not prepare template capture')}: ${e.message || e}`
 			} finally {
 				this.saveTemplateLoading = false
 			}
@@ -772,10 +763,10 @@ export default {
 			this.saveTemplateOpen = false
 			this.toast =
 				payload && payload.mode === 'update'
-					? t('openbuild', 'Template "{slug}" updated', {
+					? t('buildiq', 'Template "{slug}" updated', {
 							slug: payload.slug,
 						})
-					: t('openbuild', 'Saved as template "{slug}"', {
+					: t('buildiq', 'Saved as template "{slug}"', {
 							slug: payload.slug,
 						})
 		},

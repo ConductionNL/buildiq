@@ -1,5 +1,5 @@
 {
-    "name": "conductionnl/openbuild",
+    "name": "conductionnl/buildiq",
     "description": "Citizen-developer app builder for Nextcloud \u2014 compose apps from registers, connectors, workflows, and documents without code.",
     "license": "EUPL-1.2",
     "authors": [
@@ -11,7 +11,7 @@
     ],
     "autoload": {
         "psr-4": {
-            "OCA\\OpenBuild\\": "lib/"
+            "OCA\\Buildiq\\": "lib/"
         },
         "exclude-from-classmap": [
             "lib/Resources/template/"

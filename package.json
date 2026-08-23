@@ -1,5 +1,5 @@
 {
-	"name": "openbuild",
+	"name": "buildiq",
 	"version": "0.2.0",
 	"license": "EUPL-1.2",
 	"engines": {
@@ -29,8 +29,8 @@
 		"test:e2e:ui": "playwright test --ui",
 		"test:e2e:headed": "playwright test --headed",
 		"test:e2e:install": "playwright install --with-deps",
-		"test:newman": "newman run tests/integration/openbuild.postman_collection.json --env-var base_url=http://localhost:8080 --env-var admin_user=admin --env-var admin_password=admin",
-		"test:newman:ci": "newman run tests/integration/openbuild.postman_collection.json --env-var base_url=http://localhost:8080 --env-var admin_user=admin --env-var admin_password=admin --reporters cli,junit --reporter-junit-export tests/integration/newman-results.xml",
+		"test:newman": "newman run tests/integration/buildiq.postman_collection.json --env-var base_url=http://localhost:8080 --env-var admin_user=admin --env-var admin_password=admin",
+		"test:newman:ci": "newman run tests/integration/buildiq.postman_collection.json --env-var base_url=http://localhost:8080 --env-var admin_user=admin --env-var admin_password=admin --reporters cli,junit --reporter-junit-export tests/integration/newman-results.xml",
 		"test:unit": "vitest run",
 		"test:coverage": "vitest run --coverage --coverage.provider=v8 --coverage.reporter=json-summary --coverage.reporter=text-summary --coverage.include=src/** --coverage.reportsDirectory=coverage-vitest",
 		"test:coverage-ratchet": "npm run test:coverage && bash tests/coverage-ratchet.sh vitest coverage-vitest/coverage-summary.json",

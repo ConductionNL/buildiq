@@ -20,10 +20,10 @@
 				<template #icon>
 					<ArrowLeft :size="20" />
 				</template>
-				{{ t('openbuild', 'Back to app') }}
+				{{ t('buildiq', 'Back to app') }}
 			</NcButton>
 			<h2 class="ob-manifest-detail__title">
-				{{ t('openbuild', 'Manifest layers — {name}', { name: appName }) }}
+				{{ t('buildiq', 'Manifest layers — {name}', { name: appName }) }}
 			</h2>
 		</header>
 
@@ -35,26 +35,26 @@
 		<section class="ob-manifest-detail__layers">
 			<!-- Base -->
 			<article class="ob-manifest-detail__layer">
-				<h3>{{ t('openbuild', 'Base') }}</h3>
+				<h3>{{ t('buildiq', 'Base') }}</h3>
 				<p class="ob-manifest-detail__layer-meta">
 					{{
 						isHybrid
 							? t(
-									'openbuild',
+									'buildiq',
 									'The installed Nextcloud app manifest. Read-only.',
 								)
-							: t('openbuild', 'The built app manifest. Read-only.')
+							: t('buildiq', 'The built app manifest. Read-only.')
 					}}
 				</p>
 			</article>
 
 			<!-- Admin (shared) delta -->
 			<article class="ob-manifest-detail__layer">
-				<h3>{{ t('openbuild', 'Admin delta') }}</h3>
+				<h3>{{ t('buildiq', 'Admin delta') }}</h3>
 				<p class="ob-manifest-detail__layer-meta">
 					{{
 						t(
-							'openbuild',
+							'buildiq',
 							'Instance-wide shared customization managed by admins.',
 						)
 					}}
@@ -63,14 +63,14 @@
 					v-if="adminVersionUuid"
 					variant="tertiary"
 					@click="openInOpenRegister(adminVersionUuid)">
-					{{ t('openbuild', 'Open version history in OpenRegister') }}
+					{{ t('buildiq', 'Open version history in OpenRegister') }}
 				</NcButton>
 			</article>
 
 			<!-- Your (per-user) delta -->
 			<article
 				class="ob-manifest-detail__layer ob-manifest-detail__layer--user">
-				<h3>{{ t('openbuild', 'Your delta') }}</h3>
+				<h3>{{ t('buildiq', 'Your delta') }}</h3>
 				<p class="ob-manifest-detail__layer-meta">
 					{{ userMeta }}
 				</p>
@@ -79,20 +79,17 @@
 					class="ob-manifest-detail__layer-actions">
 					<template v-if="userDelta.exists">
 						<NcButton variant="secondary" @click="showEditModal = true">
-							{{ t('openbuild', 'Edit') }}
+							{{ t('buildiq', 'Edit') }}
 						</NcButton>
 						<NcButton variant="tertiary" @click="resetOverride">
-							{{ t('openbuild', 'Reset') }}
+							{{ t('buildiq', 'Reset') }}
 						</NcButton>
 						<NcButton
 							v-if="userDelta.versionUuid"
 							variant="tertiary"
 							@click="openInOpenRegister(userDelta.versionUuid)">
 							{{
-								t(
-									'openbuild',
-									'Open version history in OpenRegister',
-								)
+								t('buildiq', 'Open version history in OpenRegister')
 							}}
 						</NcButton>
 					</template>
@@ -101,13 +98,11 @@
 						variant="secondary"
 						:disabled="creating"
 						@click="createOverride">
-						{{ t('openbuild', 'Create override') }}
+						{{ t('buildiq', 'Create override') }}
 					</NcButton>
 				</div>
 				<p v-else class="ob-manifest-detail__layer-meta">
-					{{
-						t('openbuild', 'This app does not allow per-user overrides.')
-					}}
+					{{ t('buildiq', 'This app does not allow per-user overrides.') }}
 				</p>
 			</article>
 		</section>
@@ -118,7 +113,7 @@
 		     the private delta bodies. -->
 		<section v-if="canViewUserOverrides" class="ob-manifest-detail__overrides">
 			<header class="ob-manifest-detail__overrides-header">
-				<h3>{{ t('openbuild', 'User overrides') }}</h3>
+				<h3>{{ t('buildiq', 'User overrides') }}</h3>
 				<span class="ob-manifest-detail__overrides-count">{{
 					userOverrides.length
 				}}</span>
@@ -126,9 +121,7 @@
 			<p
 				v-if="userOverrides.length === 0"
 				class="ob-manifest-detail__layer-meta">
-				{{
-					t('openbuild', 'No users have created a personal override yet.')
-				}}
+				{{ t('buildiq', 'No users have created a personal override yet.') }}
 			</p>
 			<ul v-else class="ob-manifest-detail__overrides-list">
 				<li
@@ -145,7 +138,7 @@
 						v-if="ovr.versionUuid"
 						variant="tertiary"
 						@click="openInOpenRegister(ovr.versionUuid)">
-						{{ t('openbuild', 'Open in OpenRegister') }}
+						{{ t('buildiq', 'Open in OpenRegister') }}
 					</NcButton>
 				</li>
 			</ul>
@@ -162,7 +155,7 @@
 					<template #icon>
 						<Plus :size="20" />
 					</template>
-					{{ t('openbuild', 'New draft') }}
+					{{ t('buildiq', 'New draft') }}
 				</NcButton>
 			</div>
 			<VersionHistory
@@ -321,16 +314,13 @@ export default {
 		userMeta() {
 			if (!this.allowUserOverrides) {
 				return t(
-					'openbuild',
+					'buildiq',
 					'Per-user overrides are turned off for this app.',
 				)
 			}
 			return this.userDelta.exists
-				? t(
-						'openbuild',
-						'Your personal delta, layered over the admin delta.',
-					)
-				: t('openbuild', 'You have no personal override yet.')
+				? t('buildiq', 'Your personal delta, layered over the admin delta.')
+				: t('buildiq', 'You have no personal override yet.')
 		},
 	},
 
@@ -381,7 +371,7 @@ export default {
 			if (!this.appSlug) return
 			try {
 				const url = generateUrl(
-					'/apps/openbuild/api/app-overrides/{appId}/user-deltas',
+					'/apps/buildiq/api/app-overrides/{appId}/user-deltas',
 					{ appId: this.appSlug },
 				)
 				const { data } = await axios.get(url)
@@ -419,13 +409,13 @@ export default {
 			if (!this.appUuid) return
 			try {
 				const url = generateUrl(
-					'/apps/openregister/api/objects/openbuild/application/{uuid}',
+					'/apps/openregister/api/objects/buildiq/application/{uuid}',
 					{ uuid: this.appUuid },
 				)
 				const { data } = await axios.get(url)
 				this.application = data || null
 			} catch (e) {
-				this.error = t('openbuild', 'Could not load the app.')
+				this.error = t('buildiq', 'Could not load the app.')
 			}
 		},
 
@@ -451,7 +441,7 @@ export default {
 			if (!this.appSlug) return
 			try {
 				const url = generateUrl(
-					'/apps/openbuild/api/app-overrides/{appId}/user',
+					'/apps/buildiq/api/app-overrides/{appId}/user',
 					{ appId: this.appSlug },
 				)
 				const { data } = await axios.get(url)
@@ -482,13 +472,13 @@ export default {
 			this.error = ''
 			try {
 				const url = generateUrl(
-					'/apps/openbuild/api/app-overrides/{appId}/user',
+					'/apps/buildiq/api/app-overrides/{appId}/user',
 					{ appId: this.appSlug },
 				)
 				await axios.put(url, {})
 				await this.loadUserDelta()
 			} catch (e) {
-				this.error = t('openbuild', 'Could not create your override.')
+				this.error = t('buildiq', 'Could not create your override.')
 			} finally {
 				this.creating = false
 			}
@@ -504,13 +494,13 @@ export default {
 			this.error = ''
 			try {
 				const url = generateUrl(
-					'/apps/openbuild/api/app-overrides/{appId}/user',
+					'/apps/buildiq/api/app-overrides/{appId}/user',
 					{ appId: this.appSlug },
 				)
 				await axios.delete(url)
 				await this.loadUserDelta()
 			} catch (e) {
-				this.error = t('openbuild', 'Could not reset your override.')
+				this.error = t('buildiq', 'Could not reset your override.')
 			}
 		},
 
@@ -561,7 +551,7 @@ export default {
 			this.error = ''
 			try {
 				const listUrl = generateUrl(
-					'/apps/openbuild/api/applications/{slug}/versions',
+					'/apps/buildiq/api/applications/{slug}/versions',
 					{ slug: this.appSlug },
 				)
 				const { data } = await axios.get(listUrl)
@@ -603,7 +593,7 @@ export default {
 					application: this.appUuid,
 				})
 				showSuccess(
-					t('openbuild', 'Draft “{name}” created.', {
+					t('buildiq', 'Draft “{name}” created.', {
 						name: 'Draft ' + n,
 					}),
 				)
@@ -615,7 +605,7 @@ export default {
 					(e && e.response && e.response.data && e.response.data.detail)
 					|| ''
 				this.error =
-					t('openbuild', 'Could not create a draft.')
+					t('buildiq', 'Could not create a draft.')
 					+ (detail ? ' ' + detail : '')
 			} finally {
 				this.creatingDraft = false
@@ -632,7 +622,7 @@ export default {
 		openInOpenRegister(versionUuid) {
 			if (!versionUuid) return
 			const url = generateUrl(
-				'/apps/openregister/objects/openbuild/applicationVersion/{uuid}',
+				'/apps/openregister/objects/buildiq/applicationVersion/{uuid}',
 				{ uuid: versionUuid },
 			)
 			window.location.href = url

@@ -13,7 +13,7 @@
 <template>
 	<NcDialog
 		:open="open"
-		:name="t('openbuild', 'Resolve schema references')"
+		:name="t('buildiq', 'Resolve schema references')"
 		size="normal"
 		@update:open="$emit('update:open', $event)"
 		@closing="onClose">
@@ -21,7 +21,7 @@
 			<p class="ob-block-remap__intro">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'This block references schemas that do not exist under the same name in this app. Map each one to a schema here, or leave it unresolved — an unresolved binding inserts as a visible "needs remap" placeholder, it is never silently dropped.',
 					)
 				}}
@@ -31,23 +31,23 @@
 				<span class="ob-block-remap__source">{{ dep }}</span>
 				<NcSelect
 					v-model="selections[dep]"
-					:inputLabel="t('openbuild', 'Map “{dep}” to', { dep })"
+					:inputLabel="t('buildiq', 'Map “{dep}” to', { dep })"
 					:options="schemaOptions"
 					:clearable="true"
-					:placeholder="t('openbuild', 'Leave unresolved')" />
+					:placeholder="t('buildiq', 'Leave unresolved')" />
 			</div>
 
 			<p v-if="!dependencies.length" class="ob-block-remap__none">
-				{{ t('openbuild', 'No schema references need resolving.') }}
+				{{ t('buildiq', 'No schema references need resolving.') }}
 			</p>
 		</div>
 
 		<template #actions>
 			<NcButton @click="onClose">
-				{{ t('openbuild', 'Cancel') }}
+				{{ t('buildiq', 'Cancel') }}
 			</NcButton>
 			<NcButton variant="primary" @click="confirm">
-				{{ t('openbuild', 'Insert block') }}
+				{{ t('buildiq', 'Insert block') }}
 			</NcButton>
 		</template>
 	</NcDialog>

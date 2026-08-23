@@ -8,52 +8,52 @@
   - free-text; `config` is captured as raw JSON (read-only in v1).
   -->
 <template>
-	<section class="openbuild-widget-editor">
-		<header class="openbuild-widget-editor__header">
-			<h3>{{ t('openbuild', 'Widgets') }}</h3>
+	<section class="buildiq-widget-editor">
+		<header class="buildiq-widget-editor__header">
+			<h3>{{ t('buildiq', 'Widgets') }}</h3>
 			<NcButton @click="addWidget">
 				<template #icon>
 					<PlusIcon :size="20" />
 				</template>
-				{{ t('openbuild', 'Add widget') }}
+				{{ t('buildiq', 'Add widget') }}
 			</NcButton>
 		</header>
 
 		<NcNoteCard type="warning">
 			{{
 				t(
-					'openbuild',
+					'buildiq',
 					'No widget catalogue registered yet — widget IDs are free-text. The page editor (chain spec #5) will narrow this to a picker once it ships.',
 				)
 			}}
 		</NcNoteCard>
 
-		<p v-if="widgets.length === 0" class="openbuild-widget-editor__empty">
-			{{ t('openbuild', 'No widgets yet.') }}
+		<p v-if="widgets.length === 0" class="buildiq-widget-editor__empty">
+			{{ t('buildiq', 'No widgets yet.') }}
 		</p>
 
-		<ul v-else class="openbuild-widget-editor__rows">
+		<ul v-else class="buildiq-widget-editor__rows">
 			<li
 				v-for="(widget, index) in widgets"
 				:key="widget._key"
-				class="openbuild-widget-editor__row">
+				class="buildiq-widget-editor__row">
 				<NcTextField
 					:modelValue="widget.slot"
-					:label="t('openbuild', 'Slot')"
+					:label="t('buildiq', 'Slot')"
 					@update:modelValue="updateWidget(index, 'slot', $event)" />
 				<NcTextField
 					:modelValue="widget.widget"
-					:label="t('openbuild', 'Widget id')"
+					:label="t('buildiq', 'Widget id')"
 					@update:modelValue="updateWidget(index, 'widget', $event)" />
 				<NcTextField
 					:modelValue="widget.configJson"
-					:label="t('openbuild', 'Config (JSON)')"
+					:label="t('buildiq', 'Config (JSON)')"
 					:error="!!widget.configError"
 					:helperText="widget.configError"
 					@update:modelValue="updateConfig(index, $event)" />
 				<NcButton
 					variant="error"
-					:aria-label="t('openbuild', 'Remove widget')"
+					:aria-label="t('buildiq', 'Remove widget')"
 					@click="removeWidget(index)">
 					<template #icon>
 						<DeleteIcon :size="20" />
@@ -145,7 +145,7 @@ export default {
 			try {
 				JSON.parse(value || '{}')
 			} catch (e) {
-				error = this.t('openbuild', 'Config must be valid JSON.')
+				error = this.t('buildiq', 'Config must be valid JSON.')
 			}
 			next[index] = { ...next[index], configJson: value, configError: error }
 			this.emitWidgets(next)
@@ -214,30 +214,30 @@ export function editorToWidgets(widgets) {
 </script>
 
 <style scoped>
-.openbuild-widget-editor {
+.buildiq-widget-editor {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
 }
 
-.openbuild-widget-editor__header {
+.buildiq-widget-editor__header {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 }
 
-.openbuild-widget-editor__header h3 {
+.buildiq-widget-editor__header h3 {
 	margin: 0;
 	font-size: 18px;
 	font-weight: 600;
 }
 
-.openbuild-widget-editor__empty {
+.buildiq-widget-editor__empty {
 	margin: 0;
 	color: var(--color-text-maxcontrast);
 }
 
-.openbuild-widget-editor__rows {
+.buildiq-widget-editor__rows {
 	list-style: none;
 	margin: 0;
 	padding: 0;
@@ -246,7 +246,7 @@ export function editorToWidgets(widgets) {
 	gap: 8px;
 }
 
-.openbuild-widget-editor__row {
+.buildiq-widget-editor__row {
 	display: grid;
 	grid-template-columns: 1fr 1fr 2fr auto;
 	gap: 8px;

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild ProductionVersionGuardListener
+ * Buildiq ProductionVersionGuardListener
  *
  * Listens for OpenRegister's `ObjectSavingEvent` on Application rows and
  * rejects saves whose `productionVersion` relation points at an
@@ -21,7 +21,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Listener
- * @package  OCA\OpenBuild\Listener
+ * @package  OCA\Buildiq\Listener
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -37,11 +37,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Listener;
+namespace OCA\Buildiq\Listener;
 
-use OCA\OpenBuild\Service\ApplicationVersionService;
-use OCA\OpenBuild\Service\ListenerSlugContract;
-use OCA\OpenBuild\Service\ObjectSchemaSlugResolver;
+use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Service\ListenerSlugContract;
+use OCA\Buildiq\Service\ObjectSchemaSlugResolver;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCP\EventDispatcher\Event;
@@ -111,12 +111,12 @@ class ProductionVersionGuardListener implements IEventListener {
 		//
 		// Enabling it is therefore a rollout decision, not a bug fix, and it is
 		// deliberately off by default. Enable with:
-		// occ config:app:set openbuild listener_slug_contract --value=yes.
+		// occ config:app:set buildiq listener_slug_contract --value=yes.
 		if ($this->contract->isEnabled() === false) {
 			return;
 		}
 
-		if ($this->slugs->isOpenBuildSchema(
+		if ($this->slugs->isBuildiqSchema(
 			entity: $entity,
 			schemaSlug: ApplicationVersionService::APPLICATION_SCHEMA
 		) === false
@@ -149,14 +149,14 @@ class ProductionVersionGuardListener implements IEventListener {
 				$event->setErrors(
 					[
 						'status' => 422,
-						'code' => 'openbuild.production_version.back_reference_mismatch',
+						'code' => 'buildiq.production_version.back_reference_mismatch',
 						'message' => $e->getMessage(),
 					]
 				);
 			}
 
 			$this->logger->info(
-				message: 'OpenBuild: blocked Application save — productionVersion guard rejected the change.',
+				message: 'Buildiq: blocked Application save — productionVersion guard rejected the change.',
 				context: [
 					'applicationUuid' => $applicationUuid,
 					'productionVersion' => $proposedVersion,
@@ -212,7 +212,7 @@ class ProductionVersionGuardListener implements IEventListener {
 					return $uuid;
 				}
 			} catch (Throwable $e) {
-				$this->logger->debug('OpenBuild: getUuid() unavailable on ' . $entity::class . ': ' . $e->getMessage());
+				$this->logger->debug('Buildiq: getUuid() unavailable on ' . $entity::class . ': ' . $e->getMessage());
 			}
 		}
 

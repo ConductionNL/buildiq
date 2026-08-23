@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild App Navigation Service
+ * Buildiq App Navigation Service
  *
  * Registers per-app top-bar navigation entries for every published Application
  * in `Application::boot()` via INavigationManager::add().
@@ -21,7 +21,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -39,7 +39,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IAppConfig;
@@ -66,7 +66,7 @@ class AppNavigationService {
 	/**
 	 * Register slug that hosts Application objects.
 	 */
-	private const REGISTER_SLUG = 'openbuild';
+	private const REGISTER_SLUG = 'buildiq';
 
 	/**
 	 * Schema slug for Application objects.
@@ -149,7 +149,7 @@ class AppNavigationService {
 		}
 
 		$orderBase = $this->appConfig->getValueInt(
-			'openbuild',
+			'buildiq',
 			self::ORDER_BASE_CONFIG_KEY,
 			self::ORDER_BASE_DEFAULT
 		);
@@ -172,7 +172,7 @@ class AppNavigationService {
 			}
 
 			$iconUrl = $this->urlGenerator->linkToRouteAbsolute(
-				'openbuild.icon.iconLight',
+				'buildiq.icon.iconLight',
 				['slug' => $slug]
 			);
 
@@ -180,7 +180,7 @@ class AppNavigationService {
 			// href via IURLGenerator (not a hand-built string) so linkToRoute adds
 			// the `/index.php` front-controller segment exactly when the instance
 			// requires it — the link then resolves on both instance kinds.
-			$appUrl = $this->urlGenerator->linkToRoute('openbuild.dashboard.builder', ['slug' => $slug]);
+			$appUrl = $this->urlGenerator->linkToRoute('buildiq.dashboard.builder', ['slug' => $slug]);
 			$entryId = self::ENTRY_ID_PREFIX . $slug;
 			$order = $orderBase + (abs(crc32($slug)) % 100);
 

@@ -12,15 +12,15 @@
   -->
 <template>
 	<NcDialog
-		:name="t('openbuild', 'Permissions')"
+		:name="t('buildiq', 'Permissions')"
 		:open="open"
 		size="normal"
 		@update:open="onClose">
-		<div class="openbuild-permissions-modal">
-			<p class="openbuild-permissions-modal__help">
+		<div class="buildiq-permissions-modal">
+			<p class="buildiq-permissions-modal__help">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'Configure which Nextcloud groups can view, edit, or own this app. Members of any of these groups will see the app in their list; only owners may publish, archive, delete, transfer ownership, or change these permissions.',
 					)
 				}}
@@ -30,42 +30,42 @@
 				v-model="ownersModel"
 				:options="groupOptions"
 				:multiple="true"
-				:inputLabel="t('openbuild', 'Owners (full control)')"
+				:inputLabel="t('buildiq', 'Owners (full control)')"
 				label="label"
 				trackBy="value" />
 			<NcSelect
 				v-model="editorsModel"
 				:options="groupOptions"
 				:multiple="true"
-				:inputLabel="t('openbuild', 'Editors (can save drafts)')"
+				:inputLabel="t('buildiq', 'Editors (can save drafts)')"
 				label="label"
 				trackBy="value" />
 			<NcSelect
 				v-model="viewersModel"
 				:options="groupOptions"
 				:multiple="true"
-				:inputLabel="t('openbuild', 'Viewers (read-only)')"
+				:inputLabel="t('buildiq', 'Viewers (read-only)')"
 				label="label"
 				trackBy="value" />
 
-			<div v-if="orphanError" class="openbuild-permissions-modal__error">
+			<div v-if="orphanError" class="buildiq-permissions-modal__error">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'At least one owner group is required — saving with no owners would orphan this application.',
 					)
 				}}
 			</div>
 
-			<div class="openbuild-permissions-modal__actions">
+			<div class="buildiq-permissions-modal__actions">
 				<NcButton variant="tertiary" @click="onClose">
-					{{ t('openbuild', 'Cancel') }}
+					{{ t('buildiq', 'Cancel') }}
 				</NcButton>
 				<NcButton variant="primary" :disabled="saving" @click="save">
 					{{
 						saving
-							? t('openbuild', 'Saving permissions…')
-							: t('openbuild', 'Save permissions')
+							? t('buildiq', 'Saving permissions…')
+							: t('buildiq', 'Save permissions')
 					}}
 				</NcButton>
 			</div>
@@ -214,24 +214,24 @@ export default {
 </script>
 
 <style scoped>
-.openbuild-permissions-modal {
+.buildiq-permissions-modal {
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
 	padding: 8px 0;
 }
 
-.openbuild-permissions-modal__help {
+.buildiq-permissions-modal__help {
 	font-size: 13px;
 	color: var(--color-text-maxcontrast, #888);
 }
 
-.openbuild-permissions-modal__error {
+.buildiq-permissions-modal__error {
 	color: var(--color-error, #d63f3f);
 	font-size: 13px;
 }
 
-.openbuild-permissions-modal__actions {
+.buildiq-permissions-modal__actions {
 	display: flex;
 	gap: 8px;
 	justify-content: flex-end;

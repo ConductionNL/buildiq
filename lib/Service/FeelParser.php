@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild FeelParser
+ * Buildiq FeelParser
  *
  * Tokenises and parses the FEEL (Friendly Enough Expression Language) subset
  * used by the business-rules engine for decision-table cell conditions and
@@ -26,7 +26,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -41,7 +41,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 use InvalidArgumentException;
 

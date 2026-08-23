@@ -1,5 +1,5 @@
 /**
- * SPDX-FileCopyrightText: 2026 ConductionNL / OpenBuild Contributors
+ * SPDX-FileCopyrightText: 2026 ConductionNL / Buildiq Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Vitest unit tests for `AccessEditor.vue` (REQ-OBDSA-001 .. REQ-OBDSA-003).
@@ -229,7 +229,7 @@ describe('AccessEditor.vue mount — capability gating and readOnly (REQ-OBDSA-0
 		})
 		const updateRow = wrapper.vm.rows.find((r) => r.op === 'update')
 		expect(wrapper.vm.isRepresentable(updateRow)).toBe(false)
-		expect(wrapper.find('.openbuild-access-editor__managed-note').exists()).toBe(
+		expect(wrapper.find('.buildiq-access-editor__managed-note').exists()).toBe(
 			true,
 		)
 	})

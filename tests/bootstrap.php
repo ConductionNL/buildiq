@@ -94,7 +94,7 @@ if (!defined('OC_CONSOLE')) {
 
 		if (class_exists(\OC_App::class)) {
 			\OC_App::loadApps();
-			\OC_App::loadApp('openbuild');
+			\OC_App::loadApp('buildiq');
 		}
 
 		if (class_exists(\OC_Hook::class)) {

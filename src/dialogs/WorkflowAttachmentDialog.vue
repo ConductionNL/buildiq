@@ -15,8 +15,8 @@
 		:open="open"
 		:name="
 			editing
-				? t('openbuild', 'Edit workflow attachment')
-				: t('openbuild', 'Attach a Procest case type')
+				? t('buildiq', 'Edit workflow attachment')
+				: t('buildiq', 'Attach a Procest case type')
 		"
 		size="normal"
 		@update:open="$emit('update:open', $event)"
@@ -25,7 +25,7 @@
 			<p v-if="!procestAvailable" class="ob-workflow-attach__warn">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'Procest is not installed or enabled on this instance. The case-type list cannot be loaded.',
 					)
 				}}
@@ -33,7 +33,7 @@
 
 			<NcSelect
 				v-model="caseTypeOption"
-				:inputLabel="t('openbuild', 'Case type')"
+				:inputLabel="t('buildiq', 'Case type')"
 				:options="caseTypeOptions"
 				:loading="loadingCaseTypes"
 				:disabled="!procestAvailable"
@@ -41,34 +41,34 @@
 
 			<NcSelect
 				v-model="schemaOption"
-				:inputLabel="t('openbuild', 'Schema')"
+				:inputLabel="t('buildiq', 'Schema')"
 				:options="schemaOptions"
 				label="label" />
 
 			<div class="ob-workflow-attach__link">
 				<NcSelect
 					v-model="linkPropertyOption"
-					:inputLabel="t('openbuild', 'Link property')"
+					:inputLabel="t('buildiq', 'Link property')"
 					:options="linkPropertyOptions"
 					label="label" />
 				<NcButton
 					variant="tertiary"
 					@click="$emit('create-link-property', selectedSchemaSlug)">
-					{{ t('openbuild', 'Create zaakUrl property') }}
+					{{ t('buildiq', 'Create zaakUrl property') }}
 				</NcButton>
 			</div>
 
 			<NcTextField
 				:modelValue="descriptionTemplate"
-				:label="t('openbuild', 'Description template (optional)')"
-				:placeholder="t('openbuild', 'e.g. Application for {{title}}')"
+				:label="t('buildiq', 'Description template (optional)')"
+				:placeholder="t('buildiq', 'e.g. Application for {{title}}')"
 				@update:modelValue="descriptionTemplate = $event" />
 
 			<label class="ob-workflow-attach__toggle">
 				<input v-model="addStatusTab" type="checkbox" />
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						"Add a case-status tab to this schema's detail page",
 					)
 				}}
@@ -80,10 +80,10 @@
 		</div>
 		<template #actions>
 			<NcButton @click="onClose">
-				{{ t('openbuild', 'Cancel') }}
+				{{ t('buildiq', 'Cancel') }}
 			</NcButton>
 			<NcButton variant="primary" :disabled="!canSave" @click="onSave">
-				{{ t('openbuild', 'Save') }}
+				{{ t('buildiq', 'Save') }}
 			</NcButton>
 		</template>
 	</NcDialog>

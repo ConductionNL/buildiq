@@ -48,7 +48,7 @@ The system SHALL render a **Register widget** on the app-detail dashboard showin
 the app's OpenRegister register(s) and current object counts, with an "Open in
 OpenRegister" deep-link into the OpenRegister app for any register-data version /
 rollback / time-travel. The widget SHALL NOT model a register-delta and SHALL NOT
-reimplement register versioning in OpenBuild — it is a read + deep-link surface
+reimplement register versioning in Buildiq — it is a read + deep-link surface
 only, consistent with the existing `RegisterWidget.vue` pattern.
 
 @e2e exclude deep-link contract — the deep-link target and count formatting are Vitest component contracts; OpenRegister-side version/rollback is OR's own verified surface

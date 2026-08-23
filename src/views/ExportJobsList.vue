@@ -2,9 +2,9 @@
 <template>
 	<section class="export-jobs">
 		<header class="export-jobs__header">
-			<h2>{{ t('openbuild', 'Export application') }}</h2>
+			<h2>{{ t('buildiq', 'Export application') }}</h2>
 			<NcButton v-if="applicationSlug" variant="primary" @click="openDialog">
-				{{ t('openbuild', 'Start export') }}
+				{{ t('buildiq', 'Start export') }}
 			</NcButton>
 		</header>
 
@@ -12,19 +12,19 @@
 			<thead>
 				<tr>
 					<th scope="col">
-						{{ t('openbuild', 'Version') }}
+						{{ t('buildiq', 'Version') }}
 					</th>
 					<th scope="col">
-						{{ t('openbuild', 'Target') }}
+						{{ t('buildiq', 'Target') }}
 					</th>
 					<th scope="col">
-						{{ t('openbuild', 'Status') }}
+						{{ t('buildiq', 'Status') }}
 					</th>
 					<!-- Actions column: no visible caption, but it is still a column
 					     header, so it keeps `scope="col"` and an sr-only name. -->
 					<th scope="col">
 						<span class="hidden-visually">{{
-							t('openbuild', 'Actions')
+							t('buildiq', 'Actions')
 						}}</span>
 					</th>
 				</tr>
@@ -50,7 +50,7 @@
 								&& job.downloadUrl
 							"
 							:href="job.downloadUrl">
-							{{ t('openbuild', 'Download ZIP') }}
+							{{ t('buildiq', 'Download ZIP') }}
 						</NcButton>
 						<NcButton
 							v-else-if="
@@ -59,7 +59,7 @@
 								&& job.githubPullRequestUrl
 							"
 							:href="job.githubPullRequestUrl">
-							{{ t('openbuild', 'View pull request') }}
+							{{ t('buildiq', 'View pull request') }}
 						</NcButton>
 						<span
 							v-else-if="job.status === 'failed'"
@@ -71,7 +71,7 @@
 			</tbody>
 		</table>
 		<p v-else>
-			{{ t('openbuild', 'No exports yet.') }}
+			{{ t('buildiq', 'No exports yet.') }}
 		</p>
 
 		<ExportDialog
@@ -187,9 +187,7 @@ export default {
 				// `applicationSlug` is still the right key for the SUBMIT endpoint
 				// (/api/applications/{slug}/exports), so both props are kept.
 				const url =
-					generateUrl(
-						'/apps/openregister/api/objects/openbuild/export-job',
-					)
+					generateUrl('/apps/openregister/api/objects/buildiq/export-job')
 					+ '?applicationUuid='
 					+ encodeURIComponent(this.applicationUuid)
 				const response = await fetch(url)
@@ -216,10 +214,10 @@ export default {
 		 */
 		statusLabel(status) {
 			const map = {
-				queued: this.t('openbuild', 'Queued'),
-				running: this.t('openbuild', 'Running'),
-				succeeded: this.t('openbuild', 'Succeeded'),
-				failed: this.t('openbuild', 'Failed'),
+				queued: this.t('buildiq', 'Queued'),
+				running: this.t('buildiq', 'Running'),
+				succeeded: this.t('buildiq', 'Succeeded'),
+				failed: this.t('buildiq', 'Failed'),
 			}
 			return map[status] || status
 		},

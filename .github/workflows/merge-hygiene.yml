@@ -48,7 +48,7 @@ jobs:
           # SCOPED TO CODE, and to paths we author. A marker is only a defect
           # where it would break something: prose that DOCUMENTS a conflict is
           # legitimate, and so are agent-eval artifacts that capture one as
-          # sample output. openbuild failed this gate on
+          # sample output. buildiq failed this gate on
           # `.claude/skills/create-pr/evals/.../summary.md` — a correct file.
           #
           # That matters more than the miss it allows. A gate that fails on
@@ -86,7 +86,7 @@ jobs:
       #
       # SCOPED TWICE, because each widening found another honest file. The
       # first version parsed every tracked .json and died on tsconfig/eslint
-      # JSONC. The second still reached `lib/**/*.json`, which in openbuild
+      # JSONC. The second still reached `lib/**/*.json`, which in buildiq
       # includes an entire app TEMPLATE — `.vscode/settings.json` and all.
       # A template is not this app's configuration, and an editor file is not
       # loaded by anything. What is left is what OpenRegister actually reads.

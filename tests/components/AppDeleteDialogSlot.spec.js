@@ -4,7 +4,7 @@
  *
  * Vitest unit tests for `src/components/AppDeleteDialogSlot.vue` — the
  * component that fills CnIndexPage's `#delete-dialog` slot on the
- * applications index and wires DeleteAppDialog's confirm to OpenBuild's
+ * applications index and wires DeleteAppDialog's confirm to Buildiq's
  * `destroy` endpoint.
  *
  * The slot maps the dialog's boolean `deleteData` choice onto the API's
@@ -108,7 +108,7 @@ describe('AppDeleteDialogSlot — destroy-endpoint wiring', () => {
 		await flush()
 
 		expect(axiosDeleteMock).toHaveBeenCalledWith(
-			'/apps/openbuild/api/applications/u-app',
+			'/apps/buildiq/api/applications/u-app',
 			{ params: { deleteData: 0 } },
 		)
 	})
@@ -119,7 +119,7 @@ describe('AppDeleteDialogSlot — destroy-endpoint wiring', () => {
 		await flush()
 
 		expect(axiosDeleteMock).toHaveBeenCalledWith(
-			'/apps/openbuild/api/applications/u-app',
+			'/apps/buildiq/api/applications/u-app',
 			{ params: { deleteData: 1 } },
 		)
 	})
@@ -149,7 +149,7 @@ describe('AppDeleteDialogSlot — destroy-endpoint wiring', () => {
 		dialog(wrapper).vm.$emit('confirm', false)
 		await flush()
 		expect(axiosDeleteMock).toHaveBeenCalledWith(
-			'/apps/openbuild/api/applications/self-id',
+			'/apps/buildiq/api/applications/self-id',
 			{ params: { deleteData: 0 } },
 		)
 	})

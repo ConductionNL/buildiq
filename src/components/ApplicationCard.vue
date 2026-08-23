@@ -25,13 +25,13 @@
 			<div class="ob-app-card__head">
 				<img
 					class="ob-app-card__icon"
-					:src="`/index.php/apps/openbuild/icons/${app.slug}.svg`"
+					:src="`/index.php/apps/buildiq/icons/${app.slug}.svg`"
 					:alt="app.name || app.slug"
 					width="20"
 					height="20"
 					@error="onIconError" />
 				<h3 class="ob-app-card__title">
-					{{ app.name || app.slug || t('openbuild', 'Untitled app') }}
+					{{ app.name || app.slug || t('buildiq', 'Untitled app') }}
 				</h3>
 				<span
 					class="ob-app-card__type"
@@ -49,7 +49,7 @@
 			</p>
 			<div class="ob-app-card__meta">
 				<span class="ob-app-card__chip"
-					>{{ t('openbuild', 'Version') }} {{ productionSemver }}</span
+					>{{ t('buildiq', 'Version') }} {{ productionSemver }}</span
 				>
 				<span v-if="role !== 'none'" class="ob-app-card__chip">{{
 					roleLabel
@@ -175,8 +175,8 @@ export default {
 		 */
 		appTypeLabel() {
 			return this.appTypeKey === 'hybrid'
-				? t('openbuild', 'Hybrid')
-				: t('openbuild', 'Virtual')
+				? t('buildiq', 'Hybrid')
+				: t('buildiq', 'Virtual')
 		},
 
 		/**
@@ -219,9 +219,9 @@ export default {
 		 */
 		statusLabel() {
 			return {
-				draft: t('openbuild', 'Draft'),
-				published: t('openbuild', 'Published'),
-				archived: t('openbuild', 'Archived'),
+				draft: t('buildiq', 'Draft'),
+				published: t('buildiq', 'Published'),
+				archived: t('buildiq', 'Archived'),
 			}[this.statusKey]
 		},
 
@@ -242,9 +242,9 @@ export default {
 		roleLabel() {
 			return (
 				{
-					owner: t('openbuild', 'Owner'),
-					editor: t('openbuild', 'Editor'),
-					viewer: t('openbuild', 'Viewer'),
+					owner: t('buildiq', 'Owner'),
+					editor: t('buildiq', 'Editor'),
+					viewer: t('buildiq', 'Viewer'),
 				}[this.role] || ''
 			)
 		},
@@ -276,11 +276,11 @@ export default {
 		 */
 		onIconError(e) {
 			// imagePath resolves to the app's real web root (e.g.
-			// /apps/openbuild/img/app.svg, or /apps-shared/… in dev). The previous
-			// hardcoded '/apps/openbuild/img/app.svg' 404s when the web root differs,
+			// /apps/buildiq/img/app.svg, or /apps-shared/… in dev). The previous
+			// hardcoded '/apps/buildiq/img/app.svg' 404s when the web root differs,
 			// which re-fired this error handler and re-set the same failing src in an
 			// infinite loop (spamming the request + draining resources).
-			const fallback = imagePath('openbuild', 'app.svg')
+			const fallback = imagePath('buildiq', 'app.svg')
 			// Guard against re-entry: if the fallback itself fails to load, the error
 			// event lands here again — bail once we're already showing the fallback
 			// so we swap the src at most once. Compare the literal attribute (not the

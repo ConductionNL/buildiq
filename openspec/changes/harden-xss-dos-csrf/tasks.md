@@ -37,6 +37,6 @@ so the checkbox count stays within the supervisor cap.
 
 ## 5. Wrap-up
 
-- [x] 5.1 Update the five capability specs (`business-rules-engine`, `settings-and-observability`, `openbuild-template-catalogue`, `docudesk-document-templates`, `app-icon-management`): add this change to their `**OpenSpec changes**` list and set status `in-progress`.
+- [x] 5.1 Update the five capability specs (`business-rules-engine`, `settings-and-observability`, `buildiq-template-catalogue`, `docudesk-document-templates`, `app-icon-management`): add this change to their `**OpenSpec changes**` list and set status `in-progress`.
 - [x] 5.2 Run the Hydra mechanical gates + PHP/JS lint and confirm green.
   - No changes to the 30+ already-CSRF-protected mutations; no OR schema/seed changes (per design.md).

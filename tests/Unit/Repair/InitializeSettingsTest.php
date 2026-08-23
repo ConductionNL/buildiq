@@ -6,7 +6,7 @@
  * Covers REQ-OBS-004 (repair step bootstraps configuration on install/upgrade).
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Repair
+ * @package  OCA\Buildiq\Tests\Unit\Repair
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -19,10 +19,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Repair;
+namespace OCA\Buildiq\Tests\Unit\Repair;
 
-use OCA\OpenBuild\Repair\InitializeSettings;
-use OCA\OpenBuild\Service\SettingsService;
+use OCA\Buildiq\Repair\InitializeSettings;
+use OCA\Buildiq\Service\SettingsService;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;

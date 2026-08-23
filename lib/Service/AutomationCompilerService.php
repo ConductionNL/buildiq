@@ -1,10 +1,10 @@
 <?php
 
 /**
- * OpenBuild AutomationCompilerService
+ * Buildiq AutomationCompilerService
  *
  * Compiles a stored `Automation` declarative object (design.md Decision 1 of
- * the automation-designer change) to OpenBuild's EXISTING declarative
+ * the automation-designer change) to Buildiq's EXISTING declarative
  * primitives, and nothing else (ADR-031 — no new imperative engine):
  *
  *   - Dialect backend — event/lifecycle-transition triggers + `send-notification`
@@ -33,13 +33,13 @@
  *     {@see \OCA\OpenRegister\Db\ApprovalChainMapper} under the `aut-<slug>`
  *     provenance name. Instantiating a step against a fired object's uuid
  *     (`ApprovalService::initializeChain()`) happens OUT of this pure
- *     compiler, in {@see \OCA\OpenBuild\Listener\AutomationApprovalTriggerListener}
- *     — consume-not-rebuild (ADR-022): OpenBuild never implements an approval
+ *     compiler, in {@see \OCA\Buildiq\Listener\AutomationApprovalTriggerListener}
+ *     — consume-not-rebuild (ADR-022): Buildiq never implements an approval
  *     engine, only a compiler that provisions OR's existing one. On-approve/
  *     on-reject follow-up actions are NOT compiled into a separate artifact —
  *     they stay on the `Automation` object's own `actions[].onApprove/
  *     onReject` and are dispatched by
- *     {@see \OCA\OpenBuild\Listener\ApprovalOutcomeListener} at outcome time
+ *     {@see \OCA\Buildiq\Listener\ApprovalOutcomeListener} at outcome time
  *     via the shared {@see RuleActionDispatcher}, exactly mirroring how the
  *     rules backend's `manual` trigger dispatches its own actions.
  *
@@ -55,15 +55,15 @@
  *     editor-side degradation). Dispatching the actual owner-impersonated
  *     Docudesk call against a concretely fired object is an imperative,
  *     per-event side effect realized OUT of this pure compiler, in
- *     {@see \OCA\OpenBuild\Listener\DocumentGenerationListener} →
- *     {@see \OCA\OpenBuild\Service\DocumentGenerationService} — the same
+ *     {@see \OCA\Buildiq\Listener\DocumentGenerationListener} →
+ *     {@see \OCA\Buildiq\Service\DocumentGenerationService} — the same
  *     compile/dispatch split the approval backend above already uses.
  *
  * DEVIATION FROM design.md (documented, not silent — tasks.md apply-notes
  * instruct flagging rather than inventing a runner): design.md's Decision 2
  * matrix table marks `manual` + `run-synchronization` as a ✅ "rules backend"
  * cell. No primitive to invoke an OpenConnector synchronization on demand
- * exists anywhere in openbuild's `lib/` (the ONLY existing trigger for a
+ * exists anywhere in buildiq's `lib/` (the ONLY existing trigger for a
  * synchronization run is the AppHost schedules reconciler); the rules
  * engine's typed action vocabulary
  * ({@see ConditionActionExecutor::SIDE_EFFECT_ACTIONS}) has no
@@ -84,7 +84,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -109,15 +109,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
-use OCA\OpenBuild\Exception\UnsupportedAutomationCombinationException;
+use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ApprovalChain;
 use OCA\OpenRegister\Db\ApprovalChainMapper;
 use OCA\OpenRegister\Db\ApprovalStepMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -130,9 +130,9 @@ use Throwable;
  */
 class AutomationCompilerService {
 	/**
-	 * Shared OpenBuild register slug.
+	 * Shared Buildiq register slug.
 	 */
-	public const REGISTER_SLUG = 'openbuild';
+	public const REGISTER_SLUG = 'buildiq';
 
 	/**
 	 * Schema slug of the Automation object itself.
@@ -166,7 +166,7 @@ class AutomationCompilerService {
 
 	/**
 	 * Valid `generateDocument` `output` values (matches
-	 * {@see \OCA\OpenBuild\Service\DocumentGenerationService::OUTPUT_MODES}
+	 * {@see \OCA\Buildiq\Service\DocumentGenerationService::OUTPUT_MODES}
 	 * — kept as an independent literal rather than a cross-class constant
 	 * reference so the compiler never has to construct/inject
 	 * `DocumentGenerationService` merely to validate config, mirroring how
@@ -490,7 +490,7 @@ class AutomationCompilerService {
 			// A fetch failure means live state cannot be confirmed —
 			// fail safe by reporting drift so the operator is prompted to
 			// recompile rather than trusting a possibly-stale badge.
-			$this->logger->warning('OpenBuild: AutomationCompilerService::status() live fetch failed: ' . $e->getMessage());
+			$this->logger->warning('Buildiq: AutomationCompilerService::status() live fetch failed: ' . $e->getMessage());
 			return ['drift' => true, 'compiledHash' => $expectedHash, 'liveHash' => null];
 		}//end try
 
@@ -780,7 +780,7 @@ class AutomationCompilerService {
 				// stateless; already config-validated by
 				// {@see assertGenerateDocumentActions()}). The
 				// owner-impersonated Docudesk call happens at trigger-fire
-				// time in {@see \OCA\OpenBuild\Listener\DocumentGenerationListener},
+				// time in {@see \OCA\Buildiq\Listener\DocumentGenerationListener},
 				// reading the action straight off the stored `Automation`
 				// object — the compiler has nothing to provision or upsert.
 				continue;
@@ -988,9 +988,9 @@ class AutomationCompilerService {
 	 * Map one Automation action record to a ConditionActionRule typed action.
 	 *
 	 * PUBLIC (not merely an internal compile-time helper): also reused by
-	 * {@see \OCA\OpenBuild\Listener\ApprovalOutcomeListener} to map an
+	 * {@see \OCA\Buildiq\Listener\ApprovalOutcomeListener} to map an
 	 * `approval` action's `onApprove`/`onReject` follow-up action records to
-	 * the SAME typed-action shape {@see \OCA\OpenBuild\Service\RuleActionDispatcher}
+	 * the SAME typed-action shape {@see \OCA\Buildiq\Service\RuleActionDispatcher}
 	 * already dispatches — the follow-up fires once per approval outcome
 	 * through the identical dispatch mechanism the rules backend uses, per
 	 * design.md Decision 3 of automation-approval-steps ("through the same
@@ -1294,7 +1294,7 @@ class AutomationCompilerService {
 
 		$version = $this->loadApplicationVersion(uuid: $versionUuid);
 		if ($version === null) {
-			$this->logger->warning('OpenBuild: AutomationCompilerService could not load ApplicationVersion "' . $versionUuid . '" to apply schedules.');
+			$this->logger->warning('Buildiq: AutomationCompilerService could not load ApplicationVersion "' . $versionUuid . '" to apply schedules.');
 			return [];
 		}
 
@@ -1350,7 +1350,7 @@ class AutomationCompilerService {
 			$this->objectService->saveObject(object: $version, register: self::REGISTER_SLUG, schema: 'applicationVersion', uuid: $versionUuid);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: AutomationCompilerService failed to save schedules onto ApplicationVersion "' . $versionUuid . '": ' . $e->getMessage()
+				'Buildiq: AutomationCompilerService failed to save schedules onto ApplicationVersion "' . $versionUuid . '": ' . $e->getMessage()
 			);
 		}
 
@@ -1391,7 +1391,7 @@ class AutomationCompilerService {
 				$this->objectService->saveObject(object: $ruleSet, register: self::REGISTER_SLUG, schema: RuleEngineService::RULE_SET_SCHEMA);
 			}
 		} catch (Throwable $e) {
-			$this->logger->error('OpenBuild: AutomationCompilerService failed to save RuleSet "' . $ruleSet['slug'] . '": ' . $e->getMessage());
+			$this->logger->error('Buildiq: AutomationCompilerService failed to save RuleSet "' . $ruleSet['slug'] . '": ' . $e->getMessage());
 		}
 
 		$existingRule = $this->findOneObject(schema: RuleEngineService::CONDITION_RULE_SCHEMA, filters: ['ruleSetId' => $ruleSet['slug']]);
@@ -1413,7 +1413,7 @@ class AutomationCompilerService {
 			}
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: AutomationCompilerService failed to save ConditionActionRule for "' . $ruleSet['slug'] . '": ' . $e->getMessage()
+				'Buildiq: AutomationCompilerService failed to save ConditionActionRule for "' . $ruleSet['slug'] . '": ' . $e->getMessage()
 			);
 		}//end try
 
@@ -1483,7 +1483,7 @@ class AutomationCompilerService {
 		$schema = $this->loadSchema(slug: $schemaSlug);
 		if ($schema === null) {
 			$this->logger->warning(
-				'OpenBuild: AutomationCompilerService could not load schema "' . $schemaSlug . '" to apply approval chain "' . $planned['name'] . '".'
+				'Buildiq: AutomationCompilerService could not load schema "' . $schemaSlug . '" to apply approval chain "' . $planned['name'] . '".'
 			);
 			return null;
 		}
@@ -1518,7 +1518,7 @@ class AutomationCompilerService {
 		try {
 			$existing = $this->approvalChainMapper->findBySchemaAndName(schemaId: $schemaId, name: $payload['name']);
 		} catch (Throwable $e) {
-			$this->logger->error('OpenBuild: AutomationCompilerService failed to look up ApprovalChain "' . $payload['name'] . '": ' . $e->getMessage());
+			$this->logger->error('Buildiq: AutomationCompilerService failed to look up ApprovalChain "' . $payload['name'] . '": ' . $e->getMessage());
 			return;
 		}
 
@@ -1530,7 +1530,7 @@ class AutomationCompilerService {
 
 			$this->approvalChainMapper->createFromArray($payload);
 		} catch (Throwable $e) {
-			$this->logger->error('OpenBuild: AutomationCompilerService failed to save ApprovalChain "' . $payload['name'] . '": ' . $e->getMessage());
+			$this->logger->error('Buildiq: AutomationCompilerService failed to save ApprovalChain "' . $payload['name'] . '": ' . $e->getMessage());
 		}
 
 	}//end upsertApprovalChain()
@@ -1581,7 +1581,7 @@ class AutomationCompilerService {
 				$this->approvalChainMapper->delete($chain);
 			}
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenBuild: AutomationCompilerService failed to remove ApprovalChain "' . $name . '": ' . $e->getMessage());
+			$this->logger->warning('Buildiq: AutomationCompilerService failed to remove ApprovalChain "' . $name . '": ' . $e->getMessage());
 		}
 
 	}//end removeApprovalChain()
@@ -1598,7 +1598,7 @@ class AutomationCompilerService {
 		try {
 			$this->objectService->deleteObject(uuid: $uuid, register: self::REGISTER_SLUG, schema: $schema);
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenBuild: AutomationCompilerService failed to delete ' . $schema . ' "' . $uuid . '": ' . $e->getMessage());
+			$this->logger->warning('Buildiq: AutomationCompilerService failed to delete ' . $schema . ' "' . $uuid . '": ' . $e->getMessage());
 		}
 
 	}//end deleteObjectQuietly()
@@ -1814,7 +1814,7 @@ class AutomationCompilerService {
 		try {
 			return $this->schemaMapper->find($slug, _multitenancy: false);
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenBuild: AutomationCompilerService could not load schema "' . $slug . '": ' . $e->getMessage());
+			$this->logger->warning('Buildiq: AutomationCompilerService could not load schema "' . $slug . '": ' . $e->getMessage());
 			return null;
 		}
 
@@ -1835,7 +1835,7 @@ class AutomationCompilerService {
 		try {
 			$entity = $this->objectService->find(id: $uuid, register: self::REGISTER_SLUG, schema: 'applicationVersion');
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenBuild: AutomationCompilerService could not load ApplicationVersion "' . $uuid . '": ' . $e->getMessage());
+			$this->logger->warning('Buildiq: AutomationCompilerService could not load ApplicationVersion "' . $uuid . '": ' . $e->getMessage());
 			return null;
 		}
 
@@ -1860,7 +1860,7 @@ class AutomationCompilerService {
 				config: ['filters' => array_merge(['register' => self::REGISTER_SLUG, 'schema' => $schema], $filters), 'limit' => 1]
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenBuild: AutomationCompilerService findOneObject failed for schema "' . $schema . '": ' . $e->getMessage());
+			$this->logger->warning('Buildiq: AutomationCompilerService findOneObject failed for schema "' . $schema . '": ' . $e->getMessage());
 			return null;
 		}
 

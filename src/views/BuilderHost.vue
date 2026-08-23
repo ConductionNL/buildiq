@@ -3,11 +3,11 @@
   -
   - BuilderHost mounts a NESTED CnAppRoot for the virtual app addressed by
   - the :slug param. Per design.md Decision 4/5, this preserves the
-  - OpenBuild outer chrome and forwards path segments after the slug to
+  - Buildiq outer chrome and forwards path segments after the slug to
   - the inner router. The :key="slug" prop forces a clean remount when
   - the user navigates between virtual apps.
   -
-  - Version routing (spec `openbuild-version-routing` REQ-OBVR-004):
+  - Version routing (spec `buildiq-version-routing` REQ-OBVR-004):
   - Reads `?_version=<versionSlug>` from `$route.query._version` (the
   - underscore-prefix form to avoid colliding with user-defined `?version=`
   - params). The CnAppRoot endpoint URL includes the `_version` param when
@@ -22,14 +22,14 @@
   - skeleton; the real manifest arrives from the backend merge.
   -->
 <template>
-	<div class="openbuild-builder-host" data-testid="openbuild-builder-host">
+	<div class="buildiq-builder-host" data-testid="buildiq-builder-host">
 		<!-- REQ-OBVR-009: show version-not-found when useApplicationVersion resolved to 404 -->
 		<div
 			v-if="versionNotFound"
-			class="openbuild-builder-host__version-not-found"
+			class="buildiq-builder-host__version-not-found"
 			role="alert"
 			aria-live="polite">
-			{{ t('openbuild', 'Version not found') }}
+			{{ t('buildiq', 'Version not found') }}
 		</div>
 		<CnAppRoot
 			v-else
@@ -150,7 +150,7 @@ export default {
 			// Forward `?_version=` to the manifest endpoint so the server resolves
 			// the correct ApplicationVersion manifest (REQ-OBVR-001).
 			const endpoint = generateUrl(
-				`/apps/openbuild/api/applications/${this.slug}/manifest`,
+				`/apps/buildiq/api/applications/${this.slug}/manifest`,
 			)
 			return {
 				endpoint: this.versionSlug
@@ -194,7 +194,7 @@ export default {
 
 	// REQ-NTS-003: no beforeDestroy teardown needed — CnAppRoot owns its own
 	// scoped-theme lifecycle (mount-apply/unmount-teardown) via `useScopedTheme`,
-	// with zero OpenBuild-side wiring (theme-picker-consumes-nldesign).
+	// with zero Buildiq-side wiring (theme-picker-consumes-nldesign).
 	methods: {
 		/**
 		 * Kick off useApplicationVersion and mirror reactive state into component data.
@@ -263,7 +263,7 @@ export default {
 </script>
 
 <style scoped>
-.openbuild-builder-host {
+.buildiq-builder-host {
 	display: flex;
 	flex-direction: column;
 	flex: 1 1 auto;

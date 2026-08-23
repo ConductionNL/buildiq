@@ -6,11 +6,11 @@
  *
  * Goal: prove you can actually compose a virtual app end-to-end — create the
  * app, give it a data model (a schema with >=2 properties), and produce the
- * runtime artifact (the app manifest the OpenBuild shell renders) — not merely
+ * runtime artifact (the app manifest the Buildiq shell renders) — not merely
  * that pages render.
  *
  * The build pipeline in this app is:
- *   1. Application object        (register openbuild / schema application)
+ *   1. Application object        (register buildiq / schema application)
  *   2. + data-model Schema(s)    (OpenRegister schemas the app composes)
  *   3. + an ApplicationVersion   (carries the rendered `manifest` object)
  *   4. + a BuiltAppRoute index   (slug -> applicationUuid, drives /{slug})
@@ -33,7 +33,7 @@
  *             produced manifest (version + menu + pages). The earlier BUG-C
  *             register/reserved-key collision no longer reproduces.
  * STILL NOT DRIVABLE (-> test.fixme, real reason recorded, never faked):
- *   - The ZIP export action is Conduction/openbuild#41-quarantined
+ *   - The ZIP export action is Conduction/buildiq#41-quarantined
  *     (see export-zip.spec.ts) — no detail/editor UI to trigger it.
  *
  * The manifest leg below contains the REAL artifact assertions against the
@@ -70,7 +70,7 @@ async function appUuidBySlug(
 	slug: string,
 ): Promise<string> {
 	const res = await request.get(
-		`${BASE_URL}/index.php/apps/openregister/api/objects/openbuild/application?_limit=200`,
+		`${BASE_URL}/index.php/apps/openregister/api/objects/buildiq/application?_limit=200`,
 		{ headers: authHeaders },
 	)
 	const body = await res.json()
@@ -82,19 +82,19 @@ async function appUuidBySlug(
 }
 
 async function gotoAppBrowser(page: Page): Promise<void> {
-	// The app router runs in HISTORY mode (`createWebHistory(generateUrl('/apps/openbuild'))`
+	// The app router runs in HISTORY mode (`createWebHistory(generateUrl('/apps/buildiq'))`
 	// in src/main.js), NOT hash mode. A `#/applications` hash is not a route —
 	// vue-router matches path `/` and mounts the Dashboard, so the applications
 	// actions bar (and its "Add app" button) never renders. The
 	// `/index.php/`-prefixed form fails too: `htaccess.RewriteBase` is `/`, so
-	// `generateUrl` emits the pretty `/apps/openbuild` base and the router
+	// `generateUrl` emits the pretty `/apps/buildiq` base and the router
 	// replaces the unmatched URL with the bare app root. Live-verified: only
 	// the pretty-URL path form mounts the applications index.
-	await page.goto('/apps/openbuild/applications')
+	await page.goto('/apps/buildiq/applications')
 	await page
 		.waitForResponse(
 			(r) =>
-				r.url().includes('/objects/openbuild/application')
+				r.url().includes('/objects/buildiq/application')
 				&& r.status() === 200,
 			{ timeout: 20_000 },
 		)
@@ -167,7 +167,7 @@ test.describe('Build workflow — compose a virtual app with a data model', () =
 			.poll(
 				async () => {
 					const res = await request.get(
-						`${BASE_URL}/index.php/apps/openregister/api/objects/openbuild/application?_limit=200`,
+						`${BASE_URL}/index.php/apps/openregister/api/objects/buildiq/application?_limit=200`,
 						{ headers: authHeaders },
 					)
 					const body = await res.json()

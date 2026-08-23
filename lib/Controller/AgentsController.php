@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenBuild AgentsController
+ * Buildiq AgentsController
  *
  * REST surface for the agent-workspace change (spec `agent-workspace`).
  * Agent CRUD itself goes through OpenRegister's generic REST surface
- * (`/apps/openregister/api/objects/openbuild/agent`, ADR-022 — mirrors
+ * (`/apps/openregister/api/objects/buildiq/agent`, ADR-022 — mirrors
  * `AutomationsController`'s posture for the `automation` object), because
- * Agent create/edit/delete carries no OpenBuild-specific side effect. This
+ * Agent create/edit/delete carries no Buildiq-specific side effect. This
  * controller owns exactly the one row-level-RBAC-sensitive read the generic
  * OR REST surface cannot safely serve:
  *
@@ -15,7 +15,7 @@
  *
  * `AgentRun` visibility is owners/editors-only on the agent's parent
  * Application (design.md Open Questions — "matching the existing
- * openbuild-rbac posture for anything execute-adjacent"), enforced
+ * buildiq-rbac posture for anything execute-adjacent"), enforced
  * server-side here BEFORE any row is read. Without this per-object guard, a
  * `#[NoAdminRequired]` endpoint returning another Application's AgentRun
  * rows by uuid alone would be a textbook IDOR (hydra-gate-no-admin-idor) —
@@ -27,7 +27,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
- * @package  OCA\OpenBuild\Controller
+ * @package  OCA\Buildiq\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -42,13 +42,13 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Controller;
+namespace OCA\Buildiq\Controller;
 
-use OCA\OpenBuild\AppInfo\Application;
-use OCA\OpenBuild\Service\PermissionResolver;
+use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Service\PermissionResolver;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -66,9 +66,9 @@ use Throwable;
  */
 class AgentsController extends Controller {
 	/**
-	 * Shared OpenBuild register slug.
+	 * Shared Buildiq register slug.
 	 */
-	private const REGISTER_SLUG = 'openbuild';
+	private const REGISTER_SLUG = 'buildiq';
 
 	/**
 	 * Schema slug of the Agent object.
@@ -162,7 +162,7 @@ class AgentsController extends Controller {
 
 			if ($this->groupManager->isAdmin($user->getUID()) === true) {
 				$this->logger->info(
-					'OpenBuild AgentsController: rbac.admin_bypass',
+					'Buildiq AgentsController: rbac.admin_bypass',
 					['actor' => $user->getUID(), 'applicationSlug' => $applicationSlug]
 				);
 			}
@@ -172,7 +172,7 @@ class AgentsController extends Controller {
 
 			return new JSONResponse(data: $runs, statusCode: Http::STATUS_OK);
 		} catch (Throwable $e) {
-			$this->logger->error('OpenBuild: AgentsController::runs failed for ' . $uuid . ': ' . $e->getMessage(), ['exception' => $e]);
+			$this->logger->error('Buildiq: AgentsController::runs failed for ' . $uuid . ': ' . $e->getMessage(), ['exception' => $e]);
 			return $this->error(code: 'internal_error', detail: $e->getMessage(), status: Http::STATUS_INTERNAL_SERVER_ERROR);
 		}//end try
 	}//end runs()
@@ -189,7 +189,7 @@ class AgentsController extends Controller {
 	 *
 	 * PROPAGATION IS DELIBERATE, AND IT IS THE SAFER OF THE TWO OPTIONS.
 	 * `RegisterMapper::find()` / `SchemaMapper::find()` throw
-	 * `DoesNotExistException` when the `openbuild` register or the `agentRun`
+	 * `DoesNotExistException` when the `buildiq` register or the `agentRun`
 	 * schema is not installed, and `\Exception` when their RBAC check refuses
 	 * — both are deployment faults, not "this agent has no runs". Swallowing
 	 * them here and returning `[]` would render an empty run list that is
@@ -205,7 +205,7 @@ class AgentsController extends Controller {
 	 *
 	 * @return array<int, array<string, mixed>>
 	 *
-	 * @throws \OCP\AppFramework\Db\DoesNotExistException When the openbuild register or the agentRun schema is absent.
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When the buildiq register or the agentRun schema is absent.
 	 * @throws \Exception When the register/schema RBAC check refuses, or the object search fails.
 	 */
 	private function loadRunsForAgent(string $agentUuid): array {

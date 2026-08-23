@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild Data Register Export Bundler
+ * Buildiq Data Register Export Bundler
  *
  * Extracted from ExportService so that class stays under PHPMD's
  * cyclomatic-complexity / coupling-between-objects thresholds — a
@@ -10,7 +10,7 @@
  * self-contained concern (data-registers-runtime).
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -28,12 +28,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -41,7 +41,7 @@ use Throwable;
  * Bundles a source Application's bound `dataRegisters` (schema definitions
  * always, row data opt-in per binding) into an exported app tree, at
  * `lib/Settings/data-registers/<register-slug>.{schema,seed-data}.json`
- * (spec openbuild-exporter, ADDED Requirements "Bound data registers'
+ * (spec buildiq-exporter, ADDED Requirements "Bound data registers'
  * schema definitions are bundled into every export" + "Per-binding
  * includeData toggle controls data-register row-data inclusion").
  *
@@ -110,7 +110,7 @@ class DataRegisterExportBundler {
 			} catch (Throwable $e) {
 				// Dangling reference — no schemas bundled (Non-Goals precedent).
 				$this->logger->info(
-					'OpenBuild export: dataRegisters binding "' . $registerSlug . '" did not resolve to a register — '
+					'Buildiq export: dataRegisters binding "' . $registerSlug . '" did not resolve to a register — '
 					. 'no schema definitions bundled: ' . $e->getMessage()
 				);
 				continue;
@@ -151,7 +151,7 @@ class DataRegisterExportBundler {
 				$schema = $this->schemaMapper->find($schemaId, _multitenancy: false);
 			} catch (Throwable $e) {
 				$this->logger->debug(
-					'OpenBuild export: could not resolve schema ' . ((string)$schemaId) . ' in data register "'
+					'Buildiq export: could not resolve schema ' . ((string)$schemaId) . ' in data register "'
 					. $registerSlug . '": ' . $e->getMessage()
 				);
 				continue;
@@ -223,7 +223,7 @@ class DataRegisterExportBundler {
 			);
 		} catch (Throwable $e) {
 			$this->logger->info(
-				'OpenBuild export: could not read row data for data register "' . $registerSlug . '": ' . $e->getMessage()
+				'Buildiq export: could not read row data for data register "' . $registerSlug . '": ' . $e->getMessage()
 			);
 			return;
 		}
@@ -258,7 +258,7 @@ class DataRegisterExportBundler {
 	private function writeJsonFile(string $path, array $payload): void {
 		$encoded = json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 		if ($encoded === false) {
-			$this->logger->warning('OpenBuild export: failed to encode JSON for ' . $path);
+			$this->logger->warning('Buildiq export: failed to encode JSON for ' . $path);
 			return;
 		}
 

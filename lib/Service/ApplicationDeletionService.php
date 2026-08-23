@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild Application Deletion Service
+ * Buildiq Application Deletion Service
  *
  * Tears down a virtual Application and everything it owns: its
  * ApplicationVersions, each version's per-version OpenRegister register, the
@@ -15,7 +15,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -28,11 +28,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\RegisterService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -123,7 +123,7 @@ class ApplicationDeletionService {
 
 		if ($orphaned !== []) {
 			$this->logger->warning(
-				'OpenBuild: deleteApplication({slug}) left orphaned resources: {orphaned}',
+				'Buildiq: deleteApplication({slug}) left orphaned resources: {orphaned}',
 				['slug' => $appSlug, 'orphaned' => implode(', ', $orphaned)]
 			);
 		}
@@ -154,7 +154,7 @@ class ApplicationDeletionService {
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: deleteApplication failed to query {schema}: {message}',
+				'Buildiq: deleteApplication failed to query {schema}: {message}',
 				['schema' => $schema, 'message' => $e->getMessage()]
 			);
 			return [];
@@ -193,7 +193,7 @@ class ApplicationDeletionService {
 			// The register is already gone (or was never provisioned) — nothing
 			// to tear down, and nothing to orphan.
 			$this->logger->info(
-				'OpenBuild: deleteApplication register {slug} not found, skipping: {message}',
+				'Buildiq: deleteApplication register {slug} not found, skipping: {message}',
 				['slug' => $registerSlug, 'message' => $e->getMessage()]
 			);
 			return;
@@ -210,7 +210,7 @@ class ApplicationDeletionService {
 			$this->registerService->delete(register: $register);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: deleteApplication failed to delete register {slug}: {message}',
+				'Buildiq: deleteApplication failed to delete register {slug}: {message}',
 				['slug' => $registerSlug, 'message' => $e->getMessage()]
 			);
 			$orphaned[] = 'register:' . $registerSlug;
@@ -260,7 +260,7 @@ class ApplicationDeletionService {
 				);
 			} catch (Throwable $e) {
 				$this->logger->error(
-					'OpenBuild: deleteApplication failed to list objects in register {slug} schema {schema}: {message}',
+					'Buildiq: deleteApplication failed to list objects in register {slug} schema {schema}: {message}',
 					['slug' => $registerSlug, 'schema' => (string)$schemaId, 'message' => $e->getMessage()]
 				);
 				$orphaned[] = 'register-objects:' . $registerSlug;
@@ -285,7 +285,7 @@ class ApplicationDeletionService {
 					$progressed = true;
 				} catch (Throwable $e) {
 					$this->logger->error(
-						'OpenBuild: deleteApplication failed to delete object {uuid}: {message}',
+						'Buildiq: deleteApplication failed to delete object {uuid}: {message}',
 						['uuid' => $uuid, 'message' => $e->getMessage()]
 					);
 					$orphaned[] = 'object:' . $uuid;
@@ -305,7 +305,7 @@ class ApplicationDeletionService {
 		// diagnosable instead of surfacing as an unexplained duplicate-key
 		// rollback on the next same-slug re-create.
 		$this->logger->warning(
-			'OpenBuild: purgeRegisterSchema hit MAX_PURGE_ROUNDS cap for register {slug} '
+			'Buildiq: purgeRegisterSchema hit MAX_PURGE_ROUNDS cap for register {slug} '
 			. 'schema {schema} — register may still hold objects; downstream '
 			. 'register-delete will orphan',
 			['slug' => $registerSlug, 'schema' => (string)$schemaId, 'batch' => self::PURGE_BATCH_LIMIT, 'rounds' => self::MAX_PURGE_ROUNDS]
@@ -348,7 +348,7 @@ class ApplicationDeletionService {
 			$this->objectService->deleteObject(uuid: $uuid);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: deleteApplication failed to delete {label} {uuid}: {message}',
+				'Buildiq: deleteApplication failed to delete {label} {uuid}: {message}',
 				['label' => $label, 'uuid' => $uuid, 'message' => $e->getMessage()]
 			);
 			$orphaned[] = $label . ':' . $uuid;

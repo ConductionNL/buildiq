@@ -2,17 +2,16 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Service;
+namespace OCA\Buildiq\Tests\Unit\Service;
 
-use OCA\OpenBuild\Service\DataRegisterExportBundler;
-use OCA\OpenBuild\Service\ExportService;
-use OCA\OpenBuild\Service\PlaceholderResolver;
+use OCA\Buildiq\Service\DataRegisterExportBundler;
+use OCA\Buildiq\Service\ExportService;
+use OCA\Buildiq\Service\PlaceholderResolver;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Service\ObjectService;
 use OCP\Files\IAppData;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -91,7 +90,7 @@ final class ExportServiceTest extends TestCase {
 	}//end testGenerateAppZipOrdersArchiveEntriesLexicographically()
 
 	/**
-	 * The snapshot bookkeeping files are artefacts of OpenBuild, not of the
+	 * The snapshot bookkeeping files are artefacts of Buildiq, not of the
 	 * produced app, and must never reach the exported tree.
 	 */
 	public function testGenerateAppZipOmitsSnapshotHelperFiles(): void {
@@ -102,7 +101,7 @@ final class ExportServiceTest extends TestCase {
 	}//end testGenerateAppZipOmitsSnapshotHelperFiles()
 
 	/**
-	 * REQ (openbuild-exporter, data-registers-runtime): bound data
+	 * REQ (buildiq-exporter, data-registers-runtime): bound data
 	 * registers' schema definitions are bundled into every export.
 	 */
 	public function testGenerateAppZipBundlesSchemaDefsForBoundRegister(): void {
@@ -141,7 +140,7 @@ final class ExportServiceTest extends TestCase {
 	}//end testGenerateAppZipBundlesSchemaDefsForBoundRegister()
 
 	/**
-	 * REQ (openbuild-exporter, data-registers-runtime): row data is only
+	 * REQ (buildiq-exporter, data-registers-runtime): row data is only
 	 * bundled when a binding's `includeData` is explicitly true.
 	 */
 	public function testGenerateAppZipWritesSeedDataOnlyWhenIncludeDataTrue(): void {
@@ -179,7 +178,7 @@ final class ExportServiceTest extends TestCase {
 	}//end testGenerateAppZipWritesSeedDataOnlyWhenIncludeDataTrue()
 
 	/**
-	 * REQ (openbuild-exporter, data-registers-runtime): includeData omitted
+	 * REQ (buildiq-exporter, data-registers-runtime): includeData omitted
 	 * (or explicitly false) defaults to schema-defs-only — no seed-data file,
 	 * and no row read against OpenRegister at all.
 	 */
@@ -211,7 +210,7 @@ final class ExportServiceTest extends TestCase {
 	}//end testGenerateAppZipOmitsSeedDataWhenIncludeDataAbsent()
 
 	/**
-	 * REQ (openbuild-exporter): an Application with no `dataRegisters`
+	 * REQ (buildiq-exporter): an Application with no `dataRegisters`
 	 * produces an export tree with no `lib/Settings/data-registers/`
 	 * entries at all — and never touches OpenRegister.
 	 */
@@ -301,7 +300,7 @@ final class ExportServiceTest extends TestCase {
 		self::assertNotSame([], $map);
 		self::assertSame(
 			[],
-			glob(sys_get_temp_dir() . '/openbuild-work/scaffold-' . $appId . '-*'),
+			glob(sys_get_temp_dir() . '/buildiq-work/scaffold-' . $appId . '-*'),
 			'buildScaffoldMap() must remove its scratch tree'
 		);
 	}//end testBuildScaffoldMapRemovesItsScratchDirectory()
@@ -317,7 +316,7 @@ final class ExportServiceTest extends TestCase {
 
 		$path = $service->scratchTreeDir(jobUuid: $jobUuid);
 
-		self::assertSame(sys_get_temp_dir() . '/openbuild-work/' . $jobUuid, $path);
+		self::assertSame(sys_get_temp_dir() . '/buildiq-work/' . $jobUuid, $path);
 		self::assertSame($path, $service->scratchTreeDir(jobUuid: $jobUuid));
 		self::assertNotSame($path, $service->scratchTreeDir(jobUuid: $jobUuid . '-other'));
 		self::assertDirectoryDoesNotExist($path);
@@ -343,7 +342,7 @@ final class ExportServiceTest extends TestCase {
 		);
 
 		$this->litter[] = $zipPath;
-		$this->litter[] = sys_get_temp_dir() . '/openbuild-work/' . $jobUuid;
+		$this->litter[] = sys_get_temp_dir() . '/buildiq-work/' . $jobUuid;
 
 		self::assertFileExists($zipPath);
 
@@ -369,7 +368,7 @@ final class ExportServiceTest extends TestCase {
 			'appId' => 'demo-app',
 			'appNamespace' => 'DemoApp',
 			'appName' => 'Demo App',
-			'appDescription' => 'Exported from OpenBuild',
+			'appDescription' => 'Exported from Buildiq',
 			'appVersion' => '1.2.3',
 			'authorName' => 'Dev',
 			'authorEmail' => 'dev@conduction.nl',
@@ -413,7 +412,7 @@ final class ExportServiceTest extends TestCase {
 			// The flow/agent bundler. Injected as a no-op double: these tests
 			// are about the data-register path and the ZIP mechanics, and a
 			// real one here would couple them to a second store.
-			new \OCA\OpenBuild\Service\FlowAndAgentExportBundler(
+			new \OCA\Buildiq\Service\FlowAndAgentExportBundler(
 				$this->createMock(\OCA\OpenRegister\Db\FlowMapper::class),
 				$this->createMock(\OCA\OpenRegister\Service\ObjectService::class),
 				appManager: $this->createMock(originalClassName: \OCP\App\IAppManager::class),

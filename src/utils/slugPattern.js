@@ -73,7 +73,7 @@ export function validateSlug(slug) {
 		return {
 			valid: false,
 			message:
-				'Version slugs cannot start with `_` (reserved for openbuild system use).',
+				'Version slugs cannot start with `_` (reserved for buildiq system use).',
 		}
 	}
 

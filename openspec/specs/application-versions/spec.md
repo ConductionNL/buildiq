@@ -26,7 +26,7 @@ every save.
 ### Requirement: ApplicationVersion schema declared in OpenRegister
 
 The system SHALL declare an `ApplicationVersion` schema in
-`lib/Settings/openbuild_register.json` under the `openbuild` register namespace
+`lib/Settings/openbuild_register.json` under the `buildiq` register namespace
 (Schema.org analogue: `SoftwareApplication`). The schema SHALL define properties:
 
 - `name` (string, required) — human-readable display label set by the admin
@@ -37,7 +37,7 @@ The system SHALL declare an `ApplicationVersion` schema in
   `@conduction/nextcloud-vue/src/schemas/app-manifest.schema.json` v1.4.0+.
 - `register` (string, required) — name of the per-version OR register that holds
   this version's schemas and objects. Convention:
-  `openbuild-{appSlug}-{versionSlug}` (e.g. `openbuild-hello-world-production`).
+  `buildiq-{appSlug}-{versionSlug}` (e.g. `buildiq-hello-world-production`).
   Actual register provisioning is out of scope for this spec and owned by the
   creation-wizard capability.
 - `semver` (string, required, pattern
@@ -57,17 +57,17 @@ via `ConfigurationService::importFromApp()` in the existing repair step.
 
 #### Scenario: Schema is available after install
 
-- **WHEN** the OpenBuild repair step runs on a fresh install
-- **THEN** OpenRegister exposes the `openbuild/applicationVersion` schema with the
+- **WHEN** the Buildiq repair step runs on a fresh install
+- **THEN** OpenRegister exposes the `buildiq/applicationVersion` schema with the
   declared properties
-- **AND** the schema appears in OR's standard schema listing for the `openbuild`
+- **AND** the schema appears in OR's standard schema listing for the `buildiq`
   register namespace
 
 #### Scenario: ApplicationVersion row is created via OR REST
 
 - **WHEN** a client POSTs a payload (carrying `name`, `slug`, `manifest`, `register`,
   `semver`, `status`, and an `application` relation) to OR's REST endpoint for the
-  `openbuild/applicationVersion` namespace
+  `buildiq/applicationVersion` namespace
 - **THEN** OR persists the object, returns 201, and the returned object carries an
   OR-assigned `uuid` and the submitted fields
 
@@ -216,7 +216,7 @@ transitions (`draft → published`, `published → archived`, `archived → draf
 `on_transition` action on the `draft → published` edge SHALL upsert a
 `BuiltAppRoute` row keyed by the parent Application's `slug` and pointing at the
 parent Application's `uuid`. This action is **relocated** from the Application
-schema (chain spec `openbuild-application-register` REQ-OBA-004) — published-ness
+schema (chain spec `buildiq-application-register` REQ-OBA-004) — published-ness
 is per-version under the new model.
 
 **ID:** REQ-OBV-106
@@ -241,7 +241,7 @@ is per-version under the new model.
 ### Requirement: ApplicationVersion CRUD endpoints
 
 The system SHALL expose `ApplicationVersionsController` at
-`/index.php/apps/openbuild/api/applications/{slug}/versions` with the following
+`/index.php/apps/buildiq/api/applications/{slug}/versions` with the following
 methods:
 
 - `GET /` — list ApplicationVersions for the named Application (filtered by the
@@ -254,7 +254,7 @@ methods:
   Decision 2). When the payload DOES supply a `register`, that value SHALL be honoured
   unchanged (the per-version register convention remains available for the creation
   wizard / promotion paths). The create path SHALL NOT mint an
-  `openbuild-{appSlug}-{versionSlug}` register on this UI's behalf.
+  `buildiq-{appSlug}-{versionSlug}` register on this UI's behalf.
 - `PUT /{versionSlug}` — update one ApplicationVersion. Triggers the semver
   auto-bump (REQ-OBV-103) and cycle guard (REQ-OBV-104).
 - `DELETE /{versionSlug}?strategy=<delete-now|orphan-grace|keep-register>` —
@@ -288,18 +288,18 @@ read). All endpoints SHALL be registered in `appinfo/routes.php`.
 #### Scenario: Create without a register inherits the production register
 
 - **GIVEN** an Application `hello-world` whose production version's `register` is
-  `openbuild-hello-world-production`
+  `buildiq-hello-world-production`
 - **WHEN** an authenticated owner POSTs a create payload that omits `register`
 - **THEN** the created ApplicationVersion's `register` is
-  `openbuild-hello-world-production` (inherited from the production version)
+  `buildiq-hello-world-production` (inherited from the production version)
 - **AND** no new register is provisioned
 
 #### Scenario: Create with an explicit register honours the supplied value
 
 - **WHEN** an authenticated owner POSTs a create payload carrying
-  `register: "openbuild-hello-world-staging"`
+  `register: "buildiq-hello-world-staging"`
 - **THEN** the created ApplicationVersion's `register` is
-  `openbuild-hello-world-staging` (the supplied value is not overridden)
+  `buildiq-hello-world-staging` (the supplied value is not overridden)
 
 ### Requirement: Version-deletion endpoint accepts a strategy
 
@@ -326,10 +326,10 @@ Strategy-branching logic lives in
 
 #### Scenario: delete-now drops the register and the version row
 
-- **GIVEN** an ApplicationVersion `V` whose `register` is `openbuild-<slug>-staging`
+- **GIVEN** an ApplicationVersion `V` whose `register` is `buildiq-<slug>-staging`
   and at least one object inside that register
 - **WHEN** an authenticated owner sends `DELETE …/versions/staging?strategy=delete-now`
-- **THEN** the per-version register `openbuild-<slug>-staging` no longer exists
+- **THEN** the per-version register `buildiq-<slug>-staging` no longer exists
 - **AND** the ApplicationVersion row `V` no longer exists
 - **AND** the response is `204`
 

@@ -4,7 +4,7 @@
  * Unit tests for the ADR-037 automation-designer register fragment.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Settings
+ * @package  OCA\Buildiq\Tests\Unit\Settings
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -20,9 +20,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Settings;
+namespace OCA\Buildiq\Tests\Unit\Settings;
 
-use OCA\OpenBuild\Service\SettingsService;
+use OCA\Buildiq\Service\SettingsService;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 

@@ -9,19 +9,19 @@ chain:
 
 ## Why
 
-OpenBuild can already *export* a published app to GitHub as a standalone
-Nextcloud app (`GitHubPushService` + `ExportJobService`, the `openbuild-exporter`
+Buildiq can already *export* a published app to GitHub as a standalone
+Nextcloud app (`GitHubPushService` + `ExportJobService`, the `buildiq-exporter`
 capability): it scaffolds PHP, an `appinfo/`, a webpack build — a real installable
-Nextcloud app that no longer round-trips back into OpenBuild. And it can already
-*consume* templates from a remote OpenRegister catalogue (`openbuild-remote-template-store`).
+Nextcloud app that no longer round-trips back into Buildiq. And it can already
+*consume* templates from a remote OpenRegister catalogue (`buildiq-remote-template-store`).
 What it cannot do is treat **GitHub as a first-class, round-trippable home for a
 virtual app's definition** — push an app's manifest + schemas to a repo, discover
 other people's apps on GitHub, and pull one back in as an editable draft. Every
 serious low-code platform (Retool, Budibase, Appsmith) has a Git-backed "app as
-data" round-trip; OpenBuild's only GitHub path is the one-way scaffold exporter.
+data" round-trip; Buildiq's only GitHub path is the one-way scaffold exporter.
 
 Before any of the shop (change 2) or owner sync (change 3) work can happen, the
-fleet needs **one canonical, versioned answer to "what does an OpenBuild app look
+fleet needs **one canonical, versioned answer to "what does an Buildiq app look
 like in a GitHub repo?"** — a data format (not the exporter's PHP scaffold), a
 discovery contract, the linkage fields that tie a local `Application` to its
 GitHub home, and a serializer/parser pair that is the single implementation of
@@ -29,11 +29,11 @@ that format. This change defines exactly that and nothing more. It is the head o
 a three-change chain:
 
 1. **`github-app-repo-format`** (this change) — the canonical repo layout, the
-   `openbuild-app.json` descriptor, the discovery topic, the `Application` /
+   `buildiq-app.json` descriptor, the discovery topic, the `Application` /
    `ApplicationVersion` linkage fields, and the `AppRepoSerializer` /
    `AppRepoParser` service pair with strict import validation.
 2. **`github-shop-catalogue`** — the shop reads apps from GitHub via search
-   (`topic:openbuild-app`) as a new source alongside the existing local + remote-OR
+   (`topic:buildiq-app`) as a new source alongside the existing local + remote-OR
    sources, and installs one by parsing it through this change's parser.
 3. **`github-app-sync`** — the owner round-trip (push/pull) from the app admin
    screen, routing every write through OpenRegister's credential broker.
@@ -41,13 +41,13 @@ a three-change chain:
 This change is a **data-format / spec-heavy** change. The exporter is untouched:
 its PHP-scaffold output is a different artifact for a different purpose (ship a
 standalone app), and the round-trip data format defined here never tries to be an
-installable app on its own — it is a definition that only OpenBuild parses.
+installable app on its own — it is a definition that only Buildiq parses.
 
 ## What Changes
 
-- **NEW** canonical GitHub repo layout for an OpenBuild app (the round-trip
+- **NEW** canonical GitHub repo layout for an Buildiq app (the round-trip
   **data** format, not the exporter's PHP scaffold):
-  - `openbuild-app.json` — the top-level app descriptor: `slug`, `name`,
+  - `buildiq-app.json` — the top-level app descriptor: `slug`, `name`,
     `description`, `category`, `appType` (`virtual` | `hybrid`), `version`
     (the exported ApplicationVersion's semver), optional `icon` / `iconDark`
     refs, and an optional `credentials[]` declaration (provider / reason /
@@ -58,8 +58,8 @@ installable app on its own — it is a definition that only OpenBuild parses.
     the OpenRegister schema blobs the app's data model needs.
   - optional `README.md` + `img/` (screenshots, icon SVGs referenced by the
     descriptor).
-  - **Discovery contract:** a repo is an OpenBuild app iff it carries the GitHub
-    **topic `openbuild-app`** and a parseable `openbuild-app.json` at its root.
+  - **Discovery contract:** a repo is an Buildiq app iff it carries the GitHub
+    **topic `buildiq-app`** and a parseable `buildiq-app.json` at its root.
 - **NEW** capability `github-app-repo-format`: the format definition above plus a
   serializer/parser service pair:
   - `AppRepoSerializer` — turns a local `Application` + a chosen
@@ -95,16 +95,16 @@ installable app on its own — it is a definition that only OpenBuild parses.
 
 ### New Capabilities
 
-- `github-app-repo-format`: the canonical GitHub repo layout for an OpenBuild app
-  (`openbuild-app.json` descriptor, `manifest.json`, `schemas/*.json`, optional
-  `README.md` + `img/`), the `openbuild-app` discovery-topic contract, the
+- `github-app-repo-format`: the canonical GitHub repo layout for an Buildiq app
+  (`buildiq-app.json` descriptor, `manifest.json`, `schemas/*.json`, optional
+  `README.md` + `img/`), the `buildiq-app` discovery-topic contract, the
   `credentials[]` declaration, and the `AppRepoSerializer` / `AppRepoParser`
   service pair with strict, actionable, all-or-nothing import validation that
   targets the existing `installFromTemplateArray` clone seam.
 
 ### Modified Capabilities
 
-- `openbuild-application-register`: the `Application` schema gains two optional
+- `buildiq-application-register`: the `Application` schema gains two optional
   additive linkage fields — `githubRepo` (`{ owner, name }`) and
   `githubDefaultBranch` — recording the app's GitHub home. No lifecycle or
   behaviour change; the fields are declarative and omittable.

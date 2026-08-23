@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild AppOverrideController
+ * Buildiq AppOverrideController
  *
  * HTTP surface for the per-instance shared manifest override of an EXISTING
  * Nextcloud fleet app. Three routes:
@@ -11,12 +11,12 @@
  *            (design D2).
  *   - PUT    /api/app-overrides/{appId} — validate the delta shape + non-blank
  *            guard, upsert the AppOverride, record updatedBy from the session.
- *            CSRF-enforced; rejects anonymous (401) and out-of-OpenBuild-scope
+ *            CSRF-enforced; rejects anonymous (401) and out-of-Buildiq-scope
  *            callers (403); rejects malformed / app-blanking deltas (422).
  *   - DELETE /api/app-overrides/{appId} — idempotently clear the override.
  *            CSRF-enforced; same auth posture as PUT.
  *
- * The write/delete authorization guard is "the caller has OpenBuild access"
+ * The write/delete authorization guard is "the caller has Buildiq access"
  * (the app is enabled for them under its NC app group-restriction), NOT a
  * per-object owner check — an AppOverride is a per-instance shared
  * customization with no owner (design D1 / no-admin-idor for a shared
@@ -26,7 +26,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
- * @package  OCA\OpenBuild\Controller
+ * @package  OCA\Buildiq\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -41,11 +41,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Controller;
+namespace OCA\Buildiq\Controller;
 
-use OCA\OpenBuild\AppInfo\Application;
-use OCA\OpenBuild\Service\AppOverrideService;
-use OCA\OpenBuild\Service\PermissionResolver;
+use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Service\AppOverrideService;
+use OCA\Buildiq\Service\PermissionResolver;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -76,7 +76,7 @@ class AppOverrideController extends Controller {
 	 * @param LoggerInterface $logger PSR logger for diagnostics.
 	 * @param AppOverrideService $appOverrideService OR-backed override store.
 	 * @param IUserSession $userSession Current Nextcloud user session.
-	 * @param IAppManager $appManager Resolves OpenBuild-access for a user.
+	 * @param IAppManager $appManager Resolves Buildiq-access for a user.
 	 * @param PermissionResolver $permissionResolver Per-Application principal matcher (maintainer gate).
 	 *
 	 * @return void
@@ -98,7 +98,7 @@ class AppOverrideController extends Controller {
 	 * Returns the stored `manifestDelta` unchanged, or an empty delta `{}`
 	 * (status 200) when no override exists, so the loader's delta merge is a
 	 * no-op and the bundled manifest passes through. NEVER merges server-side
-	 * (OpenBuild lacks the fleet base — design D2). Login-required (the
+	 * (Buildiq lacks the fleet base — design D2). Login-required (the
 	 * capability/edit flow is for authenticated users); `#[NoCSRFRequired]` is
 	 * set because this is a read-only GET commonly fetched by the loader.
 	 *
@@ -133,7 +133,7 @@ class AppOverrideController extends Controller {
 			$record = $this->loadDelta(appId: $appId, rawAdmin: $rawAdmin);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: AppOverride get failed for appId ' . $appId . ': ' . $e->getMessage(),
+				'Buildiq: AppOverride get failed for appId ' . $appId . ': ' . $e->getMessage(),
 				['exception' => $e]
 			);
 			return $this->error(code: 'internal_error', status: Http::STATUS_INTERNAL_SERVER_ERROR);
@@ -212,7 +212,7 @@ class AppOverrideController extends Controller {
 			$record = $this->appOverrideService->getUserDelta(appId: $appId, uid: $user->getUID());
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: user-delta get failed for appId ' . $appId . ': ' . $e->getMessage(),
+				'Buildiq: user-delta get failed for appId ' . $appId . ': ' . $e->getMessage(),
 				['exception' => $e]
 			);
 			return $this->error(code: 'internal_error', status: Http::STATUS_INTERNAL_SERVER_ERROR);
@@ -251,7 +251,7 @@ class AppOverrideController extends Controller {
 			return $this->error(code: 'invalid_app_id', status: Http::STATUS_BAD_REQUEST);
 		}
 
-		$guard = $this->requireOpenBuildAccess();
+		$guard = $this->requireBuildiqAccess();
 		if ($guard !== null) {
 			return $guard;
 		}
@@ -283,7 +283,7 @@ class AppOverrideController extends Controller {
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: user-delta save failed for appId ' . $appId . ': ' . $e->getMessage(),
+				'Buildiq: user-delta save failed for appId ' . $appId . ': ' . $e->getMessage(),
 				['exception' => $e]
 			);
 			return $this->error(code: 'internal_error', status: Http::STATUS_INTERNAL_SERVER_ERROR);
@@ -319,7 +319,7 @@ class AppOverrideController extends Controller {
 			return $this->error(code: 'invalid_app_id', status: Http::STATUS_BAD_REQUEST);
 		}
 
-		$guard = $this->requireOpenBuildAccess();
+		$guard = $this->requireBuildiqAccess();
 		if ($guard !== null) {
 			return $guard;
 		}
@@ -330,7 +330,7 @@ class AppOverrideController extends Controller {
 			$this->appOverrideService->deleteUserDelta(appId: $appId, uid: $uid);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: user-delta clear failed for appId ' . $appId . ': ' . $e->getMessage(),
+				'Buildiq: user-delta clear failed for appId ' . $appId . ': ' . $e->getMessage(),
 				['exception' => $e]
 			);
 			return $this->error(code: 'internal_error', status: Http::STATUS_INTERNAL_SERVER_ERROR);
@@ -344,7 +344,7 @@ class AppOverrideController extends Controller {
 	 *
 	 * Unlike {@see getUser()} (which is owner-scoped to the caller's own delta),
 	 * this returns every user-scoped delta for the app so a maintainer can see
-	 * who has a personal override from the OpenBuild management screen. Gated to
+	 * who has a personal override from the Buildiq management screen. Gated to
 	 * an OWNER/EDITOR of the parent Application or an NC admin — a regular user
 	 * may NOT enumerate other users' deltas (no-admin-idor). Returns owner +
 	 * version metadata only, never the private delta bodies.
@@ -371,7 +371,7 @@ class AppOverrideController extends Controller {
 			$overrides = $this->appOverrideService->listUserDeltas(appId: $appId);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: user-delta list failed for appId ' . $appId . ': ' . $e->getMessage(),
+				'Buildiq: user-delta list failed for appId ' . $appId . ': ' . $e->getMessage(),
 				['exception' => $e]
 			);
 			return $this->error(code: 'internal_error', status: Http::STATUS_INTERNAL_SERVER_ERROR);
@@ -442,7 +442,7 @@ class AppOverrideController extends Controller {
 	 * Upsert the manifest delta for a fleet app (the write endpoint).
 	 *
 	 * CSRF is enforced (no `#[NoCSRFRequired]`). Rejects anonymous callers
-	 * (401) and callers without OpenBuild access (403). Validates the delta
+	 * (401) and callers without Buildiq access (403). Validates the delta
 	 * shape and rejects an app-blanking delta (422) before persisting. Records
 	 * `updatedBy` from the session UID.
 	 *
@@ -458,7 +458,7 @@ class AppOverrideController extends Controller {
 			return $this->error(code: 'invalid_app_id', status: Http::STATUS_BAD_REQUEST);
 		}
 
-		$guard = $this->requireOpenBuildAccess();
+		$guard = $this->requireBuildiqAccess();
 		if ($guard !== null) {
 			return $guard;
 		}
@@ -490,7 +490,7 @@ class AppOverrideController extends Controller {
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: AppOverride save failed for appId ' . $appId . ': ' . $e->getMessage(),
+				'Buildiq: AppOverride save failed for appId ' . $appId . ': ' . $e->getMessage(),
 				['exception' => $e]
 			);
 			return $this->error(code: 'internal_error', status: Http::STATUS_INTERNAL_SERVER_ERROR);
@@ -590,7 +590,7 @@ class AppOverrideController extends Controller {
 			return $this->error(code: 'invalid_app_id', status: Http::STATUS_BAD_REQUEST);
 		}
 
-		$guard = $this->requireOpenBuildAccess();
+		$guard = $this->requireBuildiqAccess();
 		if ($guard !== null) {
 			return $guard;
 		}
@@ -599,7 +599,7 @@ class AppOverrideController extends Controller {
 			$this->appOverrideService->delete(appId: $appId);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: AppOverride clear failed for appId ' . $appId . ': ' . $e->getMessage(),
+				'Buildiq: AppOverride clear failed for appId ' . $appId . ': ' . $e->getMessage(),
 				['exception' => $e]
 			);
 			return $this->error(code: 'internal_error', status: Http::STATUS_INTERNAL_SERVER_ERROR);
@@ -609,10 +609,10 @@ class AppOverrideController extends Controller {
 	}//end clear()
 
 	/**
-	 * Guard: the caller must be logged in AND have OpenBuild access.
+	 * Guard: the caller must be logged in AND have Buildiq access.
 	 *
 	 * Returns null when the caller passes, or a JSONResponse (401 anonymous /
-	 * 403 out-of-scope) when they do not. OpenBuild access is "the OpenBuild
+	 * 403 out-of-scope) when they do not. Buildiq access is "the Buildiq
 	 * app is enabled for this user under its NC app group-restriction"
 	 * (IAppManager::isEnabledForUser), the same condition that makes the
 	 * in-app edit button reachable (design D1/D6). This is the load-bearing
@@ -622,7 +622,7 @@ class AppOverrideController extends Controller {
 	 *
 	 * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
 	 */
-	private function requireOpenBuildAccess(): ?JSONResponse {
+	private function requireBuildiqAccess(): ?JSONResponse {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return $this->error(code: 'unauthenticated', status: Http::STATUS_UNAUTHORIZED);
@@ -633,7 +633,7 @@ class AppOverrideController extends Controller {
 		}
 
 		return null;
-	}//end requireOpenBuildAccess()
+	}//end requireBuildiqAccess()
 
 	/**
 	 * Read and validate the PUT body as a keyed delta object.

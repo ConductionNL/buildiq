@@ -11,7 +11,7 @@ chain:
 
 ## Why
 
-The first two changes gave OpenBuild a GitHub *format* (`github-app-repo-format`)
+The first two changes gave Buildiq a GitHub *format* (`github-app-repo-format`)
 and a GitHub *shop* that installs public apps (`github-shop-catalogue`). What's
 still missing is the **owner round-trip**: from an app's admin/detail screen, an
 owner should be able to **link** the app to a GitHub repo, **publish** (push) its
@@ -39,10 +39,10 @@ every operation, reusing the app's `permissions` model.
     change 1's `AppRepoSerializer` into an in-memory file map, then commit it to
     GitHub by **porting the Git Data API tree-push mechanics from
     `GitHubPushService`** (blobs → tree → commit → ref) — but routing **EVERY**
-    HTTP call through `CredentialBrokerService::request(credentialId, 'openbuild',
+    HTTP call through `CredentialBrokerService::request(credentialId, 'buildiq',
     method, path, headers, body, actingUserId)` instead of a PAT. When the app is
     not yet linked to a repo, it creates one (`POST /user/repos` or
-    `POST /orgs/{org}/repos`) and sets the discovery **topic `openbuild-app`**.
+    `POST /orgs/{org}/repos`) and sets the discovery **topic `buildiq-app`**.
     Push always adds a new commit (non-destructive); it records the resulting
     `commitSha` on the pushed `ApplicationVersion`.
   - `pull(slug, ref, credentialId?)` — fetch the repo's file map (reusing change
@@ -53,7 +53,7 @@ every operation, reusing the app's `permissions` model.
     NEVER overwrites the production version; activation is a separate,
     already-existing promotion step.
   - Both paths resolve the broker lazily (`class_exists` + `Server::get`, the
-    `RemoteTemplateStoreService` pattern) and never place a token in OpenBuild.
+    `RemoteTemplateStoreService` pattern) and never place a token in Buildiq.
 - **NEW** `lib/Controller/GitHubSyncController.php` — owner-RBAC-guarded endpoints:
   - `POST /api/applications/{slug}/github/link` — link the app to a repo
     (`{ owner, name }`), resolving + storing `githubRepo` + `githubDefaultBranch`.
@@ -121,7 +121,7 @@ every operation, reusing the app's `permissions` model.
   for publish to work — the UI feature-detects and disables publish with a hint
   otherwise.
 - **Network/Security**: outbound GitHub writes only via the OR credential broker
-  (token never in OpenBuild; broker guards owner / allowedApps / allowRules /
+  (token never in Buildiq; broker guards owner / allowedApps / allowRules /
   host-lock=`api.github.com`); pull reads via the broker (private) or anonymously
   (public). Every endpoint is owner-RBAC-gated; admins are not auto-granted.
 - **Dependencies**: `github-app-repo-format` (serializer/parser + linkage fields)

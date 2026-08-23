@@ -10,7 +10,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\BackgroundJob
+ * @package  OCA\Buildiq\Tests\Unit\BackgroundJob
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,11 +23,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\BackgroundJob;
+namespace OCA\Buildiq\Tests\Unit\BackgroundJob;
 
-use OCA\OpenBuild\BackgroundJob\RuleExecutionLogCleanup;
+use OCA\Buildiq\BackgroundJob\RuleExecutionLogCleanup;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;

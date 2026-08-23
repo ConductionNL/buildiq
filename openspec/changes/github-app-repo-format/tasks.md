@@ -8,16 +8,16 @@
 ## 2. AppRepoSerializer (local → repo files)
 
 - [ ] 2.1 Create `lib/Service/AppRepoSerializer.php` (SPDX + copyright in the file docblock). Pure service — inject only what is needed to read an Application + ApplicationVersion + companion schemas (no `IClientService`, no OR writes). (REQ-GARF-006)
-- [ ] 2.2 Implement `serialize(Application, ApplicationVersion): array` returning a `path => contents` file map: `openbuild-app.json` (descriptor), `manifest.json` (the version's `manifest` blob verbatim), and one `schemas/<slug>.json` per companion schema of the app's per-app register. (REQ-GARF-001, REQ-GARF-004, REQ-GARF-005)
+- [ ] 2.2 Implement `serialize(Application, ApplicationVersion): array` returning a `path => contents` file map: `buildiq-app.json` (descriptor), `manifest.json` (the version's `manifest` blob verbatim), and one `schemas/<slug>.json` per companion schema of the app's per-app register. (REQ-GARF-001, REQ-GARF-004, REQ-GARF-005)
 - [ ] 2.3 Build the descriptor per REQ-GARF-002: `formatVersion` (`"1.0"`), `slug`, `name`, `description`, `category`, `appType`, `version` (= the version's `semver`), optional `icon`/`iconDark` refs, optional `baseRef` for hybrid apps. (REQ-GARF-002)
 - [ ] 2.4 Derive the descriptor `credentials[]` (`{ provider, reason, scopes[] }`) from the manifest's top-level `credentials[]` when present. (REQ-GARF-009)
 - [ ] 2.5 Canonicalise every emitted JSON file (recursively sorted keys, stable indentation, trailing newline) and emit files in a deterministic order (descriptor, manifest, `schemas/*` sorted by slug, optional README) so re-serialising an unchanged app is byte-stable. (REQ-GARF-006)
-- [ ] 2.6 Emit an optional `README.md` (app name + description + "built with OpenBuild" provenance line) when the app has a description.
+- [ ] 2.6 Emit an optional `README.md` (app name + description + "built with Buildiq" provenance line) when the app has a description.
 
 ## 3. AppRepoParser (repo files → clone-seam payload)
 
 - [ ] 3.1 Create `lib/Service/AppRepoParser.php` (SPDX + copyright in the file docblock). Pure service — `parse(array $files): array` is a pure function of the in-memory `path => contents` map; no network I/O, no OR writes. (REQ-GARF-007)
-- [ ] 3.2 Read + JSON-decode `openbuild-app.json`; enforce size/depth bounds before decode (hostile-input-safe, design.md Decision 8); map descriptor fields onto the `ApplicationTemplate`-shaped payload (`slug`, `title` = name, `description`, `useCase` = descriptor.useCase ?? description, `category`, `version`). (REQ-GARF-002, REQ-GARF-007)
+- [ ] 3.2 Read + JSON-decode `buildiq-app.json`; enforce size/depth bounds before decode (hostile-input-safe, design.md Decision 8); map descriptor fields onto the `ApplicationTemplate`-shaped payload (`slug`, `title` = name, `description`, `useCase` = descriptor.useCase ?? description, `category`, `version`). (REQ-GARF-002, REQ-GARF-007)
 - [ ] 3.3 Read + JSON-decode `manifest.json`; validate it with the same manifest validation the local clone path applies (`validateManifest`); place the validated blob on the payload's `manifest`. (REQ-GARF-004)
 - [ ] 3.4 Collect `schemas/*.json` into `companionSchemas[]`, validating each is a JSON-schema object and its base filename is a valid kebab-case slug; reject duplicate slugs. (REQ-GARF-005, REQ-GARF-008)
 - [ ] 3.5 Set `templateOrigin = { source: "github", repo: <owner/name when known>, version: <descriptor.version> }` on the payload. (REQ-GARF-007)
@@ -33,11 +33,11 @@
 ## 5. Wiring & documentation of the discovery contract
 
 - [ ] 5.1 Register `AppRepoSerializer` + `AppRepoParser` in the app's DI container (`lib/AppInfo/Application.php`) as plain services (no routes, no controller — consumed by `github-shop-catalogue` and `github-app-sync`).
-- [ ] 5.2 Document the canonical repo layout + the `openbuild-app` discovery topic in the OpenBuild docs (e.g. `docs/` GitHub-format page): the file tree, the descriptor contract, and the "topic `openbuild-app` + root `openbuild-app.json`" discovery rule. (REQ-GARF-003)
+- [ ] 5.2 Document the canonical repo layout + the `buildiq-app` discovery topic in the Buildiq docs (e.g. `docs/` GitHub-format page): the file tree, the descriptor contract, and the "topic `buildiq-app` + root `buildiq-app.json`" discovery rule. (REQ-GARF-003)
 
 ## 6. Tests
 
-- [ ] 6.1 PHPUnit `AppRepoSerializer`: serialising an Application with two companion schemas yields `openbuild-app.json` + `manifest.json` + two `schemas/<slug>.json`; the manifest round-trips verbatim; re-serialising an unchanged app is byte-identical; the descriptor `credentials[]` is derived from a manifest credential. (REQ-GARF-004, REQ-GARF-006, REQ-GARF-009)
+- [ ] 6.1 PHPUnit `AppRepoSerializer`: serialising an Application with two companion schemas yields `buildiq-app.json` + `manifest.json` + two `schemas/<slug>.json`; the manifest round-trips verbatim; re-serialising an unchanged app is byte-identical; the descriptor `credentials[]` is derived from a manifest credential. (REQ-GARF-004, REQ-GARF-006, REQ-GARF-009)
 - [ ] 6.2 PHPUnit `AppRepoParser` happy path: a conforming fixture repo map parses to an `installFromTemplateArray`-shaped array with `slug`/`title`/`description`/`category`/`version`/`manifest`/`companionSchemas`/`templateOrigin`. (REQ-GARF-007)
 - [ ] 6.3 PHPUnit `AppRepoParser` strict-validation matrix: each failure code fires on its trigger (missing/unparseable descriptor, unknown appType, unsupported formatVersion, missing/unparseable/invalid manifest, unparseable/invalid schema, duplicate schema slug) and the whole parse fails with nothing imported. (REQ-GARF-008)
 - [ ] 6.4 PHPUnit hostile-input: an oversized/deeply-nested descriptor or manifest is rejected before decode; a `schemas/` entry with a path-traversal filename is rejected with `schema_invalid`. (design.md Decision 8)

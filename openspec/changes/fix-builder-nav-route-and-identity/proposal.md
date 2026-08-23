@@ -21,9 +21,9 @@ published app.
 ## What Changes
 
 - `lib/Service/AppNavigationService.php::registerNavEntries` (~line 185): stop
-  hand-building `$appUrl = '/apps/openbuild/builder/'.$slug` and instead
+  hand-building `$appUrl = '/apps/buildiq/builder/'.$slug` and instead
   generate the nav entry's `href` via the already-injected `IURLGenerator`:
-  `$this->urlGenerator->linkToRoute('openbuild.dashboard.builder', ['slug' =>
+  `$this->urlGenerator->linkToRoute('buildiq.dashboard.builder', ['slug' =>
   $slug])`. `linkToRoute` includes `/index.php` exactly when the instance
   requires it, so the same code path is correct on both rewrite-hidden and
   front-controller-required instances.
@@ -49,7 +49,7 @@ _None._
   generation via `IURLGenerator::linkToRoute`, not a hand-built string, so the
   entry resolves correctly regardless of the instance's front-controller
   (`/index.php`) configuration.
-- `openbuild-runtime`: the manifest endpoint requirement is amended to require
+- `buildiq-runtime`: the manifest endpoint requirement is amended to require
   that the response's top-level `name` field always reflects the
   Application's authoritative, cased display name, independent of whatever
   `name` value (if any) is present in the stored manifest blob.

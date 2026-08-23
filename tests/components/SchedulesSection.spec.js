@@ -4,7 +4,7 @@
  *
  * Vitest spec for SchedulesSection.vue.
  *
- * Spec: schedules-editor / openbuild-schedules-authoring
+ * Spec: schedules-editor / buildiq-schedules-authoring
  * (REQ-OBSA-001, REQ-OBSA-005, REQ-OBSA-007).
  */
 import { describe, it, expect, vi } from 'vitest'

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Service;
+namespace OCA\Buildiq\Tests\Unit\Service;
 
-use OCA\OpenBuild\Service\PlaceholderResolver;
+use OCA\Buildiq\Service\PlaceholderResolver;
 use PHPUnit\Framework\TestCase;
 
 /**

@@ -63,7 +63,7 @@
 				<p v-if="isHybrid" class="ob-detail-header__hybrid-note">
 					{{
 						t(
-							'openbuild',
+							'buildiq',
 							'This is a hybrid app — its name and id mirror the installed Nextcloud app and are read-only. You can still customize its pages, widgets, and menu.',
 						)
 					}}
@@ -81,9 +81,7 @@
 						<OpenInNew
 							:size="16"
 							class="ob-detail-header__open-app-icon" />
-						{{
-							t('openbuild', 'Open {name}', { name: applicationName })
-						}}
+						{{ t('buildiq', 'Open {name}', { name: applicationName }) }}
 					</a>
 				</p>
 			</div>
@@ -94,7 +92,7 @@
 			<div
 				class="ob-detail-header__pills"
 				role="tablist"
-				:aria-label="t('openbuild', 'Version selection')">
+				:aria-label="t('buildiq', 'Version selection')">
 				<div
 					v-for="version in visibleVersions"
 					:key="version.uuid"
@@ -121,7 +119,7 @@
 						v-if="hasPromoteTarget(version)"
 						class="ob-detail-header__pill-promote"
 						:aria-label="
-							t('openbuild', 'Promote {name}', {
+							t('buildiq', 'Promote {name}', {
 								name: version.name || version.slug,
 							})
 						"
@@ -193,7 +191,7 @@ export default {
 			return (
 				(this.application && this.application.name)
 				|| this.appSlug
-				|| t('openbuild', 'Untitled application')
+				|| t('buildiq', 'Untitled application')
 			)
 		},
 
@@ -230,7 +228,7 @@ export default {
 			return (
 				fromVersion
 				|| (this.application && this.application.status)
-				|| t('openbuild', 'draft')
+				|| t('buildiq', 'draft')
 			)
 		},
 
@@ -255,8 +253,8 @@ export default {
 		 */
 		appTypeLabel() {
 			return this.appTypeKey === 'hybrid'
-				? t('openbuild', 'Hybrid')
-				: t('openbuild', 'Virtual')
+				? t('buildiq', 'Hybrid')
+				: t('buildiq', 'Virtual')
 		},
 
 		/**
@@ -279,7 +277,7 @@ export default {
 		iconUrl() {
 			if (!this.appSlug) return ''
 			return generateUrl(
-				`/apps/openbuild/icons/${encodeURIComponent(this.appSlug)}.svg`,
+				`/apps/buildiq/icons/${encodeURIComponent(this.appSlug)}.svg`,
 			)
 		},
 
@@ -374,9 +372,9 @@ export default {
 			const inBucket = (bucket) =>
 				Array.isArray(bucket)
 				&& bucket.some((p) => p === `user:${uid}` || p === uid)
-			if (inBucket(permissions.owners)) return t('openbuild', 'owner')
-			if (inBucket(permissions.editors)) return t('openbuild', 'editor')
-			if (inBucket(permissions.viewers)) return t('openbuild', 'viewer')
+			if (inBucket(permissions.owners)) return t('buildiq', 'owner')
+			if (inBucket(permissions.editors)) return t('buildiq', 'editor')
+			if (inBucket(permissions.viewers)) return t('buildiq', 'viewer')
 			return ''
 		},
 
@@ -552,9 +550,9 @@ export default {
 		onPromoteClick(version) {
 			const opener =
 				typeof window !== 'undefined'
-				&& window.openbuild
-				&& typeof window.openbuild.openPromoteDialog === 'function'
-					? window.openbuild.openPromoteDialog
+				&& window.buildiq
+				&& typeof window.buildiq.openPromoteDialog === 'function'
+					? window.buildiq.openPromoteDialog
 					: null
 			if (opener) {
 				opener({ sourceVersion: version, application: this.application })
@@ -564,7 +562,7 @@ export default {
 				typeof console !== 'undefined'
 				&& typeof console.debug === 'function'
 			) {
-				console.debug('openbuild: promote dialog not registered — deferred')
+				console.debug('buildiq: promote dialog not registered — deferred')
 			}
 			this.$emit('promote', {
 				sourceVersion: version,
@@ -615,7 +613,7 @@ export default {
 			if (!this.appSlug) return
 			try {
 				const url = generateUrl(
-					`/apps/openbuild/api/applications/${encodeURIComponent(this.appSlug)}/versions`,
+					`/apps/buildiq/api/applications/${encodeURIComponent(this.appSlug)}/versions`,
 				)
 				const { data } = await axios.get(url)
 				const list = Array.isArray(data)

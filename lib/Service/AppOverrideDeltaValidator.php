@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild AppOverrideDeltaValidator
+ * Buildiq AppOverrideDeltaValidator
  *
  * Pure (stateless) validation of a fleet-app manifest delta before it is
  * persisted by AppOverrideService (design D4). Two checks:
@@ -20,7 +20,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -35,7 +35,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 /**
  * Stateless validator for fleet-app manifest deltas (design D4).
@@ -83,7 +83,7 @@ class AppOverrideDeltaValidator {
 	 * Detect a delta that, applied over an EMPTY base, resolves to a manifest
 	 * with no renderable pages and no menu (an "app-blanking" delta).
 	 *
-	 * OpenBuild cannot fully merge the delta over the real base (it lacks the
+	 * Buildiq cannot fully merge the delta over the real base (it lacks the
 	 * fleet base — design D2), but it CAN detect the obvious self-blanking
 	 * cases on write: a delta whose only page/menu effect is removals, or one
 	 * that explicitly sets `pages`/`menu` to empty. Such a delta would brick

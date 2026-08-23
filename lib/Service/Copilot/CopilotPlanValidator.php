@@ -1,11 +1,11 @@
 <?php
 
 /**
- * OpenBuild CopilotPlanValidator
+ * Buildiq CopilotPlanValidator
  *
  * Pure structural validator for a decoded copilot plan `{summary, steps[]}`
- * against the OpenBuild MCP tool catalogue
- * (`OpenBuildToolProvider::getToolDescriptors()`). Every step's `tool` must
+ * against the Buildiq MCP tool catalogue
+ * (`BuildiqToolProvider::getToolDescriptors()`). Every step's `tool` must
  * be on the allow-list and every step's `arguments` must satisfy the
  * matching tool's JSON-Schema `inputSchema` for the six constraint kinds the
  * descriptors actually use (`required`, `enum`, `pattern`, `type`,
@@ -16,7 +16,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service\Copilot
+ * @package  OCA\Buildiq\Service\Copilot
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -31,7 +31,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service\Copilot;
+namespace OCA\Buildiq\Service\Copilot;
 
 /**
  * Validates a copilot plan's steps against the tool catalogue's inputSchemas.
@@ -46,7 +46,7 @@ class CopilotPlanValidator {
 	 * Validate a decoded plan against the tool catalogue.
 	 *
 	 * @param array<string, mixed> $plan Decoded plan `{summary, steps[]}`.
-	 * @param array<int, array<string, mixed>> $toolDescriptors Tool catalogue (OpenBuildToolProvider::getToolDescriptors()).
+	 * @param array<int, array<string, mixed>> $toolDescriptors Tool catalogue (BuildiqToolProvider::getToolDescriptors()).
 	 *
 	 * @return array<int, array{stepIndex: int, message: string}> Empty when the plan is valid.
 	 *

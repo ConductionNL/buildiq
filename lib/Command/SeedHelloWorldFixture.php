@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild SeedHelloWorldFixture Command
+ * Buildiq SeedHelloWorldFixture Command
  *
  * Occ command that idempotently seeds the canonical hello-world virtual app
  * fixture used by the Playwright e2e suite.
@@ -10,7 +10,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Command
- * @package  OCA\OpenBuild\Command
+ * @package  OCA\Buildiq\Command
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,13 +23,13 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Command;
+namespace OCA\Buildiq\Command;
 
-use OCA\OpenBuild\Service\ApplicationVersionService;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\Buildiq\Service\ApplicationVersionService;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
 use stdClass;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -37,7 +37,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Throwable;
 
 /**
- * Occ openbuild:seed-hello-world-fixture.
+ * Occ buildiq:seed-hello-world-fixture.
  *
  * Idempotently seeds the canonical `hello-world` virtual app used by the
  * Playwright e2e suite: one published Application with a productionVersion
@@ -130,7 +130,7 @@ class SeedHelloWorldFixture extends Command {
 	 * @return void
 	 */
 	protected function configure(): void {
-		$this->setName(name: 'openbuild:seed-hello-world-fixture')
+		$this->setName(name: 'buildiq:seed-hello-world-fixture')
 			->setDescription(description: 'Seed the hello-world virtual app fixture for the e2e suite (idempotent; test/dev only).');
 	}//end configure()
 
@@ -183,9 +183,9 @@ class SeedHelloWorldFixture extends Command {
 					'slug' => self::VERSION_SLUG,
 					'manifest' => $this->buildManifest(),
 					// The version's `register` field names the app's per-app
-					// data register (pattern: openbuild-<slug>). The shared
+					// data register (pattern: buildiq-<slug>). The shared
 					// `hello-message` data + manifest pages live in the main
-					// `openbuild` register, so this is metadata only.
+					// `buildiq` register, so this is metadata only.
 					'register' => $register . '-' . self::SEED_SLUG,
 					'semver' => self::SEMVER,
 					'status' => 'published',
@@ -248,7 +248,7 @@ class SeedHelloWorldFixture extends Command {
 	 * when OpenCatalogi is not installed. Re-running is a no-op once the hybrid
 	 * Application exists.
 	 *
-	 * @param string $register The openbuild register slug.
+	 * @param string $register The buildiq register slug.
 	 * @param OutputInterface $output The command output.
 	 *
 	 * @return void
@@ -376,7 +376,7 @@ class SeedHelloWorldFixture extends Command {
 	/**
 	 * Whether the hybrid example Application already exists.
 	 *
-	 * @param string $register The openbuild register slug.
+	 * @param string $register The buildiq register slug.
 	 *
 	 * @return bool True when the hybrid example is already present.
 	 */
@@ -447,7 +447,7 @@ class SeedHelloWorldFixture extends Command {
 	 * Application, and loadApplication() (which resolves a single object by slug)
 	 * then 404s on the ambiguous set.
 	 *
-	 * @param string $register The OpenBuild register slug.
+	 * @param string $register The Buildiq register slug.
 	 *
 	 * @return bool True when a hello-world Application object already exists.
 	 */
@@ -464,7 +464,7 @@ class SeedHelloWorldFixture extends Command {
 
 	/**
 	 * The canonical hello-world manifest — index + detail + form pages over
-	 * the seeded `hello-message` schema in the shared `openbuild` register.
+	 * the seeded `hello-message` schema in the shared `buildiq` register.
 	 *
 	 * @return array<string, mixed>
 	 */
@@ -549,7 +549,7 @@ class SeedHelloWorldFixture extends Command {
 	 * (`hasGridLayout` wins over the auto-body), where the widget's schema
 	 * arrives through `CnPageRenderer`'s read-through detail context and fills
 	 * in reactively. The shape below is byte-for-byte nc-vue's own
-	 * `defaultDetailGrid()`, which is also exactly what OpenBuild's edit button
+	 * `defaultDetailGrid()`, which is also exactly what Buildiq's edit button
 	 * writes the moment anyone edits this page — so this changes no pixels, it
 	 * only removes the race.
 	 *
@@ -608,12 +608,12 @@ class SeedHelloWorldFixture extends Command {
 	private function buildSampleMessages(): array {
 		return [
 			[
-				'title' => 'Welcome to OpenBuild',
+				'title' => 'Welcome to Buildiq',
 				'body' => 'This message is rendered by your first virtual app — built from a JSON manifest stored in OpenRegister.',
 			],
 			[
 				'title' => 'Edit me',
-				'body' => 'Open the OpenBuild shell, find hello-world, and edit its manifest to change what you see here.',
+				'body' => 'Open the Buildiq shell, find hello-world, and edit its manifest to change what you see here.',
 			],
 			[
 				'title' => 'Built from a manifest',

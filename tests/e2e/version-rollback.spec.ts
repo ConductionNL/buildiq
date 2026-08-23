@@ -51,7 +51,7 @@ const TEST_SLUG = process.env.NC_TEST_SLUG ?? 'pw-rollback'
  */
 async function appUuid(page: import('@playwright/test').Page): Promise<string> {
 	return page.evaluate(async (slug) => {
-		const r = await fetch('/index.php/apps/openbuild/api/applications', {
+		const r = await fetch('/index.php/apps/buildiq/api/applications', {
 			headers: { 'OCS-APIRequest': 'true' },
 		})
 		const d = await r.json()
@@ -71,7 +71,7 @@ async function appRecord(
 	page: import('@playwright/test').Page,
 ): Promise<Record<string, unknown>> {
 	return page.evaluate(async (slug) => {
-		const r = await fetch('/index.php/apps/openbuild/api/applications', {
+		const r = await fetch('/index.php/apps/buildiq/api/applications', {
 			headers: { 'OCS-APIRequest': 'true' },
 		})
 		const d = await r.json()
@@ -94,7 +94,7 @@ async function activeManifest(
 ): Promise<Record<string, unknown> | null> {
 	return page.evaluate(async (slug) => {
 		const r = await fetch(
-			`/index.php/apps/openbuild/api/applications/${slug}/manifest`,
+			`/index.php/apps/buildiq/api/applications/${slug}/manifest`,
 			{ headers: { 'OCS-APIRequest': 'true' } },
 		)
 		return r.ok ? await r.json() : null
@@ -122,7 +122,7 @@ async function snapshotBySemver(
 	return page.evaluate(
 		async ([slug, want]) => {
 			const r = await fetch(
-				`/index.php/apps/openbuild/api/applications/${slug}/versions`,
+				`/index.php/apps/buildiq/api/applications/${slug}/versions`,
 				{ headers: { 'OCS-APIRequest': 'true' } },
 			)
 			const d = await r.json()
@@ -154,7 +154,7 @@ async function putActiveManifest(
 	await page.evaluate(
 		async ([slug, m]) => {
 			await fetch(
-				`/index.php/apps/openbuild/api/applications/${slug}/manifest`,
+				`/index.php/apps/buildiq/api/applications/${slug}/manifest`,
 				{
 					method: 'PUT',
 					headers: {
@@ -178,7 +178,7 @@ async function putActiveManifest(
 // What was actually on screen was a MODAL. CnAppRoot offers the first-time-setup
 // wizard whenever every REQUIRED step is met but at least one OPTIONAL step is
 // not (`optionalSetupGating`, REQ-SETUP-NV-012), and it opens it as a full
-// `modal-mask`. OpenBuild trips that permanently: its `store` step carries NO
+// `modal-mask`. Buildiq trips that permanently: its `store` step carries NO
 // `required` key — the word "optional" lives only in the title string — so
 // `optionalUnmet` is never empty. Real users dismiss it once
 // (`cn-setup-wizard-dismissed:{appId}:{version}` in localStorage); every
@@ -214,7 +214,7 @@ async function openVersionHistory(
 	uuid: string,
 	options: { requireRows?: boolean } = {},
 ): Promise<void> {
-	await page.goto(`${BASE_URL}/apps/openbuild/applications/${uuid}`, {
+	await page.goto(`${BASE_URL}/apps/buildiq/applications/${uuid}`, {
 		waitUntil: 'domcontentloaded',
 	})
 
@@ -300,7 +300,7 @@ async function openVersionHistory(
 	})
 }
 
-test.describe('openbuild-versioning — rollback (REQ-OBV-003)', () => {
+test.describe('buildiq-versioning — rollback (REQ-OBV-003)', () => {
 	// The default 30s cannot cover this on a loaded instance. Measured on the
 	// shared dev box (28 applications, 200+ schemas), a single
 	// GET /api/applications takes ~6.9s — against ~0.3s on a disposable
@@ -312,7 +312,7 @@ test.describe('openbuild-versioning — rollback (REQ-OBV-003)', () => {
 	test.beforeEach(async ({ page }) => {
 		await suppressSupportDialog(page)
 		await suppressSetupWizard(page)
-		await page.goto(`${BASE_URL}/apps/openbuild/`, {
+		await page.goto(`${BASE_URL}/apps/buildiq/`, {
 			waitUntil: 'domcontentloaded',
 		})
 		await ensureVersionChain(page, TEST_SLUG, 'PW Rollback Fixture')

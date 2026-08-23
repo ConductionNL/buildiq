@@ -7,7 +7,7 @@
  * `CaseTokenService::mint()` — a write that structurally requires an
  * authenticated `IUserSession::getUser()` (design.md Decision 4). This
  * composable is therefore only ever invoked from an authenticated
- * OpenBuild session viewing an object the staff member already has access
+ * Buildiq session viewing an object the staff member already has access
  * to (a data-register object list/detail view) — never anonymously, and
  * never as an automatic side effect of an object being created (OQ-1 stays
  * deliberately unresolved; see `src/components/runtime/TrackLinkAction.vue`

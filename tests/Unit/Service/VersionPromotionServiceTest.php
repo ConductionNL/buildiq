@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests for VersionPromotionService (spec openbuild-version-promotion).
+ * Unit tests for VersionPromotionService (spec buildiq-version-promotion).
  *
  * Covers REQ-OBVP-001 (target resolution + strategy validation),
  * REQ-OBVP-002 (start-with-source-data), REQ-OBVP-003
@@ -14,7 +14,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Service
+ * @package  OCA\Buildiq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -27,18 +27,17 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Service;
+namespace OCA\Buildiq\Tests\Unit\Service;
 
-use OCA\OpenBuild\Exception\InvalidStrategyException;
-use OCA\OpenBuild\Exception\NoPromoteTargetException;
-use OCA\OpenBuild\Exception\PromotionFailedException;
-use OCA\OpenBuild\Exception\VersionLockedException;
-use OCA\OpenBuild\Service\VersionPromotionService;
+use OCA\Buildiq\Exception\InvalidStrategyException;
+use OCA\Buildiq\Exception\NoPromoteTargetException;
+use OCA\Buildiq\Exception\PromotionFailedException;
+use OCA\Buildiq\Exception\VersionLockedException;
+use OCA\Buildiq\Service\VersionPromotionService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -244,7 +243,7 @@ class VersionPromotionServiceTest extends TestCase {
 		$this->objectService
 			->expects(self::once())
 			->method('lockObject')
-			->with('u-tgt', 'openbuild.version-promotion', 60);
+			->with('u-tgt', 'buildiq.version-promotion', 60);
 
 		// RegisterMapper::update should be invoked for the schema-set forwarding.
 		$this->registerMapper

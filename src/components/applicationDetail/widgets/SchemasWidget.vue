@@ -6,7 +6,7 @@
 
 	The inline "+ Add schema" button delegates to the existing
 	create-schema dialog when a global registration is present
-	(currently checked via `window.openbuild?.openAddSchemaDialog`).
+	(currently checked via `window.buildiq?.openAddSchemaDialog`).
 	When no dialog is registered the button emits a debug log entry
 	and no-ops, deferring the actual create flow to the future schema-
 	designer spec.
@@ -15,10 +15,10 @@
 	<div class="ob-schemas-widget">
 		<header class="ob-schemas-widget__header">
 			<h3 class="ob-schemas-widget__title">
-				{{ t('openbuild', 'Schemas') }}
+				{{ t('buildiq', 'Schemas') }}
 			</h3>
 			<NcButton variant="tertiary" @click="addSchema">
-				{{ t('openbuild', '+ Add schema') }}
+				{{ t('buildiq', '+ Add schema') }}
 			</NcButton>
 		</header>
 		<ul v-if="schemas && schemas.length > 0" class="ob-schemas-widget__list">
@@ -39,13 +39,13 @@
 						formatCount(schema.objectCount)
 					}}</span>
 					<span class="ob-schemas-widget__row-status">{{
-						schema.status || t('openbuild', 'active')
+						schema.status || t('buildiq', 'active')
 					}}</span>
 				</span>
 			</li>
 		</ul>
 		<p v-else class="ob-schemas-widget__empty">
-			{{ t('openbuild', 'No schemas yet in this version.') }}
+			{{ t('buildiq', 'No schemas yet in this version.') }}
 		</p>
 	</div>
 </template>
@@ -73,7 +73,7 @@ export default {
 		 */
 		formatCount(count) {
 			const n = Number(count || 0)
-			return t('openbuild', '{count} objects', { count: n })
+			return t('buildiq', '{count} objects', { count: n })
 		},
 
 		/**
@@ -109,9 +109,9 @@ export default {
 		addSchema() {
 			const opener =
 				typeof window !== 'undefined'
-				&& window.openbuild
-				&& typeof window.openbuild.openAddSchemaDialog === 'function'
-					? window.openbuild.openAddSchemaDialog
+				&& window.buildiq
+				&& typeof window.buildiq.openAddSchemaDialog === 'function'
+					? window.buildiq.openAddSchemaDialog
 					: null
 			if (opener) {
 				opener({ appSlug: this.appSlug, versionSlug: this.versionSlug })
@@ -122,7 +122,7 @@ export default {
 				&& typeof console.debug === 'function'
 			) {
 				console.debug(
-					'openbuild: schema-create dialog not yet registered — deferred to schema-designer spec',
+					'buildiq: schema-create dialog not yet registered — deferred to schema-designer spec',
 				)
 			}
 			this.$emit('add-schema', {

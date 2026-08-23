@@ -14,7 +14,7 @@
 -->
 <template>
 	<div class="wt-host">
-		<NcEmptyContent v-if="loading" :name="t('openbuild', 'Loading…')">
+		<NcEmptyContent v-if="loading" :name="t('buildiq', 'Loading…')">
 			<template #icon>
 				<NcLoadingIcon :size="32" />
 			</template>
@@ -142,7 +142,7 @@ export default {
 			this.toast = ''
 			try {
 				const url = generateUrl(
-					'/apps/openregister/api/objects/openbuild/application',
+					'/apps/openregister/api/objects/buildiq/application',
 				)
 				const { data } = await axios.get(url, { params: { _limit: 100 } })
 				const apps =
@@ -169,7 +169,7 @@ export default {
 					: { ...EMPTY_MANIFEST }
 			} catch (e) {
 				this.application = null
-				this.error = t('openbuild', 'Failed to load the app: {error}', {
+				this.error = t('buildiq', 'Failed to load the app: {error}', {
 					error: (e && e.message) || String(e),
 				})
 			} finally {
@@ -200,7 +200,7 @@ export default {
 			this.error = ''
 			this.toast = ''
 			try {
-				// Persist through openbuild's ApplicationVersionsController#update
+				// Persist through buildiq's ApplicationVersionsController#update
 				// (PUT /api/applications/{slug}/versions/{versionSlug}) with just the
 				// manifest. The controller allowlists MUTABLE_FIELDS and passes the
 				// OR register/schema as parameters, so it avoids the raw-objects PUT
@@ -213,7 +213,7 @@ export default {
 					&& (version.slug || (version['@self'] && version['@self'].slug))
 				if (version && versionSlug && this.routeSlug) {
 					const url = generateUrl(
-						`/apps/openbuild/api/applications/${this.routeSlug}/versions/${versionSlug}`,
+						`/apps/buildiq/api/applications/${this.routeSlug}/versions/${versionSlug}`,
 					)
 					const { data } = await axios.put(url, {
 						manifest: this.manifest,
@@ -224,25 +224,25 @@ export default {
 							: null
 					if (saved && typeof saved === 'object')
 						this.applicationVersion = saved
-					this.toast = t('openbuild', 'Walkthrough saved.')
+					this.toast = t('buildiq', 'Walkthrough saved.')
 					return
 				}
 				// Fallback for un-versioned apps: persist onto the Application object.
 				if (!this.applicationUuid) {
-					this.error = t('openbuild', 'No app to save to.')
+					this.error = t('buildiq', 'No app to save to.')
 					return
 				}
 				const url = generateUrl(
-					`/apps/openregister/api/objects/openbuild/application/${this.applicationUuid}`,
+					`/apps/openregister/api/objects/buildiq/application/${this.applicationUuid}`,
 				)
 				const { data } = await axios.put(url, {
 					...this.application,
 					manifest: this.manifest,
 				})
 				if (data && typeof data === 'object') this.application = data
-				this.toast = t('openbuild', 'Walkthrough saved.')
+				this.toast = t('buildiq', 'Walkthrough saved.')
 			} catch (e) {
-				this.error = t('openbuild', 'Failed to save: {error}', {
+				this.error = t('buildiq', 'Failed to save: {error}', {
 					error: (e && e.message) || String(e),
 				})
 			} finally {

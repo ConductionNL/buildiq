@@ -3,25 +3,25 @@
   -
   - RuleSetTestSandbox — the test sandbox view (spec business-rules-engine
   - REQ-BRE-004). Lists a RuleSet's TestCases with their last result, runs the
-  - full suite through the openbuild RulesController test-all endpoint, and lets
+  - full suite through the buildiq RulesController test-all endpoint, and lets
   - the analyst add a TestCase (sample payload + expected result) persisted via
   - OpenRegister REST. Rendered as a NcModal so it overlays the dashboard.
   -->
 <template>
 	<NcModal size="large" @close="$emit('close')">
 		<div class="rule-set-test-sandbox">
-			<h2>{{ t('openbuild', 'Test sandbox') }} — {{ ruleSet.name }}</h2>
+			<h2>{{ t('buildiq', 'Test sandbox') }} — {{ ruleSet.name }}</h2>
 
 			<div class="rule-set-test-sandbox__toolbar">
 				<NcButton variant="primary" :disabled="running" @click="runAll">
 					{{
 						running
-							? t('openbuild', 'Running…')
-							: t('openbuild', 'Run all tests')
+							? t('buildiq', 'Running…')
+							: t('buildiq', 'Run all tests')
 					}}
 				</NcButton>
 				<NcButton variant="secondary" @click="showAdd = !showAdd">
-					{{ t('openbuild', 'Add test case') }}
+					{{ t('buildiq', 'Add test case') }}
 				</NcButton>
 			</div>
 
@@ -29,12 +29,12 @@
 				v-if="summary"
 				class="rule-set-test-sandbox__summary"
 				data-testid="test-summary">
-				{{ t('openbuild', 'Passed') }}: {{ summary.passed }} /
+				{{ t('buildiq', 'Passed') }}: {{ summary.passed }} /
 				{{ summary.total }}
 				<span
 					v-if="summary.failed > 0"
 					class="rule-set-test-sandbox__failed">
-					({{ summary.failed }} {{ t('openbuild', 'failed') }})
+					({{ summary.failed }} {{ t('buildiq', 'failed') }})
 				</span>
 			</div>
 
@@ -44,13 +44,13 @@
 				<thead>
 					<tr>
 						<th scope="col">
-							{{ t('openbuild', 'Name') }}
+							{{ t('buildiq', 'Name') }}
 						</th>
 						<th scope="col">
-							{{ t('openbuild', 'Description') }}
+							{{ t('buildiq', 'Description') }}
 						</th>
 						<th scope="col">
-							{{ t('openbuild', 'Last result') }}
+							{{ t('buildiq', 'Last result') }}
 						</th>
 					</tr>
 				</thead>
@@ -75,15 +75,15 @@
 			<div v-if="showAdd" class="rule-set-test-sandbox__add">
 				<NcTextField
 					v-model="draft.name"
-					:label="t('openbuild', 'Test case name')" />
+					:label="t('buildiq', 'Test case name')" />
 				<NcTextArea
 					v-model="draft.inputPayloadText"
-					:label="t('openbuild', 'Input payload (JSON)')" />
+					:label="t('buildiq', 'Input payload (JSON)')" />
 				<NcTextArea
 					v-model="draft.expectedText"
-					:label="t('openbuild', 'Expected result (JSON)')" />
+					:label="t('buildiq', 'Expected result (JSON)')" />
 				<NcButton variant="primary" :disabled="saving" @click="addTestCase">
-					{{ t('openbuild', 'Save test case') }}
+					{{ t('buildiq', 'Save test case') }}
 				</NcButton>
 			</div>
 
@@ -152,7 +152,7 @@ export default {
 			this.loading = true
 			try {
 				const url = generateUrl(
-					'/apps/openregister/api/objects/openbuild/rule-test-case',
+					'/apps/openregister/api/objects/buildiq/rule-test-case',
 				)
 				const { data } = await axios.get(url)
 				const all = Array.isArray(data) ? data : data.results || []
@@ -160,7 +160,7 @@ export default {
 					(tc) => tc.ruleSetId === this.ruleSet.slug,
 				)
 			} catch (error) {
-				this.errorMessage = t('openbuild', 'Could not load test cases.')
+				this.errorMessage = t('buildiq', 'Could not load test cases.')
 			} finally {
 				this.loading = false
 			}
@@ -171,13 +171,13 @@ export default {
 			this.errorMessage = ''
 			try {
 				const url = generateUrl(
-					`/apps/openbuild/api/rules/${this.ruleSet.slug}/test-all`,
+					`/apps/buildiq/api/rules/${this.ruleSet.slug}/test-all`,
 				)
 				const { data } = await axios.post(url, {})
 				this.summary = data
 				this.failedNames = data.failures || []
 			} catch (error) {
-				this.errorMessage = t('openbuild', 'Test run failed.')
+				this.errorMessage = t('buildiq', 'Test run failed.')
 			} finally {
 				this.running = false
 			}
@@ -209,12 +209,12 @@ export default {
 		 */
 		resultLabel(tc) {
 			if (this.failedNames.includes(tc.name)) {
-				return t('openbuild', 'Failed')
+				return t('buildiq', 'Failed')
 			}
 			if (this.summary) {
-				return t('openbuild', 'Passed')
+				return t('buildiq', 'Passed')
 			}
-			return t('openbuild', 'Not run')
+			return t('buildiq', 'Not run')
 		},
 
 		/**
@@ -230,7 +230,7 @@ export default {
 				const payload = JSON.parse(this.draft.inputPayloadText || '{}')
 				const expected = JSON.parse(this.draft.expectedText || '{}')
 				const url = generateUrl(
-					'/apps/openregister/api/objects/openbuild/rule-test-case',
+					'/apps/openregister/api/objects/buildiq/rule-test-case',
 				)
 				await axios.post(url, {
 					ruleSetId: this.ruleSet.slug,
@@ -244,7 +244,7 @@ export default {
 				this.fetchTestCases()
 			} catch (error) {
 				this.errorMessage = t(
-					'openbuild',
+					'buildiq',
 					'Could not save the test case — check the JSON is valid.',
 				)
 			} finally {

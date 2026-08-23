@@ -37,11 +37,11 @@
  *
  * AN AGENT CAN LIVE IN HERMIQ'S REGISTER TOO
  * -------------------------------------------
- * `agent` is not exclusively OpenBuild's schema slug: hermiq declares its own
+ * `agent` is not exclusively Buildiq's schema slug: hermiq declares its own
  * `agent` schema in its own `hermiq` register (`lib/Settings/hermiq_register.json`),
  * and an agent an operator hand-creates or hermiq seeds there can carry
  * `applicationSlug` too (hermiq-agent-application-slug). The first lookup below
- * is scoped to `register: openbuild` explicitly, so it structurally cannot see
+ * is scoped to `register: buildiq` explicitly, so it structurally cannot see
  * those rows no matter what `applicationSlug` they carry — a schema slug match
  * is not a register match. When that lookup finds nothing, a second one is
  * attempted against hermiq's register, guarded by `IAppManager::isEnabledForUser()`
@@ -49,14 +49,14 @@
  * dependency elsewhere in this codebase — hermiq may not be installed, and this
  * class must not hard-depend on it. The two stores are a FALLBACK, not a merge:
  * an application's agents are expected to live in one store or the other, and
- * checking hermiq only when openbuild's own schema is empty keeps the common
- * case (agents in openbuild's own store) a single query.
+ * checking hermiq only when buildiq's own schema is empty keeps the common
+ * case (agents in buildiq's own store) a single query.
  *
- * hermiq's agent shape is richer than openbuild's own schema (real prompts up
+ * hermiq's agent shape is richer than buildiq's own schema (real prompts up
  * to several thousand characters, `hermiq.*` tool grants) and is never coerced
- * into openbuild's schema on the way out: {@see self::writeJson()} writes plain
+ * into buildiq's schema on the way out: {@see self::writeJson()} writes plain
  * JSON with no schema validation, exactly as it already does for an
- * openbuild-native agent.
+ * buildiq-native agent.
  *
  * ONE FLOW SYSTEM (ADR-065)
  * -------------------------
@@ -68,7 +68,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -79,7 +79,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Service\ObjectService;
@@ -93,11 +93,11 @@ use Throwable;
 class FlowAndAgentExportBundler {
 
 	/**
-	 * Slug of the register holding OpenBuild's own objects.
+	 * Slug of the register holding Buildiq's own objects.
 	 *
 	 * A SLUG, not the numeric register id: the id is an auto-increment
 	 * column assigned per instance and is not stable across a fresh
-	 * install, while the slug is openbuild's own fixed identity for this
+	 * install, while the slug is buildiq's own fixed identity for this
 	 * register (`register.d/*.json`). `ObjectService::findAll()` resolves
 	 * a string filter value through `RegisterMapper`, which supports slug
 	 * lookup — see `AgentsController::REGISTER_SLUG` and
@@ -106,13 +106,13 @@ class FlowAndAgentExportBundler {
 	 *
 	 * @var string
 	 */
-	private const OPENBUILD_REGISTER = 'openbuild';
+	private const BUILDIQ_REGISTER = 'openbuild';
 
 	/**
 	 * Slug of the `agent` schema.
 	 *
 	 * A SLUG, not the numeric schema id, for the same reason as
-	 * {@see self::OPENBUILD_REGISTER}. Resolved register-scoped (register
+	 * {@see self::BUILDIQ_REGISTER}. Resolved register-scoped (register
 	 * is set before schema in `ObjectService::prepareFindAllConfig()`),
 	 * which matters because schema slugs are not globally unique on this
 	 * instance.
@@ -123,9 +123,9 @@ class FlowAndAgentExportBundler {
 
 	/**
 	 * App id of hermiq, hermiq's own register slug, and hermiq's own `agent`
-	 * schema slug — consulted only as a FALLBACK when {@see self::OPENBUILD_REGISTER}
+	 * schema slug — consulted only as a FALLBACK when {@see self::BUILDIQ_REGISTER}
 	 * finds no agents, and only when hermiq is actually installed. Both are
-	 * slugs, resolved the same way as {@see self::OPENBUILD_REGISTER} — never
+	 * slugs, resolved the same way as {@see self::BUILDIQ_REGISTER} — never
 	 * hermiq's numeric register/schema ids, which are per-instance and not
 	 * portable.
 	 *
@@ -153,7 +153,7 @@ class FlowAndAgentExportBundler {
 	 * @param FlowMapper $flowMapper Resolves a bound flow's UUID against the entity the engine runs.
 	 * @param ObjectService $objectService Finds the agents that point at this application.
 	 * @param IAppManager $appManager Detects whether hermiq is installed, so the fallback lookup
-	 *                                stays optional (hermiq is not an OpenBuild dependency).
+	 *                                stays optional (hermiq is not an Buildiq dependency).
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
@@ -222,7 +222,7 @@ class FlowAndAgentExportBundler {
 				// flow is ordinary — but RETURNED rather than only logged,
 				// because an operator reads the finished job, not the log.
 				$this->logger->info(
-					'OpenBuild export: flows binding "' . $uuid . '" did not resolve to a flow — not bundled: '
+					'Buildiq export: flows binding "' . $uuid . '" did not resolve to a flow — not bundled: '
 					. $e->getMessage()
 				);
 				$skipped[] = ['kind' => 'flow', 'ref' => $uuid, 'reason' => 'no flow with that UUID'];
@@ -278,7 +278,7 @@ class FlowAndAgentExportBundler {
 		try {
 			$agents = $this->resolveAgents(applicationSlug: $applicationSlug);
 		} catch (Throwable $e) {
-			$this->logger->info('OpenBuild export: could not read agents for "' . $applicationSlug . '": ' . $e->getMessage());
+			$this->logger->info('Buildiq export: could not read agents for "' . $applicationSlug . '": ' . $e->getMessage());
 			return [['kind' => 'agents', 'ref' => $applicationSlug, 'reason' => 'agent lookup failed']];
 		}
 
@@ -311,12 +311,12 @@ class FlowAndAgentExportBundler {
 	}//end bundleAgents()
 
 	/**
-	 * Resolve an application's agents: openbuild's own schema first, falling
+	 * Resolve an application's agents: buildiq's own schema first, falling
 	 * back to hermiq's register only when that finds nothing AND hermiq is
 	 * installed. A FALLBACK, not a merge — the common case (agents in
-	 * openbuild's own store) stays a single query.
+	 * buildiq's own store) stays a single query.
 	 *
-	 * A failure in openbuild's own lookup propagates to the caller (fatal to
+	 * A failure in buildiq's own lookup propagates to the caller (fatal to
 	 * {@see self::bundleAgents()}, which reports it as a skip); a failure in
 	 * the fallback is swallowed by {@see self::findHermiqRegisterAgentsOrEmpty()} —
 	 * the fallback is a best-effort extra on a lookup that already succeeded
@@ -326,11 +326,11 @@ class FlowAndAgentExportBundler {
 	 *
 	 * @return array<int, mixed> The matching agents (raw `ObjectService::findAll()` shape).
 	 *
-	 * @throws Throwable When openbuild's own lookup fails.
+	 * @throws Throwable When buildiq's own lookup fails.
 	 */
 	private function resolveAgents(string $applicationSlug): array {
 		$agents = $this->findAgentsByApplicationSlug(
-			register: self::OPENBUILD_REGISTER,
+			register: self::BUILDIQ_REGISTER,
 			schema: self::AGENT_SCHEMA,
 			applicationSlug: $applicationSlug
 		);
@@ -346,7 +346,7 @@ class FlowAndAgentExportBundler {
 	 * The hermiq-register fallback lookup, guarded the way
 	 * {@see SkillChannelDelegate} treats hermiq as optional elsewhere in this
 	 * codebase. Never throws: a failed fallback degrades to "no agents found
-	 * there either" rather than failing the whole export, because openbuild's
+	 * there either" rather than failing the whole export, because buildiq's
 	 * own lookup (the caller) already succeeded.
 	 *
 	 * @param string $applicationSlug The application slug agents must carry.
@@ -362,7 +362,7 @@ class FlowAndAgentExportBundler {
 			);
 		} catch (Throwable $e) {
 			$this->logger->info(
-				'OpenBuild export: could not read hermiq-register agents for "' . $applicationSlug . '": '
+				'Buildiq export: could not read hermiq-register agents for "' . $applicationSlug . '": '
 				. $e->getMessage()
 			);
 
@@ -374,7 +374,7 @@ class FlowAndAgentExportBundler {
 	 * Find the agents pointing at `$applicationSlug` in one register/schema.
 	 *
 	 * Both `$register` and `$schema` MUST be slugs, never numeric ids — see
-	 * {@see self::OPENBUILD_REGISTER} for why a numeric id is not portable.
+	 * {@see self::BUILDIQ_REGISTER} for why a numeric id is not portable.
 	 * `ObjectService::findAll()` resolves a string filter value through the
 	 * register/schema mappers' slug lookup.
 	 *
@@ -385,7 +385,7 @@ class FlowAndAgentExportBundler {
 	 * @return array<int, mixed> The matching agents (raw `ObjectService::findAll()` shape).
 	 *
 	 * @throws Throwable When the underlying lookup fails; left to the caller to decide
-	 *                   whether that is fatal (openbuild's own store) or a degraded
+	 *                   whether that is fatal (buildiq's own store) or a degraded
 	 *                   fallback (hermiq's store).
 	 */
 	private function findAgentsByApplicationSlug(string $register, string $schema, string $applicationSlug): array {

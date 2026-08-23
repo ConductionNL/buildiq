@@ -3,18 +3,18 @@
 /**
  * VirtualAppCredentialRegistrar — onboards a published virtual app to the OpenRegister credential broker.
  *
- * A pure-virtual OpenBuild app (a record in OpenBuild's own register, rendered
- * inside the OpenBuild shell — never installed on disk) has no OpenRegister
+ * A pure-virtual Buildiq app (a record in Buildiq's own register, rendered
+ * inside the Buildiq shell — never installed on disk) has no OpenRegister
  * AppHost runtime context, so OpenRegister's own on-disk onboarding hook
  * ({@see \OCA\OpenRegister\AppHost\Repair\GenericInitializeSettings}) can never
- * reach it. This service is the OpenBuild-side trigger that closes that gap:
+ * reach it. This service is the Buildiq-side trigger that closes that gap:
  * when an owner publishes a virtual app whose resolved manifest declares a
- * non-empty top-level `credentials[]`, OpenBuild onboards that app to the broker
- * exactly as an on-disk leaf would be, using OpenBuild's own app-id namespace
+ * non-empty top-level `credentials[]`, Buildiq onboards that app to the broker
+ * exactly as an on-disk leaf would be, using Buildiq's own app-id namespace
  * (`openbuild-{slug}`).
  *
  * Onboarding runs the SAME two independent, idempotent paths OpenRegister uses
- * on disk, both delegated to OpenRegister-owned services (OpenBuild owns only
+ * on disk, both delegated to OpenRegister-owned services (Buildiq owns only
  * the trigger, never the registration logic — design "OR owns it"):
  *   1. Broker app-key — {@see \OCA\OpenRegister\Service\Credential\CredentialAppTokenService::registerApp},
  *      guarded by `isRegistered()` so an existing signing secret is NEVER rotated
@@ -22,7 +22,7 @@
  *   2. Per-app Doriath application — {@see \OCA\OpenRegister\Service\Credential\DoriathApplicationRegistrar::registerApplication}
  *      (identity-only, pending admin approval; itself idempotent + never-throw).
  *
- * OpenRegister is a hard dependency of OpenBuild, but the two credential
+ * OpenRegister is a hard dependency of Buildiq, but the two credential
  * services are resolved lazily via `class_exists` + `OCP\Server::get` and every
  * path is wrapped so onboarding NEVER blocks or fails a publish — a broker/
  * Doriath hiccup must not stop an app going live.
@@ -31,7 +31,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service\Credential
+ * @package  OCA\Buildiq\Service\Credential
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -44,9 +44,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service\Credential;
+namespace OCA\Buildiq\Service\Credential;
 
-use OCA\OpenBuild\Service\ManifestResolverService;
+use OCA\Buildiq\Service\ManifestResolverService;
 use OCP\IUser;
 use OCP\Server;
 use Psr\Log\LoggerInterface;
@@ -77,7 +77,7 @@ class VirtualAppCredentialRegistrar {
 	private const DORIATH_REGISTRAR = 'OCA\\OpenRegister\\Service\\Credential\\DoriathApplicationRegistrar';
 
 	/**
-	 * App-id prefix for an OpenBuild virtual app (matches the per-app register slug prefix).
+	 * App-id prefix for an Buildiq virtual app (matches the per-app register slug prefix).
 	 *
 	 * @var string
 	 */
@@ -121,7 +121,7 @@ class VirtualAppCredentialRegistrar {
 			$appId = self::APP_ID_PREFIX . $slug;
 			if (preg_match('/^[a-z0-9_-]+$/', $appId) !== 1) {
 				$this->logger->warning(
-					'OpenBuild: virtual-app credential onboarding skipped — unsafe app id {appId}',
+					'Buildiq: virtual-app credential onboarding skipped — unsafe app id {appId}',
 					['appId' => $appId]
 				);
 				return;
@@ -132,7 +132,7 @@ class VirtualAppCredentialRegistrar {
 		} catch (Throwable $e) {
 			// Onboarding is best-effort — a broker/Doriath problem must never fail a publish.
 			$this->logger->warning(
-				'OpenBuild: virtual-app credential onboarding skipped for {slug}',
+				'Buildiq: virtual-app credential onboarding skipped for {slug}',
 				['slug' => $slug, 'exception' => $e->getMessage()]
 			);
 		}//end try
@@ -154,7 +154,7 @@ class VirtualAppCredentialRegistrar {
 
 			if ($tokenService->isRegistered($appId) === true) {
 				// Never rotate an existing signing secret from a re-publish.
-				$this->logger->debug('OpenBuild: {appId} already registered with the credential broker', ['appId' => $appId]);
+				$this->logger->debug('Buildiq: {appId} already registered with the credential broker', ['appId' => $appId]);
 				return;
 			}
 
@@ -162,10 +162,10 @@ class VirtualAppCredentialRegistrar {
 			// does not sign its own tokens still gets a stable key so it can be
 			// exported to a real app later without a broker re-onboard.
 			$tokenService->registerApp($appId);
-			$this->logger->info('OpenBuild: registered {appId} with the credential broker (manifest declares credentials)', ['appId' => $appId]);
+			$this->logger->info('Buildiq: registered {appId} with the credential broker (manifest declares credentials)', ['appId' => $appId]);
 		} catch (Throwable $e) {
 			$this->logger->warning(
-				'OpenBuild: broker app-key registration skipped for {appId}',
+				'Buildiq: broker app-key registration skipped for {appId}',
 				['appId' => $appId, 'exception' => $e->getMessage()]
 			);
 		}//end try
@@ -192,7 +192,7 @@ class VirtualAppCredentialRegistrar {
 			$registrar->registerApplication($appId, $description);
 		} catch (Throwable $e) {
 			$this->logger->warning(
-				'OpenBuild: per-app Doriath registration skipped for {appId}',
+				'Buildiq: per-app Doriath registration skipped for {appId}',
 				['appId' => $appId, 'exception' => $e->getMessage()]
 			);
 		}//end try
@@ -256,7 +256,7 @@ class VirtualAppCredentialRegistrar {
 		try {
 			return Server::get($fqcn);
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenBuild: failed to resolve {fqcn}', ['fqcn' => $fqcn, 'exception' => $e->getMessage()]);
+			$this->logger->warning('Buildiq: failed to resolve {fqcn}', ['fqcn' => $fqcn, 'exception' => $e->getMessage()]);
 			return null;
 		}
 	}//end resolveService()

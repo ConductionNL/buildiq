@@ -7,20 +7,20 @@
  * more-specific routes must precede the generic catch-all-style routes they
  * would otherwise be shadowed by) AND actual first-match-wins resolution for
  * the documented matrix: app root, bare app sub-path, and the reserved
- * OpenBuild designer surfaces (pages / schemas / schemas/{id} / walkthrough).
+ * Buildiq designer surfaces (pages / schemas / schemas/{id} / walkthrough).
  *
  * The route array is loaded by literally `require`-ing appinfo/routes.php —
  * in the unit-test harness `\OCA\OpenRegister\AppHost\Routes::standard()` is
  * a stub (tests/stubs/openregister-stubs.php) that returns the `$extra` array
  * unmodified (no canonical routes prepended, no SPA catch-all appended), so
- * the result is exactly OpenBuild's own domain route list in declaration
+ * the result is exactly Buildiq's own domain route list in declaration
  * order.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\AppInfo
+ * @package  OCA\Buildiq\Tests\Unit\AppInfo
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -33,7 +33,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\AppInfo;
+namespace OCA\Buildiq\Tests\Unit\AppInfo;
 
 use PHPUnit\Framework\TestCase;
 
@@ -163,7 +163,7 @@ class RoutesTest extends TestCase {
 
 	/**
 	 * The reserved designer route must enumerate exactly the four known
-	 * OpenBuild designer surfaces (src/manifest.json).
+	 * Buildiq designer surfaces (src/manifest.json).
 	 *
 	 * @return void
 	 */
@@ -250,7 +250,7 @@ class RoutesTest extends TestCase {
 	/**
 	 * DURABILITY GUARD (route maintenance-trap): every designer surface declared
 	 * under /builder/:slug/ in src/manifest.json MUST resolve to
-	 * dashboard#builderDesigner (the OpenBuild SPA shell), NOT fall through to
+	 * dashboard#builderDesigner (the Buildiq SPA shell), NOT fall through to
 	 * the standalone-runtime builderPath route. Because the expected list is
 	 * DERIVED from the manifest rather than hardcoded, adding a designer page
 	 * there without extending builderDesigner's `designerPath` requirement in

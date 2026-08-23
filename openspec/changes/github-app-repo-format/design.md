@@ -1,6 +1,6 @@
 ## Context
 
-OpenBuild stores a virtual app as two OpenRegister objects (ADR-002): an
+Buildiq stores a virtual app as two OpenRegister objects (ADR-002): an
 `Application` (identity: `slug`, `name`, `appType`, `permissions`,
 `productionVersion`) and one or more `ApplicationVersion` rows (each carrying a
 full `manifest` blob + `semver` + per-version `register`). Companion schemas —
@@ -14,7 +14,7 @@ the round-trip format:
 - The **exporter** (`GitHubPushService`, `ExportJobService`, `exportJob` schema)
   scaffolds a full standalone Nextcloud app (PHP, `appinfo/`, webpack) and pushes
   it via the Git Data API. That output is an *installable app*, not a definition
-  OpenBuild re-reads — it does not round-trip.
+  Buildiq re-reads — it does not round-trip.
 - The **remote template store** (`RemoteTemplateStoreService`, `StoreController`)
   reads `application-template` OpenRegister objects from a remote OR instance and
   installs one through `ApplicationsController::installFromTemplateArray` — the
@@ -32,10 +32,10 @@ rewriting is re-invented.
 
 **Goals:**
 
-- Define one canonical, versioned GitHub repo layout for an OpenBuild app as a
+- Define one canonical, versioned GitHub repo layout for an Buildiq app as a
   **data** format (descriptor + manifest + companion schemas + optional docs).
-- Define the discovery contract: GitHub topic `openbuild-app` + a parseable
-  root `openbuild-app.json`.
+- Define the discovery contract: GitHub topic `buildiq-app` + a parseable
+  root `buildiq-app.json`.
 - Add the minimal linkage/provenance fields that tie a local `Application` /
   `ApplicationVersion` to its GitHub home (repo, branch, commit, ref).
 - Provide `AppRepoSerializer` (local → files) and `AppRepoParser` (files →
@@ -61,7 +61,7 @@ The GitHub repo layout is a **data** definition, not an installable app:
 
 ```
 <repo-root>/
-  openbuild-app.json        # app descriptor (see Decision 2)
+  buildiq-app.json        # app descriptor (see Decision 2)
   manifest.json             # the ApplicationVersion.manifest blob, verbatim
   schemas/
     <schema-slug>.json      # one file per companion schema, filename = slug
@@ -72,7 +72,7 @@ The GitHub repo layout is a **data** definition, not an installable app:
     icon-dark.svg
 ```
 
-Only OpenBuild parses this — it is never `occ app:enable`-able. This keeps the
+Only Buildiq parses this — it is never `occ app:enable`-able. This keeps the
 format free of PHP/appinfo/build cruft, so a diff on GitHub reads as "the app's
 data changed", and a citizen developer can hand-author one. **Alternative
 considered:** reuse the exporter's scaffold as the round-trip format — rejected:
@@ -86,7 +86,7 @@ canonicalises JSON (sorted keys, 2-space indent, trailing newline) so a re-push
 with no semantic change produces a no-op diff. This matters for the push path in
 change 3 (a blob-by-blob tree push) and for human-readable GitHub diffs.
 
-### Decision 2 — `openbuild-app.json` descriptor shape
+### Decision 2 — `buildiq-app.json` descriptor shape
 
 The descriptor is the discovery-and-metadata anchor. It carries only app-level
 identity + the credential declaration; the heavy blobs live in `manifest.json`
@@ -174,9 +174,9 @@ structured, per-file error when any of these hold — making the
 
 | Failure | Error code | Actionable message |
 |---|---|---|
-| `openbuild-app.json` missing at root | `descriptor_missing` | "No openbuild-app.json at the repo root — not an OpenBuild app repo." |
+| `buildiq-app.json` missing at root | `descriptor_missing` | "No buildiq-app.json at the repo root — not an Buildiq app repo." |
 | Descriptor not valid JSON | `descriptor_unparseable` | names the JSON parse position |
-| Unknown/absent `formatVersion` major | `format_version_unsupported` | "openbuild-app.json formatVersion X is not supported by this OpenBuild." |
+| Unknown/absent `formatVersion` major | `format_version_unsupported` | "buildiq-app.json formatVersion X is not supported by this Buildiq." |
 | `appType` not in `{virtual, hybrid}` | `app_type_unknown` | names the offending value |
 | `manifest.json` missing | `manifest_missing` | "manifest.json is required." |
 | `manifest.json` not valid JSON | `manifest_unparseable` | names the JSON parse position |
@@ -266,7 +266,7 @@ manifest + two companion schemas) — a test fixture, not OR seed data.
 
 ## Risks / Trade-offs
 
-- **[Hand-authored repo drift]** A human editing `openbuild-app.json` by hand can
+- **[Hand-authored repo drift]** A human editing `buildiq-app.json` by hand can
   desync `version` from `manifest` content → mitigated by strict validation
   (manifest still must pass the schema) and by change 3's pull always creating a
   *new draft* version (never trusting the descriptor `version` as authoritative

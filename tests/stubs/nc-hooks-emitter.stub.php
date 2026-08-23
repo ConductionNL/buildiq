@@ -20,7 +20,7 @@
  * `lib/base.php` booted — see `tests/bootstrap-unit.php`).
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests
+ * @package  OCA\Buildiq\Tests
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.

@@ -6,17 +6,17 @@
   Read-only summary of all wizard settings before submission.
   Displays the app name + slug + description, the version chain in arrow form,
   and a callout identifying the production version (terminal row).
-  spec: openbuild-app-creation-wizard REQ-OBWIZ-002
+  spec: buildiq-app-creation-wizard REQ-OBWIZ-002
 -->
 <template>
 	<div class="wizard-step4">
 		<h3 class="wizard-step4__heading">
-			{{ t('openbuild', 'Review and create') }}
+			{{ t('buildiq', 'Review and create') }}
 		</h3>
 		<p class="wizard-step4__description">
 			{{
 				t(
-					'openbuild',
+					'buildiq',
 					'Review the settings below. Clicking Create will provision your app, all version registers, and seed them with the default schema.',
 				)
 			}}
@@ -24,30 +24,30 @@
 
 		<dl class="wizard-step4__summary">
 			<div class="wizard-step4__row">
-				<dt>{{ t('openbuild', 'Name') }}</dt>
+				<dt>{{ t('buildiq', 'Name') }}</dt>
 				<dd>{{ payload.name || '—' }}</dd>
 			</div>
 			<div class="wizard-step4__row">
-				<dt>{{ t('openbuild', 'Slug') }}</dt>
+				<dt>{{ t('buildiq', 'Slug') }}</dt>
 				<dd>
 					<code>{{ payload.slug || '—' }}</code>
 				</dd>
 			</div>
 			<div v-if="payload.description" class="wizard-step4__row">
-				<dt>{{ t('openbuild', 'Description') }}</dt>
+				<dt>{{ t('buildiq', 'Description') }}</dt>
 				<dd>{{ payload.description }}</dd>
 			</div>
 		</dl>
 
 		<div class="wizard-step4__chain-section">
 			<h4 class="wizard-step4__subheading">
-				{{ t('openbuild', 'Version chain') }}
+				{{ t('buildiq', 'Version chain') }}
 			</h4>
 			<p class="wizard-step4__chain">
 				{{ chainDisplay }}
 			</p>
 			<p class="wizard-step4__production-callout">
-				{{ t('openbuild', 'Production version:') }}
+				{{ t('buildiq', 'Production version:') }}
 				<code>{{ productionSlug }}</code>
 			</p>
 		</div>
@@ -55,20 +55,20 @@
 		<!-- Icon previews when a glyph was chosen -->
 		<div v-if="lightIconSvg || darkIconSvg" class="wizard-step4__icons">
 			<h4 class="wizard-step4__subheading">
-				{{ t('openbuild', 'Icons') }}
+				{{ t('buildiq', 'Icons') }}
 			</h4>
 			<div class="wizard-step4__icon-previews">
 				<figure v-if="lightIconSvg" class="wizard-step4__icon-preview">
 					<!-- eslint-disable-next-line vue/no-v-html -->
 					<span class="wizard-step4__icon-img" v-html="lightIconSvg" />
-					<figcaption>{{ t('openbuild', 'Light') }}</figcaption>
+					<figcaption>{{ t('buildiq', 'Light') }}</figcaption>
 				</figure>
 				<figure
 					v-if="darkIconSvg"
 					class="wizard-step4__icon-preview wizard-step4__icon-preview--dark">
 					<!-- eslint-disable-next-line vue/no-v-html -->
 					<span class="wizard-step4__icon-img" v-html="darkIconSvg" />
-					<figcaption>{{ t('openbuild', 'Dark') }}</figcaption>
+					<figcaption>{{ t('buildiq', 'Dark') }}</figcaption>
 				</figure>
 			</div>
 		</div>

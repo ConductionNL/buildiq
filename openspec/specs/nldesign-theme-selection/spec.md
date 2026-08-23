@@ -14,7 +14,7 @@ The system SHALL support an optional `theme` object in the manifest v2 `runtime`
 - `tokenSetName` (string, required) — display snapshot of the set's name at pick time (refreshed on edit).
 - `preview` (object, optional) — `{ primaryColor, backgroundColor }` hex snapshots for swatch rendering without an nldesign call.
 
-OpenBuild's manifest validation layer SHALL reject: an unknown `source`, a missing or non-kebab-case `tokenSet`, non-hex `preview` colours, and unknown keys. At most one `theme` object exists per app (it is a single object, not an array); per-page themes are not supported in v1. Apps without a theme SHALL serialize byte-identical manifests (purely additive). Codification into the canonical `app-manifest-v2.schema.json` is an external `nextcloud-vue` follow-up, not part of this requirement.
+Buildiq's manifest validation layer SHALL reject: an unknown `source`, a missing or non-kebab-case `tokenSet`, non-hex `preview` colours, and unknown keys. At most one `theme` object exists per app (it is a single object, not an array); per-page themes are not supported in v1. Apps without a theme SHALL serialize byte-identical manifests (purely additive). Codification into the canonical `app-manifest-v2.schema.json` is an external `nextcloud-vue` follow-up, not part of this requirement.
 
 #### Scenario: Valid theme declaration passes validation
 
@@ -30,7 +30,7 @@ OpenBuild's manifest validation layer SHALL reject: an unknown `source`, a missi
 <!-- @e2e exclude pure app-side manifest validation, covered by vitest tests/services/themeValidation.spec.js. -->
 
 - **WHEN** the manifest declares `runtime.theme.source: "material"`
-- **THEN** the validator reports `openbuild.theme.error.unknown-source` against the theme block
+- **THEN** the validator reports `buildiq.theme.error.unknown-source` against the theme block
 - **AND** the Save button is disabled
 
 #### Scenario: Themeless app serializes byte-identically
@@ -53,18 +53,18 @@ nldesign's real non-admin `GET /api/token-sets` catalogue endpoint
 error, non-2xx, malformed body) rather than throwing. When the resolved list is non-empty,
 each entry SHALL render name, design system, and colour swatches (`theming.primary_color`,
 `theming.background_color`). When the resolved list is empty, the dialog SHALL render the
-existing REQ-NTS-005 disabled-with-hint state (`openbuild.theme.hint.nldesign-missing`) —
+existing REQ-NTS-005 disabled-with-hint state (`buildiq.theme.hint.nldesign-missing`) —
 there is no other fallback tier. The three-tier fallback this requirement previously
 specified (admin `GET /apps/nldesign/settings/tokensets`, a feature-probed non-admin
 endpoint, and a validated free-text `css/tokens/<id>.css` input) is REMOVED in full; none
 of those calls or that input exist in the dialog. The dialog SHALL offer "Default
 (Nextcloud)" to remove the theme (deleting `runtime.theme` entirely) and a **live preview
-toggle** that, instead of driving a separate OpenBuild-owned applier, mutates the in-flight
+toggle** that, instead of driving a separate Buildiq-owned applier, mutates the in-flight
 manifest object already bound to the page-designer live-preview-pane's sandboxed
 `CnAppRoot` instance — that instance re-applies the candidate theme itself per
 `scoped-theme-applier` REQ-STA-3. Saving SHALL write/refresh `tokenSet`, `tokenSetName`,
 and `preview` snapshots exactly as before. All `NcSelect`s carry `inputLabel`; every
-user-visible string uses English-source i18n keys under `openbuild.theme.*` with nl
+user-visible string uses English-source i18n keys under `buildiq.theme.*` with nl
 translations.
 
 #### Scenario: Builder picks a theme from the visual list
@@ -79,7 +79,7 @@ translations.
 
 - **GIVEN** `listTokenSets()` resolves `[]` (nldesign absent, unreachable, or genuinely empty)
 - **WHEN** the builder opens the dialog
-- **THEN** the change action is disabled with `openbuild.theme.hint.nldesign-missing`
+- **THEN** the change action is disabled with `buildiq.theme.hint.nldesign-missing`
 - **AND** no free-text token-set id input is rendered
 
 #### Scenario: Live preview applies via the sandboxed live-preview-pane CnAppRoot and reverts on cancel
@@ -87,37 +87,37 @@ translations.
 - **GIVEN** the dialog is open with "Rijkshuisstijl" selected and the preview toggle on, and the page-designer live-preview-pane's `CnAppRoot` instance is mounted
 - **WHEN** the candidate theme changes
 - **THEN** the live-preview-pane's bound manifest's `runtime.theme` updates to the candidate
-- **AND** that `CnAppRoot` instance re-applies the theme itself (no OpenBuild-owned applier call)
+- **AND** that `CnAppRoot` instance re-applies the theme itself (no Buildiq-owned applier call)
 - **WHEN** the builder cancels the dialog
 - **THEN** the live-preview-pane's manifest reverts to the previously saved theme (or default) and the saved manifest is unchanged
 
 ### Requirement: REQ-NTS-003 Runtime: theme application delegates entirely to `CnAppRoot`/`useScopedTheme`
 
-OpenBuild SHALL own no runtime theme applier. `src/composables/useAppTheme.js` — the
+Buildiq SHALL own no runtime theme applier. `src/composables/useAppTheme.js` — the
 `:root`-rewrite/inject/teardown implementation this requirement previously specified — is
 DELETED in full. `@conduction/nextcloud-vue`'s `CnAppRoot` SHALL carry
 `data-nldesign-theme-scope="<appId>"` on its own root element and SHALL self-apply
 `manifest.runtime.theme` (fetch, verify-flat-`:root`, rewrite, inject one managed
 `<style data-nldesign-theme="<appId>">`, teardown on unmount) per that library's
-`scoped-theme-applier` REQ-STA-1/REQ-STA-3, with zero OpenBuild-side wiring.
+`scoped-theme-applier` REQ-STA-1/REQ-STA-3, with zero Buildiq-side wiring.
 `src/views/BuilderHost.vue`'s nested `CnAppRoot` mount SHALL require no
-`data-openbuild-theme-scope` attribute and no `useAppTheme()` call to render correctly; the
-same applies to any other `CnAppRoot` mount OpenBuild hosts.
+`data-buildiq-theme-scope` attribute and no `useAppTheme()` call to render correctly; the
+same applies to any other `CnAppRoot` mount Buildiq hosts.
 
-#### Scenario: Themed app renders via CnAppRoot's own applier, no OpenBuild composable involved
+#### Scenario: Themed app renders via CnAppRoot's own applier, no Buildiq composable involved
 
 - **GIVEN** a published virtual app whose manifest declares `tokenSet: "amsterdam"`
 - **WHEN** an end user opens the app (mounted through `BuilderHost.vue`'s nested `CnAppRoot`)
 - **THEN** a single `<style data-nldesign-theme="...">` element exists, scoped by `[data-nldesign-theme-scope="..."]`
 - **AND** `--nldesign-color-primary` computed inside the app root is `#004699`
-- **AND** no `useAppTheme.js` file, no `data-openbuild-theme-scope` attribute, and no `data-openbuild-theme` style element exist anywhere
+- **AND** no `useAppTheme.js` file, no `data-buildiq-theme-scope` attribute, and no `data-buildiq-theme` style element exist anywhere
 
 #### Scenario: Leaving the app removes the injected style (via CnAppRoot's own teardown)
 
 - **GIVEN** the themed app is open
 - **WHEN** the user navigates away and `CnAppRoot` tears down
 - **THEN** the managed `<style>` element is removed from the document
-- **AND** no OpenBuild-owned teardown call was involved
+- **AND** no Buildiq-owned teardown call was involved
 
 #### Scenario: Missing token asset degrades to default styling (unchanged end-user behaviour)
 
@@ -126,7 +126,7 @@ same applies to any other `CnAppRoot` mount OpenBuild hosts.
 - **GIVEN** a manifest referencing a token set whose CSS asset is unreachable
 - **WHEN** the app renders
 - **THEN** the app renders fully functional in default styling
-- **AND** the degrade decision is made entirely inside `useScopedTheme`/`CnAppRoot`, not OpenBuild code
+- **AND** the degrade decision is made entirely inside `useScopedTheme`/`CnAppRoot`, not Buildiq code
 
 ### Requirement: REQ-NTS-004 Theme travels with versioning, promotion, and export
 
@@ -150,7 +150,7 @@ Because `runtime.theme` lives in the manifest, it SHALL be captured in Applicati
 
 ### Requirement: REQ-NTS-005 Capability check and graceful absence of nldesign
 
-At design time, when `useAppStatus('nldesign')` reports the app missing or disabled, the Theme section SHALL render its change action disabled with the i18n hint `openbuild.theme.hint.nldesign-missing` (an existing theme remains visible and removable). At runtime on an instance without nldesign, a themed manifest SHALL render in default styling with one console warning. The theme SHALL NOT add `"nldesign"` to the manifest `dependencies[]` array and SHALL NOT trigger CnAppRoot's dependency gate — theming is a progressive enhancement, never a gate. No openbuild surface SHALL hard-fail, blank, or throw because nldesign is absent.
+At design time, when `useAppStatus('nldesign')` reports the app missing or disabled, the Theme section SHALL render its change action disabled with the i18n hint `buildiq.theme.hint.nldesign-missing` (an existing theme remains visible and removable). At runtime on an instance without nldesign, a themed manifest SHALL render in default styling with one console warning. The theme SHALL NOT add `"nldesign"` to the manifest `dependencies[]` array and SHALL NOT trigger CnAppRoot's dependency gate — theming is a progressive enhancement, never a gate. No buildiq surface SHALL hard-fail, blank, or throw because nldesign is absent.
 
 #### Scenario: Designer degrades when nldesign is missing
 
@@ -175,14 +175,14 @@ At design time, when `useAppStatus('nldesign')` reports the app missing or disab
 
 ### Requirement: REQ-NTS-006 Integration contract pinned to nldesign's real, published surface
 
-OpenBuild's nldesign integration SHALL call exactly: `@conduction/nextcloud-vue`'s
+Buildiq's nldesign integration SHALL call exactly: `@conduction/nextcloud-vue`'s
 `useScopedTheme()` — `apply`, `teardown`, `listTokenSets`, `evaluateContrast` — and,
 through it only, nldesign's `GET /api/token-sets` and `POST /api/contrast/evaluate`
-(`app-token-set-selection` change). OpenBuild SHALL NOT call
+(`app-token-set-selection` change). Buildiq SHALL NOT call
 `/apps/nldesign/settings/tokensets`, `/apps/nldesign/settings/tokenset-preview/{id}`, or
-any other `/settings/*` nldesign route. OpenBuild SHALL NOT fetch
+any other `/settings/*` nldesign route. Buildiq SHALL NOT fetch
 `css/tokens/{tokenSet}.css` directly — that fetch is `useScopedTheme().apply()`'s internal
-concern. OpenBuild SHALL NOT import nldesign PHP classes or read its tables, and SHALL NOT
+concern. Buildiq SHALL NOT import nldesign PHP classes or read its tables, and SHALL NOT
 bundle a copy of nldesign's token catalogue or WCAG contrast math. The previously-flagged
 Codeberg dependency issue (REQ-NTS-006's original text: "requesting a
 `#[NoAdminRequired]` read-only token-set list endpoint") is RESOLVED by
@@ -193,14 +193,14 @@ capability.
 
 <!-- @e2e exclude static source-tree assertion, pinned by grep during apply/verify (no /settings/tokensets, /settings/tokenset-preview, or css/tokens/*.css reference in src/) and by ThemePickerDialog.spec.js's "never calls any nldesign settings/* route or a direct css/tokens fetch" test; not a browser flow. -->
 
-- **WHEN** the OpenBuild source tree is scanned for `/apps/nldesign/` references
-- **THEN** every reference resolves inside `node_modules/@conduction/nextcloud-vue`'s `useScopedTheme` implementation, never in OpenBuild's own `src/`
-- **AND** no `/settings/tokensets` or `/settings/tokenset-preview` call exists anywhere in OpenBuild's own code
-- **AND** no direct `css/tokens/*.css` fetch exists in OpenBuild's own code
+- **WHEN** the Buildiq source tree is scanned for `/apps/nldesign/` references
+- **THEN** every reference resolves inside `node_modules/@conduction/nextcloud-vue`'s `useScopedTheme` implementation, never in Buildiq's own `src/`
+- **AND** no `/settings/tokensets` or `/settings/tokenset-preview` call exists anywhere in Buildiq's own code
+- **AND** no direct `css/tokens/*.css` fetch exists in Buildiq's own code
 
 ### Requirement: REQ-NTS-007 `@conduction/nextcloud-vue` dependency bump gates every deletion
 
-OpenBuild's `package.json` `@conduction/nextcloud-vue` dependency SHALL be bumped to the
+Buildiq's `package.json` `@conduction/nextcloud-vue` dependency SHALL be bumped to the
 first published version that exports `useScopedTheme`, wires `CnAppRoot`'s
 `runtime.theme` self-application, and carries the `app-manifest-v2.schema.json` 2.20.0+
 `$defs/runtimeTheme` field, BEFORE `src/composables/useAppTheme.js` or
@@ -222,7 +222,7 @@ proceed with either deletion.
 Any WCAG contrast display `ThemePickerDialog.vue` offers for a candidate theme SHALL be
 sourced only from `useScopedTheme().evaluateContrast(candidates, background)`. Results
 SHALL be displayed as informational only and SHALL NEVER block Save — consistent with
-nldesign's own non-blocking selection policy. OpenBuild SHALL contain no relative-luminance or
+nldesign's own non-blocking selection policy. Buildiq SHALL contain no relative-luminance or
 contrast-ratio computation of its own; `checkThemeContrast.js` (the `app-theming` change's
 duplicate, already removed by the PR #20 revert) SHALL NOT be reintroduced in any form.
 
@@ -235,10 +235,10 @@ duplicate, already removed by the PR #20 revert) SHALL NOT be reintroduced in an
 - **THEN** the ratio/level/pass facts are shown
 - **AND** the Save button remains enabled
 
-#### Scenario: No local contrast math exists anywhere in OpenBuild
+#### Scenario: No local contrast math exists anywhere in Buildiq
 
 <!-- @e2e exclude static source-tree assertion, pinned by grep during apply/verify (no checkThemeContrast.js, no relative-luminance/contrast-ratio computation in src/); not a browser flow. -->
 
-- **WHEN** the OpenBuild source tree is scanned for relative-luminance or contrast-ratio computation
+- **WHEN** the Buildiq source tree is scanned for relative-luminance or contrast-ratio computation
 - **THEN** none exists anywhere in `src/`
 - **AND** no file named `checkThemeContrast.js` (or functional equivalent) exists

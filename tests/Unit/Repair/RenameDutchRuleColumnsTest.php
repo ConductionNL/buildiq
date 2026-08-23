@@ -13,7 +13,7 @@
  * scope, and that is what these tests pin.
  *
  * @category Tests
- * @package  OCA\OpenBuild\Tests\Unit\Repair
+ * @package  OCA\Buildiq\Tests\Unit\Repair
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -29,15 +29,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Repair;
+namespace OCA\Buildiq\Tests\Unit\Repair;
 
-use OCA\OpenBuild\Repair\RenameDutchRuleColumns;
+use OCA\Buildiq\Repair\RenameDutchRuleColumns;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
 
 /**
- * @covers \OCA\OpenBuild\Repair\RenameDutchRuleColumns
+ * @covers \OCA\Buildiq\Repair\RenameDutchRuleColumns
  */
 class RenameDutchRuleColumnsTest extends TestCase {
 	/**
@@ -101,7 +101,7 @@ class RenameDutchRuleColumnsTest extends TestCase {
 	/**
 	 * The SAME schema in a DIFFERENT register is also selected.
 	 *
-	 * openbuild's schemas live in two registers (206 and 2421 were observed),
+	 * buildiq's schemas live in two registers (206 and 2421 were observed),
 	 * so matching only the first migrates half the data. The suffix match is
 	 * what makes both registers' shards eligible.
 	 *

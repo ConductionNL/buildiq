@@ -14,35 +14,33 @@
 <template>
 	<div class="procest-case-status-panel">
 		<div v-if="loadingDetail" class="procest-case-status-panel__state">
-			{{ t('openbuild', 'Loading case…') }}
+			{{ t('buildiq', 'Loading case…') }}
 		</div>
 		<div v-else-if="noAccess" class="procest-case-status-panel__state">
-			{{ t('openbuild', 'You do not have access to this case.') }}
+			{{ t('buildiq', 'You do not have access to this case.') }}
 		</div>
 		<div
 			v-else-if="detailError"
 			class="procest-case-status-panel__state procest-case-status-panel__state--error">
-			<p>{{ t('openbuild', 'Could not load the linked case.') }}</p>
+			<p>{{ t('buildiq', 'Could not load the linked case.') }}</p>
 			<NcButton variant="secondary" @click="reload">
-				{{ t('openbuild', 'Retry') }}
+				{{ t('buildiq', 'Retry') }}
 			</NcButton>
 		</div>
 
 		<div v-else-if="!hasLinkedCase" class="procest-case-status-panel__unlinked">
 			<p>
-				{{ t('openbuild', 'No Procest case is linked to this object yet.') }}
+				{{ t('buildiq', 'No Procest case is linked to this object yet.') }}
 			</p>
 			<NcButton variant="primary" :disabled="starting" @click="startNow">
 				{{
-					starting
-						? t('openbuild', 'Starting…')
-						: t('openbuild', 'Start case')
+					starting ? t('buildiq', 'Starting…') : t('buildiq', 'Start case')
 				}}
 			</NcButton>
 			<p v-if="startError" class="procest-case-status-panel__warn">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'Starting the case failed. The object is unchanged — you can try again.',
 					)
 				}}
@@ -55,7 +53,7 @@
 			</h3>
 			<p class="procest-case-status-panel__current">
 				{{
-					t('openbuild', 'Current status: {status}', {
+					t('buildiq', 'Current status: {status}', {
 						status: currentStatus,
 					})
 				}}
@@ -78,7 +76,7 @@
 				:href="deepLink"
 				target="_blank"
 				rel="noopener noreferrer">
-				{{ t('openbuild', 'Open case in Procest') }}
+				{{ t('buildiq', 'Open case in Procest') }}
 			</a>
 		</div>
 	</div>
@@ -165,9 +163,7 @@ export default {
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
 		caseIdentification() {
 			const c = this.procest.caseDetail.value || {}
-			return (
-				c.identificatie || c.identification || t('openbuild', 'Linked case')
-			)
+			return c.identificatie || c.identification || t('buildiq', 'Linked case')
 		},
 
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
@@ -176,7 +172,7 @@ export default {
 			return (
 				c.statusName
 				|| (c.status && (c.status.statustypeOmschrijving || c.status.naam))
-				|| t('openbuild', 'Unknown')
+				|| t('buildiq', 'Unknown')
 			)
 		},
 
@@ -210,7 +206,7 @@ export default {
 				|| s.statustype
 				|| s.naam
 				|| s.status
-				|| t('openbuild', 'Status')
+				|| t('buildiq', 'Status')
 			)
 		},
 

@@ -6,11 +6,11 @@
  *
  * WHY THIS EXISTS
  * ---------------
- * Several `openbuild-runtime` requirements are about WHICH component the router
+ * Several `buildiq-runtime` requirements are about WHICH component the router
  * mounted, not about pixels:
  *
  *   - REQ-OBR-002 — `/builder/:slug` must mount a NESTED `CnAppRoot` whose
- *     `appId` is `openbuild-{slug}`.
+ *     `appId` is `buildiq-{slug}`.
  *   - REQ-OBR-006a — `/builder/:slug/schemas` must render the schema designer
  *     and must NOT mount that nested `CnAppRoot`.
  *

@@ -10,14 +10,14 @@
 <template>
 	<NcDialog
 		v-if="open"
-		:name="t('openbuild', 'Delete app')"
+		:name="t('buildiq', 'Delete app')"
 		:noClose="busy"
 		@closing="$emit('update:open', false)">
 		<div class="delete-app">
 			<p>
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'Delete "{name}" and all of its versions? This cannot be undone.',
 						{ name: appName },
 					)
@@ -26,7 +26,7 @@
 			<NcCheckboxRadioSwitch v-model="deleteData" :disabled="busy">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						"Also permanently delete all data (the app's registers and everything stored in them)",
 					)
 				}}
@@ -35,11 +35,11 @@
 				{{
 					deleteData
 						? t(
-								'openbuild',
+								'buildiq',
 								'All data will be permanently removed. The app slug becomes available again.',
 							)
 						: t(
-								'openbuild',
+								'buildiq',
 								'The app is removed but its data is kept in OpenRegister.',
 							)
 				}}
@@ -47,7 +47,7 @@
 		</div>
 		<template #actions>
 			<NcButton :disabled="busy" @click="$emit('update:open', false)">
-				{{ t('openbuild', 'Cancel') }}
+				{{ t('buildiq', 'Cancel') }}
 			</NcButton>
 			<NcButton
 				variant="error"
@@ -56,7 +56,7 @@
 				<template v-if="busy" #icon>
 					<NcLoadingIcon :size="20" />
 				</template>
-				{{ busy ? t('openbuild', 'Deleting…') : t('openbuild', 'Delete') }}
+				{{ busy ? t('buildiq', 'Deleting…') : t('buildiq', 'Delete') }}
 			</NcButton>
 		</template>
 	</NcDialog>

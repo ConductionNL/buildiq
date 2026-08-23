@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Playwright end-to-end test for the OpenBuild "save as template" flow
+ * Playwright end-to-end test for the Buildiq "save as template" flow
  * (openspec/changes/save-as-template) — the authoring half of the template
  * marketplace loop. Drives the UI through the application-detail surface,
  * the gallery, and the clone round-trip.
@@ -19,7 +19,7 @@
  * API-shape assertions (OR RBAC, create/update/delete contracts) live in the
  * Newman collection, not here (Playwright drives the UI only).
  *
- * QUARANTINED (Conduction/openbuild#41): the openbuild admin UI does not
+ * QUARANTINED (Conduction/buildiq#41): the buildiq admin UI does not
  * render the application-detail surface / template-clone dialog in this build,
  * so the flow cannot be driven end-to-end yet. This file is the canonical UI
  * coverage and re-enables once #41 is fixed (same deferred-bootstrap pattern as
@@ -39,7 +39,7 @@ import { E2E_BASE_URL as NEXTCLOUD_URL } from './support/baseUrl'
 const SOURCE_APP = 'pw-sat-source'
 const TEMPLATE_SLUG = 'pw-sat-template'
 const OR_TEMPLATES =
-	'/index.php/apps/openregister/api/objects/openbuild/application-template'
+	'/index.php/apps/openregister/api/objects/buildiq/application-template'
 
 // UN-QUARANTINED AND NARROWED 2026-07-31. #41 was not the blocker; the flow this
 // file drove is half live and half deliberately removed.
@@ -59,7 +59,7 @@ const OR_TEMPLATES =
 // now created through the wizard fixture instead, and the clone/badge
 // assertions are dropped rather than rewritten against a path that does not
 // exist. See tests/e2e/template-gallery.spec.ts for the same finding.
-test.describe('OpenBuild save as template', () => {
+test.describe('Buildiq save as template', () => {
 	/**
 	 * Delete any template this suite created, so a re-run starts clean and the
 	 * slug-collision guard in the dialog does not (correctly) block the save.
@@ -114,12 +114,9 @@ test.describe('OpenBuild save as template', () => {
 	test('captures an app as an org-local template, config only', async ({
 		page,
 	}) => {
-		await page.goto(
-			`${NEXTCLOUD_URL}/apps/openbuild/applications/${SOURCE_APP}`,
-			{
-				waitUntil: 'domcontentloaded',
-			},
-		)
+		await page.goto(`${NEXTCLOUD_URL}/apps/buildiq/applications/${SOURCE_APP}`, {
+			waitUntil: 'domcontentloaded',
+		})
 		await dismissOverlays(page)
 
 		// "Save as template" lives in the detail page's overflow Actions menu.
@@ -211,7 +208,7 @@ test.describe('OpenBuild save as template', () => {
 	// worse than a red one, because nobody looks at it again.
 	//
 	// Both scenarios are now correctly reported as uncovered. Writing them for
-	// real is tracked in Conduction/openbuild#178 — and the "no provisioned
+	// real is tracked in Conduction/buildiq#178 — and the "no provisioned
 	// user" reason below is STALE: `tests/e2e/global-setup.ts` mints
 	// `.auth/rbac-viewer.json` on every run.
 	//
@@ -233,7 +230,7 @@ test.describe('OpenBuild save as template', () => {
 	test('the capture action is offered per application, not on the index', async ({
 		page,
 	}) => {
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild`, {
+		await page.goto(`${NEXTCLOUD_URL}/apps/buildiq`, {
 			waitUntil: 'domcontentloaded',
 		})
 		await expect(

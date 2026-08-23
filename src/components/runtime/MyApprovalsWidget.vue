@@ -7,10 +7,10 @@
   -
   - Registrable page-widget type for a built (virtual) app: lists PENDING
   - OpenRegister `ApprovalStep`s whose `role` is present in the viewer's NC
-  - groups (read via `loadState('openbuild', 'currentUserGroups')`, published
+  - groups (read via `loadState('buildiq', 'currentUserGroups')`, published
   - by DashboardController::builder() — never a DOM attribute read, ADR-004
   - hard rule). Approve/reject buttons call OpenRegister's
-  - `/api/approval-steps/{id}/approve|reject` DIRECTLY — no OpenBuild
+  - `/api/approval-steps/{id}/approve|reject` DIRECTLY — no Buildiq
   - pass-through controller exists for these calls (ADR-022 redundant-
   - controller gate; design.md Decision 4 of automation-approval-steps).
   -
@@ -23,19 +23,19 @@
 <template>
 	<div class="my-approvals-widget">
 		<h3 class="my-approvals-widget__title">
-			{{ t('openbuild', 'My approvals') }}
+			{{ t('buildiq', 'My approvals') }}
 		</h3>
 
 		<div v-if="loading" class="my-approvals-widget__state">
-			{{ t('openbuild', 'Loading…') }}
+			{{ t('buildiq', 'Loading…') }}
 		</div>
 
 		<div
 			v-else-if="error"
 			class="my-approvals-widget__state my-approvals-widget__state--error">
-			<p>{{ t('openbuild', 'Could not load pending approvals.') }}</p>
+			<p>{{ t('buildiq', 'Could not load pending approvals.') }}</p>
 			<NcButton variant="secondary" @click="load">
-				{{ t('openbuild', 'Retry') }}
+				{{ t('buildiq', 'Retry') }}
 			</NcButton>
 		</div>
 
@@ -43,7 +43,7 @@
 			v-else-if="pendingSteps.length === 0"
 			class="my-approvals-widget__state"
 			data-testid="my-approvals-empty">
-			{{ t('openbuild', 'No approvals are waiting for you.') }}
+			{{ t('buildiq', 'No approvals are waiting for you.') }}
 		</p>
 
 		<ul v-else class="my-approvals-widget__list">
@@ -64,14 +64,14 @@
 						:disabled="!!deciding[step.id]"
 						data-testid="approve-button"
 						@click="decide(step, 'approve')">
-						{{ t('openbuild', 'Approve') }}
+						{{ t('buildiq', 'Approve') }}
 					</NcButton>
 					<NcButton
 						variant="error"
 						:disabled="!!deciding[step.id]"
 						data-testid="reject-button"
 						@click="decide(step, 'reject')">
-						{{ t('openbuild', 'Reject') }}
+						{{ t('buildiq', 'Reject') }}
 					</NcButton>
 				</div>
 			</li>
@@ -149,7 +149,7 @@ export default {
 
 		/**
 		 * Approve or reject a step by calling OpenRegister's endpoint DIRECTLY
-		 * — no OpenBuild controller mediates the call (task 4.2).
+		 * — no Buildiq controller mediates the call (task 4.2).
 		 *
 		 * @param {object} step - the approval step row.
 		 * @param {string} action - 'approve' or 'reject'.
@@ -168,8 +168,8 @@ export default {
 			} catch (err) {
 				this.decideError =
 					action === 'approve'
-						? t('openbuild', 'Could not approve this step.')
-						: t('openbuild', 'Could not reject this step.')
+						? t('buildiq', 'Could not approve this step.')
+						: t('buildiq', 'Could not reject this step.')
 			} finally {
 				const next = { ...this.deciding }
 				delete next[step.id]

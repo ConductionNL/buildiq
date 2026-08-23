@@ -62,7 +62,7 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 	 * @return {Promise<void>}
 	 */
 	async function seedManifest(page, documents: object[] = []): Promise<void> {
-		const base = `${BASE}/index.php/apps/openbuild/api/applications/${APP_SLUG}/manifest`
+		const base = `${BASE}/index.php/apps/buildiq/api/applications/${APP_SLUG}/manifest`
 		const current = await page.request.get(base, {
 			headers: { 'OCS-APIRequest': 'true' },
 		})
@@ -100,7 +100,7 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 	 */
 	async function openDesigner(page): Promise<void> {
 		await page.goto(
-			`${BASE}/apps/openbuild/builder/${APP_SLUG}/pages?_version=production`,
+			`${BASE}/apps/buildiq/builder/${APP_SLUG}/pages?_version=production`,
 			{
 				waitUntil: 'domcontentloaded',
 			},
@@ -323,7 +323,7 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 		const persistedDependencies = async (): Promise<string[]> => {
 			return page.evaluate(async (slug) => {
 				const resp = await fetch(
-					`/index.php/apps/openbuild/api/applications/${slug}/manifest`,
+					`/index.php/apps/buildiq/api/applications/${slug}/manifest`,
 					{
 						headers: { 'OCS-APIRequest': 'true' },
 					},
@@ -469,7 +469,7 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 // STUB BODY (the id-vs-slug defect is fixed; this needs a real body + seeded runtime.documents[]). Logic + request shape covered by vitest (useDocudeskDocument.spec.js) and Newman.
 test.skip('REQ-DDT-003 — generate produces a download', async ({ page }) => {
 	// @e2e docudesk-document-templates::generate-downloads-the-document
-	await page.goto(`${BASE}/apps/openbuild/applications`)
+	await page.goto(`${BASE}/apps/buildiq/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 10_000 })
 })
 
@@ -479,7 +479,7 @@ test.skip('REQ-DDT-003 — filename template interpolates object properties', as
 	page,
 }) => {
 	// @e2e docudesk-document-templates::filename-template-interpolates-object-properties
-	await page.goto(`${BASE}/apps/openbuild/applications`)
+	await page.goto(`${BASE}/apps/buildiq/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 10_000 })
 })
 
@@ -487,7 +487,7 @@ test.skip('REQ-DDT-003 — filename template interpolates object properties', as
 // STUB BODY — see the note above (defect fixed; real body still to be written). Logic covered by vitest (403 → no-access error code).
 test.skip('REQ-DDT-003 — a 403 renders the no-access message', async ({ page }) => {
 	// @e2e docudesk-document-templates::403-renders-a-no-access-toast-not-an-error
-	await page.goto(`${BASE}/apps/openbuild/applications`)
+	await page.goto(`${BASE}/apps/buildiq/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 10_000 })
 })
 
@@ -497,7 +497,7 @@ test.skip('REQ-DDT-003 — double-click issues exactly one request', async ({
 	page,
 }) => {
 	// @e2e docudesk-document-templates::double-click-issues-one-request
-	await page.goto(`${BASE}/apps/openbuild/applications`)
+	await page.goto(`${BASE}/apps/buildiq/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 10_000 })
 })
 
@@ -507,7 +507,7 @@ test.skip('REQ-DDT-004 — two attachments render two ordered buttons', async ({
 	page,
 }) => {
 	// @e2e docudesk-document-templates::two-attachments-render-two-ordered-buttons
-	await page.goto(`${BASE}/apps/openbuild/applications`)
+	await page.goto(`${BASE}/apps/buildiq/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 10_000 })
 })
 
@@ -515,7 +515,7 @@ test.skip('REQ-DDT-004 — two attachments render two ordered buttons', async ({
 // STUB BODY — see the note above (defect fixed; real body still to be written). Logic covered by vitest (DocumentActions empty-render test).
 test.skip('REQ-DDT-004 — no attachments renders nothing', async ({ page }) => {
 	// @e2e docudesk-document-templates::no-attachments-renders-nothing
-	await page.goto(`${BASE}/apps/openbuild/applications`)
+	await page.goto(`${BASE}/apps/buildiq/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 10_000 })
 })
 
@@ -525,6 +525,6 @@ test.skip('REQ-DDT-005 — runtime surface degrades without requests', async ({
 	page,
 }) => {
 	// @e2e docudesk-document-templates::runtime-surface-degrades-without-requests
-	await page.goto(`${BASE}/apps/openbuild/applications`)
+	await page.goto(`${BASE}/apps/buildiq/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 10_000 })
 })

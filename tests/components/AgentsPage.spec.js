@@ -83,7 +83,7 @@ const agent = (overrides = {}) => ({
 	id: 'agent-1',
 	name: 'Page builder assistant',
 	applicationSlug: 'tool-library',
-	enabledTools: ['openbuild.upsertPage', 'openbuild.addWidget'],
+	enabledTools: ['buildiq.upsertPage', 'buildiq.addWidget'],
 	maxActionsPerRun: 5,
 	...overrides,
 })
@@ -182,7 +182,7 @@ describe('AgentsPage', () => {
 		await flush()
 
 		expect(axios.delete).toHaveBeenCalledWith(
-			'/apps/openregister/api/objects/openbuild/agent/agent-1',
+			'/apps/openregister/api/objects/buildiq/agent/agent-1',
 		)
 	})
 

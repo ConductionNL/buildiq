@@ -1,6 +1,6 @@
-# OpenBuild RBAC — Per-Virtual-App Permissions
+# Buildiq RBAC — Per-Virtual-App Permissions
 
-OpenBuild's per-virtual-app role-based access control (RBAC) layers on
+Buildiq's per-virtual-app role-based access control (RBAC) layers on
 top of OpenRegister's organisation-scoping (ADR-022). Within an
 organisation, three roles partition who can do what with each
 Application: `owner`, `editor`, `viewer`.
@@ -44,7 +44,7 @@ so the Application is never orphaned (REQ-OBRBAC-001).
 
 ## Manifest endpoint enforcement
 
-`GET /index.php/apps/openbuild/api/applications/{slug}/manifest`
+`GET /index.php/apps/buildiq/api/applications/{slug}/manifest`
 deny-by-defaults to `403 Forbidden` when the caller has no group in
 the union of the three buckets (REQ-OBR-006, REQ-OBRBAC-002). The
 check runs before the manifest payload is emitted — the 403 body
@@ -53,7 +53,7 @@ never leaks Application metadata.
 Error envelope:
 
 ```json
-{ "error": "forbidden", "code": "openbuild.rbac.no_role" }
+{ "error": "forbidden", "code": "buildiq.rbac.no_role" }
 ```
 
 ## Admin bypass (audited)
@@ -73,17 +73,17 @@ The bypass:
 
 - Runs **only** in `ApplicationsController::getManifest`. The frontend
   list filter does **not** include admins automatically.
-- Is logged at `info` level on the OpenBuild PSR logger (where OR's
+- Is logged at `info` level on the Buildiq PSR logger (where OR's
   audit-trail will pick it up via Nextcloud's logging pipeline).
 - Is narrow by design — sustained bypass volume from one admin is a
   signal to grant them an explicit role on the affected Applications.
 
 ## List filter
 
-The OpenBuild shell's Application list (`ApplicationEditor.vue`)
+The Buildiq shell's Application list (`ApplicationEditor.vue`)
 filters out Applications on which the caller has no role
 (REQ-OBR-007). The filter runs client-side using
-`loadState('openbuild', 'currentUserGroups')` (no DOM data-attribute
+`loadState('buildiq', 'currentUserGroups')` (no DOM data-attribute
 reads — ADR-004 hard rule `gate-initial-state`).
 
 A future enhancement (DQ-1, see below) will move the filter to
@@ -111,7 +111,7 @@ Owners get a second button next to "Manage permissions" labelled
 "Permission history". It opens a read-only modal
 (`src/modals/PermissionHistoryModal.vue`) that:
 
-- Fetches `GET /apps/openregister/api/objects/openbuild/application/{uuid}/audit?filter=permissions,rbac.admin_bypass&limit=50` —
+- Fetches `GET /apps/openregister/api/objects/buildiq/application/{uuid}/audit?filter=permissions,rbac.admin_bypass&limit=50` —
   reuses OR's existing per-object audit endpoint; no new audit REST is
   shipped.
 - Renders one row per event with the actor, timestamp, event label
@@ -129,15 +129,15 @@ The modal lives in `src/modals/` per ADR-004 modal-isolation; the
 owner button is gated by `v-if="obAppRole === 'owner'"` in
 `ApplicationDetailActions.vue`.
 
-## openbuild.use navigation gate
+## buildiq.use navigation gate
 
-Nextcloud's per-app group restriction (Apps → OpenBuild → Restrict to
-groups) gates visibility of the OpenBuild top-bar entry. Default is
+Nextcloud's per-app group restriction (Apps → Buildiq → Restrict to
+groups) gates visibility of the Buildiq top-bar entry. Default is
 no restriction (all authenticated users see it); admins can narrow it
 via the standard Apps panel or OCC:
 
 ```bash
-occ app:enable openbuild --groups digital-team
+occ app:enable buildiq --groups digital-team
 ```
 
 This is coarse on/off visibility; the load-bearing security boundary
@@ -145,7 +145,7 @@ is the per-Application `permissions` enforced server-side.
 
 ## Data scopes vs. navigation permissions (data-scopes-authoring)
 
-This document covers **Application-level** RBAC — who may view, edit, publish, or own a virtual app as a whole. It is a separate boundary from two other permission-shaped concepts elsewhere in OpenBuild, and the distinction matters:
+This document covers **Application-level** RBAC — who may view, edit, publish, or own a virtual app as a whole. It is a separate boundary from two other permission-shaped concepts elsewhere in Buildiq, and the distinction matters:
 
 - **Manifest `permission` fields** (`runtime-group-scoped-access`) hide menu items and pages from users who lack the declared group. This is presentation only — it improves the UX by not showing navigation a user cannot use, but it enforces nothing on its own.
 - **Schema-level `authorization` scopes** (the Schema Designer's **Access** sub-editor, `data-scopes-authoring`) are compiled into the schema's `authorization` block and enforced server-side by OpenRegister on every read/create/update/delete — independently of whether the data was reached via a visible menu, a hidden page, or a direct API call. This is the actual row-level security boundary.
@@ -160,7 +160,7 @@ Production-version Access scope changes are owner-only, mirroring the owner-only
 
 If a Nextcloud admin renames a group, every Application whose
 `permissions` array references the old `gid` loses or gains rows
-without a permission-history audit event scoped to OpenBuild. We do
+without a permission-history audit event scoped to Buildiq. We do
 not (currently) ship a group-rename listener. If a rename breaks
 access:
 
@@ -178,7 +178,7 @@ the `admin` group. Operators MUST re-grant access for non-admin teams
 via the Permissions modal:
 
 1. Sign in as an admin user.
-2. Navigate to OpenBuild → Applications.
+2. Navigate to Buildiq → Applications.
 3. For each Application that should be broadly accessible, open the
    Permissions modal and add the relevant Nextcloud groups to
    `owners`, `editors`, or `viewers`.

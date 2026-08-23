@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenBuild ShopController
+ * Buildiq ShopController
  *
  * HTTP surface for the GitHub shop source (github-shop-catalogue), kept distinct
  * from the OR-registry StoreController so each source's contract stays isolated.
  * Two endpoints, both `#[NoAdminRequired]` with an in-body 401 guard (browsing +
  * installing is any-authenticated-user, identical to the local + registry installs;
  * an instance-shared read has no per-object IDOR surface):
- *   - GET  /api/shop/github/search  — search `topic:openbuild-app` repos (cards).
+ *   - GET  /api/shop/github/search  — search `topic:buildiq-app` repos (cards).
  *   - POST /api/shop/github/install — fetch a repo, strictly parse it via
  *            github-app-repo-format's AppRepoParser, and clone it locally through
  *            the shared ApplicationsController::installFromTemplateArray seam.
@@ -22,7 +22,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
- * @package  OCA\OpenBuild\Controller
+ * @package  OCA\Buildiq\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -37,12 +37,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Controller;
+namespace OCA\Buildiq\Controller;
 
-use OCA\OpenBuild\AppInfo\Application;
-use OCA\OpenBuild\Exception\AppRepoParseException;
-use OCA\OpenBuild\Service\AppRepoParser;
-use OCA\OpenBuild\Service\GitHubCatalogService;
+use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Exception\AppRepoParseException;
+use OCA\Buildiq\Service\AppRepoParser;
+use OCA\Buildiq\Service\GitHubCatalogService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -97,7 +97,7 @@ class ShopController extends Controller {
 	}//end __construct()
 
 	/**
-	 * Search GitHub for `topic:openbuild-app` repos.
+	 * Search GitHub for `topic:buildiq-app` repos.
 	 *
 	 * Login-required (in-body 401 guard). Returns the normalised cards plus a
 	 * `brokerCredentialAvailable` / `rateLimited` hint; never exposes the raw
@@ -128,7 +128,7 @@ class ShopController extends Controller {
 				credentialId: $credentialId
 			);
 		} catch (Throwable $e) {
-			$this->logger->error('OpenBuild shop: GitHub search failed: ' . $e->getMessage());
+			$this->logger->error('Buildiq shop: GitHub search failed: ' . $e->getMessage());
 			return new JSONResponse(
 				data: [
 					'outcome' => GitHubCatalogService::OUTCOME_UNREACHABLE,
@@ -165,7 +165,7 @@ class ShopController extends Controller {
 	 *
 	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 *
-	 * @no-admin-idor-exempt Addresses no openbuild-owned object: the slug identifies a
+	 * @no-admin-idor-exempt Addresses no buildiq-owned object: the slug identifies a
 	 *   template in an EXTERNAL catalogue (the configured store registry / a GitHub
 	 *   repo), so there is nothing of another tenant's to reach by guessing it. The
 	 *   install path CREATES a new app owned by the calling user rather than reading

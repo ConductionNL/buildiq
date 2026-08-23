@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild AppChannelApplier tests
+ * Buildiq AppChannelApplier tests
  *
  * These cover the properties that make applying safe rather than merely working:
  * a colliding connector is never overwritten, an absent optional app degrades
@@ -16,7 +16,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Service
+ * @package  OCA\Buildiq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -31,22 +31,22 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Service;
+namespace OCA\Buildiq\Tests\Unit\Service;
 
-use OCA\OpenBuild\Service\AgentChannelProvisioner;
-use OCA\OpenBuild\Service\AppChannelApplier;
-use OCA\OpenBuild\Service\AppRepoParser;
-use OCA\OpenBuild\Service\ChannelApplyReport;
-use OCA\OpenBuild\Service\ContainerLocator;
-use OCA\OpenBuild\Service\DataRegisterProvisioner;
-use OCA\OpenBuild\Service\FlowChannelProvisioner;
-use OCA\OpenBuild\Service\SkillChannelDelegate;
+use OCA\Buildiq\Service\AgentChannelProvisioner;
+use OCA\Buildiq\Service\AppChannelApplier;
+use OCA\Buildiq\Service\AppRepoParser;
+use OCA\Buildiq\Service\ChannelApplyReport;
+use OCA\Buildiq\Service\ContainerLocator;
+use OCA\Buildiq\Service\DataRegisterProvisioner;
+use OCA\Buildiq\Service\FlowChannelProvisioner;
+use OCA\Buildiq\Service\SkillChannelDelegate;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ObjectExistsException;
-use OCA\OpenRegister\Contract\ObjectEntityInterface;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -453,12 +453,12 @@ class AppChannelApplierTest extends TestCase {
 
 	/**
 	 * The core failure mode this file exists to close: a credential scoped
-	 * only to `openbuild` (the obvious, natural scope — the only one any
+	 * only to `buildiq` (the obvious, natural scope — the only one any
 	 * part of the shop UI hints is needed) attempting an install of a repo
 	 * that declares a skills channel. hermiq's bundle installer performs an
 	 * INDEPENDENT GitHub fetch under its OWN app identity ("hermiq"), so that
 	 * credential is denied by the broker for that one call — but ONLY that
-	 * call, since search/fetch on the openbuild side use openbuild's own app
+	 * call, since search/fetch on the buildiq side use buildiq's own app
 	 * identity and work fine with the exact same credential.
 	 *
 	 * Before this fix, that denial was only discoverable as the generic
@@ -475,7 +475,7 @@ class AppChannelApplierTest extends TestCase {
 	public function testSkillsAreSkippedWithASpecificReasonWhenTheCredentialLacksHermiqScope(): void {
 		$this->appManager->method('isEnabledForUser')->willReturn(true);
 		$this->objectService->method('find')->willReturn(
-			$this->mockedEntity(['allowedApps' => ['openbuild']])
+			$this->mockedEntity(['allowedApps' => ['buildiq']])
 		);
 		// The whole point: hermiq's installer is never even resolved, let
 		// alone called, once the credential is already known to lack scope.
@@ -516,7 +516,7 @@ class AppChannelApplierTest extends TestCase {
 	public function testSkillsAreDelegatedWhenTheCredentialDoesCarryHermiqScope(): void {
 		$this->appManager->method('isEnabledForUser')->willReturn(true);
 		$this->objectService->method('find')->willReturn(
-			$this->mockedEntity(['allowedApps' => ['openbuild', 'hermiq']])
+			$this->mockedEntity(['allowedApps' => ['buildiq', 'hermiq']])
 		);
 
 		$installer = new class {
@@ -763,7 +763,7 @@ class AppChannelApplierTest extends TestCase {
 					}
 				),
 				self::anything(),
-				'openbuild',
+				'buildiq',
 				'application',
 				$applicationUuid,
 				false,
@@ -838,7 +838,7 @@ class AppChannelApplierTest extends TestCase {
 			->with(
 				self::callback(static fn (array $object): bool => ($object['applicationSlug'] ?? null) === 'local-app'),
 				self::anything(),
-				'openbuild',
+				'buildiq',
 				'agent',
 				$uuid,
 				false,

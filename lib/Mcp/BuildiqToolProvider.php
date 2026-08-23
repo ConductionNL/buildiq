@@ -1,18 +1,18 @@
 <?php
 
 /**
- * OpenBuild MCP Tool Provider
+ * Buildiq MCP Tool Provider
  *
  * Per-app implementation of OCA\OpenRegister\Mcp\IMcpToolProvider. Exposes the
- * full OpenBuild authoring surface to an LLM via MCP: list/read apps, create
+ * full Buildiq authoring surface to an LLM via MCP: list/read apps, create
  * new apps, promote versions, and mutate a draft version's manifest (pages,
  * widgets, menu items) and per-version schemas.
  *
  * This class is a thin dispatcher: all tool logic lives in dedicated handler
- * classes under OCA\OpenBuild\Mcp\Handler\.
+ * classes under OCA\Buildiq\Mcp\Handler\.
  *
  * @category Service
- * @package  OCA\OpenBuild\Mcp
+ * @package  OCA\Buildiq\Mcp
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -37,10 +37,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Mcp;
+namespace OCA\Buildiq\Mcp;
 
+use OCA\Buildiq\Service\PermissionResolver;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenBuild\Service\PermissionResolver;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCP\IGroupManager;
@@ -49,26 +49,26 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * OpenBuild MCP Tool Provider — thin dispatcher to per-tool handler classes.
+ * Buildiq MCP Tool Provider — thin dispatcher to per-tool handler classes.
  *
  * Read tools:
- *   - openbuild.listApps        → ListAppsHandler
- *   - openbuild.getAppManifest  → GetAppManifestHandler
+ *   - buildiq.listApps        → ListAppsHandler
+ *   - buildiq.getAppManifest  → GetAppManifestHandler
  *
  * Write tools (lifecycle):
- *   - openbuild.createApp       → CreateAppHandler
- *   - openbuild.promoteVersion  → PromoteVersionHandler
+ *   - buildiq.createApp       → CreateAppHandler
+ *   - buildiq.promoteVersion  → PromoteVersionHandler
  *
  * Write tools (authoring against the draft version's manifest):
- *   - openbuild.upsertSchema    → UpsertSchemaHandler
- *   - openbuild.upsertPage      → UpsertPageHandler
- *   - openbuild.addWidget       → AddWidgetHandler
- *   - openbuild.upsertMenuItem  → UpsertMenuItemHandler
+ *   - buildiq.upsertSchema    → UpsertSchemaHandler
+ *   - buildiq.upsertPage      → UpsertPageHandler
+ *   - buildiq.addWidget       → AddWidgetHandler
+ *   - buildiq.upsertMenuItem  → UpsertMenuItemHandler
  *
  * Authoring tools default to the `development` version so a misfired tool
  * call cannot mutate production. To promote the change use promoteVersion.
  */
-class OpenBuildToolProvider implements IMcpToolProvider {
+class BuildiqToolProvider implements IMcpToolProvider {
 
 	/**
 	 * Tool catalogue.
@@ -77,11 +77,11 @@ class OpenBuildToolProvider implements IMcpToolProvider {
 	 */
 	private const TOOL_DESCRIPTORS = [
 		[
-			'id' => 'openbuild.listApps',
+			'id' => 'buildiq.listApps',
 			'subject' => 'app',
 			'action' => 'list',
 			'name' => 'List virtual apps',
-			'description' => 'List the virtual apps built with OpenBuild in your organisation.',
+			'description' => 'List the virtual apps built with Buildiq in your organisation.',
 			'inputSchema' => [
 				'type' => 'object',
 				'properties' => [
@@ -92,7 +92,7 @@ class OpenBuildToolProvider implements IMcpToolProvider {
 			],
 		],
 		[
-			'id' => 'openbuild.getAppManifest',
+			'id' => 'buildiq.getAppManifest',
 			'subject' => 'appManifest',
 			'action' => 'get',
 			'name' => 'Get virtual app manifest',
@@ -106,11 +106,11 @@ class OpenBuildToolProvider implements IMcpToolProvider {
 			],
 		],
 		[
-			'id' => 'openbuild.createApp',
+			'id' => 'buildiq.createApp',
 			'subject' => 'app',
 			'action' => 'create',
 			'name' => 'Create a new virtual app',
-			'description' => 'Create a new OpenBuild virtual app with an initial draft ApplicationVersion.'
+			'description' => 'Create a new Buildiq virtual app with an initial draft ApplicationVersion.'
 				. ' Preset chooses the version chain: "single", "dev-prod" or "dev-staging-prod".',
 			'inputSchema' => [
 				'type' => 'object',
@@ -124,7 +124,7 @@ class OpenBuildToolProvider implements IMcpToolProvider {
 			],
 		],
 		[
-			'id' => 'openbuild.promoteVersion',
+			'id' => 'buildiq.promoteVersion',
 			// `promote`, not `update`: it advances a version through a release
 			// pipeline. A grant reading "may update apps" should not silently
 			// carry the right to push a version to production.
@@ -148,7 +148,7 @@ class OpenBuildToolProvider implements IMcpToolProvider {
 			],
 		],
 		[
-			'id' => 'openbuild.upsertSchema',
+			'id' => 'buildiq.upsertSchema',
 			'subject' => 'schema',
 			'action' => 'upsert',
 			'name' => 'Create or update a schema in a virtual app',
@@ -171,7 +171,7 @@ class OpenBuildToolProvider implements IMcpToolProvider {
 			],
 		],
 		[
-			'id' => 'openbuild.upsertPage',
+			'id' => 'buildiq.upsertPage',
 			'subject' => 'page',
 			'action' => 'upsert',
 			'name' => 'Create or update a page in a virtual app',
@@ -195,7 +195,7 @@ class OpenBuildToolProvider implements IMcpToolProvider {
 			],
 		],
 		[
-			'id' => 'openbuild.addWidget',
+			'id' => 'buildiq.addWidget',
 			'subject' => 'widget',
 			'action' => 'create',
 			'name' => 'Add a widget to a page',
@@ -215,7 +215,7 @@ class OpenBuildToolProvider implements IMcpToolProvider {
 			],
 		],
 		[
-			'id' => 'openbuild.upsertMenuItem',
+			'id' => 'buildiq.upsertMenuItem',
 			'subject' => 'menuItem',
 			'action' => 'upsert',
 			'name' => 'Create or update a menu item',
@@ -243,7 +243,7 @@ class OpenBuildToolProvider implements IMcpToolProvider {
 	 *
 	 * @param IUserSession $userSession User session used to resolve the current authenticated user.
 	 * @param IGroupManager $groupManager Group manager used for admin checks.
-	 * @param ContainerInterface $container DI container used to resolve OpenRegister and OpenBuild services lazily.
+	 * @param ContainerInterface $container DI container used to resolve OpenRegister and Buildiq services lazily.
 	 * @param LoggerInterface $logger PSR logger used for non-fatal warnings and error logging.
 	 * @param ObjectServiceInterface $objectService OpenRegister's published object contract (ADR-084), threaded to every handler.
 	 * @param PermissionResolver|null $permissionResolver Shared permission-grammar resolver (H1 fix).
@@ -266,7 +266,7 @@ class OpenBuildToolProvider implements IMcpToolProvider {
 	 * @return string
 	 */
 	public function getAppId(): string {
-		return 'openbuild';
+		return 'buildiq';
 	}//end getAppId()
 
 	/**
@@ -284,8 +284,8 @@ class OpenBuildToolProvider implements IMcpToolProvider {
 	 * response. `TOOL_DESCRIPTORS` stays private/single-source; this is the
 	 * one public accessor other services read it through — currently the
 	 * AI copilot's plan validator/prompt builder
-	 * ({@see \OCA\OpenBuild\Service\Copilot\CopilotPlanValidator},
-	 * {@see \OCA\OpenBuild\Service\Copilot\CopilotPromptBuilder}), which
+	 * ({@see \OCA\Buildiq\Service\Copilot\CopilotPlanValidator},
+	 * {@see \OCA\Buildiq\Service\Copilot\CopilotPromptBuilder}), which
 	 * restrict LLM-proposed plan steps to exactly these tool ids and
 	 * validate each step's arguments against the matching `inputSchema`.
 	 *
@@ -300,7 +300,7 @@ class OpenBuildToolProvider implements IMcpToolProvider {
 	/**
 	 * Dispatch an MCP tool invocation to the matching handler.
 	 *
-	 * @param string $toolId Fully qualified tool id (e.g. "openbuild.listApps").
+	 * @param string $toolId Fully qualified tool id (e.g. "buildiq.listApps").
 	 * @param array<string, mixed> $arguments Raw tool arguments as supplied by the MCP client.
 	 *
 	 * @return array<string, mixed>
@@ -309,14 +309,14 @@ class OpenBuildToolProvider implements IMcpToolProvider {
 		// Handler class names are referenced as strings to keep the coupling
 		// count of this dispatcher class within the PHPMD threshold.
 		$handlerMap = [
-			'openbuild.listApps' => 'OCA\OpenBuild\Mcp\Handler\ListAppsHandler',
-			'openbuild.getAppManifest' => 'OCA\OpenBuild\Mcp\Handler\GetAppManifestHandler',
-			'openbuild.createApp' => 'OCA\OpenBuild\Mcp\Handler\CreateAppHandler',
-			'openbuild.promoteVersion' => 'OCA\OpenBuild\Mcp\Handler\PromoteVersionHandler',
-			'openbuild.upsertSchema' => 'OCA\OpenBuild\Mcp\Handler\UpsertSchemaHandler',
-			'openbuild.upsertPage' => 'OCA\OpenBuild\Mcp\Handler\UpsertPageHandler',
-			'openbuild.addWidget' => 'OCA\OpenBuild\Mcp\Handler\AddWidgetHandler',
-			'openbuild.upsertMenuItem' => 'OCA\OpenBuild\Mcp\Handler\UpsertMenuItemHandler',
+			'buildiq.listApps' => 'OCA\Buildiq\Mcp\Handler\ListAppsHandler',
+			'buildiq.getAppManifest' => 'OCA\Buildiq\Mcp\Handler\GetAppManifestHandler',
+			'buildiq.createApp' => 'OCA\Buildiq\Mcp\Handler\CreateAppHandler',
+			'buildiq.promoteVersion' => 'OCA\Buildiq\Mcp\Handler\PromoteVersionHandler',
+			'buildiq.upsertSchema' => 'OCA\Buildiq\Mcp\Handler\UpsertSchemaHandler',
+			'buildiq.upsertPage' => 'OCA\Buildiq\Mcp\Handler\UpsertPageHandler',
+			'buildiq.addWidget' => 'OCA\Buildiq\Mcp\Handler\AddWidgetHandler',
+			'buildiq.upsertMenuItem' => 'OCA\Buildiq\Mcp\Handler\UpsertMenuItemHandler',
 		];
 
 		if (isset($handlerMap[$toolId]) === true) {
@@ -337,9 +337,9 @@ class OpenBuildToolProvider implements IMcpToolProvider {
 	 *
 	 * @param class-string $class Fully qualified handler class name.
 	 *
-	 * @return \OCA\OpenBuild\Mcp\Handler\AbstractToolHandler
+	 * @return \OCA\Buildiq\Mcp\Handler\AbstractToolHandler
 	 */
-	private function makeHandler(string $class): \OCA\OpenBuild\Mcp\Handler\AbstractToolHandler {
+	private function makeHandler(string $class): \OCA\Buildiq\Mcp\Handler\AbstractToolHandler {
 		return new $class(
 			$this->userSession,
 			$this->container,

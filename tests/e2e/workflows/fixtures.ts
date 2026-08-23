@@ -2,14 +2,14 @@
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
 /**
- * Seeded-fixture helper for the DEEP, data-dependent OpenBuild e2e layer.
+ * Seeded-fixture helper for the DEEP, data-dependent Buildiq e2e layer.
  *
- * The OpenBuild virtual-app model is persisted as OpenRegister objects:
- *   - a Virtual App is an object in register `openbuild` / schema `application`
+ * The Buildiq virtual-app model is persisted as OpenRegister objects:
+ *   - a Virtual App is an object in register `buildiq` / schema `application`
  *   - a Schema (the building block of a virtual app) is a first-class
  *     OpenRegister schema created via OR's `/api/schemas` endpoint.
  *
- * OpenBuild itself exposes NO schema-CRUD route (see appinfo/routes.php) — the
+ * Buildiq itself exposes NO schema-CRUD route (see appinfo/routes.php) — the
  * builder UI talks to OpenRegister's runtime schema API directly. The deep
  * workflow specs therefore seed + assert persistence through OR's REST API
  * (the same backend the UI drives), using a unique `e2e-<runId>` prefix so a
@@ -25,7 +25,7 @@
  * No invented verbs (no createFromArray / deleteFromId / findObject).
  *
  * Discovered live-environment facts this helper encodes (2026-06-10):
- *   - openbuild register slug `openbuild` resolves to numeric id 206.
+ *   - buildiq register slug `buildiq` resolves to numeric id 206.
  *   - schema `application` resolves to numeric id 28.
  * Both are resolved dynamically at runtime (never hard-coded) so the helper
  * survives a clean-env reseed that renumbers ids.
@@ -38,8 +38,8 @@ const ADMIN_USER = process.env.NC_ADMIN_USER ?? 'admin'
 const ADMIN_PASS =
 	process.env.NC_ADMIN_PASSWORD ?? process.env.NC_ADMIN_PASS ?? 'admin'
 
-/** OpenRegister register slug that owns OpenBuild virtual apps. */
-export const OPENBUILD_REGISTER_SLUG = 'openbuild'
+/** OpenRegister register slug that owns Buildiq virtual apps. */
+export const BUILDIQ_REGISTER_SLUG = 'buildiq'
 /** OpenRegister schema slug for the Virtual App object. */
 export const APPLICATION_SCHEMA_SLUG = 'application'
 
@@ -150,12 +150,12 @@ export async function seedVirtualApp(
 	request: APIRequestContext,
 	opts: { slug?: string; name?: string; description?: string } = {},
 ): Promise<SeededApp> {
-	const registerId = await resolveRegisterId(request, OPENBUILD_REGISTER_SLUG)
+	const registerId = await resolveRegisterId(request, BUILDIQ_REGISTER_SLUG)
 	const schemaId = await resolveSchemaId(request, APPLICATION_SCHEMA_SLUG)
 
 	const slug = opts.slug ?? `${E2E_PREFIX}-app-${Math.floor(Math.random() * 1e4)}`
 	const name = opts.name ?? `E2E App ${slug}`
-	const description = opts.description ?? 'Seeded by the OpenBuild deep e2e suite.'
+	const description = opts.description ?? 'Seeded by the Buildiq deep e2e suite.'
 
 	const res = await request.post(
 		`${BASE_URL}/index.php/apps/openregister/api/objects/${registerId}/${schemaId}`,
@@ -207,7 +207,7 @@ export async function findVirtualApp(
 	request: APIRequestContext,
 	uuid: string,
 ): Promise<Record<string, unknown> | null> {
-	const registerId = await resolveRegisterId(request, OPENBUILD_REGISTER_SLUG)
+	const registerId = await resolveRegisterId(request, BUILDIQ_REGISTER_SLUG)
 	const schemaId = await resolveSchemaId(request, APPLICATION_SCHEMA_SLUG)
 	const res = await request.get(
 		`${BASE_URL}/index.php/apps/openregister/api/objects/${registerId}/${schemaId}/${uuid}`,
@@ -246,7 +246,7 @@ export async function deleteVirtualApp(
 	request: APIRequestContext,
 	uuid: string,
 ): Promise<void> {
-	const registerId = await resolveRegisterId(request, OPENBUILD_REGISTER_SLUG)
+	const registerId = await resolveRegisterId(request, BUILDIQ_REGISTER_SLUG)
 	const schemaId = await resolveSchemaId(request, APPLICATION_SCHEMA_SLUG)
 	await request.delete(
 		`${BASE_URL}/index.php/apps/openregister/api/objects/${registerId}/${schemaId}/${uuid}`,
@@ -278,7 +278,7 @@ export async function cleanupByPrefix(
 ): Promise<void> {
 	// --- application objects ---
 	try {
-		const registerId = await resolveRegisterId(request, OPENBUILD_REGISTER_SLUG)
+		const registerId = await resolveRegisterId(request, BUILDIQ_REGISTER_SLUG)
 		const schemaId = await resolveSchemaId(request, APPLICATION_SCHEMA_SLUG)
 		const res = await request.get(
 			`${BASE_URL}/index.php/apps/openregister/api/objects/${registerId}/${schemaId}?_limit=1000`,
@@ -333,7 +333,7 @@ export async function cleanupByPrefix(
 }
 
 /**
- * Resolve the OpenBuild manifest for a virtual-app slug (the real build
+ * Resolve the Buildiq manifest for a virtual-app slug (the real build
  * artifact the runtime renders). Returns { status, body } so the build
  * workflow spec can assert on the produced manifest shape.
  */
@@ -342,14 +342,14 @@ export async function fetchManifest(
 	slug: string,
 ): Promise<{ status: number; body: unknown }> {
 	const res = await request.get(
-		`${BASE_URL}/index.php/apps/openbuild/api/applications/${slug}/manifest`,
+		`${BASE_URL}/index.php/apps/buildiq/api/applications/${slug}/manifest`,
 		{ headers: authHeaders },
 	)
 	return { status: res.status(), body: await res.json().catch(() => null) }
 }
 
 /**
- * Drive the OpenBuild creation wizard (POST /api/applications/wizard) — the
+ * Drive the Buildiq creation wizard (POST /api/applications/wizard) — the
  * canonical "build a virtual app" entry point. Returns { status, body }.
  */
 export async function wizardCreate(
@@ -357,7 +357,7 @@ export async function wizardCreate(
 	payload: Record<string, unknown>,
 ): Promise<{ status: number; body: Record<string, unknown> }> {
 	const res = await request.post(
-		`${BASE_URL}/index.php/apps/openbuild/api/applications/wizard`,
+		`${BASE_URL}/index.php/apps/buildiq/api/applications/wizard`,
 		{ headers: authHeaders, data: payload },
 	)
 	return {

@@ -27,10 +27,10 @@
 		</div>
 		<template #actions>
 			<NcButton @click="$emit('update:open', false)">
-				{{ t('openbuild', 'Cancel') }}
+				{{ t('buildiq', 'Cancel') }}
 			</NcButton>
 			<NcButton variant="primary" :disabled="!value.trim()" @click="onSubmit">
-				{{ confirmLabel || t('openbuild', 'Confirm') }}
+				{{ confirmLabel || t('buildiq', 'Confirm') }}
 			</NcButton>
 		</template>
 	</NcDialog>

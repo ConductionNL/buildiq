@@ -156,7 +156,7 @@ describe('ApplicationDetailActions — Save as template action (REQ-SAT-001)', (
 		// The manifest comes from the resolving endpoint, not from the
 		// Application record.
 		expect(axiosMock.get).toHaveBeenCalledWith(
-			'/apps/openbuild/api/applications/my-permits/manifest',
+			'/apps/buildiq/api/applications/my-permits/manifest',
 		)
 		expect(fetchSchemasMock).toHaveBeenCalled()
 		expect(wrapper.vm.saveTemplateSchemas).toEqual([

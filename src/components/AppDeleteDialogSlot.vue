@@ -5,7 +5,7 @@
   - AppDeleteDialogSlot — fills CnIndexPage's `#delete-dialog` slot on the
   - applications index (manifest page.slots["delete-dialog"]). It replaces the
   - library's generic CnDeleteDialog so the table's native Delete row action
-  - (kept in its default last position, with the trash icon) opens OpenBuild's
+  - (kept in its default last position, with the trash icon) opens Buildiq's
   - own DeleteAppDialog: the data checkbox plus deletion through the `destroy`
   - endpoint (versions/registers/routes cleanup honouring the checkbox) instead
   - of a bare object delete that would orphan everything the app owns.
@@ -87,7 +87,7 @@ export default {
 		},
 
 		/**
-		 * Delete the app through OpenBuild's destroy endpoint (honouring the data
+		 * Delete the app through Buildiq's destroy endpoint (honouring the data
 		 * checkbox), then drop it from the table's store collection and close.
 		 *
 		 * @param {boolean} deleteData Whether to also delete all app data.
@@ -100,7 +100,7 @@ export default {
 			this.busy = true
 			try {
 				await axios.delete(
-					generateUrl(`/apps/openbuild/api/applications/${this.appUuid}`),
+					generateUrl(`/apps/buildiq/api/applications/${this.appUuid}`),
 					{
 						params: { deleteData: deleteData ? 1 : 0 },
 					},
@@ -115,7 +115,7 @@ export default {
 					|| e.message
 					|| e
 				showError(
-					this.t('openbuild', 'Delete failed: {error}', { error: detail }),
+					this.t('buildiq', 'Delete failed: {error}', { error: detail }),
 				)
 			} finally {
 				this.busy = false
@@ -147,7 +147,7 @@ export default {
 			} catch (e) {
 				// eslint-disable-next-line no-console
 				console.warn(
-					'[openbuild] could not evict deleted app from list cache',
+					'[buildiq] could not evict deleted app from list cache',
 					e,
 				)
 			}

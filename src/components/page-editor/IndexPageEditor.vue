@@ -7,20 +7,20 @@
 <template>
 	<div class="index-page-editor">
 		<h3 class="index-page-editor__title">
-			{{ t('openbuild', 'Index page') }}
+			{{ t('buildiq', 'Index page') }}
 		</h3>
 		<DataSourceOriginToggle
 			:data-source="config.dataSource || {}"
 			@update:dataSource="onDataSourceUpdate" />
 		<div v-if="!connectorActive" class="index-page-editor__group">
 			<label>
-				{{ t('openbuild', 'Register') }}
+				{{ t('buildiq', 'Register') }}
 				<select
 					:value="config.register || ''"
 					:aria-invalid="isInvalid('register')"
 					@change="update('register', $event.target.value)">
 					<option value="">
-						{{ t('openbuild', '— select register —') }}
+						{{ t('buildiq', '— select register —') }}
 					</option>
 					<option
 						v-for="r in registers"
@@ -32,14 +32,14 @@
 				<InlineFieldMark :error="markFor('register')" />
 			</label>
 			<label>
-				{{ t('openbuild', 'Schema') }}
+				{{ t('buildiq', 'Schema') }}
 				<select
 					:value="config.schema || ''"
 					:disabled="!config.register"
 					:aria-invalid="isInvalid('schema')"
 					@change="update('schema', $event.target.value)">
 					<option value="">
-						{{ t('openbuild', '— select schema —') }}
+						{{ t('buildiq', '— select schema —') }}
 					</option>
 					<option
 						v-for="s in schemas"
@@ -51,11 +51,11 @@
 				<InlineFieldMark :error="markFor('schema')" />
 			</label>
 			<label>
-				{{ t('openbuild', 'Card component (optional)') }}
+				{{ t('buildiq', 'Card component (optional)') }}
 				<input
 					type="text"
 					:value="config.cardComponent || ''"
-					:placeholder="t('openbuild', 'customComponents key')"
+					:placeholder="t('buildiq', 'customComponents key')"
 					:aria-invalid="isInvalid('cardComponent')"
 					@input="update('cardComponent', $event.target.value)" />
 				<InlineFieldMark :error="markFor('cardComponent')" />
@@ -63,7 +63,7 @@
 		</div>
 
 		<fieldset class="index-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Columns') }}</legend>
+			<legend>{{ t('buildiq', 'Columns') }}</legend>
 			<ColumnBuilder
 				:modelValue="config.columns || []"
 				:schemaProperties="schemaProperties"
@@ -72,7 +72,7 @@
 		</fieldset>
 
 		<fieldset class="index-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Actions') }}</legend>
+			<legend>{{ t('buildiq', 'Actions') }}</legend>
 			<ActionBuilder
 				:modelValue="config.actions || []"
 				@update:modelValue="update('actions', $event)" />
@@ -80,13 +80,13 @@
 		</fieldset>
 
 		<fieldset class="index-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Sidebar') }}</legend>
+			<legend>{{ t('buildiq', 'Sidebar') }}</legend>
 			<label class="index-page-editor__inline">
 				<input
 					type="checkbox"
 					:checked="sidebarEnabled"
 					@change="onSidebarToggle($event.target.checked)" />
-				{{ t('openbuild', 'Enabled') }}
+				{{ t('buildiq', 'Enabled') }}
 			</label>
 			<InlineFieldMark :error="markFor('sidebar')" />
 			<SidebarSectionBuilder
@@ -124,7 +124,7 @@ export default {
 		},
 
 		// Current Application slug. Drives the hybrid register model so the
-		// register picker hoists `openbuild-{slug}` to the top of the list.
+		// register picker hoists `buildiq-{slug}` to the top of the list.
 		appSlug: {
 			type: String,
 			default: '',
@@ -154,7 +154,7 @@ export default {
 	 * cannot see props at construction time, so the picker is created here
 	 * from the resolved props and exposed as `this.picker`.
 	 *
-	 * @param {{appSlug: string, dataRegisters: Array<{register: string, label?: string}>, config: object, pageType: string, parentRoute: string}} props - the resolved component props; only `appSlug` (hoists `openbuild-{slug}` in the register list) and `dataRegisters` (labels/hoists the Application's declared bindings) are read.
+	 * @param {{appSlug: string, dataRegisters: Array<{register: string, label?: string}>, config: object, pageType: string, parentRoute: string}} props - the resolved component props; only `appSlug` (hoists `buildiq-{slug}` in the register list) and `dataRegisters` (labels/hoists the Application's declared bindings) are read.
 	 * @return {{picker: object}} - bindings merged into the instance; `picker` exposes fetchRegisters/fetchSchemas/fetchSchemaProperties.
 	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-2.1

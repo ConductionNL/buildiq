@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild ExportsController unit tests
+ * Buildiq ExportsController unit tests
  *
  * Covers the HTTP surface — submit() validation, RBAC fallback,
  * 202 queue semantics, GitHub-field validation, and download() expiry +
@@ -9,7 +9,7 @@
  * the controller is exercised in isolation.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Controller
+ * @package  OCA\Buildiq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -25,10 +25,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Controller;
+namespace OCA\Buildiq\Tests\Unit\Controller;
 
-use OCA\OpenBuild\Controller\ExportsController;
-use OCA\OpenBuild\Service\ExportJobService;
+use OCA\Buildiq\Controller\ExportsController;
+use OCA\Buildiq\Service\ExportJobService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
@@ -225,7 +225,7 @@ final class ExportsControllerTest extends TestCase {
 	 * down, where OpenRegister refused the record and ExportJobService::queue()
 	 * rethrew as a RuntimeException — reaching the caller as a bare HTTP 500:
 	 *
-	 *   OpenBuild export submit failed: Could not record the export job:
+	 *   Buildiq export submit failed: Could not record the export job:
 	 *   Property 'applicationVersion' should match pattern ... but 'production'
 	 *   does not.
 	 *
@@ -411,7 +411,7 @@ final class ExportsControllerTest extends TestCase {
 	public function testDownloadReturnsZipForOwner(): void {
 		$this->stubAuthorisedFallback();
 
-		$tmpZip = sys_get_temp_dir() . '/openbuild-controller-test-' . uniqid() . '.zip';
+		$tmpZip = sys_get_temp_dir() . '/buildiq-controller-test-' . uniqid() . '.zip';
 		file_put_contents($tmpZip, 'PK fake zip bytes');
 
 		try {
@@ -484,7 +484,7 @@ final class ExportsControllerTest extends TestCase {
 		);
 		$this->container->method('get')->willReturn($objectService);
 
-		$tmpZip = sys_get_temp_dir() . '/openbuild-controller-test-' . uniqid() . '.zip';
+		$tmpZip = sys_get_temp_dir() . '/buildiq-controller-test-' . uniqid() . '.zip';
 		file_put_contents($tmpZip, 'PK fake zip bytes');
 
 		try {
@@ -511,7 +511,7 @@ final class ExportsControllerTest extends TestCase {
 	public function testDownloadPreservesContentDispositionFilename(): void {
 		$this->stubAuthorisedFallback();
 
-		$tmpZip = sys_get_temp_dir() . '/openbuild-filename-test.zip';
+		$tmpZip = sys_get_temp_dir() . '/buildiq-filename-test.zip';
 		file_put_contents($tmpZip, 'PK');
 
 		try {
@@ -529,7 +529,7 @@ final class ExportsControllerTest extends TestCase {
 			$headers = $headersProp->getValue($response);
 			$disposition = $headers['Content-Disposition'] ?? '';
 			self::assertStringContainsString(
-				'openbuild-filename-test.zip',
+				'buildiq-filename-test.zip',
 				(string)$disposition,
 				'Content-Disposition must include the original filename'
 			);

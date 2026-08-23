@@ -1,6 +1,6 @@
 ## Context
 
-The remediation-verification pass over the OpenBuild architectural audit left a
+The remediation-verification pass over the Buildiq architectural audit left a
 cluster of backend findings that fell between the two other hardening changes:
 the rules-engine authorization/IDOR gap with its false documentation (M1), and a
 set of small authorization- and audit-consistency defects (L2, L4, L8, L9). This

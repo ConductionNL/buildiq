@@ -21,7 +21,7 @@
  * That is a fixture that existed on exactly one laptop. On CI the app-picker
  * had no such option, both tests died on a locator timeout, and that timeout
  * was then reported as a fact about `GET /api/applications` — becoming
- * Conduction/openbuild#171 and the second comment on #173, both of which
+ * Conduction/buildiq#171 and the second comment on #173, both of which
  * claimed a granted editor cannot see their application. They can; see
  * tests/e2e/support/appRoles.ts for the measurement that retracts it.
  *
@@ -88,7 +88,7 @@ const APP_TITLE = 'RBAC Automations App'
  * fixable from here.
  *
  * It has already cost more than a test: this locator timing out was read as
- * "the editor cannot see the application", which became Conduction/openbuild#171
+ * "the editor cannot see the application", which became Conduction/buildiq#171
  * and the second comment on #173. A locator that finds nothing says nothing
  * about the API underneath it.
  *
@@ -163,7 +163,7 @@ async function deleteAutomationsBySlug(page: Page, slugs: string[]): Promise<voi
 				'Content-Type': 'application/json',
 			}
 			const listResp = await fetch(
-				'/index.php/apps/openregister/api/objects/openbuild/automation?_limit=200',
+				'/index.php/apps/openregister/api/objects/buildiq/automation?_limit=200',
 				{ headers },
 			)
 			if (!listResp.ok) {
@@ -173,12 +173,12 @@ async function deleteAutomationsBySlug(page: Page, slugs: string[]): Promise<voi
 			const rows = Array.isArray(listed) ? listed : (listed?.results ?? [])
 			for (const row of rows) {
 				if (slugs.includes(row?.slug)) {
-					// OpenBuild's own DELETE: it removes the COMPILED ARTIFACTS
+					// Buildiq's own DELETE: it removes the COMPILED ARTIFACTS
 					// first. Deleting straight over OR REST would orphan live
 					// notifications and schedules with no definition left to
 					// manage them from.
 					await fetch(
-						`/index.php/apps/openbuild/api/automations/${row['@self']?.id ?? row.id}`,
+						`/index.php/apps/buildiq/api/automations/${row['@self']?.id ?? row.id}`,
 						{ method: 'DELETE', headers },
 					)
 				}
@@ -198,7 +198,7 @@ async function deleteAutomationsBySlug(page: Page, slugs: string[]): Promise<voi
  * a second run would otherwise start from the state the first run left behind
  * and send `/disable` instead.
  *
- * Written through OpenBuild's own endpoints, as the product's own client does.
+ * Written through Buildiq's own endpoints, as the product's own client does.
  *
  * @param page Playwright page on an ADMIN session.
  * @return {Promise<void>}
@@ -218,7 +218,7 @@ async function seedDisabledProductionAutomation(page: Page): Promise<void> {
 			}
 
 			const versionsResp = await fetch(
-				`/index.php/apps/openbuild/api/applications/${appSlug}/versions`,
+				`/index.php/apps/buildiq/api/applications/${appSlug}/versions`,
 				{ headers },
 			)
 			if (!versionsResp.ok) {
@@ -233,7 +233,7 @@ async function seedDisabledProductionAutomation(page: Page): Promise<void> {
 				return `no production version among ${JSON.stringify((versions ?? []).map((v) => v?.slug))}`
 			}
 
-			const resp = await fetch('/index.php/apps/openbuild/api/automations', {
+			const resp = await fetch('/index.php/apps/buildiq/api/automations', {
 				method: 'POST',
 				headers,
 				body: JSON.stringify({
@@ -270,13 +270,13 @@ async function seedDisabledProductionAutomation(page: Page): Promise<void> {
 }
 
 /**
- * Is openbuild's `automation` schema readable and shaped as this suite expects?
+ * Is buildiq's `automation` schema readable and shaped as this suite expects?
  *
  * THIS PROBE USED TO REPORT `false` HERE AND `true` EVERYWHERE ELSE, IN THE
  * SAME RUN, AGAINST THE SAME INSTANCE.
  *
  * It is a copy of `automations.spec.ts`'s helper, and it carried that file's
- * reason with it: "the openbuild `automation` schema slug collides with a
+ * reason with it: "the buildiq `automation` schema slug collides with a
  * pre-existing schema of the same slug on this shared instance — automation
  * CREATE/SAVE 400s regardless of app/version". Run 31083894467 disproves that
  * for CI outright. Seven tests in `automations.spec.ts` sit behind the very
@@ -411,11 +411,11 @@ test.describe('automation-designer — RBAC (REQ-AUTD-008)', () => {
 		// @e2e openspec/specs/automation-designer/spec.md#editor-authors-and-enables-on-a-draft-version
 		test.skip(
 			(await automationSchemaIsUsable(request)) === false,
-			'openbuild `automation` schema does not read back with a `trigger` object property — see automationSchemaIsUsable() for why this must be a real verdict and not a failed lookup',
+			'buildiq `automation` schema does not read back with a `trigger` object property — see automationSchemaIsUsable() for why this must be a real verdict and not a failed lookup',
 		)
 		await loginAs(page, EDITOR_USER, EDITOR_PASS)
 		await suppressSupportDialog(page)
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/automations`)
+		await page.goto(`${NEXTCLOUD_URL}/apps/buildiq/automations`)
 		await page.waitForSelector('.automations-page', { timeout: 20_000 })
 		await dismissWalkthrough(page)
 
@@ -458,7 +458,7 @@ test.describe('automation-designer — RBAC (REQ-AUTD-008)', () => {
 		// @e2e openspec/specs/automation-designer/spec.md#editor-cannot-enable-on-the-production-version
 		test.skip(
 			(await automationSchemaIsUsable(request)) === false,
-			'openbuild `automation` schema does not read back with a `trigger` object property — see automationSchemaIsUsable() for why this must be a real verdict and not a failed lookup',
+			'buildiq `automation` schema does not read back with a `trigger` object property — see automationSchemaIsUsable() for why this must be a real verdict and not a failed lookup',
 		)
 
 		/**
@@ -480,7 +480,7 @@ test.describe('automation-designer — RBAC (REQ-AUTD-008)', () => {
 			const context = await browser.newContext({ storageState })
 			const p = await context.newPage()
 			await suppressSupportDialog(p)
-			await p.goto(`${NEXTCLOUD_URL}/apps/openbuild/automations`)
+			await p.goto(`${NEXTCLOUD_URL}/apps/buildiq/automations`)
 			await p.waitForSelector('.automations-page', { timeout: 20_000 })
 			await dismissWalkthrough(p)
 

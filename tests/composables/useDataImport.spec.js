@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Vitest spec for the data-import client that delegates to OpenRegister's
- * register-import surface. Verifies OpenBuild adds NO import backend — it only
+ * register-import surface. Verifies Buildiq adds NO import backend — it only
  * multipart-POSTs the file, flattens OR's sheet-keyed summary, offers rollback,
  * and builds the template URL.
  *
- * Spec: openbuild-data-import-wizard (tasks 1.1).
+ * Spec: buildiq-data-import-wizard (tasks 1.1).
  */
 import { describe, it, expect, vi } from 'vitest'
 

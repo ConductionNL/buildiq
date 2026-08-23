@@ -12,12 +12,12 @@
  *
  * ⚠️ The subject lives under `lib/Resources/template/`, which is excluded from
  * the classmap on purpose: it is scaffold shipped INTO generated apps, not code
- * openbuild runs. It is therefore required explicitly here — testing shipped
+ * buildiq runs. It is therefore required explicitly here — testing shipped
  * scaffold is exactly as necessary as testing the code that ships it, because
  * a broken seeder breaks every app ever exported.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Service
+ * @package  OCA\Buildiq\Tests\Unit\Service
  *
  * @author  Conduction Development Team <dev@conduction.nl>
  * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
@@ -25,7 +25,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Service;
+namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;

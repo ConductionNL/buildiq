@@ -1,8 +1,8 @@
 {
 	"info": {
-		"_postman_id": "openbuild-schema-editor-collection",
-		"name": "OpenBuild Schema Editor — Integration Tests",
-		"description": "Integration tests for spec #4 (openbuild-schema-editor). Exercises the per-app register schema CRUD endpoints (POST/PUT/DELETE) under `openbuild-{slug}`.\n\nThese endpoints depend on chain spec #3 (openregister-runtime-schema-api). Until that spec is merged, the `/api/registers/{register}/schemas` surface returns 404; those requests are guarded by `pm.test.skip()` so the collection passes when the upstream API isn't live yet.",
+		"_postman_id": "buildiq-schema-editor-collection",
+		"name": "Buildiq Schema Editor — Integration Tests",
+		"description": "Integration tests for spec #4 (buildiq-schema-editor). Exercises the per-app register schema CRUD endpoints (POST/PUT/DELETE) under `buildiq-{slug}`.\n\nThese endpoints depend on chain spec #3 (openregister-runtime-schema-api). Until that spec is merged, the `/api/registers/{register}/schemas` surface returns 404; those requests are guarded by `pm.test.skip()` so the collection passes when the upstream API isn't live yet.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"auth": {
@@ -17,7 +17,7 @@
 		{ "key": "admin_user", "value": "admin", "type": "string" },
 		{ "key": "admin_password", "value": "admin", "type": "string" },
 		{ "key": "app_slug", "value": "hello-world", "type": "string" },
-		{ "key": "register_slug", "value": "openbuild-hello-world", "type": "string" },
+		{ "key": "register_slug", "value": "buildiq-hello-world", "type": "string" },
 		{ "key": "schema_slug", "value": "hello-message-integration", "type": "string" },
 		{ "key": "or_api_available", "value": "", "type": "string" }
 	],
@@ -98,7 +98,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"slug\": \"{{schema_slug}}\",\n  \"title\": \"Hello message (integration)\",\n  \"description\": \"Created by openbuild-schema-editor integration tests.\",\n  \"version\": \"0.1.0\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"subject\": { \"type\": \"string\", \"maxLength\": 200 }\n  },\n  \"required\": [\"subject\"],\n  \"x-property-order\": [\"subject\"]\n}"
+							"raw": "{\n  \"slug\": \"{{schema_slug}}\",\n  \"title\": \"Hello message (integration)\",\n  \"description\": \"Created by buildiq-schema-editor integration tests.\",\n  \"version\": \"0.1.0\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"subject\": { \"type\": \"string\", \"maxLength\": 200 }\n  },\n  \"required\": [\"subject\"],\n  \"x-property-order\": [\"subject\"]\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_slug}}/schemas",

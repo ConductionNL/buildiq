@@ -72,12 +72,12 @@ describe('productionVersions (REQ-OBR-007b)', () => {
 		).toHaveBeenCalledTimes(1)
 	})
 
-	it('reads the RBAC-filtered OpenBuild endpoint, not the bulk OR version list', async () => {
+	it('reads the RBAC-filtered Buildiq endpoint, not the bulk OR version list', async () => {
 		get.mockResolvedValue({ data: [] })
 		await ensureProductionVersionsLoaded()
 
 		const url = get.mock.calls[0][0]
-		expect(url).toContain('/apps/openbuild/api/applications')
+		expect(url).toContain('/apps/buildiq/api/applications')
 		// The OR objects endpoint would return every version row WITH its whole
 		// manifest blob — 262 rows on the e2e instance — for five scalar fields.
 		expect(url).not.toContain('/apps/openregister/')

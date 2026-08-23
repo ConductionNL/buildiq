@@ -1,10 +1,10 @@
 <?php
 
 /**
- * OpenBuild VersionPromotionService
+ * Buildiq VersionPromotionService
  *
  * Owns the imperative promotion flow defined in spec
- * `openbuild-version-promotion` and ADR-002. Responsibilities:
+ * `buildiq-version-promotion` and ADR-002. Responsibilities:
  *
  *   - Resolve the target as `sourceVersion.promotesTo` (spec REQ-OBVP-001).
  *   - Validate the strategy against the closed enum
@@ -29,7 +29,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -52,14 +52,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
-use OCA\OpenBuild\Exception\InvalidStrategyException;
-use OCA\OpenBuild\Exception\NoPromoteTargetException;
-use OCA\OpenBuild\Exception\PromotionFailedException;
-use OCA\OpenBuild\Exception\VersionLockedException;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\Buildiq\Exception\InvalidStrategyException;
+use OCA\Buildiq\Exception\NoPromoteTargetException;
+use OCA\Buildiq\Exception\PromotionFailedException;
+use OCA\Buildiq\Exception\VersionLockedException;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Db\RegisterMapper;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -308,7 +308,7 @@ class VersionPromotionService {
 	 * schema set contains the union. OR's own breaking-change handling
 	 * applies at write time inside RegisterMapper::update().
 	 *
-	 * Per Decision 4: no openbuild-side diff or dry-run; OR drives the
+	 * Per Decision 4: no buildiq-side diff or dry-run; OR drives the
 	 * outcome.
 	 *
 	 * @param array<string,mixed> $source Source ApplicationVersion
@@ -324,7 +324,7 @@ class VersionPromotionService {
 
 		if ($sourceRegisterSlug === '' || $targetRegisterSlug === '') {
 			$this->logger->info(
-				'OpenBuild: forwardSchemaSetToOR skipped — source or target register slug missing'
+				'Buildiq: forwardSchemaSetToOR skipped — source or target register slug missing'
 				. ' (source=' . $sourceRegisterSlug . ', target=' . $targetRegisterSlug . ').'
 			);
 			return;
@@ -340,12 +340,12 @@ class VersionPromotionService {
 
 		// Spec Decision 4: trust OR's setSchemas + update to handle the
 		// migration outcome. The schema set is the source's verbatim;
-		// openbuild does not pre-flight column-level diffs.
+		// buildiq does not pre-flight column-level diffs.
 		$targetRegister->setSchemas($sourceSchemas);
 		$this->registerMapper->update($targetRegister);
 
 		$this->logger->info(
-			'OpenBuild: forwardSchemaSetToOR: target register ' . $targetRegisterSlug
+			'Buildiq: forwardSchemaSetToOR: target register ' . $targetRegisterSlug
 			. ' aligned with source register ' . $sourceRegisterSlug . ' (' . count($sourceSchemas) . ' schemas).'
 		);
 	}//end forwardSchemaSetToOR()
@@ -493,7 +493,7 @@ class VersionPromotionService {
 	private function handlePromotionFailure(string $targetUuid, string $strategy, Throwable $error): never {
 		$message = $error->getMessage();
 		$this->logger->error(
-			'OpenBuild: promotion failed (strategy ' . $strategy . ', target ' . $targetUuid . '): ' . $message,
+			'Buildiq: promotion failed (strategy ' . $strategy . ', target ' . $targetUuid . '): ' . $message,
 			['exception' => $error]
 		);
 
@@ -521,7 +521,7 @@ class VersionPromotionService {
 			// Persisting the archived flip itself failed — log and continue
 			// so we still surface the original failure to the caller.
 			$this->logger->error(
-				'OpenBuild: failed to persist archived flip for target ' . $targetUuid . ': '
+				'Buildiq: failed to persist archived flip for target ' . $targetUuid . ': '
 				. $persistError->getMessage(),
 				['exception' => $persistError]
 			);
@@ -553,7 +553,7 @@ class VersionPromotionService {
 		try {
 			$this->objectService->lockObject(
 				identifier: $targetUuid,
-				process: 'openbuild.version-promotion',
+				process: 'buildiq.version-promotion',
 				duration: self::LOCK_DURATION_SECONDS
 			);
 		} catch (Throwable $e) {
@@ -598,7 +598,7 @@ class VersionPromotionService {
 			$this->objectService->unlockObject(identifier: $targetUuid);
 		} catch (Throwable $e) {
 			$this->logger->warning(
-				'OpenBuild: failed to release lock on target ' . $targetUuid . ': ' . $e->getMessage()
+				'Buildiq: failed to release lock on target ' . $targetUuid . ': ' . $e->getMessage()
 			);
 		}
 	}//end releaseLock()
@@ -623,7 +623,7 @@ class VersionPromotionService {
 			}
 		} catch (Throwable $e) {
 			$this->logger->debug(
-				'OpenBuild: getLockInfo lookup for ' . $targetUuid . ' failed: ' . $e->getMessage()
+				'Buildiq: getLockInfo lookup for ' . $targetUuid . ' failed: ' . $e->getMessage()
 			);
 		}
 
@@ -747,7 +747,7 @@ class VersionPromotionService {
 					return $hint;
 				}
 			} catch (Throwable $e) {
-				$this->logger->debug('OpenBuild: extractSchemaSlug fallthrough: ' . $e->getMessage());
+				$this->logger->debug('Buildiq: extractSchemaSlug fallthrough: ' . $e->getMessage());
 			}
 		}
 

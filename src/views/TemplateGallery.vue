@@ -2,11 +2,11 @@
 <template>
 	<div class="template-gallery">
 		<header class="template-gallery__header">
-			<h1>{{ t('openbuild', 'App store') }}</h1>
+			<h1>{{ t('buildiq', 'App store') }}</h1>
 			<p class="template-gallery__subtitle">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'Install an app published to GitHub. The store lists every repository tagged with the openbuild-app topic; installing clones it into an editable draft application.',
 					)
 				}}
@@ -27,7 +27,7 @@
 					},
 				]"
 				@click="viewMode = 'templates'">
-				{{ t('openbuild', 'Templates') }}
+				{{ t('buildiq', 'Templates') }}
 			</button>
 			<button
 				type="button"
@@ -38,7 +38,7 @@
 					{ 'template-gallery__view-btn--active': viewMode === 'blocks' },
 				]"
 				@click="onSelectBlocksTab">
-				{{ t('openbuild', 'Blocks') }}
+				{{ t('buildiq', 'Blocks') }}
 			</button>
 		</div>
 
@@ -47,10 +47,10 @@
 			<div class="template-gallery__filters">
 				<NcTextField
 					:modelValue="githubQuery"
-					:label="t('openbuild', 'Search GitHub')"
+					:label="t('buildiq', 'Search GitHub')"
 					:placeholder="
 						t(
-							'openbuild',
+							'buildiq',
 							'Search apps published to GitHub (topic: openbuild-app)',
 						)
 					"
@@ -64,18 +64,18 @@
 				{{
 					githubRateLimited
 						? t(
-								'openbuild',
+								'buildiq',
 								'GitHub is rate-limiting anonymous browsing right now. Try again shortly.',
 							)
 						: t(
-								'openbuild',
+								'buildiq',
 								'GitHub could not be reached right now. Try again shortly.',
 							)
 				}}
 				<span v-if="githubRateLimited && !hasGithubCredential">
 					{{
 						t(
-							'openbuild',
+							'buildiq',
 							'Add a GitHub credential in your OpenRegister credentials settings to raise the rate limit and browse private repositories.',
 						)
 					}}
@@ -84,14 +84,14 @@
 
 			<div v-if="githubLoading" class="template-gallery__loading">
 				<NcLoadingIcon :size="32" />
-				<span>{{ t('openbuild', 'Searching GitHub…') }}</span>
+				<span>{{ t('buildiq', 'Searching GitHub…') }}</span>
 			</div>
 
 			<div
 				v-else-if="githubCards.length === 0 && githubSearched"
 				class="template-gallery__empty">
 				<NcEmptyContent
-					:name="t('openbuild', 'No GitHub apps match your search')" />
+					:name="t('buildiq', 'No GitHub apps match your search')" />
 			</div>
 
 			<ul
@@ -109,7 +109,7 @@
 						<span
 							v-if="card.unparseable || !card.installable"
 							class="template-card__badge template-card__badge--warn">
-							{{ t('openbuild', 'Unreadable app descriptor') }}
+							{{ t('buildiq', 'Unreadable app descriptor') }}
 						</span>
 						<span v-if="card.category" class="template-card__category">{{
 							categoryLabel(card.category)
@@ -139,7 +139,7 @@
 								:key="cred"
 								class="template-card__chip template-card__chip--muted">
 								{{
-									t('openbuild', 'Needs credential: {name}', {
+									t('buildiq', 'Needs credential: {name}', {
 										name: cred,
 									})
 								}}
@@ -151,13 +151,13 @@
 							v-if="card.installable && !card.unparseable"
 							variant="primary"
 							@click="openGithubInstall(card)">
-							{{ t('openbuild', 'Install') }}
+							{{ t('buildiq', 'Install') }}
 						</NcButton>
 						<span v-else class="template-card__disabled-hint">
 							{{
 								t(
-									'openbuild',
-									'This repository has no readable OpenBuild descriptor and cannot be installed.',
+									'buildiq',
+									'This repository has no readable Buildiq descriptor and cannot be installed.',
 								)
 							}}
 						</span>
@@ -173,10 +173,10 @@
 			<div class="template-gallery__filters">
 				<NcSelect
 					v-model="blockCategoryFilter"
-					:inputLabel="t('openbuild', 'Filter by category')"
+					:inputLabel="t('buildiq', 'Filter by category')"
 					:options="blockCategoryOptions"
 					:clearable="true"
-					:placeholder="t('openbuild', 'All categories')" />
+					:placeholder="t('buildiq', 'All categories')" />
 			</div>
 
 			<div v-if="blocksLoading" class="template-gallery__loading">
@@ -187,10 +187,10 @@
 				v-else-if="filteredBlocks.length === 0"
 				class="template-gallery__empty">
 				<NcEmptyContent
-					:name="t('openbuild', 'No blocks yet')"
+					:name="t('buildiq', 'No blocks yet')"
 					:description="
 						t(
-							'openbuild',
+							'buildiq',
 							'Save a widget or section from a page designer to build your first block.',
 						)
 					" />
@@ -242,7 +242,7 @@ import {
 } from '@nextcloud/vue'
 import CloneTemplateDialog from '../modals/CloneTemplateDialog.vue'
 
-const OR_BLOCKS = '/apps/openregister/api/objects/openbuild/component-block'
+const OR_BLOCKS = '/apps/openregister/api/objects/buildiq/component-block'
 
 const CATEGORY_LABELS = {
 	'government-services': 'Government services',
@@ -371,7 +371,7 @@ export default {
 		async searchGithub() {
 			this.githubLoading = true
 			try {
-				const url = generateUrl('/apps/openbuild/api/shop/github/search')
+				const url = generateUrl('/apps/buildiq/api/shop/github/search')
 				const params = { q: this.githubQuery.trim() }
 				if (this.githubCredentialId) {
 					params.credentialId = this.githubCredentialId
@@ -477,7 +477,7 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-1
 		 */
 		categoryLabel(category) {
-			return t('openbuild', CATEGORY_LABELS[category] || category || '')
+			return t('buildiq', CATEGORY_LABELS[category] || category || '')
 		},
 
 		/**

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild ChannelApplyReport tests
+ * Buildiq ChannelApplyReport tests
  *
  * The report's job is to make a dropped item impossible to hide, so these tests
  * are mostly about the failure direction: an unbalanced report MUST throw, and a
@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Service
+ * @package  OCA\Buildiq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -28,9 +28,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Service;
+namespace OCA\Buildiq\Tests\Unit\Service;
 
-use OCA\OpenBuild\Service\ChannelApplyReport;
+use OCA\Buildiq\Service\ChannelApplyReport;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 

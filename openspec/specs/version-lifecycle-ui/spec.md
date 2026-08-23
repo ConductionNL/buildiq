@@ -9,7 +9,7 @@ status: done
 ## Purpose
 
 The version-lifecycle-ui capability provides the maintainer cockpit for driving
-OpenBuild's two-object version model from the UI: the fixed/repointed version list
+Buildiq's two-object version model from the UI: the fixed/repointed version list
 (slug-based endpoint, real fields), click-to-open and per-row Edit affordances,
 the New-draft action (clones production manifest, shares production register), the
 Release action (set-as-production + publish + demote-previous, owner-only), and
@@ -32,7 +32,7 @@ SHALL NOT rely on `applicationUuid` alone to populate the version list.
 - **WHEN** `ManifestLayersDetail.vue` has loaded its `Application` object with
   `slug: "<slug>"`
 - **THEN** it renders `VersionHistory` with that slug available
-- **AND** the version list calls `GET /apps/openbuild/api/applications/<slug>/versions`
+- **AND** the version list calls `GET /apps/buildiq/api/applications/<slug>/versions`
 
 #### Scenario: Versions render for an app with at least one version
 
@@ -44,7 +44,7 @@ SHALL NOT rely on `applicationUuid` alone to populate the version list.
 
 `VersionHistory` SHALL make each version row activatable; activating a row SHALL open the
 live builder for the parent app at `?_version={versionSlug}` (the view/use path). The
-production version row SHALL open `/apps/openbuild/builder/{slug}` without a `?_version=`
+production version row SHALL open `/apps/buildiq/builder/{slug}` without a `?_version=`
 param (canonical production URL).
 
 **ID:** REQ-OBV-VLU-002
@@ -53,13 +53,13 @@ param (canonical production URL).
 
 - **GIVEN** a version list with a non-production version whose slug is `draft-2`
 - **WHEN** the user activates that row
-- **THEN** the builder opens at `/apps/openbuild/builder/<slug>?_version=draft-2`
+- **THEN** the builder opens at `/apps/buildiq/builder/<slug>?_version=draft-2`
 
 #### Scenario: Click the production version opens the canonical URL
 
 - **GIVEN** the production version row
 - **WHEN** the user activates it
-- **THEN** the builder opens at `/apps/openbuild/builder/<slug>` with no `?_version=` param
+- **THEN** the builder opens at `/apps/buildiq/builder/<slug>` with no `?_version=` param
 
 ### Requirement: Per-row Edit opens the designer scoped to the version
 
@@ -102,7 +102,7 @@ that version via `buildVersionedRoute(<designerRouteName>, { slug }, versionSlug
 
 The Manifest-detail / app-detail surface SHALL expose a **New draft** action (visible to
 owners and editors). Activating it SHALL create an `ApplicationVersion` via
-`POST /apps/openbuild/api/applications/{slug}/versions` with `status: draft`, `manifest`
+`POST /apps/buildiq/api/applications/{slug}/versions` with `status: draft`, `manifest`
 cloned from the current production version's manifest, `application` set to the parent
 Application uuid, and a generated `name`/`slug` (provisional scheme: `"Draft N"` /
 `draft-n`). The created draft SHALL share the production version's `register` (it SHALL NOT
@@ -113,11 +113,11 @@ mint a per-version register — see `application-versions` delta and design.md D
 #### Scenario: New draft clones production manifest and shares its register
 
 - **GIVEN** an Application `<slug>` whose production version has manifest M and register
-  `openbuild-<slug>-production`
+  `buildiq-<slug>-production`
 - **WHEN** an owner activates New draft
 - **THEN** a new `ApplicationVersion` is created with `status: draft`, `manifest` equal to
   M, `application` set to the parent uuid
-- **AND** the new version's `register` is `openbuild-<slug>-production` (shared with
+- **AND** the new version's `register` is `buildiq-<slug>-production` (shared with
   production, not a freshly minted register)
 - **AND** the version list re-renders showing the new draft
 
@@ -162,7 +162,7 @@ the production role. After a successful release exactly one version is productio
 ### Requirement: "Open app" split button switches versions
 
 `ApplicationDetailActions.vue` SHALL render the primary **Open app** button that opens the
-**production** runtime (`/apps/openbuild/builder/{slug}`, no `?_version=`), attached to a
+**production** runtime (`/apps/buildiq/builder/{slug}`, no `?_version=`), attached to a
 chevron (`NcActions`) that lists the app's versions. Each listed version SHALL offer a
 **View/Use** entry (builder at `?_version={slug}`) and, for editor+ callers, an **Edit**
 entry (designer at `?_version={slug}`). The production version SHALL be clearly marked in
@@ -174,7 +174,7 @@ NOT list archived versions (a provisional default; see design.md Open Questions)
 #### Scenario: Primary Open app opens production
 
 - **WHEN** the user clicks the primary Open app button
-- **THEN** the runtime opens at `/apps/openbuild/builder/<slug>` with no `?_version=` param
+- **THEN** the runtime opens at `/apps/buildiq/builder/<slug>` with no `?_version=` param
 
 #### Scenario: Chevron lists versions with View and Edit
 
@@ -188,7 +188,7 @@ NOT list archived versions (a provisional default; see design.md Open Questions)
 
 - **GIVEN** the chevron lists version `draft-2`
 - **WHEN** the user activates its View/Use entry
-- **THEN** the builder opens at `/apps/openbuild/builder/<slug>?_version=draft-2`
+- **THEN** the builder opens at `/apps/buildiq/builder/<slug>?_version=draft-2`
 
 #### Scenario: Archived versions are hidden by default
 
@@ -200,8 +200,8 @@ NOT list archived versions (a provisional default; see design.md Open Questions)
 
 The system SHALL translate all user-facing strings introduced by this capability into
 English and Dutch. All such strings (New draft, Release, version
-markers, error/toast messages, Open-app menu labels) SHALL be wrapped in the `openbuild`
-translation domain and SHALL have Dutch translations in the `openbuild` `nl` catalogue.
+markers, error/toast messages, Open-app menu labels) SHALL be wrapped in the `buildiq`
+translation domain and SHALL have Dutch translations in the `buildiq` `nl` catalogue.
 Translation keys SHALL be the English source strings.
 
 **ID:** REQ-OBV-VLU-008
@@ -209,5 +209,5 @@ Translation keys SHALL be the English source strings.
 #### Scenario: New strings appear in the NL catalogue
 
 - **WHEN** the build extracts translatable strings
-- **THEN** every new label has an entry in the `openbuild` `nl` translation file
+- **THEN** every new label has an entry in the `buildiq` `nl` translation file
 - **AND** no Dutch string is used as a translation key

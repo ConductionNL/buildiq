@@ -24,19 +24,19 @@
 <template>
 	<div class="wiki-page-editor">
 		<h3 class="wiki-page-editor__title">
-			{{ t('openbuild', 'Wiki page') }}
+			{{ t('buildiq', 'Wiki page') }}
 		</h3>
 
 		<fieldset class="wiki-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Article source (required)') }}</legend>
+			<legend>{{ t('buildiq', 'Article source (required)') }}</legend>
 			<label class="wiki-page-editor__group-row">
-				{{ t('openbuild', 'Register') }}
+				{{ t('buildiq', 'Register') }}
 				<select
 					:value="config.register || ''"
 					:aria-invalid="registerMark.hasError"
 					@change="updateRegister($event.target.value)">
 					<option value="">
-						{{ t('openbuild', '— select register —') }}
+						{{ t('buildiq', '— select register —') }}
 					</option>
 					<option
 						v-for="r in registers"
@@ -48,14 +48,14 @@
 				<InlineFieldMark :error="registerMark" />
 			</label>
 			<label class="wiki-page-editor__group-row">
-				{{ t('openbuild', 'Schema') }}
+				{{ t('buildiq', 'Schema') }}
 				<select
 					:value="config.schema || ''"
 					:disabled="!config.register"
 					:aria-invalid="schemaMark.hasError"
 					@change="update('schema', $event.target.value)">
 					<option value="">
-						{{ t('openbuild', '— select schema —') }}
+						{{ t('buildiq', '— select schema —') }}
 					</option>
 					<option
 						v-for="s in schemas"
@@ -69,15 +69,15 @@
 		</fieldset>
 
 		<fieldset class="wiki-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Article field mapping') }}</legend>
+			<legend>{{ t('buildiq', 'Article field mapping') }}</legend>
 			<label class="wiki-page-editor__group-row">
-				{{ t('openbuild', 'Content field') }}
+				{{ t('buildiq', 'Content field') }}
 				<select
 					v-if="hasBoundSchema"
 					:value="config.contentField || ''"
 					@change="update('contentField', $event.target.value)">
 					<option value="">
-						{{ t('openbuild', '— default: body —') }}
+						{{ t('buildiq', '— default: body —') }}
 					</option>
 					<option
 						v-for="key in schemaPropertyKeys"
@@ -90,18 +90,18 @@
 					v-else
 					type="text"
 					:value="config.contentField || ''"
-					:placeholder="t('openbuild', 'body')"
+					:placeholder="t('buildiq', 'body')"
 					@input="update('contentField', $event.target.value)" />
 				<InlineFieldMark :error="markFor('contentField')" />
 			</label>
 			<label class="wiki-page-editor__group-row">
-				{{ t('openbuild', 'Title field') }}
+				{{ t('buildiq', 'Title field') }}
 				<select
 					v-if="hasBoundSchema"
 					:value="config.titleField || ''"
 					@change="update('titleField', $event.target.value)">
 					<option value="">
-						{{ t('openbuild', '— default: title —') }}
+						{{ t('buildiq', '— default: title —') }}
 					</option>
 					<option
 						v-for="key in schemaPropertyKeys"
@@ -114,30 +114,30 @@
 					v-else
 					type="text"
 					:value="config.titleField || ''"
-					:placeholder="t('openbuild', 'title')"
+					:placeholder="t('buildiq', 'title')"
 					@input="update('titleField', $event.target.value)" />
 				<InlineFieldMark :error="markFor('titleField')" />
 			</label>
 			<label class="wiki-page-editor__group-row">
-				{{ t('openbuild', 'Route id param') }}
+				{{ t('buildiq', 'Route id param') }}
 				<input
 					type="text"
 					:value="config.idParam || ''"
-					:placeholder="t('openbuild', 'id')"
+					:placeholder="t('buildiq', 'id')"
 					@input="update('idParam', $event.target.value)" />
 				<InlineFieldMark :error="markFor('idParam')" />
 			</label>
 		</fieldset>
 
 		<fieldset class="wiki-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Sidebar tree (optional)') }}</legend>
+			<legend>{{ t('buildiq', 'Sidebar tree (optional)') }}</legend>
 			<label class="wiki-page-editor__group-row">
-				{{ t('openbuild', 'Sidebar register') }}
+				{{ t('buildiq', 'Sidebar register') }}
 				<select
 					:value="config.sidebarRegister || ''"
 					@change="updateSidebarRegister($event.target.value)">
 					<option value="">
-						{{ t('openbuild', '— defaults to article register —') }}
+						{{ t('buildiq', '— defaults to article register —') }}
 					</option>
 					<option
 						v-for="r in registers"
@@ -149,13 +149,13 @@
 				<InlineFieldMark :error="markFor('sidebarRegister')" />
 			</label>
 			<label class="wiki-page-editor__group-row">
-				{{ t('openbuild', 'Sidebar schema') }}
+				{{ t('buildiq', 'Sidebar schema') }}
 				<select
 					:value="config.sidebarSchema || ''"
 					:disabled="!(config.sidebarRegister || config.register)"
 					@change="update('sidebarSchema', $event.target.value)">
 					<option value="">
-						{{ t('openbuild', '— select schema —') }}
+						{{ t('buildiq', '— select schema —') }}
 					</option>
 					<option
 						v-for="s in sidebarSchemas"
@@ -167,13 +167,13 @@
 				<InlineFieldMark :error="markFor('sidebarSchema')" />
 			</label>
 			<label class="wiki-page-editor__group-row">
-				{{ t('openbuild', 'Tree children field') }}
+				{{ t('buildiq', 'Tree children field') }}
 				<select
 					v-if="hasBoundSidebarSchema"
 					:value="config.treeField || ''"
 					@change="update('treeField', $event.target.value)">
 					<option value="">
-						{{ t('openbuild', '— default: children —') }}
+						{{ t('buildiq', '— default: children —') }}
 					</option>
 					<option
 						v-for="key in sidebarSchemaPropertyKeys"
@@ -186,18 +186,18 @@
 					v-else
 					type="text"
 					:value="config.treeField || ''"
-					:placeholder="t('openbuild', 'children')"
+					:placeholder="t('buildiq', 'children')"
 					@input="update('treeField', $event.target.value)" />
 				<InlineFieldMark :error="markFor('treeField')" />
 			</label>
 			<label class="wiki-page-editor__group-row">
-				{{ t('openbuild', 'Sidebar title field') }}
+				{{ t('buildiq', 'Sidebar title field') }}
 				<select
 					v-if="hasBoundSidebarSchema"
 					:value="config.sidebarTitleField || ''"
 					@change="update('sidebarTitleField', $event.target.value)">
 					<option value="">
-						{{ t('openbuild', '— default: title field —') }}
+						{{ t('buildiq', '— default: title field —') }}
 					</option>
 					<option
 						v-for="key in sidebarSchemaPropertyKeys"
@@ -216,9 +216,9 @@
 		</fieldset>
 
 		<fieldset class="wiki-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Empty states (optional)') }}</legend>
+			<legend>{{ t('buildiq', 'Empty states (optional)') }}</legend>
 			<label class="wiki-page-editor__group-row">
-				{{ t('openbuild', 'Not-found heading') }}
+				{{ t('buildiq', 'Not-found heading') }}
 				<input
 					type="text"
 					:value="config.emptyText || ''"
@@ -226,7 +226,7 @@
 				<InlineFieldMark :error="markFor('emptyText')" />
 			</label>
 			<label class="wiki-page-editor__group-row">
-				{{ t('openbuild', 'Not-found description') }}
+				{{ t('buildiq', 'Not-found description') }}
 				<input
 					type="text"
 					:value="config.emptyDescription || ''"
@@ -234,7 +234,7 @@
 				<InlineFieldMark :error="markFor('emptyDescription')" />
 			</label>
 			<label class="wiki-page-editor__group-row">
-				{{ t('openbuild', 'No-content heading') }}
+				{{ t('buildiq', 'No-content heading') }}
 				<input
 					type="text"
 					:value="config.emptyBodyText || ''"
@@ -242,7 +242,7 @@
 				<InlineFieldMark :error="markFor('emptyBodyText')" />
 			</label>
 			<label class="wiki-page-editor__group-row">
-				{{ t('openbuild', 'No-content description') }}
+				{{ t('buildiq', 'No-content description') }}
 				<input
 					type="text"
 					:value="config.emptyBodyDescription || ''"
@@ -364,7 +364,7 @@ export default {
 				return {
 					hasError: true,
 					message: this.t(
-						'openbuild',
+						'buildiq',
 						'A register is required for wiki pages.',
 					),
 				}
@@ -386,7 +386,7 @@ export default {
 				return {
 					hasError: true,
 					message: this.t(
-						'openbuild',
+						'buildiq',
 						'A schema is required for wiki pages.',
 					),
 				}

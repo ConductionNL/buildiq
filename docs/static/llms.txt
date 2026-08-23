@@ -1,8 +1,8 @@
-# OpenBuild
+# Buildiq
 
-> OpenBuild is an open-source citizen-developer app builder for the Nextcloud workspace.
+> Buildiq is an open-source citizen-developer app builder for the Nextcloud workspace.
 
-OpenBuild is an open-source citizen-developer app builder for the Nextcloud workspace. Users compose a working app from typed OpenRegister registers, OpenConnector connectors, n8n workflows, and DocuDesk templates, then lay out list, detail, and form pages in a browser-based designer. Version snapshots roll back bad edits, ZIP exports move apps between instances, and RBAC keeps per-record access enforced through OpenRegister. Released under EUPL-1.2 and maintained by Conduction since 2019.
+Buildiq is an open-source citizen-developer app builder for the Nextcloud workspace. Users compose a working app from typed OpenRegister registers, OpenConnector connectors, n8n workflows, and DocuDesk templates, then lay out list, detail, and form pages in a browser-based designer. Version snapshots roll back bad edits, ZIP exports move apps between instances, and RBAC keeps per-record access enforced through OpenRegister. Released under EUPL-1.2 and maintained by Conduction since 2019.
 
 ## Docs
 
@@ -12,8 +12,8 @@ OpenBuild is an open-source citizen-developer app builder for the Nextcloud work
 ## Optional
 
 - [Install](https://www.conduction.nl/install): self-host on your Nextcloud instance.
-- [Source code](https://codeberg.org/Conduction/openbuild): repository and issue tracker.
-- [App page](https://www.conduction.nl/apps/openbuild): product positioning on conduction.nl.
+- [Source code](https://codeberg.org/Conduction/buildiq): repository and issue tracker.
+- [App page](https://www.conduction.nl/apps/buildiq): product positioning on conduction.nl.
 
 ## Contact
 

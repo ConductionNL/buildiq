@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
 /**
- * E2E coverage for the OpenBuild "Features & roadmap" page (manifest page
+ * E2E coverage for the Buildiq "Features & roadmap" page (manifest page
  * `FeaturesRoadmap`, route `/features-roadmap`, type `roadmap`). This is a
  * footer-section nav entry that had NO e2e coverage before this spec.
  *
@@ -26,7 +26,7 @@ const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 // The app router runs in path mode (not hash mode — that assumption was
 // stale; live-verified the nav's "Features & roadmap" link hrefs to this
 // plain path with no #/ fragment).
-const ROUTE = `${BASE}/apps/openbuild/features-roadmap`
+const ROUTE = `${BASE}/apps/buildiq/features-roadmap`
 
 // The view this spec drives, named after the component file it renders
 // (src/views/FeaturesRoadmap.vue). The manifest declares this page as
@@ -35,10 +35,10 @@ const ROUTE = `${BASE}/apps/openbuild/features-roadmap`
 // navigates here.
 const FeaturesRoadmap = ROUTE
 
-test.describe('OpenBuild Features & roadmap', () => {
+test.describe('Buildiq Features & roadmap', () => {
 	test('renders the Features heading and header actions', async ({ page }) => {
 		await page.goto(FeaturesRoadmap)
-		await expect(page).toHaveTitle(/openbuild/i)
+		await expect(page).toHaveTitle(/buildiq/i)
 
 		await expect(
 			page.getByRole('heading', { name: 'Features', exact: true }),
@@ -60,7 +60,7 @@ test.describe('OpenBuild Features & roadmap', () => {
 		).toBeVisible({ timeout: 15_000 })
 
 		await expect(
-			page.getByRole('link', { name: /openbuild\.conduction\.nl/i }),
+			page.getByRole('link', { name: /buildiq\.conduction\.nl/i }),
 		).toBeVisible({ timeout: 15_000 })
 	})
 
@@ -89,14 +89,14 @@ test.describe('OpenBuild Features & roadmap', () => {
 		).toBeVisible()
 	})
 
-	test('features page load produces no openbuild-originated console errors', async ({
+	test('features page load produces no buildiq-originated console errors', async ({
 		page,
 	}) => {
 		const errors: string[] = []
 		page.on('console', (m) => {
 			if (m.type() !== 'error') return
 			const text = m.text()
-			// NC-core/env noise on the dev container, not openbuild.
+			// NC-core/env noise on the dev container, not buildiq.
 			if (
 				/user_status|Failed to load user status|Failed to load resource/i.test(
 					text,

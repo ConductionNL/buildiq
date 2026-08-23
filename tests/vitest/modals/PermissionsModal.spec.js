@@ -242,12 +242,12 @@ describe('PermissionsModal — REQ-OBRBAC-005 / REQ-OBRBAC-007', () => {
 			// No save event must be emitted.
 			expect(wrapper.emitted('save')).toBeFalsy()
 			// The inline orphan-error must be visible.
-			expect(
-				wrapper.find('.openbuild-permissions-modal__error').exists(),
-			).toBe(true)
-			expect(
-				wrapper.find('.openbuild-permissions-modal__error').text(),
-			).toMatch(/owner/i)
+			expect(wrapper.find('.buildiq-permissions-modal__error').exists()).toBe(
+				true,
+			)
+			expect(wrapper.find('.buildiq-permissions-modal__error').text()).toMatch(
+				/owner/i,
+			)
 		})
 
 		it('clears the orphan error when the application prop is re-supplied', async () => {
@@ -257,9 +257,9 @@ describe('PermissionsModal — REQ-OBRBAC-005 / REQ-OBRBAC-007', () => {
 			await wrapper.setData({ ownersModel: [] })
 			const buttons = wrapper.findAll('button')
 			await buttons.at(buttons.length - 1).trigger('click')
-			expect(
-				wrapper.find('.openbuild-permissions-modal__error').exists(),
-			).toBe(true)
+			expect(wrapper.find('.buildiq-permissions-modal__error').exists()).toBe(
+				true,
+			)
 
 			// Re-supply application — the watcher re-syncs from props and
 			// resets `orphanError` to false.
@@ -274,9 +274,9 @@ describe('PermissionsModal — REQ-OBRBAC-005 / REQ-OBRBAC-007', () => {
 					},
 				},
 			})
-			expect(
-				wrapper.find('.openbuild-permissions-modal__error').exists(),
-			).toBe(false)
+			expect(wrapper.find('.buildiq-permissions-modal__error').exists()).toBe(
+				false,
+			)
 		})
 	})
 

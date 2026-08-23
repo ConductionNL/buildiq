@@ -1,15 +1,15 @@
 <?php
 
 /**
- * OpenBuild Settings Controller
+ * Buildiq Settings Controller
  *
- * Controller for managing OpenBuild application settings.
+ * Controller for managing Buildiq application settings.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
- * @package  OCA\OpenBuild\Controller
+ * @package  OCA\Buildiq\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,10 +22,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Controller;
+namespace OCA\Buildiq\Controller;
 
-use OCA\OpenBuild\AppInfo\Application;
-use OCA\OpenBuild\Service\SettingsService;
+use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Service\SettingsService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -36,7 +36,7 @@ use OCP\IRequest;
 use OCP\IUserSession;
 
 /**
- * Controller for managing OpenBuild application settings.
+ * Controller for managing Buildiq application settings.
  */
 class SettingsController extends Controller {
 	/**
@@ -92,18 +92,18 @@ class SettingsController extends Controller {
 	 * `appinfo/routes.php`) ships `PUT /api/settings` as `settings#update`, and
 	 * `AppHost\Bootstrap::aliasControllerUnlessLeafDefinesIt()` only substitutes
 	 * OpenRegister's `GenericSettingsController` when the leaf app does NOT ship
-	 * a class of that name. OpenBuild DOES ship this class, so the alias is
+	 * a class of that name. Buildiq DOES ship this class, so the alias is
 	 * skipped and every canonical method routed to `settings#` must exist HERE.
 	 * A missing one is not a 404 — the router matches the URL and the dispatcher
 	 * reflects the method, so the request dies with a 500 (measured 2026-08-08:
-	 * `PUT /apps/openbuild/api/settings` → 500, `ReflectionException: Method
-	 * OCA\OpenBuild\Controller\SettingsController::update() does not exist`).
+	 * `PUT /apps/buildiq/api/settings` → 500, `ReflectionException: Method
+	 * OCA\Buildiq\Controller\SettingsController::update() does not exist`).
 	 *
 	 * Persists only the whitelisted `CONFIG_KEYS` / `SECRET_KEYS` (the service
 	 * ignores anything else) and returns the freshly re-read settings array, so
 	 * the caller sees what was actually stored rather than what it submitted.
 	 *
-	 * Admin-only: writing OpenBuild configuration affects all users on the
+	 * Admin-only: writing Buildiq configuration affects all users on the
 	 * instance; non-admin callers receive 403 (H6 guard). The guard lives in
 	 * the method body rather than in an `#[AuthorizedAdminSetting]` attribute
 	 * to match `index()`/`load()`'s established posture — Nextcloud's

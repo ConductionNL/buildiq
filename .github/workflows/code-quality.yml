@@ -39,7 +39,7 @@ jobs:
   quality:
     uses: ConductionNL/.github/.github/workflows/quality.yml@main
     with:
-      app-name: openbuild
+      app-name: buildiq
       php-version: "8.3"
       php-test-versions: '["8.3", "8.4"]'
       # stable31 is REMOVED, not "dropped for coverage". `additional-apps` below
@@ -118,7 +118,7 @@ jobs:
       # The shared workflow interpolated `newman-seed-command` into an
       # UNQUOTED `eval` with no status check. This repository is the one caller
       # in the fleet that passes an `&&` chain —
-      #   `php occ app:disable openbuild && php occ app:enable openbuild`
+      #   `php occ app:disable buildiq && php occ app:enable buildiq`
       # — so the outer shell split it before `eval` ever saw it, `eval` ran
       # only the `disable`, and bash's `set -e` exemption for `&&` lists
       # returned 0 regardless. Fixed upstream in ConductionNL/.github#212: the
@@ -164,12 +164,12 @@ jobs:
       # override. The `database` input also feeds PHPUnit, Newman and the
       # journeydoc capture, so those move to Postgres with it.
       database: pgsql
-      # Was `php occ app:disable openbuild && php occ app:enable openbuild`.
+      # Was `php occ app:disable buildiq && php occ app:enable buildiq`.
       # That command seeded NOTHING and exited 0 while doing it — the exact
       # shape this programme exists to find. Nextcloud runs repair steps on
       # install and upgrade, not on disable/enable of an app that is already
       # installed, so the hello-world fixture was never created; and the
-      # dedicated `openbuild:seed-hello-world-fixture` occ command was never
+      # dedicated `buildiq:seed-hello-world-fixture` occ command was never
       # invoked at all. Disabling and re-enabling an app genuinely succeeds,
       # so the step was green for a true reason while leaving the instance
       # unseeded.
@@ -187,7 +187,7 @@ jobs:
       # This is the seed Playwright has been using all along
       # (`playwright-seed-command` below is the same script), and it really
       # does the work: ci-seed.sh line ~358 runs
-      # `php occ openbuild:seed-hello-world-fixture`. It is `set -euo pipefail`
+      # `php occ buildiq:seed-hello-world-fixture`. It is `set -euo pipefail`
       # and refuses to run outside CI without an explicit base URL, so it stays
       # able to fail — no `|| true` anywhere in the path.
       # `SEED_REQUIRE_BUNDLE=0` — this job never loads the SPA. It calls the
@@ -197,11 +197,11 @@ jobs:
       # out deliberately and the script ANNOUNCES the skip in its output, so a
       # skipped browser check can never read as a passed one. Every API fixture
       # this suite depends on is still seeded and still able to fail.
-      newman-seed-command: 'SEED_REQUIRE_BUNDLE=0 bash apps/openbuild/tests/e2e/ci-seed.sh'
+      newman-seed-command: 'SEED_REQUIRE_BUNDLE=0 bash apps/buildiq/tests/e2e/ci-seed.sh'
       # OpenRegister `development` carries the runtime-schema-API (auto-create
       # Register on application-type imports — OR PR #1464) and the lifecycle
-      # engine (ObjectTransitionedEvent) that OpenBuild's repair steps + the
-      # Newman publish step need; `main` predates both. See openbuild#29.
+      # engine (ObjectTransitionedEvent) that Buildiq's repair steps + the
+      # Newman publish step need; `main` predates both. See buildiq#29.
       #
       # DOCUDESK IS HERE BECAUSE THREE E2E SPECS ASSERT AGAINST ITS API AND
       # THERE WAS NO WAY FOR THEM TO PASS WITHOUT IT.
@@ -265,7 +265,7 @@ jobs:
       # asserts that every `nextcloud-test-refs` entry above is >= the
       # `<nextcloud min-version>` in appinfo/info.xml, and pins the floor to 32
       # / PHP 8.3. It lives HERE and not in PHPUnit on purpose: the PHPUnit job
-      # runs against a DEPLOYED copy of the app under `server/apps/openbuild`,
+      # runs against a DEPLOYED copy of the app under `server/apps/buildiq`,
       # which is not the repository — `.github/workflows/` is not part of it.
       # A first attempt at this invariant as a PHPUnit test went red on all four
       # legs for exactly that reason.
@@ -322,7 +322,7 @@ jobs:
       # The root config is untouched and still drives local runs.
       #
       # OpenRegister is already checked out for every job via `additional-apps`
-      # above, which the specs need: OpenBuild's applications, versions and
+      # above, which the specs need: Buildiq's applications, versions and
       # schemas are OpenRegister objects.
       enable-playwright: true
       playwright-test-path: tests/e2e
@@ -342,27 +342,27 @@ jobs:
       # short version is five things, each of which fails SILENTLY:
       #
       #   1. htaccess.IgnoreFrontController=true. THE root cause of the first
-      #      run's failures. openbuild builds its router as
-      #      `createWebHistory(generateUrl('/apps/openbuild'))`, and
+      #      run's failures. buildiq builds its router as
+      #      `createWebHistory(generateUrl('/apps/buildiq'))`, and
       #      `generateUrl()` prefixes `/index.php` unless the page reports
       #      `modRewriteWorking`. A freshly `maintenance:install`ed instance
       #      does not set it, so the router base becomes
-      #      `/index.php/apps/openbuild` while every spec navigates to the
-      #      pretty `/apps/openbuild/...`. Those disagree, vue-router matches
+      #      `/index.php/apps/buildiq` while every spec navigates to the
+      #      pretty `/apps/buildiq/...`. Those disagree, vue-router matches
       #      nothing, and the SPA mounts and renders perfectly — on the
       #      DASHBOARD. No 404, no console error. That is why 68 of the 83
       #      tests the first run reached failed on a non-Dashboard selector
       #      (`.agents-page`, `.ob-app-card`, `.automations-page`,
       #      `.page-designer__left`), while the only UI tests that passed were
       #      builder-host's first two — whose inner router is based at
-      #      `/apps/openbuild/builder/<slug>`, the exact URL the spec opens, so
+      #      `/apps/buildiq/builder/<slug>`, the exact URL the spec opens, so
       #      its DEFAULT route is the page being asserted. builder-host's third
       #      test, the one that needs the `/messages/new` SUB-path to survive,
       #      failed with the rest. The CI router already serves pretty URLs
       #      (the workflow's own front-controller check proves it), so this
       #      states something TRUE about the instance rather than working
       #      around anything.
-      #   2. The register + schema import. `occ app:enable openbuild` runs
+      #   2. The register + schema import. `occ app:enable buildiq` runs
       #      `InitializeSettings`, which imports with NO user session — so OR's
       #      RBAC denies it and the repair step downgrades the throw to a
       #      warning. Done here explicitly over the admin HTTP API, FORCED,
@@ -375,7 +375,7 @@ jobs:
       #      to do with what it asserts. The limit is correct product behaviour
       #      and is NOT changed — it is switched off for this throwaway test
       #      instance using Nextcloud's own supported flag.
-      #   4. openbuild:seed-hello-world-fixture — the deterministic
+      #   4. buildiq:seed-hello-world-fixture — the deterministic
       #      `hello-world` virtual app the legacy specs assert against.
       #      Production no longer seeds it (the SeedHelloWorld repair step was
       #      retired with the versioned-model migration), so the harness seeds
@@ -390,4 +390,4 @@ jobs:
       # Deliberately NOT `|| true`: if the instance cannot be provisioned, the
       # specs fail on missing content and the cause is a wall of selector
       # timeouts. Better to fail here, once, where the reason is printed.
-      playwright-seed-command: 'bash apps/openbuild/tests/e2e/ci-seed.sh'
+      playwright-seed-command: 'bash apps/buildiq/tests/e2e/ci-seed.sh'

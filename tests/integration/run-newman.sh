@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 #
-# OpenBuild API-contract test runner (Newman / Postman).
+# Buildiq API-contract test runner (Newman / Postman).
 #
-# Runs tests/integration/openbuild-api-contract.postman_collection.json against
-# a live Nextcloud instance serving the openbuild app. The collection is
+# Runs tests/integration/buildiq-api-contract.postman_collection.json against
+# a live Nextcloud instance serving the buildiq app. The collection is
 # self-contained and idempotent: it creates a virtual app via the wizard in
 # setup and deletes the resulting Application object in teardown.
 #
@@ -22,16 +22,16 @@
 set -euo pipefail
 
 # Re-exec under an exclusive flock so parallel agents serialise (shared UI-audit
-# lock for openbuild — keeps Newman and Playwright runs from racing the same
+# lock for buildiq — keeps Newman and Playwright runs from racing the same
 # brute-force counter).
-LOCK_FILE="/tmp/uiaudit-openbuild.lock"
-if [ "${OPENBUILD_NEWMAN_LOCKED:-}" != "1" ] && command -v flock >/dev/null 2>&1; then
-  export OPENBUILD_NEWMAN_LOCKED=1
+LOCK_FILE="/tmp/uiaudit-buildiq.lock"
+if [ "${BUILDIQ_NEWMAN_LOCKED:-}" != "1" ] && command -v flock >/dev/null 2>&1; then
+  export BUILDIQ_NEWMAN_LOCKED=1
   exec flock "${LOCK_FILE}" "$0" "$@"
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-COLLECTION="${SCRIPT_DIR}/openbuild-api-contract.postman_collection.json"
+COLLECTION="${SCRIPT_DIR}/buildiq-api-contract.postman_collection.json"
 
 BASE_URL="${BASE_URL:-http://localhost:8080}"
 ADMIN_USER="${ADMIN_USER:-admin}"

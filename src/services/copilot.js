@@ -34,7 +34,7 @@ function normaliseError(err) {
  */
 export async function fetchCopilotHealth() {
 	try {
-		await axios.get(generateUrl('/apps/openbuild/api/copilot/health'))
+		await axios.get(generateUrl('/apps/buildiq/api/copilot/health'))
 		return { available: true }
 	} catch (err) {
 		// The health envelope carries its machine-readable code under `reason`
@@ -63,7 +63,7 @@ export async function fetchCopilotHealth() {
  */
 export async function requestPlan({ brief, appSlug, agentId } = {}) {
 	try {
-		const url = generateUrl('/apps/openbuild/api/copilot/plan')
+		const url = generateUrl('/apps/buildiq/api/copilot/plan')
 		const { data } = await axios.post(url, { brief, appSlug, agentId })
 		return data
 	} catch (err) {
@@ -86,7 +86,7 @@ export async function requestPlan({ brief, appSlug, agentId } = {}) {
  */
 export async function executePlan(plan, { agentId, prompt } = {}) {
 	try {
-		const url = generateUrl('/apps/openbuild/api/copilot/execute')
+		const url = generateUrl('/apps/buildiq/api/copilot/execute')
 		const { data } = await axios.post(url, { ...plan, agentId, prompt })
 		return data
 	} catch (err) {
@@ -111,7 +111,7 @@ export async function executePlan(plan, { agentId, prompt } = {}) {
  */
 export async function discardRun({ agentId, prompt, plan } = {}) {
 	try {
-		const url = generateUrl('/apps/openbuild/api/copilot/discard')
+		const url = generateUrl('/apps/buildiq/api/copilot/discard')
 		await axios.post(url, { agentId, prompt, ...plan })
 	} catch (err) {
 		// Best-effort: a failed audit-log write must not surface as a user-facing error.

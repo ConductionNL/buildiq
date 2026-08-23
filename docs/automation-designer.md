@@ -7,13 +7,13 @@ SPDX-FileCopyrightText: 2026 Conduction B.V.
 
 The Automations page is the unified "when X happens, do Y" surface: one
 citizen-developer composes a **trigger**, an optional **condition**, and one
-or more **actions** without needing to know which of OpenBuild's four
+or more **actions** without needing to know which of Buildiq's four
 declarative dialects actually executes it. Nothing new is invented — every
 automation compiles to an existing primitive (the notifications dialect,
 lifecycle actions, `manifest.schedules[]`, or the business-rules engine).
 
 An automation is one stored declarative object (schema `automation` on the
-shared `openbuild` register): trigger + condition + actions + a `provenance`
+shared `buildiq` register): trigger + condition + actions + a `provenance`
 block listing exactly which compiled artifacts it produced. List, edit,
 enable/disable, dry-run and delete it as one unit from the Automations page
 (`/automations`, reached from within an app's builder — it has no top-level
@@ -56,7 +56,7 @@ trigger is blocked the same way.
 
 > **Deviation from the original design table:** `manual` +
 > `run-synchronization` is blocked in this release. No primitive to invoke an
-> OpenConnector synchronization on demand exists anywhere in OpenBuild today
+> OpenConnector synchronization on demand exists anywhere in Buildiq today
 > (the only existing trigger for a sync run is the scheduled-tasks
 > reconciler) — see `lib/Service/AutomationCompilerService.php`'s class
 > docblock for the full rationale. This is a documented v1.1 follow-up, not a
@@ -124,7 +124,7 @@ boundary, not the raw object write.
 | GET | `/api/automations/{uuid}/status` | Recompute drift against the live artifacts. |
 
 CRUD on the automation object itself is OpenRegister's generic REST surface:
-`/apps/openregister/api/objects/openbuild/automation`.
+`/apps/openregister/api/objects/buildiq/automation`.
 
 ## Relationship to the specialist editors
 

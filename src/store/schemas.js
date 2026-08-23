@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: EUPL-1.2
 /**
- * Schemas store for the OpenBuild schema designer.
+ * Schemas store for the Buildiq schema designer.
  *
  * Wraps `createObjectStore` from `@conduction/nextcloud-vue` (memory rule:
  * no bespoke `defineStore` Pinia module layered over `useObjectStore`).
@@ -16,7 +16,7 @@
  *
  * The base store treats schemas as a registered object type named
  * `schema`, scoped to the per-virtual-app register namespace
- * `openbuild-{slug}` (design OQ-2 provisional decision: one register per
+ * `buildiq-{slug}` (design OQ-2 provisional decision: one register per
  * virtual app).
  *
  * Until chain #3 lands the endpoints, the store is still importable and
@@ -48,22 +48,22 @@ const useSchemasStoreRaw = createObjectStore(STORE_ID, {
  * Resolve the per-virtual-app register slug for a built-app slug + version.
  *
  * REQ-OBVR-007: when a versionSlug is provided, the register name follows
- * spec C's naming convention: `openbuild-{appSlug}-{versionSlug}`.
- * (e.g. `openbuild-hello-world-staging`).
+ * spec C's naming convention: `buildiq-{appSlug}-{versionSlug}`.
+ * (e.g. `buildiq-hello-world-staging`).
  *
  * When no versionSlug is provided, falls back to the old per-app register
- * `openbuild-{appSlug}` for backwards compatibility with apps created before
+ * `buildiq-{appSlug}` for backwards compatibility with apps created before
  * spec C's per-version register model was introduced.
  *
  * @param {string}           appSlug     Virtual app slug (e.g. `hello-world`).
  * @param {string|undefined} [versionSlug] Optional version slug (e.g. `staging`).
- * @return {string} Register slug (e.g. `openbuild-hello-world-staging`).
+ * @return {string} Register slug (e.g. `buildiq-hello-world-staging`).
  *
  * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
  */
 export function registerSlugForApp(appSlug, versionSlug) {
 	if (versionSlug && versionSlug !== '') {
-		// Per-version register: openbuild-{appSlug}-{versionSlug} (spec C / ADR-002).
+		// Per-version register: buildiq-{appSlug}-{versionSlug} (spec C / ADR-002).
 		return `openbuild-${appSlug}-${versionSlug}`
 	}
 	// Backwards-compat: legacy per-app register (no version suffix).
@@ -75,8 +75,8 @@ export function registerSlugForApp(appSlug, versionSlug) {
  * for the given virtual app's register namespace on first call.
  *
  * REQ-OBVR-007: accepts an optional `versionSlug` and routes to the
- * correct per-version register `openbuild-{appSlug}-{versionSlug}` when
- * provided (spec C's naming convention). Falls back to `openbuild-{appSlug}`
+ * correct per-version register `buildiq-{appSlug}-{versionSlug}` when
+ * provided (spec C's naming convention). Falls back to `buildiq-{appSlug}`
  * when versionSlug is absent.
  *
  * @param {string}           appSlug    Virtual app slug.

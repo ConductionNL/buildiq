@@ -1,14 +1,14 @@
 <?php
 
 /**
- * Abstract base class for OpenBuild MCP tool handlers.
+ * Abstract base class for Buildiq MCP tool handlers.
  *
  * Provides the shared utilities (slug validation, auth check, error envelope,
  * toArray/extractUuid coercion, deep-link builder, per-Application RBAC) that
  * every concrete handler needs, eliminating duplication across the handler family.
  *
  * @category Service
- * @package  OCA\OpenBuild\Mcp\Handler
+ * @package  OCA\Buildiq\Mcp\Handler
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,27 +24,27 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Mcp\Handler;
+namespace OCA\Buildiq\Mcp\Handler;
 
-use Psr\Container\ContainerInterface;
-use OCA\OpenBuild\Service\PermissionResolver;
+use OCA\Buildiq\Service\PermissionResolver;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
- * Abstract base for all OpenBuild MCP tool handler classes.
+ * Abstract base for all Buildiq MCP tool handler classes.
  *
  * Concrete handlers extend this and implement handle(array $args): array.
  */
 abstract class AbstractToolHandler {
 
-	protected const REGISTER_SLUG = 'openbuild';
+	protected const REGISTER_SLUG = 'buildiq';
 
 	/**
 	 * Roles that grant write access to an Application.
@@ -244,13 +244,13 @@ abstract class AbstractToolHandler {
 					context: $context
 				);
 				// Mirror to PSR at info so the bypass is also visible in log streams.
-				$this->logger->info('OpenBuild MCP: rbac.admin_bypass', $context);
+				$this->logger->info('Buildiq MCP: rbac.admin_bypass', $context);
 				return;
 			} catch (\Throwable $e) {
 				// Audit-trail write failure is a compliance gap (system of record),
 				// not a routine warning — emit at critical for ops alerting.
 				$this->logger->critical(
-					'OpenBuild MCP: rbac.admin_bypass audit-trail write failed',
+					'Buildiq MCP: rbac.admin_bypass audit-trail write failed',
 					array_merge($context, ['exception' => $e->getMessage()])
 				);
 				return;
@@ -258,7 +258,7 @@ abstract class AbstractToolHandler {
 		}
 
 		// No audit mapper / entity available — best-effort PSR log only.
-		$this->logger->info('OpenBuild MCP: rbac.admin_bypass', $context);
+		$this->logger->info('Buildiq MCP: rbac.admin_bypass', $context);
 
 	}//end recordAdminBypass()
 
@@ -419,7 +419,7 @@ abstract class AbstractToolHandler {
 	}//end callerHasWriteRole()
 
 	/**
-	 * Validate that a candidate string matches the OpenBuild slug shape.
+	 * Validate that a candidate string matches the Buildiq slug shape.
 	 *
 	 * @param string $candidate Candidate slug to validate.
 	 *
@@ -494,7 +494,7 @@ abstract class AbstractToolHandler {
 	}//end checkManifestCaps()
 
 	/**
-	 * Build a Nextcloud deep link into the OpenBuild builder for the given application slug.
+	 * Build a Nextcloud deep link into the Buildiq builder for the given application slug.
 	 *
 	 * @param string $slug Application slug (empty falls back to the app root).
 	 *
@@ -502,14 +502,14 @@ abstract class AbstractToolHandler {
 	 */
 	protected function buildDeepLink(string $slug): string {
 		if ($slug === '') {
-			return '/apps/openbuild';
+			return '/apps/buildiq';
 		}
 
-		return "/apps/openbuild/builder/{$slug}";
+		return "/apps/buildiq/builder/{$slug}";
 	}//end buildDeepLink()
 
 	/**
-	 * Build an MCP "source" descriptor pointing at the OpenBuild app deep link.
+	 * Build an MCP "source" descriptor pointing at the Buildiq app deep link.
 	 *
 	 * @param string $uuid Application UUID.
 	 * @param string $slug Application slug used to build the deep link.
@@ -518,7 +518,7 @@ abstract class AbstractToolHandler {
 	 * @return array{type: string, uuid: string, url: string, label: string}
 	 */
 	protected function sourceDescriptor(string $uuid, string $slug, string $label): array {
-		return ['type' => 'openbuild.application', 'uuid' => $uuid, 'url' => $this->buildDeepLink(slug: $slug), 'label' => $label];
+		return ['type' => 'buildiq.application', 'uuid' => $uuid, 'url' => $this->buildDeepLink(slug: $slug), 'label' => $label];
 	}//end sourceDescriptor()
 
 	/**
@@ -627,12 +627,12 @@ abstract class AbstractToolHandler {
 		try {
 			$objectService->lockObject(
 				identifier: $versionUuid,
-				process: 'openbuild.mcp-manifest-edit',
+				process: 'buildiq.mcp-manifest-edit',
 				duration: 30
 			);
 		} catch (\Throwable $lockError) {
 			$this->logger->warning(
-				'OpenBuild MCP: manifest lock contention on version ' . $versionUuid,
+				'Buildiq MCP: manifest lock contention on version ' . $versionUuid,
 				['exception' => $lockError->getMessage()]
 			);
 			throw new RuntimeException(
@@ -663,7 +663,7 @@ abstract class AbstractToolHandler {
 				$objectService->unlockObject(identifier: $versionUuid);
 			} catch (\Throwable $unlockError) {
 				$this->logger->warning(
-					'OpenBuild MCP: failed to release manifest lock on ' . $versionUuid,
+					'Buildiq MCP: failed to release manifest lock on ' . $versionUuid,
 					['exception' => $unlockError->getMessage()]
 				);
 			}

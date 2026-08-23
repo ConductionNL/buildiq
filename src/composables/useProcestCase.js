@@ -3,7 +3,7 @@ import { generateUrl } from '@nextcloud/router'
 // SPDX-License-Identifier: EUPL-1.2
 /**
  * useProcestCase — runtime integration with Procest's ZGW API for workflow
- * attachments (REQ-PWA-003, REQ-PWA-004). OpenBuild stays a pure API consumer
+ * attachments (REQ-PWA-003, REQ-PWA-004). Buildiq stays a pure API consumer
  * of Procest's existing public endpoints (ADR-022): it starts a case, links it
  * back onto the OR object, and reads case status for display. The handling
  * itself (transitions, assignments, decisions) stays entirely in Procest.
@@ -117,7 +117,7 @@ export function useProcestCase(opts = {}) {
 			const uuid = objectUuid(object)
 			const body = {
 				zaaktype: attachment.caseTypeUuid,
-				kenmerken: uuid ? [{ kenmerk: uuid, bron: 'openbuild' }] : [],
+				kenmerken: uuid ? [{ kenmerk: uuid, bron: 'buildiq' }] : [],
 				omschrijving: renderDescription(
 					attachment.descriptionTemplate,
 					object,
@@ -140,7 +140,7 @@ export function useProcestCase(opts = {}) {
 
 	/**
 	 * Write the created case URL/UUID back onto the object's linkProperty via
-	 * OpenRegister's objects API (ADR-022 — no openbuild controller).
+	 * OpenRegister's objects API (ADR-022 — no buildiq controller).
 	 *
 	 * @param {object} object - the OR object.
 	 * @param {object} zaak - the created Procest zaak.

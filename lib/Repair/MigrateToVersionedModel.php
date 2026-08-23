@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenBuild MigrateToVersionedModel Repair Step
+ * Buildiq MigrateToVersionedModel Repair Step
  *
  * @destructive
  *
  * SAFETY: This step deletes every pre-migration `Application` row and its
- * per-app register (`openbuild-{slug}`). ADR-002 records the explicit
- * decision to accept this data loss: existing OpenBuild installs hold
+ * per-app register (`buildiq-{slug}`). ADR-002 records the explicit
+ * decision to accept this data loss: existing Buildiq installs hold
  * only test data, and the new versioned model re-seeds Hello World at
  * install time via the creation-wizard capability. If a deployment is
  * known to hold real user data, that data MUST be exported before this
@@ -20,7 +20,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Repair
- * @package  OCA\OpenBuild\Repair
+ * @package  OCA\Buildiq\Repair
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -38,14 +38,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Repair;
+namespace OCA\Buildiq\Repair;
 
 use Closure;
-use OCA\OpenBuild\AppInfo\Application;
-use OCA\OpenBuild\Service\ApplicationVersionService;
+use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\RegisterService;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
@@ -66,7 +66,7 @@ class MigrateToVersionedModel implements IRepairStep {
 	 * IAppConfig key persisting the migration outcome so a finished (or
 	 * permanently blocked) migration is never re-attempted on every
 	 * repair run. Re-arm manually via
-	 * `occ config:app:delete openbuild repair_migrate_versioned_model`.
+	 * `occ config:app:delete buildiq repair_migrate_versioned_model`.
 	 */
 	private const STATE_KEY = 'repair_migrate_versioned_model';
 
@@ -122,7 +122,7 @@ class MigrateToVersionedModel implements IRepairStep {
 	 * @return string
 	 */
 	public function getName(): string {
-		return 'Migrate OpenBuild to versioned app model (DESTRUCTIVE)';
+		return 'Migrate Buildiq to versioned app model (DESTRUCTIVE)';
 	}//end getName()
 
 	/**
@@ -153,16 +153,16 @@ class MigrateToVersionedModel implements IRepairStep {
 	public function run(IOutput $output): void {
 		$state = $this->appConfig->getValueString(Application::APP_ID, self::STATE_KEY, '');
 		if ($state === self::STATE_DONE) {
-			$this->logger->debug('OpenBuild: MigrateToVersionedModel already completed; skipping.');
+			$this->logger->debug('Buildiq: MigrateToVersionedModel already completed; skipping.');
 			$output->info('Migrated-to-versioned-model: previously completed, skipping.');
 			return;
 		}
 
 		if ($state === self::STATE_FAILED) {
-			$this->logger->debug('OpenBuild: MigrateToVersionedModel previously failed under system context; skipping until re-armed.');
+			$this->logger->debug('Buildiq: MigrateToVersionedModel previously failed under system context; skipping until re-armed.');
 			$output->info(
 				'Migrated-to-versioned-model: previously failed and needs operator attention;'
-				. ' skipping (re-arm via `occ config:app:delete openbuild ' . self::STATE_KEY . '`).'
+				. ' skipping (re-arm via `occ config:app:delete buildiq ' . self::STATE_KEY . '`).'
 			);
 			return;
 		}
@@ -182,7 +182,7 @@ class MigrateToVersionedModel implements IRepairStep {
 				'Migrated-to-versioned-model: could not determine schema state (' . $e->getMessage() . '); skipping for safety.'
 			);
 			$this->logger->error(
-				'OpenBuild: MigrateToVersionedModel short-circuit detection failed',
+				'Buildiq: MigrateToVersionedModel short-circuit detection failed',
 				['exception' => $e]
 			);
 			return;
@@ -223,7 +223,7 @@ class MigrateToVersionedModel implements IRepairStep {
 	 * Detect whether the schema is already in versioned shape.
 	 *
 	 * Short-circuit fires when EITHER:
-	 *   - The `applicationVersion` schema exists in the `openbuild`
+	 *   - The `applicationVersion` schema exists in the `buildiq`
 	 *     register; OR
 	 *   - No pre-migration Application row carries a `currentVersion`
 	 *     field (all surviving rows already match the new shape).
@@ -251,7 +251,7 @@ class MigrateToVersionedModel implements IRepairStep {
 		try {
 			$applications = $this->enumerateApplications();
 		} catch (Throwable) {
-			// No openbuild register or no Application schema — fresh
+			// No buildiq register or no Application schema — fresh
 			// install. Nothing to migrate.
 			return true;
 		}
@@ -275,7 +275,7 @@ class MigrateToVersionedModel implements IRepairStep {
 	}//end isAlreadyVersioned()
 
 	/**
-	 * Fetch every Application row in the `openbuild` register.
+	 * Fetch every Application row in the `buildiq` register.
 	 *
 	 * @return array<int,array<string,mixed>>
 	 *
@@ -293,7 +293,7 @@ class MigrateToVersionedModel implements IRepairStep {
 			)->getId();
 		} catch (Throwable $e) {
 			$this->logger->debug(
-				'OpenBuild: MigrateToVersionedModel enumeration found no register/schema: ' . $e->getMessage()
+				'Buildiq: MigrateToVersionedModel enumeration found no register/schema: ' . $e->getMessage()
 			);
 			return [];
 		}
@@ -341,7 +341,7 @@ class MigrateToVersionedModel implements IRepairStep {
 		$slug = (string)($application['slug'] ?? '');
 		if ($slug === '') {
 			$this->logger->warning(
-				'OpenBuild: MigrateToVersionedModel skipped Application without slug',
+				'Buildiq: MigrateToVersionedModel skipped Application without slug',
 				['application' => $application]
 			);
 			return self::ROW_FAILED;
@@ -355,7 +355,7 @@ class MigrateToVersionedModel implements IRepairStep {
 			// No per-app register to drop — proceed to delete the row.
 			$register = null;
 			$this->logger->debug(
-				'OpenBuild: MigrateToVersionedModel: register ' . $perAppRegisterSlug . ' not found (' . $e->getMessage() . '); proceeding to row delete.'
+				'Buildiq: MigrateToVersionedModel: register ' . $perAppRegisterSlug . ' not found (' . $e->getMessage() . '); proceeding to row delete.'
 			);
 		}
 
@@ -377,7 +377,7 @@ class MigrateToVersionedModel implements IRepairStep {
 					)
 				);
 				$this->logger->error(
-					'OpenBuild: MigrateToVersionedModel: register-delete failed; preserving Application row',
+					'Buildiq: MigrateToVersionedModel: register-delete failed; preserving Application row',
 					[
 						'slug' => $slug,
 						'register' => $perAppRegisterSlug,
@@ -391,7 +391,7 @@ class MigrateToVersionedModel implements IRepairStep {
 		$applicationUuid = (string)($application['id'] ?? $application['uuid'] ?? '');
 		if ($applicationUuid === '') {
 			$this->logger->warning(
-				'OpenBuild: MigrateToVersionedModel: Application \'' . $slug . '\' has no UUID; cannot delete row.'
+				'Buildiq: MigrateToVersionedModel: Application \'' . $slug . '\' has no UUID; cannot delete row.'
 			);
 			return self::ROW_FAILED;
 		}
@@ -413,14 +413,14 @@ class MigrateToVersionedModel implements IRepairStep {
 				)
 			);
 			$this->logger->error(
-				'OpenBuild: MigrateToVersionedModel: row-delete failed after register dropped',
+				'Buildiq: MigrateToVersionedModel: row-delete failed after register dropped',
 				['slug' => $slug, 'exception' => $e->getMessage()]
 			);
 			return self::ROW_FAILED;
 		}//end try
 
 		$output->info(
-			"Migrated-to-versioned-model: dropped Application '" . $slug . "' and register 'openbuild-" . $slug . "'"
+			"Migrated-to-versioned-model: dropped Application '" . $slug . "' and register 'buildiq-" . $slug . "'"
 		);
 		return self::ROW_OK;
 	}//end migrateOne()

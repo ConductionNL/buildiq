@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild AppRepoParseException
+ * Buildiq AppRepoParseException
  *
  * Thrown by AppRepoParser when a GitHub app-repo file map violates a
  * conforming-repo invariant (github-app-repo-format REQ-GARF-008). Carries a
@@ -16,7 +16,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Exception
- * @package  OCA\OpenBuild\Exception
+ * @package  OCA\Buildiq\Exception
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -31,7 +31,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Exception;
+namespace OCA\Buildiq\Exception;
 
 use RuntimeException;
 use Throwable;

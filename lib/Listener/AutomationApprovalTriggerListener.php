@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild AutomationApprovalTriggerListener
+ * Buildiq AutomationApprovalTriggerListener
  *
  * Trigger-fire half of the `approval` automation action (design.md Decision 1
  * / Decision 2 of automation-approval-steps). `AutomationCompilerService`
@@ -17,7 +17,7 @@
  * `AutomationCleanupListener` is for provenance-listed artifact removal.
  *
  * Subscribes to `ObjectCreatedEvent`, `ObjectUpdatedEvent`, `ObjectDeletedEvent`
- * and `ObjectTransitionedEvent`, scans the shared `openbuild` register's
+ * and `ObjectTransitionedEvent`, scans the shared `buildiq` register's
  * `automation` objects for one whose `trigger` matches the fired event
  * (schema + trigger type, and — for a lifecycle transition — the transition
  * action name too), and calls `ApprovalService::initializeChain()` for the
@@ -35,7 +35,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Listener
- * @package  OCA\OpenBuild\Listener
+ * @package  OCA\Buildiq\Listener
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -51,9 +51,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Listener;
+namespace OCA\Buildiq\Listener;
 
-use OCA\OpenBuild\Service\AutomationCompilerService;
+use OCA\Buildiq\Service\AutomationCompilerService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ApprovalChain;
 use OCA\OpenRegister\Db\ApprovalChainMapper;
 use OCA\OpenRegister\Db\ApprovalStepMapper;
@@ -63,7 +64,6 @@ use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Service\ApprovalService;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserSession;
@@ -85,10 +85,10 @@ class AutomationApprovalTriggerListener implements IEventListener {
 	 * Constructor.
 	 *
 	 * @param ContainerInterface $container Resolves OpenRegister's object service lazily — see objectService(),
-	 *                                     which scans the `automation` register for matching triggers. The
-	 *                                     interface cannot be constructor-injected here: a listener is built
-	 *                                     during event dispatch, before OpenRegister's DI registrations are
-	 *                                     guaranteed to be available.
+	 *                                      which scans the `automation` register for matching triggers. The
+	 *                                      interface cannot be constructor-injected here: a listener is built
+	 *                                      during event dispatch, before OpenRegister's DI registrations are
+	 *                                      guaranteed to be available.
 	 * @param SchemaMapper $schemaMapper Resolves a schema slug to its numeric id.
 	 * @param ApprovalChainMapper $chainMapper Resolves the compiled `ApprovalChain` by schema + name.
 	 * @param ApprovalStepMapper $stepMapper Idempotency guard — checks for an
@@ -132,7 +132,7 @@ class AutomationApprovalTriggerListener implements IEventListener {
 	 * `EventDispatcher::dispatch()` into whoever emitted the event. Measured
 	 * 2026-08-16, an `ObjectCreatedEvent` raised while Hermiq was persisting a chat
 	 * conversation aborted the whole chat turn — a Hermiq request killed by an
-	 * OpenBuild listener neither app's author would think to look at.
+	 * Buildiq listener neither app's author would think to look at.
 	 *
 	 * The fix asks the container for the CONCRETE class, not the interface. That
 	 * distinction is the whole repair and it is easy to get wrong: the container
@@ -175,7 +175,7 @@ class AutomationApprovalTriggerListener implements IEventListener {
 		// @codeCoverageIgnoreStart
 		if (class_exists('OCA\OpenRegister\Service\ObjectService') === false) {
 			throw new RuntimeException(
-				'openbuild requires the OpenRegister app, which is not installed on this instance.'
+				'buildiq requires the OpenRegister app, which is not installed on this instance.'
 			);
 		}
 		// @codeCoverageIgnoreEnd
@@ -188,7 +188,6 @@ class AutomationApprovalTriggerListener implements IEventListener {
 		assert($service instanceof ObjectServiceInterface);
 
 		return $service;
-
 	}//end objectService()
 
 	/**
@@ -296,7 +295,7 @@ class AutomationApprovalTriggerListener implements IEventListener {
 	}//end uuidOf()
 
 	/**
-	 * Scan the shared `openbuild` register's `automation` objects for every
+	 * Scan the shared `buildiq` register's `automation` objects for every
 	 * ENABLED automation whose `trigger` matches the fired event and whose
 	 * `actions[]` includes a compiled `approval` action.
 	 *
@@ -322,7 +321,7 @@ class AutomationApprovalTriggerListener implements IEventListener {
 				]
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenBuild: AutomationApprovalTriggerListener could not scan automations: ' . $e->getMessage());
+			$this->logger->warning('Buildiq: AutomationApprovalTriggerListener could not scan automations: ' . $e->getMessage());
 			return [];
 		}
 
@@ -478,7 +477,7 @@ class AutomationApprovalTriggerListener implements IEventListener {
 				requesterId: $requesterId
 			);
 		} catch (Throwable $e) {
-			$message = 'OpenBuild: AutomationApprovalTriggerListener failed to initialise chain "' . $chainName . '"'
+			$message = 'Buildiq: AutomationApprovalTriggerListener failed to initialise chain "' . $chainName . '"'
 				. ' for object "' . $objectUuid . '": ' . $e->getMessage();
 			$this->logger->error($message, ['exception' => $e]);
 		}
@@ -498,7 +497,7 @@ class AutomationApprovalTriggerListener implements IEventListener {
 		try {
 			$schema = $this->schemaMapper->find($schemaSlug, _multitenancy: false);
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenBuild: AutomationApprovalTriggerListener could not load schema "' . $schemaSlug . '": ' . $e->getMessage());
+			$this->logger->warning('Buildiq: AutomationApprovalTriggerListener could not load schema "' . $schemaSlug . '": ' . $e->getMessage());
 			return null;
 		}
 
@@ -511,14 +510,14 @@ class AutomationApprovalTriggerListener implements IEventListener {
 			$chain = $this->chainMapper->findBySchemaAndName(schemaId: (int)$schemaId, name: $chainName);
 		} catch (Throwable $e) {
 			$this->logger->warning(
-				'OpenBuild: AutomationApprovalTriggerListener could not resolve ApprovalChain "' . $chainName . '": ' . $e->getMessage()
+				'Buildiq: AutomationApprovalTriggerListener could not resolve ApprovalChain "' . $chainName . '": ' . $e->getMessage()
 			);
 			return null;
 		}
 
 		if ($chain === null) {
 			$this->logger->warning(
-				'OpenBuild: AutomationApprovalTriggerListener found no compiled ApprovalChain "' . $chainName . '" — automation may need recompiling.'
+				'Buildiq: AutomationApprovalTriggerListener found no compiled ApprovalChain "' . $chainName . '" — automation may need recompiling.'
 			);
 		}
 

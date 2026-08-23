@@ -14,11 +14,11 @@
 <template>
 	<div class="chat-page-editor">
 		<h3 class="chat-page-editor__title">
-			{{ t('openbuild', 'Chat page') }}
+			{{ t('buildiq', 'Chat page') }}
 		</h3>
 
 		<fieldset class="chat-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Conversation transport') }}</legend>
+			<legend>{{ t('buildiq', 'Conversation transport') }}</legend>
 			<div class="chat-page-editor__shape">
 				<label class="chat-page-editor__inline">
 					<input
@@ -26,7 +26,7 @@
 						:checked="transportShape === 'conversationSource'"
 						value="conversationSource"
 						@change="setTransportShape('conversationSource')" />
-					{{ t('openbuild', 'conversationSource (message stream)') }}
+					{{ t('buildiq', 'conversationSource (message stream)') }}
 				</label>
 				<label class="chat-page-editor__inline">
 					<input
@@ -34,18 +34,18 @@
 						:checked="transportShape === 'postUrl'"
 						value="postUrl"
 						@change="setTransportShape('postUrl')" />
-					{{ t('openbuild', 'postUrl (send endpoint)') }}
+					{{ t('buildiq', 'postUrl (send endpoint)') }}
 				</label>
 			</div>
 			<label
 				v-if="transportShape === 'conversationSource'"
 				class="chat-page-editor__group-row">
-				{{ t('openbuild', 'conversationSource') }}
+				{{ t('buildiq', 'conversationSource') }}
 				<input
 					type="text"
 					:value="config.conversationSource || ''"
 					:placeholder="
-						t('openbuild', '/api/objects/:slug/messages or a stream URL')
+						t('buildiq', '/api/objects/:slug/messages or a stream URL')
 					"
 					:aria-invalid="isInvalid('conversationSource')"
 					@input="
@@ -54,11 +54,11 @@
 				<InlineFieldMark :error="markFor('conversationSource')" />
 			</label>
 			<label v-else class="chat-page-editor__group-row">
-				{{ t('openbuild', 'postUrl') }}
+				{{ t('buildiq', 'postUrl') }}
 				<input
 					type="text"
 					:value="config.postUrl || ''"
-					:placeholder="t('openbuild', '/api/objects/:slug/messages')"
+					:placeholder="t('buildiq', '/api/objects/:slug/messages')"
 					:aria-invalid="isInvalid('postUrl')"
 					@input="setTransport('postUrl', $event.target.value)" />
 				<InlineFieldMark :error="markFor('postUrl')" />
@@ -66,7 +66,7 @@
 			<p class="chat-page-editor__hint">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'Exactly one of conversationSource or postUrl must be set.',
 					)
 				}}
@@ -74,13 +74,13 @@
 		</fieldset>
 
 		<fieldset class="chat-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Message schema (optional)') }}</legend>
+			<legend>{{ t('buildiq', 'Message schema (optional)') }}</legend>
 			<label class="chat-page-editor__group-row">
-				{{ t('openbuild', 'Schema slug') }}
+				{{ t('buildiq', 'Schema slug') }}
 				<input
 					type="text"
 					:value="config.schema || ''"
-					:placeholder="t('openbuild', 'e.g. message')"
+					:placeholder="t('buildiq', 'e.g. message')"
 					:aria-invalid="isInvalid('schema')"
 					@input="update('schema', $event.target.value)" />
 				<InlineFieldMark :error="markFor('schema')" />
