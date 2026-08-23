@@ -542,7 +542,7 @@ test('REQ-PEC-006 — Create, configure, save and render a wiki page', async ({
 	//
 	// THE SLUGS WERE WRONG, AND WRONG IN A WAY ONLY CI COULD SHOW.
 	//
-	// This used to bind `buildiq-hello-world-production` /
+	// This used to bind `openbuild-hello-world-production` /
 	// `hello-world-production-hello-message` and failed with `did not find some
 	// options` (run 31083894467) — the same symptom as the `{ index: 1 }` bug
 	// above, but a different cause: on CI THOSE SLUGS DO NOT EXIST. The seeded
@@ -550,14 +550,14 @@ test('REQ-PEC-006 — Create, configure, save and render a wiki page', async ({
 	// creation wizard, and it deliberately does not mint a per-version register:
 	// SeedHelloWorldFixture writes `register: 'openbuild-hello-world'` on the
 	// version as METADATA ONLY and puts the manifest, the `hello-message` schema
-	// and the three sample objects in the shared `buildiq` register — its own
+	// and the three sample objects in the shared `openbuild` register — its own
 	// comment says so, and the hello-world manifest's index, detail and form
 	// pages all carry `config.register = 'openbuild'`. `ci-seed.sh` prints the
-	// instance's registers, and that list is `[…, 'buildiq', …]` with no
-	// `buildiq-hello-world-production` anywhere.
+	// instance's registers, and that list is `[…, 'openbuild', …]` with no
+	// `openbuild-hello-world-production` anywhere.
 	//
 	// Those names come from a WIZARD-created app (RegisterWidget builds exactly
-	// `buildiq-{slug}-{version}`), which a developer's long-lived instance
+	// `openbuild-{slug}-{version}`), which a developer's long-lived instance
 	// accumulates and a fresh CI instance never has. So the test was pinned to
 	// a fixture shape that only existed on the machine it was written on.
 	//
@@ -572,7 +572,7 @@ test('REQ-PEC-006 — Create, configure, save and render a wiki page', async ({
 		registerSelect.locator('option[value="buildiq"]'),
 		"the seeded app's register must be offered by the register picker",
 	).toHaveCount(1, { timeout: 10_000 })
-	await registerSelect.selectOption('buildiq')
+	await registerSelect.selectOption('openbuild')
 	const schemaSelect = editor
 		.locator('.wiki-page-editor__group-row', { hasText: 'Schema' })
 		.locator('select')
@@ -616,7 +616,7 @@ test('REQ-PEC-006 — Create, configure, save and render a wiki page', async ({
 		reopened
 			.locator('.wiki-page-editor__group-row', { hasText: /^\s*Register\b/ })
 			.locator('select'),
-	).toHaveValue('buildiq')
+	).toHaveValue('openbuild')
 	await expect(
 		reopened
 			.locator('.wiki-page-editor__group-row', { hasText: /^\s*Schema\b/ })
