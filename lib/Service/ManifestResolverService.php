@@ -217,7 +217,7 @@ class ManifestResolverService {
 	/**
 	 * Look up the Application object by slug via OR's ObjectService.
 	 *
-	 * Uses searchObjects with register=buildiq, schema=application, slug={appSlug}.
+	 * Uses searchObjects with register=openbuild, schema=application, slug={appSlug}.
 	 * Returns the first normalised result or null on miss.
 	 *
 	 * @param string $appSlug The application slug.

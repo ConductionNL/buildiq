@@ -301,7 +301,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"Newman Round-trip v1\",\n  \"slug\": \"production\",\n  \"manifest\": {\n    \"version\": \"1.0.0\",\n    \"menu\": [],\n    \"pages\": [\n      {\n        \"id\": \"Home\",\n        \"route\": \"/\",\n        \"type\": \"index\",\n        \"title\": \"Home\",\n        \"config\": { \"register\": \"buildiq\", \"schema\": \"hello-message\", \"columns\": [\"title\"] }\n      }\n    ]\n  },\n  \"register\": \"buildiq-newman-roundtrip-production\",\n  \"semver\": \"1.0.0\",\n  \"status\": \"draft\",\n  \"application\": \"{{created_uuid}}\"\n}"
+							"raw": "{\n  \"name\": \"Newman Round-trip v1\",\n  \"slug\": \"production\",\n  \"manifest\": {\n    \"version\": \"1.0.0\",\n    \"menu\": [],\n    \"pages\": [\n      {\n        \"id\": \"Home\",\n        \"route\": \"/\",\n        \"type\": \"index\",\n        \"title\": \"Home\",\n        \"config\": { \"register\": \"openbuild\", \"schema\": \"hello-message\", \"columns\": [\"title\"] }\n      }\n    ]\n  },\n  \"register\": \"openbuild-newman-roundtrip-production\",\n  \"semver\": \"1.0.0\",\n  \"status\": \"draft\",\n  \"application\": \"{{created_uuid}}\"\n}"
 						},
 						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/newman-roundtrip/versions",
 						"description": "Per ADR-002, the manifest + status + semver live on ApplicationVersion. POST against the version-aware Buildiq endpoint so the parent-relation guard runs."

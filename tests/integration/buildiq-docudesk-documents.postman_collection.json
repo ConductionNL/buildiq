@@ -78,7 +78,7 @@
 				"method": "POST",
 				"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}" }, { "key": "password", "value": "{{adminPass}}" } ] },
 				"header": [ { "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
-				"body": { "mode": "raw", "raw": "{\n  \"templateId\": \"00000000-0000-0000-0000-000000000000\",\n  \"dataRefs\": [ { \"register\": \"buildiq\", \"schema\": \"application\", \"id\": \"does-not-exist\" } ],\n  \"options\": { \"format\": \"pdf\" },\n  \"filename\": \"contract-probe.pdf\"\n}" },
+				"body": { "mode": "raw", "raw": "{\n  \"templateId\": \"00000000-0000-0000-0000-000000000000\",\n  \"dataRefs\": [ { \"register\": \"openbuild\", \"schema\": \"application\", \"id\": \"does-not-exist\" } ],\n  \"options\": { \"format\": \"pdf\" },\n  \"filename\": \"contract-probe.pdf\"\n}" },
 				"url": { "raw": "{{baseUrl}}/apps/docudesk/api/correspondence/generate", "host": [ "{{baseUrl}}" ], "path": [ "apps", "docudesk", "api", "correspondence", "generate" ] }
 			},
 			"event": [
@@ -112,7 +112,7 @@
 				"method": "POST",
 				"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}" }, { "key": "password", "value": "{{adminPass}}" } ] },
 				"header": [ { "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
-				"body": { "mode": "raw", "raw": "{\n  \"templateId\": \"00000000-0000-0000-0000-000000000000\",\n  \"dataRefs\": [ { \"register\": \"buildiq\", \"schema\": \"permit-application\", \"id\": \"00000000-0000-0000-0000-000000000000\" } ],\n  \"options\": { \"format\": \"pdf\" },\n  \"filename\": \"document-00000000-0000-0000-0000-000000000000.pdf\"\n}" },
+				"body": { "mode": "raw", "raw": "{\n  \"templateId\": \"00000000-0000-0000-0000-000000000000\",\n  \"dataRefs\": [ { \"register\": \"openbuild\", \"schema\": \"permit-application\", \"id\": \"00000000-0000-0000-0000-000000000000\" } ],\n  \"options\": { \"format\": \"pdf\" },\n  \"filename\": \"document-00000000-0000-0000-0000-000000000000.pdf\"\n}" },
 				"url": { "raw": "{{baseUrl}}/apps/docudesk/api/correspondence/generate", "host": [ "{{baseUrl}}" ], "path": [ "apps", "docudesk", "api", "correspondence", "generate" ] },
 				"description": "DocumentGenerationService issues this EXACT request shape (single dataRefs entry naming {register, schema, id}; options.format; a `document-<uuid>.pdf` filename) against the SAME pinned route item #4 already asserts — the only difference at runtime is the caller's auth (owner-impersonated via a short-lived internal login token, instead of the interactive browser session Basic-Auth'd here). This item pins that shared contract stays intact; it does NOT exercise the full trigger-fire path (Application + Automation + object transition setup is out of this lightweight contract collection's scope — covered by DocumentGenerationServiceTest/DocumentGenerationListenerTest instead)."
 			},
