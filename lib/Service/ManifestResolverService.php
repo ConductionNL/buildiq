@@ -237,7 +237,7 @@ class ManifestResolverService {
 			// uniqueness depends on this flag being consistently false across every
 			// lookup in this service.  Changing it to true would silo Applications
 			// per org and break the shared-registry model.
-			$registerId = $this->registerMapper->find('openbuild', _multitenancy: false)->getId();
+			$registerId = $this->registerMapper->find(ApplicationVersionService::REGISTER_SLUG, _multitenancy: false)->getId();
 			$schemaId = $this->schemaMapper->find('application', _multitenancy: false)->getId();
 
 			$results = $this->objectService->searchObjects(
@@ -338,7 +338,7 @@ class ManifestResolverService {
 				return null;
 			}
 
-			$registerId = $this->registerMapper->find('openbuild', _multitenancy: false)->getId();
+			$registerId = $this->registerMapper->find(ApplicationVersionService::REGISTER_SLUG, _multitenancy: false)->getId();
 			$schemaId = $this->schemaMapper->find(ApplicationVersionService::APPLICATION_VERSION_SCHEMA, _multitenancy: false)->getId();
 
 			// Two-step: filter ApplicationVersions by parent application UUID + slug.
@@ -392,7 +392,7 @@ class ManifestResolverService {
 	 */
 	private function findVersionBySlugFallback(string $applicationUuid, string $versionSlug): ?array {
 		try {
-			$registerId = $this->registerMapper->find('openbuild', _multitenancy: false)->getId();
+			$registerId = $this->registerMapper->find(ApplicationVersionService::REGISTER_SLUG, _multitenancy: false)->getId();
 			$schemaId = $this->schemaMapper->find(ApplicationVersionService::APPLICATION_VERSION_SCHEMA, _multitenancy: false)->getId();
 
 			$allVersions = $this->objectService->searchObjects(

@@ -593,7 +593,7 @@ class ApplicationsController extends Controller {
 		}
 
 		try {
-			$registerId = $this->registerMapper->find('openbuild', _multitenancy: false)->getId();
+			$registerId = $this->registerMapper->find(ApplicationVersionService::REGISTER_SLUG, _multitenancy: false)->getId();
 			$routeSchema = $this->schemaMapper->find('built-app-route', _multitenancy: false)->getId();
 
 			$routeResults = $this->objectService->searchObjects(
@@ -803,7 +803,7 @@ class ApplicationsController extends Controller {
 		// caller with a framework 500 and a stack trace rather than a
 		// translated error. Translated below, cause logged.
 		try {
-			$registerId = $this->registerMapper->find('openbuild', _multitenancy: false)->getId();
+			$registerId = $this->registerMapper->find(ApplicationVersionService::REGISTER_SLUG, _multitenancy: false)->getId();
 			$routeSchema = $this->schemaMapper->find('built-app-route', _multitenancy: false)->getId();
 		} catch (Throwable $e) {
 			$this->logger->error(
@@ -904,7 +904,7 @@ class ApplicationsController extends Controller {
 				);
 			}
 
-			$registerId = $this->registerMapper->find('openbuild', _multitenancy: false)->getId();
+			$registerId = $this->registerMapper->find(ApplicationVersionService::REGISTER_SLUG, _multitenancy: false)->getId();
 			$appSchema = $this->schemaMapper->find('application', _multitenancy: false)->getId();
 
 			// Fetch all Applications scoped to the buildiq register +
@@ -1698,7 +1698,7 @@ class ApplicationsController extends Controller {
 	private function resolveSharedContext(): ?array {
 		try {
 			return [
-				'register' => $this->registerMapper->find('openbuild', _multitenancy: false)->getId(),
+				'register' => $this->registerMapper->find(ApplicationVersionService::REGISTER_SLUG, _multitenancy: false)->getId(),
 				'templateSchema' => $this->schemaMapper->find('application-template', _multitenancy: false)->getId(),
 				'applicationSchema' => $this->schemaMapper->find('application', _multitenancy: false)->getId(),
 			];
