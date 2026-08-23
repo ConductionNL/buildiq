@@ -283,7 +283,9 @@ verify() {
 import json, sys
 path, kind, code = sys.argv[1], sys.argv[2], sys.argv[3]
 required = {
-    'registers': ['buildiq'],
+    # The register SLUG stays 'openbuild' across the app-id rename: it
+    # addresses the register that already exists. Only the APP id moved.
+    'registers': ['openbuild'],
     'schemas': [
         # lib/Settings/openbuild_register.json
         'application', 'application-template', 'built-app-route',

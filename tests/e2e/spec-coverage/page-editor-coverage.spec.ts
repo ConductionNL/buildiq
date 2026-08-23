@@ -552,7 +552,7 @@ test('REQ-PEC-006 — Create, configure, save and render a wiki page', async ({
 	// version as METADATA ONLY and puts the manifest, the `hello-message` schema
 	// and the three sample objects in the shared `buildiq` register — its own
 	// comment says so, and the hello-world manifest's index, detail and form
-	// pages all carry `config.register = 'buildiq'`. `ci-seed.sh` prints the
+	// pages all carry `config.register = 'openbuild'`. `ci-seed.sh` prints the
 	// instance's registers, and that list is `[…, 'buildiq', …]` with no
 	// `buildiq-hello-world-production` anywhere.
 	//
