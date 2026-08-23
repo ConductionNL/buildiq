@@ -60,7 +60,7 @@ test.describe('Buildiq Features & roadmap', () => {
 		).toBeVisible({ timeout: 15_000 })
 
 		await expect(
-			page.getByRole('link', { name: /buildiq\.conduction\.nl/i }),
+			page.getByRole('link', { name: /openbuild\.conduction\.nl/i }),
 		).toBeVisible({ timeout: 15_000 })
 	})
 
