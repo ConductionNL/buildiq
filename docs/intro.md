@@ -5,43 +5,45 @@ description: Get started with Buildiq, the no-code app builder inside Nextcloud.
 
 # Buildiq
 
-Citizen-developer app builder for Nextcloud. Compose a working app from typed
-registers, connectors, workflows, and document templates — design schemas and
-pages in the browser, wire in data, preview the running app, version it,
+Buildiq is a no-code app builder inside Nextcloud. Compose a working app from
+typed registers, connectors, workflows, and document templates. Design schemas
+and pages in the browser, wire in data, preview the running app, version it,
 export it. No code, no second platform.
 
 ## What you get
 
 - A template catalogue of curated starters (CRM, intake form, asset register,
-  help desk) plus the blank-app option — administrators decide what's offered.
+  help desk) plus the blank-app option. Administrators decide what's offered.
 - A schema designer: define your data model field by field, backed by
   OpenRegister typed registers. No migrations.
 - A page designer: lay out list, detail, and form pages over your registers.
 - Data wiring: connect a register, an OpenConnector connector, a Procest
-  workflow, or a DocuDesk template — the app reads and writes through
+  workflow, or a DocuDesk template. The app reads and writes through
   OpenRegister abstractions.
 - Configuration over code: state machines, aggregations, calculations, and
   notifications are declared as schema metadata, not service code. Manifest
   overrides are delta-only, so customisation survives upgrades.
 - Version snapshots: snapshot the whole app and roll back a bad edit. Export
   the bundle as a ZIP, or **publish the app to a GitHub repository** and install
-  it again from the store on any instance — the token stays in Doriath and never
+  it again from the store on any instance. The token stays in Doriath and never
   reaches Buildiq (see [GitHub store](./github-store.md)).
 - RBAC: administrators control who can build, and per-record access is
   enforced through OpenRegister.
 - **AI copilot**: describe the app you want in a sentence or two, review the
   proposed schemas, pages, and widgets, and approve before anything is
-  created — see [AI Copilot](./ai-copilot.md).
+  created. See [AI Copilot](./ai-copilot.md).
 
 ## Getting started
 
 Install Buildiq from the Nextcloud app store or enable it in your Nextcloud
 admin settings. Then open the app, pick a template, and start composing.
 
-For the step-by-step walkthroughs, see the **Tutorials** in the sidebar — the
+For the step-by-step walkthroughs, see the **Tutorials** in the sidebar. The
 **User guide** covers building an app, the **Admin guide** covers RBAC,
 the template catalogue, and Buildiq settings. The `integrator-guide`,
 `buildiq-rbac`, and `buildiq-runtime` reference pages cover the deeper
 mechanics, and [Form logic](./form-logic-authoring.md) covers authoring
 multi-step wizards, conditional visibility, and validation rules on form
 pages.
+
+Next: [create a virtual app](./tutorials/create-a-virtual-app.md).
