@@ -82,6 +82,8 @@ class PublishTemplates extends Command {
 	 * Configure the command name, description, and options.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/github-app-repo-format/spec.md
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'buildiq:templates:publish')

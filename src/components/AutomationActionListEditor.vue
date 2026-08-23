@@ -129,6 +129,9 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec openspec/specs/automation-designer/spec.md
+		 */
 		typeOptions() {
 			return [
 				{
@@ -143,6 +146,9 @@ export default {
 			]
 		},
 
+		/**
+		 * @spec openspec/specs/automation-designer/spec.md
+		 */
 		operationOptions() {
 			return [
 				{ value: 'create', label: t('buildiq', 'Create') },

@@ -284,6 +284,8 @@ export default {
 		 * app slug is known. Top-level URL — the runtime is a sibling route.
 		 *
 		 * @return {string}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		builderUrl() {
 			if (!this.obApp || !this.obApp.slug) {
@@ -437,6 +439,8 @@ export default {
 		 *
 		 * @param {object} v The version row.
 		 * @return {string}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		versionLabel(v) {
 			const name = (v && (v.name || v.slug)) || ''
@@ -453,6 +457,8 @@ export default {
 		 *
 		 * @param {object} v The version row.
 		 * @return {void}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		openVersion(v) {
 			if (!this.obApp || !this.obApp.slug) {
@@ -472,6 +478,8 @@ export default {
 		 *
 		 * @param {object} v The version row.
 		 * @return {void}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		editVersion(v) {
 			if (!this.obApp || !this.obApp.slug) {
@@ -491,6 +499,8 @@ export default {
 		 *
 		 * @param {boolean} shouldPublish True to publish, false to unpublish.
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		async setPublished(shouldPublish) {
 			if (this.obAppRole !== 'owner' || !this.obApp || this.publishing) {
@@ -532,6 +542,8 @@ export default {
 		 *
 		 * @param {boolean} allow Whether to allow per-user overrides.
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		async setAllowOverrides(allow) {
 			if (this.obAppRole !== 'owner' || !this.obApp) {
@@ -561,6 +573,8 @@ export default {
 		 *
 		 * @param {boolean} open Whether the modal is opening.
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		async onSettingsOpen(open) {
 			this.settingsOpen = open
@@ -595,6 +609,8 @@ export default {
 		 *
 		 * @param {Array<{flow: string, label?: string}>} flows The full updated bindings array.
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		async setFlows(flows) {
 			if (this.obAppRole !== 'owner' || !this.obApp) {
@@ -608,6 +624,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec openspec/specs/application-detail-ui/spec.md
+		 */
 		async setDataRegisters(dataRegisters) {
 			if (this.obAppRole !== 'owner' || !this.obApp) {
 				return
@@ -628,6 +647,8 @@ export default {
 		 *
 		 * @param {boolean} deleteData Whether to also delete all app data.
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		async deleteApp(deleteData = false) {
 			if (this.obAppRole !== 'owner' || !this.obApp || this.deleting) {
@@ -664,6 +685,8 @@ export default {
 		 *
 		 * @param {object} permissions The new permissions block.
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		async onPermissionsSave(permissions) {
 			if (this.obAppRole !== 'owner' || !this.obApp) {

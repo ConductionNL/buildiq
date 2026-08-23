@@ -158,6 +158,9 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * @spec openspec/specs/application-detail-ui/spec.md
+		 */
 		async fetchRuleSets() {
 			this.loading = true
 			this.errorMessage = ''
@@ -215,6 +218,9 @@ export default {
 			this.showDecisionEditor = true
 		},
 
+		/**
+		 * @spec openspec/specs/application-detail-ui/spec.md
+		 */
 		async runTests(ruleSet) {
 			try {
 				const url = generateUrl(
@@ -237,6 +243,9 @@ export default {
 				: 'rule-sets-page__test--fail'
 		},
 
+		/**
+		 * @spec openspec/specs/application-detail-ui/spec.md
+		 */
 		testBadgeLabel(slug) {
 			const result = this.testResults[slug]
 			if (!result) {

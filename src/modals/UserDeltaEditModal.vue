@@ -107,6 +107,8 @@ export default {
 		 * Validate the JSON, PUT the user delta, and emit `saved` on success.
 		 *
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		async save() {
 			if (!this.appSlug) return

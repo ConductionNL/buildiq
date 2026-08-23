@@ -83,6 +83,8 @@ export default {
 		 * (required for accessibility — provides the modal's accessible label).
 		 *
 		 * @return {string} The translated dialog title.
+		 *
+		 * @spec openspec/specs/application-creation-wizard/spec.md
 		 */
 		dialogTitle() {
 			return this.remote

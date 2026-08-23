@@ -281,6 +281,8 @@ export default {
 		 * version selector).
 		 *
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/automation-designer/spec.md
 		 */
 		async fetchVersions() {
 			this.loadingVersions = true
@@ -412,6 +414,8 @@ export default {
 		 *
 		 * @param {object} automation - the automation object.
 		 * @return {string}
+		 *
+		 * @spec openspec/specs/automation-designer/spec.md
 		 */
 		triggerSummary(automation) {
 			const trigger = automation.trigger || {}
@@ -431,6 +435,8 @@ export default {
 		 *
 		 * @param {object} automation - the automation object.
 		 * @return {string}
+		 *
+		 * @spec openspec/specs/automation-designer/spec.md
 		 */
 		actionSummary(automation) {
 			const actions = Array.isArray(automation.actions)
@@ -529,6 +535,8 @@ export default {
 		 * @param {object} automation - the automation row.
 		 * @param {boolean} checked - the new enabled state.
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/automation-designer/spec.md
 		 */
 		async toggleEnabled(automation, checked) {
 			this.errorMessage = ''
@@ -551,6 +559,8 @@ export default {
 		 *
 		 * @param {object} automation - the automation row.
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/automation-designer/spec.md
 		 */
 		async recompile(automation) {
 			this.errorMessage = ''

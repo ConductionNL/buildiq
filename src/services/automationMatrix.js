@@ -153,6 +153,8 @@ export function blockedActionReason(triggerType, actionType) {
  *
  * @param {string} triggerType - the automation's trigger type.
  * @return {string}
+ *
+ * @spec openspec/specs/automation-designer/spec.md
  */
 export function blockedConditionReason(triggerType) {
 	if (isConditionAllowed(triggerType)) {

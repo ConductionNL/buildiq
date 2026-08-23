@@ -287,6 +287,8 @@ export default {
 		 *
 		 * @param {object} step - the step entry.
 		 * @return {{hasError: boolean, message: string}}
+		 *
+		 * @spec openspec/specs/form-editor-logic/spec.md
 		 */
 		danglingMark(step) {
 			const dangling = (
@@ -406,6 +408,8 @@ export default {
 		 * Add a new step with a placeholder title and an empty field list.
 		 *
 		 * @return {void}
+		 *
+		 * @spec openspec/specs/form-editor-logic/spec.md
 		 */
 		addStep() {
 			const next = this.localSteps.slice()

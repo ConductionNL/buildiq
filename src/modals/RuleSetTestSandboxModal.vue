@@ -148,6 +148,9 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * @spec openspec/specs/application-detail-ui/spec.md
+		 */
 		async fetchTestCases() {
 			this.loading = true
 			try {
@@ -166,6 +169,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec openspec/specs/application-detail-ui/spec.md
+		 */
 		async runAll() {
 			this.running = true
 			this.errorMessage = ''

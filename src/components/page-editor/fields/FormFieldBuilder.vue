@@ -305,6 +305,8 @@ export default {
 		 *
 		 * @param {object} field - the field entry.
 		 * @return {{hasError: boolean, message: string}}
+		 *
+		 * @spec openspec/specs/form-editor-logic/spec.md
 		 */
 		danglingConditionMark(field) {
 			const vw = field && field.visibleWhen
@@ -328,6 +330,8 @@ export default {
 		 *
 		 * @param {object} field - the field entry.
 		 * @return {string}
+		 *
+		 * @spec openspec/specs/form-editor-logic/spec.md
 		 */
 		summaryFor(field) {
 			const validation = field && field.validation

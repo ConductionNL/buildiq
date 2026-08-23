@@ -335,6 +335,8 @@ export default {
 		 *
 		 * @param {object} row The version row.
 		 * @return {string}
+		 *
+		 * @spec openspec/specs/application-versions/spec.md
 		 */
 		statusLabel(row) {
 			const status = this.rowStatus(row)

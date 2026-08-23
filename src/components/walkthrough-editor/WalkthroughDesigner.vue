@@ -639,6 +639,9 @@ export default {
 			this.commit(w)
 		},
 
+		/**
+		 * @spec openspec/specs/application-detail-ui/spec.md
+		 */
 		addTour() {
 			const w = this.clone()
 			if (!Array.isArray(w.tours)) w.tours = []

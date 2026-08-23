@@ -39,6 +39,8 @@ const inFlight = new Map()
  *
  * @param {string} uuid Application uuid or slug.
  * @return {Promise<object|null>} The record, or null when the payload is empty.
+ *
+ * @spec openspec/specs/application-detail-ui/spec.md
  */
 export function fetchApplicationRecord(uuid) {
 	if (!uuid) return Promise.resolve(null)

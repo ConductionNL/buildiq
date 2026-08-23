@@ -375,6 +375,8 @@ export default {
 		 * always offered; own-records / condition only when advertised.
 		 *
 		 * @return {Array<{value: string, label: string}>} Kind options.
+		 *
+		 * @spec openspec/specs/data-scopes-authoring/spec.md
 		 */
 		kindOptions() {
 			const options = [
@@ -458,6 +460,8 @@ export default {
 		 *
 		 * @param {string} op Operation key.
 		 * @return {string} Label.
+		 *
+		 * @spec openspec/specs/data-scopes-authoring/spec.md
 		 */
 		opLabel(op) {
 			const labels = {

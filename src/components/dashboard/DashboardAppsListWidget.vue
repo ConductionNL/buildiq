@@ -216,6 +216,9 @@ export default {
 				: 'draft'
 		},
 
+		/**
+		 * @spec openspec/specs/application-insights/spec.md
+		 */
 		appStatusLabel(app) {
 			return t('buildiq', STATUS_LABELS[this.appStatus(app)] || 'Draft')
 		},
@@ -243,6 +246,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec openspec/specs/application-insights/spec.md
+		 */
 		onIconError(e) {
 			// imagePath resolves to the app's real web root (e.g.
 			// /apps/buildiq/img/app-dark.svg, or /apps-shared/… in dev). The

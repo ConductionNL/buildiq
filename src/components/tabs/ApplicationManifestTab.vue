@@ -109,6 +109,8 @@ export default {
 		 *
 		 * @param {{slug?: string, manifest?: object}} app - the resolved Application.
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-overview/spec.md
 		 */
 		async loadManifest(app) {
 			const slug = app && app.slug

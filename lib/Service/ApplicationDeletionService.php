@@ -88,6 +88,8 @@ class ApplicationDeletionService {
 	 *                         and every object stored in them.
 	 *
 	 * @return array<int,string> Resources that could not be removed (orphaned).
+	 *
+	 * @spec openspec/specs/application-detail-ui/spec.md
 	 */
 	public function deleteApplication(string $appUuid, string $appSlug, bool $deleteData = false): array {
 		$orphaned = [];

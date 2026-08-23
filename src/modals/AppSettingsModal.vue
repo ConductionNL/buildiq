@@ -208,6 +208,8 @@ export default {
 		 * from the person who could fix it.
 		 *
 		 * @return {Array<{label: string, value: string}>} Selected options.
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		selectedFlows() {
 			return this.flows.map((binding) => {

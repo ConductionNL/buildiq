@@ -92,6 +92,8 @@ export default {
 		 *
 		 * @param {boolean} deleteData Whether to also delete all app data.
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		async onConfirm(deleteData) {
 			if (!this.appUuid || this.busy) {
@@ -129,6 +131,8 @@ export default {
 		 *
 		 * @param {string} uuid The deleted application's id.
 		 * @return {void}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		evictFromList(uuid) {
 			try {

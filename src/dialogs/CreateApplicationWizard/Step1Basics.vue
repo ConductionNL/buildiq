@@ -469,6 +469,8 @@ export default {
 		 *
 		 * @param {Event} event The file-input change event.
 		 * @return {void}
+		 *
+		 * @spec openspec/specs/application-creation-wizard/spec.md
 		 */
 		onUploadSvg(event) {
 			this.iconError = ''

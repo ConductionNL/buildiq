@@ -78,6 +78,9 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec openspec/specs/application-detail-ui/spec.md
+		 */
 		iframeSrc() {
 			const base = generateUrl(`/apps/buildiq/builder/${this.appSlug}`)
 			return this.versionSlug

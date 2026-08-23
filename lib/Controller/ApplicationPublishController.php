@@ -141,6 +141,8 @@ class ApplicationPublishController extends Controller {
 	 * @param string $appUuid Parent Application UUID (path param)
 	 *
 	 * @return JSONResponse 200 + `{deleted, orphanedResources}`, or an error envelope
+	 *
+	 * @spec openspec/specs/application-versions/spec.md
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 10, period: 60)]

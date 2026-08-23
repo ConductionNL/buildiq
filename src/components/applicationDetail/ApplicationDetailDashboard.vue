@@ -581,6 +581,8 @@ export default {
 		 * version's name/semver, falling back to the active version).
 		 *
 		 * @return {string}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		adminVersionLabel() {
 			const v = this.productionVersion || this.activeVersion
@@ -605,6 +607,8 @@ export default {
 		 * app + active version are known (KPI cards are then non-clickable).
 		 *
 		 * @return {string}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		registerSlug() {
 			if (!this.appSlug) return ''
@@ -835,6 +839,8 @@ export default {
 		 * Fetch the caller's own user-delta content (for seeding the edit modal).
 		 *
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		async loadUserDeltaContent() {
 			if (!this.appSlug || !this.allowUserOverrides) {

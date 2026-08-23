@@ -128,6 +128,8 @@ class SeedHelloWorldFixture extends Command {
 	 * Configure the command name and description.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/github-app-repo-format/spec.md
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'buildiq:seed-hello-world-fixture')

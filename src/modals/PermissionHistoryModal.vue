@@ -158,6 +158,9 @@ export default {
 			this.$emit('update:open', false)
 		},
 
+		/**
+		 * @spec openspec/specs/application-detail-ui/spec.md
+		 */
 		async load() {
 			this.loading = true
 			try {
@@ -219,6 +222,9 @@ export default {
 			}))
 		},
 
+		/**
+		 * @spec openspec/specs/application-detail-ui/spec.md
+		 */
 		rowClass(entry) {
 			if (entry.event === 'rbac.admin_bypass') {
 				return 'buildiq-permission-history__row--bypass'
@@ -226,6 +232,9 @@ export default {
 			return ''
 		},
 
+		/**
+		 * @spec openspec/specs/application-detail-ui/spec.md
+		 */
 		eventLabel(entry) {
 			if (entry.event === 'rbac.admin_bypass') {
 				return this.t('buildiq', 'Administrator bypass')

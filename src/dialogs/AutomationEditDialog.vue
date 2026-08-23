@@ -477,6 +477,9 @@ export default {
 			return slugify(this.name)
 		},
 
+		/**
+		 * @spec openspec/specs/automation-designer/spec.md
+		 */
 		triggerOptions() {
 			return [
 				{ value: 'object-created', label: t('buildiq', 'Object created') },
@@ -510,6 +513,9 @@ export default {
 			)
 		},
 
+		/**
+		 * @spec openspec/specs/automation-designer/spec.md
+		 */
 		cadenceOptions() {
 			return [
 				{ id: 'hourly', label: t('buildiq', 'Hourly') },
@@ -532,6 +538,9 @@ export default {
 			return this.cadenceOption && this.cadenceOption.id === 'custom-interval'
 		},
 
+		/**
+		 * @spec openspec/specs/automation-designer/spec.md
+		 */
 		conditionKindOptions() {
 			return [
 				{ value: 'none', label: t('buildiq', 'None') },
@@ -621,6 +630,9 @@ export default {
 			)
 		},
 
+		/**
+		 * @spec openspec/specs/automation-designer/spec.md
+		 */
 		objectOpOperationOptions() {
 			return [
 				{ value: 'create', label: t('buildiq', 'Create') },
@@ -688,6 +700,9 @@ export default {
 				.every((a) => this.generateDocumentActionValid(a))
 		},
 
+		/**
+		 * @spec openspec/specs/automation-designer/spec.md
+		 */
 		validationMessage() {
 			if (this.derivedSlug === '' || this.name.trim() === '') {
 				return t('buildiq', 'Please enter a name.')

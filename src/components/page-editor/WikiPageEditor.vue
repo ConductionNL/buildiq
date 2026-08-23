@@ -354,6 +354,8 @@ export default {
 		 * "Wiki register and schema are marked invalid when empty").
 		 *
 		 * @return {{hasError: boolean, message: string}}
+		 *
+		 * @spec openspec/specs/form-editor-logic/spec.md
 		 */
 		registerMark() {
 			const shared = this.markFor('register')
@@ -376,6 +378,8 @@ export default {
 		 * Same required-field treatment as `registerMark`, for `schema`.
 		 *
 		 * @return {{hasError: boolean, message: string}}
+		 *
+		 * @spec openspec/specs/form-editor-logic/spec.md
 		 */
 		schemaMark() {
 			const shared = this.markFor('schema')

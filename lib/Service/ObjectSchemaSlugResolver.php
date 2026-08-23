@@ -186,6 +186,8 @@ class ObjectSchemaSlugResolver {
 	 * @param string $schemaSlug The schema slug to match.
 	 *
 	 * @return bool True when the entity is that schema in the buildiq register.
+	 *
+	 * @spec openspec/specs/data-scopes-authoring/spec.md
 	 */
 	public function isBuildiqSchema(object $entity, string $schemaSlug): bool {
 		if ($this->schemaSlug(entity: $entity) !== $schemaSlug) {

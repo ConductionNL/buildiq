@@ -310,6 +310,8 @@ export default {
 		 * Pre-translated meta line for the user-delta layer.
 		 *
 		 * @return {string}
+		 *
+		 * @spec openspec/specs/application-detail-overview/spec.md
 		 */
 		userMeta() {
 			if (!this.allowUserOverrides) {
@@ -366,6 +368,8 @@ export default {
 		 * the caller is not an owner/editor/admin — the section stays hidden.
 		 *
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-overview/spec.md
 		 */
 		async loadUserOverrides() {
 			if (!this.appSlug) return
@@ -404,6 +408,8 @@ export default {
 		 * Load the Application record by UUID.
 		 *
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-overview/spec.md
 		 */
 		async loadApplication() {
 			if (!this.appUuid) return
@@ -436,6 +442,8 @@ export default {
 		 * Load the caller's own user-delta state.
 		 *
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-overview/spec.md
 		 */
 		async loadUserDelta() {
 			if (!this.appSlug) return
@@ -465,6 +473,8 @@ export default {
 		 * Create an empty user delta.
 		 *
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-overview/spec.md
 		 */
 		async createOverride() {
 			if (!this.appSlug || this.creating) return
@@ -488,6 +498,8 @@ export default {
 		 * Delete the caller's own user delta.
 		 *
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-overview/spec.md
 		 */
 		async resetOverride() {
 			if (!this.appSlug) return
@@ -618,6 +630,8 @@ export default {
 		 *
 		 * @param {string} versionUuid The ApplicationVersion UUID.
 		 * @return {void}
+		 *
+		 * @spec openspec/specs/application-detail-overview/spec.md
 		 */
 		openInOpenRegister(versionUuid) {
 			if (!versionUuid) return

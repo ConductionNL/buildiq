@@ -135,6 +135,8 @@ export default {
 		 * Run the dry-run evaluation (spec REQ-AUTD-007).
 		 *
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/automation-designer/spec.md
 		 */
 		async run() {
 			this.running = true

@@ -168,7 +168,7 @@ class ApplicationsController extends Controller {
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-51
-	 * @spec openspec/changes/openbuild-admin-settings-abstraction/specs/admin-settings-owner-gating/spec.md#requirement-owner-signal-is-derived-from-existing-openbuild-primitives
+	 * @spec openspec/changes/openbuild-admin-settings-abstraction/specs/admin-settings-owner-gating/spec.md#requirement-owner-signal-is-derived-from-existing-buildiq-primitives
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -1180,7 +1180,7 @@ class ApplicationsController extends Controller {
 	 *
 	 * @return array<string, mixed> The manifest with `runtime.user.isOwner` set (boolean).
 	 *
-	 * @spec openspec/changes/openbuild-admin-settings-abstraction/specs/admin-settings-owner-gating/spec.md#requirement-owner-signal-is-derived-from-existing-openbuild-primitives
+	 * @spec openspec/changes/openbuild-admin-settings-abstraction/specs/admin-settings-owner-gating/spec.md#requirement-owner-signal-is-derived-from-existing-buildiq-primitives
 	 */
 	private function injectOwnerSignal(array $manifest, ?array $applicationArray, ?IUser $caller): array {
 		$isOwner = false;

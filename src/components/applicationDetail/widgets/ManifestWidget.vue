@@ -174,6 +174,8 @@ export default {
 		 * Pre-translated label for the admin delta's lifecycle status.
 		 *
 		 * @return {string}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		adminStatusLabel() {
 			const map = {
@@ -188,6 +190,8 @@ export default {
 		 * Pre-translated meta line for the user-delta layer.
 		 *
 		 * @return {string}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		userMeta() {
 			if (!this.allowUserOverrides) {
@@ -218,6 +222,8 @@ export default {
 		 * (footer hidden) for non-maintainers — the endpoint 403s.
 		 *
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		async loadOverrideCount() {
 			if (!this.appSlug) return
@@ -238,6 +244,8 @@ export default {
 		 * Load the calling user's own user-delta state for this app.
 		 *
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		async loadUserDelta() {
 			if (!this.appSlug) return
@@ -266,6 +274,8 @@ export default {
 		 * Create an empty user delta (the "I want my own override" no-op state).
 		 *
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		async createOverride() {
 			if (!this.appSlug || this.creating) return
@@ -293,6 +303,8 @@ export default {
 		 * Delete the caller's own user delta.
 		 *
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		async resetOverride() {
 			if (!this.appSlug) return

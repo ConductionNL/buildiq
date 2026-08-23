@@ -73,6 +73,8 @@ let inflight = null
  * exact defect this module fixes.
  *
  * @return {Promise<object>} The (possibly empty) uuid -> version map.
+ *
+ * @spec openspec/specs/application-versions/spec.md
  */
 export function ensureProductionVersionsLoaded() {
 	if (inflight) {

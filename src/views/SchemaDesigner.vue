@@ -1155,6 +1155,8 @@ export default {
 		 *
 		 * @param {object} data The created schema as returned by the store.
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		async attachSchemaToRegister(data) {
 			const schemaId =

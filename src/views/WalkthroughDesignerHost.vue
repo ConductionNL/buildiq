@@ -135,6 +135,8 @@ export default {
 		 * version's manifest (falling back to the Application's manifest).
 		 *
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		async load() {
 			this.loading = true
@@ -193,6 +195,8 @@ export default {
 		 * fields the designer never touches round-trip losslessly.
 		 *
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		async save() {
 			if (this.saving) return

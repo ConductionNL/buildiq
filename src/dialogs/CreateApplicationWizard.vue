@@ -124,6 +124,8 @@ export default {
 		 * configure).
 		 *
 		 * @return {Array<{ id: string, label: string }>}
+		 *
+		 * @spec openspec/specs/application-creation-wizard/spec.md
 		 */
 		wizardSteps() {
 			const steps = [
@@ -161,6 +163,8 @@ export default {
 		 * @param {string} stepId The step being left.
 		 * @param {object} stepData The accumulated wizard data.
 		 * @return {(boolean|string)}
+		 *
+		 * @spec openspec/specs/application-creation-wizard/spec.md
 		 */
 		validateStep(stepId, stepData) {
 			if (stepId === 'basics') {
@@ -188,6 +192,8 @@ export default {
 		 *
 		 * @param {object} stepData The accumulated wizard data.
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-creation-wizard/spec.md
 		 */
 		async onSubmit(stepData) {
 			const body = {
@@ -227,6 +233,8 @@ export default {
 		 * @param {string} uuid     The created Application UUID.
 		 * @param {object} stepData The accumulated wizard data.
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-creation-wizard/spec.md
 		 */
 		async uploadIcons(uuid, stepData) {
 			const lightSvg = resolveAppIcon(stepData.iconValue, { dark: false })
@@ -261,6 +269,8 @@ export default {
 		 * @param {string} filename The attachment filename.
 		 * @param {string} svg      The SVG markup to store.
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-creation-wizard/spec.md
 		 */
 		async attachIcon(uuid, field, filename, svg) {
 			// OR's files#create endpoint takes JSON { name, content } and writes
@@ -285,6 +295,8 @@ export default {
 		 * @param {object} data The error payload from the API.
 		 * @param {Error} [err] The original error, for a message fallback.
 		 * @return {void}
+		 *
+		 * @spec openspec/specs/application-creation-wizard/spec.md
 		 */
 		reportError(data, err) {
 			let message = data.message || data.detail

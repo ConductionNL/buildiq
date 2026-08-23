@@ -80,6 +80,8 @@ class AutomationCleanupListener implements IEventListener {
 	 * @param Event $event Dispatched event.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/automation-designer/spec.md
 	 */
 	public function handle(Event $event): void {
 		if (($event instanceof ObjectDeletedEvent) === false) {

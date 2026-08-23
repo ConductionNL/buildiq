@@ -110,6 +110,8 @@ class VirtualAppCredentialRegistrar {
 	 * @return void
 	 *
 	 * @spec openregister/openspec/changes/per-app-doriath-application/specs/credential-broker/spec.md#per-app-doriath-application-registration
+	 *
+	 * @spec openspec/specs/app-channel-application/spec.md
 	 */
 	public function onPublish(string $slug, ?IUser $caller): void {
 		try {
@@ -247,6 +249,8 @@ class VirtualAppCredentialRegistrar {
 	 * @param string $fqcn The service FQCN.
 	 *
 	 * @return object|null The resolved service, or null when the class is absent/unresolvable.
+	 *
+	 * @spec openspec/specs/app-channel-application/spec.md
 	 */
 	protected function resolveService(string $fqcn): ?object {
 		if (class_exists($fqcn) === false) {
