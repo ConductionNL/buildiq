@@ -110,7 +110,7 @@
 				}}
 			</NcActionButton>
 			<NcActionLink
-				href="https://openbuild.conduction.nl"
+				href="https://buildiq.conduction.nl"
 				target="_blank"
 				rel="noopener noreferrer">
 				<template #icon>

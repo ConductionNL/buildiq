@@ -103,7 +103,7 @@
 			"id": "Documentation",
 			"label": "Documentation",
 			"icon": "BookOpenVariantOutline",
-			"href": "https://openbuild.conduction.nl",
+			"href": "https://buildiq.conduction.nl",
 			"section": "footer",
 			"order": 90
 		},
@@ -152,7 +152,7 @@
 					"enabled": true,
 					"showMetadata": true
 				},
-				"documentationUrl": "https://openbuild.conduction.nl"
+				"documentationUrl": "https://buildiq.conduction.nl"
 			}
 		},
 		{
@@ -247,7 +247,7 @@
 				"sidebar": {
 					"enabled": false
 				},
-				"documentationUrl": "https://openbuild.conduction.nl"
+				"documentationUrl": "https://buildiq.conduction.nl"
 			},
 			"_note": "Top-level schemas overview \u2014 renders the SchemaDesignerView (list mode) via the registry-backed `slots.default` override so the primary action is the native \"Add schema\" flow (SchemaListPanel + AddSchemaDialog). Previously this page was type:\"index\" and fell through to the generic CnIndexPage, which keys its Add button off config.schema (\"application\") and so mislabelled the action \"Add Application\". A type:\"custom\" + top-level `component` does NOT resolve here because CnPageRenderer (beta.107) dispatches custom pages via the empty legacy customComponents map, not the v2 registry; the slot-override path (resolvedSlotEntries) is the one that reads cnRegistry. With no :schemaId route param SchemaDesignerView renders list mode and the no-slug /schemas shortcut falls back to the hello-world app. Per-app drill-down lives under /builder/:slug/schemas."
 		},
@@ -260,7 +260,7 @@
 			"config": {
 				"register": "buildiq",
 				"schema": "application-template",
-				"documentationUrl": "https://openbuild.conduction.nl"
+				"documentationUrl": "https://buildiq.conduction.nl"
 			},
 			"_note": "Templates renders the store-aware TemplateGallery view (buildiq-remote-template-store): when a registry is configured the remote store search is the primary surface with built-in templates secondary; with no registry it falls back to the built-in templates as today. Install clones via CloneTemplateDialog."
 		},
@@ -279,7 +279,7 @@
 				"sidebar": {
 					"enabled": false
 				},
-				"documentationUrl": "https://openbuild.conduction.nl"
+				"documentationUrl": "https://buildiq.conduction.nl"
 			},
 			"_note": "Per-app schema list under the builder route — renders SchemaDesignerView (list mode, since there is no :schemaId param) via the registry-backed `slots.default` override, scoped to the virtual app identified by :slug (SchemaDesigner.vue reads `$route.params.slug`). Previously type:\"index\" with no slot, which fell through to the generic CnIndexPage keyed on config.schema (\"application\") and so listed Applications instead of the app's schemas (buildiq#41). Mirrors the top-level `/schemas` page fix above; per-schema drill-down lives at /builder/:slug/schemas/:schemaId (SchemaDesigner, detail mode)."
 		},
@@ -296,7 +296,7 @@
 					"enabled": true,
 					"showMetadata": true
 				},
-				"documentationUrl": "https://openbuild.conduction.nl"
+				"documentationUrl": "https://buildiq.conduction.nl"
 			},
 			"slots": {
 				"default": "SchemaDesignerView"
@@ -315,7 +315,7 @@
 					"enabled": true,
 					"showMetadata": true
 				},
-				"documentationUrl": "https://openbuild.conduction.nl"
+				"documentationUrl": "https://buildiq.conduction.nl"
 			},
 			"slots": {
 				"default": "PageDesignerView"
@@ -334,7 +334,7 @@
 					"enabled": true,
 					"showMetadata": true
 				},
-				"documentationUrl": "https://openbuild.conduction.nl"
+				"documentationUrl": "https://buildiq.conduction.nl"
 			},
 			"slots": {
 				"default": "WalkthroughDesignerView"
@@ -353,7 +353,7 @@
 					"enabled": true,
 					"showMetadata": true
 				},
-				"documentationUrl": "https://openbuild.conduction.nl"
+				"documentationUrl": "https://buildiq.conduction.nl"
 			}
 		},
 		{
@@ -370,7 +370,7 @@
 			"type": "roadmap",
 			"title": "Features & roadmap",
 			"config": {
-				"documentationUrl": "https://openbuild.conduction.nl"
+				"documentationUrl": "https://buildiq.conduction.nl"
 			}
 		}
 	],

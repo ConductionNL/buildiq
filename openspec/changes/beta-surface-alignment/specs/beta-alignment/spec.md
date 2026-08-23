@@ -6,7 +6,7 @@
 
 Buildiq's `appinfo/info.xml` description, `src/manifest.json` nav/menu
 labels, the `conduction.nl/apps/buildiq` product page (EN + NL), and the
-`openbuild.conduction.nl` docs MUST only describe composition sources,
+`buildiq.conduction.nl` docs MUST only describe composition sources,
 license, and features that are demonstrably implemented in `lib/`/`src/` at
 the time of writing. A composition source or feature name MUST NOT appear on
 a public surface unless it is traceable to a concrete class/component.

@@ -21,7 +21,7 @@ const BRAND_THEME = require.resolve('@conduction/docusaurus-preset/theme');
 const config = createConfig({
   title: 'Buildiq',
   tagline: 'Citizen-developer app builder for Nextcloud — compose apps from registers, connectors, workflows, and documents without code',
-  url: 'https://openbuild.conduction.nl',
+  url: 'https://buildiq.conduction.nl',
   baseUrl: '/',
 
   organizationName: 'ConductionNL',
@@ -60,7 +60,7 @@ const config = createConfig({
              plus the standard node_modules bucket. */
           exclude: ['**/node_modules/**', 'src/**'],
           sidebarPath: require.resolve('./sidebars.js'),
-          editUrl: 'https://codeberg.org/Conduction/buildiq/src/branch/main/docs/',
+          editUrl: 'https://github.com/ConductionNL/buildiq/tree/main/docs/',
         },
         blog: false,
         theme: {
@@ -86,8 +86,8 @@ const config = createConfig({
         label: 'Documentation',
       },
       {
-        href: 'https://codeberg.org/Conduction/buildiq',
-        label: 'Codeberg',
+        href: 'https://github.com/ConductionNL/buildiq',
+        label: 'GitHub',
         position: 'right',
       },
       { type: 'localeDropdown', position: 'right' },

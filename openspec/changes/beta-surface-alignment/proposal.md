@@ -9,7 +9,7 @@ Buildiq is the fleet's citizen-developer app builder ("Compose Nextcloud
 apps from the Technical Core", per `conduction-website/src/pages/connext.mdx`).
 Before beta release, its four public-facing surfaces — `appinfo/info.xml`,
 `src/manifest.json` nav, the `conduction.nl/apps/buildiq` product page
-(EN+NL), and the `openbuild.conduction.nl` docs — must agree on feature
+(EN+NL), and the `buildiq.conduction.nl` docs — must agree on feature
 vocabulary, version, license, and dependency declarations. They did not:
 
 - `appinfo/info.xml` declared `<licence>agpl</licence>` while `composer.json`
@@ -36,7 +36,7 @@ vocabulary, version, license, and dependency declarations. They did not:
 - Product page version was stale (`v0.3`) against `info.xml`'s `0.5.40`.
 - NL product page's `secondaryCta` pointed at the dead
   `docs.conduction.nl/buildiq` — the real docs deploy topology
-  (`docs/docusaurus.config.js`) serves at `openbuild.conduction.nl`.
+  (`docs/docusaurus.config.js`) serves at `buildiq.conduction.nl`.
 - `info.xml` declared no `<app>` dependency despite `src/manifest.json`
   declaring `"dependencies": ["openregister"]` as a hard requirement — every
   virtual-app manifest, schema, and object Buildiq manages is an
@@ -82,7 +82,7 @@ corrected.
 | "n8n workflows" (product page EN+NL, `docs/intro.md`) | No n8n integration code exists; only comments noting it's an *external* concern. Replaced with "Procest workflows", which is real. |
 | "Pipelinq" (`docs/intro.md` frontmatter) | Copy-paste error — Pipelinq is an unrelated app. Replaced with "Procest". |
 | Stale product-page version `v0.3` | `info.xml` (source of truth) is `0.5.40`. Bumped product page (EN+NL) to `v0.5`. |
-| NL page's dead `docs.conduction.nl/buildiq` link | Real docs deploy topology serves at `openbuild.conduction.nl` (`docs/docusaurus.config.js` `url:`). Corrected to match the EN page. |
+| NL page's dead `docs.conduction.nl/buildiq` link | Real docs deploy topology serves at `buildiq.conduction.nl` (`docs/docusaurus.config.js` `url:`). Corrected to match the EN page. |
 | Missing `<app>openregister</app>` dependency | `src/manifest.json` already declares `"dependencies": ["openregister"]` as hard. Added the `<app>` element (precedent: `openconnector`, `portaliq` `info.xml`). |
 | "Config-over-code" / GitHub export not mentioned in copy | Both capabilities are real (see table above) but were absent from the product-page intro and docs bullet list. Added. |
 

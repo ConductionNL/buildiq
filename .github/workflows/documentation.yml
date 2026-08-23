@@ -10,4 +10,6 @@ jobs:
   deploy:
     uses: ConductionNL/.github/.github/workflows/documentation.yml@main
     with:
-      cname: openbuild.conduction.nl
+      cname: buildiq.conduction.nl
+
+      docs-hosts: openbuild.conduction.nl,buildiq.conduction.nl

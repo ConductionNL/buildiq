@@ -37,7 +37,7 @@
 - [x] 3.3 Mention config-over-code manifest overrides and GitHub export
       alongside the existing ZIP-export/RBAC claims.
 - [x] 3.4 Fix NL page's dead `docs.conduction.nl/buildiq` link →
-      `openbuild.conduction.nl`.
+      `buildiq.conduction.nl`.
 
 ## 4. Fix docs
 

@@ -22,7 +22,7 @@ A virtual app is one record in Buildiq's `Application` OR schema. The shape is:
 }
 ```
 
-The `manifest` object validates against [`@conduction/nextcloud-vue/src/schemas/app-manifest.schema.json`](https://codeberg.org/Conduction/nextcloud-vue/src/branch/main/src/schemas/app-manifest.schema.json). The closed `type` enum for pages is `index | detail | dashboard | logs | settings | chat | files | form | custom`.
+The `manifest` object validates against [`@conduction/nextcloud-vue/src/schemas/app-manifest.schema.json`](https://github.com/ConductionNL/nextcloud-vue/tree/main/src/schemas/app-manifest.schema.json). The closed `type` enum for pages is `index | detail | dashboard | logs | settings | chat | files | form | custom`.
 
 ## Creating a virtual app with the wizard
 
@@ -108,7 +108,7 @@ request — it never competes with Save.
 
 ## Manifest checklist
 
-Per [ADR-024](https://codeberg.org/Conduction/hydra/src/branch/main/openspec/architecture/adr-024-app-manifest.md):
+Per [ADR-024](https://github.com/ConductionNL/hydra/tree/main/openspec/architecture/adr-024-app-manifest.md):
 
 - `version` (semver) — your app's content version
 - `dependencies` — list of NC app IDs that must be installed (almost always `["openregister"]`)
@@ -116,7 +116,7 @@ Per [ADR-024](https://codeberg.org/Conduction/hydra/src/branch/main/openspec/arc
 - `pages[]` — at least one entry; every page's `id` MUST be unique and match a vue-router route name
 - `label` / `title` strings are i18n KEYS, not literals. The consuming app's `t()` resolves them. Use kebab.dot.notation: `myapp.permits.title.list`.
 
-Per [ADR-007](https://codeberg.org/Conduction/hydra/src/branch/main/openspec/architecture/adr-007-i18n.md):
+Per [ADR-007](https://github.com/ConductionNL/hydra/tree/main/openspec/architecture/adr-007-i18n.md):
 
 - Every translation key MUST exist in `l10n/en.json` AND `l10n/nl.json` of the **Buildiq** repo (until per-virtual-app translations land in chain spec `buildiq-page-editor`).
 
