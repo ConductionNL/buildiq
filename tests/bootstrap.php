@@ -27,7 +27,23 @@ require_once __DIR__ . '/../vendor/autoload.php';
 // createMock(), which reads as a broken test rather than a missing dependency.
 // Only the two CONSTANT HOLDERS are stubbed: stubbing Doctrine\DBAL\Connection
 // as well fatals a full-server run, because OC\DB\Connection extends it.
-require_once __DIR__ . '/stubs/DoctrineStubs.php';
+//
+// ONLY WHEN THERE IS NO REAL NEXTCLOUD. The stub's own docblock explains that
+// class_exists() cannot protect it — at the moment this file runs the genuine
+// Doctrine is not yet reachable, so the guard passes and the STUB WINS THE NAME
+// for the rest of the process. In a full-server leg that is not a harmless
+// shadow: Nextcloud's AppConfig reads ArrayParameterType::BINARY while loading
+// app versions, and the stub does not have it, so every PHPUnit cell died in the
+// bootstrap with "Undefined constant Doctrine\DBAL\ArrayParameterType::BINARY"
+// — before a single test ran, and long before any code this app owns.
+//
+// Completing the constant list would fix that one symbol and leave the next one
+// waiting. The real fix is not to shadow a class that is genuinely present: when
+// lib/base.php exists, the server ships doctrine/dbal in 3rdparty and the stub
+// has nothing to add.
+if (file_exists(__DIR__ . '/../../../lib/base.php') === false) {
+	require_once __DIR__ . '/stubs/DoctrineStubs.php';
+}
 require_once __DIR__ . '/stubs/nc-hooks-emitter.stub.php';
 
 // vendor/nextcloud/ocp doesn't ship an autoload entry — it's intended as

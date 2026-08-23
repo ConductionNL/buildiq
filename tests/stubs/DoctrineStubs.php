@@ -64,6 +64,14 @@ namespace Doctrine\DBAL {
 			public const STRING = 101;
 			public const INTEGER = 102;
 			public const ASCII = 103;
+			// Real Doctrine has this one too, and Nextcloud's AppConfig reads it
+			// while loading app versions. Omitting it is what made a full-server
+			// run die in the bootstrap with "Undefined constant
+			// Doctrine\DBAL\ArrayParameterType::BINARY". The bootstrap no longer
+			// loads this file when a real Nextcloud is present, which is the
+			// actual fix; this keeps the stub a faithful stand-in where it IS
+			// used, so the same gap cannot reopen through a different caller.
+			public const BINARY = 104;
 		}
 	}
 
