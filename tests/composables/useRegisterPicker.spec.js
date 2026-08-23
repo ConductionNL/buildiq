@@ -5,7 +5,7 @@
  * Vitest spec for `useRegisterPicker` composable.
  *
  * Covers REQ-OBFFUI-001 (retrofit-2026-05-26-frontend-foundation):
- *  - resolveAppRegister: returns 'openbuild-{slug}' when slug set, '' otherwise.
+ *  - resolveAppRegister: returns 'buildiq-{slug}' when slug set, '' otherwise.
  *  - fetchRegisters: returns array of registers; per-app register sorted first.
  *  - fetchRegisters: returns [] on HTTP error or network failure.
  *  - fetchSchemas: returns schemas for a given register.
@@ -45,7 +45,7 @@ describe('useRegisterPicker — REQ-OBFFUI-001', () => {
 	// ------------------------------------------------------------------ //
 
 	describe('resolveAppRegister', () => {
-		it("returns 'openbuild-{slug}' when appSlug is set", () => {
+		it("returns 'buildiq-{slug}' when appSlug is set", () => {
 			const { resolveAppRegister } = useRegisterPicker({ appSlug: 'my-app' })
 			expect(resolveAppRegister()).toBe('openbuild-my-app')
 		})

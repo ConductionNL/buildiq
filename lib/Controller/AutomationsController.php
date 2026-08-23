@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild AutomationsController
+ * Buildiq AutomationsController
  *
  * REST surface for the automation-designer change (spec automation-designer
  * REQ-AUTD-005/006/007/008). This controller owns BOTH the CRUD on the
@@ -17,7 +17,7 @@
  *   - POST   /api/automations/{uuid}/dry-run — evaluate via the rules engine, no side effects
  *   - GET    /api/automations/{uuid}/status  — recompute drift against live artifacts
  *
- * WHY CRUD IS HERE AND NOT ON OR REST (Conduction/openbuild#173)
+ * WHY CRUD IS HERE AND NOT ON OR REST (Conduction/buildiq#173)
  * -------------------------------------------------------------
  * ADR-022 says apps consume OpenRegister's abstractions rather than wrapping
  * them, and that default holds wherever OR's own authorization can express the
@@ -29,7 +29,7 @@
  * when the version is the production one".
  *
  * The three CRUD writes themselves live in
- * {@see \OCA\OpenBuild\Service\AutomationWriteService} — this controller is the
+ * {@see \OCA\Buildiq\Service\AutomationWriteService} — this controller is the
  * HTTP surface, that service is the write path and the create-side RBAC scope.
  *
  * Before this controller took the writes, the designer POSTed OR REST
@@ -55,7 +55,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
- * @package  OCA\OpenBuild\Controller
+ * @package  OCA\Buildiq\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -74,14 +74,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Controller;
+namespace OCA\Buildiq\Controller;
 
-use OCA\OpenBuild\AppInfo\Application;
-use OCA\OpenBuild\Exception\UnsupportedAutomationCombinationException;
-use OCA\OpenBuild\Service\AutomationCompilerService;
-use OCA\OpenBuild\Service\AutomationWriteService;
-use OCA\OpenBuild\Service\ConditionActionExecutor;
-use OCA\OpenBuild\Service\PermissionResolver;
+use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
+use OCA\Buildiq\Service\AutomationCompilerService;
+use OCA\Buildiq\Service\AutomationWriteService;
+use OCA\Buildiq\Service\ConditionActionExecutor;
+use OCA\Buildiq\Service\PermissionResolver;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -332,7 +332,7 @@ class AutomationsController extends Controller {
 				try {
 					$outcome = $this->conditionExecutor->execute([$rule], $payload, true, null);
 				} catch (Throwable $e) {
-					$this->logger->error('OpenBuild: automation dry-run failed for ' . $uuid . ': ' . $e->getMessage());
+					$this->logger->error('Buildiq: automation dry-run failed for ' . $uuid . ': ' . $e->getMessage());
 					return $this->error(code: 'dry_run_failed', detail: 'Dry-run evaluation failed', status: Http::STATUS_UNPROCESSABLE_ENTITY);
 				}
 
@@ -449,7 +449,7 @@ class AutomationsController extends Controller {
 
 			return $action($automation);
 		} catch (Throwable $e) {
-			$this->logger->error('OpenBuild: AutomationsController failed for ' . $uuid . ': ' . $e->getMessage(), ['exception' => $e]);
+			$this->logger->error('Buildiq: AutomationsController failed for ' . $uuid . ': ' . $e->getMessage(), ['exception' => $e]);
 			return $this->error(code: 'internal_error', detail: $e->getMessage(), status: Http::STATUS_INTERNAL_SERVER_ERROR);
 		}//end try
 

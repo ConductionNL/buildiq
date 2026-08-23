@@ -1,14 +1,14 @@
 ## 1. Schema Designer sub-editors
 
-- [x] 1.1 `src/components/schema-editor/LifecycleEditor.vue:56` — add `:aria-label="t('openbuild', 'Remove state')"` to the remove-state `NcButton`.
-- [x] 1.2 `src/components/schema-editor/LifecycleEditor.vue:108` — add `:aria-label="t('openbuild', 'Remove transition')"` to the remove-transition `NcButton`.
-- [x] 1.3 `src/components/schema-editor/LifecycleEditor.vue:147` — add `:aria-label="t('openbuild', 'Remove action')"` to the remove-action `NcButton`.
-- [x] 1.4 `src/components/schema-editor/WidgetEditor.vue:49` — add `:aria-label="t('openbuild', 'Remove widget')"` to the remove-widget `NcButton`.
-- [x] 1.5 `src/components/schema-editor/RelationEditor.vue:53` — add `:aria-label="t('openbuild', 'Remove relation')"` to the remove-relation `NcButton`.
+- [x] 1.1 `src/components/schema-editor/LifecycleEditor.vue:56` — add `:aria-label="t('buildiq', 'Remove state')"` to the remove-state `NcButton`.
+- [x] 1.2 `src/components/schema-editor/LifecycleEditor.vue:108` — add `:aria-label="t('buildiq', 'Remove transition')"` to the remove-transition `NcButton`.
+- [x] 1.3 `src/components/schema-editor/LifecycleEditor.vue:147` — add `:aria-label="t('buildiq', 'Remove action')"` to the remove-action `NcButton`.
+- [x] 1.4 `src/components/schema-editor/WidgetEditor.vue:49` — add `:aria-label="t('buildiq', 'Remove widget')"` to the remove-widget `NcButton`.
+- [x] 1.5 `src/components/schema-editor/RelationEditor.vue:53` — add `:aria-label="t('buildiq', 'Remove relation')"` to the remove-relation `NcButton`.
 
 ## 2. Walkthrough Designer
 
-- [x] 2.1 `src/components/walkthrough-editor/WalkthroughDesigner.vue:102` — add `:aria-label="t('openbuild', 'Add option')"` to the add-option `NcButton` (matches the existing `'Remove option'` label on its sibling at line 111).
+- [x] 2.1 `src/components/walkthrough-editor/WalkthroughDesigner.vue:102` — add `:aria-label="t('buildiq', 'Add option')"` to the add-option `NcButton` (matches the existing `'Remove option'` label on its sibling at line 111).
 
 ## 3. i18n
 

@@ -14,7 +14,7 @@
 		<p class="block-library-panel__intro">
 			{{
 				t(
-					'openbuild',
+					'buildiq',
 					'Blocks saved by anyone in your organisation. Insert deep-copies a block onto this page — editing the source later never changes an already-inserted copy.',
 				)
 			}}
@@ -22,13 +22,13 @@
 
 		<NcSelect
 			v-model="categoryFilter"
-			:inputLabel="t('openbuild', 'Filter by category')"
+			:inputLabel="t('buildiq', 'Filter by category')"
 			:options="categoryOptions"
 			:clearable="true"
-			:placeholder="t('openbuild', 'All categories')" />
+			:placeholder="t('buildiq', 'All categories')" />
 
 		<label class="block-library-panel__import">
-			{{ t('openbuild', 'Import a block') }}
+			{{ t('buildiq', 'Import a block') }}
 			<input type="file" accept="application/json" @change="onImportFile" />
 		</label>
 
@@ -42,10 +42,10 @@
 
 		<NcEmptyContent
 			v-else-if="filteredBlocks.length === 0"
-			:name="t('openbuild', 'No blocks yet')"
+			:name="t('buildiq', 'No blocks yet')"
 			:description="
 				t(
-					'openbuild',
+					'buildiq',
 					'Save a widget or section from the designer to build your first block.',
 				)
 			" />
@@ -68,21 +68,21 @@
 				</div>
 				<div class="block-card__actions">
 					<NcButton variant="primary" @click="onInsert(block)">
-						{{ t('openbuild', 'Insert') }}
+						{{ t('buildiq', 'Insert') }}
 					</NcButton>
 					<NcButton @click="onExport(block)">
-						{{ t('openbuild', 'Export') }}
+						{{ t('buildiq', 'Export') }}
 					</NcButton>
 					<template v-if="confirmDeleteSlug === block.slug">
 						<NcButton variant="error" @click="onDelete(block)">
-							{{ t('openbuild', 'Confirm delete') }}
+							{{ t('buildiq', 'Confirm delete') }}
 						</NcButton>
 						<NcButton @click="confirmDeleteSlug = ''">
-							{{ t('openbuild', 'Cancel') }}
+							{{ t('buildiq', 'Cancel') }}
 						</NcButton>
 					</template>
 					<NcButton v-else @click="confirmDeleteSlug = block.slug">
-						{{ t('openbuild', 'Delete') }}
+						{{ t('buildiq', 'Delete') }}
 					</NcButton>
 				</div>
 			</li>
@@ -249,11 +249,9 @@ export default {
 				const count = Array.isArray(fragment.widgets)
 					? fragment.widgets.length
 					: 0
-				return t('openbuild', '{count} widget(s) in this section', { count })
+				return t('buildiq', '{count} widget(s) in this section', { count })
 			}
-			return (
-				(fragment && fragment.widgetKey) || t('openbuild', 'Single widget')
-			)
+			return (fragment && fragment.widgetKey) || t('buildiq', 'Single widget')
 		},
 
 		/**
@@ -342,8 +340,8 @@ export default {
 			} catch (e) {
 				this.importError =
 					e instanceof BlockImportError
-						? t('openbuild', 'That file is not a valid block export.')
-						: t('openbuild', 'Import failed: {message}', {
+						? t('buildiq', 'That file is not a valid block export.')
+						: t('buildiq', 'Import failed: {message}', {
 								message: e && e.message ? e.message : String(e),
 							})
 			}
@@ -392,7 +390,7 @@ export default {
 					data?.detail
 					|| data?.error
 					|| e?.message
-					|| t('openbuild', 'Import failed.')
+					|| t('buildiq', 'Import failed.')
 			}
 		},
 
@@ -413,7 +411,7 @@ export default {
 				)
 				this.blocks = this.blocks.filter((b) => b.slug !== block.slug)
 			} catch (e) {
-				this.importError = t('openbuild', 'Deleting the block failed.')
+				this.importError = t('buildiq', 'Deleting the block failed.')
 			}
 		},
 	},

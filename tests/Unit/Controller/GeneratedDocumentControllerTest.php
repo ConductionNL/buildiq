@@ -12,7 +12,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Controller
+ * @package  OCA\Buildiq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -25,9 +25,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Controller;
+namespace OCA\Buildiq\Tests\Unit\Controller;
 
-use OCA\OpenBuild\Controller\GeneratedDocumentController;
+use OCA\Buildiq\Controller\GeneratedDocumentController;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
@@ -107,7 +107,7 @@ final class GeneratedDocumentControllerTest extends TestCase {
 
 		$appData = $this->createMock(IAppData::class);
 		$appData->method('getFolder')->with('generated-documents')->willReturn($rootFolder);
-		$this->appDataFactory->method('get')->with('openbuild')->willReturn($appData);
+		$this->appDataFactory->method('get')->with('buildiq')->willReturn($appData);
 
 	}//end wireToken()
 

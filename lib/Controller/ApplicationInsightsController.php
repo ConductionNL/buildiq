@@ -1,12 +1,12 @@
 <?php
 
 /**
- * OpenBuild ApplicationInsightsController
+ * Buildiq ApplicationInsightsController
  *
  * REST surface for the maintainer-dashboard insights endpoint described
- * in `openbuild-app-detail-overview` / capability `application-insights`:
+ * in `buildiq-app-detail-overview` / capability `application-insights`:
  *
- *   GET /index.php/apps/openbuild/api/applications/{appUuid}/versions/{versionUuid}/insights?window=7d|30d|90d
+ *   GET /index.php/apps/buildiq/api/applications/{appUuid}/versions/{versionUuid}/insights?window=7d|30d|90d
  *
  * Returns `{kpis, activity}` for a single ApplicationVersion (REQ-OBAI-001).
  * Successful responses carry `Cache-Control: public, max-age=60`
@@ -19,7 +19,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
- * @package  OCA\OpenBuild\Controller
+ * @package  OCA\Buildiq\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -36,10 +36,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Controller;
+namespace OCA\Buildiq\Controller;
 
-use OCA\OpenBuild\AppInfo\Application;
-use OCA\OpenBuild\Service\ApplicationInsightsService;
+use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Service\ApplicationInsightsService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;

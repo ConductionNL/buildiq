@@ -1,9 +1,9 @@
 <?php
 
 /**
- * OpenBuild admin settings template.
+ * Buildiq admin settings template.
  *
- * Renders the mount point for the openbuild-settings.js Vue bundle. Server
+ * Renders the mount point for the buildiq-settings.js Vue bundle. Server
  * data (e.g. version) is delivered to the bundle via IInitialState +
  * loadState — not via DOM data-* attributes, per ADR-004 hard rule and the
  * hydra-gate-initial-state mechanical gate.
@@ -14,7 +14,7 @@
 
 use OCP\Util;
 
-$appId = OCA\OpenBuild\AppInfo\Application::APP_ID;
+$appId = OCA\Buildiq\AppInfo\Application::APP_ID;
 Util::addScript($appId, $appId . '-settings');
 ?>
-<div id="openbuild-settings"></div>
+<div id="buildiq-settings"></div>

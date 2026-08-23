@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild TemplateRepoSerializer
+ * Buildiq TemplateRepoSerializer
  *
  * Serialises a seeded `application-template` object into the SAME canonical
  * GitHub app-repo file map AppRepoSerializer produces for an Application +
@@ -17,7 +17,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -32,7 +32,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 use OCA\OpenRegister\Db\SchemaMapper;
 use Psr\Log\LoggerInterface;
@@ -290,7 +290,7 @@ class TemplateRepoSerializer {
 			$schema = $this->schemaMapper->find($reference, _multitenancy: false);
 		} catch (Throwable $e) {
 			$this->logger->debug(
-				'OpenBuild TemplateRepoSerializer: could not resolve companion schema "'
+				'Buildiq TemplateRepoSerializer: could not resolve companion schema "'
 				. ((string)$reference) . '": ' . $e->getMessage()
 			);
 			return null;
@@ -330,10 +330,10 @@ class TemplateRepoSerializer {
 			return null;
 		}
 
-		$name = (string)($template['title'] ?? ($template['slug'] ?? 'OpenBuild app'));
+		$name = (string)($template['title'] ?? ($template['slug'] ?? 'Buildiq app'));
 
 		return '# ' . $name . "\n\n" . $description . "\n\n"
-			. '_Built with [OpenBuild](https://conduction.nl) — a citizen-developer app builder for Nextcloud._' . "\n";
+			. '_Built with [Buildiq](https://conduction.nl) — a citizen-developer app builder for Nextcloud._' . "\n";
 	}//end buildReadme()
 
 	/**
@@ -348,7 +348,7 @@ class TemplateRepoSerializer {
 		$sorted = $this->sortKeysRecursive(value: $data);
 		$encoded = json_encode($sorted, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 		if ($encoded === false) {
-			$this->logger->warning('OpenBuild TemplateRepoSerializer: JSON encode failed for a repo file.');
+			$this->logger->warning('Buildiq TemplateRepoSerializer: JSON encode failed for a repo file.');
 			return "{}\n";
 		}
 

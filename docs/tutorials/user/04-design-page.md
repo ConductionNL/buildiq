@@ -19,7 +19,7 @@ By the end you will have added a new page to your virtual app, picked its type, 
 
 ## Steps
 
-1. Open the page designer for your app at `/apps/openbuild/builder/\<slug\>/pages`. The designer splits the screen into three panels: pages on the left, menu in the middle, the editor for the selected page on the right.
+1. Open the page designer for your app at `/apps/buildiq/builder/\<slug\>/pages`. The designer splits the screen into three panels: pages on the left, menu in the middle, the editor for the selected page on the right.
 
    ![Page designer overview](/screenshots/tutorials/user/04-design-page-01.png)
 

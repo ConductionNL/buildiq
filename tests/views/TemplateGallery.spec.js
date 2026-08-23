@@ -152,7 +152,7 @@ describe('TemplateGallery.vue — GitHub-only store', () => {
 		expect(axiosMock.get).toHaveBeenCalled()
 		const urls = axiosMock.get.mock.calls.map((c) => String(c[0]))
 		expect(
-			urls.some((u) => u.includes('/apps/openbuild/api/shop/github/search')),
+			urls.some((u) => u.includes('/apps/buildiq/api/shop/github/search')),
 		).toBe(true)
 
 		const cards = wrapper.findAll('.template-card')

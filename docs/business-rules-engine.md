@@ -11,7 +11,7 @@ from UI and code. Two paradigms are supported:
 - **Decision tables** (DMN 1.4) — multi-factor mapping (e.g. loan eligibility).
 - **Condition-action rules** — sequential triggers (e.g. invoice routing).
 
-RuleSets are first-class OpenRegister objects in the shared `openbuild`
+RuleSets are first-class OpenRegister objects in the shared `buildiq`
 register, versioned and deployed per tenant without an app redeploy.
 
 ## Lifecycle
@@ -104,7 +104,7 @@ for explaining an automated decision. The `RuleExecutionLogCleanup` background
 job (7-day interval) purges logs past the 90-day retention window.
 
 To query the audit trail for compliance, list `rule-execution-log` objects in
-the `openbuild` register filtered by `ruleSetId` and time window.
+the `buildiq` register filtered by `ruleSetId` and time window.
 
 ## Automation designer
 

@@ -120,7 +120,7 @@ export default {
 				// PUT expects it wrapped in `{ manifest }`.
 				await axios.put(
 					generateUrl(
-						`/apps/openbuild/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`,
+						`/apps/buildiq/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`,
 					),
 					{ manifest: version.manifest },
 				)
@@ -133,7 +133,7 @@ export default {
 				// what was broken is that the manifest never came back.
 				await this.obPatchApp({ status: 'draft' })
 			} catch (e) {
-				this.rollbackError = `${t('openbuild', 'Rollback failed')}: ${e.message || e}`
+				this.rollbackError = `${t('buildiq', 'Rollback failed')}: ${e.message || e}`
 			}
 		},
 	},

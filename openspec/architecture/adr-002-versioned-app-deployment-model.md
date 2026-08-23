@@ -6,10 +6,10 @@
 
 ## Context
 
-OpenBuild's current versioning model (chain spec #6 `openbuild-versioning`) treats every publish as a new `ApplicationVersion` snapshot row and points `Application.currentVersion` at the latest one. Two problems with this:
+Buildiq's current versioning model (chain spec #6 `buildiq-versioning`) treats every publish as a new `ApplicationVersion` snapshot row and points `Application.currentVersion` at the latest one. Two problems with this:
 
 1. **No safe playground for admins.** An admin who wants to change a live app has to edit the manifest in place. The change is visible to end users immediately, and there is no way to "try the change first". Citizen-developer apps need a place to experiment without breaking production.
-2. **Production data and test data share one register.** A virtual app's data lives in `openbuild-{slug}`. If the admin adds a new schema for an experiment, that schema (and any seeded test data) immediately surfaces in production. There is no isolation between "ship-quality" data and "I'm tinkering" data.
+2. **Production data and test data share one register.** A virtual app's data lives in `buildiq-{slug}`. If the admin adds a new schema for an experiment, that schema (and any seeded test data) immediately surfaces in production. There is no isolation between "ship-quality" data and "I'm tinkering" data.
 
 We also accumulate a `currentVersion` UUID on the Application record that gets updated by a writeback listener after every publish — a denormalised cache that exists because we don't have a clean way to ask "which version is live right now?". The user's instinct was that the field is redundant; the deeper cause is that the model itself conflates "the version" with "the app".
 
@@ -43,12 +43,12 @@ The wizard is the only place a chain is created in one shot; once an app exists,
 
 **Per-version register for data isolation:**
 
-Each ApplicationVersion owns its own OR register, named `openbuild-{slug}-{versionSlug}` (e.g. `openbuild-helloworld-production`, `openbuild-helloworld-staging`). Schemas and objects live in that register. Beta tinkering — including schema-shape changes and seeded test rows — can never contaminate production data because the registers are physically separate. The shared `openbuild` register continues to hold *system* schemas (Application, ApplicationVersion, ApplicationTemplate, …) per the hybrid-register memory.
+Each ApplicationVersion owns its own OR register, named `buildiq-{slug}-{versionSlug}` (e.g. `buildiq-helloworld-production`, `buildiq-helloworld-staging`). Schemas and objects live in that register. Beta tinkering — including schema-shape changes and seeded test rows — can never contaminate production data because the registers are physically separate. The shared `buildiq` register continues to hold *system* schemas (Application, ApplicationVersion, ApplicationTemplate, …) per the hybrid-register memory.
 
 **Routing — URL-param version switching, admin-only beyond production:**
 
-- `/apps/openbuild/{slug}` always serves the version pointed at by `Application.productionVersion`.
-- `/apps/openbuild/{slug}?version=<versionSlug>` serves the named version's manifest. Access to anything other than the production version requires the caller to have an editor/owner role on the Application (RBAC enforced server-side, not just hidden in the UI).
+- `/apps/buildiq/{slug}` always serves the version pointed at by `Application.productionVersion`.
+- `/apps/buildiq/{slug}?version=<versionSlug>` serves the named version's manifest. Access to anything other than the production version requires the caller to have an editor/owner role on the Application (RBAC enforced server-side, not just hidden in the UI).
 - The app detail page exposes a **version switcher** that flips the URL parameter; admins can bookmark a version-specific URL, end users at the canonical URL never see anything but production.
 
 **Promotion — single downstream target, admin-chosen data semantics:**
@@ -85,7 +85,7 @@ Replaced by the explicit `productionVersion` relation on Application. The snapsh
 - N registers per app (one per version) means more OR records to provision. Mitigated: registers are cheap; the creation wizard provisions all of them up front.
 - Promotion is no longer "click publish" — it's a dialog with three data choices. Mitigated by sensible defaults per source/target pair (e.g. dev → staging defaults to "Start target with source data"; staging → production defaults to "Migrate target's existing data").
 - URL routing now has a query-parameter dimension that must be respected by every link, deep-link emitter, and integration. The default (no param) is `productionVersion`, so external links stay correct.
-- A migration is required: existing virtual apps need their `openbuild-{slug}` register renamed to `openbuild-{slug}-production`, and an Application + ApplicationVersion(name="production") pair must be backfilled from the existing flat Application row.
+- A migration is required: existing virtual apps need their `buildiq-{slug}` register renamed to `buildiq-{slug}-production`, and an Application + ApplicationVersion(name="production") pair must be backfilled from the existing flat Application row.
 - Linear-only chains rule out branching workflows in v1. Documented limitation; a future ADR can extend the model to a DAG when there is concrete demand.
 
 ## Alternatives considered
@@ -98,11 +98,11 @@ Replaced by the explicit `productionVersion` relation on Application. The snapsh
 
 ## Related
 
-- Supersedes the version-snapshot semantics from chain spec [`openbuild-version-snapshots`](../specs/openbuild-version-snapshots/spec.md) — that spec stays archived but its writeback model is retired by this ADR.
+- Supersedes the version-snapshot semantics from chain spec [`buildiq-version-snapshots`](../specs/buildiq-version-snapshots/spec.md) — that spec stays archived but its writeback model is retired by this ADR.
 - Replaces user feedback on the `currentVersion` field (the field disappears; "which version is live" becomes the `productionVersion` relation).
 - Cascades to:
-  - Detail-page overview spec (`openbuild-app-detail-overview`) — hero shows the version switcher; KPIs/activity graph scope to the selected version; structural widgets scope to the selected version's register.
-  - Exporter spec (`openbuild-exporter`) — export picks which version to bundle.
+  - Detail-page overview spec (`buildiq-app-detail-overview`) — hero shows the version switcher; KPIs/activity graph scope to the selected version; structural widgets scope to the selected version's register.
+  - Exporter spec (`buildiq-exporter`) — export picks which version to bundle.
   - Schema designer routing — `/builder/{slug}/schemas` becomes version-aware (`?version=<slug>` or path segment).
 - Builds on [[adr-001-app-assets-via-openregister-files]] — app-level assets live on the Application record, not on the version, so icons survive promotions and apply across all versions.
 - Roadmap dependencies (out of scope for v1, but the model accommodates):

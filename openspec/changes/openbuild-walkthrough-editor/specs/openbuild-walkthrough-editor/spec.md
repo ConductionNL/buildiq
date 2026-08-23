@@ -1,13 +1,13 @@
-# openbuild-walkthrough-editor Specification
+# buildiq-walkthrough-editor Specification
 
 **Status:** proposed
-**Scope:** openbuild
+**Scope:** buildiq
 **Tier:** V1
 **Depends on:** `cn-walkthrough-engine` (manifest `walkthrough` schema + `data-walkthrough-id`); ADR-041 (universal in-app editing); `layered-versioned-app-deltas`; ADR-043.
 
 ## Purpose
 
-Let an OpenBuild app owner author and edit a virtual app's product walkthrough
+Let an Buildiq app owner author and edit a virtual app's product walkthrough
 visually — by pointing at real UI — and persist it into the app's versioned
 manifest delta, with no code or hand-written JSON.
 
@@ -15,9 +15,9 @@ manifest delta, with no code or hand-written JSON.
 
 ### Requirement: REQ-WALK-OB-001 — Visual Tour Recorder In The Edit Shell
 
-OpenBuild SHALL add an **Edit walkthrough** mode to its in-app edit shell. In that
+Buildiq SHALL add an **Edit walkthrough** mode to its in-app edit shell. In that
 mode the owner SHALL be able to click any element in the running app to create a
-walkthrough step, and OpenBuild SHALL resolve the clicked element to the most stable
+walkthrough step, and Buildiq SHALL resolve the clicked element to the most stable
 `target` available — preferring a manifest identity (`nav-item` route, `widget`
 widgetKey, `action` id, `page` route), then an injected `data-walkthrough-id`
 (`element`), and only as a last resort a CSS `selector` (flagged as brittle).
@@ -30,7 +30,7 @@ widgetKey, `action` id, `page` route), then an injected `data-walkthrough-id`
 
 ### Requirement: REQ-WALK-OB-002 — Advance Conditions Are Recorded From Real Actions
 
-While recording a step, OpenBuild SHALL observe vue-router and the OpenRegister
+While recording a step, Buildiq SHALL observe vue-router and the OpenRegister
 object store and suggest the step's `advanceOn` from the owner's real action: a
 navigation SHALL suggest `route-match` with an `:id` `capture` when the route has an
 id param; creating an object SHALL suggest `object-created` with that
@@ -40,7 +40,7 @@ register/schema. The owner SHALL be able to confirm or edit the suggestion.
 
 - **GIVEN** the owner is recording a step and creates a product
 - **WHEN** the new product is saved
-- **THEN** OpenBuild SHALL suggest `advanceOn: { type: "object-created", register: ..., schema: "product" }` with an id `capture`
+- **THEN** Buildiq SHALL suggest `advanceOn: { type: "object-created", register: ..., schema: "product" }` with an id `capture`
 
 ### Requirement: REQ-WALK-OB-003 — Steps Are Editable, Orderable, And Versioned
 
@@ -58,7 +58,7 @@ drag-reorder steps.
 ### Requirement: REQ-WALK-OB-004 — Authored Tours Persist Into The Versioned Manifest Delta
 
 On save, the editor SHALL merge the authored `walkthrough` block into the app's
-manifest delta via the existing OpenBuild persistence path, tagged to the chosen
+manifest delta via the existing Buildiq persistence path, tagged to the chosen
 `ApplicationVersion`, and SHALL validate the block against the canonical v2 schema
 before persisting — an invalid block SHALL NOT be saved.
 

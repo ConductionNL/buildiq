@@ -2,7 +2,7 @@
 
 ### Requirement: Read endpoint returns the raw delta for client-side merge
 
-The system SHALL keep `GET /index.php/apps/openbuild/api/app-overrides/{appId}` as
+The system SHALL keep `GET /index.php/apps/buildiq/api/app-overrides/{appId}` as
 a **compatibility shim** returning the stored `manifestDelta` for that `appId`,
 now extended to be **scope-aware**: when the resolved hybrid `Application` has
 `allowUserOverrides == true` AND the authenticated caller owns a `scope: user`
@@ -11,7 +11,7 @@ endpoint SHALL return the layered delta chain so the fleet app's loader resolves
 `base ⊕ admin-delta ⊕ user-delta` client-side. When `allowUserOverrides` is
 `false`, or no user delta exists for the caller, the endpoint SHALL return exactly
 the admin delta as today (the user layer is never applied). The endpoint SHALL
-NOT merge the fleet app's bundled base server-side (OpenBuild does not hold it).
+NOT merge the fleet app's bundled base server-side (Buildiq does not hold it).
 When no hybrid Application exists for the `appId`, the endpoint SHALL return an
 empty delta so the merge is a no-op. The endpoint SHALL require an authenticated
 session. A caller SHALL never receive another user's delta.

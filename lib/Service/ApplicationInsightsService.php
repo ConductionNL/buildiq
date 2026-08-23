@@ -1,11 +1,11 @@
 <?php
 
 /**
- * OpenBuild ApplicationInsightsService
+ * Buildiq ApplicationInsightsService
  *
  * Computes the four KPI scalars + activity timeline rendered by the
  * Application detail-page maintainer dashboard (spec
- * `openbuild-app-detail-overview`, capability `application-insights`).
+ * `buildiq-app-detail-overview`, capability `application-insights`).
  *
  * Responsibilities:
  *   - Resolve the Application + ApplicationVersion records (IDOR-safe).
@@ -15,7 +15,7 @@
  *     auto-granted.
  *   - Walk `manifest.pages[].config.{register,schema}` to derive the
  *     schema-set scoped to the version's per-version register
- *     (`openbuild-{appSlug}-{versionSlug}`).
+ *     (`buildiq-{appSlug}-{versionSlug}`).
  *   - Fan out four KPI calls + one chart call to OpenRegister mappers /
  *     services and assemble the response payload.
  *
@@ -33,7 +33,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -52,13 +52,13 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 use DateTime;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IUser;
@@ -144,7 +144,7 @@ class ApplicationInsightsService {
 		private readonly LoggerInterface $logger,
 		private readonly ?PermissionResolver $permissionResolver = null,
 	) {
-		$this->cache = $cacheFactory->createDistributed('openbuild_insights');
+		$this->cache = $cacheFactory->createDistributed('buildiq_insights');
 	}//end __construct()
 
 	/**
@@ -277,13 +277,13 @@ class ApplicationInsightsService {
 
 			// Prefer the version's REAL register. Versions may share production's
 			// register (manifest-only versioning), so the
-			// `openbuild-{appSlug}-{versionSlug}` convention can name a register
+			// `buildiq-{appSlug}-{versionSlug}` convention can name a register
 			// that does not exist (yielding empty KPIs). Fall back to the
 			// convention only when the version carries no register.
 			$versionSlug = (string)($version['slug'] ?? '');
 			$registerSlug = (string)($version['register'] ?? '');
 			if ($registerSlug === '') {
-				$registerSlug = sprintf('openbuild-%s-%s', $appSlug, $versionSlug);
+				$registerSlug = sprintf('buildiq-%s-%s', $appSlug, $versionSlug);
 			}
 
 			$manifest = $this->extractManifest(version: $version);
@@ -307,7 +307,7 @@ class ApplicationInsightsService {
 			return $payload;
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: ApplicationInsightsService::computeInsights failed: {message}',
+				'Buildiq: ApplicationInsightsService::computeInsights failed: {message}',
 				['message' => $e->getMessage(), 'exception' => $e]
 			);
 			return null;
@@ -421,7 +421,7 @@ class ApplicationInsightsService {
 			return [$count, $timeline];
 		} catch (Throwable $e) {
 			$this->logger->debug(
-				'OpenBuild: auditByRegisters failed: {message}',
+				'Buildiq: auditByRegisters failed: {message}',
 				['message' => $e->getMessage()]
 			);
 			return [0, []];
@@ -450,7 +450,7 @@ class ApplicationInsightsService {
 			$registers = $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			$this->logger->debug(
-				'OpenBuild: resolveInstalledAppRegisters findAll failed: {message}',
+				'Buildiq: resolveInstalledAppRegisters findAll failed: {message}',
 				['message' => $e->getMessage()]
 			);
 			return [];
@@ -544,7 +544,7 @@ class ApplicationInsightsService {
 				}
 			} catch (Throwable $e) {
 				$this->logger->debug(
-					'OpenBuild: could not resolve schema slug "{slug}" to integer ID: {message}',
+					'Buildiq: could not resolve schema slug "{slug}" to integer ID: {message}',
 					['slug' => $slug, 'message' => $e->getMessage()]
 				);
 			}
@@ -614,7 +614,7 @@ class ApplicationInsightsService {
 		// Hybrid apps mirror an installed Nextcloud app and are not created with
 		// the per-app permission buckets virtual apps carry. Their insights are
 		// aggregate counts of the installed app (which has its own RBAC on the
-		// underlying data), surfaced on the OpenBuild detail page that the caller
+		// underlying data), surfaced on the Buildiq detail page that the caller
 		// already reached — so gate on an authenticated caller rather than the
 		// (absent) per-app role buckets.
 		if ((($application['appType'] ?? 'virtual') === 'hybrid')) {
@@ -717,7 +717,7 @@ class ApplicationInsightsService {
 			return $this->normaliseObject(object: $entity);
 		} catch (Throwable $e) {
 			$this->logger->debug(
-				'OpenBuild: ApplicationInsightsService::loadApplication failed for uuid={uuid}: {message}',
+				'Buildiq: ApplicationInsightsService::loadApplication failed for uuid={uuid}: {message}',
 				['uuid' => $uuid, 'message' => $e->getMessage()]
 			);
 			return null;
@@ -746,7 +746,7 @@ class ApplicationInsightsService {
 			return $this->normaliseObject(object: $entity);
 		} catch (Throwable $e) {
 			$this->logger->debug(
-				'OpenBuild: ApplicationInsightsService::loadVersion failed for uuid={uuid}: {message}',
+				'Buildiq: ApplicationInsightsService::loadVersion failed for uuid={uuid}: {message}',
 				['uuid' => $uuid, 'message' => $e->getMessage()]
 			);
 			return null;
@@ -837,7 +837,7 @@ class ApplicationInsightsService {
 
 		if (method_exists($this->auditTrailMapper, 'getDistinctActorCount') === false) {
 			$this->logger->debug(
-				'OpenBuild: getDistinctActorCount not available on AuditTrailMapper — '
+				'Buildiq: getDistinctActorCount not available on AuditTrailMapper — '
 				. 'degrade to 0 (depends on openregister-distinct-actor-aggregation)'
 			);
 			return 0;
@@ -847,7 +847,7 @@ class ApplicationInsightsService {
 			return (int)$this->auditTrailMapper->getDistinctActorCount($schemaIds, $hours);
 		} catch (Throwable $e) {
 			$this->logger->warning(
-				'OpenBuild: getDistinctActorCount failed: {message}',
+				'Buildiq: getDistinctActorCount failed: {message}',
 				['message' => $e->getMessage()]
 			);
 			return 0;
@@ -883,7 +883,7 @@ class ApplicationInsightsService {
 			} catch (Throwable $e) {
 				// Per-schema failure should not kill the aggregate — log and continue.
 				$this->logger->debug(
-					'OpenBuild: count for schema={schemaId} on register={register} failed: {message}',
+					'Buildiq: count for schema={schemaId} on register={register} failed: {message}',
 					['schemaId' => $schemaId, 'register' => $registerSlug, 'message' => $e->getMessage()]
 				);
 				continue;
@@ -938,7 +938,7 @@ class ApplicationInsightsService {
 			return $total;
 		} catch (Throwable $e) {
 			$this->logger->debug(
-				'OpenBuild: countAttachedFiles fallback failed: {message}',
+				'Buildiq: countAttachedFiles fallback failed: {message}',
 				['message' => $e->getMessage()]
 			);
 			return 0;
@@ -970,7 +970,7 @@ class ApplicationInsightsService {
 				return (int)$this->auditTrailMapper->countByRegisterAndWindow($schemaIds, $hours);
 			} catch (Throwable $e) {
 				$this->logger->debug(
-					'OpenBuild: countByRegisterAndWindow failed: {message}',
+					'Buildiq: countByRegisterAndWindow failed: {message}',
 					['message' => $e->getMessage()]
 				);
 				return 0;
@@ -996,7 +996,7 @@ class ApplicationInsightsService {
 			return $total;
 		} catch (Throwable $e) {
 			$this->logger->debug(
-				'OpenBuild: audit-event fallback failed: {message}',
+				'Buildiq: audit-event fallback failed: {message}',
 				['message' => $e->getMessage()]
 			);
 			return 0;
@@ -1096,7 +1096,7 @@ class ApplicationInsightsService {
 			return $timeline;
 		} catch (Throwable $e) {
 			$this->logger->debug(
-				'OpenBuild: buildActivityTimeline failed: {message}',
+				'Buildiq: buildActivityTimeline failed: {message}',
 				['message' => $e->getMessage()]
 			);
 			return [];

@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Controller
+ * @package  OCA\Buildiq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,11 +20,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Controller;
+namespace OCA\Buildiq\Tests\Unit\Controller;
 
-use OCA\OpenBuild\Controller\SetupController;
-use OCA\OpenBuild\Service\SettingsService;
-use OCA\OpenBuild\Service\TemplateSeedService;
+use OCA\Buildiq\Controller\SetupController;
+use OCA\Buildiq\Service\SettingsService;
+use OCA\Buildiq\Service\TemplateSeedService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -50,14 +50,14 @@ use ReflectionMethod;
  * gate-9 (semantic-auth) flags exactly that contradiction.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Controller
+ * @package  OCA\Buildiq\Tests\Unit\Controller
  * @author   Conduction Development Team <dev@conduction.nl>
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://conduction.nl
  *
  * No `@spec` anchor: the behaviour this asserts ("Admin-only idempotent
  * seed-templates action" / "Non-admin is rejected") lives only in the
- * `openbuild-first-time-setup` CHANGE delta, and an anchor into
+ * `buildiq-first-time-setup` CHANGE delta, and an anchor into
  * `openspec/changes/**` dangles as soon as that change is archived. Promoting
  * it to `openspec/specs/` is the right fix and is filed separately — it pulls
  * seven scenarios under gate-19, which needs real e2e coverage rather than a

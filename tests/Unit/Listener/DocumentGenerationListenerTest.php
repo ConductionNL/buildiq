@@ -14,7 +14,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Listener
+ * @package  OCA\Buildiq\Tests\Unit\Listener
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -27,16 +27,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Listener;
+namespace OCA\Buildiq\Tests\Unit\Listener;
 
-use OCA\OpenBuild\Listener\DocumentGenerationListener;
-use OCA\OpenBuild\Service\DocumentGenerationService;
+use OCA\Buildiq\Listener\DocumentGenerationListener;
+use OCA\Buildiq\Service\DocumentGenerationService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;

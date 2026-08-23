@@ -5,7 +5,7 @@
  * JSON-schema definition ships from nextcloud-vue (#132); the canonical
  * `validateManifest` treats it as an additive top-level key
  * (unknown-but-tolerated), and this module supplies the strict shape +
- * cross-reference checks openbuild needs, surfaced through the
+ * cross-reference checks buildiq needs, surfaced through the
  * `useManifestValidator` pipeline (the same mechanism the
  * workflow/connector/theme/document siblings use).
  *
@@ -75,53 +75,53 @@ export function validateScheduleEntry(entry, idx = 0) {
 	const errors = []
 	const at = (code) => `/schedules/${idx}: ${code}`
 	if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
-		errors.push(at('openbuild.schedule.error.invalid-shape'))
+		errors.push(at('buildiq.schedule.error.invalid-shape'))
 		return errors
 	}
 	for (const key of Object.keys(entry)) {
 		if (!ALLOWED_KEYS.includes(key)) {
 			errors.push(
-				`/schedules/${idx}/${key}: openbuild.schedule.error.unknown-key`,
+				`/schedules/${idx}/${key}: buildiq.schedule.error.unknown-key`,
 			)
 		}
 	}
 	// id
 	if (typeof entry.id !== 'string' || entry.id.trim() === '') {
-		errors.push(at('openbuild.schedule.error.id-required'))
+		errors.push(at('buildiq.schedule.error.id-required'))
 	} else if (!SLUG_RE.test(entry.id)) {
-		errors.push(at('openbuild.schedule.error.id-not-slug'))
+		errors.push(at('buildiq.schedule.error.id-not-slug'))
 	}
 	// cadence: exactly one of interval | cron
 	const hasInterval = entry.interval !== undefined
 	const hasCron = entry.cron !== undefined
 	if (hasInterval && hasCron) {
-		errors.push(at('openbuild.schedule.error.cadence-both'))
+		errors.push(at('buildiq.schedule.error.cadence-both'))
 	} else if (!hasInterval && !hasCron) {
-		errors.push(at('openbuild.schedule.error.cadence-required'))
+		errors.push(at('buildiq.schedule.error.cadence-required'))
 	} else if (hasInterval) {
 		if (
 			typeof entry.interval !== 'number'
 			|| !Number.isInteger(entry.interval)
 			|| entry.interval <= 0
 		) {
-			errors.push(at('openbuild.schedule.error.interval-invalid'))
+			errors.push(at('buildiq.schedule.error.interval-invalid'))
 		}
 	} else if (!isValidCron(entry.cron)) {
-		errors.push(at('openbuild.schedule.error.cron-invalid'))
+		errors.push(at('buildiq.schedule.error.cron-invalid'))
 	}
 	// action
 	if (!SCHEDULE_ACTIONS.includes(entry.action)) {
-		errors.push(at('openbuild.schedule.error.action-unsupported'))
+		errors.push(at('buildiq.schedule.error.action-unsupported'))
 	} else if (entry.action === 'openconnector:synchronization') {
 		const args = entry.arguments
 		const syncId = args && args.synchronizationId
 		if (typeof syncId !== 'string' || syncId.trim() === '') {
-			errors.push(at('openbuild.schedule.error.synchronization-required'))
+			errors.push(at('buildiq.schedule.error.synchronization-required'))
 		}
 	}
 	// enabled (optional boolean)
 	if (entry.enabled !== undefined && typeof entry.enabled !== 'boolean') {
-		errors.push(at('openbuild.schedule.error.enabled-invalid'))
+		errors.push(at('buildiq.schedule.error.enabled-invalid'))
 	}
 	return errors
 }
@@ -140,7 +140,7 @@ export function validateSchedules(manifest) {
 		return errors
 	}
 	if (!Array.isArray(schedules)) {
-		errors.push('/schedules: openbuild.schedule.error.not-array')
+		errors.push('/schedules: buildiq.schedule.error.not-array')
 		return errors
 	}
 
@@ -150,9 +150,7 @@ export function validateSchedules(manifest) {
 		// cross-entry uniqueness (only when the id is a usable string)
 		if (entry && typeof entry.id === 'string' && entry.id.trim() !== '') {
 			if (seenIds.has(entry.id)) {
-				errors.push(
-					`/schedules/${idx}: openbuild.schedule.error.duplicate-id`,
-				)
+				errors.push(`/schedules/${idx}: buildiq.schedule.error.duplicate-id`)
 			}
 			seenIds.set(entry.id, idx)
 		}

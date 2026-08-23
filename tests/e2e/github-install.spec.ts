@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Playwright e2e — the GitHub shop's actual write path
- * (`POST /apps/openbuild/api/shop/github/install`), the one thing
+ * (`POST /apps/buildiq/api/shop/github/install`), the one thing
  * tests/e2e/github-store.spec.ts explicitly does NOT cover by design (that
  * file is deliberately read-only against the shared instance; this file is
  * the "belongs on an instance we own" counterpart it points to).
@@ -11,7 +11,7 @@
  * Runs against PLAYWRIGHT_BASE_URL — the disposable instance, per
  * tests/e2e/support/baseUrl.ts's own rationale: a write path must never touch
  * the shared instance's data. Gated on the same capability-probe pattern as
- * github-store.spec.ts: with no GitHub credential granted to openbuild on the
+ * github-store.spec.ts: with no GitHub credential granted to buildiq on the
  * disposable instance, these skip with the reason rather than failing or
  * fabricating a false pass.
  *
@@ -36,8 +36,8 @@ const ADMIN_PASS =
  * already-tracked limitation). Overridable so this can also be pointed at
  * buildiq-hydra to exercise the flows channel specifically.
  */
-const INSTALL_OWNER = process.env.OPENBUILD_INSTALL_TEST_OWNER ?? 'ConductionNL'
-const INSTALL_REPO = process.env.OPENBUILD_INSTALL_TEST_REPO ?? 'buildiq-spectr'
+const INSTALL_OWNER = process.env.BUILDIQ_INSTALL_TEST_OWNER ?? 'ConductionNL'
+const INSTALL_REPO = process.env.BUILDIQ_INSTALL_TEST_REPO ?? 'buildiq-spectr'
 
 /**
  * A read-write API context against the disposable instance, Basic-auth per
@@ -56,7 +56,7 @@ async function installApi() {
 }
 
 /**
- * The granted `github` credential's id, when one is allowed for openbuild on
+ * The granted `github` credential's id, when one is allowed for buildiq on
  * the disposable instance under test — or null when none is. Same probe shape
  * as github-store.spec.ts's `githubCredentialGranted()`, but resolving the id
  * rather than a boolean: `ShopController::githubInstall()` only routes the
@@ -84,7 +84,7 @@ async function resolveGithubCredentialId(): Promise<string | null> {
 			return (
 				provider === 'github'
 				&& Array.isArray(apps)
-				&& apps.includes('openbuild')
+				&& apps.includes('buildiq')
 			)
 		})
 		return (match?.id as string | undefined) ?? null
@@ -96,7 +96,7 @@ async function resolveGithubCredentialId(): Promise<string | null> {
 }
 
 /**
- * Whether a GitHub credential is granted to openbuild on the disposable
+ * Whether a GitHub credential is granted to buildiq on the disposable
  * instance under test. Mirrors github-store.spec.ts's probe exactly — same
  * shape, different instance.
  *
@@ -116,7 +116,7 @@ function freshSlug(): string {
 	return `e2e-github-install-${Date.now()}-${Math.floor(Math.random() * 10000)}`
 }
 
-test.describe('OpenBuild GitHub shop — fresh install (write path)', () => {
+test.describe('Buildiq GitHub shop — fresh install (write path)', () => {
 	// @e2e app-channel-application::installing-from-the-shop-applies-its-channels
 	test('installing a real app-repo-format-v2 repo creates a working application', async () => {
 		// The config's 30s default is measured against the suite's UI specs, not
@@ -131,14 +131,14 @@ test.describe('OpenBuild GitHub shop — fresh install (write path)', () => {
 		const credentialId = await resolveGithubCredentialId()
 		test.skip(
 			credentialId === null,
-			`no GitHub credential granted to openbuild on ${BASE_URL} — grant one before running this spec; see tests/e2e/github-store.spec.ts for the same probe`,
+			`no GitHub credential granted to buildiq on ${BASE_URL} — grant one before running this spec; see tests/e2e/github-store.spec.ts for the same probe`,
 		)
 
 		const api = await installApi()
 		const slug = freshSlug()
 		try {
 			const resp = await api.post(
-				'/index.php/apps/openbuild/api/shop/github/install',
+				'/index.php/apps/buildiq/api/shop/github/install',
 				{
 					form: {
 						owner: INSTALL_OWNER,
@@ -225,13 +225,13 @@ test.describe('OpenBuild GitHub shop — fresh install (write path)', () => {
 	test('installing an unreachable repo fails closed with a specific reason, not a silent empty success', async () => {
 		test.skip(
 			!(await githubCredentialGranted()),
-			`no GitHub credential granted to openbuild on ${BASE_URL}`,
+			`no GitHub credential granted to buildiq on ${BASE_URL}`,
 		)
 
 		const api = await installApi()
 		try {
 			const resp = await api.post(
-				'/index.php/apps/openbuild/api/shop/github/install',
+				'/index.php/apps/buildiq/api/shop/github/install',
 				{
 					form: {
 						owner: 'ConductionNL',

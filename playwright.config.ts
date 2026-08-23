@@ -3,7 +3,7 @@
 
 import { defineConfig, devices } from '@playwright/test'
 
-// Roughly 26 specs self-skip behind `process.env.OPENBUILD_E2E_LIVE === '1'`
+// Roughly 26 specs self-skip behind `process.env.BUILDIQ_E2E_LIVE === '1'`
 // with reasons like "Requires live dev environment". But EVERY spec in this
 // suite already requires a live Nextcloud at `baseURL` — the config
 // deliberately does not spin its own webServer (see the note at the bottom).
@@ -11,15 +11,15 @@ import { defineConfig, devices } from '@playwright/test'
 // quarter of the suite report green while asserting nothing, which is the
 // green-but-dead antipattern.
 //
-// Default it ON so those specs actually assert. Set OPENBUILD_E2E_LIVE=0 to
+// Default it ON so those specs actually assert. Set BUILDIQ_E2E_LIVE=0 to
 // opt out deliberately (e.g. a parse-only lint of the suite).
-process.env.OPENBUILD_E2E_LIVE ??= '1'
+process.env.BUILDIQ_E2E_LIVE ??= '1'
 
 /**
- * Playwright config for OpenBuild e2e tests.
+ * Playwright config for Buildiq e2e tests.
  *
  * Targets the local Nextcloud Docker stack at http://localhost:8080
- * (see `.github/docker-compose.yml`). Tests assume the OpenBuild app
+ * (see `.github/docker-compose.yml`). Tests assume the Buildiq app
  * is enabled and the SeedHelloWorld repair step has populated the
  * canonical hello-world virtual app.
  *

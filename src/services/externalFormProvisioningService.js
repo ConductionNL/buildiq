@@ -2,7 +2,7 @@
 /**
  * externalFormProvisioningService — provisions/revokes the two OpenRegister
  * primitives an "externally fillable" page needs, riding the builder's own
- * NC session (no OpenBuild PHP proxy — ADR-022, design.md Decision 3):
+ * NC session (no Buildiq PHP proxy — ADR-022, design.md Decision 3):
  *
  *   1. `GET`/`PATCH /api/schemas/{id}` — merge-safe schema authorization
  *      (REQ-EFP-003 / REQ-EFP-005). The schemas endpoint resolves `{id}` by

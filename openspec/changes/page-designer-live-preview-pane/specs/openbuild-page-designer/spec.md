@@ -15,13 +15,13 @@ is absent, the pane SHALL collapse to a "save & reload" affordance that
 opens `/builder/:slug` in a new browser tab against the last saved
 manifest, with an inline i18n note explaining the limitation.
 
-@e2e exclude mixed spec — sandboxed `CnAppRoot` re-mount on in-flight manifest change (in-memory `useAppManifest` overload from chain spec #2, now shipped) is verified by Vitest component tests mocking `useLivePreview`; the fallback "Save & open preview" button remains covered by the openbuild-page-designer Playwright tests
+@e2e exclude mixed spec — sandboxed `CnAppRoot` re-mount on in-flight manifest change (in-memory `useAppManifest` overload from chain spec #2, now shipped) is verified by Vitest component tests mocking `useLivePreview`; the fallback "Save & open preview" button remains covered by the buildiq-page-designer Playwright tests
 
 **ID:** REQ-OBPD-008
 
 The sandboxed `CnAppRoot` SHALL:
 
-- Use a unique `appId` of `openbuild-preview-{slug}` so its state
+- Use a unique `appId` of `buildiq-preview-{slug}` so its state
   does not collide with the production-mounted virtual app.
 - Receive the manifest as an in-memory object (no fetch).
 - Re-mount via a `:key` bound to the manifest's content hash, so any

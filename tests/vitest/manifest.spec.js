@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: EUPL-1.2
 //
-// Structural checks for OpenBuild's own app manifest (ADR-024 Tier-1+):
+// Structural checks for Buildiq's own app manifest (ADR-024 Tier-1+):
 // every menu entry routes to a real page, every referenced component resolves
 // to a real registry entry, and the registry carries no dead entries.
 // Catches the easy ways a manifest edit silently blanks a nav item or a

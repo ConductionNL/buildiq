@@ -1,12 +1,12 @@
 // @ts-check
 
 /**
- * OpenBuild documentation site.
+ * Buildiq documentation site.
  *
  * Built on @conduction/docusaurus-preset for brand defaults (tokens,
  * theme swizzles for Navbar / Footer, i18n scaffolding, KvK / BTW
  * copyright). Site-specific overrides — locale (en only), sidebar
- * path, mermaid theme, custom prism themes, openbuild-only navbar
+ * path, mermaid theme, custom prism themes, buildiq-only navbar
  * items — are passed through createConfig() opts.
  */
 
@@ -19,13 +19,13 @@ const { createConfig, baseFooterLinks } = require('@conduction/docusaurus-preset
 const BRAND_THEME = require.resolve('@conduction/docusaurus-preset/theme');
 
 const config = createConfig({
-  title: 'OpenBuild',
+  title: 'Buildiq',
   tagline: 'Citizen-developer app builder for Nextcloud — compose apps from registers, connectors, workflows, and documents without code',
   url: 'https://openbuild.conduction.nl',
   baseUrl: '/',
 
   organizationName: 'ConductionNL',
-  projectName: 'openbuild',
+  projectName: 'buildiq',
 
   /* English-only for now (ADR-030). Dutch is omitted because shipping
      `i18n.locales: ['en', 'nl']` without translated markdown triggers
@@ -42,10 +42,10 @@ const config = createConfig({
     },
   },
 
-  /* The openbuild docs source lives at the repo root of `docs/` rather
+  /* The buildiq docs source lives at the repo root of `docs/` rather
      than under a `docs/` subfolder, so we override the preset's default
      `presets:` block to point `docs.path` at './' and disable the blog
-     plugin. customCss carries openbuild-specific CSS only — brand
+     plugin. customCss carries buildiq-specific CSS only — brand
      tokens and the theme swizzles are auto-loaded by the brand theme
      entry in `themes:` below. */
   presets: [
@@ -60,7 +60,7 @@ const config = createConfig({
              plus the standard node_modules bucket. */
           exclude: ['**/node_modules/**', 'src/**'],
           sidebarPath: require.resolve('./sidebars.js'),
-          editUrl: 'https://codeberg.org/Conduction/openbuild/src/branch/main/docs/',
+          editUrl: 'https://codeberg.org/Conduction/buildiq/src/branch/main/docs/',
         },
         blog: false,
         theme: {
@@ -73,10 +73,10 @@ const config = createConfig({
   themes: [BRAND_THEME, '@docusaurus/theme-mermaid'],
 
   /* Brand navbar provides locale dropdown + GitHub by default; we
-     replace items[] with openbuild's own (Documentation sidebar link,
-     openbuild GitHub link). Object.assign in createConfig is shallow,
+     replace items[] with buildiq's own (Documentation sidebar link,
+     buildiq GitHub link). Object.assign in createConfig is shallow,
      so items: replaces wholesale — re-include the locale dropdown and
-     add the openbuild GitHub repo link explicitly. */
+     add the buildiq GitHub repo link explicitly. */
   navbar: {
     items: [
       {
@@ -86,7 +86,7 @@ const config = createConfig({
         label: 'Documentation',
       },
       {
-        href: 'https://codeberg.org/Conduction/openbuild',
+        href: 'https://codeberg.org/Conduction/buildiq',
         label: 'Codeberg',
         position: 'right',
       },
@@ -111,7 +111,7 @@ const config = createConfig({
   /* themeConfig is shallow-merged into the preset's defaults
      (colorMode + navbar + footer). prism + mermaid land alongside. */
   themeConfig: {
-    image: 'img/og-openbuild.png',
+    image: 'img/og-buildiq.png',
     prism: {
       theme: require('prism-react-renderer/themes/github'),
       darkTheme: require('prism-react-renderer/themes/dracula'),

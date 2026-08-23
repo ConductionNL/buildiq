@@ -4,7 +4,7 @@
  * Unit tests for the ADR-037 modular register fragment deep-merge.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Service
+ * @package  OCA\Buildiq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -15,9 +15,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Service;
+namespace OCA\Buildiq\Tests\Unit\Service;
 
-use OCA\OpenBuild\Service\SettingsService;
+use OCA\Buildiq\Service\SettingsService;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 

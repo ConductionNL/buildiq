@@ -25,33 +25,32 @@
  * see the `@e2e exclude` annotations on those requirements in
  * specs/page-editor-coverage/spec.md.
  *
- * QUARANTINE (Conduction/openbuild#41): as of authoring time the openbuild
+ * QUARANTINE (Conduction/buildiq#41): as of authoring time the buildiq
  * builder/virtual-app surface is non-functional in the CI/dev-container
  * build — PageDesignerHost mounts but the virtual-app load returns a 500
  * ("Failed to load the virtual app: Request failed with status code
  * 500"), so the designer panes never render and there is no built page
  * route to navigate to. Every test below therefore mirrors the
  * `page-designer-ui.spec.ts` convention: gated behind
- * `OPENBUILD_E2E_LIVE=1` rather than run by default, so CI stays green
+ * `BUILDIQ_E2E_LIVE=1` rather than run by default, so CI stays green
  * until #41 is fixed while the flows are ready to exercise against a
  * live, fully-built dev instance. Do NOT remove the LIVE gate without
  * confirming #41 is closed.
  *
- * Route (history-mode base /apps/openbuild):
- *   PageDesigner →  /apps/openbuild/builder/:slug/pages
- *   Built page   →  /apps/openbuild/builder/:slug/:route
+ * Route (history-mode base /apps/buildiq):
+ *   PageDesigner →  /apps/buildiq/builder/:slug/pages
+ *   Built page   →  /apps/buildiq/builder/:slug/:route
  */
 
 import { test, expect } from '@playwright/test'
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
-const LIVE = process.env.OPENBUILD_E2E_LIVE === '1'
+const LIVE = process.env.BUILDIQ_E2E_LIVE === '1'
 
 const SLUG = 'hello-world'
-const PAGE_DESIGNER = (slug: string) =>
-	`${BASE}/apps/openbuild/builder/${slug}/pages`
+const PAGE_DESIGNER = (slug: string) => `${BASE}/apps/buildiq/builder/${slug}/pages`
 const BUILT_PAGE = (slug: string, route: string) =>
-	`${BASE}/apps/openbuild/builder/${slug}/${route}`
+	`${BASE}/apps/buildiq/builder/${slug}/${route}`
 
 /**
  * Click "Save & open preview" and wait for the save to actually land.
@@ -63,7 +62,7 @@ const BUILT_PAGE = (slug: string, route: string) =>
  * AND came back 2xx, which networkidle never did.
  *
  * PageDesignerHost.save() writes through OpenRegister directly, NOT through
- * OpenBuild's own `applications/{slug}/manifest` route: it PATCHes
+ * Buildiq's own `applications/{slug}/manifest` route: it PATCHes
  * `objects/openbuild/applicationVersion/{uuid}` and only falls back to PUTting
  * `objects/openbuild/application/{uuid}` when there is no version. Match either,
  * or this helper waits for a request that is never sent.
@@ -90,7 +89,7 @@ const GENERATED_PAGE_ID = /^(map|roadmap|search|wiki)-page-\d+$/
  * which selects the OLDEST leftover page, not the one the test just configured
  * — so `.map-page-editor` never showed the values that had just been written.
  *
- * Deleting them through OpenBuild's own manifest route (in-page fetch, so the
+ * Deleting them through Buildiq's own manifest route (in-page fetch, so the
  * request carries the session cookie AND the CSRF requesttoken the plain
  * AppFramework route requires) leaves exactly the seeded pages, making each
  * run's own page unambiguous.
@@ -101,7 +100,7 @@ const GENERATED_PAGE_ID = /^(map|roadmap|search|wiki)-page-\d+$/
 async function removeGeneratedPages(
 	page: import('@playwright/test').Page,
 ): Promise<void> {
-	await page.goto(`${BASE}/apps/openbuild/`, { waitUntil: 'domcontentloaded' })
+	await page.goto(`${BASE}/apps/buildiq/`, { waitUntil: 'domcontentloaded' })
 	await page.waitForTimeout(500)
 	await page.evaluate(async (slug) => {
 		const tok =
@@ -114,7 +113,7 @@ async function removeGeneratedPages(
 			'OCS-APIRequest': 'true',
 			'Content-Type': 'application/json',
 		}
-		const url = `/index.php/apps/openbuild/api/applications/${slug}/manifest`
+		const url = `/index.php/apps/buildiq/api/applications/${slug}/manifest`
 		const res = await fetch(url, { headers })
 		if (!res.ok) {
 			return
@@ -310,7 +309,7 @@ test('REQ-PEC-002 — Add page lists the four new types', async ({ page }) => {
 	// @e2e page-editor-coverage::add-page-lists-the-four-new-types
 	test.skip(
 		!LIVE,
-		'Requires a live dev env with the page designer built and openbuild#41 fixed — set OPENBUILD_E2E_LIVE=1',
+		'Requires a live dev env with the page designer built and buildiq#41 fixed — set BUILDIQ_E2E_LIVE=1',
 	)
 
 	await page.goto(PAGE_DESIGNER(SLUG))
@@ -335,7 +334,7 @@ test('REQ-PEC-002 — Adding a map page seeds the map-shaped default config', as
 	// @e2e page-editor-coverage::adding-a-map-page-seeds-the-map-shaped-default-config
 	test.skip(
 		!LIVE,
-		'Requires a live dev env with the page designer built and openbuild#41 fixed — set OPENBUILD_E2E_LIVE=1',
+		'Requires a live dev env with the page designer built and buildiq#41 fixed — set BUILDIQ_E2E_LIVE=1',
 	)
 
 	await addPage(page, 'map')
@@ -364,7 +363,7 @@ test('REQ-PEC-003 — Create, configure, save and render a map page', async ({
 	// @e2e page-editor-coverage::create-configure-save-and-render-a-map-page
 	test.skip(
 		!LIVE,
-		'Requires a live dev env with the page designer + built app and openbuild#41 fixed — set OPENBUILD_E2E_LIVE=1',
+		'Requires a live dev env with the page designer + built app and buildiq#41 fixed — set BUILDIQ_E2E_LIVE=1',
 	)
 
 	await addPage(page, 'map')
@@ -414,7 +413,7 @@ test('REQ-PEC-004 — Create, configure, save and render a roadmap page', async 
 	// @e2e page-editor-coverage::create-configure-save-and-render-a-roadmap-page
 	test.skip(
 		!LIVE,
-		'Requires a live dev env with the page designer + built app and openbuild#41 fixed — set OPENBUILD_E2E_LIVE=1',
+		'Requires a live dev env with the page designer + built app and buildiq#41 fixed — set BUILDIQ_E2E_LIVE=1',
 	)
 
 	await addPage(page, 'roadmap')
@@ -423,7 +422,7 @@ test('REQ-PEC-004 — Create, configure, save and render a roadmap page', async 
 
 	await editor
 		.locator('input[placeholder="owner/repo"]')
-		.fill('ConductionNL/openbuild')
+		.fill('ConductionNL/buildiq')
 	await editor.locator('select').first().selectOption('github')
 
 	await saveAndAwaitPersist(page)
@@ -439,7 +438,7 @@ test('REQ-PEC-004 — Create, configure, save and render a roadmap page', async 
 	const reopened = page.locator('.roadmap-page-editor')
 	await expect(reopened).toBeVisible({ timeout: 5_000 })
 	await expect(reopened.locator('input[placeholder="owner/repo"]')).toHaveValue(
-		'ConductionNL/openbuild',
+		'ConductionNL/buildiq',
 	)
 	await expect(reopened.locator('select').first()).toHaveValue('github')
 })
@@ -455,7 +454,7 @@ test('REQ-PEC-005 — Create, configure, save and render a search page', async (
 	// @e2e page-editor-coverage::create-configure-save-and-render-a-search-page
 	test.skip(
 		!LIVE,
-		'Requires a live dev env with the page designer + built app and openbuild#41 fixed — set OPENBUILD_E2E_LIVE=1',
+		'Requires a live dev env with the page designer + built app and buildiq#41 fixed — set BUILDIQ_E2E_LIVE=1',
 	)
 
 	await addPage(page, 'search')
@@ -518,7 +517,7 @@ test('REQ-PEC-006 — Create, configure, save and render a wiki page', async ({
 	// @e2e page-editor-coverage::create-configure-save-and-render-a-wiki-page
 	test.skip(
 		!LIVE,
-		'Requires a live dev env with the page designer + built app + a seed register/schema and openbuild#41 fixed — set OPENBUILD_E2E_LIVE=1',
+		'Requires a live dev env with the page designer + built app + a seed register/schema and buildiq#41 fixed — set BUILDIQ_E2E_LIVE=1',
 	)
 
 	await addPage(page, 'wiki')
@@ -547,7 +546,7 @@ test('REQ-PEC-006 — Create, configure, save and render a wiki page', async ({
 	// `hello-world-production-hello-message` and failed with `did not find some
 	// options` (run 31083894467) — the same symptom as the `{ index: 1 }` bug
 	// above, but a different cause: on CI THOSE SLUGS DO NOT EXIST. The seeded
-	// fixture is created by `occ openbuild:seed-hello-world-fixture`, not by the
+	// fixture is created by `occ buildiq:seed-hello-world-fixture`, not by the
 	// creation wizard, and it deliberately does not mint a per-version register:
 	// SeedHelloWorldFixture writes `register: 'openbuild-hello-world'` on the
 	// version as METADATA ONLY and puts the manifest, the `hello-message` schema

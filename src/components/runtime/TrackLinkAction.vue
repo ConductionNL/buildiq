@@ -9,7 +9,7 @@
   - Owner-context ONLY: mounted inside a running (built) app's Detail page,
   - viewed by an authenticated staff member with access to the object —
   - never rendered for an anonymous visitor (Portaliq renders the anonymous
-  - submission surface; OpenBuild never does). Gated on the CURRENT app's
+  - submission surface; Buildiq never does). Gated on the CURRENT app's
   - `runtime.externalForms[]` entry for this object's (register, schema)
   - carrying `trackLinkAction.enabled: true` — read via the `cnManifest`
   - injection CnAppRoot provides to every descendant (the live, reactive
@@ -20,15 +20,13 @@
 	<div v-if="eligible" class="ob-track-link-action">
 		<NcButton :disabled="minting" @click="mint">
 			{{
-				minting
-					? t('openbuild', 'Minting…')
-					: t('openbuild', 'Mint track-link')
+				minting ? t('buildiq', 'Minting…') : t('buildiq', 'Mint track-link')
 			}}
 		</NcButton>
 		<div v-if="link" class="ob-track-link-action__result">
 			<code>{{ link }}</code>
 			<NcButton variant="tertiary" @click="copy">
-				{{ t('openbuild', 'Copy') }}
+				{{ t('buildiq', 'Copy') }}
 			</NcButton>
 		</div>
 	</div>
@@ -210,10 +208,10 @@ export default {
 					this.resolvedObjectId,
 				)
 				this.link = result.url
-				showSuccess(t('openbuild', 'Track-link minted.'))
+				showSuccess(t('buildiq', 'Track-link minted.'))
 			} catch (e) {
 				showError(
-					t('openbuild', 'Could not mint a track-link: {error}', {
+					t('buildiq', 'Could not mint a track-link: {error}', {
 						error: (e && e.message) || String(e),
 					}),
 				)
@@ -234,7 +232,7 @@ export default {
 			}
 			if (navigator.clipboard && navigator.clipboard.writeText) {
 				navigator.clipboard.writeText(this.link)
-				showSuccess(t('openbuild', 'Link copied.'))
+				showSuccess(t('buildiq', 'Link copied.'))
 			}
 		},
 	},

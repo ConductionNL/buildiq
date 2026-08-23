@@ -1,5 +1,5 @@
 /**
- * SPDX-FileCopyrightText: 2026 ConductionNL / OpenBuild Contributors
+ * SPDX-FileCopyrightText: 2026 ConductionNL / Buildiq Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Vitest unit tests for `SchemaDesigner.vue` (REQ-OBSD-001 ..
@@ -53,7 +53,7 @@ const dialogMocks = vi.hoisted(() => {
 vi.mock('../../src/store/schemas.js', () => {
 	return {
 		useSchemasStore: () => storeMocks,
-		registerSlugForApp: (appSlug) => `openbuild-${appSlug}`,
+		registerSlugForApp: (appSlug) => `buildiq-${appSlug}`,
 		STORE_ID: 'openbuild-schemas',
 	}
 })
@@ -241,7 +241,7 @@ describe('SchemaDesigner', () => {
 		const [type, body] = storeMocks.saveObject.mock.calls[0]
 		expect(type).toBe('schema')
 		expect(body).toMatchObject({
-			// NAMESPACED, not the raw user-typed "new" (openbuild#41). The
+			// NAMESPACED, not the raw user-typed "new" (buildiq#41). The
 			// designer's list is the global schema collection filtered to the
 			// slugs owned by this app+version, so a schema created with the raw
 			// slug was invisible in the list it was created from and unattached

@@ -1,11 +1,11 @@
 <?php
 
 /**
- * OpenBuild CopilotPromptBuilder
+ * Buildiq CopilotPromptBuilder
  *
  * Builds the constrained system prompt CopilotService sends to the LLM via
  * `OCP\TaskProcessing` (`TextToText`). The prompt embeds the serialised tool
- * catalogue from `OpenBuildToolProvider::getToolDescriptors()`, demands a
+ * catalogue from `BuildiqToolProvider::getToolDescriptors()`, demands a
  * single JSON object `{summary, steps[]}` as the only acceptable output, and
  * — when a target app is given — a compact summary of its current manifest
  * so the model can propose sensible upserts instead of guessing blind.
@@ -14,7 +14,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service\Copilot
+ * @package  OCA\Buildiq\Service\Copilot
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -29,9 +29,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service\Copilot;
+namespace OCA\Buildiq\Service\Copilot;
 
-use OCA\OpenBuild\Mcp\OpenBuildToolProvider;
+use OCA\Buildiq\Mcp\BuildiqToolProvider;
 use stdClass;
 
 /**
@@ -43,13 +43,13 @@ class CopilotPromptBuilder {
 	/**
 	 * Constructor.
 	 *
-	 * @param OpenBuildToolProvider $toolProvider Source of the tool catalogue
-	 *                                            (`getToolDescriptors()`).
+	 * @param BuildiqToolProvider $toolProvider Source of the tool catalogue
+	 *                                          (`getToolDescriptors()`).
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly OpenBuildToolProvider $toolProvider,
+		private readonly BuildiqToolProvider $toolProvider,
 	) {
 	}//end __construct()
 
@@ -61,7 +61,7 @@ class CopilotPromptBuilder {
 	 *                                                 for a plan that targets an existing app.
 	 * @param array<int, array<string, mixed>>|null $toolDescriptors Optional narrowed tool catalogue (agent-workspace
 	 *                                                               design.md Decision 1) — defaults to the full
-	 *                                                               `OpenBuildToolProvider` catalogue when null.
+	 *                                                               `BuildiqToolProvider` catalogue when null.
 	 * @param string|null $instructionsPrefix Optional agent `instructions` text prefixed onto the
 	 *                                        prompt (agent-workspace design.md Decision 1).
 	 *
@@ -139,7 +139,7 @@ class CopilotPromptBuilder {
 	 *
 	 * @param array<int, array<string, mixed>>|null $toolDescriptors Optional narrowed tool catalogue —
 	 *                                                               defaults to the full
-	 *                                                               `OpenBuildToolProvider` catalogue when null.
+	 *                                                               `BuildiqToolProvider` catalogue when null.
 	 *
 	 * @return string
 	 */
@@ -161,7 +161,7 @@ class CopilotPromptBuilder {
 		}
 
 		return <<<PROMPT
-        You are the OpenBuild copilot. You turn a short natural-language brief
+        You are the Buildiq copilot. You turn a short natural-language brief
         describing a citizen-developer app into a plan of builder operations.
 
         You MUST respond with exactly one JSON object and nothing else — no

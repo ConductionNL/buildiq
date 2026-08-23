@@ -1,8 +1,8 @@
 /*
- * SPDX-FileCopyrightText: 2026 OpenBuild Contributors
+ * SPDX-FileCopyrightText: 2026 Buildiq Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Vitest spec for DashboardPageEditor (openbuild#9 task 7.1).
+ * Vitest spec for DashboardPageEditor (buildiq#9 task 7.1).
  *
  * Asserts the simple `update(key, value)` round-trip:
  *  - assigning a non-empty array emits `update:config` with the value set.

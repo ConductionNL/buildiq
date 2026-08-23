@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild AppRepoSerializer
+ * Buildiq AppRepoSerializer
  *
  * Turns a local Application object + a chosen ApplicationVersion object into the
  * ordered set of GitHub app-repo files (github-app-repo-format REQ-GARF-006): the
@@ -21,7 +21,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -36,11 +36,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -95,19 +95,19 @@ class AppRepoSerializer {
 	 * @param LoggerInterface $logger PSR logger (server-side diagnostics only).
 	 * @param TemplateRepoSerializer $templateSerializer Serialises a seeded template into the same repo layout.
 	 * @param ObjectServiceInterface|null $objectService Reads connector + automation objects (app-repo-format-v2).
-	 *                                          Nullable so the v1 construction shape still works and the
-	 *                                          new channels simply collect nothing when it is absent.
+	 *                                                   Nullable so the v1 construction shape still works and the
+	 *                                                   new channels simply collect nothing when it is absent.
 	 * @param FlowAgentChannelCollector|null $flowAgentCollector Resolves an application's bound flows
-	 *                                          and the agents that point at it, adapted into the
-	 *                                          `path => contents` map convention this class uses
-	 *                                          everywhere else. Nullable so the v1 construction shape
-	 *                                          and every existing test still build without it,
-	 *                                          degrading the flows and agents channels to empty exactly
-	 *                                          like `objectService` absent degrades connectors/automations.
+	 *                                                           and the agents that point at it, adapted into the
+	 *                                                           `path => contents` map convention this class uses
+	 *                                                           everywhere else. Nullable so the v1 construction shape
+	 *                                                           and every existing test still build without it,
+	 *                                                           degrading the flows and agents channels to empty exactly
+	 *                                                           like `objectService` absent degrades connectors/automations.
 	 * @param AppRepoPayloadSafety $payloadSafety Path-safety and secret-redaction primitives, stateless
-	 *                                          so a default instance is safe to construct here — every
-	 *                                          existing caller and test keeps building this class
-	 *                                          without naming it.
+	 *                                            so a default instance is safe to construct here — every
+	 *                                            existing caller and test keeps building this class
+	 *                                            without naming it.
 	 *
 	 * @return void
 	 */
@@ -293,7 +293,7 @@ class AppRepoSerializer {
 			$registerSlug = (string)($binding['register'] ?? '');
 			if ($this->payloadSafety->isSafeSlug(slug: $registerSlug) === false) {
 				$this->logger->warning(
-					'OpenBuild AppRepoSerializer: rejected unsafe data-register slug.',
+					'Buildiq AppRepoSerializer: rejected unsafe data-register slug.',
 					['slug' => $registerSlug]
 				);
 				continue;
@@ -303,7 +303,7 @@ class AppRepoSerializer {
 				$register = $this->registerMapper->find($registerSlug, _multitenancy: false);
 			} catch (Throwable $e) {
 				$this->logger->debug(
-					'OpenBuild AppRepoSerializer: bound data register "' . $registerSlug . '" not resolvable: ' . $e->getMessage()
+					'Buildiq AppRepoSerializer: bound data register "' . $registerSlug . '" not resolvable: ' . $e->getMessage()
 				);
 				continue;
 			}
@@ -389,7 +389,7 @@ class AppRepoSerializer {
 			$uuid = (string)($binding['uuid'] ?? '');
 			if (in_array($kind, self::CONNECTOR_KINDS, true) === false || $this->payloadSafety->isSafeUuid(uuid: $uuid) === false) {
 				$this->logger->warning(
-					'OpenBuild AppRepoSerializer: rejected unsafe connector binding.',
+					'Buildiq AppRepoSerializer: rejected unsafe connector binding.',
 					['kind' => $kind, 'uuid' => $uuid]
 				);
 				continue;
@@ -587,14 +587,14 @@ class AppRepoSerializer {
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
-				'OpenBuild AppRepoSerializer: declared connector "' . $kind . '/' . $uuid . '" could not be resolved: ' . $e->getMessage()
+				'Buildiq AppRepoSerializer: declared connector "' . $kind . '/' . $uuid . '" could not be resolved: ' . $e->getMessage()
 			);
 			return null;
 		}
 
 		if ($found === null) {
 			$this->logger->warning(
-				'OpenBuild AppRepoSerializer: declared connector "' . $kind . '/' . $uuid . '" does not exist.'
+				'Buildiq AppRepoSerializer: declared connector "' . $kind . '/' . $uuid . '" does not exist.'
 			);
 			return null;
 		}
@@ -673,7 +673,7 @@ class AppRepoSerializer {
 			);
 		} catch (Throwable $e) {
 			$this->logger->debug(
-				'OpenBuild AppRepoSerializer: automations for "' . $slug . '" not resolvable: ' . $e->getMessage()
+				'Buildiq AppRepoSerializer: automations for "' . $slug . '" not resolvable: ' . $e->getMessage()
 			);
 			return [];
 		}
@@ -707,7 +707,7 @@ class AppRepoSerializer {
 	 *
 	 * Delegated to {@see FlowAgentChannelCollector}, which adapts
 	 * {@see FlowAndAgentExportBundler} — the same reader `ExportService` uses
-	 * for the openbuild-exporter's standalone app scaffold — into the
+	 * for the buildiq-exporter's standalone app scaffold — into the
 	 * `path => contents` map convention every collector here returns.
 	 *
 	 * @param array<string,mixed> $application The Application object.
@@ -848,7 +848,7 @@ class AppRepoSerializer {
 	 * absent (an app never provisioned a per-app register) yields no companions
 	 * rather than an error — serialise is total.
 	 *
-	 * @param string $slug The Application slug (per-app register is `openbuild-{slug}`).
+	 * @param string $slug The Application slug (per-app register is `buildiq-{slug}`).
 	 *
 	 * @return array<string,array<string,mixed>> Schema blobs keyed by slug.
 	 *
@@ -863,7 +863,7 @@ class AppRepoSerializer {
 			$register = $this->registerMapper->find('openbuild-' . $slug, _multitenancy: false);
 		} catch (Throwable $e) {
 			$this->logger->debug(
-				'OpenBuild AppRepoSerializer: no per-app register for "' . $slug . '": ' . $e->getMessage()
+				'Buildiq AppRepoSerializer: no per-app register for "' . $slug . '": ' . $e->getMessage()
 			);
 			return [];
 		}
@@ -874,7 +874,7 @@ class AppRepoSerializer {
 				$schema = $this->schemaMapper->find($schemaId, _multitenancy: false);
 			} catch (Throwable $e) {
 				$this->logger->debug(
-					'OpenBuild AppRepoSerializer: could not resolve schema ' . ((string)$schemaId) . ': ' . $e->getMessage()
+					'Buildiq AppRepoSerializer: could not resolve schema ' . ((string)$schemaId) . ': ' . $e->getMessage()
 				);
 				continue;
 			}
@@ -916,10 +916,10 @@ class AppRepoSerializer {
 			return null;
 		}
 
-		$name = (string)($application['name'] ?? ($application['slug'] ?? 'OpenBuild app'));
+		$name = (string)($application['name'] ?? ($application['slug'] ?? 'Buildiq app'));
 
 		return '# ' . $name . "\n\n" . $description . "\n\n"
-			. '_Built with [OpenBuild](https://conduction.nl) — a citizen-developer app builder for Nextcloud._' . "\n";
+			. '_Built with [Buildiq](https://conduction.nl) — a citizen-developer app builder for Nextcloud._' . "\n";
 	}//end buildReadme()
 
 	/**
@@ -988,7 +988,7 @@ class AppRepoSerializer {
 		if ($encoded === false) {
 			// A payload that cannot encode is a programming error, not user input;
 			// emit an empty object so the file map stays well-formed and diffable.
-			$this->logger->warning('OpenBuild AppRepoSerializer: JSON encode failed for a repo file.');
+			$this->logger->warning('Buildiq AppRepoSerializer: JSON encode failed for a repo file.');
 			return "{}\n";
 		}
 

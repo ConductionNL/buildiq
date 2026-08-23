@@ -21,8 +21,8 @@ declare(strict_types=1);
 
 namespace OCA\AppTemplate\Repair;
 
-use OCA\AppTemplate\Service\SettingsService;
 use OCA\AppTemplate\Service\FlowSeedService;
+use OCA\AppTemplate\Service\SettingsService;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Log\LoggerInterface;

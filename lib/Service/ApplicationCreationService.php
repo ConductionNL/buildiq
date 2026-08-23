@@ -1,10 +1,10 @@
 <?php
 
 /**
- * OpenBuild ApplicationCreationService
+ * Buildiq ApplicationCreationService
  *
  * Owns the atomic creation flow for the `POST /api/applications/wizard`
- * endpoint (spec `openbuild-app-creation-wizard`, REQ-OBWIZ-007 through
+ * endpoint (spec `buildiq-app-creation-wizard`, REQ-OBWIZ-007 through
  * REQ-OBWIZ-010).
  *
  * Flow per Decision 7 of the design:
@@ -27,7 +27,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -48,12 +48,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
-use OCA\OpenBuild\Exception\WizardCreationException;
+use OCA\Buildiq\Exception\WizardCreationException;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\RegisterService;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -158,7 +158,7 @@ class ApplicationCreationService {
 			try {
 				$this->objectService->lockObject(
 					identifier: $lockKey,
-					process: 'openbuild.createApplication',
+					process: 'buildiq.createApplication',
 					duration: 10,
 					advisory: true
 				);
@@ -239,7 +239,7 @@ class ApplicationCreationService {
 				}
 
 				$this->logger->error(
-					'OpenBuild: wizard create-application failed for slug ' . $appSlug . ': ' . $errorMsg,
+					'Buildiq: wizard create-application failed for slug ' . $appSlug . ': ' . $errorMsg,
 					['exception' => $e]
 				);
 				throw new WizardCreationException(
@@ -301,7 +301,7 @@ class ApplicationCreationService {
 					$state['versionPayloads'][$versionSlug] = $versionPayload;
 				} catch (Throwable $e) {
 					$this->logger->error(
-						'OpenBuild: wizard create-version failed for ' . $versionSlug . ': ' . $e->getMessage(),
+						'Buildiq: wizard create-version failed for ' . $versionSlug . ': ' . $e->getMessage(),
 						['exception' => $e]
 					);
 					$this->rollbackAndThrow(state: $state, failedAtStep: 'create-version-' . $versionSlug, cause: $e);
@@ -317,7 +317,7 @@ class ApplicationCreationService {
 					);
 				} catch (Throwable $e) {
 					$this->logger->error(
-						'OpenBuild: wizard register-provision failed for ' . $registerSlug . ': ' . $e->getMessage(),
+						'Buildiq: wizard register-provision failed for ' . $registerSlug . ': ' . $e->getMessage(),
 						['exception' => $e]
 					);
 					$this->rollbackAndThrow(state: $state, failedAtStep: 'register-provision-' . $versionSlug, cause: $e);
@@ -356,7 +356,7 @@ class ApplicationCreationService {
 					);
 				} catch (Throwable $e) {
 					$this->logger->error(
-						'OpenBuild: wizard chain-wiring failed for ' . $currentSlug . ' → ' . $nextSlug . ': ' . $e->getMessage(),
+						'Buildiq: wizard chain-wiring failed for ' . $currentSlug . ' → ' . $nextSlug . ': ' . $e->getMessage(),
 						['exception' => $e]
 					);
 					$this->rollbackAndThrow(state: $state, failedAtStep: 'wire-chain-' . $currentSlug . '-to-' . $nextSlug, cause: $e);
@@ -391,7 +391,7 @@ class ApplicationCreationService {
 				);
 			} catch (Throwable $e) {
 				$this->logger->error(
-					'OpenBuild: wizard set-productionVersion failed: ' . $e->getMessage(),
+					'Buildiq: wizard set-productionVersion failed: ' . $e->getMessage(),
 					['exception' => $e]
 				);
 				$this->rollbackAndThrow(state: $state, failedAtStep: 'set-production-version', cause: $e);
@@ -403,7 +403,7 @@ class ApplicationCreationService {
 			// Application UUID through a BuiltAppRoute object. Without this step
 			// the wizard-built app is unreachable by slug and the manifest
 			// endpoint returns 404 `not_found` even though the app, its versions
-			// and its productionVersion pointer all exist (openbuild publish gap).
+			// and its productionVersion pointer all exist (buildiq publish gap).
 			try {
 				$createdRoute = $this->objectService->saveObject(
 					object: ['slug' => $appSlug, 'applicationUuid' => $state['applicationUuid']],
@@ -417,7 +417,7 @@ class ApplicationCreationService {
 				}
 			} catch (Throwable $e) {
 				$this->logger->error(
-					'OpenBuild: wizard built-app-route publish failed for slug ' . $appSlug . ': ' . $e->getMessage(),
+					'Buildiq: wizard built-app-route publish failed for slug ' . $appSlug . ': ' . $e->getMessage(),
 					['exception' => $e]
 				);
 				$this->rollbackAndThrow(state: $state, failedAtStep: 'publish-route', cause: $e);
@@ -425,7 +425,7 @@ class ApplicationCreationService {
 
 			$versionCount = count($versions);
 			$this->logger->info(
-				'OpenBuild: wizard successfully created Application ' . $appSlug
+				'Buildiq: wizard successfully created Application ' . $appSlug
 				. ' (uuid: ' . $state['applicationUuid'] . ') with ' . $versionCount . ' version(s).'
 			);
 
@@ -437,7 +437,7 @@ class ApplicationCreationService {
 					$this->objectService->unlockObject(identifier: $lockKey, advisory: true);
 				} catch (Throwable $unlockError) {
 					$this->logger->warning(
-						'OpenBuild: failed to release slug lock ' . $lockKey,
+						'Buildiq: failed to release slug lock ' . $lockKey,
 						['exception' => $unlockError->getMessage()]
 					);
 				}
@@ -678,8 +678,8 @@ class ApplicationCreationService {
 		$register = $this->registerMapper->createFromArray(
 			[
 				'slug' => $registerSlug,
-				'title' => 'OpenBuild — ' . $appSlug . ' (' . $versionSlug . ')',
-				'description' => 'Per-version schema namespace for OpenBuild app `' . $appSlug . '` version `' . $versionSlug . '`.',
+				'title' => 'Buildiq — ' . $appSlug . ' (' . $versionSlug . ')',
+				'description' => 'Per-version schema namespace for Buildiq app `' . $appSlug . '` version `' . $versionSlug . '`.',
 				'version' => '0.1.0',
 				'schemas' => [],
 			]
@@ -688,7 +688,7 @@ class ApplicationCreationService {
 		// Seed the default schema set into the freshly-provisioned register.
 		// Schema slugs are unique per organisation, so namespace each seed slug
 		// with the app+version prefix to avoid colliding with the same seed
-		// already installed in another register (e.g. the global `openbuild`
+		// already installed in another register (e.g. the global `buildiq`
 		// register or another wizard-provisioned app's register).
 		$slugPrefix = $appSlug . '-' . $versionSlug . '-';
 		$createdIds = [];
@@ -732,7 +732,7 @@ class ApplicationCreationService {
 			return true;
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: wizard rollback failed to delete register ' . $registerSlug . ': ' . $e->getMessage(),
+				'Buildiq: wizard rollback failed to delete register ' . $registerSlug . ': ' . $e->getMessage(),
 				['exception' => $e]
 			);
 			return false;
@@ -860,7 +860,7 @@ class ApplicationCreationService {
 				$this->objectService->deleteObject(uuid: $uuid);
 			} catch (Throwable $e) {
 				$this->logger->error(
-					'OpenBuild: wizard rollback failed to delete ' . $label . ' ' . $uuid . ': ' . $e->getMessage(),
+					'Buildiq: wizard rollback failed to delete ' . $label . ' ' . $uuid . ': ' . $e->getMessage(),
 					['exception' => $e]
 				);
 				$orphaned[] = $prefix . $uuid;
@@ -982,7 +982,7 @@ class ApplicationCreationService {
 	 * token in `register` and rewrites every non-empty `config.schema`
 	 * to the namespaced seed slug `{schemaSlugPrefix}{originalSchemaSlug}`
 	 * so the manifest references the actual per-version schemas created
-	 * by {@see provisionRegister()} (openbuild#75 — without this the
+	 * by {@see provisionRegister()} (buildiq#75 — without this the
 	 * KPI / insights cards aggregated against a non-existent schema and
 	 * leaked the same numbers across all tiers).
 	 *

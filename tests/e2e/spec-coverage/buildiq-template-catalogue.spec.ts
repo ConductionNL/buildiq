@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
 /**
- * E2E coverage for openbuild-template-catalogue spec — UI scenarios only.
+ * E2E coverage for buildiq-template-catalogue spec — UI scenarios only.
  *
  * REQ-OBTC-003: Gallery view lists templates with filter and detail
  *   - filtering-by-category-narrows-the-gallery
@@ -17,26 +17,26 @@
  * Pure-backend requirements (REQ-OBTC-001/002/004/005/007/009/010)
  * are annotated @e2e exclude in the spec.
  *
- * Note: gallery tests guard on OPENBUILD_E2E_LIVE because the template
+ * Note: gallery tests guard on BUILDIQ_E2E_LIVE because the template
  * catalogue requires the seeded templates to be available.
  */
 
 import { test, expect } from '@playwright/test'
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
-const LIVE = process.env.OPENBUILD_E2E_LIVE === '1'
+const LIVE = process.env.BUILDIQ_E2E_LIVE === '1'
 
 // The view this spec drives, named after the component file it renders
 // (src/views/TemplateGallery.vue, the manifest's `Templates` page). The name
 // was only in a comment further down, so nothing reading executable code
 // could tell this view was covered.
-const TemplateGallery = `${BASE}/apps/openbuild/templates`
+const TemplateGallery = `${BASE}/apps/buildiq/templates`
 
-// @e2e openbuild-template-catalogue::filtering-by-category-narrows-the-gallery
-test('REQ-OBTC-003 — template gallery route renders at /apps/openbuild/templates', async ({
+// @e2e buildiq-template-catalogue::filtering-by-category-narrows-the-gallery
+test('REQ-OBTC-003 — template gallery route renders at /apps/buildiq/templates', async ({
 	page,
 }) => {
-	// @e2e openbuild-template-catalogue::filtering-by-category-narrows-the-gallery
+	// @e2e buildiq-template-catalogue::filtering-by-category-narrows-the-gallery
 	await page.goto(TemplateGallery)
 
 	// The templates route must render without white-screening
@@ -45,7 +45,7 @@ test('REQ-OBTC-003 — template gallery route renders at /apps/openbuild/templat
 		page.locator('main'),
 		'templates route must render main content',
 	).toBeVisible({ timeout: 15_000 })
-	await expect(page).toHaveTitle(/openbuild/i)
+	await expect(page).toHaveTitle(/buildiq/i)
 
 	// If the gallery is built, a category filter and template cards should be visible
 	// If not yet built, the route at minimum loads the outer shell without crashing
@@ -59,16 +59,16 @@ test('REQ-OBTC-003 — template gallery route renders at /apps/openbuild/templat
 	await expect(page.locator('main'), 'main must remain visible').toBeVisible()
 })
 
-// @e2e openbuild-template-catalogue::empty-application-list-surfaces-the-gallery-cta
+// @e2e buildiq-template-catalogue::empty-application-list-surfaces-the-gallery-cta
 test('REQ-OBTC-003 — applications page renders a gallery CTA for admin', async ({
 	page,
 }) => {
-	// @e2e openbuild-template-catalogue::empty-application-list-surfaces-the-gallery-cta
-	await page.goto(`${BASE}/apps/openbuild/applications`)
+	// @e2e buildiq-template-catalogue::empty-application-list-surfaces-the-gallery-cta
+	await page.goto(`${BASE}/apps/buildiq/applications`)
 	await expect(page.locator('main'), 'applications page must load').toBeVisible({
 		timeout: 15_000,
 	})
-	await expect(page).toHaveTitle(/openbuild/i)
+	await expect(page).toHaveTitle(/buildiq/i)
 
 	// Either the page has applications OR it shows an empty state with a CTA
 	// The CTA text may say "Create from template" or "Browse templates"
@@ -89,14 +89,14 @@ test('REQ-OBTC-003 — applications page renders a gallery CTA for admin', async
 	// If no CTA, there are applications on this install — that is also valid
 })
 
-// @e2e openbuild-template-catalogue::clone-redirects-into-the-page-editor
+// @e2e buildiq-template-catalogue::clone-redirects-into-the-page-editor
 test('REQ-OBTC-006 — an installable gallery card exposes the clone action and it opens the clone dialog', async ({
 	page,
 }) => {
-	// @e2e openbuild-template-catalogue::clone-redirects-into-the-page-editor
+	// @e2e buildiq-template-catalogue::clone-redirects-into-the-page-editor
 	test.skip(
 		!LIVE,
-		'Requires live dev env with template catalogue seeded — set OPENBUILD_E2E_LIVE=1',
+		'Requires live dev env with template catalogue seeded — set BUILDIQ_E2E_LIVE=1',
 	)
 
 	// This assertion used to look for a literal "Use this template" button on
@@ -159,14 +159,14 @@ test('REQ-OBTC-006 — an installable gallery card exposes the clone action and 
 	)
 })
 
-// @e2e openbuild-template-catalogue::gallery-hides-edit-controls-on-a-seeded-template
+// @e2e buildiq-template-catalogue::gallery-hides-edit-controls-on-a-seeded-template
 test('REQ-OBTC-008 — seeded template cards do not show Edit or Delete controls', async ({
 	page,
 }) => {
-	// @e2e openbuild-template-catalogue::gallery-hides-edit-controls-on-a-seeded-template
+	// @e2e buildiq-template-catalogue::gallery-hides-edit-controls-on-a-seeded-template
 	test.skip(
 		!LIVE,
-		'Requires live dev env with template catalogue seeded — set OPENBUILD_E2E_LIVE=1',
+		'Requires live dev env with template catalogue seeded — set BUILDIQ_E2E_LIVE=1',
 	)
 
 	await page.goto(TemplateGallery)

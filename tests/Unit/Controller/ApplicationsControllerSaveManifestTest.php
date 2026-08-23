@@ -13,23 +13,23 @@
  * is refused, and a viewer (a real role, but a read-only one) cannot write.
  *
  * @category Test
- * @package  OpenBuild
+ * @package  Buildiq
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl
- * @link     https://github.com/ConductionNL/openbuild
+ * @link     https://github.com/ConductionNL/buildiq
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Controller;
+namespace OCA\Buildiq\Tests\Unit\Controller;
 
-use OCA\OpenBuild\Controller\ApplicationsController;
-use OCA\OpenBuild\Service\AppChannelApplier;
-use OCA\OpenBuild\Service\ManifestResolverService;
-use OCA\OpenBuild\Service\PermissionResolver;
+use OCA\Buildiq\Controller\ApplicationsController;
+use OCA\Buildiq\Service\AppChannelApplier;
+use OCA\Buildiq\Service\ManifestResolverService;
+use OCA\Buildiq\Service\PermissionResolver;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Http;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -43,9 +43,9 @@ use Psr\Log\LoggerInterface;
  * Contract tests for ApplicationsController::saveManifest().
  *
  * @category Test
- * @package  OpenBuild
+ * @package  Buildiq
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl
- * @link     https://github.com/ConductionNL/openbuild
+ * @link     https://github.com/ConductionNL/buildiq
  */
 class ApplicationsControllerSaveManifestTest extends TestCase {
 
@@ -197,7 +197,7 @@ class ApplicationsControllerSaveManifestTest extends TestCase {
 	public function testSaveManifestRefusesUnknownSlug(): void {
 		$this->authenticate();
 		$this->registerMapper->method('find')->willThrowException(
-			new \OCP\AppFramework\Db\DoesNotExistException('register openbuild not found')
+			new \OCP\AppFramework\Db\DoesNotExistException('register buildiq not found')
 		);
 		$this->objectService->expects(self::never())->method('saveObject');
 

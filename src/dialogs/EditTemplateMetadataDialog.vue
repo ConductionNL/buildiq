@@ -11,31 +11,31 @@
 <template>
 	<NcDialog
 		:open="open"
-		:name="t('openbuild', 'Edit template details')"
+		:name="t('buildiq', 'Edit template details')"
 		size="normal"
 		@update:open="$emit('update:open', $event)"
 		@closing="onClose">
 		<div class="ob-edit-template">
 			<NcTextField
 				:modelValue="form.title"
-				:label="t('openbuild', 'Template title')"
+				:label="t('buildiq', 'Template title')"
 				@update:modelValue="form.title = $event" />
 			<NcTextField
 				:modelValue="form.useCase"
-				:label="t('openbuild', 'Use case (one line)')"
+				:label="t('buildiq', 'Use case (one line)')"
 				@update:modelValue="form.useCase = $event" />
 			<NcTextArea
 				:modelValue="form.description"
-				:label="t('openbuild', 'Description')"
+				:label="t('buildiq', 'Description')"
 				@update:modelValue="form.description = $event" />
 			<NcSelect
 				v-model="categoryOption"
-				:inputLabel="t('openbuild', 'Category')"
+				:inputLabel="t('buildiq', 'Category')"
 				:options="categoryOptions"
 				:clearable="false" />
 			<NcTextField
 				:modelValue="form.sourceUrl"
-				:label="t('openbuild', 'Source URL (optional)')"
+				:label="t('buildiq', 'Source URL (optional)')"
 				@update:modelValue="form.sourceUrl = $event" />
 			<p v-if="saveError" class="ob-edit-template__error" role="alert">
 				{{ saveError }}
@@ -43,14 +43,10 @@
 		</div>
 		<template #actions>
 			<NcButton @click="onClose">
-				{{ t('openbuild', 'Cancel') }}
+				{{ t('buildiq', 'Cancel') }}
 			</NcButton>
 			<NcButton variant="primary" :disabled="!canSave || saving" @click="save">
-				{{
-					saving
-						? t('openbuild', 'Saving…')
-						: t('openbuild', 'Save changes')
-				}}
+				{{ saving ? t('buildiq', 'Saving…') : t('buildiq', 'Save changes') }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -102,7 +98,7 @@ export default {
 		categoryOptions() {
 			return TEMPLATE_CATEGORIES.map((value) => ({
 				id: value,
-				label: t('openbuild', CATEGORY_LABELS[value] || value),
+				label: t('buildiq', CATEGORY_LABELS[value] || value),
 			}))
 		},
 
@@ -213,7 +209,7 @@ export default {
 					data?.detail
 					|| data?.error
 					|| e?.message
-					|| t('openbuild', 'Saving the template failed.')
+					|| t('buildiq', 'Saving the template failed.')
 			} finally {
 				this.saving = false
 			}

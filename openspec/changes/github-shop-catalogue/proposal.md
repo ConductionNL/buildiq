@@ -10,15 +10,15 @@ chain:
 
 ## Why
 
-OpenBuild's Templates page ("the shop") already reads apps from two sources: the
-locally-seeded `application-template` records (`openbuild-template-catalogue`) and
-a remote OpenRegister catalogue proxied server-side (`openbuild-remote-template-store`).
+Buildiq's Templates page ("the shop") already reads apps from two sources: the
+locally-seeded `application-template` records (`buildiq-template-catalogue`) and
+a remote OpenRegister catalogue proxied server-side (`buildiq-remote-template-store`).
 Neither reaches GitHub — yet GitHub is where the world's open-source app
 definitions actually live, and change `github-app-repo-format` just defined a
-canonical, parseable repo layout (discovery topic `openbuild-app`) plus the
+canonical, parseable repo layout (discovery topic `buildiq-app`) plus the
 `AppRepoParser` that turns such a repo into the exact clone-seam payload the shop
 already installs. What's missing is the **network leg + a third shop source**:
-search GitHub for `topic:openbuild-app`, render the hits as installable cards
+search GitHub for `topic:buildiq-app`, render the hits as installable cards
 alongside the existing local + registry sources, and install a chosen one by
 parsing its repo through change 1's parser into the audited clone path.
 
@@ -35,7 +35,7 @@ next change (`github-app-sync`) and is out of scope here.
 ## What Changes
 
 - **NEW** `lib/Service/GitHubCatalogService.php` — the server-side GitHub source:
-  - **Search:** anonymous `GET https://api.github.com/search/repositories?q=topic:openbuild-app`
+  - **Search:** anonymous `GET https://api.github.com/search/repositories?q=topic:buildiq-app`
     via `OCP\Http\Client\IClientService`. The host is **fixed** (`api.github.com`),
     never admin-configurable, so the SSRF surface is closed by construction.
     Results are **cached server-side** with a short TTL (`ICacheFactory`), because
@@ -51,7 +51,7 @@ next change (`github-app-sync`) and is out of scope here.
     `CredentialBrokerService::request(...)` in-process (lazy FQCN resolution,
     `class_exists` + `Server::get`, mirroring `RemoteTemplateStoreService`'s OR
     resolution) for a higher rate limit and private-repo access. The secret never
-    reaches OpenBuild — the broker performs the HTTP call. Anonymous is the
+    reaches Buildiq — the broker performs the HTTP call. Anonymous is the
     default fallback.
 - **NEW** two endpoints on a new `ShopController`:
   - `GET /api/shop/github/search?q=…` — proxied GitHub search → normalised cards
@@ -83,7 +83,7 @@ next change (`github-app-sync`) and is out of scope here.
 ### New Capabilities
 
 - `github-shop-catalogue`: the `GitHubCatalogService` (SSRF-safe fixed-host
-  anonymous `topic:openbuild-app` search + per-hit descriptor fetch, short-TTL
+  anonymous `topic:buildiq-app` search + per-hit descriptor fetch, short-TTL
   server-side caching, automatic broker-credential upgrade for rate limit +
   private repos), and the `ShopController` `GET /api/shop/github/search` +
   `POST /api/shop/github/install` endpoints (install parses the repo via change
@@ -114,8 +114,8 @@ next change (`github-app-sync`) and is out of scope here.
 - **Network/Security**: outbound reads only to the **fixed** hosts
   `api.github.com` (+ the contents/raw host) — no admin-configurable URL, so no
   SSRF surface. Anonymous by default; the broker path keeps the credential
-  server-/OR-side (never in OpenBuild). Endpoints require an authenticated
-  OpenBuild user. No app data leaves the instance (consume-only).
+  server-/OR-side (never in Buildiq). Endpoints require an authenticated
+  Buildiq user. No app data leaves the instance (consume-only).
 - **Dependencies**: `github-app-repo-format` (parser + format) — hard dep;
   OpenRegister (already a hard dep) for the clone seam and, optionally, the
   credential broker. The parallel OpenRegister change `github-provider-shop-rules`

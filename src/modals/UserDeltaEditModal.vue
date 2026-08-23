@@ -15,16 +15,16 @@
 	<NcModal
 		v-if="open"
 		size="large"
-		:name="t('openbuild', 'Edit your override')"
+		:name="t('buildiq', 'Edit your override')"
 		@close="onClose">
 		<div class="ob-user-delta-modal">
 			<h2 class="ob-user-delta-modal__title">
-				{{ t('openbuild', 'Edit your override') }}
+				{{ t('buildiq', 'Edit your override') }}
 			</h2>
 			<p class="ob-user-delta-modal__hint">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'This personal delta is layered on top of the shared admin delta. Use the keyed delta format (pages by id, widgets by id, "$op":"remove" to delete).',
 					)
 				}}
@@ -42,13 +42,13 @@
 
 			<div class="ob-user-delta-modal__actions">
 				<NcButton variant="tertiary" @click="onClose">
-					{{ t('openbuild', 'Cancel') }}
+					{{ t('buildiq', 'Cancel') }}
 				</NcButton>
 				<NcButton variant="primary" :disabled="saving" @click="save">
 					{{
 						saving
-							? t('openbuild', 'Saving…')
-							: t('openbuild', 'Save override')
+							? t('buildiq', 'Saving…')
+							: t('buildiq', 'Save override')
 					}}
 				</NcButton>
 			</div>
@@ -107,6 +107,8 @@ export default {
 		 * Validate the JSON, PUT the user delta, and emit `saved` on success.
 		 *
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		async save() {
 			if (!this.appSlug) return
@@ -114,7 +116,7 @@ export default {
 			try {
 				parsed = this.draft.trim() === '' ? {} : JSON.parse(this.draft)
 			} catch (e) {
-				this.error = t('openbuild', 'The delta is not valid JSON.')
+				this.error = t('buildiq', 'The delta is not valid JSON.')
 				return
 			}
 			if (
@@ -122,7 +124,7 @@ export default {
 				|| typeof parsed !== 'object'
 				|| Array.isArray(parsed)
 			) {
-				this.error = t('openbuild', 'The delta must be a JSON object.')
+				this.error = t('buildiq', 'The delta must be a JSON object.')
 				return
 			}
 
@@ -130,7 +132,7 @@ export default {
 			this.error = ''
 			try {
 				const url = generateUrl(
-					'/apps/openbuild/api/app-overrides/{appId}/user',
+					'/apps/buildiq/api/app-overrides/{appId}/user',
 					{ appId: this.appSlug },
 				)
 				await axios.put(url, parsed)
@@ -143,8 +145,8 @@ export default {
 					&& e.response.data
 					&& (e.response.data.detail || e.response.data.error)
 				this.error = detail
-					? `${t('openbuild', 'Could not save your override')}: ${detail}`
-					: t('openbuild', 'Could not save your override')
+					? `${t('buildiq', 'Could not save your override')}: ${detail}`
+					: t('buildiq', 'Could not save your override')
 			} finally {
 				this.saving = false
 			}

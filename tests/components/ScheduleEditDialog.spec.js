@@ -4,7 +4,7 @@
  *
  * Vitest spec for ScheduleEditDialog.vue.
  *
- * Spec: schedules-editor / openbuild-schedules-authoring
+ * Spec: schedules-editor / buildiq-schedules-authoring
  * (REQ-OBSA-002, REQ-OBSA-003, REQ-OBSA-004, REQ-OBSA-006).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'

@@ -1,19 +1,19 @@
-# openbuild-exporter Specification
+# buildiq-exporter Specification
 
 ## Purpose
 
 @e2e exclude mixed spec — ExportJob schema/lifecycle, ZIP/GitHub pipeline, async background-job, and idempotency all verified by Newman/PHPUnit; UI export dialog and jobs-list behavior covered by exporter-ui spec Playwright tests
 
-Ships the graduation path that turns a published OpenBuild virtual app into a
+Ships the graduation path that turns a published Buildiq virtual app into a
 standalone Nextcloud app — its own `appinfo/info.xml`, its own namespace, its own
 GitHub repo, its own CI / release pipeline — with zero runtime dependency on
-OpenBuild. Given an `Application` record + its companion schemas + sample data, the
+Buildiq. Given an `Application` record + its companion schemas + sample data, the
 exporter generates a complete nextcloud-app-template-shaped tree on disk and either
 streams it as a ZIP or pushes it to a new GitHub repo. The exported app boots
 Tier-4 (per ADR-024): one bundled `src/manifest.json`, one `<app>_register.json`
 schema bundle, no per-slug endpoint workaround, no nested mount — the exported app
 **is** the top-level app. Closes the loop on the hybrid model committed to in
-`bootstrap-openbuild`.
+`bootstrap-buildiq`.
 
 **OpenSpec changes**: [data-registers-runtime](../../changes/data-registers-runtime/), [harden-rules-authz-and-audit-parity](../../changes/harden-rules-authz-and-audit-parity/)
 
@@ -68,7 +68,7 @@ re-entry; `failed → queued` permitted only via explicit retry).
 The export pipeline SHALL operate on a **specific published version**
 of an Application — never on the in-flight draft. The frontend dialog
 SHALL default the version field to the Application's current
-`published` version (per `openbuild-versioning`). The system SHALL
+`published` version (per `buildiq-versioning`). The system SHALL
 reject an export request whose `applicationVersion` does not match any
 known published version of the referenced Application.
 
@@ -111,7 +111,7 @@ SHALL include at minimum:
 - `lib/AppInfo/Application.php` with the new namespace.
 - `lib/Settings/<newapp>_register.json` carrying the companion
   schemas referenced by the manifest, slug-prefixed where the
-  source uses the shared `openbuild` namespace.
+  source uses the shared `buildiq` namespace.
 - `lib/Repair/InitializeSettings.php` invoking
   `ConfigurationService::importFromApp()` against the new
   register.
@@ -156,24 +156,24 @@ SHALL include at minimum:
 The exporter SHALL emit a `lib/Settings/<newapp>_register.json`
 declaring a fresh OR register namespace named after the exported
 appId, and SHALL relocate every companion schema referenced by the
-source manifest from OpenBuild's `openbuild` namespace into that
+source manifest from Buildiq's `buildiq` namespace into that
 new namespace. The exporter SHALL rewrite every
 `config.register` / `config.schema` reference inside the embedded
 `src/manifest.json` so the exported app reads from its own
-register, not from `openbuild`. The exporter SHALL NOT copy the
+register, not from `buildiq`. The exporter SHALL NOT copy the
 `Application`, `BuiltAppRoute`, or `ExportJob` schemas into the
-new register (those are OpenBuild's internal machinery).
+new register (those are Buildiq's internal machinery).
 
 #### Scenario: Manifest references rewritten to the new namespace
 
 - **WHEN** the source manifest references
-  `{ register: "openbuild", schema: "hello-message" }` on a page
+  `{ register: "buildiq", schema: "hello-message" }` on a page
   config
 - **THEN** the exported `src/manifest.json` references
   `{ register: "hello-world", schema: "hello-message" }` (assuming
   exported appId `hello-world`).
 
-#### Scenario: OpenBuild internals excluded from the exported register
+#### Scenario: Buildiq internals excluded from the exported register
 
 - **WHEN** the exporter writes
   `lib/Settings/<newapp>_register.json`
@@ -188,13 +188,13 @@ new register (those are OpenBuild's internal machinery).
 The exported `src/manifest.json` SHALL be the **sole** manifest
 source for the exported app — there SHALL NOT be a per-slug manifest
 endpoint, an `options.fetcher` redirect, or any other runtime
-indirection (the workaround documented in bootstrap-openbuild
+indirection (the workaround documented in bootstrap-buildiq
 Decision 4 collapses for the exported app because it owns exactly
 one manifest). The generated `src/main.js` SHALL call
 `useAppManifest('<newapp>', bundledManifest)` with the bundled blob
 directly. The exported app SHALL NOT mount a nested `CnAppRoot` —
 its `CnAppRoot` is the top-level mount (the nested-mount
-arrangement of bootstrap-openbuild Decision 5 collapses for the
+arrangement of bootstrap-buildiq Decision 5 collapses for the
 same reason).
 
 #### Scenario: Generated main.js mounts CnAppRoot at top level
@@ -217,9 +217,9 @@ same reason).
 When the user selects target `zip`, the system SHALL produce a
 single `.zip` file containing the full exported tree, store it in
 Nextcloud's app-data area under
-`appdata_<instance>/openbuild/exports/<jobUuid>/`, set the
+`appdata_<instance>/buildiq/exports/<jobUuid>/`, set the
 ExportJob's `downloadUrl` to
-`/index.php/apps/openbuild/api/exports/{uuid}/download`, set
+`/index.php/apps/buildiq/api/exports/{uuid}/download`, set
 `downloadExpiresAt` to 24 hours after job completion, and transition
 the job to `succeeded`. After expiry, the download endpoint SHALL
 return 410 Gone and the archive SHALL be purged by a daily
@@ -253,8 +253,8 @@ When the user selects target `github`, the system SHALL:
 3. Open a pull request from `bootstrap` to the repo's default
    branch (`development` if the org's standard ruleset prescribes
    it, otherwise `main`) with a placeholder title
-   `"chore: bootstrap from OpenBuild"` and a body linking back to
-   the source OpenBuild Application.
+   `"chore: bootstrap from Buildiq"` and a body linking back to
+   the source Buildiq Application.
 4. Populate the ExportJob's `downloadUrl` field with the resulting
    PR URL.
 
@@ -347,7 +347,7 @@ until terminal state.
 The system SHALL ensure that re-exporting the same Application version with the same
 `includeSeedData` flag produces a byte-equivalent ZIP archive.
 The exporter SHALL NOT embed creation timestamps, random UUIDs, or
-the running OpenBuild instance's identity into any text file
+the running Buildiq instance's identity into any text file
 committed to the exported tree. The PHP `composer.json` and JS
 `package.json` SHALL pin dependency versions identically across
 runs.
@@ -399,41 +399,41 @@ identity to remain idempotent across re-installs.
 
 ---
 
-### Requirement: Exported app boots standalone with zero OpenBuild dependency
+### Requirement: Exported app boots standalone with zero Buildiq dependency
 
 The system SHALL ensure that the exported app, when installed in a Nextcloud
-instance that does NOT have OpenBuild installed, boots to a working
+instance that does NOT have Buildiq installed, boots to a working
 `CnAppRoot`-rendered surface using only its bundled
 `src/manifest.json` + companion register + standard Conduction
 runtime dependencies. The exported `composer.json`,
 `package.json`, and `appinfo/info.xml` SHALL NOT reference
-`openbuild` as a dependency, peer dependency, or required app.
+`buildiq` as a dependency, peer dependency, or required app.
 
-#### Scenario: Exported app installs without OpenBuild
+#### Scenario: Exported app installs without Buildiq
 
 - **WHEN** the exported app is enabled on a Nextcloud instance
-  that has OpenRegister installed but NOT OpenBuild
+  that has OpenRegister installed but NOT Buildiq
 - **THEN** the app's top-bar entry appears, navigating to it
   renders the manifest-driven index page, and no error logs
-  reference a missing `openbuild` dependency.
+  reference a missing `buildiq` dependency.
 
-#### Scenario: No openbuild string in exported dependency files
+#### Scenario: No buildiq string in exported dependency files
 
 - **WHEN** the exported `composer.json`, `package.json`, and
   `appinfo/info.xml` are inspected
-- **THEN** none of them contains the substring `openbuild`
+- **THEN** none of them contains the substring `buildiq`
   (case-insensitive) as a dependency reference.
 
 ### Requirement: An app's agents are resolved WITHOUT a binding
 
 The exporter MUST resolve an application's agents by querying `agent`
 objects whose `applicationSlug` matches the application's slug, filtered to
-the `openbuild` register and `agent` schema BY SLUG, never by numeric
+the `buildiq` register and `agent` schema BY SLUG, never by numeric
 register/schema id.
 
 Numeric register/schema ids in OpenRegister are auto-increment columns
 assigned per instance at creation time. They are NOT stable across a fresh
-install — the `openbuild` register and `agent` schema get whatever ids
+install — the `buildiq` register and `agent` schema get whatever ids
 happen to be next on a given instance. A resolver pinned to one instance's
 numeric ids matches nothing on any other instance: the underlying
 `findAll()` call returns an empty result rather than an error, so the
@@ -443,7 +443,7 @@ export completes successfully having silently bundled zero agents.
 
 #### Scenario: Agent resolution is portable across instances
 - **WHEN** an application's agents are resolved for export
-- **THEN** the register/schema filter MUST identify the `openbuild`
+- **THEN** the register/schema filter MUST identify the `buildiq`
   register and `agent` schema by their SLUGS
 - **AND** the resolution MUST succeed identically regardless of what
   numeric ids those register and schema rows happen to have on the running

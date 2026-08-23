@@ -14,7 +14,7 @@
 	<section class="ob-documents-section">
 		<header class="ob-documents-section__header">
 			<h3 class="ob-documents-section__title">
-				{{ t('openbuild', 'Documents') }}
+				{{ t('buildiq', 'Documents') }}
 			</h3>
 			<NcButton
 				variant="secondary"
@@ -23,19 +23,19 @@
 					docudeskAvailable
 						? ''
 						: t(
-								'openbuild',
+								'buildiq',
 								'Docudesk is not installed or enabled on this instance.',
 							)
 				"
 				@click="openAdd">
-				{{ t('openbuild', 'Attach template') }}
+				{{ t('buildiq', 'Attach template') }}
 			</NcButton>
 		</header>
 
 		<p v-if="!docudeskAvailable" class="ob-documents-section__hint">
 			{{
 				t(
-					'openbuild',
+					'buildiq',
 					'Docudesk is not available. Existing attachments stay viewable and removable, but you cannot add new ones.',
 				)
 			}}
@@ -44,7 +44,7 @@
 		<p v-if="attachments.length === 0" class="ob-documents-section__empty">
 			{{
 				t(
-					'openbuild',
+					'buildiq',
 					'No Docudesk templates are attached yet. Attach one to let users generate a branded document from an object.',
 				)
 			}}
@@ -58,7 +58,7 @@
 					<strong>{{ doc.label }}</strong>
 					<span class="ob-documents-section__item-meta">
 						{{
-							t('openbuild', '{template} on schema {schema}', {
+							t('buildiq', '{template} on schema {schema}', {
 								template: doc.templateName,
 								schema: doc.schema,
 							})
@@ -67,10 +67,10 @@
 				</div>
 				<div class="ob-documents-section__item-actions">
 					<NcButton variant="tertiary" @click="openEdit(doc)">
-						{{ t('openbuild', 'Edit') }}
+						{{ t('buildiq', 'Edit') }}
 					</NcButton>
 					<NcButton variant="tertiary" @click="detach(doc)">
-						{{ t('openbuild', 'Detach') }}
+						{{ t('buildiq', 'Detach') }}
 					</NcButton>
 				</div>
 			</li>
@@ -86,14 +86,14 @@
 
 		<ConfirmActionDialog
 			v-model:open="confirmDetachOpen"
-			:name="t('openbuild', 'Detach template')"
+			:name="t('buildiq', 'Detach template')"
 			:message="
 				t(
-					'openbuild',
+					'buildiq',
 					'Detach this template? Previously generated documents are NOT deleted.',
 				)
 			"
-			:confirmLabel="t('openbuild', 'Detach')"
+			:confirmLabel="t('buildiq', 'Detach')"
 			destructive
 			@confirm="onConfirmDetach" />
 	</section>

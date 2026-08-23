@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild FlowChannelProvisioner
+ * Buildiq FlowChannelProvisioner
  *
  * Applies a published app repo's `flows/` channel: creates OpenRegister `Flow`
  * ENTITIES for every published flow definition the local Application does not
@@ -25,8 +25,8 @@
  * reimplementing it.
  *
  * The bundler that reads a flow back out for export (`FlowAndAgentExportBundler`,
- * `openbuild-app-binds-flows-and-agents`) was written for a DIFFERENT case — the
- * openbuild-exporter's standalone scaffold, whose migration seeds a `Flow` row
+ * `buildiq-app-binds-flows-and-agents`) was written for a DIFFERENT case — the
+ * buildiq-exporter's standalone scaffold, whose migration seeds a `Flow` row
  * directly at a fixed uuid because there is no live session, owner or trigger
  * index to reconcile at migration time. That is not this case: applying a v2
  * repo onto a running instance always has a real session, so going through
@@ -50,7 +50,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -63,7 +63,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowService;
@@ -85,7 +85,7 @@ class FlowChannelProvisioner {
 	private const CHANNEL = 'flows';
 
 	/**
-	 * The shared OpenBuild register slug the Application object lives in.
+	 * The shared Buildiq register slug the Application object lives in.
 	 *
 	 * @var string
 	 */
@@ -103,7 +103,7 @@ class FlowChannelProvisioner {
 	 *
 	 * @var string
 	 */
-	private const OWNING_APP = 'openbuild';
+	private const OWNING_APP = 'buildiq';
 
 	/**
 	 * Maximum flows applied from one repo.
@@ -205,7 +205,7 @@ class FlowChannelProvisioner {
 
 			if ($applied >= self::MAX_FLOWS) {
 				$this->logger->warning(
-					'OpenBuild channel apply: channel "' . self::CHANNEL . '" declared ' . count($flows)
+					'Buildiq channel apply: channel "' . self::CHANNEL . '" declared ' . count($flows)
 					. ' items but the bound is ' . self::MAX_FLOWS . ' — the excess was NOT applied.'
 				);
 				$report->recordTruncated(channel: self::CHANNEL, item: $item);
@@ -257,7 +257,7 @@ class FlowChannelProvisioner {
 				'label' => (string)($blob['name'] ?? ''),
 			];
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenBuild channel apply: flow "' . $sourceUuid . '" could not be created: ' . $e->getMessage());
+			$this->logger->warning('Buildiq channel apply: flow "' . $sourceUuid . '" could not be created: ' . $e->getMessage());
 			$report->recordFailed(channel: self::CHANNEL, item: $item, reason: $e->getMessage());
 			return null;
 		}
@@ -280,7 +280,7 @@ class FlowChannelProvisioner {
 				_multitenancy: false
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenBuild channel apply: local application "' . $uuid . '" could not be loaded: ' . $e->getMessage());
+			$this->logger->warning('Buildiq channel apply: local application "' . $uuid . '" could not be loaded: ' . $e->getMessage());
 			return null;
 		}
 
@@ -349,7 +349,7 @@ class FlowChannelProvisioner {
 			// because an unbound flow is otherwise invisible: it exists, runs
 			// nothing wired to it, and nothing in the report says so.
 			$this->logger->error(
-				'OpenBuild channel apply: created ' . count($newBindings)
+				'Buildiq channel apply: created ' . count($newBindings)
 				. ' flow(s) but could not rebind them onto application "' . $applicationUuid . '": ' . $e->getMessage()
 			);
 		}

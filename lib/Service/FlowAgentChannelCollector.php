@@ -1,11 +1,11 @@
 <?php
 
 /**
- * OpenBuild FlowAgentChannelCollector
+ * Buildiq FlowAgentChannelCollector
  *
  * Adapts {@see FlowAndAgentExportBundler} — the tested reader of "which flows
  * and agents does this application carry", already consumed by `ExportService`
- * for the openbuild-exporter's standalone app scaffold (PR #233) — into the
+ * for the buildiq-exporter's standalone app scaffold (PR #233) — into the
  * `path => contents` map convention every other `AppRepoSerializer` channel
  * collector returns.
  *
@@ -21,7 +21,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -34,7 +34,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 use FilesystemIterator;
 use Psr\Log\LoggerInterface;
@@ -70,8 +70,8 @@ class FlowAgentChannelCollector {
 	 * Constructor.
 	 *
 	 * @param FlowAndAgentExportBundler|null $bundler Resolves an application's bound flows and its
-	 *                                        agents. Nullable so a serializer built without it (the
-	 *                                        v1 construction shape) degrades to an empty channel.
+	 *                                                agents. Nullable so a serializer built without it (the
+	 *                                                v1 construction shape) degrades to an empty channel.
 	 * @param LoggerInterface $logger PSR logger.
 	 *
 	 * @return void
@@ -109,10 +109,10 @@ class FlowAgentChannelCollector {
 		$empty['declaredFlows'] = count($bindings);
 
 		$slug = (string)($application['slug'] ?? '');
-		$scratch = sys_get_temp_dir() . '/openbuild-repo-flows-' . bin2hex(random_bytes(8));
+		$scratch = sys_get_temp_dir() . '/buildiq-repo-flows-' . bin2hex(random_bytes(8));
 
 		if (is_dir($scratch) === false && mkdir($scratch, 0o700, true) === false) {
-			$this->logger->warning('OpenBuild FlowAgentChannelCollector: could not create a scratch directory for the flows/agents channel.');
+			$this->logger->warning('Buildiq FlowAgentChannelCollector: could not create a scratch directory for the flows/agents channel.');
 			return $empty;
 		}
 
@@ -126,7 +126,7 @@ class FlowAgentChannelCollector {
 				'skipped' => $skipped,
 			];
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenBuild FlowAgentChannelCollector: flows/agents bundling failed: ' . $e->getMessage());
+			$this->logger->warning('Buildiq FlowAgentChannelCollector: flows/agents bundling failed: ' . $e->getMessage());
 			return $empty;
 		} finally {
 			$this->removeScratchDir(path: $scratch);

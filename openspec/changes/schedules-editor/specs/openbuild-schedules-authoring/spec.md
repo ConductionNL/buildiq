@@ -2,7 +2,7 @@
 
 ### Requirement: Schedules section renders the app's schedules as a list (REQ-OBSA-001)
 
-The system SHALL render a **Schedules** section in the OpenBuild page designer
+The system SHALL render a **Schedules** section in the Buildiq page designer
 (`SchedulesSection.vue`, mounted in `PageDesignerHost.vue` beside the Theme,
 Workflow-attachments and Document-attachments sections) that lists every entry
 in the current `manifest.schedules[]` array. The section is a controlled

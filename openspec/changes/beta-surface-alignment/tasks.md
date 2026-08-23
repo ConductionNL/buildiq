@@ -14,7 +14,7 @@
       push (`GitHubPushService`) both have concrete implementations.
 - [x] 1.7 Confirm config-over-code / fork-free override claim
       (`AppOverrideService` delta-only manifest overrides).
-- [x] 1.8 Confirm the 8 MCP tool IDs/names in `lib/Mcp/OpenBuildToolProvider.php`
+- [x] 1.8 Confirm the 8 MCP tool IDs/names in `lib/Mcp/BuildiqToolProvider.php`
       match the product page's `McpToolShelf` exactly.
 - [x] 1.9 Confirm docs deploy topology (`docs/docusaurus.config.js` `url:`)
       to catch the NL page's dead docs link.
@@ -36,7 +36,7 @@
 - [x] 3.2 Replace "n8n workflows" with "Procest workflows" in hero tagline/intro.
 - [x] 3.3 Mention config-over-code manifest overrides and GitHub export
       alongside the existing ZIP-export/RBAC claims.
-- [x] 3.4 Fix NL page's dead `docs.conduction.nl/openbuild` link →
+- [x] 3.4 Fix NL page's dead `docs.conduction.nl/buildiq` link →
       `openbuild.conduction.nl`.
 
 ## 4. Fix docs

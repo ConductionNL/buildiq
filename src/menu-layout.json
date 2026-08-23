@@ -1,5 +1,5 @@
 {
-	"_comment": "ADR-044 navigation layout for OpenBuild. This file is the SINGLE declarative home for navigation-IA changes (per ADR-044 §2): move an entry into another group (relocations), retire a duplicate menu entry whose page stays routable (removals), or promote an entry into Nextcloud's settings foldout (settingsSection). All keys ship empty/no-op so buildManifest() reproduces the prior pages/menu concatenation exactly; declare changes here instead of editing src/main.js.",
+	"_comment": "ADR-044 navigation layout for Buildiq. This file is the SINGLE declarative home for navigation-IA changes (per ADR-044 §2): move an entry into another group (relocations), retire a duplicate menu entry whose page stays routable (removals), or promote an entry into Nextcloud's settings foldout (settingsSection). All keys ship empty/no-op so buildManifest() reproduces the prior pages/menu concatenation exactly; declare changes here instead of editing src/main.js.",
 	"relocations": {},
 	"removals": [],
 	"settingsSection": []

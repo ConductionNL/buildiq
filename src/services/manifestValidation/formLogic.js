@@ -22,8 +22,8 @@
  * Returned entries are `<pointer>: <code>` strings (the same convention as
  * `schedules.js`) so the existing path-prefix -> inline-mark mechanism
  * (REQ-OBPD-011) lights up the offending editor section. Codes are
- * `openbuild.formLogic.error.*` for hard errors and
- * `openbuild.formLogic.warning.*` for the one warning-level rule.
+ * `buildiq.formLogic.error.*` for hard errors and
+ * `buildiq.formLogic.warning.*` for the one warning-level rule.
  *
  * @spec openspec/specs/form-editor-logic/spec.md#req-obfel-005
  */
@@ -63,7 +63,7 @@ function validateSteps(config, pathBase, declaredKeys) {
 		return errors
 	}
 	if (!Array.isArray(config.steps)) {
-		errors.push(`${pathBase}/steps: openbuild.formLogic.error.steps-not-array`)
+		errors.push(`${pathBase}/steps: buildiq.formLogic.error.steps-not-array`)
 		return errors
 	}
 
@@ -73,24 +73,24 @@ function validateSteps(config, pathBase, declaredKeys) {
 	config.steps.forEach((step, sIndex) => {
 		const stepPath = `${pathBase}/steps/${sIndex}`
 		if (!isPlainObject(step)) {
-			errors.push(`${stepPath}: openbuild.formLogic.error.step-invalid-shape`)
+			errors.push(`${stepPath}: buildiq.formLogic.error.step-invalid-shape`)
 			return
 		}
 		if (typeof step.title !== 'string' || step.title.trim() === '') {
 			errors.push(
-				`${stepPath}/title: openbuild.formLogic.error.step-title-required`,
+				`${stepPath}/title: buildiq.formLogic.error.step-title-required`,
 			)
 		}
 		if (!Array.isArray(step.fields)) {
 			errors.push(
-				`${stepPath}/fields: openbuild.formLogic.error.step-fields-not-array`,
+				`${stepPath}/fields: buildiq.formLogic.error.step-fields-not-array`,
 			)
 			return
 		}
 		if (typeof step.id === 'string' && step.id !== '') {
 			if (seenIds.has(step.id)) {
 				errors.push(
-					`${stepPath}/id: openbuild.formLogic.error.duplicate-step-id`,
+					`${stepPath}/id: buildiq.formLogic.error.duplicate-step-id`,
 				)
 			}
 			seenIds.add(step.id)
@@ -98,7 +98,7 @@ function validateSteps(config, pathBase, declaredKeys) {
 		step.fields.forEach((key, fIndex) => {
 			if (typeof key !== 'string' || !declaredKeys.has(key)) {
 				errors.push(
-					`${stepPath}/fields/${fIndex}: openbuild.formLogic.error.dangling-step-field`,
+					`${stepPath}/fields/${fIndex}: buildiq.formLogic.error.dangling-step-field`,
 				)
 				return
 			}
@@ -109,7 +109,7 @@ function validateSteps(config, pathBase, declaredKeys) {
 	assignmentCount.forEach((count, key) => {
 		if (count > 1) {
 			errors.push(
-				`${pathBase}/steps: openbuild.formLogic.error.duplicate-field-assignment(${key})`,
+				`${pathBase}/steps: buildiq.formLogic.error.duplicate-field-assignment(${key})`,
 			)
 		}
 	})
@@ -141,11 +141,11 @@ function validateFieldLogic(field, fieldPath, declaredKeys) {
 			|| visibleWhen.field.trim() === ''
 		) {
 			errors.push(
-				`${fieldPath}/visibleWhen/field: openbuild.formLogic.error.condition-field-required`,
+				`${fieldPath}/visibleWhen/field: buildiq.formLogic.error.condition-field-required`,
 			)
 		} else if (!declaredKeys.has(visibleWhen.field)) {
 			errors.push(
-				`${fieldPath}/visibleWhen/field: openbuild.formLogic.error.dangling-condition-field`,
+				`${fieldPath}/visibleWhen/field: buildiq.formLogic.error.dangling-condition-field`,
 			)
 		}
 		if (
@@ -153,7 +153,7 @@ function validateFieldLogic(field, fieldPath, declaredKeys) {
 			&& !VISIBLE_WHEN_OPS.includes(visibleWhen.op)
 		) {
 			errors.push(
-				`${fieldPath}/visibleWhen/op: openbuild.formLogic.error.condition-op-not-allowed`,
+				`${fieldPath}/visibleWhen/op: buildiq.formLogic.error.condition-op-not-allowed`,
 			)
 		}
 	}
@@ -165,19 +165,19 @@ function validateFieldLogic(field, fieldPath, declaredKeys) {
 			&& typeof validation.required !== 'boolean'
 		) {
 			errors.push(
-				`${fieldPath}/validation/required: openbuild.formLogic.error.validation-required-not-boolean`,
+				`${fieldPath}/validation/required: buildiq.formLogic.error.validation-required-not-boolean`,
 			)
 		}
 		const hasMin = validation.min !== undefined
 		const hasMax = validation.max !== undefined
 		if (hasMin && typeof validation.min !== 'number') {
 			errors.push(
-				`${fieldPath}/validation/min: openbuild.formLogic.error.validation-min-not-number`,
+				`${fieldPath}/validation/min: buildiq.formLogic.error.validation-min-not-number`,
 			)
 		}
 		if (hasMax && typeof validation.max !== 'number') {
 			errors.push(
-				`${fieldPath}/validation/max: openbuild.formLogic.error.validation-max-not-number`,
+				`${fieldPath}/validation/max: buildiq.formLogic.error.validation-max-not-number`,
 			)
 		}
 		if (
@@ -188,7 +188,7 @@ function validateFieldLogic(field, fieldPath, declaredKeys) {
 			&& validation.min > validation.max
 		) {
 			errors.push(
-				`${fieldPath}/validation: openbuild.formLogic.error.validation-min-greater-than-max`,
+				`${fieldPath}/validation: buildiq.formLogic.error.validation-min-greater-than-max`,
 			)
 		}
 		if (typeof validation.pattern === 'string') {
@@ -196,7 +196,7 @@ function validateFieldLogic(field, fieldPath, declaredKeys) {
 				new RegExp(validation.pattern)
 			} catch {
 				errors.push(
-					`${fieldPath}/validation/pattern: openbuild.formLogic.error.validation-pattern-does-not-compile`,
+					`${fieldPath}/validation/pattern: buildiq.formLogic.error.validation-pattern-does-not-compile`,
 				)
 			}
 		}
@@ -205,7 +205,7 @@ function validateFieldLogic(field, fieldPath, declaredKeys) {
 			&& typeof validation.message !== 'string'
 		) {
 			errors.push(
-				`${fieldPath}/validation/message: openbuild.formLogic.error.validation-message-not-string`,
+				`${fieldPath}/validation/message: buildiq.formLogic.error.validation-message-not-string`,
 			)
 		}
 		// Warning-level: an un-migrated field carries both the structured
@@ -214,7 +214,7 @@ function validateFieldLogic(field, fieldPath, declaredKeys) {
 		// edits that field's Validation section).
 		if (field.required !== undefined || field.pattern !== undefined) {
 			errors.push(
-				`${fieldPath}: openbuild.formLogic.warning.flat-and-structured-validation`,
+				`${fieldPath}: buildiq.formLogic.warning.flat-and-structured-validation`,
 			)
 		}
 	}

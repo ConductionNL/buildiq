@@ -12,7 +12,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Listener
+ * @package  OCA\Buildiq\Tests\Unit\Listener
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -25,18 +25,17 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Listener;
+namespace OCA\Buildiq\Tests\Unit\Listener;
 
-use OCA\OpenBuild\Listener\ApprovalOutcomeListener;
-use OCA\OpenBuild\Service\AutomationCompilerService;
-use OCA\OpenBuild\Service\RuleActionDispatcher;
+use OCA\Buildiq\Listener\ApprovalOutcomeListener;
+use OCA\Buildiq\Service\AutomationCompilerService;
+use OCA\Buildiq\Service\RuleActionDispatcher;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ApprovalChain;
 use OCA\OpenRegister\Db\ApprovalStep;
 use OCA\OpenRegister\Event\ApprovalStepApprovedEvent;
 use OCA\OpenRegister\Event\ApprovalStepRejectedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;

@@ -1,5 +1,5 @@
 /**
- * OpenBuild landing page.
+ * Buildiq landing page.
  *
  * Composes the brand <DetailHero> + <WidgetShelf> from
  * @conduction/docusaurus-preset/components.
@@ -21,7 +21,7 @@ import {
 /* Builder glyph: a stylised stack of blocks being assembled — the
    citizen developer composing an app from registers, connectors,
    workflows, and documents. */
-const OPENBUILD_ICON = (
+const BUILDIQ_ICON = (
   <svg viewBox="0 0 24 24">
     <path d="M4 7l8-4 8 4-8 4-8-4zm0 5l8 4 8-4M4 17l8 4 8-4" />
   </svg>
@@ -232,27 +232,27 @@ const WIDGETS = [
 export default function Home() {
   return (
     <Layout
-      title="OpenBuild, no-code app builder inside Nextcloud"
+      title="Buildiq, no-code app builder inside Nextcloud"
       description="Citizen-developer app builder for Nextcloud. Compose apps from registers, connectors, workflows, and documents without writing code."
     >
       <main className="marketing-page">
         <DetailHero
           background="cobalt"
-          appId="openbuild"
+          appId="buildiq"
           status={{ label: 'Beta', color: 'var(--c-orange-knvb)' }}
           version="v0.x"
           locales="NL · EN"
-          title="OpenBuild"
+          title="Buildiq"
           tagline={TAGLINE}
           primaryCta={{
             label: 'View on GitHub',
-            href: 'https://codeberg.org/Conduction/openbuild',
+            href: 'https://codeberg.org/Conduction/buildiq',
             tone: 'orange',
           }}
           secondaryCta={{ label: 'Read the docs', href: '/docs/intro' }}
           iconColor="var(--c-orange-knvb)"
-          icon={OPENBUILD_ICON}
-          illustration={<AppMock app="openbuild" />}
+          icon={BUILDIQ_ICON}
+          illustration={<AppMock app="buildiq" />}
         />
 
         <WidgetShelf

@@ -1,5 +1,5 @@
 /**
- * SPDX-FileCopyrightText: 2026 ConductionNL / OpenBuild Contributors
+ * SPDX-FileCopyrightText: 2026 ConductionNL / Buildiq Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Vitest stub for `@conduction/nextcloud-vue`.
@@ -98,7 +98,7 @@ export function registerIcons() {}
 export function registerTranslations() {}
 
 // Icon-catalogue adapters (src/utils/iconCatalogues.js). The library ships no
-// icon pack — OpenBuild owns the data and feeds it through these. Behaviour
+// icon pack — Buildiq owns the data and feeds it through these. Behaviour
 // mirrors the real adapters closely enough for the wizard suite: each maps a
 // source pack to `{ key, value, label }` entries.
 export function fromMdiJs(mdiModule) {

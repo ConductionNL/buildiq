@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\AppInfo
+ * @package  OCA\Buildiq\Tests\Unit\AppInfo
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,16 +18,16 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\AppInfo;
+namespace OCA\Buildiq\Tests\Unit\AppInfo;
 
-use OCA\OpenBuild\AppInfo\OpenRegisterAutoloader;
+use OCA\Buildiq\AppInfo\OpenRegisterAutoloader;
 use PHPUnit\Framework\TestCase;
 
 /**
  * The prelude's whole purpose is that it CANNOT take down the caller.
  *
  * The defect it exists to prevent is a load-order failure in the composition
- * root: `openbuild` sorts before `openregister`, so `OCA\OpenRegister\` is not
+ * root: `buildiq` sorts before `openregister`, so `OCA\OpenRegister\` is not
  * autoloadable inside `Application::register()` on a healthy instance. The
  * `class_exists()` guard turned that into a silent skip of the entire generic
  * AppHost plumbing. A prelude that could itself throw would replace the silent

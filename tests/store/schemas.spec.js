@@ -4,9 +4,9 @@
  *
  * Vitest spec for `schemas.js` store helpers.
  *
- * Covers spec `openbuild-version-routing` REQ-OBVR-007 and tasks.md §6.5:
- *  - `registerSlugForApp(appSlug)` → `openbuild-{appSlug}` (legacy, no versionSlug)
- *  - `registerSlugForApp(appSlug, versionSlug)` → `openbuild-{appSlug}-{versionSlug}` (per-version register)
+ * Covers spec `buildiq-version-routing` REQ-OBVR-007 and tasks.md §6.5:
+ *  - `registerSlugForApp(appSlug)` → `buildiq-{appSlug}` (legacy, no versionSlug)
+ *  - `registerSlugForApp(appSlug, versionSlug)` → `buildiq-{appSlug}-{versionSlug}` (per-version register)
  *  - `useSchemasStore` registers to the correct per-version register namespace
  */
 
@@ -32,21 +32,21 @@ describe('registerSlugForApp — register slug construction (REQ-OBVR-007)', () 
 		registerSlugForApp = mod.registerSlugForApp
 	})
 
-	it('returns openbuild-{appSlug} when no versionSlug is provided (legacy)', () => {
+	it('returns buildiq-{appSlug} when no versionSlug is provided (legacy)', () => {
 		expect(registerSlugForApp('hello-world')).toBe('openbuild-hello-world')
 	})
 
-	it('returns openbuild-{appSlug} when versionSlug is undefined', () => {
+	it('returns buildiq-{appSlug} when versionSlug is undefined', () => {
 		expect(registerSlugForApp('hello-world', undefined)).toBe(
 			'openbuild-hello-world',
 		)
 	})
 
-	it('returns openbuild-{appSlug} when versionSlug is empty string', () => {
+	it('returns buildiq-{appSlug} when versionSlug is empty string', () => {
 		expect(registerSlugForApp('hello-world', '')).toBe('openbuild-hello-world')
 	})
 
-	it('returns openbuild-{appSlug}-{versionSlug} when versionSlug is provided (spec C)', () => {
+	it('returns buildiq-{appSlug}-{versionSlug} when versionSlug is provided (spec C)', () => {
 		expect(registerSlugForApp('hello-world', 'staging')).toBe(
 			'openbuild-hello-world-staging',
 		)

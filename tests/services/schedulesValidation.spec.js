@@ -4,7 +4,7 @@
  *
  * Vitest spec for app-side top-level schedules[] validation.
  *
- * Spec: schedules-editor / openbuild-schedules-authoring (REQ-OBSA-006).
+ * Spec: schedules-editor / buildiq-schedules-authoring (REQ-OBSA-006).
  */
 import { describe, it, expect } from 'vitest'
 import {

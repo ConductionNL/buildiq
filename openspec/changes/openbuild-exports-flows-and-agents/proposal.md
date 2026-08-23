@@ -1,18 +1,18 @@
 ---
 kind: code
 depends_on:
-  - openbuild-app-binds-flows-and-agents
+  - buildiq-app-binds-flows-and-agents
 ---
 
 ## Why
 
-Exporting an OpenBuild app leaves behind everything that makes it do anything.
+Exporting an Buildiq app leaves behind everything that makes it do anything.
 
 `ExportJobService` accepts exactly one collection from the request — `dataRegisters` — and `ExportService::generateAppZip()` is three steps: copy the template, resolve placeholders, `bundleDataRegisterSchemas()`. There is no other collector. So the ZIP carries a scaffold and some schema definitions, and nothing that runs.
 
 Measured on the dev instance, exporting `hydra-console` today produces the three schemas of the `hydra-cache` register (`change`, `cycle`, `finding`) and **none** of the 86 `Flow` entities or 14 agent definitions the app is actually built from. Import that ZIP and you get an app that looks right and does nothing: the registers are there, the pipeline is not.
 
-The head of this chain (`openbuild-app-binds-flows-and-agents`) gives an application somewhere to declare its flows and agents. This change reads those bindings, puts the definitions in the ZIP, and makes an imported flow actually runnable.
+The head of this chain (`buildiq-app-binds-flows-and-agents`) gives an application somewhere to declare its flows and agents. This change reads those bindings, puts the definitions in the ZIP, and makes an imported flow actually runnable.
 
 ### The half that is easy to get wrong
 
@@ -52,9 +52,9 @@ Per **ADR-065**, OpenRegister is the only home for a flow engine. This change ad
 
 ## Impact
 
-- **`openbuild/lib/Service/`** — new `FlowAndAgentExportBundler`; `ExportService` gains one bundling step; `ExportJobService` accepts two more collections.
-- **`openbuild/lib/Resources/template/`** — the scaffold gains `lib/Settings/flows/`, `lib/Settings/agents/`, and install/update-time seeding.
+- **`buildiq/lib/Service/`** — new `FlowAndAgentExportBundler`; `ExportService` gains one bundling step; `ExportJobService` accepts two more collections.
+- **`buildiq/lib/Resources/template/`** — the scaffold gains `lib/Settings/flows/`, `lib/Settings/agents/`, and install/update-time seeding.
 - **OpenRegister** — read via `FlowMapper` and written on the importing side. No OpenRegister change: this consumes the existing abstraction (ADR-022) and adds no engine (ADR-065).
 - **Tests** — unit coverage for the bundler and the seeder; Playwright coverage for export-with-bindings and for import-then-run.
 - **Not touched** — the `agentflow` object store. It is read by nothing here and written by nothing here; consolidating it is a separate change with its own migration risk.
-- **Upstream:** requires `openbuild-app-binds-flows-and-agents` to have landed; there is nothing to read until it does.
+- **Upstream:** requires `buildiq-app-binds-flows-and-agents` to have landed; there is nothing to read until it does.

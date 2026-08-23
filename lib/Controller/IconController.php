@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenBuild Icon Controller
+ * Buildiq Icon Controller
  *
  * Thin controller that serves per-application SVG icons backed by
  * IconService's fallback chain (ADR-001, design.md Decision 2).
  *
  * Endpoints:
- *   GET /apps/openbuild/icons/{slug}.svg      → iconLight
- *   GET /apps/openbuild/icons/{slug}-dark.svg → iconDark
+ *   GET /apps/buildiq/icons/{slug}.svg      → iconLight
+ *   GET /apps/buildiq/icons/{slug}-dark.svg → iconDark
  *
  * Both methods:
  *   - Require any valid NC session (#[NoAdminRequired]).
@@ -25,7 +25,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
- * @package  OCA\OpenBuild\Controller
+ * @package  OCA\Buildiq\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -41,10 +41,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Controller;
+namespace OCA\Buildiq\Controller;
 
-use OCA\OpenBuild\AppInfo\Application;
-use OCA\OpenBuild\Service\IconService;
+use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Service\IconService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;

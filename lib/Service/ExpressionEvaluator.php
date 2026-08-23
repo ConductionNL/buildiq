@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild ExpressionEvaluator
+ * Buildiq ExpressionEvaluator
  *
  * Resolves a FeelParser AST against a runtime context (the input payload).
  * Field paths are looked up with dot-notation (`applicant.age` →
@@ -15,7 +15,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -30,7 +30,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 use InvalidArgumentException;
 

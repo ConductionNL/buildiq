@@ -20,7 +20,7 @@
  */
 import { test, expect } from '@playwright/test'
 
-const APP_SLUG = process.env.NC_OPENBUILD_TEST_SLUG ?? 'hello-world'
+const APP_SLUG = process.env.NC_BUILDIQ_TEST_SLUG ?? 'hello-world'
 // The app-picker option's accessible name is the Application TITLE
 // ("Hello World"), not its slug ("hello-world") — hyphens become spaces in
 // the rendered title. Match either form.
@@ -44,16 +44,16 @@ function looseOptionName(text: string): RegExp {
 	return new RegExp(escaped.split('').join('\\s*'), 'i')
 }
 
-const HEALTH_URL = '/index.php/apps/openbuild/api/copilot/health'
-const PLAN_URL = '**/apps/openbuild/api/copilot/plan'
-const EXECUTE_URL = '**/apps/openbuild/api/copilot/execute'
-const RUNS_URL_PATTERN = /\/apps\/openbuild\/api\/agents\/.+\/runs/
+const HEALTH_URL = '/index.php/apps/buildiq/api/copilot/health'
+const PLAN_URL = '**/apps/buildiq/api/copilot/plan'
+const EXECUTE_URL = '**/apps/buildiq/api/copilot/execute'
+const RUNS_URL_PATTERN = /\/apps\/buildiq\/api\/agents\/.+\/runs/
 
 const SCOPED_PLAN = {
 	summary: 'Adds a contact-details step to the intake form.',
 	steps: [
 		{
-			tool: 'openbuild.upsertPage',
+			tool: 'buildiq.upsertPage',
 			arguments: {
 				appSlug: APP_SLUG,
 				pageId: 'e2e-agent-contact',
@@ -117,7 +117,7 @@ test.describe('agent-workspace — Agents page', () => {
 	})
 
 	test.beforeEach(async ({ page }) => {
-		await page.goto('/apps/openbuild/agents')
+		await page.goto('/apps/buildiq/agents')
 		await page.waitForSelector('.agents-page', { timeout: 20_000 })
 
 		await page.getByRole('combobox', { name: /application/i }).click()
@@ -283,7 +283,7 @@ test.describe('agent-workspace — Agents page', () => {
 		)
 		await expect(
 			runRow.locator('[data-testid="agent-run-tool-call"]').first(),
-		).toContainText('openbuild.upsertPage')
+		).toContainText('buildiq.upsertPage')
 	})
 
 	test('a disallowed tool request is rejected', async ({ page, request }) => {

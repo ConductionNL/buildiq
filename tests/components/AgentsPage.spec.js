@@ -83,7 +83,7 @@ const agent = (overrides = {}) => ({
 	id: 'agent-1',
 	name: 'Page builder assistant',
 	applicationSlug: 'tool-library',
-	enabledTools: ['openbuild.upsertPage', 'openbuild.addWidget'],
+	enabledTools: ['buildiq.upsertPage', 'buildiq.addWidget'],
 	maxActionsPerRun: 5,
 	...overrides,
 })

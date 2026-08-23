@@ -1,12 +1,12 @@
 <?php
 
 /**
- * OpenBuild VersionPromotionController
+ * Buildiq VersionPromotionController
  *
  * REST surface for the manual promotion flow described in
  * `openbuild-version-promotion` / ADR-002. Exposes a single endpoint:
  *
- *   POST /index.php/apps/openbuild/api/applications/{appUuid}/versions/{versionUuid}/promote
+ *   POST /index.php/apps/buildiq/api/applications/{appUuid}/versions/{versionUuid}/promote
  *
  * Body: `{ "strategy": "start-with-source-data" | "migrate-existing-data" |
  *          "empty-start", "confirmAppSlug": "<slug>" }`.
@@ -19,7 +19,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
- * @package  OCA\OpenBuild\Controller
+ * @package  OCA\Buildiq\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -37,16 +37,16 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Controller;
+namespace OCA\Buildiq\Controller;
 
-use OCA\OpenBuild\AppInfo\Application;
-use OCA\OpenBuild\Exception\InsufficientPermissionException;
-use OCA\OpenBuild\Exception\InvalidStrategyException;
-use OCA\OpenBuild\Exception\NoPromoteTargetException;
-use OCA\OpenBuild\Exception\PromotionFailedException;
-use OCA\OpenBuild\Exception\VersionLockedException;
-use OCA\OpenBuild\Service\PermissionResolver;
-use OCA\OpenBuild\Service\VersionPromotionService;
+use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Exception\InsufficientPermissionException;
+use OCA\Buildiq\Exception\InvalidStrategyException;
+use OCA\Buildiq\Exception\NoPromoteTargetException;
+use OCA\Buildiq\Exception\PromotionFailedException;
+use OCA\Buildiq\Exception\VersionLockedException;
+use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Service\VersionPromotionService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -173,7 +173,7 @@ class VersionPromotionController extends Controller {
 	 */
 	private function mapExceptionToResponse(Throwable $error): JSONResponse {
 		if ($error instanceof NoPromoteTargetException) {
-			$this->logger->info('OpenBuild: promote rejected (no target): ' . $error->getMessage());
+			$this->logger->info('Buildiq: promote rejected (no target): ' . $error->getMessage());
 			return $this->errorResponse(
 				code: $error->getErrorCode(),
 				detail: $error->getMessage(),
@@ -182,7 +182,7 @@ class VersionPromotionController extends Controller {
 		}
 
 		if ($error instanceof InvalidStrategyException) {
-			$this->logger->info('OpenBuild: promote rejected (invalid strategy): ' . $error->getMessage());
+			$this->logger->info('Buildiq: promote rejected (invalid strategy): ' . $error->getMessage());
 			return $this->errorResponse(
 				code: $error->getErrorCode(),
 				detail: $error->getMessage(),
@@ -195,7 +195,7 @@ class VersionPromotionController extends Controller {
 		}
 
 		if ($error instanceof InsufficientPermissionException) {
-			$this->logger->info('OpenBuild: promote rejected (rbac): ' . $error->getMessage());
+			$this->logger->info('Buildiq: promote rejected (rbac): ' . $error->getMessage());
 			return $this->errorResponse(
 				code: $error->getErrorCode(),
 				detail: $error->getMessage(),
@@ -204,7 +204,7 @@ class VersionPromotionController extends Controller {
 		}
 
 		if ($error instanceof PromotionFailedException) {
-			$this->logger->error('OpenBuild: promotion failed (500): ' . $error->getMessage(), ['exception' => $error]);
+			$this->logger->error('Buildiq: promotion failed (500): ' . $error->getMessage(), ['exception' => $error]);
 			return new JSONResponse(
 				data: [
 					'error' => $error->getErrorCode(),
@@ -216,7 +216,7 @@ class VersionPromotionController extends Controller {
 		}
 
 		$this->logger->error(
-			'OpenBuild: VersionPromotionController::promote unexpected failure: ' . $error->getMessage(),
+			'Buildiq: VersionPromotionController::promote unexpected failure: ' . $error->getMessage(),
 			['exception' => $error]
 		);
 		return $this->errorResponse(
@@ -236,7 +236,7 @@ class VersionPromotionController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-64
 	 */
 	private function buildLockedResponse(VersionLockedException $error): JSONResponse {
-		$this->logger->info('OpenBuild: promote rejected (locked): ' . $error->getMessage());
+		$this->logger->info('Buildiq: promote rejected (locked): ' . $error->getMessage());
 		$body = [
 			'error' => $error->getErrorCode(),
 			'detail' => $error->getMessage(),
@@ -273,7 +273,7 @@ class VersionPromotionController extends Controller {
 			);
 		} catch (Throwable $e) {
 			$this->logger->debug(
-				'OpenBuild: Application {uuid} could not be loaded: {message}',
+				'Buildiq: Application {uuid} could not be loaded: {message}',
 				['uuid' => $uuid, 'message' => $e->getMessage(), 'exception' => $e]
 			);
 			return null;
@@ -306,7 +306,7 @@ class VersionPromotionController extends Controller {
 			);
 		} catch (Throwable $e) {
 			$this->logger->debug(
-				'OpenBuild: ApplicationVersion {uuid} could not be loaded: {message}',
+				'Buildiq: ApplicationVersion {uuid} could not be loaded: {message}',
 				['uuid' => $uuid, 'message' => $e->getMessage(), 'exception' => $e]
 			);
 			return null;

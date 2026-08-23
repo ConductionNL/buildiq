@@ -108,7 +108,7 @@ manifest until you resolve it.
 
 ## See also
 
-- [OpenBuild Runtime](./openbuild-runtime.md) — how a virtual app renders
+- [Buildiq Runtime](./buildiq-runtime.md) — how a virtual app renders
   end to end.
-- [OpenBuild RBAC](./openbuild-rbac.md) — who can edit a page's form
+- [Buildiq RBAC](./buildiq-rbac.md) — who can edit a page's form
   logic.

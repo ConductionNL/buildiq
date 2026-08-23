@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: EUPL-1.2 -->
 <!-- SPDX-FileCopyrightText: 2026 Conduction B.V. -->
 <!--
-	DashboardIndex — the OpenBuild dashboard, modelled on the DocuDesk dashboard
+	DashboardIndex — the Buildiq dashboard, modelled on the DocuDesk dashboard
 	pattern: a single self-contained CnDashboardPage (KPI cards row + content
 	panels) mounted via a `type: "custom"` manifest page. Rendering one
 	CnDashboardPage from a custom view (rather than nesting CnDashboardPage as a
@@ -18,14 +18,14 @@
 <template>
 	<div class="ob-dashboard">
 		<CnDashboardPage
-			:title="t('openbuild', 'Dashboard')"
+			:title="t('buildiq', 'Dashboard')"
 			:widgets="widgetDefs"
 			:layout="dashboardLayout"
 			:loading="loading">
 			<!-- Create app — primary header action (opens the creation wizard). -->
 			<template #header-actions>
 				<NcButton variant="primary" @click="showWizard = true">
-					{{ t('openbuild', 'Create app') }}
+					{{ t('buildiq', 'Create app') }}
 				</NcButton>
 			</template>
 
@@ -40,9 +40,9 @@
 					<CnStatsBlock
 						horizontal
 						:icon="iconApps"
-						:title="t('openbuild', 'Apps')"
+						:title="t('buildiq', 'Apps')"
 						:count="counts.apps"
-						:countLabel="t('openbuild', 'apps')"
+						:countLabel="t('buildiq', 'apps')"
 						variant="primary"
 						showZeroCount />
 				</div>
@@ -59,9 +59,9 @@
 					<CnStatsBlock
 						horizontal
 						:icon="iconHybrid"
-						:title="t('openbuild', 'Hybrid apps')"
+						:title="t('buildiq', 'Hybrid apps')"
 						:count="counts.hybrid"
-						:countLabel="t('openbuild', 'hybrid')"
+						:countLabel="t('buildiq', 'hybrid')"
 						variant="default"
 						showZeroCount />
 				</div>
@@ -78,9 +78,9 @@
 					<CnStatsBlock
 						horizontal
 						:icon="iconVersions"
-						:title="t('openbuild', 'Published versions')"
+						:title="t('buildiq', 'Published versions')"
 						:count="counts.versions"
-						:countLabel="t('openbuild', 'versions')"
+						:countLabel="t('buildiq', 'versions')"
 						variant="success"
 						showZeroCount />
 				</div>
@@ -92,9 +92,9 @@
 			<template #widget-recent-apps>
 				<NcEmptyContent
 					v-if="!loading && recentApps.length === 0"
-					:name="t('openbuild', 'No apps yet')"
+					:name="t('buildiq', 'No apps yet')"
 					:description="
-						t('openbuild', 'Create your first app to get started.')
+						t('buildiq', 'Create your first app to get started.')
 					" />
 				<div v-else class="ob-recent-apps">
 					<CnDataTable
@@ -104,13 +104,13 @@
 						:selectable="false"
 						@rowClick="goToApp">
 						<template #actions-header>
-							{{ t('openbuild', 'Edit') }}
+							{{ t('buildiq', 'Edit') }}
 						</template>
 						<template #row-actions="{ row }">
 							<NcButton
 								variant="tertiary"
 								:aria-label="
-									t('openbuild', 'Open {name}', {
+									t('buildiq', 'Open {name}', {
 										name: row.name || row.slug,
 									})
 								"
@@ -228,10 +228,10 @@ export default {
 		 */
 		widgetDefs() {
 			return [
-				{ id: 'apps', title: t('openbuild', 'Apps') },
-				{ id: 'hybrid', title: t('openbuild', 'Hybrid apps') },
-				{ id: 'versions', title: t('openbuild', 'Published versions') },
-				{ id: 'recent-apps', title: t('openbuild', 'Recent apps') },
+				{ id: 'apps', title: t('buildiq', 'Apps') },
+				{ id: 'hybrid', title: t('buildiq', 'Hybrid apps') },
+				{ id: 'versions', title: t('buildiq', 'Published versions') },
+				{ id: 'recent-apps', title: t('buildiq', 'Recent apps') },
 			]
 		},
 
@@ -243,9 +243,9 @@ export default {
 		 */
 		recentColumns() {
 			return [
-				{ key: 'name', label: t('openbuild', 'Name') },
-				{ key: 'typeLabel', label: t('openbuild', 'Type') },
-				{ key: 'slug', label: t('openbuild', 'Slug') },
+				{ key: 'name', label: t('buildiq', 'Name') },
+				{ key: 'typeLabel', label: t('buildiq', 'Type') },
+				{ key: 'slug', label: t('buildiq', 'Slug') },
 			]
 		},
 	},
@@ -281,12 +281,12 @@ export default {
 					...a,
 					typeLabel:
 						a.appType === 'hybrid'
-							? t('openbuild', 'Hybrid')
-							: t('openbuild', 'Virtual'),
+							? t('buildiq', 'Hybrid')
+							: t('buildiq', 'Virtual'),
 				}))
 			} catch (e) {
 				// Dashboard is best-effort — leave zeros / empty list on failure.
-				console.error('OpenBuild dashboard load failed', e)
+				console.error('Buildiq dashboard load failed', e)
 			} finally {
 				this.loading = false
 			}

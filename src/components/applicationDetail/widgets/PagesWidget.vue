@@ -8,7 +8,7 @@
 	<div class="ob-pages-widget">
 		<header class="ob-pages-widget__header">
 			<h3 class="ob-pages-widget__title">
-				{{ t('openbuild', 'Pages') }}
+				{{ t('buildiq', 'Pages') }}
 			</h3>
 		</header>
 		<ul v-if="pages && pages.length > 0" class="ob-pages-widget__list">
@@ -32,7 +32,7 @@
 			</li>
 		</ul>
 		<p v-else class="ob-pages-widget__empty">
-			{{ t('openbuild', 'No pages configured.') }}
+			{{ t('buildiq', 'No pages configured.') }}
 		</p>
 	</div>
 </template>

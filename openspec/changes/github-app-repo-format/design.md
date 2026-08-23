@@ -1,6 +1,6 @@
 ## Context
 
-OpenBuild stores a virtual app as two OpenRegister objects (ADR-002): an
+Buildiq stores a virtual app as two OpenRegister objects (ADR-002): an
 `Application` (identity: `slug`, `name`, `appType`, `permissions`,
 `productionVersion`) and one or more `ApplicationVersion` rows (each carrying a
 full `manifest` blob + `semver` + per-version `register`). Companion schemas —
@@ -14,7 +14,7 @@ the round-trip format:
 - The **exporter** (`GitHubPushService`, `ExportJobService`, `exportJob` schema)
   scaffolds a full standalone Nextcloud app (PHP, `appinfo/`, webpack) and pushes
   it via the Git Data API. That output is an *installable app*, not a definition
-  OpenBuild re-reads — it does not round-trip.
+  Buildiq re-reads — it does not round-trip.
 - The **remote template store** (`RemoteTemplateStoreService`, `StoreController`)
   reads `application-template` OpenRegister objects from a remote OR instance and
   installs one through `ApplicationsController::installFromTemplateArray` — the
@@ -32,9 +32,9 @@ rewriting is re-invented.
 
 **Goals:**
 
-- Define one canonical, versioned GitHub repo layout for an OpenBuild app as a
+- Define one canonical, versioned GitHub repo layout for an Buildiq app as a
   **data** format (descriptor + manifest + companion schemas + optional docs).
-- Define the discovery contract: GitHub topic `openbuild-app` + a parseable
+- Define the discovery contract: GitHub topic `buildiq-app` + a parseable
   root `openbuild-app.json`.
 - Add the minimal linkage/provenance fields that tie a local `Application` /
   `ApplicationVersion` to its GitHub home (repo, branch, commit, ref).
@@ -72,7 +72,7 @@ The GitHub repo layout is a **data** definition, not an installable app:
     icon-dark.svg
 ```
 
-Only OpenBuild parses this — it is never `occ app:enable`-able. This keeps the
+Only Buildiq parses this — it is never `occ app:enable`-able. This keeps the
 format free of PHP/appinfo/build cruft, so a diff on GitHub reads as "the app's
 data changed", and a citizen developer can hand-author one. **Alternative
 considered:** reuse the exporter's scaffold as the round-trip format — rejected:
@@ -174,9 +174,9 @@ structured, per-file error when any of these hold — making the
 
 | Failure | Error code | Actionable message |
 |---|---|---|
-| `openbuild-app.json` missing at root | `descriptor_missing` | "No openbuild-app.json at the repo root — not an OpenBuild app repo." |
+| `openbuild-app.json` missing at root | `descriptor_missing` | "No openbuild-app.json at the repo root — not an Buildiq app repo." |
 | Descriptor not valid JSON | `descriptor_unparseable` | names the JSON parse position |
-| Unknown/absent `formatVersion` major | `format_version_unsupported` | "openbuild-app.json formatVersion X is not supported by this OpenBuild." |
+| Unknown/absent `formatVersion` major | `format_version_unsupported` | "openbuild-app.json formatVersion X is not supported by this Buildiq." |
 | `appType` not in `{virtual, hybrid}` | `app_type_unknown` | names the offending value |
 | `manifest.json` missing | `manifest_missing` | "manifest.json is required." |
 | `manifest.json` not valid JSON | `manifest_unparseable` | names the JSON parse position |

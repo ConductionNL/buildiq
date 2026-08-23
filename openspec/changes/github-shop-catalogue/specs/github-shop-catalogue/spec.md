@@ -1,11 +1,11 @@
 ## ADDED Requirements
 
-### Requirement: Server-side GitHub search over the openbuild-app topic
+### Requirement: Server-side GitHub search over the buildiq-app topic
 
 The system SHALL provide a `GitHubCatalogService` that searches GitHub for
-OpenBuild apps server-side via `OCP\Http\Client\IClientService`, requesting
+Buildiq apps server-side via `OCP\Http\Client\IClientService`, requesting
 `https://api.github.com/search/repositories` with a query that includes
-`topic:openbuild-app` (a user search term, when supplied, appended as an
+`topic:buildiq-app` (a user search term, when supplied, appended as an
 additional qualifier). The host SHALL be a fixed compile-time constant
 (`api.github.com`) — never admin-configurable — so there is no SSRF surface; the
 service SHALL still validate any `owner` / `repo` / `ref` value against a safe
@@ -15,16 +15,16 @@ the raw GitHub response body to the caller.
 
 **ID:** REQ-GHSC-001
 
-#### Scenario: Search targets the openbuild-app topic on the fixed host
+#### Scenario: Search targets the buildiq-app topic on the fixed host
 
 - **WHEN** the GitHub shop search runs
 - **THEN** the outbound request is to `api.github.com` and its query includes
-  `topic:openbuild-app`
+  `topic:buildiq-app`
 
 #### Scenario: A user term is appended to the topic query
 
 - **WHEN** the search runs with the term `permit`
-- **THEN** the outbound query carries both `topic:openbuild-app` and the
+- **THEN** the outbound query carries both `topic:buildiq-app` and the
   URL-encoded `permit` term
 
 ### Requirement: Per-hit descriptor fetch builds installable cards
@@ -81,8 +81,8 @@ cached result exists, the service SHALL serve the cached result with a
 The system SHALL upgrade GitHub search and fetch to an authenticated request when
 the acting user has an allowed broker `github` credential — routing the call
 through OpenRegister's `CredentialBrokerService::request(credentialId,
-'openbuild', method, path, headers, body, actingUserId)` so the credential's
-token is used by the broker and NEVER reaches OpenBuild. The service SHALL resolve
+'buildiq', method, path, headers, body, actingUserId)` so the credential's
+token is used by the broker and NEVER reaches Buildiq. The service SHALL resolve
 the broker lazily (`class_exists` + `Server::get`, mirroring the OR-service
 resolution in `RemoteTemplateStoreService`) and SHALL fall back to an anonymous
 request when the broker class is absent, the widened `github` allowRules are not
@@ -97,7 +97,7 @@ default so the shop is usable with no credential configured.
   widened allowRules are present
 - **WHEN** the GitHub shop search runs
 - **THEN** the request is performed through the credential broker
-- **AND** no GitHub token is present in OpenBuild's process or response
+- **AND** no GitHub token is present in Buildiq's process or response
 
 #### Scenario: Missing broker or rules falls back to anonymous
 
@@ -152,7 +152,7 @@ path, and SHALL create nothing locally.
 #### Scenario: Installing a conforming GitHub app creates a local Application
 
 - **WHEN** an authenticated user installs a resolvable conforming
-  `topic:openbuild-app` repo with a valid new `name` + `slug`
+  `topic:buildiq-app` repo with a valid new `name` + `slug`
 - **THEN** a new local `Application` exists with `status: draft`, owned by the
   caller
 - **AND** its companion schemas are namespaced under the new slug (via the reused

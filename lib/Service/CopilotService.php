@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenBuild CopilotService
+ * Buildiq CopilotService
  *
  * Orchestrates the prompt-to-app copilot: probes LLM availability, turns a
  * natural-language brief into a validated JSON plan restricted to the
- * OpenBuild MCP tool catalogue, predicts the manifest impact of that plan,
+ * Buildiq MCP tool catalogue, predicts the manifest impact of that plan,
  * and executes an approved plan atomically through the exact same handler
- * classes the MCP surface uses (`OpenBuildToolProvider::invokeTool()`) — no
+ * classes the MCP surface uses (`BuildiqToolProvider::invokeTool()`) — no
  * duplicated builder logic (design.md Decision 1).
  *
  * LLM access rides Nextcloud's Task Processing API (`OCP\TaskProcessing`,
@@ -20,7 +20,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -35,15 +35,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
-use OCA\OpenBuild\Exception\CopilotException;
-use OCA\OpenBuild\Mcp\OpenBuildToolProvider;
-use OCA\OpenBuild\Service\Copilot\CopilotPlanValidator;
-use OCA\OpenBuild\Service\Copilot\CopilotPromptBuilder;
+use OCA\Buildiq\Exception\CopilotException;
+use OCA\Buildiq\Mcp\BuildiqToolProvider;
+use OCA\Buildiq\Service\Copilot\CopilotPlanValidator;
+use OCA\Buildiq\Service\Copilot\CopilotPromptBuilder;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -114,7 +114,7 @@ class CopilotService {
 	 *
 	 * @var array<int, string>
 	 */
-	private const MANIFEST_MUTATING_TOOLS = ['openbuild.upsertPage', 'openbuild.addWidget', 'openbuild.upsertMenuItem'];
+	private const MANIFEST_MUTATING_TOOLS = ['buildiq.upsertPage', 'buildiq.addWidget', 'buildiq.upsertMenuItem'];
 
 	/**
 	 * Tools that require an existing-app RBAC check at execute time (every
@@ -124,11 +124,11 @@ class CopilotService {
 	 * @var array<int, string>
 	 */
 	private const EXISTING_APP_WRITE_TOOLS = [
-		'openbuild.upsertSchema',
-		'openbuild.upsertPage',
-		'openbuild.addWidget',
-		'openbuild.upsertMenuItem',
-		'openbuild.promoteVersion',
+		'buildiq.upsertSchema',
+		'buildiq.upsertPage',
+		'buildiq.addWidget',
+		'buildiq.upsertMenuItem',
+		'buildiq.promoteVersion',
 	];
 
 	/**
@@ -139,13 +139,13 @@ class CopilotService {
 	 *                                      30+ only).
 	 * @param LoggerInterface $logger PSR logger for diagnostics.
 	 * @param ObjectServiceInterface $objectService OpenRegister object surface (reads only
-	 *                                     — writes flow through
-	 *                                     `invokeTool()`).
+	 *                                              — writes flow through
+	 *                                              `invokeTool()`).
 	 * @param IUserManager $userManager Resolves a uid string to an `IUser` for RBAC.
 	 * @param IGroupManager $groupManager Group manager (admin bypass logging).
 	 * @param PermissionResolver $permissionResolver Shared permission-grammar resolver.
-	 * @param OpenBuildToolProvider $toolProvider MCP dispatcher — the
-	 *                                            single execution path.
+	 * @param BuildiqToolProvider $toolProvider MCP dispatcher — the
+	 *                                          single execution path.
 	 * @param CopilotPlanValidator $planValidator Structural plan validator.
 	 * @param CopilotPromptBuilder $promptBuilder System-prompt builder.
 	 * @param ApplicationDeletionService $appDeletionService Compensates a plan-created app on rollback.
@@ -163,7 +163,7 @@ class CopilotService {
 		private readonly IUserManager $userManager,
 		private readonly IGroupManager $groupManager,
 		private readonly PermissionResolver $permissionResolver,
-		private readonly OpenBuildToolProvider $toolProvider,
+		private readonly BuildiqToolProvider $toolProvider,
 		private readonly CopilotPlanValidator $planValidator,
 		private readonly CopilotPromptBuilder $promptBuilder,
 		private readonly ApplicationDeletionService $appDeletionService,
@@ -192,7 +192,7 @@ class CopilotService {
 		try {
 			$taskTypes = $manager->getAvailableTaskTypes();
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenBuild Copilot: getAvailableTaskTypes failed: ' . $e->getMessage());
+			$this->logger->warning('Buildiq Copilot: getAvailableTaskTypes failed: ' . $e->getMessage());
 			return ['available' => false, 'reason' => 'no_provider'];
 		}
 
@@ -414,7 +414,7 @@ class CopilotService {
 	 * Re-validates the plan (the server never trusts the client's review),
 	 * snapshots every touched version's manifest, dispatches each step in
 	 * order (createApp first, promoteVersion last) through
-	 * `OpenBuildToolProvider::invokeTool()`, and on any step failure rolls
+	 * `BuildiqToolProvider::invokeTool()`, and on any step failure rolls
 	 * every snapshot back and deletes a plan-created application. When
 	 * `$agentId` is given, the resolved agent's tool allow-list is
 	 * re-applied to the revalidation and a transparent `AgentRun` record is
@@ -554,7 +554,7 @@ class CopilotService {
 					);
 				}
 
-				if ($tool === 'openbuild.createApp') {
+				if ($tool === 'buildiq.createApp') {
 					$createdAppUuid = (string)($result['app']['uuid'] ?? '');
 					$createdAppSlug = (string)($result['app']['slug'] ?? ($args['slug'] ?? ''));
 				}
@@ -585,7 +585,7 @@ class CopilotService {
 				throw $e;
 			}
 
-			$this->logger->error('OpenBuild Copilot: execute failed: ' . $e->getMessage(), ['exception' => $e]);
+			$this->logger->error('Buildiq Copilot: execute failed: ' . $e->getMessage(), ['exception' => $e]);
 			throw new CopilotException(
 				errorCode: 'execution_failed',
 				message: 'Failed to execute the plan. See server logs for details.',
@@ -837,18 +837,18 @@ class CopilotService {
 			if ($this->auditTrailMapper !== null && $entity instanceof ObjectEntity) {
 				try {
 					$this->auditTrailMapper->createAuditTrailEntry(object: $entity, action: 'rbac.admin_bypass', context: $context);
-					$this->logger->info('OpenBuild Copilot: rbac.admin_bypass', $context);
+					$this->logger->info('Buildiq Copilot: rbac.admin_bypass', $context);
 					return;
 				} catch (\Throwable $e) {
 					$this->logger->critical(
-						'OpenBuild Copilot: rbac.admin_bypass audit-trail write failed',
+						'Buildiq Copilot: rbac.admin_bypass audit-trail write failed',
 						array_merge($context, ['exception' => $e->getMessage()])
 					);
 					return;
 				}
 			}//end if
 
-			$this->logger->info('OpenBuild Copilot: rbac.admin_bypass', $context);
+			$this->logger->info('Buildiq Copilot: rbac.admin_bypass', $context);
 		}//end if
 	}//end assertWriteRoleOnApp()
 
@@ -940,7 +940,7 @@ class CopilotService {
 		try {
 			$raw = $this->runTextToTextTask(manager: $manager, prompt: $prompt, userId: $userId, appSlug: $appSlug);
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenBuild Copilot: LLM task failed: ' . $e->getMessage());
+			$this->logger->warning('Buildiq Copilot: LLM task failed: ' . $e->getMessage());
 			return [null, '', $e->getMessage()];
 		}
 
@@ -975,7 +975,7 @@ class CopilotService {
 		$task = new Task(
 			TextToText::ID,
 			['input' => $prompt],
-			'openbuild',
+			'buildiq',
 			$userId,
 			$appSlug,
 		);
@@ -1055,7 +1055,7 @@ class CopilotService {
 	private function collectCreatedAppSlugs(array $steps): array {
 		$slugs = [];
 		foreach ($steps as $step) {
-			if ((string)($step['tool'] ?? '') === 'openbuild.createApp') {
+			if ((string)($step['tool'] ?? '') === 'buildiq.createApp') {
 				$slug = (string)($step['arguments']['slug'] ?? '');
 				if ($slug !== '') {
 					$slugs[$slug] = true;
@@ -1130,9 +1130,9 @@ class CopilotService {
 	 */
 	private function applyStepToManifest(string $tool, array $args, array $manifest): array {
 		return match ($tool) {
-			'openbuild.upsertPage' => $this->applyUpsertPage(args: $args, manifest: $manifest),
-			'openbuild.addWidget' => $this->applyAddWidget(args: $args, manifest: $manifest),
-			'openbuild.upsertMenuItem' => $this->applyUpsertMenuItem(args: $args, manifest: $manifest),
+			'buildiq.upsertPage' => $this->applyUpsertPage(args: $args, manifest: $manifest),
+			'buildiq.addWidget' => $this->applyAddWidget(args: $args, manifest: $manifest),
+			'buildiq.upsertMenuItem' => $this->applyUpsertMenuItem(args: $args, manifest: $manifest),
 			default => $manifest,
 		};
 	}//end applyStepToManifest()
@@ -1393,12 +1393,12 @@ class CopilotService {
 
 		foreach ($steps as $step) {
 			$tool = (string)($step['tool'] ?? '');
-			if ($tool === 'openbuild.createApp') {
+			if ($tool === 'buildiq.createApp') {
 				$createSteps[] = $step;
 				continue;
 			}
 
-			if ($tool === 'openbuild.promoteVersion') {
+			if ($tool === 'buildiq.promoteVersion') {
 				$promoteSteps[] = $step;
 				continue;
 			}
@@ -1441,7 +1441,7 @@ class CopilotService {
 				);
 			} catch (Throwable $e) {
 				$this->logger->error(
-					'OpenBuild Copilot: rollback failed to restore manifest for '
+					'Buildiq Copilot: rollback failed to restore manifest for '
 						. $snapshot['appSlug'] . '@' . $snapshot['versionSlug'] . ': ' . $e->getMessage()
 				);
 			}//end try
@@ -1458,7 +1458,7 @@ class CopilotService {
 				deleteData: false
 			);
 		} catch (Throwable $e) {
-			$this->logger->error('OpenBuild Copilot: rollback failed to delete created app ' . $createdAppUuid . ': ' . $e->getMessage());
+			$this->logger->error('Buildiq Copilot: rollback failed to delete created app ' . $createdAppUuid . ': ' . $e->getMessage());
 		}
 	}//end rollback()
 

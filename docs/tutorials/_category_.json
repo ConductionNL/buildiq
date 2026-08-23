@@ -5,7 +5,7 @@
   "collapsed": false,
   "link": {
     "type": "generated-index",
-    "title": "OpenBuild tutorials",
-    "description": "Step-by-step walkthroughs for everyday OpenBuild tasks. The user track covers building an app — templates, schemas, pages, data wiring, preview, versions, export. The admin track covers org-wide configuration — RBAC, the template catalogue, and OpenBuild settings."
+    "title": "Buildiq tutorials",
+    "description": "Step-by-step walkthroughs for everyday Buildiq tasks. The user track covers building an app — templates, schemas, pages, data wiring, preview, versions, export. The admin track covers org-wide configuration — RBAC, the template catalogue, and Buildiq settings."
   }
 }

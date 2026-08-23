@@ -35,7 +35,7 @@ const route = {
 }
 
 /**
- * Spec: openbuild-app-detail-overview / application-detail-overview
+ * Spec: buildiq-app-detail-overview / application-detail-overview
  * REQ-OBADO-001 (identity + controls header), REQ-OBADO-002 (pill ordering),
  * REQ-OBADO-003 (window toggle). The KPI / activity / structural / banner rows
  * moved to ApplicationDetailDashboard (grid-built body) — see its spec.

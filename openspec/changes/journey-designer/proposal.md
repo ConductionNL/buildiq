@@ -6,7 +6,7 @@ kind: code
 
 ## Summary
 
-Add a Journey Designer beside OpenBuild's Page Designer: author a `journey`'s
+Add a Journey Designer beside Buildiq's Page Designer: author a `journey`'s
 step sequence, branch rules, write mappings and access mode, over `form`
 objects authored with the existing form-page editor. Validates mappings against
 the target schema at author time and previews the journey through the same
@@ -17,7 +17,7 @@ ADR-085 §6.
 
 ## Motivation
 
-Authoring belongs where authoring already is. OpenBuild's Page Designer has one
+Authoring belongs where authoring already is. Buildiq's Page Designer has one
 sub-editor per canonical page type, and `FormStepsManager.vue` already authors
 `config.steps[]` — the multi-step grammar inside a single form. A journey is
 the layer above: several forms, a branch between them, a review, and the
@@ -30,7 +30,7 @@ submits.
 
 ## Affected Projects
 
-- [ ] `openbuild` — `JourneyDesigner.vue` and its sub-editors; author-time
+- [ ] `buildiq` — `JourneyDesigner.vue` and its sub-editors; author-time
       validation of `writes[]` mappings against target schemas; a live preview
       pane mounting `CnJourney`.
 

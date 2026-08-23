@@ -1,14 +1,14 @@
 # GitHub App Repo Format Specification
 
 **Status**: in-progress
-**Scope**: openbuild
+**Scope**: buildiq
 **OpenSpec changes**:
 - github-app-repo-format
 - app-repo-format-v2
 
 ## Purpose
 
-Defines the on-disk layout of a published OpenBuild application repository and the rules for reading it back. v1 carried the descriptor, the manifest, the app's own companion schemas and a README. v2 additionally carries the shared data registers an app binds to, the OpenConnector configuration it declares, its automations and its skills — the difference between an artefact that describes an app and one that can reconstitute it.
+Defines the on-disk layout of a published Buildiq application repository and the rules for reading it back. v1 carried the descriptor, the manifest, the app's own companion schemas and a README. v2 additionally carries the shared data registers an app binds to, the OpenConnector configuration it declares, its automations and its skills — the difference between an artefact that describes an app and one that can reconstitute it.
 
 ## ADDED Requirements
 

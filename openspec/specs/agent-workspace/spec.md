@@ -9,7 +9,7 @@
 Named, tool-scoped AI agents layered on top of the existing `ai-copilot`
 plan/execute engine (ADR-022 consume-not-rebuild). An `Agent` is a persistent,
 reusable configuration — instructions, an explicit subset of the eight
-`OpenBuildToolProvider` tools it may invoke, and a per-run action cap — never
+`BuildiqToolProvider` tools it may invoke, and a per-run action cap — never
 a wider capability surface than the bare copilot. Every agent run is
 transparently logged (prompt, plan, every tool call's arguments and result,
 outcome), addressing the market-wide "trust gap" evidence (Budibase Agents,
@@ -20,10 +20,10 @@ plan/approve/execute/rollback architecture `ai-copilot` already ships.
 
 ### Requirement: Agent entity declares a named, tool-scoped configuration
 
-The system SHALL declare an `Agent` schema in the `openbuild` register
+The system SHALL declare an `Agent` schema in the `buildiq` register
 namespace with properties `uuid`, `applicationSlug`, `name`, `instructions`
 (free text), `modelTaskType`, `enabledTools` (array, each value one of the
-eight `OpenBuildToolProvider` tool names), and `maxActionsPerRun` (positive
+eight `BuildiqToolProvider` tool names), and `maxActionsPerRun` (positive
 integer). `enabledTools` SHALL be validated against the eight-tool catalogue
 at save time — an unknown tool name SHALL be rejected.
 
@@ -35,13 +35,13 @@ surface exercises it distinctly from any other schema-validated save.
 #### Scenario: Agent with a valid tool subset saves
 
 - **WHEN** an editor creates an `Agent` with
-  `enabledTools: ["openbuild.upsertPage", "openbuild.addWidget"]`
+  `enabledTools: ["buildiq.upsertPage", "buildiq.addWidget"]`
 - **THEN** the `Agent` record is created
 
 #### Scenario: Unknown tool name is rejected
 
 - **WHEN** an editor attempts to create an `Agent` with
-  `enabledTools: ["openbuild.deleteApp"]` (not in the catalogue)
+  `enabledTools: ["buildiq.deleteApp"]` (not in the catalogue)
 - **THEN** the save is rejected with a validation error naming the unknown
   tool
 
@@ -72,7 +72,7 @@ records, including each tool call's arguments and result (the Retool
 tool-chip transparency pattern) — never a summarised or redacted view of
 what actually ran. Run-history read access SHALL be restricted server-side
 to owners/editors of the agent's parent Application, matching the existing
-`openbuild-rbac` posture for anything execute-adjacent.
+`buildiq-rbac` posture for anything execute-adjacent.
 
 #### Scenario: A discarded proposal is still logged
 
@@ -109,7 +109,7 @@ viewer-denial scenario.
 
 `enabledTools` SHALL always be validated, both at `Agent` save time and at
 every plan/execute request time, as a subset of the eight-tool
-`OpenBuildToolProvider` catalogue. No configuration path, prompt content, or
+`BuildiqToolProvider` catalogue. No configuration path, prompt content, or
 client request SHALL be able to grant an agent a tool outside that
 catalogue.
 

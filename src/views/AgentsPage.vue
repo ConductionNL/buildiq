@@ -9,16 +9,16 @@
   - (AgentRunHistory.vue).
   -
   - Agent object CRUD goes through OpenRegister's REST surface (ADR-022);
-  - the RBAC-sensitive run-history read goes through the openbuild
+  - the RBAC-sensitive run-history read goes through the buildiq
   - AgentsController API (never the generic OR REST surface — see its
   - docblock for why).
   -->
 <template>
 	<div class="agents-page">
 		<header class="agents-page__header">
-			<h2>{{ t('openbuild', 'Agents') }}</h2>
+			<h2>{{ t('buildiq', 'Agents') }}</h2>
 			<NcButton variant="primary" :disabled="!selectedApp" @click="openNew">
-				{{ t('openbuild', 'New agent') }}
+				{{ t('buildiq', 'New agent') }}
 			</NcButton>
 		</header>
 
@@ -26,7 +26,7 @@
 			<NcSelect
 				v-model="selectedApp"
 				class="agents-page__picker-select"
-				:inputLabel="t('openbuild', 'Application')"
+				:inputLabel="t('buildiq', 'Application')"
 				:options="applications"
 				:loading="loadingApplications"
 				label="name"
@@ -38,16 +38,16 @@
 
 		<NcEmptyContent
 			v-else-if="selectedApp && agents.length === 0"
-			:name="t('openbuild', 'No agents yet')"
+			:name="t('buildiq', 'No agents yet')"
 			:description="
 				t(
-					'openbuild',
+					'buildiq',
 					'Create an agent to give it instructions and a scoped subset of the builder tools.',
 				)
 			" />
 
 		<p v-else-if="!selectedApp" class="agents-page__hint">
-			{{ t('openbuild', 'Select an application to see its agents.') }}
+			{{ t('buildiq', 'Select an application to see its agents.') }}
 		</p>
 
 		<div v-else class="agents-page__body">
@@ -67,7 +67,7 @@
 						<strong>{{ agent.name }}</strong>
 						<span class="agents-page__item-meta">
 							{{
-								t('openbuild', '{count} tool(s) enabled', {
+								t('buildiq', '{count} tool(s) enabled', {
 									count: (agent.enabledTools || []).length,
 								})
 							}}
@@ -75,10 +75,10 @@
 					</button>
 					<div class="agents-page__item-side">
 						<NcButton variant="tertiary" @click="openEdit(agent)">
-							{{ t('openbuild', 'Edit') }}
+							{{ t('buildiq', 'Edit') }}
 						</NcButton>
 						<NcButton variant="tertiary" @click="remove(agent)">
-							{{ t('openbuild', 'Delete') }}
+							{{ t('buildiq', 'Delete') }}
 						</NcButton>
 					</div>
 				</li>
@@ -89,12 +89,12 @@
 					<NcButton
 						:variant="activeTab === 'chat' ? 'primary' : 'tertiary'"
 						@click="activeTab = 'chat'">
-						{{ t('openbuild', 'Chat') }}
+						{{ t('buildiq', 'Chat') }}
 					</NcButton>
 					<NcButton
 						:variant="activeTab === 'history' ? 'primary' : 'tertiary'"
 						@click="activeTab = 'history'">
-						{{ t('openbuild', 'Run history') }}
+						{{ t('buildiq', 'Run history') }}
 					</NcButton>
 				</div>
 
@@ -183,11 +183,11 @@ export default {
 			this.loadingApplications = true
 			this.errorMessage = ''
 			try {
-				const url = generateUrl('/apps/openbuild/api/applications')
+				const url = generateUrl('/apps/buildiq/api/applications')
 				const { data } = await axios.get(url)
 				this.applications = this.extractResults(data)
 			} catch (error) {
-				this.errorMessage = t('openbuild', 'Could not load applications.')
+				this.errorMessage = t('buildiq', 'Could not load applications.')
 			} finally {
 				this.loadingApplications = false
 			}
@@ -228,7 +228,7 @@ export default {
 					(a) => a.applicationSlug === this.selectedApp.slug,
 				)
 			} catch (error) {
-				this.errorMessage = t('openbuild', 'Could not load agents.')
+				this.errorMessage = t('buildiq', 'Could not load agents.')
 			} finally {
 				this.loading = false
 			}
@@ -292,7 +292,7 @@ export default {
 				}
 				await this.fetchAgents()
 			} catch (error) {
-				this.errorMessage = t('openbuild', 'Could not delete the agent.')
+				this.errorMessage = t('buildiq', 'Could not delete the agent.')
 			}
 		},
 

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests for the openbuild:templates:publish command.
+ * Unit tests for the buildiq:templates:publish command.
  *
  * Covers the store-seed command's template resolution and publish loop: seeded
  * `application-template` objects are read via the real ObjectService
@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Command
+ * @package  OCA\Buildiq\Tests\Unit\Command
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -28,12 +28,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Command;
+namespace OCA\Buildiq\Tests\Unit\Command;
 
-use OCA\OpenBuild\Command\PublishTemplates;
-use OCA\OpenBuild\Service\GitHubAppSyncService;
+use OCA\Buildiq\Command\PublishTemplates;
+use OCA\Buildiq\Service\GitHubAppSyncService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -167,7 +166,7 @@ class PublishTemplatesTest extends TestCase {
 		$this->syncService->method('publishTemplate')->willReturnCallback(
 			static function (array $template): array {
 				if (($template['slug'] ?? '') === 'good') {
-					return ['outcome' => GitHubAppSyncService::OUTCOME_OK, 'repoUrl' => 'https://github.com/acme/openbuild-good'];
+					return ['outcome' => GitHubAppSyncService::OUTCOME_OK, 'repoUrl' => 'https://github.com/acme/buildiq-good'];
 				}
 
 				return ['outcome' => GitHubAppSyncService::OUTCOME_BROKER_DENIED];
@@ -179,7 +178,7 @@ class PublishTemplatesTest extends TestCase {
 
 		$display = $tester->getDisplay();
 		$this->assertSame(Command::FAILURE, $exit);
-		$this->assertStringContainsString('https://github.com/acme/openbuild-good', $display);
+		$this->assertStringContainsString('https://github.com/acme/buildiq-good', $display);
 		$this->assertStringContainsString('broker_denied', $display);
 		$this->assertStringContainsString('Published: 1  Failed: 1', $display);
 	}//end testPartialFailureReportsAndExitsNonZero()

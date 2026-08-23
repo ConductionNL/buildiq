@@ -1,20 +1,20 @@
 <?php
 
 /**
- * OpenBuild PublishTemplates Command
+ * Buildiq PublishTemplates Command
  *
  * Occ command that seeds the GitHub-only store by publishing the seeded
- * `application-template` objects to GitHub as `openbuild-app` repos. Each
+ * `application-template` objects to GitHub as `buildiq-app` repos. Each
  * targeted template is serialized (AppRepoSerializer::serializeTemplate) and
  * published through GitHubAppSyncService::publishTemplate — every GitHub write
  * routes through OpenRegister's credential broker, so the credential token
- * never reaches OpenBuild.
+ * never reaches Buildiq.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Command
- * @package  OCA\OpenBuild\Command
+ * @package  OCA\Buildiq\Command
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -29,9 +29,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Command;
+namespace OCA\Buildiq\Command;
 
-use OCA\OpenBuild\Service\GitHubAppSyncService;
+use OCA\Buildiq\Service\GitHubAppSyncService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
@@ -41,9 +41,9 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Throwable;
 
 /**
- * Occ openbuild:templates:publish.
+ * Occ buildiq:templates:publish.
  *
- * Publishes seeded `application-template` objects to GitHub as `openbuild-app`
+ * Publishes seeded `application-template` objects to GitHub as `buildiq-app`
  * repos (the GitHub-only store's seed operation). A single template failure is
  * collected and reported without aborting the rest; the command exits non-zero
  * when any template fails.
@@ -52,7 +52,7 @@ use Throwable;
  */
 class PublishTemplates extends Command {
 	/**
-	 * The shared OpenBuild register slug.
+	 * The shared Buildiq register slug.
 	 */
 	private const REGISTER_SLUG = 'openbuild';
 
@@ -82,10 +82,12 @@ class PublishTemplates extends Command {
 	 * Configure the command name, description, and options.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/github-app-repo-format/spec.md
 	 */
 	protected function configure(): void {
-		$this->setName(name: 'openbuild:templates:publish')
-			->setDescription(description: 'Publish seeded OpenBuild application-templates to GitHub as openbuild-app repos.')
+		$this->setName(name: 'buildiq:templates:publish')
+			->setDescription(description: 'Publish seeded Buildiq application-templates to GitHub as buildiq-app repos.')
 			->addOption('credential', null, InputOption::VALUE_REQUIRED, 'The github broker credential UUID to publish with (required).')
 			->addOption('org', null, InputOption::VALUE_REQUIRED, 'Org to publish the repos under (omit = the credential user\'s account).')
 			->addOption('user', null, InputOption::VALUE_REQUIRED, 'The credential owner / acting user UID (broker identity).')
@@ -181,7 +183,7 @@ class PublishTemplates extends Command {
 			$templateSlug = (string)($template['slug'] ?? '(unknown)');
 
 			if ($dryRun === true) {
-				$output->writeln('  <info>[dry-run]</info> ' . $templateSlug . ' -> openbuild-' . $templateSlug);
+				$output->writeln('  <info>[dry-run]</info> ' . $templateSlug . ' -> buildiq-' . $templateSlug);
 				++$published;
 				continue;
 			}
@@ -244,7 +246,7 @@ class PublishTemplates extends Command {
 	}//end publishOne()
 
 	/**
-	 * Resolve seeded `application-template` objects from the shared openbuild
+	 * Resolve seeded `application-template` objects from the shared buildiq
 	 * register (optionally narrowed to one slug) via the real ObjectService
 	 * searchObjectsBySlug API, filtering to the seeded set client-side.
 	 *
@@ -271,7 +273,7 @@ class PublishTemplates extends Command {
 				_multitenancy: false
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenBuild: template lookup failed: ' . $e->getMessage());
+			$this->logger->warning('Buildiq: template lookup failed: ' . $e->getMessage());
 			return [];
 		}
 

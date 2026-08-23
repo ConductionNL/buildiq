@@ -1,7 +1,7 @@
 {
   "change": "harden-xss-dos-csrf",
-  "project": "openbuild",
-  "repo": "ConductionNL/openbuild",
+  "project": "buildiq",
+  "repo": "ConductionNL/buildiq",
   "base_branch": "development",
   "feature_branch": "feature/1/harden-xss-dos-csrf",
   "created": "2026-07-23",
@@ -87,7 +87,7 @@
       "title": "createFromTemplate rate limit + gate",
       "description": "Add #[UserRateLimit] and the creation-wizard authorization gate to ApplicationsController::createFromTemplate.",
       "status": "done",
-      "spec_ref": "openbuild-template-catalogue",
+      "spec_ref": "buildiq-template-catalogue",
       "acceptance_criteria": [
         "excess calls throttled",
         "unauthorized caller gets 403"
@@ -101,7 +101,7 @@
       "title": "createFromTemplate parity test",
       "description": "Test excess createFromTemplate calls are throttled and an unauthorized caller gets 403.",
       "status": "done",
-      "spec_ref": "openbuild-template-catalogue",
+      "spec_ref": "buildiq-template-catalogue",
       "acceptance_criteria": [
         "rate limit enforced",
         "403 for unauthorized caller"
@@ -242,7 +242,7 @@
       "title": "SSRF: disable redirect following (audit H2)",
       "description": "Set allow_redirects=>false on the registry fetch in RemoteTemplateStoreService::fetch.",
       "status": "done",
-      "spec_ref": "openbuild-remote-template-store",
+      "spec_ref": "buildiq-remote-template-store",
       "acceptance_criteria": [
         "fetch options refuse redirects"
       ],
@@ -255,7 +255,7 @@
       "title": "SSRF redirect test",
       "description": "testFetchDisablesRedirectFollowing asserts the fetch refuses redirects.",
       "status": "done",
-      "spec_ref": "openbuild-remote-template-store",
+      "spec_ref": "buildiq-remote-template-store",
       "acceptance_criteria": [
         "test asserts allow_redirects false"
       ],

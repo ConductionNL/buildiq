@@ -18,7 +18,7 @@ import { test, expect } from '@playwright/test'
  * Call-site dependency:
  *   PromoteVersionDialog is a standalone modal (ADR-004 modal-isolation) that
  *   requires a call site in the Application detail page (spec B /
- *   openbuild-app-detail-overview). Since spec B has not shipped yet, this
+ *   buildiq-app-detail-overview). Since spec B has not shipped yet, this
  *   test file is written in a describe.skip block for the e2e tests that need
  *   a live call site, so the file lands in the repo and tracks the gap.
  *
@@ -26,7 +26,7 @@ import { test, expect } from '@playwright/test'
  *   cover the gate logic in isolation (no live NC needed).
  *
  * To activate these tests:
- *   1. Merge spec B (openbuild-app-detail-overview) which adds a "Promote"
+ *   1. Merge spec B (buildiq-app-detail-overview) which adds a "Promote"
  *      button / action in the ApplicationVersion list.
  *   2. Remove the describe.skip wrapper and replace the TODO_PROMOTE_BUTTON
  *      selector with the actual trigger selector.
@@ -58,9 +58,9 @@ async function loginAs(
 //     the two non-terminal pills (REQ-OBADO-012 is covered in
 //     applicationDetailOverview.spec.ts);
 //   - clicking that affordance opens NOTHING. `onPromoteClick()` looks for
-//     `window.openbuild.openPromoteDialog`, which is defined nowhere in src/,
+//     `window.buildiq.openPromoteDialog`, which is defined nowhere in src/,
 //     then falls back to emitting a `promote` event that no parent handles, and
-//     logs `console.debug('openbuild: promote dialog not registered —
+//     logs `console.debug('buildiq: promote dialog not registered —
 //     deferred')`. PromoteVersionDialog.vue is fully built and unit-tested
 //     (tests/dialogs/PromoteVersionDialog.spec.js) but is imported by nothing.
 //
@@ -88,7 +88,7 @@ async function loginAs(
 // chain to have a non-terminal pill to promote from, which this instance has
 // not got (hello-world has exactly one version, `production`).
 test.describe
-	.skip('PromoteVersionDialog — e2e with live call site (pending spec B / openbuild-app-detail-overview)', () => {
+	.skip('PromoteVersionDialog — e2e with live call site (pending spec B / buildiq-app-detail-overview)', () => {
 	// TODO: Replace this selector with the actual Promote button once spec B
 	// wires the dialog into the ApplicationVersion list in the detail page.
 	const TODO_PROMOTE_BUTTON_SELECTOR =
@@ -106,7 +106,7 @@ test.describe
 		// Navigate to the detail page for hello-world. `networkidle` never
 		// settles on Nextcloud (ADR-074 rule 4); the Promote button becoming
 		// visible is the readiness signal these scenarios actually need.
-		await page.goto(`${BASE}/index.php/apps/openbuild/builder/${TEST_SLUG}`, {
+		await page.goto(`${BASE}/index.php/apps/buildiq/builder/${TEST_SLUG}`, {
 			waitUntil: 'domcontentloaded',
 		})
 
@@ -157,7 +157,7 @@ test.describe
 	test('5.2 — start-with-source-data: Confirm is enabled by default', async ({
 		page,
 	}) => {
-		await page.goto(`${BASE}/index.php/apps/openbuild/builder/${TEST_SLUG}`, {
+		await page.goto(`${BASE}/index.php/apps/buildiq/builder/${TEST_SLUG}`, {
 			waitUntil: 'domcontentloaded',
 		})
 
@@ -186,7 +186,7 @@ test.describe
 	test('5.2 — migrate-existing-data: Confirm is enabled by default', async ({
 		page,
 	}) => {
-		await page.goto(`${BASE}/index.php/apps/openbuild/builder/${TEST_SLUG}`, {
+		await page.goto(`${BASE}/index.php/apps/buildiq/builder/${TEST_SLUG}`, {
 			waitUntil: 'domcontentloaded',
 		})
 
@@ -215,9 +215,9 @@ test.describe
 // ---------------------------------------------------------------------------
 // Component-smoke test via the router (no describe.skip — runs immediately)
 // ---------------------------------------------------------------------------
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no detail / editor / version / diff / rollback UI; Schemas page misconfigured. Re-enable when #41 is fixed.
+// QUARANTINED (Conduction/buildiq#41): buildiq admin UI not functional in this build — no detail / editor / version / diff / rollback UI; Schemas page misconfigured. Re-enable when #41 is fixed.
 // UN-QUARANTINED 2026-07-30. Quarantining this block was spurious: it opens no
-// browser and touches no OpenBuild UI — it is an fs.stat on
+// browser and touches no Buildiq UI — it is an fs.stat on
 // src/dialogs/PromoteVersionDialog.vue asserting the ADR-004 modal-isolation
 // placement. A broken admin UI could never have affected it.
 test.describe('PromoteVersionDialog — component available (static assertion)', () => {

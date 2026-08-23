@@ -23,11 +23,11 @@
 				{{
 					isSection
 						? t(
-								'openbuild',
+								'buildiq',
 								'Save the selected widgets as a reusable block your organisation can insert into any page.',
 							)
 						: t(
-								'openbuild',
+								'buildiq',
 								'Save this widget as a reusable block your organisation can insert into any page.',
 							)
 				}}
@@ -35,20 +35,20 @@
 
 			<NcTextField
 				:modelValue="form.name"
-				:label="t('openbuild', 'Block name')"
+				:label="t('buildiq', 'Block name')"
 				@update:modelValue="onNameInput" />
 			<NcTextField
 				:modelValue="form.slug"
-				:label="t('openbuild', 'Slug (kebab-case, max 48 chars)')"
+				:label="t('buildiq', 'Slug (kebab-case, max 48 chars)')"
 				@update:modelValue="form.slug = $event" />
 			<NcTextArea
 				:modelValue="form.description"
-				:label="t('openbuild', 'Description')"
+				:label="t('buildiq', 'Description')"
 				@update:modelValue="form.description = $event" />
 			<NcTextField
 				:modelValue="form.category"
 				:label="
-					t('openbuild', 'Category (e.g. {examples})', {
+					t('buildiq', 'Category (e.g. {examples})', {
 						examples: categoryHint,
 					})
 				"
@@ -56,10 +56,10 @@
 
 			<!-- Capture summary -->
 			<section class="ob-save-block__summary">
-				<h3>{{ t('openbuild', 'What will be captured') }}</h3>
+				<h3>{{ t('buildiq', 'What will be captured') }}</h3>
 				<p v-if="dependencySummary.length">
 					{{
-						t('openbuild', 'Bindings reference {count} schema(s).', {
+						t('buildiq', 'Bindings reference {count} schema(s).', {
 							count: dependencySummary.length,
 						})
 					}}
@@ -69,10 +69,7 @@
 						<code>{{ entry.slug }}</code>
 						<span v-if="entry.shared" class="ob-save-block__shared-flag">
 							{{
-								t(
-									'openbuild',
-									'(shared schema — captured unchanged)',
-								)
+								t('buildiq', '(shared schema — captured unchanged)')
 							}}
 						</span>
 					</li>
@@ -80,7 +77,7 @@
 				<p class="ob-save-block__no-rows">
 					{{
 						t(
-							'openbuild',
+							'buildiq',
 							'No object data (rows) is captured — only structure.',
 						)
 					}}
@@ -90,7 +87,7 @@
 			<p v-if="collisionError" class="ob-save-block__error" role="alert">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'Two schemas would collide under the same name: {schemas}. Rename one before saving.',
 						{ schemas: collisionError },
 					)
@@ -99,7 +96,7 @@
 			<p v-if="slugTakenError" class="ob-save-block__error" role="alert">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'That slug is already used by a block in your organisation. Pick another slug.',
 					)
 				}}
@@ -111,7 +108,7 @@
 
 		<template #actions>
 			<NcButton @click="onClose">
-				{{ t('openbuild', 'Cancel') }}
+				{{ t('buildiq', 'Cancel') }}
 			</NcButton>
 			<NcButton variant="primary" :disabled="!canSave || saving" @click="save">
 				{{ saveLabel }}
@@ -185,8 +182,8 @@ export default {
 		 */
 		dialogTitle() {
 			return this.isSection
-				? t('openbuild', 'Save section as block')
-				: t('openbuild', 'Save widget as block')
+				? t('buildiq', 'Save section as block')
+				: t('buildiq', 'Save widget as block')
 		},
 
 		/**
@@ -303,9 +300,7 @@ export default {
 		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 		 */
 		saveLabel() {
-			return this.saving
-				? t('openbuild', 'Saving…')
-				: t('openbuild', 'Save block')
+			return this.saving ? t('buildiq', 'Saving…') : t('buildiq', 'Save block')
 		},
 	},
 
@@ -462,7 +457,7 @@ export default {
 					data?.detail
 					|| data?.error
 					|| e?.message
-					|| t('openbuild', 'Saving the block failed.')
+					|| t('buildiq', 'Saving the block failed.')
 			} finally {
 				this.saving = false
 			}

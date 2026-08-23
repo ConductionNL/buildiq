@@ -2,7 +2,7 @@
 
 ### Requirement: The GitHub export holds no token
 
-OpenBuild SHALL NOT accept, store, or transmit a GitHub Personal Access Token on the
+Buildiq SHALL NOT accept, store, or transmit a GitHub Personal Access Token on the
 export path. `GitHubPushService` SHALL make every GitHub call — repo-existence check,
 create-repo, create-blob/tree/commit/ref, open-pull-request — through OpenRegister's
 `CredentialBrokerService`, passing `{method, path, body}` plus a credential UUID and the
@@ -84,5 +84,5 @@ covered by `SettingsServiceTest`.
 #### Scenario: A stored registry token is redacted from CLI output
 
 - **WHEN** an admin saves a remote-registry token and an operator runs
-  `occ config:app:get openbuild registry_token`
+  `occ config:app:get buildiq registry_token`
 - **THEN** the value is not printed in cleartext

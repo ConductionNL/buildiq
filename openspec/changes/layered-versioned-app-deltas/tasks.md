@@ -26,12 +26,12 @@
 
 ## 5. Seed data (ADR-001)
 
-- [x] 5.1 _(DEVIATION: register-level object seed intentionally skipped — fabricating a hybrid `opencatalogi`/`pipelinq` Application would COLLIDE with the rows `MigrateAppOverridesToHybrid` creates from the real installed apps. The design's example objects live as PHPUnit/Vitest fixtures instead; live validation enabled `allowUserOverrides` on the real migrated pipelinq app.)_ Seed via the `@self` envelope (into the `openbuild` register, on the existing install/repair step) the design's example objects: a hybrid `Application` `opencatalogi` with `allowUserOverrides: true` + admin `ApplicationVersion` + one `scope: user` `ApplicationVersion`; a `virtual` `Application` with `allowUserOverrides: false`; and the travel-agency booking-board example for component tests. Use SAFE placeholder UUIDs only (nil UUID / `<PLACEHOLDER-…>`). [design Seed Data]
+- [x] 5.1 _(DEVIATION: register-level object seed intentionally skipped — fabricating a hybrid `opencatalogi`/`pipelinq` Application would COLLIDE with the rows `MigrateAppOverridesToHybrid` creates from the real installed apps. The design's example objects live as PHPUnit/Vitest fixtures instead; live validation enabled `allowUserOverrides` on the real migrated pipelinq app.)_ Seed via the `@self` envelope (into the `buildiq` register, on the existing install/repair step) the design's example objects: a hybrid `Application` `opencatalogi` with `allowUserOverrides: true` + admin `ApplicationVersion` + one `scope: user` `ApplicationVersion`; a `virtual` `Application` with `allowUserOverrides: false`; and the travel-agency booking-board example for component tests. Use SAFE placeholder UUIDs only (nil UUID / `<PLACEHOLDER-…>`). [design Seed Data]
 
 ## 6. Frontend — dashboard widgets (`src/components/applicationDetail/`)
 
 - [x] 6.1 Replace the Schemas / Pages / Menu structural widgets in `ApplicationDetailDashboard.vue` + `widgets/` with the **Manifest widget** showing Base (read-only), Admin delta (current version + count), and Your delta (current version + count OR "create override" affordance when `allowUserOverrides` is on and none exists); does NOT render raw manifest JSON; opens the Manifest detail page on click. Dutch + English `t()` strings (ADR-007). [REQ-ADLU-001]
-- [x] 6.2 Add/keep the **Register widget** showing register(s) + current counts with an "Open in OpenRegister" deep-link; NO register-delta, NO register versioning in OpenBuild. [REQ-ADLU-002]
+- [x] 6.2 Add/keep the **Register widget** showing register(s) + current counts with an "Open in OpenRegister" deep-link; NO register-delta, NO register versioning in Buildiq. [REQ-ADLU-002]
 
 ## 7. Frontend — Manifest detail page + route + modals (`src/views/`, `src/modals/`, `src/dialogs/`)
 
@@ -45,7 +45,7 @@
 - [x] 8.2 PHPUnit: layered resolution `base ⊕ admin ⊕ user` over the existing merge port, including overrides-disabled and no-user-delta paths. [REQ-LAD-003]
 - [x] 8.3 PHPUnit (no-admin-idor): user-scope guard + owner filter — owner allowed, foreign user denied/empty, flag-false denied, admin bypass audited. [REQ-LAD-004, REQ-OBRBAC-008, REQ-AOP-008]
 - [x] 8.4 Vitest component tests: Manifest widget layer rows + create-override affordance; Register widget deep-link + counts; Manifest detail page version-history reuse; create/edit/rollback modal contracts + label props. [REQ-ADLU-001..004]
-- [x] 8.5 Playwright visual-validation on `http://localhost:8080/apps/openbuild`: open a seeded app's detail, confirm the new dashboard renders the Manifest + Register widgets, the create-override affordance appears for an `allowUserOverrides: true` app, and the Manifest detail page lists delta versions. [REQ-ADLU-001, REQ-ADLU-003]
+- [x] 8.5 Playwright visual-validation on `http://localhost:8080/apps/buildiq`: open a seeded app's detail, confirm the new dashboard renders the Manifest + Register widgets, the create-override affordance appears for an `allowUserOverrides: true` app, and the Manifest detail page lists delta versions. [REQ-ADLU-001, REQ-ADLU-003]
 
 ## 9. Quality gates
 

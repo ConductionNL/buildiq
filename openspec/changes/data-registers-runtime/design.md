@@ -397,7 +397,7 @@ that no real workflow would create by hand.
   require the exported app to either provision its own copy of a shared
   register (reintroducing the exact per-app-copy problem `dataRegisters` was
   designed to avoid) or take a runtime dependency back on the source
-  register's continued existence outside OpenBuild's own lifecycle — both
+  register's continued existence outside Buildiq's own lifecycle — both
   are bigger decisions than this spec's scope; the head's own design.md
   leaves the same door open ("Open Questions" notes no cap or deeper
   integration is addressed yet).

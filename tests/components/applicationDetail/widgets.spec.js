@@ -29,7 +29,7 @@ const router = { push: vi.fn() }
 const route = { name: 'VirtualAppDetail', params: {}, query: {} }
 
 /**
- * Spec: openbuild-app-detail-overview / application-detail-overview
+ * Spec: buildiq-app-detail-overview / application-detail-overview
  * REQ-OBADO-006 through REQ-OBADO-010.
  *
  * Each widget is a small presentational card with a deep-link click handler.

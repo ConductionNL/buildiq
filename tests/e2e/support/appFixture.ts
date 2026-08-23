@@ -1,9 +1,9 @@
 /**
- * Shared e2e fixture helper: create an OpenBuild virtual app idempotently.
+ * Shared e2e fixture helper: create an Buildiq virtual app idempotently.
  *
  * Replaces the obsolete "Add application" button + slug-field UI flow that
  * several specs still drove in their `beforeEach`. App creation moved to a
- * multi-step wizard / template-clone dialog (openbuild-app-creation-wizard),
+ * multi-step wizard / template-clone dialog (buildiq-app-creation-wizard),
  * so the old flat form no longer exists — the `if (addAppButton.isVisible())`
  * guard those specs used silently skipped creation, leaving the app absent and
  * every downstream step failing on a non-existent app.
@@ -23,7 +23,7 @@
 import type { Page } from '@playwright/test'
 
 /**
- * Ensure an OpenBuild virtual app exists (create it if absent). Idempotent.
+ * Ensure an Buildiq virtual app exists (create it if absent). Idempotent.
  *
  * @param page     Playwright page (authenticated via the shared admin storageState).
  * @param slug     The app slug (lower-kebab).
@@ -43,7 +43,7 @@ export async function ensureApp(
 	name: string,
 	versions: string[] = ['production'],
 ): Promise<void> {
-	await page.goto('/apps/openbuild/', { waitUntil: 'domcontentloaded' })
+	await page.goto('/apps/buildiq/', { waitUntil: 'domcontentloaded' })
 	await page.waitForTimeout(500)
 	const result = await page.evaluate(
 		async ({ slug, name, versions }) => {
@@ -67,7 +67,7 @@ export async function ensureApp(
 			// wizard ~180s before failing 500 — which then blows the test timeout
 			// rather than reporting anything useful.
 			const listResp = await fetch(
-				'/index.php/apps/openbuild/api/applications',
+				'/index.php/apps/buildiq/api/applications',
 				{ headers },
 			)
 			if (listResp.ok) {
@@ -86,7 +86,7 @@ export async function ensureApp(
 				}
 			}
 			const resp = await fetch(
-				'/index.php/apps/openbuild/api/applications/wizard',
+				'/index.php/apps/buildiq/api/applications/wizard',
 				{
 					method: 'POST',
 					headers,
@@ -163,7 +163,7 @@ export async function dismissOverlays(page: Page): Promise<void> {
  * the DOM: the mask covers the shell, so anything behind it — notably the
  * sidebar toggle at z-index 1001 — is unclickable while it is up.
  *
- * OpenBuild trips this permanently. Its `store` step ("Remote template store")
+ * Buildiq trips this permanently. Its `store` step ("Remote template store")
  * is optional and is normally never completed, so `optionalUnmet` is non-empty
  * forever. The wizard is suppressed for real users by a per-browser flag
  * (`cn-setup-wizard-dismissed:{appId}:{setup.version}`) written on dismiss —

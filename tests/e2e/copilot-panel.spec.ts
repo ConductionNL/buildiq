@@ -13,8 +13,8 @@
  * when it returned 503 ("no AI provider configured"). That gate was wrong,
  * and it hid the only part of this flow worth asserting.
  *
- * OpenBuild is the MCP **provider**, not an AI consumer: the deterministic
- * authoring surface is `lib/Mcp/OpenBuildToolProvider` and its handlers
+ * Buildiq is the MCP **provider**, not an AI consumer: the deterministic
+ * authoring surface is `lib/Mcp/BuildiqToolProvider` and its handlers
  * (CreateApp, UpsertPage, AddWidget, …). `CopilotService::execute()` is a
  * pure dispatcher over those handlers — it never calls `assertAvailable()`
  * and needs no AI at all. Only `plan()` talks to an LLM.
@@ -43,9 +43,9 @@ import { dismissWalkthrough, dismissSupportDialog } from './support/overlays'
 // PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts.
 import { E2E_BASE_URL } from './support/baseUrl'
 
-const HEALTH_URL = '**/apps/openbuild/api/copilot/health'
-const PLAN_URL = '**/apps/openbuild/api/copilot/plan'
-const EXECUTE_URL = '**/apps/openbuild/api/copilot/execute'
+const HEALTH_URL = '**/apps/buildiq/api/copilot/health'
+const PLAN_URL = '**/apps/buildiq/api/copilot/plan'
+const EXECUTE_URL = '**/apps/buildiq/api/copilot/execute'
 
 /** Page id the stubbed plan creates. Upsert semantics make re-runs idempotent. */
 const SUPPLIERS_PAGE_ID = 'e2e-suppliers'
@@ -59,7 +59,7 @@ const STUBBED_PLAN = {
 		// 'production' version. Without this the real execute call 422s with
 		// "No version 'development' found for app 'hello-world'." — live-verified.
 		{
-			tool: 'openbuild.upsertPage',
+			tool: 'buildiq.upsertPage',
 			arguments: {
 				appSlug: 'hello-world',
 				versionSlug: 'production',
@@ -70,7 +70,7 @@ const STUBBED_PLAN = {
 			},
 		},
 		{
-			tool: 'openbuild.addWidget',
+			tool: 'buildiq.addWidget',
 			arguments: {
 				appSlug: 'hello-world',
 				versionSlug: 'production',
@@ -119,7 +119,7 @@ test.describe('Builder copilot panel (spec: ai-copilot)', () => {
 				body: JSON.stringify({ available: true }),
 			}),
 		)
-		await page.goto('/apps/openbuild/builder/hello-world/pages')
+		await page.goto('/apps/buildiq/builder/hello-world/pages')
 		await dismissWalkthrough(page)
 		await dismissSupportDialog(page)
 		// NOT waitForLoadState('networkidle') — this NC instance's own
@@ -181,7 +181,7 @@ test.describe('Builder copilot panel (spec: ai-copilot)', () => {
 		// source first — the served manifest — then that the reloaded designer
 		// actually renders it.
 		const manifestRes = await page.request.get(
-			`${E2E_BASE_URL}/index.php/apps/openbuild/api/applications/hello-world/manifest`,
+			`${E2E_BASE_URL}/index.php/apps/buildiq/api/applications/hello-world/manifest`,
 			{ headers: { 'OCS-APIRequest': 'true' } },
 		)
 		expect(manifestRes.ok(), 'the manifest must be readable back').toBeTruthy()
@@ -252,7 +252,7 @@ test.describe('Builder copilot panel (spec: ai-copilot)', () => {
 		await expect(proposal).toBeVisible({ timeout: 10_000 })
 
 		// Snapshot the manifest so "changes nothing" is asserted, not assumed.
-		const manifestUrl = `${E2E_BASE_URL}/index.php/apps/openbuild/api/applications/hello-world/manifest`
+		const manifestUrl = `${E2E_BASE_URL}/index.php/apps/buildiq/api/applications/hello-world/manifest`
 		const before = await (
 			await page.request.get(manifestUrl, {
 				headers: { 'OCS-APIRequest': 'true' },

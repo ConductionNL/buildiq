@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenBuild Exports Controller
+ * Buildiq Exports Controller
  *
  * Thin controller: queues an ExportJob and streams the resulting ZIP.
  * Standard CRUD on ExportJob (list/get for polling) goes through OR REST
  * per ADR-022 — this controller deliberately omits those.
  *
  * @category Controller
- * @package  OCA\OpenBuild\Controller
+ * @package  OCA\Buildiq\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -30,10 +30,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Controller;
+namespace OCA\Buildiq\Controller;
 
-use OCA\OpenBuild\AppInfo\Application;
-use OCA\OpenBuild\Service\ExportJobService;
+use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Service\ExportJobService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -48,7 +48,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * Controller for the OpenBuild export pipeline.
+ * Controller for the Buildiq export pipeline.
  *
  * @spec openspec/changes/openbuild-exporter/tasks.md#task-7.2
  * @spec openspec/changes/openbuild-exporter/tasks.md#task-5.2
@@ -185,7 +185,7 @@ class ExportsController extends Controller {
 			// is not in any role bucket is not authorised.
 			return false;
 		} catch (\Throwable $e) {
-			$this->logger->debug('OpenBuild export: authz lookup failed: ' . $e->getMessage());
+			$this->logger->debug('Buildiq export: authz lookup failed: ' . $e->getMessage());
 			return false;
 		}//end try
 	}//end isAuthorisedForApplication()
@@ -257,7 +257,7 @@ class ExportsController extends Controller {
 
 			return $requestedBy !== '' && $requestedBy === $uid;
 		} catch (\Throwable $e) {
-			$this->logger->debug('OpenBuild export: job authz lookup failed: ' . $e->getMessage());
+			$this->logger->debug('Buildiq export: job authz lookup failed: ' . $e->getMessage());
 			return false;
 		}//end try
 	}//end isAuthorisedForJob()
@@ -301,7 +301,7 @@ class ExportsController extends Controller {
 
 			return $uuid;
 		} catch (\Throwable $e) {
-			$this->logger->warning('OpenBuild export: could not resolve application UUID: ' . $e->getMessage());
+			$this->logger->warning('Buildiq export: could not resolve application UUID: ' . $e->getMessage());
 			return '';
 		}//end try
 	}//end resolveApplicationUuid()
@@ -370,7 +370,7 @@ class ExportsController extends Controller {
 		// Nothing checked it here, so any other string sailed through validation
 		// and only failed three layers down, where OpenRegister refused the
 		// record and ExportJobService::queue() rethrew as a RuntimeException.
-		// That surfaces to the caller as a bare HTTP 500, logged as: "OpenBuild
+		// That surfaces to the caller as a bare HTTP 500, logged as: "Buildiq
 		// export submit failed: Could not record the export job: Property
 		// 'applicationVersion' should match pattern
 		// '^\d+\.\d+\.\d+(?:[-+][\w.-]+)?$' but 'production' does not."
@@ -525,7 +525,7 @@ class ExportsController extends Controller {
 				Http::STATUS_UNPROCESSABLE_ENTITY
 			);
 		} catch (\Throwable $e) {
-			$this->logger->error('OpenBuild export submit failed: ' . $e->getMessage());
+			$this->logger->error('Buildiq export submit failed: ' . $e->getMessage());
 			return new JSONResponse(
 				['error' => 'Internal error queueing export.'],
 				Http::STATUS_INTERNAL_SERVER_ERROR

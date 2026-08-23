@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests for ApplicationInsightsService (spec openbuild-app-detail-overview /
+ * Unit tests for ApplicationInsightsService (spec buildiq-app-detail-overview /
  * capability application-insights, REQ-OBAI-001..006).
  *
  * Covers:
@@ -16,7 +16,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Service
+ * @package  OCA\Buildiq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -29,17 +29,16 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Service;
+namespace OCA\Buildiq\Tests\Unit\Service;
 
-use OCA\OpenBuild\Service\ApplicationInsightsService;
-use OCA\OpenBuild\Service\PermissionResolver;
+use OCA\Buildiq\Service\ApplicationInsightsService;
+use OCA\Buildiq\Service\PermissionResolver;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Service\ObjectService;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IGroup;

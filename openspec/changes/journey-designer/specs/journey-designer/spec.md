@@ -1,16 +1,16 @@
 # journey-designer Delta: journey-designer
 
 **Status**: in-progress
-**Scope**: openbuild
+**Scope**: buildiq
 **OpenSpec changes**:
 
 - [journey-designer](../../)
 
 ## Purpose
 
-Authors a `journey` in OpenBuild: step sequence, branch rules, write mappings
+Authors a `journey` in Buildiq: step sequence, branch rules, write mappings
 and access mode, over `form` objects authored by the existing form-page editor.
-Implements ADR-085 §6. Related: `openbuild-page-designer`, `form-editor-logic`
+Implements ADR-085 §6. Related: `buildiq-page-designer`, `form-editor-logic`
 (which already authors `config.steps[]` inside one form), and the cross-app
 delta `hydra/openspec/changes/portaliq-phase-two/specs/forms-and-journeys/spec.md`.
 

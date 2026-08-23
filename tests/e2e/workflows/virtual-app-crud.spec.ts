@@ -4,9 +4,9 @@
 /**
  * DEEP, data-dependent e2e — full CRUD-WITH-PERSISTENCE for a Virtual App.
  *
- * A Virtual App is an OpenRegister object (register `openbuild` / schema
- * `application`). The OpenBuild shell exposes a generic OR object-browser for
- * it at the `/apps/openbuild/schemas` route (the in-app nav labels it
+ * A Virtual App is an OpenRegister object (register `buildiq` / schema
+ * `application`). The Buildiq shell exposes a generic OR object-browser for
+ * it at the `/apps/buildiq/schemas` route (the in-app nav labels it
  * "Schemas", but it lists + edits Application objects — verified live
  * 2026-06-10). That browser is the functional CRUD surface: Cards/Table
  * toggle, an "Add Application" create modal, per-row selection, and a
@@ -24,7 +24,7 @@
  * Legs that are NOT honestly drivable in this build are marked `test.fixme`
  * with the concrete reason (see BUG LIST in the suite header below), never
  * faked green:
- *   - EDIT via the row detail/edit sidebar — Conduction/openbuild#41 (the
+ *   - EDIT via the row detail/edit sidebar — Conduction/buildiq#41 (the
  *     application detail/editor sidebar does not populate the object's fields).
  *
  * CREATE via the four-step wizard endpoint (formerly BUG-A) is now GREEN:
@@ -33,7 +33,7 @@
  * returns 201 with the new app's UUID.
  *
  * Pre-conditions: Docker stack up at PLAYWRIGHT_BASE_URL (default
- * http://localhost:8080); OpenBuild + OpenRegister enabled; admin/admin.
+ * http://localhost:8080); Buildiq + OpenRegister enabled; admin/admin.
  * globalSetup provides the authenticated storageState.
  */
 
@@ -52,7 +52,7 @@ import {
  * application list request to settle.
  */
 async function gotoAppBrowser(page: Page): Promise<void> {
-	// The app router runs in HISTORY mode (`createWebHistory(generateUrl('/apps/openbuild'))`
+	// The app router runs in HISTORY mode (`createWebHistory(generateUrl('/apps/buildiq'))`
 	// in src/main.js), NOT hash mode. Two consequences, both live-verified on
 	// this instance:
 	//   - a `#/applications` hash is not a route: vue-router matches path `/`
@@ -60,11 +60,11 @@ async function gotoAppBrowser(page: Page): Promise<void> {
 	//     "Add app" button) is never rendered;
 	//   - the `/index.php/`-prefixed form does not match the router base
 	//     (`htaccess.RewriteBase` is `/`, so `generateUrl` emits the pretty
-	//     `/apps/openbuild`), so the router replaces the URL with the bare
+	//     `/apps/buildiq`), so the router replaces the URL with the bare
 	//     app root — again the Dashboard.
 	// The pretty-URL path form is the only form that actually mounts the
 	// applications index.
-	await page.goto('/apps/openbuild/applications')
+	await page.goto('/apps/buildiq/applications')
 	await page
 		.waitForResponse(
 			(r) =>
@@ -349,7 +349,7 @@ test.describe('Virtual App — full CRUD with persistence', () => {
 	})
 
 	// ---- #41: detail/editor sidebar does not populate ----------------------
-	test.fixme('EDIT via the row detail sidebar (Conduction/openbuild#41: editor does not render app fields)', async ({
+	test.fixme('EDIT via the row detail sidebar (Conduction/buildiq#41: editor does not render app fields)', async ({
 		page,
 		request,
 	}) => {

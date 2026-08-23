@@ -1,12 +1,12 @@
 <?php
 
 /**
- * OpenBuild GeneratedDocumentController
+ * Buildiq GeneratedDocumentController
  *
  * Serves the `download-link` output mode of the `generateDocument`
  * automation action (automation-document-action design.md Decision 3).
  * `DocumentGenerationService::writeDownloadLink()` writes the generated
- * document's bytes into OpenBuild's OWN app-private storage
+ * document's bytes into Buildiq's OWN app-private storage
  * (`OCP\Files\IAppData` — never the user's Files tree) behind a random
  * token with a metadata sidecar carrying a ~24h expiry. This controller is
  * the ONLY reader of that storage: it resolves the token, rejects (404,
@@ -27,7 +27,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
- * @package  OCA\OpenBuild\Controller
+ * @package  OCA\Buildiq\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -43,10 +43,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Controller;
+namespace OCA\Buildiq\Controller;
 
-use OCA\OpenBuild\AppInfo\Application;
-use OCA\OpenBuild\Service\DocumentGenerationService;
+use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Service\DocumentGenerationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -77,7 +77,7 @@ class GeneratedDocumentController extends Controller {
 	 * Constructor.
 	 *
 	 * @param IRequest $request Current HTTP request.
-	 * @param IAppDataFactory $appDataFactory Resolves OpenBuild's app-private storage.
+	 * @param IAppDataFactory $appDataFactory Resolves Buildiq's app-private storage.
 	 * @param LoggerInterface $logger PSR logger.
 	 *
 	 * @return void
@@ -113,7 +113,7 @@ class GeneratedDocumentController extends Controller {
 		}
 
 		try {
-			$folder = $this->appDataFactory->get('openbuild')
+			$folder = $this->appDataFactory->get('buildiq')
 				->getFolder(self::APPDATA_FOLDER)
 				->getFolder($token);
 
@@ -154,7 +154,7 @@ class GeneratedDocumentController extends Controller {
 		try {
 			$folder->delete();
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenBuild: GeneratedDocumentController could not delete an expired artifact: ' . $e->getMessage());
+			$this->logger->warning('Buildiq: GeneratedDocumentController could not delete an expired artifact: ' . $e->getMessage());
 		}
 
 	}//end deleteQuietly()

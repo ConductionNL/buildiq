@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild ApplicationVersionsController
+ * Buildiq ApplicationVersionsController
  *
  * REST surface for the versioned-app model (ADR-002 / spec
  * `application-versions`). Exposes CRUD over ApplicationVersion rows
@@ -24,7 +24,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
- * @package  OCA\OpenBuild\Controller
+ * @package  OCA\Buildiq\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -41,17 +41,17 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Controller;
+namespace OCA\Buildiq\Controller;
 
 use DateTimeImmutable;
 use DateTimeInterface;
-use OCA\OpenBuild\AppInfo\Application;
-use OCA\OpenBuild\Service\ApplicationVersionService;
+use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -207,7 +207,7 @@ class ApplicationVersionsController extends Controller {
 			return new JSONResponse(data: $normalised, statusCode: Http::STATUS_OK);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: ApplicationVersionsController::index failed for slug ' . $appSlug . ': ' . $e->getMessage(),
+				'Buildiq: ApplicationVersionsController::index failed for slug ' . $appSlug . ': ' . $e->getMessage(),
 				['exception' => $e]
 			);
 			return $this->errorResponse(code: 'internal_error', detail: 'Failed to load versions');
@@ -313,7 +313,7 @@ class ApplicationVersionsController extends Controller {
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: ApplicationVersionsController::create failed for slug ' . $appSlug . ': ' . $e->getMessage(),
+				'Buildiq: ApplicationVersionsController::create failed for slug ' . $appSlug . ': ' . $e->getMessage(),
 				['exception' => $e]
 			);
 			return $this->errorResponse(
@@ -387,7 +387,7 @@ class ApplicationVersionsController extends Controller {
 				try {
 					$this->objectService->lockObject(
 						identifier: $currentUuid,
-						process: 'openbuild.controller-update',
+						process: 'buildiq.controller-update',
 						duration: 15
 					);
 					$locked = true;
@@ -413,7 +413,7 @@ class ApplicationVersionsController extends Controller {
 						$this->objectService->unlockObject(identifier: $currentUuid);
 					} catch (Throwable $unlockErr) {
 						$this->logger->warning(
-							'OpenBuild: failed to release update lock on ' . $currentUuid . ': ' . $unlockErr->getMessage()
+							'Buildiq: failed to release update lock on ' . $currentUuid . ': ' . $unlockErr->getMessage()
 						);
 					}
 				}
@@ -425,7 +425,7 @@ class ApplicationVersionsController extends Controller {
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: ApplicationVersionsController::update failed for slug ' . $appSlug . '/' . $versionSlug . ': ' . $e->getMessage(),
+				'Buildiq: ApplicationVersionsController::update failed for slug ' . $appSlug . '/' . $versionSlug . ': ' . $e->getMessage(),
 				['exception' => $e]
 			);
 			return $this->errorResponse(
@@ -481,7 +481,7 @@ class ApplicationVersionsController extends Controller {
 			return new JSONResponse(data: [], statusCode: Http::STATUS_NO_CONTENT);
 		} catch (Throwable $e) {
 			$this->logger->info(
-				'OpenBuild: ApplicationVersionsController::destroy refused for slug ' . $appSlug . '/' . $versionSlug . ': ' . $e->getMessage()
+				'Buildiq: ApplicationVersionsController::destroy refused for slug ' . $appSlug . '/' . $versionSlug . ': ' . $e->getMessage()
 			);
 
 			$message = $e->getMessage();
@@ -529,7 +529,7 @@ class ApplicationVersionsController extends Controller {
 		}
 
 		if ($this->isOwnerStrict(application: $application, user: $user) === false) {
-			return $this->errorResponse(code: 'openbuild.rbac.not_owner', status: Http::STATUS_FORBIDDEN);
+			return $this->errorResponse(code: 'buildiq.rbac.not_owner', status: Http::STATUS_FORBIDDEN);
 		}
 
 		try {
@@ -549,7 +549,7 @@ class ApplicationVersionsController extends Controller {
 			return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
 		} catch (Throwable $e) {
 			$this->logger->info(
-				'OpenBuild: ApplicationVersionsController::release refused for slug ' . $appSlug . '/' . $versionSlug . ': ' . $e->getMessage()
+				'Buildiq: ApplicationVersionsController::release refused for slug ' . $appSlug . '/' . $versionSlug . ': ' . $e->getMessage()
 			);
 			return $this->errorResponse(
 				code: 'release_failed',
@@ -610,7 +610,7 @@ class ApplicationVersionsController extends Controller {
 	}//end resolveProductionRegister()
 
 	/**
-	 * Resolve the OpenBuild register + one of its schemas to the numeric IDs
+	 * Resolve the Buildiq register + one of its schemas to the numeric IDs
 	 * OR's `searchObjects` expects in `@self`.
 	 *
 	 * Both mapper find() calls THROW DoesNotExistException when absent — they do
@@ -632,7 +632,7 @@ class ApplicationVersionsController extends Controller {
 			];
 		} catch (Throwable $e) {
 			$this->logger->warning(
-				'OpenBuild: could not resolve register/schema {schema}: {message}',
+				'Buildiq: could not resolve register/schema {schema}: {message}',
 				['schema' => $schemaSlug, 'message' => $e->getMessage(), 'exception' => $e]
 			);
 			return null;
@@ -825,7 +825,7 @@ class ApplicationVersionsController extends Controller {
 		}
 
 		return $this->errorResponse(
-			code: 'openbuild.rbac.no_role',
+			code: 'buildiq.rbac.no_role',
 			status: Http::STATUS_FORBIDDEN
 		);
 	}//end requireRole()
@@ -881,7 +881,7 @@ class ApplicationVersionsController extends Controller {
 						action: self::EVENT_ADMIN_BYPASS,
 						context: $context
 					);
-					$this->logger->info('OpenBuild: rbac.admin_bypass exercised', $context);
+					$this->logger->info('Buildiq: rbac.admin_bypass exercised', $context);
 					return;
 				}
 			} catch (Throwable $e) {
@@ -890,13 +890,13 @@ class ApplicationVersionsController extends Controller {
 				// Per REQ-OBRBAC-007 the OR audit trail is the system of record
 				// for admin-bypass events; silent fallback defeats forensic review.
 				$this->logger->critical(
-					'OpenBuild: failed to record admin bypass in OR audit trail — COMPLIANCE GAP; bypass event lost from system of record',
+					'Buildiq: failed to record admin bypass in OR audit trail — COMPLIANCE GAP; bypass event lost from system of record',
 					array_merge($context, ['exception' => $e->getMessage()])
 				);
 			}//end try
 		}//end if
 
-		$this->logger->info('OpenBuild: rbac.admin_bypass exercised', $context);
+		$this->logger->info('Buildiq: rbac.admin_bypass exercised', $context);
 	}//end recordAdminBypass()
 
 	/**

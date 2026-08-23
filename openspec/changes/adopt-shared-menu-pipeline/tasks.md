@@ -38,7 +38,7 @@
       before/after this change (e.g. a one-off script or a Vitest snapshot)
       — with empty `menu-layout.json` keys, `buildManifest()`'s output MUST
       be array-equal to the old `mergeManifestFragments()` output.
-- [ ] 4.2 Manual smoke test: every existing OpenBuild page (Dashboard, Apps,
+- [ ] 4.2 Manual smoke test: every existing Buildiq page (Dashboard, Apps,
       Store, Documentation, Features & roadmap, Business Rules) remains
       reachable via its existing route and its existing menu entry (or the
       settings foldout for Features & roadmap, unchanged). DEFERRED — needs a

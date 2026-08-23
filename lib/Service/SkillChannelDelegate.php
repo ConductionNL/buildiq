@@ -1,12 +1,12 @@
 <?php
 
 /**
- * OpenBuild SkillChannelDelegate
+ * Buildiq SkillChannelDelegate
  *
  * Applies a published app repo's `skills/` channel by delegating to hermiq, which
  * owns skill installation and fetches the bundle itself from the repo coordinates.
  *
- * OpenBuild deliberately parses no skill frontmatter and places no aux files:
+ * Buildiq deliberately parses no skill frontmatter and places no aux files:
  * byte-fidelity and the ADR-068 §3 rule that `learning-candidates.md` never leaves
  * the instance have to keep living in exactly one implementation.
  *
@@ -19,7 +19,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -34,7 +34,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
@@ -124,7 +124,7 @@ class SkillChannelDelegate {
 		$installer = $this->installer();
 		if ($installer === null) {
 			$this->logger->info(
-				'OpenBuild channel apply: hermiq is not available — skipping ' . count($skills) . ' declared skills.'
+				'Buildiq channel apply: hermiq is not available — skipping ' . count($skills) . ' declared skills.'
 			);
 			$report->skipChannel(channel: self::CHANNEL, reason: self::REASON_NO_HERMIQ);
 			return;
@@ -141,7 +141,7 @@ class SkillChannelDelegate {
 
 			$this->adoptCounts(result: $result, report: $report);
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenBuild channel apply: hermiq skill install failed: ' . $e->getMessage());
+			$this->logger->warning('Buildiq channel apply: hermiq skill install failed: ' . $e->getMessage());
 			$report->skipChannel(channel: self::CHANNEL, reason: 'hermiq-install-failed');
 		}//end try
 

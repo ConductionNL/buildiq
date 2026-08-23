@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild GitHubPushService unit tests
+ * Buildiq GitHubPushService unit tests
  *
  * This file used to lock the OPPOSITE contract: that the PAT was a method-scoped
  * parameter, not stored on `$this`, and absent from log lines. That is good hygiene
@@ -17,7 +17,7 @@
  * actually exercisable: against the live broker on the dev instance.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Service
+ * @package  OCA\Buildiq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -33,9 +33,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Service;
+namespace OCA\Buildiq\Tests\Unit\Service;
 
-use OCA\OpenBuild\Service\GitHubPushService;
+use OCA\Buildiq\Service\GitHubPushService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
@@ -50,7 +50,7 @@ final class GitHubPushServiceTest extends TestCase {
 	 * @return string Absolute path to the tree.
 	 */
 	private function makeTree(): string {
-		$treeDir = sys_get_temp_dir() . '/openbuild-test-tree-' . uniqid();
+		$treeDir = sys_get_temp_dir() . '/buildiq-test-tree-' . uniqid();
 		mkdir($treeDir, 0o755, true);
 		file_put_contents($treeDir . '/README.md', '# hello');
 

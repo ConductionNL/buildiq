@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild RuleEngineService
+ * Buildiq RuleEngineService
  *
  * The single evaluation surface for the business-rules engine. Loads a RuleSet
  * bundle by slug (from the hot-reload cache or OpenRegister), evaluates its
@@ -18,7 +18,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -35,7 +35,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IUserSession;
@@ -49,7 +49,7 @@ use Throwable;
 class RuleEngineService {
 
 	/**
-	 * Shared OpenBuild register slug.
+	 * Shared Buildiq register slug.
 	 */
 	public const REGISTER_SLUG = 'openbuild';
 
@@ -271,7 +271,7 @@ class RuleEngineService {
 	 * Load (and cache) a RuleSet bundle: the RuleSet plus its tables/rules.
 	 *
 	 * Resolution runs through OpenRegister `searchObjectsBySlug` (see
-	 * {@see findMany()}), which applies the schema's RBAC. IMPORTANT: `openbuild`
+	 * {@see findMany()}), which applies the schema's RBAC. IMPORTANT: `buildiq`
 	 * is a system-wide register (not org-scoped), so multitenancy is intentionally
 	 * bypassed and this is NOT per-owner or per-organisation read isolation — with
 	 * a read-open rule-set schema, any authenticated caller can resolve a rule-set
@@ -371,7 +371,7 @@ class RuleEngineService {
 			// A failed audit write must not abort the evaluation response, but
 			// it is a compliance gap — log at error so ops alerting catches it.
 			$this->logger->error(
-				'OpenBuild: failed to persist RuleExecutionLog',
+				'Buildiq: failed to persist RuleExecutionLog',
 				['ruleSet' => $ruleSetSlug, 'exception' => $e->getMessage()]
 			);
 		}
@@ -441,7 +441,7 @@ class RuleEngineService {
 	private function findMany(string $schema, array $filters, ?int $limit = null): array {
 		// Authorization-aware resolution (harden-rules-authz-and-audit-parity,
 		// M1): resolve through searchObjectsBySlug (which applies the schema's
-		// RBAC) rather than a raw findAll. `openbuild` is a SYSTEM-WIDE register
+		// RBAC) rather than a raw findAll. `buildiq` is a SYSTEM-WIDE register
 		// (not org-scoped) — mirror ListAppsHandler and pass _multitenancy:false
 		// so cross-org callers still resolve it (a true org filter would make
 		// registerMapper->find() throw and break evaluation). Note: for a
@@ -457,7 +457,7 @@ class RuleEngineService {
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
-				'OpenBuild: rule-engine searchObjects failed',
+				'Buildiq: rule-engine searchObjects failed',
 				['schema' => $schema, 'exception' => $e->getMessage()]
 			);
 			return [];

@@ -5,7 +5,7 @@
 `ApplicationInsightsService::callerInAnyRole` SHALL authorize a caller who matches
 via a `group:` principal, not only `user:`/bare-uid — reusing
 `PermissionResolver::matchesCaller` so insights authorization is consistent with
-every other OpenBuild guard. A caller authorized solely through group membership
+every other Buildiq guard. A caller authorized solely through group membership
 MUST NOT be wrongly denied.
 
 #### Scenario: A group-only-authorized caller gets insights

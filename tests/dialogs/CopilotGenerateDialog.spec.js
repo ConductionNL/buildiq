@@ -85,7 +85,7 @@ describe('CopilotGenerateDialog.vue — spec ai-copilot REQ-OBAIC-001/006', () =
 					summary: 'A tool library',
 					steps: [
 						{
-							tool: 'openbuild.createApp',
+							tool: 'buildiq.createApp',
 							arguments: {
 								slug: 'tool-library',
 								name: 'Tool Library',
@@ -141,7 +141,7 @@ describe('CopilotGenerateDialog.vue — spec ai-copilot REQ-OBAIC-001/006', () =
 				summary: 'x',
 				steps: [
 					{
-						tool: 'openbuild.createApp',
+						tool: 'buildiq.createApp',
 						arguments: { slug: 'x', name: 'X' },
 					},
 				],

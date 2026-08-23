@@ -1,12 +1,12 @@
 <?php
 
 /**
- * OpenBuild ApplicationCreationController
+ * Buildiq ApplicationCreationController
  *
  * Single-endpoint controller for the app-creation wizard
- * (spec `openbuild-app-creation-wizard`, REQ-OBWIZ-001 / REQ-OBWIZ-007).
+ * (spec `buildiq-app-creation-wizard`, REQ-OBWIZ-001 / REQ-OBWIZ-007).
  *
- * Endpoint: POST /apps/openbuild/api/applications/wizard
+ * Endpoint: POST /apps/buildiq/api/applications/wizard
  *
  * The endpoint is ADMIN-ONLY (issue #157): app creation provisions an OR
  * Register, mirroring OR's admin-only RegistersController gate (OR #1949).
@@ -29,7 +29,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
- * @package  OCA\OpenBuild\Controller
+ * @package  OCA\Buildiq\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -46,12 +46,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Controller;
+namespace OCA\Buildiq\Controller;
 
-use OCA\OpenBuild\AppInfo\Application;
-use OCA\OpenBuild\Exception\WizardCreationException;
-use OCA\OpenBuild\Service\ApplicationCreationService;
-use OCA\OpenBuild\Settings\AdminSettings;
+use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Exception\WizardCreationException;
+use OCA\Buildiq\Service\ApplicationCreationService;
+use OCA\Buildiq\Settings\AdminSettings;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -120,7 +120,7 @@ class ApplicationCreationController extends Controller {
 		// Creating a virtual app provisions an OR Register, which mirrors the
 		// admin-only gate on OR's RegistersController (OR #1949). Non-admin
 		// users who have been denied register-create rights in OR must not be
-		// able to regain that privilege via openbuild (issue #157).
+		// able to regain that privilege via buildiq (issue #157).
 		if ($this->groupManager->isAdmin($user->getUID()) === false) {
 			return new JSONResponse(
 				data: ['error' => 'forbidden', 'message' => 'Creating virtual apps requires Nextcloud admin privileges.'],
@@ -160,7 +160,7 @@ class ApplicationCreationController extends Controller {
 			return new JSONResponse(data: $body, statusCode: $httpStatus);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: ApplicationCreationController::wizard unhandled exception: ' . $e->getMessage(),
+				'Buildiq: ApplicationCreationController::wizard unhandled exception: ' . $e->getMessage(),
 				['exception' => $e]
 			);
 

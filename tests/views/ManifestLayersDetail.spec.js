@@ -322,7 +322,7 @@ describe('ManifestLayersDetail', () => {
 			await flush(wrapper)
 			await wrapper.vm.createOverride()
 			expect(axiosPutMock).toHaveBeenCalledWith(
-				'/apps/openbuild/api/app-overrides/petstore/user',
+				'/apps/buildiq/api/app-overrides/petstore/user',
 				{},
 			)
 		})
@@ -342,7 +342,7 @@ describe('ManifestLayersDetail', () => {
 			await flush(wrapper)
 			await wrapper.vm.resetOverride()
 			expect(axiosDeleteMock).toHaveBeenCalledWith(
-				'/apps/openbuild/api/app-overrides/petstore/user',
+				'/apps/buildiq/api/app-overrides/petstore/user',
 			)
 		})
 
@@ -395,7 +395,7 @@ describe('ManifestLayersDetail', () => {
 			await wrapper.vm.createDraft()
 			expect(axiosPostMock).toHaveBeenCalledTimes(1)
 			const [url, body] = axiosPostMock.mock.calls[0]
-			expect(url).toBe('/apps/openbuild/api/applications/petstore/versions')
+			expect(url).toBe('/apps/buildiq/api/applications/petstore/versions')
 			expect(body.name).toBe('Draft 2')
 			expect(body.slug).toBe('draft-2')
 			expect(body.status).toBe('draft')

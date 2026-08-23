@@ -1,11 +1,11 @@
 <?php
 
 /**
- * Unit tests for the OpenBuild Capabilities class.
+ * Unit tests for the Buildiq Capabilities class.
  *
- * Covers the openbuild-inline-edit-persistence change (spec
- * openbuild-capability): the document carries `openbuild.enabled === true` and
- * a boolean `openbuild.canEdit` that reflects the calling user's OpenBuild
+ * Covers the buildiq-inline-edit-persistence change (spec
+ * buildiq-capability): the document carries `buildiq.enabled === true` and
+ * a boolean `buildiq.canEdit` that reflects the calling user's Buildiq
  * access — true for an in-scope user, false for an out-of-scope or anonymous
  * user.
  *
@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit
+ * @package  OCA\Buildiq\Tests\Unit
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,9 +26,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit;
+namespace OCA\Buildiq\Tests\Unit;
 
-use OCA\OpenBuild\Capabilities;
+use OCA\Buildiq\Capabilities;
 use OCP\App\IAppManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -80,7 +80,7 @@ class CapabilitiesTest extends TestCase {
 	}//end capabilities()
 
 	/**
-	 * The document carries openbuild.enabled === true and a boolean canEdit.
+	 * The document carries buildiq.enabled === true and a boolean canEdit.
 	 *
 	 * @return void
 	 */
@@ -92,9 +92,9 @@ class CapabilitiesTest extends TestCase {
 
 		$doc = $this->capabilities()->getCapabilities();
 
-		self::assertArrayHasKey('openbuild', $doc);
-		self::assertTrue($doc['openbuild']['enabled']);
-		self::assertIsBool($doc['openbuild']['canEdit']);
+		self::assertArrayHasKey('buildiq', $doc);
+		self::assertTrue($doc['buildiq']['enabled']);
+		self::assertIsBool($doc['buildiq']['canEdit']);
 
 	}//end testDocumentShapeIsPresent()
 
@@ -111,7 +111,7 @@ class CapabilitiesTest extends TestCase {
 
 		$doc = $this->capabilities()->getCapabilities();
 
-		self::assertTrue($doc['openbuild']['canEdit']);
+		self::assertTrue($doc['buildiq']['canEdit']);
 
 	}//end testCanEditTrueForInScopeUser()
 
@@ -128,7 +128,7 @@ class CapabilitiesTest extends TestCase {
 
 		$doc = $this->capabilities()->getCapabilities();
 
-		self::assertFalse($doc['openbuild']['canEdit']);
+		self::assertFalse($doc['buildiq']['canEdit']);
 
 	}//end testCanEditFalseForOutOfScopeUser()
 
@@ -142,7 +142,7 @@ class CapabilitiesTest extends TestCase {
 
 		$doc = $this->capabilities()->getCapabilities();
 
-		self::assertFalse($doc['openbuild']['canEdit']);
+		self::assertFalse($doc['buildiq']['canEdit']);
 
 	}//end testCanEditFalseForAnonymous()
 }//end class

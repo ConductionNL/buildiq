@@ -140,7 +140,7 @@ describe('CreateApplicationWizard', () => {
 		})
 
 		expect(axios.post).toHaveBeenCalledWith(
-			'/apps/openbuild/api/applications/wizard',
+			'/apps/buildiq/api/applications/wizard',
 			{
 				name: 'X',
 				slug: 'x',

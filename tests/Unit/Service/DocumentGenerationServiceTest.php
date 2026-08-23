@@ -11,7 +11,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Service
+ * @package  OCA\Buildiq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,16 +24,16 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Service;
+namespace OCA\Buildiq\Tests\Unit\Service;
 
-use OCA\OpenBuild\Service\DocumentGenerationService;
-use OCA\OpenBuild\Service\JobOwnerImpersonator;
-use OCA\OpenBuild\Service\RuleActionDispatcher;
+use OCA\Buildiq\Service\DocumentGenerationService;
+use OCA\Buildiq\Service\JobOwnerImpersonator;
+use OCA\Buildiq\Service\RuleActionDispatcher;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Files\AppData\IAppDataFactory;
 use OCP\Files\Folder;

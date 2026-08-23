@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild PreferencesController.
+ * Buildiq PreferencesController.
  *
  * Generic per-user key/value preferences, backed by Nextcloud IConfig
  * user values. Used by shared @conduction/nextcloud-vue widgets (e.g.
@@ -9,7 +9,7 @@
  * UI flag cross-device without a bespoke endpoint per feature.
  *
  * @category Controller
- * @package  OCA\OpenBuild\Controller
+ * @package  OCA\Buildiq\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
@@ -17,14 +17,14 @@
  *
  * @version GIT: <git_id>
  *
- * @link https://github.com/ConductionNL/openbuild
+ * @link https://github.com/ConductionNL/buildiq
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Controller;
+namespace OCA\Buildiq\Controller;
 
-use OCA\OpenBuild\AppInfo\Application;
+use OCA\Buildiq\AppInfo\Application;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;

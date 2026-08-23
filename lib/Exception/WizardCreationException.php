@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild WizardCreationException
+ * Buildiq WizardCreationException
  *
  * Thrown by ApplicationCreationService when the atomic creation flow fails
  * at any step (validation, Application/ApplicationVersion create, register
@@ -15,7 +15,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Exception
- * @package  OCA\OpenBuild\Exception
+ * @package  OCA\Buildiq\Exception
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -28,7 +28,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Exception;
+namespace OCA\Buildiq\Exception;
 
 use RuntimeException;
 use Throwable;

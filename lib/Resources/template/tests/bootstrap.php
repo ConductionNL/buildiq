@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild app-template integration test bootstrap.
+ * Buildiq app-template integration test bootstrap.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.

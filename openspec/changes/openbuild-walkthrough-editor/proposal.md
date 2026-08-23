@@ -1,10 +1,10 @@
-# openbuild-walkthrough-editor — visual tour authoring for virtual apps
+# buildiq-walkthrough-editor — visual tour authoring for virtual apps
 
 ## Why
 
-Apps created in OpenBuild are **virtual** — they have no source tree, so their
+Apps created in Buildiq are **virtual** — they have no source tree, so their
 walkthrough (ADR-043, `manifest.walkthrough`) can't be hand-authored in a
-`manifest.json`. OpenBuild already owns visual, in-app authoring of virtual apps:
+`manifest.json`. Buildiq already owns visual, in-app authoring of virtual apps:
 the create-app wizard, the universal in-app edit shell (ADR-041), per-user/app
 manifest deltas, and version promotion. This change adds a **visual tour editor**
 on top of that machinery so an app owner can record and edit a product walkthrough
@@ -16,10 +16,10 @@ same way.
 
 ## What changes
 
-1. **"Edit walkthrough" mode** in the OpenBuild edit shell (alongside the existing
+1. **"Edit walkthrough" mode** in the Buildiq edit shell (alongside the existing
    edit-page / edit-menu / edit-widget modes). Entering it overlays the running
    app with a recorder: the owner clicks any element (nav item, widget, button,
-   page region) and OpenBuild resolves it to the most stable `target` it can —
+   page region) and Buildiq resolves it to the most stable `target` it can —
    `nav-item`/`widget`/`action`/`page` from manifest identifiers first, then a
    `data-walkthrough-id` it injects, then a CSS `selector` as last resort.
 
@@ -31,12 +31,12 @@ same way.
    add/rename/delete.
 
 3. **Capture recording** — when the owner performs the navigation/action while
-   recording, OpenBuild observes the route change / created object and pre-fills the
+   recording, Buildiq observes the route change / created object and pre-fills the
    `advanceOn` + `capture` (e.g. recording a "create product" step auto-suggests
    `object-created: { register, schema: product }` with `capture: { productId: :id }`).
 
 4. **Persistence into the manifest delta** — the authored `walkthrough` block is
-   written into the app's manifest via the existing OpenBuild delta/version
+   written into the app's manifest via the existing Buildiq delta/version
    persistence (the same path page/menu/widget edits use), scoped per app and
    assignable to an `ApplicationVersion`, so a new app version ships a "what's new"
    tour of just the steps authored against it.
@@ -57,5 +57,5 @@ same way.
 
 ## Consumer impact
 
-OpenBuild-only. Reuses ADR-041 edit shell + layered-versioned-app-deltas; no change
-to how non-OpenBuild apps load or render walkthroughs.
+Buildiq-only. Reuses ADR-041 edit shell + layered-versioned-app-deltas; no change
+to how non-Buildiq apps load or render walkthroughs.

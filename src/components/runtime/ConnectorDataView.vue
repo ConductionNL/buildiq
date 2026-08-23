@@ -14,19 +14,19 @@
 <template>
 	<div class="connector-data-view">
 		<div v-if="loading" class="connector-data-view__state">
-			{{ t('openbuild', 'Loading…') }}
+			{{ t('buildiq', 'Loading…') }}
 		</div>
 		<div
 			v-else-if="error"
 			class="connector-data-view__state connector-data-view__state--error">
-			<p>{{ t('openbuild', 'Could not load data from OpenConnector.') }}</p>
+			<p>{{ t('buildiq', 'Could not load data from OpenConnector.') }}</p>
 			<NcButton variant="secondary" @click="retry">
-				{{ t('openbuild', 'Retry') }}
+				{{ t('buildiq', 'Retry') }}
 			</NcButton>
 		</div>
 		<div v-else>
 			<p v-if="isStale" class="connector-data-view__stale">
-				{{ t('openbuild', 'Showing cached data — a refresh failed.') }}
+				{{ t('buildiq', 'Showing cached data — a refresh failed.') }}
 			</p>
 			<table v-if="rows.length" class="connector-data-view__table">
 				<thead>
@@ -45,7 +45,7 @@
 				</tbody>
 			</table>
 			<p v-else class="connector-data-view__state">
-				{{ t('openbuild', 'No results.') }}
+				{{ t('buildiq', 'No results.') }}
 			</p>
 		</div>
 	</div>

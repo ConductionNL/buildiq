@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild ApprovalOutcomeListener
+ * Buildiq ApprovalOutcomeListener
  *
  * On-approve / on-reject follow-up dispatch for the `approval` automation
  * action (design.md Decision 3 of automation-approval-steps). Subscribes to
@@ -12,7 +12,7 @@
  * `initializeChain()` call) — resolves the ORIGINATING automation from the
  * chain's `aut-<slug>` provenance name, and dispatches its configured
  * `onApprove`/`onReject` follow-up actions through the SAME
- * {@see \OCA\OpenBuild\Service\RuleActionDispatcher} the rules backend
+ * {@see \OCA\Buildiq\Service\RuleActionDispatcher} the rules backend
  * already uses for `manual`-trigger automations — never a new imperative
  * engine, never polling (ADR-031 §Exceptions(1), the identical justification
  * already accepted for `AutomationCompilerService`'s own compile branches).
@@ -25,7 +25,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Listener
- * @package  OCA\OpenBuild\Listener
+ * @package  OCA\Buildiq\Listener
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -42,13 +42,13 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Listener;
+namespace OCA\Buildiq\Listener;
 
-use OCA\OpenBuild\Service\AutomationCompilerService;
-use OCA\OpenBuild\Service\RuleActionDispatcher;
+use OCA\Buildiq\Service\AutomationCompilerService;
+use OCA\Buildiq\Service\RuleActionDispatcher;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Event\ApprovalStepApprovedEvent;
 use OCA\OpenRegister\Event\ApprovalStepRejectedEvent;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Container\ContainerExceptionInterface;
@@ -131,7 +131,7 @@ class ApprovalOutcomeListener implements IEventListener {
 		// @codeCoverageIgnoreStart
 		if (class_exists('OCA\OpenRegister\Service\ObjectService') === false) {
 			throw new RuntimeException(
-				'openbuild requires the OpenRegister app, which is not installed on this instance.'
+				'buildiq requires the OpenRegister app, which is not installed on this instance.'
 			);
 		}
 		// @codeCoverageIgnoreEnd
@@ -144,7 +144,6 @@ class ApprovalOutcomeListener implements IEventListener {
 		assert($service instanceof ObjectServiceInterface);
 
 		return $service;
-
 	}//end objectService()
 
 	/**
@@ -271,7 +270,7 @@ class ApprovalOutcomeListener implements IEventListener {
 		try {
 			$mapped = $this->compiler->mapActionToRuleAction(action: $action);
 		} catch (Throwable $e) {
-			$this->logger->error('OpenBuild: ApprovalOutcomeListener could not map follow-up action: ' . $e->getMessage());
+			$this->logger->error('Buildiq: ApprovalOutcomeListener could not map follow-up action: ' . $e->getMessage());
 			return;
 		}
 
@@ -288,7 +287,7 @@ class ApprovalOutcomeListener implements IEventListener {
 		try {
 			($this->actionDispatcher)($type, $params, []);
 		} catch (Throwable $e) {
-			$this->logger->error('OpenBuild: ApprovalOutcomeListener follow-up dispatch failed for action "' . $type . '": ' . $e->getMessage());
+			$this->logger->error('Buildiq: ApprovalOutcomeListener follow-up dispatch failed for action "' . $type . '": ' . $e->getMessage());
 		}
 
 	}//end dispatchOne()
@@ -314,7 +313,7 @@ class ApprovalOutcomeListener implements IEventListener {
 				]
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenBuild: ApprovalOutcomeListener could not resolve automation "' . $slug . '": ' . $e->getMessage());
+			$this->logger->warning('Buildiq: ApprovalOutcomeListener could not resolve automation "' . $slug . '": ' . $e->getMessage());
 			return null;
 		}
 

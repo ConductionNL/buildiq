@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild GitHubCatalogService unit tests
+ * Buildiq GitHubCatalogService unit tests
  *
  * Regression coverage for a defect found live during
  * app-repo-format-flow-agent-export's round-trip verification: the flows/
@@ -18,7 +18,7 @@
  * data-registers/connectors/automations/skills).
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Service
+ * @package  OCA\Buildiq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -34,9 +34,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Service;
+namespace OCA\Buildiq\Tests\Unit\Service;
 
-use OCA\OpenBuild\Service\GitHubCatalogService;
+use OCA\Buildiq\Service\GitHubCatalogService;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;

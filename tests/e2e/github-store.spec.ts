@@ -23,7 +23,7 @@
  *
  * WHY REQUEST-LEVEL AND NOT UI: the shared instance does not run this branch's
  * build — nothing deploys to it from here, by standing rule — so its
- * `/apps/openbuild/templates` page is whatever build happens to be installed,
+ * `/apps/buildiq/templates` page is whatever build happens to be installed,
  * and asserting against that DOM would measure someone else's checkout rather
  * than this code. (Driving it proved the point: `.template-gallery` never
  * mounts there.) The credential's effect is visible in the API contract
@@ -32,7 +32,7 @@
  * against the disposable instance in tests/e2e/template-gallery.spec.ts.
  *
  * Gated on a capability probe (the same pattern as the Docudesk compose
- * scenario): with no GitHub credential granted to openbuild, these skip with the
+ * scenario): with no GitHub credential granted to buildiq, these skip with the
  * reason rather than failing or quietly asserting something weaker.
  */
 
@@ -45,7 +45,7 @@ import { test, expect, request as playwrightRequest } from '@playwright/test'
  * of the suite, and silently following the disposable one would make it skip
  * forever without anyone noticing.
  */
-const STORE_URL = process.env.OPENBUILD_GITHUB_STORE_URL ?? 'http://localhost:8080'
+const STORE_URL = process.env.BUILDIQ_GITHUB_STORE_URL ?? 'http://localhost:8080'
 const ADMIN_USER = process.env.NC_ADMIN_USER ?? 'admin'
 const ADMIN_PASS =
 	process.env.NC_ADMIN_PASSWORD ?? process.env.NC_ADMIN_PASS ?? 'admin'
@@ -77,7 +77,7 @@ async function storeApi() {
 }
 
 /**
- * Whether a GitHub credential is granted to openbuild on the store instance.
+ * Whether a GitHub credential is granted to buildiq on the store instance.
  *
  * @return {Promise<boolean>} true when the authenticated path is exercisable.
  */
@@ -96,7 +96,7 @@ async function githubCredentialGranted(): Promise<boolean> {
 			return (
 				provider === 'github'
 				&& Array.isArray(apps)
-				&& apps.includes('openbuild')
+				&& apps.includes('buildiq')
 			)
 		})
 	} catch {
@@ -106,11 +106,11 @@ async function githubCredentialGranted(): Promise<boolean> {
 	}
 }
 
-test.describe('OpenBuild GitHub template store — authenticated path (read-only)', () => {
-	test('a granted GitHub credential is visible to openbuild', async () => {
+test.describe('Buildiq GitHub template store — authenticated path (read-only)', () => {
+	test('a granted GitHub credential is visible to buildiq', async () => {
 		test.skip(
 			!(await githubCredentialGranted()),
-			`no GitHub credential granted to openbuild on ${STORE_URL} — grant one in User settings > Credentials`,
+			`no GitHub credential granted to buildiq on ${STORE_URL} — grant one in User settings > Credentials`,
 		)
 
 		const api = await storeApi()
@@ -129,14 +129,14 @@ test.describe('OpenBuild GitHub template store — authenticated path (read-only
 				github.length,
 				'at least one GitHub credential must exist',
 			).toBeGreaterThan(0)
-			// The grant is per-app: openbuild must be among the apps allowed to use it.
+			// The grant is per-app: buildiq must be among the apps allowed to use it.
 			expect(
 				github.some((r: Record<string, unknown>) =>
 					((r?.allowedApps ?? r?.apps ?? []) as string[]).includes(
-						'openbuild',
+						'buildiq',
 					),
 				),
-				'openbuild must be allowed to use a GitHub credential',
+				'buildiq must be allowed to use a GitHub credential',
 			).toBe(true)
 			// The secret itself must never come back over this API.
 			expect(
@@ -151,14 +151,14 @@ test.describe('OpenBuild GitHub template store — authenticated path (read-only
 	test('the store search runs authenticated — not rate-limited, and returns cards', async () => {
 		test.skip(
 			!(await githubCredentialGranted()),
-			`no GitHub credential granted to openbuild on ${STORE_URL} — grant one in User settings > Credentials`,
+			`no GitHub credential granted to buildiq on ${STORE_URL} — grant one in User settings > Credentials`,
 		)
 
 		const api = await storeApi()
 		try {
 			const resp = await api.get(
-				'/index.php/apps/openbuild/api/shop/github/search',
-				{ params: { q: 'openbuild' } },
+				'/index.php/apps/buildiq/api/shop/github/search',
+				{ params: { q: 'buildiq' } },
 			)
 			expect(resp.ok(), 'the store search endpoint must answer').toBeTruthy()
 			const payload = await resp.json()

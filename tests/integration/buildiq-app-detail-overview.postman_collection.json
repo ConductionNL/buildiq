@@ -1,8 +1,8 @@
 {
 	"info": {
-		"_postman_id": "openbuild-app-detail-overview-collection",
-		"name": "OpenBuild — Application detail / insights (spec openbuild-app-detail-overview)",
-		"description": "Newman integration suite for the openbuild-app-detail-overview OpenSpec change\n(capability application-insights, REQ-OBAI-001 – REQ-OBAI-007). Exercises:\n\n  GET /api/applications/{appUuid}/versions/{versionUuid}/insights?window=7d|30d|90d\n\nCovers:\n  - 200 OK + Cache-Control: public, max-age=60 for each accepted window\n  - 400 (invalid window enum value)\n  - 400 (missing window)\n  - 404 on unknown appUuid / versionUuid (no existence leak)\n\nNOTE: The 200 happy-path cases use synthetic UUIDs that may resolve to\n404 in a fresh container — the tests accept either 200 OR 404 because the\nintegration container is not always pre-seeded. Cache-header presence is\nasserted only on 200 responses (REQ-OBAI-006 — error responses MUST NOT\ncarry the public-cache header).",
+		"_postman_id": "buildiq-app-detail-overview-collection",
+		"name": "Buildiq — Application detail / insights (spec buildiq-app-detail-overview)",
+		"description": "Newman integration suite for the buildiq-app-detail-overview OpenSpec change\n(capability application-insights, REQ-OBAI-001 – REQ-OBAI-007). Exercises:\n\n  GET /api/applications/{appUuid}/versions/{versionUuid}/insights?window=7d|30d|90d\n\nCovers:\n  - 200 OK + Cache-Control: public, max-age=60 for each accepted window\n  - 400 (invalid window enum value)\n  - 400 (missing window)\n  - 404 on unknown appUuid / versionUuid (no existence leak)\n\nNOTE: The 200 happy-path cases use synthetic UUIDs that may resolve to\n404 in a fresh container — the tests accept either 200 OR 404 because the\nintegration container is not always pre-seeded. Cache-header presence is\nasserted only on 200 responses (REQ-OBAI-006 — error responses MUST NOT\ncarry the public-cache header).",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"auth": {
@@ -32,7 +32,7 @@
 							{ "key": "Accept",         "value": "application/json" },
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
-						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{app_uuid}}/versions/{{version_uuid}}/insights?window=7d"
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/{{app_uuid}}/versions/{{version_uuid}}/insights?window=7d"
 					},
 					"event": [
 						{
@@ -72,7 +72,7 @@
 							{ "key": "Accept",         "value": "application/json" },
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
-						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{app_uuid}}/versions/{{version_uuid}}/insights?window=30d"
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/{{app_uuid}}/versions/{{version_uuid}}/insights?window=30d"
 					},
 					"event": [
 						{
@@ -96,7 +96,7 @@
 							{ "key": "Accept",         "value": "application/json" },
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
-						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{app_uuid}}/versions/{{version_uuid}}/insights?window=90d"
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/{{app_uuid}}/versions/{{version_uuid}}/insights?window=90d"
 					},
 					"event": [
 						{
@@ -120,7 +120,7 @@
 							{ "key": "Accept",         "value": "application/json" },
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
-						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{app_uuid}}/versions/{{version_uuid}}/insights?window=24h"
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/{{app_uuid}}/versions/{{version_uuid}}/insights?window=24h"
 					},
 					"event": [
 						{
@@ -149,7 +149,7 @@
 							{ "key": "Accept",         "value": "application/json" },
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
-						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{app_uuid}}/versions/{{version_uuid}}/insights"
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/{{app_uuid}}/versions/{{version_uuid}}/insights"
 					},
 					"event": [
 						{
@@ -173,7 +173,7 @@
 							{ "key": "Accept",         "value": "application/json" },
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
-						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/ffffffff-ffff-ffff-ffff-ffffffffffff/versions/{{version_uuid}}/insights?window=7d"
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/ffffffff-ffff-ffff-ffff-ffffffffffff/versions/{{version_uuid}}/insights?window=7d"
 					},
 					"event": [
 						{
@@ -201,7 +201,7 @@
 							{ "key": "Accept",         "value": "application/json" },
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
-						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{app_uuid}}/versions/ffffffff-ffff-ffff-ffff-ffffffffffff/insights?window=7d"
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/{{app_uuid}}/versions/ffffffff-ffff-ffff-ffff-ffffffffffff/insights?window=7d"
 					},
 					"event": [
 						{

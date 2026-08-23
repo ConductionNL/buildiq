@@ -3,7 +3,7 @@
 /**
  * Integration test for the full publish → rollback → republish cycle.
  *
- * Spec #6 openbuild-versioning. Walks an Application object through:
+ * Spec #6 buildiq-versioning. Walks an Application object through:
  *   1. draft → published (asserts ApplicationVersion row created, BuiltAppRoute
  *      created, currentVersion set on the Application)
  *   2. rollback to v1.0.0 (asserts a NEW ApplicationVersion row is created
@@ -21,7 +21,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Integration
+ * @package  OCA\Buildiq\Tests\Integration
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -34,12 +34,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Integration;
+namespace OCA\Buildiq\Tests\Integration;
 
-use OCA\OpenBuild\Listener\ApplicationVersionSnapshotListener;
+use OCA\Buildiq\Listener\ApplicationVersionSnapshotListener;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;

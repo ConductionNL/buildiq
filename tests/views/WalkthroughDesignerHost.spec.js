@@ -10,7 +10,7 @@
  *    then EMPTY_MANIFEST; surface load errors.
  *  - computed routeSlug / versionSlug / applicationUuid.
  *  - onManifestUpdate mutates the controlled manifest.
- *  - save(): version path (openbuild versions PUT), app fallback path
+ *  - save(): version path (buildiq versions PUT), app fallback path
  *    (openregister objects PUT), the "no app to save to" guard, the
  *    re-entrancy guard, and the failure path.
  */
@@ -176,7 +176,7 @@ describe('WalkthroughDesignerHost', () => {
 		})
 		await wrapper.vm.save()
 		expect(axiosPutMock).toHaveBeenCalledWith(
-			'/apps/openbuild/api/applications/petstore/versions/draft-1',
+			'/apps/buildiq/api/applications/petstore/versions/draft-1',
 			{ manifest: wrapper.vm.manifest },
 		)
 		expect(wrapper.vm.applicationVersion).toEqual({

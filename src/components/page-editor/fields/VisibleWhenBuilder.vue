@@ -20,16 +20,16 @@
 <template>
 	<div class="visible-when-builder">
 		<p v-if="isAdvanced" class="visible-when-builder__advanced">
-			{{ t('openbuild', 'Advanced condition — edit in Raw JSON') }}
+			{{ t('buildiq', 'Advanced condition — edit in Raw JSON') }}
 		</p>
 		<template v-else>
 			<select
 				class="visible-when-builder__select"
-				:aria-label="t('openbuild', 'Condition field')"
+				:aria-label="t('buildiq', 'Condition field')"
 				:value="currentField"
 				@change="onFieldChange($event.target.value)">
 				<option value="">
-					{{ t('openbuild', '— no condition —') }}
+					{{ t('buildiq', '— no condition —') }}
 				</option>
 				<option v-for="key in fieldOptions" :key="key" :value="key">
 					{{ key }}
@@ -38,7 +38,7 @@
 			<select
 				v-if="currentField"
 				class="visible-when-builder__select visible-when-builder__select--narrow"
-				:aria-label="t('openbuild', 'Condition operator')"
+				:aria-label="t('buildiq', 'Condition operator')"
 				:value="currentOp"
 				@change="onOpChange($event.target.value)">
 				<option v-for="op in OPS" :key="op" :value="op">
@@ -49,17 +49,17 @@
 				v-if="currentField"
 				type="text"
 				class="visible-when-builder__value"
-				:placeholder="t('openbuild', 'Value')"
-				:aria-label="t('openbuild', 'Condition value')"
+				:placeholder="t('buildiq', 'Value')"
+				:aria-label="t('buildiq', 'Condition value')"
 				:value="currentValueDisplay"
 				@input="onValueInput($event.target.value)" />
 			<button
 				v-if="currentField"
 				type="button"
 				class="visible-when-builder__clear"
-				:title="t('openbuild', 'Clear condition')"
+				:title="t('buildiq', 'Clear condition')"
 				@click="clear">
-				{{ t('openbuild', 'Clear') }}
+				{{ t('buildiq', 'Clear') }}
 			</button>
 		</template>
 	</div>

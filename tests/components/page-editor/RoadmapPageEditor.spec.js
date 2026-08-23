@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2026 OpenBuild Contributors
+ * SPDX-FileCopyrightText: 2026 Buildiq Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Vitest spec for RoadmapPageEditor (REQ-PEC-004).
@@ -31,10 +31,10 @@ describe('RoadmapPageEditor', () => {
 
 	it('editing repo emits the repo key', async () => {
 		const wrapper = mountEditor({})
-		wrapper.vm.update('repo', 'ConductionNL/openbuild')
+		wrapper.vm.update('repo', 'ConductionNL/buildiq')
 		await wrapper.vm.$nextTick()
 		const next = wrapper.emitted('update:config')[0][0]
-		expect(next.repo).toBe('ConductionNL/openbuild')
+		expect(next.repo).toBe('ConductionNL/buildiq')
 	})
 
 	it('updateForgeType writes forge as { type }', async () => {
@@ -79,7 +79,7 @@ describe('RoadmapPageEditor', () => {
 			{ slug: 'x', title: 'X', summary: 'summary', docsUrl: '/docs/x' },
 		]
 		const wrapper = mountEditor({ features })
-		wrapper.vm.update('repo', 'ConductionNL/openbuild')
+		wrapper.vm.update('repo', 'ConductionNL/buildiq')
 		await wrapper.vm.$nextTick()
 		const next = wrapper.emitted('update:config')[0][0]
 		expect(next.features).toEqual(features)

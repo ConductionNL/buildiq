@@ -22,7 +22,7 @@ test('REQ-OBS-001 — authenticated settings read returns config + booleans', as
 	request,
 }) => {
 	// @e2e settings-and-observability::authenticated-read
-	const res = await request.get('/index.php/apps/openbuild/api/settings', {
+	const res = await request.get('/index.php/apps/buildiq/api/settings', {
 		headers: { 'OCS-APIRequest': 'true' },
 	})
 	expect(res.status()).toBe(200)
@@ -45,7 +45,7 @@ test('REQ-OBS-001 — unauthenticated settings read is gated (401 or 302 without
 	// if cookie-only auth is enforced, this returns 401/302. Both are valid.
 	// The test asserts the endpoint is reachable (not 500) — 401/302/200 all pass.
 	const ctx = await playwright.request.newContext({ baseURL: BASE })
-	const res = await ctx.get('/index.php/apps/openbuild/api/settings')
+	const res = await ctx.get('/index.php/apps/buildiq/api/settings')
 	await ctx.dispose()
 	// Accept 200 (basic-auth pass-through), 401, or 302 depending on NC auth config
 	expect([200, 401, 302]).toContain(res.status())
@@ -56,7 +56,7 @@ test('REQ-OBS-002 — POST settings persists a known key and echoes success', as
 	request,
 }) => {
 	// @e2e settings-and-observability::persist-a-known-key
-	const res = await request.post('/index.php/apps/openbuild/api/settings', {
+	const res = await request.post('/index.php/apps/buildiq/api/settings', {
 		headers: { 'OCS-APIRequest': 'true', 'Content-Type': 'application/json' },
 		data: JSON.stringify({ register: 'openbuild' }),
 	})
@@ -71,7 +71,7 @@ test('REQ-OBS-002 — unknown key in POST is ignored (no 4xx)', async ({
 	request,
 }) => {
 	// @e2e settings-and-observability::unknown-key-ignored
-	const res = await request.post('/index.php/apps/openbuild/api/settings', {
+	const res = await request.post('/index.php/apps/buildiq/api/settings', {
 		headers: { 'OCS-APIRequest': 'true', 'Content-Type': 'application/json' },
 		data: JSON.stringify({ unknownKey12345: 'should-be-ignored' }),
 	})
@@ -87,7 +87,7 @@ test('REQ-OBS-003 — force reload endpoint returns success result', async ({
 	request,
 }) => {
 	// @e2e settings-and-observability::first-import-succeeds
-	const res = await request.post('/index.php/apps/openbuild/api/settings/load', {
+	const res = await request.post('/index.php/apps/buildiq/api/settings/load', {
 		headers: { 'OCS-APIRequest': 'true' },
 	})
 	expect(res.status()).toBe(200)
@@ -102,7 +102,7 @@ test('REQ-OBS-003 — settings response includes openregisters flag', async ({
 }) => {
 	// @e2e settings-and-observability::openregister-absent
 	// On this env OR is installed → openregisters must be true
-	const res = await request.get('/index.php/apps/openbuild/api/settings', {
+	const res = await request.get('/index.php/apps/buildiq/api/settings', {
 		headers: { 'OCS-APIRequest': 'true' },
 	})
 	expect(res.status()).toBe(200)
@@ -116,7 +116,7 @@ test('REQ-OBS-003 — reload endpoint accepts POST and responds', async ({
 	request,
 }) => {
 	// @e2e settings-and-observability::forced-reload
-	const res = await request.post('/index.php/apps/openbuild/api/settings/load', {
+	const res = await request.post('/index.php/apps/buildiq/api/settings/load', {
 		headers: { 'OCS-APIRequest': 'true' },
 	})
 	expect([200, 201]).toContain(res.status())
@@ -127,7 +127,7 @@ test('REQ-OBS-005 — health endpoint returns status:ok with 200', async ({
 	request,
 }) => {
 	// @e2e settings-and-observability::health-probe
-	const res = await request.get('/index.php/apps/openbuild/api/health', {
+	const res = await request.get('/index.php/apps/buildiq/api/health', {
 		headers: { 'OCS-APIRequest': 'true' },
 	})
 	expect(res.status()).toBe(200)
@@ -136,7 +136,7 @@ test('REQ-OBS-005 — health endpoint returns status:ok with 200', async ({
 })
 
 // @e2e settings-and-observability::metrics-probe
-// Contract note: this endpoint used to be OpenBuild's own MetricsController
+// Contract note: this endpoint used to be Buildiq's own MetricsController
 // returning the placeholder JSON `{"metrics":[]}`. ADR-040 (AppHost adoption)
 // replaced it with OpenRegister's GenericMetricsController, which renders the
 // declarative `observability.metrics` block of src/manifest.json as a
@@ -147,7 +147,7 @@ test('REQ-OBS-005 — metrics endpoint returns a Prometheus exposition with 200'
 	request,
 }) => {
 	// @e2e settings-and-observability::metrics-probe
-	const res = await request.get('/index.php/apps/openbuild/api/metrics', {
+	const res = await request.get('/index.php/apps/buildiq/api/metrics', {
 		headers: { 'OCS-APIRequest': 'true' },
 	})
 	expect(res.status()).toBe(200)
@@ -158,15 +158,15 @@ test('REQ-OBS-005 — metrics endpoint returns a Prometheus exposition with 200'
 	// present with its HELP/TYPE metadata, proving the manifest was actually
 	// loaded and rendered rather than an empty body being returned. The engine
 	// namespaces each declared metric with the app id, so the manifest's
-	// `applications_total` is exposed as `openbuild_applications_total`.
+	// `applications_total` is exposed as `buildiq_applications_total`.
 	for (const name of [
 		'export_jobs_total',
 		'applications_total',
 		'application_versions_total',
 	]) {
-		expect(body).toContain(`# HELP openbuild_${name}`)
-		expect(body).toContain(`# TYPE openbuild_${name} gauge`)
+		expect(body).toContain(`# HELP buildiq_${name}`)
+		expect(body).toContain(`# TYPE buildiq_${name} gauge`)
 	}
 	// The engine's own implicit series, always present.
-	expect(body).toContain('openbuild_up 1')
+	expect(body).toContain('buildiq_up 1')
 })

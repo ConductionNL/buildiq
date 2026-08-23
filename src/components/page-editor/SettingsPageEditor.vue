@@ -22,17 +22,17 @@
 <template>
 	<div class="settings-page-editor">
 		<h3 class="settings-page-editor__title">
-			{{ t('openbuild', 'Settings page') }}
+			{{ t('buildiq', 'Settings page') }}
 		</h3>
 
 		<fieldset class="settings-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Save endpoint') }}</legend>
+			<legend>{{ t('buildiq', 'Save endpoint') }}</legend>
 			<label class="settings-page-editor__group-row">
-				{{ t('openbuild', 'saveEndpoint (optional)') }}
+				{{ t('buildiq', 'saveEndpoint (optional)') }}
 				<input
 					type="text"
 					:value="config.saveEndpoint || ''"
-					:placeholder="t('openbuild', '/api/objects/:slug/settings')"
+					:placeholder="t('buildiq', '/api/objects/:slug/settings')"
 					:aria-invalid="isInvalid('saveEndpoint')"
 					@input="update('saveEndpoint', $event.target.value)" />
 				<InlineFieldMark :error="markFor('saveEndpoint')" />
@@ -40,7 +40,7 @@
 		</fieldset>
 
 		<fieldset class="settings-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Layout') }}</legend>
+			<legend>{{ t('buildiq', 'Layout') }}</legend>
 			<div class="settings-page-editor__shape">
 				<label class="settings-page-editor__inline">
 					<input
@@ -48,7 +48,7 @@
 						:checked="layoutShape === 'sections'"
 						value="sections"
 						@change="setLayoutShape('sections')" />
-					{{ t('openbuild', 'Flat sections') }}
+					{{ t('buildiq', 'Flat sections') }}
 				</label>
 				<label class="settings-page-editor__inline">
 					<input
@@ -56,18 +56,18 @@
 						:checked="layoutShape === 'tabs'"
 						value="tabs"
 						@change="setLayoutShape('tabs')" />
-					{{ t('openbuild', 'Tabbed sections') }}
+					{{ t('buildiq', 'Tabbed sections') }}
 				</label>
 			</div>
 			<p class="settings-page-editor__hint">
-				{{ t('openbuild', 'Exactly one of sections or tabs must be set.') }}
+				{{ t('buildiq', 'Exactly one of sections or tabs must be set.') }}
 			</p>
 		</fieldset>
 
 		<fieldset
 			v-if="layoutShape === 'sections'"
 			class="settings-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Sections') }}</legend>
+			<legend>{{ t('buildiq', 'Sections') }}</legend>
 			<SettingsSectionBuilder
 				:modelValue="config.sections || []"
 				@update:modelValue="update('sections', $event)" />
@@ -75,7 +75,7 @@
 		</fieldset>
 
 		<fieldset v-else class="settings-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Tabs') }}</legend>
+			<legend>{{ t('buildiq', 'Tabs') }}</legend>
 			<div
 				v-for="(tab, index) in tabs"
 				:key="index"
@@ -85,15 +85,15 @@
 						:value="tab.id || ''"
 						type="text"
 						class="settings-page-editor__field settings-page-editor__field--narrow"
-						:placeholder="t('openbuild', 'Tab id')"
-						:aria-label="t('openbuild', 'Tab id')"
+						:placeholder="t('buildiq', 'Tab id')"
+						:aria-label="t('buildiq', 'Tab id')"
 						@input="updateTabField(index, 'id', $event.target.value)" />
 					<input
 						:value="tab.label || ''"
 						type="text"
 						class="settings-page-editor__field"
-						:placeholder="t('openbuild', 'Tab label (i18n key)')"
-						:aria-label="t('openbuild', 'Tab label (i18n key)')"
+						:placeholder="t('buildiq', 'Tab label (i18n key)')"
+						:aria-label="t('buildiq', 'Tab label (i18n key)')"
 						@input="
 							updateTabField(index, 'label', $event.target.value)
 						" />
@@ -101,15 +101,15 @@
 						:value="tab.icon || ''"
 						type="text"
 						class="settings-page-editor__field settings-page-editor__field--narrow"
-						:placeholder="t('openbuild', 'Icon (optional)')"
-						:aria-label="t('openbuild', 'Icon (optional)')"
+						:placeholder="t('buildiq', 'Icon (optional)')"
+						:aria-label="t('buildiq', 'Icon (optional)')"
 						@input="
 							updateTabField(index, 'icon', $event.target.value)
 						" />
 					<button
 						type="button"
 						class="settings-page-editor__remove"
-						:title="t('openbuild', 'Remove tab')"
+						:title="t('buildiq', 'Remove tab')"
 						@click="removeTab(index)">
 						✕
 					</button>
@@ -119,7 +119,7 @@
 					@update:modelValue="updateTabField(index, 'sections', $event)" />
 			</div>
 			<button type="button" class="settings-page-editor__add" @click="addTab">
-				+ {{ t('openbuild', 'Add tab') }}
+				+ {{ t('buildiq', 'Add tab') }}
 			</button>
 			<InlineFieldMark :error="markFor('tabs')" />
 		</fieldset>

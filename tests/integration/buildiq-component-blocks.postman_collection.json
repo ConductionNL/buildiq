@@ -1,7 +1,7 @@
 {
 	"info": {
-		"_postman_id": "openbuild-component-blocks",
-		"name": "OpenBuild Component Blocks",
+		"_postman_id": "buildiq-component-blocks",
+		"name": "Buildiq Component Blocks",
 		"description": "Newman/Postman integration tests for the component-blocks spec (tasks.md 7.2). Covers `ComponentBlock` CRUD via the standard OR objects REST API (no bespoke controller — ADR-022) and the export/import JSON round-trip shape (design.md D4).",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},

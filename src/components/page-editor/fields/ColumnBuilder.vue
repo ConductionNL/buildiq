@@ -16,9 +16,9 @@
 				class="column-builder__key"
 				@change="onKeyChange(index, $event.target.value)">
 				<option value="">
-					{{ t('openbuild', '— select column —') }}
+					{{ t('buildiq', '— select column —') }}
 				</option>
-				<optgroup :label="t('openbuild', 'Schema properties')">
+				<optgroup :label="t('buildiq', 'Schema properties')">
 					<option
 						v-for="key in schemaPropertyKeys"
 						:key="key"
@@ -26,7 +26,7 @@
 						{{ key }}
 					</option>
 				</optgroup>
-				<optgroup :label="t('openbuild', 'Metadata (@self.*)')">
+				<optgroup :label="t('buildiq', 'Metadata (@self.*)')">
 					<option v-for="key in SELF_VIRTUAL_KEYS" :key="key" :value="key">
 						{{ key }}
 					</option>
@@ -36,19 +36,19 @@
 				:value="rowLabel(col)"
 				type="text"
 				class="column-builder__label"
-				:placeholder="t('openbuild', 'Label (i18n key)')"
-				:aria-label="t('openbuild', 'Label (i18n key)')"
+				:placeholder="t('buildiq', 'Label (i18n key)')"
+				:aria-label="t('buildiq', 'Label (i18n key)')"
 				@input="onLabelInput(index, $event.target.value)" />
 			<button
 				type="button"
 				class="column-builder__remove"
-				:title="t('openbuild', 'Remove column')"
+				:title="t('buildiq', 'Remove column')"
 				@click="removeColumn(index)">
 				✕
 			</button>
 		</div>
 		<button type="button" class="column-builder__add" @click="addColumn">
-			+ {{ t('openbuild', 'Add column') }}
+			+ {{ t('buildiq', 'Add column') }}
 		</button>
 	</div>
 </template>

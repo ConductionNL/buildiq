@@ -20,12 +20,9 @@
 
 		<NcEmptyContent
 			v-else-if="!loading && apps.length === 0"
-			:name="t('openbuild', 'No virtual apps yet')"
+			:name="t('buildiq', 'No virtual apps yet')"
 			:description="
-				t(
-					'openbuild',
-					'Create your first virtual application to get started.',
-				)
+				t('buildiq', 'Create your first virtual application to get started.')
 			">
 			<template #icon>
 				<span
@@ -34,7 +31,7 @@
 			</template>
 			<template #action>
 				<NcButton variant="primary" @click="goToApps">
-					{{ t('openbuild', 'Create an app') }}
+					{{ t('buildiq', 'Create an app') }}
 				</NcButton>
 			</template>
 		</NcEmptyContent>
@@ -43,22 +40,22 @@
 			<thead>
 				<tr>
 					<th scope="col" class="ob-apps-list-widget__col-name">
-						{{ t('openbuild', 'App') }}
+						{{ t('buildiq', 'App') }}
 					</th>
 					<th scope="col" class="ob-apps-list-widget__col-status">
-						{{ t('openbuild', 'Status') }}
+						{{ t('buildiq', 'Status') }}
 					</th>
 					<th scope="col" class="ob-apps-list-widget__col-version">
-						{{ t('openbuild', 'Version') }}
+						{{ t('buildiq', 'Version') }}
 					</th>
 					<th scope="col" class="ob-apps-list-widget__col-updated">
-						{{ t('openbuild', 'Updated') }}
+						{{ t('buildiq', 'Updated') }}
 					</th>
 					<!-- Row-actions column: no visible caption, but still a column
 					     header, so it keeps `scope="col"` and an sr-only name. -->
 					<th scope="col" class="ob-apps-list-widget__col-actions">
 						<span class="hidden-visually">{{
-							t('openbuild', 'Actions')
+							t('buildiq', 'Actions')
 						}}</span>
 					</th>
 				</tr>
@@ -73,15 +70,13 @@
 						<div class="ob-apps-list-widget__name-cell">
 							<img
 								class="ob-apps-list-widget__icon"
-								:src="`/index.php/apps/openbuild/icons/${app.slug}-dark.svg`"
+								:src="`/index.php/apps/buildiq/icons/${app.slug}-dark.svg`"
 								:alt="app.name || app.slug"
 								width="20"
 								height="20"
 								@error="onIconError" />
 							<span class="ob-apps-list-widget__name">{{
-								app.name
-								|| app.slug
-								|| t('openbuild', 'Untitled app')
+								app.name || app.slug || t('buildiq', 'Untitled app')
 							}}</span>
 							<span class="ob-apps-list-widget__slug">{{
 								app.slug
@@ -105,7 +100,7 @@
 						<NcButton
 							variant="tertiary"
 							:aria-label="
-								t('openbuild', 'Open {name}', {
+								t('buildiq', 'Open {name}', {
 									name: app.name || app.slug,
 								})
 							"
@@ -123,7 +118,7 @@
 			v-if="!loading && total > apps.length"
 			class="ob-apps-list-widget__footer">
 			<NcButton variant="tertiary" @click="goToApps">
-				{{ t('openbuild', 'View all {count} apps', { count: total }) }}
+				{{ t('buildiq', 'View all {count} apps', { count: total }) }}
 			</NcButton>
 		</div>
 	</div>
@@ -221,8 +216,11 @@ export default {
 				: 'draft'
 		},
 
+		/**
+		 * @spec openspec/specs/application-insights/spec.md
+		 */
 		appStatusLabel(app) {
-			return t('openbuild', STATUS_LABELS[this.appStatus(app)] || 'Draft')
+			return t('buildiq', STATUS_LABELS[this.appStatus(app)] || 'Draft')
 		},
 
 		appVersion(app) {
@@ -248,14 +246,17 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec openspec/specs/application-insights/spec.md
+		 */
 		onIconError(e) {
 			// imagePath resolves to the app's real web root (e.g.
-			// /apps/openbuild/img/app-dark.svg, or /apps-shared/… in dev). The
-			// previous hardcoded '/apps/openbuild/img/app-dark.svg' 404s when the web
+			// /apps/buildiq/img/app-dark.svg, or /apps-shared/… in dev). The
+			// previous hardcoded '/apps/buildiq/img/app-dark.svg' 404s when the web
 			// root differs, which re-fired this error handler and re-set the same
 			// failing src in an infinite loop (spamming the request + draining
 			// resources).
-			const fallback = imagePath('openbuild', 'app-dark.svg')
+			const fallback = imagePath('buildiq', 'app-dark.svg')
 			// Guard against re-entry: if the fallback itself fails to load, the error
 			// event lands here again — bail once we're already showing the fallback
 			// so we swap the src at most once. Compare the literal attribute (not the

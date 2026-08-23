@@ -1,18 +1,18 @@
 <?php
 
 /**
- * OpenBuild Applications Controller
+ * Buildiq Applications Controller
  *
  * Serves the per-virtual-app manifest endpoint, the RBAC-filtered list
  * endpoint used by the editor (REQ-OBRBAC-002 / REQ-OBR-007), the
- * manifest-diff endpoint (openbuild-versioning REQ-OBV-005) and the
- * clone-from-template action (openbuild-templates-marketplace
+ * manifest-diff endpoint (buildiq-versioning REQ-OBV-005) and the
+ * clone-from-template action (buildiq-templates-marketplace
  * REQ-OBTC-004 / REQ-OBTC-005). Per design.md Decision 6 this is the
  * single app-local HTTP surface; `listMine` exists because OR's
  * schema-level read rule is a coarse group-ACL (not a row-level filter on
  * the Application's `permissions` block) so the list MUST be filtered
  * server-side here, and `createFromTemplate` is the thin-glue clone action
- * (ADR-032) that provisions a per-app `openbuild-{slug}` register and
+ * (ADR-032) that provisions a per-app `buildiq-{slug}` register and
  * deep-copies the template's companion schemas into it (hybrid register
  * model).
  *
@@ -20,7 +20,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
- * @package  OCA\OpenBuild\Controller
+ * @package  OCA\Buildiq\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -48,21 +48,21 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Controller;
+namespace OCA\Buildiq\Controller;
 
 use DateTimeImmutable;
 use DateTimeInterface;
-use OCA\OpenBuild\AppInfo\Application;
-use OCA\OpenBuild\Service\AppChannelApplier;
-use OCA\OpenBuild\Service\ApplicationVersionService;
-use OCA\OpenBuild\Service\ManifestResolverService;
-use OCA\OpenBuild\Service\PermissionResolver;
+use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Service\AppChannelApplier;
+use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Service\ManifestResolverService;
+use OCA\Buildiq\Service\PermissionResolver;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Contract\ObjectEntityInterface;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -77,12 +77,12 @@ use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
- * Controller for the OpenBuild manifest, list, diff and clone-from-template endpoints.
+ * Controller for the Buildiq manifest, list, diff and clone-from-template endpoints.
  */
 class ApplicationsController extends Controller {
 	/**
 	 * Nextcloud admin group identifier used as the bypass anchor and the
-	 * fallback owner per design.md Decision 5 of openbuild-rbac.
+	 * fallback owner per design.md Decision 5 of buildiq-rbac.
 	 */
 	private const ADMIN_GROUP = 'admin';
 
@@ -132,11 +132,11 @@ class ApplicationsController extends Controller {
 	 * manifest. The manifest is returned UNWRAPPED (no OR envelope) so
 	 * useAppManifest in @conduction/nextcloud-vue consumes it directly.
 	 *
-	 * Version routing (spec `openbuild-version-routing` REQ-OBVR-001):
+	 * Version routing (spec `buildiq-version-routing` REQ-OBVR-001):
 	 * ---------------------------------------------------------------
 	 * An optional `?_version=<versionSlug>` query parameter selects a specific
 	 * ApplicationVersion. The underscore-prefix form (`_version`, not `version`)
-	 * is OpenBuild's system-reserved namespace marker — it prevents collision
+	 * is Buildiq's system-reserved namespace marker — it prevents collision
 	 * with user-defined `?version=` params that citizen developers may add to
 	 * their virtual apps' routes.
 	 *
@@ -168,7 +168,7 @@ class ApplicationsController extends Controller {
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-51
-	 * @spec openspec/changes/openbuild-admin-settings-abstraction/specs/admin-settings-owner-gating/spec.md#requirement-owner-signal-is-derived-from-existing-openbuild-primitives
+	 * @spec openspec/changes/openbuild-admin-settings-abstraction/specs/admin-settings-owner-gating/spec.md#requirement-owner-signal-is-derived-from-existing-buildiq-primitives
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -236,7 +236,7 @@ class ApplicationsController extends Controller {
 			}
 
 			if ($manifest === null) {
-				$this->logger->warning('OpenBuild: Application ' . $applicationUuid . ' has no resolvable manifest');
+				$this->logger->warning('Buildiq: Application ' . $applicationUuid . ' has no resolvable manifest');
 				return new JSONResponse(
 					data: ['error' => 'no_manifest', 'message' => 'Application has no manifest'],
 					statusCode: Http::STATUS_NOT_FOUND
@@ -302,7 +302,7 @@ class ApplicationsController extends Controller {
 			// without needing the request timestamp. Per MWest review on PR #2.
 			$correlationId = bin2hex(random_bytes(8));
 			$this->logger->error(
-				'OpenBuild: getManifest failed for slug ' . $slug . ': ' . $e->getMessage(),
+				'Buildiq: getManifest failed for slug ' . $slug . ': ' . $e->getMessage(),
 				['exception' => $e, 'correlationId' => $correlationId, 'slug' => $slug]
 			);
 			return new JSONResponse(
@@ -320,7 +320,7 @@ class ApplicationsController extends Controller {
 	 * Persist an in-app manifest edit (pages / menu / settings / sidebar / actions).
 	 *
 	 * Symmetric write counterpart to {@see getManifest}: the standalone runtime's
-	 * OpenBuild edit shell (ADR-041) PUTs the full edited manifest here on Save.
+	 * Buildiq edit shell (ADR-041) PUTs the full edited manifest here on Save.
 	 * Resolves the app by slug, enforces owner/editor RBAC (viewers are read-only;
 	 * NC admins get an audited bypass), then surgically writes the `manifest` field
 	 * onto the production ApplicationVersion (versioned model, ADR-002), falling
@@ -346,7 +346,7 @@ class ApplicationsController extends Controller {
 			$user = $this->userSession->getUser();
 			if ($user === null) {
 				return new JSONResponse(
-					data: ['error' => 'forbidden', 'code' => 'openbuild.rbac.no_role'],
+					data: ['error' => 'forbidden', 'code' => 'buildiq.rbac.no_role'],
 					statusCode: Http::STATUS_FORBIDDEN
 				);
 			}
@@ -361,7 +361,7 @@ class ApplicationsController extends Controller {
 			);
 			if ($hasWrite === false && $this->groupManager->isInGroup($user->getUID(), self::ADMIN_GROUP) === false) {
 				return new JSONResponse(
-					data: ['error' => 'forbidden', 'code' => 'openbuild.rbac.no_role'],
+					data: ['error' => 'forbidden', 'code' => 'buildiq.rbac.no_role'],
 					statusCode: Http::STATUS_FORBIDDEN
 				);
 			}
@@ -465,7 +465,7 @@ class ApplicationsController extends Controller {
 		} catch (Throwable $e) {
 			$correlationId = bin2hex(random_bytes(8));
 			$this->logger->error(
-				'OpenBuild: saveManifest failed for slug ' . $slug . ': ' . $e->getMessage(),
+				'Buildiq: saveManifest failed for slug ' . $slug . ': ' . $e->getMessage(),
 				['exception' => $e, 'correlationId' => $correlationId, 'slug' => $slug]
 			);
 			return new JSONResponse(
@@ -677,7 +677,7 @@ class ApplicationsController extends Controller {
 				statusCode: Http::STATUS_OK
 			);
 		} catch (\Throwable $e) {
-			$this->logger->error('OpenBuild: diffVersions failed for slug ' . $slug . ': ' . $e->getMessage(), ['exception' => $e]);
+			$this->logger->error('Buildiq: diffVersions failed for slug ' . $slug . ': ' . $e->getMessage(), ['exception' => $e]);
 			return new JSONResponse(
 				data: ['error' => 'internal_error', 'message' => 'Failed to resolve diff'],
 				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
@@ -726,7 +726,7 @@ class ApplicationsController extends Controller {
 		// `if (...Blob === null) return 404` branches — and NEITHER COULD EVER
 		// BE TAKEN. The throw went straight past them into diffVersions()'s
 		// outer `catch (Throwable)`, which answers 500 `internal_error` and logs
-		// "OpenBuild: diffVersions failed for slug hello-world: Object not found
+		// "Buildiq: diffVersions failed for slug hello-world: Object not found
 		// in magic table".
 		//
 		// This is the eighth instance of the family PR #159 fixed ("seven 404
@@ -746,7 +746,7 @@ class ApplicationsController extends Controller {
 			);
 		} catch (\Throwable $e) {
 			$this->logger->debug(
-				'OpenBuild: diff token {token} did not resolve to an ApplicationVersion: {message}',
+				'Buildiq: diff token {token} did not resolve to an ApplicationVersion: {message}',
 				['token' => $token, 'message' => $e->getMessage(), 'exception' => $e]
 			);
 			return null;
@@ -807,13 +807,13 @@ class ApplicationsController extends Controller {
 			$routeSchema = $this->schemaMapper->find('built-app-route', _multitenancy: false)->getId();
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: could not resolve the openbuild register / built-app-route schema: {message}',
+				'Buildiq: could not resolve the buildiq register / built-app-route schema: {message}',
 				['message' => $e->getMessage(), 'exception' => $e]
 			);
 			return new JSONResponse(
 				data: [
 					'error' => 'internal_error',
-					'message' => 'The OpenBuild register is not available.',
+					'message' => 'The Buildiq register is not available.',
 				],
 				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
 			);
@@ -831,7 +831,7 @@ class ApplicationsController extends Controller {
 		);
 
 		if (empty($routeResults) === true) {
-			$this->logger->debug('OpenBuild: no BuiltAppRoute found for slug=' . $slug);
+			$this->logger->debug('Buildiq: no BuiltAppRoute found for slug=' . $slug);
 			return new JSONResponse(
 				data: ['error' => 'not_found', 'message' => 'No published virtual app found for slug ' . $slug],
 				statusCode: Http::STATUS_NOT_FOUND
@@ -843,7 +843,7 @@ class ApplicationsController extends Controller {
 		$applicationUuid = ($route['applicationUuid'] ?? null);
 
 		if ($applicationUuid === null) {
-			$this->logger->warning('OpenBuild: BuiltAppRoute for slug ' . $slug . ' is missing applicationUuid');
+			$this->logger->warning('Buildiq: BuiltAppRoute for slug ' . $slug . ' is missing applicationUuid');
 			return new JSONResponse(
 				data: ['error' => 'inconsistent_state', 'message' => 'Route exists but has no applicationUuid'],
 				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
@@ -858,7 +858,7 @@ class ApplicationsController extends Controller {
 		);
 
 		if ($application === null) {
-			$this->logger->warning('OpenBuild: Application ' . $applicationUuid . ' (for slug ' . $slug . ') not found');
+			$this->logger->warning('Buildiq: Application ' . $applicationUuid . ' (for slug ' . $slug . ') not found');
 			return new JSONResponse(
 				data: ['error' => 'inconsistent_state', 'message' => 'Route points to an Application that does not exist'],
 				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
@@ -899,7 +899,7 @@ class ApplicationsController extends Controller {
 			$user = $this->userSession->getUser();
 			if ($user === null) {
 				return new JSONResponse(
-					data: ['error' => 'forbidden', 'code' => 'openbuild.rbac.no_role'],
+					data: ['error' => 'forbidden', 'code' => 'buildiq.rbac.no_role'],
 					statusCode: Http::STATUS_FORBIDDEN
 				);
 			}
@@ -907,7 +907,7 @@ class ApplicationsController extends Controller {
 			$registerId = $this->registerMapper->find('openbuild', _multitenancy: false)->getId();
 			$appSchema = $this->schemaMapper->find('application', _multitenancy: false)->getId();
 
-			// Fetch all Applications scoped to the openbuild register +
+			// Fetch all Applications scoped to the buildiq register +
 			// application schema. OR's multitenancy + RBAC still applies;
 			// the per-Application filter below is the load-bearing
 			// authorization boundary.
@@ -935,7 +935,7 @@ class ApplicationsController extends Controller {
 
 			if ($adminBypassUsed === true) {
 				$this->logger->info(
-					'OpenBuild: rbac.admin_bypass exercised on Application list',
+					'Buildiq: rbac.admin_bypass exercised on Application list',
 					[
 						'actor' => $user->getUID(),
 						'event' => self::EVENT_ADMIN_BYPASS . '.list',
@@ -950,7 +950,7 @@ class ApplicationsController extends Controller {
 			return new JSONResponse(data: $filtered, statusCode: Http::STATUS_OK);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: listMine failed: ' . $e->getMessage(),
+				'Buildiq: listMine failed: ' . $e->getMessage(),
 				['exception' => $e]
 			);
 			return new JSONResponse(
@@ -1110,7 +1110,7 @@ class ApplicationsController extends Controller {
 			// the defect this method fixes — a card quietly showing "Draft"
 			// because the data never arrived.
 			$this->logger->warning(
-				'OpenBuild: could not resolve productionVersion detail for the application list; '
+				'Buildiq: could not resolve productionVersion detail for the application list; '
 				. 'cards will fall back to their placeholder status/version: ' . $e->getMessage(),
 				['exception' => $e]
 			);
@@ -1180,7 +1180,7 @@ class ApplicationsController extends Controller {
 	 *
 	 * @return array<string, mixed> The manifest with `runtime.user.isOwner` set (boolean).
 	 *
-	 * @spec openspec/changes/openbuild-admin-settings-abstraction/specs/admin-settings-owner-gating/spec.md#requirement-owner-signal-is-derived-from-existing-openbuild-primitives
+	 * @spec openspec/changes/openbuild-admin-settings-abstraction/specs/admin-settings-owner-gating/spec.md#requirement-owner-signal-is-derived-from-existing-buildiq-primitives
 	 */
 	private function injectOwnerSignal(array $manifest, ?array $applicationArray, ?IUser $caller): array {
 		$isOwner = false;
@@ -1225,7 +1225,7 @@ class ApplicationsController extends Controller {
 	 * preserved; only `permissions` is set/overwritten. Delegates the actual
 	 * computation to {@see ManifestResolverService::resolveCallerPermissionsForDisplay()}
 	 * so the client-mirror set and the server's own authoritative filter
-	 * ({@see \OCA\OpenBuild\Service\ManifestResolverService::filterManifestForCaller()})
+	 * ({@see \OCA\Buildiq\Service\ManifestResolverService::filterManifestForCaller()})
 	 * are derived from the exact same admin/write-role/group logic — they
 	 * cannot drift apart into two different permission grammars.
 	 *
@@ -1266,7 +1266,7 @@ class ApplicationsController extends Controller {
 	 * Computes the caller's group set and intersects with the Application's
 	 * `permissions.owners ∪ permissions.editors ∪ permissions.viewers`.
 	 * Returns null when the caller has any role, or a `JSONResponse` 403
-	 * with the fixed `openbuild.rbac.no_role` error envelope otherwise.
+	 * with the fixed `buildiq.rbac.no_role` error envelope otherwise.
 	 *
 	 * Admin bypass per design.md Decision 5: a caller in the Nextcloud
 	 * `admin` group always passes; the bypass is recorded as a
@@ -1295,7 +1295,7 @@ class ApplicationsController extends Controller {
 			// route — Nextcloud's framework rejects them earlier. Treat as
 			// forbidden defensively (ADR-005 deny-by-default).
 			return new JSONResponse(
-				data: ['error' => 'forbidden', 'code' => 'openbuild.rbac.no_role'],
+				data: ['error' => 'forbidden', 'code' => 'buildiq.rbac.no_role'],
 				statusCode: Http::STATUS_FORBIDDEN
 			);
 		}
@@ -1322,7 +1322,7 @@ class ApplicationsController extends Controller {
 		}
 
 		return new JSONResponse(
-			data: ['error' => 'forbidden', 'code' => 'openbuild.rbac.no_role'],
+			data: ['error' => 'forbidden', 'code' => 'buildiq.rbac.no_role'],
 			statusCode: Http::STATUS_FORBIDDEN
 		);
 	}//end requirePermission()
@@ -1366,7 +1366,7 @@ class ApplicationsController extends Controller {
 				// audit trail is the system of record, the PSR log is the
 				// operational tap.
 				$this->logger->info(
-					'OpenBuild: rbac.admin_bypass exercised',
+					'Buildiq: rbac.admin_bypass exercised',
 					$context
 				);
 				return;
@@ -1376,7 +1376,7 @@ class ApplicationsController extends Controller {
 				// Per REQ-OBRBAC-007 the OR audit trail is the system of record
 				// for admin-bypass events; silent fallback defeats forensic review.
 				$this->logger->critical(
-					'OpenBuild: failed to record admin bypass in OR audit trail — COMPLIANCE GAP; bypass event lost from system of record',
+					'Buildiq: failed to record admin bypass in OR audit trail — COMPLIANCE GAP; bypass event lost from system of record',
 					array_merge($context, ['exception' => $e->getMessage()])
 				);
 			}//end try
@@ -1386,7 +1386,7 @@ class ApplicationsController extends Controller {
 		// entity (defensive). Emit to PSR logger at info level so the
 		// event still surfaces somewhere reviewable.
 		$this->logger->info(
-			'OpenBuild: rbac.admin_bypass exercised',
+			'Buildiq: rbac.admin_bypass exercised',
 			$context
 		);
 	}//end recordAdminBypass()
@@ -1395,10 +1395,10 @@ class ApplicationsController extends Controller {
 	 * Clone an Application from a template.
 	 *
 	 * Reads the ApplicationTemplate identified by $templateSlug, creates a
-	 * per-app `openbuild-{newSlug}` register, deep-copies its companion JSON
+	 * per-app `buildiq-{newSlug}` register, deep-copies its companion JSON
 	 * schemas into that per-app register (REQ-OBTC-005 / hybrid register
 	 * model), rewrites manifest schema refs to the new slug, and creates a
-	 * new Application record in the shared `openbuild` register, tagged
+	 * new Application record in the shared `buildiq` register, tagged
 	 * with the caller's UID (multi-user isolation).
 	 *
 	 * @param string $templateSlug The source template slug
@@ -1445,7 +1445,7 @@ class ApplicationsController extends Controller {
 		if ($ctx === null) {
 			return $this->errorResponse(
 				code: 'not_configured',
-				detail: 'OpenBuild register/schemas not initialised',
+				detail: 'Buildiq register/schemas not initialised',
 				status: Http::STATUS_SERVICE_UNAVAILABLE
 			);
 		}
@@ -1479,7 +1479,7 @@ class ApplicationsController extends Controller {
 	 * Clone a template ARRAY into a new local Application (shared install seam).
 	 *
 	 * This is the reusable clone body extracted from createFromTemplate so the
-	 * remote-template store (openbuild-remote-template-store) can install a
+	 * remote-template store (buildiq-remote-template-store) can install a
 	 * template fetched from a remote catalogue through the exact same path —
 	 * companion-schema namespacing, manifest rewrite, per-app register
 	 * provisioning, owner-tagged persist. The only difference between the local
@@ -1519,7 +1519,7 @@ class ApplicationsController extends Controller {
 		if ($ctx === null) {
 			return [
 				'status' => Http::STATUS_SERVICE_UNAVAILABLE,
-				'data' => ['error' => 'not_configured', 'detail' => 'OpenBuild register/schemas not initialised'],
+				'data' => ['error' => 'not_configured', 'detail' => 'Buildiq register/schemas not initialised'],
 			];
 		}
 
@@ -1704,7 +1704,7 @@ class ApplicationsController extends Controller {
 			];
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: register/schema resolution failed',
+				'Buildiq: register/schema resolution failed',
 				['exception' => $e->getMessage()]
 			);
 			return null;
@@ -1765,7 +1765,7 @@ class ApplicationsController extends Controller {
 			return ['register' => $register, 'schemaIds' => $schemaIds];
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: companion-schema clone failed',
+				'Buildiq: companion-schema clone failed',
 				['exception' => $e->getMessage()]
 			);
 			return [
@@ -1837,7 +1837,7 @@ class ApplicationsController extends Controller {
 				schema: $ctx['applicationSchema']
 			);
 		} catch (Throwable $e) {
-			$this->logger->error('OpenBuild: application save failed', ['exception' => $e->getMessage()]);
+			$this->logger->error('Buildiq: application save failed', ['exception' => $e->getMessage()]);
 			return [
 				'error' => ['error' => 'clone_failed', 'detail' => $e->getMessage()],
 				'status' => Http::STATUS_INTERNAL_SERVER_ERROR,
@@ -1921,7 +1921,7 @@ class ApplicationsController extends Controller {
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: linkProductionVersion failed for ' . $appSlug . ': ' . $e->getMessage(),
+				'Buildiq: linkProductionVersion failed for ' . $appSlug . ': ' . $e->getMessage(),
 				['exception' => $e]
 			);
 		}//end try
@@ -2000,7 +2000,7 @@ class ApplicationsController extends Controller {
 	}//end buildRewriteMap()
 
 	/**
-	 * Provision (or fetch existing) the per-app register `openbuild-{newSlug}`.
+	 * Provision (or fetch existing) the per-app register `buildiq-{newSlug}`.
 	 *
 	 * Per the hybrid register model, each cloned app gets its own register so
 	 * companion schemas don't collide across apps.
@@ -2018,7 +2018,7 @@ class ApplicationsController extends Controller {
 		// template+slug would otherwise share a register. The first
 		// attempt at scoping always namespaced by owner, but that
 		// breaks every existing single-tenant install (their existing
-		// registers are still at `openbuild-{slug}`). So we keep the
+		// registers are still at `buildiq-{slug}`). So we keep the
 		// legacy un-namespaced slug AS LONG AS the existing register
 		// belongs to the caller; otherwise fall back to the
 		// owner-namespaced form.
@@ -2072,8 +2072,8 @@ class ApplicationsController extends Controller {
 		return $this->registerMapper->createFromArray(
 			[
 				'slug' => $slug,
-				'title' => 'OpenBuild — ' . $appSlug,
-				'description' => 'Per-app schema namespace for OpenBuild app `' . $appSlug . '` (owner: ' . $ownerUid . ').',
+				'title' => 'Buildiq — ' . $appSlug,
+				'description' => 'Per-app schema namespace for Buildiq app `' . $appSlug . '` (owner: ' . $ownerUid . ').',
 				'version' => '0.1.0',
 				'schemas' => [],
 			]
@@ -2233,7 +2233,7 @@ class ApplicationsController extends Controller {
 
 			return $this->normaliseObject(object: $results[0]);
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenBuild: lookup failed', ['exception' => $e->getMessage()]);
+			$this->logger->warning('Buildiq: lookup failed', ['exception' => $e->getMessage()]);
 			return null;
 		}//end try
 	}//end lookupOne()

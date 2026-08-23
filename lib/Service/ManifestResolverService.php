@@ -1,11 +1,11 @@
 <?php
 
 /**
- * OpenBuild ManifestResolverService
+ * Buildiq ManifestResolverService
  *
  * Encapsulates the two-step slug resolution (Application by slug →
  * ApplicationVersion by application + slug) and the RBAC gate for
- * version-aware manifest endpoint access (spec `openbuild-version-routing`
+ * version-aware manifest endpoint access (spec `buildiq-version-routing`
  * REQ-OBVR-002 / REQ-OBVR-003).
  *
  * Design decisions:
@@ -25,7 +25,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -42,11 +42,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IUser;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -90,7 +90,7 @@ class ManifestResolverService {
 	 * Step 4  : return the resolved ApplicationVersion's `manifest` payload.
 	 *
 	 * NOTE on `_version` parameter name: the underscore-prefix form (`_version`) is
-	 * OpenBuild's system-reserved namespace marker for query parameters. This prevents
+	 * Buildiq's system-reserved namespace marker for query parameters. This prevents
 	 * collision with user-defined `?version=` params that citizen developers may add
 	 * to their virtual apps' routes. Callers of this service pass the string value
 	 * of `_version`; the underscore prefix is stripped at the HTTP layer.
@@ -230,7 +230,7 @@ class ManifestResolverService {
 		try {
 			// Spec decision (L2): _multitenancy: false is used throughout
 			// ManifestResolverService so that all register/schema/object lookups
-			// operate in the global (non-tenant-isolated) scope.  OpenBuild ships
+			// operate in the global (non-tenant-isolated) scope.  Buildiq ships
 			// virtual apps as a shared-instance service — each Application is owned
 			// and accessed by specific NC users, but the Application objects themselves
 			// are not partitioned by tenant/organisation.  Cross-tenant slug

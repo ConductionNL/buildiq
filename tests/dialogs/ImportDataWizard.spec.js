@@ -10,7 +10,7 @@
  * register's schemas are selectable — shared dataRegisters never appear), and
  * template download.
  *
- * Spec: openbuild-data-import-wizard (tasks 2.1).
+ * Spec: buildiq-data-import-wizard (tasks 2.1).
  */
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'

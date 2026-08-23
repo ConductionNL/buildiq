@@ -15,7 +15,7 @@ The system SHALL support a `workflows[]` array in the manifest v2 `runtime` bloc
 - `linkProperty` (string, required) — name of a string/url-typed property on the target schema that stores the linked case reference.
 - `descriptionTemplate` (string, optional) — template for the case description; may interpolate `{{objectProperty}}` placeholders resolved against the created object.
 
-OpenBuild's manifest validation layer SHALL reject: duplicate `id`s, more than one attachment for the same `schema`, a `schema` not present in the virtual app, a `linkProperty` not declared on that schema (or not string-typed), an unknown `trigger`, and unknown keys. Apps with zero attachments SHALL serialize byte-identical manifests (purely additive). Codification into the canonical `app-manifest-v2.schema.json` is an external `nextcloud-vue` follow-up, not part of this requirement.
+Buildiq's manifest validation layer SHALL reject: duplicate `id`s, more than one attachment for the same `schema`, a `schema` not present in the virtual app, a `linkProperty` not declared on that schema (or not string-typed), an unknown `trigger`, and unknown keys. Apps with zero attachments SHALL serialize byte-identical manifests (purely additive). Codification into the canonical `app-manifest-v2.schema.json` is an external `nextcloud-vue` follow-up, not part of this requirement.
 
 #### Scenario: Valid attachment passes validation
 
@@ -27,13 +27,13 @@ OpenBuild's manifest validation layer SHALL reject: duplicate `id`s, more than o
 #### Scenario: Second attachment on the same schema is rejected
 
 - **WHEN** a second `workflows[]` entry targets `schema: "kapaanvraag"`
-- **THEN** the validator marks both entries with the error `openbuild.workflow.error.duplicate-schema-attachment`
+- **THEN** the validator marks both entries with the error `buildiq.workflow.error.duplicate-schema-attachment`
 - **AND** the Save button is disabled
 
 #### Scenario: Missing linkProperty is rejected
 
 - **WHEN** an attachment names `linkProperty: "zaakUrl"` but the `kapaanvraag` schema declares no such property
-- **THEN** the validator reports `openbuild.workflow.error.link-property-missing` with a click-to-focus link to the attachment entry
+- **THEN** the validator reports `buildiq.workflow.error.link-property-missing` with a click-to-focus link to the attachment entry
 
 ### Requirement: REQ-PWA-002 Builder UI: attach a Procest case type to a virtual-app schema
 
@@ -62,13 +62,13 @@ The system SHALL provide `WorkflowAttachmentDialog.vue` (standalone dialog in `s
 
 ### Requirement: REQ-PWA-003 Runtime: object creation starts a linked Procest case
 
-When an object of an attached schema is created through the virtual app's UI (form page in create mode, or an index-page create action), the runtime SHALL, after the OR object create succeeds: (1) POST a case to `POST /apps/procest/api/zgw/zaken/v1/zaken` carrying the attachment's `caseTypeUuid` (as the zaaktype reference), the rendered `descriptionTemplate` (or a default naming the app + object), and a `kenmerken` entry `{ kenmerk: "<objectUuid>", bron: "openbuild:<appSlug>:<schemaSlug>" }`; (2) write the created case's URL and UUID back onto the object's `linkProperty` via the standard OR object-update path. Case-start failure SHALL NOT roll back, block, or delay the object creation: the object stands, the user sees a non-blocking warning toast, and the object's detail surface offers a "Start case" retry which SHALL first attempt reconciliation via `POST /apps/procest/api/zgw/zaken/v1/zaken/_zoek` by the object-UUID kenmerk (re-linking a half-completed case) before creating a new case. The runtime SHALL NOT start a second case when the object's `linkProperty` already holds a case reference.
+When an object of an attached schema is created through the virtual app's UI (form page in create mode, or an index-page create action), the runtime SHALL, after the OR object create succeeds: (1) POST a case to `POST /apps/procest/api/zgw/zaken/v1/zaken` carrying the attachment's `caseTypeUuid` (as the zaaktype reference), the rendered `descriptionTemplate` (or a default naming the app + object), and a `kenmerken` entry `{ kenmerk: "<objectUuid>", bron: "buildiq:<appSlug>:<schemaSlug>" }`; (2) write the created case's URL and UUID back onto the object's `linkProperty` via the standard OR object-update path. Case-start failure SHALL NOT roll back, block, or delay the object creation: the object stands, the user sees a non-blocking warning toast, and the object's detail surface offers a "Start case" retry which SHALL first attempt reconciliation via `POST /apps/procest/api/zgw/zaken/v1/zaken/_zoek` by the object-UUID kenmerk (re-linking a half-completed case) before creating a new case. The runtime SHALL NOT start a second case when the object's `linkProperty` already holds a case reference.
 
 #### Scenario: Create flow starts a case and links both ways
 
 - **GIVEN** schema `kapaanvraag` attached to case type "Kapvergunning" with `linkProperty: "zaakUrl"`
 - **WHEN** an end user submits the app's create form and the OR object is created with UUID `abc-123`
-- **THEN** a case is created in Procest with the Kapvergunning zaaktype and a kenmerk `abc-123` (bron `openbuild:...`)
+- **THEN** a case is created in Procest with the Kapvergunning zaaktype and a kenmerk `abc-123` (bron `buildiq:...`)
 - **AND** the object's `zaakUrl` property is updated with the case URL
 - **AND** the user lands on the normal post-create surface with no extra confirmation step
 
@@ -107,7 +107,7 @@ The system SHALL provide `ProcestCaseStatusPanel.vue`, registered as `procest-ca
 
 - **GIVEN** an object linked to a case the viewing user may not read in Procest
 - **WHEN** the panel fetches the case and receives 403
-- **THEN** the panel renders the i18n no-access message (`openbuild.workflow.case.no-access`)
+- **THEN** the panel renders the i18n no-access message (`buildiq.workflow.case.no-access`)
 - **AND** the deep link is still offered (Procest will enforce its own access on arrival)
 - **AND** no error is thrown to the console
 
@@ -120,7 +120,7 @@ The system SHALL provide `ProcestCaseStatusPanel.vue`, registered as `procest-ca
 
 ### Requirement: REQ-PWA-005 Deep links into Procest for case handling
 
-The system SHALL provide a single shared helper `buildProcestCaseUrl(zaakUuid)` that produces the Procest frontend URL for a case, and an "Open in Procest" action on the ProcestCaseStatusPanel (and on the attachment's object rows where row actions are configured) that opens that URL in a new tab. All Procest deep links in openbuild MUST be built through this helper — no inline URL construction — so a Procest route change is a single-point fix. The helper SHALL be verified against the deployed Procest during apply; if Procest publishes no stable case route, that is recorded on the flagged Procest dependency issue and the helper targets the best-known route with a code comment referencing the issue.
+The system SHALL provide a single shared helper `buildProcestCaseUrl(zaakUuid)` that produces the Procest frontend URL for a case, and an "Open in Procest" action on the ProcestCaseStatusPanel (and on the attachment's object rows where row actions are configured) that opens that URL in a new tab. All Procest deep links in buildiq MUST be built through this helper — no inline URL construction — so a Procest route change is a single-point fix. The helper SHALL be verified against the deployed Procest during apply; if Procest publishes no stable case route, that is recorded on the flagged Procest dependency issue and the helper targets the best-known route with a code comment referencing the issue.
 
 #### Scenario: Deep link opens the case in Procest
 
@@ -131,12 +131,12 @@ The system SHALL provide a single shared helper `buildProcestCaseUrl(zaakUuid)` 
 
 #### Scenario: No inline deep-link construction
 
-- **WHEN** the openbuild source tree is scanned for Procest frontend URLs
+- **WHEN** the buildiq source tree is scanned for Procest frontend URLs
 - **THEN** every occurrence outside `buildProcestCaseUrl` and its tests resolves through the helper
 
 ### Requirement: REQ-PWA-006 Capability check and graceful absence of Procest
 
-When a manifest contains at least one `workflows[]` attachment, the save flow SHALL ensure `"procest"` is present exactly once in the manifest v2 `dependencies[]` array. At design time, when `useAppStatus('procest')` reports the app missing or disabled, the Workflows section SHALL render its add action disabled with the i18n hint `openbuild.workflow.hint.procest-missing` (existing attachments remain listed and detachable). At runtime on an instance without Procest: CnAppRoot's standard dependency gate applies for end users; if a surface renders regardless, the status panel SHALL show an "integration unavailable" state and the on-create trigger SHALL skip the case start with a single logged warning — object creation itself MUST proceed normally. No openbuild surface SHALL hard-fail, blank, or throw because Procest is absent.
+When a manifest contains at least one `workflows[]` attachment, the save flow SHALL ensure `"procest"` is present exactly once in the manifest v2 `dependencies[]` array. At design time, when `useAppStatus('procest')` reports the app missing or disabled, the Workflows section SHALL render its add action disabled with the i18n hint `buildiq.workflow.hint.procest-missing` (existing attachments remain listed and detachable). At runtime on an instance without Procest: CnAppRoot's standard dependency gate applies for end users; if a surface renders regardless, the status panel SHALL show an "integration unavailable" state and the on-create trigger SHALL skip the case start with a single logged warning — object creation itself MUST proceed normally. No buildiq surface SHALL hard-fail, blank, or throw because Procest is absent.
 
 #### Scenario: Dependency auto-added on save
 
@@ -160,13 +160,13 @@ When a manifest contains at least one `workflows[]` attachment, the save flow SH
 
 ### Requirement: REQ-PWA-007 Integration contract pinned to Procest's existing public API surface
 
-OpenBuild's Procest integration SHALL call exactly the following existing Procest routes and no others: `GET /apps/procest/api/zgw/catalogi/v1/zaaktypen` (case-type picker), `POST /apps/procest/api/zgw/zaken/v1/zaken` (case start), `GET /apps/procest/api/zgw/zaken/v1/zaken/{uuid}` (case detail), `GET /apps/procest/api/zgw/zaken/v1/statussen` (status history), and `POST /apps/procest/api/zgw/zaken/v1/zaken/_zoek` (kenmerk reconciliation) — plus, once it exists, the flagged per-case task-list endpoint. All calls use the caller's Nextcloud session; openbuild SHALL NOT bypass, re-implement, or cache-invalidate Procest's authorization, SHALL NOT import Procest PHP classes or read its tables, and SHALL NOT modify case data beyond the create in REQ-PWA-003. The contract SHALL be pinned by a Newman collection asserting each route's request/response shape against the dev instance, so Procest-side drift fails CI rather than production.
+Buildiq's Procest integration SHALL call exactly the following existing Procest routes and no others: `GET /apps/procest/api/zgw/catalogi/v1/zaaktypen` (case-type picker), `POST /apps/procest/api/zgw/zaken/v1/zaken` (case start), `GET /apps/procest/api/zgw/zaken/v1/zaken/{uuid}` (case detail), `GET /apps/procest/api/zgw/zaken/v1/statussen` (status history), and `POST /apps/procest/api/zgw/zaken/v1/zaken/_zoek` (kenmerk reconciliation) — plus, once it exists, the flagged per-case task-list endpoint. All calls use the caller's Nextcloud session; buildiq SHALL NOT bypass, re-implement, or cache-invalidate Procest's authorization, SHALL NOT import Procest PHP classes or read its tables, and SHALL NOT modify case data beyond the create in REQ-PWA-003. The contract SHALL be pinned by a Newman collection asserting each route's request/response shape against the dev instance, so Procest-side drift fails CI rather than production.
 
 #### Scenario: Contract surface is closed
 
-- **WHEN** the openbuild source tree is scanned for `/apps/procest/` references
+- **WHEN** the buildiq source tree is scanned for `/apps/procest/` references
 - **THEN** every runtime call target is one of the five listed routes (or the feature-probed tasks endpoint)
-- **AND** no Procest PHP namespace is imported anywhere in openbuild
+- **AND** no Procest PHP namespace is imported anywhere in buildiq
 
 #### Scenario: Newman pins the ZRC create contract
 

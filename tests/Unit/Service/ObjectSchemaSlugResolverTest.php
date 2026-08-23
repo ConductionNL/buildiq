@@ -22,7 +22,7 @@
  * accessor below is reached the way production reaches it, through `__call`.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Service
+ * @package  OCA\Buildiq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -31,14 +31,14 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @link https://openbuild.nl
+ * @link https://buildiq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Service;
+namespace OCA\Buildiq\Tests\Unit\Service;
 
-use OCA\OpenBuild\Service\ObjectSchemaSlugResolver;
+use OCA\Buildiq\Service\ObjectSchemaSlugResolver;
 use OCP\AppFramework\Db\Entity;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -89,7 +89,7 @@ class MagicSlugEntityFixture extends Entity {
 }//end class
 
 /**
- * @covers \OCA\OpenBuild\Service\ObjectSchemaSlugResolver
+ * @covers \OCA\Buildiq\Service\ObjectSchemaSlugResolver
  */
 class ObjectSchemaSlugResolverTest extends TestCase {
 
@@ -228,18 +228,18 @@ class ObjectSchemaSlugResolverTest extends TestCase {
 	}//end testRegisterSlugResolvesThroughMagicAccessor()
 
 	/**
-	 * The capability the two listeners depend on: an openbuild `application`
+	 * The capability the two listeners depend on: an buildiq `application`
 	 * object must be recognised as one.
 	 *
 	 * @return void
 	 */
-	public function testIsOpenBuildSchemaMatchesOpenBuildsOwnObject(): void {
+	public function testIsBuildiqSchemaMatchesBuildiqsOwnObject(): void {
 		$resolver = $this->resolver(['28' => 'application'], ['11' => 'openbuild']);
 
 		$this->assertTrue(
-			$resolver->isOpenBuildSchema(entity: $this->entity('11', '28'), schemaSlug: 'application')
+			$resolver->isBuildiqSchema(entity: $this->entity('11', '28'), schemaSlug: 'application')
 		);
-	}//end testIsOpenBuildSchemaMatchesOpenBuildsOwnObject()
+	}//end testIsBuildiqSchemaMatchesBuildiqsOwnObject()
 
 	/**
 	 * Fail-closed behaviour must be preserved: a same-named schema in another
@@ -251,13 +251,13 @@ class ObjectSchemaSlugResolverTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	public function testIsOpenBuildSchemaRejectsSameSlugInAnotherRegister(): void {
+	public function testIsBuildiqSchemaRejectsSameSlugInAnotherRegister(): void {
 		$resolver = $this->resolver(['5103' => 'automation'], ['99' => 'someotherapp']);
 
 		$this->assertFalse(
-			$resolver->isOpenBuildSchema(entity: $this->entity('99', '5103'), schemaSlug: 'automation')
+			$resolver->isBuildiqSchema(entity: $this->entity('99', '5103'), schemaSlug: 'automation')
 		);
-	}//end testIsOpenBuildSchemaRejectsSameSlugInAnotherRegister()
+	}//end testIsBuildiqSchemaRejectsSameSlugInAnotherRegister()
 
 	/**
 	 * An unresolvable schema must still yield '', so an entity from a register

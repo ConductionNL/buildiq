@@ -11,7 +11,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Service
+ * @package  OCA\Buildiq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,9 +24,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Service;
+namespace OCA\Buildiq\Tests\Unit\Service;
 
-use OCA\OpenBuild\Service\AppNavigationService;
+use OCA\Buildiq\Service\AppNavigationService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
@@ -114,7 +114,7 @@ class AppNavigationServiceTest extends TestCase {
 		// front-controller-required instance would produce.
 		$this->urlGenerator
 			->method('linkToRoute')
-			->willReturnCallback(fn ($route, $params) => '/index.php/apps/openbuild/builder/' . $params['slug']);
+			->willReturnCallback(fn ($route, $params) => '/index.php/apps/buildiq/builder/' . $params['slug']);
 
 		// Pre-existing break, fixed here: AppNavigationService gained an $appConfig
 		// constructor parameter (the nav-order base override) and this test was never
@@ -452,14 +452,14 @@ class AppNavigationServiceTest extends TestCase {
 		$this->assertSame('Hello World', $entry['name']);
 		// Nav links target the standalone runtime page (/builder/{slug}), not
 		// the bare app root — see AppNavigationService + DashboardController::builder.
-		$this->assertStringContainsString('/apps/openbuild/builder/hello-world', $entry['href']);
+		$this->assertStringContainsString('/apps/buildiq/builder/hello-world', $entry['href']);
 		$this->assertArrayHasKey('order', $entry);
 		$this->assertArrayHasKey('enabled', $entry);
 	}//end testRegisteredClosureReturnsExpectedShape()
 
 	/**
 	 * REQ-OBNAV-001 / #32-Fix-A: the nav entry `href` is generated via
-	 * `IURLGenerator::linkToRoute('openbuild.dashboard.builder', ...)`, NOT a
+	 * `IURLGenerator::linkToRoute('buildiq.dashboard.builder', ...)`, NOT a
 	 * hand-built string. This makes the link include the `/index.php`
 	 * front-controller segment on instances that require it (no URL rewriting),
 	 * so the top-bar menu link does not 404 there.
@@ -487,7 +487,7 @@ class AppNavigationServiceTest extends TestCase {
 				function (string $route, array $params) use (&$capturedRoute, &$capturedParams): string {
 					$capturedRoute = $route;
 					$capturedParams = $params;
-					return '/index.php/apps/openbuild/builder/' . $params['slug'];
+					return '/index.php/apps/buildiq/builder/' . $params['slug'];
 				}
 			);
 
@@ -518,11 +518,11 @@ class AppNavigationServiceTest extends TestCase {
 		$entry = ($registeredClosures[0])();
 
 		// Route + slug forwarded correctly to linkToRoute.
-		$this->assertSame('openbuild.dashboard.builder', $capturedRoute);
+		$this->assertSame('buildiq.dashboard.builder', $capturedRoute);
 		$this->assertSame(['slug' => 'hello-world'], $capturedParams);
 		// The href IS the linkToRoute output (includes the /index.php segment),
-		// not a hand-built '/apps/openbuild/builder/...' string.
-		$this->assertSame('/index.php/apps/openbuild/builder/hello-world', $entry['href']);
+		// not a hand-built '/apps/buildiq/builder/...' string.
+		$this->assertSame('/index.php/apps/buildiq/builder/hello-world', $entry['href']);
 		$this->assertStringStartsWith('/index.php/', $entry['href']);
 	}//end testNavEntryHrefIsGeneratedViaLinkToRoute()
 }//end class

@@ -15,7 +15,7 @@
   - mutates the in-flight manifest bound to the page-designer live-preview
   - pane's sandboxed CnAppRoot instance (via the host's onThemePreview),
   - which re-applies the candidate theme itself (scoped-theme-applier
-  - REQ-STA-3) — no OpenBuild-owned applier call. Disabled with a hint when
+  - REQ-STA-3) — no Buildiq-owned applier call. Disabled with a hint when
   - the live-preview pane itself is unavailable (design.md OQ-1 / Decision
   - 3, task 3.3).
   -
@@ -25,7 +25,7 @@
 <template>
 	<NcDialog
 		:open="open"
-		:name="t('openbuild', 'Choose an NL Design theme')"
+		:name="t('buildiq', 'Choose an NL Design theme')"
 		size="normal"
 		@update:open="$emit('update:open', $event)"
 		@closing="onClose">
@@ -33,7 +33,7 @@
 			<p v-if="!nldesignAvailable" class="ob-theme-picker__warn">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'NL Design (nldesign) is not installed or enabled on this instance.',
 					)
 				}}
@@ -42,7 +42,7 @@
 			<NcSelect
 				v-if="nldesignAvailable && tokenSetOptions.length"
 				v-model="selectedOption"
-				:inputLabel="t('openbuild', 'Token set')"
+				:inputLabel="t('buildiq', 'Token set')"
 				:options="tokenSetOptions"
 				:loading="loadingList"
 				label="label" />
@@ -50,7 +50,7 @@
 			<p
 				v-else-if="nldesignAvailable && !loadingList"
 				class="ob-theme-picker__hint">
-				{{ t('openbuild', 'No NL Design token sets are available yet.') }}
+				{{ t('buildiq', 'No NL Design token sets are available yet.') }}
 			</p>
 
 			<!-- swatches + name for the resolved candidate -->
@@ -92,7 +92,7 @@
 							: 'ob-theme-picker__contrast-row--warn',
 					]">
 					{{
-						t('openbuild', '{name}: ratio {ratio}, level {level}', {
+						t('buildiq', '{name}: ratio {ratio}, level {level}', {
 							name: result.name,
 							ratio: result.ratio,
 							level: result.level,
@@ -107,12 +107,12 @@
 					type="checkbox"
 					:disabled="!previewAvailable"
 					@change="onPreviewToggle" />
-				{{ t('openbuild', 'Live preview in the designer') }}
+				{{ t('buildiq', 'Live preview in the designer') }}
 			</label>
 			<p v-if="!previewAvailable" class="ob-theme-picker__hint">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'Live preview is not available in this designer session.',
 					)
 				}}
@@ -120,13 +120,13 @@
 		</div>
 		<template #actions>
 			<NcButton @click="onClose">
-				{{ t('openbuild', 'Cancel') }}
+				{{ t('buildiq', 'Cancel') }}
 			</NcButton>
 			<NcButton variant="tertiary" @click="onClearTheme">
-				{{ t('openbuild', 'Default (Nextcloud)') }}
+				{{ t('buildiq', 'Default (Nextcloud)') }}
 			</NcButton>
 			<NcButton variant="primary" :disabled="!candidate" @click="onSave">
-				{{ t('openbuild', 'Save') }}
+				{{ t('buildiq', 'Save') }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -313,7 +313,7 @@ export default {
 			const background = c.backgroundColor || '#FFFFFF'
 			const candidates = [
 				{
-					name: t('openbuild', 'Primary'),
+					name: t('buildiq', 'Primary'),
 					value: c.primaryColor,
 					role: 'ui',
 				},

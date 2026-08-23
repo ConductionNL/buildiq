@@ -16,7 +16,7 @@
 	<span v-if="error && error.hasError" class="inline-field-mark" role="alert">
 		<span class="inline-field-mark__dot" aria-hidden="true">⚠</span>
 		<span class="inline-field-mark__text">{{
-			error.message || t('openbuild', 'This field has a validation error.')
+			error.message || t('buildiq', 'This field has a validation error.')
 		}}</span>
 	</span>
 </template>

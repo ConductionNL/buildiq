@@ -4,7 +4,7 @@
  *
  * Vitest unit tests for src/dialogs/CreateApplicationWizard/Step1Basics.vue.
  *
- * Covers spec openbuild-app-creation-wizard task 6.2:
+ * Covers spec buildiq-app-creation-wizard task 6.2:
  *   - name input auto-derives slug via toKebabCase
  *   - manually overriding slug blocks auto-derivation
  *   - leading-underscore slug rejected (slugError set)
@@ -174,7 +174,7 @@ describe('Step1Basics.vue — spec task 6.2', () => {
 	it('slugError is set for leading-underscore slug', () => {
 		const wrapper = mountStep1({ slug: '_internal' })
 		expect(wrapper.vm.slugError).toBeTruthy()
-		expect(wrapper.vm.slugError).toContain('reserved for openbuild system use')
+		expect(wrapper.vm.slugError).toContain('reserved for buildiq system use')
 	})
 
 	it('slugError is set for slug with invalid characters', () => {

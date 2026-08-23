@@ -1,6 +1,6 @@
 ## Context
 
-An OpenBuild app is an `Application` (identity + `permissions` RBAC +
+An Buildiq app is an `Application` (identity + `permissions` RBAC +
 `productionVersion`) plus N `ApplicationVersion` rows (each a full `manifest` +
 `semver` + per-version register). Change `github-app-repo-format` added the
 `AppRepoSerializer` / `AppRepoParser` pair and the linkage/provenance fields
@@ -25,7 +25,7 @@ Two existing pieces are the raw material for the round-trip:
   `POST /orgs/*/repos`, `GET /search/repositories`, `GET /user` on top of the
   existing `GET /repos/*`, `PUT /repos/*/contents/*`, `POST /repos/*/git/*`.
 
-The app `permissions` model (`openbuild-rbac`) already gives an owner gate
+The app `permissions` model (`buildiq-rbac`) already gives an owner gate
 (`ApplicationVersionOwnerGuard` / the publish controller's owner check), which
 this change reuses verbatim — a Nextcloud admin is NOT auto-granted (matching the
 release endpoint, REQ-OBV-110).
@@ -37,7 +37,7 @@ release endpoint, REQ-OBV-110).
 - Let an **owner** link an app to a GitHub repo, **push** its current version, and
   **pull** a ref back — from the app detail cockpit.
 - Route **every** GitHub write through the OR credential broker so the token never
-  enters OpenBuild; read (pull) via the broker for private repos, anonymously for
+  enters Buildiq; read (pull) via the broker for private repos, anonymously for
   public.
 - Reuse change 1's serializer/parser and change 2's repo fetch — no new
   serialize/parse/clone logic.
@@ -71,7 +71,7 @@ release endpoint, REQ-OBV-110).
 3. **Ensure a repo** — if `Application.githubRepo` is unset (or `$repo` overrides
    it), create one via the broker: `POST /user/repos` (user-owned) or
    `POST /orgs/{org}/repos` (org-owned), then set the discovery **topic
-   `openbuild-app`** (`PUT /repos/{owner}/{repo}/topics`), and store `githubRepo`
+   `buildiq-app`** (`PUT /repos/{owner}/{repo}/topics`), and store `githubRepo`
    + `githubDefaultBranch` on the Application. The create-repo body sets
    **`"private": false` (PUBLIC by default)** — rationale: a freshly published app
    must be discoverable in the shop's *anonymous* catalogue search, and a private
@@ -83,9 +83,9 @@ release endpoint, REQ-OBV-110).
    `POST …/git/commits` (parented on the current default-branch head, fetched via
    `GET …/git/ref/heads/{branch}` — a `GET /repos/*` call), then advance the
    branch ref (`PATCH …/git/refs/heads/{branch}`). **Every** one of these calls
-   goes through `CredentialBrokerService::request(credentialId, 'openbuild',
+   goes through `CredentialBrokerService::request(credentialId, 'buildiq',
    <method>, <path>, headers, body, actingUserId)` — no PAT, no token in
-   OpenBuild.
+   Buildiq.
 5. **Stamp provenance** — record the resulting `commitSha` on the pushed
    `ApplicationVersion` and return `{ repoUrl, commitSha, branch }`.
 
@@ -196,7 +196,7 @@ The application detail cockpit (`application-detail-ui`,
 Every new dialog/modal is its own `.vue` under `src/modals/` (modal-isolation);
 no inline `NcModal`/`NcDialog`.
 
-### Decision 6 — Owner-RBAC (reuse `openbuild-rbac`, admins not auto-granted)
+### Decision 6 — Owner-RBAC (reuse `buildiq-rbac`, admins not auto-granted)
 
 Every operation requires the caller be an **owner** of the Application, reusing the
 existing owner gate (`ApplicationVersionOwnerGuard` / the publish controller's
@@ -233,13 +233,13 @@ data for this change = **N/A**. Test fixtures use an example linked Application 
 
 ### Decision 9 — Security (ADR-005)
 
-- **Token never in OpenBuild.** Every GitHub write goes through
+- **Token never in Buildiq.** Every GitHub write goes through
   `CredentialBrokerService::request` with a `credentialId`; the broker holds and
-  uses the token. OpenBuild never reads, logs, or returns a token. Pull of a
+  uses the token. Buildiq never reads, logs, or returns a token. Pull of a
   private repo uses the same broker path; public pull is anonymous.
-- **Broker guards are authoritative.** owner / allowedApps=`openbuild` /
+- **Broker guards are authoritative.** owner / allowedApps=`buildiq` /
   allowRules (github write set) / host-lock=`api.github.com` are enforced by the
-  broker; OpenBuild does not re-implement them and treats a broker denial as a
+  broker; Buildiq does not re-implement them and treats a broker denial as a
   clean, hint-bearing failure (feature detection).
 - **Owner-RBAC on every write.** link/push/pull are owner-only (Decision 6);
   admins not auto-granted; per-object guard closes no-admin-idor.

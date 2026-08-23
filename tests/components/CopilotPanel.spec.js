@@ -54,7 +54,7 @@ describe('CopilotPanel.vue — spec ai-copilot REQ-OBAIC-007', () => {
 				summary: 'Adds a suppliers page',
 				steps: [
 					{
-						tool: 'openbuild.upsertPage',
+						tool: 'buildiq.upsertPage',
 						arguments: {
 							appSlug: 'tool-library',
 							pageId: 'suppliers',
@@ -90,7 +90,7 @@ describe('CopilotPanel.vue — spec ai-copilot REQ-OBAIC-007', () => {
 			.mockResolvedValueOnce({
 				data: {
 					summary: 'x',
-					steps: [{ tool: 'openbuild.upsertPage', arguments: {} }],
+					steps: [{ tool: 'buildiq.upsertPage', arguments: {} }],
 					manifests: {},
 				},
 			})
@@ -120,7 +120,7 @@ describe('CopilotPanel.vue — spec ai-copilot REQ-OBAIC-007', () => {
 		axiosPost.mockResolvedValueOnce({
 			data: {
 				summary: 'x',
-				steps: [{ tool: 'openbuild.upsertPage', arguments: {} }],
+				steps: [{ tool: 'buildiq.upsertPage', arguments: {} }],
 				manifests: {},
 			},
 		})
@@ -149,7 +149,7 @@ describe('CopilotPanel.vue — spec ai-copilot REQ-OBAIC-007', () => {
 		axiosPost.mockResolvedValueOnce({
 			data: {
 				summary: 'x',
-				steps: [{ tool: 'openbuild.upsertPage', arguments: {} }],
+				steps: [{ tool: 'buildiq.upsertPage', arguments: {} }],
 				manifests: {},
 			},
 		})
@@ -216,7 +216,7 @@ describe('CopilotPanel.vue — spec ai-copilot REQ-OBAIC-007', () => {
 			.trigger('keydown.enter')
 
 		expect(axiosPost).toHaveBeenCalledWith(
-			'/apps/openbuild/api/copilot/plan',
+			'/apps/buildiq/api/copilot/plan',
 			expect.objectContaining({
 				brief: 'add a page',
 				appSlug: 'tool-library',
@@ -230,7 +230,7 @@ describe('CopilotPanel.vue — spec ai-copilot REQ-OBAIC-007', () => {
 			.mockResolvedValueOnce({
 				data: {
 					summary: 'x',
-					steps: [{ tool: 'openbuild.upsertPage', arguments: {} }],
+					steps: [{ tool: 'buildiq.upsertPage', arguments: {} }],
 					manifests: {},
 				},
 			})
@@ -253,7 +253,7 @@ describe('CopilotPanel.vue — spec ai-copilot REQ-OBAIC-007', () => {
 
 		expect(axiosPost).toHaveBeenNthCalledWith(
 			2,
-			'/apps/openbuild/api/copilot/execute',
+			'/apps/buildiq/api/copilot/execute',
 			expect.objectContaining({ agentId: 'agent-1', prompt: 'add a page' }),
 		)
 	})
@@ -262,7 +262,7 @@ describe('CopilotPanel.vue — spec ai-copilot REQ-OBAIC-007', () => {
 		axiosPost.mockResolvedValueOnce({
 			data: {
 				summary: 'x',
-				steps: [{ tool: 'openbuild.upsertPage', arguments: {} }],
+				steps: [{ tool: 'buildiq.upsertPage', arguments: {} }],
 				manifests: {},
 			},
 		})
@@ -285,7 +285,7 @@ describe('CopilotPanel.vue — spec ai-copilot REQ-OBAIC-007', () => {
 		await flush()
 
 		expect(axiosPost).toHaveBeenCalledWith(
-			'/apps/openbuild/api/copilot/discard',
+			'/apps/buildiq/api/copilot/discard',
 			expect.objectContaining({ agentId: 'agent-1', prompt: 'add a page' }),
 		)
 	})

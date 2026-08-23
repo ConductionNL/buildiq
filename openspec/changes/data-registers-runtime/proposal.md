@@ -12,13 +12,13 @@ registers (e.g. `spectr`'s ~30-schema canonical dataset) the app binds to
 alongside its own per-version register. That spec shipped **zero** PHP/Vue code
 by design (per ADR-032, a `kind: config` head only declares schema). Today,
 declaring a `dataRegisters` binding on an `Application` object has no visible
-effect anywhere in OpenBuild: the builder pickers don't know it exists, the
+effect anywhere in Buildiq: the builder pickers don't know it exists, the
 exporter doesn't bundle it, and there is no UI to add or remove a binding in
 the first place. `spectr`'s data-register work — the concrete consumer named in
 the head's proposal — stays blocked until this follower lands.
 
 This spec is that follower (`kind: code`, `depends_on:
-[data-registers-schema-declaration]`). It wires the four places in OpenBuild
+[data-registers-schema-declaration]`). It wires the four places in Buildiq
 that need to become `dataRegisters`-aware:
 
 1. The builder's register/schema pickers surface the Application's declared
@@ -88,7 +88,7 @@ introduces no new capability domain)_
 - `version-promotion`: ADDED Requirement — `VersionPromotionService` never
   reads or writes `Application.dataRegisters`; a regression test locks this
   invariant in. No existing requirement's behavior changes.
-- `openbuild-exporter`: ADDED Requirement — the exporter bundles bound data
+- `buildiq-exporter`: ADDED Requirement — the exporter bundles bound data
   registers' schema definitions (always) and row data (opt-in per binding via
   `includeData`) into the exported app tree.
 - `page-designer-ui`: ADDED Requirement — register/schema-backed sub-editors

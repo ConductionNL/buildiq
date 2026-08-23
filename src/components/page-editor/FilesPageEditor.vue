@@ -16,17 +16,17 @@
 <template>
 	<div class="files-page-editor">
 		<h3 class="files-page-editor__title">
-			{{ t('openbuild', 'Files page') }}
+			{{ t('buildiq', 'Files page') }}
 		</h3>
 
 		<fieldset class="files-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Root folder') }}</legend>
+			<legend>{{ t('buildiq', 'Root folder') }}</legend>
 			<label class="files-page-editor__group-row">
-				{{ t('openbuild', 'Folder path') }}
+				{{ t('buildiq', 'Folder path') }}
 				<input
 					type="text"
 					:value="config.folder || ''"
-					:placeholder="t('openbuild', 'e.g. /Documents or Attachments')"
+					:placeholder="t('buildiq', 'e.g. /Documents or Attachments')"
 					:aria-invalid="isInvalid('folder')"
 					@input="update('folder', $event.target.value)" />
 				<InlineFieldMark :error="markFor('folder')" />
@@ -34,7 +34,7 @@
 		</fieldset>
 
 		<fieldset class="files-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Allowed types (optional)') }}</legend>
+			<legend>{{ t('buildiq', 'Allowed types (optional)') }}</legend>
 			<div class="files-page-editor__tags">
 				<span
 					v-for="(typ, index) in allowedTypes"
@@ -44,7 +44,7 @@
 					<button
 						type="button"
 						class="files-page-editor__tag-remove"
-						:title="t('openbuild', 'Remove type')"
+						:title="t('buildiq', 'Remove type')"
 						@click="removeType(index)">
 						✕
 					</button>
@@ -55,8 +55,8 @@
 					type="text"
 					class="files-page-editor__tag-input"
 					list="files-page-editor-type-suggestions"
-					:placeholder="t('openbuild', 'Add type, press Enter')"
-					:aria-label="t('openbuild', 'Add type, press Enter')"
+					:placeholder="t('buildiq', 'Add type, press Enter')"
+					:aria-label="t('buildiq', 'Add type, press Enter')"
 					:aria-invalid="isInvalid('allowedTypes')"
 					@keydown.enter.prevent="commitDraft"
 					@keydown.,.prevent="commitDraft"
@@ -72,7 +72,7 @@
 			<p class="files-page-editor__hint">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'MIME types (image/png) or extensions (.pdf). Leave empty to allow everything.',
 					)
 				}}

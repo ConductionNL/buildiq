@@ -10,7 +10,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Listener
+ * @package  OCA\Buildiq\Tests\Unit\Listener
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,12 +23,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Listener;
+namespace OCA\Buildiq\Tests\Unit\Listener;
 
-use OCA\OpenBuild\Listener\ProductionVersionGuardListener;
-use OCA\OpenBuild\Service\ApplicationVersionService;
-use OCA\OpenBuild\Service\ListenerSlugContract;
-use OCA\OpenBuild\Service\ObjectSchemaSlugResolver;
+use OCA\Buildiq\Listener\ProductionVersionGuardListener;
+use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Service\ListenerSlugContract;
+use OCA\Buildiq\Service\ObjectSchemaSlugResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -123,7 +123,7 @@ class ProductionVersionGuardListenerTest extends TestCase {
 		$entity->method('jsonSerialize')->willReturn(['@self' => ['schema' => '116']]);
 		$entity->method('getObject')->willReturn(['productionVersion' => 'uuid-other']);
 
-		$slugs->expects(self::never())->method('isOpenBuildSchema');
+		$slugs->expects(self::never())->method('isBuildiqSchema');
 		$service->expects(self::never())->method('guardProductionVersionOwnership');
 
 		$event = new ObjectUpdatingEvent($entity);
@@ -145,7 +145,7 @@ class ProductionVersionGuardListenerTest extends TestCase {
 		]);
 		$entity->method('getObject')->willReturn(['productionVersion' => 'uuid-v']);
 
-		$this->slugs->method('isOpenBuildSchema')->willReturn(false);
+		$this->slugs->method('isBuildiqSchema')->willReturn(false);
 
 		$event = new ObjectUpdatingEvent($entity);
 
@@ -167,7 +167,7 @@ class ProductionVersionGuardListenerTest extends TestCase {
 		]);
 		$entity->method('getObject')->willReturn(['slug' => 'foo']);
 
-		$this->slugs->method('isOpenBuildSchema')->willReturn(true);
+		$this->slugs->method('isBuildiqSchema')->willReturn(true);
 
 		$event = new ObjectUpdatingEvent($entity);
 
@@ -199,7 +199,7 @@ class ProductionVersionGuardListenerTest extends TestCase {
 		$entity->method('getUuid')->willReturn('uuid-this-app');
 
 		$this->slugs->expects(self::once())
-			->method('isOpenBuildSchema')
+			->method('isBuildiqSchema')
 			->with($entity, ApplicationVersionService::APPLICATION_SCHEMA)
 			->willReturn(true);
 

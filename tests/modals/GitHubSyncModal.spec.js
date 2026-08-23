@@ -224,7 +224,7 @@ describe('GitHubSyncModal.vue', () => {
 
 		expect(axiosMock.post).toHaveBeenCalledTimes(1)
 		const [url, body] = axiosMock.post.mock.calls[0]
-		expect(url).toBe('/apps/openbuild/api/applications/petstore/github/pull')
+		expect(url).toBe('/apps/buildiq/api/applications/petstore/github/pull')
 		expect(body.ref).toBe('main')
 		expect(wrapper.vm.pullResult).toBeTruthy()
 		expect(wrapper.vm.pullResult.versionSlug).toBe('draft-2')

@@ -11,7 +11,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Controller
+ * @package  OCA\Buildiq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,15 +24,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Controller;
+namespace OCA\Buildiq\Tests\Unit\Controller;
 
-use OCA\OpenBuild\Controller\AutomationsController;
-use OCA\OpenBuild\Service\AutomationCompilerService;
-use OCA\OpenBuild\Service\AutomationWriteService;
-use OCA\OpenBuild\Service\ConditionActionExecutor;
-use OCA\OpenBuild\Service\PermissionResolver;
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\Buildiq\Controller\AutomationsController;
+use OCA\Buildiq\Service\AutomationCompilerService;
+use OCA\Buildiq\Service\AutomationWriteService;
+use OCA\Buildiq\Service\ConditionActionExecutor;
+use OCA\Buildiq\Service\PermissionResolver;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
 use OCP\IGroupManager;
@@ -361,7 +361,7 @@ final class AutomationsControllerTest extends TestCase {
 		);
 
 		$this->compiler->method('compile')->willThrowException(
-			new \OCA\OpenBuild\Exception\UnsupportedAutomationCombinationException('bad combination')
+			new \OCA\Buildiq\Exception\UnsupportedAutomationCombinationException('bad combination')
 		);
 
 		$response = $this->controller->compile(uuid: 'a-1');
@@ -515,7 +515,7 @@ final class AutomationsControllerTest extends TestCase {
 	}//end testDisableReturns403ForNonMember()
 
 	/**
-	 * REQ-AUTD-008 / Conduction/openbuild#173: create() authorises against the
+	 * REQ-AUTD-008 / Conduction/buildiq#173: create() authorises against the
 	 * parent Application named in the body and 201s an editor.
 	 *
 	 * @return void
@@ -524,7 +524,7 @@ final class AutomationsControllerTest extends TestCase {
 		$this->wireUser(uid: 'bob');
 		$this->request->method('getParams')->willReturn(
 			[
-				'_route' => 'openbuild.automations.create',
+				'_route' => 'buildiq.automations.create',
 				'applicationSlug' => 'permit-tracker',
 				'versionUuid' => 'draft-version',
 				'slug' => 'nag-on-overdue',

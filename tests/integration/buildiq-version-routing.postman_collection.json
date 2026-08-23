@@ -1,7 +1,7 @@
 {
 	"info": {
-		"name": "OpenBuild — Version Routing (`?_version=` resolution)",
-		"description": "Newman integration suite for openbuild-version-routing (REQ-OBVR-001..007). Asserts that the version-aware manifest endpoint resolves the correct ApplicationVersion based on the `?_version=` query param + RBAC role.\n\nFlow:\n  1. Happy path — no `?_version=` returns the production manifest.\n  2. `?_version=production` returns the production manifest.\n  3. `?_version=development` (non-production) returns the development manifest for editor/owner; 404s for viewer/non-member.\n  4. `?_version=nonexistent` returns 404.\n\nThe suite assumes the seeded `hello-world` Application with a development+production version chain. When the chain isn't seeded, individual requests will report PASS/SKIP via pm.test assertions that tolerate missing seed.",
+		"name": "Buildiq — Version Routing (`?_version=` resolution)",
+		"description": "Newman integration suite for buildiq-version-routing (REQ-OBVR-001..007). Asserts that the version-aware manifest endpoint resolves the correct ApplicationVersion based on the `?_version=` query param + RBAC role.\n\nFlow:\n  1. Happy path — no `?_version=` returns the production manifest.\n  2. `?_version=production` returns the production manifest.\n  3. `?_version=development` (non-production) returns the development manifest for editor/owner; 404s for viewer/non-member.\n  4. `?_version=nonexistent` returns 404.\n\nThe suite assumes the seeded `hello-world` Application with a development+production version chain. When the chain isn't seeded, individual requests will report PASS/SKIP via pm.test assertions that tolerate missing seed.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"auth": {
@@ -29,7 +29,7 @@
 							{ "key": "Accept", "value": "application/json" },
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
-						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{app_slug}}/manifest"
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/{{app_slug}}/manifest"
 					},
 					"event": [
 						{
@@ -66,7 +66,7 @@
 							{ "key": "Accept", "value": "application/json" },
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
-						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{app_slug}}/manifest?_version=production"
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/{{app_slug}}/manifest?_version=production"
 					},
 					"event": [
 						{
@@ -94,7 +94,7 @@
 							{ "key": "Accept", "value": "application/json" },
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
-						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{app_slug}}/manifest?_version=development"
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/{{app_slug}}/manifest?_version=development"
 					},
 					"event": [
 						{
@@ -124,7 +124,7 @@
 							{ "key": "Accept", "value": "application/json" },
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
-						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{app_slug}}/manifest?_version=nonexistent-slug"
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/{{app_slug}}/manifest?_version=nonexistent-slug"
 					},
 					"event": [
 						{
@@ -154,7 +154,7 @@
 							{ "key": "Accept", "value": "application/json" },
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
-						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/no-such-app-slug/manifest"
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/no-such-app-slug/manifest"
 					},
 					"event": [
 						{

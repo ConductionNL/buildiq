@@ -1,8 +1,8 @@
 {
 	"info": {
-		"_postman_id": "openbuild-collection",
-		"name": "OpenBuild Integration Tests",
-		"description": "Newman/Postman integration test collection for the OpenBuild Nextcloud app.\n\nCovers:\n  - the public per-slug manifest endpoint (200 hello-world + 404 unknown);\n  - CRUD round-trip on Application objects via OpenRegister's REST API (POST/GET/PUT/DELETE);\n  - the manifest after a publish transition.\n\nAssumes the SeedHelloWorld repair step has run on a fresh install and the openbuild + openregister apps are enabled. Run via the runner pattern documented in tests/integration/README.md.",
+		"_postman_id": "buildiq-collection",
+		"name": "Buildiq Integration Tests",
+		"description": "Newman/Postman integration test collection for the Buildiq Nextcloud app.\n\nCovers:\n  - the public per-slug manifest endpoint (200 hello-world + 404 unknown);\n  - CRUD round-trip on Application objects via OpenRegister's REST API (POST/GET/PUT/DELETE);\n  - the manifest after a publish transition.\n\nAssumes the SeedHelloWorld repair step has run on a fresh install and the buildiq + openregister apps are enabled. Run via the runner pattern documented in tests/integration/README.md.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"auth": {
@@ -77,7 +77,7 @@
 								"value": "true"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/hello-world/manifest",
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/hello-world/manifest",
 						"description": "Public manifest read for the seeded hello-world virtual app."
 					},
 					"event": [
@@ -126,7 +126,7 @@
 								"value": "true"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/no-such-slug/manifest",
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/no-such-slug/manifest",
 						"description": "Manifest lookup for a slug with no BuiltAppRoute must 404 with the not_found error code."
 					},
 					"event": [
@@ -168,7 +168,7 @@
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application",
-						"description": "After SeedHelloWorld runs, the openbuild/application register lists at least one object with slug='hello-world'."
+						"description": "After SeedHelloWorld runs, the buildiq/application register lists at least one object with slug='hello-world'."
 					},
 					"event": [
 						{
@@ -303,8 +303,8 @@
 							"mode": "raw",
 							"raw": "{\n  \"name\": \"Newman Round-trip v1\",\n  \"slug\": \"production\",\n  \"manifest\": {\n    \"version\": \"1.0.0\",\n    \"menu\": [],\n    \"pages\": [\n      {\n        \"id\": \"Home\",\n        \"route\": \"/\",\n        \"type\": \"index\",\n        \"title\": \"Home\",\n        \"config\": { \"register\": \"openbuild\", \"schema\": \"hello-message\", \"columns\": [\"title\"] }\n      }\n    ]\n  },\n  \"register\": \"openbuild-newman-roundtrip-production\",\n  \"semver\": \"1.0.0\",\n  \"status\": \"draft\",\n  \"application\": \"{{created_uuid}}\"\n}"
 						},
-						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/newman-roundtrip/versions",
-						"description": "Per ADR-002, the manifest + status + semver live on ApplicationVersion. POST against the version-aware OpenBuild endpoint so the parent-relation guard runs."
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/newman-roundtrip/versions",
+						"description": "Per ADR-002, the manifest + status + semver live on ApplicationVersion. POST against the version-aware Buildiq endpoint so the parent-relation guard runs."
 					},
 					"event": [
 						{
@@ -463,7 +463,7 @@
 								"value": "true"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/newman-roundtrip/manifest",
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/newman-roundtrip/manifest",
 						"description": "After the publish transition + productionVersion pointer set, ManifestResolverService should resolve the slug to the version's manifest."
 					},
 					"event": [
@@ -502,8 +502,8 @@
 								"value": "true"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/newman-roundtrip/versions/production?strategy=delete-now",
-						"description": "THIS STEP WAS A BROKEN TEARDOWN; IT IS NOW A REAL ASSERTION.\n\nIt used to send `strategy=hard` — not a strategy at all (the enum is delete-now | orphan-grace | keep-register) — and got a 400, so its 'returns 200 or 204' failed for a reason that had nothing to do with deletion.\n\nWith a valid strategy the answer is 422, and 422 is CORRECT: ApplicationVersionsController::destroy()'s own docblock says 'Attempts to delete the parent Application's production version yield 422', and this round-trip pointed the Application's productionVersion at exactly this row three steps earlier. Deleting it first was never going to work.\n\nSo the teardown is reordered — the Application goes first, then the version row via OR's object API — and the attempt itself is kept as the assertion it should always have been. That matters beyond tidiness: openbuild-application-versions carries a test named 'DESTROY — reject production version deletion (422)' which SKIPS ('production_version_slug not set — seed step not run'), so this guard had no executing coverage anywhere in the suite."
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/newman-roundtrip/versions/production?strategy=delete-now",
+						"description": "THIS STEP WAS A BROKEN TEARDOWN; IT IS NOW A REAL ASSERTION.\n\nIt used to send `strategy=hard` — not a strategy at all (the enum is delete-now | orphan-grace | keep-register) — and got a 400, so its 'returns 200 or 204' failed for a reason that had nothing to do with deletion.\n\nWith a valid strategy the answer is 422, and 422 is CORRECT: ApplicationVersionsController::destroy()'s own docblock says 'Attempts to delete the parent Application's production version yield 422', and this round-trip pointed the Application's productionVersion at exactly this row three steps earlier. Deleting it first was never going to work.\n\nSo the teardown is reordered — the Application goes first, then the version row via OR's object API — and the attempt itself is kept as the assertion it should always have been. That matters beyond tidiness: buildiq-application-versions carries a test named 'DESTROY — reject production version deletion (422)' which SKIPS ('production_version_slug not set — seed step not run'), so this guard had no executing coverage anywhere in the suite."
 					},
 					"event": [
 						{
@@ -571,7 +571,7 @@
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/applicationVersion/{{created_version_uuid}}",
-						"description": "Now that the Application (and therefore its productionVersion pointer) is gone, the version row can be removed. Via OR's object API rather than openbuild's versions route, because that route resolves the version THROUGH its parent Application — which no longer exists — so it could only 404 here.\n\nOrdering, not preference: the openbuild route is the right surface while the app is alive, and it is exercised as such by the 422 guard assertion above."
+						"description": "Now that the Application (and therefore its productionVersion pointer) is gone, the version row can be removed. Via OR's object API rather than buildiq's versions route, because that route resolves the version THROUGH its parent Application — which no longer exists — so it could only 404 here.\n\nOrdering, not preference: the buildiq route is the right surface while the app is alive, and it is exercised as such by the 422 guard assertion above."
 					},
 					"event": [
 						{
@@ -637,7 +637,7 @@
 							}
 						],
 						"url": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application-template",
-						"description": "Create a user template via OR REST. REQ-SAT-006: no openbuild PHP endpoint \u2014 plain OR object create. Org scoping is applied by OR's standard `organisation` field.",
+						"description": "Create a user template via OR REST. REQ-SAT-006: no buildiq PHP endpoint \u2014 plain OR object create. Org scoping is applied by OR's standard `organisation` field.",
 						"body": {
 							"mode": "raw",
 							"raw": "{\n  \"slug\": \"newman-sat-pack\",\n  \"title\": \"Newman SAT pack\",\n  \"description\": \"Synthetic org-local template created by the save-as-template Newman contract test\",\n  \"useCase\": \"Save-as-template contract\",\n  \"category\": \"internal-operations\",\n  \"manifest\": {\n    \"pages\": [\n      {\n        \"id\": \"idx\",\n        \"type\": \"index\",\n        \"config\": {\n          \"schema\": \"permit-application\"\n        }\n      }\n    ]\n  },\n  \"companionSchemas\": [\n    {\n      \"slug\": \"permit-application\",\n      \"title\": \"Permit\",\n      \"properties\": {}\n    }\n  ],\n  \"isSeeded\": false,\n  \"version\": \"1.0.0\"\n}"
@@ -734,7 +734,7 @@
 								"value": "true"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/from-template/newman-sat-pack",
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/from-template/newman-sat-pack",
 						"description": "The existing from-template clone endpoint reads a user template (isSeeded:false) by slug and namespaces companion schemas \u2014 REQ-SAT-005 'clones normally'. Records templateOrigin for traceability.",
 						"body": {
 							"mode": "raw",

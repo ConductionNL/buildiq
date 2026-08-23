@@ -21,19 +21,19 @@
 <template>
 	<div class="search-page-editor">
 		<h3 class="search-page-editor__title">
-			{{ t('openbuild', 'Search page') }}
+			{{ t('buildiq', 'Search page') }}
 		</h3>
 
 		<fieldset class="search-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Scope') }}</legend>
+			<legend>{{ t('buildiq', 'Scope') }}</legend>
 			<label class="search-page-editor__group-row">
-				{{ t('openbuild', 'Register') }}
+				{{ t('buildiq', 'Register') }}
 				<select
 					:value="config.register || ''"
 					:aria-invalid="isInvalid('register')"
 					@change="updateRegister($event.target.value)">
 					<option value="">
-						{{ t('openbuild', '— select register —') }}
+						{{ t('buildiq', '— select register —') }}
 					</option>
 					<option
 						v-for="r in registers"
@@ -45,14 +45,14 @@
 				<InlineFieldMark :error="markFor('register')" />
 			</label>
 			<label class="search-page-editor__group-row">
-				{{ t('openbuild', 'Schema') }}
+				{{ t('buildiq', 'Schema') }}
 				<select
 					:value="config.schema || ''"
 					:disabled="!config.register"
 					:aria-invalid="isInvalid('schema')"
 					@change="update('schema', $event.target.value)">
 					<option value="">
-						{{ t('openbuild', '— select schema —') }}
+						{{ t('buildiq', '— select schema —') }}
 					</option>
 					<option
 						v-for="s in schemas"
@@ -66,7 +66,7 @@
 			<p class="search-page-editor__hint" role="note">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						"Query execution is wired by the consuming app via the page's @search contract; a freshly built page renders the search UI without live results.",
 					)
 				}}
@@ -74,9 +74,9 @@
 		</fieldset>
 
 		<fieldset class="search-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Texts') }}</legend>
+			<legend>{{ t('buildiq', 'Texts') }}</legend>
 			<label class="search-page-editor__group-row">
-				{{ t('openbuild', 'Title') }}
+				{{ t('buildiq', 'Title') }}
 				<input
 					type="text"
 					:value="config.title || ''"
@@ -85,7 +85,7 @@
 				<InlineFieldMark :error="markFor('title')" />
 			</label>
 			<label class="search-page-editor__group-row">
-				{{ t('openbuild', 'Placeholder') }}
+				{{ t('buildiq', 'Placeholder') }}
 				<input
 					type="text"
 					:value="config.placeholder || ''"
@@ -94,7 +94,7 @@
 				<InlineFieldMark :error="markFor('placeholder')" />
 			</label>
 			<label class="search-page-editor__group-row">
-				{{ t('openbuild', 'Search button label') }}
+				{{ t('buildiq', 'Search button label') }}
 				<input
 					type="text"
 					:value="config.searchLabel || ''"
@@ -103,7 +103,7 @@
 				<InlineFieldMark :error="markFor('searchLabel')" />
 			</label>
 			<label class="search-page-editor__group-row">
-				{{ t('openbuild', 'Idle label') }}
+				{{ t('buildiq', 'Idle label') }}
 				<input
 					type="text"
 					:value="config.idleLabel || ''"
@@ -112,7 +112,7 @@
 				<InlineFieldMark :error="markFor('idleLabel')" />
 			</label>
 			<label class="search-page-editor__group-row">
-				{{ t('openbuild', 'Empty-results label') }}
+				{{ t('buildiq', 'Empty-results label') }}
 				<input
 					type="text"
 					:value="config.emptyLabel || ''"
@@ -123,7 +123,7 @@
 		</fieldset>
 
 		<fieldset class="search-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Facets') }}</legend>
+			<legend>{{ t('buildiq', 'Facets') }}</legend>
 			<div
 				v-for="(facet, index) in facets"
 				:key="index"
@@ -132,16 +132,16 @@
 					<input
 						type="text"
 						:value="facet.key || ''"
-						:placeholder="t('openbuild', 'Facet key')"
-						:aria-label="t('openbuild', 'Facet key')"
+						:placeholder="t('buildiq', 'Facet key')"
+						:aria-label="t('buildiq', 'Facet key')"
 						@input="
 							updateFacetField(index, 'key', $event.target.value)
 						" />
 					<input
 						type="text"
 						:value="facet.label || ''"
-						:placeholder="t('openbuild', 'Label (optional)')"
-						:aria-label="t('openbuild', 'Label (optional)')"
+						:placeholder="t('buildiq', 'Label (optional)')"
+						:aria-label="t('buildiq', 'Label (optional)')"
 						@input="
 							updateFacetField(index, 'label', $event.target.value)
 						" />
@@ -156,12 +156,12 @@
 									$event.target.checked,
 								)
 							" />
-						{{ t('openbuild', 'Multiple') }}
+						{{ t('buildiq', 'Multiple') }}
 					</label>
 					<button
 						type="button"
 						class="search-page-editor__row-remove"
-						:title="t('openbuild', 'Remove facet')"
+						:title="t('buildiq', 'Remove facet')"
 						@click="removeFacet(index)">
 						✕
 					</button>
@@ -174,8 +174,8 @@
 						<input
 							type="text"
 							:value="option.value || ''"
-							:placeholder="t('openbuild', 'Option value')"
-							:aria-label="t('openbuild', 'Option value')"
+							:placeholder="t('buildiq', 'Option value')"
+							:aria-label="t('buildiq', 'Option value')"
 							@input="
 								updateFacetOptionField(
 									index,
@@ -187,8 +187,8 @@
 						<input
 							type="text"
 							:value="option.label || ''"
-							:placeholder="t('openbuild', 'Option label (optional)')"
-							:aria-label="t('openbuild', 'Option label (optional)')"
+							:placeholder="t('buildiq', 'Option label (optional)')"
+							:aria-label="t('buildiq', 'Option label (optional)')"
 							@input="
 								updateFacetOptionField(
 									index,
@@ -200,7 +200,7 @@
 						<button
 							type="button"
 							class="search-page-editor__row-remove"
-							:title="t('openbuild', 'Remove option')"
+							:title="t('buildiq', 'Remove option')"
 							@click="removeFacetOption(index, optIndex)">
 							✕
 						</button>
@@ -209,7 +209,7 @@
 						type="button"
 						class="search-page-editor__row-add"
 						@click="addFacetOption(index)">
-						+ {{ t('openbuild', 'Add option') }}
+						+ {{ t('buildiq', 'Add option') }}
 					</button>
 				</div>
 			</div>
@@ -217,7 +217,7 @@
 				type="button"
 				class="search-page-editor__row-add"
 				@click="addFacet">
-				+ {{ t('openbuild', 'Add facet') }}
+				+ {{ t('buildiq', 'Add facet') }}
 			</button>
 			<InlineFieldMark :error="markFor('facets')" />
 		</fieldset>

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Playwright end-to-end coverage for the ZIP export flow of spec #9
- * (openbuild-export-to-real-app).
+ * (buildiq-export-to-real-app).
  *
  * Flow:
  *   1. Authenticate as admin against the local Nextcloud dev instance
@@ -17,7 +17,7 @@
  *      expected filename pattern `<appId>-<version>.zip` (or the job-UUID
  *      fallback the current ExportService emits).
  *
- * NOTE: The Playwright runner is not wired up in OpenBuild yet — this file
+ * NOTE: The Playwright runner is not wired up in Buildiq yet — this file
  * is committed alongside the apply PR per task 7.2 / 8.x of the spec.
  * It runs once the cohort-wide Playwright bootstrap lands and asserts the
  * end-to-end UX contract the controller + background-job tests have
@@ -46,12 +46,12 @@ const POLL_TIMEOUT_MS = 60_000
 // Fixed with `defineAsyncComponent()`. This block asserts the dialog actually
 // mounts, which is the part that silently broke; the ZIP round-trip below stays
 // skipped for the unrelated reasons documented there.
-test.describe('OpenBuild export dialog', () => {
+test.describe('Buildiq export dialog', () => {
 	test('the Export action opens the export dialog with its target picker', async ({
 		page,
 	}) => {
 		await page.goto(
-			`${NEXTCLOUD_URL}/apps/openbuild/applications/${APPLICATION_SLUG}`,
+			`${NEXTCLOUD_URL}/apps/buildiq/applications/${APPLICATION_SLUG}`,
 			{
 				waitUntil: 'domcontentloaded',
 			},
@@ -92,7 +92,7 @@ test.describe('OpenBuild export dialog', () => {
 //     src/components/tabs/ExportJobsTab.vue + src/views/ExportJobsList.vue, and
 //     the export trigger is now the "Export" button in ApplicationDetailActions
 //     opening ExportDialog — not the flow this file drives.
-//   - It navigates to `/apps/openbuild/applications/hello-world`, i.e. the slug
+//   - It navigates to `/apps/buildiq/applications/hello-world`, i.e. the slug
 //     as the route param. The detail route takes the OR OBJECT ID
 //     (`/applications/:objectId`), so this lands on a not-found detail page.
 //   - It also re-implements a form login instead of using the shared
@@ -100,7 +100,7 @@ test.describe('OpenBuild export dialog', () => {
 //
 // Retarget it at ExportJobsTab/ExportDialog and resolve the object id first;
 // the ZIP contract itself is covered at the unit/controller level meanwhile.
-test.describe.skip('OpenBuild ZIP export', () => {
+test.describe.skip('Buildiq ZIP export', () => {
 	test.beforeEach(async ({ page }) => {
 		// Login via the Nextcloud login form. CI uses storageState; this
 		// fallback keeps the spec runnable in local dev.
@@ -127,7 +127,7 @@ test.describe.skip('OpenBuild ZIP export', () => {
 	}) => {
 		// 1. Navigate to the hello-world editor.
 		await page.goto(
-			`${NEXTCLOUD_URL}/apps/openbuild/applications/${APPLICATION_SLUG}`,
+			`${NEXTCLOUD_URL}/apps/buildiq/applications/${APPLICATION_SLUG}`,
 		)
 
 		// 2. Open the Export dialog. The button is wired in
@@ -171,7 +171,7 @@ test.describe.skip('OpenBuild ZIP export', () => {
 	}) => {
 		// Locks the client-side guard mirror of the 422 controller path.
 		await page.goto(
-			`${NEXTCLOUD_URL}/apps/openbuild/applications/${APPLICATION_SLUG}`,
+			`${NEXTCLOUD_URL}/apps/buildiq/applications/${APPLICATION_SLUG}`,
 		)
 		const exportButton = page.getByRole('button', { name: /export/i })
 		await expect(exportButton).toBeVisible({ timeout: 15_000 })

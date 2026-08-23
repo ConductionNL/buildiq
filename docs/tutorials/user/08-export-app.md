@@ -1,12 +1,12 @@
 ---
 sidebar_position: 8
 title: Export your app
-description: Download a virtual app as a ZIP bundle — manifest + schemas + sample data — that can be imported into another OpenBuild instance.
+description: Download a virtual app as a ZIP bundle — manifest + schemas + sample data — that can be imported into another Buildiq instance.
 ---
 
 # Export your app
 
-When the virtual app works the way you want, export it. OpenBuild produces a ZIP containing the manifest (schemas, pages, menu, data sources) and an optional set of sample records. Another OpenBuild instance imports the ZIP to recreate the app.
+When the virtual app works the way you want, export it. Buildiq produces a ZIP containing the manifest (schemas, pages, menu, data sources) and an optional set of sample records. Another Buildiq instance imports the ZIP to recreate the app.
 
 ## Goal
 
@@ -35,7 +35,7 @@ By the end you will have requested an export of your app, watched the job comple
 
    ![Export completed](/screenshots/tutorials/user/08-export-app-04.png)
 
-5. To re-import, copy the ZIP to the target instance, open **Virtual apps → Import application** there, pick the ZIP, and OpenBuild recreates the app with its schemas, pages, and sample data.
+5. To re-import, copy the ZIP to the target instance, open **Virtual apps → Import application** there, pick the ZIP, and Buildiq recreates the app with its schemas, pages, and sample data.
 
    ![Re-import dialog](/screenshots/tutorials/user/08-export-app-05.png)
 

@@ -7,7 +7,7 @@ import { ensureVersionChain } from './support/versionChain'
 import { grantAppRoles } from './support/appRoles'
 
 /**
- * Playwright e2e — Version routing (spec E, openbuild-version-routing).
+ * Playwright e2e — Version routing (spec E, buildiq-version-routing).
  *
  * Covers spec E task 9.1 – 9.3 (the three REQUIRED e2e scenarios):
  *
@@ -75,7 +75,7 @@ test.describe('9.1 Bookmarkability — reload preserves ?_version= (REQ-OBVR-008
 	}) => {
 		// No `/index.php` prefix: every other spec navigates the pretty form, and the
 		// SPA's router base is resolved from it.
-		const targetUrl = `${BASE}/apps/openbuild/builder/${TEST_SLUG}/schemas?_version=${STAGING_VERSION}`
+		const targetUrl = `${BASE}/apps/buildiq/builder/${TEST_SLUG}/schemas?_version=${STAGING_VERSION}`
 		await page.goto(targetUrl, { waitUntil: 'domcontentloaded' })
 
 		// The mount assertion comes FIRST and is now the readiness signal. It
@@ -88,8 +88,8 @@ test.describe('9.1 Bookmarkability — reload preserves ?_version= (REQ-OBVR-008
 		// The original looked for `[data-testid="schema-designer"]` /
 		// `.ob-schema-designer`, neither of which exists in src/, with an
 		// `h2, h3` text fallback — so it would have passed on any page with a
-		// matching heading. The real panel is `.openbuild-schema-list`.
-		await expect(page.locator('.openbuild-schema-list')).toBeVisible({
+		// matching heading. The real panel is `.buildiq-schema-list`.
+		await expect(page.locator('.buildiq-schema-list')).toBeVisible({
 			timeout: 30_000,
 		})
 
@@ -104,7 +104,7 @@ test.describe('9.1 Bookmarkability — reload preserves ?_version= (REQ-OBVR-008
 		// URL is fully usable — and its render is again what proves the URL is
 		// being read after the SPA has had its say.
 		await page.reload({ waitUntil: 'domcontentloaded' })
-		await expect(page.locator('.openbuild-schema-list')).toBeVisible({
+		await expect(page.locator('.buildiq-schema-list')).toBeVisible({
 			timeout: 30_000,
 		})
 
@@ -124,7 +124,7 @@ test.describe('9.1 Bookmarkability — reload preserves ?_version= (REQ-OBVR-008
 //     -outsider and mints one storageState each, so no spec form-logs-in (four
 //     consecutive logins is exactly what trips Nextcloud's brute-force throttle).
 //     `loginAs` is gone from this block for that reason.
-//  2. OpenRegister-level visibility. Until openbuild#76 every non-admin saw ZERO
+//  2. OpenRegister-level visibility. Until buildiq#76 every non-admin saw ZERO
 //     objects — a schema authorization block with no `read` key fails closed to
 //     owner-only rows — so "viewer gets 404" passed for the wrong reason and any
 //     200 assertion was unreachable. `read: ["authenticated"]` fixed that, which
@@ -144,7 +144,7 @@ test.describe('9.2 Non-production version access is role-gated (REQ-OBVR-003)', 
 		const page = await context.newPage()
 		try {
 			await suppressSupportDialog(page)
-			await page.goto(`${BASE}/apps/openbuild/`, {
+			await page.goto(`${BASE}/apps/buildiq/`, {
 				waitUntil: 'domcontentloaded',
 			})
 			await ensureVersionChain(page, TEST_SLUG, 'PW Version Chain')
@@ -184,7 +184,7 @@ test.describe('9.2 Non-production version access is role-gated (REQ-OBVR-003)', 
 		const api = await asRole(role)
 		try {
 			const resp = await api.get(
-				`/index.php/apps/openbuild/api/applications/${TEST_SLUG}/manifest?_version=${version}`,
+				`/index.php/apps/buildiq/api/applications/${TEST_SLUG}/manifest?_version=${version}`,
 			)
 			return {
 				status: resp.status(),
@@ -243,7 +243,7 @@ test.describe('9.2 Non-production version access is role-gated (REQ-OBVR-003)', 
 		)
 	})
 
-	// This test previously asserted `.openbuild-schema-list` has count 0 for the
+	// This test previously asserted `.buildiq-schema-list` has count 0 for the
 	// viewer. That assertion was wrong twice over, and worth recording because
 	// both failure modes are easy to repeat:
 	//
@@ -253,7 +253,7 @@ test.describe('9.2 Non-production version access is role-gated (REQ-OBVR-003)', 
 	//     held because nothing rendered for anyone.
 	//  2. It cannot distinguish the roles anyway. Measured side by side, the
 	//     viewer (DENIED staging) and the editor (ALLOWED staging) render the
-	//     IDENTICAL surface: `.openbuild-schema-list` count 1, reading
+	//     IDENTICAL surface: `.buildiq-schema-list` count 1, reading
 	//     "No schemas yet". The builder shows the same empty designer either
 	//     way, so the selector carries no information about the gate.
 	//
@@ -270,12 +270,12 @@ test.describe('9.2 Non-production version access is role-gated (REQ-OBVR-003)', 
 		const page = await context.newPage()
 		try {
 			await page.goto(
-				`${BASE}/apps/openbuild/builder/${TEST_SLUG}/schemas?_version=${STAGING_VERSION}`,
+				`${BASE}/apps/buildiq/builder/${TEST_SLUG}/schemas?_version=${STAGING_VERSION}`,
 				{ waitUntil: 'domcontentloaded' },
 			)
 
 			// What actually matters: no schema of the forbidden version is named.
-			// `.openbuild-schema-list` renders as empty chrome; asserting its
+			// `.buildiq-schema-list` renders as empty chrome; asserting its
 			// ABSENCE measured nothing, asserting its emptiness measures the leak.
 			//
 			// Wait for that panel to RENDER before reading it. The old
@@ -284,9 +284,9 @@ test.describe('9.2 Non-production version access is role-gated (REQ-OBVR-003)', 
 			// the timeout — and the `innerText().catch(() => '')` under it turned
 			// an unrendered page into an empty string that passes the assertion
 			// below trivially. Measured (see the note above this test): the viewer
-			// gets the same `.openbuild-schema-list` the editor does, empty, so its
+			// gets the same `.buildiq-schema-list` the editor does, empty, so its
 			// visibility is a signal both roles genuinely reach.
-			const list = page.locator('.openbuild-schema-list')
+			const list = page.locator('.buildiq-schema-list')
 			await expect(
 				list,
 				'the builder must render for the viewer — otherwise the leak assertion below reads an empty page',
@@ -339,12 +339,12 @@ test.describe('9.3 Default version resolution — a version-less URL still rende
 	test('navigating without ?_version= resolves a version and renders the builder', async ({
 		page,
 	}) => {
-		await page.goto(`${BASE}/apps/openbuild/builder/${TEST_SLUG}/schemas`, {
+		await page.goto(`${BASE}/apps/buildiq/builder/${TEST_SLUG}/schemas`, {
 			waitUntil: 'domcontentloaded',
 		})
 
 		// It must resolve to a usable designer without a version in the URL.
-		await expect(page.locator('.openbuild-schema-list')).toBeVisible({
+		await expect(page.locator('.buildiq-schema-list')).toBeVisible({
 			timeout: 30_000,
 		})
 

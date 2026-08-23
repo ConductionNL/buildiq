@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2026 OpenBuild Contributors
+ * SPDX-FileCopyrightText: 2026 Buildiq Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Vitest spec for `useManifestValidator` composable.
@@ -168,9 +168,9 @@ describe('useManifestValidator', () => {
 		validateSpy.mockImplementationOnce(() => ({
 			valid: false,
 			errors: [
-				'/runtime/theme: openbuild.theme.error.unknown-source',
-				'/runtime/theme: openbuild.theme.error.token-set-not-kebab',
-				'/runtime/theme/logo: openbuild.theme.error.unknown-key',
+				'/runtime/theme: buildiq.theme.error.unknown-source',
+				'/runtime/theme: buildiq.theme.error.token-set-not-kebab',
+				'/runtime/theme/logo: buildiq.theme.error.unknown-key',
 			],
 		}))
 		const v = useManifestValidator()
@@ -182,9 +182,9 @@ describe('useManifestValidator', () => {
 		vi.advanceTimersByTime(300)
 		expect(v.hasErrors.value).toBe(true)
 		expect(v.errors.value).toEqual([
-			'/runtime/theme: openbuild.theme.error.unknown-source',
-			'/runtime/theme: openbuild.theme.error.token-set-not-kebab',
-			'/runtime/theme/logo: openbuild.theme.error.unknown-key',
+			'/runtime/theme: buildiq.theme.error.unknown-source',
+			'/runtime/theme: buildiq.theme.error.token-set-not-kebab',
+			'/runtime/theme/logo: buildiq.theme.error.unknown-key',
 		])
 	})
 

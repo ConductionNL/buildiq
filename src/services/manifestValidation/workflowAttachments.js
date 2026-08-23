@@ -5,7 +5,7 @@
  * The canonical `app-manifest-v2.schema.json` carries `runtime` with
  * `additionalProperties: true`, so the library validator accepts the
  * `workflows` branch; this module supplies the strict shape + cross-reference
- * checks openbuild needs, surfaced through the `useManifestValidator`
+ * checks buildiq needs, surfaced through the `useManifestValidator`
  * pipeline.
  *
  * Returned errors are `<pointer>: <i18n-error-code>` strings so the existing
@@ -116,7 +116,7 @@ export function validateWorkflowAttachments(manifest) {
 		return errors
 	}
 	if (!Array.isArray(workflows)) {
-		errors.push('/runtime/workflows: openbuild.workflow.error.not-array')
+		errors.push('/runtime/workflows: buildiq.workflow.error.not-array')
 		return errors
 	}
 
@@ -126,57 +126,57 @@ export function validateWorkflowAttachments(manifest) {
 	workflows.forEach((wf, idx) => {
 		const at = (code) => `/runtime/workflows/${idx}: ${code}`
 		if (!wf || typeof wf !== 'object' || Array.isArray(wf)) {
-			errors.push(at('openbuild.workflow.error.invalid-shape'))
+			errors.push(at('buildiq.workflow.error.invalid-shape'))
 			return
 		}
 		for (const key of Object.keys(wf)) {
 			if (!ALLOWED_KEYS.includes(key)) {
 				errors.push(
-					`/runtime/workflows/${idx}/${key}: openbuild.workflow.error.unknown-key`,
+					`/runtime/workflows/${idx}/${key}: buildiq.workflow.error.unknown-key`,
 				)
 			}
 		}
 		// id
 		if (typeof wf.id !== 'string' || wf.id.trim() === '') {
-			errors.push(at('openbuild.workflow.error.id-required'))
+			errors.push(at('buildiq.workflow.error.id-required'))
 		} else {
 			if (seenIds.has(wf.id)) {
-				errors.push(at('openbuild.workflow.error.duplicate-id'))
+				errors.push(at('buildiq.workflow.error.duplicate-id'))
 			}
 			seenIds.set(wf.id, idx)
 		}
 		// schema + at-most-one-per-schema
 		if (typeof wf.schema !== 'string' || wf.schema.trim() === '') {
-			errors.push(at('openbuild.workflow.error.schema-required'))
+			errors.push(at('buildiq.workflow.error.schema-required'))
 		} else {
 			schemaCounts.set(wf.schema, (schemaCounts.get(wf.schema) || 0) + 1)
 			if (!schemaKnown(manifest, wf.schema)) {
-				errors.push(at('openbuild.workflow.error.schema-unknown'))
+				errors.push(at('buildiq.workflow.error.schema-unknown'))
 			}
 		}
 		// caseTypeUuid
 		if (typeof wf.caseTypeUuid !== 'string' || !UUID_RE.test(wf.caseTypeUuid)) {
-			errors.push(at('openbuild.workflow.error.casetype-uuid-invalid'))
+			errors.push(at('buildiq.workflow.error.casetype-uuid-invalid'))
 		}
 		// caseTypeName
 		if (typeof wf.caseTypeName !== 'string' || wf.caseTypeName.trim() === '') {
-			errors.push(at('openbuild.workflow.error.casetype-name-required'))
+			errors.push(at('buildiq.workflow.error.casetype-name-required'))
 		}
 		// trigger
 		if (!WORKFLOW_TRIGGERS.includes(wf.trigger)) {
-			errors.push(at('openbuild.workflow.error.trigger-unsupported'))
+			errors.push(at('buildiq.workflow.error.trigger-unsupported'))
 		}
 		// linkProperty + cross-reference
 		if (typeof wf.linkProperty !== 'string' || wf.linkProperty.trim() === '') {
-			errors.push(at('openbuild.workflow.error.link-property-required'))
+			errors.push(at('buildiq.workflow.error.link-property-required'))
 		} else if (typeof wf.schema === 'string') {
 			const accessor = schemaPropsAccessor(manifest, wf.schema)
 			if (accessor) {
 				if (!accessor.has(wf.linkProperty)) {
-					errors.push(at('openbuild.workflow.error.link-property-missing'))
+					errors.push(at('buildiq.workflow.error.link-property-missing'))
 				} else if (!accessor.isString(wf.linkProperty)) {
 					errors.push(
-						at('openbuild.workflow.error.link-property-not-string'),
+						at('buildiq.workflow.error.link-property-not-string'),
 					)
 				}
 			}
@@ -186,7 +186,7 @@ export function validateWorkflowAttachments(manifest) {
 			wf.descriptionTemplate !== undefined
 			&& typeof wf.descriptionTemplate !== 'string'
 		) {
-			errors.push(at('openbuild.workflow.error.description-template-invalid'))
+			errors.push(at('buildiq.workflow.error.description-template-invalid'))
 		}
 	})
 
@@ -198,7 +198,7 @@ export function validateWorkflowAttachments(manifest) {
 			&& (schemaCounts.get(wf.schema) || 0) > 1
 		) {
 			errors.push(
-				`/runtime/workflows/${idx}: openbuild.workflow.error.duplicate-schema-attachment`,
+				`/runtime/workflows/${idx}: buildiq.workflow.error.duplicate-schema-attachment`,
 			)
 		}
 	})

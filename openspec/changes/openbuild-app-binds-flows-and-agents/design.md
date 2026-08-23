@@ -16,7 +16,7 @@ Two facts about the target of the new binding, both measured rather than assumed
 - Name the referent unambiguously as the OpenRegister `Flow`, so ADR-065's single-engine rule is expressed in the data model rather than only in prose.
 
 **Non-Goals:**
-- Reading the bindings. No exporter, importer, UI picker or validation consumes them in this change — that is `openbuild-exports-flows-and-agents` (`kind: code`).
+- Reading the bindings. No exporter, importer, UI picker or validation consumes them in this change — that is `buildiq-exports-flows-and-agents` (`kind: code`).
 - Migrating or removing the `agentflow` object store. That drift is real and is called out so this binding does not inherit it, but consolidating the two stores is its own change with its own data-migration risk.
 - Back-filling bindings on the 30 existing applications, including `hydra-console`. Absent means "binds none" and that is correct for all of them until someone declares otherwise.
 - Versioning or promotion behaviour. Like `dataRegisters`, these bindings sit on `Application`, not `ApplicationVersion`, and `VersionPromotionService` neither reads nor writes them.

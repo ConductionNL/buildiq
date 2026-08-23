@@ -4,7 +4,7 @@
  * Guards that every page an app template scaffolds declares a renderable page type.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit
+ * @package  OCA\Buildiq\Tests\Unit
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -12,14 +12,14 @@
  *
  * @version GIT: <git-id>
  *
- * @link https://openbuild.nl
+ * @link https://buildiq.nl
  *
  * @spec exclude mechanical template-integrity guard, not a product behaviour
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit;
+namespace OCA\Buildiq\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
 
@@ -128,7 +128,6 @@ class TemplatePageTypesTest extends TestCase {
 		}
 
 		return $pages;
-
 	}//end collectPages()
 
 	/**
@@ -142,7 +141,6 @@ class TemplatePageTypesTest extends TestCase {
 		self::assertNotEmpty($files, 'Expected at least one app template to scan.');
 
 		return $files;
-
 	}//end templateFiles()
 
 }//end class

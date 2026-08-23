@@ -12,33 +12,33 @@
 				:value="widget.id || ''"
 				type="text"
 				class="widget-builder__field"
-				:placeholder="t('openbuild', 'Widget id')"
-				:aria-label="t('openbuild', 'Widget id')"
+				:placeholder="t('buildiq', 'Widget id')"
+				:aria-label="t('buildiq', 'Widget id')"
 				@input="updateField(index, 'id', $event.target.value)" />
 			<input
 				:value="widget.title || ''"
 				type="text"
 				class="widget-builder__field"
-				:placeholder="t('openbuild', 'Title')"
-				:aria-label="t('openbuild', 'Title')"
+				:placeholder="t('buildiq', 'Title')"
+				:aria-label="t('buildiq', 'Title')"
 				@input="updateField(index, 'title', $event.target.value)" />
 			<input
 				:value="widget.type || ''"
 				type="text"
 				class="widget-builder__field widget-builder__field--narrow"
-				:placeholder="t('openbuild', 'Type')"
-				:aria-label="t('openbuild', 'Type')"
+				:placeholder="t('buildiq', 'Type')"
+				:aria-label="t('buildiq', 'Type')"
 				@input="updateField(index, 'type', $event.target.value)" />
 			<button
 				type="button"
 				class="widget-builder__remove"
-				:title="t('openbuild', 'Remove widget')"
+				:title="t('buildiq', 'Remove widget')"
 				@click="removeWidget(index)">
 				✕
 			</button>
 		</div>
 		<button type="button" class="widget-builder__add" @click="addWidget">
-			+ {{ t('openbuild', 'Add widget') }}
+			+ {{ t('buildiq', 'Add widget') }}
 		</button>
 	</div>
 </template>

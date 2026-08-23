@@ -26,8 +26,8 @@ bump per the OpenRegister version-gate rule.
 
 #### Scenario: Schema declares the GitHub linkage fields after install
 
-- **WHEN** the OpenBuild repair step runs (fresh install or upgrade)
-- **THEN** the `Application` schema in the `openbuild` register exposes optional
+- **WHEN** the Buildiq repair step runs (fresh install or upgrade)
+- **THEN** the `Application` schema in the `buildiq` register exposes optional
   `githubRepo` (`{ owner, name }`) and `githubDefaultBranch` properties
 - **AND** an Application object that omits both remains schema-valid
 

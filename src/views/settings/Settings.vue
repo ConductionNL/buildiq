@@ -1,55 +1,53 @@
 <!-- SPDX-License-Identifier: EUPL-1.2 -->
 <template>
 	<CnSettingsSection
-		:name="t('openbuild', 'Configuration')"
-		:description="t('openbuild', 'Configure the app settings')">
+		:name="t('buildiq', 'Configuration')"
+		:description="t('buildiq', 'Configure the app settings')">
 		<form @submit.prevent="save">
 			<div class="form-group">
-				<label for="register">{{ t('openbuild', 'Register') }}</label>
+				<label for="register">{{ t('buildiq', 'Register') }}</label>
 				<input
 					id="register"
 					v-model="form.register"
 					type="text"
-					:placeholder="t('openbuild', 'OpenRegister register ID')" />
+					:placeholder="t('buildiq', 'OpenRegister register ID')" />
 			</div>
 
 			<h3 class="settings-subheading">
-				{{ t('openbuild', 'Template registry') }}
+				{{ t('buildiq', 'Template registry') }}
 			</h3>
 			<p class="settings-help">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'Connect a remote registry to browse and install shared templates from a store.',
 					)
 				}}
 			</p>
 
 			<div class="form-group">
-				<label for="registry_url">{{
-					t('openbuild', 'Registry URL')
-				}}</label>
+				<label for="registry_url">{{ t('buildiq', 'Registry URL') }}</label>
 				<input
 					id="registry_url"
 					v-model="form.registry_url"
 					type="text"
-					:placeholder="t('openbuild', 'https://store.example.com')" />
+					:placeholder="t('buildiq', 'https://store.example.com')" />
 			</div>
 
 			<div class="form-group">
 				<label for="registry_register">{{
-					t('openbuild', 'Registry register')
+					t('buildiq', 'Registry register')
 				}}</label>
 				<input
 					id="registry_register"
 					v-model="form.registry_register"
 					type="text"
-					:placeholder="t('openbuild', 'openbuild')" />
+					:placeholder="t('buildiq', 'buildiq')" />
 			</div>
 
 			<div class="form-group">
 				<label for="registry_token">{{
-					t('openbuild', 'Registry token')
+					t('buildiq', 'Registry token')
 				}}</label>
 				<input
 					id="registry_token"
@@ -60,7 +58,7 @@
 				<span v-if="tokenIsSet" class="settings-help">
 					{{
 						t(
-							'openbuild',
+							'buildiq',
 							'A token is set. Leave blank to keep the current token.',
 						)
 					}}
@@ -72,7 +70,7 @@
 			</div>
 
 			<NcButton variant="primary" type="submit" :disabled="saving">
-				{{ saving ? t('openbuild', 'Saving…') : t('openbuild', 'Save') }}
+				{{ saving ? t('buildiq', 'Saving…') : t('buildiq', 'Save') }}
 			</NcButton>
 		</form>
 	</CnSettingsSection>
@@ -115,8 +113,8 @@ export default {
 		 */
 		tokenPlaceholder() {
 			return this.tokenIsSet
-				? t('openbuild', 'Leave blank to keep the current token')
-				: t('openbuild', 'Bearer token (optional)')
+				? t('buildiq', 'Leave blank to keep the current token')
+				: t('buildiq', 'Bearer token (optional)')
 		},
 	},
 
@@ -130,7 +128,7 @@ export default {
 		const settings = settingsStore.settings || {}
 		this.form.register = settings.register || ''
 		this.form.registry_url = settings.registry_url || ''
-		this.form.registry_register = settings.registry_register || 'openbuild'
+		this.form.registry_register = settings.registry_register || 'buildiq'
 		this.tokenIsSet = !!settings.registry_token_set
 	},
 
@@ -155,7 +153,7 @@ export default {
 			}
 			const result = await settingsStore.saveSettings(payload)
 			if (result) {
-				this.successMessage = t('openbuild', 'Settings saved successfully')
+				this.successMessage = t('buildiq', 'Settings saved successfully')
 				this.tokenIsSet =
 					!!result.registry_token_set
 					|| (this.tokenIsSet

@@ -10,55 +10,55 @@
   -->
 <template>
 	<NcDialog
-		:name="t('openbuild', 'Condition-action rule editor')"
+		:name="t('buildiq', 'Condition-action rule editor')"
 		size="large"
 		@closing="$emit('close')">
 		<div class="condition-action-editor">
 			<NcTextField
 				v-model="staged.name"
-				:label="t('openbuild', 'Rule name')"
+				:label="t('buildiq', 'Rule name')"
 				data-testid="rule-name" />
 			<NcTextField
 				v-model="staged.description"
-				:label="t('openbuild', 'Description')" />
+				:label="t('buildiq', 'Description')" />
 
 			<div class="condition-action-editor__row">
 				<NcTextField
 					v-model.number="staged.priority"
 					type="number"
-					:label="t('openbuild', 'Priority')" />
+					:label="t('buildiq', 'Priority')" />
 				<NcTextField
 					v-model.number="staged.salience"
 					type="number"
-					:label="t('openbuild', 'Salience')" />
+					:label="t('buildiq', 'Salience')" />
 			</div>
 
 			<NcTextArea
 				v-model="staged.condition"
-				:label="t('openbuild', 'Condition (FEEL)')"
+				:label="t('buildiq', 'Condition (FEEL)')"
 				data-testid="rule-condition" />
 
-			<h4>{{ t('openbuild', 'Actions') }}</h4>
+			<h4>{{ t('buildiq', 'Actions') }}</h4>
 			<div
 				v-for="(action, index) in staged.actions"
 				:key="'a-' + index"
 				class="condition-action-editor__action">
 				<NcSelect
 					v-model="action.type"
-					:inputLabel="t('openbuild', 'Action type')"
+					:inputLabel="t('buildiq', 'Action type')"
 					:options="actionTypes" />
 				<NcButton variant="tertiary" @click="removeAction(index)">
-					{{ t('openbuild', 'Remove') }}
+					{{ t('buildiq', 'Remove') }}
 				</NcButton>
 			</div>
 			<NcButton variant="secondary" @click="addAction">
-				{{ t('openbuild', 'Add action') }}
+				{{ t('buildiq', 'Add action') }}
 			</NcButton>
 
 			<NcCheckboxRadioSwitch
 				v-model="staged.active"
-				:aria-label="t('openbuild', 'Active')">
-				{{ t('openbuild', 'Active') }}
+				:aria-label="t('buildiq', 'Active')">
+				{{ t('buildiq', 'Active') }}
 			</NcCheckboxRadioSwitch>
 
 			<NcNoteCard v-if="errorMessage" type="error">
@@ -68,10 +68,10 @@
 
 		<template #actions>
 			<NcButton @click="$emit('close')">
-				{{ t('openbuild', 'Cancel') }}
+				{{ t('buildiq', 'Cancel') }}
 			</NcButton>
 			<NcButton variant="primary" :disabled="saving" @click="save">
-				{{ saving ? t('openbuild', 'Saving…') : t('openbuild', 'Save') }}
+				{{ saving ? t('buildiq', 'Saving…') : t('buildiq', 'Save') }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -194,7 +194,7 @@ export default {
 				})
 				this.$emit('saved')
 			} catch (error) {
-				this.errorMessage = t('openbuild', 'Could not save the rule.')
+				this.errorMessage = t('buildiq', 'Could not save the rule.')
 			} finally {
 				this.saving = false
 			}

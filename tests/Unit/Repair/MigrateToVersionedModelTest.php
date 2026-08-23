@@ -11,7 +11,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Repair
+ * @package  OCA\Buildiq\Tests\Unit\Repair
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,15 +24,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Repair;
+namespace OCA\Buildiq\Tests\Unit\Repair;
 
-use OCA\OpenBuild\Repair\MigrateToVersionedModel;
+use OCA\Buildiq\Repair\MigrateToVersionedModel;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\RegisterService;
 use OCP\IAppConfig;
@@ -158,7 +158,7 @@ class MigrateToVersionedModelTest extends TestCase {
 	 * The previous check probed for the `applicationVersion` schema's
 	 * existence, but `InitializeSettings` imports that schema BEFORE
 	 * this step runs, so the probe always fired true and the migration
-	 * was skipped (openbuild#69). The new check inspects Application
+	 * was skipped (buildiq#69). The new check inspects Application
 	 * row shape and only proceeds when at least one row still carries
 	 * a legacy `manifest` / `version` / `status` / `currentVersion`
 	 * top-level field.

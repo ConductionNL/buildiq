@@ -9,15 +9,15 @@ retrofit: true
 
 @e2e exclude pure-backend event-listener spec — listener registration, event wiring, URL template, and short-circuit guards verified by PHPUnit; no UI surface testable via Playwright (deep-link integration requires OR to dispatch events, not exercisable in isolation)
 
-OpenBuild opts in to Nextcloud's unified-search deep-link integration
+Buildiq opts in to Nextcloud's unified-search deep-link integration
 by listening for OpenRegister's `DeepLinkRegistrationEvent` and
 registering per-schema URL templates. When OR resolves a search hit on
 a registered schema, the unified-search result row links straight to
-the matching OpenBuild detail view — no double-click through OR.
+the matching Buildiq detail view — no double-click through OR.
 
 This capability is event-driven: the contract is "if OR is installed
-and dispatches the event, OpenBuild provides its deep-link table". If
-OR is absent the event never fires and OpenBuild silently no-ops, so
+and dispatches the event, Buildiq provides its deep-link table". If
+OR is absent the event never fires and Buildiq silently no-ops, so
 the integration is optional and adds zero hard dependency.
 
 ## Requirements
@@ -28,7 +28,7 @@ The app SHALL register a listener for
 `OCA\OpenRegister\Event\DeepLinkRegistrationEvent` during
 `Application::register` via
 `IRegistrationContext::registerEventListener`. The listener class
-SHALL be `OCA\OpenBuild\Listener\DeepLinkRegistrationListener` and
+SHALL be `OCA\Buildiq\Listener\DeepLinkRegistrationListener` and
 SHALL implement `OCP\EventDispatcher\IEventListener<Event>`. The
 listener SHALL be idempotent at the Nextcloud DI level — re-running
 `register()` SHALL NOT result in duplicate registrations. The wiring
@@ -39,7 +39,7 @@ installed, no event fires and the listener is never invoked.
 
 #### Scenario: Listener is registered exactly once
 
-- **WHEN** Nextcloud bootstraps the OpenBuild app and calls
+- **WHEN** Nextcloud bootstraps the Buildiq app and calls
   `Application::register`
 - **THEN** `IRegistrationContext::registerEventListener` is invoked
   with `DeepLinkRegistrationEvent::class` and
@@ -47,7 +47,7 @@ installed, no event fires and the listener is never invoked.
 
 #### Scenario: OpenRegister absent → no-op
 
-- **WHEN** OpenRegister is not installed and OpenBuild boots
+- **WHEN** OpenRegister is not installed and Buildiq boots
 - **THEN** the wiring registers without raising
 - **AND** no deep-link entries are emitted because the event never
   fires
@@ -64,9 +64,9 @@ installed, no event fires and the listener is never invoked.
 When `handle()` receives a `DeepLinkRegistrationEvent`, it SHALL
 register one or more deep-link entries by calling
 `$event->register(appId, registerSlug, schemaSlug, urlTemplate)`.
-Each entry SHALL declare `appId: 'openbuild'` as the host Nextcloud
+Each entry SHALL declare `appId: 'buildiq'` as the host Nextcloud
 app id. The `urlTemplate` SHALL be a relative path of shape
-`/apps/openbuild/#/{schemaPath}/{uuid}` with `{uuid}` as the canonical
+`/apps/buildiq/#/{schemaPath}/{uuid}` with `{uuid}` as the canonical
 placeholder OR substitutes with the matching object's UUID. The
 registration SHALL be additive — calling `$event->register(...)` once
 per schema; the listener SHALL NOT mutate or remove previously
@@ -79,7 +79,7 @@ registered entries on the event.
 - **WHEN** OR dispatches `DeepLinkRegistrationEvent` and the listener
   handles it
 - **THEN** `$event->register(...)` is called at least once with
-  `appId: 'openbuild'`
+  `appId: 'buildiq'`
 
 #### Scenario: URL template carries the {uuid} placeholder
 
@@ -93,11 +93,11 @@ The handler currently registers only a single placeholder entry for
 schema slug `example` (left over from the
 `nextcloud-app-template` scaffold — see `lib/Resources/template/lib/
 Listener/DeepLinkRegistrationListener.php`). This is observed-but-
-incomplete: the real OpenBuild schemas (`application`,
+incomplete: the real Buildiq schemas (`application`,
 `application-version`, `built-app-route`, etc.) have no deep-link
 entries yet, so unified-search hits on those rows still land on OR's
 generic detail page. TODO (filed separately): replace the placeholder
-with one `$event->register(...)` call per OpenBuild-owned schema. This
+with one `$event->register(...)` call per Buildiq-owned schema. This
 retrofit spec captures the wiring contract; the catalogue is
 intentionally left to a follow-up so future PRs can extend
 REQ-OBDL-002 without re-litigating REQ-OBDL-001.

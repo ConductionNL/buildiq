@@ -3,11 +3,11 @@ import { generateUrl } from '@nextcloud/router'
 // SPDX-License-Identifier: EUPL-1.2
 /**
  * useDocudeskDocument — runtime integration with Docudesk's correspondence
- * API for document-template attachments (REQ-DDT-003). OpenBuild stays a pure
+ * API for document-template attachments (REQ-DDT-003). Buildiq stays a pure
  * API consumer of Docudesk's existing public surface (ADR-022): it POSTs a
  * `dataRefs` reference to the current OR object, lets Docudesk render the
  * branded document, and hands the result to the browser as a download. No
- * document rendering, no template logic, no openbuild PHP.
+ * document rendering, no template logic, no buildiq PHP.
  *
  * Failure-tolerant by design (REQ-DDT-003): a generate failure NEVER mutates
  * the object or navigates away — it surfaces a typed, non-blocking error

@@ -5,8 +5,8 @@
  * Vitest unit tests for `src/dialogs/ExportDialog.vue` — the no-token contract.
  *
  * This dialog used to render a password field for the user's GitHub Personal Access
- * Token, which was POSTed to OpenBuild and replayed by OpenBuild against api.github.com.
- * It now picks a credential from OpenRegister's broker instead: OpenBuild learns a UUID,
+ * Token, which was POSTed to Buildiq and replayed by Buildiq against api.github.com.
+ * It now picks a credential from OpenRegister's broker instead: Buildiq learns a UUID,
  * never the token behind it.
  *
  * Covers:

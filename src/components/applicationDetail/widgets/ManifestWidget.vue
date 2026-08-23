@@ -21,7 +21,7 @@
 	<div class="ob-manifest-widget">
 		<header class="ob-manifest-widget__header">
 			<h3 class="ob-manifest-widget__title">
-				{{ t('openbuild', 'Manifest layers') }}
+				{{ t('buildiq', 'Manifest layers') }}
 			</h3>
 			<a
 				class="ob-manifest-widget__view-all"
@@ -29,7 +29,7 @@
 				tabindex="0"
 				@click="$emit('open-detail')"
 				@keyup.enter="$emit('open-detail')">
-				{{ t('openbuild', 'View versions') }}
+				{{ t('buildiq', 'View versions') }}
 			</a>
 		</header>
 
@@ -38,19 +38,19 @@
 			<li class="ob-manifest-widget__layer">
 				<div class="ob-manifest-widget__layer-main">
 					<span class="ob-manifest-widget__layer-name">{{
-						t('openbuild', 'Base')
+						t('buildiq', 'Base')
 					}}</span>
 					<span class="ob-manifest-widget__layer-meta">
 						{{
 							isHybrid
-								? t('openbuild', 'Installed app manifest')
-								: t('openbuild', 'Built manifest')
+								? t('buildiq', 'Installed app manifest')
+								: t('buildiq', 'Built manifest')
 						}}
 					</span>
 				</div>
 				<span
 					class="ob-manifest-widget__badge ob-manifest-widget__badge--muted">
-					{{ t('openbuild', 'Read-only') }}
+					{{ t('buildiq', 'Read-only') }}
 				</span>
 			</li>
 
@@ -58,12 +58,10 @@
 			<li class="ob-manifest-widget__layer">
 				<div class="ob-manifest-widget__layer-main">
 					<span class="ob-manifest-widget__layer-name">{{
-						t('openbuild', 'Admin delta')
+						t('buildiq', 'Admin delta')
 					}}</span>
 					<span class="ob-manifest-widget__layer-meta">
-						{{
-							t('openbuild', 'Shared · {label}', { label: adminLabel })
-						}}
+						{{ t('buildiq', 'Shared · {label}', { label: adminLabel }) }}
 					</span>
 				</div>
 				<span class="ob-manifest-widget__badge">{{ adminStatusLabel }}</span>
@@ -73,7 +71,7 @@
 			<li class="ob-manifest-widget__layer ob-manifest-widget__layer--user">
 				<div class="ob-manifest-widget__layer-main">
 					<span class="ob-manifest-widget__layer-name">{{
-						t('openbuild', 'Your delta')
+						t('buildiq', 'Your delta')
 					}}</span>
 					<span class="ob-manifest-widget__layer-meta">{{
 						userMeta
@@ -84,15 +82,15 @@
 					<template v-else-if="!allowUserOverrides">
 						<span
 							class="ob-manifest-widget__badge ob-manifest-widget__badge--muted">
-							{{ t('openbuild', 'Disabled') }}
+							{{ t('buildiq', 'Disabled') }}
 						</span>
 					</template>
 					<template v-else-if="userDelta.exists">
 						<NcButton variant="tertiary" @click="$emit('edit-override')">
-							{{ t('openbuild', 'Edit') }}
+							{{ t('buildiq', 'Edit') }}
 						</NcButton>
 						<NcButton variant="tertiary" @click="resetOverride">
-							{{ t('openbuild', 'Reset') }}
+							{{ t('buildiq', 'Reset') }}
 						</NcButton>
 					</template>
 					<template v-else>
@@ -100,7 +98,7 @@
 							variant="secondary"
 							:disabled="creating"
 							@click="createOverride">
-							{{ t('openbuild', 'Create override') }}
+							{{ t('buildiq', 'Create override') }}
 						</NcButton>
 					</template>
 				</div>
@@ -121,7 +119,7 @@
 				@keyup.enter="$emit('open-detail')">
 				{{
 					n(
-						'openbuild',
+						'buildiq',
 						'%n user override',
 						'%n user overrides',
 						userOverrideCount,
@@ -176,34 +174,35 @@ export default {
 		 * Pre-translated label for the admin delta's lifecycle status.
 		 *
 		 * @return {string}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		adminStatusLabel() {
 			const map = {
-				published: t('openbuild', 'Published'),
-				draft: t('openbuild', 'Draft'),
-				archived: t('openbuild', 'Archived'),
+				published: t('buildiq', 'Published'),
+				draft: t('buildiq', 'Draft'),
+				archived: t('buildiq', 'Archived'),
 			}
-			return map[this.adminStatus] || t('openbuild', 'Current')
+			return map[this.adminStatus] || t('buildiq', 'Current')
 		},
 
 		/**
 		 * Pre-translated meta line for the user-delta layer.
 		 *
 		 * @return {string}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		userMeta() {
 			if (!this.allowUserOverrides) {
-				return t(
-					'openbuild',
-					'Per-user overrides are turned off for this app',
-				)
+				return t('buildiq', 'Per-user overrides are turned off for this app')
 			}
 			if (this.userLoading) {
-				return t('openbuild', 'Loading…')
+				return t('buildiq', 'Loading…')
 			}
 			return this.userDelta.exists
-				? t('openbuild', 'Personal · layered over the admin delta')
-				: t('openbuild', 'No personal override yet')
+				? t('buildiq', 'Personal · layered over the admin delta')
+				: t('buildiq', 'No personal override yet')
 		},
 	},
 
@@ -223,12 +222,14 @@ export default {
 		 * (footer hidden) for non-maintainers — the endpoint 403s.
 		 *
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		async loadOverrideCount() {
 			if (!this.appSlug) return
 			try {
 				const url = generateUrl(
-					'/apps/openbuild/api/app-overrides/{appId}/user-deltas',
+					'/apps/buildiq/api/app-overrides/{appId}/user-deltas',
 					{ appId: this.appSlug },
 				)
 				const { data } = await axios.get(url)
@@ -243,6 +244,8 @@ export default {
 		 * Load the calling user's own user-delta state for this app.
 		 *
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		async loadUserDelta() {
 			if (!this.appSlug) return
@@ -250,7 +253,7 @@ export default {
 			this.error = ''
 			try {
 				const url = generateUrl(
-					'/apps/openbuild/api/app-overrides/{appId}/user',
+					'/apps/buildiq/api/app-overrides/{appId}/user',
 					{ appId: this.appSlug },
 				)
 				const { data } = await axios.get(url)
@@ -271,6 +274,8 @@ export default {
 		 * Create an empty user delta (the "I want my own override" no-op state).
 		 *
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		async createOverride() {
 			if (!this.appSlug || this.creating) return
@@ -278,7 +283,7 @@ export default {
 			this.error = ''
 			try {
 				const url = generateUrl(
-					'/apps/openbuild/api/app-overrides/{appId}/user',
+					'/apps/buildiq/api/app-overrides/{appId}/user',
 					{ appId: this.appSlug },
 				)
 				await axios.put(url, {})
@@ -287,7 +292,7 @@ export default {
 			} catch (e) {
 				this.error = this.extractError(
 					e,
-					t('openbuild', 'Could not create your override'),
+					t('buildiq', 'Could not create your override'),
 				)
 			} finally {
 				this.creating = false
@@ -298,13 +303,15 @@ export default {
 		 * Delete the caller's own user delta.
 		 *
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		async resetOverride() {
 			if (!this.appSlug) return
 			this.error = ''
 			try {
 				const url = generateUrl(
-					'/apps/openbuild/api/app-overrides/{appId}/user',
+					'/apps/buildiq/api/app-overrides/{appId}/user',
 					{ appId: this.appSlug },
 				)
 				await axios.delete(url)
@@ -313,7 +320,7 @@ export default {
 			} catch (e) {
 				this.error = this.extractError(
 					e,
-					t('openbuild', 'Could not reset your override'),
+					t('buildiq', 'Could not reset your override'),
 				)
 			}
 		},

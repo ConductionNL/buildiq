@@ -6,7 +6,7 @@ declare(strict_types=1);
 // ADR-040 AppHost adoption: the canonical route set (dashboard#page,
 // dashboard#catchAll, settings#index/create/load, preferences#getPreference/
 // setPreference, metrics#index, health#index) is owned by the engine via
-// \OCA\OpenRegister\AppHost\Routes::standard(). OpenBuild's domain routes are
+// \OCA\OpenRegister\AppHost\Routes::standard(). Buildiq's domain routes are
 // passed as $extra; Routes::standard() inserts them BEFORE the SPA catch-all so
 // they keep priority over the `/{path}` fallback, and keeps the canonical
 // specific-first ordering. The catch-all (dashboard#catchAll) is always emitted
@@ -16,7 +16,7 @@ declare(strict_types=1);
 // is a pure array builder — so requiring it is safe even when OR is disabled.
 return \OCA\OpenRegister\AppHost\Routes::standard(
     [
-        // App-creation wizard endpoint (openbuild-app-creation-wizard REQ-OBWIZ-001).
+        // App-creation wizard endpoint (buildiq-app-creation-wizard REQ-OBWIZ-001).
         // POST /api/applications/wizard — atomic creation of Application + N versions + N registers.
         // ADMIN-ONLY (issue #157): #[AuthorizedAdminSetting(AdminSettings::class)] on the controller
         // method so NC's middleware refuses before dispatch, plus an in-body isAdmin() gate as
@@ -24,7 +24,7 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // Must precede the {slug} + collection routes so it does not shadow them.
         ['name' => 'applicationCreation#wizard', 'url' => '/api/applications/wizard', 'verb' => 'POST'],
 
-        // First-time-setup contract (openbuild-first-time-setup, ADR-042) — the
+        // First-time-setup contract (buildiq-first-time-setup, ADR-042) — the
         // fleet-wide CnSetupWizard endpoints. Admin-only via
         // #[AuthorizedAdminSetting] on each controller method (CSRF enforced).
         // The run-action step seeds the bundled ApplicationTemplate records
@@ -33,7 +33,7 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         ['name' => 'setup#saveConfig', 'url' => '/api/setup/config', 'verb' => 'POST'],
         ['name' => 'setup#runAction', 'url' => '/api/setup/action/{actionId}', 'verb' => 'POST'],
 
-        // RBAC-filtered Application list (openbuild-rbac REQ-OBRBAC-002 / REQ-OBR-007).
+        // RBAC-filtered Application list (buildiq-rbac REQ-OBRBAC-002 / REQ-OBR-007).
         // OR's schema-level read rule is a coarse group ACL — not a row-level filter on the
         // Application's `permissions` block — so the editor list MUST go through this
         // endpoint, NOT directly through `/apps/openregister/api/objects/openbuild/application`,
@@ -42,11 +42,11 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // is order-sensitive when prefix overlaps).
         ['name' => 'applications#listMine', 'url' => '/api/applications', 'verb' => 'GET'],
 
-        // Clone-from-template action (openbuild-templates-marketplace REQ-OBTC-004 / REQ-OBTC-005).
+        // Clone-from-template action (buildiq-templates-marketplace REQ-OBTC-004 / REQ-OBTC-005).
         // POST so it does not collide with the GET {slug} routes; #[NoAdminRequired] on the
-        // controller method. Creates a per-app `openbuild-{newSlug}` register, deep-copies the
+        // controller method. Creates a per-app `buildiq-{newSlug}` register, deep-copies the
         // template's companion schemas into it, rewrites manifest schema refs, and persists a new
-        // Application in the shared `openbuild` register tagged with the caller's UID.
+        // Application in the shared `buildiq` register tagged with the caller's UID.
         ['name' => 'applications#createFromTemplate', 'url' => '/api/applications/from-template/{templateSlug}', 'verb' => 'POST'],
 
         // Manifest endpoint — returns the stored manifest JSON blob for a given virtual-app slug.
@@ -62,7 +62,7 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // (pages/menu/settings/sidebar/actions) were computed but never persisted.
         ['name' => 'applications#saveManifest', 'url' => '/api/applications/{slug}/manifest', 'verb' => 'PUT', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
-        // Versioning — diff endpoint (chain spec #6 openbuild-versioning, REQ-OBV-005). Returns
+        // Versioning — diff endpoint (chain spec #6 buildiq-versioning, REQ-OBV-005). Returns
         // two ApplicationVersion manifest blobs in one round-trip so the client diff component
         // does not double-fetch. `from`/`to` are ApplicationVersion UUIDs OR the literal `draft`.
         // Specific route MUST precede the SPA catch-all (memory rule: Symfony specific-first).
@@ -70,7 +70,7 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
 
         // ApplicationVersion CRUD + strategy-aware delete (spec
         // `application-versions` REQ-OBV-107 / REQ-OBV-108 of
-        // openbuild-versioning-model). Specific routes MUST precede the
+        // buildiq-versioning-model). Specific routes MUST precede the
         // SPA catch-all to win Symfony's order-sensitive router (memory
         // rule: specific-first). The `/diff` route above stays first
         // because its URL is more specific than `{versionSlug}`.
@@ -90,16 +90,16 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // (`application-versions` REQ-OBV-110). Single-production invariant; NO admin bypass.
         ['name' => 'applicationVersions#release',  'url' => '/api/applications/{appSlug}/versions/{versionSlug}/release', 'verb' => 'POST', 'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
-        // Insights endpoint (openbuild-app-detail-overview REQ-OBAI-001 / REQ-OBAI-007).
+        // Insights endpoint (buildiq-app-detail-overview REQ-OBAI-001 / REQ-OBAI-007).
         // GET /api/applications/{appUuid}/versions/{versionUuid}/insights?window=7d|30d|90d
         // Returns `{kpis, activity}` for a single ApplicationVersion. #[NoAdminRequired] on
         // the controller method; RBAC happens inside ApplicationInsightsService (viewer-or-
         // better for production, editor-or-better for non-production, NC admins NOT
-        // auto-granted — mirrors openbuild-version-routing). UUID path params + the
+        // auto-granted — mirrors buildiq-version-routing). UUID path params + the
         // trailing `/insights` literal disambiguate from the slug-based CRUD routes.
         ['name' => 'applicationInsights#getInsights', 'url' => '/api/applications/{appUuid}/versions/{versionUuid}/insights', 'verb' => 'GET', 'requirements' => ['appUuid' => '[a-f0-9-]{8,}', 'versionUuid' => '[a-f0-9-]{8,}']],
 
-        // Manual promotion endpoint (openbuild-version-promotion REQ-OBVP-001).
+        // Manual promotion endpoint (buildiq-version-promotion REQ-OBVP-001).
         // Spec mandates UUID path params (`{appUuid}/versions/{versionUuid}/promote`)
         // to distinguish this surface from the slug-based CRUD above. The trailing
         // `/promote` literal is sufficient to disambiguate from the `{versionSlug}`
@@ -130,12 +130,12 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // builder()) — the AppHost Routes::standard() guard throws on duplicate names.
         ['name' => 'dashboard#builderSlash', 'url' => '/builder/{slug}/', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
-        // Reserved OpenBuild designer sub-paths (openbuild-deep-links #100 fix).
+        // Reserved Buildiq designer sub-paths (buildiq-deep-links #100 fix).
         // `pages`, `schemas`, `schemas/{schemaId}` and `walkthrough` are
-        // OpenBuild's OWN designer surfaces (src/manifest.json: PageDesigner,
+        // Buildiq's OWN designer surfaces (src/manifest.json: PageDesigner,
         // SchemaDesignerList, SchemaDesigner, WalkthroughDesigner) — matched by
         // the SPA's OWN vue-router (main.js) before its BuilderHost wildcard.
-        // They must keep serving the OpenBuild SPA shell (dashboard#builderDesigner
+        // They must keep serving the Buildiq SPA shell (dashboard#builderDesigner
         // renders the same page as catchAll()), NOT the standalone virtual-app
         // runtime that dashboard#builderPath now serves below. MUST precede
         // builderPath so this more-specific literal alternation wins
@@ -151,17 +151,17 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         ['name' => 'dashboard#builderDesigner', 'url' => '/builder/{slug}/{designerPath}', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'designerPath' => 'pages|schemas|schemas/[^/]+|walkthrough']],
 
         // ANY OTHER /builder/{slug}/... sub-path is a page defined by the
-        // DEPLOYED virtual app's OWN manifest (openbuild-deep-links #100).
+        // DEPLOYED virtual app's OWN manifest (buildiq-deep-links #100).
         // Direct navigation (fresh load / refresh / bookmark) previously fell
         // through to the SPA catch-all — the wrong shell, nesting the app
-        // inside OpenBuild's own chrome/router instead of letting the app's
+        // inside Buildiq's own chrome/router instead of letting the app's
         // own client-side router (builder.js, history mode) resolve it, the
         // way clicking within the app already does. `path` allows slashes
         // (requirement '.*', same trick as the SPA catch-all's `.+`) so
         // nested app pages (e.g. /tenders/{id}) deep-link correctly too.
         ['name' => 'dashboard#builderPath', 'url' => '/builder/{slug}/{path}', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'path' => '.*']],
 
-        // Icon-serving endpoints (openbuild-nextcloud-nav REQ-OBICON-002 / REQ-OBICON-003).
+        // Icon-serving endpoints (buildiq-nextcloud-nav REQ-OBICON-002 / REQ-OBICON-003).
         // Both are #[NoAdminRequired] on the controller. ORDER MATTERS: iconDark's
         // pattern ("{slug}-dark.svg") is a SUBSET of iconLight's ("{slug}.svg") because
         // {slug} matches hyphens — so "foo-dark.svg" matches BOTH (iconDark with
@@ -181,7 +181,7 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
 
         // Business-rules engine (spec business-rules-engine REQ-BRE-006 / REQ-BRE-004).
         // All three carry #[NoAdminRequired] on the controller; resolution goes
-        // through searchObjectsBySlug (schema RBAC applied). `openbuild` is a
+        // through searchObjectsBySlug (schema RBAC applied). `buildiq` is a
         // system-wide register, so this is NOT per-owner/per-org read isolation
         // (writes stay admin-gated at the schema). evaluate/test-all are POST so they cannot collide
         // with the GET SPA catch-all; the GET schema route's `/schema` suffix makes it
@@ -194,7 +194,7 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         //
         // ⚠️ CRUD ON `automation` LIVES HERE, NOT ON OR REST — and that is a
         // deliberate departure from the ADR-022 "consume OR abstractions"
-        // default, scoped to this one schema. Conduction/openbuild#173.
+        // default, scoped to this one schema. Conduction/buildiq#173.
         //
         // ADR-022 holds wherever OR's own authorization can express the
         // requirement. For `automation` it cannot. OR gates writes with a
@@ -231,11 +231,11 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         ['name' => 'automations#dryRun',   'url' => '/api/automations/{uuid}/dry-run',  'verb' => 'POST', 'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
         ['name' => 'automations#status',   'url' => '/api/automations/{uuid}/status',   'verb' => 'GET',  'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
 
-        // App-override store-and-serve (openbuild-inline-edit-persistence,
+        // App-override store-and-serve (buildiq-inline-edit-persistence,
         // spec app-override-persistence). Per-instance shared manifest delta for
         // an EXISTING fleet app, keyed by `appId`. GET returns the raw stored
         // delta for client-side merge (mergeStrategy:'delta'); PUT upserts it
-        // (CSRF-enforced, OpenBuild-access guard, validate-shape + non-blank);
+        // (CSRF-enforced, Buildiq-access guard, validate-shape + non-blank);
         // DELETE clears it (idempotent). Specific-first so the `{appId}` routes
         // are not shadowed by the engine-appended SPA `/{path}` catch-all;
         // `appId` carries the kebab-case NC-app-id requirement.
@@ -256,7 +256,7 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         ['name' => 'appOverride#save',  'url' => '/api/app-overrides/{appId}', 'verb' => 'PUT',    'requirements' => ['appId' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'appOverride#clear', 'url' => '/api/app-overrides/{appId}', 'verb' => 'DELETE', 'requirements' => ['appId' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
-        // Remote template store (openbuild-remote-template-store). Consume-only:
+        // Remote template store (buildiq-remote-template-store). Consume-only:
         // search proxies the configured remote OpenRegister catalogue server-side;
         // install resolves a remote template by slug and clones it locally via the
         // shared ApplicationsController install seam.
@@ -287,7 +287,7 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // editors, hybrid-app rejection, agent resolution) is enforced inside
         // CopilotService, not via a route attribute. `plan` performs zero
         // builder writes; `execute` re-validates and dispatches through
-        // OpenBuildToolProvider::invokeTool(); `discard` only ever runs for
+        // BuildiqToolProvider::invokeTool(); `discard` only ever runs for
         // the agent-scoped chat surface (logs a discarded AgentRun).
         // Specific-first, before the engine-appended SPA catch-all.
         ['name' => 'copilot#health',  'url' => '/api/copilot/health',  'verb' => 'GET'],

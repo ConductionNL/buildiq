@@ -15,23 +15,23 @@ By the end you will have stored a GitHub credential, published your app to a pub
 ## Prerequisites
 
 - A virtual app you own, with a released or draft version to publish.
-- A GitHub **fine-grained personal access token**, scoped to the repositories you want to publish to (or all of them), with exactly three repository permissions — **Administration: Read and write** (create the repo and set its topic), **Contents: Read and write** (push the app), and **Metadata: Read-only** (required). No issues, pull-requests, workflows, or account permissions are needed. You paste the token into OpenBuild once; it is held in Doriath (Nextcloud's encrypted credential vault) and OpenBuild never sees it again — the OpenRegister credential broker makes the GitHub calls for you.
+- A GitHub **fine-grained personal access token**, scoped to the repositories you want to publish to (or all of them), with exactly three repository permissions — **Administration: Read and write** (create the repo and set its topic), **Contents: Read and write** (push the app), and **Metadata: Read-only** (required). No issues, pull-requests, workflows, or account permissions are needed. You paste the token into Buildiq once; it is held in Doriath (Nextcloud's encrypted credential vault) and Buildiq never sees it again — the OpenRegister credential broker makes the GitHub calls for you.
 
   ![GitHub fine-grained token permissions: Administration and Contents at Read and write, Metadata at Read-only](/screenshots/tutorials/user/09-publish-to-github-00-permissions.jpg)
 
 ## Steps
 
-1. Add a GitHub credential. Open the app's **user settings → Credentials**, click **Add credential**, choose the **GitHub** provider, paste your token, and allow **openbuild** to use it. The token is stored write-only — it is never shown or returned again.
+1. Add a GitHub credential. Open the app's **user settings → Credentials**, click **Add credential**, choose the **GitHub** provider, paste your token, and allow **buildiq** to use it. The token is stored write-only — it is never shown or returned again.
 
-2. Open your app, then **Actions → GitHub**. Pick your GitHub credential and click **Publish**. OpenBuild creates a **public** repository, tags it with the `openbuild-app` topic, and commits the app — `openbuild-app.json`, `manifest.json`, and `schemas/` — in one clean commit. The token never reaches OpenBuild; the broker makes the call and returns only the repository it created.
+2. Open your app, then **Actions → GitHub**. Pick your GitHub credential and click **Publish**. Buildiq creates a **public** repository, tags it with the `buildiq-app` topic, and commits the app — `openbuild-app.json`, `manifest.json`, and `schemas/` — in one clean commit. The token never reaches Buildiq; the broker makes the call and returns only the repository it created.
 
    ![The GitHub panel: credential picker with Link repository, Publish, and Pull buttons](/screenshots/tutorials/user/09-publish-to-github-01.png)
 
-3. Go to **Store → GitHub**. The store searches GitHub for the `openbuild-app` topic and shows each published app as an installable card, built from its `openbuild-app.json`. Your app appears there — public apps with no credential at all; add your credential to also see your own private repositories.
+3. Go to **Store → GitHub**. The store searches GitHub for the `buildiq-app` topic and shows each published app as an installable card, built from its `openbuild-app.json`. Your app appears there — public apps with no credential at all; add your credential to also see your own private repositories.
 
    ![The store GitHub tab with a search box and an installable app card](/screenshots/tutorials/user/09-publish-to-github-02.png)
 
-4. Click **Install** on the card, give the new app a name and slug, and confirm. OpenBuild parses the repository and clones it into a fresh local app through the same path as any template — so it is an ordinary editable app, not a locked import.
+4. Click **Install** on the card, give the new app a name and slug, and confirm. Buildiq parses the repository and clones it into a fresh local app through the same path as any template — so it is an ordinary editable app, not a locked import.
 
    ![The Install app from GitHub dialog with name and slug fields](/screenshots/tutorials/user/09-publish-to-github-03.png)
 
@@ -39,7 +39,7 @@ By the end you will have stored a GitHub credential, published your app to a pub
 
 ## Verification
 
-The round-trip is good when: after publishing, the repository exists on GitHub with `openbuild-app.json`, `manifest.json`, and `schemas/`, and carries the `openbuild-app` topic. The strongest test: delete the app locally, search **Store → GitHub**, and install it again — you get the same app back, because it now lives in the repository.
+The round-trip is good when: after publishing, the repository exists on GitHub with `openbuild-app.json`, `manifest.json`, and `schemas/`, and carries the `buildiq-app` topic. The strongest test: delete the app locally, search **Store → GitHub**, and install it again — you get the same app back, because it now lives in the repository.
 
 ## Common issues
 

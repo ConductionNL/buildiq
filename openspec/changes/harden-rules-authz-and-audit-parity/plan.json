@@ -1,7 +1,7 @@
 {
   "change": "harden-rules-authz-and-audit-parity",
-  "project": "openbuild",
-  "repo": "ConductionNL/openbuild",
+  "project": "buildiq",
+  "repo": "ConductionNL/buildiq",
   "base_branch": "development",
   "feature_branch": "feature/4/harden-rules-authz-and-audit-parity",
   "created": "2026-07-23",
@@ -58,7 +58,7 @@
       "title": "Export download authz reads requestedBy",
       "description": "In ExportsController::isAuthorisedForJob read requestedBy ?? @self.owner instead of the never-written submittedBy.",
       "status": "done",
-      "spec_ref": "openbuild-exporter",
+      "spec_ref": "buildiq-exporter",
       "acceptance_criteria": [
         "persisted requester authorized",
         "no reliance on accidental @self.owner-only fallback"
@@ -72,7 +72,7 @@
       "title": "Export download authz test",
       "description": "Test the persisted requestedBy user may download and a stranger is denied (404-masked).",
       "status": "done",
-      "spec_ref": "openbuild-exporter",
+      "spec_ref": "buildiq-exporter",
       "acceptance_criteria": [
         "requester allowed",
         "stranger denied"
@@ -86,7 +86,7 @@
       "title": "MCP admin-bypass audit-trail parity",
       "description": "Inject AuditTrailMapper into AbstractToolHandler and record the admin bypass via recordAdminBypass (fail-soft); same for CopilotService.",
       "status": "done",
-      "spec_ref": "openbuild-rbac",
+      "spec_ref": "buildiq-rbac",
       "acceptance_criteria": [
         "MCP admin bypass writes an audit-trail entry",
         "write failure fails soft (logged, non-aborting)"
@@ -101,7 +101,7 @@
       "title": "MCP audit-trail test",
       "description": "Test that an MCP admin bypass writes an audit-trail entry.",
       "status": "done",
-      "spec_ref": "openbuild-rbac",
+      "spec_ref": "buildiq-rbac",
       "acceptance_criteria": [
         "audit-trail entry created on MCP bypass"
       ],

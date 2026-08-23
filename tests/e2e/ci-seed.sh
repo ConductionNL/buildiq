@@ -3,7 +3,7 @@
 # SPDX-FileCopyrightText: 2026 Conduction B.V.
 # SPDX-License-Identifier: EUPL-1.2
 #
-# Provision OpenBuild's OpenRegister register + schemas, the `hello-world`
+# Provision Buildiq's OpenRegister register + schemas, the `hello-world`
 # virtual-app fixture and the instance settings the e2e suite depends on, for
 # the shared `E2E Tests (Playwright)` CI job.
 #
@@ -11,18 +11,18 @@
 # `php -S` is up and with cwd set to the Nextcloud server root, so this is
 # invoked as:
 #
-#     playwright-seed-command: 'bash apps/openbuild/tests/e2e/ci-seed.sh'
+#     playwright-seed-command: 'bash apps/buildiq/tests/e2e/ci-seed.sh'
 #
 # WHY THIS IS NEEDED — four separate reasons, all of which fail SILENTLY.
 # ----------------------------------------------------------------------
 #
-#  1. `occ app:enable openbuild` runs the `InitializeSettings` post-migration
+#  1. `occ app:enable buildiq` runs the `InitializeSettings` post-migration
 #     repair step, which is supposed to import lib/Settings/openbuild_register.json
 #     (plus the ADR-037 register.d/*.json fragments) into OpenRegister. An
 #     IRepairStep runs with NO user session, so OpenRegister's RBAC denies the
 #     import outright ("User 'Anonymous' does not have permission to 'create'
 #     objects in schema '…'"). `InitializeSettings::run()` catches \Throwable and
-#     downgrades it to a warning, so `occ app:enable openbuild` still exits 0.
+#     downgrades it to a warning, so `occ app:enable buildiq` still exits 0.
 #     The app enables, the SPA boots, and the register simply is not there.
 #     Additionally the repair path calls loadConfiguration(force: false), which
 #     is version-gated: it can advance the recorded configuration version WITHOUT
@@ -130,9 +130,9 @@ if [ -f "${SERVER_DIR}/occ" ]; then
 
 	# ── PRETTY URLs — why a deep link silently became the Dashboard ──────────
 	#
-	# openbuild's SPA builds its router as
+	# buildiq's SPA builds its router as
 	#
-	#     createWebHistory(generateUrl('/apps/openbuild'))     (src/main.js)
+	#     createWebHistory(generateUrl('/apps/buildiq'))     (src/main.js)
 	#
 	# and `generateUrl()` from @nextcloud/router is:
 	#
@@ -141,11 +141,11 @@ if [ -f "${SERVER_DIR}/occ" ]; then
 	#
 	# Nextcloud sets `modRewriteWorking` from `htaccess.IgnoreFrontController`.
 	# A real Apache install has it on (that is what the shipped .htaccess is
-	# for), so the router base is `/apps/openbuild` and every spec's
-	# `page.goto('/apps/openbuild/applications')` matches.
+	# for), so the router base is `/apps/buildiq` and every spec's
+	# `page.goto('/apps/buildiq/applications')` matches.
 	#
 	# A freshly `occ maintenance:install`ed instance behind `php -S` does NOT
-	# have it set. The router base is then `/index.php/apps/openbuild`, which is
+	# have it set. The router base is then `/index.php/apps/buildiq`, which is
 	# NOT a prefix of the URL the spec opened — so vue-router matches nothing
 	# and falls back to the default route. The SPA mounts, renders perfectly,
 	# and shows the DASHBOARD. No error, no 404, no console warning: the app
@@ -159,7 +159,7 @@ if [ -f "${SERVER_DIR}/occ" ]; then
 	# screenshot in the artifacts shows the same Dashboard. The specs that
 	# passed are exactly the two classes this cannot touch: pure `request.get()`
 	# API tests, and builder-host, whose builder.js router is based on
-	# `/apps/openbuild/builder/<slug>` and which the spec opens AT that base.
+	# `/apps/buildiq/builder/<slug>` and which the spec opens AT that base.
 	#
 	# createApplicationWizard.spec.ts already carries a live-verified note about
 	# the mirror image of this on the dev box ("the `/index.php/`-prefixed form
@@ -180,10 +180,10 @@ else
 	echo "::warning::No occ at ${SERVER_DIR}/occ — skipping instance configuration."
 fi
 
-# ── 1. Import the OpenBuild configuration ────────────────────────────────────
-# openbuild's appinfo/routes.php returns \OCA\OpenRegister\AppHost\Routes::standard(),
+# ── 1. Import the Buildiq configuration ────────────────────────────────────
+# buildiq's appinfo/routes.php returns \OCA\OpenRegister\AppHost\Routes::standard(),
 # whose canonical table ships `settings#load` at POST /api/settings/load. On
-# openbuild that resolves to OCA\OpenBuild\Controller\SettingsController::load(),
+# buildiq that resolves to OCA\Buildiq\Controller\SettingsController::load(),
 # which calls SettingsService::reloadConfiguration() → doLoadConfiguration(force: true)
 # — precisely the forced import the repair step cannot perform, and the only path
 # that also deep-merges the ADR-037 register.d/*.json fragments (business rules,
@@ -197,7 +197,7 @@ fi
 # strict-cookie precondition is satisfied because a Basic-auth request carries
 # no session cookie at all). Without the header this POST is rejected as a CSRF
 # failure.
-IMPORT_URL="${BASE}/index.php/apps/openbuild/api/settings/load"
+IMPORT_URL="${BASE}/index.php/apps/buildiq/api/settings/load"
 echo "[ci-seed] POST ${IMPORT_URL} (forced import)"
 
 IMPORT_BODY="$(mktemp)"
@@ -221,19 +221,19 @@ head -c 2000 "$IMPORT_BODY"; echo
 IMPORT_OK=0
 if [ "$IMPORT_CODE" = "200" ] && grep -q '"success":[[:space:]]*true' "$IMPORT_BODY"; then
 	IMPORT_OK=1
-	echo "[ci-seed] openbuild settings#load reported success."
+	echo "[ci-seed] buildiq settings#load reported success."
 else
-	echo "[ci-seed] openbuild settings#load did not report success; falling back to the OpenRegister importer."
+	echo "[ci-seed] buildiq settings#load did not report success; falling back to the OpenRegister importer."
 fi
 
 # ── 1b. Fallback: OpenRegister's generic configuration importer ──────────────
-# Independent of openbuild's own controller wiring, so it still provisions the
+# Independent of buildiq's own controller wiring, so it still provisions the
 # base register if `settings#load` is unavailable (e.g. an OpenRegister build
 # whose AppHost route table predates it). Admin-only. It reads the upload under
 # the literal form key `file`; a raw JSON body is NOT an accepted shape.
 #
 # ⚠️ This fallback imports the BASE register only — it cannot perform the
-# register.d/*.json deep-merge, which lives in openbuild's own SettingsService.
+# register.d/*.json deep-merge, which lives in buildiq's own SettingsService.
 # The verification step below therefore still fails if we end up here, which is
 # the intended outcome: a partial provision must not read as a success.
 if [ "$IMPORT_OK" != "1" ]; then
@@ -253,7 +253,7 @@ if [ "$IMPORT_OK" != "1" ]; then
 			-H 'OCS-APIRequest: true' \
 			-F "file=@${REGISTER_JSON}" \
 			-F 'force=true' \
-			-F 'appId=openbuild' \
+			-F 'appId=buildiq' \
 			"$OR_URL" || echo 000
 	)"
 	echo "[ci-seed] configurations/import HTTP ${OR_CODE}"
@@ -269,7 +269,7 @@ fi
 # derives one from the title when that key is absent. Note in particular that
 # `applicationVersion` is camelCase and `rule-test-case` does not match its
 # title ("TestCase") — mechanically kebab-casing the titles would produce four
-# wrong slugs here. The register slug is `openbuild`, taken from
+# wrong slugs here. The register slug is `buildiq`, taken from
 # `x-openregister.app`, which is what
 # ImportHandler::autoCreateRegisterIfApplication() uses for an
 # `x-openregister.type: application` configuration.
@@ -283,6 +283,8 @@ verify() {
 import json, sys
 path, kind, code = sys.argv[1], sys.argv[2], sys.argv[3]
 required = {
+    # The register SLUG stays 'openbuild' across the app-id rename: it
+    # addresses the register that already exists. Only the APP id moved.
     'registers': ['openbuild'],
     'schemas': [
         # lib/Settings/openbuild_register.json
@@ -313,7 +315,7 @@ slugs = {i.get('slug') for i in items if isinstance(i, dict)}
 missing = [s for s in required if s not in slugs]
 print(f'[ci-seed] {kind} present: {sorted(s for s in slugs if s)}')
 if missing:
-    print(f'::error::OpenBuild {kind} missing after import: {missing}')
+    print(f'::error::Buildiq {kind} missing after import: {missing}')
     print('::error::The e2e suite cannot create an application, schema, page or '
           'automation without them; every UI spec would fail on an empty list.')
     sys.exit(1)
@@ -337,11 +339,11 @@ OBJ_CODE="$(curl -sS -o /dev/null -w '%{http_code}' \
 	"${BASE}/index.php/apps/openregister/api/objects/openbuild/application?_limit=1" || echo 000)"
 echo "[ci-seed] objects/openbuild/application probe -> ${OBJ_CODE}"
 if [ "$OBJ_CODE" -ge 400 ] 2>/dev/null; then
-	echo "::error::The openbuild application collection is not readable (HTTP ${OBJ_CODE})."
+	echo "::error::The buildiq application collection is not readable (HTTP ${OBJ_CODE})."
 	exit 1
 fi
 
-echo "[ci-seed] OpenBuild register + schemas provisioned."
+echo "[ci-seed] Buildiq register + schemas provisioned."
 
 # ── 3. Seed the deterministic `hello-world` virtual-app fixture ──────────────
 # Production no longer ships a hello-world seed (the SeedHelloWorld repair step
@@ -354,8 +356,8 @@ echo "[ci-seed] OpenBuild register + schemas provisioned."
 # Idempotent: the command short-circuits once the hello-world Application (or
 # its BuiltAppRoute) exists.
 if [ -f "${SERVER_DIR}/occ" ]; then
-	echo "[ci-seed] occ openbuild:seed-hello-world-fixture"
-	if ! (cd "${SERVER_DIR}" && php occ openbuild:seed-hello-world-fixture); then
+	echo "[ci-seed] occ buildiq:seed-hello-world-fixture"
+	if ! (cd "${SERVER_DIR}" && php occ buildiq:seed-hello-world-fixture); then
 		echo "::error::Seeding the hello-world fixture failed."
 		echo "::error::Specs that open the canonical hello-world virtual app would fail on an empty page."
 		exit 1
@@ -365,7 +367,7 @@ if [ -f "${SERVER_DIR}/occ" ]; then
 	# The occ command exiting 0 covers 'already present — skipping' as well as a
 	# successful create, so its exit code alone is not evidence of existence.
 	HW_BODY="$(mktemp)"
-	HW_CODE="$(api_get "$HW_BODY" "/index.php/apps/openbuild/api/applications/hello-world/manifest")"
+	HW_CODE="$(api_get "$HW_BODY" "/index.php/apps/buildiq/api/applications/hello-world/manifest")"
 	echo "[ci-seed] hello-world manifest -> HTTP ${HW_CODE}"
 	if [ "$HW_CODE" != "200" ]; then
 		head -c 500 "$HW_BODY"; echo
@@ -395,7 +397,7 @@ fi
 #
 # The fix used here is the PRODUCT'S OWN returning-user mechanism, not a test
 # hack and not a per-spec workaround: both overlays persist "seen" as a
-# per-user preference through `PUT /apps/openbuild/api/preferences/{key}`
+# per-user preference through `PUT /apps/buildiq/api/preferences/{key}`
 # (nc-vue `persistWalkthroughSeenVersion()` and the support dialog's
 # `support-dialog-seen`), and read it back on mount. Writing it once here for
 # the admin the suite runs as makes every fresh context a returning user.
@@ -418,7 +420,7 @@ set_pref() {
 		-H 'Content-Type: application/json' \
 		-H 'OCS-APIRequest: true' \
 		--data "{\"value\":\"$2\"}" \
-		"${BASE}/index.php/apps/openbuild/api/preferences/$1" || echo 000)"
+		"${BASE}/index.php/apps/buildiq/api/preferences/$1" || echo 000)"
 	echo "[ci-seed] preference $1=$2 -> HTTP ${code}"
 	if [ "$code" != "200" ]; then
 		echo "::warning::Could not set the '$1' preference (HTTP ${code}) — the first-visit overlay will re-open in every test and swallow clicks."
@@ -438,7 +440,7 @@ set_pref 'support-dialog-seen' '1'
 # (`seedDocudeskTemplateFixtures()`), and `global-setup.ts` is a Playwright
 # hook — the Newman leg never runs it. So the `Integration Tests (Newman)` job
 # booted a Docudesk whose `template_register`/`template_schema` were unset, and
-# `openbuild-docudesk-documents.postman_collection.json` items 4 and 6 got a
+# `buildiq-docudesk-documents.postman_collection.json` items 4 and 6 got a
 # **500**, not the 4xx they assert:
 #
 #   OCA\DocuDesk\Exception\RegisterNotConfiguredException
@@ -446,7 +448,7 @@ set_pref 'support-dialog-seen' '1'
 #   OpenRegisterResolver.php:68 → TemplateService.php:171
 #     → CorrespondenceService.php:200 → CorrespondenceController.php:107
 #
-# Item 1 passed throughout, which is what made this look like an openbuild
+# Item 1 passed throughout, which is what made this look like an buildiq
 # defect: Docudesk's TemplatesController CATCHES that exception and answers
 # `{results: [], total: 0, notConfigured: true}`, while CorrespondenceController
 # has no such catch and lets it escape as a 500. Same missing configuration,
@@ -457,7 +459,7 @@ set_pref 'support-dialog-seen' '1'
 # template storage at all".
 #
 # Docudesk is OPTIONAL. A 404/501 on the settings probe is a clean skip, not a
-# failure: openbuild's own specs must not require a sibling app to be present.
+# failure: buildiq's own specs must not require a sibling app to be present.
 DD_BODY="$(mktemp)"
 DD_CODE="$(api_get "$DD_BODY" "/index.php/apps/docudesk/api/settings")"
 if [ "$DD_CODE" = "404" ] || [ "$DD_CODE" = "501" ]; then
@@ -546,17 +548,17 @@ fi
 # still renders, still returns HTTP 200 — it is simply on the wrong route, and
 # every downstream failure then accuses a selector.
 PRETTY_HTML="$(mktemp)"
-PRETTY_CODE="$(api_get "$PRETTY_HTML" "/index.php/apps/openbuild/")"
+PRETTY_CODE="$(api_get "$PRETTY_HTML" "/index.php/apps/buildiq/")"
 if [ "$PRETTY_CODE" != "200" ]; then
-	echo "::error::Could not fetch the OpenBuild app page to verify pretty URLs (HTTP ${PRETTY_CODE})."
+	echo "::error::Could not fetch the Buildiq app page to verify pretty URLs (HTTP ${PRETTY_CODE})."
 	exit 1
 fi
 if grep -q '"modRewriteWorking":true\|"modRewriteWorking": *true' "$PRETTY_HTML"; then
-	echo "[ci-seed] served page reports modRewriteWorking:true — the SPA router base will be /apps/openbuild."
+	echo "[ci-seed] served page reports modRewriteWorking:true — the SPA router base will be /apps/buildiq."
 else
-	echo "::error::The served OpenBuild page does NOT report modRewriteWorking:true."
-	echo "::error::generateUrl() will therefore return '/index.php/apps/openbuild' as the vue-router base,"
-	echo "::error::while every spec navigates to the pretty '/apps/openbuild/...' form. Those disagree, so"
+	echo "::error::The served Buildiq page does NOT report modRewriteWorking:true."
+	echo "::error::generateUrl() will therefore return '/index.php/apps/buildiq' as the vue-router base,"
+	echo "::error::while every spec navigates to the pretty '/apps/buildiq/...' form. Those disagree, so"
 	echo "::error::vue-router matches nothing and silently falls back to the Dashboard — the SPA mounts and"
 	echo "::error::renders fine, on the wrong page, and every non-Dashboard selector times out blaming itself."
 	grep -o 'modRewriteWorking[^,}]*' "$PRETTY_HTML" | head -3 || echo "  (key not present in the page at all)"
@@ -567,9 +569,9 @@ fi
 # Failures are ignored on purpose: this is a warm-up, not a gate. The real
 # checks are above and in the bundle gate below.
 for path in \
-	"/index.php/apps/openbuild/" \
-	"/index.php/settings/admin/openbuild" \
-	"/index.php/apps/openbuild/api/applications" \
+	"/index.php/apps/buildiq/" \
+	"/index.php/settings/admin/buildiq" \
+	"/index.php/apps/buildiq/api/applications" \
 	"/index.php/apps/openregister/api/registers?_limit=1"
 do
 	code="$(curl -sS -o /dev/null -w '%{http_code}' -u "${USER_NAME}:${USER_PASS}" \
@@ -580,19 +582,19 @@ done
 # Pull the main webpack bundle once so it is in the page cache.
 #
 # Do NOT hardcode the URL. Nextcloud serves an app's assets from whichever apps
-# directory it was installed into — `/apps/openbuild/js/…` on the CI runner,
-# `/custom_apps/openbuild/js/…` in the docker dev images — and asking for the
+# directory it was installed into — `/apps/buildiq/js/…` on the CI runner,
+# `/custom_apps/buildiq/js/…` in the docker dev images — and asking for the
 # wrong one does not 404: it returns HTTP 200 with `text/html`, the NC error page
 # served through index.php. Read the real src out of the rendered app page.
 APP_HTML="$(mktemp)"
 curl -sS -u "${USER_NAME}:${USER_PASS}" -H 'OCS-APIRequest: true' \
-	"${BASE}/index.php/apps/openbuild/" -o "$APP_HTML" || true
+	"${BASE}/index.php/apps/buildiq/" -o "$APP_HTML" || true
 
 # `|| true` is load-bearing: grep exits 1 when it matches nothing, and under
 # `set -euo pipefail` that would abort the script right here — so the very case
 # the gate below exists to explain (no bundle) would die with a bare non-zero
 # exit and none of the diagnosis.
-BUNDLE_SRC="$(grep -oE 'src="[^"]*openbuild-main[^"]*"' "$APP_HTML" \
+BUNDLE_SRC="$(grep -oE 'src="[^"]*buildiq-main[^"]*"' "$APP_HTML" \
 	| head -1 | sed 's/^src="//; s/"$//' || true)"
 
 if [ -n "$BUNDLE_SRC" ]; then
@@ -648,7 +650,7 @@ elif [ "${GITHUB_ACTIONS:-}" = "true" ] || [ "${CI:-}" = "true" ]; then
 			echo "[ci-seed] bundle verified as JavaScript."
 			;;
 		*)
-			echo "::error::The OpenBuild frontend bundle did not serve as JavaScript (got: ${BUNDLE_INFO:-<not found>})."
+			echo "::error::The Buildiq frontend bundle did not serve as JavaScript (got: ${BUNDLE_INFO:-<not found>})."
 			echo "::error::The SPA cannot mount, so every UI spec would fail on a selector timeout with a misleading cause."
 			echo "::error::Check the 'Build app frontend' step — a missing bundle returns HTTP 200 text/html, not 404."
 			exit 1
@@ -664,7 +666,7 @@ elif [ "${GITHUB_ACTIONS:-}" = "true" ] || [ "${CI:-}" = "true" ]; then
 			;;
 	esac
 	if [ "$BUNDLE_BYTES" -lt "$BUNDLE_MIN_BYTES" ]; then
-		echo "::error::The OpenBuild frontend bundle served only ${BUNDLE_BYTES} bytes (floor: ${BUNDLE_MIN_BYTES})."
+		echo "::error::The Buildiq frontend bundle served only ${BUNDLE_BYTES} bytes (floor: ${BUNDLE_MIN_BYTES})."
 		echo "::error::Content-Type was JavaScript, so the check above passed — a truncated or empty bundle"
 		echo "::error::is served as 200 application/javascript and is indistinguishable from a good one by"
 		echo "::error::status and type alone. The SPA will not mount and every UI spec will blame its selector."

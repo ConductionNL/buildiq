@@ -1,10 +1,10 @@
 <?php
 
 /**
- * OpenBuild AutomationWriteService
+ * Buildiq AutomationWriteService
  *
  * Owns the WRITE path of the automation designer — the create/update/delete
- * half of `AutomationsController` (spec REQ-AUTD-008, Conduction/openbuild#173).
+ * half of `AutomationsController` (spec REQ-AUTD-008, Conduction/buildiq#173).
  * The controller keeps the effectual actions (compile/enable/disable/dry-run/
  * status) and stays a thin HTTP surface over this service.
  *
@@ -43,7 +43,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -58,7 +58,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Http;
@@ -76,7 +76,7 @@ use Throwable;
  */
 class AutomationWriteService {
 	/**
-	 * Shared OpenBuild register slug.
+	 * Shared Buildiq register slug.
 	 */
 	private const REGISTER_SLUG = 'openbuild';
 	/**
@@ -258,7 +258,7 @@ class AutomationWriteService {
 	 * "an OWNER of THIS Application on THIS version".
 	 *
 	 * Leaving the default `_rbac: true` here made OR re-litigate a decision
-	 * openbuild had already made and reach the opposite answer. MEASURED on a
+	 * buildiq had already made and reach the opposite answer. MEASURED on a
 	 * live instance (NC 34, openregister 0.2.17-unstable.36) before this
 	 * change, with the Application's `permissions` granting
 	 * `owners: ['user:rbac-owner']`:
@@ -277,7 +277,7 @@ class AutomationWriteService {
 	 * This is NOT a widening: the routes are `#[NoAdminRequired]` but the
 	 * per-Application check is unconditional, runs before this line is reached,
 	 * and grants nothing to NC admins on its own (`allowAdminBypass: false`).
-	 * See Conduction/openbuild#173.
+	 * See Conduction/buildiq#173.
 	 *
 	 * @param array<string,mixed> $automation The automation to persist.
 	 * @param string|null $uuid Existing uuid, or null to let OR mint one.
@@ -362,7 +362,7 @@ class AutomationWriteService {
 			return $action();
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: AutomationWriteService failed for application ' . $applicationSlug . ': ' . $e->getMessage(),
+				'Buildiq: AutomationWriteService failed for application ' . $applicationSlug . ': ' . $e->getMessage(),
 				['exception' => $e]
 			);
 			return $this->error(code: 'internal_error', detail: $e->getMessage(), status: Http::STATUS_INTERNAL_SERVER_ERROR);

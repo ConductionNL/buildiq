@@ -1,9 +1,9 @@
-# openbuild-page-designer Specification
+# buildiq-page-designer Specification
 
 ## Purpose
 
 Ships the visual Page Designer that replaces the textarea-only manifest editor
-from `bootstrap-openbuild`, giving citizen developers a structured UI for
+from `bootstrap-buildiq`, giving citizen developers a structured UI for
 authoring `manifest.menu[]` and `manifest.pages[]`. Provides one sub-editor per
 canonical page type (`index | detail | dashboard | logs | settings | chat | files |
 form | custom`), each authoring only its own `pages[].config` sub-shape per the
@@ -48,7 +48,7 @@ disabled-with-tooltip state on those fields.
 - **WHEN** the user attempts to add a child entry inside a
   `menu[].children[].children[]` slot
 - **THEN** the editor refuses the action with the i18n message
-  `openbuild.page-designer.menu.error.nesting-depth`
+  `buildiq.page-designer.menu.error.nesting-depth`
 - **AND** the manifest remains unchanged
 
 #### Scenario: Action field disables route and href
@@ -66,7 +66,7 @@ authors the manifest's `pages[]` array. The editor SHALL support
 adding, removing, and drag-reordering pages, and MUST enforce the
 following invariants before allowing a save:
 
-@e2e exclude visual-editor component spec — duplicate-id inline error marks, disabled Save button on duplication, and page-type-pick-then-sub-editor-mount are PageListEditor.vue component contracts verified by Vitest unit tests; the route to the page designer is covered by the openbuild-runtime Playwright tests
+@e2e exclude visual-editor component spec — duplicate-id inline error marks, disabled Save button on duplication, and page-type-pick-then-sub-editor-mount are PageListEditor.vue component contracts verified by Vitest unit tests; the route to the page designer is covered by the buildiq-runtime Playwright tests
 
 - Every `pages[].id` SHALL be unique within the manifest.
 - Every `pages[].route` SHALL match the vue-router pattern grammar
@@ -150,7 +150,7 @@ the canonical schema. It SHALL expose:
 #### Scenario: Column picker offers @self.* metadata fields
 
 - **WHEN** the user opens the column-selector dropdown for an index
-  page bound to `register: openbuild, schema: hello-message`
+  page bound to `register: buildiq, schema: hello-message`
 - **THEN** the dropdown lists each `hello-message` property AND the
   six `@self.*` metadata entries
 - **AND** selecting `@self.created` adds the column to `columns[]` in
@@ -273,13 +273,13 @@ collapse to a "save & reload" affordance that opens
 `/builder/:slug` in a new browser tab against the last saved
 manifest, with an inline i18n note explaining the limitation.
 
-@e2e exclude mixed spec — sandboxed `CnAppRoot` re-mount on in-flight manifest change (in-memory `useAppManifest` overload from chain spec #2) requires chain spec #2 (`nextcloud-vue-in-memory-manifest`) not yet shipped; fallback "Save & open preview" button is covered by the openbuild-page-designer Playwright tests
+@e2e exclude mixed spec — sandboxed `CnAppRoot` re-mount on in-flight manifest change (in-memory `useAppManifest` overload from chain spec #2) requires chain spec #2 (`nextcloud-vue-in-memory-manifest`) not yet shipped; fallback "Save & open preview" button is covered by the buildiq-page-designer Playwright tests
 
 **ID:** REQ-OBPD-008
 
 The sandboxed `CnAppRoot` SHALL:
 
-- Use a unique `appId` of `openbuild-preview-{slug}` so its state
+- Use a unique `appId` of `buildiq-preview-{slug}` so its state
   does not collide with the production-mounted virtual app.
 - Receive the manifest as an in-memory object (no fetch).
 - Re-mount via a `:key` bound to the manifest's content hash, so any
@@ -297,7 +297,7 @@ The sandboxed `CnAppRoot` SHALL:
 
 - **WHEN** chain spec #2's in-memory manifest loader is NOT detected
 - **THEN** the right-hand pane displays a "Save & open preview" button
-- **AND** an i18n note (`openbuild.page-designer.preview.unavailable`)
+- **AND** an i18n note (`buildiq.page-designer.preview.unavailable`)
   explains the limitation
 - **AND** clicking the button saves the manifest and opens
   `/builder/:slug` in a new tab
@@ -310,7 +310,7 @@ manifest, validate it via
 updated `Application` object via OpenRegister's existing REST API at
 `/index.php/apps/openregister/api/objects/openbuild/application/{uuid}`
 — the same path the spec #1 textarea editor already uses. The
-designer MUST NOT introduce a new openbuild-side controller for
+designer MUST NOT introduce a new buildiq-side controller for
 manifest writes (ADR-022).
 
 @e2e exclude mixed spec — Save PUT to OR REST and dirty-indicator clear require editing manifest content and intercepting network requests; the OR REST write contract is verified by Newman; the Save-blocked-by-validator scenario requires injecting a validation error which is a Vitest unit test contract
@@ -337,14 +337,14 @@ manifest writes (ADR-022).
 ### Requirement: Raw JSON fallback tab preserves the spec-1 textarea
 
 The Application edit view SHALL retain the textarea-based JSON
-manifest editor shipped by spec #1 (`bootstrap-openbuild`) as a
+manifest editor shipped by spec #1 (`bootstrap-buildiq`) as a
 secondary tab labelled "Raw JSON". The Design tab (the new
 `PageDesigner.vue`) SHALL be the default tab on view load. The two
 tabs SHALL share the same in-flight manifest state, so edits made in
 one tab are visible in the other when the user switches tabs without
 saving.
 
-@e2e exclude mixed spec — tab-switch shared in-flight manifest state and dirty-indicator persistence across tabs are controlled-component state contracts verified by Vitest unit tests; the Design/Raw JSON tab UI is covered by the openbuild-runtime Playwright tests (REQ-OBR-005)
+@e2e exclude mixed spec — tab-switch shared in-flight manifest state and dirty-indicator persistence across tabs are controlled-component state contracts verified by Vitest unit tests; the Design/Raw JSON tab UI is covered by the buildiq-runtime Playwright tests (REQ-OBR-005)
 
 **ID:** REQ-OBPD-010
 

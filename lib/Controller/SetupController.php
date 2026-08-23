@@ -1,9 +1,9 @@
 <?php
 
 /**
- * OpenBuild first-time-setup contract (ADR-042).
+ * Buildiq first-time-setup contract (ADR-042).
  *
- * Backs the shared CnSetupWizard renderer for OpenBuild's own manifest `setup`
+ * Backs the shared CnSetupWizard renderer for Buildiq's own manifest `setup`
  * block: reports per-step completion (`GET /api/setup/status`), persists config
  * values from `config-fields` steps (`POST /api/setup/config`), and runs
  * privileged server-side actions from `run-action` steps
@@ -33,7 +33,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
- * @package  OCA\OpenBuild\Controller
+ * @package  OCA\Buildiq\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -48,12 +48,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Controller;
+namespace OCA\Buildiq\Controller;
 
-use OCA\OpenBuild\AppInfo\Application;
-use OCA\OpenBuild\Service\SettingsService;
-use OCA\OpenBuild\Service\TemplateSeedService;
-use OCA\OpenBuild\Settings\AdminSettings;
+use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Service\SettingsService;
+use OCA\Buildiq\Service\TemplateSeedService;
+use OCA\Buildiq\Settings\AdminSettings;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -204,7 +204,7 @@ class SetupController extends Controller {
 			$result = $this->seedService->seed();
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: setup seed-templates action failed',
+				'Buildiq: setup seed-templates action failed',
 				['exception' => $e->getMessage()]
 			);
 

@@ -46,7 +46,7 @@ Acceptance criteria
 - [ ] Apply the `automations` channel with the same create-or-skip rules, bounded at `MAX_AUTOMATIONS = 512`
 
 Acceptance criteria
-- OpenBuild parses no skill frontmatter and places no aux files itself
+- Buildiq parses no skill frontmatter and places no aux files itself
 - A hermiq failure is reported as a failed channel, never as success
 
 ### 6. Tests

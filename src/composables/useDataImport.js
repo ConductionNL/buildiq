@@ -3,7 +3,7 @@
 //
 // useDataImport — thin client that delegates ALL file parsing, schema
 // inference, and object creation to OpenRegister's shipped register-import
-// capability. OpenBuild adds NO import backend and does NO parsing/inference/
+// capability. Buildiq adds NO import backend and does NO parsing/inference/
 // writing of its own (ADR-022, one write path). The composable only:
 //
 //   1. multipart-POSTs the file the maker chose to
@@ -18,10 +18,10 @@
 //      `GET /apps/openregister/api/registers/{registerId}/schemas/{schema}/import-template`.
 //
 // The `registerId` is ALWAYS the active `ApplicationVersion`'s own per-version
-// register (`openbuild-{slug}-{versionSlug}`, ADR-002); shared bound
+// register (`buildiq-{slug}-{versionSlug}`, ADR-002); shared bound
 // `dataRegisters` are never passed here — the caller excludes them from the
 // target list. The write is independently re-gated server-side by
-// OpenRegister's own register manage-permission (default-secure), so OpenBuild
+// OpenRegister's own register manage-permission (default-secure), so Buildiq
 // never becomes a permission-bypass path.
 //
 // @spec openspec/changes/openbuild-data-import-wizard/tasks.md#1.1
@@ -126,7 +126,7 @@ export function useDataImport(opts = {}) {
 	const client = opts.client || axiosDefault
 
 	/**
-	 * Import a file into a register via OpenRegister. OpenBuild uploads the
+	 * Import a file into a register via OpenRegister. Buildiq uploads the
 	 * raw file bytes only — OR parses, infers the schema (when none is given),
 	 * and writes the objects.
 	 *

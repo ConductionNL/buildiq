@@ -15,7 +15,7 @@
 <template>
 	<NcDialog
 		:open="open"
-		:name="t('openbuild', 'Save as template')"
+		:name="t('buildiq', 'Save as template')"
 		size="normal"
 		@update:open="$emit('update:open', $event)"
 		@closing="onClose">
@@ -23,7 +23,7 @@
 			<p class="ob-save-template__intro">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'Publish this application as a reusable template your organisation can build new apps from.',
 					)
 				}}
@@ -31,37 +31,37 @@
 
 			<NcTextField
 				:modelValue="form.title"
-				:label="t('openbuild', 'Template title')"
+				:label="t('buildiq', 'Template title')"
 				@update:modelValue="onTitleInput" />
 			<NcTextField
 				:modelValue="form.slug"
-				:label="t('openbuild', 'Slug (kebab-case, max 32 chars)')"
+				:label="t('buildiq', 'Slug (kebab-case, max 32 chars)')"
 				@update:modelValue="form.slug = $event" />
 			<NcTextField
 				:modelValue="form.useCase"
-				:label="t('openbuild', 'Use case (one line)')"
+				:label="t('buildiq', 'Use case (one line)')"
 				@update:modelValue="form.useCase = $event" />
 			<NcTextArea
 				:modelValue="form.description"
-				:label="t('openbuild', 'Description')"
+				:label="t('buildiq', 'Description')"
 				@update:modelValue="form.description = $event" />
 			<NcSelect
 				v-model="categoryOption"
-				:inputLabel="t('openbuild', 'Category')"
+				:inputLabel="t('buildiq', 'Category')"
 				:options="categoryOptions"
 				:clearable="false" />
 			<NcTextField
 				:modelValue="form.sourceUrl"
-				:label="t('openbuild', 'Source URL (optional)')"
+				:label="t('buildiq', 'Source URL (optional)')"
 				@update:modelValue="form.sourceUrl = $event" />
 
 			<!-- Capture summary -->
 			<section class="ob-save-template__summary">
-				<h3>{{ t('openbuild', 'What will be captured') }}</h3>
+				<h3>{{ t('buildiq', 'What will be captured') }}</h3>
 				<p>
 					{{
 						t(
-							'openbuild',
+							'buildiq',
 							'The application manifest and {count} companion schema(s).',
 							{ count: captureSummary.length },
 						)
@@ -75,7 +75,7 @@
 							class="ob-save-template__shared-flag">
 							{{
 								t(
-									'openbuild',
+									'buildiq',
 									'(shared schema — captured unchanged, clones receive an independent copy)',
 								)
 							}}
@@ -85,7 +85,7 @@
 				<p class="ob-save-template__no-rows">
 					{{
 						t(
-							'openbuild',
+							'buildiq',
 							'No object data (rows) is captured — a template is a definition, not a dataset.',
 						)
 					}}
@@ -96,7 +96,7 @@
 			<p v-if="collisionError" class="ob-save-template__error" role="alert">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'Two schemas would collide under the same name: {schemas}. Rename one before saving.',
 						{ schemas: collisionError },
 					)
@@ -109,7 +109,7 @@
 				<p>
 					{{
 						t(
-							'openbuild',
+							'buildiq',
 							'The captured manifest is invalid and cannot be published:',
 						)
 					}}
@@ -126,7 +126,7 @@
 				role="alert">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'That slug belongs to a Conduction-curated template and cannot be overwritten. Pick another slug.',
 					)
 				}}
@@ -137,7 +137,7 @@
 				role="alert">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'That slug is already used by a template you cannot edit. Pick another slug.',
 					)
 				}}
@@ -150,7 +150,7 @@
 			<p v-if="updateMode" class="ob-save-template__update-notice">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'A template with this slug already exists. Saving will update it and bump its version. Previously cloned applications are not affected.',
 					)
 				}}
@@ -159,7 +159,7 @@
 
 		<template #actions>
 			<NcButton @click="onClose">
-				{{ t('openbuild', 'Cancel') }}
+				{{ t('buildiq', 'Cancel') }}
 			</NcButton>
 			<NcButton variant="primary" :disabled="!canSave || saving" @click="save">
 				{{ saveLabel }}
@@ -242,7 +242,7 @@ export default {
 		categoryOptions() {
 			return TEMPLATE_CATEGORIES.map((value) => ({
 				id: value,
-				label: t('openbuild', CATEGORY_LABELS[value] || value),
+				label: t('buildiq', CATEGORY_LABELS[value] || value),
 			}))
 		},
 
@@ -377,11 +377,11 @@ export default {
 		 */
 		saveLabel() {
 			if (this.saving) {
-				return t('openbuild', 'Saving…')
+				return t('buildiq', 'Saving…')
 			}
 			return this.updateMode
-				? t('openbuild', 'Update template')
-				: t('openbuild', 'Save as template')
+				? t('buildiq', 'Update template')
+				: t('buildiq', 'Save as template')
 		},
 	},
 
@@ -581,7 +581,7 @@ export default {
 					data?.detail
 					|| data?.error
 					|| e?.message
-					|| t('openbuild', 'Saving the template failed.')
+					|| t('buildiq', 'Saving the template failed.')
 			} finally {
 				this.saving = false
 			}

@@ -1,4 +1,4 @@
-# Tasks — openbuild-connector-widget-runtime
+# Tasks — buildiq-connector-widget-runtime
 
 ## 1. Canonical registry seam (REQ-CWR-001)
 
@@ -11,7 +11,7 @@ Acceptance criteria:
 - [ ] 1.2 Source the `registry` prop in the published standalone entry `src/builder.js` from the accessor instead of spreading the imported object.
 
 Acceptance criteria:
-- `/apps/openbuild/builder/{slug}` mounts `CnAppRoot` with the accessor's output.
+- `/apps/buildiq/builder/{slug}` mounts `CnAppRoot` with the accessor's output.
 - No behaviour change: `connector-data` still resolves ahead of built-ins via the injected `cnRegistry`.
 
 - [ ] 1.3 Source the `registry` prop in the preview host `src/views/BuilderHost.vue` from the same accessor.
@@ -53,7 +53,7 @@ Acceptance criteria:
 - [ ] 3.4 Raise the `stats-block` endpoint-parity item upstream against `@conduction/nextcloud-vue`, referencing the per-entry response-mapping design it needs.
 
 Acceptance criteria:
-- No change is made to the vendored schema inside OpenBuild.
+- No change is made to the vendored schema inside Buildiq.
 
 ## 4. Published-path proof (REQ-CWR-004, REQ-OCAS-006)
 
@@ -63,7 +63,7 @@ Acceptance criteria:
 - The fixture is self-identifying as test data and is torn down after the run.
 - The widget is not placed as a single full-width body widget on a dashboard page (ADR-036 single-custom-widget rule).
 
-- [ ] 4.2 Drive `/apps/openbuild/builder/{slug}` and assert the `ConnectorDataView` surface renders — its projected table, or its error state with a Retry action.
+- [ ] 4.2 Drive `/apps/buildiq/builder/{slug}` and assert the `ConnectorDataView` surface renders — its projected table, or its error state with a Retry action.
 
 Acceptance criteria:
 - The assertion targets the widget's own surface, never a generic "something rendered" check.
@@ -91,7 +91,7 @@ Acceptance criteria:
 Acceptance criteria:
 - Scenarios not covered by a test carry a reason-bearing `@e2e exclude`.
 
-- [ ] 5.3 Run the OpenBuild quality gates and the vitest + Playwright suites, and fix any pre-existing failures encountered.
+- [ ] 5.3 Run the Buildiq quality gates and the vitest + Playwright suites, and fix any pre-existing failures encountered.
 
 Acceptance criteria:
 - Gates report a summary line; an aborted run is not accepted as green.

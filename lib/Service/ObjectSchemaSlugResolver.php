@@ -9,7 +9,7 @@
  * `"28"`, not `"application"`. `ObjectEntity` has no `getSchemaSlug()` method
  * and never has had one.
  *
- * openbuild's listeners each carried a private `extractSchemaSlug()` /
+ * buildiq's listeners each carried a private `extractSchemaSlug()` /
  * `schemaOf()` helper that probed for that non-existent `getSchemaSlug()` and
  * then fell back to `@self.schema` — the id again. Every one of those helpers
  * therefore returned an id, which was compared with `!==` against a slug
@@ -23,11 +23,11 @@
  * Both register AND schema are resolved, because a schema slug is **not**
  * unique across registers: this instance carries two distinct schemas with the
  * slug `automation` (ids 71 and 5103). Matching on the schema slug alone would
- * fire openbuild's handlers for another app's objects. This mirrors the
+ * fire buildiq's handlers for another app's objects. This mirrors the
  * register+schema pair pattern already shipped in petstore and planix.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -38,12 +38,12 @@
  *
  * @version GIT: <git-id>
  *
- * @link https://openbuild.nl
+ * @link https://buildiq.nl
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -54,7 +54,7 @@ use Psr\Log\LoggerInterface;
 class ObjectSchemaSlugResolver {
 
 	/**
-	 * The register slug openbuild's own objects live in.
+	 * The register slug buildiq's own objects live in.
 	 *
 	 * @var string
 	 */
@@ -65,7 +65,7 @@ class ObjectSchemaSlugResolver {
 	 *
 	 * The mappers cache too, but memoising here also caches the MISSES, so a
 	 * payload referencing a schema this instance does not have costs one failed
-	 * lookup per request rather than one per event. openbuild's listeners fire
+	 * lookup per request rather than one per event. buildiq's listeners fire
 	 * on every object write, so an unmemoised lookup is an N+1 on bulk imports
 	 * (docudesk measured 1,471 SchemaMapper::find() calls per object save from
 	 * exactly this shape).
@@ -79,7 +79,7 @@ class ObjectSchemaSlugResolver {
 	 *
 	 * @param ContainerInterface $container The DI container, used to reach
 	 *                                      OpenRegister's mappers lazily so
-	 *                                      openbuild still boots without it.
+	 *                                      buildiq still boots without it.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
@@ -166,7 +166,7 @@ class ObjectSchemaSlugResolver {
 			$value = $entity->$accessor();
 		} catch (\Throwable $e) {
 			$this->logger->debug(
-				'OpenBuild: ' . $accessor . '() unavailable on ' . $entity::class,
+				'Buildiq: ' . $accessor . '() unavailable on ' . $entity::class,
 				['exception' => $e->getMessage()]
 			);
 			return null;
@@ -180,21 +180,23 @@ class ObjectSchemaSlugResolver {
 	}//end readAccessor()
 
 	/**
-	 * Test whether an entity is an openbuild object of the given schema.
+	 * Test whether an entity is an buildiq object of the given schema.
 	 *
 	 * @param object $entity The OpenRegister ObjectEntity.
 	 * @param string $schemaSlug The schema slug to match.
 	 *
-	 * @return bool True when the entity is that schema in the openbuild register.
+	 * @return bool True when the entity is that schema in the buildiq register.
+	 *
+	 * @spec openspec/specs/data-scopes-authoring/spec.md
 	 */
-	public function isOpenBuildSchema(object $entity, string $schemaSlug): bool {
+	public function isBuildiqSchema(object $entity, string $schemaSlug): bool {
 		if ($this->schemaSlug(entity: $entity) !== $schemaSlug) {
 			return false;
 		}
 
 		// Guard the register too: `automation` is not a unique slug instance-wide.
 		return $this->registerSlug(entity: $entity) === self::REGISTER_SLUG;
-	}//end isOpenBuildSchema()
+	}//end isBuildiqSchema()
 
 	/**
 	 * Resolve a slug from an id via one of OpenRegister's mappers.
@@ -233,13 +235,13 @@ class ObjectSchemaSlugResolver {
 			// `getSlug()` is an `@method` docblock on Schema and Register, served
 			// by Entity::__call — see readAccessor(). Probing it with
 			// method_exists() returned '' for every real entity, which is what
-			// kept isOpenBuildSchema() false even for openbuild's own objects.
+			// kept isBuildiqSchema() false even for buildiq's own objects.
 			if (is_object($entity) === true) {
 				$slug = (string)($this->readAccessor(entity: $entity, accessor: 'getSlug') ?? '');
 			}
 		} catch (\Throwable $e) {
 			$this->logger->debug(
-				'OpenBuild: could not resolve slug for ' . $mapper . ' id ' . $id,
+				'Buildiq: could not resolve slug for ' . $mapper . ' id ' . $id,
 				['exception' => $e->getMessage()]
 			);
 		}

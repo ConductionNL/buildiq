@@ -1,7 +1,7 @@
 # App Channel Application Specification
 
 **Status**: in-progress
-**Scope**: openbuild
+**Scope**: buildiq
 **OpenSpec changes**:
 - [apply-v2-channels](../../changes/apply-v2-channels/)
 - [app-repo-format-flow-agent-export](../../changes/archive/2026-08-19-app-repo-format-flow-agent-export/) _(archived 2026-08-19)_
@@ -124,7 +124,7 @@ lookup SHALL NOT be treated as a scope gap.
 
 ### Requirement: An absent optional dependency degrades with a stated reason
 
-OpenBuild depends only on `openregister`. `openconnector` and `hermiq` are optional. When a
+Buildiq depends only on `openregister`. `openconnector` and `hermiq` are optional. When a
 channel requires an app that is not installed or not enabled, the applier SHALL skip that
 channel with a machine-readable reason and SHALL allow the remaining channels to apply.
 

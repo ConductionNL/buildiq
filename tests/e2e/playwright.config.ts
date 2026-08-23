@@ -35,8 +35,8 @@
  * and `--project visual`.
  *
  * The report/output paths also differ deliberately: the workflow uploads
- * `server/apps/openbuild/playwright-report/` and
- * `server/apps/openbuild/test-results/`, so on CI the artifacts must land at
+ * `server/apps/buildiq/playwright-report/` and
+ * `server/apps/buildiq/test-results/`, so on CI the artifacts must land at
  * the APP ROOT, not under `tests/e2e/`. With a config whose paths sit
  * elsewhere the upload steps match nothing and, because they carry
  * `if-no-files-found: ignore`, say so quietly — a red run with no report and
@@ -53,14 +53,14 @@ import * as path from 'path'
 
 import { E2E_BASE_URL } from './support/baseUrl'
 
-// Roughly 26 specs self-skip behind `process.env.OPENBUILD_E2E_LIVE === '1'`.
+// Roughly 26 specs self-skip behind `process.env.BUILDIQ_E2E_LIVE === '1'`.
 // Every spec in this suite already requires a live Nextcloud at `baseURL`, so
 // the guard never distinguished "can run" from "cannot run" — it only let a
 // quarter of the suite report green while asserting nothing. The root config
 // defaults it ON for the same reason; without this line CI would collect those
 // specs and skip them, which is the green-but-dead shape this job exists to
-// end. Set OPENBUILD_E2E_LIVE=0 to opt out deliberately.
-process.env.OPENBUILD_E2E_LIVE ??= '1'
+// end. Set BUILDIQ_E2E_LIVE=0 to opt out deliberately.
+process.env.BUILDIQ_E2E_LIVE ??= '1'
 
 // `__dirname` is `<app root>/tests/e2e`; the app root is two levels up. The
 // workflow runs `npx playwright test` with the app root as CWD, but paths are
@@ -119,7 +119,7 @@ export default defineConfig({
 	// the runner mid-test. A cancellation is not a verdict: no summary line, no
 	// counts, and — because Playwright writes its HTML report only after the last
 	// test — `actions/upload-artifact` found nothing ("No files were found with
-	// the provided path: server/apps/openbuild/playwright-report/"), so there was
+	// the provided path: server/apps/buildiq/playwright-report/"), so there was
 	// no report and no traces to read either.
 	//
 	// A `globalTimeout` BELOW the job cap makes Playwright stop itself, print

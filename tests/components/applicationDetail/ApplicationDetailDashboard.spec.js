@@ -34,7 +34,7 @@ const route = {
 }
 
 /**
- * Spec: openbuild-app-detail-overview / application-detail-overview.
+ * Spec: buildiq-app-detail-overview / application-detail-overview.
  *
  * The grid-built body dashboard (CnDetailPage #before-body slot) owns the KPI
  * grid, activity graph, structural widgets, and the version-no-longer-accessible

@@ -1,5 +1,5 @@
 /**
- * SPDX-FileCopyrightText: 2026 ConductionNL / OpenBuild Contributors
+ * SPDX-FileCopyrightText: 2026 ConductionNL / Buildiq Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Vitest unit tests for the Access sub-editor wiring in
@@ -32,7 +32,7 @@ const storeMocks = vi.hoisted(() => {
 vi.mock('../../src/store/schemas.js', () => {
 	return {
 		useSchemasStore: () => storeMocks,
-		registerSlugForApp: (appSlug) => `openbuild-${appSlug}`,
+		registerSlugForApp: (appSlug) => `buildiq-${appSlug}`,
 		STORE_ID: 'openbuild-schemas',
 	}
 })
@@ -42,7 +42,7 @@ vi.mock('@nextcloud/dialogs', () => {
 })
 
 /**
- * Groups returned by the mocked `loadState('openbuild', 'currentUserGroups')`
+ * Groups returned by the mocked `loadState('buildiq', 'currentUserGroups')`
  * call — mutated per-test instead of using `mockReturnValue`/`mockReset`,
  * which would also affect unrelated `loadState('core', 'capabilities')`
  * calls that `@nextcloud/vue`'s own bundled chunks make at *module
@@ -65,7 +65,7 @@ vi.mock('@nextcloud/initial-state', () => {
 		// fallback, so honouring it keeps their code paths working exactly
 		// as they do against the real, un-mocked module.
 		loadState: vi.fn((app, key, fallback) => {
-			if (app === 'openbuild' && key === 'currentUserGroups') {
+			if (app === 'buildiq' && key === 'currentUserGroups') {
 				return mockedUserGroups
 			}
 			if (fallback !== undefined) {

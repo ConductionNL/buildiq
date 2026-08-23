@@ -9,23 +9,23 @@
   - message; authoring lands in tasks 8.2.
   -->
 <template>
-	<section class="openbuild-calculation-editor">
-		<header class="openbuild-calculation-editor__header">
-			<h3>{{ t('openbuild', 'Calculations') }}</h3>
+	<section class="buildiq-calculation-editor">
+		<header class="buildiq-calculation-editor__header">
+			<h3>{{ t('buildiq', 'Calculations') }}</h3>
 		</header>
 		<NcNoteCard type="info">
 			{{
 				t(
-					'openbuild',
+					'buildiq',
 					'The calculation editor ships in v1.1 (see design Decision 7). Existing calculations declared on this schema are shown read-only below.',
 				)
 			}}
 		</NcNoteCard>
-		<pre v-if="calculations" class="openbuild-calculation-editor__readonly">{{
+		<pre v-if="calculations" class="buildiq-calculation-editor__readonly">{{
 			formatted
 		}}</pre>
-		<p v-else class="openbuild-calculation-editor__empty">
-			{{ t('openbuild', 'No calculations declared on this schema.') }}
+		<p v-else class="buildiq-calculation-editor__empty">
+			{{ t('buildiq', 'No calculations declared on this schema.') }}
 		</p>
 	</section>
 </template>
@@ -59,19 +59,19 @@ export default {
 </script>
 
 <style scoped>
-.openbuild-calculation-editor {
+.buildiq-calculation-editor {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
 }
 
-.openbuild-calculation-editor__header h3 {
+.buildiq-calculation-editor__header h3 {
 	margin: 0;
 	font-size: 18px;
 	font-weight: 600;
 }
 
-.openbuild-calculation-editor__readonly {
+.buildiq-calculation-editor__readonly {
 	margin: 0;
 	padding: 8px;
 	background: var(--color-background-dark);
@@ -81,7 +81,7 @@ export default {
 	overflow: auto;
 }
 
-.openbuild-calculation-editor__empty {
+.buildiq-calculation-editor__empty {
 	margin: 0;
 	color: var(--color-text-maxcontrast);
 }

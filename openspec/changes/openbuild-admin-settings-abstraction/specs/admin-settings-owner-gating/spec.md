@@ -2,7 +2,7 @@
 
 ### Requirement: Admin surface is gated on app-owner group membership
 
-The admin-settings nav entry and the admin dialog SHALL be shown only when the calling user is an **owner** of the app. Ownership SHALL be resolved as a non-empty intersection of the caller's group GIDs — read from the already-published `openbuild.currentUserGroups` initial state via `loadState('openbuild', 'currentUserGroups', [])` — with the app's owner principals parsed from `Application.permissions.owners` using the existing `group:<gid>` / bare-GID grammar, and/or an owner signal carried on the manifest `runtime.user` context. The gate SHALL NOT use `OC.isUserAdmin()`. The system SHALL read owner inputs from initial state (`loadState`), never from DOM data-attributes.
+The admin-settings nav entry and the admin dialog SHALL be shown only when the calling user is an **owner** of the app. Ownership SHALL be resolved as a non-empty intersection of the caller's group GIDs — read from the already-published `buildiq.currentUserGroups` initial state via `loadState('buildiq', 'currentUserGroups', [])` — with the app's owner principals parsed from `Application.permissions.owners` using the existing `group:<gid>` / bare-GID grammar, and/or an owner signal carried on the manifest `runtime.user` context. The gate SHALL NOT use `OC.isUserAdmin()`. The system SHALL read owner inputs from initial state (`loadState`), never from DOM data-attributes.
 
 #### Scenario: Owner sees the admin surface
 
@@ -26,9 +26,9 @@ The admin-settings nav entry and the admin dialog SHALL be shown only when the c
 - **WHEN** a Nextcloud super-admin who is not in the app's owner group opens the app
 - **THEN** the admin surface SHALL NOT be shown on the basis of the super-admin flag alone
 
-### Requirement: Owner signal is derived from existing OpenBuild primitives
+### Requirement: Owner signal is derived from existing Buildiq primitives
 
-The backend SHALL surface the caller's owner status without introducing a parallel permission model. It SHALL reuse the already-published `openbuild.currentUserGroups`, the `Application.permissions.owners` bucket populated by `PopulateApplicationPermissions` (default group `admin`), and `PermissionResolver::matchesCaller(...)` with the `owners` role bucket. Any owner flag/role added to the manifest `runtime.user` context SHALL be a read-only projection computed via `PermissionResolver`, and SHALL NOT modify `PermissionResolver`'s grammar or the `permissions` block shape.
+The backend SHALL surface the caller's owner status without introducing a parallel permission model. It SHALL reuse the already-published `buildiq.currentUserGroups`, the `Application.permissions.owners` bucket populated by `PopulateApplicationPermissions` (default group `admin`), and `PermissionResolver::matchesCaller(...)` with the `owners` role bucket. Any owner flag/role added to the manifest `runtime.user` context SHALL be a read-only projection computed via `PermissionResolver`, and SHALL NOT modify `PermissionResolver`'s grammar or the `permissions` block shape.
 
 #### Scenario: Owner projection matches the resolver
 

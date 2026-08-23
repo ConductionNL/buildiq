@@ -4,13 +4,13 @@
 import { test, expect, Page, APIRequestContext } from '@playwright/test'
 
 /**
- * E2E — the `hydra-console` OpenBuild virtual app, live, against the
+ * E2E — the `hydra-console` Buildiq virtual app, live, against the
  * real `hydra-cache` register (register 2512).
  *
  * ROUTING FORM (read this before touching a `goto` here)
  * ------------------------------------------------------
  * `src/builder.js` boots the runtime with
- *   `new VueRouter({ mode: 'history', base: generateUrl('/apps/openbuild/builder/' + slug) })`
+ *   `new VueRouter({ mode: 'history', base: generateUrl('/apps/buildiq/builder/' + slug) })`
  * — a HISTORY router, NOT a hash router. A path-form `goto` is therefore the
  * correct navigation form and really does land on the requested page. To make
  * that verifiable rather than assumed, every helper below asserts BOTH:
@@ -30,9 +30,9 @@ import { test, expect, Page, APIRequestContext } from '@playwright/test'
  *
  * RUNNING
  * -------
- *   OPENBUILD_SEED_CMD=true npx playwright test tests/e2e/hydra-console.spec.ts
+ *   BUILDIQ_SEED_CMD=true npx playwright test tests/e2e/hydra-console.spec.ts
  *
- * `OPENBUILD_SEED_CMD=true` neutralises globalSetup's hello-world `occ` seed —
+ * `BUILDIQ_SEED_CMD=true` neutralises globalSetup's hello-world `occ` seed —
  * this suite needs no fixture seeding and must not mutate the instance.
  *
  * KNOWN-BROKEN BEHAVIOUR ENCODED HERE (see the individual tests)
@@ -48,7 +48,7 @@ import { test, expect, Page, APIRequestContext } from '@playwright/test'
  *    to an *unexpected pass* the moment it is fixed.
  */
 
-const APP_BASE = '/apps/openbuild/builder/hydra-console'
+const APP_BASE = '/apps/buildiq/builder/hydra-console'
 const OR_API = '/index.php/apps/openregister/api/objects/hydra-cache'
 
 /** Detail/index pages hydrate over several sequential OR round-trips on a
@@ -170,7 +170,7 @@ test.describe('hydra-console — live console over the hydra-cache register', ()
 	// Nothing in this repository seeds it: `hydra-console.spec.ts` is the only
 	// file that mentions `hydra-cache` at all. On an instance without it every
 	// test here fails with the same `must respond 2xx` 404, which is an
-	// environment gap, not a defect in OpenBuild.
+	// environment gap, not a defect in Buildiq.
 	//
 	// The guard below is a REAL capability probe: it performs an actual query
 	// and fires only when OpenRegister reports the register missing. It is not

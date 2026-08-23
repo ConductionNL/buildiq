@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Controller
+ * @package  OCA\Buildiq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,16 +26,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Controller;
+namespace OCA\Buildiq\Tests\Unit\Controller;
 
-use OCA\OpenBuild\Controller\ApplicationVersionsController;
-use OCA\OpenBuild\Service\ApplicationVersionService;
+use OCA\Buildiq\Controller\ApplicationVersionsController;
+use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\IGroupManager;
@@ -221,7 +220,7 @@ class ApplicationVersionsControllerTest extends TestCase {
 	public function testReleaseTranslatesMissingRegisterInsteadOfThrowing(): void {
 		$registerMapper = $this->createMock(RegisterMapper::class);
 		$registerMapper->method('find')->willThrowException(
-			new DoesNotExistException('register openbuild not found')
+			new DoesNotExistException('register buildiq not found')
 		);
 
 		$controller = new ApplicationVersionsController(

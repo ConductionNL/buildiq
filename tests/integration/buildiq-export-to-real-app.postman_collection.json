@@ -1,8 +1,8 @@
 {
 	"info": {
-		"_postman_id": "openbuild-export-to-real-app",
-		"name": "OpenBuild Export Pipeline (spec #9)",
-		"description": "Integration tests for the OpenBuild export pipeline — POST /api/applications/{slug}/exports, GET /api/exports/{uuid} (OR REST), GET /api/exports/{uuid}/download. Locks the 202-accept-then-poll contract and the 410-on-expiry guarantee. Run requires the seeded `hello-world` Application from bootstrap-openbuild.",
+		"_postman_id": "buildiq-export-to-real-app",
+		"name": "Buildiq Export Pipeline (spec #9)",
+		"description": "Integration tests for the Buildiq export pipeline — POST /api/applications/{slug}/exports, GET /api/exports/{uuid} (OR REST), GET /api/exports/{uuid}/download. Locks the 202-accept-then-poll contract and the 410-on-expiry guarantee. Run requires the seeded `hello-world` Application from bootstrap-buildiq.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"auth": {
@@ -55,7 +55,7 @@
 					"mode": "raw",
 					"raw": "{\"target\":\"ftp\",\"applicationVersion\":\"1.0.0\"}"
 				},
-				"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{app_slug}}/exports",
+				"url": "{{base_url}}/index.php/apps/buildiq/api/applications/{{app_slug}}/exports",
 				"description": "Body-validation guard. An invalid target value must short-circuit before the ExportJob is created."
 			},
 			"event": [
@@ -86,7 +86,7 @@
 					"mode": "raw",
 					"raw": "{\"target\":\"zip\",\"applicationVersion\":\"1.0.0\",\"includeSeedData\":false}"
 				},
-				"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{app_slug}}/exports"
+				"url": "{{base_url}}/index.php/apps/buildiq/api/applications/{{app_slug}}/exports"
 			},
 			"event": [
 				{
@@ -150,7 +150,7 @@
 				"header": [
 					{ "key": "OCS-APIRequest", "value": "true" }
 				],
-				"url": "{{base_url}}/index.php/apps/openbuild/api/exports/{{job_uuid}}/download"
+				"url": "{{base_url}}/index.php/apps/buildiq/api/exports/{{job_uuid}}/download"
 			},
 			"event": [
 				{

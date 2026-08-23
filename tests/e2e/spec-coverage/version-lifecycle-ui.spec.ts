@@ -3,7 +3,7 @@
 
 /**
  * E2E coverage for the `version-lifecycle-ui` spec — the maintainer cockpit for
- * OpenBuild's two-object version model.
+ * Buildiq's two-object version model.
  *
  * NEW FILE 2026-08-11. Every one of this spec's 17 scenarios was uncovered by
  * gate-19: no Playwright test anywhere in the suite referenced a single one of
@@ -12,19 +12,19 @@
  *
  * The surface, read from source rather than guessed:
  *
- *   route      /apps/openbuild/applications/{objectId}/manifest
+ *   route      /apps/buildiq/applications/{objectId}/manifest
  *              (manifest.json page `ApplicationManifestDetail`)
- *   list       GET  /apps/openbuild/api/applications/{slug}/versions
+ *   list       GET  /apps/buildiq/api/applications/{slug}/versions
  *              (VersionHistory.vue — the SLUG-based endpoint, which is the
  *              whole point of REQ-OBV-VLU-001)
  *   row        .version-history__row, production row also --current
  *   marker     .version-history__badge--production
- *   open       openVersion() -> /apps/openbuild/builder/{slug}
+ *   open       openVersion() -> /apps/buildiq/builder/{slug}
  *                               (+ '?_version=' + slug when not production)
- *   edit       editVersion() -> /apps/openbuild/builder/{slug}/pages
+ *   edit       editVersion() -> /apps/buildiq/builder/{slug}/pages
  *                               (+ '?_version=' + slug when not production)
  *   new draft  ManifestLayersDetail.createDraft() ->
- *              POST /apps/openbuild/api/applications/{slug}/versions
+ *              POST /apps/buildiq/api/applications/{slug}/versions
  *
  * WHAT IS NOT HERE, AND WHY. REQ-OBV-VLU-007 (the "Open app" split button in
  * ApplicationDetailActions.vue) and REQ-OBV-VLU-008 (the NL catalogue) are a
@@ -59,7 +59,7 @@ const NAME = 'PW Version Lifecycle'
  * @return {Promise<void>}
  */
 async function openManifestDetail(page: Page, objectId: string): Promise<void> {
-	await page.goto(`${BASE}/apps/openbuild/applications/${objectId}/manifest`, {
+	await page.goto(`${BASE}/apps/buildiq/applications/${objectId}/manifest`, {
 		waitUntil: 'domcontentloaded',
 	})
 	await expect(
@@ -125,12 +125,12 @@ test.describe('version-lifecycle-ui — the version list on the Manifest detail 
 		// wait BEFORE navigating so the request cannot be missed.
 		const versionsCall = page.waitForResponse(
 			(r) =>
-				r.url().includes(`/apps/openbuild/api/applications/${SLUG}/versions`)
+				r.url().includes(`/apps/buildiq/api/applications/${SLUG}/versions`)
 				&& r.request().method() === 'GET',
 			{ timeout: 30_000 },
 		)
 
-		await page.goto(`${BASE}/apps/openbuild/applications/${objectId}/manifest`, {
+		await page.goto(`${BASE}/apps/buildiq/applications/${objectId}/manifest`, {
 			waitUntil: 'domcontentloaded',
 		})
 
@@ -224,7 +224,7 @@ test.describe('version-lifecycle-ui — the version list on the Manifest detail 
 
 		await page.waitForURL(
 			(url) =>
-				url.pathname.endsWith(`/apps/openbuild/builder/${SLUG}`)
+				url.pathname.endsWith(`/apps/buildiq/builder/${SLUG}`)
 				&& url.searchParams.get('_version') === 'staging',
 			{ timeout: 30_000 },
 		)
@@ -254,7 +254,7 @@ test.describe('version-lifecycle-ui — the version list on the Manifest detail 
 
 		await page.waitForURL(
 			(url) =>
-				url.pathname.endsWith(`/apps/openbuild/builder/${SLUG}`)
+				url.pathname.endsWith(`/apps/buildiq/builder/${SLUG}`)
 				&& !url.searchParams.has('_version'),
 			{ timeout: 30_000 },
 		)
@@ -284,7 +284,7 @@ test.describe('version-lifecycle-ui — the version list on the Manifest detail 
 
 		await page.waitForURL(
 			(url) =>
-				url.pathname.endsWith(`/apps/openbuild/builder/${SLUG}/pages`)
+				url.pathname.endsWith(`/apps/buildiq/builder/${SLUG}/pages`)
 				&& url.searchParams.get('_version') === 'staging',
 			{ timeout: 30_000 },
 		)
@@ -317,7 +317,7 @@ test.describe('version-lifecycle-ui — the version list on the Manifest detail 
 		// version list first, so the predicate pins the method as well as the URL.
 		const created = page.waitForResponse(
 			(r) =>
-				r.url().includes(`/apps/openbuild/api/applications/${SLUG}/versions`)
+				r.url().includes(`/apps/buildiq/api/applications/${SLUG}/versions`)
 				&& r.request().method() === 'POST',
 			{ timeout: 45_000 },
 		)

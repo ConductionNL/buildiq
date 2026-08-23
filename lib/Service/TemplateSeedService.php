@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild TemplateSeedService
+ * Buildiq TemplateSeedService
  *
  * Shared, idempotent seeding of the four Conduction-curated
  * ApplicationTemplate records. Extracted from SeedApplicationTemplates so the
@@ -21,7 +21,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -36,7 +36,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\App\IAppManager;
@@ -99,13 +99,13 @@ class TemplateSeedService {
 	 * the first-seeded version. Admin-created rows (isSeeded !== true) are never
 	 * touched. A slug at or below the stored version is skipped (idempotent).
 	 *
-	 * @return array{seeded:int,updated:int,skipped:int,errors:array<int,string>,deferred?:bool} Per-run
-	 *         counts and collected errors. `seeded` counts new rows, `updated` counts in-place
-	 *         version upgrades, `skipped` counts up-to-date/admin rows. `deferred` is set when
-	 *         the register/schema is not provisioned yet (install ordering) — the caller
-	 *         re-runs on the next repair rather than failing the install. It was returned but
-	 *         never declared, so SeedApplicationTemplates' check for it read as statically
-	 *         impossible.
+	 * Per-run counts and collected errors. `seeded` counts new rows, `updated` counts in-place version
+	 * upgrades, `skipped` counts up-to-date/admin rows. `deferred` is set when the register/schema is not
+	 * provisioned yet (install ordering) — the caller re-runs on the next repair rather than failing the
+	 * install. It was returned but never declared, so SeedApplicationTemplates' check for it read as statically
+	 * impossible.
+	 *
+	 * @return array{seeded:int,updated:int,skipped:int,errors:array<int,string>,deferred?:bool}
 	 *
 	 * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-11
 	 */
@@ -115,7 +115,7 @@ class TemplateSeedService {
 		$skipped = 0;
 		$errors = [];
 
-		$fixturesDir = $this->appManager->getAppPath('openbuild') . '/lib/Settings/templates';
+		$fixturesDir = $this->appManager->getAppPath('buildiq') . '/lib/Settings/templates';
 		if (is_dir($fixturesDir) === false) {
 			$errors[] = 'Template fixtures directory missing: ' . $fixturesDir;
 			return ['seeded' => $seeded, 'updated' => $updated, 'skipped' => $skipped, 'errors' => $errors];
@@ -158,7 +158,7 @@ class TemplateSeedService {
 					// Cannot target the existing row for an in-place update;
 					// skip rather than risk creating a duplicate-slug row.
 					$this->logger->warning(
-						'OpenBuild: cannot resolve uuid for existing template — skipping update',
+						'Buildiq: cannot resolve uuid for existing template — skipping update',
 						['slug' => $slug]
 					);
 					++$skipped;
@@ -187,7 +187,7 @@ class TemplateSeedService {
 					++$updated;
 				}
 			} catch (DoesNotExistException $e) {
-				// The openbuild register / application-template schema is not
+				// The buildiq register / application-template schema is not
 				// provisioned yet — the configuration import (InitializeSettings)
 				// has not completed on this pass (e.g. install ordering). Defer
 				// seeding rather than failing the install: a subsequent
@@ -205,13 +205,13 @@ class TemplateSeedService {
 				// `deferred` would then be needed so one missing schema does not
 				// hide seedable slugs.
 				$this->logger->warning(
-					'OpenBuild: register/application-template schema not available yet — deferring template seeding',
+					'Buildiq: register/application-template schema not available yet — deferring template seeding',
 					['slug' => $slug, 'exception' => $e->getMessage()]
 				);
 				return ['seeded' => $seeded, 'updated' => $updated, 'skipped' => $skipped, 'errors' => [], 'deferred' => true];
 			} catch (Throwable $e) {
 				$this->logger->error(
-					'OpenBuild: failed to seed template',
+					'Buildiq: failed to seed template',
 					['slug' => $slug, 'exception' => $e->getMessage()]
 				);
 				$errors[] = 'Failed to seed template "' . $slug . '": ' . $e->getMessage();
@@ -348,7 +348,7 @@ class TemplateSeedService {
 			return null;
 		} catch (Throwable $e) {
 			$this->logger->warning(
-				'OpenBuild: template lookup failed — treating as absent',
+				'Buildiq: template lookup failed — treating as absent',
 				['slug' => $slug, 'exception' => $e->getMessage()]
 			);
 			return null;

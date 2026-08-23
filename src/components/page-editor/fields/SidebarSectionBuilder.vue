@@ -13,27 +13,27 @@
 				:value="section.id || ''"
 				type="text"
 				class="sidebar-section-builder__field"
-				:placeholder="t('openbuild', 'Section id')"
-				:aria-label="t('openbuild', 'Section id')"
+				:placeholder="t('buildiq', 'Section id')"
+				:aria-label="t('buildiq', 'Section id')"
 				@input="updateField(index, 'id', $event.target.value)" />
 			<input
 				:value="section.label || ''"
 				type="text"
 				class="sidebar-section-builder__field"
-				:placeholder="t('openbuild', 'Label')"
-				:aria-label="t('openbuild', 'Label')"
+				:placeholder="t('buildiq', 'Label')"
+				:aria-label="t('buildiq', 'Label')"
 				@input="updateField(index, 'label', $event.target.value)" />
 			<input
 				:value="(section.columns || []).join(',')"
 				type="text"
 				class="sidebar-section-builder__field"
-				:placeholder="t('openbuild', 'Columns (comma-separated)')"
-				:aria-label="t('openbuild', 'Columns (comma-separated)')"
+				:placeholder="t('buildiq', 'Columns (comma-separated)')"
+				:aria-label="t('buildiq', 'Columns (comma-separated)')"
 				@input="updateColumns(index, $event.target.value)" />
 			<button
 				type="button"
 				class="sidebar-section-builder__remove"
-				:title="t('openbuild', 'Remove section')"
+				:title="t('buildiq', 'Remove section')"
 				@click="removeSection(index)">
 				✕
 			</button>
@@ -42,7 +42,7 @@
 			type="button"
 			class="sidebar-section-builder__add"
 			@click="addSection">
-			+ {{ t('openbuild', 'Add section') }}
+			+ {{ t('buildiq', 'Add section') }}
 		</button>
 	</div>
 </template>

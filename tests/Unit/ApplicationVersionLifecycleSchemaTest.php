@@ -2,7 +2,7 @@
 
 /**
  * Unit test for the ApplicationVersion lifecycle declared in
- * `lib/Settings/openbuild_register.json` (openbuild#10 task 5.2).
+ * `lib/Settings/openbuild_register.json` (buildiq#10 task 5.2).
  *
  * Per ADR-031 (schema-declarative business logic), the
  * `applicationVersion` schema carries an `x-openregister-lifecycle`
@@ -18,7 +18,7 @@
  *     targeting `openbuild/built-app-route` (BuiltAppRoute upkeep)
  *
  * A real end-to-end transition test requires booted Nextcloud +
- * OpenRegister with a Postgres / MySQL backend (see openbuild#10
+ * OpenRegister with a Postgres / MySQL backend (see buildiq#10
  * task 5.2 note "Requires container-bound NC bootstrap"). That
  * integration scope is tracked separately; this test guards the
  * declarative contract that anchors it.
@@ -27,7 +27,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit
+ * @package  OCA\Buildiq\Tests\Unit
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -40,12 +40,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit;
+namespace OCA\Buildiq\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
 
 /**
- * Tests the declarative lifecycle of ApplicationVersion (openbuild#10).
+ * Tests the declarative lifecycle of ApplicationVersion (buildiq#10).
  */
 class ApplicationVersionLifecycleSchemaTest extends TestCase {
 
@@ -262,7 +262,7 @@ class ApplicationVersionLifecycleSchemaTest extends TestCase {
 	}//end notificationTransitionActions()
 
 	/**
-	 * The crux of the openbuild-notifications prerequisite: every
+	 * The crux of the buildiq-notifications prerequisite: every
 	 * `transition`-trigger notification rule MUST reference a transition
 	 * **action name** that is actually declared in the schema's
 	 * `x-openregister-lifecycle.transitions` map.
@@ -312,7 +312,7 @@ class ApplicationVersionLifecycleSchemaTest extends TestCase {
 
 	/**
 	 * REQ-OBN-001 — exportJob declares exactly the two notification rules
-	 * required by openbuild-notifications (#23): export-succeeded and
+	 * required by buildiq-notifications (#23): export-succeeded and
 	 * export-failed.
 	 *
 	 * @spec openspec/changes/openbuild-notifications/tasks.md#task-1
@@ -335,7 +335,7 @@ class ApplicationVersionLifecycleSchemaTest extends TestCase {
 
 	/**
 	 * REQ-OBN-002 — ApplicationVersion declares exactly the two notification
-	 * rules required by openbuild-notifications (#23): version-published and
+	 * rules required by buildiq-notifications (#23): version-published and
 	 * version-archived.
 	 *
 	 * @spec openspec/changes/openbuild-notifications/tasks.md#task-2
@@ -359,7 +359,7 @@ class ApplicationVersionLifecycleSchemaTest extends TestCase {
 	/**
 	 * REQ-OBN-003 — Every notification rule on both schemas ships with
 	 * object-acl recipients (permission: manage), is enabled by default, and
-	 * uses the nc-notification channel (openbuild-notifications #23 task-3).
+	 * uses the nc-notification channel (buildiq-notifications #23 task-3).
 	 *
 	 * @spec openspec/changes/openbuild-notifications/tasks.md#task-3
 	 *
@@ -426,7 +426,7 @@ class ApplicationVersionLifecycleSchemaTest extends TestCase {
 	/**
 	 * REQ-OBN-004 — Every notification rule ships bilingual subjects in
 	 * both Dutch (nl) and English (en) per ADR-007 / ADR-025
-	 * (openbuild-notifications #23 task-4).
+	 * (buildiq-notifications #23 task-4).
 	 *
 	 * @spec openspec/changes/openbuild-notifications/tasks.md#task-4
 	 *

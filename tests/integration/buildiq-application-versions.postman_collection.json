@@ -1,8 +1,8 @@
 {
 	"info": {
-		"_postman_id": "openbuild-application-versions-collection",
-		"name": "OpenBuild — Application Versions CRUD (spec C)",
-		"description": "Newman integration suite for the openbuild-versioning-model OpenSpec change\n(spec C, REQ-OBV-101 – REQ-OBV-108). Exercises the five ApplicationVersion\nendpoints registered in appinfo/routes.php:\n\n  GET  /api/applications/{slug}/versions\n  POST /api/applications/{slug}/versions\n  GET  /api/applications/{slug}/versions/{versionSlug}\n  PUT  /api/applications/{slug}/versions/{versionSlug}\n  DELETE /api/applications/{slug}/versions/{versionSlug}?strategy=\n\nEach folder asserts: HTTP status, response shape (semver, name, manifest,\nstatus, application relation), and basic 401 RBAC (unauthenticated request).\n\n⚠️ THE ANONYMOUS PROBES MUST USE {{noAuthBase}}, NOT {{base_url}}.\n\n`auth: { type: noauth }` removes the Authorization header. It does NOT remove\nthe SESSION COOKIE Newman is already holding for that origin, and a request\ncarrying a logged-in session cookie is not anonymous — it is a logged-in\nrequest with no CSRF token, which Nextcloud answers 412 (\"CSRF check failed\"),\nnot 401.\n\nMeasured directly (newman --verbose, identical request, one origin apart):\n\n  auth,   {{base_url}}    -> 324B up,  9 headers  (Authorization, no Cookie)\n  noauth, {{base_url}}    -> 576B up,  9 headers  (no Authorization, COOKIE)\n  noauth, {{noAuthBase}}  -> 285B up,  8 headers  (neither — truly anonymous)\n\nAnd in CI (run 31356594486) the flip is visible in the run order: the FIRST\nanonymous probe returned 401, and every anonymous probe AFTER the first\nauthenticated write returned 412. Three assertions in this collection were\nfailing for that reason and none of them was measuring anonymous access.\n\n{{noAuthBase}} is the SAME server reached by its other name, so the cookie jar\n(which is keyed by origin) has nothing for it. This is the pattern\nopenbuild-api-contract.postman_collection.json already uses, and all five of\nits anonymous assertions passed in the very run these failed.\n\nThe suite is self-contained: it creates, reads, updates, and destroys a\ntest ApplicationVersion against the seeded hello-world Application so it\ndoes not leave state behind.",
+		"_postman_id": "buildiq-application-versions-collection",
+		"name": "Buildiq — Application Versions CRUD (spec C)",
+		"description": "Newman integration suite for the buildiq-versioning-model OpenSpec change\n(spec C, REQ-OBV-101 – REQ-OBV-108). Exercises the five ApplicationVersion\nendpoints registered in appinfo/routes.php:\n\n  GET  /api/applications/{slug}/versions\n  POST /api/applications/{slug}/versions\n  GET  /api/applications/{slug}/versions/{versionSlug}\n  PUT  /api/applications/{slug}/versions/{versionSlug}\n  DELETE /api/applications/{slug}/versions/{versionSlug}?strategy=\n\nEach folder asserts: HTTP status, response shape (semver, name, manifest,\nstatus, application relation), and basic 401 RBAC (unauthenticated request).\n\n⚠️ THE ANONYMOUS PROBES MUST USE {{noAuthBase}}, NOT {{base_url}}.\n\n`auth: { type: noauth }` removes the Authorization header. It does NOT remove\nthe SESSION COOKIE Newman is already holding for that origin, and a request\ncarrying a logged-in session cookie is not anonymous — it is a logged-in\nrequest with no CSRF token, which Nextcloud answers 412 (\"CSRF check failed\"),\nnot 401.\n\nMeasured directly (newman --verbose, identical request, one origin apart):\n\n  auth,   {{base_url}}    -> 324B up,  9 headers  (Authorization, no Cookie)\n  noauth, {{base_url}}    -> 576B up,  9 headers  (no Authorization, COOKIE)\n  noauth, {{noAuthBase}}  -> 285B up,  8 headers  (neither — truly anonymous)\n\nAnd in CI (run 31356594486) the flip is visible in the run order: the FIRST\nanonymous probe returned 401, and every anonymous probe AFTER the first\nauthenticated write returned 412. Three assertions in this collection were\nfailing for that reason and none of them was measuring anonymous access.\n\n{{noAuthBase}} is the SAME server reached by its other name, so the cookie jar\n(which is keyed by origin) has nothing for it. This is the pattern\nbuildiq-api-contract.postman_collection.json already uses, and all five of\nits anonymous assertions passed in the very run these failed.\n\nThe suite is self-contained: it creates, reads, updates, and destroys a\ntest ApplicationVersion against the seeded hello-world Application so it\ndoes not leave state behind.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"auth": {
@@ -34,7 +34,7 @@
 							{ "key": "Accept",        "value": "application/json" },
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
-						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions"
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/{{test_slug}}/versions"
 					},
 					"event": [
 						{
@@ -70,7 +70,7 @@
 						"header": [
 							{ "key": "Accept", "value": "application/json" }
 						],
-						"url": "{{noAuthBase}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions"
+						"url": "{{noAuthBase}}/index.php/apps/buildiq/api/applications/{{test_slug}}/versions"
 					},
 					"event": [
 						{
@@ -105,7 +105,7 @@
 							"mode": "raw",
 							"raw": "{\n  \"name\": \"Newman Test Version\",\n  \"slug\": \"newman-test-v1\",\n  \"manifest\": {\n    \"version\": \"0.1.0\",\n    \"menu\": [],\n    \"pages\": [\n      {\n        \"id\": \"Home\",\n        \"route\": \"/\",\n        \"type\": \"index\",\n        \"title\": \"Home\",\n        \"config\": { \"register\": \"openbuild\", \"schema\": \"hello-message\", \"columns\": [\"title\"] }\n      }\n    ]\n  },\n  \"register\": \"openbuild-hello-world-newman-test-v1\",\n  \"semver\": \"0.1.0\",\n  \"status\": \"draft\"\n}"
 						},
-						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions"
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/{{test_slug}}/versions"
 					},
 					"event": [
 						{
@@ -157,7 +157,7 @@
 							"mode": "raw",
 							"raw": "{\"name\": \"x\", \"slug\": \"x\", \"manifest\": {}, \"register\": \"openbuild-hello-world-x\", \"semver\": \"0.1.0\"}"
 						},
-						"url": "{{noAuthBase}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions"
+						"url": "{{noAuthBase}}/index.php/apps/buildiq/api/applications/{{test_slug}}/versions"
 					},
 					"event": [
 						{
@@ -185,7 +185,7 @@
 							{ "key": "Accept",        "value": "application/json" },
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
-						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions/{{version_slug}}"
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/{{test_slug}}/versions/{{version_slug}}"
 					},
 					"event": [
 						{
@@ -225,7 +225,7 @@
 						"header": [
 							{ "key": "Accept", "value": "application/json" }
 						],
-						"url": "{{noAuthBase}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions/{{version_slug}}"
+						"url": "{{noAuthBase}}/index.php/apps/buildiq/api/applications/{{test_slug}}/versions/{{version_slug}}"
 					},
 					"event": [
 						{
@@ -258,7 +258,7 @@
 							"mode": "raw",
 							"raw": "{\n  \"name\": \"Newman Test Version (updated)\",\n  \"slug\": \"newman-test-v1\",\n  \"manifest\": {\n    \"version\": \"0.1.0\",\n    \"menu\": [],\n    \"pages\": [\n      {\n        \"id\": \"Home\",\n        \"route\": \"/\",\n        \"type\": \"index\",\n        \"title\": \"Home Updated\",\n        \"config\": { \"register\": \"openbuild\", \"schema\": \"hello-message\", \"columns\": [\"title\", \"body\"] }\n      }\n    ]\n  },\n  \"register\": \"openbuild-hello-world-newman-test-v1\",\n  \"semver\": \"0.1.0\",\n  \"status\": \"draft\"\n}"
 						},
-						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions/{{version_slug}}"
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/{{test_slug}}/versions/{{version_slug}}"
 					},
 					"event": [
 						{
@@ -295,7 +295,7 @@
 							"mode": "raw",
 							"raw": "{\"name\": \"x\"}"
 						},
-						"url": "{{noAuthBase}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions/{{version_slug}}"
+						"url": "{{noAuthBase}}/index.php/apps/buildiq/api/applications/{{test_slug}}/versions/{{version_slug}}"
 					},
 					"event": [
 						{
@@ -324,9 +324,9 @@
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions/{{version_slug}}?strategy=delete-now",
+							"raw": "{{base_url}}/index.php/apps/buildiq/api/applications/{{test_slug}}/versions/{{version_slug}}?strategy=delete-now",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openbuild", "api", "applications", "{{test_slug}}", "versions", "{{version_slug}}"],
+							"path": ["index.php", "apps", "buildiq", "api", "applications", "{{test_slug}}", "versions", "{{version_slug}}"],
 							"query": [{ "key": "strategy", "value": "delete-now" }]
 						}
 					},
@@ -352,7 +352,7 @@
 							{ "key": "Accept",        "value": "application/json" },
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
-						"url": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions/non-existent-version"
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/{{test_slug}}/versions/non-existent-version"
 					},
 					"event": [
 						{
@@ -381,9 +381,9 @@
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openbuild/api/applications/{{test_slug}}/versions/{{production_version_slug}}?strategy=delete-now",
+							"raw": "{{base_url}}/index.php/apps/buildiq/api/applications/{{test_slug}}/versions/{{production_version_slug}}?strategy=delete-now",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openbuild", "api", "applications", "{{test_slug}}", "versions", "{{production_version_slug}}"],
+							"path": ["index.php", "apps", "buildiq", "api", "applications", "{{test_slug}}", "versions", "{{production_version_slug}}"],
 							"query": [{ "key": "strategy", "value": "delete-now" }]
 						}
 					},

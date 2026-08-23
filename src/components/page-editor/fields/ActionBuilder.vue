@@ -13,29 +13,29 @@
 				:value="act.id || ''"
 				type="text"
 				class="action-builder__field"
-				:placeholder="t('openbuild', 'Action id (e.g. edit)')"
-				:aria-label="t('openbuild', 'Action id (e.g. edit)')"
+				:placeholder="t('buildiq', 'Action id (e.g. edit)')"
+				:aria-label="t('buildiq', 'Action id (e.g. edit)')"
 				@input="updateField(index, 'id', $event.target.value)" />
 			<input
 				:value="act.label || ''"
 				type="text"
 				class="action-builder__field"
-				:placeholder="t('openbuild', 'Label (i18n key)')"
-				:aria-label="t('openbuild', 'Label (i18n key)')"
+				:placeholder="t('buildiq', 'Label (i18n key)')"
+				:aria-label="t('buildiq', 'Label (i18n key)')"
 				@input="updateField(index, 'label', $event.target.value)" />
 			<input
 				:value="act.icon || ''"
 				type="text"
 				class="action-builder__field action-builder__field--narrow"
-				:placeholder="t('openbuild', 'Icon')"
-				:aria-label="t('openbuild', 'Icon')"
+				:placeholder="t('buildiq', 'Icon')"
+				:aria-label="t('buildiq', 'Icon')"
 				@input="updateField(index, 'icon', $event.target.value)" />
 			<select
 				:value="act.target || ''"
 				class="action-builder__field action-builder__field--narrow"
 				@change="updateField(index, 'target', $event.target.value)">
 				<option value="">
-					{{ t('openbuild', '— target —') }}
+					{{ t('buildiq', '— target —') }}
 				</option>
 				<option value="navigate">navigate</option>
 				<option value="emit">emit</option>
@@ -44,13 +44,13 @@
 			<button
 				type="button"
 				class="action-builder__remove"
-				:title="t('openbuild', 'Remove action')"
+				:title="t('buildiq', 'Remove action')"
 				@click="removeAction(index)">
 				✕
 			</button>
 		</div>
 		<button type="button" class="action-builder__add" @click="addAction">
-			+ {{ t('openbuild', 'Add action') }}
+			+ {{ t('buildiq', 'Add action') }}
 		</button>
 	</div>
 </template>

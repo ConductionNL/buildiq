@@ -1,10 +1,10 @@
 # Export pipeline
 
-OpenBuild's founding commitment is a **hybrid** architecture: prototype as a virtual
-app inside OpenBuild's nested `CnAppRoot` host, then **graduate** to a standalone
+Buildiq's founding commitment is a **hybrid** architecture: prototype as a virtual
+app inside Buildiq's nested `CnAppRoot` host, then **graduate** to a standalone
 Nextcloud app — its own `appinfo/info.xml`, its own OpenRegister namespace, its own
 repository, and its own CI/release pipeline — with **zero** runtime dependency on
-OpenBuild.
+Buildiq.
 
 This document describes how the exporter turns a published virtual `Application` into a
 real app and delivers it either as a ZIP download or a GitHub repository push.
@@ -34,7 +34,7 @@ until a terminal state.
 ## ZIP delivery
 
 When `target: "zip"`, the exporter writes a single `.zip` under the app-data work area,
-sets `downloadUrl` to `/index.php/apps/openbuild/api/exports/{uuid}/download`, and sets
+sets `downloadUrl` to `/index.php/apps/buildiq/api/exports/{uuid}/download`, and sets
 `downloadExpiresAt` to 24 hours after completion. After expiry the download endpoint
 returns `410 Gone` and the daily `CleanupExpiredExports` job purges the archive while
 preserving the ExportJob audit record.
@@ -56,7 +56,7 @@ against the GitHub REST + Git Data API) performs:
    (`POST /git/trees`), a commit (`POST /git/commits`), and a `bootstrap` branch ref
    (`POST /git/refs`).
 4. **Open PR** — `POST /repos/{org}/{repo}/pulls` from `bootstrap` to the default
-   branch, titled `chore: bootstrap from OpenBuild`.
+   branch, titled `chore: bootstrap from Buildiq`.
 
 ### Default-branch heuristic (OQ-2)
 
@@ -67,7 +67,7 @@ ruleset heuristic (contains `conduction`), otherwise `main`. The PR targets that
 
 - The GitHub PAT is collected once in the Export dialog (`<input type="password">`).
 - It is transmitted over the standard authenticated Nextcloud REST channel and stored
-  **only** via `ICredentialsManager`, keyed `openbuild.export.<jobUuid>.pat`.
+  **only** via `ICredentialsManager`, keyed `buildiq.export.<jobUuid>.pat`.
 - The PAT is **never** persisted on the ExportJob object, **never** logged, and **never**
   written to the `log` or `errorMessage` fields. `GitHubPushService` additionally scrubs
   any PAT-shaped token out of error messages before they surface.
@@ -83,7 +83,7 @@ push target reads from.
 
 ## What to do next after a GitHub export
 
-1. Review the open `chore: bootstrap from OpenBuild` pull request.
+1. Review the open `chore: bootstrap from Buildiq` pull request.
 2. Clone the repository locally.
 3. Run `composer install` and `npm install` (the exporter ships pinned lockfiles but does
    not vendor dependencies — OQ-5).

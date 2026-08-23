@@ -4,8 +4,8 @@
 /**
  * DEEP, data-dependent e2e — full CRUD-WITH-PERSISTENCE for a Schema.
  *
- * In OpenBuild a Schema is the building block a virtual app composes (its data
- * model). Schemas are first-class OpenRegister schemas; OpenBuild itself
+ * In Buildiq a Schema is the building block a virtual app composes (its data
+ * model). Schemas are first-class OpenRegister schemas; Buildiq itself
  * exposes NO schema-CRUD route (verified against appinfo/routes.php) — the
  * builder UI drives OpenRegister's runtime schema API directly. This spec
  * therefore exercises CRUD-with-persistence against that same backend the UI
@@ -21,7 +21,7 @@
  *   DELETE  — DELETE → read back returns 404 (truly gone).
  *
  * The in-app schema *designer* UI (`/builder/{slug}/schemas`, "Add schema" +
- * field editor) is Conduction/openbuild#41-quarantined (the builder/page-
+ * field editor) is Conduction/buildiq#41-quarantined (the builder/page-
  * designer nested routes do not render in this build), so the UI-driven
  * variant is `test.fixme`'d with that reason rather than faked.
  *
@@ -153,14 +153,14 @@ test.describe('Schema — full CRUD with persistence (OR runtime schema API)', (
 	})
 
 	// ---- #41: schema designer UI quarantined -------------------------------
-	test.fixme('CRUD via the in-app schema designer UI (Conduction/openbuild#41: builder routes do not render)', async ({
+	test.fixme('CRUD via the in-app schema designer UI (Conduction/buildiq#41: builder routes do not render)', async ({
 		page,
 	}) => {
 		// The /builder/{slug}/schemas designer ("Add schema" → field editor →
 		// Save) is part of the #41-quarantined nested builder routes. When #41
 		// is fixed this should drive: Add schema → add 2 fields → Save →
 		// reload → assert both fields persist → rename → Save → assert → delete.
-		await page.goto('/apps/openbuild/builder/hello-world/schemas')
+		await page.goto('/apps/buildiq/builder/hello-world/schemas')
 		await expect(page.getByRole('button', { name: /add schema/i })).toBeVisible({
 			timeout: 15_000,
 		})

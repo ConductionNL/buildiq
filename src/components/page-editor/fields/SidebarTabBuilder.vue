@@ -14,45 +14,45 @@
 				:value="tab.id || ''"
 				type="text"
 				class="sidebar-tab-builder__field"
-				:placeholder="t('openbuild', 'Tab id')"
-				:aria-label="t('openbuild', 'Tab id')"
+				:placeholder="t('buildiq', 'Tab id')"
+				:aria-label="t('buildiq', 'Tab id')"
 				@input="updateField(index, 'id', $event.target.value)" />
 			<input
 				:value="tab.label || ''"
 				type="text"
 				class="sidebar-tab-builder__field"
-				:placeholder="t('openbuild', 'Label (i18n key)')"
-				:aria-label="t('openbuild', 'Label (i18n key)')"
+				:placeholder="t('buildiq', 'Label (i18n key)')"
+				:aria-label="t('buildiq', 'Label (i18n key)')"
 				@input="updateField(index, 'label', $event.target.value)" />
 			<input
 				:value="tab.icon || ''"
 				type="text"
 				class="sidebar-tab-builder__field sidebar-tab-builder__field--narrow"
-				:placeholder="t('openbuild', 'Icon')"
-				:aria-label="t('openbuild', 'Icon')"
+				:placeholder="t('buildiq', 'Icon')"
+				:aria-label="t('buildiq', 'Icon')"
 				@input="updateField(index, 'icon', $event.target.value)" />
 			<input
 				:value="tab.component || ''"
 				type="text"
 				class="sidebar-tab-builder__field"
-				:placeholder="t('openbuild', 'Component (registry key)')"
-				:aria-label="t('openbuild', 'Component (registry key)')"
+				:placeholder="t('buildiq', 'Component (registry key)')"
+				:aria-label="t('buildiq', 'Component (registry key)')"
 				@input="updateField(index, 'component', $event.target.value)" />
 			<button
 				type="button"
 				class="sidebar-tab-builder__remove"
-				:title="t('openbuild', 'Remove tab')"
+				:title="t('buildiq', 'Remove tab')"
 				@click="removeTab(index)">
 				✕
 			</button>
 		</div>
 		<button type="button" class="sidebar-tab-builder__add" @click="addTab">
-			+ {{ t('openbuild', 'Add tab') }}
+			+ {{ t('buildiq', 'Add tab') }}
 		</button>
 		<p class="sidebar-tab-builder__hint">
 			{{
 				t(
-					'openbuild',
+					'buildiq',
 					'Each tab declares either a list of widgets OR a component (mutually exclusive).',
 				)
 			}}

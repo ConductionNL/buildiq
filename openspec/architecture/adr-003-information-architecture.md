@@ -6,7 +6,7 @@
 
 ## Context
 
-openbuild is the low-code application builder where citizen developers and ambtenaren assemble register-based apps from schemas, pages, workflows, and business rules. The chain ships roughly a dozen specs (`openbuild-application-register`, `openbuild-page-designer`, `openbuild-schema-designer`, `workflow-designer`, `business-rules-engine`, `openbuild-template-catalogue`, `gemma-starter-pack`, `openbuild-runtime`, `openbuild-rbac`, `openbuild-exporter`, `openbuild-version-snapshots`, `environments-deployment-pipeline`) plus assorted infra concerns.
+buildiq is the low-code application builder where citizen developers and ambtenaren assemble register-based apps from schemas, pages, workflows, and business rules. The chain ships roughly a dozen specs (`buildiq-application-register`, `buildiq-page-designer`, `buildiq-schema-designer`, `workflow-designer`, `business-rules-engine`, `buildiq-template-catalogue`, `gemma-starter-pack`, `buildiq-runtime`, `buildiq-rbac`, `buildiq-exporter`, `buildiq-version-snapshots`, `environments-deployment-pipeline`) plus assorted infra concerns.
 
 The naive sidebar would put each spec on its own top-level menu — twelve-plus items in a sidebar, no clear daily home for the maker, and four "Designer" menus competing with the surfaces they edit. That violates the fleet-wide 5–7 top-level menu ceiling and forces the maker to context-switch between "where my app lives" and "where I edit it".
 
@@ -15,11 +15,11 @@ Two persona groups must be served without splitting the app:
 - **Maker** (citizen-dev / ambtenaar) — spends 90% of their time editing one app: its schemas, pages, workflows, rules, RBAC. Needs Apps as a home, designers launched in app context, Catalog for templates.
 - **Operator / release manager** — promotes between environments, runs pipelines, manages snapshots. Needs Deploy and Beheer.
 
-A cross-cutting IA design pass (`/tmp/ia-small5.md`, 2026-05-22) covered openbuild alongside four sibling apps (financeq, purchaseq, planix, scholiq) and applied the same compression discipline: collapse tier-suffixed and adapter specs into sub-pages/tabs/widgets, demote infrastructure to per-resource tabs, keep top-level menus bounded between 4 and 6.
+A cross-cutting IA design pass (`/tmp/ia-small5.md`, 2026-05-22) covered buildiq alongside four sibling apps (financeq, purchaseq, planix, scholiq) and applied the same compression discipline: collapse tier-suffixed and adapter specs into sub-pages/tabs/widgets, demote infrastructure to per-resource tabs, keep top-level menus bounded between 4 and 6.
 
 ## Decision
 
-Adopt a **5-menu top-level navigation** for openbuild:
+Adopt a **5-menu top-level navigation** for buildiq:
 
 1. **Apps** — Mijn apps, Alle apps, App-detail, App-runtime preview
 2. **Designers** — Page Designer, Schema Designer, Workflow Designer, Business Rules Designer (as sub-tools)
@@ -59,7 +59,7 @@ Catalog is template-shopping for citizen-devs (browse, install, fork, publish); 
 
 The GEMMA-pack for overheid use cases is highly visible and politically important, but it is one (well-curated) template feed among many.
 
-*Rationale:* promoting GEMMA to its own top-level menu would imply openbuild is a GEMMA tool first and an app builder second, and would force every non-overheid maker to scan past it. Inside Catalog, GEMMA gets prominence via ordering and badging without distorting the IA.
+*Rationale:* promoting GEMMA to its own top-level menu would imply buildiq is a GEMMA tool first and an app builder second, and would force every non-overheid maker to scan past it. Inside Catalog, GEMMA gets prominence via ordering and badging without distorting the IA.
 
 *How to apply:* keep `gemma-starter-pack` mapped as `Catalog > GEMMA-starterpack`. Give it a visual treatment (top of the list, conformity-score badge) inside Catalog rather than a sidebar slot.
 
@@ -67,17 +67,17 @@ The GEMMA-pack for overheid use cases is highly visible and politically importan
 
 | spec_slug | placement | parent |
 |---|---|---|
-| `openbuild-application-register` | menu | Apps |
-| `openbuild-page-designer` | sub-tool | Designers > Page Designer |
-| `openbuild-schema-designer` | sub-tool | Designers > Schema Designer |
+| `buildiq-application-register` | menu | Apps |
+| `buildiq-page-designer` | sub-tool | Designers > Page Designer |
+| `buildiq-schema-designer` | sub-tool | Designers > Schema Designer |
 | `workflow-designer` | sub-tool | Designers > Workflow Designer |
 | `business-rules-engine` | sub-tool | Designers > Business Rules Designer |
-| `openbuild-template-catalogue` | menu | Catalog |
+| `buildiq-template-catalogue` | menu | Catalog |
 | `gemma-starter-pack` | sub-page | Catalog > GEMMA-starterpack |
-| `openbuild-runtime` | tab | Apps > app > Runtime/Preview (+ global in Beheer) |
-| `openbuild-rbac` | tab | Apps > app > RBAC (+ global in Beheer) |
-| `openbuild-exporter` | tab | Apps > app > Export (+ global in Beheer) |
-| `openbuild-version-snapshots` | tab | Apps > app > Versies (+ snapshot-policy in Beheer) |
+| `buildiq-runtime` | tab | Apps > app > Runtime/Preview (+ global in Beheer) |
+| `buildiq-rbac` | tab | Apps > app > RBAC (+ global in Beheer) |
+| `buildiq-exporter` | tab | Apps > app > Export (+ global in Beheer) |
+| `buildiq-version-snapshots` | tab | Apps > app > Versies (+ snapshot-policy in Beheer) |
 | `environments-deployment-pipeline` | menu | Deploy |
 
 ### Implementation phases (informational, mirrored from IA doc)
@@ -109,12 +109,12 @@ The GEMMA-pack for overheid use cases is highly visible and politically importan
 | One top-level menu per chain spec (~12 items) | Violates 5–7 ceiling; no daily home; designers compete with the surfaces they edit |
 | Single "Lifecycle" menu merging Catalog + Deploy | Mixes citizen-dev decision-making with operator execution; distinct personas forced to scan past irrelevant content |
 | Designers as top-level (4 sibling menus) | Forces app-context switching; designer with no app context is meaningless; bloats sidebar |
-| GEMMA-starterpack as top-level menu | Implies openbuild is a GEMMA tool first; non-overheid makers scan past it; one template feed shouldn't shape the IA |
+| GEMMA-starterpack as top-level menu | Implies buildiq is a GEMMA tool first; non-overheid makers scan past it; one template feed shouldn't shape the IA |
 | RBAC / Snapshots / Runtime as top-level menus | Drags the maker out of the app to manage one app's settings; per-app tab is where the work happens |
 
 ## Related
 
-- Builds on the fleet IA design pass `ia-small5.md` (2026-05-22) that covered financeq, purchaseq, planix, scholiq, openbuild with the same compression discipline.
+- Builds on the fleet IA design pass `ia-small5.md` (2026-05-22) that covered financeq, purchaseq, planix, scholiq, buildiq with the same compression discipline.
 - Aligns with `adr-002-versioned-app-deployment-model.md` — the per-app Versies tab is the surface for the linear-chain promotion model from ADR-002.
 - Aligns with `adr-001-app-assets-via-openregister-files.md` — app-level assets surface inside App detail tabs, never in a separate "Assets" menu.
 - Downstream cascades: any new chain spec must be placed via the IA mapping table; new top-level menus require an ADR superseding this one.

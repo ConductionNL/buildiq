@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild AgentRunLogger
+ * Buildiq AgentRunLogger
  *
  * Thin wrapper that persists one `AgentRun` record per plan+execute (or
  * plan+discard) interaction issued with an `agentId` — the prompt, the
@@ -16,7 +16,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -31,7 +31,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -107,7 +107,7 @@ class AgentRunLogger {
 			return $this->toArray(item: $created);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild AgentRunLogger: failed to persist AgentRun for agent ' . $agentId . ' (outcome ' . $outcome . '): ' . $e->getMessage(),
+				'Buildiq AgentRunLogger: failed to persist AgentRun for agent ' . $agentId . ' (outcome ' . $outcome . '): ' . $e->getMessage(),
 				['exception' => $e, 'userId' => $userId]
 			);
 

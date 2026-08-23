@@ -14,7 +14,7 @@
 
 ## 3. i18n & quality
 
-- [x] 3.1 Wrap all user-facing strings in `t('openbuild', ...)` with Dutch + English translations per hydra ADR-007 (English source keys)
+- [x] 3.1 Wrap all user-facing strings in `t('buildiq', ...)` with Dutch + English translations per hydra ADR-007 (English source keys)
 - [x] 3.2 Pass `eslint` and `stylelint` on the new/changed files
 
 ## 4. Tests

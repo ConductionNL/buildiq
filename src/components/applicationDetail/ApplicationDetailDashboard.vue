@@ -40,7 +40,7 @@
 				<div
 					class="ob-detail-dashboard__range"
 					role="group"
-					:aria-label="t('openbuild', 'Time range')">
+					:aria-label="t('buildiq', 'Time range')">
 					<NcButton
 						v-for="opt in windowOptions"
 						:key="opt"
@@ -64,19 +64,19 @@
 					}"
 					role="button"
 					tabindex="0"
-					:title="t('openbuild', 'Open in OpenRegister')"
+					:title="t('buildiq', 'Open in OpenRegister')"
 					@click="openInRegister('audit')"
 					@keyup.enter="openInRegister('audit')">
 					<CnStatsBlock
 						class="ob-detail-dashboard__kpi"
 						horizontal
 						:icon="iconUsers"
-						:title="t('openbuild', 'Active users')"
+						:title="t('buildiq', 'Active users')"
 						:count="kpis.activeUsers"
-						:countLabel="t('openbuild', 'users')"
+						:countLabel="t('buildiq', 'users')"
 						variant="primary"
 						:loading="!loaded"
-						:loadingLabel="t('openbuild', 'Loading…')"
+						:loadingLabel="t('buildiq', 'Loading…')"
 						:showZeroCount="loaded" />
 				</div>
 				<div
@@ -86,19 +86,19 @@
 					}"
 					role="button"
 					tabindex="0"
-					:title="t('openbuild', 'Open in OpenRegister')"
+					:title="t('buildiq', 'Open in OpenRegister')"
 					@click="openInRegister('objects')"
 					@keyup.enter="openInRegister('objects')">
 					<CnStatsBlock
 						class="ob-detail-dashboard__kpi"
 						horizontal
 						:icon="iconObjects"
-						:title="t('openbuild', 'Object count')"
+						:title="t('buildiq', 'Object count')"
 						:count="kpis.objectCount"
-						:countLabel="t('openbuild', 'objects')"
+						:countLabel="t('buildiq', 'objects')"
 						variant="primary"
 						:loading="!loaded"
-						:loadingLabel="t('openbuild', 'Loading…')"
+						:loadingLabel="t('buildiq', 'Loading…')"
 						:showZeroCount="loaded" />
 				</div>
 				<!-- Storage: the KPI value is the SUM of attached-file sizes (bytes)
@@ -113,7 +113,7 @@
 					}"
 					role="button"
 					tabindex="0"
-					:title="t('openbuild', 'Open in OpenRegister')"
+					:title="t('buildiq', 'Open in OpenRegister')"
 					@click="openInRegister('files')"
 					@keyup.enter="openInRegister('files')">
 					<CnStatsBlock
@@ -121,7 +121,7 @@
 						class="ob-detail-dashboard__kpi"
 						horizontal
 						:icon="iconStorage"
-						:title="t('openbuild', 'Storage')"
+						:title="t('buildiq', 'Storage')"
 						:count="kpis.filesCount"
 						countLabel=""
 						variant="success"
@@ -135,11 +135,11 @@
 						class="ob-detail-dashboard__kpi"
 						horizontal
 						:icon="iconStorage"
-						:title="t('openbuild', 'Storage')"
+						:title="t('buildiq', 'Storage')"
 						:count="0"
 						variant="success"
 						loading
-						:loadingLabel="t('openbuild', 'Loading…')" />
+						:loadingLabel="t('buildiq', 'Loading…')" />
 				</div>
 				<div
 					class="ob-detail-dashboard__kpi-link"
@@ -148,19 +148,19 @@
 					}"
 					role="button"
 					tabindex="0"
-					:title="t('openbuild', 'Open in OpenRegister')"
+					:title="t('buildiq', 'Open in OpenRegister')"
 					@click="openInRegister('audit')"
 					@keyup.enter="openInRegister('audit')">
 					<CnStatsBlock
 						class="ob-detail-dashboard__kpi"
 						horizontal
 						:icon="iconAudit"
-						:title="t('openbuild', 'Audit events')"
+						:title="t('buildiq', 'Audit events')"
 						:count="kpis.auditEventCount"
-						:countLabel="t('openbuild', 'events')"
+						:countLabel="t('buildiq', 'events')"
 						variant="warning"
 						:loading="!loaded"
-						:loadingLabel="t('openbuild', 'Loading…')"
+						:loadingLabel="t('buildiq', 'Loading…')"
 						:showZeroCount="loaded" />
 				</div>
 			</div>
@@ -174,7 +174,7 @@
 				<header class="ob-detail-dashboard__activity-header">
 					<h3>
 						{{
-							t('openbuild', 'Activity ({window})', {
+							t('buildiq', 'Activity ({window})', {
 								window: selectedWindow,
 							})
 						}}
@@ -185,7 +185,7 @@
 					viewBox="0 0 100 30"
 					preserveAspectRatio="none"
 					role="img"
-					:aria-label="t('openbuild', 'Activity sparkline')">
+					:aria-label="t('buildiq', 'Activity sparkline')">
 					<polyline
 						:points="sparklinePoints"
 						fill="none"
@@ -194,7 +194,7 @@
 				</svg>
 				<p class="ob-detail-dashboard__activity-summary">
 					{{
-						t('openbuild', '{count} buckets, {sum} total events', {
+						t('buildiq', '{count} buckets, {sum} total events', {
 							count: activity.length,
 							sum: totalActivityEvents,
 						})
@@ -202,7 +202,7 @@
 				</p>
 			</div>
 			<p v-else class="ob-detail-dashboard__activity-empty">
-				{{ t('openbuild', 'No activity in the selected window') }}
+				{{ t('buildiq', 'No activity in the selected window') }}
 			</p>
 		</section>
 
@@ -330,7 +330,7 @@ export default {
 			// Layered-delta UI state (layered-versioned-app-deltas).
 			showUserDeltaModal: false,
 			userDeltaContent: {},
-			// Import-data wizard state (openbuild-data-import-wizard).
+			// Import-data wizard state (buildiq-data-import-wizard).
 			showImportWizard: false,
 			importSchemas: [],
 		}
@@ -545,11 +545,11 @@ export default {
 			if (this.versionNoLongerAccessible) {
 				return {
 					message: t(
-						'openbuild',
+						'buildiq',
 						'This version is no longer accessible. Switch to production?',
 					),
 
-					actionLabel: t('openbuild', 'Switch to production'),
+					actionLabel: t('buildiq', 'Switch to production'),
 					action: () => this.switchToProduction(),
 				}
 			}
@@ -581,11 +581,13 @@ export default {
 		 * version's name/semver, falling back to the active version).
 		 *
 		 * @return {string}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		adminVersionLabel() {
 			const v = this.productionVersion || this.activeVersion
-			if (!v) return t('openbuild', 'current')
-			return v.semver || v.name || v.slug || t('openbuild', 'current')
+			if (!v) return t('buildiq', 'current')
+			return v.semver || v.name || v.slug || t('buildiq', 'current')
 		},
 
 		/**
@@ -601,17 +603,19 @@ export default {
 		/**
 		 * Slug of the OpenRegister register the KPIs reflect. Hybrid apps use the
 		 * installed fleet app's register (== appSlug); virtual apps use the
-		 * per-version register `openbuild-{appSlug}-{versionSlug}`. Empty until the
+		 * per-version register `buildiq-{appSlug}-{versionSlug}`. Empty until the
 		 * app + active version are known (KPI cards are then non-clickable).
 		 *
 		 * @return {string}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		registerSlug() {
 			if (!this.appSlug) return ''
 			if (this.isHybrid) return this.appSlug
 			// Prefer the active version's REAL register — versions may share
 			// production's register (manifest-only versioning), so the
-			// `openbuild-{appSlug}-{versionSlug}` convention can name a register
+			// `buildiq-{appSlug}-{versionSlug}` convention can name a register
 			// that doesn't exist. Fall back to the convention when absent.
 			const real = (this.activeVersion && this.activeVersion.register) || ''
 			if (real) return real
@@ -740,7 +744,7 @@ export default {
 		formatBytes(bytes) {
 			const n = Number(bytes) || 0
 			if (n < 1024) {
-				return t('openbuild', '{n} B', { n })
+				return t('buildiq', '{n} B', { n })
 			}
 			const units = ['KB', 'MB', 'GB', 'TB', 'PB']
 			let value = n / 1024
@@ -835,6 +839,8 @@ export default {
 		 * Fetch the caller's own user-delta content (for seeding the edit modal).
 		 *
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		async loadUserDeltaContent() {
 			if (!this.appSlug || !this.allowUserOverrides) {
@@ -843,7 +849,7 @@ export default {
 			}
 			try {
 				const url = generateUrl(
-					'/apps/openbuild/api/app-overrides/{appId}/user',
+					'/apps/buildiq/api/app-overrides/{appId}/user',
 					{ appId: this.appSlug },
 				)
 				const { data } = await axios.get(url)
@@ -918,7 +924,7 @@ export default {
 			if (!this.appSlug) return
 			try {
 				const url = generateUrl(
-					`/apps/openbuild/api/applications/${encodeURIComponent(this.appSlug)}/versions`,
+					`/apps/buildiq/api/applications/${encodeURIComponent(this.appSlug)}/versions`,
 				)
 				const { data } = await axios.get(url)
 				const list = Array.isArray(data)
@@ -982,7 +988,7 @@ export default {
 			this.versionNoLongerAccessible = false
 			try {
 				const url = generateUrl(
-					`/apps/openbuild/api/applications/${encodeURIComponent(appUuid)}/versions/${encodeURIComponent(this.activeVersionUuid)}/insights`,
+					`/apps/buildiq/api/applications/${encodeURIComponent(appUuid)}/versions/${encodeURIComponent(this.activeVersionUuid)}/insights`,
 				)
 				const { data } = await axios.get(url, {
 					params: { window: this.selectedWindow },

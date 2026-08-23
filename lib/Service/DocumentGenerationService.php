@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild DocumentGenerationService
+ * Buildiq DocumentGenerationService
  *
  * Imperative half of the `generateDocument` automation action (design.md
  * Decision 1/2/3 of automation-document-action). On trigger fire, calls
@@ -49,10 +49,10 @@
  * to the triggering object's owner's Nextcloud Files via `OCP\Files\IRootFolder`
  * and sets `{ "ref": "<fileId>" }` on the object's `generatedDocument` field
  * (ADR-001 `{ref}` shape, the same one `logoRef`/`ShareToken` already use);
- * `download-link` writes the bytes to OpenBuild's OWN app-private storage
+ * `download-link` writes the bytes to Buildiq's OWN app-private storage
  * (`OCP\Files\IAppData` — never the user-visible Files tree, satisfying "no
  * file is written to Nextcloud Files") behind a random, single-use-scoped
- * token with a ~24h TTL, served by {@see \OCA\OpenBuild\Controller\GeneratedDocumentController};
+ * token with a ~24h TTL, served by {@see \OCA\Buildiq\Controller\GeneratedDocumentController};
  * `notify` dispatches a notification through the existing
  * {@see RuleActionDispatcher} (reuse, not a second notification path) and
  * MUST be paired with `attach` and/or `download-link`.
@@ -61,7 +61,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -81,11 +81,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\Authentication\Token\IToken;
 use OCP\Files\AppData\IAppDataFactory;
 use OCP\Files\Folder;
@@ -104,7 +104,7 @@ use Throwable;
  */
 class DocumentGenerationService {
 	/**
-	 * Shared OpenBuild register slug (matches {@see AutomationCompilerService::REGISTER_SLUG}).
+	 * Shared Buildiq register slug (matches {@see AutomationCompilerService::REGISTER_SLUG}).
 	 */
 	public const REGISTER_SLUG = AutomationCompilerService::REGISTER_SLUG;
 
@@ -130,7 +130,7 @@ class DocumentGenerationService {
 	 * `attach` output mode's subfolder name in the impersonated owner's
 	 * Nextcloud Files.
 	 */
-	private const ATTACH_SUBFOLDER = 'OpenBuild generated documents';
+	private const ATTACH_SUBFOLDER = 'Buildiq generated documents';
 
 	/**
 	 * `download-link` mode's signed-URL lifetime (design.md Open Questions —
@@ -165,10 +165,10 @@ class DocumentGenerationService {
 	 * Constructor.
 	 *
 	 * @param ObjectServiceInterface $objectService OpenRegister object service (ADR-022 boundary)
-	 *                                     — resolves the owning Application by slug
-	 *                                     and writes the `attach`-mode object file
-	 *                                     reference.
-	 * @param RegisterMapper $registerMapper Resolves the shared `openbuild` register id.
+	 *                                              — resolves the owning Application by slug
+	 *                                              and writes the `attach`-mode object file
+	 *                                              reference.
+	 * @param RegisterMapper $registerMapper Resolves the shared `buildiq` register id.
 	 * @param SchemaMapper $schemaMapper Resolves the `application` schema id.
 	 * @param JobOwnerImpersonator $ownerImpersonator Impersonates the Application owner (design.md Decision 1).
 	 * @param RuleActionDispatcher $ruleActionDispatcher Dispatches the `notify` output mode's notification
@@ -179,7 +179,7 @@ class DocumentGenerationService {
 	 * @param IRootFolder $rootFolder `attach` mode — writes to the owner's
 	 *                                Nextcloud Files.
 	 * @param IAppDataFactory $appDataFactory `download-link` mode — writes to
-	 *                                        OpenBuild's own app-private storage (never
+	 *                                        Buildiq's own app-private storage (never
 	 *                                        the user's Files tree).
 	 * @param ContainerInterface $container PSR container — lazily resolves the
 	 *                                      optional NC-core token provider (see {@see
@@ -226,7 +226,7 @@ class DocumentGenerationService {
 		$templateId = (string)($action['templateId'] ?? '');
 		$outputModes = $this->normaliseOutputModes(raw: $action['output'] ?? null);
 		if ($templateId === '' || $outputModes === []) {
-			$this->logger->warning('OpenBuild: DocumentGenerationService skipped — invalid generateDocument action config.');
+			$this->logger->warning('Buildiq: DocumentGenerationService skipped — invalid generateDocument action config.');
 			return false;
 		}
 
@@ -234,7 +234,7 @@ class DocumentGenerationService {
 		$applicationUuid = $this->resolveApplicationUuid(slug: $applicationSlug);
 		if ($applicationUuid === null) {
 			$this->logger->warning(
-				'OpenBuild: DocumentGenerationService could not resolve Application "' . $applicationSlug . '" — generation skipped.'
+				'Buildiq: DocumentGenerationService could not resolve Application "' . $applicationSlug . '" — generation skipped.'
 			);
 			return false;
 		}
@@ -253,7 +253,7 @@ class DocumentGenerationService {
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: DocumentGenerationService failed for object "' . $objectUuid . '": ' . $e->getMessage(),
+				'Buildiq: DocumentGenerationService failed for object "' . $objectUuid . '": ' . $e->getMessage(),
 				['exception' => $e]
 			);
 			return false;
@@ -351,7 +351,7 @@ class DocumentGenerationService {
 	/**
 	 * Resolve the owning Application's uuid by slug (established scattered
 	 * pattern in this codebase — see e.g.
-	 * {@see \OCA\OpenBuild\Service\ManifestResolverService::findApplicationBySlug()}).
+	 * {@see \OCA\Buildiq\Service\ManifestResolverService::findApplicationBySlug()}).
 	 *
 	 * @param string $slug The Application slug.
 	 *
@@ -373,7 +373,7 @@ class DocumentGenerationService {
 				]
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenBuild: DocumentGenerationService findApplicationBySlug failed for "' . $slug . '": ' . $e->getMessage());
+			$this->logger->warning('Buildiq: DocumentGenerationService findApplicationBySlug failed for "' . $slug . '": ' . $e->getMessage());
 			return null;
 		}
 
@@ -407,7 +407,7 @@ class DocumentGenerationService {
 	private function callGenerate(string $templateId, array $dataRefs, string $filename): ?array {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
-			$this->logger->warning('OpenBuild: DocumentGenerationService has no impersonated user active — Docudesk call skipped.');
+			$this->logger->warning('Buildiq: DocumentGenerationService has no impersonated user active — Docudesk call skipped.');
 			return null;
 		}
 
@@ -415,7 +415,7 @@ class DocumentGenerationService {
 		$minted = $this->mintOneTimeToken(uid: $uid);
 		if ($minted === null) {
 			$this->logger->error(
-				'OpenBuild: DocumentGenerationService could not mint an internal auth token for "' . $uid . '" — Docudesk call skipped.'
+				'Buildiq: DocumentGenerationService could not mint an internal auth token for "' . $uid . '" — Docudesk call skipped.'
 			);
 			return null;
 		}
@@ -440,7 +440,7 @@ class DocumentGenerationService {
 					]
 				);
 			} catch (Throwable $e) {
-				$this->logger->error('OpenBuild: DocumentGenerationService Docudesk call failed: ' . $e->getMessage(), ['exception' => $e]);
+				$this->logger->error('Buildiq: DocumentGenerationService Docudesk call failed: ' . $e->getMessage(), ['exception' => $e]);
 				return null;
 			}
 		} finally {
@@ -454,7 +454,7 @@ class DocumentGenerationService {
 
 		$status = $response->getStatusCode();
 		if ($status < 200 || $status >= 300) {
-			$this->logger->warning('OpenBuild: DocumentGenerationService Docudesk call returned status ' . $status . '.');
+			$this->logger->warning('Buildiq: DocumentGenerationService Docudesk call returned status ' . $status . '.');
 			return null;
 		}
 
@@ -502,14 +502,14 @@ class DocumentGenerationService {
 				$uid,
 				$uid,
 				null,
-				'OpenBuild automation (generateDocument)',
+				'Buildiq automation (generateDocument)',
 				IToken::TEMPORARY_TOKEN,
 				IToken::DO_NOT_REMEMBER
 			);
 
 			return [$secret, $provider];
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenBuild: DocumentGenerationService could not mint an internal auth token: ' . $e->getMessage());
+			$this->logger->warning('Buildiq: DocumentGenerationService could not mint an internal auth token: ' . $e->getMessage());
 			return null;
 		}//end try
 
@@ -530,7 +530,7 @@ class DocumentGenerationService {
 				$provider->invalidateToken($token);
 			}
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenBuild: DocumentGenerationService could not invalidate the internal auth token: ' . $e->getMessage());
+			$this->logger->warning('Buildiq: DocumentGenerationService could not invalidate the internal auth token: ' . $e->getMessage());
 		}
 
 	}//end invalidateToken()
@@ -572,7 +572,7 @@ class DocumentGenerationService {
 				// A non-folder node already occupies that path — should
 				// never happen for a name this class alone manages, but
 				// fail safe rather than fatal.
-				$this->logger->error('OpenBuild: DocumentGenerationService attach target "' . self::ATTACH_SUBFOLDER . '" is not a folder.');
+				$this->logger->error('Buildiq: DocumentGenerationService attach target "' . self::ATTACH_SUBFOLDER . '" is not a folder.');
 				return null;
 			}
 
@@ -581,7 +581,7 @@ class DocumentGenerationService {
 
 			return (string)$file->getId();
 		} catch (Throwable $e) {
-			$this->logger->error('OpenBuild: DocumentGenerationService attach-to-Files failed: ' . $e->getMessage(), ['exception' => $e]);
+			$this->logger->error('Buildiq: DocumentGenerationService attach-to-Files failed: ' . $e->getMessage(), ['exception' => $e]);
 			return null;
 		}//end try
 
@@ -637,14 +637,14 @@ class DocumentGenerationService {
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: DocumentGenerationService could not write the attachment reference onto "' . $objectUuid . '": ' . $e->getMessage()
+				'Buildiq: DocumentGenerationService could not write the attachment reference onto "' . $objectUuid . '": ' . $e->getMessage()
 			);
 		}
 
 	}//end writeAttachmentReference()
 
 	/**
-	 * `download-link` output mode — write the returned bytes to OpenBuild's
+	 * `download-link` output mode — write the returned bytes to Buildiq's
 	 * OWN app-private storage (never the user's Files tree) behind a random
 	 * token, with a metadata sidecar carrying the ~24h expiry
 	 * ({@see self::DOWNLOAD_LINK_TTL_SECONDS}) served by
@@ -658,14 +658,14 @@ class DocumentGenerationService {
 	 */
 	private function writeDownloadLink(string $filename, string $body, string $contentType): ?string {
 		try {
-			$appData = $this->appDataFactory->get('openbuild');
+			$appData = $this->appDataFactory->get('buildiq');
 			try {
 				$root = $appData->getFolder(self::APPDATA_FOLDER);
 			} catch (Throwable $e) {
 				$root = $appData->newFolder(self::APPDATA_FOLDER);
 			}
 		} catch (Throwable $e) {
-			$this->logger->error('OpenBuild: DocumentGenerationService could not open app-data storage: ' . $e->getMessage());
+			$this->logger->error('Buildiq: DocumentGenerationService could not open app-data storage: ' . $e->getMessage());
 			return null;
 		}
 
@@ -686,12 +686,12 @@ class DocumentGenerationService {
 				)
 			);
 		} catch (Throwable $e) {
-			$this->logger->error('OpenBuild: DocumentGenerationService could not persist the download-link artifact: ' . $e->getMessage());
+			$this->logger->error('Buildiq: DocumentGenerationService could not persist the download-link artifact: ' . $e->getMessage());
 			return null;
 		}
 
 		return $this->urlGenerator->linkToRouteAbsolute(
-			'openbuild.generatedDocument.download',
+			'buildiq.generatedDocument.download',
 			['token' => $token]
 		);
 

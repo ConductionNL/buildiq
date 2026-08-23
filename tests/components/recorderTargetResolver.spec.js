@@ -8,7 +8,7 @@ import {
 } from '../../src/components/walkthrough-editor/recorderTargetResolver.js'
 
 /**
- * Spec: openbuild-walkthrough-editor recorder (ADR-043). Clicking an element on
+ * Spec: buildiq-walkthrough-editor recorder (ADR-043). Clicking an element on
  * the running virtual app resolves to the most stable target descriptor.
  */
 describe('recorderTargetResolver', () => {

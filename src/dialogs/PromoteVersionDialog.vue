@@ -2,7 +2,7 @@
 <!-- SPDX-FileCopyrightText: 2026 Conduction B.V. -->
 <template>
 	<NcDialog
-		:name="t('openbuild', 'Promote version')"
+		:name="t('buildiq', 'Promote version')"
 		:noClose="false"
 		size="normal"
 		@closing="onCancel">
@@ -11,7 +11,7 @@
 			<p>
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'This version has no downstream target. Set a "Promotes to" relation to enable promotion.',
 					)
 				}}
@@ -24,11 +24,11 @@
 				<h3>{{ summaryText }}</h3>
 				<p class="promote-dialog__registers">
 					<span
-						>{{ t('openbuild', 'Source register:') }}
+						>{{ t('buildiq', 'Source register:') }}
 						<code>{{ sourceVersion.register }}</code></span
 					>
 					<span
-						>{{ t('openbuild', 'Target register:') }}
+						>{{ t('buildiq', 'Target register:') }}
 						<code>{{ targetVersion.register }}</code></span
 					>
 				</p>
@@ -36,7 +36,7 @@
 
 			<fieldset class="promote-dialog__strategies">
 				<legend class="promote-dialog__strategies-legend">
-					{{ t('openbuild', 'Data strategy') }}
+					{{ t('buildiq', 'Data strategy') }}
 				</legend>
 
 				<NcCheckboxRadioSwitch
@@ -45,12 +45,12 @@
 					name="promote-strategy"
 					type="radio">
 					<strong>{{
-						t('openbuild', 'Start target with source data')
+						t('buildiq', 'Start target with source data')
 					}}</strong>
 					<span class="promote-dialog__strategy-description">
 						{{
 							t(
-								'openbuild',
+								'buildiq',
 								"Replace the target version's rows with copies of the source's rows. Useful when the test data is the new shape of production data.",
 							)
 						}}
@@ -63,12 +63,12 @@
 					name="promote-strategy"
 					type="radio">
 					<strong>{{
-						t('openbuild', "Migrate target's existing data")
+						t('buildiq', "Migrate target's existing data")
 					}}</strong>
 					<span class="promote-dialog__strategy-description">
 						{{
 							t(
-								'openbuild',
+								'buildiq',
 								"Keep the target version's existing rows and apply the source's schema set. OpenRegister handles column-level migration for breaking changes.",
 							)
 						}}
@@ -80,14 +80,12 @@
 					value="empty-start"
 					name="promote-strategy"
 					type="radio">
-					<strong>{{
-						t('openbuild', 'Empty start (destructive)')
-					}}</strong>
+					<strong>{{ t('buildiq', 'Empty start (destructive)') }}</strong>
 					<span
 						class="promote-dialog__strategy-description promote-dialog__strategy-description--destructive">
 						{{
 							t(
-								'openbuild',
+								'buildiq',
 								"Drop every row in the target's register and install the source's schema set without copying data. This cannot be undone.",
 							)
 						}}
@@ -110,14 +108,14 @@
 		<!-- Actions slot — always at NcDialog level -->
 		<template #actions>
 			<NcButton variant="tertiary" @click="onCancel">
-				{{ t('openbuild', 'Cancel') }}
+				{{ t('buildiq', 'Cancel') }}
 			</NcButton>
 			<NcButton
 				v-if="targetVersion"
 				variant="primary"
 				:disabled="!isDestructiveGateMet"
 				@click="onConfirm">
-				{{ t('openbuild', 'Promote') }}
+				{{ t('buildiq', 'Promote') }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -137,7 +135,7 @@ import { defaultStrategyFor } from './promoteVersionDefaults.js'
  * (spec REQ-OBVP-010, ADR-004 modal-isolation rule). The dialog is a
  * pure presentation component — it does NOT call the backend itself.
  * The parent surface (delivered by sibling spec
- * `openbuild-app-detail-overview`) listens to the emitted events and
+ * `buildiq-app-detail-overview`) listens to the emitted events and
  * performs the network call.
  *
  * Props:
@@ -199,7 +197,7 @@ export default {
 				this.sourceVersion?.name || this.sourceVersion?.slug || '?'
 			const targetName =
 				this.targetVersion?.name || this.targetVersion?.slug || '?'
-			return t('openbuild', 'Promote {source} to {target}', {
+			return t('buildiq', 'Promote {source} to {target}', {
 				source: sourceName,
 				target: targetName,
 			})
@@ -232,7 +230,7 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-2
 		 */
 		confirmInputLabel() {
-			return t('openbuild', 'Type the application slug to confirm')
+			return t('buildiq', 'Type the application slug to confirm')
 		},
 
 		/**
@@ -243,7 +241,7 @@ export default {
 		 */
 		confirmHelperText() {
 			return t(
-				'openbuild',
+				'buildiq',
 				'Empty start will permanently delete every row in the target\'s register. Type "{slug}" to confirm.',
 				{ slug: this.application?.slug || '' },
 			)

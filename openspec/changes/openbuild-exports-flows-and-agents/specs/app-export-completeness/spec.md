@@ -1,6 +1,6 @@
 ## Purpose
 
-Defines what an exported OpenBuild application contains and what that export is good for. The guarantee is not that the ZIP mentions the app's parts, but that an instance which imports it can RUN them — an export whose flows import but never fire is worse than one that omits them, because nothing surfaces the difference.
+Defines what an exported Buildiq application contains and what that export is good for. The guarantee is not that the ZIP mentions the app's parts, but that an instance which imports it can RUN them — an export whose flows import but never fire is worse than one that omits them, because nothing surfaces the difference.
 
 ## ADDED Requirements
 

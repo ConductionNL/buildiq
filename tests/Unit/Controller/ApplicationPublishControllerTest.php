@@ -16,7 +16,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Controller
+ * @package  OCA\Buildiq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -29,15 +29,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Controller;
+namespace OCA\Buildiq\Tests\Unit\Controller;
 
-use OCA\OpenBuild\Controller\ApplicationPublishController;
-use OCA\OpenBuild\Service\ApplicationDeletionService;
-use OCA\OpenBuild\Service\Credential\VirtualAppCredentialRegistrar;
-use OCA\OpenBuild\Service\PermissionResolver;
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\Buildiq\Controller\ApplicationPublishController;
+use OCA\Buildiq\Service\ApplicationDeletionService;
+use OCA\Buildiq\Service\Credential\VirtualAppCredentialRegistrar;
+use OCA\Buildiq\Service\PermissionResolver;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Http;
 use OCP\IGroupManager;
 use OCP\IRequest;

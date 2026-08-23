@@ -4,7 +4,7 @@
  * `dataSource.connector` form. The canonical `app-manifest-v2.schema.json`
  * carries the `dataSource` $def with `additionalProperties: true`, so the
  * library validator accepts the `connector` branch without complaint; this
- * module supplies the strict shape checks openbuild needs on top of it
+ * module supplies the strict shape checks buildiq needs on top of it
  * (REQ-OCAS-001), surfaced through the `useManifestValidator` pipeline.
  *
  * Returned errors are JSON-Pointer-prefixed strings of the shape
@@ -68,7 +68,7 @@ export function validateConnectorDataSource(dataSource, pointer) {
 		|| typeof connector !== 'object'
 		|| Array.isArray(connector)
 	) {
-		errors.push(at('openbuild.connector.error.invalid-shape'))
+		errors.push(at('buildiq.connector.error.invalid-shape'))
 		return errors
 	}
 
@@ -77,16 +77,16 @@ export function validateConnectorDataSource(dataSource, pointer) {
 		dataSource.register !== undefined || dataSource.schema !== undefined
 	const hasGraphqlForm = dataSource.graphql !== undefined
 	if (hasRegisterForm || hasGraphqlForm) {
-		errors.push(`${pointer}: openbuild.connector.error.mixed-form`)
+		errors.push(`${pointer}: buildiq.connector.error.mixed-form`)
 	}
 
 	// Unknown / credential keys.
 	for (const key of Object.keys(connector)) {
 		if (CREDENTIAL_KEYS.includes(key)) {
-			errors.push(at('openbuild.connector.error.credentials-forbidden'))
+			errors.push(at('buildiq.connector.error.credentials-forbidden'))
 		} else if (!ALLOWED_KEYS.includes(key)) {
 			errors.push(
-				`${pointer}/connector/${key}: openbuild.connector.error.unknown-key`,
+				`${pointer}/connector/${key}: buildiq.connector.error.unknown-key`,
 			)
 		}
 	}
@@ -94,11 +94,11 @@ export function validateConnectorDataSource(dataSource, pointer) {
 	// endpointPath — required, scheme/host-free, not an /apps/ path.
 	const ep = connector.endpointPath
 	if (typeof ep !== 'string' || ep.trim() === '') {
-		errors.push(at('openbuild.connector.error.endpoint-required'))
+		errors.push(at('buildiq.connector.error.endpoint-required'))
 	} else if (ep.includes('://')) {
-		errors.push(at('openbuild.connector.error.endpoint-no-scheme'))
+		errors.push(at('buildiq.connector.error.endpoint-no-scheme'))
 	} else if (ep.startsWith('/apps/')) {
-		errors.push(at('openbuild.connector.error.endpoint-no-apps-prefix'))
+		errors.push(at('buildiq.connector.error.endpoint-no-apps-prefix'))
 	}
 
 	// method — optional, closed enum GET.
@@ -106,18 +106,18 @@ export function validateConnectorDataSource(dataSource, pointer) {
 		connector.method !== undefined
 		&& !CONNECTOR_METHODS.includes(connector.method)
 	) {
-		errors.push(at('openbuild.connector.error.method-unsupported'))
+		errors.push(at('buildiq.connector.error.method-unsupported'))
 	}
 
 	// query — optional, scalar-valued map.
 	if (connector.query !== undefined) {
 		const q = connector.query
 		if (q === null || typeof q !== 'object' || Array.isArray(q)) {
-			errors.push(at('openbuild.connector.error.query-not-object'))
+			errors.push(at('buildiq.connector.error.query-not-object'))
 		} else {
 			for (const v of Object.values(q)) {
 				if (v !== null && typeof v === 'object') {
-					errors.push(at('openbuild.connector.error.query-not-scalar'))
+					errors.push(at('buildiq.connector.error.query-not-scalar'))
 					break
 				}
 			}
@@ -130,7 +130,7 @@ export function validateConnectorDataSource(dataSource, pointer) {
 			typeof connector.itemsPath !== 'string'
 			|| !DOT_PATH.test(connector.itemsPath)
 		) {
-			errors.push(at('openbuild.connector.error.itemspath-invalid'))
+			errors.push(at('buildiq.connector.error.itemspath-invalid'))
 		}
 	}
 
@@ -142,12 +142,12 @@ export function validateConnectorDataSource(dataSource, pointer) {
 		|| Array.isArray(fields)
 		|| Object.keys(fields).length === 0
 	) {
-		errors.push(at('openbuild.connector.error.fields-required'))
+		errors.push(at('buildiq.connector.error.fields-required'))
 	} else {
 		for (const [name, sel] of Object.entries(fields)) {
 			if (typeof sel !== 'string' || !DOT_PATH.test(sel)) {
 				errors.push(
-					`${pointer}/connector/fields/${name}: openbuild.connector.error.field-selector-invalid`,
+					`${pointer}/connector/fields/${name}: buildiq.connector.error.field-selector-invalid`,
 				)
 			}
 		}
@@ -157,7 +157,7 @@ export function validateConnectorDataSource(dataSource, pointer) {
 	if (connector.cacheTtl !== undefined) {
 		const ttl = connector.cacheTtl
 		if (!Number.isInteger(ttl) || ttl < 0 || ttl > 3600) {
-			errors.push(at('openbuild.connector.error.cachettl-range'))
+			errors.push(at('buildiq.connector.error.cachettl-range'))
 		}
 	}
 

@@ -3,7 +3,7 @@
 /**
  * Unit tests for ApplicationCreationController.
  *
- * Covers spec `openbuild-app-creation-wizard` REQ-OBWIZ-001, REQ-OBWIZ-007:
+ * Covers spec `buildiq-app-creation-wizard` REQ-OBWIZ-001, REQ-OBWIZ-007:
  *   - 201 on success with applicationUuid in body
  *   - 422 on validation failure (failedAtStep=validate)
  *   - 500 on rollback-complete failure
@@ -16,7 +16,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Controller
+ * @package  OCA\Buildiq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -29,11 +29,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Controller;
+namespace OCA\Buildiq\Tests\Unit\Controller;
 
-use OCA\OpenBuild\Controller\ApplicationCreationController;
-use OCA\OpenBuild\Exception\WizardCreationException;
-use OCA\OpenBuild\Service\ApplicationCreationService;
+use OCA\Buildiq\Controller\ApplicationCreationController;
+use OCA\Buildiq\Exception\WizardCreationException;
+use OCA\Buildiq\Service\ApplicationCreationService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;

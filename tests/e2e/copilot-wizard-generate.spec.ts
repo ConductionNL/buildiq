@@ -11,8 +11,8 @@
  * is actually deterministic and worth asserting — see the long note in
  * tests/e2e/copilot-panel.spec.ts.
  *
- * OpenBuild is the MCP **provider**: `CopilotService::execute()` is a pure
- * dispatcher over `lib/Mcp/OpenBuildToolProvider`'s handlers and never calls
+ * Buildiq is the MCP **provider**: `CopilotService::execute()` is a pure
+ * dispatcher over `lib/Mcp/BuildiqToolProvider`'s handlers and never calls
  * `assertAvailable()`, so it needs no AI. Only `plan()` talks to an LLM.
  *
  *   - `/api/copilot/health` is stubbed 200 — an environment probe that gates
@@ -21,12 +21,12 @@
  *   - `/api/copilot/plan` is stubbed — LLM output is non-deterministic and
  *     explicitly out of scope (spec.md `@e2e exclude` on REQ-OBAIC-002/004).
  *   - `/api/copilot/execute` is NOT stubbed — it hits the real backend and
- *     drives the real `openbuild.createApp` / `openbuild.upsertPage` MCP
+ *     drives the real `buildiq.createApp` / `buildiq.upsertPage` MCP
  *     handlers, so a real Application is genuinely created.
  *
  * Preconditions:
  *   - Nextcloud reachable at PLAYWRIGHT_BASE_URL.
- *   - openbuild enabled, openregister enabled.
+ *   - buildiq enabled, openregister enabled.
  *   - Authenticated browser context from global-setup.
  */
 import { test, expect } from '@playwright/test'
@@ -39,11 +39,11 @@ import { test, expect } from '@playwright/test'
 // that hit the same overlays.
 import { dismissWalkthrough, dismissSupportDialog } from './support/overlays'
 
-const HEALTH_URL = '**/apps/openbuild/api/copilot/health'
-const PLAN_URL = '**/apps/openbuild/api/copilot/plan'
+const HEALTH_URL = '**/apps/buildiq/api/copilot/health'
+const PLAN_URL = '**/apps/buildiq/api/copilot/plan'
 
 /**
- * `openbuild.createApp` rejects a slug that already exists, so a fixed slug
+ * `buildiq.createApp` rejects a slug that already exists, so a fixed slug
  * would pass once and fail on every re-run. Each run gets its own slug.
  * Must satisfy the tool's `^[a-z0-9][a-z0-9-]*[a-z0-9]$` pattern, max 48.
  */
@@ -53,7 +53,7 @@ const stubbedPlan = (slug: string) => ({
 	summary: 'A tool library where members can borrow and return tools.',
 	steps: [
 		{
-			tool: 'openbuild.createApp',
+			tool: 'buildiq.createApp',
 			arguments: {
 				slug,
 				name: 'E2E Copilot Tool Library',
@@ -61,7 +61,7 @@ const stubbedPlan = (slug: string) => ({
 			},
 		},
 		{
-			tool: 'openbuild.upsertPage',
+			tool: 'buildiq.upsertPage',
 			arguments: {
 				appSlug: slug,
 				pageId: 'home',
@@ -111,7 +111,7 @@ test.describe('Wizard "Generate with AI" (spec: ai-copilot)', () => {
 				body: JSON.stringify({ available: true }),
 			}),
 		)
-		await page.goto('/apps/openbuild/')
+		await page.goto('/apps/buildiq/')
 		await dismissWalkthrough(page)
 		await dismissSupportDialog(page)
 		// NOT waitForLoadState('networkidle') — this NC instance's own
@@ -187,7 +187,7 @@ test.describe('Wizard "Generate with AI" (spec: ai-copilot)', () => {
 				body: JSON.stringify({ available: true }),
 			}),
 		)
-		await page.goto('/apps/openbuild/')
+		await page.goto('/apps/buildiq/')
 		await dismissWalkthrough(page)
 		await dismissSupportDialog(page)
 		// NOT waitForLoadState('networkidle') — this NC instance's own
@@ -214,7 +214,7 @@ test.describe('Wizard "Generate with AI" (spec: ai-copilot)', () => {
 		)
 
 		let executeCalled = false
-		await page.route('**/apps/openbuild/api/copilot/execute', (route) => {
+		await page.route('**/apps/buildiq/api/copilot/execute', (route) => {
 			executeCalled = true
 			return route.continue()
 		})
@@ -260,7 +260,7 @@ test.describe('Wizard "Generate with AI" (spec: ai-copilot)', () => {
 				}),
 			}),
 		)
-		await page.goto('/apps/openbuild/')
+		await page.goto('/apps/buildiq/')
 		await dismissWalkthrough(page)
 		await dismissSupportDialog(page)
 		// NOT waitForLoadState('networkidle') — this NC instance's own

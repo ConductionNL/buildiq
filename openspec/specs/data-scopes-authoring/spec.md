@@ -160,7 +160,7 @@ manage-permission.
 
 ### Requirement: Authored scopes MUST rely on OpenRegister enforcement, not designer gating (REQ-OBDSA-008)
 
-OpenBuild MUST NOT add client-side row filtering that substitutes for
+Buildiq MUST NOT add client-side row filtering that substitutes for
 the compiled `authorization` metadata: the Access sub-editor is an authoring surface only, and the authoritative
 row-level control is OpenRegister's server-side evaluation of the
 compiled block, exactly as the
@@ -171,7 +171,7 @@ Access scopes are what actually restrict data.
 
 **ID:** REQ-OBDSA-008
 
-#### Scenario: Compiled scopes are enforced server-side without OpenBuild code
+#### Scenario: Compiled scopes are enforced server-side without Buildiq code
 - GIVEN a schema saved with `authorization.read = ["vets"]` through the Access sub-editor
 - WHEN a non-vet, non-admin user requests that schema's objects directly from OpenRegister
 - THEN OpenRegister returns no objects for that user

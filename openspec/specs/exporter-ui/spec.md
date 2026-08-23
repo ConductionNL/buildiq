@@ -6,13 +6,13 @@ retrofit: true
 
 ## Purpose
 
-The exporter UI graduates a published OpenBuild virtual app into a standalone
+The exporter UI graduates a published Buildiq virtual app into a standalone
 Nextcloud app. `ExportDialog` collects the export target, visibility, license,
 and version, then submits the export job; `ExportJobsList` lists the jobs, polls
 for status, and labels each.
 
 This capability is observed behaviour of those components. It is the frontend
-half of the `openbuild-exporter` backend capability.
+half of the `buildiq-exporter` backend capability.
 
 ## Requirements
 
@@ -22,7 +22,7 @@ half of the `openbuild-exporter` backend capability.
 lists (`targetOptions`, `visibilityOptions`, `licenseOptions`,
 `versionOptions`), submit the export job (`submit`), and close (`onClose`).
 
-@e2e exclude retrofit component-contract spec — `targetOptions`, `visibilityOptions`, `licenseOptions`, `versionOptions`, `submit`, `onClose` are dialog-component contracts verified by Vitest unit tests; export-dialog open/submit integration requires a published app + export backend which is covered by the openbuild-exporter Newman tests
+@e2e exclude retrofit component-contract spec — `targetOptions`, `visibilityOptions`, `licenseOptions`, `versionOptions`, `submit`, `onClose` are dialog-component contracts verified by Vitest unit tests; export-dialog open/submit integration requires a published app + export backend which is covered by the buildiq-exporter Newman tests
 
 #### Scenario: Submit an export
 
@@ -36,7 +36,7 @@ for status updates, clean up the poll on `beforeDestroy`, label each job's
 status (`statusLabel`), open the export dialog (`openDialog`), and react to a
 newly queued job (`onQueued`).
 
-@e2e exclude retrofit component-contract spec — `fetchJobs`, `statusLabel`, `onQueued`, poll-cleanup-on-`beforeDestroy` are component lifecycle contracts verified by Vitest unit tests; job-status polling requires a running async export job backend which is covered by the openbuild-exporter Newman tests
+@e2e exclude retrofit component-contract spec — `fetchJobs`, `statusLabel`, `onQueued`, poll-cleanup-on-`beforeDestroy` are component lifecycle contracts verified by Vitest unit tests; job-status polling requires a running async export job backend which is covered by the buildiq-exporter Newman tests
 
 #### Scenario: Poll a running job
 

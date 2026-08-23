@@ -8,7 +8,7 @@ retrofit: true
 
 ## Purpose
 
-OpenBuild exposes a small administrative surface that lets the frontend
+Buildiq exposes a small administrative surface that lets the frontend
 read and write app-level configuration (the OpenRegister register key),
 discover whether OpenRegister is installed, and learn whether the
 current user is an admin. The same surface re-imports the bundled
@@ -28,7 +28,7 @@ This capability is observed behaviour of the `SettingsService`,
 
 `SettingsService::getSettings()` SHALL return a flat array containing
 every key in `CONFIG_KEYS` (currently `register`), read from
-`IAppConfig` for the `openbuild` app with an empty-string default,
+`IAppConfig` for the `buildiq` app with an empty-string default,
 merged with two computed metadata fields: `openregisters` (true when
 the `openregister` app is installed, via
 `isOpenRegisterAvailable()`) and `isAdmin` (true when a user is signed
@@ -61,7 +61,7 @@ rejecting unauthenticated callers with HTTP 401.
 #### Scenario: Persist a known key
 
 - **WHEN** an authenticated caller POSTs `{"register":"openbuild"}`
-- **THEN** the `register` app-config value is set to `openbuild`
+- **THEN** the `register` app-config value is set to `buildiq`
 - **AND** the response echoes `success:true` and the updated config
 
 #### Scenario: Unknown key ignored
@@ -109,7 +109,7 @@ return its result, rejecting unauthenticated callers with HTTP 401.
 The `InitializeSettings` repair step SHALL run during app
 install/upgrade, calling `SettingsService::reloadConfiguration()` to
 force-import the bundled register configuration so a freshly installed
-OpenBuild has its registers and schemas provisioned without a manual
+Buildiq has its registers and schemas provisioned without a manual
 admin action. `getName()` SHALL return a human-readable step name and
 `run(IOutput $output)` SHALL execute the import and surface its outcome
 through the repair output / logger.
@@ -118,7 +118,7 @@ through the repair output / logger.
 
 #### Scenario: Install triggers import
 
-- **WHEN** the OpenBuild app is installed or upgraded
+- **WHEN** the Buildiq app is installed or upgraded
 - **THEN** the `InitializeSettings` repair step runs
   `reloadConfiguration()` to provision registers
 
@@ -126,7 +126,7 @@ through the repair output / logger.
 
 Both probe endpoints are served by OpenRegister's AppHost observability
 engine (ADR-040 adoption, ADR-006 contract), driven by the declarative
-`observability` block of `src/manifest.json`. OpenBuild no longer owns a
+`observability` block of `src/manifest.json`. Buildiq no longer owns a
 concrete `HealthController` / `MetricsController`; `AppInfo\Application`
 binds the leaf controller names to `GenericHealthController` /
 `GenericMetricsController` via lazy service factories. Those factories are
@@ -141,8 +141,8 @@ code chosen by the manifest's `statusCodePolicy` (`adr006`).
 `Content-Type: text/plain; version=0.0.4`) rendering each gauge declared
 in `observability.metrics`, with HTTP 200 for an authorised caller. The
 engine namespaces every series with the app id, so the manifest's
-`applications_total` is exposed as `openbuild_applications_total`, and it
-adds the implicit `openbuild_info` and `openbuild_up` series.
+`applications_total` is exposed as `buildiq_applications_total`, and it
+adds the implicit `buildiq_info` and `buildiq_up` series.
 
 #### Scenario: Health probe
 
@@ -153,11 +153,11 @@ adds the implicit `openbuild_info` and `openbuild_up` series.
 
 - **WHEN** an authenticated caller hits the metrics endpoint
 - **THEN** the response is a `text/plain` Prometheus exposition with HTTP
-  200, containing `# HELP` / `# TYPE` lines for `openbuild_export_jobs_total`,
-  `openbuild_applications_total` and `openbuild_application_versions_total`,
-  plus the implicit `openbuild_up` series
+  200, containing `# HELP` / `# TYPE` lines for `buildiq_export_jobs_total`,
+  `buildiq_applications_total` and `buildiq_application_versions_total`,
+  plus the implicit `buildiq_up` series
 
-**Notes:** This requirement previously described OpenBuild's own probe
+**Notes:** This requirement previously described Buildiq's own probe
 controllers returning a placeholder `{"metrics":[]}` JSON payload. That
 implementation was removed by the ADR-040 AppHost adoption but the
 requirement text was not updated with it, leaving the spec — and the e2e
@@ -175,8 +175,8 @@ references any `OCA\OpenRegister\AppHost\…` name, including the
 Nextcloud registers apps in sorted order: `OC_App::getEnabledApps()` does
 `sort($apps)` and `Coordinator::registerApps()` walks that list calling
 `OC_App::registerAutoloading($appId, $path)` and then `$app->register()`
-for one app at a time. `openbuild` sorts before `openregister`, so every
-`OCA\OpenRegister\…` name is unresolvable inside OpenBuild's `register()`
+for one app at a time. `buildiq` sorts before `openregister`, so every
+`OCA\OpenRegister\…` name is unresolvable inside Buildiq's `register()`
 on a perfectly healthy instance with OpenRegister enabled.
 
 `OC_App::registerAutoloading()` is idempotent and touches only the
@@ -190,15 +190,15 @@ than the one it exists to prevent.
 
 #### Scenario: The AppHost-bound observability routes actually dispatch
 
-- **GIVEN** an instance with OpenRegister enabled, and OpenBuild's
+- **GIVEN** an instance with OpenRegister enabled, and Buildiq's
   `register()` running at its sorted position ahead of `openregister`
-- **WHEN** `GET /apps/openbuild/api/health` is called
+- **WHEN** `GET /apps/buildiq/api/health` is called
 - **THEN** the response MUST be HTTP 200 with the engine's canonical
-  `{status, app, version, checks}` shape and `app = "openbuild"` — which is
+  `{status, app, version, checks}` shape and `app = "buildiq"` — which is
   only possible if `class_exists(Bootstrap::class)` answered `true` and
-  `Bootstrap::register()` ran, because OpenBuild ships no concrete
+  `Bootstrap::register()` ran, because Buildiq ships no concrete
   `HealthController` and `health#index` exists ONLY as a Bootstrap DI alias
-- **AND** `GET /apps/openbuild/api/metrics` MUST NOT return a 5xx: an
+- **AND** `GET /apps/buildiq/api/metrics` MUST NOT return a 5xx: an
   anonymous caller must be turned away by the auth middleware, which only
   runs once the route resolves to a bound controller
 - **AND** the log line `OpenRegister AppHost\Bootstrap is not autoloadable`
@@ -206,7 +206,7 @@ than the one it exists to prevent.
 
 The absent-OpenRegister path has no scenario of its own on purpose: it is not
 reachable from a browser or an HTTP client, because an instance without
-OpenRegister cannot serve OpenBuild's OpenRegister-backed surface at all. It is
+OpenRegister cannot serve Buildiq's OpenRegister-backed surface at all. It is
 asserted directly at the unit level, in
 `tests/Unit/AppInfo/OpenRegisterAutoloaderTest.php`, which runs the prelude in
 an environment where `\OCP\Server::get()` resolves nothing and requires that
@@ -216,7 +216,7 @@ control still returns to the caller.
 is narrower than the load-order argument alone predicts — both halves are
 recorded here because the difference is not yet explained.
 
-Before the prelude (run 31081906401, job 92555103075): `OpenBuild:
+Before the prelude (run 31081906401, job 92555103075): `Buildiq:
 OpenRegister AppHost\Bootstrap is not autoloadable` was logged **3 times**,
 once for each `occ` invocation in `tests/e2e/ci-seed.sh`, while
 `lib/AppHost/Bootstrap.php` existed on OpenRegister the whole time. So under
@@ -225,7 +225,7 @@ generic plumbing was silently skipped — for every `occ` command, background
 job and repair step.
 
 In the *same* run, `GET /api/health` returned 200 with `status: ok` and
-`GET /api/metrics` rendered the manifest's gauges. OpenBuild ships no
+`GET /api/metrics` rendered the manifest's gauges. Buildiq ships no
 concrete `HealthController`/`MetricsController`, and `health#index` exists
 only as a `Bootstrap::register()` DI alias — so under the **web** SAPI the
 guard was answering `true` and the plumbing *was* registered. The mechanism

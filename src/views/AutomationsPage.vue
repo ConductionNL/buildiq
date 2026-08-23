@@ -9,23 +9,23 @@
   -
   - Automation object CRUD goes through OpenRegister's REST surface
   - (ADR-022); the effectual compile/enable/disable/dry-run/status calls go
-  - through the openbuild AutomationsController API.
+  - through the buildiq AutomationsController API.
   -->
 <template>
 	<div class="automations-page">
 		<header class="automations-page__header">
-			<h2>{{ t('openbuild', 'Automations') }}</h2>
+			<h2>{{ t('buildiq', 'Automations') }}</h2>
 			<NcButton
 				variant="secondary"
 				:disabled="!selectedApp"
 				@click="openFlows">
-				{{ t('openbuild', 'Edit flows…') }}
+				{{ t('buildiq', 'Edit flows…') }}
 			</NcButton>
 			<NcButton
 				variant="primary"
 				:disabled="!selectedVersionId"
 				@click="openNew">
-				{{ t('openbuild', 'New automation') }}
+				{{ t('buildiq', 'New automation') }}
 			</NcButton>
 		</header>
 
@@ -33,7 +33,7 @@
 			<NcSelect
 				v-model="selectedApp"
 				class="automations-page__picker"
-				:inputLabel="t('openbuild', 'Application')"
+				:inputLabel="t('buildiq', 'Application')"
 				:options="applications"
 				:loading="loadingApplications"
 				label="name"
@@ -42,7 +42,7 @@
 			<NcSelect
 				v-model="selectedVersion"
 				class="automations-page__picker"
-				:inputLabel="t('openbuild', 'Version')"
+				:inputLabel="t('buildiq', 'Version')"
 				:options="versions"
 				:loading="loadingVersions"
 				:disabled="!selectedApp"
@@ -55,10 +55,10 @@
 
 		<NcEmptyContent
 			v-else-if="selectedVersionId && automations.length === 0"
-			:name="t('openbuild', 'No automations yet')"
+			:name="t('buildiq', 'No automations yet')"
 			:description="
 				t(
-					'openbuild',
+					'buildiq',
 					'Create an automation to compose a trigger, an optional condition, and one or more actions.',
 				)
 			" />
@@ -66,7 +66,7 @@
 		<p v-else-if="!selectedVersionId" class="automations-page__hint">
 			{{
 				t(
-					'openbuild',
+					'buildiq',
 					'Select an application and a version to see its automations.',
 				)
 			}}
@@ -88,9 +88,9 @@
 						v-if="driftFor(automation.id)"
 						class="automations-page__drift-badge"
 						data-testid="drift-badge">
-						{{ t('openbuild', 'Drift detected') }}
+						{{ t('buildiq', 'Drift detected') }}
 						<NcButton variant="tertiary" @click="recompile(automation)">
-							{{ t('openbuild', 'Recompile (overwrite)') }}
+							{{ t('buildiq', 'Recompile (overwrite)') }}
 						</NcButton>
 					</span>
 					<span
@@ -106,16 +106,16 @@
 						type="switch"
 						:modelValue="automation.enabled !== false"
 						@update:modelValue="toggleEnabled(automation, $event)">
-						{{ t('openbuild', 'Enabled') }}
+						{{ t('buildiq', 'Enabled') }}
 					</NcCheckboxRadioSwitch>
 					<NcButton variant="tertiary" @click="openTestPanel(automation)">
-						{{ t('openbuild', 'Test') }}
+						{{ t('buildiq', 'Test') }}
 					</NcButton>
 					<NcButton variant="tertiary" @click="openEdit(automation)">
-						{{ t('openbuild', 'Edit') }}
+						{{ t('buildiq', 'Edit') }}
 					</NcButton>
 					<NcButton variant="tertiary" @click="remove(automation)">
-						{{ t('openbuild', 'Delete') }}
+						{{ t('buildiq', 'Delete') }}
 					</NcButton>
 				</div>
 			</li>
@@ -138,7 +138,7 @@
 
 		<!--
 		  flow-engine-unification task 6.4: the shared node/edge canvas, scoped
-		  to this built application (`app`), not the fixed "openbuild" — each
+		  to this built application (`app`), not the fixed "buildiq" — each
 		  application under construction gets its own flows, mirroring how
 		  automations are already scoped by `applicationSlug` above. CnFlowDetail
 		  treats the literal id "new" as "start blank", so this always opens
@@ -158,14 +158,14 @@
 
 		<ConfirmActionDialog
 			v-model:open="confirmDeleteOpen"
-			:name="t('openbuild', 'Delete automation')"
+			:name="t('buildiq', 'Delete automation')"
 			:message="
 				t(
-					'openbuild',
+					'buildiq',
 					'Delete this automation? This also removes its compiled artifacts.',
 				)
 			"
-			:confirmLabel="t('openbuild', 'Delete')"
+			:confirmLabel="t('buildiq', 'Delete')"
 			:busy="deleting"
 			destructive
 			@confirm="onConfirmDelete" />
@@ -252,11 +252,11 @@ export default {
 			this.loadingApplications = true
 			this.errorMessage = ''
 			try {
-				const url = generateUrl('/apps/openbuild/api/applications')
+				const url = generateUrl('/apps/buildiq/api/applications')
 				const { data } = await axios.get(url)
 				this.applications = this.extractResults(data)
 			} catch (error) {
-				this.errorMessage = t('openbuild', 'Could not load applications.')
+				this.errorMessage = t('buildiq', 'Could not load applications.')
 			} finally {
 				this.loadingApplications = false
 			}
@@ -281,18 +281,20 @@ export default {
 		 * version selector).
 		 *
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/automation-designer/spec.md
 		 */
 		async fetchVersions() {
 			this.loadingVersions = true
 			this.errorMessage = ''
 			try {
 				const url = generateUrl(
-					`/apps/openbuild/api/applications/${this.selectedApp.slug}/versions`,
+					`/apps/buildiq/api/applications/${this.selectedApp.slug}/versions`,
 				)
 				const { data } = await axios.get(url)
 				this.versions = this.extractResults(data)
 			} catch (error) {
-				this.errorMessage = t('openbuild', 'Could not load versions.')
+				this.errorMessage = t('buildiq', 'Could not load versions.')
 			} finally {
 				this.loadingVersions = false
 			}
@@ -333,7 +335,7 @@ export default {
 				)
 				await this.refreshStatuses()
 			} catch (error) {
-				this.errorMessage = t('openbuild', 'Could not load automations.')
+				this.errorMessage = t('buildiq', 'Could not load automations.')
 			} finally {
 				this.loading = false
 			}
@@ -350,7 +352,7 @@ export default {
 				this.automations.map(async (automation) => {
 					try {
 						const url = generateUrl(
-							`/apps/openbuild/api/automations/${automation.id}/status`,
+							`/apps/buildiq/api/automations/${automation.id}/status`,
 						)
 						const { data } = await axios.get(url)
 						return [automation.id, data]
@@ -400,9 +402,9 @@ export default {
 		 */
 		approvalStateLabel(state) {
 			const labels = {
-				pending: t('openbuild', 'Approval pending'),
-				approved: t('openbuild', 'Approved'),
-				rejected: t('openbuild', 'Rejected'),
+				pending: t('buildiq', 'Approval pending'),
+				approved: t('buildiq', 'Approved'),
+				rejected: t('buildiq', 'Rejected'),
 			}
 			return labels[state] || state
 		},
@@ -412,18 +414,20 @@ export default {
 		 *
 		 * @param {object} automation - the automation object.
 		 * @return {string}
+		 *
+		 * @spec openspec/specs/automation-designer/spec.md
 		 */
 		triggerSummary(automation) {
 			const trigger = automation.trigger || {}
 			const labels = {
-				'object-created': t('openbuild', 'When an object is created'),
-				'object-updated': t('openbuild', 'When an object is updated'),
-				'object-deleted': t('openbuild', 'When an object is deleted'),
-				'lifecycle-transition': t('openbuild', 'On lifecycle transition'),
-				schedule: t('openbuild', 'On a schedule'),
-				manual: t('openbuild', 'Manual'),
+				'object-created': t('buildiq', 'When an object is created'),
+				'object-updated': t('buildiq', 'When an object is updated'),
+				'object-deleted': t('buildiq', 'When an object is deleted'),
+				'lifecycle-transition': t('buildiq', 'On lifecycle transition'),
+				schedule: t('buildiq', 'On a schedule'),
+				manual: t('buildiq', 'Manual'),
 			}
-			return labels[trigger.type] || t('openbuild', 'No trigger')
+			return labels[trigger.type] || t('buildiq', 'No trigger')
 		},
 
 		/**
@@ -431,13 +435,15 @@ export default {
 		 *
 		 * @param {object} automation - the automation object.
 		 * @return {string}
+		 *
+		 * @spec openspec/specs/automation-designer/spec.md
 		 */
 		actionSummary(automation) {
 			const actions = Array.isArray(automation.actions)
 				? automation.actions
 				: []
 			if (actions.length === 0) {
-				return t('openbuild', 'No actions')
+				return t('buildiq', 'No actions')
 			}
 			return actions.map((a) => a.type).join(', ')
 		},
@@ -529,20 +535,22 @@ export default {
 		 * @param {object} automation - the automation row.
 		 * @param {boolean} checked - the new enabled state.
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/automation-designer/spec.md
 		 */
 		async toggleEnabled(automation, checked) {
 			this.errorMessage = ''
 			const action = checked ? 'enable' : 'disable'
 			try {
 				const url = generateUrl(
-					`/apps/openbuild/api/automations/${automation.id}/${action}`,
+					`/apps/buildiq/api/automations/${automation.id}/${action}`,
 				)
 				await axios.post(url, {})
 				await this.fetchAutomations()
 			} catch (error) {
 				this.errorMessage = checked
-					? t('openbuild', 'Could not enable the automation.')
-					: t('openbuild', 'Could not disable the automation.')
+					? t('buildiq', 'Could not enable the automation.')
+					: t('buildiq', 'Could not disable the automation.')
 			}
 		},
 
@@ -551,17 +559,19 @@ export default {
 		 *
 		 * @param {object} automation - the automation row.
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/automation-designer/spec.md
 		 */
 		async recompile(automation) {
 			this.errorMessage = ''
 			try {
 				const url = generateUrl(
-					`/apps/openbuild/api/automations/${automation.id}/compile`,
+					`/apps/buildiq/api/automations/${automation.id}/compile`,
 				)
 				await axios.post(url, {})
 				await this.fetchAutomations()
 			} catch (error) {
-				this.errorMessage = t('openbuild', 'Recompile failed.')
+				this.errorMessage = t('buildiq', 'Recompile failed.')
 			}
 		},
 
@@ -608,23 +618,20 @@ export default {
 			this.errorMessage = ''
 			this.deleting = true
 			try {
-				// OpenBuild's own endpoint: it authorises against the parent
+				// Buildiq's own endpoint: it authorises against the parent
 				// Application's `permissions` block and removes the COMPILED
 				// ARTIFACTS before deleting the definition. Deleting straight
 				// over OR REST 403s for every non-admin (the `automation`
 				// schema is admin-only on `delete`) and, for an admin, would
 				// leave the compiled notifications/schedules live with no
-				// definition left to edit them from. Conduction/openbuild#173.
+				// definition left to edit them from. Conduction/buildiq#173.
 				const url = generateUrl(
-					`/apps/openbuild/api/automations/${automation.id}`,
+					`/apps/buildiq/api/automations/${automation.id}`,
 				)
 				await axios.delete(url)
 				await this.fetchAutomations()
 			} catch (error) {
-				this.errorMessage = t(
-					'openbuild',
-					'Could not delete the automation.',
-				)
+				this.errorMessage = t('buildiq', 'Could not delete the automation.')
 			} finally {
 				this.deleting = false
 				this.confirmDeleteOpen = false

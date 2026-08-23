@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: EUPL-1.2 -->
 <!--
-  - PageDesigner — three-pane visual designer for OpenBuild application
+  - PageDesigner — three-pane visual designer for Buildiq application
   - manifests. Toolbar: undo / redo (OQ-1) + the save-and-preview action.
   - Left: page list + menu tree. Centre: per-page-type sub-editor
   - dispatched by `page.type` (the sub-editors paint inline validator
@@ -17,17 +17,17 @@
 					type="button"
 					class="page-designer__tool-btn"
 					:disabled="!canUndo"
-					:title="t('openbuild', 'Undo (Ctrl+Z)')"
+					:title="t('buildiq', 'Undo (Ctrl+Z)')"
 					@click="undo">
-					↶ {{ t('openbuild', 'Undo') }}
+					↶ {{ t('buildiq', 'Undo') }}
 				</button>
 				<button
 					type="button"
 					class="page-designer__tool-btn"
 					:disabled="!canRedo"
-					:title="t('openbuild', 'Redo (Ctrl+Shift+Z / Ctrl+Y)')"
+					:title="t('buildiq', 'Redo (Ctrl+Shift+Z / Ctrl+Y)')"
 					@click="redo">
-					↷ {{ t('openbuild', 'Redo') }}
+					↷ {{ t('buildiq', 'Redo') }}
 				</button>
 			</div>
 			<div class="page-designer__toolbar-group">
@@ -35,14 +35,14 @@
 					type="button"
 					class="page-designer__tool-btn"
 					@click="blocksSidebarOpen = true">
-					{{ t('openbuild', 'Blocks') }}
+					{{ t('buildiq', 'Blocks') }}
 				</button>
 				<button
 					type="button"
 					class="page-designer__tool-btn page-designer__tool-btn--primary"
 					:disabled="!canSaveAndPreview"
 					@click="saveAndPreview">
-					{{ t('openbuild', 'Save & open preview') }}
+					{{ t('buildiq', 'Save & open preview') }}
 				</button>
 			</div>
 		</header>
@@ -55,7 +55,7 @@
 		     engine — rather than splicing the manifest by hand. -->
 		<NcAppSidebar
 			v-if="blocksSidebarOpen"
-			:name="t('openbuild', 'Blocks')"
+			:name="t('buildiq', 'Blocks')"
 			@close="blocksSidebarOpen = false">
 			<BlockLibraryPanel
 				:open="blocksSidebarOpen"
@@ -87,13 +87,13 @@
 						:data-registers="applicationDataRegisters"
 						:parentRoute="selectedPage.route || ''"
 						:title="
-							t('openbuild', 'Unsupported page type: {type}', {
+							t('buildiq', 'Unsupported page type: {type}', {
 								type: selectedPage.type,
 							})
 						"
 						:message="
 							t(
-								'openbuild',
+								'buildiq',
 								'No visual editor exists for this page type yet. Edit the raw config below; unknown keys are preserved.',
 							)
 						"
@@ -114,7 +114,7 @@
 					<p>
 						{{
 							t(
-								'openbuild',
+								'buildiq',
 								'Select a page on the left, or add one to start designing.',
 							)
 						}}
@@ -133,7 +133,7 @@
 				<div
 					v-if="previewAvailable && livePreviewProps"
 					class="page-designer__preview">
-					<h4>{{ t('openbuild', 'Live preview') }}</h4>
+					<h4>{{ t('buildiq', 'Live preview') }}</h4>
 					<div class="page-designer__preview-surface">
 						<CnAppRoot
 							:key="livePreviewProps.key"
@@ -147,11 +147,11 @@
 					</div>
 				</div>
 				<div v-else class="page-designer__preview-fallback">
-					<h4>{{ t('openbuild', 'Live preview') }}</h4>
+					<h4>{{ t('buildiq', 'Live preview') }}</h4>
 					<p class="page-designer__preview-message">
 						{{
 							t(
-								'openbuild',
+								'buildiq',
 								'Live preview is not yet installed. Save and open the built app to preview your changes.',
 							)
 						}}
@@ -161,16 +161,16 @@
 						class="page-designer__preview-btn"
 						:disabled="!canSaveAndPreview"
 						@click="saveAndPreview">
-						{{ t('openbuild', 'Save & open preview') }}
+						{{ t('buildiq', 'Save & open preview') }}
 					</button>
 				</div>
 				<div class="page-designer__errors">
-					<h4>{{ t('openbuild', 'Validation') }}</h4>
+					<h4>{{ t('buildiq', 'Validation') }}</h4>
 					<p
 						v-if="depthError"
 						class="page-designer__error-row"
 						role="alert">
-						{{ t('openbuild', 'Menu depth is limited to two levels.') }}
+						{{ t('buildiq', 'Menu depth is limited to two levels.') }}
 					</p>
 					<ul
 						v-if="validatorErrors.length"
@@ -183,7 +183,7 @@
 						</li>
 					</ul>
 					<p v-else-if="!depthError" class="page-designer__ok">
-						{{ t('openbuild', 'No validation errors.') }}
+						{{ t('buildiq', 'No validation errors.') }}
 					</p>
 				</div>
 			</aside>
@@ -902,7 +902,7 @@ export default {
 		/**
 		 * REQ-OBPD-008: translate function handed to the sandboxed CnAppRoot
 		 * preview (mirrors App.vue's `translateForApp`). Closes over
-		 * Nextcloud's translate against the openbuild app id so preview chrome
+		 * Nextcloud's translate against the buildiq app id so preview chrome
 		 * (nav labels, empty states) localises identically to the built app.
 		 *
 		 * @param {string} key - Translation key.
@@ -910,7 +910,7 @@ export default {
 		 * @spec openspec/changes/page-designer-live-preview-pane/tasks.md#task-2.3
 		 */
 		translateForPreview(key) {
-			return ncT('openbuild', key)
+			return ncT('buildiq', key)
 		},
 
 		// --- Undo / redo (OQ-1) -------------------------------------------

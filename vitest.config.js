@@ -1,8 +1,8 @@
 /**
- * SPDX-FileCopyrightText: 2026 ConductionNL / OpenBuild Contributors
+ * SPDX-FileCopyrightText: 2026 ConductionNL / Buildiq Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Vitest configuration for OpenBuild Vue 3 unit tests.
+ * Vitest configuration for Buildiq Vue 3 unit tests.
  *
  * Tests live under `tests/components/**` and `tests/views/**` and run in
  * a jsdom environment so DOM assertions (`wrapper.find`, `wrapper.text`,
