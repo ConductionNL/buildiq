@@ -554,7 +554,12 @@ export default {
 
 	data() {
 		return {
-			mode: 'walkthrough',
+			// Which editor tab opens first. Deep-linkable via `?mode=setup` so a
+			// caller can send the user straight to the setup wizard instead of
+			// landing on the walkthrough and making them find the tab. Guarded
+			// with optional chaining because this component is mounted in unit
+			// tests without a router.
+			mode: this.$route?.query?.mode === 'setup' ? 'setup' : 'walkthrough',
 			activeTourIndex: 0,
 			recording: false,
 			TRIGGERS,

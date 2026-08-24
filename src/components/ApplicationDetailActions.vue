@@ -54,6 +54,46 @@
 				</template>
 			</NcActions>
 		</div>
+		<!-- App-level editors. These edit the app's chrome (its settings, its
+		     first-run wizard, its guided tour, its support note) rather than any
+		     one page, so they belong on the app page rather than in the in-page
+		     orange edit menu, which is being narrowed to page-local actions.
+		     Setup wizard and Support & donation are not here yet: their modals
+		     (CnEditSetupModal / CnEditSupportModal) exist in
+		     @conduction/nextcloud-vue but are not exported from its package
+		     index, so they cannot be imported. ConductionNL/nextcloud-vue#748
+		     exports them; they land here once that reaches a published release. -->
+		<NcButton
+			v-if="obAppRole === 'owner'"
+			data-test="app-edit-settings"
+			:disabled="!obApp"
+			@click="onSettingsOpen(true)">
+			<template #icon>
+				<CogOutline :size="20" />
+			</template>
+			{{ t('buildiq', 'Settings') }}
+		</NcButton>
+		<NcButton
+			v-if="canEditVersions"
+			data-test="app-edit-setup"
+			:disabled="!obApp"
+			@click="openWalkthroughDesigner('setup')">
+			<template #icon>
+				<MapMarkerPath :size="20" />
+			</template>
+			{{ t('buildiq', 'Setup wizard') }}
+		</NcButton>
+		<NcButton
+			v-if="canEditVersions"
+			data-test="app-edit-walkthrough"
+			:disabled="!obApp"
+			@click="openWalkthroughDesigner('walkthrough')">
+			<template #icon>
+				<MapMarkerPath :size="20" />
+			</template>
+			{{ t('buildiq', 'Walkthrough') }}
+		</NcButton>
+
 		<NcButton :disabled="!obApp" @click="exportOpen = true">
 			{{ t('buildiq', 'Export') }}
 		</NcButton>
@@ -200,6 +240,7 @@ import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
 import Github from 'vue-material-design-icons/Github.vue'
 import HelpCircleOutline from 'vue-material-design-icons/HelpCircleOutline.vue'
 import History from 'vue-material-design-icons/History.vue'
+import MapMarkerPath from 'vue-material-design-icons/MapMarkerPath.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
 import PencilRulerOutline from 'vue-material-design-icons/PencilRulerOutline.vue'
 import DeleteAppDialog from '../dialogs/DeleteAppDialog.vue'
@@ -235,6 +276,7 @@ export default {
 		NcActionLink,
 		OpenInNew,
 		CogOutline,
+		MapMarkerPath,
 		DeleteOutline,
 		PencilRulerOutline,
 		AccountMultipleOutline,
@@ -576,6 +618,37 @@ export default {
 		 *
 		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
+		/**
+		 * Open the walkthrough designer for this app, on a chosen tab.
+		 *
+		 * The designer is a page (`WalkthroughDesigner` at
+		 * `/builder/:slug/walkthrough`), not a modal, so this routes rather
+		 * than opening a dialog. It hosts BOTH editors: the guided tour and
+		 * the first-run setup wizard. `?mode=setup` selects the latter, so the
+		 * Setup wizard button lands on its own tab rather than on the
+		 * walkthrough with the user left to find it.
+		 *
+		 * @param {string} mode Which tab to open, `walkthrough` or `setup`.
+		 *
+		 * @return {void}
+		 *
+		 * @spec exclude routes to an existing page, no new behaviour
+		 */
+		openWalkthroughDesigner(mode) {
+			const slug = this.obApp && this.obApp.slug
+			if (!slug) {
+				return
+			}
+
+			this.$router
+				.push({
+					name: 'WalkthroughDesigner',
+					params: { slug },
+					query: mode === 'setup' ? { mode: 'setup' } : {},
+				})
+				.catch(() => {})
+		},
+
 		async onSettingsOpen(open) {
 			this.settingsOpen = open
 			if (!open || this.availableFlows.length || this.loadingFlows) {
