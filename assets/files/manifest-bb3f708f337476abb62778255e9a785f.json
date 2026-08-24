@@ -1,0 +1,407 @@
+{
+	"$schema": "https://codeberg.org/Conduction/nextcloud-vue/raw/branch/main/src/schemas/app-manifest-v2.schema.json",
+	"version": "2.0.0",
+	"openbuildEditable": false,
+	"dependencies": [
+		"openregister"
+	],
+	"setup": {
+		"enabled": true,
+		"version": 1,
+		"completionConfigKey": "setup_completed_version",
+		"steps": [
+			{
+				"id": "welcome",
+				"type": "info",
+				"title": "Welcome to Buildiq",
+				"body": "Buildiq builds apps from templates. This quick setup makes sure the bundled starter templates are available and, optionally, connects a remote template store. It is safe to run more than once."
+			},
+			{
+				"id": "seed",
+				"type": "run-action",
+				"title": "Install starter templates",
+				"required": true,
+				"action": "seed-templates",
+				"body": "Fills the Store with the starter templates, so the create-from-template flow has something to offer. This normally runs on install. Run it here if OpenRegister was enabled after Buildiq, or to repair a partial install. Safe to run twice: existing templates are left untouched."
+			},
+			{
+				"id": "store",
+				"type": "config-fields",
+				"title": "Remote template store (optional)",
+				"body": "Connect a remote template catalogue to offer more starter apps. The bundled templates work without it, so leave this blank to skip.",
+				"schema": {
+					"type": "object",
+					"properties": {
+						"registry_url": {
+							"type": "string",
+							"title": "Store URL"
+						},
+						"registry_register": {
+							"type": "string",
+							"title": "Register segment"
+						},
+						"registry_token": {
+							"type": "string",
+							"title": "Read token (write-only)",
+							"format": "password"
+						}
+					}
+				}
+			},
+			{
+				"id": "done",
+				"type": "summary",
+				"title": "All set",
+				"healthCheck": true,
+				"body": "Buildiq is ready. Open the Store to clone a template into your first app."
+			}
+		]
+	},
+	"walkthrough": {
+		"enabled": true,
+		"version": 1,
+		"completionConfigKey": "walkthrough_completed_version",
+		"tours": [
+			{
+				"id": "buildiq:getting-started",
+				"title": "Getting started",
+				"trigger": "first-visit",
+				"minAppVersion": "0.5.9",
+				"steps": [
+					{ "id": "welcome", "sinceVersion": "0.5.9", "placement": "center", "title": "Welcome to Buildiq", "body": "You'll create your first app from a template. Each step is yours to do. Reopen this tour anytime from the … menu.", "target": { "kind": "page", "ref": "Dashboard" }, "advanceOn": { "type": "manual" } },
+					{ "id": "go-apps", "sinceVersion": "0.5.9", "placement": "right", "body": "Every app you build lives here, ready to open, edit or export.", "task": "Click Apps in the menu", "target": { "kind": "nav-item", "ref": "VirtualApps" }, "advanceOn": { "type": "route-match", "route": "VirtualApps" } },
+					{ "id": "go-store", "sinceVersion": "0.5.9", "placement": "right", "body": "The fastest way to start is from a template. The Store holds ready-made apps you can clone and make your own.", "task": "Click Store in the menu", "target": { "kind": "nav-item", "ref": "Templates" }, "advanceOn": { "type": "route-match", "route": "Templates" } },
+					{ "id": "create-app", "sinceVersion": "0.5.9", "placement": "bottom", "allowManualNext": true, "body": "Cloning copies the template's schemas and pages into an app that is yours to change.", "task": "Clone a template into a new app", "target": { "kind": "page", "ref": "templates-grid" }, "advanceOn": { "type": "object-created", "register": "buildiq", "schema": "application", "capture": { "applicationId": ":id" } } },
+					{ "id": "done", "sinceVersion": "0.5.9", "placement": "center", "title": "Your first app exists", "body": "Open it from Apps to design its schemas and pages. Add your first schema next, then build a page on top of it.", "target": { "kind": "page", "ref": "Dashboard" }, "advanceOn": { "type": "manual" } }
+				]
+			}
+		]
+	},
+	"menu": [
+		{
+			"id": "Dashboard",
+			"label": "Dashboard",
+			"icon": "ViewDashboardOutline",
+			"route": "Dashboard",
+			"order": 10
+		},
+		{
+			"id": "VirtualApps",
+			"label": "Apps",
+			"icon": "ViewGridOutline",
+			"route": "VirtualApps",
+			"order": 20
+		},
+		{
+			"id": "Store",
+			"label": "Store",
+			"icon": "StoreOutline",
+			"route": "Templates",
+			"order": 30
+		},
+		{
+			"id": "Documentation",
+			"label": "Documentation",
+			"icon": "BookOpenVariantOutline",
+			"href": "https://openbuild.conduction.nl",
+			"section": "footer",
+			"order": 90
+		},
+		{
+			"id": "FeaturesRoadmapMenu",
+			"label": "Features & roadmap",
+			"icon": "MapMarkerPath",
+			"route": "FeaturesRoadmap",
+			"section": "footer",
+			"order": 95
+		}
+	],
+	"pages": [
+		{
+			"id": "Dashboard",
+			"route": "/",
+			"type": "custom",
+			"title": "Dashboard",
+			"component": "DashboardIndex",
+			"config": {},
+			"_note": "Dashboard renders the self-contained DashboardIndex view (one CnDashboardPage: 4 KPI cards + Recent apps table + Quick start panel), modelled on the DocuDesk dashboard. type:custom mounts a single CnDashboardPage to avoid the dashboard-in-dashboard antipattern (hydra gate-15)."
+		},
+		{
+			"id": "VirtualApps",
+			"route": "/applications",
+			"type": "index",
+			"title": "Apps",
+			"actionsComponent": "VirtualAppsActions",
+			"slots": {
+				"delete-dialog": "AppDeleteDialogSlot"
+			},
+			"config": {
+				"register": "buildiq",
+				"schema": "application",
+				"viewMode": "cards",
+				"cardComponent": "ApplicationCard",
+				"columns": [
+					"name",
+					"status",
+					"version",
+					"@self.updated"
+				],
+				"showAdd": false,
+				"showMassImport": true,
+				"sidebar": {
+					"enabled": true,
+					"showMetadata": true
+				},
+				"documentationUrl": "https://openbuild.conduction.nl"
+			}
+		},
+		{
+			"id": "ApplicationManifestDetail",
+			"route": "/applications/:objectId/manifest",
+			"type": "custom",
+			"title": "Manifest layers",
+			"component": "ApplicationManifestDetail",
+			"config": {},
+			"_note": "Routed Manifest detail page (layered-versioned-app-deltas). Surfaces the three manifest customization layers (Base / Admin delta / Your delta), the per-layer OpenRegister version history + rollback (reusing VersionHistory), and the per-user create/edit/reset of the caller's own delta. type:custom mounts ManifestLayersDetail; reached from the app-detail Manifest widget. Declared before /applications/:objectId so the extra /manifest segment matches first."
+		},
+		{
+			"id": "VirtualAppDetail",
+			"route": "/applications/:objectId",
+			"type": "detail",
+			"title": "App",
+			"headerComponent": "ApplicationDetailHeader",
+			"actionsComponent": "ApplicationDetailActions",
+			"slots": {
+				"before-body": "ApplicationDetailDashboard"
+			},
+			"config": {
+				"register": "buildiq",
+				"schema": "application",
+				"maxWidth": "none",
+				"showRelatedObjects": false,
+				"showRefresh": false,
+				"showRequestFeature": false,
+				"_note": "Purpose-built maintainer cockpit, NOT the generic data+audit-trail archetype — deliberately exempt from the standard detail-page widget composition (detail-page-redesign brief). headerComponent/actionsComponent/slots.before-body are pre-existing, spec-driven custom components (openspec/changes/retrofit-2026-05-26-application-detail-ui): the before-body ApplicationDetailDashboard already surfaces the KPI grid, activity graph, and a Manifest/Register/Groups widget row — Register's widget already deep-links to this Application's pages/schemas/menu structure (comment in ApplicationDetailDashboard.vue: 'the schema/page/menu detail always reflects the latest manifest and is reachable from the manifest layers'), so the FK-scoped versions/pages/schemas visibility the brief calls for is already covered there, NOT duplicated here. pages and schemas are NOT OpenRegister objects (they live inside ApplicationVersion.manifest as a JSON blob) so no object-list can FK-scope them; ApplicationVersion IS a real FK child (application relation) and its history is what the sidebar 'history' tab already surfaces via rollback-capable VersionHistory. The five non-audit sidebar tabs (Manifest raw editor, Version history+rollback, Diff, Icon upload, Export jobs) are bespoke registered components (kind:'tab' in src/registry.js) with NO catalog widget equivalent (no diff/rollback/icon-upload widget type exists) — moving them into config.widgets is not expressible without inventing a widget type or registering a new kind:'widget' component, both forbidden by the manifest-only rule. Kept as-is; only the audit tab was normalised to the canonical nc-vue built-in below so History still resolves without app registration.",
+				"sidebar": {
+					"enabled": true,
+					"showMetadata": true
+				},
+				"sidebarTabs": [
+					{
+						"id": "manifest",
+						"label": "Manifest",
+						"icon": "PencilOutline",
+						"component": "ApplicationManifestTab",
+						"order": 20
+					},
+					{
+						"id": "history",
+						"label": "Version history",
+						"icon": "History",
+						"component": "ApplicationVersionsTab",
+						"order": 30
+					},
+					{
+						"id": "diff",
+						"label": "Diff",
+						"icon": "FileDocumentMultipleOutline",
+						"component": "ApplicationDiffTab",
+						"order": 40
+					},
+					{
+						"id": "icons",
+						"label": "Icons",
+						"icon": "ImageOutline",
+						"component": "ApplicationIconTab",
+						"order": 50
+					},
+					{
+						"id": "exports",
+						"label": "Exports",
+						"icon": "DatabaseExportOutline",
+						"component": "ExportJobsTab",
+						"order": 60
+					},
+					{
+						"id": "audit",
+						"label": "History",
+						"icon": "History",
+						"widgets": [ { "type": "audit" } ],
+						"order": 70
+					}
+				]
+			}
+		},
+		{
+			"id": "Schemas",
+			"route": "/schemas",
+			"type": "detail",
+			"title": "Schemas",
+			"slots": {
+				"default": "SchemaDesignerView"
+			},
+			"config": {
+				"register": "buildiq",
+				"schema": "application",
+				"createForm": "never",
+				"sidebar": {
+					"enabled": false
+				},
+				"documentationUrl": "https://openbuild.conduction.nl"
+			},
+			"_note": "Top-level schemas overview \u2014 renders the SchemaDesignerView (list mode) via the registry-backed `slots.default` override so the primary action is the native \"Add schema\" flow (SchemaListPanel + AddSchemaDialog). Previously this page was type:\"index\" and fell through to the generic CnIndexPage, which keys its Add button off config.schema (\"application\") and so mislabelled the action \"Add Application\". A type:\"custom\" + top-level `component` does NOT resolve here because CnPageRenderer (beta.107) dispatches custom pages via the empty legacy customComponents map, not the v2 registry; the slot-override path (resolvedSlotEntries) is the one that reads cnRegistry. With no :schemaId route param SchemaDesignerView renders list mode and the no-slug /schemas shortcut falls back to the hello-world app. Per-app drill-down lives under /builder/:slug/schemas."
+		},
+		{
+			"id": "Templates",
+			"route": "/templates",
+			"type": "custom",
+			"title": "Store",
+			"component": "TemplateGallery",
+			"config": {
+				"register": "buildiq",
+				"schema": "application-template",
+				"documentationUrl": "https://openbuild.conduction.nl"
+			},
+			"_note": "Templates renders the store-aware TemplateGallery view (buildiq-remote-template-store): when a registry is configured the remote store search is the primary surface with built-in templates secondary; with no registry it falls back to the built-in templates as today. Install clones via CloneTemplateDialog."
+		},
+		{
+			"id": "SchemaDesignerList",
+			"route": "/builder/:slug/schemas",
+			"type": "detail",
+			"title": "Schemas",
+			"slots": {
+				"default": "SchemaDesignerView"
+			},
+			"config": {
+				"register": "buildiq",
+				"schema": "application",
+				"createForm": "never",
+				"sidebar": {
+					"enabled": false
+				},
+				"documentationUrl": "https://openbuild.conduction.nl"
+			},
+			"_note": "Per-app schema list under the builder route — renders SchemaDesignerView (list mode, since there is no :schemaId param) via the registry-backed `slots.default` override, scoped to the virtual app identified by :slug (SchemaDesigner.vue reads `$route.params.slug`). Previously type:\"index\" with no slot, which fell through to the generic CnIndexPage keyed on config.schema (\"application\") and so listed Applications instead of the app's schemas (buildiq#41). Mirrors the top-level `/schemas` page fix above; per-schema drill-down lives at /builder/:slug/schemas/:schemaId (SchemaDesigner, detail mode)."
+		},
+		{
+			"id": "SchemaDesigner",
+			"route": "/builder/:slug/schemas/:schemaId",
+			"type": "detail",
+			"title": "Schema",
+			"config": {
+				"register": "buildiq",
+				"schema": "application",
+				"createForm": "never",
+				"sidebar": {
+					"enabled": true,
+					"showMetadata": true
+				},
+				"documentationUrl": "https://openbuild.conduction.nl"
+			},
+			"slots": {
+				"default": "SchemaDesignerView"
+			}
+		},
+		{
+			"id": "PageDesigner",
+			"route": "/builder/:slug/pages",
+			"type": "detail",
+			"title": "Page designer",
+			"config": {
+				"register": "buildiq",
+				"schema": "application",
+				"createForm": "never",
+				"sidebar": {
+					"enabled": true,
+					"showMetadata": true
+				},
+				"documentationUrl": "https://openbuild.conduction.nl"
+			},
+			"slots": {
+				"default": "PageDesignerView"
+			}
+		},
+		{
+			"id": "WalkthroughDesigner",
+			"route": "/builder/:slug/walkthrough",
+			"type": "detail",
+			"title": "Walkthrough designer",
+			"config": {
+				"register": "buildiq",
+				"schema": "application",
+				"createForm": "never",
+				"sidebar": {
+					"enabled": true,
+					"showMetadata": true
+				},
+				"documentationUrl": "https://openbuild.conduction.nl"
+			},
+			"slots": {
+				"default": "WalkthroughDesignerView"
+			}
+		},
+		{
+			"id": "Exports",
+			"route": "/exports",
+			"type": "index",
+			"title": "Exports",
+			"config": {
+				"register": "buildiq",
+				"schema": "export-job",
+				"viewMode": "table",
+				"sidebar": {
+					"enabled": true,
+					"showMetadata": true
+				},
+				"documentationUrl": "https://openbuild.conduction.nl"
+			}
+		},
+		{
+			"id": "BuilderHost",
+			"route": "/builder/:slug/:pathMatch(.*)?",
+			"type": "custom",
+			"title": "App",
+			"component": "BuilderHostView",
+			"_note": "Virtual-app host that mounts a nested CnAppRoot rendering the virtual app's own manifest from GET /api/applications/{slug}/manifest. This is a meta-app-shell (app inside app) pattern that no standard page type supports. It is the core runtime surface of buildiq and will always require a custom host component."
+		},
+		{
+			"id": "FeaturesRoadmap",
+			"route": "/features-roadmap",
+			"type": "roadmap",
+			"title": "Features & roadmap",
+			"config": {
+				"documentationUrl": "https://openbuild.conduction.nl"
+			}
+		}
+	],
+	"observability": {
+		"health": {
+			"statusCodePolicy": "adr006",
+			"checks": [
+				{ "id": "database", "type": "database" },
+				{ "id": "openregister", "type": "orAvailable", "severity": "degraded" }
+			]
+		},
+		"metrics": [
+			{
+				"name": "export_jobs_total",
+				"type": "gauge",
+				"help": "Export jobs by lifecycle status",
+				"source": { "kind": "objectCount", "register": "buildiq", "schema": "export-job", "groupBy": ["status"] }
+			},
+			{
+				"name": "applications_total",
+				"type": "gauge",
+				"help": "Virtual applications (one nav entry per published app)",
+				"source": { "kind": "objectCount", "register": "buildiq", "schema": "application" }
+			},
+			{
+				"name": "application_versions_total",
+				"type": "gauge",
+				"help": "Application versions by lifecycle status",
+				"source": { "kind": "objectCount", "register": "buildiq", "schema": "applicationVersion", "groupBy": ["status"] }
+			}
+		]
+	},
+	"deepLinks": []
+}
