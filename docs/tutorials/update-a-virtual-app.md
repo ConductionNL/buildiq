@@ -18,7 +18,7 @@ You see:
 - **Activity graph** placeholder (empties out before any events accumulate).
 - **Structural widgets** — Register, Schemas, Groups & users, Pages, Menu — each linking out to the corresponding designer.
 
-> **Known issue**: the development pill doesn't yet render alongside Production in some scenarios — see [issue tracker](https://codeberg.org/Conduction/buildiq/issues) for the latest.
+> **Known issue**: the development pill doesn't yet render alongside Production in some scenarios — see the [issue tracker](https://github.com/ConductionNL/buildiq/issues) for the latest.
 
 ## 2. Open the schema designer for a version
 

@@ -2,7 +2,7 @@
   "spec_slug": "business-rules-engine",
   "title": "Business Rules Engine",
   "app": "openbuild",
-  "repo": "https://codeberg.org/Conduction/openbuild",
+  "repo": "https://github.com/ConductionNL/buildiq",
   "depends_on": [],
-  "issue": "https://codeberg.org/Conduction/openbuild/issues/129"
+  "issue": "Codeberg issue #129 (pre-migration, not migrated to GitHub)"
 }
