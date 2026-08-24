@@ -261,7 +261,7 @@ final class DocumentGenerationServiceTest extends TestCase {
 
 		$this->assertArrayHasKey('json', $captured);
 		$this->assertSame(
-			[['register' => 'openbuild', 'schema' => 'permit', 'id' => 'obj-uuid-9']],
+			[['register' => 'buildiq', 'schema' => 'permit', 'id' => 'obj-uuid-9']],
 			$captured['json']['dataRefs']
 		);
 		$this->assertSame('tpl-1', $captured['json']['templateId']);
@@ -297,7 +297,7 @@ final class DocumentGenerationServiceTest extends TestCase {
 			->with(
 				$this->equalTo([DocumentGenerationService::ATTACHMENT_FIELD => ['ref' => '42']]),
 				$this->equalTo([]),
-				$this->equalTo('openbuild'),
+				$this->equalTo('buildiq'),
 				$this->equalTo('permit'),
 				$this->equalTo('obj-uuid-9')
 			);

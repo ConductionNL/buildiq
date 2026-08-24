@@ -130,7 +130,7 @@ class PublishTemplatesTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('searchObjectsBySlug')
 			->with(
-				'openbuild',
+				'buildiq',
 				'application-template',
 				['slug' => 'incident-reporter'],
 				false,

@@ -171,7 +171,7 @@ export default {
 			this.errorMessage = ''
 			try {
 				const ruleSetUrl = generateUrl(
-					'/apps/openregister/api/objects/openbuild/rule-set',
+					'/apps/openregister/api/objects/buildiq/rule-set',
 				)
 				await axios.post(ruleSetUrl, {
 					slug: this.staged.slug,
@@ -180,7 +180,7 @@ export default {
 					status: this.ruleSet.status || 'draft',
 				})
 				const ruleUrl = generateUrl(
-					'/apps/openregister/api/objects/openbuild/condition-action-rule',
+					'/apps/openregister/api/objects/buildiq/condition-action-rule',
 				)
 				await axios.post(ruleUrl, {
 					ruleSetId: this.staged.slug,

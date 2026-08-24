@@ -256,7 +256,7 @@ final class AutomationCompilerServiceTest extends TestCase {
 							'schema' => 'flag',
 							'operation' => 'create',
 							'object' => ['reason' => 'large-claim'],
-							'register' => 'openbuild',
+							'register' => 'buildiq',
 						],
 					],
 				],

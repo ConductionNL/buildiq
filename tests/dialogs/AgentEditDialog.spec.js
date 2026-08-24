@@ -151,7 +151,7 @@ describe('AgentEditDialog', () => {
 
 		expect(axios.post).toHaveBeenCalledTimes(1)
 		const [url, payload] = axios.post.mock.calls[0]
-		expect(url).toBe('/apps/openregister/api/objects/openbuild/agent')
+		expect(url).toBe('/apps/openregister/api/objects/buildiq/agent')
 		expect(payload.enabledTools).toEqual(['buildiq.upsertPage'])
 		expect(payload.applicationSlug).toBe('tool-library')
 		expect(wrapper.emitted('saved')).toBeTruthy()
@@ -172,7 +172,7 @@ describe('AgentEditDialog', () => {
 
 		expect(axios.put).toHaveBeenCalledTimes(1)
 		expect(axios.put.mock.calls[0][0]).toBe(
-			'/apps/openregister/api/objects/openbuild/agent/agent-1',
+			'/apps/openregister/api/objects/buildiq/agent/agent-1',
 		)
 	})
 

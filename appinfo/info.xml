@@ -110,6 +110,31 @@ Vrij en open source onder de EUPL-1.2-licentie.
 
     <repair-steps>
         <post-migration>
+            <!--
+                MUST run before InitializeSettings, which triggers the register
+                import. The register slug moves with the app id (`openbuild` ->
+                `buildiq`), together with `x-openregister.app` — for a
+                `type: application` configuration that field IS a register slug
+                (ImportHandler::autoCreateRegisterIfApplication reads
+                `$xOpenregister['app'] ?? $appId`). OpenRegister resolves a
+                register by slug and its not-found branch CREATES a second,
+                empty register rather than failing, so an import that ran first
+                would fork the register and leave every stored object behind on
+                the old row, silently.
+
+                It moves no data: an object is bound to its register by NUMERIC
+                id. Idempotent, non-destructive, refuses rather than merges when
+                both slugs already exist.
+
+                SCOPED TO THIS APP'S OWN REGISTER. The per-generated-app
+                registers `openbuild-{slug}[-{version}]` are deliberately NOT in
+                its map: those names are minted per generated app, stored on the
+                app, and resolved with `registerMapper->find('openbuild-' . $slug)`
+                — and the credential broker holds `allowedApps` entries against
+                the matching `openbuild-{slug}` virtual app ids. They move only
+                in a pass that moves the minted credentials with them.
+            -->
+            <step>OCA\Buildiq\Repair\MigrateRegisterSlug</step>
             <step>OCA\Buildiq\Repair\InitializeSettings</step>
             <step>OCA\Buildiq\Repair\MigrateToVersionedModel</step>
             <step>OCA\Buildiq\Repair\MigrateAppOverridesToHybrid</step>
@@ -124,6 +149,31 @@ Vrij en open source onder de EUPL-1.2-licentie.
             <step>OCA\Buildiq\Repair\RenameDutchRuleColumns</step>
         </post-migration>
         <install>
+            <!--
+                MUST run before InitializeSettings, which triggers the register
+                import. The register slug moves with the app id (`openbuild` ->
+                `buildiq`), together with `x-openregister.app` — for a
+                `type: application` configuration that field IS a register slug
+                (ImportHandler::autoCreateRegisterIfApplication reads
+                `$xOpenregister['app'] ?? $appId`). OpenRegister resolves a
+                register by slug and its not-found branch CREATES a second,
+                empty register rather than failing, so an import that ran first
+                would fork the register and leave every stored object behind on
+                the old row, silently.
+
+                It moves no data: an object is bound to its register by NUMERIC
+                id. Idempotent, non-destructive, refuses rather than merges when
+                both slugs already exist.
+
+                SCOPED TO THIS APP'S OWN REGISTER. The per-generated-app
+                registers `openbuild-{slug}[-{version}]` are deliberately NOT in
+                its map: those names are minted per generated app, stored on the
+                app, and resolved with `registerMapper->find('openbuild-' . $slug)`
+                — and the credential broker holds `allowedApps` entries against
+                the matching `openbuild-{slug}` virtual app ids. They move only
+                in a pass that moves the minted credentials with them.
+            -->
+            <step>OCA\Buildiq\Repair\MigrateRegisterSlug</step>
             <step>OCA\Buildiq\Repair\InitializeSettings</step>
             <step>OCA\Buildiq\Repair\MigrateToVersionedModel</step>
             <step>OCA\Buildiq\Repair\MigrateAppOverridesToHybrid</step>

@@ -39,7 +39,7 @@ const ADMIN_PASS =
 	process.env.NC_ADMIN_PASSWORD ?? process.env.NC_ADMIN_PASS ?? 'admin'
 
 /** OpenRegister register slug that owns Buildiq virtual apps. */
-export const BUILDIQ_REGISTER_SLUG = 'openbuild'
+export const BUILDIQ_REGISTER_SLUG = 'buildiq'
 /** OpenRegister schema slug for the Virtual App object. */
 export const APPLICATION_SCHEMA_SLUG = 'application'
 

@@ -124,7 +124,7 @@ boundary, not the raw object write.
 | GET | `/api/automations/{uuid}/status` | Recompute drift against the live artifacts. |
 
 CRUD on the automation object itself is OpenRegister's generic REST surface:
-`/apps/openregister/api/objects/openbuild/automation`.
+`/apps/openregister/api/objects/buildiq/automation`.
 
 ## Relationship to the specialist editors
 

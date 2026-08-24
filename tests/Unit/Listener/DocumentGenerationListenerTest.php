@@ -244,7 +244,7 @@ final class DocumentGenerationListenerTest extends TestCase {
 			from: 'draft',
 			to: 'approved',
 			userId: null,
-			register: 'openbuild',
+			register: 'buildiq',
 			schema: 'permit'
 		);
 		$this->listener->handle($event);

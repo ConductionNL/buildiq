@@ -303,7 +303,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Full Dutch + English translations for the visual page designer (170 strings, en↔nl parity) — the designer UI was previously untranslated (ADR-007 / `buildiq-page-designer` REQ-OBPD spec, tasks 6.1/6.2).
 
 ### Changed
-- Page designer save path now targets the active `ApplicationVersion.manifest` (`PUT /api/objects/openbuild/applicationVersion/{uuid}`) per ADR-002 / Decision 6 / REQ-OBPD-009, surgical-merging the UI-controlled `manifest` field for round-trip safety; falls back to the `Application` object for apps that predate the versioned model.
+- Page designer save path now targets the active `ApplicationVersion.manifest` (`PUT /api/objects/buildiq/applicationVersion/{uuid}`) per ADR-002 / Decision 6 / REQ-OBPD-009, surgical-merging the UI-controlled `manifest` field for round-trip safety; falls back to the `Application` object for apps that predate the versioned model.
 
 ### Fixed
 - Removed two designer strings that leaked the internal `buildiq.page-designer.*` dotted-key prefix into the user-facing UI (live-preview unavailable note and the menu nesting-depth error).

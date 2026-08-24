@@ -394,7 +394,7 @@ final class ExportJobServiceTest extends TestCase {
 	 * ObjectService::saveObject() (#104). Omitting them let saveObject()
 	 * fall back to whatever register/schema an EARLIER call in the same
 	 * request left as ambient state (e.g. ExportsController's
-	 * searchObjectsBySlug('openbuild', 'application', ...) re-anchors it to
+	 * searchObjectsBySlug('buildiq', 'application', ...) re-anchors it to
 	 * schema=application) and let OR auto-generate its own identity instead
 	 * of the job's own UUID — so a later loadJob($jobUuid) could never find
 	 * the record it just "persisted".
@@ -432,7 +432,7 @@ final class ExportJobServiceTest extends TestCase {
 			'status' => 'queued',
 		]);
 
-		self::assertSame('openbuild', $capturedArgs['register'], 'persistJob() must target the buildiq register');
+		self::assertSame('buildiq', $capturedArgs['register'], 'persistJob() must target the buildiq register');
 		self::assertSame('export-job', $capturedArgs['schema'], 'persistJob() must target the export-job schema SLUG (not the exportJob JSON key)');
 		self::assertSame('job-uuid-123', $capturedArgs['uuid'], 'persistJob() must persist under the job\'s OWN uuid, not an OR-auto-generated identity');
 	}//end testPersistJobPassesExplicitRegisterSchemaAndUuidToSaveObject()
@@ -454,7 +454,7 @@ final class ExportJobServiceTest extends TestCase {
 
 		$existing = new ObjectEntity();
 		$existing->setUuid('job-uuid-456');
-		$existing->setRegister('openbuild');
+		$existing->setRegister('buildiq');
 		$existing->setSchema('export-job');
 		$existing->setObject([
 			'applicationUuid' => 'app-uuid-1',
@@ -482,7 +482,7 @@ final class ExportJobServiceTest extends TestCase {
 		);
 		$service->mergeJobFields('job-uuid-456', ['downloadUrl' => '/index.php/apps/buildiq/api/exports/job-uuid-456/download']);
 
-		self::assertSame('openbuild', $capturedArgs['register'], 'mergeJobFields() must target the buildiq register');
+		self::assertSame('buildiq', $capturedArgs['register'], 'mergeJobFields() must target the buildiq register');
 		self::assertSame('export-job', $capturedArgs['schema'], 'mergeJobFields() must target the export-job schema SLUG');
 		self::assertSame('job-uuid-456', $capturedArgs['uuid'], 'mergeJobFields() must update the SAME existing record by uuid');
 		self::assertSame('/index.php/apps/buildiq/api/exports/job-uuid-456/download', $capturedArgs['job']['downloadUrl']);
@@ -559,7 +559,7 @@ final class ExportJobServiceTest extends TestCase {
 
 		$existing = new ObjectEntity();
 		$existing->setUuid('job-uuid-extra');
-		$existing->setRegister('openbuild');
+		$existing->setRegister('buildiq');
 		$existing->setSchema('export-job');
 		$existing->setObject(['status' => 'running']);
 

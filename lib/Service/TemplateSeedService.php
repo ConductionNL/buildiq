@@ -175,7 +175,7 @@ class TemplateSeedService {
 				// (uuid null) creates a new row.
 				$this->objectService->saveObject(
 					object: $data,
-					register: 'openbuild',
+					register: 'buildiq',
 					schema: 'application-template',
 					uuid: $existingUuid,
 					_rbac: false,
@@ -319,7 +319,7 @@ class TemplateSeedService {
 			$results = $this->objectService->findAll(
 				config: [
 					'filters' => [
-						'register' => 'openbuild',
+						'register' => 'buildiq',
 						'schema' => 'application-template',
 						'slug' => $slug,
 					],

@@ -286,7 +286,7 @@ final class FlowAndAgentExportBundlerTest extends TestCase {
 			message: 'agents must be looked up by the application they point at'
 		);
 		$this->assertSame(
-			expected: 'openbuild',
+			expected: 'buildiq',
 			actual: ($captured['filters']['register'] ?? null),
 			message: 'register must be filtered by SLUG — a numeric id is not stable across instances'
 		);
@@ -355,7 +355,7 @@ final class FlowAndAgentExportBundlerTest extends TestCase {
 			message: 'the negative control: buildiq-scoped-only, an agent living solely in hermiq\'s register is invisible'
 		);
 		$this->assertCount(expectedCount: 1, haystack: $captured, message: 'without the fallback only the buildiq-scoped query is ever issued');
-		$this->assertSame(expected: 'openbuild', actual: $captured[0]['filters']['register']);
+		$this->assertSame(expected: 'buildiq', actual: $captured[0]['filters']['register']);
 
 	}//end testOpenbuildsOwnQueryAloneCannotSeeAHermiqRegisterAgent()
 
@@ -381,7 +381,7 @@ final class FlowAndAgentExportBundlerTest extends TestCase {
 		$this->objectService->method('findAll')->willReturnCallback(
 			function (array $config) use (&$captured): array {
 				$captured[] = $config;
-				if (($config['filters']['register'] ?? null) === 'openbuild') {
+				if (($config['filters']['register'] ?? null) === 'buildiq') {
 					// Openbuild's own schema has nothing for this application.
 					return [];
 				}
@@ -447,7 +447,7 @@ final class FlowAndAgentExportBundlerTest extends TestCase {
 
 		$this->objectService->method('findAll')->willReturnCallback(
 			function (array $config): array {
-				if (($config['filters']['register'] ?? null) === 'openbuild') {
+				if (($config['filters']['register'] ?? null) === 'buildiq') {
 					return [];
 				}
 
@@ -490,7 +490,7 @@ final class FlowAndAgentExportBundlerTest extends TestCase {
 			haystack: $captured,
 			message: 'with hermiq not installed, only the buildiq-scoped query may ever be issued'
 		);
-		$this->assertSame(expected: 'openbuild', actual: $captured[0]['filters']['register']);
+		$this->assertSame(expected: 'buildiq', actual: $captured[0]['filters']['register']);
 
 	}//end testTheFallbackIsNeverAttemptedWhenHermiqIsNotInstalled()
 

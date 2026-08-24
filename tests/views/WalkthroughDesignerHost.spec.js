@@ -199,7 +199,7 @@ describe('WalkthroughDesignerHost', () => {
 		})
 		await wrapper.vm.save()
 		expect(axiosPutMock).toHaveBeenCalledWith(
-			'/apps/openregister/api/objects/openbuild/application/app-uuid',
+			'/apps/openregister/api/objects/buildiq/application/app-uuid',
 			expect.objectContaining({ manifest: wrapper.vm.manifest }),
 		)
 		expect(wrapper.vm.toast).toBe('Walkthrough saved.')
