@@ -60,9 +60,24 @@ class GitHubCatalogService {
 	private const API_BASE = 'https://api.github.com';
 
 	/**
-	 * The discovery topic every conforming Buildiq app repo carries.
+	 * The discovery topics a conforming app repo may carry, canonical first.
+	 *
+	 * A GitHub topic lives on repositories we do not own, so it only moves when
+	 * THOSE repos re-tag. The app-id rename (openbuild -> buildiq, #334) moved
+	 * this constant to `buildiq-app` while every published app repo still
+	 * carried `openbuild-app`, so the store searched for a topic nothing
+	 * answered to, got a legitimately empty result set, and rendered "no apps
+	 * match your search". Measured 2026-08-24: `topic:buildiq-app` matched 0
+	 * repositories, `topic:openbuild-app` matched 5.
+	 *
+	 * Both are accepted while the rename is in flight. Drop the legacy entry
+	 * once every published app repo carries the canonical topic; until then,
+	 * removing it empties the store.
 	 */
-	private const DISCOVERY_TOPIC = 'topic:buildiq-app';
+	private const DISCOVERY_TOPICS = [
+		'topic:buildiq-app',
+		'topic:openbuild-app',
+	];
 
 	/**
 	 * The credential-broker service FQCN (resolved lazily; may be absent).
@@ -197,7 +212,129 @@ class GitHubCatalogService {
 			return $cached;
 		}
 
-		$queryString = self::DISCOVERY_TOPIC;
+		$hits = $this->collectTopicHits(
+			term: $term,
+			actingUserId: $actingUserId,
+			credentialId: $credentialId
+		);
+
+		if ($hits['anyOk'] === false) {
+			// Every accepted topic failed to answer. Nothing was measured, so
+			// this is not an empty catalogue. Returning here also skips the
+			// cache write below, so one bad round is not served to every later
+			// caller for the whole TTL.
+			$failure = self::OUTCOME_UNREACHABLE;
+			if ($hits['rateLimited'] === true) {
+				$failure = self::OUTCOME_RATE_LIMITED;
+			}
+
+			return [
+				'outcome' => $failure,
+				'cards' => [],
+				'brokerUsed' => $hits['brokerUsed'],
+				'rateLimited' => $hits['rateLimited'],
+			];
+		}
+
+		$payload = [
+			'outcome' => self::OUTCOME_OK,
+			'cards' => $this->buildCards(
+				items: $hits['items'],
+				actingUserId: $actingUserId,
+				credentialId: $credentialId
+			),
+			'brokerUsed' => $hits['brokerUsed'],
+			// At least one topic answered, so the catalogue is real. If another
+			// topic was rate-limited the set may be incomplete, and saying so is
+			// more honest than reporting a clean result.
+			'rateLimited' => $hits['rateLimited'],
+		];
+		$this->cacheSet(key: $cacheKey, value: $payload, ttl: self::SEARCH_TTL);
+
+		return $payload;
+	}//end search()
+
+
+	/**
+	 * Query every accepted discovery topic and merge the hits.
+	 *
+	 * GitHub's repository search does NOT support OR on qualifiers ("logical
+	 * operators only apply to text, not to qualifiers"), so each accepted topic
+	 * needs its own request. Results are merged and de-duplicated by full_name
+	 * before any card is built.
+	 *
+	 * @param string      $term         The user's search text, already trimmed.
+	 * @param string|null $actingUserId Who is asking, for credential resolution.
+	 * @param string|null $credentialId The advisory github credential, if any.
+	 *
+	 * @return array{items: array<int, array>, anyOk: bool, brokerUsed: bool, rateLimited: bool}
+	 */
+	private function collectTopicHits(
+		string $term,
+		?string $actingUserId,
+		?string $credentialId
+	): array {
+		$items = [];
+		$seen = [];
+		$brokerUsed = false;
+		$anyOk = false;
+		$rateLimited = false;
+
+		foreach (self::DISCOVERY_TOPICS as $topic) {
+			$page = $this->fetchTopic(
+				topic: $topic,
+				term: $term,
+				actingUserId: $actingUserId,
+				credentialId: $credentialId
+			);
+
+			$brokerUsed = ($brokerUsed || $page['brokerUsed']);
+			if ($page['rateLimited'] === true) {
+				$rateLimited = true;
+			}
+
+			if ($page['ok'] === false) {
+				continue;
+			}
+
+			$anyOk = true;
+			foreach ($page['items'] as $item) {
+				$key = strtolower((string)($item['full_name'] ?? ''));
+				if ($key === '' || isset($seen[$key]) === true) {
+					continue;
+				}
+
+				$seen[$key] = true;
+				$items[] = $item;
+			}
+		}
+
+		return [
+			'items' => $items,
+			'anyOk' => $anyOk,
+			'brokerUsed' => $brokerUsed,
+			'rateLimited' => $rateLimited,
+		];
+	}//end collectTopicHits()
+
+
+	/**
+	 * Run one topic's repository search and return its usable items.
+	 *
+	 * @param string      $topic        The discovery topic to query.
+	 * @param string      $term         The user's search text, already trimmed.
+	 * @param string|null $actingUserId Who is asking.
+	 * @param string|null $credentialId The advisory github credential, if any.
+	 *
+	 * @return array{ok: bool, items: array<int, array>, brokerUsed: bool, rateLimited: bool}
+	 */
+	private function fetchTopic(
+		string $topic,
+		string $term,
+		?string $actingUserId,
+		?string $credentialId
+	): array {
+		$queryString = $topic;
 		if ($term !== '') {
 			$queryString .= ' ' . $term;
 		}
@@ -205,63 +342,73 @@ class GitHubCatalogService {
 		$path = '/search/repositories?q=' . rawurlencode($queryString) . '&per_page=' . self::MAX_HITS;
 
 		$result = $this->get(path: $path, actingUserId: $actingUserId, credentialId: $credentialId);
-		if ($result['ok'] === false) {
-			// Rate-limited with no fresh result — surface a generic outcome.
-			$failure = self::OUTCOME_UNREACHABLE;
-			if ($result['rateLimited'] === true) {
-				$failure = self::OUTCOME_RATE_LIMITED;
-			}
+		$failed = [
+			'ok' => false,
+			'items' => [],
+			'brokerUsed' => $result['brokerUsed'],
+			'rateLimited' => $result['rateLimited'],
+		];
 
-			return [
-				'outcome' => $failure,
-				'cards' => [],
-				'brokerUsed' => $result['brokerUsed'],
-				'rateLimited' => $result['rateLimited'],
-			];
+		if ($result['ok'] === false) {
+			return $failed;
 		}
 
 		$decoded = json_decode($result['body'], true);
 		if (is_array($decoded) === false || is_array($decoded['items'] ?? null) === false) {
 			// A 200 whose body is not the documented search shape means GitHub
-			// never actually answered the query: a proxy error page, a truncated
-			// response, an HTML interstitial. Reporting that as OUTCOME_OK with
-			// zero cards makes the UI say "no apps match your search", which
-			// tells the user their query found nothing when in fact the lookup
-			// failed. A lookup failure must not wear the words of a judgement.
-			// Returning here also skips the cache write below, so one malformed
-			// response is not served to every later caller for the whole TTL.
-			return [
-				'outcome' => self::OUTCOME_UNREACHABLE,
-				'cards' => [],
-				'brokerUsed' => $result['brokerUsed'],
-				'rateLimited' => $result['rateLimited'],
-			];
+			// never actually answered this query: a proxy error page, a
+			// truncated response, an HTML interstitial. Counting it as an empty
+			// success would make the UI say "no apps match your search", telling
+			// the user their query found nothing when in fact the lookup failed.
+			// A lookup failure must not wear the words of a judgement, so this
+			// query counts as failed.
+			return $failed;
 		}
 
-		$items = $decoded['items'];
+		// Shape-check here so the caller's merge loop can trust every entry.
+		$items = array_values(
+			array_filter(
+				$decoded['items'],
+				static fn ($item): bool => is_array($item)
+			)
+		);
 
+		return [
+			'ok' => true,
+			'items' => $items,
+			'brokerUsed' => $result['brokerUsed'],
+			'rateLimited' => $result['rateLimited'],
+		];
+	}//end fetchTopic()
+
+
+	/**
+	 * Build the installable cards for the merged hits.
+	 *
+	 * Every entry was already shape-checked while merging the per-topic
+	 * responses, so no is_array() guard is needed here.
+	 *
+	 * @param array<int, array> $items        The merged, de-duplicated hits.
+	 * @param string|null       $actingUserId Who is asking.
+	 * @param string|null       $credentialId The advisory github credential, if any.
+	 *
+	 * @return array<int, array> The cards, skipping any that would not build.
+	 */
+	private function buildCards(
+		array $items,
+		?string $actingUserId,
+		?string $credentialId
+	): array {
 		$cards = [];
 		foreach (array_slice($items, 0, self::MAX_HITS) as $item) {
-			if (is_array($item) === false) {
-				continue;
-			}
-
 			$card = $this->buildCard(item: $item, actingUserId: $actingUserId, credentialId: $credentialId);
 			if ($card !== null) {
 				$cards[] = $card;
 			}
 		}
 
-		$payload = [
-			'outcome' => self::OUTCOME_OK,
-			'cards' => $cards,
-			'brokerUsed' => $result['brokerUsed'],
-			'rateLimited' => false,
-		];
-		$this->cacheSet(key: $cacheKey, value: $payload, ttl: self::SEARCH_TTL);
-
-		return $payload;
-	}//end search()
+		return $cards;
+	}//end buildCards()
 
 	/**
 	 * Fetch + decode a repo's root `openbuild-app.json` descriptor.
