@@ -64,15 +64,121 @@
 		"tours": [
 			{
 				"id": "buildiq:getting-started",
-				"title": "Getting started",
+				"title": "Build the pet store",
 				"trigger": "first-visit",
 				"minAppVersion": "0.5.9",
 				"steps": [
-					{ "id": "welcome", "sinceVersion": "0.5.9", "placement": "center", "title": "Welcome to Buildiq", "body": "You'll create your first app from a template. Each step is yours to do. Reopen this tour anytime from the … menu.", "target": { "kind": "page", "ref": "Dashboard" }, "advanceOn": { "type": "manual" } },
-					{ "id": "go-apps", "sinceVersion": "0.5.9", "placement": "right", "body": "Every app you build lives here, ready to open, edit or export.", "task": "Click Apps in the menu", "target": { "kind": "nav-item", "ref": "VirtualApps" }, "advanceOn": { "type": "route-match", "route": "VirtualApps" } },
-					{ "id": "go-store", "sinceVersion": "0.5.9", "placement": "right", "body": "The fastest way to start is from a template. The Store holds ready-made apps you can clone and make your own.", "task": "Click Store in the menu", "target": { "kind": "nav-item", "ref": "Templates" }, "advanceOn": { "type": "route-match", "route": "Templates" } },
-					{ "id": "create-app", "sinceVersion": "0.5.9", "placement": "bottom", "allowManualNext": true, "body": "Cloning copies the template's schemas and pages into an app that is yours to change.", "task": "Clone a template into a new app", "target": { "kind": "page", "ref": "templates-grid" }, "advanceOn": { "type": "object-created", "register": "buildiq", "schema": "application", "capture": { "applicationId": ":id" } } },
-					{ "id": "done", "sinceVersion": "0.5.9", "placement": "center", "title": "Your first app exists", "body": "Open it from Apps to design its schemas and pages. Add your first schema next, then build a page on top of it.", "target": { "kind": "page", "ref": "Dashboard" }, "advanceOn": { "type": "manual" } }
+					{
+						"id": "welcome",
+						"sinceVersion": "0.5.9",
+						"placement": "center",
+						"title": "Build the pet store",
+						"body": "You'll build a working pet store. A Pet record, a page that lists them, a live preview. Each step is yours to do.",
+						"target": {
+							"kind": "page",
+							"ref": "Dashboard"
+						},
+						"advanceOn": {
+							"type": "manual"
+						}
+					},
+					{
+						"id": "go-apps",
+						"sinceVersion": "0.5.9",
+						"placement": "right",
+						"body": "Every app you build lives here, ready to open, edit or export.",
+						"task": "Click Apps in the menu",
+						"target": {
+							"kind": "nav-item",
+							"ref": "VirtualApps"
+						},
+						"advanceOn": {
+							"type": "route-match",
+							"route": "VirtualApps"
+						}
+					},
+					{
+						"id": "create-app",
+						"sinceVersion": "0.5.9",
+						"placement": "bottom",
+						"body": "Name it Pet Store. A blank app gives you an empty register to shape yourself.",
+						"task": "Create an app called Pet Store",
+						"allowManualNext": true,
+						"target": {
+							"kind": "page",
+							"ref": "VirtualApps"
+						},
+						"advanceOn": {
+							"type": "object-created",
+							"register": "buildiq",
+							"schema": "application",
+							"capture": {
+								"applicationId": ":id"
+							}
+						}
+					},
+					{
+						"id": "add-schema",
+						"sinceVersion": "0.5.9",
+						"placement": "bottom",
+						"body": "A schema is the shape of one record. Yours is a Pet: it needs a name, a species and a status.",
+						"task": "Add a schema called Pet",
+						"allowManualNext": true,
+						"target": {
+							"kind": "page",
+							"ref": "SchemaDesignerList"
+						},
+						"advanceOn": {
+							"type": "route-match",
+							"route": "SchemaDesigner"
+						}
+					},
+					{
+						"id": "add-page",
+						"sinceVersion": "0.5.9",
+						"placement": "bottom",
+						"body": "An index page lists every record of one schema. Point it at Pet and the store has a shop floor.",
+						"task": "Add an index page over Pet",
+						"allowManualNext": true,
+						"target": {
+							"kind": "page",
+							"ref": "PageDesigner"
+						},
+						"advanceOn": {
+							"type": "route-match",
+							"route": "PageDesigner"
+						}
+					},
+					{
+						"id": "preview",
+						"sinceVersion": "0.5.9",
+						"placement": "center",
+						"body": "Open the app to see the page you just laid out, running on real data.",
+						"task": "Open the app and add your first pet",
+						"allowManualNext": true,
+						"target": {
+							"kind": "page",
+							"ref": "BuilderHost"
+						},
+						"advanceOn": {
+							"type": "manual"
+						}
+					},
+					{
+						"id": "done",
+						"sinceVersion": "0.5.9",
+						"placement": "center",
+						"title": "Your pet store runs",
+						"body": "You built a schema, a page and a working app. The docs cover flows, widgets and publishing to other instances.",
+						"task": "Open the documentation to keep building",
+						"target": {
+							"kind": "nav-item",
+							"ref": "Documentation"
+						},
+						"advanceOn": {
+							"type": "manual"
+						}
+					}
 				]
 			}
 		]
@@ -226,7 +332,11 @@
 						"id": "audit",
 						"label": "History",
 						"icon": "History",
-						"widgets": [ { "type": "audit" } ],
+						"widgets": [
+							{
+								"type": "audit"
+							}
+						],
 						"order": 70
 					}
 				]
@@ -249,7 +359,7 @@
 				},
 				"documentationUrl": "https://openbuild.conduction.nl"
 			},
-			"_note": "Top-level schemas overview \u2014 renders the SchemaDesignerView (list mode) via the registry-backed `slots.default` override so the primary action is the native \"Add schema\" flow (SchemaListPanel + AddSchemaDialog). Previously this page was type:\"index\" and fell through to the generic CnIndexPage, which keys its Add button off config.schema (\"application\") and so mislabelled the action \"Add Application\". A type:\"custom\" + top-level `component` does NOT resolve here because CnPageRenderer (beta.107) dispatches custom pages via the empty legacy customComponents map, not the v2 registry; the slot-override path (resolvedSlotEntries) is the one that reads cnRegistry. With no :schemaId route param SchemaDesignerView renders list mode and the no-slug /schemas shortcut falls back to the hello-world app. Per-app drill-down lives under /builder/:slug/schemas."
+			"_note": "Top-level schemas overview — renders the SchemaDesignerView (list mode) via the registry-backed `slots.default` override so the primary action is the native \"Add schema\" flow (SchemaListPanel + AddSchemaDialog). Previously this page was type:\"index\" and fell through to the generic CnIndexPage, which keys its Add button off config.schema (\"application\") and so mislabelled the action \"Add Application\". A type:\"custom\" + top-level `component` does NOT resolve here because CnPageRenderer (beta.107) dispatches custom pages via the empty legacy customComponents map, not the v2 registry; the slot-override path (resolvedSlotEntries) is the one that reads cnRegistry. With no :schemaId route param SchemaDesignerView renders list mode and the no-slug /schemas shortcut falls back to the hello-world app. Per-app drill-down lives under /builder/:slug/schemas."
 		},
 		{
 			"id": "Templates",
@@ -378,8 +488,15 @@
 		"health": {
 			"statusCodePolicy": "adr006",
 			"checks": [
-				{ "id": "database", "type": "database" },
-				{ "id": "openregister", "type": "orAvailable", "severity": "degraded" }
+				{
+					"id": "database",
+					"type": "database"
+				},
+				{
+					"id": "openregister",
+					"type": "orAvailable",
+					"severity": "degraded"
+				}
 			]
 		},
 		"metrics": [
@@ -387,19 +504,37 @@
 				"name": "export_jobs_total",
 				"type": "gauge",
 				"help": "Export jobs by lifecycle status",
-				"source": { "kind": "objectCount", "register": "buildiq", "schema": "export-job", "groupBy": ["status"] }
+				"source": {
+					"kind": "objectCount",
+					"register": "buildiq",
+					"schema": "export-job",
+					"groupBy": [
+						"status"
+					]
+				}
 			},
 			{
 				"name": "applications_total",
 				"type": "gauge",
 				"help": "Virtual applications (one nav entry per published app)",
-				"source": { "kind": "objectCount", "register": "buildiq", "schema": "application" }
+				"source": {
+					"kind": "objectCount",
+					"register": "buildiq",
+					"schema": "application"
+				}
 			},
 			{
 				"name": "application_versions_total",
 				"type": "gauge",
 				"help": "Application versions by lifecycle status",
-				"source": { "kind": "objectCount", "register": "buildiq", "schema": "applicationVersion", "groupBy": ["status"] }
+				"source": {
+					"kind": "objectCount",
+					"register": "buildiq",
+					"schema": "applicationVersion",
+					"groupBy": [
+						"status"
+					]
+				}
 			}
 		]
 	},
