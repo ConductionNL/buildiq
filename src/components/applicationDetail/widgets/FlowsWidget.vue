@@ -127,7 +127,9 @@ export default {
 			}
 
 			window.open(
-				generateUrl('/apps/openregister/flows/{uuid}', { uuid: String(uuid) }),
+				generateUrl('/apps/openregister/flows/{uuid}', {
+					uuid: String(uuid),
+				}),
 				'_blank',
 				'noopener,noreferrer',
 			)
