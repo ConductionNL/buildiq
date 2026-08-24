@@ -116,7 +116,8 @@ isn't squatted.
 ### Empty-state landing (no auto-seed)
 
 The legacy `lib/Repair/SeedHelloWorld.php` repair step was retired by
-[`buildiq-versioning-model`](../openspec/changes/openbuild-versioning-model/).
+[`buildiq-versioning-model`](https://github.com/ConductionNL/buildiq/tree/development/openspec/changes/archive/2026-05-17-openbuild-versioning-model),
+archived on 2026-05-17.
 Fresh installs land the admin on an empty Virtual apps index with a CTA
 pointing at the wizard; pre-existing installs that still carry pre-spec-C
 Application rows are migrated by `MigrateToVersionedModel` (destructive but
@@ -201,17 +202,16 @@ their own shape server-side.
 
 | Path | Role |
 |------|------|
-| [`lib/AppInfo/Application.php`](../lib/AppInfo/Application.php) | `Bootstrap::register()` + re-aliased bespoke controllers + domain wiring |
-| [`appinfo/routes.php`](../appinfo/routes.php) | `Routes::standard($extra)` — canonical AppHost routes + Buildiq domain routes |
-| [`src/manifest.json`](../src/manifest.json) | UI shell + the `observability` (health/metrics) and `deepLinks` blocks |
-| [`lib/Controller/ApplicationsController.php`](../lib/Controller/ApplicationsController.php) | `getManifest()` — the only app-local controller method |
-| [`lib/Settings/openbuild_register.json`](../lib/Settings/openbuild_register.json) | OR schema declarations for `Application`, `BuiltAppRoute`, `HelloMessage`, plus the lifecycle metadata |
-| [`lib/Repair/InitializeSettings.php`](../lib/Repair/InitializeSettings.php) | Imports the register into OR on install/upgrade |
-| [`lib/Repair/SeedHelloWorld.php`](../lib/Repair/SeedHelloWorld.php) | Seeds the canonical hello-world virtual app |
-| [`src/views/BuilderHost.vue`](../src/views/BuilderHost.vue) | Nested CnAppRoot mount with the redirected endpoint workaround |
-| [`src/views/ApplicationEditor.vue`](../src/views/ApplicationEditor.vue) | Textarea-based JSON manifest editor (v1; visual editor lives in chain spec `buildiq-page-editor`) |
-| [`src/router/index.js`](../src/router/index.js) | Outer routes including `/builder/:slug/:pathMatch(.*)?` |
-| [`src/manifests/placeholder.json`](../src/manifests/placeholder.json) | Empty-skeleton manifest bundled into `useAppManifest` |
+| [`lib/AppInfo/Application.php`](https://github.com/ConductionNL/buildiq/blob/development/lib/AppInfo/Application.php) | `Bootstrap::register()` + re-aliased bespoke controllers + domain wiring |
+| [`appinfo/routes.php`](https://github.com/ConductionNL/buildiq/blob/development/appinfo/routes.php) | `Routes::standard($extra)`, canonical AppHost routes plus Buildiq domain routes |
+| [`src/manifest.json`](https://github.com/ConductionNL/buildiq/blob/development/src/manifest.json) | UI shell + the `observability` (health/metrics) and `deepLinks` blocks |
+| [`lib/Controller/ApplicationsController.php`](https://github.com/ConductionNL/buildiq/blob/development/lib/Controller/ApplicationsController.php) | `getManifest()`, the only app-local controller method |
+| [`lib/Settings/openbuild_register.json`](https://github.com/ConductionNL/buildiq/blob/development/lib/Settings/openbuild_register.json) | OR schema declarations for `Application`, `BuiltAppRoute`, `HelloMessage`, plus the lifecycle metadata |
+| [`lib/Repair/InitializeSettings.php`](https://github.com/ConductionNL/buildiq/blob/development/lib/Repair/InitializeSettings.php) | Imports the register into OR on install/upgrade |
+| [`lib/Command/SeedHelloWorldFixture.php`](https://github.com/ConductionNL/buildiq/blob/development/lib/Command/SeedHelloWorldFixture.php) | Seeds the canonical hello-world virtual app |
+| [`src/views/BuilderHost.vue`](https://github.com/ConductionNL/buildiq/blob/development/src/views/BuilderHost.vue) | Nested CnAppRoot mount with the redirected endpoint workaround |
+| [`src/registry.js`](https://github.com/ConductionNL/buildiq/blob/development/src/registry.js) | Component and route registry, including `/builder/:slug/:pathMatch(.*)?` |
+| [`src/manifests/placeholder.json`](https://github.com/ConductionNL/buildiq/blob/development/src/manifests/placeholder.json) | Empty-skeleton manifest bundled into `useAppManifest` |
 
 ## Related ADRs
 

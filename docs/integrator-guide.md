@@ -1,6 +1,16 @@
-# Integrator guide — authoring a virtual app by hand
+# Integrator guide, authoring a virtual app by hand
 
-This guide walks you through creating a new virtual app in Buildiq without using the visual editor (which lives in chain spec [`buildiq-page-editor`](../openspec/changes/) — not yet shipped). At this stage, Buildiq is integrator-only: you write JSON and the runtime renders it.
+This guide creates a virtual app by writing its JSON directly, instead of using
+the visual designers. You write the manifest and the runtime renders it.
+
+**You do not have to work this way.** Buildiq ships visual designers for pages,
+schemas and walkthroughs, and most apps are built entirely through them. Start
+at [create a virtual app](./tutorials/create-a-virtual-app.md) if that is what
+you want.
+
+Author by hand when you need something the designers do not expose yet, when you
+are diffing or reviewing a manifest, or when you are generating apps from a
+script.
 
 ## What you author
 
@@ -56,8 +66,9 @@ affected; the migration step `MigrateToVersionedModel` only fires when
 pre-spec-C Application rows are present and is idempotent on re-runs.
 
 For further reading on what each step writes through to OR, see
-[`buildiq-runtime.md`](./buildiq-runtime.md) and the wizard chain spec
-[`openspec/changes/openbuild-app-creation-wizard/`](../openspec/changes/openbuild-app-creation-wizard/).
+[`openbuild-runtime.md`](./openbuild-runtime.md) and the wizard chain spec
+[`openbuild-app-creation-wizard`](https://github.com/ConductionNL/buildiq/tree/development/openspec/changes/archive/2026-05-17-openbuild-app-creation-wizard),
+archived on 2026-05-17.
 
 ## Editing session: undo/redo (page designer & schema designer)
 
@@ -128,7 +139,7 @@ The seeded `hello-world` Application is the canonical reference. Its manifest ex
 - **detail** page → drives `CnDetailPage` keyed on `:id`
 - **form** page → drives `CnFormPage` with `mode: create` and `submitEndpoint` going to OR's REST
 
-See [`lib/Repair/SeedHelloWorld.php`](../lib/Repair/SeedHelloWorld.php) `buildHelloWorldManifest()` for the full JSON.
+See [`lib/Command/SeedHelloWorldFixture.php`](https://github.com/ConductionNL/buildiq/blob/development/lib/Command/SeedHelloWorldFixture.php) for the full JSON.
 
 ## When you hit a limit
 

@@ -54,4 +54,4 @@ The roll-back worked when: the **Version history** tab shows a new *Previous dra
 ## Reference
 
 - [Export the app](./08-export-app.md) — turn a snapshot into a downloadable bundle.
-- [Manifest reference](../../features/manifest.md) — what exactly is in a snapshot.
+- [The manifest](../../elements/manifest.md), what exactly is in a snapshot.

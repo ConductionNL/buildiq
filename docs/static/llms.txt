@@ -2,7 +2,7 @@
 
 > Buildiq is an open-source citizen-developer app builder for the Nextcloud workspace.
 
-Buildiq is an open-source citizen-developer app builder for the Nextcloud workspace. Users compose a working app from typed OpenRegister registers, OpenConnector connectors, n8n workflows, and DocuDesk templates, then lay out list, detail, and form pages in a browser-based designer. Version snapshots roll back bad edits, ZIP exports move apps between instances, and RBAC keeps per-record access enforced through OpenRegister. Released under EUPL-1.2 and maintained by Conduction since 2019.
+Buildiq is an open-source citizen-developer app builder for the Nextcloud workspace. An app is navigation, pages, data (schemas) and business logic (flows). Users compose one from typed OpenRegister registers, OpenConnector connectors, OpenRegister flows, and DocuDesk templates, then lay out dashboard, index, detail and custom pages in a browser-based designer. Version snapshots roll back bad edits, ZIP exports move apps between instances, and RBAC keeps per-record access enforced through OpenRegister. Released under EUPL-1.2 and maintained by Conduction since 2019.
 
 ## Docs
 
