@@ -1,5 +1,4 @@
 <?php
-// SPDX-License-Identifier: EUPL-1.2
 
 /**
  * OpenBuilt Application
@@ -16,6 +15,8 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -65,7 +66,6 @@ class Application extends App implements IBootstrap
         );
 
         // Initialize register and schemas on install/upgrade — declared in info.xml repair-steps.
-
     }//end register()
 
     /**

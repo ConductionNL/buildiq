@@ -1,5 +1,4 @@
 <?php
-// SPDX-License-Identifier: EUPL-1.2
 
 /**
  * OpenBuilt Settings Section
@@ -16,6 +15,8 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
