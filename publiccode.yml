@@ -1,7 +1,7 @@
 publiccodeYmlVersion: "0.4"
 
 name: Buildiq
-url: "https://codeberg.org/Conduction/buildiq"
+url: "https://github.com/ConductionNL/buildiq"
 softwareVersion: "0.3.7"
 releaseDate: "2026-05-26"
 developmentStatus: beta

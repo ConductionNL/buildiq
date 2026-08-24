@@ -9,9 +9,9 @@
 </p>
 
 <p align="center">
-  <a href="https://codeberg.org/Conduction/buildiq/releases"><img src="https://img.shields.io/gitea/v/release/Conduction/buildiq?gitea_url=https%3A%2F%2Fcodeberg.org" alt="Latest release"></a>
-  <a href="https://codeberg.org/Conduction/buildiq/src/branch/main/LICENSE"><img src="https://img.shields.io/badge/license-EUPL--1.2-blue" alt="License"></a>
-  <a href="https://ci.codeberg.org/repos/Conduction/buildiq"><img src="https://ci.codeberg.org/api/badges/Conduction/buildiq/status.svg" alt="Code quality"></a>
+  <a href="https://github.com/ConductionNL/buildiq/releases"><img src="https://img.shields.io/github/v/release/ConductionNL/buildiq" alt="Latest release"></a>
+  <a href="https://github.com/ConductionNL/buildiq/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-EUPL--1.2-blue" alt="License"></a>
+  <a href="https://github.com/ConductionNL/buildiq/actions/workflows/code-quality.yml"><img src="https://github.com/ConductionNL/buildiq/actions/workflows/code-quality.yml/badge.svg" alt="Code quality"></a>
 </p>
 
 ---
@@ -20,7 +20,7 @@ Buildiq is a citizen-developer app builder for Nextcloud. It lets non-technical 
 
 Per [ADR-024](../hydra/openspec/architecture/adr-024-app-manifest.md) each built app is rendered at runtime by mounting `CnAppRoot` with the app's manifest, which lives as a JSON blob in Buildiq's own OpenRegister namespace. Per [ADR-031](../hydra/openspec/architecture/adr-031-schema-declarative-business-logic.md) behaviour (state machines, aggregations, calculations, notifications) is declared as schema metadata in the register file instead of service code. Built apps are virtual at first (records in Buildiq's register, rendered inside the Buildiq shell at `/apps/buildiq/builder/{slug}`); a Phase-2 export generates a real Nextcloud app from a virtual app.
 
-> **Requires [OpenRegister](https://codeberg.org/Conduction/openregister)** — all virtual-app data is stored as OpenRegister objects.
+> **Requires [OpenRegister](https://github.com/ConductionNL/openregister)** — all virtual-app data is stored as OpenRegister objects.
 
 ## Screenshots
 
@@ -103,7 +103,7 @@ Data model is fully defined in [`lib/Settings/openbuild_register.json`](lib/Sett
 | Nextcloud | 28 – 33 |
 | PHP | 8.1+ |
 | Node.js | 20+ |
-| [OpenRegister](https://codeberg.org/Conduction/openregister) | latest |
+| [OpenRegister](https://github.com/ConductionNL/openregister) | latest |
 | [@conduction/nextcloud-vue](https://www.npmjs.com/package/@conduction/nextcloud-vue) | latest |
 
 ## Installation
@@ -120,7 +120,7 @@ Data model is fully defined in [`lib/Settings/openbuild_register.json`](lib/Sett
 
 ```bash
 cd /var/www/html/custom_apps
-git clone https://codeberg.org/Conduction/buildiq.git buildiq
+git clone https://github.com/ConductionNL/buildiq.git buildiq
 cd buildiq
 npm install && npm run build
 php occ app:enable buildiq
@@ -187,12 +187,12 @@ npm run stylelint       # CSS linting
 
 ## Related Apps
 
-- **[OpenRegister](https://codeberg.org/Conduction/openregister)** — Object storage layer (required dependency)
-- **[OpenConnector](https://codeberg.org/Conduction/openconnector)** — API / iPaaS integration (consumed by built apps via manifest)
-- **[Procest](https://codeberg.org/Conduction/procest)** — Process / case management (consumed via workflow attachments)
-- **[Docudesk](https://codeberg.org/Conduction/docudesk)** — Document generation (consumed via template attachments)
-- **[LaunchPad](https://codeberg.org/Conduction/launchpad)** — Dashboards (consumed via widget embeds)
-- **[NL Design](https://codeberg.org/Conduction/nldesign)** — Government theming (CSS variable inheritance)
+- **[OpenRegister](https://github.com/ConductionNL/openregister)** — Object storage layer (required dependency)
+- **[OpenConnector](https://github.com/ConductionNL/integriq)** — API / iPaaS integration (consumed by built apps via manifest)
+- **[Procest](https://github.com/ConductionNL/dossiq)** — Process / case management (consumed via workflow attachments)
+- **[Docudesk](https://github.com/ConductionNL/filinq)** — Document generation (consumed via template attachments)
+- **[LaunchPad](https://github.com/ConductionNL/launchpad)** — Dashboards (consumed via widget embeds)
+- **[NL Design](https://github.com/ConductionNL/thematiq)** — Government theming (CSS variable inheritance)
 
 ## Support
 

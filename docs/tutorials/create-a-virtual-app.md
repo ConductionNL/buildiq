@@ -97,5 +97,5 @@ The detail page renders:
 - **"Add Item" button instead of "Add application"** — the manifest's `actionsComponent` must sit at page top-level (sibling to `id`/`route`/`type`/`title`), not nested inside `config`. The default CnIndexPage Add button is independent; suppress it with `config.showAdd: false` if needed.
 - **`[object Object]` in OR API URLs** — your local nc-vue version pre-dates the positional-arg fix in `CnIndexPage.registerObjectType`. Update nc-vue or copy the fix from `feature/buildiq-version-routing` / this branch.
 - **Schema uniqueness violation on create** — the org-wide schema-slug constraint requires per-app namespacing of seed schema slugs. The wizard applies `{appSlug}-{versionSlug}-` as a prefix; if you fork the wizard's seed list, keep the namespacing pattern.
-- **Hello World apps don't disappear after upgrade** — the green-field migration step's idempotency check is too eager. See [issue #69](https://codeberg.org/Conduction/buildiq/issues/69).
-- **Icons return 404 from `/apps/buildiq/icons/{slug}.svg`** — see [issue #68](https://codeberg.org/Conduction/buildiq/issues/68).
+- **Hello World apps don't disappear after upgrade** — the green-field migration step's idempotency check is too eager. See Codeberg issue #69 (pre-migration, not migrated to GitHub).
+- **Icons return 404 from `/apps/buildiq/icons/{slug}.svg`** — see Codeberg issue #68 (pre-migration, not migrated to GitHub).

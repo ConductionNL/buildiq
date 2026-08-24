@@ -13,4 +13,4 @@
 
 ## 3. Follow-up tracking
 
-- [ ] 3.1 File a GitHub/Codeberg issue tracking the remaining locale gap (`de`/`fr`/`es`/etc. at 304 missing keys) so `L10N_REQUIRED_LOCALES` can be widened incrementally — out of scope for this change but must not be silently dropped.
+- [ ] 3.1 File a GitHub issue tracking the remaining locale gap (`de`/`fr`/`es`/etc. at 304 missing keys) so `L10N_REQUIRED_LOCALES` can be widened incrementally — out of scope for this change but must not be silently dropped.
