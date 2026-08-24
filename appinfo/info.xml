@@ -135,6 +135,40 @@ Vrij en open source onder de EUPL-1.2-licentie.
                 in a pass that moves the minted credentials with them.
             -->
             <step>OCA\Buildiq\Repair\MigrateRegisterSlug</step>
+            <!--
+                SIBLING OF MigrateRegisterSlug, AND NEITHER COVERS THE OTHER.
+                OpenRegister resolves the two halves of a configuration by
+                DIFFERENT keys: a REGISTER by slug alone (RegisterMapper::find),
+                a SCHEMA by the PAIR —
+                SchemaMapper::findByApplicationAndSlug(slug, application).
+
+                This app now passes `appId: Application::APP_ID` = `buildiq`,
+                while every schema it already owns still carries
+                `application = openbuild`, so the pair matches nothing — and
+                ImportHandler's not-found branch is not an error path, it is the
+                "create a new one" path. The import InitializeSettings triggers
+                would build a SECOND, EMPTY schema set under the new application
+                id while every stored object stayed bound to the old rows.
+                Nothing errors; the app renders empty collections.
+
+                MUST run before InitializeSettings, for the same reason
+                MigrateRegisterSlug does — the import is the thing that forks.
+
+                Measured on a live install: 17 schemas still under `openbuild`,
+                and zero of their slugs collide with a twin under `buildiq`, so
+                all 17 move.
+
+                Where a slug DOES already have a twin under the new application
+                id it refuses rather than merges: two rows sharing
+                (application, slug) means findByApplicationAndSlug(), which caps
+                at one row, silently picks one and the other's objects become
+                unreachable. That is a decision about data, not a migration.
+
+                Never deletes a schema, and never throws — it runs under
+                <install>, where an escaping exception aborts the install and
+                the app never enables.
+            -->
+            <step>OCA\Buildiq\Repair\MigrateSchemaApplicationId</step>
             <step>OCA\Buildiq\Repair\InitializeSettings</step>
             <step>OCA\Buildiq\Repair\MigrateToVersionedModel</step>
             <step>OCA\Buildiq\Repair\MigrateAppOverridesToHybrid</step>
@@ -174,6 +208,40 @@ Vrij en open source onder de EUPL-1.2-licentie.
                 in a pass that moves the minted credentials with them.
             -->
             <step>OCA\Buildiq\Repair\MigrateRegisterSlug</step>
+            <!--
+                SIBLING OF MigrateRegisterSlug, AND NEITHER COVERS THE OTHER.
+                OpenRegister resolves the two halves of a configuration by
+                DIFFERENT keys: a REGISTER by slug alone (RegisterMapper::find),
+                a SCHEMA by the PAIR —
+                SchemaMapper::findByApplicationAndSlug(slug, application).
+
+                This app now passes `appId: Application::APP_ID` = `buildiq`,
+                while every schema it already owns still carries
+                `application = openbuild`, so the pair matches nothing — and
+                ImportHandler's not-found branch is not an error path, it is the
+                "create a new one" path. The import InitializeSettings triggers
+                would build a SECOND, EMPTY schema set under the new application
+                id while every stored object stayed bound to the old rows.
+                Nothing errors; the app renders empty collections.
+
+                MUST run before InitializeSettings, for the same reason
+                MigrateRegisterSlug does — the import is the thing that forks.
+
+                Measured on a live install: 17 schemas still under `openbuild`,
+                and zero of their slugs collide with a twin under `buildiq`, so
+                all 17 move.
+
+                Where a slug DOES already have a twin under the new application
+                id it refuses rather than merges: two rows sharing
+                (application, slug) means findByApplicationAndSlug(), which caps
+                at one row, silently picks one and the other's objects become
+                unreachable. That is a decision about data, not a migration.
+
+                Never deletes a schema, and never throws — it runs under
+                <install>, where an escaping exception aborts the install and
+                the app never enables.
+            -->
+            <step>OCA\Buildiq\Repair\MigrateSchemaApplicationId</step>
             <step>OCA\Buildiq\Repair\InitializeSettings</step>
             <step>OCA\Buildiq\Repair\MigrateToVersionedModel</step>
             <step>OCA\Buildiq\Repair\MigrateAppOverridesToHybrid</step>
