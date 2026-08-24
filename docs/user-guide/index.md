@@ -31,6 +31,6 @@ Each tutorial is a short, screenshot-driven walkthrough living under [`docs/tuto
 
 ## Reference
 
-- [Integrator guide](../../integrator-guide) — author a virtual app by hand (the JSON-first path for power users).
-- [OpenBuilt runtime](../../openbuilt-runtime) — what happens between a manifest record and the rendered SPA.
-- [RBAC operator guide](../../openbuilt-rbac) — `occ app:enable openbuilt` + group restrictions + per-Application permissions.
+- [Integrator guide](../integrator-guide.md), author a virtual app by hand (the JSON-first path for power users).
+- [Buildiq runtime](../openbuild-runtime.md), what happens between a manifest record and the rendered SPA.
+- [RBAC operator guide](../openbuild-rbac.md), `occ app:enable buildiq` plus group restrictions and per-Application permissions.

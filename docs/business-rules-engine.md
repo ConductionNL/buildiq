@@ -46,8 +46,7 @@ Conditions use a small, auditable FEEL subset:
 
 **Not supported:** string interpolation, function calls (`now()`,
 `length()`), custom user-defined functions, external library calls. Move that
-logic into an n8n workflow (via the `start-workflow` action) or a backend
-service.
+logic into an OpenRegister flow or a backend service.
 
 ### Decision-table cell conditions
 
@@ -73,8 +72,12 @@ A matching rule runs its actions in order:
 
 - `set-veld` — set a field on the working payload.
 - `send-notification` — dispatch a Nextcloud notification.
-- `start-workflow` — start an n8n workflow.
 - `call-rule-set` — evaluate another RuleSet.
+
+`start-workflow` is accepted by the schema but **reserved and currently a
+no-op**. Buildiq wires no workflow engine, so dispatching it logs a warning and
+changes nothing (`RuleActionDispatcher::dispatchStartWorkflow`). Do not build on
+it yet. To run business logic beyond a rule set, use an OpenRegister flow.
 
 A failing action aborts the rule unless `continueOnError` is set. In dry-run
 mode side-effecting actions are recorded but not dispatched.
