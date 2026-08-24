@@ -234,6 +234,28 @@
 				@openPermissions="onOpenPermissions" />
 		</section>
 
+		<!-- 5. Structure tables — the four parts of an app, each listed with
+		     its rows so the whole app is editable from this page rather than
+		     only from inside the running app. PagesWidget / MenuWidget /
+		     SchemasWidget were implemented for REQ-OBADO-009 and mounted
+		     nowhere; FlowsWidget completes the set. -->
+		<section class="ob-detail-dashboard__structure">
+			<PagesWidget
+				:appSlug="appSlug"
+				:versionSlug="activeVersionSlug"
+				:pages="activePages" />
+			<MenuWidget
+				:appSlug="appSlug"
+				:versionSlug="activeVersionSlug"
+				:menu="activeMenu" />
+			<SchemasWidget
+				:appSlug="appSlug"
+				:versionSlug="activeVersionSlug"
+				:schemas="activeSchemas"
+				@addSchema="onAddSchema" />
+			<FlowsWidget :flows="activeFlows" />
+		</section>
+
 		<UserDeltaEditModal
 			v-model:open="showUserDeltaModal"
 			:appSlug="appSlug"
@@ -260,9 +282,13 @@ import Harddisk from 'vue-material-design-icons/Harddisk.vue'
 import History from 'vue-material-design-icons/History.vue'
 import ImportDataWizard from '../../dialogs/ImportDataWizard.vue'
 import UserDeltaEditModal from '../../modals/UserDeltaEditModal.vue'
+import FlowsWidget from './widgets/FlowsWidget.vue'
 import GroupsWidget from './widgets/GroupsWidget.vue'
 import ManifestWidget from './widgets/ManifestWidget.vue'
+import MenuWidget from './widgets/MenuWidget.vue'
+import PagesWidget from './widgets/PagesWidget.vue'
 import RegisterWidget from './widgets/RegisterWidget.vue'
+import SchemasWidget from './widgets/SchemasWidget.vue'
 import { fetchApplicationRecord } from '../../composables/useApplicationRecord.js'
 import { useInsightsWindow } from '../../composables/useInsightsWindow.js'
 import { useRegisterPicker } from '../../composables/useRegisterPicker.js'
@@ -274,9 +300,13 @@ export default {
 	components: {
 		CnStatsBlock,
 		NcButton,
+		FlowsWidget,
 		GroupsWidget,
 		ManifestWidget,
+		MenuWidget,
+		PagesWidget,
 		RegisterWidget,
+		SchemasWidget,
 		UserDeltaEditModal,
 		ImportDataWizard,
 	},
@@ -287,6 +317,10 @@ export default {
 		object: { type: Object, default: null },
 		objectId: { type: String, default: '' },
 	},
+
+	// Declared so the emit is part of the component's contract rather than an
+	// undeclared side channel. This one was already fired and never declared.
+	emits: ['open-permissions'],
 
 	/**
 	 * Expose the shared insights-window ref (driven by the header toggle) so the
@@ -474,6 +508,23 @@ export default {
 				out.push({ id, name: id, objectCount: 0, status: 'active' })
 			})
 			return out
+		},
+
+		/**
+		 * OpenRegister flows bound to this app.
+		 *
+		 * Flows are a field on the Application record (written by
+		 * `ApplicationDetailActions.setFlows` via `obPatchApp({ flows })`), not
+		 * part of the version manifest, so they are read off the record rather
+		 * than off `activeManifest`.
+		 *
+		 * @return {Array<object>}
+		 *
+		 * @spec exclude reads an existing record field for a display-only table
+		 */
+		activeFlows() {
+			const flows = this.application && this.application.flows
+			return Array.isArray(flows) ? flows : []
 		},
 
 		/**
@@ -765,6 +816,28 @@ export default {
 		 * @return {void}
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
+		/**
+		 * Open the schema designer for this app.
+		 *
+		 * SchemasWidget emitted `add-schema` and logged that no create dialog
+		 * was registered yet, deferring to the schema-designer spec. That
+		 * designer has since shipped (`SchemaDesignerList` at
+		 * `/builder/:slug/schemas`), so the emit now goes somewhere.
+		 *
+		 * @return {void}
+		 *
+		 * @spec exclude routes to an existing page, no new behaviour
+		 */
+		onAddSchema() {
+			if (!this.appSlug) {
+				return
+			}
+
+			this.$router
+				.push({ name: 'SchemaDesignerList', params: { slug: this.appSlug } })
+				.catch(() => {})
+		},
+
 		onOpenPermissions(application) {
 			this.$emit('open-permissions', application)
 		},
@@ -1132,8 +1205,16 @@ export default {
 	gap: 12px;
 }
 
+.ob-detail-dashboard__structure {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 12px;
+	margin-top: 12px;
+}
+
 @media (max-width: 900px) {
-	.ob-detail-dashboard__widgets {
+	.ob-detail-dashboard__widgets,
+	.ob-detail-dashboard__structure {
 		grid-template-columns: 1fr;
 	}
 }

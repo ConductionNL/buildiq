@@ -48,22 +48,32 @@ const useSchemasStoreRaw = createObjectStore(STORE_ID, {
  * Resolve the per-virtual-app register slug for a built-app slug + version.
  *
  * REQ-OBVR-007: when a versionSlug is provided, the register name follows
- * spec C's naming convention: `buildiq-{appSlug}-{versionSlug}`.
- * (e.g. `buildiq-hello-world-staging`).
+ * spec C's naming convention: `openbuild-{appSlug}-{versionSlug}`
+ * (e.g. `openbuild-hello-world-staging`).
  *
  * When no versionSlug is provided, falls back to the old per-app register
- * `buildiq-{appSlug}` for backwards compatibility with apps created before
+ * `openbuild-{appSlug}` for backwards compatibility with apps created before
  * spec C's per-version register model was introduced.
+ *
+ * WHY THE PREFIX STAYS `openbuild-` AFTER THE APP-ID RENAME. The app id moved
+ * to `buildiq` and the CONTROL register moved with it (see
+ * `lib/Repair/MigrateRegisterSlug`, whose map is `openbuild => buildiq` and
+ * covers that one row only). These PER-APP registers are a different set: a
+ * register slug is frozen once objects live under it, and renaming one is a
+ * data migration per virtual app, not a find-and-replace. Every existing
+ * per-app register on a live instance is named `openbuild-*`, so this prefix is
+ * the correct value, not leftover. The docblock previously said `buildiq-`
+ * while the code returned `openbuild-`; the code was right.
  *
  * @param {string}           appSlug     Virtual app slug (e.g. `hello-world`).
  * @param {string|undefined} [versionSlug] Optional version slug (e.g. `staging`).
- * @return {string} Register slug (e.g. `buildiq-hello-world-staging`).
+ * @return {string} Register slug (e.g. `openbuild-hello-world-staging`).
  *
  * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
  */
 export function registerSlugForApp(appSlug, versionSlug) {
 	if (versionSlug && versionSlug !== '') {
-		// Per-version register: buildiq-{appSlug}-{versionSlug} (spec C / ADR-002).
+		// Per-version register: openbuild-{appSlug}-{versionSlug} (spec C / ADR-002).
 		return `openbuild-${appSlug}-${versionSlug}`
 	}
 	// Backwards-compat: legacy per-app register (no version suffix).
