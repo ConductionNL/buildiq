@@ -1,23 +1,31 @@
 {
-  "/features/-cbb": {
-    "__comp": "55d11d86",
+  "/features/-5de": {
+    "__comp": "e686c2f3",
     "__context": {
       "plugin": "f622ed5e"
     },
-    "data": "afa3ca50"
+    "data": "ff49f5cf"
   },
-  "/docs/-440": {
+  "/docs/-271": {
     "__comp": "5e95c892",
     "__context": {
       "plugin": "aba21aa0"
     }
   },
-  "/docs/-e7e": {
+  "/docs/-738": {
     "__comp": "a7bd4aaa",
     "__props": "11b43341"
   },
-  "/docs/-941": {
+  "/docs/-ce7": {
     "__comp": "a94703ab"
+  },
+  "/docs/ai-copilot/-4e3": {
+    "__comp": "17896441",
+    "content": "406fa8bb"
+  },
+  "/docs/automation-designer/-8b3": {
+    "__comp": "17896441",
+    "content": "2a0d792b"
   },
   "/docs/business-rules-engine/-4aa": {
     "__comp": "17896441",
@@ -39,6 +47,26 @@
     "__comp": "17896441",
     "content": "e5f565f5"
   },
+  "/docs/Features/-4c8": {
+    "__comp": "17896441",
+    "content": "e94fbaa4"
+  },
+  "/docs/form-logic-authoring/-886": {
+    "__comp": "17896441",
+    "content": "0cf3c642"
+  },
+  "/docs/github-store/-57c": {
+    "__comp": "17896441",
+    "content": "da98d233"
+  },
+  "/docs/installation/-9cf": {
+    "__comp": "17896441",
+    "content": "575981d1"
+  },
+  "/docs/Integrations/-e7a": {
+    "__comp": "17896441",
+    "content": "e34bd023"
+  },
   "/docs/integrator-guide/-355": {
     "__comp": "17896441",
     "content": "83281ea4"
@@ -58,6 +86,14 @@
   "/docs/releasing/-278": {
     "__comp": "17896441",
     "content": "9c60e451"
+  },
+  "/docs/Technical/-ce2": {
+    "__comp": "17896441",
+    "content": "4944575c"
+  },
+  "/docs/template-store/-f45": {
+    "__comp": "17896441",
+    "content": "d43a21c9"
   },
   "/docs/tutorials/admin/admin-settings/-d1f": {
     "__comp": "17896441",
@@ -107,9 +143,21 @@
     "__comp": "17896441",
     "content": "eb3d7fb5"
   },
+  "/docs/tutorials/user/publish-to-github/-38a": {
+    "__comp": "17896441",
+    "content": "ca480c1d"
+  },
   "/docs/tutorials/user/version-snapshots/-9d8": {
     "__comp": "17896441",
     "content": "d3963936"
+  },
+  "/docs/UseCases/-5d6": {
+    "__comp": "17896441",
+    "content": "559f2320"
+  },
+  "/docs/user-guide/-8a0": {
+    "__comp": "17896441",
+    "content": "5d262cbb"
   },
   "/-2e1": {
     "__comp": "c4f5d8e4",

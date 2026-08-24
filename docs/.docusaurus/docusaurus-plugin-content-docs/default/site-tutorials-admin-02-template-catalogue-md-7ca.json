@@ -8,7 +8,7 @@
   "permalink": "/docs/tutorials/admin/template-catalogue",
   "draft": false,
   "unlisted": false,
-  "editUrl": "https://codeberg.org/Conduction/openbuild/src/branch/main/docs/tutorials/admin/02-template-catalogue.md",
+  "editUrl": "https://github.com/ConductionNL/buildiq/tree/main/docs/tutorials/admin/02-template-catalogue.md",
   "tags": [],
   "version": "current",
   "sidebarPosition": 2,
@@ -23,7 +23,7 @@
     "permalink": "/docs/tutorials/admin/rbac"
   },
   "next": {
-    "title": "Manage OpenBuild settings",
+    "title": "Manage Buildiq settings",
     "permalink": "/docs/tutorials/admin/admin-settings"
   }
 }

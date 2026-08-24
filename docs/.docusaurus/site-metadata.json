@@ -30,22 +30,22 @@
     "conduction-ai-crawling": {
       "type": "package",
       "name": "@conduction/docusaurus-preset",
-      "version": "3.10.0"
+      "version": "3.26.0"
     },
     "conduction-indexnow": {
       "type": "package",
       "name": "@conduction/docusaurus-preset",
-      "version": "3.10.0"
+      "version": "3.26.0"
     },
     "conduction-features-page": {
       "type": "package",
       "name": "@conduction/docusaurus-preset",
-      "version": "3.10.0"
+      "version": "3.26.0"
     },
     "@conduction/docusaurus-theme": {
       "type": "package",
       "name": "@conduction/docusaurus-preset",
-      "version": "3.10.0"
+      "version": "3.26.0"
     },
     "docusaurus-theme-mermaid": {
       "type": "package",

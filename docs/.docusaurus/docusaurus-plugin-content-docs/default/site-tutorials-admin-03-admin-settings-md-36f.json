@@ -1,21 +1,21 @@
 {
   "id": "tutorials/admin/admin-settings",
-  "title": "Manage OpenBuild settings",
-  "description": "The three things every OpenBuild admin touches — version info, OpenRegister wiring and the support contact.",
+  "title": "Manage Buildiq settings",
+  "description": "The three things every Buildiq admin touches — version info, OpenRegister wiring and the support contact.",
   "source": "@site/tutorials/admin/03-admin-settings.md",
   "sourceDirName": "tutorials/admin",
   "slug": "/tutorials/admin/admin-settings",
   "permalink": "/docs/tutorials/admin/admin-settings",
   "draft": false,
   "unlisted": false,
-  "editUrl": "https://codeberg.org/Conduction/openbuild/src/branch/main/docs/tutorials/admin/03-admin-settings.md",
+  "editUrl": "https://github.com/ConductionNL/buildiq/tree/main/docs/tutorials/admin/03-admin-settings.md",
   "tags": [],
   "version": "current",
   "sidebarPosition": 3,
   "frontMatter": {
     "sidebar_position": 3,
-    "title": "Manage OpenBuild settings",
-    "description": "The three things every OpenBuild admin touches — version info, OpenRegister wiring and the support contact."
+    "title": "Manage Buildiq settings",
+    "description": "The three things every Buildiq admin touches — version info, OpenRegister wiring and the support contact."
   },
   "sidebar": "tutorialSidebar",
   "previous": {

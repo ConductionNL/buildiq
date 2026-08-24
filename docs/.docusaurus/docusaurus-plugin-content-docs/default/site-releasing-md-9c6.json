@@ -1,6 +1,6 @@
 {
   "id": "releasing",
-  "title": "Releasing OpenBuild",
+  "title": "Releasing Buildiq",
   "description": "Version + changelog",
   "source": "@site/releasing.md",
   "sourceDirName": ".",
@@ -8,13 +8,17 @@
   "permalink": "/docs/releasing",
   "draft": false,
   "unlisted": false,
-  "editUrl": "https://codeberg.org/Conduction/openbuild/src/branch/main/docs/releasing.md",
+  "editUrl": "https://github.com/ConductionNL/buildiq/tree/main/docs/releasing.md",
   "tags": [],
   "version": "current",
   "frontMatter": {},
   "sidebar": "tutorialSidebar",
   "previous": {
-    "title": "OpenBuild Runtime",
+    "title": "Buildiq Runtime",
     "permalink": "/docs/openbuild-runtime"
+  },
+  "next": {
+    "title": "Remote template store",
+    "permalink": "/docs/template-store"
   }
 }

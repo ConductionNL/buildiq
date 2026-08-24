@@ -1,14 +1,14 @@
 {
   "id": "openbuild-rbac",
-  "title": "OpenBuild RBAC — Per-Virtual-App Permissions",
-  "description": "OpenBuild's per-virtual-app role-based access control (RBAC) layers on",
+  "title": "Buildiq RBAC — Per-Virtual-App Permissions",
+  "description": "Buildiq's per-virtual-app role-based access control (RBAC) layers on",
   "source": "@site/openbuild-rbac.md",
   "sourceDirName": ".",
   "slug": "/openbuild-rbac",
   "permalink": "/docs/openbuild-rbac",
   "draft": false,
   "unlisted": false,
-  "editUrl": "https://codeberg.org/Conduction/openbuild/src/branch/main/docs/openbuild-rbac.md",
+  "editUrl": "https://github.com/ConductionNL/buildiq/tree/main/docs/openbuild-rbac.md",
   "tags": [],
   "version": "current",
   "frontMatter": {},
@@ -18,7 +18,7 @@
     "permalink": "/docs/integrator-guide"
   },
   "next": {
-    "title": "OpenBuild Runtime",
+    "title": "Buildiq Runtime",
     "permalink": "/docs/openbuild-runtime"
   }
 }

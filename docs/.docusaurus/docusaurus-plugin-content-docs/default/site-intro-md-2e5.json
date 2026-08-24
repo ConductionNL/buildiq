@@ -1,24 +1,28 @@
 {
   "id": "intro",
-  "title": "OpenBuild",
-  "description": "Get started with OpenBuild, the no-code app builder inside Nextcloud. Compose apps from OpenRegister schemas, OpenConnector flows, and Pipelinq.",
+  "title": "Buildiq",
+  "description": "Get started with Buildiq, the no-code app builder inside Nextcloud. Compose apps from OpenRegister schemas, OpenConnector flows, and Procest workflows.",
   "source": "@site/intro.md",
   "sourceDirName": ".",
   "slug": "/intro",
   "permalink": "/docs/intro",
   "draft": false,
   "unlisted": false,
-  "editUrl": "https://codeberg.org/Conduction/openbuild/src/branch/main/docs/intro.md",
+  "editUrl": "https://github.com/ConductionNL/buildiq/tree/main/docs/intro.md",
   "tags": [],
   "version": "current",
   "sidebarPosition": 1,
   "frontMatter": {
     "sidebar_position": 1,
-    "description": "Get started with OpenBuild, the no-code app builder inside Nextcloud. Compose apps from OpenRegister schemas, OpenConnector flows, and Pipelinq."
+    "description": "Get started with Buildiq, the no-code app builder inside Nextcloud. Compose apps from OpenRegister schemas, OpenConnector flows, and Procest workflows."
   },
   "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Use cases",
+    "permalink": "/docs/UseCases/"
+  },
   "next": {
-    "title": "Tutorials",
-    "permalink": "/docs/category/tutorials"
+    "title": "Features",
+    "permalink": "/docs/Features/"
   }
 }

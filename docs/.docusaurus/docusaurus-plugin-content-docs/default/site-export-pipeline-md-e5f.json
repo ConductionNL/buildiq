@@ -1,14 +1,14 @@
 {
   "id": "export-pipeline",
   "title": "Export pipeline",
-  "description": "OpenBuild's founding commitment is a hybrid architecture: prototype as a virtual",
+  "description": "Buildiq's founding commitment is a hybrid architecture: prototype as a virtual",
   "source": "@site/export-pipeline.md",
   "sourceDirName": ".",
   "slug": "/export-pipeline",
   "permalink": "/docs/export-pipeline",
   "draft": false,
   "unlisted": false,
-  "editUrl": "https://codeberg.org/Conduction/openbuild/src/branch/main/docs/export-pipeline.md",
+  "editUrl": "https://github.com/ConductionNL/buildiq/tree/main/docs/export-pipeline.md",
   "tags": [],
   "version": "current",
   "frontMatter": {},
@@ -18,7 +18,7 @@
     "permalink": "/docs/business-rules-engine"
   },
   "next": {
-    "title": "Integrator guide — authoring a virtual app by hand",
-    "permalink": "/docs/integrator-guide"
+    "title": "form-logic-authoring",
+    "permalink": "/docs/form-logic-authoring"
   }
 }

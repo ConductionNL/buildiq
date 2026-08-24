@@ -8,14 +8,14 @@
   "permalink": "/docs/business-rules-engine",
   "draft": false,
   "unlisted": false,
-  "editUrl": "https://codeberg.org/Conduction/openbuild/src/branch/main/docs/business-rules-engine.md",
+  "editUrl": "https://github.com/ConductionNL/buildiq/tree/main/docs/business-rules-engine.md",
   "tags": [],
   "version": "current",
   "frontMatter": {},
   "sidebar": "tutorialSidebar",
   "previous": {
-    "title": "Tutorial: Update a virtual app",
-    "permalink": "/docs/tutorials/update-a-virtual-app"
+    "title": "automation-designer",
+    "permalink": "/docs/automation-designer"
   },
   "next": {
     "title": "Export pipeline",

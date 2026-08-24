@@ -1,14 +1,14 @@
 {
   "id": "tutorials/update-a-virtual-app",
   "title": "Tutorial: Update a virtual app",
-  "description": "Audience: OpenBuild admins who have already created an app via the wizard and want to evolve it — design schemas, edit pages, switch between versions, and promote changes through the chain.",
+  "description": "Audience: Buildiq admins who have already created an app via the wizard and want to evolve it — design schemas, edit pages, switch between versions, and promote changes through the chain.",
   "source": "@site/tutorials/update-a-virtual-app.md",
   "sourceDirName": "tutorials",
   "slug": "/tutorials/update-a-virtual-app",
   "permalink": "/docs/tutorials/update-a-virtual-app",
   "draft": false,
   "unlisted": false,
-  "editUrl": "https://codeberg.org/Conduction/openbuild/src/branch/main/docs/tutorials/update-a-virtual-app.md",
+  "editUrl": "https://github.com/ConductionNL/buildiq/tree/main/docs/tutorials/update-a-virtual-app.md",
   "tags": [],
   "version": "current",
   "frontMatter": {},
@@ -18,7 +18,7 @@
     "permalink": "/docs/tutorials/create-a-virtual-app"
   },
   "next": {
-    "title": "business-rules-engine",
-    "permalink": "/docs/business-rules-engine"
+    "title": "Integrations",
+    "permalink": "/docs/Integrations/"
   }
 }

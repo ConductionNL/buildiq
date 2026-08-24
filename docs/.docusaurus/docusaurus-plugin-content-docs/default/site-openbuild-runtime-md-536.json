@@ -1,24 +1,24 @@
 {
   "id": "openbuild-runtime",
-  "title": "OpenBuild Runtime",
-  "description": "This document describes how OpenBuild renders a virtual app at runtime — the manifest endpoint, the nested CnAppRoot mount, and the workaround that bridges the gap until the in-memory useAppManifest overload ships in @conduction/nextcloud-vue.",
+  "title": "Buildiq Runtime",
+  "description": "This document describes how Buildiq renders a virtual app at runtime — the manifest endpoint, the nested CnAppRoot mount, and the workaround that bridges the gap until the in-memory useAppManifest overload ships in @conduction/nextcloud-vue.",
   "source": "@site/openbuild-runtime.md",
   "sourceDirName": ".",
   "slug": "/openbuild-runtime",
   "permalink": "/docs/openbuild-runtime",
   "draft": false,
   "unlisted": false,
-  "editUrl": "https://codeberg.org/Conduction/openbuild/src/branch/main/docs/openbuild-runtime.md",
+  "editUrl": "https://github.com/ConductionNL/buildiq/tree/main/docs/openbuild-runtime.md",
   "tags": [],
   "version": "current",
   "frontMatter": {},
   "sidebar": "tutorialSidebar",
   "previous": {
-    "title": "OpenBuild RBAC — Per-Virtual-App Permissions",
+    "title": "Buildiq RBAC — Per-Virtual-App Permissions",
     "permalink": "/docs/openbuild-rbac"
   },
   "next": {
-    "title": "Releasing OpenBuild",
+    "title": "Releasing Buildiq",
     "permalink": "/docs/releasing"
   }
 }

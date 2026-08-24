@@ -1,21 +1,21 @@
 {
   "id": "tutorials/user/export-app",
   "title": "Export your app",
-  "description": "Download a virtual app as a ZIP bundle — manifest + schemas + sample data — that can be imported into another OpenBuild instance.",
+  "description": "Download a virtual app as a ZIP bundle — manifest + schemas + sample data — that can be imported into another Buildiq instance.",
   "source": "@site/tutorials/user/08-export-app.md",
   "sourceDirName": "tutorials/user",
   "slug": "/tutorials/user/export-app",
   "permalink": "/docs/tutorials/user/export-app",
   "draft": false,
   "unlisted": false,
-  "editUrl": "https://codeberg.org/Conduction/openbuild/src/branch/main/docs/tutorials/user/08-export-app.md",
+  "editUrl": "https://github.com/ConductionNL/buildiq/tree/main/docs/tutorials/user/08-export-app.md",
   "tags": [],
   "version": "current",
   "sidebarPosition": 8,
   "frontMatter": {
     "sidebar_position": 8,
     "title": "Export your app",
-    "description": "Download a virtual app as a ZIP bundle — manifest + schemas + sample data — that can be imported into another OpenBuild instance."
+    "description": "Download a virtual app as a ZIP bundle — manifest + schemas + sample data — that can be imported into another Buildiq instance."
   },
   "sidebar": "tutorialSidebar",
   "previous": {
@@ -23,7 +23,7 @@
     "permalink": "/docs/tutorials/user/version-snapshots"
   },
   "next": {
-    "title": "Admin guide",
-    "permalink": "/docs/category/admin-guide"
+    "title": "Publish to GitHub and install from the store",
+    "permalink": "/docs/tutorials/user/publish-to-github"
   }
 }

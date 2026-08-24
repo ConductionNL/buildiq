@@ -4,20 +4,20 @@
  * Modify the docusaurus.config.js file at your site's root instead.
  */
 export default {
-  "title": "OpenBuild",
+  "title": "Buildiq",
   "tagline": "Citizen-developer app builder for Nextcloud — compose apps from registers, connectors, workflows, and documents without code",
   "favicon": "img/favicon.svg",
-  "url": "https://openbuild.conduction.nl",
+  "url": "https://buildiq.conduction.nl",
   "baseUrl": "/",
   "trailingSlash": true,
   "organizationName": "ConductionNL",
-  "projectName": "openbuild",
+  "projectName": "buildiq",
   "customFields": {
-    "appVersion": "0.5.0"
+    "appVersion": "0.6.1-unstable.20260819215516"
   },
   "onBrokenLinks": "warn",
   "staticDirectories": [
-    "/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openbuild/docs/node_modules/@conduction/docusaurus-preset/static",
+    "/home/rubenlinde/iq-rename/buildiq/docs/node_modules/@conduction/docusaurus-preset/static",
     "static"
   ],
   "i18n": {
@@ -42,12 +42,12 @@ export default {
             "**/node_modules/**",
             "src/**"
           ],
-          "sidebarPath": "/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openbuild/docs/sidebars.js",
-          "editUrl": "https://codeberg.org/Conduction/openbuild/src/branch/main/docs/"
+          "sidebarPath": "/home/rubenlinde/iq-rename/buildiq/docs/sidebars.js",
+          "editUrl": "https://github.com/ConductionNL/buildiq/tree/main/docs/"
         },
         "blog": false,
         "theme": {
-          "customCss": "/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openbuild/docs/src/css/custom.css"
+          "customCss": "/home/rubenlinde/iq-rename/buildiq/docs/src/css/custom.css"
         },
         "sitemap": {
           "changefreq": null,
@@ -71,7 +71,7 @@ export default {
     ]
   ],
   "themes": [
-    "/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openbuild/docs/node_modules/@conduction/docusaurus-preset/src/theme.js",
+    "/home/rubenlinde/iq-rename/buildiq/docs/node_modules/@conduction/docusaurus-preset/src/theme.js",
     "@docusaurus/theme-mermaid"
   ],
   "themeConfig": {
@@ -81,9 +81,9 @@ export default {
       "respectPrefersColorScheme": true
     },
     "navbar": {
-      "title": "OpenBuild",
+      "title": "Buildiq",
       "logo": {
-        "alt": "OpenBuild avatar",
+        "alt": "Buildiq avatar",
         "src": "img/logo.svg",
         "srcDark": "img/logo-dark.svg"
       },
@@ -95,8 +95,8 @@ export default {
           "label": "Documentation"
         },
         {
-          "href": "https://codeberg.org/Conduction/openbuild",
-          "label": "Codeberg",
+          "href": "https://github.com/ConductionNL/buildiq",
+          "label": "GitHub",
           "position": "right"
         },
         {
@@ -142,7 +142,7 @@ export default {
       "terms": "https://www.conduction.nl/terms",
       "iso": "https://www.conduction.nl/iso"
     },
-    "image": "img/og-openbuild.png",
+    "image": "img/og-buildiq.png",
     "metadata": [
       {
         "name": "twitter:site",
@@ -398,20 +398,20 @@ export default {
       "attributes": {
         "type": "application/ld+json"
       },
-      "innerHTML": "{\"@context\":\"https://schema.org\",\"@type\":\"WebSite\",\"@id\":\"https://openbuild.conduction.nl/#website\",\"url\":\"https://openbuild.conduction.nl/\",\"name\":\"OpenBuild\",\"publisher\":{\"@id\":\"https://www.conduction.nl/#org\"},\"inLanguage\":[\"en\"]}"
+      "innerHTML": "{\"@context\":\"https://schema.org\",\"@type\":\"WebSite\",\"@id\":\"https://buildiq.conduction.nl/#website\",\"url\":\"https://buildiq.conduction.nl/\",\"name\":\"Buildiq\",\"publisher\":{\"@id\":\"https://www.conduction.nl/#org\"},\"inLanguage\":[\"en\"]}"
     }
   ],
   "plugins": [
     [
-      "/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openbuild/docs/node_modules/@conduction/docusaurus-preset/src/plugins/ai-crawling.js",
+      "/home/rubenlinde/iq-rename/buildiq/docs/node_modules/@conduction/docusaurus-preset/src/plugins/ai-crawling.js",
       {}
     ],
     [
-      "/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openbuild/docs/node_modules/@conduction/docusaurus-preset/src/plugins/indexnow.js",
+      "/home/rubenlinde/iq-rename/buildiq/docs/node_modules/@conduction/docusaurus-preset/src/plugins/indexnow.js",
       {}
     ],
     [
-      "/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openbuild/docs/node_modules/@conduction/docusaurus-preset/src/plugins/features-page.js",
+      "/home/rubenlinde/iq-rename/buildiq/docs/node_modules/@conduction/docusaurus-preset/src/plugins/features-page.js",
       {}
     ]
   ],

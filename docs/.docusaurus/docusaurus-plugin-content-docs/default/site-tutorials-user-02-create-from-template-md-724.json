@@ -8,7 +8,7 @@
   "permalink": "/docs/tutorials/user/create-from-template",
   "draft": false,
   "unlisted": false,
-  "editUrl": "https://codeberg.org/Conduction/openbuild/src/branch/main/docs/tutorials/user/02-create-from-template.md",
+  "editUrl": "https://github.com/ConductionNL/buildiq/tree/main/docs/tutorials/user/02-create-from-template.md",
   "tags": [],
   "version": "current",
   "sidebarPosition": 2,
@@ -19,7 +19,7 @@
   },
   "sidebar": "tutorialSidebar",
   "previous": {
-    "title": "Open OpenBuild for the first time",
+    "title": "Open Buildiq for the first time",
     "permalink": "/docs/tutorials/user/first-launch"
   },
   "next": {

@@ -4,21 +4,33 @@ import ComponentCreator from '@docusaurus/ComponentCreator';
 export default [
   {
     path: '/features/',
-    component: ComponentCreator('/features/', 'cbb'),
+    component: ComponentCreator('/features/', '5de'),
     exact: true
   },
   {
     path: '/docs/',
-    component: ComponentCreator('/docs/', '440'),
+    component: ComponentCreator('/docs/', '271'),
     routes: [
       {
         path: '/docs/',
-        component: ComponentCreator('/docs/', 'e7e'),
+        component: ComponentCreator('/docs/', '738'),
         routes: [
           {
             path: '/docs/',
-            component: ComponentCreator('/docs/', '941'),
+            component: ComponentCreator('/docs/', 'ce7'),
             routes: [
+              {
+                path: '/docs/ai-copilot/',
+                component: ComponentCreator('/docs/ai-copilot/', '4e3'),
+                exact: true,
+                sidebar: "tutorialSidebar"
+              },
+              {
+                path: '/docs/automation-designer/',
+                component: ComponentCreator('/docs/automation-designer/', '8b3'),
+                exact: true,
+                sidebar: "tutorialSidebar"
+              },
               {
                 path: '/docs/business-rules-engine/',
                 component: ComponentCreator('/docs/business-rules-engine/', '4aa'),
@@ -50,6 +62,36 @@ export default [
                 sidebar: "tutorialSidebar"
               },
               {
+                path: '/docs/Features/',
+                component: ComponentCreator('/docs/Features/', '4c8'),
+                exact: true,
+                sidebar: "tutorialSidebar"
+              },
+              {
+                path: '/docs/form-logic-authoring/',
+                component: ComponentCreator('/docs/form-logic-authoring/', '886'),
+                exact: true,
+                sidebar: "tutorialSidebar"
+              },
+              {
+                path: '/docs/github-store/',
+                component: ComponentCreator('/docs/github-store/', '57c'),
+                exact: true,
+                sidebar: "tutorialSidebar"
+              },
+              {
+                path: '/docs/installation/',
+                component: ComponentCreator('/docs/installation/', '9cf'),
+                exact: true,
+                sidebar: "tutorialSidebar"
+              },
+              {
+                path: '/docs/Integrations/',
+                component: ComponentCreator('/docs/Integrations/', 'e7a'),
+                exact: true,
+                sidebar: "tutorialSidebar"
+              },
+              {
                 path: '/docs/integrator-guide/',
                 component: ComponentCreator('/docs/integrator-guide/', '355'),
                 exact: true,
@@ -76,6 +118,18 @@ export default [
               {
                 path: '/docs/releasing/',
                 component: ComponentCreator('/docs/releasing/', '278'),
+                exact: true,
+                sidebar: "tutorialSidebar"
+              },
+              {
+                path: '/docs/Technical/',
+                component: ComponentCreator('/docs/Technical/', 'ce2'),
+                exact: true,
+                sidebar: "tutorialSidebar"
+              },
+              {
+                path: '/docs/template-store/',
+                component: ComponentCreator('/docs/template-store/', 'f45'),
                 exact: true,
                 sidebar: "tutorialSidebar"
               },
@@ -152,8 +206,26 @@ export default [
                 sidebar: "tutorialSidebar"
               },
               {
+                path: '/docs/tutorials/user/publish-to-github/',
+                component: ComponentCreator('/docs/tutorials/user/publish-to-github/', '38a'),
+                exact: true,
+                sidebar: "tutorialSidebar"
+              },
+              {
                 path: '/docs/tutorials/user/version-snapshots/',
                 component: ComponentCreator('/docs/tutorials/user/version-snapshots/', '9d8'),
+                exact: true,
+                sidebar: "tutorialSidebar"
+              },
+              {
+                path: '/docs/UseCases/',
+                component: ComponentCreator('/docs/UseCases/', '5d6'),
+                exact: true,
+                sidebar: "tutorialSidebar"
+              },
+              {
+                path: '/docs/user-guide/',
+                component: ComponentCreator('/docs/user-guide/', '8a0'),
                 exact: true,
                 sidebar: "tutorialSidebar"
               }

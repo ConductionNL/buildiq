@@ -8,8 +8,18 @@
           "label": "Next",
           "isLast": true,
           "path": "/docs",
-          "mainDocId": "intro",
+          "mainDocId": "UseCases/index",
           "docs": [
+            {
+              "id": "ai-copilot",
+              "path": "/docs/ai-copilot",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "automation-designer",
+              "path": "/docs/automation-designer",
+              "sidebar": "tutorialSidebar"
+            },
             {
               "id": "business-rules-engine",
               "path": "/docs/business-rules-engine",
@@ -18,6 +28,31 @@
             {
               "id": "export-pipeline",
               "path": "/docs/export-pipeline",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "Features/index",
+              "path": "/docs/Features/",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "form-logic-authoring",
+              "path": "/docs/form-logic-authoring",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "github-store",
+              "path": "/docs/github-store",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "installation",
+              "path": "/docs/installation",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "Integrations/index",
+              "path": "/docs/Integrations/",
               "sidebar": "tutorialSidebar"
             },
             {
@@ -43,6 +78,16 @@
             {
               "id": "releasing",
               "path": "/docs/releasing",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "Technical/index",
+              "path": "/docs/Technical/",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "template-store",
+              "path": "/docs/template-store",
               "sidebar": "tutorialSidebar"
             },
             {
@@ -106,8 +151,23 @@
               "sidebar": "tutorialSidebar"
             },
             {
+              "id": "tutorials/user/publish-to-github",
+              "path": "/docs/tutorials/user/publish-to-github",
+              "sidebar": "tutorialSidebar"
+            },
+            {
               "id": "tutorials/user/version-snapshots",
               "path": "/docs/tutorials/user/version-snapshots",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "UseCases/index",
+              "path": "/docs/UseCases/",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "user-guide/index",
+              "path": "/docs/user-guide/",
               "sidebar": "tutorialSidebar"
             },
             {
@@ -130,8 +190,8 @@
           "sidebars": {
             "tutorialSidebar": {
               "link": {
-                "path": "/docs/intro",
-                "label": "intro"
+                "path": "/docs/UseCases/",
+                "label": "Use cases"
               }
             }
           }
