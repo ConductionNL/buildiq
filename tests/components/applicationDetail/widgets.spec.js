@@ -88,7 +88,7 @@ describe('applicationDetail widgets', () => {
 		)
 	})
 
-	it('SchemasWidget renders schema names + emits add-schema event', async () => {
+	it('SchemasWidget renders schema names + emits addSchema event', async () => {
 		const schemas = [
 			{ id: 's1', name: 'Customer', objectCount: 5, status: 'active' },
 		]
@@ -98,12 +98,12 @@ describe('applicationDetail widgets', () => {
 		})
 		expect(wrapper.text()).toContain('Customer')
 
-		// Trigger add-schema via the inline button — when no global dialog is
-		// registered the component emits the event instead.
+		// Trigger addSchema via the inline button. The parent routes this to
+		// the schema designer; the widget only announces the intent.
 		wrapper.findComponent({ name: 'NcButton' }).vm.$emit('click')
 		// Allow Vue's reactive update to flush.
 		await wrapper.vm.$nextTick()
-		expect(wrapper.emitted('add-schema')).toBeTruthy()
+		expect(wrapper.emitted('addSchema')).toBeTruthy()
 	})
 
 	it('SchemasWidget click on a row pushes a versioned route', async () => {

@@ -1420,7 +1420,8 @@ OC.L10N.register(
         "Page {position}": "Page {position}",
         "New flow": "New flow",
         "The flows could not be loaded. This does not mean there are none.": "The flows could not be loaded. This does not mean there are none.",
-        "This application has no flows yet.": "This application has no flows yet."
+        "This application has no flows yet.": "This application has no flows yet.",
+        "No flows bound to this app yet.": "No flows bound to this app yet."
     },
     "nplurals=2; plural=(n != 1);"
 )

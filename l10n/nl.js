@@ -2,6 +2,7 @@ OC.L10N.register(
     "buildiq",
     {
         "Edit flows…": "Flows bewerken…",
+        "No flows bound to this app yet.": "Nog geen flows gekoppeld aan deze app.",
         "/api/objects/:slug/…": "/api/objects/:slug/…",
         "Failed to load flows": "Flows laden mislukt",
         "Flows": "Flows",

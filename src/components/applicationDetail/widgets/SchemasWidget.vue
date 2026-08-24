@@ -63,6 +63,8 @@ export default {
 		schemas: { type: Array, default: () => [] },
 	},
 
+	emits: ['addSchema'],
+
 	methods: {
 		/**
 		 * Format an object-count value for inline display.
@@ -125,7 +127,7 @@ export default {
 					'buildiq: schema-create dialog not yet registered — deferred to schema-designer spec',
 				)
 			}
-			this.$emit('add-schema', {
+			this.$emit('addSchema', {
 				appSlug: this.appSlug,
 				versionSlug: this.versionSlug,
 			})
