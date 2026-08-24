@@ -132,7 +132,7 @@ class AutomationCompilerService {
 	/**
 	 * Shared Buildiq register slug.
 	 */
-	public const REGISTER_SLUG = 'openbuild';
+	public const REGISTER_SLUG = 'buildiq';
 
 	/**
 	 * Schema slug of the Automation object itself.

@@ -17,7 +17,7 @@
  *     from the DOM rather than merely hidden. Same on /applications.
  *
  * Seed/env note: the served build's
- * `openregister/api/objects/openbuild/export-job` collection endpoint 500s
+ * `openregister/api/objects/buildiq/export-job` collection endpoint 500s
  * on the unseeded dev register, so the list renders its empty state rather
  * than rows. Assertions are therefore data-independent.
  */

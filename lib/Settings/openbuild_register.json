@@ -7,15 +7,15 @@
   },
   "x-openregister": {
     "type": "application",
-    "app": "openbuild",
+    "app": "buildiq",
     "openregister": "^v0.2.10",
     "description": "OpenBuild register namespace. Hosts the Application + ApplicationVersion + BuiltAppRoute control schemas, the ApplicationTemplate catalogue (spec #8), and the seed `hello-message` schema for the canonical hello-world app. Per ADR-002 the Application schema is the logical app (slug/name/appType/baseRef/permissions + productionVersion relation); ApplicationVersion carries the manifest, register reference, semver, and lifecycle. Per unify-apps-with-app-type the unified `appType` discriminator (virtual|hybrid) replaces the retired standalone AppOverride schema — a hybrid app is an Application(appType:hybrid) plus a delta-only ApplicationVersion."
   },
   "paths": {},
   "components": {
     "registers": {
-      "openbuild": {
-        "slug": "openbuild",
+      "buildiq": {
+        "slug": "buildiq",
         "title": "OpenBuild Register",
         "description": "OpenBuild register namespace — holds the Application + ApplicationVersion + BuiltAppRoute control schemas, the ApplicationTemplate catalogue, the automation/rule-engine schemas and the seed hello-message schema for the canonical hello-world app.",
         "version": "0.9.0",

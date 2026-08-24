@@ -763,7 +763,7 @@ class AppChannelApplierTest extends TestCase {
 					}
 				),
 				self::anything(),
-				'openbuild',
+				'buildiq',
 				'application',
 				$applicationUuid,
 				false,
@@ -838,7 +838,7 @@ class AppChannelApplierTest extends TestCase {
 			->with(
 				self::callback(static fn (array $object): bool => ($object['applicationSlug'] ?? null) === 'local-app'),
 				self::anything(),
-				'openbuild',
+				'buildiq',
 				'agent',
 				$uuid,
 				false,

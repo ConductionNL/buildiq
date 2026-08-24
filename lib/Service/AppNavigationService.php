@@ -66,7 +66,7 @@ class AppNavigationService {
 	/**
 	 * Register slug that hosts Application objects.
 	 */
-	private const REGISTER_SLUG = 'openbuild';
+	private const REGISTER_SLUG = 'buildiq';
 
 	/**
 	 * Schema slug for Application objects.

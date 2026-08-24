@@ -68,7 +68,7 @@ async function gotoAppBrowser(page: Page): Promise<void> {
 	await page
 		.waitForResponse(
 			(r) =>
-				r.url().includes('/objects/openbuild/application')
+				r.url().includes('/objects/buildiq/application')
 				&& r.status() === 200,
 			{ timeout: 20_000 },
 		)
@@ -189,7 +189,7 @@ test.describe('Virtual App — full CRUD with persistence', () => {
 			.poll(
 				async () => {
 					const res = await request.get(
-						`${process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'}/index.php/apps/openregister/api/objects/openbuild/application?_limit=200`,
+						`${process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'}/index.php/apps/openregister/api/objects/buildiq/application?_limit=200`,
 						{
 							headers: {
 								'OCS-APIRequest': 'true',
@@ -311,7 +311,7 @@ test.describe('Virtual App — full CRUD with persistence', () => {
 
 		const deletePromise = page.waitForResponse(
 			(r) =>
-				r.url().includes('/objects/openbuild/application')
+				r.url().includes('/objects/buildiq/application')
 				&& r.request().method() === 'DELETE',
 			{ timeout: 15_000 },
 		)

@@ -347,7 +347,9 @@ class MigrateToVersionedModel implements IRepairStep {
 			return self::ROW_FAILED;
 		}
 
-		$perAppRegisterSlug = ApplicationVersionService::REGISTER_SLUG . '-' . $slug;
+		// Per-version register — NOT the app's register slug. See
+		// ApplicationVersionService::VERSION_REGISTER_PREFIX.
+		$perAppRegisterSlug = ApplicationVersionService::VERSION_REGISTER_PREFIX . $slug;
 
 		try {
 			$register = $this->registerMapper->find($perAppRegisterSlug, _multitenancy: false);

@@ -61,7 +61,7 @@ class AppOverrideService {
 	/**
 	 * OpenRegister register slug that hosts the Buildiq control schemas.
 	 */
-	public const REGISTER_SLUG = 'openbuild';
+	public const REGISTER_SLUG = 'buildiq';
 
 	/**
 	 * OpenRegister schema slug for the logical app record.
@@ -309,7 +309,9 @@ class AppOverrideService {
 					'manifest' => (object)[],
 					'manifestDelta' => $delta,
 					'baseRef' => $userBaseRef,
-					'register' => self::REGISTER_SLUG . '-' . $appId,
+					// Per-version register — NOT this app's register slug. See
+					// ApplicationVersionService::VERSION_REGISTER_PREFIX.
+					'register' => ApplicationVersionService::VERSION_REGISTER_PREFIX . $appId,
 					'semver' => '0.1.0',
 					'status' => 'draft',
 					'application' => $appUuid,
@@ -682,7 +684,8 @@ class AppOverrideService {
 				'manifest' => (object)[],
 				'manifestDelta' => $delta,
 				'baseRef' => $baseRefObject,
-				'register' => self::REGISTER_SLUG . '-' . $appId,
+				// Per-version register — see VERSION_REGISTER_PREFIX.
+				'register' => ApplicationVersionService::VERSION_REGISTER_PREFIX . $appId,
 				'semver' => '0.1.0',
 				'status' => 'published',
 				'application' => $applicationUuid,

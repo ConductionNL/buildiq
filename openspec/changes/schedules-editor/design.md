@@ -16,7 +16,7 @@ to the Buildiq Vue frontend.
 - **Editor host** — `src/views/PageDesignerHost.vue` holds `this.manifest`
   (data field); `onManifestUpdate()` (~line 410) assigns it; `save()`
   (~lines 420–467) PUTs the whole ApplicationVersion manifest to
-  `PUT /apps/openregister/api/objects/openbuild/applicationVersion/{versionUuid}`
+  `PUT /apps/openregister/api/objects/buildiq/applicationVersion/{versionUuid}`
   (fallback `/application/{uuid}`). The persisted payload is
   `{ ...version, manifest }`, so **any top-level manifest key the editor does
   not touch survives the round-trip**. A schedules editor therefore gets

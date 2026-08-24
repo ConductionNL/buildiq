@@ -60,7 +60,7 @@ rejecting unauthenticated callers with HTTP 401.
 
 #### Scenario: Persist a known key
 
-- **WHEN** an authenticated caller POSTs `{"register":"openbuild"}`
+- **WHEN** an authenticated caller POSTs `{"register":"buildiq"}`
 - **THEN** the `register` app-config value is set to `buildiq`
 - **AND** the response echoes `success:true` and the updated config
 

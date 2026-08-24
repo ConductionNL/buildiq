@@ -174,4 +174,66 @@ final class GitHubCatalogServiceTest extends TestCase {
 		$this->assertArrayHasKey('skills/pkg/skill.json', $files);
 		$this->assertArrayNotHasKey('unrelated/should-not-fetch.json', $files);
 	}//end testFetchRepoFilesIncludesFlowsAndAgentsChannels()
+
+	/**
+	 * A 200 whose body is not the documented search shape is a LOOKUP
+	 * FAILURE, not an empty result set.
+	 *
+	 * Regression: the decode used to fall through to `OUTCOME_OK` with zero
+	 * cards whenever `items` was missing or the body would not parse, so a
+	 * proxy error page or a truncated response was reported as a successful
+	 * search that simply matched nothing. The App store then rendered "No
+	 * GitHub apps match your search" and — because `githubUnavailable` was
+	 * false — showed neither cards nor its unavailable hint. E2E
+	 * REQ-OBTC-006 caught the resulting dead state on buildiq
+	 * `development`, 2026-08-23.
+	 *
+	 * @return void
+	 */
+	public function testSearchReportsUnreachableWhenTheBodyIsNotTheSearchShape(): void {
+		$service = $this->makeService();
+
+		$response = $this->createMock(IResponse::class);
+		$response->method('getStatusCode')->willReturn(200);
+		$response->method('getBody')->willReturn('<html><body>502 Bad Gateway</body></html>');
+
+		$client = $this->createMock(IClient::class);
+		$client->method('get')->willReturn($response);
+		$this->clientService->method('newClient')->willReturn($client);
+
+		$result = $service->search(query: null, actingUserId: 'alice', credentialId: null);
+
+		$this->assertSame(
+			GitHubCatalogService::OUTCOME_UNREACHABLE,
+			$result['outcome'],
+			'a 200 with an unparseable body must not be reported as a successful search — that is the exact defect this test guards against.'
+		);
+		$this->assertSame([], $result['cards']);
+	}//end testSearchReportsUnreachableWhenTheBodyIsNotTheSearchShape()
+
+	/**
+	 * The other side of the same line: a well-formed response that genuinely
+	 * matched nothing is still `OUTCOME_OK`.
+	 *
+	 * Without this, the fix above could be "achieved" by calling every empty
+	 * result unreachable, which would replace one lie with another.
+	 *
+	 * @return void
+	 */
+	public function testSearchReportsOkForAGenuinelyEmptyResultSet(): void {
+		$service = $this->makeService();
+
+		$client = $this->createMock(IClient::class);
+		$client->method('get')->willReturn($this->jsonResponse(['items' => []]));
+		$this->clientService->method('newClient')->willReturn($client);
+
+		$result = $service->search(query: null, actingUserId: 'alice', credentialId: null);
+
+		$this->assertSame(
+			GitHubCatalogService::OUTCOME_OK,
+			$result['outcome'],
+			'an empty but well-formed result set is a real answer, not a failure.'
+		);
+		$this->assertSame([], $result['cards']);
+	}//end testSearchReportsOkForAGenuinelyEmptyResultSet()
 }//end class

@@ -283,9 +283,16 @@ verify() {
 import json, sys
 path, kind, code = sys.argv[1], sys.argv[2], sys.argv[3]
 required = {
-    # The register SLUG stays 'openbuild' across the app-id rename: it
-    # addresses the register that already exists. Only the APP id moved.
-    'registers': ['openbuild'],
+    # The register slug moved to 'buildiq' with this change. The note that
+    # used to sit here said the opposite — that the slug stays 'openbuild'
+    # because it addresses a register that already exists — which was true
+    # only while the rename was the APP id alone. This PR renames the register
+    # too, and MigrateRegisterSlug renames the existing row ahead of the
+    # import, so the row this addresses is the same one; it answers to a new
+    # name. The FILE is still openbuild_register.json and is referenced by
+    # path elsewhere in this script: that is a filename, not an identifier
+    # anything resolves.
+    'registers': ['buildiq'],
     'schemas': [
         # lib/Settings/openbuild_register.json
         'application', 'application-template', 'built-app-route',
@@ -336,8 +343,8 @@ verify "$SCH_BODY" schemas "$SCH_CODE"
 # failure mode has a name here rather than as a timeout on an empty table.
 OBJ_CODE="$(curl -sS -o /dev/null -w '%{http_code}' \
 	-u "${USER_NAME}:${USER_PASS}" -H 'OCS-APIRequest: true' \
-	"${BASE}/index.php/apps/openregister/api/objects/openbuild/application?_limit=1" || echo 000)"
-echo "[ci-seed] objects/openbuild/application probe -> ${OBJ_CODE}"
+	"${BASE}/index.php/apps/openregister/api/objects/buildiq/application?_limit=1" || echo 000)"
+echo "[ci-seed] objects/buildiq/application probe -> ${OBJ_CODE}"
 if [ "$OBJ_CODE" -ge 400 ] 2>/dev/null; then
 	echo "::error::The buildiq application collection is not readable (HTTP ${OBJ_CODE})."
 	exit 1

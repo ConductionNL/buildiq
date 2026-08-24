@@ -112,7 +112,7 @@
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 
-const REGISTER = 'openbuild'
+const REGISTER = 'buildiq'
 const SCHEMA = 'application'
 
 export default {

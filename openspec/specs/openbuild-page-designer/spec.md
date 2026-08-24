@@ -308,7 +308,7 @@ The Page Designer's Save action SHALL serialise the in-flight
 manifest, validate it via
 `@conduction/nextcloud-vue`'s `validateManifest` export, and PUT the
 updated `Application` object via OpenRegister's existing REST API at
-`/index.php/apps/openregister/api/objects/openbuild/application/{uuid}`
+`/index.php/apps/openregister/api/objects/buildiq/application/{uuid}`
 — the same path the spec #1 textarea editor already uses. The
 designer MUST NOT introduce a new buildiq-side controller for
 manifest writes (ADR-022).
@@ -321,7 +321,7 @@ manifest writes (ADR-022).
 
 - **WHEN** the user clicks Save with a valid manifest
 - **THEN** the editor sends a PUT to OR's
-  `/api/objects/openbuild/application/{uuid}` endpoint with the full
+  `/api/objects/buildiq/application/{uuid}` endpoint with the full
   Application body and the updated `manifest` field
 - **AND** the response is `200`
 - **AND** the editor's "dirty" indicator clears

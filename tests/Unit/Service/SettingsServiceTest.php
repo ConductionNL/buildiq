@@ -140,15 +140,15 @@ final class SettingsServiceTest extends TestCase {
 	public function testUpdateSettingsPersistsOnlyWhitelistedKeys(): void {
 		$this->appConfig->expects(self::once())
 			->method('setValueString')
-			->with(self::anything(), 'register', 'openbuild');
+			->with(self::anything(), 'register', 'buildiq');
 
-		$this->appConfig->method('getValueString')->willReturn('openbuild');
+		$this->appConfig->method('getValueString')->willReturn('buildiq');
 		$this->appManager->method('isInstalled')->willReturn(false);
 		$this->userSession->method('getUser')->willReturn(null);
 
-		$result = $this->sut()->updateSettings(['register' => 'openbuild', 'unknown_key' => 'ignored']);
+		$result = $this->sut()->updateSettings(['register' => 'buildiq', 'unknown_key' => 'ignored']);
 
-		self::assertSame('openbuild', $result['register']);
+		self::assertSame('buildiq', $result['register']);
 	}//end testUpdateSettingsPersistsOnlyWhitelistedKeys()
 
 	/**

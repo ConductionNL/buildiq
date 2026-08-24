@@ -69,7 +69,7 @@ class GitHubAppSyncService {
 	/**
 	 * The shared Buildiq register slug.
 	 */
-	private const REGISTER_SLUG = 'openbuild';
+	private const REGISTER_SLUG = 'buildiq';
 
 	/**
 	 * The Application schema slug.
@@ -462,7 +462,9 @@ class GitHubAppSyncService {
 		$appUuid = $this->uuidOf(object: $application);
 		$appSlug = (string)($application['slug'] ?? '');
 		$versionSlug = $this->draftVersionSlug();
-		$registerSlug = self::REGISTER_SLUG . '-' . $appSlug . '-' . $versionSlug;
+		// Per-version register — NOT this app's register slug. See
+		// ApplicationVersionService::VERSION_REGISTER_PREFIX.
+		$registerSlug = ApplicationVersionService::VERSION_REGISTER_PREFIX . $appSlug . '-' . $versionSlug;
 
 		$rewriteMap = $this->reconcileCompanionSchemas(
 			template: $template,

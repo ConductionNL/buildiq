@@ -106,7 +106,7 @@ class FlowAndAgentExportBundler {
 	 *
 	 * @var string
 	 */
-	private const BUILDIQ_REGISTER = 'openbuild';
+	private const BUILDIQ_REGISTER = 'buildiq';
 
 	/**
 	 * Slug of the `agent` schema.

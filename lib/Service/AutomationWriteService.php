@@ -78,7 +78,7 @@ class AutomationWriteService {
 	/**
 	 * Shared Buildiq register slug.
 	 */
-	private const REGISTER_SLUG = 'openbuild';
+	private const REGISTER_SLUG = 'buildiq';
 	/**
 	 * Schema slug of the Automation object.
 	 */

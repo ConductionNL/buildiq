@@ -25,7 +25,7 @@
  * 2026-08-11 on a live instance (NC 34, openregister 0.2.17-unstable.36),
  * printing the status code on every probe:
  *
- *   - `GET /apps/openregister/api/objects/openbuild/application` as
+ *   - `GET /apps/openregister/api/objects/buildiq/application` as
  *     `rbac-editor` → 200 with FIVE rows. OR's multitenancy/ownership scoping
  *     does not drop the row, so that hypothesis is dead.
  *   - `GET /apps/buildiq/api/applications` as `rbac-editor`, BEFORE any
@@ -50,7 +50,7 @@ import type { Page } from '@playwright/test'
 
 /** OR object API for the buildiq Application schema. */
 const OR_APPLICATIONS =
-	'/index.php/apps/openregister/api/objects/openbuild/application'
+	'/index.php/apps/openregister/api/objects/buildiq/application'
 
 /**
  * Grant owner / editor / viewer roles on an application to the given principals.

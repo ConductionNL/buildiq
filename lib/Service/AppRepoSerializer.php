@@ -664,7 +664,7 @@ class AppRepoSerializer {
 			$results = $this->objectService->findAll(
 				config: [
 					'filters' => [
-						'register' => 'openbuild',
+						'register' => 'buildiq',
 						'schema' => 'automation',
 						'applicationSlug' => $slug,
 					],

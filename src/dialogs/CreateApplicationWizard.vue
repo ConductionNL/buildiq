@@ -276,14 +276,14 @@ export default {
 			// OR's files#create endpoint takes JSON { name, content } and writes
 			// the content verbatim — no multipart needed for text SVG.
 			const filesUrl = generateUrl(
-				`/apps/openregister/api/objects/openbuild/application/${uuid}/files`,
+				`/apps/openregister/api/objects/buildiq/application/${uuid}/files`,
 			)
 			await axios.post(filesUrl, { name: filename, content: svg })
 
 			// PATCH (partial merge) — a PUT would replace the whole object and fail
 			// validation on the now-missing required name/slug.
 			const patchUrl = generateUrl(
-				`/apps/openregister/api/objects/openbuild/application/${uuid}`,
+				`/apps/openregister/api/objects/buildiq/application/${uuid}`,
 			)
 			await axios.patch(patchUrl, { [field]: { ref: filename } })
 		},
