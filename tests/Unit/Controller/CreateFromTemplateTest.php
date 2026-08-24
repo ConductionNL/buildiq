@@ -34,6 +34,7 @@ use OCA\Buildiq\Controller\ApplicationsController;
 use OCA\Buildiq\Service\AppChannelApplier;
 use OCA\Buildiq\Service\ManifestResolverService;
 use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Service\ApplicationVersionService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -180,7 +181,14 @@ class CreateFromTemplateTest extends TestCase {
 		$this->registerMapper->method('find')->willReturnCallback(
 			function (...$args) use ($registerEntity): Register {
 				$slug = (string)($args['id'] ?? $args[0]);
-				if ($slug === 'openbuild') {
+				// Matched against the CONSTANT, not a literal. Pinning the slug
+				// here is what turned a rename into eight red PHPUnit cells
+				// reporting 503: the controller asked for the new slug, this
+				// mock answered only to the old one and threw, and the
+				// controller's "register unavailable" branch did exactly what it
+				// is supposed to. Tracking the constant means the next rename
+				// moves the mock with the code.
+				if ($slug === ApplicationVersionService::REGISTER_SLUG) {
 					return $registerEntity;
 				}
 				throw new \RuntimeException('register not found: ' . $slug);

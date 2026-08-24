@@ -54,7 +54,7 @@ class PublishTemplates extends Command {
 	/**
 	 * The shared Buildiq register slug.
 	 */
-	private const REGISTER_SLUG = 'openbuild';
+	private const REGISTER_SLUG = 'buildiq';
 
 	/**
 	 * The ApplicationTemplate schema slug (seeded store templates).

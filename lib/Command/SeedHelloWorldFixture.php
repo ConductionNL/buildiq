@@ -59,6 +59,18 @@ use Throwable;
  * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
  */
 class SeedHelloWorldFixture extends Command {
+	/**
+	 * Prefix of the PER-VERSION register the creation wizard provisions.
+	 *
+	 * Aliased to the canonical constant rather than re-declared: a second copy
+	 * of this string is exactly the shape of the bug it exists to prevent.
+	 * See ApplicationVersionService::VERSION_REGISTER_PREFIX for why it is
+	 * separate from REGISTER_SLUG and why it stays `openbuild-`.
+	 *
+	 * @var string
+	 */
+	private const VERSION_REGISTER_PREFIX = ApplicationVersionService::VERSION_REGISTER_PREFIX;
+
 	private const SEED_SLUG = 'hello-world';
 
 	private const VERSION_SLUG = 'production';
@@ -184,14 +196,8 @@ class SeedHelloWorldFixture extends Command {
 					'name' => self::SEMVER,
 					'slug' => self::VERSION_SLUG,
 					'manifest' => $this->buildManifest(),
-					// The version's `register` field names the app's per-app
-					// data register (pattern: openbuild-<slug>). The shared
-					// `hello-message` data + manifest pages live in the main
-					// `openbuild` register, so this is metadata only.
-					// Both keep the OLD spelling: the register SLUG did not move
-					// with the app id, and this string is matched against
-					// existing registers.
-					'register' => $register . '-' . self::SEED_SLUG,
+					// NOT $register — see VERSION_REGISTER_PREFIX.
+					'register' => self::VERSION_REGISTER_PREFIX . self::SEED_SLUG,
 					'semver' => self::SEMVER,
 					'status' => 'published',
 					'application' => $applicationUuid,
@@ -319,7 +325,11 @@ class SeedHelloWorldFixture extends Command {
 					],
 				],
 				'baseRef' => $baseRef,
-				'register' => $register . '-' . self::HYBRID_SLUG,
+				// Per-version register, NOT the app's register — see
+				// VERSION_REGISTER_PREFIX. Same coupling as the hello-world
+				// version above; this one is reached only when the hybrid
+				// example is seeded, so it survived the first fix.
+				'register' => self::VERSION_REGISTER_PREFIX . self::HYBRID_SLUG,
 				'semver' => '0.1.0',
 				'status' => 'published',
 				'application' => $applicationUuid,

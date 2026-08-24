@@ -68,7 +68,7 @@ use Throwable;
  */
 class CopilotService {
 
-	private const REGISTER_SLUG = 'openbuild';
+	private const REGISTER_SLUG = 'buildiq';
 
 	private const APPLICATION_SCHEMA = 'application';
 

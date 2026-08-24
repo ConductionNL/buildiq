@@ -6,7 +6,7 @@
 ## 2. Wire the four verified consumers + PageDesigner
 
 - [x] 2.1 `IndexPageEditor.vue`, `DetailPageEditor.vue`, `LogsPageEditor.vue`: add a `dataRegisters: { type: Array, default: () => [] }` prop and pass it into the existing `useRegisterPicker({ appSlug: props.appSlug })` call in `setup()`
-- [x] 2.2 `src/views/PageDesigner.vue`: add an `applicationDataRegisters` data field populated by a small fetch (`GET /apps/openregister/api/objects/openbuild/application?slug=<slug>&_limit=1`, same call shape `useApplicationVersion.js` already uses) in `created()`; pass `:data-registers="applicationDataRegisters"` on the `<component :is="subEditorFor(...)">` binding, next to the existing `:app-slug="slug"`
+- [x] 2.2 `src/views/PageDesigner.vue`: add an `applicationDataRegisters` data field populated by a small fetch (`GET /apps/openregister/api/objects/buildiq/application?slug=<slug>&_limit=1`, same call shape `useApplicationVersion.js` already uses) in `created()`; pass `:data-registers="applicationDataRegisters"` on the `<component :is="subEditorFor(...)">` binding, next to the existing `:app-slug="slug"`
 - [x] 2.3 `ApplicationDetailActions.vue`: in `openSaveAsTemplate()`, extend `useRegisterPicker({ appSlug: this.obApp.slug })` to also pass `dataRegisters: this.obApp.dataRegisters || []`
 - [x] 2.4 Extend `tests/components/page-editor/IndexPageEditor.spec.js`: mounting with a `data-registers` prop passes it through to the mocked `useRegisterPicker` factory call
 

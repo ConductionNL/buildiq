@@ -593,7 +593,7 @@
 		"objects": [
 			{
 				"@self": {
-					"register": "openbuild",
+					"register": "buildiq",
 					"schema": "rule-set",
 					"slug": "loan-eligibility"
 				},
@@ -608,7 +608,7 @@
 			},
 			{
 				"@self": {
-					"register": "openbuild",
+					"register": "buildiq",
 					"schema": "decision-table",
 					"slug": "loan-eligibility-table"
 				},
@@ -679,7 +679,7 @@
 			},
 			{
 				"@self": {
-					"register": "openbuild",
+					"register": "buildiq",
 					"schema": "rule-test-case",
 					"slug": "loan-eligibility-test-1"
 				},
@@ -701,7 +701,7 @@
 			},
 			{
 				"@self": {
-					"register": "openbuild",
+					"register": "buildiq",
 					"schema": "rule-set",
 					"slug": "invoice-routing"
 				},
@@ -716,7 +716,7 @@
 			},
 			{
 				"@self": {
-					"register": "openbuild",
+					"register": "buildiq",
 					"schema": "condition-action-rule",
 					"slug": "invoice-routing-rule-1"
 				},
@@ -744,7 +744,7 @@
 			},
 			{
 				"@self": {
-					"register": "openbuild",
+					"register": "buildiq",
 					"schema": "rule-set",
 					"slug": "complaint-escalation"
 				},
@@ -759,7 +759,7 @@
 			},
 			{
 				"@self": {
-					"register": "openbuild",
+					"register": "buildiq",
 					"schema": "condition-action-rule",
 					"slug": "complaint-escalation-rule-1"
 				},

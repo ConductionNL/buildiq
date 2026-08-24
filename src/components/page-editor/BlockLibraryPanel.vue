@@ -114,7 +114,7 @@ import {
 	remapBlockRecord,
 } from '../../services/blockInsert.js'
 
-const OR_BLOCKS = '/apps/openregister/api/objects/openbuild/component-block'
+const OR_BLOCKS = '/apps/openregister/api/objects/buildiq/component-block'
 
 export default {
 	name: 'BlockLibraryPanel',

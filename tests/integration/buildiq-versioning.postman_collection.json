@@ -54,9 +54,9 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application?_limit=100",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application?_limit=100",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "application"],
 							"query": [{ "key": "_limit", "value": "100" }]
 						}
 					},
@@ -109,9 +109,9 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/applicationVersion?_limit=5000",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/applicationVersion?_limit=5000",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "applicationVersion"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "applicationVersion"],
 							"query": [{ "key": "_limit", "value": "5000" }]
 						}
 					},
@@ -181,9 +181,9 @@
 							"raw": "{{merged_body}}"
 						},
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application/{{application_uuid}}",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application", "{{application_uuid}}"]
+							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "application", "{{application_uuid}}"]
 						}
 					},
 					"event": [
@@ -211,8 +211,8 @@
 									"    dependencies: ['openregister'],",
 									"    menu: [{ id: 'Messages', label: 'buildiq.helloworld.menu.messages', icon: 'icon-comment', route: 'Messages', order: 1 }],",
 									"    pages: [",
-									"        { id: 'Messages', route: '/', type: 'index', title: 'buildiq.helloworld.title.messages', config: { register: 'openbuild', schema: 'hello-message', columns: ['title', 'body', '@self.created'] } },",
-									"        { id: 'About', route: '/about', type: 'detail', title: 'buildiq.helloworld.title.about', config: { register: 'openbuild', schema: 'hello-message' } }",
+									"        { id: 'Messages', route: '/', type: 'index', title: 'buildiq.helloworld.title.messages', config: { register: 'buildiq', schema: 'hello-message', columns: ['title', 'body', '@self.created'] } },",
+									"        { id: 'About', route: '/about', type: 'detail', title: 'buildiq.helloworld.title.about', config: { register: 'buildiq', schema: 'hello-message' } }",
 									"    ]",
 									"};",
 									"pm.collectionVariables.set('merged_body', JSON.stringify(Object.assign({}, base, { version: '1.1.0', status: 'published', manifest: manifest })));"
@@ -248,9 +248,9 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/applicationVersion?_limit=5000",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/applicationVersion?_limit=5000",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "applicationVersion"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "applicationVersion"],
 							"query": [{ "key": "_limit", "value": "5000" }]
 						}
 					},
@@ -320,9 +320,9 @@
 							"raw": "{{merged_body}}"
 						},
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application/{{application_uuid}}",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application", "{{application_uuid}}"]
+							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "application", "{{application_uuid}}"]
 						}
 					},
 					"event": [
@@ -339,7 +339,7 @@
 									"    dependencies: ['openregister'],",
 									"    menu: [{ id: 'Messages', label: 'buildiq.helloworld.menu.messages', icon: 'icon-comment', route: 'Messages', order: 1 }],",
 									"    pages: [",
-									"        { id: 'Messages', route: '/', type: 'index', title: 'buildiq.helloworld.title.messages', config: { register: 'openbuild', schema: 'hello-message', columns: ['title', 'body', '@self.created'] } }",
+									"        { id: 'Messages', route: '/', type: 'index', title: 'buildiq.helloworld.title.messages', config: { register: 'buildiq', schema: 'hello-message', columns: ['title', 'body', '@self.created'] } }",
 									"    ]",
 									"};",
 									"pm.collectionVariables.set('merged_body', JSON.stringify(Object.assign({}, base, { version: '1.0.0-rb1', status: 'published', manifest: manifest })));"
@@ -366,9 +366,9 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/applicationVersion?_limit=5000",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/applicationVersion?_limit=5000",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "applicationVersion"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "applicationVersion"],
 							"query": [{ "key": "_limit", "value": "5000" }]
 						}
 					},
@@ -423,9 +423,9 @@
 							"raw": "{{merged_body}}"
 						},
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/openbuild/application/{{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application/{{application_uuid}}",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "openbuild", "application", "{{application_uuid}}"]
+							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "application", "{{application_uuid}}"]
 						}
 					},
 					"event": [

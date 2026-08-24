@@ -23,7 +23,7 @@
  * The index page is a manifest `type: index` page over
  * `register: buildiq / schema: application`, so `CnIndexPage` fetches the rows
  * from OpenRegister's GENERIC objects endpoint
- * (`/apps/openregister/api/objects/openbuild/application`) — it never calls
+ * (`/apps/openregister/api/objects/buildiq/application`) — it never calls
  * Buildiq's own `/api/applications`. Enriching the row payload the cards
  * receive is therefore not possible from the controller; the resolution has to
  * happen on the client.

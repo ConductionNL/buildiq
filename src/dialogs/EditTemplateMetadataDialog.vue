@@ -64,7 +64,7 @@ import {
 } from '@nextcloud/vue'
 import { TEMPLATE_CATEGORIES } from '../services/templateCapture.js'
 
-const OR_TEMPLATES = '/apps/openregister/api/objects/openbuild/application-template'
+const OR_TEMPLATES = '/apps/openregister/api/objects/buildiq/application-template'
 
 const CATEGORY_LABELS = {
 	'government-services': 'Government services',

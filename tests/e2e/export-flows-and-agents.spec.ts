@@ -338,7 +338,7 @@ test.describe('Exporting the flows an app is made of', () => {
 
 		// The detail route takes the OR OBJECT ID, not the slug.
 		const lookup = await page.request.get(
-			`${BASE}/index.php/apps/openregister/api/objects/openbuild/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
+			`${BASE}/index.php/apps/openregister/api/objects/buildiq/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
 		)
 		expect(lookup.ok(), 'the application lookup must succeed').toBeTruthy()
 		const apps = (await lookup.json()).results || []
@@ -439,7 +439,7 @@ test.describe('Exporting the flows an app is made of', () => {
 		// fixed sleep, so a slow instance does not produce a flaky pass.
 		//
 		// ⚠️ It is a PUT to the OpenRegister OBJECT
-		// (/apps/openregister/api/objects/openbuild/application/{uuid}), not to
+		// (/apps/openregister/api/objects/buildiq/application/{uuid}), not to
 		// an buildiq route — `obPatchApp()` writes the Application object
 		// directly. Waiting on /apps/buildiq/api/applications would wait for
 		// a request that is never made.
@@ -447,7 +447,7 @@ test.describe('Exporting the flows an app is made of', () => {
 			(response) =>
 				response
 					.url()
-					.includes('/apps/openregister/api/objects/openbuild/application')
+					.includes('/apps/openregister/api/objects/buildiq/application')
 				&& response.request().method() === 'PUT',
 			{ timeout: 20_000 },
 		)
@@ -522,7 +522,7 @@ test.describe('Exporting the flows an app is made of', () => {
 		//
 		// An ExportJob is an OpenRegister OBJECT, not an buildiq route: there
 		// is no GET /api/exports. `ExportJobsList.vue` reads it the same way.
-		const jobsUrl = `${BASE}/index.php/apps/openregister/api/objects/openbuild/export-job?applicationUuid=${encodeURIComponent(objectId)}`
+		const jobsUrl = `${BASE}/index.php/apps/openregister/api/objects/buildiq/export-job?applicationUuid=${encodeURIComponent(objectId)}`
 
 		let status = ''
 		let jobUuid = ''

@@ -63,8 +63,8 @@ const BUILT_PAGE = (slug: string, route: string) =>
  *
  * PageDesignerHost.save() writes through OpenRegister directly, NOT through
  * Buildiq's own `applications/{slug}/manifest` route: it PATCHes
- * `objects/openbuild/applicationVersion/{uuid}` and only falls back to PUTting
- * `objects/openbuild/application/{uuid}` when there is no version. Match either,
+ * `objects/buildiq/applicationVersion/{uuid}` and only falls back to PUTting
+ * `objects/buildiq/application/{uuid}` when there is no version. Match either,
  * or this helper waits for a request that is never sent.
  *
  * @param page Playwright page.
@@ -151,7 +151,7 @@ async function saveAndAwaitPersist(
 ): Promise<void> {
 	const saved = page.waitForResponse(
 		(r) =>
-			/\/api\/objects\/openbuild\/(applicationVersion|application)\/[^/]+$/.test(
+			/\/api\/objects\/buildiq\/(applicationVersion|application)\/[^/]+$/.test(
 				r.url(),
 			) && ['PATCH', 'PUT'].includes(r.request().method()),
 		{ timeout: 20_000 },
@@ -550,10 +550,10 @@ test('REQ-PEC-006 — Create, configure, save and render a wiki page', async ({
 	// creation wizard, and it deliberately does not mint a per-version register:
 	// SeedHelloWorldFixture writes `register: 'openbuild-hello-world'` on the
 	// version as METADATA ONLY and puts the manifest, the `hello-message` schema
-	// and the three sample objects in the shared `openbuild` register — its own
+	// and the three sample objects in the shared `buildiq` register — its own
 	// comment says so, and the hello-world manifest's index, detail and form
-	// pages all carry `config.register = 'openbuild'`. `ci-seed.sh` prints the
-	// instance's registers, and that list is `[…, 'openbuild', …]` with no
+	// pages all carry `config.register = 'buildiq'`. `ci-seed.sh` prints the
+	// instance's registers, and that list is `[…, 'buildiq', …]` with no
 	// `openbuild-hello-world-production` anywhere.
 	//
 	// Those names come from a WIZARD-created app (RegisterWidget builds exactly
@@ -569,10 +569,10 @@ test('REQ-PEC-006 — Create, configure, save and render a wiki page', async ({
 		.locator('.wiki-page-editor__group-row', { hasText: /^\s*Register\b/ })
 		.locator('select')
 	await expect(
-		registerSelect.locator('option[value="openbuild"]'),
+		registerSelect.locator('option[value="buildiq"]'),
 		"the seeded app's register must be offered by the register picker",
 	).toHaveCount(1, { timeout: 10_000 })
-	await registerSelect.selectOption('openbuild')
+	await registerSelect.selectOption('buildiq')
 	const schemaSelect = editor
 		.locator('.wiki-page-editor__group-row', { hasText: 'Schema' })
 		.locator('select')
@@ -616,7 +616,7 @@ test('REQ-PEC-006 — Create, configure, save and render a wiki page', async ({
 		reopened
 			.locator('.wiki-page-editor__group-row', { hasText: /^\s*Register\b/ })
 			.locator('select'),
-	).toHaveValue('openbuild')
+	).toHaveValue('buildiq')
 	await expect(
 		reopened
 			.locator('.wiki-page-editor__group-row', { hasText: /^\s*Schema\b/ })

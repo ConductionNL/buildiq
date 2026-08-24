@@ -58,7 +58,7 @@ test('REQ-OBS-002 — POST settings persists a known key and echoes success', as
 	// @e2e settings-and-observability::persist-a-known-key
 	const res = await request.post('/index.php/apps/buildiq/api/settings', {
 		headers: { 'OCS-APIRequest': 'true', 'Content-Type': 'application/json' },
-		data: JSON.stringify({ register: 'openbuild' }),
+		data: JSON.stringify({ register: 'buildiq' }),
 	})
 	expect(res.status()).toBe(200)
 	const body = await res.json()

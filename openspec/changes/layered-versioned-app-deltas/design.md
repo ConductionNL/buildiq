@@ -212,7 +212,7 @@ and `<PLACEHOLDER-…>` forms). Seeded into the `buildiq` register on install.
 
 ```jsonc
 {
-  "@self": { "register": "openbuild", "schema": "application" },
+  "@self": { "register": "buildiq", "schema": "application" },
   "slug": "opencatalogi",
   "name": "Open Catalogi",
   "appType": "hybrid",
@@ -227,7 +227,7 @@ and `<PLACEHOLDER-…>` forms). Seeded into the `buildiq` register on install.
 
 ```jsonc
 {
-  "@self": { "register": "openbuild", "schema": "applicationVersion", "id": "<PLACEHOLDER-ADMIN-VERSION-UUID>" },
+  "@self": { "register": "buildiq", "schema": "applicationVersion", "id": "<PLACEHOLDER-ADMIN-VERSION-UUID>" },
   "name": "Production",
   "slug": "production",
   "scope": "admin",
@@ -245,7 +245,7 @@ and `<PLACEHOLDER-…>` forms). Seeded into the `buildiq` register on install.
 
 ```jsonc
 {
-  "@self": { "register": "openbuild", "schema": "applicationVersion" },
+  "@self": { "register": "buildiq", "schema": "applicationVersion" },
   "name": "Mijn weergave",
   "slug": "user-jdvries",
   "scope": "user",
@@ -264,7 +264,7 @@ and `<PLACEHOLDER-…>` forms). Seeded into the `buildiq` register on install.
 
 ```jsonc
 {
-  "@self": { "register": "openbuild", "schema": "application" },
+  "@self": { "register": "buildiq", "schema": "application" },
   "slug": "intake-tracker",
   "name": "Intake Tracker",
   "appType": "virtual",

@@ -71,7 +71,7 @@
 					{ "id": "welcome", "sinceVersion": "0.5.9", "placement": "center", "title": "Welcome to Buildiq", "body": "You'll create your first app from a template. Each step is yours to do. Reopen this tour anytime from the … menu.", "target": { "kind": "page", "ref": "Dashboard" }, "advanceOn": { "type": "manual" } },
 					{ "id": "go-apps", "sinceVersion": "0.5.9", "placement": "right", "body": "Every app you build lives here, ready to open, edit or export.", "task": "Click Apps in the menu", "target": { "kind": "nav-item", "ref": "VirtualApps" }, "advanceOn": { "type": "route-match", "route": "VirtualApps" } },
 					{ "id": "go-store", "sinceVersion": "0.5.9", "placement": "right", "body": "The fastest way to start is from a template. The Store holds ready-made apps you can clone and make your own.", "task": "Click Store in the menu", "target": { "kind": "nav-item", "ref": "Templates" }, "advanceOn": { "type": "route-match", "route": "Templates" } },
-					{ "id": "create-app", "sinceVersion": "0.5.9", "placement": "bottom", "allowManualNext": true, "body": "Cloning copies the template's schemas and pages into an app that is yours to change.", "task": "Clone a template into a new app", "target": { "kind": "page", "ref": "templates-grid" }, "advanceOn": { "type": "object-created", "register": "openbuild", "schema": "application", "capture": { "applicationId": ":id" } } },
+					{ "id": "create-app", "sinceVersion": "0.5.9", "placement": "bottom", "allowManualNext": true, "body": "Cloning copies the template's schemas and pages into an app that is yours to change.", "task": "Clone a template into a new app", "target": { "kind": "page", "ref": "templates-grid" }, "advanceOn": { "type": "object-created", "register": "buildiq", "schema": "application", "capture": { "applicationId": ":id" } } },
 					{ "id": "done", "sinceVersion": "0.5.9", "placement": "center", "title": "Your first app exists", "body": "Open it from Apps to design its schemas and pages. Add your first schema next, then build a page on top of it.", "target": { "kind": "page", "ref": "Dashboard" }, "advanceOn": { "type": "manual" } }
 				]
 			}
@@ -136,7 +136,7 @@
 				"delete-dialog": "AppDeleteDialogSlot"
 			},
 			"config": {
-				"register": "openbuild",
+				"register": "buildiq",
 				"schema": "application",
 				"viewMode": "cards",
 				"cardComponent": "ApplicationCard",
@@ -175,7 +175,7 @@
 				"before-body": "ApplicationDetailDashboard"
 			},
 			"config": {
-				"register": "openbuild",
+				"register": "buildiq",
 				"schema": "application",
 				"maxWidth": "none",
 				"showRelatedObjects": false,
@@ -241,7 +241,7 @@
 				"default": "SchemaDesignerView"
 			},
 			"config": {
-				"register": "openbuild",
+				"register": "buildiq",
 				"schema": "application",
 				"createForm": "never",
 				"sidebar": {
@@ -258,7 +258,7 @@
 			"title": "Store",
 			"component": "TemplateGallery",
 			"config": {
-				"register": "openbuild",
+				"register": "buildiq",
 				"schema": "application-template",
 				"documentationUrl": "https://openbuild.conduction.nl"
 			},
@@ -273,7 +273,7 @@
 				"default": "SchemaDesignerView"
 			},
 			"config": {
-				"register": "openbuild",
+				"register": "buildiq",
 				"schema": "application",
 				"createForm": "never",
 				"sidebar": {
@@ -289,7 +289,7 @@
 			"type": "detail",
 			"title": "Schema",
 			"config": {
-				"register": "openbuild",
+				"register": "buildiq",
 				"schema": "application",
 				"createForm": "never",
 				"sidebar": {
@@ -308,7 +308,7 @@
 			"type": "detail",
 			"title": "Page designer",
 			"config": {
-				"register": "openbuild",
+				"register": "buildiq",
 				"schema": "application",
 				"createForm": "never",
 				"sidebar": {
@@ -327,7 +327,7 @@
 			"type": "detail",
 			"title": "Walkthrough designer",
 			"config": {
-				"register": "openbuild",
+				"register": "buildiq",
 				"schema": "application",
 				"createForm": "never",
 				"sidebar": {
@@ -346,7 +346,7 @@
 			"type": "index",
 			"title": "Exports",
 			"config": {
-				"register": "openbuild",
+				"register": "buildiq",
 				"schema": "export-job",
 				"viewMode": "table",
 				"sidebar": {
@@ -387,19 +387,19 @@
 				"name": "export_jobs_total",
 				"type": "gauge",
 				"help": "Export jobs by lifecycle status",
-				"source": { "kind": "objectCount", "register": "openbuild", "schema": "export-job", "groupBy": ["status"] }
+				"source": { "kind": "objectCount", "register": "buildiq", "schema": "export-job", "groupBy": ["status"] }
 			},
 			{
 				"name": "applications_total",
 				"type": "gauge",
 				"help": "Virtual applications (one nav entry per published app)",
-				"source": { "kind": "objectCount", "register": "openbuild", "schema": "application" }
+				"source": { "kind": "objectCount", "register": "buildiq", "schema": "application" }
 			},
 			{
 				"name": "application_versions_total",
 				"type": "gauge",
 				"help": "Application versions by lifecycle status",
-				"source": { "kind": "objectCount", "register": "openbuild", "schema": "applicationVersion", "groupBy": ["status"] }
+				"source": { "kind": "objectCount", "register": "buildiq", "schema": "applicationVersion", "groupBy": ["status"] }
 			}
 		]
 	},

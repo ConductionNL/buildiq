@@ -58,7 +58,7 @@ class ObjectSchemaSlugResolver {
 	 *
 	 * @var string
 	 */
-	public const REGISTER_SLUG = 'openbuild';
+	public const REGISTER_SLUG = 'buildiq';
 
 	/**
 	 * Resolved slugs keyed by "<mapperFqn>:<id>", for the request lifetime.
