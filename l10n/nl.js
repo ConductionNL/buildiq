@@ -1007,7 +1007,9 @@ OC.L10N.register(
         "Copy": "Kopiëren",
         "Track-link minted.": "Volglink aangemaakt.",
         "Could not mint a track-link: {error}": "Kon geen volglink aanmaken: {error}",
-        "Link copied.": "Link gekopieerd."
+        "Link copied.": "Link gekopieerd.",
+        "Support & donation": "Support & donatie",
+        "Failed to load settings": "Instellingen laden mislukt"
     },
     "nplurals=2; plural=(n != 1);"
 )
