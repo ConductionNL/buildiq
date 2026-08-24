@@ -58,11 +58,8 @@
 		     first-run wizard, its guided tour, its support note) rather than any
 		     one page, so they belong on the app page rather than in the in-page
 		     orange edit menu, which is being narrowed to page-local actions.
-		     Setup wizard and Support & donation are not here yet: their modals
-		     (CnEditSetupModal / CnEditSupportModal) exist in
-		     @conduction/nextcloud-vue but are not exported from its package
-		     index, so they cannot be imported. ConductionNL/nextcloud-vue#748
-		     exports them; they land here once that reaches a published release. -->
+		     Setup wizard opens the Walkthrough Designer on its own tab rather
+		     than a separate modal, because that designer already hosts one. -->
 		<NcButton
 			v-if="obAppRole === 'owner'"
 			data-test="app-edit-settings"
@@ -92,6 +89,16 @@
 				<MapMarkerPath :size="20" />
 			</template>
 			{{ t('buildiq', 'Walkthrough') }}
+		</NcButton>
+		<NcButton
+			v-if="canEditVersions"
+			data-test="app-edit-support"
+			:disabled="!obApp"
+			@click="openSupportEditor">
+			<template #icon>
+				<HeartOutline :size="20" />
+			</template>
+			{{ t('buildiq', 'Support & donation') }}
 		</NcButton>
 
 		<NcButton :disabled="!obApp" @click="exportOpen = true">
@@ -184,6 +191,10 @@
 			:slug="obApp.slug"
 			:isOwner="obAppRole === 'owner'"
 			@update:open="githubOpen = $event" />
+		<CnEditSupportModal
+			v-if="supportOpen"
+			:working="supportWorkingManifest"
+			@close="onSupportClose" />
 		<AppSettingsModal
 			:open="settingsOpen"
 			:appName="(obApp && (obApp.name || obApp.slug)) || ''"
@@ -229,6 +240,7 @@
 </template>
 
 <script>
+import { CnEditSupportModal } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { NcActionButton, NcActionLink, NcActions, NcButton } from '@nextcloud/vue'
@@ -238,6 +250,7 @@ import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
 import Github from 'vue-material-design-icons/Github.vue'
+import HeartOutline from 'vue-material-design-icons/HeartOutline.vue'
 import HelpCircleOutline from 'vue-material-design-icons/HelpCircleOutline.vue'
 import History from 'vue-material-design-icons/History.vue'
 import MapMarkerPath from 'vue-material-design-icons/MapMarkerPath.vue'
@@ -287,6 +300,8 @@ export default {
 		PermissionsModal,
 		PermissionHistoryModal,
 		AppSettingsModal,
+		CnEditSupportModal,
+		HeartOutline,
 		GitHubSyncModal,
 		DeleteAppDialog,
 		SaveAsTemplateDialog,
@@ -301,6 +316,12 @@ export default {
 			deleting: false,
 			githubOpen: false,
 			settingsOpen: false,
+			// The support-note editor mutates a working manifest copy in place
+			// and emits `close`, so it needs its own copy to edit and a flag to
+			// mount it. Held here rather than in the modal so a cancel simply
+			// drops the copy.
+			supportOpen: false,
+			supportWorkingManifest: null,
 			// Every flow on the instance, as picker options. Loaded lazily when
 			// the settings modal opens — see onSettingsOpen().
 			availableFlows: [],
@@ -618,6 +639,54 @@ export default {
 		 *
 		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
+		/**
+		 * Open the support-note editor.
+		 *
+		 * `CnEditSupportModal` edits `manifest.support` in place on a working
+		 * copy, so this resolves the app's manifest first and hands over a
+		 * clone. Editing a clone means cancelling costs nothing: the copy is
+		 * simply dropped.
+		 *
+		 * The manifest is resolved from the ACTIVE VERSION through the app's
+		 * own endpoint, not read off the Application record, because an
+		 * Application carries no manifest — it lives on the ApplicationVersion.
+		 * Reading `obApp.manifest` yields undefined and opens the editor on an
+		 * empty object.
+		 *
+		 * @return {Promise<void>}
+		 *
+		 * @spec exclude opens an existing library editor on the resolved manifest
+		 */
+		async openSupportEditor() {
+			if (!this.obApp || !this.obApp.slug) {
+				return
+			}
+
+			this.error = ''
+			try {
+				const url = generateUrl(
+					`/apps/buildiq/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`,
+				)
+				const { data } = await axios.get(url)
+				this.supportWorkingManifest = JSON.parse(JSON.stringify(data || {}))
+				this.supportOpen = true
+			} catch (e) {
+				this.error = `${t('buildiq', 'Failed to load settings')}: ${e.message || e}`
+			}
+		},
+
+		/**
+		 * Close the support-note editor and drop the working copy.
+		 *
+		 * @return {void}
+		 *
+		 * @spec exclude closes a modal, no behaviour
+		 */
+		onSupportClose() {
+			this.supportOpen = false
+			this.supportWorkingManifest = null
+		},
+
 		/**
 		 * Open the walkthrough designer for this app, on a chosen tab.
 		 *
