@@ -25,7 +25,7 @@ import { test, expect } from '@playwright/test'
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 const LIVE = process.env.BUILDIQ_E2E_LIVE === '1'
 
-// QUARANTINED (Conduction/buildiq#41): buildiq admin UI not functional in this build — no application detail / icon / template-clone UI renders. Re-enable when #41 is fixed.
+// STUB/QUARANTINE NOTE CORRECTED 2026-08-25. The old text blamed buildiq#41 for the admin UI "not functional in this build". #41 is a PR that MERGED on 2026-07-27, and 47 spec files in this suite already pass against that UI — applicationDetailOverview.spec.ts alone has 9 passing tests. What actually blocks these is that their bodies are stubs (goto + main-visible), so enabling them would pass while asserting nothing.
 //
 // THE TWO TRACEABILITY ANCHORS THAT SAT HERE ARE REMOVED, and deliberately not
 // replaced. This test drives the shared ADMIN session and asserts that `main`
@@ -65,7 +65,7 @@ test.skip('REQ-OBRBAC-004 — owner sees edit controls on the application detail
 	})
 })
 
-// QUARANTINED (Conduction/buildiq#41): buildiq admin UI not functional in this build — no application detail / icon / template-clone UI renders. Re-enable when #41 is fixed.
+// STUB/QUARANTINE NOTE CORRECTED 2026-08-25. The old text blamed buildiq#41 for the admin UI "not functional in this build". #41 is a PR that MERGED on 2026-07-27, and 47 spec files in this suite already pass against that UI — applicationDetailOverview.spec.ts alone has 9 passing tests. What actually blocks these is that their bodies are stubs (goto + main-visible), so enabling them would pass while asserting nothing.
 //
 // ANCHORS REMOVED, and this one is worse than its neighbour on two counts. The
 // requirement is that an EDITOR sees Save and does NOT see Publish; the test is
