@@ -141,3 +141,9 @@ docs/node_modules/
 sbom.cdx.json
 bom-php.cdx.json
 bom-npm.cdx.json
+
+# Agent/test scratch and tool caches — generated, never source.
+# Added by the 2026-08-25 fleet hygiene sweep (ADR-100 Decision 2).
+.stale/
+/.e2e-state/
+.phpunit.result.cache
