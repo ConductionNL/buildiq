@@ -48,6 +48,7 @@ import {
 	dismissOverlays,
 	suppressSupportDialog,
 } from '../support/appFixture'
+import { dismissFirstVisitOverlays } from '../support/overlays'
 import { readStagedManifest } from '../support/stagedManifest'
 import { E2E_BASE_URL as BASE } from '../support/baseUrl'
 import { confirmAction } from '../support/confirmDialog'
@@ -540,13 +541,22 @@ async function openSeededRuntimeDetail(page): Promise<void> {
 	await page.goto(`${BASE}/apps/buildiq/builder/hello-world`, {
 		waitUntil: 'domcontentloaded',
 	})
-	await dismissOverlays(page).catch(() => {})
+	// `dismissFirstVisitOverlays`, not `dismissOverlays`. The runtime app
+	// declares a walkthrough that pops a beat AFTER navigation settles, and the
+	// appFixture helper's instantaneous check races it. That is what left the
+	// seeded row found-but-never-actionable: the page snapshot showed the
+	// "Messages" table with the "Welcome to Buildiq" cell present, while the
+	// click spent its whole timeout on "waiting for element to be visible,
+	// enabled and stable" behind the overlay. buildiq-runtime.spec.ts drives
+	// this same route and uses this helper.
+	await dismissFirstVisitOverlays(page)
 
 	const row = page.getByText('Welcome to Buildiq', { exact: false }).first()
 	await expect(
 		row,
 		'the seeded runtime index must list its demo messages',
 	).toBeVisible({ timeout: 20_000 })
+	await row.scrollIntoViewIfNeeded()
 	await row.click()
 	await page.waitForURL(/\/builder\/hello-world\/messages\/[^/]+/, {
 		timeout: 20_000,
