@@ -1421,7 +1421,9 @@ OC.L10N.register(
         "New flow": "New flow",
         "The flows could not be loaded. This does not mean there are none.": "The flows could not be loaded. This does not mean there are none.",
         "This application has no flows yet.": "This application has no flows yet.",
-        "No flows bound to this app yet.": "No flows bound to this app yet."
+        "No flows bound to this app yet.": "No flows bound to this app yet.",
+        "Failed to load settings": "Failed to load settings",
+        "Support & donation": "Support & donation"
     },
     "nplurals=2; plural=(n != 1);"
 )
