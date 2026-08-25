@@ -134,3 +134,10 @@ tests/e2e/.auth/
 
 # docs build artefacts (never track)
 docs/node_modules/
+
+# SBOM is generated per run and published as the sbom-<app> workflow artifact
+# and a stable-release asset — never stored in the repo (hydra sbom-generation
+# spec; ConductionNL/.github#572).
+sbom.cdx.json
+bom-php.cdx.json
+bom-npm.cdx.json
