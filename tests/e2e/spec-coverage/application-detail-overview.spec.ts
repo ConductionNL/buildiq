@@ -33,7 +33,7 @@ async function gotoHelloWorldDetail(page: import('@playwright/test').Page) {
 	await page.waitForURL(/\/applications\//, { timeout: 15_000 })
 }
 
-// QUARANTINED (Conduction/buildiq#41): buildiq admin UI not functional in this build — no application detail / icon / template-clone UI renders. Re-enable when #41 is fixed.
+// STUB/QUARANTINE NOTE CORRECTED 2026-08-25. The old text blamed buildiq#41 for the admin UI "not functional in this build". #41 is a PR that MERGED on 2026-07-27, and 47 spec files in this suite already pass against that UI — applicationDetailOverview.spec.ts alone has 9 passing tests. What actually blocks these is that their bodies are stubs (goto + main-visible), so enabling them would pass while asserting nothing.
 //
 // ANCHORS REMOVED. The requirement names six rows IN DOM ORDER, plus four
 // sidebar tabs present and one absent. This body asserts `main` is visible, the
@@ -62,7 +62,7 @@ test.skip('REQ-OBADO-001 — application detail page renders main area without c
 	).toBeVisible({ timeout: 10_000 })
 })
 
-// QUARANTINED (Conduction/buildiq#41): buildiq admin UI not functional in this build — no application detail / icon / template-clone UI renders. Re-enable when #41 is fixed.
+// STUB/QUARANTINE NOTE CORRECTED 2026-08-25. The old text blamed buildiq#41 for the admin UI "not functional in this build". #41 is a PR that MERGED on 2026-07-27, and 47 spec files in this suite already pass against that UI — applicationDetailOverview.spec.ts alone has 9 passing tests. What actually blocks these is that their bodies are stubs (goto + main-visible), so enabling them would pass while asserting nothing.
 //
 // ANCHORS REMOVED. The requirement is that the hero strip shows the icon from
 // the APPLICATION record rather than a per-version one (ADR-001). This body

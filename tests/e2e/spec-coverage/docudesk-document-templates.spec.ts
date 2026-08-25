@@ -19,16 +19,27 @@
  * it and seeds the "Bevestigingsbrief" / "Besluit" fixtures — see
  * tests/e2e/global-setup.ts.
  *
- * The runtime scenarios (REQ-DDT-003/004 and the runtime half of REQ-DDT-005)
- * remain skipped, now with their REAL reason recorded rather than the stale
- * "#41 builder UI not functional" one: `DocumentActions` filters attachments by
- * `object['@self'].schema`, which OpenRegister returns as the NUMERIC schema id
- * ("21"), while a `runtime.documents[]` entry declares a schema SLUG
- * ("hello-message"). The two never match, so the surface renders nothing for
- * every real object regardless of configuration. That is a product defect, not
- * a test-harness one, and is reported rather than papered over. Their logic is
- * covered by tests/components/DocumentActions.spec.js and
- * tests/composables/useDocudeskDocument.spec.js in the meantime.
+ * THE NUMERIC-ID DEFECT THIS HEADER USED TO DESCRIBE IS FIXED (2026-08-25).
+ *
+ * It read: "`DocumentActions` filters attachments by `object['@self'].schema`,
+ * which OpenRegister returns as the NUMERIC schema id ("21"), while a
+ * `runtime.documents[]` entry declares a schema SLUG ("hello-message"). The two
+ * never match, so the surface renders nothing for every real object."
+ *
+ * The component now injects `cnObjectContext` — whose `schema` is the manifest
+ * slug — and resolves candidates through `objectSchemaKeys()`, which collects
+ * `[ctx.schema, obj.schema, self.schemaSlug, self.schema]` and matches any of
+ * them. Slug and numeric id both hit. A skip reason that outlives its cause is
+ * how this file came to carry twelve tests asserting nothing in the first
+ * place, so it is corrected here rather than left to age further.
+ *
+ * REQ-DDT-004's negative case and REQ-DDT-005's runtime case are now written
+ * against the seeded `hello-world` runtime app, which declares no
+ * `runtime.documents[]` and is therefore the exact fixture they need. The
+ * REQ-DDT-003 generate/download scenarios remain stubs: they need a published
+ * app carrying an attachment, which is real fixture work rather than a skip to
+ * remove. Their logic is covered by tests/components/DocumentActions.spec.js
+ * and tests/composables/useDocudeskDocument.spec.js meanwhile.
  */
 
 import { test, expect } from '@playwright/test'
@@ -37,6 +48,7 @@ import {
 	dismissOverlays,
 	suppressSupportDialog,
 } from '../support/appFixture'
+import { dismissFirstVisitOverlays } from '../support/overlays'
 import { readStagedManifest } from '../support/stagedManifest'
 import { E2E_BASE_URL as BASE } from '../support/baseUrl'
 import { confirmAction } from '../support/confirmDialog'
@@ -474,7 +486,7 @@ test.skip('REQ-DDT-003 — generate produces a download', async ({ page }) => {
 })
 
 // @e2e docudesk-document-templates::filename-template-interpolates-object-properties
-// STUB BODY — see the note above (defect fixed; real body still to be written). Logic covered by vitest (renderFilename + buildFilename).
+// STUB BODY. Needs a PUBLISHED app carrying an attachment — real fixture work, not a skip to remove. Enabling it as-is would pass while asserting nothing. Logic covered by vitest (renderFilename + buildFilename).
 test.skip('REQ-DDT-003 — filename template interpolates object properties', async ({
 	page,
 }) => {
@@ -484,7 +496,7 @@ test.skip('REQ-DDT-003 — filename template interpolates object properties', as
 })
 
 // @e2e docudesk-document-templates::403-renders-a-no-access-toast-not-an-error
-// STUB BODY — see the note above (defect fixed; real body still to be written). Logic covered by vitest (403 → no-access error code).
+// STUB BODY. Needs a PUBLISHED app carrying an attachment — real fixture work, not a skip to remove. Enabling it as-is would pass while asserting nothing. Logic covered by vitest (403 → no-access error code).
 test.skip('REQ-DDT-003 — a 403 renders the no-access message', async ({ page }) => {
 	// @e2e docudesk-document-templates::403-renders-a-no-access-toast-not-an-error
 	await page.goto(`${BASE}/apps/buildiq/applications`)
@@ -492,7 +504,7 @@ test.skip('REQ-DDT-003 — a 403 renders the no-access message', async ({ page }
 })
 
 // @e2e docudesk-document-templates::double-click-issues-one-request
-// STUB BODY — see the note above (defect fixed; real body still to be written). Logic covered by vitest (in-flight guard test).
+// STUB BODY. Needs a PUBLISHED app carrying an attachment — real fixture work, not a skip to remove. Enabling it as-is would pass while asserting nothing. Logic covered by vitest (in-flight guard test).
 test.skip('REQ-DDT-003 — double-click issues exactly one request', async ({
 	page,
 }) => {
@@ -502,7 +514,7 @@ test.skip('REQ-DDT-003 — double-click issues exactly one request', async ({
 })
 
 // @e2e docudesk-document-templates::two-attachments-render-two-ordered-buttons
-// STUB BODY — see the note above (defect fixed; real body still to be written). Logic covered by vitest (DocumentActions ordered-buttons test).
+// STUB BODY. Needs a PUBLISHED app carrying an attachment — real fixture work, not a skip to remove. Enabling it as-is would pass while asserting nothing. Logic covered by vitest (DocumentActions ordered-buttons test).
 test.skip('REQ-DDT-004 — two attachments render two ordered buttons', async ({
 	page,
 }) => {
@@ -511,20 +523,81 @@ test.skip('REQ-DDT-004 — two attachments render two ordered buttons', async ({
 	await expect(page.locator('main')).toBeVisible({ timeout: 10_000 })
 })
 
+/**
+ * Open a runtime object detail on the seeded demo app.
+ *
+ * `hello-world` is seeded by the repair step and declares NO
+ * `runtime.documents[]`, which is exactly the fixture the two REQ-DDT-004/005
+ * negative scenarios need: a real object detail, rendered by the real runtime,
+ * with nothing attached to its schema.
+ *
+ * Navigation mirrors buildiq-runtime.spec.ts's own REQ-OBR-004: open the
+ * standalone runtime entry, click a seeded message, and wait for the router to
+ * land on the manifest's `/messages/:id` detail route.
+ *
+ * @param page The Playwright page.
+ */
+async function openSeededRuntimeDetail(page): Promise<void> {
+	await page.goto(`${BASE}/apps/buildiq/builder/hello-world`, {
+		waitUntil: 'domcontentloaded',
+	})
+	// `dismissFirstVisitOverlays`, not `dismissOverlays`. The runtime app
+	// declares a walkthrough that pops a beat AFTER navigation settles, and the
+	// appFixture helper's instantaneous check races it. That is what left the
+	// seeded row found-but-never-actionable: the page snapshot showed the
+	// "Messages" table with the "Welcome to Buildiq" cell present, while the
+	// click spent its whole timeout on "waiting for element to be visible,
+	// enabled and stable" behind the overlay. buildiq-runtime.spec.ts drives
+	// this same route and uses this helper.
+	await dismissFirstVisitOverlays(page)
+
+	const row = page.getByText('Welcome to Buildiq', { exact: false }).first()
+	await expect(
+		row,
+		'the seeded runtime index must list its demo messages',
+	).toBeVisible({ timeout: 20_000 })
+	await row.scrollIntoViewIfNeeded()
+	await row.click()
+	await page.waitForURL(/\/builder\/hello-world\/messages\/[^/]+/, {
+		timeout: 20_000,
+	})
+}
+
 // @e2e docudesk-document-templates::no-attachments-renders-nothing
-// STUB BODY — see the note above (defect fixed; real body still to be written). Logic covered by vitest (DocumentActions empty-render test).
-test.skip('REQ-DDT-004 — no attachments renders nothing', async ({ page }) => {
+test('REQ-DDT-004 — no attachments renders nothing', async ({ page }) => {
 	// @e2e docudesk-document-templates::no-attachments-renders-nothing
-	await page.goto(`${BASE}/apps/buildiq/applications`)
-	await expect(page.locator('main')).toBeVisible({ timeout: 10_000 })
+	//
+	// REAL BODY (was a stub: `goto('/applications')` + `expect(main).toBeVisible()`,
+	// which would have passed without ever reaching a runtime object).
+	//
+	// DocumentActions renders its whole root behind
+	// `v-if="schemaAttachments.length"`, so "renders nothing" is literally an
+	// absent element rather than an empty one — count 0, not an empty-state.
+	await openSeededRuntimeDetail(page)
+
+	await expect(
+		page.locator('.ob-document-actions'),
+		'a schema with no declared attachments must render no document surface at all',
+	).toHaveCount(0)
 })
 
 // @e2e docudesk-document-templates::runtime-surface-degrades-without-requests
-// STUB BODY — see the note above (defect fixed; real body still to be written). Logic covered by vitest (DocumentActions absent-app state issues no request).
-test.skip('REQ-DDT-005 — runtime surface degrades without requests', async ({
-	page,
-}) => {
+test('REQ-DDT-005 — runtime surface degrades without requests', async ({ page }) => {
 	// @e2e docudesk-document-templates::runtime-surface-degrades-without-requests
-	await page.goto(`${BASE}/apps/buildiq/applications`)
-	await expect(page.locator('main')).toBeVisible({ timeout: 10_000 })
+	//
+	// REAL BODY. The claim is not "nothing is shown" — the test above covers
+	// that — it is that nothing is ASKED. A surface that renders empty while
+	// still calling Docudesk on every object detail is the failure this scenario
+	// exists to catch, and it is invisible in the DOM.
+	const docudeskCalls: string[] = []
+	page.on('request', (req) => {
+		if (req.url().includes('/apps/docudesk/')) docudeskCalls.push(req.url())
+	})
+
+	await openSeededRuntimeDetail(page)
+
+	expect(
+		docudeskCalls,
+		`an object whose schema declares no attachments must issue no Docudesk requests; got ${docudeskCalls.join(', ')}`,
+	).toHaveLength(0)
 })

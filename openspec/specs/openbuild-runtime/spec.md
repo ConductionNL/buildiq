@@ -63,47 +63,73 @@ treats it as authenticated-user-readable.
   that has no matching `BuiltAppRoute`
 - **THEN** the response is `404` with a JSON error body
 
-### Requirement: Buildiq shell mounts a nested CnAppRoot per virtual app
+### Requirement: A published virtual app runs in its own standalone shell
 
-The Buildiq frontend SHALL register a route `/builder/:slug/*` whose
-view (`BuilderHost.vue`) mounts a **nested** `CnAppRoot` instance.
-The nested mount SHALL be supplied with `appId = buildiq-{slug}`
-and a `bundledManifest` value, so that
-`useAppManifest(appId, bundledManifest)` deep-merges the per-slug
-endpoint response over the bundled placeholder and renders the virtual
-app inside the Buildiq shell. The outer Buildiq shell's
-`CnAppNav`, header, and chrome SHALL remain visible; the inner
-`CnAppRoot` SHALL render only into the Buildiq page area.
+`/builder/{slug}` (no sub-path) SHALL be served by
+`DashboardController::builder`, which boots the `src/builder.js` webpack entry.
+That entry SHALL mount the virtual app's **own** `CnAppRoot` as the
+**top-level** shell, with its menu, pages and router built from
+`GET /api/applications/{slug}/manifest`.
+
+The Buildiq SPA SHALL NOT wrap it. Rendering the app inside Buildiq's shell
+nests one `NcContent` in another — double chrome — and, worse, shares Buildiq's
+router, which holds none of the app's page routes, so page content never
+resolves.
 
 **ID:** REQ-OBR-002
 
-#### Scenario: Navigating into a virtual app renders its manifest pages
+#### Scenario: A published app renders in its own shell, not inside Buildiq's
 
 - **WHEN** an authenticated user navigates to
   `/index.php/apps/buildiq/builder/hello-world`
-- **THEN** the outer Buildiq shell stays mounted
-- **AND** a nested `CnAppRoot` mounts inside the page area with
-  `appId = buildiq-hello-world`
-- **AND** the index page declared in the `hello-world` manifest
-  renders
+- **THEN** the index page declared in the `hello-world` manifest renders
+- **AND** the app's own navigation is the one present
+- **AND** Buildiq's own shell navigation is **not** rendered around it
 
-### Requirement: Path segments after the slug forward to the inner router
+> **Rewritten 2026-08-25.** This requirement previously mandated the opposite:
+> a **nested** `CnAppRoot` inside the Buildiq shell, with the outer `CnAppNav`,
+> header and chrome staying visible, mounted by `BuilderHost.vue`.
+>
+> The product deliberately moved away from that, and `src/builder.js` states
+> why in its own header — double chrome, and a shared router that cannot resolve
+> the app's pages. `appinfo/routes.php` maps the bare `/builder/{slug}` to
+> `dashboard#builder`, a standalone page with its own webpack entry.
+> `BuilderHost.vue` still exists and is still registered, but only ever mounts
+> for builder sub-paths that fall through to the SPA catch-all — never for the
+> runtime route this scenario navigates to.
+>
+> So `[data-testid="buildiq-builder-host"]` was genuinely absent while the app
+> itself rendered correctly, and the e2e asserting the nested mount could not
+> pass. It was left `test.skip` with a note recommending precisely this rewrite;
+> this is that rewrite. The requirement now describes what ships, and the
+> scenario asserts the property that actually matters — one shell, not two.
 
-For routes matching `/builder/:slug/*`, the system SHALL forward the
-path segments after `/{slug}` to the **inner** manifest's vue-router
-so that detail, form, and dashboard pages inside the virtual app
-resolve correctly. The outer Buildiq router SHALL treat everything
-after `/{slug}/` as opaque to the inner router; the inner router
-MUST match its own routes against that suffix.
+### Requirement: A virtual app's own routes resolve on its own router
+
+The standalone runtime entry SHALL build its router from the app's own
+manifest, so that the app's index, detail, form and dashboard pages resolve
+from within its shell — by navigation inside the app, and by deep link.
+
+Designer surfaces (`/builder/{slug}/pages`, `/builder/{slug}/schemas`) SHALL
+remain in the Buildiq SPA and are NOT part of the virtual app's router.
 
 **ID:** REQ-OBR-003
 
-#### Scenario: Detail route inside a virtual app resolves
+#### Scenario: A detail page inside a virtual app resolves
 
-- **WHEN** an authenticated user navigates to
-  `/index.php/apps/buildiq/builder/hello-world/messages/00000000-0000-0000-0000-000000000000`
-- **THEN** the inner `CnAppRoot`'s router matches its `detail` page
-  for the `hello-message` schema
+- **WHEN** an authenticated user opens a row from the app's index page
+- **THEN** the app's `detail` page for that schema renders
+
+> **Rewritten 2026-08-25**, with REQ-OBR-002. The previous wording described an
+> **outer** Buildiq router forwarding an opaque path suffix to an **inner**
+> router — machinery that belongs to the nested-mount design the product
+> abandoned. There is no outer router in this path any more: the standalone
+> entry owns the only router, built from the app's own manifest.
+>
+> The scenario is now written around opening a row rather than deep-linking a
+> hardcoded all-zero uuid, because that uuid never existed in any fixture — a
+> detail of the old scenario that guaranteed it could not be asserted even if
+> the architecture had matched.
 - **AND** the detail page renders for the requested object id
 
 ### Requirement: Seeded hello-world Application exercises index, detail, form

@@ -26,11 +26,12 @@
  */
 
 import { test, expect } from '@playwright/test'
+import { dismissOverlays } from '../support/appFixture'
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 
 // @e2e nldesign-theme-selection::builder-picks-a-theme-from-the-visual-list
-// QUARANTINED (Conduction/buildiq#41): buildiq admin builder UI not functional in this build — the Theme section / picker dialog does not render. Re-enable when #41 is fixed. Logic covered by vitest (ThemeSection.spec.js + ThemePickerDialog.spec.js, exercising the real published useScopedTheme.listTokenSets()).
+// STUB BODY (goto + main-visible only) — needs real assertions written. The old note said "QUARANTINED (buildiq#41): builder UI not functional"; #41 is a PR that MERGED 2026-07-27, and 47 spec files already pass against that builder UI. Enabling this as it stands would pass while asserting nothing. Logic covered by vitest (ThemeSection.spec.js + ThemePickerDialog.spec.js, exercising the real published useScopedTheme.listTokenSets()).
 test.skip('REQ-NTS-002 — builder picks a theme from the visual list', async ({
 	page,
 }) => {
@@ -40,7 +41,7 @@ test.skip('REQ-NTS-002 — builder picks a theme from the visual list', async ({
 })
 
 // @e2e nldesign-theme-selection::empty-catalogue-renders-the-absence-hint-not-a-free-text-fallback
-// QUARANTINED (Conduction/buildiq#41): builder UI not functional. Logic covered by vitest (ThemePickerDialog empty-list → REQ-NTS-005 hint test; no free-text input exists anywhere in the dialog anymore).
+// STUB BODY — needs real assertions. The buildiq#41 quarantine is stale: #41 MERGED 2026-07-27 and the builder UI renders. Logic covered by vitest (ThemePickerDialog empty-list → REQ-NTS-005 hint test; no free-text input exists anywhere in the dialog anymore).
 test.skip('REQ-NTS-002 — empty catalogue renders the absence hint, not a free-text fallback', async ({
 	page,
 }) => {
@@ -50,7 +51,7 @@ test.skip('REQ-NTS-002 — empty catalogue renders the absence hint, not a free-
 })
 
 // @e2e nldesign-theme-selection::live-preview-applies-via-the-sandboxed-live-preview-pane-cnapproot-and-reverts-on-cancel
-// QUARANTINED (Conduction/buildiq#41): builder UI not functional. Logic covered by vitest (PageDesignerHost.spec.js onThemePreview mutate/revert test + ThemePickerDialog cancel-revert test).
+// STUB BODY — needs real assertions. The buildiq#41 quarantine is stale: #41 MERGED 2026-07-27 and the builder UI renders. Logic covered by vitest (PageDesignerHost.spec.js onThemePreview mutate/revert test + ThemePickerDialog cancel-revert test).
 test.skip('REQ-NTS-002 — live preview applies via the sandboxed live-preview-pane CnAppRoot and reverts on cancel', async ({
 	page,
 }) => {
@@ -60,7 +61,7 @@ test.skip('REQ-NTS-002 — live preview applies via the sandboxed live-preview-p
 })
 
 // @e2e nldesign-theme-selection::themed-app-renders-via-cnapproots-own-applier-no-buildiq-composable-involved
-// QUARANTINED (Conduction/buildiq#41): the published virtual-app runtime is not reachable through the quarantined builder. Scoped-render + :root-rewrite now live in @conduction/nextcloud-vue (scoped-theme-applier) and are covered by tests/composables/nextcloud-vue-useScopedTheme.spec.js against the REAL published dist; the asset contract by Newman.
+// STUB BODY — needs real assertions. The buildiq#41 quarantine is stale: #41 MERGED 2026-07-27; the runtime is reachable (buildiq-runtime.spec.ts drives it). Scoped-render + :root-rewrite now live in @conduction/nextcloud-vue (scoped-theme-applier) and are covered by tests/composables/nextcloud-vue-useScopedTheme.spec.js against the REAL published dist; the asset contract by Newman.
 test.skip("REQ-NTS-003 — themed app renders via CnAppRoot's own applier, no Buildiq composable involved", async ({
 	page,
 }) => {
@@ -70,7 +71,7 @@ test.skip("REQ-NTS-003 — themed app renders via CnAppRoot's own applier, no Bu
 })
 
 // @e2e nldesign-theme-selection::leaving-the-app-removes-the-injected-style-via-cnapproots-own-teardown
-// QUARANTINED (Conduction/buildiq#41): runtime not reachable. Teardown covered by tests/composables/nextcloud-vue-useScopedTheme.spec.js against the real published useScopedTheme.teardown().
+// STUB BODY — needs real assertions. The buildiq#41 quarantine is stale: #41 MERGED 2026-07-27; the runtime is reachable. Teardown covered by tests/composables/nextcloud-vue-useScopedTheme.spec.js against the real published useScopedTheme.teardown().
 test.skip("REQ-NTS-003 — leaving the app removes the injected style (via CnAppRoot's own teardown)", async ({
 	page,
 }) => {
@@ -80,17 +81,47 @@ test.skip("REQ-NTS-003 — leaving the app removes the injected style (via CnApp
 })
 
 // @e2e nldesign-theme-selection::designer-degrades-when-nldesign-is-missing
-// QUARANTINED (Conduction/buildiq#41): builder UI not functional. Logic covered by vitest (ThemeSection disabled-Change absent-app test).
-test.skip('REQ-NTS-005 — designer degrades when nldesign is missing', async ({
+test('REQ-NTS-005 — designer degrades when nldesign is missing', async ({
 	page,
 }) => {
 	// @e2e nldesign-theme-selection::designer-degrades-when-nldesign-is-missing
-	await page.goto(`${BASE}/apps/buildiq/applications`)
-	await expect(page.locator('main')).toBeVisible({ timeout: 10_000 })
+	//
+	// REAL BODY. This was `goto('/applications')` +
+	// `expect(main).toBeVisible()`, which asserts nothing about themes and would
+	// pass on any page that renders.
+	//
+	// The quarantine it carried — "buildiq#41: builder UI not functional" — cites
+	// a PR that MERGED on 2026-07-27, and 47 spec files in this suite already
+	// pass against that same builder UI.
+	//
+	// Deterministic here: this app's CI installs openregister and docudesk and
+	// NOT nldesign (see code-quality.yml `additional-apps`), so
+	// `nldesignAvailable` is false and the degraded branch is the one under test.
+	await page.goto(
+		`${BASE}/apps/buildiq/builder/hello-world/pages?_version=production`,
+		{ waitUntil: 'domcontentloaded' },
+	)
+	await page.waitForSelector('.page-designer__left', { timeout: 60_000 })
+	await dismissOverlays(page).catch(() => {})
+
+	const section = page.locator('.ob-theme-section')
+	await section.scrollIntoViewIfNeeded()
+	await expect(section).toBeVisible({ timeout: 30_000 })
+
+	// Degrading means two things, and both are asserted: the absence is
+	// EXPLAINED, and the control that cannot work is not merely inert.
+	await expect(
+		section.locator('.ob-theme-section__hint'),
+		'the designer must say why the theme cannot be changed',
+	).toBeVisible()
+	await expect(
+		section.getByRole('button', { name: 'Change' }),
+		'the Change control must be disabled, not silently non-functional',
+	).toBeDisabled()
 })
 
 // @e2e nldesign-theme-selection::themed-app-still-renders-without-nldesign
-// QUARANTINED (Conduction/buildiq#41): runtime not reachable. Degrade-to-default covered by tests/composables/nextcloud-vue-useScopedTheme.spec.js (real published apply() on a fetch failure).
+// STUB BODY — needs real assertions. The buildiq#41 quarantine is stale: #41 MERGED 2026-07-27; the runtime is reachable. Degrade-to-default covered by tests/composables/nextcloud-vue-useScopedTheme.spec.js (real published apply() on a fetch failure).
 test.skip('REQ-NTS-005 — a themed app renders default styling without nldesign', async ({
 	page,
 }) => {

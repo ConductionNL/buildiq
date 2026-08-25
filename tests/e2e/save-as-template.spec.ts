@@ -19,7 +19,7 @@
  * API-shape assertions (OR RBAC, create/update/delete contracts) live in the
  * Newman collection, not here (Playwright drives the UI only).
  *
- * QUARANTINED (Conduction/buildiq#41): the buildiq admin UI does not
+ * STUB NOTE CORRECTED: buildiq#41 MERGED 2026-07-27; the admin UI does
  * render the application-detail surface / template-clone dialog in this build,
  * so the flow cannot be driven end-to-end yet. This file is the canonical UI
  * coverage and re-enables once #41 is fixed (same deferred-bootstrap pattern as

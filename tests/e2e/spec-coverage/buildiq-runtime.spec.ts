@@ -180,62 +180,60 @@ async function activateSidebarTab(
 }
 
 // ---------------------------------------------------------------------------
-// REQ-OBR-002 — Buildiq shell mounts a nested CnAppRoot per virtual app
+// REQ-OBR-002 — a published virtual app runs in its OWN standalone shell
 // ---------------------------------------------------------------------------
 
-// @e2e buildiq-runtime::navigating-into-a-virtual-app-renders-its-manifest-pages
-test.skip('REQ-OBR-002 — builder route mounts a nested CnAppRoot for the virtual app', async () => {
-	// @e2e buildiq-runtime::navigating-into-a-virtual-app-renders-its-manifest-pages
+// @e2e buildiq-runtime::a-published-app-renders-in-its-own-shell-not-inside-buildiqs
+test("REQ-OBR-002 — the runtime route mounts ONE shell, the app's own", async ({
+	page,
+}) => {
+	// REWRITTEN WITH THE REQUIREMENT (2026-08-25).
 	//
-	// SUPERSEDED REQUIREMENT — established from source + a live page snapshot, not
-	// inferred. REQ-OBR-002/003 describe `/builder/:slug/*` mounting a NESTED
-	// `CnAppRoot` INSIDE the Buildiq shell, with the outer `CnAppNav` and chrome
-	// still visible. The product deliberately does the opposite now:
+	// This test used to assert a NESTED CnAppRoot inside the Buildiq shell, with
+	// the outer CnAppNav still visible, and was left permanently skipped because
+	// the product does the opposite on purpose: `appinfo/routes.php` maps the bare
+	// `/builder/{slug}` to `dashboard#builder`, whose `src/builder.js` entry states
+	// the reason in its header — nesting produced double chrome and shared
+	// Buildiq's router, which holds none of the app's page routes.
 	//
-	//   appinfo/routes.php maps the bare `/builder/{slug}` (and `/builder/{slug}/`)
-	//   to `dashboard#builder`, a STANDALONE page that boots `src/builder.js` —
-	//   its own webpack entry (`buildiq-builder.js`). That file's header states
-	//   the reason outright: "It is deliberately NOT the Buildiq SPA: rendering
-	//   the app inside Buildiq's shell nests one NcContent in another (double
-	//   chrome) and, worse, shares Buildiq's router — which has none of the app's
-	//   page routes, so page content never resolves."
-	//
-	// `src/views/BuilderHost.vue` still exists and is still registered, but it only
-	// mounts for builder sub-paths that fall through to the SPA catch-all — never
-	// for the bare runtime route these scenarios navigate to. That is why
-	// `[data-testid="buildiq-builder-host"]` is genuinely absent while the app
-	// itself renders: the failed run's page snapshot shows the virtual app's
-	// "Messages" index with all three seeded rows, under a nav link to
-	// `/apps/buildiq/builder/hello-world/`, and no builder-host wrapper anywhere.
-	//
-	// The BEHAVIOUR both scenarios exist to protect — the seeded app's index and
-	// detail pages resolving from its own manifest — is covered and passing in
-	// "REQ-OBR-004 — the seeded index lists the three sample messages and opens
-	// one" (and in tests/e2e/builder-host.spec.ts). Re-asserting it here under the
-	// nested-mount wording would test an architecture the app abandoned on purpose.
-	//
-	// Resolution belongs in the spec: REQ-OBR-002/003 should be re-worded around the
-	// standalone runtime entry. Left skipped rather than deleted so that rewrite has
-	// something to find.
+	// So the old assertion could never pass, and the spec has been rewritten to
+	// describe what ships. This body asserts the property that actually matters
+	// and that the old wording had backwards: ONE shell, not two.
+	await open(page, `/builder/${SLUG}`)
+
+	// The app's own manifest content is on the page.
+	await expect(
+		page.getByText(SEEDED_TITLES[0], { exact: false }).first(),
+		"the virtual app's own index page must render",
+	).toBeVisible({ timeout: 20_000 })
+
+	// Exactly one CnAppRoot. Counting instances is the point: the abandoned
+	// design would show two (Buildiq's, plus the nested one), and a plain
+	// "is it visible" check cannot tell those apart.
+	const roots = await findMounted(page, 'CnAppRoot')
+	expect(
+		roots.length,
+		`exactly one CnAppRoot must be mounted on the runtime route; found ${roots.length}. `
+			+ `Mounted components: ${(await mountedComponentNames(page)).join(', ')}`,
+	).toBe(1)
+
+	// And it is not Buildiq's shell wrapped around it: the builder-host wrapper
+	// belongs to the SPA catch-all, never to this route.
+	await expect(
+		page.locator('[data-testid="buildiq-builder-host"]'),
+		'the SPA builder-host wrapper must NOT wrap the standalone runtime route',
+	).toHaveCount(0)
 })
 
 // ---------------------------------------------------------------------------
-// REQ-OBR-003 — path segments after the slug forward to the inner router
+// REQ-OBR-003 — the app's own routes resolve on its own router
 // ---------------------------------------------------------------------------
-
-// @e2e buildiq-runtime::detail-route-inside-a-virtual-app-resolves
-test.skip('REQ-OBR-003 — a detail path after the slug resolves on the inner router', async () => {
-	// @e2e buildiq-runtime::detail-route-inside-a-virtual-app-resolves
-	//
-	// Same superseded premise as REQ-OBR-002 above — there is no OUTER router
-	// forwarding to an INNER one on the bare `/builder/{slug}` route, because the
-	// standalone entry builds the app's router from its own manifest and is the
-	// only router in play.
-	//
-	// The behaviour is covered by "REQ-OBR-004 — the seeded index lists the three
-	// sample messages and opens one", which clicks through to the manifest's
-	// `/messages/:id` detail page and asserts the URL and the rendered object.
-})
+//
+// Covered by "REQ-OBR-004 — the seeded index lists the three sample messages and
+// opens one", which clicks a row and asserts the URL moves onto the manifest's
+// `/messages/:id` route and that the detail page renders the object clicked.
+// That is exactly the rewritten scenario, so no second test is written here —
+// a duplicate would add a passing assertion without adding coverage.
 
 // ---------------------------------------------------------------------------
 // REQ-OBR-004 — seeded hello-world Application exercises index, detail, form
