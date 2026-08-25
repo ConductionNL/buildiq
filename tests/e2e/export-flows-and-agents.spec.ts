@@ -54,6 +54,26 @@ const POLL_TIMEOUT_MS = 90_000
  */
 const RUN_AS = process.env.NC_ADMIN_USER || 'admin'
 
+/**
+ * The schedule a fixture flow claims, alongside {@link RUN_AS}.
+ *
+ * `cron` and `runAs` are BOTH mandatory, and each is refused separately — so
+ * supplying only one still fails, with an error naming only the other. Probed
+ * against a live instance:
+ *
+ *     {cron, runAs} -> 201
+ *     {cron}        -> 400  "must carry a \"runAs\" naming the user its runs act as"
+ *     {runAs}       -> 400  "must carry a \"cron\" expression"
+ *
+ * These fixtures previously sent `config: {}`, which is why the first fix here
+ * — adding `runAs` alone — moved the error rather than clearing it.
+ *
+ * A five-field expression, not a macro: `@hourly` and friends are refused.
+ * Nothing in this suite waits for the schedule to fire; the flows are created
+ * disabled or driven directly, so the time chosen only has to be valid.
+ */
+const FIXTURE_CRON = '0 3 * * *'
+
 /** The fixture flow's name. One constant: the creating POST and the picker
  * assertion must not be able to drift apart. */
 const FIXTURE_FLOW_NAME = 'PW export fixture agentic'
@@ -329,7 +349,7 @@ test.describe('Exporting the flows an app is made of', () => {
 					{
 						id: 'start',
 						type: 'openregister.trigger-schedule',
-						config: { runAs: RUN_AS },
+						config: { cron: FIXTURE_CRON, runAs: RUN_AS },
 					},
 					// An AGENTIC node: this fixture proves ADR-065's rule that
 					// such a flow takes the ordinary path, not only the plain case.
@@ -648,7 +668,7 @@ test.describe('Exporting the flows an app is made of', () => {
 					{
 						id: 'start',
 						type: 'openregister.trigger-schedule',
-						config: { runAs: RUN_AS },
+						config: { cron: FIXTURE_CRON, runAs: RUN_AS },
 					},
 					{ id: 'done', type: 'openregister.end', config: {} },
 				],
