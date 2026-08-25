@@ -39,6 +39,17 @@ import { E2E_BASE_URL as BASE } from './support/baseUrl'
 const TEST_SLUG = 'hello-world'
 const POLL_TIMEOUT_MS = 90_000
 
+/**
+ * The account a fixture schedule trigger declares as its `runAs`.
+ *
+ * OpenRegister's TriggerScheduleNode refuses a schedule trigger that does not
+ * name an existing account — "nobody is present when a schedule fires, so there
+ * is no session to take an identity from, and the flow's owner is not used as a
+ * fallback". The e2e session runs as the admin, so that is the account these
+ * fixtures can truthfully name.
+ */
+const NC_ADMIN = process.env.NC_ADMIN_USER || 'admin'
+
 /** The fixture flow's name. One constant: the creating POST and the picker
  * assertion must not be able to drift apart. */
 const FIXTURE_FLOW_NAME = 'PW export fixture agentic'
@@ -314,7 +325,15 @@ test.describe('Exporting the flows an app is made of', () => {
 					{
 						id: 'start',
 						type: 'openregister.trigger-schedule',
-						config: {},
+						// A schedule trigger's config is validated on save now, and
+						// an empty one is refused with a 400: OpenRegister's
+						// TriggerScheduleNode requires a five-field `cron` AND a
+						// `runAs` naming an existing account, because nobody is
+						// present when a schedule fires and it will not fall back
+						// to the flow's owner. This fixture exists to be exported
+						// and re-imported, not to fire, but it still has to be a
+						// document the platform accepts.
+						config: { cron: '0 * * * *', runAs: NC_ADMIN },
 					},
 					// An AGENTIC node: this fixture proves ADR-065's rule that
 					// such a flow takes the ordinary path, not only the plain case.
@@ -633,7 +652,15 @@ test.describe('Exporting the flows an app is made of', () => {
 					{
 						id: 'start',
 						type: 'openregister.trigger-schedule',
-						config: {},
+						// A schedule trigger's config is validated on save now, and
+						// an empty one is refused with a 400: OpenRegister's
+						// TriggerScheduleNode requires a five-field `cron` AND a
+						// `runAs` naming an existing account, because nobody is
+						// present when a schedule fires and it will not fall back
+						// to the flow's owner. This fixture exists to be exported
+						// and re-imported, not to fire, but it still has to be a
+						// document the platform accepts.
+						config: { cron: '0 * * * *', runAs: NC_ADMIN },
 					},
 					{ id: 'done', type: 'openregister.end', config: {} },
 				],
