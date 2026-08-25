@@ -39,6 +39,21 @@ import { E2E_BASE_URL as BASE } from './support/baseUrl'
 const TEST_SLUG = 'hello-world'
 const POLL_TIMEOUT_MS = 90_000
 
+/**
+ * The identity a scheduled fixture flow runs as.
+ *
+ * openregister's `TriggerScheduleNode` refuses a schedule trigger whose config
+ * carries no `runAs` (ADR-099): nobody is present when a schedule fires, so
+ * there is no session to take an identity from, and the flow's owner is
+ * deliberately NOT used as a fallback — authoring a flow is not consent to
+ * unattended execution as its author.
+ *
+ * It is validated against real accounts (`userManager->get()`), so this cannot
+ * be an arbitrary label. It tracks the account the suite authenticates as, set
+ * in playwright.config.ts from the same environment variable.
+ */
+const RUN_AS = process.env.NC_ADMIN_USER || 'admin'
+
 /** The fixture flow's name. One constant: the creating POST and the picker
  * assertion must not be able to drift apart. */
 const FIXTURE_FLOW_NAME = 'PW export fixture agentic'
@@ -314,7 +329,7 @@ test.describe('Exporting the flows an app is made of', () => {
 					{
 						id: 'start',
 						type: 'openregister.trigger-schedule',
-						config: {},
+						config: { runAs: RUN_AS },
 					},
 					// An AGENTIC node: this fixture proves ADR-065's rule that
 					// such a flow takes the ordinary path, not only the plain case.
@@ -633,7 +648,7 @@ test.describe('Exporting the flows an app is made of', () => {
 					{
 						id: 'start',
 						type: 'openregister.trigger-schedule',
-						config: {},
+						config: { runAs: RUN_AS },
 					},
 					{ id: 'done', type: 'openregister.end', config: {} },
 				],
