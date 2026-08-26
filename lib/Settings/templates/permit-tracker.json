@@ -6,7 +6,6 @@
   "category": "government-services",
   "screenshotUrl": "img/templates/permit-tracker.svg",
   "isSeeded": true,
-  "sourceUrl": "https://codeberg.org/Conduction/concurrentie-analyse/src/branch/main/app-builder/README.md#user-stories",
   "version": "1.0.0",
   "manifest": {
     "version": "1.0.0",
