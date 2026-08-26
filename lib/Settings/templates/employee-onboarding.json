@@ -6,7 +6,7 @@
   "category": "internal-operations",
   "screenshotUrl": "img/templates/employee-onboarding.svg",
   "isSeeded": true,
-  "sourceUrl": "https://codeberg.org/Conduction/concurrentie-analyse/src/branch/main/app-builder/README.md#user-stories",
+  "sourceUrl": "https://github.com/ConductionNL/market-intelligence/blob/main/app-builder/README.md#user-stories",
   "version": "1.0.0",
   "manifest": {
     "version": "1.0.0",
