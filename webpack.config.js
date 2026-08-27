@@ -9,7 +9,7 @@ const buildMode = process.env.NODE_ENV
 const isDev = buildMode === 'development'
 // Production builds disable source maps entirely. The full `source-map` devtool
 // (and Terser's own source-map generation) added significant memory and time on
-// top of compilation, and emitted large .map files into js/ (openbuild has three
+// top of compilation, and emitted large .map files into js/ (buildiq has three
 // entries — main/settings/builder — each bundling the shared nextcloud-vue lib).
 // Dropping them keeps the output minified while lowering peak memory. Dev keeps
 // cheap, fast line-level maps. Mirrors pipelinq/openregister.
@@ -32,7 +32,7 @@ webpackConfig.stats = {
 // under both apps/ and custom_apps/.
 webpackConfig.output = { ...webpackConfig.output, publicPath: 'auto' }
 
-const appId = 'openbuild'
+const appId = 'buildiq'
 webpackConfig.entry = {
 	main: {
 		import: path.join(__dirname, 'src', 'main.js'),
@@ -42,7 +42,7 @@ webpackConfig.entry = {
 		import: path.join(__dirname, 'src', 'settings.js'),
 		filename: appId + '-settings.js',
 	},
-	// Standalone runtime for a published virtual app (/apps/openbuild/builder/{slug}).
+	// Standalone runtime for a published virtual app (/apps/buildiq/builder/{slug}).
 	builder: {
 		import: path.join(__dirname, 'src', 'builder.js'),
 		filename: appId + '-builder.js',

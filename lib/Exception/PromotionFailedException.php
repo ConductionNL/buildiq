@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild PromotionFailedException
+ * Buildiq PromotionFailedException
  *
  * Thrown after the on-failure flow has flipped the target to `archived` and
  * stamped `_self.promotionFailedAt` (spec REQ-OBVP-009 — 500 / `code:
@@ -12,7 +12,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Exception
- * @package  OCA\OpenBuild\Exception
+ * @package  OCA\Buildiq\Exception
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -25,7 +25,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Exception;
+namespace OCA\Buildiq\Exception;
 
 use Throwable;
 

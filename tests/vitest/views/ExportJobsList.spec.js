@@ -12,7 +12,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 
-vi.mock('@nextcloud/router', () => ({
+vi.mock('@nextcloud/router', async (importOriginal) => ({
+	...(await importOriginal()),
 	generateUrl: (path) => `/index.php${path}`,
 }))
 
@@ -52,7 +53,7 @@ describe('ExportJobsList — #104 schema-slug fix', () => {
 		const requestedUrl = global.fetch.mock.calls[0][0]
 
 		expect(requestedUrl).toContain(
-			'/apps/openregister/api/objects/openbuild/export-job',
+			'/apps/openregister/api/objects/buildiq/export-job',
 		)
 		expect(requestedUrl).not.toContain('exportJob')
 

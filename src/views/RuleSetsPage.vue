@@ -3,21 +3,21 @@
   -
   - RuleSetsPage — the business-rules engine dashboard (spec
   - business-rules-engine REQ-BRE-001 / REQ-BRE-004). Lists every RuleSet in
-  - the shared `openbuild` register, with status, version, owner app and a
+  - the shared `buildiq` register, with status, version, owner app and a
   - per-row test indicator. Row actions open the matching editor dialog
   - (DecisionTableEditor / ConditionActionRuleEditor) or the test sandbox, run
   - the test suite, transition the lifecycle, or export the RuleSet as JSON.
   -
   - RuleSet CRUD goes through OpenRegister's REST surface; rule evaluation and
-  - test-all go through the openbuild RulesController API. No direct lifecycle
+  - test-all go through the buildiq RulesController API. No direct lifecycle
   - mutation here — the OR lifecycle (x-openregister-lifecycle) owns transitions.
   -->
 <template>
 	<div class="rule-sets-page">
 		<div class="rule-sets-page__header">
-			<h2>{{ t('openbuild', 'Business rules') }}</h2>
+			<h2>{{ t('buildiq', 'Business rules') }}</h2>
 			<NcButton variant="primary" @click="openCreate">
-				{{ t('openbuild', 'New rule set') }}
+				{{ t('buildiq', 'New rule set') }}
 			</NcButton>
 		</div>
 
@@ -25,10 +25,10 @@
 
 		<NcEmptyContent
 			v-else-if="ruleSets.length === 0"
-			:name="t('openbuild', 'No rule sets yet')"
+			:name="t('buildiq', 'No rule sets yet')"
 			:description="
 				t(
-					'openbuild',
+					'buildiq',
 					'Create a decision table or a condition-action rule set to get started.',
 				)
 			" />
@@ -37,25 +37,25 @@
 			<thead>
 				<tr>
 					<th scope="col">
-						{{ t('openbuild', 'Name') }}
+						{{ t('buildiq', 'Name') }}
 					</th>
 					<th scope="col">
-						{{ t('openbuild', 'Type') }}
+						{{ t('buildiq', 'Type') }}
 					</th>
 					<th scope="col">
-						{{ t('openbuild', 'Status') }}
+						{{ t('buildiq', 'Status') }}
 					</th>
 					<th scope="col">
-						{{ t('openbuild', 'Version') }}
+						{{ t('buildiq', 'Version') }}
 					</th>
 					<th scope="col">
-						{{ t('openbuild', 'Owner app') }}
+						{{ t('buildiq', 'Owner app') }}
 					</th>
 					<th scope="col">
-						{{ t('openbuild', 'Tests') }}
+						{{ t('buildiq', 'Tests') }}
 					</th>
 					<th scope="col">
-						{{ t('openbuild', 'Actions') }}
+						{{ t('buildiq', 'Actions') }}
 					</th>
 				</tr>
 			</thead>
@@ -81,16 +81,16 @@
 					</td>
 					<td class="rule-sets-page__actions">
 						<NcButton variant="tertiary" @click="edit(rs)">
-							{{ t('openbuild', 'Edit') }}
+							{{ t('buildiq', 'Edit') }}
 						</NcButton>
 						<NcButton variant="tertiary" @click="openSandbox(rs)">
-							{{ t('openbuild', 'Test') }}
+							{{ t('buildiq', 'Test') }}
 						</NcButton>
 						<NcButton variant="tertiary" @click="runTests(rs)">
-							{{ t('openbuild', 'Run tests') }}
+							{{ t('buildiq', 'Run tests') }}
 						</NcButton>
 						<NcButton variant="tertiary" @click="exportRuleSet(rs)">
-							{{ t('openbuild', 'Export') }}
+							{{ t('buildiq', 'Export') }}
 						</NcButton>
 					</td>
 				</tr>
@@ -158,17 +158,20 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * @spec openspec/specs/application-detail-ui/spec.md
+		 */
 		async fetchRuleSets() {
 			this.loading = true
 			this.errorMessage = ''
 			try {
 				const url = generateUrl(
-					'/apps/openregister/api/objects/openbuild/rule-set',
+					'/apps/openregister/api/objects/buildiq/rule-set',
 				)
 				const { data } = await axios.get(url)
 				this.ruleSets = this.extractResults(data)
 			} catch (error) {
-				this.errorMessage = t('openbuild', 'Could not load rule sets.')
+				this.errorMessage = t('buildiq', 'Could not load rule sets.')
 			} finally {
 				this.loading = false
 			}
@@ -215,15 +218,18 @@ export default {
 			this.showDecisionEditor = true
 		},
 
+		/**
+		 * @spec openspec/specs/application-detail-ui/spec.md
+		 */
 		async runTests(ruleSet) {
 			try {
 				const url = generateUrl(
-					`/apps/openbuild/api/rules/${ruleSet.slug}/test-all`,
+					`/apps/buildiq/api/rules/${ruleSet.slug}/test-all`,
 				)
 				const { data } = await axios.post(url, {})
 				this.testResults[ruleSet.slug] = data
 			} catch (error) {
-				this.errorMessage = t('openbuild', 'Test run failed.')
+				this.errorMessage = t('buildiq', 'Test run failed.')
 			}
 		},
 
@@ -237,10 +243,13 @@ export default {
 				: 'rule-sets-page__test--fail'
 		},
 
+		/**
+		 * @spec openspec/specs/application-detail-ui/spec.md
+		 */
 		testBadgeLabel(slug) {
 			const result = this.testResults[slug]
 			if (!result) {
-				return t('openbuild', 'Not run')
+				return t('buildiq', 'Not run')
 			}
 			return `${result.passed}/${result.total}`
 		},

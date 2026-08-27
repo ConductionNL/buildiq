@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenBuild Flag Registry Token Sensitive Repair Step
+ * Buildiq Flag Registry Token Sensitive Repair Step
  *
  * Retro-flags an already-stored `registry_token` as sensitive.
  *
  * SettingsService always kept the token write-only — it is never returned to the
  * browser, only a `registry_token_set` boolean is. But it was written as an ordinary
  * appconfig string, so on every install that had already configured a remote template
- * store the token sat in cleartext in `occ config:app:get openbuild registry_token`,
+ * store the token sat in cleartext in `occ config:app:get buildiq registry_token`,
  * in `occ config:list`, and in every support/status dump those feed.
  *
  * Flagging the WRITE path fixes new tokens only; a token stored before this release
@@ -19,7 +19,7 @@
  * Idempotent, and a no-op when no token is configured.
  *
  * @category Repair
- * @package  OCA\OpenBuild\Repair
+ * @package  OCA\Buildiq\Repair
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -35,9 +35,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Repair;
+namespace OCA\Buildiq\Repair;
 
-use OCA\OpenBuild\AppInfo\Application;
+use OCA\Buildiq\AppInfo\Application;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -73,7 +73,7 @@ class FlagRegistryTokenSensitive implements IRepairStep {
 	 * @return string
 	 */
 	public function getName(): string {
-		return 'Flag the OpenBuild registry token as sensitive';
+		return 'Flag the Buildiq registry token as sensitive';
 	}//end getName()
 
 	/**
@@ -93,7 +93,7 @@ class FlagRegistryTokenSensitive implements IRepairStep {
 		);
 
 		if ($token === '') {
-			$output->info('No OpenBuild registry token configured; nothing to flag.');
+			$output->info('No Buildiq registry token configured; nothing to flag.');
 			return;
 		}
 
@@ -103,13 +103,13 @@ class FlagRegistryTokenSensitive implements IRepairStep {
 				self::REGISTRY_TOKEN_KEY,
 				true
 			);
-			$output->info('OpenBuild registry token flagged as sensitive.');
+			$output->info('Buildiq registry token flagged as sensitive.');
 		} catch (\Throwable $e) {
 			// Never fatal: a failure here leaves the token exactly as it was, which is
 			// the pre-existing state, not a regression.
-			$output->warning('Could not flag the OpenBuild registry token: ' . $e->getMessage());
+			$output->warning('Could not flag the Buildiq registry token: ' . $e->getMessage());
 			$this->logger->warning(
-				'OpenBuild: could not flag registry_token as sensitive',
+				'Buildiq: could not flag registry_token as sensitive',
 				['exception' => $e->getMessage()]
 			);
 		}

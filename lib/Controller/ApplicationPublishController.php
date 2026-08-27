@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild Application Publish Controller
+ * Buildiq Application Publish Controller
  *
  * Exposes the explicit publish / unpublish action that flips an Application's
  * `status` between `draft` and `published`. Only a `published` Application is
@@ -16,7 +16,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
- * @package  OCA\OpenBuild\Controller
+ * @package  OCA\Buildiq\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -29,14 +29,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Controller;
+namespace OCA\Buildiq\Controller;
 
-use OCA\OpenBuild\AppInfo\Application;
-use OCA\OpenBuild\Exception\InsufficientPermissionException;
-use OCA\OpenBuild\Service\ApplicationDeletionService;
-use OCA\OpenBuild\Service\Credential\VirtualAppCredentialRegistrar;
-use OCA\OpenBuild\Service\PermissionResolver;
-use OCA\OpenBuild\Service\VersionPromotionService;
+use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Exception\InsufficientPermissionException;
+use OCA\Buildiq\Service\ApplicationDeletionService;
+use OCA\Buildiq\Service\Credential\VirtualAppCredentialRegistrar;
+use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Service\VersionPromotionService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -141,6 +141,8 @@ class ApplicationPublishController extends Controller {
 	 * @param string $appUuid Parent Application UUID (path param)
 	 *
 	 * @return JSONResponse 200 + `{deleted, orphanedResources}`, or an error envelope
+	 *
+	 * @spec openspec/specs/application-versions/spec.md
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 10, period: 60)]
@@ -181,7 +183,7 @@ class ApplicationPublishController extends Controller {
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: delete failed for {uuid}: {message}',
+				'Buildiq: delete failed for {uuid}: {message}',
 				['uuid' => $appUuid, 'message' => $e->getMessage(), 'exception' => $e]
 			);
 			return new JSONResponse(
@@ -279,7 +281,7 @@ class ApplicationPublishController extends Controller {
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: publish/unpublish failed for {uuid}: {message}',
+				'Buildiq: publish/unpublish failed for {uuid}: {message}',
 				['uuid' => $appUuid, 'message' => $e->getMessage(), 'exception' => $e]
 			);
 			return new JSONResponse(
@@ -335,7 +337,7 @@ class ApplicationPublishController extends Controller {
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: built-app-route upsert failed on publish for slug {slug}: {message}',
+				'Buildiq: built-app-route upsert failed on publish for slug {slug}: {message}',
 				['slug' => $slug, 'message' => $e->getMessage(), 'exception' => $e]
 			);
 		}
@@ -354,7 +356,7 @@ class ApplicationPublishController extends Controller {
 	 *
 	 * Catching here is what makes the declared `?array` contract true. The
 	 * cause is logged at debug level so a genuine provisioning fault (no
-	 * `openbuild` register at all) is still traceable rather than silently
+	 * `buildiq` register at all) is still traceable rather than silently
 	 * flattened into "not found".
 	 *
 	 * @param string $uuid Application UUID.
@@ -370,7 +372,7 @@ class ApplicationPublishController extends Controller {
 			);
 		} catch (Throwable $e) {
 			$this->logger->debug(
-				'OpenBuild: Application {uuid} could not be loaded: {message}',
+				'Buildiq: Application {uuid} could not be loaded: {message}',
 				['uuid' => $uuid, 'message' => $e->getMessage(), 'exception' => $e]
 			);
 			return null;

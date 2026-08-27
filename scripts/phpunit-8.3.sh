@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run the openbuild unit suite on PHP 8.3 (the app's required runtime) without
+# Run the buildiq unit suite on PHP 8.3 (the app's required runtime) without
 # needing PHP 8.3 on the host — uses a throwaway php:8.3-cli docker container.
 # Usage:  bash scripts/phpunit-8.3.sh
 set -euo pipefail

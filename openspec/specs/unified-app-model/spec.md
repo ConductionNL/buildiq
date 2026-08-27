@@ -2,8 +2,8 @@
 
 ## Purpose
 
-Unifies OpenBuild's two app vocabularies — *virtual* apps (built from scratch by
-OpenBuild) and *hybrid* apps (a delta layered over an already-installed Nextcloud
+Unifies Buildiq's two app vocabularies — *virtual* apps (built from scratch by
+Buildiq) and *hybrid* apps (a delta layered over an already-installed Nextcloud
 fleet app) — into ONE "Apps" concept distinguished by an `appType` discriminator
 (`virtual` | `hybrid`) on the `Application` schema. A hybrid app is just an
 `Application` (`appType: hybrid`, `baseRef.id` = the installed app id) plus a
@@ -23,7 +23,7 @@ app; everything else stays editable) and the idempotent `AppOverride` → hybrid
 
 ### Requirement: Application carries an appType discriminator
 
-The `Application` schema SHALL declare an `appType` property — an enum with values `virtual` and `hybrid`, defaulting to `virtual`. A `virtual` app is fully delivered by OpenBuild (its `ApplicationVersion` manifest is built from scratch or from a template). A `hybrid` app customizes an already-installed Nextcloud fleet app — its `ApplicationVersion` carries a delta-only manifest layered over that fleet app's bundled manifest. The system SHALL treat an `Application` with no `appType` field as `virtual` (legacy default applied on read).
+The `Application` schema SHALL declare an `appType` property — an enum with values `virtual` and `hybrid`, defaulting to `virtual`. A `virtual` app is fully delivered by Buildiq (its `ApplicationVersion` manifest is built from scratch or from a template). A `hybrid` app customizes an already-installed Nextcloud fleet app — its `ApplicationVersion` carries a delta-only manifest layered over that fleet app's bundled manifest. The system SHALL treat an `Application` with no `appType` field as `virtual` (legacy default applied on read).
 
 #### Scenario: Legacy Application reads as virtual
 
@@ -60,7 +60,7 @@ The system SHALL represent a hybrid app as one `Application` (`appType: "hybrid"
 
 For an `Application` with `appType: "hybrid"`, the system SHALL treat the identity metadata — `slug`, `name`, `appType`, and the `baseRef` linkage — as read-only after creation, because a hybrid app's identity mirrors the underlying installed Nextcloud app. The backend SHALL REJECT any update that changes `slug` or `name` on a hybrid `Application` with a 4xx error. All other content (pages, widgets, menus, schemas-as-delta on the version) SHALL remain editable. A `virtual` app SHALL retain full edit of `slug` and `name`.
 
-The lock SHALL be enforced as a pre-save guard on OR's object-update event that compares the proposed payload against the stored row and scopes to hybrid apps via the `appType` discriminator (the discriminator is the reliable selector — OR's object event exposes the schema as a numeric id, not the `application` slug, so a slug match is not dependable). When the guard rejects the change it SHALL stop the save and surface a 4xx error with code `openbuild.hybrid_metadata.locked`.
+The lock SHALL be enforced as a pre-save guard on OR's object-update event that compares the proposed payload against the stored row and scopes to hybrid apps via the `appType` discriminator (the discriminator is the reliable selector — OR's object event exposes the schema as a numeric id, not the `application` slug, so a slug match is not dependable). When the guard rejects the change it SHALL stop the save and surface a 4xx error with code `buildiq.hybrid_metadata.locked`.
 
 #### Scenario: Renaming a hybrid app slug is rejected
 

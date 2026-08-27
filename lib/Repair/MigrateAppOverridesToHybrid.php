@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild MigrateAppOverridesToHybrid Repair Step
+ * Buildiq MigrateAppOverridesToHybrid Repair Step
  *
  * One-time, idempotent migration from the retired standalone `AppOverride`
  * schema to the unified app model (unify-apps-with-app-type). Each pre-existing
@@ -11,7 +11,7 @@
  * `productionVersion` pointed at that version. After each row is copied and
  * verified, the source `AppOverride` row is DELETED (clean break, D-RETIRE).
  * Once every row is migrated the now-empty `app-override` schema is dropped from
- * the `openbuild` register so the unified model is the single source of truth.
+ * the `buildiq` register so the unified model is the single source of truth.
  *
  * Idempotent: on a fresh install (no `app-override` schema) the step is a
  * no-op; on a re-run after migration it finds no rows and exits cleanly; a row
@@ -22,7 +22,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Repair
- * @package  OCA\OpenBuild\Repair
+ * @package  OCA\Buildiq\Repair
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -37,12 +37,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Repair;
+namespace OCA\Buildiq\Repair;
 
-use OCA\OpenBuild\Service\AppOverrideService;
+use OCA\Buildiq\Service\AppOverrideService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Log\LoggerInterface;
@@ -64,7 +64,7 @@ class MigrateAppOverridesToHybrid implements IRepairStep {
 	 *
 	 * @param LoggerInterface $logger PSR logger for diagnostics.
 	 * @param ObjectServiceInterface $objectService OpenRegister object service.
-	 * @param RegisterMapper $registerMapper Resolves the openbuild register id.
+	 * @param RegisterMapper $registerMapper Resolves the buildiq register id.
 	 * @param SchemaMapper $schemaMapper Resolves + drops the app-override schema.
 	 * @param AppOverrideService $appOverrideService Unified hybrid-app store (create/update path).
 	 *
@@ -87,7 +87,7 @@ class MigrateAppOverridesToHybrid implements IRepairStep {
 	 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
 	 */
 	public function getName(): string {
-		return 'Migrate OpenBuild AppOverride records to hybrid Applications';
+		return 'Migrate Buildiq AppOverride records to hybrid Applications';
 	}//end getName()
 
 	/**
@@ -135,7 +135,7 @@ class MigrateAppOverridesToHybrid implements IRepairStep {
 			. 'retaining the app-override schema and its rows for retry (schema NOT dropped).'
 		);
 		$this->logger->warning(
-			'OpenBuild: MigrateAppOverridesToHybrid: schema retained — ' . $failed . ' override(s) un-migrated'
+			'Buildiq: MigrateAppOverridesToHybrid: schema retained — ' . $failed . ' override(s) un-migrated'
 		);
 
 	}//end run()
@@ -150,7 +150,7 @@ class MigrateAppOverridesToHybrid implements IRepairStep {
 			return $this->schemaMapper->find(self::LEGACY_SCHEMA_SLUG, _multitenancy: false)->getId();
 		} catch (Throwable $e) {
 			$this->logger->debug(
-				'OpenBuild: MigrateAppOverridesToHybrid: no app-override schema (' . $e->getMessage() . ').'
+				'Buildiq: MigrateAppOverridesToHybrid: no app-override schema (' . $e->getMessage() . ').'
 			);
 			return null;
 		}
@@ -158,7 +158,7 @@ class MigrateAppOverridesToHybrid implements IRepairStep {
 	}//end resolveLegacySchemaId()
 
 	/**
-	 * Fetch every legacy AppOverride row in the openbuild register.
+	 * Fetch every legacy AppOverride row in the buildiq register.
 	 *
 	 * @param int $schemaId The resolved app-override schema id.
 	 *
@@ -172,7 +172,7 @@ class MigrateAppOverridesToHybrid implements IRepairStep {
 			)->getId();
 		} catch (Throwable $e) {
 			$this->logger->debug(
-				'OpenBuild: MigrateAppOverridesToHybrid: openbuild register not found (' . $e->getMessage() . ').'
+				'Buildiq: MigrateAppOverridesToHybrid: buildiq register not found (' . $e->getMessage() . ').'
 			);
 			return [];
 		}
@@ -209,7 +209,7 @@ class MigrateAppOverridesToHybrid implements IRepairStep {
 		$appId = (string)($row['appId'] ?? '');
 		if ($appId === '') {
 			$this->logger->warning(
-				'OpenBuild: MigrateAppOverridesToHybrid skipped a row without appId',
+				'Buildiq: MigrateAppOverridesToHybrid skipped a row without appId',
 				['row' => $row]
 			);
 			return false;
@@ -246,7 +246,7 @@ class MigrateAppOverridesToHybrid implements IRepairStep {
 				'Migrate-app-overrides-to-hybrid: FAILED to migrate override \'' . $appId . '\' (' . $e->getMessage() . '); source row preserved.'
 			);
 			$this->logger->error(
-				'OpenBuild: MigrateAppOverridesToHybrid: upsert failed; preserving source row',
+				'Buildiq: MigrateAppOverridesToHybrid: upsert failed; preserving source row',
 				['appId' => $appId, 'exception' => $e->getMessage()]
 			);
 			return false;
@@ -261,7 +261,7 @@ class MigrateAppOverridesToHybrid implements IRepairStep {
 				$this->objectService->deleteObject(uuid: $uuid, _rbac: false, _multitenancy: false);
 			} catch (Throwable $e) {
 				$this->logger->error(
-					'OpenBuild: MigrateAppOverridesToHybrid: migrated but failed to delete source row',
+					'Buildiq: MigrateAppOverridesToHybrid: migrated but failed to delete source row',
 					['appId' => $appId, 'exception' => $e->getMessage()]
 				);
 			}
@@ -289,7 +289,7 @@ class MigrateAppOverridesToHybrid implements IRepairStep {
 				'Migrate-app-overrides-to-hybrid: could not drop the app-override schema (' . $e->getMessage() . '); it is empty and harmless.'
 			);
 			$this->logger->warning(
-				'OpenBuild: MigrateAppOverridesToHybrid: schema drop failed',
+				'Buildiq: MigrateAppOverridesToHybrid: schema drop failed',
 				['exception' => $e->getMessage()]
 			);
 		}

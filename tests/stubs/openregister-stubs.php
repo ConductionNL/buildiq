@@ -4,7 +4,7 @@
  * OpenRegister test stubs.
  *
  * Provides minimal class declarations for the OpenRegister types that
- * OpenBuild's controllers, services, repair steps and listeners reference
+ * Buildiq's controllers, services, repair steps and listeners reference
  * by hard-typed constructor parameters or return types. These stubs are
  * only declared when the real OpenRegister sources are NOT present on the
  * autoload path (e.g. CI runs the out-of-container unit suite without the
@@ -655,7 +655,7 @@ namespace OCA\OpenRegister\Db {
 	if (class_exists(AuditTrailMapper::class, autoload: false) === false) {
 		/**
 		 * Stub AuditTrailMapper — call surface covering the methods used by
-		 * OpenBuild services. `getDistinctActorCount` is the new aggregation
+		 * Buildiq services. `getDistinctActorCount` is the new aggregation
 		 * delivered by `openregister-distinct-actor-aggregation`; declaring
 		 * it here lets the unit tests mock it before the OR floor lands.
 		 */
@@ -1466,7 +1466,7 @@ namespace OCA\OpenRegister\Service\Credential {
 
 	if (class_exists(CredentialBrokerService::class, autoload: false) === false) {
 		/**
-		 * Stub CredentialBrokerService — the `request()` call surface OpenBuild's
+		 * Stub CredentialBrokerService — the `request()` call surface Buildiq's
 		 * GitHubAppSyncService routes every outbound GitHub call through (resolved
 		 * lazily via `Server::get()`). The signature mirrors the real OR broker
 		 * (`request(string $credentialId, string $appId, string $method, string
@@ -1931,7 +1931,7 @@ namespace OCA\OpenRegister\Exception {
 		 * Insert-only save conflict — thrown by ObjectService::saveObject() when
 		 * $failIfExists is true and the identifier is already taken.
 		 *
-		 * Stubbed as a TYPE because OpenBuild's channel applier catches it by
+		 * Stubbed as a TYPE because Buildiq's channel applier catches it by
 		 * type. Matching on message text instead let a plain PHP "Unknown named
 		 * parameter $failIfExists" error masquerade as a benign collision, so a
 		 * wiring bug reported itself as "already exists" and the test went green.
@@ -2154,7 +2154,7 @@ namespace OCA\OpenRegister\AppHost\Settings {
 
 	if (class_exists(GenericAdminSettings::class, autoload: false) === false) {
 		/**
-		 * Stub GenericAdminSettings — OpenBuild's AdminSettings extends this.
+		 * Stub GenericAdminSettings — Buildiq's AdminSettings extends this.
 		 * Implements IDelegatedSettings so the subclass satisfies the NC
 		 * settings framework's type expectations under the unit harness.
 		 */
@@ -2217,7 +2217,7 @@ namespace OCA\OpenRegister\AppHost\Settings {
 
 	if (class_exists(GenericSettingsSection::class, autoload: false) === false) {
 		/**
-		 * Stub GenericSettingsSection — OpenBuild's SettingsSection extends this.
+		 * Stub GenericSettingsSection — Buildiq's SettingsSection extends this.
 		 */
 		class GenericSettingsSection implements \OCP\Settings\IIconSection {
 

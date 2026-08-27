@@ -17,11 +17,11 @@ README.md                           data-registers/<slug>.json   NEW  shared reg
                                     README.md
 ```
 
-**Why this is the difference between an artefact and an app.** spectr's manifest binds every page to `spectr-live` — 109 references — and has no meaningful `openbuild-spectr` companion schemas. Under v1 it serialises to a manifest plus **zero** `schemas/` entries and reports success. v2 carries the register definitions the pages read *and* the connectors that populate them.
+**Why this is the difference between an artefact and an app.** spectr's manifest binds every page to `spectr-live` — 109 references — and has no meaningful `buildiq-spectr` companion schemas. Under v1 it serialises to a manifest plus **zero** `schemas/` entries and reports success. v2 carries the register definitions the pages read *and* the connectors that populate them.
 
 **Collectors are total.** Each new collector mirrors `collectCompanionSchemas()`: a missing or unreadable source yields no entries and a `debug` log, never an exception. Serialisation must not become the thing that blocks a publish. The counter-measure against that turning back into a silent empty export is the descriptor: every channel's entry count is recorded, so "collected nothing" is visible in the artefact itself.
 
-**One layout, two apps.** `skills/<name>/SKILL.md` + auxiliaries is byte-for-byte the layout hermiq's `SkillBundleSerializer` produces. openbuild does not invent a second skill shape.
+**One layout, two apps.** `skills/<name>/SKILL.md` + auxiliaries is byte-for-byte the layout hermiq's `SkillBundleSerializer` produces. buildiq does not invent a second skill shape.
 
 ## API Design
 

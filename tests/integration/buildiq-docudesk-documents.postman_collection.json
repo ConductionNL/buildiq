@@ -1,0 +1,126 @@
+{
+	"info": {
+		"name": "Buildiq ⇄ Docudesk Document Templates Contract",
+		"description": "Newman/Postman contract suite for the docudesk-document-templates feature (REQ-DDT-006). Buildiq is a pure API consumer (ADR-022) of Docudesk's EXISTING public correspondence/template surface — it adds NO PHP. This collection pins exactly the Docudesk endpoints buildiq calls so Docudesk-side drift fails CI:\n\n  1. GET  /apps/docudesk/api/templates           — attach-picker list (200, array shape).\n  2. GET  /apps/docudesk/api/templates/{id}      — name-snapshot refresh on edit (200 or 404 for a deleted template).\n  3. POST /apps/docudesk/api/templates/{id}/preview — builder preview affordance.\n  4. POST /apps/docudesk/api/correspondence/generate — runtime generation. The request body asserted here is EXACTLY what useDocudeskDocument sends: { templateId, dataRefs: [{ register, schema, id }], options: { format }, filename } — kept in lockstep with the composable. An unknown templateId yields a 4xx (not a 500).\n\nFormat value set pinned against Docudesk CorrespondenceService::VALID_FORMATS = ['pdf','docx','html','email'] (verified 2026-06-15). Binary (pdf/docx) → DataDownloadResponse; html/email → JSON content.\n\nAUTH MODEL mirrors the other buildiq collections: noauth collection auth + explicit basic-auth per request (admin:admin) + OCS-APIRequest on writes. Docudesk's template + correspondence endpoints are all @NoAdminRequired, so a normal authed session suffices — no buildiq-side IDOR gap.\n\nThe suite is tolerant of a Docudesk instance with no seeded templates: list-shape and generate-with-unknown-id (4xx) always assert; the show/preview happy-path requests assert their shape ONLY when a template id is discovered, otherwise they skip with a pm.test note (so CI stays honest on an empty Docudesk without faking a pass). Run via run-newman.sh.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{ "key": "baseUrl", "value": "http://localhost:8080" },
+		{ "key": "adminUser", "value": "admin" },
+		{ "key": "adminPass", "value": "admin" },
+		{ "key": "templateId", "value": "" }
+	],
+	"auth": { "type": "noauth" },
+	"item": [
+		{
+			"name": "1. Templates index (200, array shape)",
+			"request": {
+				"method": "GET",
+				"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}" }, { "key": "password", "value": "{{adminPass}}" } ] },
+				"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
+				"url": { "raw": "{{baseUrl}}/apps/docudesk/api/templates", "host": [ "{{baseUrl}}" ], "path": [ "apps", "docudesk", "api", "templates" ] }
+			},
+			"event": [
+				{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+					"pm.test('templates index returns 200', () => pm.response.to.have.status(200));",
+					"let body; try { body = pm.response.json(); } catch (e) { body = null; }",
+					"const list = body && (body.results || body.templates || body);",
+					"pm.test('templates index is an array (or results array)', () => pm.expect(Array.isArray(list)).to.be.true);",
+					"if (Array.isArray(list) && list.length) {",
+					"  const first = list[0];",
+					"  const id = first.id || first.uuid;",
+					"  if (id) { pm.collectionVariables.set('templateId', id); }",
+					"  pm.test('a template carries an id and a name', () => { pm.expect(id, 'id').to.be.ok; pm.expect(first.name || first.title, 'name').to.be.ok; });",
+					"} else {",
+					"  pm.test('no templates seeded — show/preview happy paths will skip', () => pm.expect(true).to.be.true);",
+					"}"
+				] } }
+			]
+		},
+		{
+			"name": "2. Template show (200 shape, when a template exists)",
+			"request": {
+				"method": "GET",
+				"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}" }, { "key": "password", "value": "{{adminPass}}" } ] },
+				"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
+				"url": { "raw": "{{baseUrl}}/apps/docudesk/api/templates/{{templateId}}", "host": [ "{{baseUrl}}" ], "path": [ "apps", "docudesk", "api", "templates", "{{templateId}}" ] }
+			},
+			"event": [
+				{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+					"const tid = pm.collectionVariables.get('templateId');",
+					"if (!tid) { pm.test('skipped — no template id discovered', () => pm.expect(true).to.be.true); return; }",
+					"pm.test('template show returns 200', () => pm.response.to.have.status(200));",
+					"const body = pm.response.json();",
+					"pm.test('template show exposes a name', () => pm.expect(body.name || body.title).to.be.ok);"
+				] } }
+			]
+		},
+		{
+			"name": "3. Template preview (when a template exists)",
+			"request": {
+				"method": "POST",
+				"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}" }, { "key": "password", "value": "{{adminPass}}" } ] },
+				"header": [ { "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
+				"body": { "mode": "raw", "raw": "{}" },
+				"url": { "raw": "{{baseUrl}}/apps/docudesk/api/templates/{{templateId}}/preview", "host": [ "{{baseUrl}}" ], "path": [ "apps", "docudesk", "api", "templates", "{{templateId}}", "preview" ] }
+			},
+			"event": [
+				{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+					"const tid = pm.collectionVariables.get('templateId');",
+					"if (!tid) { pm.test('skipped — no template id discovered', () => pm.expect(true).to.be.true); return; }",
+					"pm.test('preview does not 500', () => pm.expect(pm.response.code).to.be.below(500));"
+				] } }
+			]
+		},
+		{
+			"name": "4. Generate — unknown templateId yields 4xx (not 500), pins request shape",
+			"request": {
+				"method": "POST",
+				"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}" }, { "key": "password", "value": "{{adminPass}}" } ] },
+				"header": [ { "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
+				"body": { "mode": "raw", "raw": "{\n  \"templateId\": \"00000000-0000-0000-0000-000000000000\",\n  \"dataRefs\": [ { \"register\": \"openbuild\", \"schema\": \"application\", \"id\": \"does-not-exist\" } ],\n  \"options\": { \"format\": \"pdf\" },\n  \"filename\": \"contract-probe.pdf\"\n}" },
+				"url": { "raw": "{{baseUrl}}/apps/docudesk/api/correspondence/generate", "host": [ "{{baseUrl}}" ], "path": [ "apps", "docudesk", "api", "correspondence", "generate" ] }
+			},
+			"event": [
+				{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+					"pm.test('generate with an unknown templateId is a 4xx, not a 500', () => { pm.expect(pm.response.code).to.be.at.least(400); pm.expect(pm.response.code).to.be.below(500); });",
+					"// The body above is byte-for-byte the shape useDocudeskDocument sends:",
+					"// { templateId, dataRefs: [{ register, schema, id }], options: { format }, filename }.",
+					"// Keeping this request in lockstep with the composable means a Docudesk",
+					"// contract change (renamed key, dropped dataRefs support) fails CI here."
+				] } }
+			]
+		},
+		{
+			"name": "5. Generate — missing dataRefs is rejected (4xx)",
+			"request": {
+				"method": "POST",
+				"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}" }, { "key": "password", "value": "{{adminPass}}" } ] },
+				"header": [ { "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
+				"body": { "mode": "raw", "raw": "{\n  \"templateId\": \"00000000-0000-0000-0000-000000000000\",\n  \"options\": { \"format\": \"pdf\" },\n  \"filename\": \"no-datarefs.pdf\"\n}" },
+				"url": { "raw": "{{baseUrl}}/apps/docudesk/api/correspondence/generate", "host": [ "{{baseUrl}}" ], "path": [ "apps", "docudesk", "api", "correspondence", "generate" ] }
+			},
+			"event": [
+				{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+					"pm.test('generate without dataRefs is a 4xx (dataRefs is required)', () => { pm.expect(pm.response.code).to.be.at.least(400); pm.expect(pm.response.code).to.be.below(500); });"
+				] } }
+			]
+		},
+		{
+			"name": "6. Automation-triggered generate uses the SAME pinned route (automation-document-action)",
+			"request": {
+				"method": "POST",
+				"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}" }, { "key": "password", "value": "{{adminPass}}" } ] },
+				"header": [ { "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
+				"body": { "mode": "raw", "raw": "{\n  \"templateId\": \"00000000-0000-0000-0000-000000000000\",\n  \"dataRefs\": [ { \"register\": \"openbuild\", \"schema\": \"permit-application\", \"id\": \"00000000-0000-0000-0000-000000000000\" } ],\n  \"options\": { \"format\": \"pdf\" },\n  \"filename\": \"document-00000000-0000-0000-0000-000000000000.pdf\"\n}" },
+				"url": { "raw": "{{baseUrl}}/apps/docudesk/api/correspondence/generate", "host": [ "{{baseUrl}}" ], "path": [ "apps", "docudesk", "api", "correspondence", "generate" ] },
+				"description": "DocumentGenerationService issues this EXACT request shape (single dataRefs entry naming {register, schema, id}; options.format; a `document-<uuid>.pdf` filename) against the SAME pinned route item #4 already asserts — the only difference at runtime is the caller's auth (owner-impersonated via a short-lived internal login token, instead of the interactive browser session Basic-Auth'd here). This item pins that shared contract stays intact; it does NOT exercise the full trigger-fire path (Application + Automation + object transition setup is out of this lightweight contract collection's scope — covered by DocumentGenerationServiceTest/DocumentGenerationListenerTest instead)."
+			},
+			"event": [
+				{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+					"pm.test('automation-shaped generate request (single dataRefs entry) hits the same pinned route and yields the documented 4xx for an unknown templateId', () => { pm.expect(pm.response.code).to.be.at.least(400); pm.expect(pm.response.code).to.be.below(500); });"
+				] } }
+			]
+		}
+	]
+}

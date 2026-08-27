@@ -1,6 +1,6 @@
 ---
 id: TS-001
-title: "AI agent drives every OpenBuild action-menu capability through the UI"
+title: "AI agent drives every Buildiq action-menu capability through the UI"
 priority: high
 category: functional
 personas:
@@ -19,9 +19,9 @@ spec-refs:
 - hermiq/openspec/changes/anthropic-agent-provider/specs/anthropic-agent-provider/spec.md
 ---
 
-# TS-001: AI agent drives every OpenBuild action-menu capability through the UI
+# TS-001: AI agent drives every Buildiq action-menu capability through the UI
 
-**Goal**: Verify that a user can accomplish everything available through OpenBuild's
+**Goal**: Verify that a user can accomplish everything available through Buildiq's
 action surfaces **by asking the AI companion** (the hex icon, backed by hermiq) rather than
 clicking manually — and, critically, determine *how the agent perceives the page*: whether the
 MCP tool surface alone is enough, or whether it also needs the raw OpenRegister API and/or RAG
@@ -34,8 +34,8 @@ The two things under test are **coverage** (can the agent do each capability at 
 
 ## Scope: virtual apps only
 
-This scenario targets **virtual OpenBuild apps** — apps whose manifest is a set of OpenRegister
-objects (schemas, pages, deltas). **Hybrid apps are out of scope** for the OpenBuild MCP surface
+This scenario targets **virtual Buildiq apps** — apps whose manifest is a set of OpenRegister
+objects (schemas, pages, deltas). **Hybrid apps are out of scope** for the Buildiq MCP surface
 for now: a hybrid app's core manifest is an actual, often large, JSON file, so exposing it as MCP
 tool metadata is neither cheap nor useful — keep hybrid apps out of the MCP scope until that is
 revisited. Only run this scenario against a virtual app fixture.
@@ -53,14 +53,14 @@ right one**, not whether RAG "exists" — it does, next to MCP, by design.
 
 ## Preconditions
 
-- Logged in as a Nextcloud user who owns at least one **virtual** OpenBuild app (e.g. the `CowBoy`
+- Logged in as a Nextcloud user who owns at least one **virtual** Buildiq app (e.g. the `CowBoy`
   demo app, `owner` role, one published version, one register with ≥1 schema).
 - Hermiq engine enabled (`hermiq.engine.enabled = true`) with a chat provider configured that is
   capable of tool use — either the `anthropic` provider (Claude, per
   `anthropic-agent-provider`) or a tool-capable Ollama model. **A non-tool-capable model will
   fail this scenario at the "understands the page" gate — that failure is itself a result.**
 - OR `chat.proxyTo = hermiq` (or nc-vue default already `hermiq`) so the AI icon reaches hermiq.
-- The hermiq MCP surface (ADR-063) is registered so OpenBuild/OpenRegister capabilities are
+- The hermiq MCP surface (ADR-063) is registered so Buildiq/OpenRegister capabilities are
   exposed as tools.
 
 ## Capability coverage matrix
@@ -69,7 +69,7 @@ For each row, drive the capability by instructing the AI companion in natural la
 verify the effect in the UI and in OpenRegister. Record which channel the agent used
 (**MCP tool** / **OR API** / **RAG** / **could not**).
 
-| # | Capability (OpenBuild action surface) | Example instruction to the agent | Verify |
+| # | Capability (Buildiq action surface) | Example instruction to the agent | Verify |
 |---|---|---|---|
 | 1 | Add a schema to the app's register | "Add a `Cow` schema with fields name, tagNumber, birthDate" | New schema appears in Register panel + OpenRegister |
 | 2 | Alter an existing schema (add/rename/retype a property) | "Add a `weight` number field to the Cow schema" | Property present; existing objects unaffected |
@@ -82,11 +82,11 @@ verify the effect in the UI and in OpenRegister. Record which channel the agent 
 | 9 | Export the app manifest | "Export this app" | Export dialog / artifact produced |
 | 10 | Manage permissions | "Give the editors group edit access" | Permission recorded (owner-only action) |
 | 11 | Save as template | "Save this app as a template" | Template capture prepared |
-| 12 | Settings (register bindings, GitHub) | "Bind this app to the openbuild-cowboy register" | Setting persisted |
+| 12 | Settings (register bindings, GitHub) | "Bind this app to the buildiq-cowboy register" | Setting persisted |
 
 ## Scenario
 
-- GIVEN the user opens the OpenBuild app detail page and clicks the AI companion (hex) icon
+- GIVEN the user opens the Buildiq app detail page and clicks the AI companion (hex) icon
 - WHEN the user asks the agent, in plain language, to perform each capability in the matrix above
 - THEN for each capability the agent either completes it (state changes correctly and is visible
   in the UI and in OpenRegister) or reports honestly that it cannot
@@ -125,7 +125,7 @@ transcript. Reminder: this holds for virtual apps only — hybrid apps stay out 
 
 ## Test Data
 
-- Use the `CowBoy` demo app (Virtual, published, register `openbuild-cowboy-production`, one
+- Use the `CowBoy` demo app (Virtual, published, register `buildiq-cowboy-production`, one
   `Hello Message` schema) as the starting fixture, or any owner-role app with ≥1 register.
 
 ## Acceptance Criteria

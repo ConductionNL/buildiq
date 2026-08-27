@@ -1,0 +1,181 @@
+{
+	"info": {
+		"_postman_id": "buildiq-templates-marketplace",
+		"name": "Buildiq Templates Marketplace",
+		"description": "Newman/Postman integration tests for the buildiq-templates-marketplace spec. Covers REQ-OBTC-003 (list seeded templates), REQ-OBTC-004 (createFromTemplate happy path + 4xx slug-collision), REQ-OBTC-009 (cross-user slug reuse).",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{ "key": "username", "value": "{{primary_user}}", "type": "string" },
+			{ "key": "password", "value": "{{primary_password}}", "type": "string" }
+		]
+	},
+	"variable": [
+		{ "key": "base_url", "value": "http://localhost:8080", "type": "string" },
+		{ "key": "primary_user", "value": "admin", "type": "string" },
+		{ "key": "primary_password", "value": "admin", "type": "string" },
+		{ "key": "template_slug", "value": "permit-tracker", "type": "string" },
+		{ "key": "clone_slug", "value": "newman-permits", "type": "string" },
+		{ "key": "clone_uuid", "value": "", "type": "string" }
+	],
+	"item": [
+		{
+			"name": "GET applicationTemplates — list returns 4 seeded records",
+			"request": {
+				"method": "GET",
+				"header": [
+					{ "key": "Accept", "value": "application/json" },
+					{ "key": "OCS-APIRequest", "value": "true" }
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application-template",
+					"host": ["{{base_url}}"],
+					"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "application-template"]
+				},
+				"description": "Read the seeded ApplicationTemplate records directly from OpenRegister (REQ-OBTC-003)."
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('200 OK', function () { pm.response.to.have.status(200); });",
+							"const body = pm.response.json();",
+							"const results = Array.isArray(body) ? body : (body.results || []);",
+							"pm.test('At least four seeded templates returned', function () {",
+							"    pm.expect(results.length).to.be.at.least(4);",
+							"});",
+							"const slugs = results.map(r => r.slug);",
+							"pm.test('All four canonical slugs are present', function () {",
+							"    ['permit-tracker','stakeholder-consultation','employee-onboarding','incident-reporter'].forEach(s => {",
+							"        pm.expect(slugs).to.include(s);",
+							"    });",
+							"});"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "POST createFromTemplate — happy path returns 201 + new uuid",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" },
+					{ "key": "Accept", "value": "application/json" },
+					{ "key": "OCS-APIRequest", "value": "true" },
+					{ "key": "requesttoken", "value": "newman-stub" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Newman permits\",\n  \"slug\": \"{{clone_slug}}\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/buildiq/api/applications/from-template/{{template_slug}}",
+					"host": ["{{base_url}}"],
+					"path": ["index.php", "apps", "buildiq", "api", "applications", "from-template", "{{template_slug}}"]
+				},
+				"description": "Clone the `permit-tracker` template into a fresh draft Application (REQ-OBTC-004)."
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('201 Created', function () { pm.response.to.have.status(201); });",
+							"const body = pm.response.json();",
+							"pm.test('Response carries a uuid + slug', function () {",
+							"    pm.expect(body).to.have.property('uuid');",
+							"    pm.expect(body.slug).to.eql(pm.variables.get('clone_slug'));",
+							"});",
+							"pm.collectionVariables.set('clone_uuid', body.uuid);"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "POST createFromTemplate — same user + same slug → 409 slug_collision",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" },
+					{ "key": "Accept", "value": "application/json" },
+					{ "key": "OCS-APIRequest", "value": "true" },
+					{ "key": "requesttoken", "value": "newman-stub" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Newman permits (dup)\",\n  \"slug\": \"{{clone_slug}}\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/buildiq/api/applications/from-template/{{template_slug}}",
+					"host": ["{{base_url}}"],
+					"path": ["index.php", "apps", "buildiq", "api", "applications", "from-template", "{{template_slug}}"]
+				},
+				"description": "Re-clone with the same slug as the same user — slug collision returns 409 (REQ-OBTC-004 slug-uniqueness)."
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('4xx status', function () {",
+							"    pm.expect(pm.response.code).to.be.within(400, 499);",
+							"});",
+							"const body = pm.response.json();",
+							"pm.test('Error code is slug_collision', function () {",
+							"    pm.expect(body.error).to.eql('slug_collision');",
+							"});"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "POST createFromTemplate — slug uniqueness is ORG-WIDE, so a different name/owner does not unlock it",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" },
+					{ "key": "Accept", "value": "application/json" },
+					{ "key": "OCS-APIRequest", "value": "true" },
+					{ "key": "requesttoken", "value": "newman-stub" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Tester permits\",\n  \"slug\": \"{{clone_slug}}\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/buildiq/api/applications/from-template/{{template_slug}}",
+					"host": ["{{base_url}}"],
+					"path": ["index.php", "apps", "buildiq", "api", "applications", "from-template", "{{template_slug}}"]
+				},
+				"description": "Retries the taken slug with a DIFFERENT app name, pinning that the collision is decided by the slug alone.\n\n⚠️ THIS REQUEST USED TO ASSERT THE OPPOSITE, AND IT ASSERTED SOMETHING NOTHING IMPLEMENTS. It read 'different user + same slug → 201 (cross-user reuse OK)' and cited 'REQ-OBTC-004 owner-scoped uniqueness'. Three things were wrong with that:\n\n1. REQ-OBTC-004 says the opposite. Its only slug scenario — openspec/specs/openbuild-template-catalogue/spec.md:254-261 — is 'Clone with an existing slug is rejected … a slug that matches an existing Application IN THEIR ORGANISATION → 4xx'. There is no owner-scoped uniqueness anywhere in the spec.\n2. The product deliberately scopes org-wide. ApplicationsController:1467-1478 carries the comment 'Slug uniqueness org-wide (no owner filter) to prevent squatting' and pointedly does NOT pass lookupOne()'s optional $owner argument.\n3. The 'different user' never existed. {{second_user}} (`tester`) is created by neither tests/e2e/ci-seed.sh nor tests/e2e/global-setup.ts, and a per-request Basic override cannot switch users anyway once Newman holds a session cookie for the origin (server/lib/base.php:1054-1066). The request ran as admin — and createFromTemplate is admin-only (ApplicationsController:1377-1383), so a genuinely-authenticated `tester` would have got 403, never 201.\n\nSo it was red because it demanded behaviour that the spec forbids, the code refuses, and its own premise could not be established. It now asserts the contract that is actually specified."
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('A taken slug stays taken — 4xx regardless of the app name', function () {",
+							"    pm.expect(pm.response.code).to.be.within(400, 499);",
+							"});",
+							"const body = pm.response.json();",
+							"pm.test('Error code is slug_collision, and the colliding slug is named', function () {",
+							"    pm.expect(body.error).to.eql('slug_collision');",
+							"    pm.expect(body.detail).to.eql(pm.collectionVariables.get('clone_slug'));",
+							"});"
+						]
+					}
+				}
+			]
+		}
+	]
+}

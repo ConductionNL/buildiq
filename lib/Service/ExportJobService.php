@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild Export Job Service
+ * Buildiq Export Job Service
  *
  * Orchestration helper between the HTTP controller and the OR-backed
  * ExportJob record + the imperative ExportService pipeline.
@@ -10,10 +10,10 @@
  * had it stored under ICredentialsManager keyed by job UUID and deleted on every
  * terminal state. That is gone. The record now carries only `githubCredentialId`
  * — a UUID pointing at a credential in OpenRegister's broker — so there is no
- * OpenBuild-held secret left to store, to forget to delete, or to leak.
+ * Buildiq-held secret left to store, to forget to delete, or to leak.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -35,7 +35,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 use OCP\BackgroundJob\IJobList;
 use Psr\Container\ContainerInterface;
@@ -51,7 +51,7 @@ class ExportJobService {
 	/**
 	 * OR register slug hosting the ExportJob schema (#104).
 	 */
-	public const REGISTER_SLUG = 'openbuild';
+	public const REGISTER_SLUG = 'buildiq';
 
 	/**
 	 * OR schema SLUG for the ExportJob record (#104). NOTE: this is
@@ -147,7 +147,7 @@ class ExportJobService {
 
 		$this->persistJob(job: $job);
 		$this->jobList->add(
-			\OCA\OpenBuild\BackgroundJob\RunExportJob::class,
+			\OCA\Buildiq\BackgroundJob\RunExportJob::class,
 			['jobUuid' => $jobUuid]
 		);
 
@@ -248,7 +248,7 @@ class ExportJobService {
 	 * `register`/`schema` (so `ObjectService::saveObject()` relied on
 	 * whatever register/schema context an EARLIER call in the same request
 	 * left behind — e.g. `ExportsController::isAuthorisedForApplication()`'s
-	 * `searchObjectsBySlug('openbuild', 'application', ...)` call re-anchors
+	 * `searchObjectsBySlug('buildiq', 'application', ...)` call re-anchors
 	 * that ambient state to schema=`application`, which does not accept an
 	 * ExportJob payload's shape) AND `uuid` (so `extractUuidAndNormalizeObject()`
 	 * — which only recognises `@self.id`/`id`, not our own `uuid` data field —
@@ -271,7 +271,7 @@ class ExportJobService {
 			// `SimpleContainer::has()` IS `isset(...) || class_exists($id)`
 			// (server/lib/private/AppFramework/Utility/SimpleContainer.php:50).
 			if (class_exists('\OCA\OpenRegister\Service\ObjectService') === false) {
-				$this->logger->info('OpenBuild export job persisted (logger fallback): ' . $job['uuid']);
+				$this->logger->info('Buildiq export job persisted (logger fallback): ' . $job['uuid']);
 				return;
 			}
 
@@ -359,7 +359,7 @@ class ExportJobService {
 			// honour it. Surface this so the issue is visible — never
 			// silently write status directly.
 			$this->logger->warning(
-				'OpenBuild export: OR TransitionEngine unavailable — '
+				'Buildiq export: OR TransitionEngine unavailable — '
 				. 'lifecycle transition "' . $action . '" SKIPPED on job ' . $jobUuid . '. '
 				. 'Bump OpenRegister to >= the build that ships '
 				. 'OCA\\OpenRegister\\Service\\Lifecycle\\TransitionEngine.'
@@ -371,7 +371,7 @@ class ExportJobService {
 			$engine = $this->container->get($engineClass);
 			if (method_exists($engine, 'transition') === false) {
 				$this->logger->warning(
-					'OpenBuild export: OR TransitionEngine present but '
+					'Buildiq export: OR TransitionEngine present but '
 					. 'transition() method missing — likely API drift.'
 				);
 				return false;
@@ -397,7 +397,7 @@ class ExportJobService {
 			);
 		} catch (\Throwable $e) {
 			$this->logger->error(
-				'OpenBuild export: lifecycle transition "' . $action . '" failed on job '
+				'Buildiq export: lifecycle transition "' . $action . '" failed on job '
 				. $jobUuid . ': ' . $e->getMessage()
 			);
 			return false;
@@ -459,7 +459,7 @@ class ExportJobService {
 			}
 		} catch (\Throwable $e) {
 			$this->logger->warning(
-				'OpenBuild export: mergeJobFields failed on job ' . $jobUuid . ': ' . $e->getMessage()
+				'Buildiq export: mergeJobFields failed on job ' . $jobUuid . ': ' . $e->getMessage()
 			);
 		}//end try
 	}//end mergeJobFields()
@@ -475,7 +475,7 @@ class ExportJobService {
 	 */
 	public function resolveDownload(string $uuid): ?array {
 		// Look for the ZIP in the deterministic location.
-		$candidate = sys_get_temp_dir() . '/openbuild-exports/' . $uuid . '.zip';
+		$candidate = sys_get_temp_dir() . '/buildiq-exports/' . $uuid . '.zip';
 		if (file_exists($candidate) === false) {
 			return null;
 		}
@@ -488,7 +488,7 @@ class ExportJobService {
 	}//end resolveDownload()
 
 	// The fetchPat()/clearPat()/credentialKey() trio was removed with the PAT itself.
-	// There is no OpenBuild-held GitHub secret any more, so there is nothing to fetch,
+	// There is no Buildiq-held GitHub secret any more, so there is nothing to fetch,
 	// nothing to remember to delete on a terminal state, and no key to build.
 
 	/**
@@ -537,7 +537,7 @@ class ExportJobService {
 			return null;
 		} catch (\Throwable $e) {
 			$this->logger->warning(
-				'OpenBuild ExportJobService: loadJob failed for job ' . $jobUuid . ': ' . $e->getMessage()
+				'Buildiq ExportJobService: loadJob failed for job ' . $jobUuid . ': ' . $e->getMessage()
 			);
 			return null;
 		}//end try

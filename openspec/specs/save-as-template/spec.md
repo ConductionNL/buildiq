@@ -5,7 +5,7 @@ TBD - created by archiving change save-as-template. Update Purpose after archive
 ## Requirements
 ### Requirement: REQ-SAT-001 "Save as template" action and dialog on the application-detail surface
 
-The system SHALL provide `SaveAsTemplateDialog.vue` (standalone dialog in `src/dialogs/` per the modal-isolation rule), opened from a "Save as template" action on the application-detail surface, visible to users with editor/owner rights on the Application (per the existing openbuild-rbac surface). The dialog SHALL expose: (a) metadata inputs — `title` (prefilled from the app name), `slug` (auto-suggested kebab-case from the title, editable), `description`, `useCase`, `category` (picker over the REQ-OBTC-001 enum values), and optional `sourceUrl`; (b) a **capture summary** listing what will be stored — the manifest plus each companion schema with its de-namespaced slug, flagging any schema captured without de-namespacing per REQ-SAT-002; and (c) a Save action gated by REQ-SAT-003 validation. Saving SHALL create the `ApplicationTemplate` via standard OR REST with `isSeeded: false` and `version` set from the source Application's current version. Object data (rows) SHALL NEVER be captured — a template is a definition, not a dataset. All `NcSelect`s carry `inputLabel`; every user-visible string uses English-source i18n keys under `openbuild.templates.saveAs.*` with nl translations.
+The system SHALL provide `SaveAsTemplateDialog.vue` (standalone dialog in `src/dialogs/` per the modal-isolation rule), opened from a "Save as template" action on the application-detail surface, visible to users with editor/owner rights on the Application (per the existing buildiq-rbac surface). The dialog SHALL expose: (a) metadata inputs — `title` (prefilled from the app name), `slug` (auto-suggested kebab-case from the title, editable), `description`, `useCase`, `category` (picker over the REQ-OBTC-001 enum values), and optional `sourceUrl`; (b) a **capture summary** listing what will be stored — the manifest plus each companion schema with its de-namespaced slug, flagging any schema captured without de-namespacing per REQ-SAT-002; and (c) a Save action gated by REQ-SAT-003 validation. Saving SHALL create the `ApplicationTemplate` via standard OR REST with `isSeeded: false` and `version` set from the source Application's current version. Object data (rows) SHALL NEVER be captured — a template is a definition, not a dataset. All `NcSelect`s carry `inputLabel`; every user-visible string uses English-source i18n keys under `buildiq.templates.saveAs.*` with nl translations.
 
 #### Scenario: Saving captures the app as an org-local template
 
@@ -31,7 +31,7 @@ The system SHALL provide `SaveAsTemplateDialog.vue` (standalone dialog in `src/d
 
 ### Requirement: REQ-SAT-002 Companion schemas are de-namespaced as the exact inverse of clone-time prefixing
 
-When capturing, the system SHALL strip the leading `<sourceAppSlug>-` prefix from every companion schema slug and rewrite every manifest reference (page `config`, data sources, and any `runtime.*` block references) to the de-namespaced slug — the exact inverse of clone-time REQ-OBTC-005 — so that save→clone composes to a clean rename without prefix stacking. A schema slug that does not carry the source app's prefix SHALL be captured unchanged and flagged in the dialog's capture summary as a shared schema (clones will receive an independent prefixed copy). If two captured schemas would de-namespace to the same canonical slug, the save SHALL be hard-blocked with the error `openbuild.templates.saveAs.error.slug-collision` naming both schemas.
+When capturing, the system SHALL strip the leading `<sourceAppSlug>-` prefix from every companion schema slug and rewrite every manifest reference (page `config`, data sources, and any `runtime.*` block references) to the de-namespaced slug — the exact inverse of clone-time REQ-OBTC-005 — so that save→clone composes to a clean rename without prefix stacking. A schema slug that does not carry the source app's prefix SHALL be captured unchanged and flagged in the dialog's capture summary as a shared schema (clones will receive an independent prefixed copy). If two captured schemas would de-namespace to the same canonical slug, the save SHALL be hard-blocked with the error `buildiq.templates.saveAs.error.slug-collision` naming both schemas.
 
 #### Scenario: Round-trip is a clean rename
 
@@ -55,16 +55,16 @@ When capturing, the system SHALL strip the leading `<sourceAppSlug>-` prefix fro
 
 - **GIVEN** an app carrying schemas `my-permits-tasks` and a hand-attached `tasks`
 - **WHEN** the builder attempts to save it as a template
-- **THEN** the save is blocked with `openbuild.templates.saveAs.error.slug-collision` naming both schemas
+- **THEN** the save is blocked with `buildiq.templates.saveAs.error.slug-collision` naming both schemas
 - **AND** no template record is created
 
 ### Requirement: REQ-SAT-003 Validation gate: a template that cannot clone cleanly cannot be published
 
-Before allowing Save, the dialog SHALL validate the **captured, de-namespaced** manifest with the canonical `validateManifest` from `@conduction/nextcloud-vue` plus openbuild's app-side validation layer (which tolerates and validates the sibling `runtime.workflows[]` / `runtime.documents[]` / `runtime.theme` blocks). Any validation error SHALL disable Save and render the errors through the existing validation-display path. This extends REQ-OBTC-009's "never persist a broken template" guarantee from seeded to user templates; cloned apps inherit the guarantee transitively per REQ-OBTC-009.
+Before allowing Save, the dialog SHALL validate the **captured, de-namespaced** manifest with the canonical `validateManifest` from `@conduction/nextcloud-vue` plus buildiq's app-side validation layer (which tolerates and validates the sibling `runtime.workflows[]` / `runtime.documents[]` / `runtime.theme` blocks). Any validation error SHALL disable Save and render the errors through the existing validation-display path. This extends REQ-OBTC-009's "never persist a broken template" guarantee from seeded to user templates; cloned apps inherit the guarantee transitively per REQ-OBTC-009.
 
 #### Scenario: Invalid manifest blocks publication
 
-@e2e exclude validation-gate logic contract — the validateManifest-driven Save-disable is covered by the SaveAsTemplateDialog Vitest tests (mocked validator returning errors); the full UI flow is quarantined under Conduction/openbuild#41.
+@e2e exclude validation-gate logic contract — the validateManifest-driven Save-disable is covered by the SaveAsTemplateDialog Vitest tests (mocked validator returning errors); the full UI flow is quarantined under Conduction/buildiq#41.
 
 - **GIVEN** an app whose manifest currently fails canonical validation
 - **WHEN** the builder opens "Save as template"
@@ -82,7 +82,7 @@ Before allowing Save, the dialog SHALL validate the **captured, de-namespaced** 
 
 ### Requirement: REQ-SAT-004 Re-saving onto an existing slug: update-in-place for own templates, hard error for seeded slugs
 
-When the chosen slug matches an existing `ApplicationTemplate` in the caller's organisation: if the record has `isSeeded: true`, the save SHALL be rejected with `openbuild.templates.saveAs.error.seeded-slug` (curated slugs are never overwritable). If the record has `isSeeded: false` and OR reports the caller may write it, the dialog SHALL offer **Update template** — replacing `manifest` and `companionSchemas`, refreshing metadata from the form, and bumping `version` (minor) — or picking a new slug. If the caller may not write the existing record, the slug is rejected as taken. Updating a template SHALL NOT modify any Application previously cloned from it (REQ-OBTC-007's one-shot semantics hold in both directions).
+When the chosen slug matches an existing `ApplicationTemplate` in the caller's organisation: if the record has `isSeeded: true`, the save SHALL be rejected with `buildiq.templates.saveAs.error.seeded-slug` (curated slugs are never overwritable). If the record has `isSeeded: false` and OR reports the caller may write it, the dialog SHALL offer **Update template** — replacing `manifest` and `companionSchemas`, refreshing metadata from the form, and bumping `version` (minor) — or picking a new slug. If the caller may not write the existing record, the slug is rejected as taken. Updating a template SHALL NOT modify any Application previously cloned from it (REQ-OBTC-007's one-shot semantics hold in both directions).
 
 #### Scenario: Update-in-place bumps the version
 
@@ -105,7 +105,7 @@ When the chosen slug matches an existing `ApplicationTemplate` in the caller's o
 @e2e exclude slug-resolution logic contract — the `seeded-slug` rejection is a property of the pure `resolveSaveTarget` function, covered by Vitest (templateCapture + SaveAsTemplateDialog tests); no Playwright-observable UI surface beyond the disabled-Save state.
 
 - **WHEN** a builder attempts to save a template with slug `permit-tracker` (a seeded template)
-- **THEN** the save is rejected with `openbuild.templates.saveAs.error.seeded-slug`
+- **THEN** the save is rejected with `buildiq.templates.saveAs.error.seeded-slug`
 - **AND** the seeded template is unchanged
 
 ### Requirement: REQ-SAT-005 Org-local templates are manageable in the gallery; seeded read-only contract preserved
@@ -121,7 +121,7 @@ The template gallery SHALL render `isSeeded: false` templates with an "Organisat
 
 #### Scenario: Management actions are rights-gated
 
-@e2e exclude rights-gating logic contract — the `canManage` writability gate is covered by the TemplateGalleryManagement Vitest tests (writable vs non-writable org-local cards); the live UI is quarantined under Conduction/openbuild#41.
+@e2e exclude rights-gating logic contract — the `canManage` writability gate is covered by the TemplateGalleryManagement Vitest tests (writable vs non-writable org-local cards); the live UI is quarantined under Conduction/buildiq#41.
 
 - **GIVEN** an org-local template owned by user A
 - **WHEN** user B (no write rights on the record) views its gallery card
@@ -140,7 +140,7 @@ The template gallery SHALL render `isSeeded: false` templates with an "Organisat
 - **WHEN** any user views the `permit-tracker` seeded card after this change
 - **THEN** no Edit or Delete control is rendered (REQ-OBTC-008 unchanged)
 
-### Requirement: REQ-SAT-006 Zero new PHP: capture composes existing OR and openbuild surfaces only
+### Requirement: REQ-SAT-006 Zero new PHP: capture composes existing OR and buildiq surfaces only
 
 The save-as-template flow SHALL introduce no new PHP controllers, routes, services, or repair steps. Template create, update, and delete SHALL go through OR's standard object REST surface (`useObjectStore`) against the existing `ApplicationTemplate` schema under OR's RBAC and organisation scoping; cloning SHALL continue through the existing unmodified `from-template` endpoint. The `ApplicationTemplate` schema SHALL NOT be modified by this change.
 
@@ -159,5 +159,5 @@ The save-as-template flow SHALL introduce no new PHP controllers, routes, servic
 - **GIVEN** a user whose OR rights do not allow writing another user's template record
 - **WHEN** they attempt the update flow against it (e.g. crafted request)
 - **THEN** OR rejects the write with its standard authorization error
-- **AND** openbuild adds no bypass path
+- **AND** buildiq adds no bypass path
 

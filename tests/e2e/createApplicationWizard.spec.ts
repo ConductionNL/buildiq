@@ -4,7 +4,7 @@
 /**
  * E2E — four-step App Creation Wizard.
  *
- * Covers spec openbuild-app-creation-wizard tasks 8.5 + 8.6.
+ * Covers spec buildiq-app-creation-wizard tasks 8.5 + 8.6.
  *
  *   Task 8.5 (preset happy paths):
  *     - `single`: name "Hello World", slug auto-derives to `hello-world-pw-single`,
@@ -22,12 +22,12 @@
  *
  * Pre-conditions:
  *   - Docker stack running at PLAYWRIGHT_BASE_URL (default: http://localhost:8080).
- *   - OpenBuild app enabled; `openbuild` register + schemas present (SeedHelloWorld).
+ *   - Buildiq app enabled; `buildiq` register + schemas present (SeedHelloWorld).
  *   - Nextcloud admin user: NC_ADMIN_USER / NC_ADMIN_PASSWORD (default: admin/admin).
  *   - Tests that actually POST to the wizard will leave state in OR; they are
- *     skip-guarded on the `OPENBUILD_E2E_LIVE` env variable so CI dry-runs pass.
+ *     skip-guarded on the `BUILDIQ_E2E_LIVE` env variable so CI dry-runs pass.
  *
- * When OPENBUILD_E2E_LIVE is not set to "1", all tests that require a running dev
+ * When BUILDIQ_E2E_LIVE is not set to "1", all tests that require a running dev
  * environment are skipped with an explanatory message. The spec still parses cleanly
  * for `playwright test --list`.
  */
@@ -75,7 +75,7 @@ const WIZARD_FIXTURE_SLUGS = [
  */
 async function deleteWizardFixtureApps(request: APIRequestContext): Promise<void> {
 	const resp = await request.get(
-		'/index.php/apps/openregister/api/objects/openbuild/application?_limit=100',
+		'/index.php/apps/openregister/api/objects/buildiq/application?_limit=100',
 		{
 			headers: { 'OCS-APIRequest': 'true' },
 		},
@@ -91,7 +91,7 @@ async function deleteWizardFixtureApps(request: APIRequestContext): Promise<void
 		if (WIZARD_FIXTURE_SLUGS.includes(slug) && id) {
 			await request
 				.delete(
-					`/index.php/apps/openregister/api/objects/openbuild/application/${id}`,
+					`/index.php/apps/openregister/api/objects/buildiq/application/${id}`,
 					{
 						headers: { 'OCS-APIRequest': 'true' },
 					},
@@ -103,26 +103,26 @@ async function deleteWizardFixtureApps(request: APIRequestContext): Promise<void
 
 /**
  * Whether a live dev environment is available.
- * Set OPENBUILD_E2E_LIVE=1 to run tests that require a provisioned OR backend.
+ * Set BUILDIQ_E2E_LIVE=1 to run tests that require a provisioned OR backend.
  */
-const LIVE = process.env.OPENBUILD_E2E_LIVE === '1'
+const LIVE = process.env.BUILDIQ_E2E_LIVE === '1'
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 /**
- * Navigate to the OpenBuild app as admin.
+ * Navigate to the Buildiq app as admin.
  *
  * @param page Playwright page.
  */
 async function goToApps(page: Page): Promise<void> {
-	// NOT `/index.php/apps/openbuild/applications` — live-verified that the
+	// NOT `/index.php/apps/buildiq/applications` — live-verified that the
 	// `/index.php/`-prefixed form of this deep link redirects to the bare
-	// `/apps/openbuild/` Dashboard root, silently dropping the `/applications`
+	// `/apps/buildiq/` Dashboard root, silently dropping the `/applications`
 	// sub-path, so `.ob-va-actions` never renders and this always timed out.
 	// The pretty-URL form (no `/index.php/` prefix) preserves the sub-path.
-	await page.goto(`${BASE_URL}/apps/openbuild/applications`)
+	await page.goto(`${BASE_URL}/apps/buildiq/applications`)
 	// Wait for the app to mount; the actions bar must be visible.
 	await page.waitForSelector('.ob-va-actions, [data-cy="ob-actions"]', {
 		timeout: 20_000,
@@ -140,7 +140,7 @@ async function goToApps(page: Page): Promise<void> {
  * y≈1318 in a 720px viewport. Playwright judged it visible and enabled, scrolled
  * to it, and the modal overlay then swallowed the click — producing "subtree
  * intercepts pointer events" against the DIALOG, which reads exactly like a
- * broken dialog rather than a mis-aimed locator (openbuild#86).
+ * broken dialog rather than a mis-aimed locator (buildiq#86).
  *
  * It only started failing once the fixture apps grew past one page, which is why
  * this looked like a regression in the wizard.
@@ -307,7 +307,7 @@ test.describe('Wizard — preset happy paths (task 8.5)', () => {
 	test('single preset: name → slug auto-derives, Create lands on detail page', async ({
 		page,
 	}) => {
-		test.skip(!LIVE, 'Requires live dev environment — set OPENBUILD_E2E_LIVE=1')
+		test.skip(!LIVE, 'Requires live dev environment — set BUILDIQ_E2E_LIVE=1')
 
 		await goToApps(page)
 		await openWizard(page)
@@ -353,7 +353,7 @@ test.describe('Wizard — preset happy paths (task 8.5)', () => {
 	test('dev-prod preset: chain shows development → production', async ({
 		page,
 	}) => {
-		test.skip(!LIVE, 'Requires live dev environment — set OPENBUILD_E2E_LIVE=1')
+		test.skip(!LIVE, 'Requires live dev environment — set BUILDIQ_E2E_LIVE=1')
 
 		await goToApps(page)
 		await openWizard(page)
@@ -392,7 +392,7 @@ test.describe('Wizard — preset happy paths (task 8.5)', () => {
 	test('dev-staging-prod preset: chain shows development → staging → production', async ({
 		page,
 	}) => {
-		test.skip(!LIVE, 'Requires live dev environment — set OPENBUILD_E2E_LIVE=1')
+		test.skip(!LIVE, 'Requires live dev environment — set BUILDIQ_E2E_LIVE=1')
 
 		await goToApps(page)
 		await openWizard(page)
@@ -431,7 +431,7 @@ test.describe('Wizard — preset happy paths (task 8.5)', () => {
 	test('custom preset: builds alpha → beta → main chain and creates successfully', async ({
 		page,
 	}) => {
-		test.skip(!LIVE, 'Requires live dev environment — set OPENBUILD_E2E_LIVE=1')
+		test.skip(!LIVE, 'Requires live dev environment — set BUILDIQ_E2E_LIVE=1')
 
 		await goToApps(page)
 		await openWizard(page)
@@ -515,7 +515,7 @@ test.describe('Wizard — validation errors (task 8.6)', () => {
 	test('leading-underscore version slug shows inline error and blocks advancing', async ({
 		page,
 	}) => {
-		test.skip(!LIVE, 'Requires live dev environment — set OPENBUILD_E2E_LIVE=1')
+		test.skip(!LIVE, 'Requires live dev environment — set BUILDIQ_E2E_LIVE=1')
 
 		await goToApps(page)
 		await openWizard(page)
@@ -559,7 +559,7 @@ test.describe('Wizard — validation errors (task 8.6)', () => {
 	test('duplicate version slug shows inline error and blocks advancing', async ({
 		page,
 	}) => {
-		test.skip(!LIVE, 'Requires live dev environment — set OPENBUILD_E2E_LIVE=1')
+		test.skip(!LIVE, 'Requires live dev environment — set BUILDIQ_E2E_LIVE=1')
 
 		await goToApps(page)
 		await openWizard(page)
@@ -607,7 +607,7 @@ test.describe('Wizard — validation errors (task 8.6)', () => {
 	test('empty version name shows inline error and blocks advancing', async ({
 		page,
 	}) => {
-		test.skip(!LIVE, 'Requires live dev environment — set OPENBUILD_E2E_LIVE=1')
+		test.skip(!LIVE, 'Requires live dev environment — set BUILDIQ_E2E_LIVE=1')
 
 		await goToApps(page)
 		await openWizard(page)
@@ -649,7 +649,7 @@ test.describe('Wizard — validation errors (task 8.6)', () => {
 	test('slug already in use shows server-side error; admin can edit and retry', async ({
 		page,
 	}) => {
-		test.skip(!LIVE, 'Requires live dev environment — set OPENBUILD_E2E_LIVE=1')
+		test.skip(!LIVE, 'Requires live dev environment — set BUILDIQ_E2E_LIVE=1')
 
 		// This test requires `hello-world` to already exist (seeded by SeedHelloWorld).
 		await goToApps(page)

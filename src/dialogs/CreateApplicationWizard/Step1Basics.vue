@@ -5,12 +5,12 @@
   Step 1 — Basics
   Collects the Application name, slug (auto-derived, editable via Advanced toggle),
   description, and optional light/dark icon uploads.
-  spec: openbuild-app-creation-wizard REQ-OBWIZ-002, REQ-OBWIZ-005
+  spec: buildiq-app-creation-wizard REQ-OBWIZ-002, REQ-OBWIZ-005
 -->
 <template>
 	<div class="wizard-step1">
 		<h3 class="wizard-step1__heading">
-			{{ t('openbuild', 'App basics') }}
+			{{ t('buildiq', 'App basics') }}
 		</h3>
 
 		<!-- Generate with AI (spec ai-copilot REQ-OBAIC-006) — health-gated;
@@ -20,7 +20,7 @@
 				data-testid="copilot-generate-button"
 				variant="secondary"
 				@click="showCopilotDialog = true">
-				{{ t('openbuild', 'Generate with AI') }}
+				{{ t('buildiq', 'Generate with AI') }}
 			</NcButton>
 		</div>
 		<p
@@ -29,11 +29,11 @@
 			class="wizard-step1__ai-hint">
 			{{
 				t(
-					'openbuild',
+					'buildiq',
 					'Tip: configure an AI provider in the Nextcloud AI settings to unlock "Generate with AI".',
 				)
 			}}
-			<a :href="aiSettingsUrl">{{ t('openbuild', 'Open AI settings') }}</a>
+			<a :href="aiSettingsUrl">{{ t('buildiq', 'Open AI settings') }}</a>
 		</p>
 
 		<!-- This dialog is nested inside the create-app wizard's own NcModal.
@@ -58,14 +58,14 @@
 		<!-- Name input -->
 		<div class="wizard-step1__field">
 			<label class="wizard-step1__label" for="wizard-app-name">
-				{{ t('openbuild', 'Name') }} <span aria-hidden="true">*</span>
+				{{ t('buildiq', 'Name') }} <span aria-hidden="true">*</span>
 			</label>
 			<input
 				id="wizard-app-name"
 				class="wizard-step1__input"
 				type="text"
 				:value="payload.name"
-				:placeholder="t('openbuild', 'e.g. My Permit Tracker')"
+				:placeholder="t('buildiq', 'e.g. My Permit Tracker')"
 				autocomplete="off"
 				@input="onNameInput" />
 		</div>
@@ -74,7 +74,7 @@
 		<div class="wizard-step1__field wizard-step1__field--slug">
 			<div class="wizard-step1__slug-row">
 				<span class="wizard-step1__slug-label">
-					{{ t('openbuild', 'Slug') }}:
+					{{ t('buildiq', 'Slug') }}:
 				</span>
 				<code
 					class="wizard-step1__slug-chip"
@@ -87,15 +87,15 @@
 					@click="showAdvanced = !showAdvanced">
 					{{
 						showAdvanced
-							? t('openbuild', 'Hide')
-							: t('openbuild', 'Advanced')
+							? t('buildiq', 'Hide')
+							: t('buildiq', 'Advanced')
 					}}
 				</button>
 			</div>
 
 			<div v-if="showAdvanced" class="wizard-step1__advanced">
 				<label class="wizard-step1__label" for="wizard-app-slug">
-					{{ t('openbuild', 'Slug') }}
+					{{ t('buildiq', 'Slug') }}
 				</label>
 				<input
 					id="wizard-app-slug"
@@ -103,7 +103,7 @@
 					:class="{ 'wizard-step1__input--error': slugError }"
 					type="text"
 					:value="payload.slug"
-					:placeholder="t('openbuild', 'kebab-case-slug')"
+					:placeholder="t('buildiq', 'kebab-case-slug')"
 					autocomplete="off"
 					@input="onSlugInput" />
 				<p v-if="slugError" class="wizard-step1__error-msg" role="alert">
@@ -115,15 +115,13 @@
 		<!-- Description textarea -->
 		<div class="wizard-step1__field">
 			<label class="wizard-step1__label" for="wizard-app-description">
-				{{ t('openbuild', 'Description') }}
+				{{ t('buildiq', 'Description') }}
 			</label>
 			<textarea
 				id="wizard-app-description"
 				class="wizard-step1__textarea"
 				:value="payload.description"
-				:placeholder="
-					t('openbuild', 'Optional: describe what this app does')
-				"
+				:placeholder="t('buildiq', 'Optional: describe what this app does')"
 				rows="3"
 				@input="onDescriptionInput" />
 		</div>
@@ -134,7 +132,7 @@
 		     an optional dark override lets you use a different dark glyph. -->
 		<div class="wizard-step1__field">
 			<p class="wizard-step1__label">
-				{{ t('openbuild', 'App icon (optional)') }}
+				{{ t('buildiq', 'App icon (optional)') }}
 			</p>
 
 			<div class="wizard-step1__icon-row">
@@ -150,7 +148,7 @@
 				<div class="wizard-step1__icon-preview">
 					<div
 						class="wizard-step1__preview-box wizard-step1__preview-box--light"
-						:title="t('openbuild', 'On the app header (light icon)')">
+						:title="t('buildiq', 'On the app header (light icon)')">
 						<!-- eslint-disable-next-line vue/no-v-html -->
 						<span
 							v-if="lightPreview"
@@ -160,7 +158,7 @@
 					</div>
 					<div
 						class="wizard-step1__preview-box wizard-step1__preview-box--dark"
-						:title="t('openbuild', 'On a light background (dark icon)')">
+						:title="t('buildiq', 'On a light background (dark icon)')">
 						<!-- eslint-disable-next-line vue/no-v-html -->
 						<span
 							v-if="darkPreview"
@@ -181,7 +179,7 @@
 						accept=".svg,image/svg+xml"
 						class="wizard-step1__file-input"
 						@change="onUploadSvg" />
-					{{ t('openbuild', 'Upload your own SVG') }}
+					{{ t('buildiq', 'Upload your own SVG') }}
 				</label>
 				<button
 					type="button"
@@ -189,8 +187,8 @@
 					@click="showDarkOverride = !showDarkOverride">
 					{{
 						showDarkOverride
-							? t('openbuild', 'Hide dark override')
-							: t('openbuild', 'Add a dark override')
+							? t('buildiq', 'Hide dark override')
+							: t('buildiq', 'Add a dark override')
 					}}
 				</button>
 				<span
@@ -206,7 +204,7 @@
 				<p class="wizard-step1__file-label">
 					{{
 						t(
-							'openbuild',
+							'buildiq',
 							'Dark variant (optional — defaults to the icon above)',
 						)
 					}}
@@ -471,6 +469,8 @@ export default {
 		 *
 		 * @param {Event} event The file-input change event.
 		 * @return {void}
+		 *
+		 * @spec openspec/specs/application-creation-wizard/spec.md
 		 */
 		onUploadSvg(event) {
 			this.iconError = ''
@@ -480,7 +480,7 @@ export default {
 			}
 			const isSvg = file.type === 'image/svg+xml' || /\.svg$/i.test(file.name)
 			if (!isSvg) {
-				this.iconError = t('openbuild', 'Only .svg files are accepted')
+				this.iconError = t('buildiq', 'Only .svg files are accepted')
 				this.$refs.uploadInput.value = ''
 				return
 			}
@@ -490,7 +490,7 @@ export default {
 					typeof e.target.result === 'string' ? e.target.result.trim() : ''
 				if (!text.includes('<svg')) {
 					this.iconError = t(
-						'openbuild',
+						'buildiq',
 						'That file does not contain an SVG',
 					)
 				} else {
@@ -499,7 +499,7 @@ export default {
 				this.$refs.uploadInput.value = ''
 			}
 			reader.onerror = () => {
-				this.iconError = t('openbuild', 'Could not read that file')
+				this.iconError = t('buildiq', 'Could not read that file')
 				this.$refs.uploadInput.value = ''
 			}
 			reader.readAsText(file)

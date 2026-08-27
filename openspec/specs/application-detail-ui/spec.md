@@ -6,7 +6,7 @@ retrofit: true
 
 ## Purpose
 
-The Application detail UI is OpenBuild's maintainer cockpit. The
+The Application detail UI is Buildiq's maintainer cockpit. The
 `ApplicationDetailHeader` (registered as the detail-route `headerComponent`)
 renders version pills, a four-card KPI grid, an activity sparkline, and the
 stacked overview widgets (register / schemas / groups / pages / menu). The
@@ -82,7 +82,7 @@ status and role labels (`statusKey`, `statusLabel`, `role`, `roleLabel`),
 fall back gracefully on a broken icon (`onIconError`), and navigate to the
 detail route on activation (`onCardActivate`).
 
-@e2e exclude retrofit component-contract spec — card navigation is covered by the openbuild-runtime Playwright tests (`application-list-renders-for-admin`, `hello-world-card-navigates-to-detail`); the card's role/status label contracts are Vitest-tested
+@e2e exclude retrofit component-contract spec — card navigation is covered by the buildiq-runtime Playwright tests (`application-list-renders-for-admin`, `hello-world-card-navigates-to-detail`); the card's role/status label contracts are Vitest-tested
 
 #### Scenario: Activate a card
 
@@ -100,7 +100,7 @@ rollback and short-hex display (`onRollback`, `shortHex`). `ApplicationIconTab`
 SHALL react to icon updates (`onIconUpdated`). `VirtualAppsActions` SHALL react
 to wizard completion (`onWizardCreated`).
 
-@e2e exclude retrofit component-contract spec — `canPublish`, `publish`, `parseAndValidate`, `onRollback`, `onIconUpdated`, `onWizardCreated` are composable-level contracts verified by Vitest; publish + manifest-save integration is covered by the openbuild-runtime Playwright tests
+@e2e exclude retrofit component-contract spec — `canPublish`, `publish`, `parseAndValidate`, `onRollback`, `onIconUpdated`, `onWizardCreated` are composable-level contracts verified by Vitest; publish + manifest-save integration is covered by the buildiq-runtime Playwright tests
 
 #### Scenario: Publish a draft
 
@@ -121,7 +121,7 @@ compute a deterministic diff (`diffParts`, `partClass`, `sortReplacer`,
 flag, permissions, and the per-app translation helper (`appIcon`,
 `appStoreUrl`, `isAdmin`, `permissions`, `translateForApp`, `created`).
 
-@e2e exclude retrofit component-contract spec — `diffParts`, `sortReplacer`, `prettyManifest`, `appIcon`, `isAdmin`, `permissions`, `translateForApp` are composable/computed contracts verified by Vitest; diff rendering and app-shell init are covered by the openbuild-runtime Playwright tests
+@e2e exclude retrofit component-contract spec — `diffParts`, `sortReplacer`, `prettyManifest`, `appIcon`, `isAdmin`, `permissions`, `translateForApp` are composable/computed contracts verified by Vitest; diff rendering and app-shell init are covered by the buildiq-runtime Playwright tests
 
 #### Scenario: Diff two versions
 

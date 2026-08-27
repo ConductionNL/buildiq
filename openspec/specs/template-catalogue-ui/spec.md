@@ -6,16 +6,16 @@ retrofit: true
 
 ## Purpose
 
-The template-catalogue UI is OpenBuild's starter-template gallery.
+The template-catalogue UI is Buildiq's starter-template gallery.
 `TemplateGallery` fetches `ApplicationTemplate` records, filters by category,
 resolves per-template screenshots, and opens the clone dialog;
 `CloneTemplateDialog` validates the clone target, submits, and redirects to the
 new application.
 
 This capability is observed behaviour of those components. It is the frontend
-half of the `openbuild-template-catalogue` backend capability.
+half of the `buildiq-template-catalogue` backend capability.
 
-**OpenSpec changes**: [openbuild-remote-template-store](../../changes/archive/2026-06-20-openbuild-remote-template-store/) _(archived 2026-06-20)_, [github-shop-catalogue](../../changes/github-shop-catalogue/)
+**OpenSpec changes**: [buildiq-remote-template-store](../../changes/archive/2026-06-20-buildiq-remote-template-store/) _(archived 2026-06-20)_, [github-shop-catalogue](../../changes/github-shop-catalogue/)
 
 **Status**: in-progress
 
@@ -30,7 +30,7 @@ template's screenshot with a fallback (`resolveScreenshot`), open the clone
 modal (`openClone`), and redirect after a successful clone
 (`onCloneSubmit`, `redirectAfterClone`).
 
-@e2e exclude retrofit component-contract spec — `categoryOptions`, `categoryLabel`, `filteredTemplates`, `resolveScreenshot`, `openClone`, `onCloneSubmit`, `redirectAfterClone` are component-state contracts verified by Vitest unit tests; gallery filter and clone-redirect integration are covered by the openbuild-template-catalogue Playwright tests
+@e2e exclude retrofit component-contract spec — `categoryOptions`, `categoryLabel`, `filteredTemplates`, `resolveScreenshot`, `openClone`, `onCloneSubmit`, `redirectAfterClone` are component-state contracts verified by Vitest unit tests; gallery filter and clone-redirect integration are covered by the buildiq-template-catalogue Playwright tests
 
 #### Scenario: Filter by category
 
@@ -49,7 +49,7 @@ modal (`openClone`), and redirect after a successful clone
 clone (`submit`), surface errors (`setError`), and close (`onClose`). On success
 the gallery SHALL redirect to the new application.
 
-@e2e exclude retrofit component-contract spec — `resolvedTitle`, `canSubmit`, `submit`, `setError`, `onClose` are dialog-component contracts verified by Vitest unit tests; clone-dialog open/submit/redirect integration is covered by the openbuild-template-catalogue Playwright tests
+@e2e exclude retrofit component-contract spec — `resolvedTitle`, `canSubmit`, `submit`, `setError`, `onClose` are dialog-component contracts verified by Vitest unit tests; clone-dialog open/submit/redirect integration is covered by the buildiq-template-catalogue Playwright tests
 
 #### Scenario: Reject an empty target
 
@@ -77,7 +77,7 @@ from-template path) as the secondary section.
 @e2e exclude retrofit component-contract spec — the store search-renders-results
 and install-opens-dialog behaviours are `TemplateGallery` component-state
 contracts verified by Vitest; the end-to-end install flow is covered by the
-openbuild-template-catalogue Playwright tests.
+buildiq-template-catalogue Playwright tests.
 
 #### Scenario: Search renders remote results
 
@@ -104,7 +104,7 @@ errors SHALL be surfaced in the dialog.
 
 @e2e exclude retrofit component-contract spec — the dialog submit-routes-to-store
 and redirect-after-install behaviours are dialog-component contracts verified by
-Vitest; the integration is covered by the openbuild-template-catalogue Playwright
+Vitest; the integration is covered by the buildiq-template-catalogue Playwright
 tests.
 
 #### Scenario: Successful remote install redirects
@@ -122,7 +122,7 @@ templates as the primary content** when no registry is configured
 SHALL NOT render the store search box or remote cards, and SHALL NOT issue any
 store request. Admin
 users SHALL additionally see a "configure a registry" hint linking to the
-OpenBuild admin settings; non-admins SHALL simply see the local templates. This
+Buildiq admin settings; non-admins SHALL simply see the local templates. This
 guarantees a registry-less instance is non-regressed.
 
 #### Scenario: Falls back to local templates when unconfigured

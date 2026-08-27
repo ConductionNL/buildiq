@@ -11,7 +11,7 @@
  * (`schema-designer.spec.ts`, `schema-access-scopes.spec.ts`,
  * `versionRouting.spec.ts`): shared admin `storageState` from
  * `tests/e2e/global-setup.ts` (no per-spec login), a create-if-not-present
- * app helper, and the same Conduction/openbuild#41 quarantine — the
+ * app helper, and the same Conduction/buildiq#41 quarantine — the
  * designer admin UI does not render in this build yet, so this suite is
  * skipped until #41 is fixed. One test per scenario, named with the
  * requirement id.
@@ -99,7 +99,7 @@ test.describe('builder-undo-redo — page designer (REQ-BUR-001..004)', () => {
 	}) => {
 		// @e2e openspec/specs/builder-undo-redo/spec.md#undo-restores-the-previous-draft-state
 		// @e2e openspec/specs/builder-undo-redo/spec.md#redo-re-applies-an-undone-edit
-		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/pages`, {
+		await page.goto(`${BASE_URL}/apps/buildiq/builder/${APP_SLUG}/pages`, {
 			waitUntil: 'domcontentloaded',
 		})
 		await expect(page.locator('.page-designer__left')).toBeVisible({
@@ -142,7 +142,7 @@ test.describe('builder-undo-redo — page designer (REQ-BUR-001..004)', () => {
 		page,
 	}) => {
 		// @e2e openspec/specs/builder-undo-redo/spec.md#a-new-edit-after-undo-truncates-the-redo-tail
-		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/pages`, {
+		await page.goto(`${BASE_URL}/apps/buildiq/builder/${APP_SLUG}/pages`, {
 			waitUntil: 'domcontentloaded',
 		})
 		await expect(page.locator('.page-designer__left')).toBeVisible({
@@ -170,7 +170,7 @@ test.describe('builder-undo-redo — page designer (REQ-BUR-001..004)', () => {
 	}) => {
 		// @e2e openspec/specs/builder-undo-redo/spec.md#both-buttons-disabled-in-a-fresh-session
 		// @e2e openspec/specs/builder-undo-redo/spec.md#buttons-enable-and-disable-as-the-stack-moves
-		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/pages`, {
+		await page.goto(`${BASE_URL}/apps/buildiq/builder/${APP_SLUG}/pages`, {
 			waitUntil: 'domcontentloaded',
 		})
 		await expect(page.locator('.page-designer__left')).toBeVisible({
@@ -195,7 +195,7 @@ test.describe('builder-undo-redo — page designer (REQ-BUR-001..004)', () => {
 	test('REQ-BUR-003: Ctrl+Z / Ctrl+Shift+Z drive undo and redo outside editable fields', async ({
 		page,
 	}) => {
-		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/pages`, {
+		await page.goto(`${BASE_URL}/apps/buildiq/builder/${APP_SLUG}/pages`, {
 			waitUntil: 'domcontentloaded',
 		})
 		await expect(page.locator('.page-designer__left')).toBeVisible({
@@ -236,7 +236,7 @@ test.describe('builder-undo-redo — page designer (REQ-BUR-001..004)', () => {
 	test('REQ-BUR-003: Ctrl+Z inside a text field leaves draft-level history untouched', async ({
 		page,
 	}) => {
-		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/pages`, {
+		await page.goto(`${BASE_URL}/apps/buildiq/builder/${APP_SLUG}/pages`, {
 			waitUntil: 'domcontentloaded',
 		})
 		await expect(page.locator('.page-designer__left')).toBeVisible({
@@ -274,7 +274,7 @@ test.describe('builder-undo-redo — page designer (REQ-BUR-001..004)', () => {
 		page,
 	}) => {
 		// @e2e openspec/specs/builder-undo-redo/spec.md#history-survives-a-sub-editor-switch
-		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/pages`, {
+		await page.goto(`${BASE_URL}/apps/buildiq/builder/${APP_SLUG}/pages`, {
 			waitUntil: 'domcontentloaded',
 		})
 		await expect(page.locator('.page-designer__left')).toBeVisible({
@@ -304,7 +304,7 @@ test.describe('builder-undo-redo — page designer (REQ-BUR-001..004)', () => {
 		page,
 	}) => {
 		// @e2e openspec/specs/builder-undo-redo/spec.md#save-resets-the-session-history
-		await page.goto(`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/pages`, {
+		await page.goto(`${BASE_URL}/apps/buildiq/builder/${APP_SLUG}/pages`, {
 			waitUntil: 'domcontentloaded',
 		})
 		await expect(page.locator('.page-designer__left')).toBeVisible({
@@ -359,7 +359,7 @@ test.describe('builder-undo-redo — page designer (REQ-BUR-001..004)', () => {
 		const CHAIN_SLUG = 'pw-undo-redo-chain'
 		await ensureVersionChain(page, CHAIN_SLUG, 'PW Undo Redo Chain')
 
-		await page.goto(`${BASE_URL}/apps/openbuild/builder/${CHAIN_SLUG}/pages`, {
+		await page.goto(`${BASE_URL}/apps/buildiq/builder/${CHAIN_SLUG}/pages`, {
 			waitUntil: 'domcontentloaded',
 		})
 		await expect(page.locator('.page-designer__left')).toBeVisible({
@@ -372,7 +372,7 @@ test.describe('builder-undo-redo — page designer (REQ-BUR-001..004)', () => {
 		await expect(pageDesignerButton(page, 'Undo')).toBeEnabled()
 
 		await page.goto(
-			`${BASE_URL}/apps/openbuild/builder/${CHAIN_SLUG}/pages?_version=staging`,
+			`${BASE_URL}/apps/buildiq/builder/${CHAIN_SLUG}/pages?_version=staging`,
 			{ waitUntil: 'domcontentloaded' },
 		)
 		await expect(page.locator('.page-designer__left')).toBeVisible({
@@ -385,7 +385,7 @@ test.describe('builder-undo-redo — page designer (REQ-BUR-001..004)', () => {
 })
 
 // UN-QUARANTINED 2026-07-30 — same two harness fixes as the block above; the
-// Schemas page itself was repaired in openbuild#30/#33/#34/#41.
+// Schemas page itself was repaired in buildiq#30/#33/#34/#41.
 test.describe('builder-undo-redo — schema designer (REQ-BUR-005)', () => {
 	test.beforeEach(async ({ page }) => {
 		await suppressSupportDialog(page)
@@ -400,18 +400,18 @@ test.describe('builder-undo-redo — schema designer (REQ-BUR-005)', () => {
 		// @e2e openspec/specs/builder-undo-redo/spec.md#schema-save-resets-the-schema-session-history
 		//
 		// `?_version=production` is REQUIRED, not decoration. Without it the
-		// designer falls back to the legacy `openbuild-{slug}` register, which a
+		// designer falls back to the legacy `buildiq-{slug}` register, which a
 		// wizard-created app does not have — the schema is then created but the
 		// attach fails ("Schema created, but could not be attached to register
-		// openbuild-pw-undo-redo", with a Nextcloud login page as the response
+		// buildiq-pw-undo-redo", with a Nextcloud login page as the response
 		// body), the detail never renders its field editor, and the Add-field
 		// click waits out the whole timeout. The real in-app nav carries the same
 		// marker via buildVersionedRoute(); see schema-designer.spec.ts.
 		await page.goto(
-			`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/schemas?_version=production`,
+			`${BASE_URL}/apps/buildiq/builder/${APP_SLUG}/schemas?_version=production`,
 			{ waitUntil: 'domcontentloaded' },
 		)
-		await expect(page.locator('.openbuild-schema-list')).toBeVisible({
+		await expect(page.locator('.buildiq-schema-list')).toBeVisible({
 			timeout: 20_000,
 		})
 		await dismissOverlays(page)
@@ -421,12 +421,12 @@ test.describe('builder-undo-redo — schema designer (REQ-BUR-005)', () => {
 		// run's schema matches this filter too. Without it the click resolves to
 		// several rows and dies on strict mode (or lands on a stale duplicate).
 		const existingRow = page
-			.locator('.openbuild-schema-list__row')
+			.locator('.buildiq-schema-list__row')
 			.filter({ hasText: SCHEMA_SLUG })
 			.first()
 		if (
 			(await page
-				.locator('.openbuild-schema-list__row')
+				.locator('.buildiq-schema-list__row')
 				.filter({ hasText: SCHEMA_SLUG })
 				.count()) === 0
 		) {
@@ -453,7 +453,7 @@ test.describe('builder-undo-redo — schema designer (REQ-BUR-005)', () => {
 		await expect(redoBtn).toBeDisabled()
 
 		// Add a field → undo → field gone.
-		const fieldRows = page.locator('.openbuild-field-editor__row')
+		const fieldRows = page.locator('.buildiq-field-editor__row')
 
 		// Let the row list SETTLE before baselining it. This test saves the field
 		// it adds, so the fixture schema grows by one property per run and the

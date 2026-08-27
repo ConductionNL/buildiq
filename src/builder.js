@@ -2,16 +2,16 @@
 //
 // builder.js — the STANDALONE runtime entry for a published virtual app.
 //
-// Served at /apps/openbuild/builder/{slug} (DashboardController::builder), this
+// Served at /apps/buildiq/builder/{slug} (DashboardController::builder), this
 // mounts the virtual app's own CnAppRoot as the TOP-LEVEL shell — its own menu,
 // pages and routing resolved from GET /api/applications/{slug}/manifest. It is
-// deliberately NOT the OpenBuild SPA: rendering the app inside OpenBuild's shell
-// nests one NcContent in another (double chrome) and, worse, shares OpenBuild's
+// deliberately NOT the Buildiq SPA: rendering the app inside Buildiq's shell
+// nests one NcContent in another (double chrome) and, worse, shares Buildiq's
 // router — which has none of the app's page routes, so page content never
 // resolves. A separate entry gives the app a clean, single shell with a router
 // built from its own manifest.
 //
-// Designer surfaces (/builder/{slug}/pages, /schemas) stay in the OpenBuild SPA;
+// Designer surfaces (/builder/{slug}/pages, /schemas) stay in the Buildiq SPA;
 // only the bare /builder/{slug} runtime is served by this entry.
 
 import {
@@ -63,17 +63,17 @@ try {
 } catch (e) {
 	// eslint-disable-next-line no-console
 	console.warn(
-		'[openbuild:builder] registerTranslations failed; lib strings fall back to English source',
+		'[buildiq:builder] registerTranslations failed; lib strings fall back to English source',
 		e,
 	)
 }
 
-const slug = loadState('openbuild', 'builderSlug', '')
-const versionSlug = loadState('openbuild', 'builderVersion', '')
+const slug = loadState('buildiq', 'builderSlug', '')
+const versionSlug = loadState('buildiq', 'builderVersion', '')
 
 // Best-effort l10n load — boot must not depend on it (see main.js).
 try {
-	const r = loadTranslations('openbuild', () => {})
+	const r = loadTranslations('buildiq', () => {})
 	if (r && typeof r.then === 'function') {
 		r.then(
 			() => {},
@@ -102,9 +102,9 @@ const AppNotFound = {
 	name: 'AppNotFound',
 	render() {
 		return h(NcEmptyContent, {
-			name: t('openbuild', 'App not found'),
+			name: t('buildiq', 'App not found'),
 			description: t(
-				'openbuild',
+				'buildiq',
 				'This app could not be loaded — it may have been deleted, or it has no pages yet.',
 			),
 		})
@@ -154,7 +154,7 @@ function routesFromManifest(manifest) {
  * @return {string}
  */
 function translateForApp(key, vars) {
-	return t('openbuild', key, vars)
+	return t('buildiq', key, vars)
 }
 
 // Top-bar branding state. A single observer drives every (re-)apply so that the
@@ -164,7 +164,7 @@ let topBarBrand = null
 /**
  * Rebrand the Nextcloud top-bar (app name + icon) to the virtual app's identity.
  *
- * The global top-bar is server-rendered chrome for the host `openbuild` app, so
+ * The global top-bar is server-rendered chrome for the host `buildiq` app, so
  * there is no supported API to retitle it per virtual app. We patch the DOM
  * directly and keep it in sync with a MutationObserver, because Nextcloud's
  * app-menu is a Vue component that can re-render (resize, unified-search and
@@ -173,7 +173,7 @@ let topBarBrand = null
  * own mutations.
  *
  * Call it twice: once early with a slug-humanised name (so the bar flips off
- * "OpenBuild" before the manifest request resolves), then again with the real
+ * "Buildiq" before the manifest request resolves), then again with the real
  * `manifest.name` to correct it. The second call only updates the shared state
  * and re-applies; it does not create a second observer.
  *
@@ -189,7 +189,7 @@ function brandTopBar(appName, appSlug) {
 	if (typeof document === 'undefined') {
 		return
 	}
-	const icon = generateUrl(`/apps/openbuild/icons/${appSlug}.svg`)
+	const icon = generateUrl(`/apps/buildiq/icons/${appSlug}.svg`)
 	if (topBarBrand) {
 		// Refine an existing brand (e.g. slug-name → real manifest name).
 		if (appName) {
@@ -216,7 +216,7 @@ function brandTopBar(appName, appSlug) {
 			'[aria-label^="Open apps menu, currently in"]',
 		)
 		if (trigger && state.name) {
-			const label = t('openbuild', 'Open apps menu, currently in {app}', {
+			const label = t('buildiq', 'Open apps menu, currently in {app}', {
 				app: state.name,
 			})
 			if (trigger.getAttribute('aria-label') !== label) {
@@ -292,15 +292,15 @@ function normalizeManifestPages(manifest) {
  * @return {Promise<void>}
  */
 async function boot() {
-	// Flip the top-bar off the host "OpenBuild" identity immediately using the
-	// slug, so there's no visible "OpenBuild" flash while the manifest (which
+	// Flip the top-bar off the host "Buildiq" identity immediately using the
+	// slug, so there's no visible "Buildiq" flash while the manifest (which
 	// carries the real display name) is still loading.
 	if (slug) {
 		brandTopBar(humaniseSlug(slug), slug)
 	}
 	let manifest = { version: '1.0.0', menu: [], pages: [] }
 	try {
-		let url = generateUrl(`/apps/openbuild/api/applications/${slug}/manifest`)
+		let url = generateUrl(`/apps/buildiq/api/applications/${slug}/manifest`)
 		if (versionSlug) {
 			url += `?_version=${encodeURIComponent(versionSlug)}`
 		}
@@ -325,7 +325,7 @@ async function boot() {
 	} catch (e) {
 		// Render an empty (but well-formed) shell; the app simply has no pages.
 		// eslint-disable-next-line no-console
-		console.error('[openbuild:builder] failed to load manifest for ' + slug, e)
+		console.error('[buildiq:builder] failed to load manifest for ' + slug, e)
 	}
 
 	// Normalise pages (config-as-object guard + inline page titles for data pages).
@@ -344,7 +344,7 @@ async function boot() {
 		)
 
 	const router = createRouter({
-		history: createWebHistory(generateUrl(`/apps/openbuild/builder/${slug}`)),
+		history: createWebHistory(generateUrl(`/apps/buildiq/builder/${slug}`)),
 		routes: routesFromManifest(manifest),
 	})
 
@@ -371,7 +371,7 @@ async function boot() {
 	const shellProps = {
 		appId: `openbuild-${slug}`,
 		// The app's display name — drives the support dialog title etc.
-		// Without it CnAppRoot falls back to the appId ("openbuild-{slug}").
+		// Without it CnAppRoot falls back to the appId ("buildiq-{slug}").
 		appName: manifest.name || manifest.title || slug,
 		manifest,
 		// runtime-group-scoped-access REQ-1: forwarded to CnAppNav /
@@ -398,7 +398,7 @@ async function boot() {
 		// edits would vanish on refresh.
 		persistManifestDelta: async () => {
 			const saveUrl = generateUrl(
-				`/apps/openbuild/api/applications/${slug}/manifest`,
+				`/apps/buildiq/api/applications/${slug}/manifest`,
 			)
 			await axios.put(saveUrl, { manifest })
 			// Only touch the router when the PAGE SET actually changed — a
@@ -428,7 +428,7 @@ async function boot() {
 			} catch (e) {
 				// eslint-disable-next-line no-console
 				console.warn(
-					'[openbuild:builder] router rebuild after save failed (edit is saved; reload to pick up new routes)',
+					'[buildiq:builder] router rebuild after save failed (edit is saved; reload to pick up new routes)',
 					e,
 				)
 			}
@@ -441,7 +441,7 @@ async function boot() {
 	// A thin root whose render re-runs on `routerEpoch`, so bumping it remounts
 	// the routed view (CnAppRoot keys its <router-view> on `routerViewKey`).
 	const app = createApp({
-		name: 'OpenBuildBuilderRoot',
+		name: 'BuildiqBuilderRoot',
 		render: () =>
 			h(CnAppRoot, { ...shellProps, routerViewKey: shellState.routerEpoch }),
 	})

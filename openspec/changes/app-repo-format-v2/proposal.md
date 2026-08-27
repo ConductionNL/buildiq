@@ -6,13 +6,13 @@ kind: code
 
 ## Summary
 
-`AppRepoSerializer::serialize()` emits exactly four kinds of file: `openbuild-app.json`, `manifest.json`, `schemas/<slug>.json` (companion schemas of the app's *own* `openbuild-{slug}` register) and `README.md`. Everything else that makes a virtual app work — the shared data registers it binds to, the OpenConnector configs that feed them, its automations, and its skills — is left behind. This change extends the format to v2 so a published app repository carries the app's whole configuration, and the parser reads it back.
+`AppRepoSerializer::serialize()` emits exactly four kinds of file: `openbuild-app.json`, `manifest.json`, `schemas/<slug>.json` (companion schemas of the app's *own* `buildiq-{slug}` register) and `README.md`. Everything else that makes a virtual app work — the shared data registers it binds to, the OpenConnector configs that feed them, its automations, and its skills — is left behind. This change extends the format to v2 so a published app repository carries the app's whole configuration, and the parser reads it back.
 
 ## Motivation
 
-A published OpenBuild app today is a manifest plus whatever schemas happen to live in its own per-app register. For a real app that is not enough to run.
+A published Buildiq app today is a manifest plus whatever schemas happen to live in its own per-app register. For a real app that is not enough to run.
 
-The sharpest case is **spectr**. Its manifest binds every page to the shared external register `spectr-live`; it has no `openbuild-spectr` companion schemas to speak of, and its `dataRegisters` binding is currently null. `collectCompanionSchemas()` is deliberately *total* — a missing register logs at `debug` and returns `[]`. So serialising spectr today produces a `manifest.json` full of pages pointing at schema slugs the recipient never receives, plus **zero** `schemas/` entries, and reports success. That is a green-but-empty publish: the artefact installs and the app does not work.
+The sharpest case is **spectr**. Its manifest binds every page to the shared external register `spectr-live`; it has no `buildiq-spectr` companion schemas to speak of, and its `dataRegisters` binding is currently null. `collectCompanionSchemas()` is deliberately *total* — a missing register logs at `debug` and returns `[]`. So serialising spectr today produces a `manifest.json` full of pages pointing at schema slugs the recipient never receives, plus **zero** `schemas/` entries, and reports success. That is a green-but-empty publish: the artefact installs and the app does not work.
 
 The same gap applies to every ingestion-backed app. OpenConnector configs are what populate the registers the pages read; without them an installed app renders empty tables forever.
 
@@ -20,7 +20,7 @@ This is the format `buildiq-spectr` and `buildiq-hydra` are meant to ship in, so
 
 ## Affected Projects
 
-- [ ] Project: `openbuild` — `AppRepoSerializer` gains four channels, `AppRepoParser` learns to read them, `formatVersion` moves to 2.0 with 1.0 still accepted.
+- [ ] Project: `buildiq` — `AppRepoSerializer` gains four channels, `AppRepoParser` learns to read them, `formatVersion` moves to 2.0 with 1.0 still accepted.
 
 ## Scope
 
@@ -30,7 +30,7 @@ This is the format `buildiq-spectr` and `buildiq-hydra` are meant to ship in, so
 - **`connectors/<kind>/<slug>.json`** — the OpenConnector configuration objects (`source`, `mapping`, `synchronization`, `job`) the app **explicitly declares**, via a new `Application.connectors[]` binding. Read as OpenRegister objects from the `openconnector` register — no cross-app PHP dependency (ADR-022: apps consume OR abstractions).
 - **`Application.connectors[]`** — a new declarative binding (`{kind, slug}`), added as a register.d fragment in the same ADR-037 style `dataRegisters` was, so no base-schema surgery is needed.
 - **`automations/<slug>.json`** — the app's `Automation` objects, selected by their existing `applicationSlug` field.
-- **`skills/<name>/…`** — the app's skills, in the layout `skill-bundle-publish` already defines, so hermiq and openbuild agree on one shape.
+- **`skills/<name>/…`** — the app's skills, in the layout `skill-bundle-publish` already defines, so hermiq and buildiq agree on one shape.
 - `formatVersion` 2.0; `AppRepoParser` accepts **both** 1.0 (four kinds, exactly as today) and 2.0.
 - Secret hygiene: connector configs are emitted with credential *references* only; any inline secret-shaped value is stripped and the strip is recorded.
 
@@ -63,7 +63,7 @@ Declared entries are exported as declared. The serializer additionally resolves 
 
 ## New Dependencies
 
-None. OpenConnector data is read through OpenRegister's `ObjectService`, which openbuild already depends on.
+None. OpenConnector data is read through OpenRegister's `ObjectService`, which buildiq already depends on.
 
 ## Impact
 
@@ -85,7 +85,7 @@ None. OpenConnector data is read through OpenRegister's `ObjectService`, which o
 
 ### Risk 2: A v1 consumer meets a v2 repo
 
-**Severity:** Medium — **Mitigation:** `formatVersion` is checked before anything else and an unsupported *major* is refused outright rather than best-effort parsed — the existing `AppRepoParser` already refuses an unknown `formatVersion`, so an older OpenBuild declines a v2 repo cleanly instead of installing a partial app.
+**Severity:** Medium — **Mitigation:** `formatVersion` is checked before anything else and an unsupported *major* is refused outright rather than best-effort parsed — the existing `AppRepoParser` already refuses an unknown `formatVersion`, so an older Buildiq declines a v2 repo cleanly instead of installing a partial app.
 
 ### Risk 3: Over-collection via dependency resolution
 

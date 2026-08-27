@@ -24,7 +24,10 @@ const { roleMock, fetchSchemasMock } = vi.hoisted(() => ({
 }))
 
 vi.mock('@nextcloud/axios', () => ({ default: axiosMock }))
-vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => p }))
+vi.mock('@nextcloud/router', async (importOriginal) => ({
+	...(await importOriginal()),
+	generateUrl: (p) => p,
+}))
 vi.mock('../../src/composables/useRole.js', () => ({
 	useRole: roleMock,
 	getCurrentUserGroups: () => ['group1'],
@@ -153,7 +156,7 @@ describe('ApplicationDetailActions — Save as template action (REQ-SAT-001)', (
 		// The manifest comes from the resolving endpoint, not from the
 		// Application record.
 		expect(axiosMock.get).toHaveBeenCalledWith(
-			'/apps/openbuild/api/applications/my-permits/manifest',
+			'/apps/buildiq/api/applications/my-permits/manifest',
 		)
 		expect(fetchSchemasMock).toHaveBeenCalled()
 		expect(wrapper.vm.saveTemplateSchemas).toEqual([

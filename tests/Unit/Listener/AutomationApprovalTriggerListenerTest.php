@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Listener
+ * @package  OCA\Buildiq\Tests\Unit\Listener
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,9 +26,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Listener;
+namespace OCA\Buildiq\Tests\Unit\Listener;
 
-use OCA\OpenBuild\Listener\AutomationApprovalTriggerListener;
+use OCA\Buildiq\Listener\AutomationApprovalTriggerListener;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ApprovalChain;
 use OCA\OpenRegister\Db\ApprovalChainMapper;
 use OCA\OpenRegister\Db\ApprovalStepMapper;
@@ -37,8 +38,6 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Service\ApprovalService;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -292,7 +291,7 @@ final class AutomationApprovalTriggerListenerTest extends TestCase {
 			from: 'draft',
 			to: 'active',
 			userId: null,
-			register: 'openbuild',
+			register: 'buildiq',
 			schema: 'permit'
 		);
 		$this->listener->handle($event);

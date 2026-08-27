@@ -6,7 +6,7 @@
  * check:nc-floor — the declared Nextcloud floor must match what CI installs on.
  *
  * `<nextcloud min-version>` is enforced at INSTALL time, so it is not prose: it
- * decides whether `occ app:enable openbuild` succeeds. A floor ABOVE the
+ * decides whether `occ app:enable buildiq` succeeds. A floor ABOVE the
  * Nextcloud version a CI leg boots makes the enable refuse, and that surfaces
  * ~70 seconds later as *missing tables* — which reads like a migration fault
  * and sends you to entirely the wrong file.
@@ -21,7 +21,7 @@
  *
  * Deliberately a repo-checkout check and NOT a PHPUnit test. This fleet's
  * PHPUnit job runs against a DEPLOYED copy of the app under
- * `server/apps/openbuild`, which is not the repository: `.github/workflows/`
+ * `server/apps/buildiq`, which is not the repository: `.github/workflows/`
  * is not part of it. A first attempt at this invariant as
  * `tests/Unit/AppInfo/NextcloudFloorTest.php` went red on all four PHPUnit legs
  * for exactly that reason. The `frontend-checks` matrix runs in the checkout,
@@ -123,7 +123,7 @@ let failed = false
 for (const { ref, major } of refs) {
 	if (major < floor) {
 		console.error(
-			'[check:nc-floor] CI installs OpenBuild on '
+			'[check:nc-floor] CI installs Buildiq on '
 				+ ref
 				+ ' (Nextcloud '
 				+ major
@@ -131,7 +131,7 @@ for (const { ref, major } of refs) {
 				+ 'appinfo/info.xml declares min-version="'
 				+ floor
 				+ '". min-version is enforced at '
-				+ 'install time, so `occ app:enable openbuild` refuses on that leg and the seed fails '
+				+ 'install time, so `occ app:enable buildiq` refuses on that leg and the seed fails '
 				+ 'with "is not installed or enabled" — which reads like a migration fault. '
 				+ 'Lower the floor or drop the leg.',
 		)

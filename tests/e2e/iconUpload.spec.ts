@@ -5,7 +5,7 @@
  * Playwright e2e — icon upload on the Application detail page (spec A task 7.5).
  *
  * UN-QUARANTINED AND REWRITTEN 2026-07-30. The file sat behind
- * `test.describe.skip` blaming Conduction/openbuild#41 ("no application detail
+ * `test.describe.skip` blaming Conduction/buildiq#41 ("no application detail
  * page renders"). The detail page renders fine; what was actually broken was
  * this file's own idea of the surface:
  *
@@ -61,7 +61,7 @@ async function resolveApp(
 	request: APIRequestContext,
 ): Promise<{ objectId: string; app: Record<string, any> }> {
 	const res = await request.get(
-		`${BASE}/index.php/apps/openbuild/api/applications`,
+		`${BASE}/index.php/apps/buildiq/api/applications`,
 		{
 			headers: { 'OCS-APIRequest': 'true' },
 		},
@@ -95,7 +95,7 @@ async function resolveApp(
  * @return {Promise<void>}
  */
 async function openIconsTab(page: Page, objectId: string): Promise<void> {
-	await page.goto(`/apps/openbuild/applications/${objectId}`, {
+	await page.goto(`/apps/buildiq/applications/${objectId}`, {
 		waitUntil: 'domcontentloaded',
 	})
 	await dismissFirstVisitOverlays(page)
@@ -257,7 +257,7 @@ test.describe('Icon upload on the Application detail page (spec A task 7.5)', ()
 		).toBeVisible({ timeout: 30_000 })
 		const src = await preview.getAttribute('src')
 		expect(src, 'the preview must point at the icon-serving endpoint').toMatch(
-			/\/apps\/openbuild\/icons\//,
+			/\/apps\/buildiq\/icons\//,
 		)
 
 		// No error was raised on the happy path.

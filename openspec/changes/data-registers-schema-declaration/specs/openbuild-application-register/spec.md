@@ -32,7 +32,7 @@ schema metadata only (ADR-031) — this requirement introduces no service
 class, no route, and no validation that a referenced register slug exists in
 OpenRegister at save time (see design.md Non-Goals). This is the schema
 surface SPECTR-NEXTCLOUD-PLAN.md §4.2 / hydra ADR-050 decision #2 locks for
-OpenBuild; the consumers (builder pickers, promotion-skip regression
+Buildiq; the consumers (builder pickers, promotion-skip regression
 coverage, export inclusion, designer UI) are out of scope for this
 requirement and land in the follower spec `data-registers-runtime`.
 
@@ -40,9 +40,9 @@ requirement and land in the follower spec `data-registers-runtime`.
 
 #### Scenario: Schema declares dataRegisters after install
 
-- **WHEN** the OpenBuild app is installed (or upgraded) and its repair step
+- **WHEN** the Buildiq app is installed (or upgraded) and its repair step
   runs
-- **THEN** the `Application` schema in the `openbuild` register exposes the
+- **THEN** the `Application` schema in the `buildiq` register exposes the
   `dataRegisters` property with the shape above
 - **AND** the property is omittable — existing Application objects created
   before this change remain schema-valid

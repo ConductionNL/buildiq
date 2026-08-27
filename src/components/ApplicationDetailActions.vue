@@ -8,7 +8,7 @@
   - Export button, and a "··· Actions" overflow menu (Settings — incl.
   - publish/unpublish — GitHub, permissions, Save as template, Delete).
   - Page/walkthrough design happens inside the running app via the in-app
-  - OpenBuild edit menu (CnOpenBuildEditButton, ADR-041), not from here.
+  - Buildiq edit menu (CnBuildiqEditButton, ADR-041), not from here.
   - Reads/writes the Application via OR's REST API (ADR-022) + the dedicated
   - publish/delete endpoints, using the applicationContext mixin. Modals/dialogs
   - live in their own files per ADR-004 gate-modal-isolation.
@@ -26,11 +26,11 @@
 				<template #icon>
 					<OpenInNew :size="20" />
 				</template>
-				{{ t('openbuild', 'Open app') }}
+				{{ t('buildiq', 'Open app') }}
 			</NcButton>
 			<NcActions
 				v-if="openableVersions.length"
-				:menuName="t('openbuild', 'Open a version')"
+				:menuName="t('buildiq', 'Open a version')"
 				:forceMenu="true"
 				class="ob-detail-actions__open-chevron">
 				<!-- Vue 3 requires the v-for key on the <template> itself, not on
@@ -49,18 +49,63 @@
 						<template #icon>
 							<PencilRulerOutline :size="20" />
 						</template>
-						{{
-							t('openbuild', 'Edit {name}', { name: versionLabel(v) })
-						}}
+						{{ t('buildiq', 'Edit {name}', { name: versionLabel(v) }) }}
 					</NcActionButton>
 				</template>
 			</NcActions>
 		</div>
-		<NcButton :disabled="!obApp" @click="exportOpen = true">
-			{{ t('openbuild', 'Export') }}
+		<!-- App-level editors. These edit the app's chrome (its settings, its
+		     first-run wizard, its guided tour, its support note) rather than any
+		     one page, so they belong on the app page rather than in the in-page
+		     orange edit menu, which is being narrowed to page-local actions.
+		     Setup wizard opens the Walkthrough Designer on its own tab rather
+		     than a separate modal, because that designer already hosts one. -->
+		<NcButton
+			v-if="obAppRole === 'owner'"
+			data-test="app-edit-settings"
+			:disabled="!obApp"
+			@click="onSettingsOpen(true)">
+			<template #icon>
+				<CogOutline :size="20" />
+			</template>
+			{{ t('buildiq', 'Settings') }}
+		</NcButton>
+		<NcButton
+			v-if="canEditVersions"
+			data-test="app-edit-setup"
+			:disabled="!obApp"
+			@click="openWalkthroughDesigner('setup')">
+			<template #icon>
+				<MapMarkerPath :size="20" />
+			</template>
+			{{ t('buildiq', 'Setup wizard') }}
+		</NcButton>
+		<NcButton
+			v-if="canEditVersions"
+			data-test="app-edit-walkthrough"
+			:disabled="!obApp"
+			@click="openWalkthroughDesigner('walkthrough')">
+			<template #icon>
+				<MapMarkerPath :size="20" />
+			</template>
+			{{ t('buildiq', 'Walkthrough') }}
+		</NcButton>
+		<NcButton
+			v-if="canEditVersions"
+			data-test="app-edit-support"
+			:disabled="!obApp"
+			@click="openSupportEditor">
+			<template #icon>
+				<HeartOutline :size="20" />
+			</template>
+			{{ t('buildiq', 'Support & donation') }}
 		</NcButton>
 
-		<NcActions :menuName="t('openbuild', 'Actions')" :forceMenu="true">
+		<NcButton :disabled="!obApp" @click="exportOpen = true">
+			{{ t('buildiq', 'Export') }}
+		</NcButton>
+
+		<NcActions :menuName="t('buildiq', 'Actions')" :forceMenu="true">
 			<NcActionButton
 				v-if="obAppRole === 'owner'"
 				data-test="app-settings-action"
@@ -69,7 +114,7 @@
 				<template #icon>
 					<CogOutline :size="20" />
 				</template>
-				{{ t('openbuild', 'Settings') }}
+				{{ t('buildiq', 'Settings') }}
 			</NcActionButton>
 			<NcActionButton
 				v-if="obApp && obApp.slug"
@@ -78,7 +123,7 @@
 				<template #icon>
 					<Github :size="20" />
 				</template>
-				{{ t('openbuild', 'GitHub') }}
+				{{ t('buildiq', 'GitHub') }}
 			</NcActionButton>
 			<NcActionButton
 				v-if="obAppRole === 'owner'"
@@ -87,7 +132,7 @@
 				<template #icon>
 					<AccountMultipleOutline :size="20" />
 				</template>
-				{{ t('openbuild', 'Manage permissions') }}
+				{{ t('buildiq', 'Manage permissions') }}
 			</NcActionButton>
 			<NcActionButton
 				v-if="obAppRole === 'owner'"
@@ -96,7 +141,7 @@
 				<template #icon>
 					<History :size="20" />
 				</template>
-				{{ t('openbuild', 'Permission history') }}
+				{{ t('buildiq', 'Permission history') }}
 			</NcActionButton>
 			<NcActionButton
 				v-if="canSaveAsTemplate"
@@ -107,8 +152,8 @@
 				</template>
 				{{
 					saveTemplateLoading
-						? t('openbuild', 'Preparing…')
-						: t('openbuild', 'Save as template')
+						? t('buildiq', 'Preparing…')
+						: t('buildiq', 'Save as template')
 				}}
 			</NcActionButton>
 			<NcActionLink
@@ -118,7 +163,7 @@
 				<template #icon>
 					<HelpCircleOutline :size="20" />
 				</template>
-				{{ t('openbuild', 'Documentation') }}
+				{{ t('buildiq', 'Documentation') }}
 			</NcActionLink>
 			<NcActionButton
 				v-if="obAppRole === 'owner'"
@@ -127,7 +172,7 @@
 				<template #icon>
 					<DeleteOutline :size="20" />
 				</template>
-				{{ t('openbuild', 'Delete') }}
+				{{ t('buildiq', 'Delete') }}
 			</NcActionButton>
 		</NcActions>
 
@@ -146,6 +191,10 @@
 			:slug="obApp.slug"
 			:isOwner="obAppRole === 'owner'"
 			@update:open="githubOpen = $event" />
+		<CnEditSupportModal
+			v-if="supportOpen"
+			:working="supportWorkingManifest"
+			@close="onSupportClose" />
 		<AppSettingsModal
 			:open="settingsOpen"
 			:appName="(obApp && (obApp.name || obApp.slug)) || ''"
@@ -191,6 +240,7 @@
 </template>
 
 <script>
+import { CnEditSupportModal } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { NcActionButton, NcActionLink, NcActions, NcButton } from '@nextcloud/vue'
@@ -200,8 +250,10 @@ import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
 import Github from 'vue-material-design-icons/Github.vue'
+import HeartOutline from 'vue-material-design-icons/HeartOutline.vue'
 import HelpCircleOutline from 'vue-material-design-icons/HelpCircleOutline.vue'
 import History from 'vue-material-design-icons/History.vue'
+import MapMarkerPath from 'vue-material-design-icons/MapMarkerPath.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
 import PencilRulerOutline from 'vue-material-design-icons/PencilRulerOutline.vue'
 import DeleteAppDialog from '../dialogs/DeleteAppDialog.vue'
@@ -226,7 +278,7 @@ const ExportDialog = defineAsyncComponent(
 	() => import('../dialogs/ExportDialog.vue'),
 )
 
-const OR_TEMPLATES = '/apps/openregister/api/objects/openbuild/application-template'
+const OR_TEMPLATES = '/apps/openregister/api/objects/buildiq/application-template'
 
 export default {
 	name: 'ApplicationDetailActions',
@@ -237,6 +289,7 @@ export default {
 		NcActionLink,
 		OpenInNew,
 		CogOutline,
+		MapMarkerPath,
 		DeleteOutline,
 		PencilRulerOutline,
 		AccountMultipleOutline,
@@ -247,6 +300,8 @@ export default {
 		PermissionsModal,
 		PermissionHistoryModal,
 		AppSettingsModal,
+		CnEditSupportModal,
+		HeartOutline,
 		GitHubSyncModal,
 		DeleteAppDialog,
 		SaveAsTemplateDialog,
@@ -261,6 +316,12 @@ export default {
 			deleting: false,
 			githubOpen: false,
 			settingsOpen: false,
+			// The support-note editor mutates a working manifest copy in place
+			// and emits `close`, so it needs its own copy to edit and a flag to
+			// mount it. Held here rather than in the modal so a cancel simply
+			// drops the copy.
+			supportOpen: false,
+			supportWorkingManifest: null,
 			// Every flow on the instance, as picker options. Loaded lazily when
 			// the settings modal opens — see onSettingsOpen().
 			availableFlows: [],
@@ -286,12 +347,14 @@ export default {
 		 * app slug is known. Top-level URL — the runtime is a sibling route.
 		 *
 		 * @return {string}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		builderUrl() {
 			if (!this.obApp || !this.obApp.slug) {
 				return ''
 			}
-			return generateUrl(`/apps/openbuild/builder/${this.obApp.slug}`)
+			return generateUrl(`/apps/buildiq/builder/${this.obApp.slug}`)
 		},
 
 		/**
@@ -396,7 +459,7 @@ export default {
 			}
 			try {
 				const url = generateUrl(
-					'/apps/openbuild/api/applications/{slug}/versions',
+					'/apps/buildiq/api/applications/{slug}/versions',
 					{ slug: this.obApp.slug },
 				)
 				const { data } = await axios.get(url)
@@ -439,12 +502,14 @@ export default {
 		 *
 		 * @param {object} v The version row.
 		 * @return {string}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		versionLabel(v) {
 			const name = (v && (v.name || v.slug)) || ''
 			const semver = v && v.semver ? ` (${v.semver})` : ''
 			const prod = this.isProductionVersion(v)
-				? ` — ${t('openbuild', 'Production')}`
+				? ` — ${t('buildiq', 'Production')}`
 				: ''
 			return `${name}${semver}${prod}`
 		},
@@ -455,12 +520,14 @@ export default {
 		 *
 		 * @param {object} v The version row.
 		 * @return {void}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		openVersion(v) {
 			if (!this.obApp || !this.obApp.slug) {
 				return
 			}
-			const base = generateUrl(`/apps/openbuild/builder/${this.obApp.slug}`)
+			const base = generateUrl(`/apps/buildiq/builder/${this.obApp.slug}`)
 			const url = this.isProductionVersion(v)
 				? base
 				: `${base}?_version=${encodeURIComponent(v.slug)}`
@@ -474,13 +541,15 @@ export default {
 		 *
 		 * @param {object} v The version row.
 		 * @return {void}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		editVersion(v) {
 			if (!this.obApp || !this.obApp.slug) {
 				return
 			}
 			const base = generateUrl(
-				`/apps/openbuild/builder/${this.obApp.slug}/pages`,
+				`/apps/buildiq/builder/${this.obApp.slug}/pages`,
 			)
 			window.location.href = this.isProductionVersion(v)
 				? base
@@ -493,6 +562,8 @@ export default {
 		 *
 		 * @param {boolean} shouldPublish True to publish, false to unpublish.
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		async setPublished(shouldPublish) {
 			if (this.obAppRole !== 'owner' || !this.obApp || this.publishing) {
@@ -505,7 +576,7 @@ export default {
 				const action = shouldPublish ? 'publish' : 'unpublish'
 				await axios.post(
 					generateUrl(
-						`/apps/openbuild/api/applications/${this.obAppUuid}/${action}`,
+						`/apps/buildiq/api/applications/${this.obAppUuid}/${action}`,
 					),
 					{},
 				)
@@ -514,19 +585,16 @@ export default {
 				// toggle/badge stale until a full page reload.
 				await this.obLoadApp(true)
 				this.toast = shouldPublish
-					? t(
-							'openbuild',
-							'App published — it now appears in the app menu.',
-						)
-					: t('openbuild', 'App unpublished — removed from the app menu.')
+					? t('buildiq', 'App published — it now appears in the app menu.')
+					: t('buildiq', 'App unpublished — removed from the app menu.')
 			} catch (e) {
 				const detail =
 					(e.response && e.response.data && e.response.data.detail)
 					|| e.message
 					|| e
 				this.error = shouldPublish
-					? `${t('openbuild', 'Publish failed')}: ${detail}`
-					: `${t('openbuild', 'Unpublish failed')}: ${detail}`
+					? `${t('buildiq', 'Publish failed')}: ${detail}`
+					: `${t('buildiq', 'Unpublish failed')}: ${detail}`
 			} finally {
 				this.publishing = false
 			}
@@ -537,6 +605,8 @@ export default {
 		 *
 		 * @param {boolean} allow Whether to allow per-user overrides.
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		async setAllowOverrides(allow) {
 			if (this.obAppRole !== 'owner' || !this.obApp) {
@@ -546,7 +616,7 @@ export default {
 			try {
 				await this.obPatchApp({ allowUserOverrides: allow })
 			} catch (e) {
-				this.error = `${t('openbuild', 'Failed to save settings')}: ${e.message || e}`
+				this.error = `${t('buildiq', 'Failed to save settings')}: ${e.message || e}`
 			}
 		},
 
@@ -566,7 +636,88 @@ export default {
 		 *
 		 * @param {boolean} open Whether the modal is opening.
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
+		/**
+		 * Open the support-note editor.
+		 *
+		 * `CnEditSupportModal` edits `manifest.support` in place on a working
+		 * copy, so this resolves the app's manifest first and hands over a
+		 * clone. Editing a clone means cancelling costs nothing: the copy is
+		 * simply dropped.
+		 *
+		 * The manifest is resolved from the ACTIVE VERSION through the app's
+		 * own endpoint, not read off the Application record, because an
+		 * Application carries no manifest — it lives on the ApplicationVersion.
+		 * Reading `obApp.manifest` yields undefined and opens the editor on an
+		 * empty object.
+		 *
+		 * @return {Promise<void>}
+		 *
+		 * @spec exclude opens an existing library editor on the resolved manifest
+		 */
+		async openSupportEditor() {
+			if (!this.obApp || !this.obApp.slug) {
+				return
+			}
+
+			this.error = ''
+			try {
+				const url = generateUrl(
+					`/apps/buildiq/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`,
+				)
+				const { data } = await axios.get(url)
+				this.supportWorkingManifest = JSON.parse(JSON.stringify(data || {}))
+				this.supportOpen = true
+			} catch (e) {
+				this.error = `${t('buildiq', 'Failed to load settings')}: ${e.message || e}`
+			}
+		},
+
+		/**
+		 * Close the support-note editor and drop the working copy.
+		 *
+		 * @return {void}
+		 *
+		 * @spec exclude closes a modal, no behaviour
+		 */
+		onSupportClose() {
+			this.supportOpen = false
+			this.supportWorkingManifest = null
+		},
+
+		/**
+		 * Open the walkthrough designer for this app, on a chosen tab.
+		 *
+		 * The designer is a page (`WalkthroughDesigner` at
+		 * `/builder/:slug/walkthrough`), not a modal, so this routes rather
+		 * than opening a dialog. It hosts BOTH editors: the guided tour and
+		 * the first-run setup wizard. `?mode=setup` selects the latter, so the
+		 * Setup wizard button lands on its own tab rather than on the
+		 * walkthrough with the user left to find it.
+		 *
+		 * @param {string} mode Which tab to open, `walkthrough` or `setup`.
+		 *
+		 * @return {void}
+		 *
+		 * @spec exclude routes to an existing page, no new behaviour
+		 */
+		openWalkthroughDesigner(mode) {
+			const slug = this.obApp && this.obApp.slug
+			if (!slug) {
+				return
+			}
+
+			this.$router
+				.push({
+					name: 'WalkthroughDesigner',
+					params: { slug },
+					query: mode === 'setup' ? { mode: 'setup' } : {},
+				})
+				.catch(() => {})
+		},
+
 		async onSettingsOpen(open) {
 			this.settingsOpen = open
 			if (!open || this.availableFlows.length || this.loadingFlows) {
@@ -589,7 +740,7 @@ export default {
 					}))
 					.filter((option) => !!option.value)
 			} catch (e) {
-				this.error = `${t('openbuild', 'Failed to load flows')}: ${e.message || e}`
+				this.error = `${t('buildiq', 'Failed to load flows')}: ${e.message || e}`
 			} finally {
 				this.loadingFlows = false
 			}
@@ -600,6 +751,8 @@ export default {
 		 *
 		 * @param {Array<{flow: string, label?: string}>} flows The full updated bindings array.
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		async setFlows(flows) {
 			if (this.obAppRole !== 'owner' || !this.obApp) {
@@ -609,10 +762,13 @@ export default {
 			try {
 				await this.obPatchApp({ flows })
 			} catch (e) {
-				this.error = `${t('openbuild', 'Failed to save settings')}: ${e.message || e}`
+				this.error = `${t('buildiq', 'Failed to save settings')}: ${e.message || e}`
 			}
 		},
 
+		/**
+		 * @spec openspec/specs/application-detail-ui/spec.md
+		 */
 		async setDataRegisters(dataRegisters) {
 			if (this.obAppRole !== 'owner' || !this.obApp) {
 				return
@@ -621,7 +777,7 @@ export default {
 			try {
 				await this.obPatchApp({ dataRegisters })
 			} catch (e) {
-				this.error = `${t('openbuild', 'Failed to save settings')}: ${e.message || e}`
+				this.error = `${t('buildiq', 'Failed to save settings')}: ${e.message || e}`
 			}
 		},
 
@@ -633,6 +789,8 @@ export default {
 		 *
 		 * @param {boolean} deleteData Whether to also delete all app data.
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		async deleteApp(deleteData = false) {
 			if (this.obAppRole !== 'owner' || !this.obApp || this.deleting) {
@@ -642,9 +800,7 @@ export default {
 			this.error = ''
 			try {
 				await axios.delete(
-					generateUrl(
-						`/apps/openbuild/api/applications/${this.obAppUuid}`,
-					),
+					generateUrl(`/apps/buildiq/api/applications/${this.obAppUuid}`),
 					{
 						params: { deleteData: deleteData ? 1 : 0 },
 					},
@@ -653,16 +809,14 @@ export default {
 				if (this.$router) {
 					this.$router.push({ name: 'VirtualApps' }).catch(() => {})
 				} else {
-					window.location.href = generateUrl(
-						'/apps/openbuild/applications',
-					)
+					window.location.href = generateUrl('/apps/buildiq/applications')
 				}
 			} catch (e) {
 				const detail =
 					(e.response && e.response.data && e.response.data.detail)
 					|| e.message
 					|| e
-				this.error = `${t('openbuild', 'Delete failed')}: ${detail}`
+				this.error = `${t('buildiq', 'Delete failed')}: ${detail}`
 			} finally {
 				this.deleting = false
 			}
@@ -673,6 +827,8 @@ export default {
 		 *
 		 * @param {object} permissions The new permissions block.
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		async onPermissionsSave(permissions) {
 			if (this.obAppRole !== 'owner' || !this.obApp) {
@@ -683,7 +839,7 @@ export default {
 				await this.obPatchApp({ permissions })
 				this.permissionsOpen = false
 			} catch (e) {
-				this.error = `${t('openbuild', 'Failed to save permissions')}: ${e.message || e}`
+				this.error = `${t('buildiq', 'Failed to save permissions')}: ${e.message || e}`
 			}
 		},
 
@@ -716,7 +872,7 @@ export default {
 				// disabled. Saving an app as a template was impossible for EVERY
 				// application.
 				const manifestUrl = generateUrl(
-					`/apps/openbuild/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`,
+					`/apps/buildiq/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`,
 				)
 				const { data: resolvedManifest } = await axios.get(manifestUrl)
 				this.saveTemplateManifest =
@@ -735,7 +891,7 @@ export default {
 				this.existingTemplates = await this.loadExistingTemplates()
 				this.saveTemplateOpen = true
 			} catch (e) {
-				this.error = `${t('openbuild', 'Could not prepare template capture')}: ${e.message || e}`
+				this.error = `${t('buildiq', 'Could not prepare template capture')}: ${e.message || e}`
 			} finally {
 				this.saveTemplateLoading = false
 			}
@@ -772,10 +928,10 @@ export default {
 			this.saveTemplateOpen = false
 			this.toast =
 				payload && payload.mode === 'update'
-					? t('openbuild', 'Template "{slug}" updated', {
+					? t('buildiq', 'Template "{slug}" updated', {
 							slug: payload.slug,
 						})
-					: t('openbuild', 'Saved as template "{slug}"', {
+					: t('buildiq', 'Saved as template "{slug}"', {
 							slug: payload.slug,
 						})
 		},

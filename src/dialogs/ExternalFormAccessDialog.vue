@@ -8,7 +8,7 @@
   - URLs before confirming.
   -
   - All provisioning happens HERE, via `externalFormProvisioningService.js`,
-  - riding the builder's own NC session — OpenBuild hosts no PHP proxy for
+  - riding the builder's own NC session — Buildiq hosts no PHP proxy for
   - any of it (design.md Decision 3). On save this dialog emits the fully
   - resolved `runtime.externalForms[]` entry; the host (FormPageEditor.vue)
   - only persists it into the manifest.
@@ -16,14 +16,14 @@
 <template>
 	<NcDialog
 		:open="open"
-		:name="t('openbuild', 'External access')"
+		:name="t('buildiq', 'External access')"
 		size="normal"
 		@update:open="onDialogOpenChange"
 		@closing="onClose">
 		<div class="ob-external-form-access">
 			<p class="ob-external-form-access__target">
 				{{
-					t('openbuild', 'Target: {register} / {schema}', {
+					t('buildiq', 'Target: {register} / {schema}', {
 						register,
 						schema,
 					})
@@ -35,7 +35,7 @@
 					:checked="enabled"
 					type="checkbox"
 					@change="enabled = $event.target.checked" />
-				{{ t('openbuild', 'Allow anonymous submissions to this endpoint') }}
+				{{ t('buildiq', 'Allow anonymous submissions to this endpoint') }}
 			</label>
 
 			<template v-if="enabled">
@@ -44,16 +44,14 @@
 						:checked="publicRead"
 						type="checkbox"
 						@change="publicRead = $event.target.checked" />
-					{{
-						t('openbuild', 'Also allow anonymous reads (public listing)')
-					}}
+					{{ t('buildiq', 'Also allow anonymous reads (public listing)') }}
 				</label>
 
 				<NcTextField
 					:modelValue="organisationScope || ''"
-					:label="t('openbuild', 'Organisation scope (optional)')"
+					:label="t('buildiq', 'Organisation scope (optional)')"
 					:placeholder="
-						t('openbuild', 'Organisation id — leave empty for none')
+						t('buildiq', 'Organisation id — leave empty for none')
 					"
 					@update:modelValue="organisationScope = $event || null" />
 
@@ -64,7 +62,7 @@
 						@change="trackLinkEnabled = $event.target.checked" />
 					{{
 						t(
-							'openbuild',
+							'buildiq',
 							'Offer a "mint track-link" action on submitted objects',
 						)
 					}}
@@ -74,7 +72,7 @@
 			<NcNoteCard v-if="portalHint" type="warning">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'Portaliq rendering not available on this instance yet — the raw public-create URL below still works.',
 					)
 				}}
@@ -86,12 +84,12 @@
 
 			<div v-if="showUrls" class="ob-external-form-access__urls">
 				<p>
-					<strong>{{ t('openbuild', 'Raw public submit URL') }}</strong
+					<strong>{{ t('buildiq', 'Raw public submit URL') }}</strong
 					><br />
 					<code>{{ rawSubmitUrl }}</code>
 				</p>
 				<p v-if="portalUrl">
-					<strong>{{ t('openbuild', 'Portaliq page') }}</strong
+					<strong>{{ t('buildiq', 'Portaliq page') }}</strong
 					><br />
 					<code>{{ portalUrl }}</code>
 				</p>
@@ -99,17 +97,17 @@
 		</div>
 		<template #actions>
 			<NcButton @click="onClose">
-				{{ t('openbuild', 'Close') }}
+				{{ t('buildiq', 'Close') }}
 			</NcButton>
 			<NcButton
 				v-if="hadEnabledEntry"
 				variant="tertiary"
 				:disabled="saving"
 				@click="onDisable">
-				{{ t('openbuild', 'Disable') }}
+				{{ t('buildiq', 'Disable') }}
 			</NcButton>
 			<NcButton variant="primary" :disabled="saving" @click="onSave">
-				{{ saving ? t('openbuild', 'Saving…') : t('openbuild', 'Save') }}
+				{{ saving ? t('buildiq', 'Saving…') : t('buildiq', 'Save') }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -350,7 +348,7 @@ export default {
 				this.$emit('save', next)
 			} catch (e) {
 				this.errorMessage = t(
-					'openbuild',
+					'buildiq',
 					'Could not provision external access: {error}',
 					{ error: (e && e.message) || String(e) },
 				)
@@ -404,7 +402,7 @@ export default {
 				this.$emit('save', next)
 			} catch (e) {
 				this.errorMessage = t(
-					'openbuild',
+					'buildiq',
 					'Could not disable external access: {error}',
 					{ error: (e && e.message) || String(e) },
 				)

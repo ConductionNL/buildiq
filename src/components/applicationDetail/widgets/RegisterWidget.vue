@@ -10,13 +10,13 @@
 	instead lists the register's schemas (what's actually IN the register). The
 	primary action navigates to the OpenRegister registry detail page via a
 	top-level Nextcloud URL — OpenRegister is a sibling app, not part of
-	OpenBuild's router.
+	Buildiq's router.
 -->
 <template>
 	<div class="ob-register-widget">
 		<header class="ob-register-widget__header">
 			<h3 class="ob-register-widget__title">
-				{{ t('openbuild', 'Register') }}
+				{{ t('buildiq', 'Register') }}
 			</h3>
 			<p class="ob-register-widget__slug">
 				<code>{{ registerSlug }}</code>
@@ -27,7 +27,7 @@
 		<div class="ob-register-widget__schemas">
 			<div class="ob-register-widget__schemas-head">
 				<span class="ob-register-widget__schemas-label">{{
-					t('openbuild', 'Schemas')
+					t('buildiq', 'Schemas')
 				}}</span>
 				<span v-if="!loading" class="ob-register-widget__schemas-count">{{
 					schemas.length
@@ -40,7 +40,7 @@
 				class="ob-register-widget__loading" />
 
 			<p v-else-if="schemas.length === 0" class="ob-register-widget__empty">
-				{{ t('openbuild', 'This register defines no schemas.') }}
+				{{ t('buildiq', 'This register defines no schemas.') }}
 			</p>
 
 			<ul v-else class="ob-register-widget__schema-list">
@@ -55,7 +55,7 @@
 					class="ob-register-widget__schema ob-register-widget__schema--more">
 					{{
 						n(
-							'openbuild',
+							'buildiq',
 							'+%n more schema',
 							'+%n more schemas',
 							schemas.length - visibleLimit,
@@ -70,10 +70,10 @@
 				v-if="canImport"
 				variant="secondary"
 				@click="$emit('import-data', { registerSlug, schemas })">
-				{{ t('openbuild', 'Import data') }}
+				{{ t('buildiq', 'Import data') }}
 			</NcButton>
 			<NcButton variant="primary" @click="openInOpenRegister">
-				{{ t('openbuild', 'Open in OpenRegister') }}
+				{{ t('buildiq', 'Open in OpenRegister') }}
 			</NcButton>
 		</footer>
 	</div>
@@ -91,18 +91,18 @@ export default {
 	props: {
 		/** The app's kebab-case slug. */
 		appSlug: { type: String, required: true },
-		/** The active version's slug (the per-version register is `openbuild-{appSlug}-{versionSlug}`). */
+		/** The active version's slug (the per-version register is `buildiq-{appSlug}-{versionSlug}`). */
 		versionSlug: { type: String, required: true },
 		/**
 		 * Whether this is a hybrid app. A hybrid app's data + schemas live in the
 		 * INSTALLED app's register (named after the app), not the empty per-version
-		 * `openbuild-{appSlug}-{versionSlug}` register — so the widget points at the
+		 * `buildiq-{appSlug}-{versionSlug}` register — so the widget points at the
 		 * fleet register for hybrids.
 		 */
 		isHybrid: { type: Boolean, default: false },
 		/**
 		 * The active version's REAL register slug. Versions may share production's
-		 * register (manifest-only versioning), so the `openbuild-{appSlug}-{versionSlug}`
+		 * register (manifest-only versioning), so the `buildiq-{appSlug}-{versionSlug}`
 		 * convention can name a non-existent register; when this override is set it
 		 * takes precedence.
 		 */
@@ -133,7 +133,7 @@ export default {
 		 * The register to show. For a HYBRID app this is the installed fleet
 		 * app's register (named after the app — that is where its schemas/data
 		 * actually live); for a VIRTUAL app it is the per-version register
-		 * `openbuild-{appSlug}-{versionSlug}` (ADR-002 / openbuild-versioning-model).
+		 * `buildiq-{appSlug}-{versionSlug}` (ADR-002 / buildiq-versioning-model).
 		 *
 		 * @return {string}
 		 */

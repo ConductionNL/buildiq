@@ -7,7 +7,7 @@ The production webpack build (`NODE_ENV=production`) SHALL set `devtool: false` 
 #### Scenario: Production build emits no source maps
 
 - **WHEN** `npm run build` runs with `NODE_ENV=production`
-- **THEN** the `js/` output directory SHALL contain no `.map` files for `openbuild-main.js`, `openbuild-settings.js`, or `openbuild-builder.js`
+- **THEN** the `js/` output directory SHALL contain no `.map` files for `buildiq-main.js`, `buildiq-settings.js`, or `buildiq-builder.js`
 
 #### Scenario: Development build keeps fast source maps
 

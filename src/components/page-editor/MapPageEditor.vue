@@ -24,14 +24,14 @@
 <template>
 	<div class="map-page-editor">
 		<h3 class="map-page-editor__title">
-			{{ t('openbuild', 'Map page') }}
+			{{ t('buildiq', 'Map page') }}
 		</h3>
 
 		<fieldset class="map-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Viewport') }}</legend>
+			<legend>{{ t('buildiq', 'Viewport') }}</legend>
 			<div class="map-page-editor__group">
 				<label class="map-page-editor__group-row">
-					{{ t('openbuild', 'Centre latitude') }}
+					{{ t('buildiq', 'Centre latitude') }}
 					<input
 						type="number"
 						step="any"
@@ -40,7 +40,7 @@
 						@input="updateCenterPart(0, $event.target.value)" />
 				</label>
 				<label class="map-page-editor__group-row">
-					{{ t('openbuild', 'Centre longitude') }}
+					{{ t('buildiq', 'Centre longitude') }}
 					<input
 						type="number"
 						step="any"
@@ -51,7 +51,7 @@
 				<InlineFieldMark :error="markFor('center')" />
 			</div>
 			<label class="map-page-editor__group-row">
-				{{ t('openbuild', 'Zoom') }}
+				{{ t('buildiq', 'Zoom') }}
 				<input
 					type="number"
 					:value="config.zoom"
@@ -60,11 +60,11 @@
 				<InlineFieldMark :error="markFor('zoom')" />
 			</label>
 			<label class="map-page-editor__group-row">
-				{{ t('openbuild', 'Height (optional)') }}
+				{{ t('buildiq', 'Height (optional)') }}
 				<input
 					type="text"
 					:value="config.height || ''"
-					:placeholder="t('openbuild', 'e.g. 500px')"
+					:placeholder="t('buildiq', 'e.g. 500px')"
 					:aria-invalid="isInvalid('height')"
 					@input="update('height', $event.target.value)" />
 				<InlineFieldMark :error="markFor('height')" />
@@ -72,7 +72,7 @@
 		</fieldset>
 
 		<fieldset class="map-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Layers') }}</legend>
+			<legend>{{ t('buildiq', 'Layers') }}</legend>
 			<div
 				v-for="(layer, index) in layers"
 				:key="index"
@@ -89,25 +89,25 @@
 					type="text"
 					class="map-page-editor__row-url"
 					:value="layer.url || ''"
-					:placeholder="t('openbuild', 'Layer URL')"
-					:aria-label="t('openbuild', 'Layer URL')"
+					:placeholder="t('buildiq', 'Layer URL')"
+					:aria-label="t('buildiq', 'Layer URL')"
 					@input="updateLayerField(index, 'url', $event.target.value)" />
 				<button
 					type="button"
 					class="map-page-editor__row-remove"
-					:title="t('openbuild', 'Remove layer')"
+					:title="t('buildiq', 'Remove layer')"
 					@click="removeLayer(index)">
 					✕
 				</button>
 			</div>
 			<button type="button" class="map-page-editor__row-add" @click="addLayer">
-				+ {{ t('openbuild', 'Add layer') }}
+				+ {{ t('buildiq', 'Add layer') }}
 			</button>
 			<InlineFieldMark :error="markFor('layers')" />
 		</fieldset>
 
 		<fieldset class="map-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Markers') }}</legend>
+			<legend>{{ t('buildiq', 'Markers') }}</legend>
 			<div class="map-page-editor__shape">
 				<label class="map-page-editor__inline">
 					<input
@@ -115,7 +115,7 @@
 						:checked="markerSourceShape === 'url'"
 						value="url"
 						@change="setMarkerSourceShape('url')" />
-					{{ t('openbuild', 'Source URL') }}
+					{{ t('buildiq', 'Source URL') }}
 				</label>
 				<label class="map-page-editor__inline">
 					<input
@@ -123,13 +123,13 @@
 						:checked="markerSourceShape === 'register'"
 						value="register"
 						@change="setMarkerSourceShape('register')" />
-					{{ t('openbuild', 'Register + schema') }}
+					{{ t('buildiq', 'Register + schema') }}
 				</label>
 			</div>
 
 			<div v-if="markerSourceShape === 'url'" class="map-page-editor__group">
 				<label class="map-page-editor__group-row">
-					{{ t('openbuild', 'Marker source URL') }}
+					{{ t('buildiq', 'Marker source URL') }}
 					<input
 						type="text"
 						:value="
@@ -138,7 +138,7 @@
 								&& config.markers.dataSource.url)
 							|| ''
 						"
-						:placeholder="t('openbuild', 'https://…/markers.json')"
+						:placeholder="t('buildiq', 'https://…/markers.json')"
 						@input="
 							updateMarkerDataSourceField('url', $event.target.value)
 						" />
@@ -148,13 +148,13 @@
 				<p class="map-page-editor__hint" role="note">
 					{{
 						t(
-							'openbuild',
+							'buildiq',
 							'Renderer support for register-bound markers is pending in the library — the built page will show an empty marker layer until it ships.',
 						)
 					}}
 				</p>
 				<label class="map-page-editor__group-row">
-					{{ t('openbuild', 'Register') }}
+					{{ t('buildiq', 'Register') }}
 					<select
 						:value="
 							(config.markers
@@ -166,7 +166,7 @@
 							updateMarkerDataSourceRegister($event.target.value)
 						">
 						<option value="">
-							{{ t('openbuild', '— select register —') }}
+							{{ t('buildiq', '— select register —') }}
 						</option>
 						<option
 							v-for="r in registers"
@@ -177,7 +177,7 @@
 					</select>
 				</label>
 				<label class="map-page-editor__group-row">
-					{{ t('openbuild', 'Schema') }}
+					{{ t('buildiq', 'Schema') }}
 					<select
 						:value="
 							(config.markers
@@ -199,7 +199,7 @@
 							)
 						">
 						<option value="">
-							{{ t('openbuild', '— select schema —') }}
+							{{ t('buildiq', '— select schema —') }}
 						</option>
 						<option
 							v-for="s in schemas"
@@ -213,13 +213,13 @@
 
 			<div class="map-page-editor__group">
 				<label class="map-page-editor__group-row">
-					{{ t('openbuild', 'Latitude field') }}
+					{{ t('buildiq', 'Latitude field') }}
 					<select
 						v-if="hasBoundSchema"
 						:value="(config.markers && config.markers.latField) || ''"
 						@change="updateMarkerField('latField', $event.target.value)">
 						<option value="">
-							{{ t('openbuild', '— select property —') }}
+							{{ t('buildiq', '— select property —') }}
 						</option>
 						<option
 							v-for="key in schemaPropertyKeys"
@@ -237,13 +237,13 @@
 						" />
 				</label>
 				<label class="map-page-editor__group-row">
-					{{ t('openbuild', 'Longitude field') }}
+					{{ t('buildiq', 'Longitude field') }}
 					<select
 						v-if="hasBoundSchema"
 						:value="(config.markers && config.markers.lngField) || ''"
 						@change="updateMarkerField('lngField', $event.target.value)">
 						<option value="">
-							{{ t('openbuild', '— select property —') }}
+							{{ t('buildiq', '— select property —') }}
 						</option>
 						<option
 							v-for="key in schemaPropertyKeys"
@@ -261,7 +261,7 @@
 						" />
 				</label>
 				<label class="map-page-editor__group-row">
-					{{ t('openbuild', 'Popup field') }}
+					{{ t('buildiq', 'Popup field') }}
 					<select
 						v-if="hasBoundSchema"
 						:value="(config.markers && config.markers.popupField) || ''"
@@ -269,7 +269,7 @@
 							updateMarkerField('popupField', $event.target.value)
 						">
 						<option value="">
-							{{ t('openbuild', '— select property —') }}
+							{{ t('buildiq', '— select property —') }}
 						</option>
 						<option
 							v-for="key in schemaPropertyKeys"
@@ -293,7 +293,7 @@
 						@change="
 							updateMarkerField('clustering', $event.target.checked)
 						" />
-					{{ t('openbuild', 'Clustering') }}
+					{{ t('buildiq', 'Clustering') }}
 				</label>
 			</div>
 			<InlineFieldMark :error="markFor('markers')" />

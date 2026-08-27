@@ -3,13 +3,13 @@ kind: code
 depends_on: []
 ---
 
-# openbuild-connector-widget-runtime — lock the endpoint-binding surface on the PUBLISHED virtual-app path
+# buildiq-connector-widget-runtime — lock the endpoint-binding surface on the PUBLISHED virtual-app path
 
 ## Why
 
 Building the `hydra-console` virtual app raised a question nobody could answer
-from the specs: **can a widget in a published OpenBuild app bind to an
-OpenConnector endpoint, or only in the builder preview?** OpenBuild ships a
+from the specs: **can a widget in a published Buildiq app bind to an
+OpenConnector endpoint, or only in the builder preview?** Buildiq ships a
 `connector-data` widget whose only documented consumer (REQ-OCAS-006) says it is
 "used by the virtual-app render path" — without saying *which* render path. There
 are two, and they are wired by two independent call sites.
@@ -17,11 +17,11 @@ are two, and they are wired by two independent call sites.
 The code was read before this proposal was written. **The answer is yes:
 `connector-data` DOES resolve on the published path.** `src/builder.js` — the
 standalone runtime entry served by `DashboardController::builder()` for
-`/apps/openbuild/builder/{slug}` — passes `registry: { ...runtimeRegistry }` to
+`/apps/buildiq/builder/{slug}` — passes `registry: { ...runtimeRegistry }` to
 the top-level `CnAppRoot`, `CnAppRoot` provides it to descendants as `cnRegistry`,
 and `CnWidgetGrid` resolves `widgetKey` against the consumer registry *before*
 built-ins and before the dashboard catalog. The component survives into the
-shipped `js/openbuild-builder.js` bundle (its template strings are present), and
+shipped `js/buildiq-builder.js` bundle (its template strings are present), and
 the deployed snapshot is byte-identical to the repo bundle.
 
 So the capability is real — but it is **undefended**, and that is the actual
@@ -66,7 +66,7 @@ endpoint parity) is resolved here as an explicit **non-change** with a rationale
    effective registry is a superset of the preview path's — so preview can never
    again offer a widget the published app cannot render.
 3. **A published-path e2e.** A Playwright spec drives a real published app at
-   `/apps/openbuild/builder/{slug}` with a `connector-data` widget, and asserts
+   `/apps/buildiq/builder/{slug}` with a `connector-data` widget, and asserts
    the widget's own rendered surface — never `CnUnknownWidget`, and no
    `Unknown widgetKey` console warning. Preview-only coverage is explicitly not
    sufficient.
@@ -79,7 +79,7 @@ endpoint parity) is resolved here as an explicit **non-change** with a rationale
    items validate against `$defs.statsBlockEntry`, which is
    `additionalProperties: false` and *requires* `register` + `schema`. Endpoint
    parity for it is recorded as an upstream `@conduction/nextcloud-vue` concern
-   with a stated rationale, not silently worked around in OpenBuild.
+   with a stated rationale, not silently worked around in Buildiq.
 6. **The unresolved-key failure mode is made loud enough to catch.** An
    unresolved `widgetKey` currently yields `CnUnknownWidget` plus one
    `console.warn`; the e2e treats that warning as a hard failure so the
@@ -100,7 +100,7 @@ its `dataSource.connector` contract. Existing published apps are unaffected.
 - `openconnector-api-sources`: REQ-OCAS-006 currently says `useConnectorDataSource`
   is used by "the virtual-app render path" without distinguishing the published
   standalone entry from the builder preview, and none of its scenarios exercise
-  `/apps/openbuild/builder/{slug}`. Tightened to name the published path
+  `/apps/buildiq/builder/{slug}`. Tightened to name the published path
   explicitly and to require the proof to run there.
 
 ## Impact

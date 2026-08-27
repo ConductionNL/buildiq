@@ -52,7 +52,7 @@ try {
 } catch (e) {
 	// eslint-disable-next-line no-console
 	console.warn(
-		'[openbuild] registerTranslations failed; lib strings fall back to English source',
+		'[buildiq] registerTranslations failed; lib strings fall back to English source',
 		e,
 	)
 }
@@ -67,7 +67,7 @@ try {
  */
 function tryLoadTranslations() {
 	try {
-		const result = loadTranslations('openbuild', () => {})
+		const result = loadTranslations('buildiq', () => {})
 		if (result && typeof result.then === 'function') {
 			result.then(
 				() => {},
@@ -89,7 +89,7 @@ const RoutePageRenderer = { ...CnPageRenderer }
 // `@conduction/nextcloud-vue` `buildManifest(base, fragments, menuLayout)`
 // pipeline instead of a per-app re-implementation. The only app-local step is
 // collecting the `src/manifest.d/*.json` fragments (ADR-037) — `require.context`
-// is resolved by OpenBuild's own webpack build, so we gather the fragment
+// is resolved by Buildiq's own webpack build, so we gather the fragment
 // objects here and hand them in. `menu-layout.json` (relocations / removals /
 // settingsSection) is the single declarative home for future navigation-IA
 // changes; it ships all-empty today, so `buildManifest()` reproduces the prior
@@ -137,7 +137,7 @@ function routesFromManifest(manifest) {
 
 const router = createRouter({
 	// History mode (clean path URLs + working deep-links e.g.
-	// /apps/openbuild/applications/{id}). This relies on the AppHost engine's
+	// /apps/buildiq/applications/{id}). This relies on the AppHost engine's
 	// SPA catch-all (\OCA\OpenRegister\AppHost\Routes::standard adds
 	// dashboard#catchAll for `/{path}`) serving the SPA index on any sub-path —
 	// without it, history-mode deep-links 404 at the server (the reason the app
@@ -145,7 +145,7 @@ const router = createRouter({
 	//
 	// vue-router 4 replaces `mode: 'history'` + `base` with a history object
 	// that takes the base as its argument.
-	history: createWebHistory(generateUrl('/apps/openbuild')),
+	history: createWebHistory(generateUrl('/apps/buildiq')),
 	routes: routesFromManifest(mergedManifest),
 })
 

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild RuleSetCacheManager
+ * Buildiq RuleSetCacheManager
  *
  * Caches loaded RuleSet bundles (the RuleSet object plus its DecisionTables and
  * ConditionActionRules) in Nextcloud's distributed memory cache so the runtime
@@ -14,7 +14,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -29,7 +29,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -47,7 +47,7 @@ class RuleSetCacheManager {
 	/**
 	 * Cache namespace prefix.
 	 */
-	private const NAMESPACE = 'openbuild.rules';
+	private const NAMESPACE = 'buildiq.rules';
 
 	/**
 	 * The distributed cache instance (null when caching unavailable).

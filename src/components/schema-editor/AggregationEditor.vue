@@ -9,23 +9,23 @@
   - message; authoring lands in tasks 8.1.
   -->
 <template>
-	<section class="openbuild-aggregation-editor">
-		<header class="openbuild-aggregation-editor__header">
-			<h3>{{ t('openbuild', 'Aggregations') }}</h3>
+	<section class="buildiq-aggregation-editor">
+		<header class="buildiq-aggregation-editor__header">
+			<h3>{{ t('buildiq', 'Aggregations') }}</h3>
 		</header>
 		<NcNoteCard type="info">
 			{{
 				t(
-					'openbuild',
+					'buildiq',
 					'The aggregation editor ships in v1.1 (see design Decision 7). Existing aggregations declared on this schema are shown read-only below.',
 				)
 			}}
 		</NcNoteCard>
-		<pre v-if="aggregations" class="openbuild-aggregation-editor__readonly">{{
+		<pre v-if="aggregations" class="buildiq-aggregation-editor__readonly">{{
 			formatted
 		}}</pre>
-		<p v-else class="openbuild-aggregation-editor__empty">
-			{{ t('openbuild', 'No aggregations declared on this schema.') }}
+		<p v-else class="buildiq-aggregation-editor__empty">
+			{{ t('buildiq', 'No aggregations declared on this schema.') }}
 		</p>
 	</section>
 </template>
@@ -59,19 +59,19 @@ export default {
 </script>
 
 <style scoped>
-.openbuild-aggregation-editor {
+.buildiq-aggregation-editor {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
 }
 
-.openbuild-aggregation-editor__header h3 {
+.buildiq-aggregation-editor__header h3 {
 	margin: 0;
 	font-size: 18px;
 	font-weight: 600;
 }
 
-.openbuild-aggregation-editor__readonly {
+.buildiq-aggregation-editor__readonly {
 	margin: 0;
 	padding: 8px;
 	background: var(--color-background-dark);
@@ -81,7 +81,7 @@ export default {
 	overflow: auto;
 }
 
-.openbuild-aggregation-editor__empty {
+.buildiq-aggregation-editor__empty {
 	margin: 0;
 	color: var(--color-text-maxcontrast);
 }

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild JobOwnerImpersonator unit tests
+ * Buildiq JobOwnerImpersonator unit tests
  *
  * Covers the impersonation contract used by ExportJobService::transitionJob()
  * (#105): resolve an OR object's owner, swap the session user for the
@@ -13,7 +13,7 @@
  * never restored).
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Service
+ * @package  OCA\Buildiq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -29,11 +29,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Service;
+namespace OCA\Buildiq\Tests\Unit\Service;
 
-use OCA\OpenBuild\Service\JobOwnerImpersonator;
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\Buildiq\Service\JobOwnerImpersonator;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
@@ -298,7 +298,7 @@ final class JobOwnerImpersonatorTest extends TestCase {
 	 * fire, and the `fail` transition that should have recorded why was
 	 * refused for the same reason:
 	 *
-	 *   OpenBuild: owner impersonation lookup failed for object <uuid>:
+	 *   Buildiq: owner impersonation lookup failed for object <uuid>:
 	 *   User 'Anonymous' does not have permission to 'read' objects in schema
 	 *   'Export Job'
 	 *
@@ -322,7 +322,7 @@ final class JobOwnerImpersonatorTest extends TestCase {
 		// impersonator resolves the service duck-typed
 		// (`method_exists($service, 'find')`) rather than by type, so a
 		// one-method fake is a faithful stand-in.
-		$objectService = new class ($object) {
+		$objectService = new class($object) {
 			/**
 			 * Flags the production call actually passed.
 			 *
@@ -335,7 +335,9 @@ final class JobOwnerImpersonatorTest extends TestCase {
 			 *
 			 * @param object $object Object `find()` hands back.
 			 */
-			public function __construct(private object $object) {
+			public function __construct(
+				private object $object,
+			) {
 			}//end __construct()
 
 			/**
@@ -353,12 +355,12 @@ final class JobOwnerImpersonatorTest extends TestCase {
 			 */
 			public function find(
 				int|string $id,
-				?array $_extend=[],
-				bool $files=false,
-				string|int|null $register=null,
-				string|int|null $schema=null,
-				bool $_rbac=true,
-				bool $_multitenancy=true
+				?array $_extend = [],
+				bool $files = false,
+				string|int|null $register = null,
+				string|int|null $schema = null,
+				bool $_rbac = true,
+				bool $_multitenancy = true,
 			): object {
 				$this->captured = ['_rbac' => $_rbac, '_multitenancy' => $_multitenancy];
 

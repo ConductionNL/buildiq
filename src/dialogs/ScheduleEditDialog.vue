@@ -23,32 +23,32 @@
 		v-if="open"
 		:name="
 			editing
-				? t('openbuild', 'Edit scheduled task')
-				: t('openbuild', 'Add scheduled task')
+				? t('buildiq', 'Edit scheduled task')
+				: t('buildiq', 'Add scheduled task')
 		"
 		@close="onClose">
 		<div class="ob-schedule-edit">
 			<h2 class="ob-schedule-edit__title">
 				{{
 					editing
-						? t('openbuild', 'Edit scheduled task')
-						: t('openbuild', 'Add scheduled task')
+						? t('buildiq', 'Edit scheduled task')
+						: t('buildiq', 'Add scheduled task')
 				}}
 			</h2>
 
 			<NcTextField
 				:modelValue="label"
-				:label="t('openbuild', 'Label')"
-				:placeholder="t('openbuild', 'e.g. Nightly BRP sync')"
+				:label="t('buildiq', 'Label')"
+				:placeholder="t('buildiq', 'e.g. Nightly BRP sync')"
 				@update:modelValue="onLabelInput" />
 			<p class="ob-schedule-edit__hint">
-				{{ t('openbuild', 'Identifier') }}:
+				{{ t('buildiq', 'Identifier') }}:
 				<code>{{ derivedId || '—' }}</code>
 			</p>
 
 			<NcSelect
 				v-model="cadenceOption"
-				:inputLabel="t('openbuild', 'Cadence')"
+				:inputLabel="t('buildiq', 'Cadence')"
 				:options="cadenceOptions"
 				:clearable="false"
 				label="label" />
@@ -56,12 +56,12 @@
 			<NcTextField
 				v-if="isCustomCron"
 				:modelValue="cron"
-				:label="t('openbuild', 'Cron expression (5 fields)')"
-				:placeholder="t('openbuild', 'e.g. 0 3 * * 1')"
+				:label="t('buildiq', 'Cron expression (5 fields)')"
+				:placeholder="t('buildiq', 'e.g. 0 3 * * 1')"
 				:error="cron !== '' && !cronValid"
 				:helperText="
 					cron !== '' && !cronValid
-						? t('openbuild', 'Enter a valid 5-field cron expression.')
+						? t('buildiq', 'Enter a valid 5-field cron expression.')
 						: ''
 				"
 				@update:modelValue="cron = $event" />
@@ -70,13 +70,13 @@
 				v-if="isCustomInterval"
 				:modelValue="String(intervalSeconds)"
 				type="number"
-				:label="t('openbuild', 'Interval (seconds)')"
-				:placeholder="t('openbuild', 'e.g. 43200')"
+				:label="t('buildiq', 'Interval (seconds)')"
+				:placeholder="t('buildiq', 'e.g. 43200')"
 				@update:modelValue="intervalSeconds = $event" />
 
 			<NcSelect
 				v-model="actionOption"
-				:inputLabel="t('openbuild', 'Action')"
+				:inputLabel="t('buildiq', 'Action')"
 				:options="actionOptions"
 				:clearable="false"
 				label="label" />
@@ -85,7 +85,7 @@
 				<NcSelect
 					v-if="syncPickerAvailable"
 					v-model="syncOption"
-					:inputLabel="t('openbuild', 'Synchronization')"
+					:inputLabel="t('buildiq', 'Synchronization')"
 					:options="syncOptions"
 					:loading="syncLoading"
 					label="label"
@@ -95,19 +95,16 @@
 						class="ob-schedule-edit__hint ob-schedule-edit__hint--warning">
 						{{
 							t(
-								'openbuild',
+								'buildiq',
 								'The synchronization list could not be loaded. Enter a synchronization id manually.',
 							)
 						}}
 					</p>
 					<NcTextField
 						:modelValue="syncId"
-						:label="t('openbuild', 'Synchronization id')"
+						:label="t('buildiq', 'Synchronization id')"
 						:placeholder="
-							t(
-								'openbuild',
-								'e.g. 00000000-0000-0000-0000-000000000000',
-							)
+							t('buildiq', 'e.g. 00000000-0000-0000-0000-000000000000')
 						"
 						@update:modelValue="syncId = $event" />
 				</div>
@@ -117,7 +114,7 @@
 				:modelValue="enabled"
 				type="switch"
 				@update:modelValue="enabled = $event">
-				{{ t('openbuild', 'Enabled') }}
+				{{ t('buildiq', 'Enabled') }}
 			</NcCheckboxRadioSwitch>
 
 			<p
@@ -125,19 +122,16 @@
 				class="ob-schedule-edit__error"
 				role="alert">
 				{{
-					t(
-						'openbuild',
-						'Please complete the scheduled task before saving.',
-					)
+					t('buildiq', 'Please complete the scheduled task before saving.')
 				}}
 			</p>
 
 			<div class="ob-schedule-edit__actions">
 				<NcButton @click="onClose">
-					{{ t('openbuild', 'Cancel') }}
+					{{ t('buildiq', 'Cancel') }}
 				</NcButton>
 				<NcButton variant="primary" :disabled="!valid" @click="onSave">
-					{{ t('openbuild', 'Save') }}
+					{{ t('buildiq', 'Save') }}
 				</NcButton>
 			</div>
 		</div>
@@ -253,14 +247,14 @@ export default {
 		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-002 */
 		cadenceOptions() {
 			return [
-				{ id: 'hourly', label: t('openbuild', 'Hourly') },
-				{ id: 'daily', label: t('openbuild', 'Daily') },
-				{ id: 'weekly', label: t('openbuild', 'Weekly') },
-				{ id: 'monthly', label: t('openbuild', 'Monthly') },
-				{ id: 'custom-cron', label: t('openbuild', 'Custom (cron)') },
+				{ id: 'hourly', label: t('buildiq', 'Hourly') },
+				{ id: 'daily', label: t('buildiq', 'Daily') },
+				{ id: 'weekly', label: t('buildiq', 'Weekly') },
+				{ id: 'monthly', label: t('buildiq', 'Monthly') },
+				{ id: 'custom-cron', label: t('buildiq', 'Custom (cron)') },
 				{
 					id: 'custom-interval',
-					label: t('openbuild', 'Custom interval (seconds)'),
+					label: t('buildiq', 'Custom interval (seconds)'),
 				},
 			]
 		},
@@ -270,7 +264,7 @@ export default {
 			return [
 				{
 					value: 'openconnector:synchronization',
-					label: t('openbuild', 'Run a synchronization'),
+					label: t('buildiq', 'Run a synchronization'),
 				},
 			]
 		},

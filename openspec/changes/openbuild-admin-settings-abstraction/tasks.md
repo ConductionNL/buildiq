@@ -11,13 +11,13 @@
 
 ## 3. Owner gating (CnAppRoot / CnAppNav)
 
-- [x] 3.1 Resolve `isOwner` on the frontend: `loadState('openbuild','currentUserGroups',[])` ∩ GIDs parsed from `permissions.owners` (`group:<gid>`/bare grammar), OR a `runtime.user` owner/role signal; read via initial-state, never DOM attributes.
+- [x] 3.1 Resolve `isOwner` on the frontend: `loadState('buildiq','currentUserGroups',[])` ∩ GIDs parsed from `permissions.owners` (`group:<gid>`/bare grammar), OR a `runtime.user` owner/role signal; read via initial-state, never DOM attributes.
 - [x] 3.2 Auto-include an owner-gated "Admin settings" nav entry in `CnAppNav` and honour a manifest `action: "admin-settings"` entry (REQ-JMR-004); open the admin dialog on click.
 - [x] 3.3 Remove `OC.isUserAdmin()` as the gate for the admin surface; gate both the nav entry and the dialog (and per-section `permission` narrowing) on `isOwner`, with `permission` narrow-only.
 
-## 4. Backend owner signal (openbuild)
+## 4. Backend owner signal (buildiq)
 
-- [x] 4.1 Surface a read-only owner flag/role on the manifest `runtime.user` context at serve time, computed via `PermissionResolver::matchesCaller(...['owners'])` over the app's `permissions`; reuse the already-published `openbuild.currentUserGroups` and `PopulateApplicationPermissions` owner default. No grammar/model change.
+- [x] 4.1 Surface a read-only owner flag/role on the manifest `runtime.user` context at serve time, computed via `PermissionResolver::matchesCaller(...['owners'])` over the app's `permissions`; reuse the already-published `buildiq.currentUserGroups` and `PopulateApplicationPermissions` owner default. No grammar/model change.
 - [x] 4.2 SPDX headers + full PHPDoc + `@spec` tags on any touched PHP; pass `composer check:strict`.
 
 ## 5. Tests
@@ -28,7 +28,7 @@
 
 ## 6. Verify
 
-- [x] 6.1 Run `openspec validate openbuild-admin-settings-abstraction --strict` and the relevant hydra gates (initial-state, modal-isolation, nc-input-labels, spec-coverage) green on the diff.
+- [x] 6.1 Run `openspec validate buildiq-admin-settings-abstraction --strict` and the relevant hydra gates (initial-state, modal-isolation, nc-input-labels, spec-coverage) green on the diff.
 - [x] 6.2 Backend owner projection matches `matchesCaller` for owner/non-owner/super-admin; confirm no change to `PermissionResolver` grammar or `permissions` block shape.
 
 ## Acceptance criteria

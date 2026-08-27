@@ -1,11 +1,11 @@
 ## ADDED Requirements
 
-### Requirement: Server-side GitHub search over the openbuild-app topic
+### Requirement: Server-side GitHub search over the buildiq-app topic
 
 The system SHALL provide a `GitHubCatalogService` that searches GitHub for
-OpenBuild apps server-side via `OCP\Http\Client\IClientService`, requesting
+Buildiq apps server-side via `OCP\Http\Client\IClientService`, requesting
 `https://api.github.com/search/repositories` with a query that includes
-`topic:openbuild-app` (a user search term, when supplied, appended as an
+`topic:buildiq-app` (a user search term, when supplied, appended as an
 additional qualifier). The host SHALL be a fixed compile-time constant
 (`api.github.com`) — never admin-configurable — so there is no SSRF surface; the
 service SHALL still validate any `owner` / `repo` / `ref` value against a safe
@@ -15,16 +15,16 @@ the raw GitHub response body to the caller.
 
 **ID:** REQ-GHSC-001
 
-#### Scenario: Search targets the openbuild-app topic on the fixed host
+#### Scenario: Search targets the buildiq-app topic on the fixed host
 
 - **WHEN** the GitHub shop search runs
 - **THEN** the outbound request is to `api.github.com` and its query includes
-  `topic:openbuild-app`
+  `topic:buildiq-app`
 
 #### Scenario: A user term is appended to the topic query
 
 - **WHEN** the search runs with the term `permit`
-- **THEN** the outbound query carries both `topic:openbuild-app` and the
+- **THEN** the outbound query carries both `topic:buildiq-app` and the
   URL-encoded `permit` term
 
 ### Requirement: Per-hit descriptor fetch builds installable cards
@@ -76,13 +76,26 @@ cached result exists, the service SHALL serve the cached result with a
 - **THEN** the service surfaces a generic `github_rate_limited` outcome
 - **AND** the raw GitHub response body is not returned to the caller
 
+#### Scenario: A malformed 200 is a lookup failure, not an empty result set
+
+@e2e exclude backend decode contract — the malformed-body branch cannot be driven from a browser without making GitHub itself return a bad 200; verified by PHPUnit (GitHubCatalogServiceTest::testSearchReportsUnreachableWhenTheBodyIsNotTheSearchShape, plus its OK-for-genuinely-empty counterpart). The user-visible consequence is covered by e2e REQ-OBTC-006.
+
+- **GIVEN** GitHub answers a search with HTTP 200 whose body does not carry the
+  documented `items` array (a proxy error page, a truncated response)
+- **WHEN** the service decodes that response
+- **THEN** the service surfaces a `github_unreachable` outcome
+- **AND** the result is not written to the cache
+- **AND** the caller does NOT receive a successful search with zero results,
+  because that would render as "no apps match your search" and tell the user
+  their query found nothing when the lookup never completed
+
 ### Requirement: Automatic broker-credential upgrade for search and fetch
 
 The system SHALL upgrade GitHub search and fetch to an authenticated request when
 the acting user has an allowed broker `github` credential — routing the call
 through OpenRegister's `CredentialBrokerService::request(credentialId,
-'openbuild', method, path, headers, body, actingUserId)` so the credential's
-token is used by the broker and NEVER reaches OpenBuild. The service SHALL resolve
+'buildiq', method, path, headers, body, actingUserId)` so the credential's
+token is used by the broker and NEVER reaches Buildiq. The service SHALL resolve
 the broker lazily (`class_exists` + `Server::get`, mirroring the OR-service
 resolution in `RemoteTemplateStoreService`) and SHALL fall back to an anonymous
 request when the broker class is absent, the widened `github` allowRules are not
@@ -97,7 +110,7 @@ default so the shop is usable with no credential configured.
   widened allowRules are present
 - **WHEN** the GitHub shop search runs
 - **THEN** the request is performed through the credential broker
-- **AND** no GitHub token is present in OpenBuild's process or response
+- **AND** no GitHub token is present in Buildiq's process or response
 
 #### Scenario: Missing broker or rules falls back to anonymous
 
@@ -152,7 +165,7 @@ path, and SHALL create nothing locally.
 #### Scenario: Installing a conforming GitHub app creates a local Application
 
 - **WHEN** an authenticated user installs a resolvable conforming
-  `topic:openbuild-app` repo with a valid new `name` + `slug`
+  `topic:buildiq-app` repo with a valid new `name` + `slug`
 - **THEN** a new local `Application` exists with `status: draft`, owned by the
   caller
 - **AND** its companion schemas are namespaced under the new slug (via the reused

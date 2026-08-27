@@ -7,7 +7,7 @@
 ## Purpose
 
 Lets a citizen developer capture a configured widget, or a selected
-multi-widget page section, from OpenBuild's page designer into a named,
+multi-widget page section, from Buildiq's page designer into a named,
 reusable `ComponentBlock` — a manifest fragment plus schema-dependency
 metadata. A block is org-scoped (not app-scoped), so any editor in the
 organisation can browse the block library from any app's page designer and
@@ -24,7 +24,7 @@ gallery under a distinct "Blocks" filter.
 
 ### Requirement: ComponentBlock schema captures a manifest fragment with dependency metadata
 
-The system SHALL declare a `ComponentBlock` schema in the `openbuild`
+The system SHALL declare a `ComponentBlock` schema in the `buildiq`
 register namespace with properties `uuid`, `slug`, `name`, `description`,
 `category`, `schemaDependencies` (array of de-namespaced schema slugs the
 fragment references), `fragment` (the captured widget or page-section

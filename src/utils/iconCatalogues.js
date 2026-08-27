@@ -6,7 +6,7 @@
  * into an app-icon SVG the wizard can attach to the created Application.
  *
  * The @conduction/nextcloud-vue library bundles no icon pack — the consumer
- * (OpenBuild) owns and licenses the data and passes it in through the adapters:
+ * (Buildiq) owns and licenses the data and passes it in through the adapters:
  *   - MDI is built from the optional @mdi/js dependency (Apache-2.0 / MIT).
  *   - OpenGemeenten is the full CC0 set from github.com/OpenGemeenten/Iconenset
  *     (Regular style, 250 glyphs), extracted into ./openGemeentenIcons.json.

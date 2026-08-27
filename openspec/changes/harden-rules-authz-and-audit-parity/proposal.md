@@ -83,9 +83,9 @@ audit behaviour honest with what the code claims.
 ### Modified Capabilities
 - **business-rules-engine** — per-RuleSet authorization on evaluate/schema/test-all;
   documentation corrected to describe the real isolation boundary.
-- **openbuild-rbac** — MCP admin-bypass recorded to the OR audit trail at parity
+- **buildiq-rbac** — MCP admin-bypass recorded to the OR audit trail at parity
   with the HTTP path (REQ-OBRBAC-007).
-- **openbuild-exporter** — download authorization reads the persisted requester
+- **buildiq-exporter** — download authorization reads the persisted requester
   identity; no silent owner-fallback.
 - **application-insights** — insights role check honours `group:` principals.
 - **app-icon-management** — icon endpoint documentation matches enforced behaviour

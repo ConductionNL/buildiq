@@ -2,7 +2,7 @@
 
 ### Requirement: State-changing settings endpoints MUST enforce CSRF protection
 
-The OpenBuild settings write endpoints SHALL NOT carry `#[NoCSRFRequired]`.
+The Buildiq settings write endpoints SHALL NOT carry `#[NoCSRFRequired]`.
 `SettingsController::create` (POST `/api/settings`, writes instance-wide config
 including `registry_url`/`registry_token`) and `SettingsController::load` (POST
 `/api/settings/load`, re-provisions registers/schemas) MUST require a valid
@@ -17,7 +17,7 @@ enforcing CSRF breaks no legitimate caller.
 - **THEN** the request is rejected by CSRF middleware before the controller runs
 
 #### Scenario: Settings write from the SPA succeeds
-- **WHEN** the OpenBuild SPA posts settings with the request token attached
+- **WHEN** the Buildiq SPA posts settings with the request token attached
 - **THEN** the request is accepted and processed as before
 
 ### Requirement: The per-user preference write endpoint MUST enforce CSRF protection

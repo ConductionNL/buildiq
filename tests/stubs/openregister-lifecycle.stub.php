@@ -7,7 +7,7 @@
  * runtime (the runtime stubs live in tests/stubs/openregister-stubs.php, guarded
  * by class_exists). Lets the app-registered ApplicationVersionOwnerGuard resolve
  * the OR interface it implements when the openregister sibling app is absent from
- * the analysis path (openbuild-rbac, ADR-022/ADR-023).
+ * the analysis path (buildiq-rbac, ADR-022/ADR-023).
  *
  * @category Test
  * @package  OCA\OpenRegister\Lifecycle

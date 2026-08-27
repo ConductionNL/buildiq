@@ -1,11 +1,11 @@
 ---
 sidebar_position: 8
-description: The AI copilot turns a natural-language brief into a reviewable, approvable builder plan — the prompt-to-app path in OpenBuild.
+description: The AI copilot turns a natural-language brief into a reviewable, approvable builder plan — the prompt-to-app path in Buildiq.
 ---
 
 # AI Copilot
 
-The AI copilot is OpenBuild's prompt-to-app surface: describe the app you
+The AI copilot is Buildiq's prompt-to-app surface: describe the app you
 want in a sentence or two, review the concrete operations the AI proposes,
 and approve before anything is created or changed. It never mutates your
 app silently.
@@ -25,7 +25,7 @@ app silently.
 
 1. **Plan** — your brief is sent to the configured AI provider with a
    constrained prompt that only knows about the eight builder operations
-   OpenBuild's MCP tools already expose (create app, promote version, upsert
+   Buildiq's MCP tools already expose (create app, promote version, upsert
    schema, upsert page, add widget, upsert menu item, list apps, get
    manifest). The AI's reply is parsed into a plan: a short summary plus an
    ordered list of steps. **Nothing is written during this step.**
@@ -34,7 +34,7 @@ app silently.
    manifest's size or page/widget/menu-item limits. The predicted manifest
    is shown as a diff. If validation fails, Approve stays disabled and you
    see why.
-3. **Approve** — only on your explicit action does OpenBuild execute the
+3. **Approve** — only on your explicit action does Buildiq execute the
    plan. Execution runs through the exact same handler code the builder's
    MCP tools use — the same permission checks, the same locking, the same
    caps. There is no separate, less-checked path for AI-driven changes.
@@ -42,7 +42,7 @@ app silently.
 ## Atomicity guarantee
 
 An approved plan is applied step by step. If any step fails partway
-through, OpenBuild restores every manifest it had touched to its
+through, Buildiq restores every manifest it had touched to its
 pre-plan snapshot, and deletes an application the plan itself created (so
 you're never left with a half-built app you didn't ask for). This is
 compensation-based, not a database transaction — OpenRegister has no
@@ -57,7 +57,7 @@ remove by hand.
 The copilot rides Nextcloud's built-in **Task Processing** API, so it
 works with whatever text-generation provider you've configured for your
 instance — a local model, an EU-hosted one, or one of the bundled
-Nextcloud AI apps. OpenBuild never talks to a vendor directly and never
+Nextcloud AI apps. Buildiq never talks to a vendor directly and never
 names a model.
 
 - Requires **Nextcloud 30 or newer** (Task Processing shipped in NC 30).
@@ -66,7 +66,7 @@ names a model.
 - The AI Chat Companion (the free-form assistant available elsewhere in
   Nextcloud) shares the same provider configuration but is a different,
   independent surface — the copilot's deterministic plan/approve flow is
-  specific to OpenBuild.
+  specific to Buildiq.
 
 ### Degradation without a provider
 
@@ -83,9 +83,9 @@ else sees no trace of the feature at all.
   get the same audited bypass the builder's MCP tools already have.
 - **Creating a new app**: any authenticated user can generate and confirm a
   new app; you become its owner, exactly like the manual creation wizard.
-- **Hybrid apps** (installed real apps OpenBuild layers customisation on
+- **Hybrid apps** (installed real apps Buildiq layers customisation on
   top of) are out of scope for the copilot entirely — it only edits virtual
-  apps built from scratch in OpenBuild.
+  apps built from scratch in Buildiq.
 
 ## What it will not do
 

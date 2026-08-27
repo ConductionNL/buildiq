@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests for the openbuild:seed-hello-world-fixture command's HYBRID path.
+ * Unit tests for the buildiq:seed-hello-world-fixture command's HYBRID path.
  *
  * The hybrid example app is written as ONE create carrying a pre-minted
  * Application UUID, because the create/create/update shape it replaced was
@@ -18,7 +18,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Command
+ * @package  OCA\Buildiq\Tests\Unit\Command
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -33,16 +33,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Command;
+namespace OCA\Buildiq\Tests\Unit\Command;
 
-use OCA\OpenBuild\Command\SeedHelloWorldFixture;
+use OCA\Buildiq\Command\SeedHelloWorldFixture;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Command\Command;

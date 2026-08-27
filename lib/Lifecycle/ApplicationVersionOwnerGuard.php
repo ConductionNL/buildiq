@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild ApplicationVersionOwnerGuard
+ * Buildiq ApplicationVersionOwnerGuard
  *
  * OpenRegister lifecycle guard for the destructive ApplicationVersion
  * transitions (publish, archive, reopen). Enforces that the caller holds the
@@ -30,7 +30,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Lifecycle
- * @package  OCA\OpenBuild\Lifecycle
+ * @package  OCA\Buildiq\Lifecycle
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -43,13 +43,13 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Lifecycle;
+namespace OCA\Buildiq\Lifecycle;
 
-use OCA\OpenBuild\Service\ApplicationVersionService;
-use OCA\OpenBuild\Service\PermissionResolver;
+use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Service\PermissionResolver;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Lifecycle\GuardResult;
 use OCA\OpenRegister\Lifecycle\LifecycleGuardInterface;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
 
@@ -113,7 +113,7 @@ class ApplicationVersionOwnerGuard implements LifecycleGuardInterface {
 		$caller = $this->userManager->get($userId);
 		if ($caller === null) {
 			$this->logger->warning(
-				'OpenBuild ApplicationVersionOwnerGuard: could not resolve caller UID; denying transition',
+				'Buildiq ApplicationVersionOwnerGuard: could not resolve caller UID; denying transition',
 				['uid' => $userId, 'action' => $action]
 			);
 			return GuardResult::deny('Uw gebruiker kon niet worden bepaald; transitie geweigerd.');
@@ -129,7 +129,7 @@ class ApplicationVersionOwnerGuard implements LifecycleGuardInterface {
 		if ((string)($object['scope'] ?? 'admin') === 'user') {
 			if ($this->permissionResolver->matchesUserScopeOwner(version: $object, caller: $caller) === false) {
 				$this->logger->warning(
-					'OpenBuild ApplicationVersionOwnerGuard: non-owner denied on user-scoped delta',
+					'Buildiq ApplicationVersionOwnerGuard: non-owner denied on user-scoped delta',
 					['action' => $action, 'uid' => $userId]
 				);
 				return GuardResult::deny(
@@ -142,7 +142,7 @@ class ApplicationVersionOwnerGuard implements LifecycleGuardInterface {
 			// An NC admin keeps the audited escape hatch even when the flag is off.
 			if ($flag !== true && $this->permissionResolver->isAdmin(caller: $caller) === false) {
 				$this->logger->warning(
-					'OpenBuild ApplicationVersionOwnerGuard: user-scoped transition denied — '
+					'Buildiq ApplicationVersionOwnerGuard: user-scoped transition denied — '
 					. 'parent app does not allow user overrides',
 					['action' => $action, 'uid' => $userId]
 				);
@@ -157,7 +157,7 @@ class ApplicationVersionOwnerGuard implements LifecycleGuardInterface {
 		$application = $this->loadParentApplication(version: $object);
 		if ($application === null) {
 			$this->logger->warning(
-				'OpenBuild ApplicationVersionOwnerGuard: parent Application unresolved; denying transition',
+				'Buildiq ApplicationVersionOwnerGuard: parent Application unresolved; denying transition',
 				['action' => $action, 'application' => ($object['application'] ?? null)]
 			);
 			return GuardResult::deny(
@@ -191,7 +191,7 @@ class ApplicationVersionOwnerGuard implements LifecycleGuardInterface {
 			}
 
 			$this->logger->warning(
-				'OpenBuild ApplicationVersionOwnerGuard: parent Application has no permissions block; '
+				'Buildiq ApplicationVersionOwnerGuard: parent Application has no permissions block; '
 				. 'denying non-admin caller (admin escape hatch only)',
 				['action' => $action, 'slug' => ($application['slug'] ?? null)]
 			);
@@ -250,7 +250,7 @@ class ApplicationVersionOwnerGuard implements LifecycleGuardInterface {
 			);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
-				'OpenBuild ApplicationVersionOwnerGuard: failed to load parent Application: ' . $e->getMessage(),
+				'Buildiq ApplicationVersionOwnerGuard: failed to load parent Application: ' . $e->getMessage(),
 				['application' => $applicationUuid]
 			);
 			return null;

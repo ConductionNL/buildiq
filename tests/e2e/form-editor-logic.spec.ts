@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2026 OpenBuild Contributors
+ * SPDX-FileCopyrightText: 2026 Buildiq Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Playwright end-to-end coverage for openspec change `form-editor-logic`
@@ -43,12 +43,12 @@ import { readStagedManifest } from './support/stagedManifest'
 import { E2E_BASE_URL as BASE_URL } from './support/baseUrl'
 
 // Harness rewritten 2026-07-28. The original seeded through a "Raw JSON" tab on
-// `/apps/openbuild/applications/{slug}/design` — neither the route nor the
+// `/apps/buildiq/applications/{slug}/design` — neither the route nor the
 // textarea exists (the designer is `/builder/:slug/pages`, and its host is
 // PageDesignerHost). The form page is now seeded through the manifest API and
 // every assertion reads the PERSISTED manifest back, which is a truer end-to-end
 // check than inspecting an unsaved editor buffer.
-test.describe('openbuild form-editor-logic', () => {
+test.describe('buildiq form-editor-logic', () => {
 	// The page designer is a three-pane desktop surface: at Playwright's default
 	// 1280x720 the page-list rows land below the fold (measured y=728), where the
 	// click never settles. Give it a desktop viewport.
@@ -67,7 +67,7 @@ test.describe('openbuild form-editor-logic', () => {
 	 */
 	async function fetchManifest(page) {
 		const resp = await page.request.get(
-			`${BASE_URL}/index.php/apps/openbuild/api/applications/${APP_SLUG}/manifest`,
+			`${BASE_URL}/index.php/apps/buildiq/api/applications/${APP_SLUG}/manifest`,
 			{ headers: { 'OCS-APIRequest': 'true' } },
 		)
 		expect(resp.ok(), 'GET manifest must succeed').toBeTruthy()
@@ -105,7 +105,7 @@ test.describe('openbuild form-editor-logic', () => {
 			config,
 		})
 		const resp = await page.request.put(
-			`${BASE_URL}/index.php/apps/openbuild/api/applications/${APP_SLUG}/manifest`,
+			`${BASE_URL}/index.php/apps/buildiq/api/applications/${APP_SLUG}/manifest`,
 			{
 				headers: { 'OCS-APIRequest': 'true' },
 				data: { manifest: { ...manifest, pages } },
@@ -133,7 +133,7 @@ test.describe('openbuild form-editor-logic', () => {
 	async function seedFormPageAndSelect(page, mutate = null) {
 		const index = await seedFormPage(page, mutate)
 		await page.goto(
-			`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/pages?_version=production`,
+			`${BASE_URL}/apps/buildiq/builder/${APP_SLUG}/pages?_version=production`,
 			{
 				waitUntil: 'domcontentloaded',
 			},

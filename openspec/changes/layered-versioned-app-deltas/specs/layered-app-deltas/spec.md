@@ -71,7 +71,7 @@ points at the admin delta version (`kind: application-version`,
 the parent `Application.allowUserOverrides` is `true` AND a `scope: user` row
 owned by the caller exists; otherwise the result SHALL be exactly
 `base ⊕ admin-delta`. For a HYBRID app the BASE is the fleet app's bundled
-manifest, which OpenBuild does not hold, so the BASE merge SHALL remain
+manifest, which Buildiq does not hold, so the BASE merge SHALL remain
 client-side (the loader merges the served admin+user delta chain over the bundled
 base); for a VIRTUAL app the resolution MAY merge server-side via the existing
 `ManifestResolverService`. The merge SHALL reuse the existing PHP
@@ -161,4 +161,4 @@ for delta history. Rollback of a delta SHALL roll back that single
 - **WHEN** the owner rolls a user delta back to an earlier OR version
 - **THEN** the delta's `manifestDelta` reverts to that version's content via OR's
   rollback path
-- **AND** no OpenBuild-local version store is consulted
+- **AND** no Buildiq-local version store is consulted

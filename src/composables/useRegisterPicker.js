@@ -6,11 +6,11 @@ import { getRequestToken } from '@nextcloud/auth'
  *
  * Hybrid register model (per design.md + locked decision 3):
  *  - The page editor consumes Application records from the SHARED
- *    `openbuild` register (one record per virtual app).
+ *    `buildiq` register (one record per virtual app).
  *  - The manifest each Application produces references schemas living
- *    in the PER-APP register `openbuild-{slug}`. So when the user picks
+ *    in the PER-APP register `buildiq-{slug}`. So when the user picks
  *    a schema for a page binding, this composable shows the registers
- *    available to that per-app namespace — i.e. `openbuild-{slug}` plus
+ *    available to that per-app namespace — i.e. `buildiq-{slug}` plus
  *    any other registers the user explicitly references.
  *
  * Why a composable and not raw axios in each sub-editor:
@@ -32,8 +32,8 @@ import { generateUrl } from '@nextcloud/router'
  * (builder.js and BuilderHost.vue) so the two cannot drift apart again.
  *
  * Take `perAppRegister` from `registerSlugForApp(slug, versionSlug)` — the app's
- * register is per-VERSION (`openbuild-{slug}-{version}`), so the bare
- * `openbuild-{slug}` is usually not a register at all.
+ * register is per-VERSION (`buildiq-{slug}-{version}`), so the bare
+ * `buildiq-{slug}` is usually not a register at all.
  *
  * @param {string} perAppRegister - the app's own (per-version) register slug.
  * @param {?object} manifest - the resolved manifest (its pages' `config.register`).
@@ -76,7 +76,7 @@ function PICKER_HEADERS() {
  *
  * @param {object} [opts] - Options.
  * @param {string} [opts.appSlug] - Current Application slug. When set, the
- *   picker filters to the per-app register `openbuild-{slug}` first.
+ *   picker filters to the per-app register `buildiq-{slug}` first.
  * @param {Array<{register: string, label?: string}>} [opts.dataRegisters] -
  *   The Application's declared shared data-register bindings
  *   (`Application.dataRegisters`, data-registers-schema-declaration). When
@@ -95,7 +95,7 @@ export function useRegisterPicker(opts = {}) {
 
 	/**
 	 * Resolve the per-app register slug for the current Application.
-	 * Returns `openbuild-{slug}` when slug is set, falls back to ''.
+	 * Returns `buildiq-{slug}` when slug is set, falls back to ''.
 	 *
 	 * @return {string} - the per-app register slug or empty string.
 	 */

@@ -1,10 +1,10 @@
 /*
- * SPDX-FileCopyrightText: 2026 OpenBuild Contributors
+ * SPDX-FileCopyrightText: 2026 Buildiq Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Vitest spec — manifest load → serialise round-trip (openbuild#9 task 7.2).
+ * Vitest spec — manifest load → serialise round-trip (buildiq#9 task 7.2).
  *
- * A canonical OpenBuild manifest must survive a JSON.parse → JSON.stringify
+ * A canonical Buildiq manifest must survive a JSON.parse → JSON.stringify
  * cycle without losing information. The page editor depends on this when it
  * round-trips manifest edits through its Raw-JSON tab; the wizard seed
  * depends on it because every new app is born from `default-manifest.json`.
@@ -25,7 +25,7 @@ const REPO_ROOT = resolve(__dirname, '../..')
 
 const TARGETS = [
 	{
-		label: 'OpenBuild shell manifest (src/manifest.json)',
+		label: 'Buildiq shell manifest (src/manifest.json)',
 		path: 'src/manifest.json',
 		substituteTokens: false,
 	},
@@ -183,7 +183,7 @@ describe('manifest round-trip', () => {
 						type: 'index',
 						title: 'Messages',
 						config: {
-							register: 'openbuild',
+							register: 'buildiq',
 							schema: 'hello-message',
 							columns: ['title', 'body'],
 							sort: { field: 'created', dir: 'desc' },

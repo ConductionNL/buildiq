@@ -22,22 +22,22 @@
 import { test, expect } from '@playwright/test'
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
-const LIVE = process.env.OPENBUILD_E2E_LIVE === '1'
+const LIVE = process.env.BUILDIQ_E2E_LIVE === '1'
 
 // Helper: navigate to the Hello World detail page
 async function gotoHelloWorldDetail(page: import('@playwright/test').Page) {
-	await page.goto(`${BASE}/apps/openbuild/applications`)
+	await page.goto(`${BASE}/apps/buildiq/applications`)
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
 	await card.click()
 	await page.waitForURL(/\/applications\//, { timeout: 15_000 })
 }
 
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no application detail / icon / template-clone UI renders. Re-enable when #41 is fixed.
+// STUB/QUARANTINE NOTE CORRECTED 2026-08-25. The old text blamed buildiq#41 for the admin UI "not functional in this build". #41 is a PR that MERGED on 2026-07-27, and 47 spec files in this suite already pass against that UI — applicationDetailOverview.spec.ts alone has 9 passing tests. What actually blocks these is that their bodies are stubs (goto + main-visible), so enabling them would pass while asserting nothing.
 //
 // ANCHORS REMOVED. The requirement names six rows IN DOM ORDER, plus four
 // sidebar tabs present and one absent. This body asserts `main` is visible, the
-// document title matches /openbuild/i, and the string "Hello World" appears —
+// document title matches /buildiq/i, and the string "Hello World" appears —
 // which is true of any detail page that does not white-screen, and would stay
 // true with all six rows deleted. The test title says so itself: "renders main
 // area without crashing". That is a smoke test, and a smoke test is a fine
@@ -52,8 +52,8 @@ test.skip('REQ-OBADO-001 — application detail page renders main area without c
 		timeout: 10_000,
 	})
 
-	// The page title must reference OpenBuild
-	await expect(page).toHaveTitle(/openbuild/i)
+	// The page title must reference Buildiq
+	await expect(page).toHaveTitle(/buildiq/i)
 
 	// The app name "Hello World" must appear in the detail
 	await expect(
@@ -62,7 +62,7 @@ test.skip('REQ-OBADO-001 — application detail page renders main area without c
 	).toBeVisible({ timeout: 10_000 })
 })
 
-// QUARANTINED (Conduction/openbuild#41): openbuild admin UI not functional in this build — no application detail / icon / template-clone UI renders. Re-enable when #41 is fixed.
+// STUB/QUARANTINE NOTE CORRECTED 2026-08-25. The old text blamed buildiq#41 for the admin UI "not functional in this build". #41 is a PR that MERGED on 2026-07-27, and 47 spec files in this suite already pass against that UI — applicationDetailOverview.spec.ts alone has 9 passing tests. What actually blocks these is that their bodies are stubs (goto + main-visible), so enabling them would pass while asserting nothing.
 //
 // ANCHORS REMOVED. The requirement is that the hero strip shows the icon from
 // the APPLICATION record rather than a per-version one (ADR-001). This body
@@ -116,7 +116,7 @@ test('REQ-OBADO-006 — Register widget shows an "Open in OpenRegister" link on 
 	// @e2e application-detail-overview::register-widget-deep-links-to-openregister
 	test.skip(
 		!LIVE,
-		'Requires live dev env with the ApplicationDetailHeader cockpit built — set OPENBUILD_E2E_LIVE=1',
+		'Requires live dev env with the ApplicationDetailHeader cockpit built — set BUILDIQ_E2E_LIVE=1',
 	)
 
 	await gotoHelloWorldDetail(page)

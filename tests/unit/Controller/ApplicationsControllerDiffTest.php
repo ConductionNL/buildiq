@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests for ApplicationsController::diffVersions (spec #6 openbuild-versioning).
+ * Unit tests for ApplicationsController::diffVersions (spec #6 buildiq-versioning).
  *
  * Pins the three contract points called out in design.md §Diff endpoint:
  *   - 200 returns `{ from, to }` with manifest + version + publishedAt for both
@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Controller
+ * @package  OCA\Buildiq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,17 +26,17 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Controller;
+namespace OCA\Buildiq\Tests\Unit\Controller;
 
-use OCA\OpenBuild\Controller\ApplicationsController;
-use OCA\OpenBuild\Service\ManifestResolverService;
-use OCA\OpenBuild\Service\PermissionResolver;
+use OCA\Buildiq\Controller\ApplicationsController;
+use OCA\Buildiq\Service\ManifestResolverService;
+use OCA\Buildiq\Service\PermissionResolver;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
 use OCP\IGroupManager;
@@ -126,7 +126,7 @@ class ApplicationsControllerDiffTest extends TestCase {
 			groupManager: $groupManager,
 			manifestResolver: $this->createMock(ManifestResolverService::class),
 			permissionResolver: $permissionResolver,
-			channelApplier: $this->createMock(\OCA\OpenBuild\Service\AppChannelApplier::class),
+			channelApplier: $this->createMock(\OCA\Buildiq\Service\AppChannelApplier::class),
 		);
 	}//end setUp()
 
@@ -374,13 +374,13 @@ class ApplicationsControllerDiffTest extends TestCase {
 			groupManager: $noAdminGroupManager,
 			manifestResolver: $this->createMock(ManifestResolverService::class),
 			permissionResolver: $noAdminPermissionResolver,
-			channelApplier: $this->createMock(\OCA\OpenBuild\Service\AppChannelApplier::class),
+			channelApplier: $this->createMock(\OCA\Buildiq\Service\AppChannelApplier::class),
 		);
 
 		$result = $controller->diffVersions(slug: 'hello-world', from: 'draft', to: 'draft');
 
 		self::assertSame(Http::STATUS_FORBIDDEN, $result->getStatus());
 		$data = $result->getData();
-		self::assertSame('openbuild.rbac.no_role', $data['code']);
+		self::assertSame('buildiq.rbac.no_role', $data['code']);
 	}//end testDiffVersionsReturns403WhenCallerHasNoRole()
 }//end class

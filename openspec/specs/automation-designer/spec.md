@@ -200,7 +200,7 @@ class import (see `automation-document-action` and the modified
 `docudesk-document-templates` REQ-DDT-006). Compilation SHALL be
 deterministic (identical automation → identical artifacts) and idempotent
 (recompiling an unchanged automation changes nothing). No new imperative
-execution engine is introduced in openbuild.
+execution engine is introduced in buildiq.
 
 @e2e exclude backend compilation contract — artifact shapes are asserted by
 PHPUnit against `AutomationCompilerService` (unit) and the OR round-trip

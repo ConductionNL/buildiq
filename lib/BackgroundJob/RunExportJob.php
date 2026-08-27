@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenBuild RunExportJob background job
+ * Buildiq RunExportJob background job
  *
  * Picks up a queued ExportJob and walks it through running →
  * succeeded|failed. Honours the no-auto-retry rule (memory: crashes →
  * needs-input).
  *
  * @category BackgroundJob
- * @package  OCA\OpenBuild\BackgroundJob
+ * @package  OCA\Buildiq\BackgroundJob
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -27,11 +27,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\BackgroundJob;
+namespace OCA\Buildiq\BackgroundJob;
 
-use OCA\OpenBuild\Service\ExportJobService;
-use OCA\OpenBuild\Service\ExportService;
-use OCA\OpenBuild\Service\GitHubPushService;
+use OCA\Buildiq\Service\ExportJobService;
+use OCA\Buildiq\Service\ExportService;
+use OCA\Buildiq\Service\GitHubPushService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use Psr\Log\LoggerInterface;
@@ -80,7 +80,7 @@ class RunExportJob extends QueuedJob {
 	protected function run($argument): void {
 		$jobUuid = $this->extractJobUuid(argument: $argument);
 		if ($jobUuid === '') {
-			$this->logger->error('OpenBuild RunExportJob: missing jobUuid argument');
+			$this->logger->error('Buildiq RunExportJob: missing jobUuid argument');
 			return;
 		}
 
@@ -96,7 +96,7 @@ class RunExportJob extends QueuedJob {
 			// an errorMessage onto the record, and leave it for the user
 			// (memory: crashes → needs-input).
 			$this->logger->error(
-				'OpenBuild export failed',
+				'Buildiq export failed',
 				['jobUuid' => $jobUuid, 'error' => $e->getMessage()]
 			);
 			$this->exportJobService->transitionJob(
@@ -141,7 +141,7 @@ class RunExportJob extends QueuedJob {
 		$job = $this->exportJobService->loadJob(jobUuid: $jobUuid);
 		if ($job === null) {
 			throw new RuntimeException(
-				sprintf('OpenBuild RunExportJob: could not load ExportJob record for UUID %s', $jobUuid)
+				sprintf('Buildiq RunExportJob: could not load ExportJob record for UUID %s', $jobUuid)
 			);
 		}
 
@@ -162,7 +162,7 @@ class RunExportJob extends QueuedJob {
 
 		if ($applicationUuid === '') {
 			throw new RuntimeException(
-				sprintf('OpenBuild RunExportJob: ExportJob %s has an empty applicationUuid', $jobUuid)
+				sprintf('Buildiq RunExportJob: ExportJob %s has an empty applicationUuid', $jobUuid)
 			);
 		}
 
@@ -171,7 +171,7 @@ class RunExportJob extends QueuedJob {
 			'appNamespace' => $this->slugToNamespace(slug: $applicationSlug),
 			'appName' => $this->slugToLabel(slug: $applicationSlug),
 			'appVersion' => $applicationVersion,
-			'authorName' => 'OpenBuild Citizen Developer',
+			'authorName' => 'Buildiq Citizen Developer',
 			'authorEmail' => 'dev@conduction.nl',
 			'license' => $license,
 		];
@@ -200,7 +200,7 @@ class RunExportJob extends QueuedJob {
 		}
 
 		$this->exportJobService->transitionJob(jobUuid: $jobUuid, action: 'succeed', extraFields: $extra);
-		$this->logger->info('OpenBuild export succeeded', ['jobUuid' => $jobUuid]);
+		$this->logger->info('Buildiq export succeeded', ['jobUuid' => $jobUuid]);
 	}//end executePipeline()
 
 	/**
@@ -258,7 +258,7 @@ class RunExportJob extends QueuedJob {
 		$credentialId = (string)($job['githubCredentialId'] ?? '');
 		if ($credentialId === '') {
 			throw new RuntimeException(
-				'OpenBuild RunExportJob: a GitHub export needs a broker credential; '
+				'Buildiq RunExportJob: a GitHub export needs a broker credential; '
 				. 'ExportJob ' . $jobUuid . ' has none.'
 			);
 		}
@@ -296,7 +296,7 @@ class RunExportJob extends QueuedJob {
 	 */
 	private function buildSuccessFields(string $jobUuid, ?array $pushResult): array {
 		$extra = [
-			'downloadUrl' => '/index.php/apps/openbuild/api/exports/' . $jobUuid . '/download',
+			'downloadUrl' => '/index.php/apps/buildiq/api/exports/' . $jobUuid . '/download',
 		];
 
 		if (is_array($pushResult) === false) {

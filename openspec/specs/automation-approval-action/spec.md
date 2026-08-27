@@ -12,7 +12,7 @@ v1 — OR's `ApprovalStep.role` has no per-user primitive), compiled to an OR
 on-reject follow-up compilation via typed listeners on OR's approval events,
 and the "My approvals" runtime widget that lists and decides the viewer's
 pending steps by calling OpenRegister's approval-steps REST surface directly
-(ADR-022 consume-not-rebuild — OpenBuild never implements an approval
+(ADR-022 consume-not-rebuild — Buildiq never implements an approval
 engine).
 
 ## Requirements
@@ -25,7 +25,7 @@ filters the result client-side to steps whose `role` is present in the
 current viewer's NC groups (supplied via `IInitialState`, never a DOM
 attribute read). The widget SHALL offer approve/reject actions that call
 OpenRegister's `POST /api/approval-steps/{id}/approve` and
-`/api/approval-steps/{id}/reject` directly — OpenBuild SHALL NOT expose an
+`/api/approval-steps/{id}/reject` directly — Buildiq SHALL NOT expose an
 intermediate pass-through controller for these calls.
 
 #### Scenario: Widget shows only steps the viewer's groups can act on
@@ -41,16 +41,16 @@ intermediate pass-through controller for these calls.
 - **WHEN** a viewer clicks Approve on a listed step
 - **THEN** the frontend calls OpenRegister's
   `POST /api/approval-steps/{id}/approve` directly
-- **AND** no OpenBuild controller method mediates the call
+- **AND** no Buildiq controller method mediates the call
 
 #### Scenario: Empty state when no steps are assigned
 
 - **WHEN** the viewer's groups match no pending `ApprovalStep`
 - **THEN** the widget renders an empty state and no approve/reject controls
 
-### Requirement: OpenBuild introduces no new approval authorization logic
+### Requirement: Buildiq introduces no new approval authorization logic
 
-All approval authorization (role/group membership, separation-of-duties) SHALL be enforced exclusively by OpenRegister's `ApprovalService`. OpenBuild
+All approval authorization (role/group membership, separation-of-duties) SHALL be enforced exclusively by OpenRegister's `ApprovalService`. Buildiq
 SHALL NOT duplicate, pre-check, or bypass that authorization in the widget,
 the compiler, or any listener — an approve/reject call that OR's own checks
 would reject SHALL be rejected by OR, not filtered out silently beforehand in
@@ -61,5 +61,5 @@ a way that could mask a bug.
 - **WHEN** a viewer who is not a member of a step's assigned group somehow
   triggers an approve call for that step
 - **THEN** OpenRegister's `verifyRole` check rejects the call with `403`
-- **AND** OpenBuild performs no separate authorization check that would
+- **AND** Buildiq performs no separate authorization check that would
   produce a different outcome

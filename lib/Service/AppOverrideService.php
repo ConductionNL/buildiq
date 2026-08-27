@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild AppOverrideService
+ * Buildiq AppOverrideService
  *
  * Store-and-serve for a fleet app's manifest customization. Since
  * unify-apps-with-app-type the customization is persisted in the UNIFIED app
@@ -14,7 +14,7 @@
  * the backing storage moved.
  *
  * It does NOT merge the delta — the merge runs client-side in the fleet app's
- * loader over its own bundled base, because OpenBuild does not hold fleet apps'
+ * loader over its own bundled base, because Buildiq does not hold fleet apps'
  * bundled manifests. The same delta-only ApplicationVersion is what the unified
  * Apps list renders as a hybrid app, so the in-app builder and the fleet-app
  * shim read and write one shared record.
@@ -23,7 +23,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -38,7 +38,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 use DateTimeImmutable;
 use DateTimeInterface;
@@ -59,9 +59,9 @@ use Throwable;
  */
 class AppOverrideService {
 	/**
-	 * OpenRegister register slug that hosts the OpenBuild control schemas.
+	 * OpenRegister register slug that hosts the Buildiq control schemas.
 	 */
-	public const REGISTER_SLUG = 'openbuild';
+	public const REGISTER_SLUG = 'buildiq';
 
 	/**
 	 * OpenRegister schema slug for the logical app record.
@@ -309,7 +309,9 @@ class AppOverrideService {
 					'manifest' => (object)[],
 					'manifestDelta' => $delta,
 					'baseRef' => $userBaseRef,
-					'register' => self::REGISTER_SLUG . '-' . $appId,
+					// Per-version register — NOT this app's register slug. See
+					// ApplicationVersionService::VERSION_REGISTER_PREFIX.
+					'register' => ApplicationVersionService::VERSION_REGISTER_PREFIX . $appId,
 					'semver' => '0.1.0',
 					'status' => 'draft',
 					'application' => $appUuid,
@@ -402,7 +404,7 @@ class AppOverrideService {
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: user delta list failed for ' . $appId . ': ' . $e->getMessage(),
+				'Buildiq: user delta list failed for ' . $appId . ': ' . $e->getMessage(),
 				['exception' => $e]
 			);
 			return [];
@@ -589,7 +591,7 @@ class AppOverrideService {
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: hybrid Application lookup failed for appId ' . $appId . ': ' . $e->getMessage(),
+				'Buildiq: hybrid Application lookup failed for appId ' . $appId . ': ' . $e->getMessage(),
 				['exception' => $e]
 			);
 			return null;
@@ -632,7 +634,7 @@ class AppOverrideService {
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: hybrid production version lookup failed for appId ' . $appId . ': ' . $e->getMessage(),
+				'Buildiq: hybrid production version lookup failed for appId ' . $appId . ': ' . $e->getMessage(),
 				['exception' => $e]
 			);
 			return null;
@@ -682,7 +684,8 @@ class AppOverrideService {
 				'manifest' => (object)[],
 				'manifestDelta' => $delta,
 				'baseRef' => $baseRefObject,
-				'register' => self::REGISTER_SLUG . '-' . $appId,
+				// Per-version register — see VERSION_REGISTER_PREFIX.
+				'register' => ApplicationVersionService::VERSION_REGISTER_PREFIX . $appId,
 				'semver' => '0.1.0',
 				'status' => 'published',
 				'application' => $applicationUuid,
@@ -820,7 +823,7 @@ class AppOverrideService {
 			$this->objectService->deleteObject(uuid: $uuid);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: failed to delete ' . $context . ': ' . $e->getMessage(),
+				'Buildiq: failed to delete ' . $context . ': ' . $e->getMessage(),
 				['exception' => $e]
 			);
 		}
@@ -861,7 +864,7 @@ class AppOverrideService {
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: user delta lookup failed for ' . $uid . ': ' . $e->getMessage(),
+				'Buildiq: user delta lookup failed for ' . $uid . ': ' . $e->getMessage(),
 				['exception' => $e]
 			);
 			return null;

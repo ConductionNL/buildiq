@@ -13,7 +13,7 @@
 		<p class="ob-manifest-tab__help">
 			{{
 				t(
-					'openbuild',
+					'buildiq',
 					'Integrator-only editor: edit the raw JSON manifest below. For a visual editor open "Design pages".',
 				)
 			}}
@@ -21,13 +21,13 @@
 		<textarea
 			v-model="manifestText"
 			class="ob-manifest-tab__textarea"
-			data-testid="openbuild-editor-textarea"
+			data-testid="buildiq-editor-textarea"
 			spellcheck="false"
 			:readonly="obAppRole === 'viewer' || obAppRole === 'none'"
-			:placeholder="t('openbuild', 'Paste or edit the JSON manifest here.')"
-			:aria-label="t('openbuild', 'Paste or edit the JSON manifest here.')" />
+			:placeholder="t('buildiq', 'Paste or edit the JSON manifest here.')"
+			:aria-label="t('buildiq', 'Paste or edit the JSON manifest here.')" />
 		<div v-if="error" class="ob-manifest-tab__error">
-			{{ t('openbuild', 'Invalid manifest') }}: {{ error }}
+			{{ t('buildiq', 'Invalid manifest') }}: {{ error }}
 		</div>
 		<div v-if="obAppError" class="ob-manifest-tab__error">
 			{{ obAppError }}
@@ -37,9 +37,9 @@
 				v-if="obAppRole === 'editor' || obAppRole === 'owner'"
 				variant="primary"
 				:disabled="!obApp || saving"
-				data-testid="openbuild-editor-save"
+				data-testid="buildiq-editor-save"
 				@click="save">
-				{{ saving ? t('openbuild', 'Saving…') : t('openbuild', 'Save') }}
+				{{ saving ? t('buildiq', 'Saving…') : t('buildiq', 'Save') }}
 			</NcButton>
 			<span v-if="savedToast" class="ob-manifest-tab__toast">{{
 				savedToast
@@ -109,6 +109,8 @@ export default {
 		 *
 		 * @param {{slug?: string, manifest?: object}} app - the resolved Application.
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-overview/spec.md
 		 */
 		async loadManifest(app) {
 			const slug = app && app.slug
@@ -119,7 +121,7 @@ export default {
 			try {
 				const { data } = await axios.get(
 					generateUrl(
-						`/apps/openbuild/api/applications/${encodeURIComponent(slug)}/manifest`,
+						`/apps/buildiq/api/applications/${encodeURIComponent(slug)}/manifest`,
 					),
 				)
 				this.manifestText = JSON.stringify(data || {}, null, 2)
@@ -127,7 +129,7 @@ export default {
 				// Fall back to whatever the record carries rather than blanking the
 				// editor; the error surface below reports the failure.
 				this.manifestText = JSON.stringify(app.manifest || {}, null, 2)
-				this.error = `${t('openbuild', 'Could not load the manifest')}: ${e.message || e}`
+				this.error = `${t('buildiq', 'Could not load the manifest')}: ${e.message || e}`
 			}
 		},
 
@@ -141,7 +143,7 @@ export default {
 			try {
 				parsed = JSON.parse(this.manifestText)
 			} catch (e) {
-				this.error = `${t('openbuild', 'JSON parse error')}: ${e.message}`
+				this.error = `${t('buildiq', 'JSON parse error')}: ${e.message}`
 				return null
 			}
 			const result = validateManifest
@@ -178,13 +180,13 @@ export default {
 				// expects it wrapped in `{ manifest }`.
 				await axios.put(
 					generateUrl(
-						`/apps/openbuild/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`,
+						`/apps/buildiq/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`,
 					),
 					{ manifest: parsed },
 				)
-				this.savedToast = t('openbuild', 'Saved')
+				this.savedToast = t('buildiq', 'Saved')
 			} catch (e) {
-				this.error = `${t('openbuild', 'Save failed')}: ${e.message || e}`
+				this.error = `${t('buildiq', 'Save failed')}: ${e.message || e}`
 			} finally {
 				this.saving = false
 			}

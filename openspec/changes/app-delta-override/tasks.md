@@ -1,11 +1,11 @@
 ## 0. Prerequisite (hard dependency)
 
 - [ ] 0.1 Confirm `@conduction/nextcloud-vue` `manifest-delta-merge-and-flex-columns` has landed in the consumed version — stable `widgetEntry.id`, `mergeManifestDelta`, `diffManifest`, `$op:"remove"`, `__order`, and `orphanedDeltaPaths` are all exported and documented. BLOCK all tasks below until confirmed.
-- [ ] 0.2 Pin the consumed nextcloud-vue version in OpenBuild's `package.json` to the release that includes the foundation, and capture the canonical JS `mergeManifestDelta` unit-test fixtures for reuse as the PHP port's shared fixtures.
+- [ ] 0.2 Pin the consumed nextcloud-vue version in Buildiq's `package.json` to the release that includes the foundation, and capture the canonical JS `mergeManifestDelta` unit-test fixtures for reuse as the PHP port's shared fixtures.
 
 ## 1. Schema fields (additive, no migration)
 
-- [ ] 1.1 Add the optional `baseRef` structured-reference property to the manifest-carrying `ApplicationVersion` schema in `lib/Settings/openbuild_register.json` (kind = template | openbuild-app | fleet-app, id, optional version pin), with a description and `additionalProperties: false`.
+- [ ] 1.1 Add the optional `baseRef` structured-reference property to the manifest-carrying `ApplicationVersion` schema in `lib/Settings/openbuild_register.json` (kind = template | buildiq-app | fleet-app, id, optional version pin), with a description and `additionalProperties: false`.
 - [ ] 1.2 Add the optional `manifestDelta` object property to `ApplicationVersion` (keyed delta: page-by-id, widget-by-id, `$op:"remove"`, `__order`), with a description pointing at the nextcloud-vue contract.
 - [ ] 1.3 Add a backwards-compat note to the existing `manifest` blob property: blob present + no `baseRef` ⇒ blob IS the manifest (legacy/standalone). Bump the schema `version`.
 
@@ -18,8 +18,8 @@
 
 ## 3. Base resolution
 
-- [ ] 3.1 In `ManifestResolverService`, add `resolveBase(baseRef)` — template ref → `ApplicationTemplate.manifest`; openbuild-app ref → that app's resolved production manifest (recursive); fleet-app ref → named fleet app's bundled manifest; honour an optional version pin.
-- [ ] 3.2 Add a depth cap + cycle guard to recursive `openbuild-app` base resolution (reuse the `guardNoCycle` precedent); a cycle/over-deep chain resolves to the deepest safe base + a diagnostic.
+- [ ] 3.1 In `ManifestResolverService`, add `resolveBase(baseRef)` — template ref → `ApplicationTemplate.manifest`; buildiq-app ref → that app's resolved production manifest (recursive); fleet-app ref → named fleet app's bundled manifest; honour an optional version pin.
+- [ ] 3.2 Add a depth cap + cycle guard to recursive `buildiq-app` base resolution (reuse the `guardNoCycle` precedent); a cycle/over-deep chain resolves to the deepest safe base + a diagnostic.
 
 ## 4. Endpoint resolution wiring
 

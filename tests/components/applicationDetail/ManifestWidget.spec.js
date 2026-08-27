@@ -167,7 +167,7 @@ describe('ManifestWidget', () => {
 		await flush(wrapper)
 		await wrapper.vm.createOverride()
 		expect(axiosPutMock).toHaveBeenCalledWith(
-			'/apps/openbuild/api/app-overrides/opencatalogi/user',
+			'/apps/buildiq/api/app-overrides/opencatalogi/user',
 			{},
 		)
 		expect(wrapper.emitted('changed')).toBeTruthy()

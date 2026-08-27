@@ -2,12 +2,12 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Vitest spec for the OpenBuild ↔ nc-vue integration seam
+ * Vitest spec for the Buildiq ↔ nc-vue integration seam
  * (`src/composables/useSessionHistory.js`), migrated from the deleted
  * local `useManifestHistory` composable's spec (builder-undo-redo,
  * design.md D1 / task 4.1).
  *
- * Exercises the seam exactly as OpenBuild's designers consume it:
+ * Exercises the seam exactly as Buildiq's designers consume it:
  *  - push/undo/redo round-trip.
  *  - push is a no-op on a structurally-identical state.
  *  - a push after an undo truncates the redo tail (REQ-BUR-001).

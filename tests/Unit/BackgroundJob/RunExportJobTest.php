@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild RunExportJob unit tests
+ * Buildiq RunExportJob unit tests
  *
  * Covers the most security-critical surface in spec #9: the lifecycle
  * transitions through TransitionEngine, the ALWAYS-clear-PAT contract
@@ -9,7 +9,7 @@
  * idempotency guarantee for re-runs of the same job.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\BackgroundJob
+ * @package  OCA\Buildiq\Tests\Unit\BackgroundJob
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -25,12 +25,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\BackgroundJob;
+namespace OCA\Buildiq\Tests\Unit\BackgroundJob;
 
-use OCA\OpenBuild\BackgroundJob\RunExportJob;
-use OCA\OpenBuild\Service\ExportJobService;
-use OCA\OpenBuild\Service\ExportService;
-use OCA\OpenBuild\Service\GitHubPushService;
+use OCA\Buildiq\BackgroundJob\RunExportJob;
+use OCA\Buildiq\Service\ExportJobService;
+use OCA\Buildiq\Service\ExportService;
+use OCA\Buildiq\Service\GitHubPushService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -166,7 +166,7 @@ final class RunExportJobTest extends TestCase {
 		$this->exportService
 			->expects(self::once())
 			->method('generateAppZip')
-			->willReturn('/tmp/openbuild-exports/' . $jobUuid . '.zip');
+			->willReturn('/tmp/buildiq-exports/' . $jobUuid . '.zip');
 
 		// GitHub push must NOT fire for a ZIP-only job.
 		$this->githubPushService->expects(self::never())->method('push');
@@ -215,7 +215,7 @@ final class RunExportJobTest extends TestCase {
 	 *
 	 * This replaces the old pair of `clearPat()` tests. Those guaranteed the PAT was
 	 * deleted from ICredentialsManager on every terminal state, which mattered only
-	 * because OpenBuild held a PAT at all. It no longer does, so there is nothing to
+	 * because Buildiq held a PAT at all. It no longer does, so there is nothing to
 	 * clear; what matters now is that a job which cannot authenticate through the
 	 * broker refuses to run rather than proceeding.
 	 *

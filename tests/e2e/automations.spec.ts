@@ -22,7 +22,7 @@
 import { test, expect, type APIRequestContext, type Page } from '@playwright/test'
 import { confirmAction } from './support/confirmDialog'
 
-const APP_SLUG = process.env.NC_OPENBUILD_TEST_SLUG ?? 'hello-world'
+const APP_SLUG = process.env.NC_BUILDIQ_TEST_SLUG ?? 'hello-world'
 // The app-picker option's accessible name is the Application TITLE
 // ("Hello World"), not its slug ("hello-world") — hyphens become spaces in
 // the rendered title. Match either form.
@@ -31,16 +31,16 @@ const APP_TITLE_PATTERN = new RegExp(APP_SLUG.replace(/-/g, '.?'), 'i')
 /**
  * KNOWN ENVIRONMENT DEFECT (flagged, not test-code-fixable): on this shared
  * dev instance the `automation` schema slug the automation-designer feature
- * registers into the `openbuild` register (lib/Settings/register.d/40-automations.json,
+ * registers into the `buildiq` register (lib/Settings/register.d/40-automations.json,
  * trigger: object) collides with a PRE-EXISTING, unrelated `automation`
  * schema slug already claimed by another app on this instance (a CRM
  * automation schema, trigger: string enum `lead_created|...`). OpenRegister
  * resolves `/apps/openregister/api/schemas/automation` and the generic
- * `/apps/openregister/api/objects/openbuild/automation` write path by SLUG,
- * globally, not scoped to the openbuild register — so `POST` a real
+ * `/apps/openregister/api/objects/buildiq/automation` write path by SLUG,
+ * globally, not scoped to the buildiq register — so `POST` a real
  * automation payload 400s ("Property 'trigger' should be type 'string'").
- * Confirmed live: `GET .../registers/openbuild` lists 15 schemas, none of
- * them `automation` — `openbuild:settings/load` (force re-import) does not
+ * Confirmed live: `GET .../registers/buildiq` lists 15 schemas, none of
+ * them `automation` — `buildiq:settings/load` (force re-import) does not
  * fix it because the fragment merge silently no-ops on the slug conflict
  * instead of erroring. This is a genuine product-adjacent defect (likely in
  * OpenRegister's global-vs-register-scoped schema slug uniqueness), outside
@@ -52,7 +52,7 @@ const APP_TITLE_PATTERN = new RegExp(APP_SLUG.replace(/-/g, '.?'), 'i')
  *
  * @param request Playwright APIRequestContext (fixture-provided).
  * @return {Promise<boolean>} True when the live `automation` schema is
- * openbuild's own (trigger is an object), false when it is the colliding
+ * buildiq's own (trigger is an object), false when it is the colliding
  * schema from another app.
  */
 /**
@@ -214,7 +214,7 @@ const FIXED_AUTOMATION_NAMES = [
  */
 async function deleteStaleAutomations(request: APIRequestContext): Promise<void> {
 	const resp = await request.get(
-		'/index.php/apps/openregister/api/objects/openbuild/automation',
+		'/index.php/apps/openregister/api/objects/buildiq/automation',
 		{
 			headers: { 'OCS-APIRequest': 'true' },
 		},
@@ -228,7 +228,7 @@ async function deleteStaleAutomations(request: APIRequestContext): Promise<void>
 		if (FIXED_AUTOMATION_NAMES.includes(automation?.name) && automation?.id) {
 			await request
 				.delete(
-					`/index.php/apps/openregister/api/objects/openbuild/automation/${automation.id}`,
+					`/index.php/apps/openregister/api/objects/buildiq/automation/${automation.id}`,
 					{
 						headers: { 'OCS-APIRequest': 'true' },
 					},
@@ -253,7 +253,7 @@ test.describe('automation-designer — Automations page', () => {
 	})
 
 	test.beforeEach(async ({ page }) => {
-		await page.goto('/apps/openbuild/automations')
+		await page.goto('/apps/buildiq/automations')
 		await page.waitForSelector('.automations-page', { timeout: 20_000 })
 
 		// Select the seeded application + its production version.
@@ -290,7 +290,7 @@ test.describe('automation-designer — Automations page', () => {
 	}) => {
 		test.skip(
 			(await automationSchemaIsUsable(request)) === false,
-			'openbuild `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance — see the automationSchemaIsUsable() note at the top of this file',
+			'buildiq `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance — see the automationSchemaIsUsable() note at the top of this file',
 		)
 		await page.getByRole('button', { name: /new automation/i }).click()
 		await page.waitForSelector('.automation-edit')
@@ -349,7 +349,7 @@ test.describe('automation-designer — Automations page', () => {
 	}) => {
 		test.skip(
 			(await automationSchemaIsUsable(request)) === false,
-			'openbuild `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance — see the automationSchemaIsUsable() note at the top of this file',
+			'buildiq `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance — see the automationSchemaIsUsable() note at the top of this file',
 		)
 		await page.getByRole('button', { name: /new automation/i }).click()
 		await page.waitForSelector('.automation-edit')
@@ -401,7 +401,7 @@ test.describe('automation-designer — Automations page', () => {
 	}) => {
 		test.skip(
 			(await automationSchemaIsUsable(request)) === false,
-			'openbuild `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance — see the automationSchemaIsUsable() note at the top of this file',
+			'buildiq `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance — see the automationSchemaIsUsable() note at the top of this file',
 		)
 		await page.getByRole('button', { name: /new automation/i }).click()
 		await page.waitForSelector('.automation-edit')
@@ -498,7 +498,7 @@ test.describe('automation-designer — Automations page', () => {
 	}) => {
 		test.skip(
 			(await automationSchemaIsUsable(request)) === false,
-			'requires the "E2E nightly sync" automation from an earlier scenario in this file, which cannot be created — openbuild `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance, see automationSchemaIsUsable()',
+			'requires the "E2E nightly sync" automation from an earlier scenario in this file, which cannot be created — buildiq `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance, see automationSchemaIsUsable()',
 		)
 		// Assumes a schedule automation named "E2E nightly sync" from an
 		// earlier scenario in this file exists; if the suite runs this spec
@@ -524,7 +524,7 @@ test.describe('automation-designer — Automations page', () => {
 	}) => {
 		test.skip(
 			(await automationSchemaIsUsable(request)) === false,
-			'requires an existing automation row from an earlier scenario in this file, which cannot be created — openbuild `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance, see automationSchemaIsUsable()',
+			'requires an existing automation row from an earlier scenario in this file, which cannot be created — buildiq `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance, see automationSchemaIsUsable()',
 		)
 		const row = page.locator('[data-testid="automation-row"]').first()
 		await expect(row).toBeVisible({ timeout: 10_000 })
@@ -543,7 +543,7 @@ test.describe('automation-designer — Automations page', () => {
 	}) => {
 		test.skip(
 			(await automationSchemaIsUsable(request)) === false,
-			'requires the "E2E flag large claims" automation from an earlier scenario in this file, which cannot be created — openbuild `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance, see automationSchemaIsUsable()',
+			'requires the "E2E flag large claims" automation from an earlier scenario in this file, which cannot be created — buildiq `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance, see automationSchemaIsUsable()',
 		)
 		const row = page.locator('[data-testid="automation-row"]', {
 			hasText: 'E2E flag large claims',
@@ -576,7 +576,7 @@ test.describe('automation-approval-steps — approval action end to end', () => 
 	// My Approvals widget's approve action is authorised (mirrors the
 	// group-membership fixture other e2e specs in this fleet rely on).
 	test.beforeEach(async ({ page }) => {
-		await page.goto('/apps/openbuild/automations')
+		await page.goto('/apps/buildiq/automations')
 		await page.waitForSelector('.automations-page', { timeout: 20_000 })
 
 		await page.getByRole('combobox', { name: /application/i }).click()
@@ -595,7 +595,7 @@ test.describe('automation-approval-steps — approval action end to end', () => 
 	}) => {
 		test.skip(
 			(await automationSchemaIsUsable(request)) === false,
-			'openbuild `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance — see the automationSchemaIsUsable() note at the top of this file',
+			'buildiq `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance — see the automationSchemaIsUsable() note at the top of this file',
 		)
 		await page.getByRole('button', { name: /new automation/i }).click()
 		await page.waitForSelector('.automation-edit')
@@ -660,13 +660,13 @@ test.describe('automation-approval-steps — approval action end to end', () => 
 		).toBeVisible({ timeout: 10_000 })
 	})
 
-	test('My Approvals widget lists a pending step and approve/reject call OpenRegister directly (no OpenBuild pass-through route)', async ({
+	test('My Approvals widget lists a pending step and approve/reject call OpenRegister directly (no Buildiq pass-through route)', async ({
 		page,
 	}) => {
 		// The widget is placed on a built-app page via the page designer in a
 		// full fixture; here we assert its runtime surface renders and its
 		// actions target OpenRegister's REST API directly, per REQ (no
-		// OpenBuild controller mediates approve/reject).
+		// Buildiq controller mediates approve/reject).
 		const responsePromise = page
 			.waitForResponse(
 				(res) =>
@@ -676,7 +676,7 @@ test.describe('automation-approval-steps — approval action end to end', () => 
 			)
 			.catch(() => null)
 
-		await page.goto(`/apps/openbuild/builder/${APP_SLUG}`)
+		await page.goto(`/apps/buildiq/builder/${APP_SLUG}`)
 		const response = await responsePromise
 		if (response) {
 			expect(response.url()).toContain('/apps/openregister/api/approval-steps')
@@ -691,7 +691,7 @@ test.describe('automation-document-action — generateDocument action', () => {
 	// seeded template so the live picker renders (falls back to the
 	// free-text template-id field otherwise, which this test also covers).
 	test.beforeEach(async ({ page }) => {
-		await page.goto('/apps/openbuild/automations')
+		await page.goto('/apps/buildiq/automations')
 		await page.waitForSelector('.automations-page', { timeout: 20_000 })
 
 		await page.getByRole('combobox', { name: /application/i }).click()
@@ -711,7 +711,7 @@ test.describe('automation-document-action — generateDocument action', () => {
 	}) => {
 		test.skip(
 			(await automationSchemaIsUsable(request)) === false,
-			'openbuild `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance — see the automationSchemaIsUsable() note at the top of this file',
+			'buildiq `automation` schema slug collides with a pre-existing schema of the same slug on this shared instance — see the automationSchemaIsUsable() note at the top of this file',
 		)
 		test.skip(
 			(await docudeskIsAvailable(request)) === false,

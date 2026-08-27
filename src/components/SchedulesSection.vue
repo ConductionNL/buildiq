@@ -14,17 +14,17 @@
 	<section class="ob-schedules-section">
 		<header class="ob-schedules-section__header">
 			<h3 class="ob-schedules-section__title">
-				{{ t('openbuild', 'Scheduled tasks') }}
+				{{ t('buildiq', 'Scheduled tasks') }}
 			</h3>
 			<NcButton variant="secondary" @click="openAdd">
-				{{ t('openbuild', 'Add scheduled task') }}
+				{{ t('buildiq', 'Add scheduled task') }}
 			</NcButton>
 		</header>
 
 		<p v-if="schedules.length === 0" class="ob-schedules-section__empty">
 			{{
 				t(
-					'openbuild',
+					'buildiq',
 					'No scheduled tasks yet. Add one to run a synchronization on a schedule.',
 				)
 			}}
@@ -50,15 +50,15 @@
 						}">
 						{{
 							schedule.enabled === false
-								? t('openbuild', 'Disabled')
-								: t('openbuild', 'Enabled')
+								? t('buildiq', 'Disabled')
+								: t('buildiq', 'Enabled')
 						}}
 					</span>
 					<NcButton variant="tertiary" @click="openEdit(schedule)">
-						{{ t('openbuild', 'Edit') }}
+						{{ t('buildiq', 'Edit') }}
 					</NcButton>
 					<NcButton variant="tertiary" @click="remove(schedule)">
-						{{ t('openbuild', 'Remove') }}
+						{{ t('buildiq', 'Remove') }}
 					</NcButton>
 				</div>
 			</li>
@@ -72,9 +72,9 @@
 
 		<ConfirmActionDialog
 			v-model:open="confirmRemoveOpen"
-			:name="t('openbuild', 'Remove scheduled task')"
-			:message="t('openbuild', 'Remove this scheduled task?')"
-			:confirmLabel="t('openbuild', 'Remove')"
+			:name="t('buildiq', 'Remove scheduled task')"
+			:message="t('buildiq', 'Remove this scheduled task?')"
+			:confirmLabel="t('buildiq', 'Remove')"
 			destructive
 			@confirm="onConfirmRemove" />
 	</section>
@@ -149,18 +149,18 @@ export default {
 		 */
 		cadenceSummary(schedule) {
 			if (typeof schedule.cron === 'string' && schedule.cron !== '') {
-				return t('openbuild', 'Cron: {expr}', { expr: schedule.cron })
+				return t('buildiq', 'Cron: {expr}', { expr: schedule.cron })
 			}
 			if (typeof schedule.interval === 'number') {
 				const label = INTERVAL_LABELS[schedule.interval]
 				if (label) {
-					return t('openbuild', label)
+					return t('buildiq', label)
 				}
-				return t('openbuild', 'Every {seconds}s', {
+				return t('buildiq', 'Every {seconds}s', {
 					seconds: schedule.interval,
 				})
 			}
-			return t('openbuild', 'No cadence')
+			return t('buildiq', 'No cadence')
 		},
 
 		/**
@@ -172,9 +172,9 @@ export default {
 		 */
 		actionSummary(schedule) {
 			if (schedule.action === 'openconnector:synchronization') {
-				return t('openbuild', 'Run a synchronization')
+				return t('buildiq', 'Run a synchronization')
 			}
-			return schedule.action || t('openbuild', 'No action')
+			return schedule.action || t('buildiq', 'No action')
 		},
 
 		/**
@@ -186,7 +186,7 @@ export default {
 		 */
 		syncSummary(schedule) {
 			const id = schedule.arguments && schedule.arguments.synchronizationId
-			return id || t('openbuild', 'No synchronization')
+			return id || t('buildiq', 'No synchronization')
 		},
 
 		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-001 */

@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Controller
+ * @package  OCA\Buildiq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,10 +20,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Controller;
+namespace OCA\Buildiq\Tests\Unit\Controller;
 
-use OCA\OpenBuild\Controller\SettingsController;
-use OCA\OpenBuild\Service\SettingsService;
+use OCA\Buildiq\Controller\SettingsController;
+use OCA\Buildiq\Service\SettingsService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;

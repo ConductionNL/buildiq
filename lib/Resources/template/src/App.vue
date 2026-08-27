@@ -4,14 +4,14 @@
 
 	The exported app does NOT scaffold its own navigation, settings shells,
 	or page wiring. It mounts CnAppRoot from @conduction/nextcloud-vue and
-	hands it the bundled manifest (src/manifest.json, baked in by OpenBuild's
+	hands it the bundled manifest (src/manifest.json, baked in by Buildiq's
 	PlaceholderResolver at export time). CnAppRoot owns:
 	  - the NcContent + NcAppNavigation + NcAppContent skeleton,
 	  - the router instance derived from manifest.pages,
 	  - the deep-link registration,
 	  - the optional NL Design system theme overlay.
 
-	No OpenBuild runtime dependency. The unzipped tree builds and installs
+	No Buildiq runtime dependency. The unzipped tree builds and installs
 	standalone — manifest changes ship via this file, not via OR records.
 
 	This file pairs with the chain spec #2 overload of useAppManifest:

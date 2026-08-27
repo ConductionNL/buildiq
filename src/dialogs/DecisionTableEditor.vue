@@ -13,39 +13,39 @@
   -->
 <template>
 	<NcDialog
-		:name="t('openbuild', 'Decision table editor')"
+		:name="t('buildiq', 'Decision table editor')"
 		size="large"
 		@closing="$emit('close')">
 		<div class="decision-table-editor">
 			<NcTextField
 				v-model="staged.name"
-				:label="t('openbuild', 'Rule set name')"
+				:label="t('buildiq', 'Rule set name')"
 				data-testid="rule-set-name" />
 
 			<NcSelect
 				v-model="staged.hitPolicy"
-				:inputLabel="t('openbuild', 'Hit policy')"
+				:inputLabel="t('buildiq', 'Hit policy')"
 				:options="hitPolicies"
 				data-testid="hit-policy" />
 
-			<h4>{{ t('openbuild', 'Input columns') }}</h4>
+			<h4>{{ t('buildiq', 'Input columns') }}</h4>
 			<div
 				v-for="(col, index) in staged.inputColumns"
 				:key="'in-' + index"
 				class="decision-table-editor__col">
-				<NcTextField v-model="col.name" :label="t('openbuild', 'Name')" />
+				<NcTextField v-model="col.name" :label="t('buildiq', 'Name')" />
 				<NcTextField
 					v-model="col.expressionPath"
-					:label="t('openbuild', 'Payload path')" />
+					:label="t('buildiq', 'Payload path')" />
 				<NcButton variant="tertiary" @click="removeInput(index)">
-					{{ t('openbuild', 'Remove') }}
+					{{ t('buildiq', 'Remove') }}
 				</NcButton>
 			</div>
 			<NcButton variant="secondary" @click="addInput">
-				{{ t('openbuild', 'Add input column') }}
+				{{ t('buildiq', 'Add input column') }}
 			</NcButton>
 
-			<h4>{{ t('openbuild', 'Rules') }}</h4>
+			<h4>{{ t('buildiq', 'Rules') }}</h4>
 			<table class="decision-table-editor__grid">
 				<thead>
 					<tr>
@@ -56,7 +56,7 @@
 							{{ col.name }}
 						</th>
 						<th scope="col">
-							{{ t('openbuild', 'Decision') }}
+							{{ t('buildiq', 'Decision') }}
 						</th>
 					</tr>
 				</thead>
@@ -79,13 +79,13 @@
 							<input
 								v-model="rule.values.decision"
 								class="decision-table-editor__cell"
-								:aria-label="t('openbuild', 'Decision')" />
+								:aria-label="t('buildiq', 'Decision')" />
 						</td>
 					</tr>
 				</tbody>
 			</table>
 			<NcButton variant="secondary" @click="addRule">
-				{{ t('openbuild', 'Add rule') }}
+				{{ t('buildiq', 'Add rule') }}
 			</NcButton>
 
 			<div v-if="warnings.length" class="decision-table-editor__warnings">
@@ -104,10 +104,10 @@
 
 		<template #actions>
 			<NcButton @click="$emit('close')">
-				{{ t('openbuild', 'Cancel') }}
+				{{ t('buildiq', 'Cancel') }}
 			</NcButton>
 			<NcButton variant="primary" :disabled="saving" @click="save">
-				{{ saving ? t('openbuild', 'Saving…') : t('openbuild', 'Save') }}
+				{{ saving ? t('buildiq', 'Saving…') : t('buildiq', 'Save') }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -191,7 +191,7 @@ export default {
 			) {
 				issues.push(
 					t(
-						'openbuild',
+						'buildiq',
 						'A catch-all rule appears before other rules — later rules are unreachable.',
 					),
 				)
@@ -256,7 +256,7 @@ export default {
 			this.errorMessage = ''
 			try {
 				const ruleSetUrl = generateUrl(
-					'/apps/openregister/api/objects/openbuild/rule-set',
+					'/apps/openregister/api/objects/buildiq/rule-set',
 				)
 				await axios.post(ruleSetUrl, {
 					slug: this.staged.slug,
@@ -265,7 +265,7 @@ export default {
 					status: this.ruleSet.status || 'draft',
 				})
 				const tableUrl = generateUrl(
-					'/apps/openregister/api/objects/openbuild/decision-table',
+					'/apps/openregister/api/objects/buildiq/decision-table',
 				)
 				await axios.post(tableUrl, {
 					ruleSetId: this.staged.slug,
@@ -276,7 +276,7 @@ export default {
 				this.$emit('saved')
 			} catch (error) {
 				this.errorMessage = t(
-					'openbuild',
+					'buildiq',
 					'Could not save the decision table.',
 				)
 			} finally {

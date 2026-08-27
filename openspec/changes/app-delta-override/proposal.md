@@ -1,8 +1,8 @@
 ## Why
 
-OpenBuild freezes every built app as a **whole-manifest blob** on its `ApplicationVersion.manifest`: the editor copies the base app/template manifest in full and persists it, then `ManifestResolverService` serves that frozen copy verbatim. Three problems fall out of this. (1) A built app is **permanently severed from its base** — once the blob is saved, every later base-app bugfix, new page, or widget added upstream is frozen out and never reaches the derived app. (2) **Storage bloat** — each built app stores a complete copy of a manifest that is mostly identical to its base, and every version snapshot multiplies it. (3) **You cannot patch one page** — because arrays merge by replacement, the editor must re-persist the entire `pages[]`/`widgets[]` tree to change a single page, so a one-field tweak rewrites (and re-freezes) everything.
+Buildiq freezes every built app as a **whole-manifest blob** on its `ApplicationVersion.manifest`: the editor copies the base app/template manifest in full and persists it, then `ManifestResolverService` serves that frozen copy verbatim. Three problems fall out of this. (1) A built app is **permanently severed from its base** — once the blob is saved, every later base-app bugfix, new page, or widget added upstream is frozen out and never reaches the derived app. (2) **Storage bloat** — each built app stores a complete copy of a manifest that is mostly identical to its base, and every version snapshot multiplies it. (3) **You cannot patch one page** — because arrays merge by replacement, the editor must re-persist the entire `pages[]`/`widgets[]` tree to change a single page, so a one-field tweak rewrites (and re-freezes) everything.
 
-The `@conduction/nextcloud-vue` change `manifest-delta-merge-and-flex-columns` has now shipped the foundation that fixes the root cause: an optional stable `widgetEntry.id` merge key, the pure utils `mergeManifestDelta(base, delta)` and `diffManifest(base, edited)`, a `{ "$op": "remove" }` marker, `__order` reordering, keyed page/widget merge, and an `orphanedDeltaPaths` surface. This change consumes that foundation so OpenBuild stores **`baseRef` + `manifestDelta`** instead of a frozen blob, and resolves base + delta at serve time.
+The `@conduction/nextcloud-vue` change `manifest-delta-merge-and-flex-columns` has now shipped the foundation that fixes the root cause: an optional stable `widgetEntry.id` merge key, the pure utils `mergeManifestDelta(base, delta)` and `diffManifest(base, edited)`, a `{ "$op": "remove" }` marker, `__order` reordering, keyed page/widget merge, and an `orphanedDeltaPaths` surface. This change consumes that foundation so Buildiq stores **`baseRef` + `manifestDelta`** instead of a frozen blob, and resolves base + delta at serve time.
 
 ## What Changes
 
@@ -22,8 +22,8 @@ The `@conduction/nextcloud-vue` change `manifest-delta-merge-and-flex-columns` h
 
 ### Modified Capabilities
 
-- `openbuild-runtime`: The slug-keyed manifest endpoint's resolution contract changes — it MAY now resolve a `baseRef` + `manifestDelta` pair into a merged manifest before responding, while still serving a legacy blob unchanged when no `baseRef` is set. (Delta spec at `specs/openbuild-runtime/spec.md`.)
-- `openbuild-application-register`: The schema declaration gains the optional `baseRef` and `manifestDelta` properties on the manifest-carrying `ApplicationVersion` schema. (Delta spec at `specs/openbuild-application-register/spec.md`.)
+- `buildiq-runtime`: The slug-keyed manifest endpoint's resolution contract changes — it MAY now resolve a `baseRef` + `manifestDelta` pair into a merged manifest before responding, while still serving a legacy blob unchanged when no `baseRef` is set. (Delta spec at `specs/buildiq-runtime/spec.md`.)
+- `buildiq-application-register`: The schema declaration gains the optional `baseRef` and `manifestDelta` properties on the manifest-carrying `ApplicationVersion` schema. (Delta spec at `specs/buildiq-application-register/spec.md`.)
 
 ## Impact
 

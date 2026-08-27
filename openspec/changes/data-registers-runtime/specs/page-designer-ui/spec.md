@@ -22,7 +22,7 @@ inside `fetchRegisters()` and the prop pass-through at each sub-editor are
 composable- and component-contract behaviour verified by Vitest unit tests
 (`useRegisterPicker.spec.js`, `IndexPageEditor.spec.js`); overall picker
 mounting and rendering inside the designer route is covered by the existing
-openbuild-page-designer Playwright tests
+buildiq-page-designer Playwright tests
 
 #### Scenario: A bound data register is labelled in the picker
 

@@ -6,7 +6,7 @@
  * REQ-OBICON-004.
  *
  * UN-QUARANTINED 2026-08-11. This file used to hold three unconditional
- * `test.skip`s citing "Conduction/openbuild#41: openbuild admin UI not
+ * `test.skip`s citing "Conduction/buildiq#41: buildiq admin UI not
  * functional in this build — no application detail / icon / template-clone UI
  * renders". That reason was stale on both counts, and each half was checked
  * against a live instance before this rewrite:
@@ -41,7 +41,7 @@ import { suppressSupportDialog, suppressSetupWizard } from '../support/appFixtur
 const HELLO_WORLD_SLUG = 'hello-world'
 
 /** OR register/schema the Application record lives in (IconUploadSection.vue). */
-const OR_OBJECT_PATH = 'apps/openregister/api/objects/openbuild/application'
+const OR_OBJECT_PATH = 'apps/openregister/api/objects/buildiq/application'
 
 /** A minimal but genuinely valid SVG — OR writes the content verbatim. */
 const MINIMAL_SVG =
@@ -61,7 +61,7 @@ async function resolveApp(
 	request: APIRequestContext,
 ): Promise<{ objectId: string; app: Record<string, any> }> {
 	const res = await request.get(
-		`${BASE}/index.php/apps/openbuild/api/applications`,
+		`${BASE}/index.php/apps/buildiq/api/applications`,
 		{
 			headers: { 'OCS-APIRequest': 'true' },
 		},
@@ -95,7 +95,7 @@ async function resolveApp(
  * @return {Promise<void>}
  */
 async function openIconsTab(page: Page, objectId: string): Promise<void> {
-	await page.goto(`/apps/openbuild/applications/${objectId}`, {
+	await page.goto(`/apps/buildiq/applications/${objectId}`, {
 		waitUntil: 'domcontentloaded',
 	})
 	await expect(
@@ -327,7 +327,7 @@ test.describe('app-icon-management — removing an icon (REQ-OBICON-004)', () =>
 		//
 		// The first draft of this assertion demanded the dark preview render no
 		// <img> at all, and it failed — correctly. The slot keeps rendering an
-		// image and lets `/apps/openbuild/icons/{slug}-dark.svg` serve the
+		// image and lets `/apps/buildiq/icons/{slug}-dark.svg` serve the
 		// fallback; that server-side fallback chain is REQ-OBICON-002, which the
 		// spec excludes to PHPUnit. So what belongs here is the DOM-observable
 		// half: the slot still shows something rather than collapsing.

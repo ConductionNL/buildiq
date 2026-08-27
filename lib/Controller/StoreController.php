@@ -1,9 +1,9 @@
 <?php
 
 /**
- * OpenBuild StoreController
+ * Buildiq StoreController
  *
- * HTTP surface for the remote template "store" (openbuild-remote-template-
+ * HTTP surface for the remote template "store" (buildiq-remote-template-
  * store):
  *   - GET  /api/store/templates            — search remote templates (cards).
  *   - POST /api/store/templates/{slug}/install — resolve the remote template by
@@ -32,13 +32,13 @@
  * already carry, resolved for static analysis by one stub entry.
  *
  * INSTALL stays here, and only install: cloning an application template into a
- * local virtual app is OpenBuild-specific (companion namespacing, manifest
+ * local virtual app is Buildiq-specific (companion namespacing, manifest
  * rewrite, per-app register, owner-tagged persist) and has different
  * authorization from the connector-adapter and agent-template installs in other
  * apps. That is the ADR-080 Decision 3 seam.
  *
  * Both endpoints carry #[NoAdminRequired] and an in-body authentication guard
- * (any authenticated OpenBuild user may search + install; the install caller
+ * (any authenticated Buildiq user may search + install; the install caller
  * becomes the new app's owner — mirrors the local createFromTemplate posture).
  * No publishing in this cut.
  *
@@ -46,7 +46,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
- * @package  OCA\OpenBuild\Controller
+ * @package  OCA\Buildiq\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -61,9 +61,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Controller;
+namespace OCA\Buildiq\Controller;
 
-use OCA\OpenBuild\AppInfo\Application;
+use OCA\Buildiq\AppInfo\Application;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
 use OCP\AppFramework\Controller;
@@ -76,7 +76,7 @@ use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
- * Store search + OpenBuild's own template install.
+ * Store search + Buildiq's own template install.
  *
  * @spec openspec/specs/openbuild-remote-template-store/spec.md
  */
@@ -108,8 +108,8 @@ class StoreController extends Controller {
 	}//end __construct()
 
 	/**
-	 * OpenBuild's store parameters: `application-template` objects in the
-	 * `openbuild` register of the configured remote catalogue.
+	 * Buildiq's store parameters: `application-template` objects in the
+	 * `buildiq` register of the configured remote catalogue.
 	 *
 	 * @return StoreDescriptor
 	 */
@@ -117,7 +117,7 @@ class StoreController extends Controller {
 		return new StoreDescriptor(
 			appId: Application::APP_ID,
 			schema: 'application-template',
-			defaultRegister: 'openbuild',
+			defaultRegister: 'buildiq',
 			cardFields: [
 				'slug' => 'slug',
 				'title' => 'title',
@@ -141,7 +141,7 @@ class StoreController extends Controller {
 	 *
 	 * @spec openspec/specs/openbuild-remote-template-store/spec.md
 	 *
-	 * @no-admin-idor-exempt Addresses no openbuild-owned object: the slug identifies a
+	 * @no-admin-idor-exempt Addresses no buildiq-owned object: the slug identifies a
 	 *   template in an EXTERNAL catalogue (the configured store registry / a GitHub
 	 *   repo), so there is nothing of another tenant's to reach by guessing it. The
 	 *   install path CREATES a new app owned by the calling user rather than reading
@@ -172,7 +172,7 @@ class StoreController extends Controller {
 		} catch (Throwable $e) {
 			// Detail to the log, generic outcome to the browser: a registry's
 			// internals are not the caller's business.
-			$this->logger->error('OpenBuild store: search failed: ' . $e->getMessage());
+			$this->logger->error('Buildiq store: search failed: ' . $e->getMessage());
 			return new JSONResponse(
 				data: ['outcome' => GenericStoreService::OUTCOME_UNREACHABLE, 'cards' => []],
 				statusCode: Http::STATUS_OK
@@ -200,7 +200,7 @@ class StoreController extends Controller {
 		try {
 			return $this->storeService->resolve(descriptor: $this->descriptor(), slug: $slug);
 		} catch (Throwable $e) {
-			$this->logger->error('OpenBuild store: resolve failed for ' . $slug . ': ' . $e->getMessage());
+			$this->logger->error('Buildiq store: resolve failed for ' . $slug . ': ' . $e->getMessage());
 			return null;
 		}
 	}//end resolveForInstall()
@@ -236,7 +236,7 @@ class StoreController extends Controller {
 	 *
 	 * @spec openspec/specs/openbuild-remote-template-store/spec.md
 	 *
-	 * @no-admin-idor-exempt Addresses no openbuild-owned object: the slug identifies a
+	 * @no-admin-idor-exempt Addresses no buildiq-owned object: the slug identifies a
 	 *   template in an EXTERNAL catalogue (the configured store registry / a GitHub
 	 *   repo), so there is nothing of another tenant's to reach by guessing it. The
 	 *   install path CREATES a new app owned by the calling user rather than reading

@@ -8,13 +8,13 @@ status: done
 
 ## Purpose
 
-Lets an OpenBuild page-designer builder mark a page/schema "externally fillable" by
+Lets an Buildiq page-designer builder mark a page/schema "externally fillable" by
 **provisioning existing primitives** — OpenRegister's anonymous object-create surface
 (schema `authorization.create` gated) and Portaliq's `portalPage` object provisioning —
-rather than implementing citizen-facing intake inside OpenBuild. Replaces the reverted
+rather than implementing citizen-facing intake inside Buildiq. Replaces the reverted
 `public-forms-runtime` feature (PR #8, reverted PR #20) with a thin configuration leaf:
-OpenBuild writes an OR schema's authorization and a Portaliq `portalPage` object, then
-surfaces the resulting public URLs. OpenBuild hosts no public controller, no render path,
+Buildiq writes an OR schema's authorization and a Portaliq `portalPage` object, then
+surfaces the resulting public URLs. Buildiq hosts no public controller, no render path,
 and no anonymous-write logic of its own.
 
 ## Requirements
@@ -22,13 +22,13 @@ and no anonymous-write logic of its own.
 ### Requirement: REQ-EFP-001 Manifest declaration: `runtime.externalForms[]`
 
 The system SHALL support an optional `externalForms` array in the manifest v2 `runtime`
-block. Each entry SHALL carry: `id` (string, OpenBuild-generated bookkeeping key),
+block. Each entry SHALL carry: `id` (string, Buildiq-generated bookkeeping key),
 `pageId` (string, the owning page), `register` / `schema` (string slugs, the OR target),
 `status` (`enabled` | `disabled`), `publicRead` (boolean, default `false`),
 `organisationScope` (string organisation id, or `null`), `portalPage` (object
 `{objectId, portalPath}` or `null` when the Portaliq leg has not yet provisioned), and
 `trackLinkAction` (object `{enabled: boolean}`). At most one entry exists per `id`;
-multiple entries MAY target the same `(register, schema)` pair. OpenBuild's manifest
+multiple entries MAY target the same `(register, schema)` pair. Buildiq's manifest
 validation layer SHALL reject: an entry missing `register` or `schema`, an unknown
 `status` value, a non-boolean `publicRead`/`trackLinkAction.enabled`, and unknown
 top-level or nested keys. An app with no `externalForms` entries SHALL serialize
@@ -48,7 +48,7 @@ byte-identical manifests to before this feature (purely additive).
 <!-- @e2e exclude pure app-side manifest validation, covered by vitest. -->
 
 - **WHEN** the manifest declares an `externalForms` entry with no `schema` key
-- **THEN** the validator reports `openbuild.externalForm.error.schema-required`
+- **THEN** the validator reports `buildiq.externalForm.error.schema-required`
 - **AND** the Save button is disabled
 
 #### Scenario: An app without externalForms serializes byte-identically
@@ -64,13 +64,13 @@ byte-identical manifests to before this feature (purely additive).
 `src/components/page-editor/FormPageEditor.vue` SHALL gain an "External access" section,
 enabled only when `submitShape === 'endpoint'` and `config.submitEndpoint` resolves to an
 OR `/api/objects/{register}/{schema}` shape (otherwise the section renders disabled with
-the hint `openbuild.externalForm.hint.requires-or-endpoint`). The section SHALL open
+the hint `buildiq.externalForm.hint.requires-or-endpoint`). The section SHALL open
 `src/dialogs/ExternalFormAccessDialog.vue` (standalone dialog per the modal-isolation
 rule). The dialog SHALL let the builder: enable/disable public create, optionally enable
 public read, optionally set an organisation scope, optionally enable the track-link
 action, and see the resulting public URLs (raw OR public-create endpoint; Portaliq
 `/portal` page when provisioned) before confirming. All `NcSelect`s carry `inputLabel`;
-every user-visible string uses English-source i18n keys under `openbuild.externalForm.*`
+every user-visible string uses English-source i18n keys under `buildiq.externalForm.*`
 with nl translations.
 
 #### Scenario: Builder enables external access from the Form page editor
@@ -89,7 +89,7 @@ with nl translations.
 
 - **GIVEN** a Form page with `submitShape === 'handler'`
 - **WHEN** the builder views the page editor
-- **THEN** the "External access" section renders disabled with `openbuild.externalForm.hint.requires-or-endpoint`
+- **THEN** the "External access" section renders disabled with `buildiq.externalForm.hint.requires-or-endpoint`
 
 ### Requirement: REQ-EFP-003 Provisioning: merge-safe schema authorization
 
@@ -131,7 +131,7 @@ carrying `anonymous: true` bound to the same `(register, schema)` the toggle tar
 `status: "active"`. When the `portaliq`/`portalPage` schema does not exist on the instance
 (OR responds schema-not-found for that register/schema pair), the service SHALL skip this
 write, leave `portalPage: null` in the manifest entry, and surface
-`openbuild.externalForm.hint.portaliq-unavailable` in the dialog — the OR-only leg (raw
+`buildiq.externalForm.hint.portaliq-unavailable` in the dialog — the OR-only leg (raw
 public POST URL) remains fully functional. Disabling the toggle SHALL PUT the linked
 `portalPage` object's `status` to `"draft"` (never delete it).
 
@@ -184,7 +184,7 @@ SHALL become `"disabled"`.
 objectId, {label, ttlSeconds})` function calling
 `POST /api/objects/{register}/{schema}/{id}/integrations/shares` with
 `{type: "public-token", label, ttlSeconds}`, returning the minted token's public URL. It
-SHALL only be callable from an authenticated OpenBuild session viewing an object the
+SHALL only be callable from an authenticated Buildiq session viewing an object the
 builder/staff member already has access to (a data-register object list/detail view) —
 never from an anonymous context, and never invoked automatically as a side effect of an
 object being created. It SHALL be offered on a schema's object views only when that
@@ -194,7 +194,7 @@ schema's `runtime.externalForms` entry has `trackLinkAction.enabled: true`.
 
 <!-- @e2e exclude live E2E against a running instance deferred (no shared-dev deploy per workflow); the mint request/response shape is covered by useTrackLinkAction.spec.js and TrackLinkAction.spec.js (Vitest). -->
 
-- **GIVEN** an authenticated OpenBuild session viewing an object of a schema whose external-form entry has `trackLinkAction.enabled: true`
+- **GIVEN** an authenticated Buildiq session viewing an object of a schema whose external-form entry has `trackLinkAction.enabled: true`
 - **WHEN** the staff member clicks "Mint track-link"
 - **THEN** `POST /api/objects/{register}/{schema}/{id}/integrations/shares` is called with `{type: "public-token"}`
 - **AND** the returned public `GET /api/public/case-tokens/{token}` URL is shown for the staff member to copy/relay
@@ -207,12 +207,12 @@ schema's `runtime.externalForms` entry has `trackLinkAction.enabled: true`.
 - **WHEN** the staff member views a submitted object of that schema
 - **THEN** no "Mint track-link" action is rendered
 
-### Requirement: REQ-EFP-007 Closed integration contract — no OpenBuild anonymous surface
+### Requirement: REQ-EFP-007 Closed integration contract — no Buildiq anonymous surface
 
-OpenBuild's external-form-provisioning integration SHALL call exactly:
+Buildiq's external-form-provisioning integration SHALL call exactly:
 `GET`/`PATCH /api/schemas/{id}`, `POST`/`PUT /api/objects/portaliq/portalPage`, and
 `POST /api/objects/{register}/{schema}/{id}/integrations/shares` — all authenticated,
-owner-context calls riding the builder's own NC session. OpenBuild SHALL NOT declare any
+owner-context calls riding the builder's own NC session. Buildiq SHALL NOT declare any
 `#[PublicPage]` route, SHALL NOT import OpenRegister or Portaliq PHP classes, SHALL NOT
 read their database tables directly, and SHALL NOT implement a `ShareToken` model or any
 anonymous-write/anonymous-render code path of its own.
@@ -221,7 +221,7 @@ anonymous-write/anonymous-render code path of its own.
 
 <!-- @e2e exclude static source-tree scan, covered by a hydra gate / grep check, not a UI flow. -->
 
-- **WHEN** the OpenBuild source tree is scanned for `#[PublicPage]` attributes and for `OCA\OpenRegister`/`OCA\Portaliq` PHP namespace imports
+- **WHEN** the Buildiq source tree is scanned for `#[PublicPage]` attributes and for `OCA\OpenRegister`/`OCA\Portaliq` PHP namespace imports
 - **THEN** no `#[PublicPage]` route exists anywhere in `lib/Controller/`
-- **AND** no OpenRegister or Portaliq PHP namespace is imported anywhere in OpenBuild
+- **AND** no OpenRegister or Portaliq PHP namespace is imported anywhere in Buildiq
 - **AND** no `ShareToken` class/file exists in the repository

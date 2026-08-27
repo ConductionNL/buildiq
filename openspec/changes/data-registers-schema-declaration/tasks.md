@@ -17,7 +17,7 @@
 
 ## Acceptance Criteria
 
-- The `Application` schema in the `openbuild` register exposes an optional `dataRegisters` array property matching design.md Decision 1's shape after the repair step runs.
+- The `Application` schema in the `buildiq` register exposes an optional `dataRegisters` array property matching design.md Decision 1's shape after the repair step runs.
 - An Application saved with a valid `dataRegisters` binding (single or multiple entries) round-trips byte-for-byte via OR REST.
 - An Application saved without `dataRegisters` is accepted and reads back as an empty array — full back-compat with every pre-existing Application.
 - A `dataRegisters` entry missing the required `register` key is rejected with a 4xx.

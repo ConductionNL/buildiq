@@ -11,20 +11,20 @@
 <template>
 	<div class="manifest-diff">
 		<header class="manifest-diff__header">
-			<h3>{{ t('openbuild', 'Manifest diff') }}</h3>
+			<h3>{{ t('buildiq', 'Manifest diff') }}</h3>
 			<small class="manifest-diff__pair">
-				{{ t('openbuild', 'From') }}: <code>{{ fromLabel }}</code> →
-				{{ t('openbuild', 'To') }}: <code>{{ toLabel }}</code>
+				{{ t('buildiq', 'From') }}: <code>{{ fromLabel }}</code> →
+				{{ t('buildiq', 'To') }}: <code>{{ toLabel }}</code>
 			</small>
 		</header>
 		<p v-if="loading" class="manifest-diff__loading">
-			{{ t('openbuild', 'Loading diff…') }}
+			{{ t('buildiq', 'Loading diff…') }}
 		</p>
 		<p v-else-if="error" class="manifest-diff__error">
 			{{ error }}
 		</p>
 		<p v-else-if="!hasAnyContent" class="manifest-diff__empty">
-			{{ t('openbuild', 'Nothing to diff — publish the app first.') }}
+			{{ t('buildiq', 'Nothing to diff — publish the app first.') }}
 		</p>
 		<pre v-else class="manifest-diff__pane"><span
 			v-for="(part, idx) in diffParts"
@@ -114,10 +114,10 @@ export default {
 		 */
 		fromLabel() {
 			if (this.isStaticMode) {
-				return this.fromLabelText || t('openbuild', 'Current')
+				return this.fromLabelText || t('buildiq', 'Current')
 			}
 			return this.from === 'draft'
-				? t('openbuild', 'Current draft')
+				? t('buildiq', 'Current draft')
 				: this.from.slice(0, 8) + '…'
 		},
 
@@ -128,10 +128,10 @@ export default {
 		 */
 		toLabel() {
 			if (this.isStaticMode) {
-				return this.toLabelText || t('openbuild', 'Predicted')
+				return this.toLabelText || t('buildiq', 'Predicted')
 			}
 			return this.to === 'draft'
-				? t('openbuild', 'Current draft')
+				? t('buildiq', 'Current draft')
 				: this.to
 					? this.to.slice(0, 8) + '…'
 					: '—'
@@ -222,7 +222,7 @@ export default {
 			this.error = ''
 			try {
 				const url = generateUrl(
-					`/apps/openbuild/api/applications/${this.slug}/versions/diff`,
+					`/apps/buildiq/api/applications/${this.slug}/versions/diff`,
 				)
 				const { data } = await axios.get(url, {
 					params: { from: this.from, to: this.to },

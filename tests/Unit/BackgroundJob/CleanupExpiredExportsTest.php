@@ -1,14 +1,14 @@
 <?php
 
 /**
- * OpenBuild CleanupExpiredExports unit tests
+ * Buildiq CleanupExpiredExports unit tests
  *
  * Asserts that expired export ZIPs are purged and fresh ones are kept, and
  * that the job is idempotent (re-running over an already-clean tree is a
  * no-op).
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\BackgroundJob
+ * @package  OCA\Buildiq\Tests\Unit\BackgroundJob
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,9 +24,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\BackgroundJob;
+namespace OCA\Buildiq\Tests\Unit\BackgroundJob;
 
-use OCA\OpenBuild\BackgroundJob\CleanupExpiredExports;
+use OCA\Buildiq\BackgroundJob\CleanupExpiredExports;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -67,7 +67,7 @@ final class CleanupExpiredExportsTest extends TestCase {
 	 * @return void
 	 */
 	public function testExpiredZipPurgedFreshKept(): void {
-		$exportsRoot = sys_get_temp_dir() . '/openbuild-exports';
+		$exportsRoot = sys_get_temp_dir() . '/buildiq-exports';
 		if (is_dir($exportsRoot) === false) {
 			mkdir($exportsRoot, 0o755, true);
 		}

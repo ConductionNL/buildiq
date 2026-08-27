@@ -1,5 +1,5 @@
 {
-  "_comment": "ADR-037 register fragment — agent-workspace. Adds the `Agent` and `AgentRun` schemas to the shared `openbuild` register. An Agent is a named, reusable, tool-scoped configuration layered on top of the existing ai-copilot plan/execute engine (design.md Context) — it never introduces a second execution engine (ADR-022/031): every agent-scoped plan/execute request still flows through CopilotService::plan()/execute() -> OpenBuildToolProvider::invokeTool(). `enabledTools` is validated server-side at save time by restricting the array's `items.enum` to exactly the eight OpenBuildToolProvider tool ids (REQ in specs/agent-workspace/spec.md 'Unknown tool name is rejected') — an unknown tool name fails OpenRegister's own JSON-Schema enum validation with no additional imperative code needed, matching ADR-031's declarative-first preference. The same eight-id enum is intersected server-side (never trusted from the client) with an agent's `enabledTools` on every plan/execute request (design.md Decision 1) — this schema-level enum only bounds what CAN be saved, not what is enforced at request time. AgentRun is the transparent run-log record (design.md Decision 2, Retool tool-chip transparency pattern) written by `AgentRunLogger`, a thin wrapper around CopilotService's existing plan/execute/discard paths — never embedded in CopilotService's core logic. `AgentRun` read access is RBAC-gated server-side (owners/editors only on the parent Application, design.md Open Questions) by the dedicated `AgentsController::runs()` endpoint, NOT by the generic OpenRegister object REST surface (that endpoint has no per-Application row-level filter, the same IDOR shape `routes.php`'s `applications#listMine` comment documents for the Application list).",
+  "_comment": "ADR-037 register fragment — agent-workspace. Adds the `Agent` and `AgentRun` schemas to the shared `buildiq` register. An Agent is a named, reusable, tool-scoped configuration layered on top of the existing ai-copilot plan/execute engine (design.md Context) — it never introduces a second execution engine (ADR-022/031): every agent-scoped plan/execute request still flows through CopilotService::plan()/execute() -> BuildiqToolProvider::invokeTool(). `enabledTools` is validated server-side at save time by restricting the array's `items.enum` to exactly the eight BuildiqToolProvider tool ids (REQ in specs/agent-workspace/spec.md 'Unknown tool name is rejected') — an unknown tool name fails OpenRegister's own JSON-Schema enum validation with no additional imperative code needed, matching ADR-031's declarative-first preference. The same eight-id enum is intersected server-side (never trusted from the client) with an agent's `enabledTools` on every plan/execute request (design.md Decision 1) — this schema-level enum only bounds what CAN be saved, not what is enforced at request time. AgentRun is the transparent run-log record (design.md Decision 2, Retool tool-chip transparency pattern) written by `AgentRunLogger`, a thin wrapper around CopilotService's existing plan/execute/discard paths — never embedded in CopilotService's core logic. `AgentRun` read access is RBAC-gated server-side (owners/editors only on the parent Application, design.md Open Questions) by the dedicated `AgentsController::runs()` endpoint, NOT by the generic OpenRegister object REST surface (that endpoint has no per-Application row-level filter, the same IDOR shape `routes.php`'s `applications#listMine` comment documents for the Application list).",
   "components": {
     "schemas": {
       "Agent": {
@@ -8,7 +8,7 @@
         "icon": "Robot",
         "version": "1.0.0",
         "title": "Agent",
-        "description": "A named, reusable, tool-scoped AI configuration for one Application: free-text instructions prefixed onto the copilot system prompt, an explicit subset of the eight OpenBuildToolProvider tools it may invoke, and a per-run action cap. Never a wider capability surface than the bare copilot (agent-workspace design.md Goals).",
+        "description": "A named, reusable, tool-scoped AI configuration for one Application: free-text instructions prefixed onto the copilot system prompt, an explicit subset of the eight BuildiqToolProvider tools it may invoke, and a per-run action cap. Never a wider capability surface than the bare copilot (agent-workspace design.md Goals).",
         "authorization": {
           "read": [
             "authenticated"
@@ -64,17 +64,17 @@
             "items": {
               "type": "string",
               "enum": [
-                "openbuild.listApps",
-                "openbuild.getAppManifest",
-                "openbuild.createApp",
-                "openbuild.promoteVersion",
-                "openbuild.upsertSchema",
-                "openbuild.upsertPage",
-                "openbuild.addWidget",
-                "openbuild.upsertMenuItem"
+                "buildiq.listApps",
+                "buildiq.getAppManifest",
+                "buildiq.createApp",
+                "buildiq.promoteVersion",
+                "buildiq.upsertSchema",
+                "buildiq.upsertPage",
+                "buildiq.addWidget",
+                "buildiq.upsertMenuItem"
               ]
             },
-            "description": "The subset of the eight OpenBuildToolProvider tool ids this agent may propose in a plan. Validated at save time against exactly this enum (an unknown tool name is rejected); re-validated server-side (intersected with the live catalogue) on every plan/execute request — never a superset of what the bare copilot already exposes."
+            "description": "The subset of the eight BuildiqToolProvider tool ids this agent may propose in a plan. Validated at save time against exactly this enum (an unknown tool name is rejected); re-validated server-side (intersected with the live catalogue) on every plan/execute request — never a superset of what the bare copilot already exposes."
           },
           "maxActionsPerRun": {
             "title": "Max Actions Per Run",
@@ -161,7 +161,7 @@
                 }
               }
             },
-            "description": "Ordered list of every tool call this run dispatched through `OpenBuildToolProvider::invokeTool()`, each with its arguments and raw result — the Retool tool-chip transparency pattern. Empty for a discarded or plan-rejected run."
+            "description": "Ordered list of every tool call this run dispatched through `BuildiqToolProvider::invokeTool()`, each with its arguments and raw result — the Retool tool-chip transparency pattern. Empty for a discarded or plan-rejected run."
           },
           "outcome": {
             "title": "Outcome",

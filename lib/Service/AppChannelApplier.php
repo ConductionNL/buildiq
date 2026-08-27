@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild AppChannelApplier
+ * Buildiq AppChannelApplier
  *
  * Applies a parsed v2 app-repo template's channels — `dataRegisters`,
  * `connectors`, `automations`, `skills`, `flows` and `agents` — onto this
@@ -29,7 +29,7 @@
  *     logged and counted. `ChannelApplyReport` enforces
  *     `created + skipped + failed === declared`.
  *
- * `openconnector` and `hermiq` are OPTIONAL — OpenBuild declares only
+ * `openconnector` and `hermiq` are OPTIONAL — Buildiq declares only
  * `openregister` — so their channels degrade with a machine-readable reason while
  * the remaining channels still apply.
  *
@@ -37,7 +37,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -52,10 +52,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
-use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -113,7 +113,6 @@ class AppChannelApplier {
 	 */
 	private const MAX_AUTOMATIONS = 512;
 
-
 	/**
 	 * Reason recorded when OpenConnector is not available.
 	 *
@@ -125,7 +124,7 @@ class AppChannelApplier {
 	 * Reason recorded when the skills channel is skipped because the supplied
 	 * credential's own `allowedApps` does not include hermiq — hermiq fetches
 	 * the skill bundle itself, under ITS OWN app identity, so a credential
-	 * scoped only to `openbuild` cannot be used for that call.
+	 * scoped only to `buildiq` cannot be used for that call.
 	 *
 	 * @var string
 	 */
@@ -253,8 +252,8 @@ class AppChannelApplier {
 	 *
 	 * Hermiq's bundle installer does its OWN GitHub fetch, authenticating as
 	 * app "hermiq" — independent of which app the credential was scoped for.
-	 * A credential that works for every other channel here (openbuild's own
-	 * search/fetch, all scoped as "openbuild") can still be denied by the
+	 * A credential that works for every other channel here (buildiq's own
+	 * search/fetch, all scoped as "buildiq") can still be denied by the
 	 * broker for this one delegated call. Checking the credential's own
 	 * `allowedApps` here — the SAME register/schema `credentialExists()`
 	 * reads — catches that BEFORE attempting (and failing) the call, rather
@@ -294,7 +293,7 @@ class AppChannelApplier {
 				channel: 'skills',
 				message: 'This repository declares ' . $declared . ' skill(s), but the GitHub credential used '
 					. 'for this install is not authorised for hermiq. Skills are fetched by hermiq itself, '
-					. 'under its own app identity, so a credential scoped only to "openbuild" cannot be used '
+					. 'under its own app identity, so a credential scoped only to "buildiq" cannot be used '
 					. 'for that fetch. Add "hermiq" to the credential\'s allowed apps and re-run the GitHub '
 					. 'sync to install the skills.'
 			);
@@ -348,7 +347,7 @@ class AppChannelApplier {
 			);
 		} catch (Throwable $e) {
 			$this->logger->debug(
-				'OpenBuild channel apply: credential scope lookup for "' . $credentialId . '" was inconclusive: '
+				'Buildiq channel apply: credential scope lookup for "' . $credentialId . '" was inconclusive: '
 				. $e->getMessage()
 			);
 
@@ -448,7 +447,7 @@ class AppChannelApplier {
 
 		if ($this->appManager->isEnabledForUser('openconnector') === false) {
 			$this->logger->info(
-				'OpenBuild channel apply: openconnector is not enabled — skipping ' . $declared . ' declared connectors.'
+				'Buildiq channel apply: openconnector is not enabled — skipping ' . $declared . ' declared connectors.'
 			);
 			$report->skipChannel(channel: 'connectors', reason: self::REASON_NO_OPENCONNECTOR);
 			return;
@@ -522,7 +521,7 @@ class AppChannelApplier {
 				reason: ChannelApplyReport::REASON_EXISTS
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenBuild channel apply: connector "' . $item . '" failed: ' . $e->getMessage());
+			$this->logger->warning('Buildiq channel apply: connector "' . $item . '" failed: ' . $e->getMessage());
 			$report->recordFailed(channel: 'connectors', item: $item, reason: $e->getMessage());
 		}//end try
 
@@ -612,10 +611,12 @@ class AppChannelApplier {
 				_multitenancy: false
 			);
 
-			return (is_array($found) === true && $found !== []);
+			// `findAll()` returns an array, so the `is_array()` conjunct this
+			// replaces could never be false.
+			return ($found !== []);
 		} catch (Throwable $e) {
 			$this->logger->debug(
-				'OpenBuild channel apply: credential lookup for "' . $name . '" was inconclusive: ' . $e->getMessage()
+				'Buildiq channel apply: credential lookup for "' . $name . '" was inconclusive: ' . $e->getMessage()
 			);
 
 			return true;
@@ -674,7 +675,7 @@ class AppChannelApplier {
 	 */
 	private function logTruncation(string $channel, int $declared, int $bound): void {
 		$this->logger->warning(
-			'OpenBuild channel apply: channel "' . $channel . '" declared ' . $declared
+			'Buildiq channel apply: channel "' . $channel . '" declared ' . $declared
 			. ' items but the bound is ' . $bound . ' — the excess was NOT applied.'
 		);
 

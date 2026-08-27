@@ -24,9 +24,9 @@ npx newman run tests/integration/quarantine/<file> \
   --env-var "admin_user=admin" --env-var "admin_password=admin"
 ```
 
-## openbuild-version-diff.postman_collection.json
+## buildiq-version-diff.postman_collection.json
 
-Extracted from `openbuild-versioning.postman_collection.json`, where it was the
+Extracted from `buildiq-versioning.postman_collection.json`, where it was the
 `REQ-OBV-005 — diff endpoint returns both manifest blobs` folder and had been
 carrying the comment "STILL RED, DELIBERATELY". It was three of the twelve
 Newman assertion failures on `development`.

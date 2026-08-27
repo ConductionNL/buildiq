@@ -1,8 +1,8 @@
 /*
- * SPDX-FileCopyrightText: 2026 OpenBuild Contributors
+ * SPDX-FileCopyrightText: 2026 Buildiq Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Playwright end-to-end coverage for openspec change `openbuild-page-editor`.
+ * Playwright end-to-end coverage for openspec change `buildiq-page-editor`.
  *
  * Implements task 7.5 (add-page → save → render).
  *
@@ -11,11 +11,11 @@
  * NOTE: Playwright binaries are NOT installed by `npm install`. Run
  * `npm run test:e2e:install` once before invoking `npm run test:e2e`.
  *
- * UN-QUARANTINED AND REWRITTEN 2026-07-31. The file blamed openbuild#41, but it
+ * UN-QUARANTINED AND REWRITTEN 2026-07-31. The file blamed buildiq#41, but it
  * was written against a surface that does not exist and never did on this
  * branch:
  *
- *   - it navigated to `/apps/openbuild/applications/hello-world/design`. There
+ *   - it navigated to `/apps/buildiq/applications/hello-world/design`. There
  *     is no `/design` route — src/manifest.json declares the designer at
  *     `/builder/:slug/pages` (PageDesignerHost);
  *   - it asserted `.application-editor__tab--active`,
@@ -29,7 +29,7 @@
  * manifest editor is a sidebar tab on the app DETAIL page
  * (ApplicationManifestTab). Rewriting it here would invent coverage for a
  * surface that does not exist; the same drift is recorded at the matching skip
- * in tests/e2e/spec-coverage/openbuild-runtime.spec.ts, whose REQ-OBR-005 test
+ * in tests/e2e/spec-coverage/buildiq-runtime.spec.ts, whose REQ-OBR-005 test
  * covers the real manifest round-trip.
  */
 
@@ -46,7 +46,7 @@ import { E2E_BASE_URL as BASE_URL } from './support/baseUrl'
 const APP_SLUG = 'pw-page-designer'
 const NEW_ROUTE = '/added-by-e2e'
 
-test.describe('openbuild page designer', () => {
+test.describe('buildiq page designer', () => {
 	// The designer is a three-pane desktop surface; at the default 1280x720 the
 	// page-list rows land below the fold, where a click never settles.
 	test.use({ viewport: { width: 1600, height: 1200 } })
@@ -65,8 +65,8 @@ test.describe('openbuild page designer', () => {
 	}) => {
 		// Reset to a known baseline so the run is idempotent: this test saves the
 		// page it adds, so a second run would otherwise stack duplicate routes.
-		const manifestUrl = `/index.php/apps/openbuild/api/applications/${APP_SLUG}/manifest`
-		await page.goto(`${BASE_URL}/apps/openbuild/`, {
+		const manifestUrl = `/index.php/apps/buildiq/api/applications/${APP_SLUG}/manifest`
+		await page.goto(`${BASE_URL}/apps/buildiq/`, {
 			waitUntil: 'domcontentloaded',
 		})
 		await page.evaluate(
@@ -94,7 +94,7 @@ test.describe('openbuild page designer', () => {
 		)
 
 		await page.goto(
-			`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/pages?_version=production`,
+			`${BASE_URL}/apps/buildiq/builder/${APP_SLUG}/pages?_version=production`,
 			{
 				waitUntil: 'domcontentloaded',
 			},
@@ -150,14 +150,14 @@ test.describe('openbuild page designer', () => {
 
 		// REQ-OBPD-003 — the newly-added route renders in the built virtual app.
 		await page.goto(
-			`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}${NEW_ROUTE}?_version=production`,
+			`${BASE_URL}/apps/buildiq/builder/${APP_SLUG}${NEW_ROUTE}?_version=production`,
 			{
 				waitUntil: 'domcontentloaded',
 			},
 		)
 		await expect(
 			page
-				.locator('#openbuild-builder, .cn-app-root, .cn-page-renderer')
+				.locator('#buildiq-builder, .cn-app-root, .cn-page-renderer')
 				.first(),
 			'the saved route must render inside the builder host',
 		).toBeVisible({ timeout: 45_000 })

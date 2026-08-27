@@ -3,7 +3,7 @@
 
 use OCP\Util;
 
-$appId = OCA\OpenBuild\AppInfo\Application::APP_ID;
+$appId = OCA\Buildiq\AppInfo\Application::APP_ID;
 Util::addScript($appId, $appId . '-builder');
 ?>
 <div id="content"></div>

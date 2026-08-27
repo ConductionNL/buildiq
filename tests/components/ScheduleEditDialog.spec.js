@@ -4,13 +4,16 @@
  *
  * Vitest spec for ScheduleEditDialog.vue.
  *
- * Spec: schedules-editor / openbuild-schedules-authoring
+ * Spec: schedules-editor / buildiq-schedules-authoring
  * (REQ-OBSA-002, REQ-OBSA-003, REQ-OBSA-004, REQ-OBSA-006).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 
-vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => p }))
+vi.mock('@nextcloud/router', async (importOriginal) => ({
+	...(await importOriginal()),
+	generateUrl: (p) => p,
+}))
 vi.mock('@nextcloud/axios', () => ({ default: { get: vi.fn() } }))
 
 import axios from '@nextcloud/axios'

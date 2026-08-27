@@ -3,7 +3,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * Vitest unit tests for `src/composables/useRole.js` — the single source
- * of truth for role-keyed UI gating across all OpenBuild editor surfaces
+ * of truth for role-keyed UI gating across all Buildiq editor surfaces
  * (REQ-OBR-008 / REQ-OBRBAC-004). Covered scenarios:
  *
  *   - getCurrentUserGroups: success path + loadState-throws fallback
@@ -43,7 +43,7 @@ describe('useRole — REQ-OBR-008 / REQ-OBRBAC-004', () => {
 		it('returns the loadState array when set', () => {
 			loadState.mockReturnValue(['team-alpha', 'team-beta'])
 			expect(getCurrentUserGroups()).toEqual(['team-alpha', 'team-beta'])
-			expect(loadState).toHaveBeenCalledWith('openbuild', 'currentUserGroups')
+			expect(loadState).toHaveBeenCalledWith('buildiq', 'currentUserGroups')
 		})
 
 		it('returns [] when loadState returns a non-array', () => {
@@ -178,7 +178,7 @@ describe('useRole — REQ-OBR-008 / REQ-OBRBAC-004', () => {
 			// Pass a non-array — composable should ignore it and consult
 			// loadState instead.
 			expect(useRole(app, 'team-alpha')).toBe('owner')
-			expect(loadState).toHaveBeenCalledWith('openbuild', 'currentUserGroups')
+			expect(loadState).toHaveBeenCalledWith('buildiq', 'currentUserGroups')
 		})
 	})
 

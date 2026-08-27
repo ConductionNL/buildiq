@@ -19,7 +19,7 @@
 -->
 <template>
 	<NcDialog
-		:name="t('openbuild', 'Import data')"
+		:name="t('buildiq', 'Import data')"
 		:noClose="importing"
 		size="large"
 		@closing="onClose">
@@ -46,33 +46,33 @@
 			<!-- Step 1: choose target -->
 			<section v-if="step === 1" class="ob-import-wizard__panel">
 				<h3 class="ob-import-wizard__heading">
-					{{ t('openbuild', 'Where should the data go?') }}
+					{{ t('buildiq', 'Where should the data go?') }}
 				</h3>
 				<NcCheckboxRadioSwitch
 					v-model="targetMode"
 					value="existing"
 					name="ob-import-target"
 					type="radio">
-					{{ t('openbuild', 'Add rows to an existing schema') }}
+					{{ t('buildiq', 'Add rows to an existing schema') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
 					v-model="targetMode"
 					value="create"
 					name="ob-import-target"
 					type="radio">
-					{{ t('openbuild', 'Create a new schema from the file') }}
+					{{ t('buildiq', 'Create a new schema from the file') }}
 				</NcCheckboxRadioSwitch>
 
 				<template v-if="targetMode === 'existing'">
 					<NcSelect
 						v-model="selectedSchema"
 						class="ob-import-wizard__schema-select"
-						:inputLabel="t('openbuild', 'Target schema')"
+						:inputLabel="t('buildiq', 'Target schema')"
 						:options="schemaOptions"
 						:placeholder="
 							schemaOptions.length
-								? t('openbuild', 'Choose a schema')
-								: t('openbuild', 'No schemas in this version yet')
+								? t('buildiq', 'Choose a schema')
+								: t('buildiq', 'No schemas in this version yet')
 						"
 						label="label"
 						:disabled="!schemaOptions.length" />
@@ -84,13 +84,13 @@
 						<template #icon>
 							<DownloadIcon :size="20" />
 						</template>
-						{{ t('openbuild', 'Download a matching template') }}
+						{{ t('buildiq', 'Download a matching template') }}
 					</NcButton>
 				</template>
 				<p v-else class="ob-import-wizard__hint">
 					{{
 						t(
-							'openbuild',
+							'buildiq',
 							"OpenRegister reads the file's header row to infer the fields and creates the schema for you.",
 						)
 					}}
@@ -100,11 +100,11 @@
 			<!-- Step 2: upload -->
 			<section v-else-if="step === 2" class="ob-import-wizard__panel">
 				<h3 class="ob-import-wizard__heading">
-					{{ t('openbuild', 'Choose a file') }}
+					{{ t('buildiq', 'Choose a file') }}
 				</h3>
 				<input
 					ref="fileInput"
-					:aria-label="t('openbuild', 'Choose a file')"
+					:aria-label="t('buildiq', 'Choose a file')"
 					type="file"
 					class="ob-import-wizard__file-input"
 					accept=".xlsx,.xls,.csv,.json"
@@ -115,8 +115,8 @@
 					</template>
 					{{
 						file
-							? t('openbuild', 'Choose a different file')
-							: t('openbuild', 'Select xlsx, xls, csv or json')
+							? t('buildiq', 'Choose a different file')
+							: t('buildiq', 'Select xlsx, xls, csv or json')
 					}}
 				</NcButton>
 				<div v-if="file" class="ob-import-wizard__file-meta">
@@ -126,7 +126,7 @@
 				<NcNoteCard v-if="file && isLargeFile" type="warning">
 					{{
 						t(
-							'openbuild',
+							'buildiq',
 							'Large files import synchronously and may take a while. Consider splitting very large spreadsheets.',
 						)
 					}}
@@ -136,17 +136,17 @@
 			<!-- Step 3: preview -->
 			<section v-else-if="step === 3" class="ob-import-wizard__panel">
 				<h3 class="ob-import-wizard__heading">
-					{{ t('openbuild', 'Preview') }}
+					{{ t('buildiq', 'Preview') }}
 				</h3>
 				<p class="ob-import-wizard__hint">
 					{{
 						targetMode === 'existing'
 							? t(
-									'openbuild',
+									'buildiq',
 									'Rows will be mapped onto these schema fields by matching column headers.',
 								)
 							: t(
-									'openbuild',
+									'buildiq',
 									'OpenRegister will infer these fields from the file and create the schema.',
 								)
 					}}
@@ -169,7 +169,7 @@
 				<p v-else class="ob-import-wizard__hint">
 					{{
 						t(
-							'openbuild',
+							'buildiq',
 							'Field preview is not available for this file type; OpenRegister will parse it on import.',
 						)
 					}}
@@ -177,7 +177,7 @@
 
 				<template v-if="sampleRows.length">
 					<h4 class="ob-import-wizard__subheading">
-						{{ t('openbuild', 'First rows') }}
+						{{ t('buildiq', 'First rows') }}
 					</h4>
 					<div class="ob-import-wizard__sample-scroll">
 						<!--
@@ -214,21 +214,21 @@
 			<!-- Step 4: confirm -->
 			<section v-else-if="step === 4" class="ob-import-wizard__panel">
 				<h3 class="ob-import-wizard__heading">
-					{{ t('openbuild', 'Ready to import') }}
+					{{ t('buildiq', 'Ready to import') }}
 				</h3>
 				<p class="ob-import-wizard__hint">
 					{{ confirmText }}
 				</p>
 				<div v-if="importing" class="ob-import-wizard__importing">
 					<NcLoadingIcon :size="32" />
-					<span>{{ t('openbuild', 'Importing via OpenRegister…') }}</span>
+					<span>{{ t('buildiq', 'Importing via OpenRegister…') }}</span>
 				</div>
 			</section>
 
 			<!-- Step 5: result -->
 			<section v-else-if="step === 5" class="ob-import-wizard__panel">
 				<h3 class="ob-import-wizard__heading">
-					{{ t('openbuild', 'Import complete') }}
+					{{ t('buildiq', 'Import complete') }}
 				</h3>
 				<div class="ob-import-wizard__counts">
 					<div class="ob-import-wizard__count">
@@ -236,7 +236,7 @@
 							result.created
 						}}</span>
 						<span class="ob-import-wizard__count-label">{{
-							t('openbuild', 'created')
+							t('buildiq', 'created')
 						}}</span>
 					</div>
 					<div class="ob-import-wizard__count">
@@ -244,7 +244,7 @@
 							result.updated
 						}}</span>
 						<span class="ob-import-wizard__count-label">{{
-							t('openbuild', 'updated')
+							t('buildiq', 'updated')
 						}}</span>
 					</div>
 					<div class="ob-import-wizard__count">
@@ -252,14 +252,14 @@
 							result.skipped
 						}}</span>
 						<span class="ob-import-wizard__count-label">{{
-							t('openbuild', 'skipped')
+							t('buildiq', 'skipped')
 						}}</span>
 					</div>
 				</div>
 				<NcNoteCard v-if="result.errors.length" type="warning">
 					{{
 						n(
-							'openbuild',
+							'buildiq',
 							'%n row could not be imported.',
 							'%n rows could not be imported.',
 							result.errors.length,
@@ -278,7 +278,7 @@
 					<template #icon>
 						<DownloadIcon :size="20" />
 					</template>
-					{{ t('openbuild', 'Download error report') }}
+					{{ t('buildiq', 'Download error report') }}
 				</NcButton>
 			</section>
 		</div>
@@ -288,21 +288,21 @@
 				v-if="step > 1 && step < 5 && !importing"
 				variant="tertiary"
 				@click="back">
-				{{ t('openbuild', 'Back') }}
+				{{ t('buildiq', 'Back') }}
 			</NcButton>
 			<NcButton
 				v-if="step < 4"
 				variant="primary"
 				:disabled="!canAdvance"
 				@click="next">
-				{{ t('openbuild', 'Next') }}
+				{{ t('buildiq', 'Next') }}
 			</NcButton>
 			<NcButton
 				v-else-if="step === 4"
 				variant="primary"
 				:disabled="importing"
 				@click="runImport">
-				{{ t('openbuild', 'Import') }}
+				{{ t('buildiq', 'Import') }}
 			</NcButton>
 			<template v-else>
 				<NcButton
@@ -312,12 +312,12 @@
 					@click="undo">
 					{{
 						undoing
-							? t('openbuild', 'Undoing…')
-							: t('openbuild', 'Undo import')
+							? t('buildiq', 'Undoing…')
+							: t('buildiq', 'Undo import')
 					}}
 				</NcButton>
 				<NcButton variant="primary" @click="onClose">
-					{{ t('openbuild', 'Done') }}
+					{{ t('buildiq', 'Done') }}
 				</NcButton>
 			</template>
 		</template>
@@ -433,11 +433,11 @@ export default {
 		 */
 		stepLabels() {
 			return [
-				{ n: 1, label: t('openbuild', 'Target') },
-				{ n: 2, label: t('openbuild', 'File') },
-				{ n: 3, label: t('openbuild', 'Preview') },
-				{ n: 4, label: t('openbuild', 'Confirm') },
-				{ n: 5, label: t('openbuild', 'Result') },
+				{ n: 1, label: t('buildiq', 'Target') },
+				{ n: 2, label: t('buildiq', 'File') },
+				{ n: 3, label: t('buildiq', 'Preview') },
+				{ n: 4, label: t('buildiq', 'Confirm') },
+				{ n: 5, label: t('buildiq', 'Result') },
 			]
 		},
 
@@ -500,11 +500,11 @@ export default {
 		 */
 		detectedTypeLabel() {
 			const map = {
-				excel: t('openbuild', 'Excel spreadsheet'),
-				csv: t('openbuild', 'CSV file'),
-				json: t('openbuild', 'JSON export'),
+				excel: t('buildiq', 'Excel spreadsheet'),
+				csv: t('buildiq', 'CSV file'),
+				json: t('buildiq', 'JSON export'),
 			}
-			return map[this.detectedType] || t('openbuild', 'Unsupported file type')
+			return map[this.detectedType] || t('buildiq', 'Unsupported file type')
 		},
 
 		/**
@@ -545,13 +545,13 @@ export default {
 			if (this.targetMode === 'existing') {
 				const label = this.selectedSchema ? this.selectedSchema.label : ''
 				return t(
-					'openbuild',
+					'buildiq',
 					'Import "{file}" into the "{schema}" schema. OpenRegister parses the file and writes the rows.',
 					{ file: fileName, schema: label },
 				)
 			}
 			return t(
-				'openbuild',
+				'buildiq',
 				'Import "{file}" as a new schema. OpenRegister infers the fields from the header row and writes the rows.',
 				{ file: fileName },
 			)
@@ -729,7 +729,7 @@ export default {
 		},
 
 		/**
-		 * Run the import by delegating to OpenRegister. OpenBuild uploads the
+		 * Run the import by delegating to OpenRegister. Buildiq uploads the
 		 * file bytes only; OR parses, infers, and writes.
 		 *
 		 * @return {Promise<void>}
@@ -840,7 +840,7 @@ export default {
 			}
 			return e && e.message
 				? String(e.message)
-				: t('openbuild', 'Import failed.')
+				: t('buildiq', 'Import failed.')
 		},
 
 		/**

@@ -15,7 +15,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Controller
+ * @package  OCA\Buildiq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -30,10 +30,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Controller;
+namespace OCA\Buildiq\Tests\Unit\Controller;
 
-use OCA\OpenBuild\Controller\SettingsController;
-use OCA\OpenBuild\Service\SettingsService;
+use OCA\Buildiq\Controller\SettingsController;
+use OCA\Buildiq\Service\SettingsService;
 use OCP\AppFramework\Http;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -45,7 +45,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * The canonical AppHost route table routes BOTH `PUT /api/settings`
  * (`settings#update`) and `POST /api/settings` (`settings#create`) into this
- * controller, and because OpenBuild ships the class itself no generic is
+ * controller, and because Buildiq ships the class itself no generic is
  * aliased in to cover either.
  *
  * These tests assert the ITEM — that the write actually reaches
@@ -58,7 +58,7 @@ use PHPUnit\Framework\TestCase;
  * SecurityMiddleware only evaluates auth attributes on the DISPATCHED method,
  * so `#[NoAdminRequired]` on `update()` is NOT a guard — if the in-body H6
  * check were ever dropped from the write path, any authenticated user could
- * rewrite instance-wide OpenBuild configuration. Asserting the guard on
+ * rewrite instance-wide Buildiq configuration. Asserting the guard on
  * `update()` (not merely on `create()`) is what makes that regression visible.
  *
  * @spec openspec/specs/settings-and-observability/spec.md#req-obs-002
@@ -142,7 +142,7 @@ class SettingsControllerWriteTest extends TestCase {
 	 */
 	public function testUpdatePersistsTheRequestParametersAndReturnsTheStoredConfig(): void {
 		$submitted = [
-			'register' => 'openbuild',
+			'register' => 'buildiq',
 			'registry_url' => 'https://store.example.org',
 		];
 
@@ -150,7 +150,7 @@ class SettingsControllerWriteTest extends TestCase {
 		// the submitted shape — asserting on it proves the response comes from
 		// the service rather than being echoed back.
 		$stored = [
-			'register' => 'openbuild',
+			'register' => 'buildiq',
 			'registry_url' => 'https://store.example.org',
 			'openregisters' => true,
 			'isAdmin' => true,
@@ -190,9 +190,9 @@ class SettingsControllerWriteTest extends TestCase {
 	 * @return void
 	 */
 	public function testCreateDelegatesToUpdateAndStillWrites(): void {
-		$submitted = ['register' => 'openbuild'];
+		$submitted = ['register' => 'buildiq'];
 		$stored = [
-			'register' => 'openbuild',
+			'register' => 'buildiq',
 			'isAdmin' => true,
 		];
 

@@ -19,19 +19,17 @@
 				:modelValue="selectedOption"
 				:options="endpointOptions"
 				:loading="loading"
-				:inputLabel="t('openbuild', 'OpenConnector endpoint')"
-				:placeholder="t('openbuild', 'Select an endpoint')"
+				:inputLabel="t('buildiq', 'OpenConnector endpoint')"
+				:placeholder="t('buildiq', 'Select an endpoint')"
 				label="label"
 				@update:modelValue="onSelect" />
 			<p v-if="error" class="connector-source-picker__error">
-				{{ t('openbuild', 'Could not load OpenConnector endpoints.') }}
+				{{ t('buildiq', 'Could not load OpenConnector endpoints.') }}
 			</p>
 			<p
 				v-else-if="!loading && endpointOptions.length === 0"
 				class="connector-source-picker__hint">
-				{{
-					t('openbuild', 'No OpenConnector endpoints are configured yet.')
-				}}
+				{{ t('buildiq', 'No OpenConnector endpoints are configured yet.') }}
 			</p>
 		</div>
 
@@ -40,25 +38,22 @@
 				class="connector-source-picker__hint connector-source-picker__hint--warning">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'OpenConnector is not installed or enabled on this instance. You can still author an endpoint path manually, but it cannot be verified here.',
 					)
 				}}
 			</p>
 			<label class="connector-source-picker__manual-label">
-				{{ t('openbuild', 'Endpoint path') }}
+				{{ t('buildiq', 'Endpoint path') }}
 				<input
 					type="text"
 					:value="manualPath"
-					:placeholder="t('openbuild', 'e.g. kvk/companies')"
+					:placeholder="t('buildiq', 'e.g. kvk/companies')"
 					@input="onManualInput($event.target.value)" />
 			</label>
 			<p v-if="manualPath" class="connector-source-picker__unverified">
 				{{
-					t(
-						'openbuild',
-						'This binding cannot be verified on this instance.',
-					)
+					t('buildiq', 'This binding cannot be verified on this instance.')
 				}}
 			</p>
 		</div>

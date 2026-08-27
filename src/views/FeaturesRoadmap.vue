@@ -30,13 +30,13 @@ export default {
 	data() {
 		return {
 			repo: loadState(
-				'openbuild',
+				'buildiq',
 				'features_roadmap_repo',
-				'ConductionNL/openbuild',
+				'ConductionNL/buildiq',
 			),
 
-			features: loadState('openbuild', 'features_roadmap_features', []),
-			disabled: loadState('openbuild', 'features_roadmap_disabled', false),
+			features: loadState('buildiq', 'features_roadmap_features', []),
+			disabled: loadState('buildiq', 'features_roadmap_disabled', false),
 		}
 	},
 }

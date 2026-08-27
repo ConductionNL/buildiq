@@ -30,7 +30,7 @@ export class BlockImportError extends Error {
 	 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
 	 */
 	constructor(code) {
-		super(`openbuild.blocks.import.error.${code}`)
+		super(`buildiq.blocks.import.error.${code}`)
 		this.name = 'BlockImportError'
 		this.code = code
 	}

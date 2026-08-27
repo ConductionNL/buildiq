@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test'
  * Playwright e2e — AI Chat Companion + streaming (spec: ai-chat-companion-streaming).
  *
  * Validates the user-visible flow:
- *   1. FAB renders on /apps/openbuild/ (gated on /api/chat/health 200)
+ *   1. FAB renders on /apps/buildiq/ (gated on /api/chat/health 200)
  *   2. Clicking the FAB opens the chat panel with the input ready
  *   3. Submitting a message renders the user bubble immediately
  *   4. While the response is in flight the Thinking indicator
@@ -23,7 +23,7 @@ import { test, expect } from '@playwright/test'
  *
  * Preconditions:
  *   - Nextcloud reachable at PLAYWRIGHT_BASE_URL (default localhost:8080)
- *   - openbuild enabled, openregister enabled
+ *   - buildiq enabled, openregister enabled
  *   - /api/chat/health returns 200 (LLM provider configured —
  *     Ollama on the dev box) OR 503 (test skipped per spec)
  *   - Authenticated browser context from global-setup
@@ -35,7 +35,7 @@ import { test, expect } from '@playwright/test'
  * `CnAiCompanion` widget in `@conduction/nextcloud-vue` resolves its backend
  * through `aiChatConfig.js`, whose `DEFAULT_CHAT_APP_ID` was flipped from
  * `openregister` to `hermiq` (ADR-034 Amendment 2026-07-05 "Default flip").
- * OpenBuild does not pass `:chat-app-id`, so it gets the default.
+ * Buildiq does not pass `:chat-app-id`, so it gets the default.
  *
  * Probing OpenRegister therefore asked a question about a DIFFERENT app than
  * the one whose answer decides whether the FAB renders. On this container both
@@ -52,8 +52,8 @@ const chatUnavailable = (status: number) => status !== 200
 
 test.describe('AI Chat Companion — FAB + thinking + response (spec: ai-chat-companion-streaming)', () => {
 	test.beforeEach(async ({ page }) => {
-		await page.goto('/apps/openbuild/', { waitUntil: 'domcontentloaded' })
-		// The OpenBuild SPA hydrates async, so every test below needs the shell
+		await page.goto('/apps/buildiq/', { waitUntil: 'domcontentloaded' })
+		// The Buildiq SPA hydrates async, so every test below needs the shell
 		// mounted before it looks for the FAB. `waitForLoadState('networkidle')`
 		// cannot provide that: it never settles on Nextcloud (ADR-074 rule 4),
 		// so it burned its whole budget in EVERY test of this file — including
@@ -74,7 +74,7 @@ test.describe('AI Chat Companion — FAB + thinking + response (spec: ai-chat-co
 			.first()
 		await expect(
 			appShell.or(createApp).first(),
-			'the OpenBuild app shell must mount',
+			'the Buildiq app shell must mount',
 		).toBeVisible({ timeout: 30_000 })
 	})
 
@@ -89,7 +89,7 @@ test.describe('AI Chat Companion — FAB + thinking + response (spec: ai-chat-co
 		)
 
 		const fab = page.locator('[data-testid="cn-ai-fab"]')
-		await expect(fab, 'FAB must be visible on /apps/openbuild/').toBeVisible({
+		await expect(fab, 'FAB must be visible on /apps/buildiq/').toBeVisible({
 			timeout: 10_000,
 		})
 		await expect(fab).toHaveAttribute('aria-label', /chat/i)

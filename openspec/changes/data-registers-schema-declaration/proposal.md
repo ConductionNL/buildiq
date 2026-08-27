@@ -9,7 +9,7 @@ chain:
 ## Why
 
 `SPECTR-NEXTCLOUD-PLAN.md` §4.2 and hydra ADR-050 (decision #2) lock a new
-OpenBuild capability: an `Application` can bind to one or more **shared,
+Buildiq capability: an `Application` can bind to one or more **shared,
 non-versioned OpenRegister data registers** alongside its own per-version
 config register. The first concrete consumer is `spectr` (Conduction's
 market-intelligence app) — its ~30-schema, 82k+/158k+-row canonical dataset
@@ -18,11 +18,11 @@ version without being copied on each promotion. `pipelinq` and `mydash` are
 named as the obvious next consumers once the capability exists.
 
 Per ADR-002, `ApplicationVersion.register` is already the per-version,
-app-owned register (`openbuild-{slug}-{versionSlug}`) — schemas and objects
+app-owned register (`buildiq-{slug}-{versionSlug}`) — schemas and objects
 that a promotion is expected to copy or migrate. A shared data register is
 architecturally different: it is **not owned by the app**, it is **not
 versioned**, and promotion **must never touch it**. Today there is no
-property on `Application` (or anywhere in the OpenBuild schema surface) that
+property on `Application` (or anywhere in the Buildiq schema surface) that
 lets an admin declare such a binding, so `spectr`'s data-register work is
 blocked until the schema exists.
 
@@ -65,7 +65,7 @@ capability domain)_
 
 #### Modified Capabilities
 
-- `openbuild-application-register`: ADDED Requirement — the `Application`
+- `buildiq-application-register`: ADDED Requirement — the `Application`
   schema gains an optional `dataRegisters` array property (shared data
   register bindings), sibling to `baseRef`. No existing requirement's
   behavior changes; this is purely additive.
@@ -73,7 +73,7 @@ capability domain)_
 ## Impact
 
 - **Changed files**: `lib/Settings/register.d/20-data-registers.json` (new
-  fragment, per ADR-037 — the shared `openbuild` register's `Application`
+  fragment, per ADR-037 — the shared `buildiq` register's `Application`
   schema gains the `dataRegisters` property via deep-merge; no edit to
   `lib/Settings/openbuild_register.json` itself).
 - **No PHP/Vue/route changes** — see "What Changes" above.
@@ -82,7 +82,7 @@ capability domain)_
   absent.
 - **OpenRegister** — no new register, no new OR-side schema; this only adds
   one property to the existing `Application` schema already imported into
-  the shared `openbuild` register.
+  the shared `buildiq` register.
 - **Downstream (out of scope here, tracked by the follower spec
   `data-registers-runtime`)**:
   - `src/composables/useRegisterPicker.js` (consumed by
@@ -101,7 +101,7 @@ capability domain)_
     per-version register/manifest into the export ZIP today; the follower
     adds shared data-register **schema defs** (never data) to that bundle.
   - The version-promotion, page-designer-ui / schema-designer-ui, and
-    openbuild-exporter capabilities are the follower's spec-delta targets —
+    buildiq-exporter capabilities are the follower's spec-delta targets —
     none of them change here.
 - **Foundational ADRs honoured** — ADR-002 (extends the versioned model
   without altering it: `dataRegisters` is explicitly NOT the per-version

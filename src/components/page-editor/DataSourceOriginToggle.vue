@@ -12,14 +12,14 @@
 <template>
 	<div class="ds-origin-toggle">
 		<fieldset class="ds-origin-toggle__choice">
-			<legend>{{ t('openbuild', 'Data source') }}</legend>
+			<legend>{{ t('buildiq', 'Data source') }}</legend>
 			<label class="ds-origin-toggle__radio">
 				<input
 					type="radio"
 					:checked="origin === 'openregister'"
 					value="openregister"
 					@change="selectOrigin('openregister')" />
-				{{ t('openbuild', 'OpenRegister') }}
+				{{ t('buildiq', 'OpenRegister') }}
 			</label>
 			<label class="ds-origin-toggle__radio">
 				<input
@@ -27,7 +27,7 @@
 					:checked="origin === 'openconnector'"
 					value="openconnector"
 					@change="selectOrigin('openconnector')" />
-				{{ t('openbuild', 'OpenConnector') }}
+				{{ t('buildiq', 'OpenConnector') }}
 			</label>
 		</fieldset>
 
@@ -47,14 +47,14 @@
 
 		<ConfirmActionDialog
 			v-model:open="confirmSwitchOpen"
-			:name="t('openbuild', 'Switch data source')"
+			:name="t('buildiq', 'Switch data source')"
 			:message="
 				t(
-					'openbuild',
+					'buildiq',
 					'Switching to OpenRegister discards the OpenConnector mapping. Continue?',
 				)
 			"
-			:confirmLabel="t('openbuild', 'Confirm')"
+			:confirmLabel="t('buildiq', 'Confirm')"
 			destructive
 			@confirm="onConfirmSwitch" />
 	</div>

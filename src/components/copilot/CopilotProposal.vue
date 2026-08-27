@@ -33,13 +33,13 @@
 			:key="versionKey"
 			:fromManifest="pair.current"
 			:toManifest="pair.predicted"
-			:fromLabelText="t('openbuild', 'Current')"
-			:toLabelText="t('openbuild', 'Predicted')" />
+			:fromLabelText="t('buildiq', 'Current')"
+			:toLabelText="t('buildiq', 'Predicted')" />
 
 		<p v-if="!canApprove" class="copilot-proposal__error" role="alert">
 			{{
 				t(
-					'openbuild',
+					'buildiq',
 					'This proposal did not pass validation and cannot be applied.',
 				)
 			}}
@@ -50,14 +50,14 @@
 				data-testid="copilot-discard"
 				:disabled="busy"
 				@click="$emit('discard')">
-				{{ t('openbuild', 'Discard') }}
+				{{ t('buildiq', 'Discard') }}
 			</NcButton>
 			<NcButton
 				data-testid="copilot-approve"
 				variant="primary"
 				:disabled="!canApprove || busy"
 				@click="$emit('approve')">
-				{{ busy ? t('openbuild', 'Applying…') : t('openbuild', 'Approve') }}
+				{{ busy ? t('buildiq', 'Applying…') : t('buildiq', 'Approve') }}
 			</NcButton>
 		</div>
 	</div>

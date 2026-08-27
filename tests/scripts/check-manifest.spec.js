@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
 /**
- * Vitest spec for scripts/check-manifest.js (openbuild#10 task 4.3).
+ * Vitest spec for scripts/check-manifest.js (buildiq#10 task 4.3).
  *
  * The validator binds the canonical ADR-024 schema
  * (`@conduction/nextcloud-vue/src/schemas/app-manifest.schema.json`) to
@@ -41,7 +41,7 @@ function runValidator(args = []) {
 }
 
 describe('check-manifest CLI', () => {
-	it('passes for the OpenBuild shell + wizard seed (default targets)', () => {
+	it('passes for the Buildiq shell + wizard seed (default targets)', () => {
 		const { code, stdout } = runValidator()
 		expect(code).toBe(0)
 		expect(stdout).toContain('PASS src/manifest.json')

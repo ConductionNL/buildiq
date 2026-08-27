@@ -2,18 +2,18 @@
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 //
 // useApplicationVersion — resolves an ApplicationVersion record for use by
-// the four builder views (spec `openbuild-version-routing` REQ-OBVR-005).
+// the four builder views (spec `buildiq-version-routing` REQ-OBVR-005).
 //
 // Signature:
 //   useApplicationVersion(appSlug: string, versionSlug: string | undefined)
 //   → { applicationVersion: Ref<object|null>, loading: Ref<boolean>, error: Ref<Error|null> }
 //
 // When versionSlug is a non-empty string:
-//   GET /apps/openbuild/api/applications/{appSlug}/versions/{versionSlug}
+//   GET /apps/buildiq/api/applications/{appSlug}/versions/{versionSlug}
 //   Resolves the named ApplicationVersion record (spec C REQ-OBV-107).
 //
 // When versionSlug is undefined or empty:
-//   GET /apps/openbuild/api/applications/{appSlug}/versions (list)
+//   GET /apps/buildiq/api/applications/{appSlug}/versions (list)
 //   Applies the "most-upstream non-production fallback" rule (Decision 2 /
 //   REQ-OBVR-004 Scenario 2): find the version with no predecessor in the
 //   promotesTo chain. Falls back to the production version when every version
@@ -104,7 +104,7 @@ export function useApplicationVersion(appSlug, versionSlug) {
 		error.value = null
 		try {
 			const url = generateUrl(
-				`/apps/openbuild/api/applications/${encodeURIComponent(appSlug)}/versions/${encodeURIComponent(versionSlug)}`,
+				`/apps/buildiq/api/applications/${encodeURIComponent(appSlug)}/versions/${encodeURIComponent(versionSlug)}`,
 			)
 			const { data } = await axios.get(url)
 			applicationVersion.value = data || null
@@ -130,7 +130,7 @@ export function useApplicationVersion(appSlug, versionSlug) {
 		try {
 			// Fetch all versions for this app (spec C REQ-OBV-107 list endpoint).
 			const versionsUrl = generateUrl(
-				`/apps/openbuild/api/applications/${encodeURIComponent(appSlug)}/versions`,
+				`/apps/buildiq/api/applications/${encodeURIComponent(appSlug)}/versions`,
 			)
 			const { data: versionsData } = await axios.get(versionsUrl)
 			const versions = Array.isArray(versionsData)
@@ -149,7 +149,7 @@ export function useApplicationVersion(appSlug, versionSlug) {
 			let productionUuid = null
 			try {
 				const appUrl = generateUrl(
-					'/apps/openregister/api/objects/openbuild/application',
+					'/apps/openregister/api/objects/buildiq/application',
 				)
 				const { data: appData } = await axios.get(appUrl, {
 					params: { slug: appSlug, _limit: 1 },

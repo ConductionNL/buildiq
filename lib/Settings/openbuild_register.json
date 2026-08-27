@@ -7,15 +7,15 @@
   },
   "x-openregister": {
     "type": "application",
-    "app": "openbuild",
+    "app": "buildiq",
     "openregister": "^v0.2.10",
     "description": "OpenBuild register namespace. Hosts the Application + ApplicationVersion + BuiltAppRoute control schemas, the ApplicationTemplate catalogue (spec #8), and the seed `hello-message` schema for the canonical hello-world app. Per ADR-002 the Application schema is the logical app (slug/name/appType/baseRef/permissions + productionVersion relation); ApplicationVersion carries the manifest, register reference, semver, and lifecycle. Per unify-apps-with-app-type the unified `appType` discriminator (virtual|hybrid) replaces the retired standalone AppOverride schema — a hybrid app is an Application(appType:hybrid) plus a delta-only ApplicationVersion."
   },
   "paths": {},
   "components": {
     "registers": {
-      "openbuild": {
-        "slug": "openbuild",
+      "buildiq": {
+        "slug": "buildiq",
         "title": "OpenBuild Register",
         "description": "OpenBuild register namespace — holds the Application + ApplicationVersion + BuiltAppRoute control schemas, the ApplicationTemplate catalogue, the automation/rule-engine schemas and the seed hello-message schema for the canonical hello-world app.",
         "version": "0.9.0",
@@ -691,7 +691,7 @@
               ],
               "to": "published",
               "description": "Mark this version as ready to be the parent Application's productionVersion. Relocated from Application schema per ADR-002 — published-ness is per-version now. Authorization (REQ-OBRBAC-004): owner of the parent Application (or a Nextcloud admin) only — enforced by the ApplicationVersionOwnerGuard `requires` tag below, which OR's LifecycleValidationListener runs on this transition.",
-              "requires": "OCA\\OpenBuild\\Lifecycle\\ApplicationVersionOwnerGuard",
+              "requires": "OCA\\Buildiq\\Lifecycle\\ApplicationVersionOwnerGuard",
               "on_transition": {
                 "upsert_relation": {
                   "schema": "openbuild/built-app-route",
@@ -711,7 +711,7 @@
               ],
               "to": "archived",
               "description": "Retire a published version. Operators are responsible for swapping the parent Application's productionVersion off this row first. Authorization (REQ-OBRBAC-004): owner of the parent Application (or a Nextcloud admin) only — enforced by ApplicationVersionOwnerGuard.",
-              "requires": "OCA\\OpenBuild\\Lifecycle\\ApplicationVersionOwnerGuard"
+              "requires": "OCA\\Buildiq\\Lifecycle\\ApplicationVersionOwnerGuard"
             },
             "reopen": {
               "from": [
@@ -719,7 +719,7 @@
               ],
               "to": "draft",
               "description": "Restore an archived ApplicationVersion to draft for further editing. Authorization (REQ-OBRBAC-004): owner of the parent Application (or a Nextcloud admin) only — enforced by ApplicationVersionOwnerGuard.",
-              "requires": "OCA\\OpenBuild\\Lifecycle\\ApplicationVersionOwnerGuard"
+              "requires": "OCA\\Buildiq\\Lifecycle\\ApplicationVersionOwnerGuard"
             }
           }
         }

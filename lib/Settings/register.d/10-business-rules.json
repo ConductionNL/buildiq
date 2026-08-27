@@ -1,5 +1,5 @@
 {
-	"_comment": "ADR-037 register fragment — business-rules-engine. Adds the RuleSet, DecisionTable, ConditionActionRule, RuleExecutionLog and TestCase schemas to the shared `openbuild` register, plus three seed RuleSets with companion tables/rules/test-cases. SettingsService::deepMergeConfig unions components.schemas by key and concatenates components.objects[]. RuleSet carries x-openregister-lifecycle (draft → test → active → archived) and x-openregister-notifications (rule-change alerts), so no custom *LifecycleService / *NotificationService class is needed (ADR-031 §Schema-declarative). Evaluation logic (FeelParser, DecisionTableEvaluator, ConditionActionExecutor, RuleEngineService) is the documented ADR-031 §Exceptions code path. ADR-062 rule 7 note: DecisionTable/ConditionActionRule/RuleExecutionLog/TestCase.ruleSetId is a plain `type:\"string\"` slug reference (NOT format:uuid, NOT a $ref relation) BY DESIGN — RuleSet's natural key is its kebab-case slug because it drives the public runtime route `POST /api/rules/{ruleSetSlug}/evaluate`; the slug is stable across RuleSet re-import/versioning while a uuid would churn. This is a deliberate business-key reference, not a bare-string-FK-by-convention violation (gate 31 does not flag it — the heuristic only fires on format:uuid properties).",
+	"_comment": "ADR-037 register fragment — business-rules-engine. Adds the RuleSet, DecisionTable, ConditionActionRule, RuleExecutionLog and TestCase schemas to the shared `buildiq` register, plus three seed RuleSets with companion tables/rules/test-cases. SettingsService::deepMergeConfig unions components.schemas by key and concatenates components.objects[]. RuleSet carries x-openregister-lifecycle (draft → test → active → archived) and x-openregister-notifications (rule-change alerts), so no custom *LifecycleService / *NotificationService class is needed (ADR-031 §Schema-declarative). Evaluation logic (FeelParser, DecisionTableEvaluator, ConditionActionExecutor, RuleEngineService) is the documented ADR-031 §Exceptions code path. ADR-062 rule 7 note: DecisionTable/ConditionActionRule/RuleExecutionLog/TestCase.ruleSetId is a plain `type:\"string\"` slug reference (NOT format:uuid, NOT a $ref relation) BY DESIGN — RuleSet's natural key is its kebab-case slug because it drives the public runtime route `POST /api/rules/{ruleSetSlug}/evaluate`; the slug is stable across RuleSet re-import/versioning while a uuid would churn. This is a deliberate business-key reference, not a bare-string-FK-by-convention violation (gate 31 does not flag it — the heuristic only fires on format:uuid properties).",
 	"components": {
 		"schemas": {
 			"RuleSet": {
@@ -78,7 +78,7 @@
 					"ownerApp": {
 						"title": "Owner App",
 						"type": "string",
-						"description": "Owning consumer app identifier (e.g. openbuild-lending)."
+						"description": "Owning consumer app identifier (e.g. buildiq-lending)."
 					},
 					"activatedOn": {
 						"title": "Activated At",
@@ -593,7 +593,7 @@
 		"objects": [
 			{
 				"@self": {
-					"register": "openbuild",
+					"register": "buildiq",
 					"schema": "rule-set",
 					"slug": "loan-eligibility"
 				},
@@ -603,12 +603,12 @@
 				"version": "1.0.0",
 				"status": "active",
 				"ruleType": "decision-table",
-				"ownerApp": "openbuild-lending",
+				"ownerApp": "buildiq-lending",
 				"validFrom": "2026-05-22"
 			},
 			{
 				"@self": {
-					"register": "openbuild",
+					"register": "buildiq",
 					"schema": "decision-table",
 					"slug": "loan-eligibility-table"
 				},
@@ -679,7 +679,7 @@
 			},
 			{
 				"@self": {
-					"register": "openbuild",
+					"register": "buildiq",
 					"schema": "rule-test-case",
 					"slug": "loan-eligibility-test-1"
 				},
@@ -701,7 +701,7 @@
 			},
 			{
 				"@self": {
-					"register": "openbuild",
+					"register": "buildiq",
 					"schema": "rule-set",
 					"slug": "invoice-routing"
 				},
@@ -711,12 +711,12 @@
 				"version": "1.0.0",
 				"status": "active",
 				"ruleType": "condition-action",
-				"ownerApp": "openbuild-invoicing",
+				"ownerApp": "buildiq-invoicing",
 				"validFrom": "2026-05-22"
 			},
 			{
 				"@self": {
-					"register": "openbuild",
+					"register": "buildiq",
 					"schema": "condition-action-rule",
 					"slug": "invoice-routing-rule-1"
 				},
@@ -744,7 +744,7 @@
 			},
 			{
 				"@self": {
-					"register": "openbuild",
+					"register": "buildiq",
 					"schema": "rule-set",
 					"slug": "complaint-escalation"
 				},
@@ -754,12 +754,12 @@
 				"version": "2.1.0",
 				"status": "active",
 				"ruleType": "condition-action",
-				"ownerApp": "openbuild-complaints",
+				"ownerApp": "buildiq-complaints",
 				"validFrom": "2026-05-15"
 			},
 			{
 				"@self": {
-					"register": "openbuild",
+					"register": "buildiq",
 					"schema": "condition-action-rule",
 					"slug": "complaint-escalation-rule-1"
 				},

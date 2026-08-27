@@ -13,7 +13,7 @@
 	<section class="ob-theme-section">
 		<header class="ob-theme-section__header">
 			<h3 class="ob-theme-section__title">
-				{{ t('openbuild', 'Theme') }}
+				{{ t('buildiq', 'Theme') }}
 			</h3>
 			<div class="ob-theme-section__actions">
 				<NcButton
@@ -23,15 +23,15 @@
 						nldesignAvailable
 							? ''
 							: t(
-									'openbuild',
+									'buildiq',
 									'NL Design is not installed or enabled on this instance.',
 								)
 					"
 					@click="openPicker">
-					{{ t('openbuild', 'Change') }}
+					{{ t('buildiq', 'Change') }}
 				</NcButton>
 				<NcButton v-if="theme" variant="tertiary" @click="removeTheme">
-					{{ t('openbuild', 'Remove') }}
+					{{ t('buildiq', 'Remove') }}
 				</NcButton>
 			</div>
 		</header>
@@ -39,7 +39,7 @@
 		<p v-if="!nldesignAvailable" class="ob-theme-section__hint">
 			{{
 				t(
-					'openbuild',
+					'buildiq',
 					'NL Design is not available. An existing theme stays visible and removable, but you cannot change it.',
 				)
 			}}
@@ -55,7 +55,7 @@
 			<strong>{{ theme.tokenSetName || theme.tokenSet }}</strong>
 		</div>
 		<p v-else class="ob-theme-section__default">
-			{{ t('openbuild', 'Default (Nextcloud)') }}
+			{{ t('buildiq', 'Default (Nextcloud)') }}
 		</p>
 
 		<ThemePickerDialog
@@ -69,14 +69,14 @@
 
 		<ConfirmActionDialog
 			v-model:open="confirmRemoveOpen"
-			:name="t('openbuild', 'Remove theme')"
+			:name="t('buildiq', 'Remove theme')"
 			:message="
 				t(
-					'openbuild',
+					'buildiq',
 					'Remove the theme? This app will render in the default Nextcloud styling.',
 				)
 			"
-			:confirmLabel="t('openbuild', 'Remove')"
+			:confirmLabel="t('buildiq', 'Remove')"
 			destructive
 			@confirm="onConfirmRemoveTheme" />
 	</section>

@@ -2,7 +2,7 @@
 
 ### Requirement: Shell manifest build uses the shared buildManifest pipeline
 
-OpenBuild's own app-shell bootstrap (`src/main.js`) SHALL build its
+Buildiq's own app-shell bootstrap (`src/main.js`) SHALL build its
 effective runtime manifest via `@conduction/nextcloud-vue`'s shared
 `buildManifest(base, fragments, menuLayout)` utility rather than a
 locally re-implemented merge function. The app-local step SHALL be
@@ -14,7 +14,7 @@ re-implement `mergeMenuItems`, `applyMenuRelocations`,
 
 #### Scenario: Manifest build delegates to the shared util
 
-- **WHEN** the OpenBuild shell boots and resolves its effective manifest
+- **WHEN** the Buildiq shell boots and resolves its effective manifest
 - **THEN** the merge of the bundled base manifest with every
   `src/manifest.d/*.json` fragment is performed by
   `@conduction/nextcloud-vue`'s `buildManifest()`

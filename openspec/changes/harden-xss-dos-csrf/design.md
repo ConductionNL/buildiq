@@ -1,7 +1,7 @@
 ## Context
 
 An attack-surface sweep (full enumeration in `attack-surface-map.md`) found a
-small set of exploitable weaknesses in OpenBuild's own code across three
+small set of exploitable weaknesses in Buildiq's own code across three
 categories, against a large majority of surfaces that are already correctly
 defended. The exploitable items are: two denial-of-service Highs in the
 business-rules engine (no bounds on the FEEL parser/evaluator; no re-entry guard

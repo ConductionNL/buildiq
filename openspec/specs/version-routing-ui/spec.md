@@ -9,7 +9,7 @@ status: done
 
 ## Purpose
 
-The version-routing UI exposes OpenBuild's two-object version model to the
+The version-routing UI exposes Buildiq's two-object version model to the
 maintainer: `VersionHistory` lists OR object-time-travel snapshots with compare
 + rollback, `PromoteVersionDialog` moves a manifest/schema/data set to a
 downstream version with a computed default strategy and a destructive-confirm
@@ -19,15 +19,15 @@ load history.
 
 This capability is observed behaviour of those components. It is the frontend
 half of the `version-routing`, `version-promotion`, and
-`openbuild-version-snapshots` backend capabilities.
+`buildiq-version-snapshots` backend capabilities.
 
 ## Requirements
 
 ### Requirement: Version history lists snapshots and gates compare and rollback
 
 `VersionHistory` SHALL load the app's `ApplicationVersion` rows from the working
-slug-based endpoint `GET /apps/openbuild/api/applications/{slug}/versions` (NOT the
-OR-object endpoint `/apps/openregister/api/objects/openbuild/application-version`, which
+slug-based endpoint `GET /apps/buildiq/api/applications/{slug}/versions` (NOT the
+OR-object endpoint `/apps/openregister/api/objects/buildiq/application-version`, which
 returns no rows for this register shape) and SHALL key its rows off the real returned
 fields (`name`, `slug`, `semver`, `status`, `application`, `register`, `manifest`). It
 SHALL NOT filter on the non-existent field `applicationUuid`; the parent relation field is
@@ -45,14 +45,14 @@ capability.
 
 - **GIVEN** an Application `<slug>` with one or more `ApplicationVersion` rows
 - **WHEN** the version-history view loads with that slug
-- **THEN** it calls `GET /apps/openbuild/api/applications/<slug>/versions`
+- **THEN** it calls `GET /apps/buildiq/api/applications/<slug>/versions`
 - **AND** it renders one row per returned version using the real fields (`name`, `slug`,
   `semver`, `status`)
 
 #### Scenario: Empty endpoint is no longer hit
 
 - **WHEN** the version-history view loads
-- **THEN** it does NOT call `/apps/openregister/api/objects/openbuild/application-version`
+- **THEN** it does NOT call `/apps/openregister/api/objects/buildiq/application-version`
 - **AND** it does NOT filter rows on `applicationUuid`
 
 #### Scenario: Rollback through confirm
@@ -69,7 +69,7 @@ capability.
 destructive-confirm gate (`isDestructiveGateMet`), and emit confirm/cancel
 (`onConfirm`, `onCancel`).
 
-@e2e exclude retrofit component-contract spec — `computeDefaultStrategy`, `summaryText`, `confirmHelperText`, `confirmInputLabel`, `isDestructiveGateMet`, `onConfirm`/`onCancel` are dialog-component contracts verified by Vitest unit tests; destructive-gate flow requires a running dev→staging chain which is covered by the openbuild-version-snapshots Newman tests
+@e2e exclude retrofit component-contract spec — `computeDefaultStrategy`, `summaryText`, `confirmHelperText`, `confirmInputLabel`, `isDestructiveGateMet`, `onConfirm`/`onCancel` are dialog-component contracts verified by Vitest unit tests; destructive-gate flow requires a running dev→staging chain which is covered by the buildiq-version-snapshots Newman tests
 
 #### Scenario: Gate a destructive promotion
 
@@ -82,7 +82,7 @@ destructive-confirm gate (`isDestructiveGateMet`), and emit confirm/cancel
 (`title`, `formattedPublishedAt`), track open state (`onUpdateOpen`), and emit
 confirm/cancel (`confirm`, `cancel`).
 
-@e2e exclude retrofit component-contract spec — `title`, `formattedPublishedAt`, `onUpdateOpen`, `confirm`/`cancel` emit contracts are modal-component contracts verified by Vitest unit tests; rollback confirmation flow is covered by the openbuild-runtime Playwright tests
+@e2e exclude retrofit component-contract spec — `title`, `formattedPublishedAt`, `onUpdateOpen`, `confirm`/`cancel` emit contracts are modal-component contracts verified by Vitest unit tests; rollback confirmation flow is covered by the buildiq-runtime Playwright tests
 
 #### Scenario: Confirm a rollback
 
@@ -97,7 +97,7 @@ exposing a default editable version helper (`defaultEditableVersion`).
 composables SHALL return reactive state consumed by the builder hosts and the
 detail header.
 
-@e2e exclude retrofit composable-contract spec — `useApplicationVersion` reactive-state resolution, `defaultEditableVersion` helper, and `useManifestHistory` load contracts are composable contracts verified by Vitest unit tests; version slug resolution in the builder host is covered by the openbuild-runtime Playwright tests
+@e2e exclude retrofit composable-contract spec — `useApplicationVersion` reactive-state resolution, `defaultEditableVersion` helper, and `useManifestHistory` load contracts are composable contracts verified by Vitest unit tests; version slug resolution in the builder host is covered by the buildiq-runtime Playwright tests
 
 #### Scenario: Resolve the active version
 

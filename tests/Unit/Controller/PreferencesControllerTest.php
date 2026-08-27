@@ -11,7 +11,7 @@
  *   - Happy-path set → writes IConfig and returns {value: <stored>}.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Controller
+ * @package  OCA\Buildiq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,9 +24,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Controller;
+namespace OCA\Buildiq\Tests\Unit\Controller;
 
-use OCA\OpenBuild\Controller\PreferencesController;
+use OCA\Buildiq\Controller\PreferencesController;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IConfig;
@@ -207,7 +207,7 @@ class PreferencesControllerTest extends TestCase {
 			->method('deleteUserValue')
 			->with(
 				userId: 'test-user',
-				appName: 'openbuild',
+				appName: 'buildiq',
 				key: 'pref_mykey'
 			);
 		$this->config->expects($this->never())->method('setUserValue');
@@ -234,7 +234,7 @@ class PreferencesControllerTest extends TestCase {
 			->method('getUserValue')
 			->with(
 				userId: 'test-user',
-				appName: 'openbuild',
+				appName: 'buildiq',
 				key: 'pref_mykey',
 				default: ''
 			)
@@ -272,7 +272,7 @@ class PreferencesControllerTest extends TestCase {
 			->method('setUserValue')
 			->with(
 				userId: 'test-user',
-				appName: 'openbuild',
+				appName: 'buildiq',
 				key: 'pref_my-flag',
 				value: 'true'
 			);
@@ -296,7 +296,7 @@ class PreferencesControllerTest extends TestCase {
 			->method('getUserValue')
 			->with(
 				userId: 'test-user',
-				appName: 'openbuild',
+				appName: 'buildiq',
 				key: 'pref_helloworld',
 				default: ''
 			)

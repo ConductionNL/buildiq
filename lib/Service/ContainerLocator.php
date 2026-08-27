@@ -1,15 +1,15 @@
 <?php
 
 /**
- * OpenBuild ContainerLocator
+ * Buildiq ContainerLocator
  *
  * Resolves a service class from the server container by name, returning null when
  * it cannot be resolved.
  *
- * This exists so that OPTIONAL cross-app dependencies stay optional. OpenBuild
+ * This exists so that OPTIONAL cross-app dependencies stay optional. Buildiq
  * declares only `openregister`; `hermiq` and `openconnector` may be absent, so
  * their services cannot be constructor-injected — an unresolvable type hint would
- * break OpenBuild's own container wiring on an instance that simply does not have
+ * break Buildiq's own container wiring on an instance that simply does not have
  * the other app installed.
  *
  * Keeping the lookup behind this one seam also keeps it stubbable in tests: an
@@ -20,7 +20,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -35,7 +35,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 use OCP\IServerContainer;
 use Psr\Log\LoggerInterface;
@@ -78,7 +78,7 @@ class ContainerLocator {
 			$service = $this->container->get($name);
 		} catch (Throwable $e) {
 			$this->logger->debug(
-				'OpenBuild: optional service "' . $name . '" could not be resolved: ' . $e->getMessage()
+				'Buildiq: optional service "' . $name . '" could not be resolved: ' . $e->getMessage()
 			);
 
 			return null;

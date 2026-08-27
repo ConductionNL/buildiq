@@ -1,6 +1,6 @@
 ## Context
 
-OpenBuild apps carry manifest customization as a keyed `manifestDelta` on an
+Buildiq apps carry manifest customization as a keyed `manifestDelta` on an
 `ApplicationVersion` (per ADR-002 the version is the deployable runtime; per
 `app-delta-override` / `unify-apps-with-app-type` the delta replaces a frozen
 blob). For a HYBRID app the delta is layered over an installed Nextcloud fleet
@@ -42,17 +42,17 @@ This change adds the **USER (per-user)** layer and reworks the dashboard.
 
 **Non-Goals:**
 
-- NOT modelling a register-delta or rebuilding register versioning in OpenBuild —
+- NOT modelling a register-delta or rebuilding register versioning in Buildiq —
   the Register widget is deep-link only (current state + counts → OpenRegister).
 - NOT building the admin/shared delta layer — that is `app-delta-override` +
-  `openbuild-inline-edit-persistence`; this change layers on top of them.
+  `buildiq-inline-edit-persistence`; this change layers on top of them.
 - NOT introducing a new OpenRegister schema — the user layer reuses
   `ApplicationVersion`.
-- NOT a server-side merge for HYBRID apps — OpenBuild does not hold the fleet
+- NOT a server-side merge for HYBRID apps — Buildiq does not hold the fleet
   app's bundled base, so the base⊕admin⊕user merge for a HYBRID app stays
   client-side (the served payload is the resolved admin+user delta chain or the
-  raw deltas; the bundled base is merged in the loader, per `openbuild-inline-edit-persistence`
-  design D2). For VIRTUAL apps where OpenBuild owns the base, server-side merge
+  raw deltas; the bundled base is merged in the loader, per `buildiq-inline-edit-persistence`
+  design D2). For VIRTUAL apps where Buildiq owns the base, server-side merge
   follows `app-delta-override`'s `ManifestResolverService`.
 - NOT per-user quotas, sharing a user delta with another user, or org-scoped
   (group) deltas — single owner per user-scoped row only.
@@ -127,7 +127,7 @@ service is written.
 
 The Register widget shows the app's OpenRegister register(s) and current object
 counts and deep-links into the OpenRegister app for any version / rollback /
-time-travel of register DATA. OpenBuild models NO register-delta and rebuilds NO
+time-travel of register DATA. Buildiq models NO register-delta and rebuilds NO
 register versioning — this is purely a read + deep-link surface, consistent with
 the existing `RegisterWidget.vue` "Open in OpenRegister" pattern.
 
@@ -206,13 +206,13 @@ BASE-first: `merge(merge(base, adminDelta), userDelta)`.
 
 Realistic objects per modified schema using general-organization data, `@self`
 envelope, SAFE placeholder UUIDs only (nil UUID `00000000-0000-0000-0000-000000000000`
-and `<PLACEHOLDER-…>` forms). Seeded into the `openbuild` register on install.
+and `<PLACEHOLDER-…>` forms). Seeded into the `buildiq` register on install.
 
 **`Application` (hybrid, user-overrides enabled) — a municipality customizing the catalog app:**
 
 ```jsonc
 {
-  "@self": { "register": "openbuild", "schema": "application" },
+  "@self": { "register": "buildiq", "schema": "application" },
   "slug": "opencatalogi",
   "name": "Open Catalogi",
   "appType": "hybrid",
@@ -227,14 +227,14 @@ and `<PLACEHOLDER-…>` forms). Seeded into the `openbuild` register on install.
 
 ```jsonc
 {
-  "@self": { "register": "openbuild", "schema": "applicationVersion", "id": "<PLACEHOLDER-ADMIN-VERSION-UUID>" },
+  "@self": { "register": "buildiq", "schema": "applicationVersion", "id": "<PLACEHOLDER-ADMIN-VERSION-UUID>" },
   "name": "Production",
   "slug": "production",
   "scope": "admin",
   "manifest": {},
   "manifestDelta": { "pages": { "dashboard": { "title": "Catalogusbeheer" } } },
   "baseRef": { "kind": "fleet-app", "id": "opencatalogi" },
-  "register": "openbuild-opencatalogi",
+  "register": "buildiq-opencatalogi",
   "semver": "0.1.0",
   "status": "published",
   "application": "<PLACEHOLDER-APP-UUID>"
@@ -245,7 +245,7 @@ and `<PLACEHOLDER-…>` forms). Seeded into the `openbuild` register on install.
 
 ```jsonc
 {
-  "@self": { "register": "openbuild", "schema": "applicationVersion" },
+  "@self": { "register": "buildiq", "schema": "applicationVersion" },
   "name": "Mijn weergave",
   "slug": "user-jdvries",
   "scope": "user",
@@ -253,7 +253,7 @@ and `<PLACEHOLDER-…>` forms). Seeded into the `openbuild` register on install.
   "manifest": {},
   "manifestDelta": { "pages": { "dashboard": { "widgets": { "recent-uploads": { "$op": "remove" } } } } },
   "baseRef": { "kind": "application-version", "id": "<PLACEHOLDER-ADMIN-VERSION-UUID>" },
-  "register": "openbuild-opencatalogi",
+  "register": "buildiq-opencatalogi",
   "semver": "0.1.0",
   "status": "draft",
   "application": "<PLACEHOLDER-APP-UUID>"
@@ -264,7 +264,7 @@ and `<PLACEHOLDER-…>` forms). Seeded into the `openbuild` register on install.
 
 ```jsonc
 {
-  "@self": { "register": "openbuild", "schema": "application" },
+  "@self": { "register": "buildiq", "schema": "application" },
   "slug": "intake-tracker",
   "name": "Intake Tracker",
   "appType": "virtual",

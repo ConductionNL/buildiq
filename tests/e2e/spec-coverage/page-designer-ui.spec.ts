@@ -21,9 +21,9 @@
  * REQ-OBPDUI-005: Inline validation surface and config-field registration.
  *   - validation-panel-renders-in-right-pane
  *
- * Routes (history-mode base /apps/openbuild):
- *   PageDesigner  →  /apps/openbuild/builder/:slug/pages
- *   BuilderHost   →  /apps/openbuild/builder/:slug/:pathMatch
+ * Routes (history-mode base /apps/buildiq):
+ *   PageDesigner  →  /apps/buildiq/builder/:slug/pages
+ *   BuilderHost   →  /apps/buildiq/builder/:slug/:pathMatch
  */
 
 import { test, expect } from '@playwright/test'
@@ -35,10 +35,9 @@ import { test, expect } from '@playwright/test'
 import { dismissFirstVisitOverlays } from '../support/overlays'
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
-const LIVE = process.env.OPENBUILD_E2E_LIVE === '1'
+const LIVE = process.env.BUILDIQ_E2E_LIVE === '1'
 
-const PAGE_DESIGNER = (slug: string) =>
-	`${BASE}/apps/openbuild/builder/${slug}/pages`
+const PAGE_DESIGNER = (slug: string) => `${BASE}/apps/buildiq/builder/${slug}/pages`
 
 // ---------------------------------------------------------------------------
 // REQ-OBPDUI-001 — Controlled designer orchestrates pages, menu, undo/redo
@@ -50,7 +49,7 @@ const PAGE_DESIGNER = (slug: string) =>
 // `PAGE_DESIGNER('hello-world')` URL, waits for the same `.page-designer-host`
 // selector, and passes — as do every page-editor-coverage.spec.ts scenario and
 // the docudesk builder specs, all of which drive
-// `/apps/openbuild/builder/<slug>/pages`. The 500 was fixed weeks ago; this
+// `/apps/buildiq/builder/<slug>/pages`. The 500 was fixed weeks ago; this
 // file was last touched 2026-06-06 and simply never rechecked.
 // @e2e page-designer-ui::page-designer-renders-three-pane-layout
 test('REQ-OBPDUI-001 — page designer route renders the three-pane layout', async ({
@@ -64,7 +63,7 @@ test('REQ-OBPDUI-001 — page designer route renders the three-pane layout', asy
 	).toBeVisible({ timeout: 15_000 })
 
 	// The outer shell must load without a white screen.
-	await expect(page).toHaveTitle(/openbuild/i)
+	await expect(page).toHaveTitle(/buildiq/i)
 })
 
 // @e2e page-designer-ui::undo-button-disabled-on-fresh-load
@@ -74,7 +73,7 @@ test('REQ-OBPDUI-001 — undo button is disabled when no edits have been made', 
 	// @e2e page-designer-ui::undo-button-disabled-on-fresh-load
 	test.skip(
 		!LIVE,
-		'Requires live dev env with page designer JS built — set OPENBUILD_E2E_LIVE=1',
+		'Requires live dev env with page designer JS built — set BUILDIQ_E2E_LIVE=1',
 	)
 
 	await page.goto(PAGE_DESIGNER('hello-world'))
@@ -135,7 +134,7 @@ test('REQ-OBPDUI-002 — unknown ?_version shows version-not-found state', async
 	// @e2e page-designer-ui::unknown-version-renders-not-found-state
 	test.skip(
 		!LIVE,
-		'Requires live dev env with page designer JS built — set OPENBUILD_E2E_LIVE=1',
+		'Requires live dev env with page designer JS built — set BUILDIQ_E2E_LIVE=1',
 	)
 
 	await page.goto(`${PAGE_DESIGNER('hello-world')}?_version=nonexistent-slug-xyz`)
@@ -169,7 +168,7 @@ test('REQ-OBPDUI-003 — centre pane renders a sub-editor when a page is selecte
 	// @e2e page-designer-ui::sub-editor-is-rendered-when-page-selected
 	test.skip(
 		!LIVE,
-		'Requires live dev env with page designer JS built and hello-world pages — set OPENBUILD_E2E_LIVE=1',
+		'Requires live dev env with page designer JS built and hello-world pages — set BUILDIQ_E2E_LIVE=1',
 	)
 
 	await page.goto(PAGE_DESIGNER('hello-world'))
@@ -208,7 +207,7 @@ test('REQ-OBPDUI-004 — left pane renders the page list and menu tree', async (
 	// @e2e page-designer-ui::page-list-editor-renders-in-left-pane
 	test.skip(
 		!LIVE,
-		'Requires live dev env with page designer JS built — set OPENBUILD_E2E_LIVE=1',
+		'Requires live dev env with page designer JS built — set BUILDIQ_E2E_LIVE=1',
 	)
 
 	await page.goto(PAGE_DESIGNER('hello-world'))
@@ -234,7 +233,7 @@ test('REQ-OBPDUI-005 — right pane renders the validation surface', async ({
 	// @e2e page-designer-ui::validation-panel-renders-in-right-pane
 	test.skip(
 		!LIVE,
-		'Requires live dev env with page designer JS built — set OPENBUILD_E2E_LIVE=1',
+		'Requires live dev env with page designer JS built — set BUILDIQ_E2E_LIVE=1',
 	)
 
 	await page.goto(PAGE_DESIGNER('hello-world'))

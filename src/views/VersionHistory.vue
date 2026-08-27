@@ -3,7 +3,7 @@
   - SPDX-FileCopyrightText: 2026 Conduction B.V.
   -
   - Version-history list for an Application. Reads ApplicationVersion rows from
-  - the slug-based OpenBuild endpoint (`/api/applications/{slug}/versions`) — the
+  - the slug-based Buildiq endpoint (`/api/applications/{slug}/versions`) — the
   - OR objects endpoint + `applicationUuid` filter never matched this register
   - shape, so this is the working source (version-lifecycle-and-switcher,
   - version-routing-ui MODIFIED). Each row can be opened (view/use) in the live
@@ -13,15 +13,15 @@
 <template>
 	<div class="version-history">
 		<header class="version-history__header">
-			<h3>{{ t('openbuild', 'Version history') }}</h3>
+			<h3>{{ t('buildiq', 'Version history') }}</h3>
 		</header>
 		<p v-if="loading" class="version-history__empty">
-			{{ t('openbuild', 'Loading…') }}
+			{{ t('buildiq', 'Loading…') }}
 		</p>
 		<p v-else-if="!versions.length" class="version-history__empty">
 			{{
 				t(
-					'openbuild',
+					'buildiq',
 					'No versions yet — create a draft to start a new version.',
 				)
 			}}
@@ -50,33 +50,33 @@
 						<span
 							v-if="isProduction(row)"
 							class="version-history__badge version-history__badge--production">
-							{{ t('openbuild', 'Production') }}
+							{{ t('buildiq', 'Production') }}
 						</span>
 					</div>
 				</div>
 				<!-- Actions stop row-click propagation so a button never doubles as "open". -->
 				<div class="version-history__actions" @click.stop>
 					<button class="version-history__btn" @click="openVersion(row)">
-						{{ t('openbuild', 'Open') }}
+						{{ t('buildiq', 'Open') }}
 					</button>
 					<button
 						v-if="canEdit"
 						class="version-history__btn"
 						@click="editVersion(row)">
-						{{ t('openbuild', 'Edit') }}
+						{{ t('buildiq', 'Edit') }}
 					</button>
 					<button
 						v-if="canRelease && rowStatus(row) === 'draft'"
 						class="version-history__btn version-history__btn--primary"
 						:disabled="releasing === rowUuid(row)"
 						@click="release(row)">
-						{{ t('openbuild', 'Release') }}
+						{{ t('buildiq', 'Release') }}
 					</button>
 					<button
 						v-if="!isProduction(row)"
 						class="version-history__btn version-history__btn--danger"
 						@click="askRollback(row)">
-						{{ t('openbuild', 'Roll back') }}
+						{{ t('buildiq', 'Roll back') }}
 					</button>
 				</div>
 			</li>
@@ -208,12 +208,12 @@ export default {
 				let url
 				if (this.appSlug) {
 					url = generateUrl(
-						'/apps/openbuild/api/applications/{slug}/versions',
+						'/apps/buildiq/api/applications/{slug}/versions',
 						{ slug: this.appSlug },
 					)
 				} else {
 					url = generateUrl(
-						'/apps/openbuild/api/applicationversions?applicationUuid={uuid}',
+						'/apps/buildiq/api/applicationversions?applicationUuid={uuid}',
 						{ uuid: this.applicationUuid },
 					)
 				}
@@ -335,16 +335,18 @@ export default {
 		 *
 		 * @param {object} row The version row.
 		 * @return {string}
+		 *
+		 * @spec openspec/specs/application-versions/spec.md
 		 */
 		statusLabel(row) {
 			const status = this.rowStatus(row)
 			if (status === 'published') {
-				return t('openbuild', 'Published')
+				return t('buildiq', 'Published')
 			}
 			if (status === 'archived') {
-				return t('openbuild', 'Archived')
+				return t('buildiq', 'Archived')
 			}
-			return t('openbuild', 'Draft')
+			return t('buildiq', 'Draft')
 		},
 
 		/**
@@ -373,7 +375,7 @@ export default {
 			if (!this.appSlug) {
 				return
 			}
-			const base = generateUrl('/apps/openbuild/builder/{slug}', {
+			const base = generateUrl('/apps/buildiq/builder/{slug}', {
 				slug: this.appSlug,
 			})
 			window.location.href = this.isProduction(row)
@@ -394,7 +396,7 @@ export default {
 			if (!this.appSlug) {
 				return
 			}
-			const base = generateUrl('/apps/openbuild/builder/{slug}/pages', {
+			const base = generateUrl('/apps/buildiq/builder/{slug}/pages', {
 				slug: this.appSlug,
 			})
 			window.location.href = this.isProduction(row)
@@ -419,12 +421,12 @@ export default {
 			this.releasing = this.rowUuid(row)
 			try {
 				const url = generateUrl(
-					'/apps/openbuild/api/applications/{slug}/versions/{versionSlug}/release',
+					'/apps/buildiq/api/applications/{slug}/versions/{versionSlug}/release',
 					{ slug: this.appSlug, versionSlug },
 				)
 				await axios.post(url, {})
 				showSuccess(
-					t('openbuild', '“{name}” is now the production version.', {
+					t('buildiq', '“{name}” is now the production version.', {
 						name: this.rowName(row),
 					}),
 				)
@@ -436,7 +438,7 @@ export default {
 					|| (e && e.message)
 					|| ''
 				showError(
-					t('openbuild', 'Release failed') + (detail ? ': ' + detail : ''),
+					t('buildiq', 'Release failed') + (detail ? ': ' + detail : ''),
 				)
 			} finally {
 				this.releasing = ''

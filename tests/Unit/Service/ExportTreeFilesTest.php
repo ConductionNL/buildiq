@@ -9,7 +9,7 @@
  * spurious diff between two archives that should have matched.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Service
+ * @package  OCA\Buildiq\Tests\Unit\Service
  *
  * @author  Conduction Development Team <dev@conduction.nl>
  * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
@@ -17,13 +17,13 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Service;
+namespace OCA\Buildiq\Tests\Unit\Service;
 
-use OCA\OpenBuild\Service\ExportTreeFiles;
+use OCA\Buildiq\Service\ExportTreeFiles;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \OCA\OpenBuild\Service\ExportTreeFiles
+ * @covers \OCA\Buildiq\Service\ExportTreeFiles
  */
 final class ExportTreeFilesTest extends TestCase {
 

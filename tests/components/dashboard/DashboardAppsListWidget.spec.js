@@ -191,14 +191,9 @@ describe('DashboardAppsListWidget', () => {
 		// which the DOM makes absolute.
 		it('onIconError swaps in the fallback icon', () => {
 			const target = document.createElement('img')
-			target.setAttribute(
-				'src',
-				'/index.php/apps/openbuild/icons/foo-dark.svg',
-			)
+			target.setAttribute('src', '/index.php/apps/buildiq/icons/foo-dark.svg')
 			vm.onIconError({ target })
-			expect(target.getAttribute('src')).toBe(
-				'/apps/openbuild/img/app-dark.svg',
-			)
+			expect(target.getAttribute('src')).toBe('/apps/buildiq/img/app-dark.svg')
 		})
 
 		it('onIconError does not re-swap once the fallback itself is showing', () => {
@@ -206,11 +201,9 @@ describe('DashboardAppsListWidget', () => {
 			// Without the guard the handler would re-set the same failing src forever,
 			// spamming requests — so it must swap at most once.
 			const target = document.createElement('img')
-			target.setAttribute('src', '/apps/openbuild/img/app-dark.svg')
+			target.setAttribute('src', '/apps/buildiq/img/app-dark.svg')
 			vm.onIconError({ target })
-			expect(target.getAttribute('src')).toBe(
-				'/apps/openbuild/img/app-dark.svg',
-			)
+			expect(target.getAttribute('src')).toBe('/apps/buildiq/img/app-dark.svg')
 		})
 	})
 

@@ -1,14 +1,14 @@
 <?php
 
 /**
- * Handler for the openbuild.upsertPage MCP tool.
+ * Handler for the buildiq.upsertPage MCP tool.
  *
  * Creates or updates a page entry in the draft manifest of an ApplicationVersion.
  * The lookup uses case-insensitive page id matching so the LLM does not need to
  * remember exact casing.
  *
  * @category Service
- * @package  OCA\OpenBuild\Mcp\Handler
+ * @package  OCA\Buildiq\Mcp\Handler
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,10 +24,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Mcp\Handler;
+namespace OCA\Buildiq\Mcp\Handler;
 
 /**
- * Handles the openbuild.upsertPage tool invocation.
+ * Handles the buildiq.upsertPage tool invocation.
  */
 class UpsertPageHandler extends AbstractToolHandler {
 
@@ -109,7 +109,7 @@ class UpsertPageHandler extends AbstractToolHandler {
 			];
 		} catch (\Throwable $e) {
 			$this->logger->error(
-				'OpenBuild MCP: upsertPage failed',
+				'Buildiq MCP: upsertPage failed',
 				['appSlug' => $appSlug, 'pageId' => $pageId, 'exception' => $e->getMessage(), 'trace' => $e->getTraceAsString()]
 			);
 			return $this->errorResult(error: 'upsert_failed', message: 'Failed to upsert page. See server logs for details.');

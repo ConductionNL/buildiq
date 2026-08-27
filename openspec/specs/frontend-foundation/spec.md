@@ -6,7 +6,7 @@ retrofit: true
 
 ## Purpose
 
-OpenBuild's shared frontend foundation: cross-view composables (insights, live
+Buildiq's shared frontend foundation: cross-view composables (insights, live
 preview, manifest validation, register picking, RBAC role resolution), the
 object/settings Vuex stores, the slug utilities, the `PermissionsModal`, the
 settings views, and the backend per-user `PreferencesController`. These pieces
@@ -42,7 +42,7 @@ for an application; `getCurrentUserGroups()` SHALL read the current user's
 groups; `hasAnyRole(application, userGroups)` SHALL return whether the caller
 holds any of the application's roles.
 
-@e2e exclude retrofit composable-contract spec — `useRole`, `getCurrentUserGroups`, `hasAnyRole` return-value contracts are verified by Vitest unit tests; role-gated UI surface is covered by the openbuild-rbac Playwright tests
+@e2e exclude retrofit composable-contract spec — `useRole`, `getCurrentUserGroups`, `hasAnyRole` return-value contracts are verified by Vitest unit tests; role-gated UI surface is covered by the buildiq-rbac Playwright tests
 
 #### Scenario: Resolve no role
 

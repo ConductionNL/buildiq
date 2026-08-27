@@ -4,7 +4,7 @@
  * Unit tests for AutomationWriteService.
  *
  * Covers spec REQ-AUTD-008 for the automation WRITE path extracted out of
- * AutomationsController (Conduction/openbuild#173):
+ * AutomationsController (Conduction/buildiq#173):
  *
  *   - create() 403s a caller who holds no role on the parent Application;
  *   - create() 400s when `applicationSlug` or `versionUuid` is missing — they
@@ -20,7 +20,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Service
+ * @package  OCA\Buildiq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -33,13 +33,13 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Service;
+namespace OCA\Buildiq\Tests\Unit\Service;
 
-use OCA\OpenBuild\Service\AutomationCompilerService;
-use OCA\OpenBuild\Service\AutomationWriteService;
-use OCA\OpenBuild\Service\PermissionResolver;
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\Buildiq\Service\AutomationCompilerService;
+use OCA\Buildiq\Service\AutomationWriteService;
+use OCA\Buildiq\Service\PermissionResolver;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
 use OCP\IGroupManager;
@@ -254,7 +254,7 @@ final class AutomationWriteServiceTest extends TestCase {
 
 	/**
 	 * REQ-AUTD-008: an editor of the parent Application gets a 201, and the
-	 * write goes out in SYSTEM CONTEXT (`_rbac: false`) — openbuild has already
+	 * write goes out in SYSTEM CONTEXT (`_rbac: false`) — buildiq has already
 	 * made the finer-grained decision OR's coarse schema ACL cannot express.
 	 *
 	 * @return void
@@ -454,7 +454,7 @@ final class AutomationWriteServiceTest extends TestCase {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParams')->willReturn(
 			[
-				'_route' => 'openbuild.automations.update',
+				'_route' => 'buildiq.automations.update',
 				'uuid' => 'a-1',
 				'applicationSlug' => 'permit-tracker',
 				'slug' => 'nag',

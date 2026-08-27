@@ -19,7 +19,7 @@ The system SHALL support a `documents[]` array in the manifest v2 `runtime` bloc
 - `format` (string, optional) — output format passed to Docudesk's `options.format`; the allowed value set is pinned against the deployed Docudesk during apply (flagged dependency), defaulting to the template's own default when absent.
 - `filenameTemplate` (string, optional) — download filename; may interpolate `{{objectProperty}}` placeholders resolved against the object; defaults to `<label>-<objectUuid>.<ext>`.
 
-OpenBuild's manifest validation layer SHALL reject: duplicate `id`s, duplicate *(schema, label)* pairs, a `schema` not present in the virtual app, a non-UUID `templateId`, an empty `label`, a `format` outside the pinned value set, and unknown keys. Apps with zero attachments SHALL serialize byte-identical manifests (purely additive). Codification into the canonical `app-manifest-v2.schema.json` is an external `nextcloud-vue` follow-up, not part of this requirement.
+Buildiq's manifest validation layer SHALL reject: duplicate `id`s, duplicate *(schema, label)* pairs, a `schema` not present in the virtual app, a non-UUID `templateId`, an empty `label`, a `format` outside the pinned value set, and unknown keys. Apps with zero attachments SHALL serialize byte-identical manifests (purely additive). Codification into the canonical `app-manifest-v2.schema.json` is an external `nextcloud-vue` follow-up, not part of this requirement.
 
 #### Scenario: Valid attachment passes validation
 
@@ -42,7 +42,7 @@ OpenBuild's manifest validation layer SHALL reject: duplicate `id`s, duplicate *
 <!-- @e2e exclude pure app-side manifest validation, covered by vitest tests/services/documentAttachmentsValidation.spec.js — no browser surface to drive. -->
 
 - **WHEN** a second entry targets `schema: "kapaanvraag"` with the identical label "Generate confirmation letter"
-- **THEN** the validator marks both entries with the error `openbuild.document.error.duplicate-label`
+- **THEN** the validator marks both entries with the error `buildiq.document.error.duplicate-label`
 - **AND** the Save button is disabled
 
 #### Scenario: Attachment to a foreign schema is rejected
@@ -50,11 +50,11 @@ OpenBuild's manifest validation layer SHALL reject: duplicate `id`s, duplicate *
 <!-- @e2e exclude pure app-side manifest validation, covered by vitest tests/services/documentAttachmentsValidation.spec.js — no browser surface to drive. -->
 
 - **WHEN** an entry names `schema: "not-in-this-app"`
-- **THEN** the validator reports `openbuild.document.error.unknown-schema` with a click-to-focus link to the entry
+- **THEN** the validator reports `buildiq.document.error.unknown-schema` with a click-to-focus link to the entry
 
 ### Requirement: REQ-DDT-002 Builder UI: attach a Docudesk template to a virtual-app schema
 
-The system SHALL provide `DocumentTemplateAttachmentDialog.vue` (standalone dialog in `src/dialogs/` per the modal-isolation rule), opened from a "Documents" section on the application-detail/designer surface that lists existing attachments (template name, schema, label) with add, edit, and detach actions. The dialog SHALL expose: (a) a **template picker** populated from `GET /apps/docudesk/api/templates` (showing name; loading/error states); (b) a **schema picker** listing the virtual app's own schemas; (c) a required **action label** input; (d) an optional **format picker** limited to the pinned value set; (e) an optional **filename template** input with `{{property}}` placeholder hints; (f) a **Preview** affordance calling `POST /apps/docudesk/api/templates/{id}/preview` and presenting the rendered result before saving; and (g) an optional "add document actions to this schema's detail page" toggle that injects a `docudesk-document-actions` entry into the matching detail page's `sidebarProps.tabs` (or detail action group). Editing an attachment SHALL refresh `templateName` via `GET /apps/docudesk/api/templates/{id}` and SHALL surface a warning when the template no longer exists. Detaching SHALL only remove the manifest entry — previously generated documents are user downloads and are never touched. All `NcSelect`s carry `inputLabel`; every user-visible string uses English-source i18n keys under `openbuild.document.*` with nl translations.
+The system SHALL provide `DocumentTemplateAttachmentDialog.vue` (standalone dialog in `src/dialogs/` per the modal-isolation rule), opened from a "Documents" section on the application-detail/designer surface that lists existing attachments (template name, schema, label) with add, edit, and detach actions. The dialog SHALL expose: (a) a **template picker** populated from `GET /apps/docudesk/api/templates` (showing name; loading/error states); (b) a **schema picker** listing the virtual app's own schemas; (c) a required **action label** input; (d) an optional **format picker** limited to the pinned value set; (e) an optional **filename template** input with `{{property}}` placeholder hints; (f) a **Preview** affordance calling `POST /apps/docudesk/api/templates/{id}/preview` and presenting the rendered result before saving; and (g) an optional "add document actions to this schema's detail page" toggle that injects a `docudesk-document-actions` entry into the matching detail page's `sidebarProps.tabs` (or detail action group). Editing an attachment SHALL refresh `templateName` via `GET /apps/docudesk/api/templates/{id}` and SHALL surface a warning when the template no longer exists. Detaching SHALL only remove the manifest entry — previously generated documents are user downloads and are never touched. All `NcSelect`s carry `inputLabel`; every user-visible string uses English-source i18n keys under `buildiq.document.*` with nl translations.
 
 #### Scenario: Attaching a template writes the manifest entry
 
@@ -74,12 +74,12 @@ The system SHALL provide `DocumentTemplateAttachmentDialog.vue` (standalone dial
 
 - **GIVEN** an attachment whose template was deleted in Docudesk
 - **WHEN** the builder opens the attachment for editing
-- **THEN** the dialog shows `openbuild.document.warning.template-missing`
+- **THEN** the dialog shows `buildiq.document.warning.template-missing`
 - **AND** the builder can re-pick a template or detach
 
 ### Requirement: REQ-DDT-003 Runtime: user-invoked generation delivers a download
 
-The system SHALL provide `useDocudeskDocument.js` with a `generate(attachment, object)` action that: (1) resolves a single `dataRefs` entry `{ register, schema, id }` from the runtime's active data context (the version-routed register/schema the app is reading and the object's UUID — never a serialized copy of the object's data); (2) renders the filename from `filenameTemplate` (safe `{{prop}}` interpolation against the object; missing properties → empty string; no eval), defaulting per REQ-DDT-001; (3) POSTs `POST /apps/docudesk/api/correspondence/generate` with `{ templateId, dataRefs, options: { format? }, filename }`; and (4) hands the returned document to the browser as a download. Generation SHALL be idempotent under double-click (in-flight guard per attachment+object). Failure SHALL surface as a non-blocking toast — a 403 SHALL render the distinct no-access message `openbuild.document.error.no-access`, any other failure `openbuild.document.error.generate-failed` with a retry affordance — and SHALL never navigate, mutate the object, or block any other surface.
+The system SHALL provide `useDocudeskDocument.js` with a `generate(attachment, object)` action that: (1) resolves a single `dataRefs` entry `{ register, schema, id }` from the runtime's active data context (the version-routed register/schema the app is reading and the object's UUID — never a serialized copy of the object's data); (2) renders the filename from `filenameTemplate` (safe `{{prop}}` interpolation against the object; missing properties → empty string; no eval), defaulting per REQ-DDT-001; (3) POSTs `POST /apps/docudesk/api/correspondence/generate` with `{ templateId, dataRefs, options: { format? }, filename }`; and (4) hands the returned document to the browser as a download. Generation SHALL be idempotent under double-click (in-flight guard per attachment+object). Failure SHALL surface as a non-blocking toast — a 403 SHALL render the distinct no-access message `buildiq.document.error.no-access`, any other failure `buildiq.document.error.generate-failed` with a retry affordance — and SHALL never navigate, mutate the object, or block any other surface.
 
 #### Scenario: Generate downloads the document
 
@@ -126,7 +126,7 @@ The system SHALL provide `DocumentActions.vue`, registered as `docudesk-document
 
 ### Requirement: REQ-DDT-005 Capability check and graceful absence of Docudesk
 
-When a manifest contains at least one `documents[]` attachment, the save flow SHALL ensure `"docudesk"` is present exactly once in the manifest v2 `dependencies[]` array, via the same shared `ensureDependency(appId)` utility as the sibling integrations (one implementation, not copies). At design time, when `useAppStatus('docudesk')` reports the app missing or disabled, the Documents section SHALL render its add action disabled with the i18n hint `openbuild.document.hint.docudesk-missing` (existing attachments remain listed and detachable). At runtime on an instance without Docudesk: CnAppRoot's standard dependency gate applies for end users; if a surface renders regardless, the document-actions surface SHALL show an "integration unavailable" state and no request SHALL be sent to `/apps/docudesk/...`. No openbuild surface SHALL hard-fail, blank, or throw because Docudesk is absent.
+When a manifest contains at least one `documents[]` attachment, the save flow SHALL ensure `"docudesk"` is present exactly once in the manifest v2 `dependencies[]` array, via the same shared `ensureDependency(appId)` utility as the sibling integrations (one implementation, not copies). At design time, when `useAppStatus('docudesk')` reports the app missing or disabled, the Documents section SHALL render its add action disabled with the i18n hint `buildiq.document.hint.docudesk-missing` (existing attachments remain listed and detachable). At runtime on an instance without Docudesk: CnAppRoot's standard dependency gate applies for end users; if a surface renders regardless, the document-actions surface SHALL show an "integration unavailable" state and no request SHALL be sent to `/apps/docudesk/...`. No buildiq surface SHALL hard-fail, blank, or throw because Docudesk is absent.
 
 #### Scenario: Dependency auto-added on save
 
@@ -150,19 +150,19 @@ When a manifest contains at least one `documents[]` attachment, the save flow SH
 
 ### Requirement: REQ-DDT-006 Integration contract pinned to Docudesk's existing public API surface
 
-OpenBuild's Docudesk integration SHALL call exactly the following existing Docudesk routes and no others: `GET /apps/docudesk/api/templates` (template picker), `GET /apps/docudesk/api/templates/{id}` (snapshot refresh + existence check), `POST /apps/docudesk/api/templates/{id}/preview` (builder preview), and `POST /apps/docudesk/api/correspondence/generate` (runtime generation, both interactively from an end user via `docudesk-document-templates` and automation-triggered via `automation-document-action`). Every call SHALL use a Nextcloud session: the interactive caller's own session for end-user-invoked generation, or the Application owner's session, impersonated for the duration of exactly one internal call via the existing `JobOwnerImpersonator` pattern, for automation-triggered generation — there is no third calling shape. openbuild SHALL NOT bypass or re-implement Docudesk's authorization, SHALL NOT import Docudesk PHP classes or read its tables, SHALL NOT persist rendered documents, template content, or huisstijl assets beyond the one file an `attach`-mode automation action explicitly writes to Nextcloud Files (per `automation-document-action`), and SHALL NOT modify any Docudesk data. The contract — including the `dataRefs` request shape and the pinned `options.format` value set — SHALL be pinned by a Newman collection asserting each route's request/response shape against the dev instance, so Docudesk-side drift fails CI rather than production.
+Buildiq's Docudesk integration SHALL call exactly the following existing Docudesk routes and no others: `GET /apps/docudesk/api/templates` (template picker), `GET /apps/docudesk/api/templates/{id}` (snapshot refresh + existence check), `POST /apps/docudesk/api/templates/{id}/preview` (builder preview), and `POST /apps/docudesk/api/correspondence/generate` (runtime generation, both interactively from an end user via `docudesk-document-templates` and automation-triggered via `automation-document-action`). Every call SHALL use a Nextcloud session: the interactive caller's own session for end-user-invoked generation, or the Application owner's session, impersonated for the duration of exactly one internal call via the existing `JobOwnerImpersonator` pattern, for automation-triggered generation — there is no third calling shape. buildiq SHALL NOT bypass or re-implement Docudesk's authorization, SHALL NOT import Docudesk PHP classes or read its tables, SHALL NOT persist rendered documents, template content, or huisstijl assets beyond the one file an `attach`-mode automation action explicitly writes to Nextcloud Files (per `automation-document-action`), and SHALL NOT modify any Docudesk data. The contract — including the `dataRefs` request shape and the pinned `options.format` value set — SHALL be pinned by a Newman collection asserting each route's request/response shape against the dev instance, so Docudesk-side drift fails CI rather than production.
 
 #### Scenario: Contract surface is closed
 
-<!-- @e2e exclude static source-tree assertion + Newman contract scenario; pinned by tests/integration/openbuild-docudesk-documents.postman_collection.json, not a browser flow. -->
+<!-- @e2e exclude static source-tree assertion + Newman contract scenario; pinned by tests/integration/buildiq-docudesk-documents.postman_collection.json, not a browser flow. -->
 
-- **WHEN** the openbuild source tree is scanned for `/apps/docudesk/` references
+- **WHEN** the buildiq source tree is scanned for `/apps/docudesk/` references
 - **THEN** every call target is one of the four listed routes
-- **AND** no Docudesk PHP namespace is imported anywhere in openbuild, including `DocumentGenerationService`
+- **AND** no Docudesk PHP namespace is imported anywhere in buildiq, including `DocumentGenerationService`
 
 #### Scenario: Newman pins the generate contract
 
-<!-- @e2e exclude Newman API-contract scenario; pinned by tests/integration/openbuild-docudesk-documents.postman_collection.json, not a browser flow. -->
+<!-- @e2e exclude Newman API-contract scenario; pinned by tests/integration/buildiq-docudesk-documents.postman_collection.json, not a browser flow. -->
 
 - **GIVEN** the Newman collection's generate request with a seeded template and a seeded OR object reference
 - **WHEN** the collection runs against the dev instance
@@ -171,7 +171,7 @@ OpenBuild's Docudesk integration SHALL call exactly the following existing Docud
 
 #### Scenario: Automation-triggered call uses the owner-impersonated session, not a PHP import
 
-@e2e exclude backend contract — impersonation + HTTP-vs-PHP-import assertions are covered by PHPUnit (`DocumentGenerationServiceTest`, `DocumentGenerationNoDocudeskImportTest`) and Newman (`openbuild-docudesk-documents.postman_collection.json` item 6); no distinct browser-observable behaviour beyond the `automation-designer::compose-a-document-generation-action` e2e coverage.
+@e2e exclude backend contract — impersonation + HTTP-vs-PHP-import assertions are covered by PHPUnit (`DocumentGenerationServiceTest`, `DocumentGenerationNoDocudeskImportTest`) and Newman (`buildiq-docudesk-documents.postman_collection.json` item 6); no distinct browser-observable behaviour beyond the `automation-designer::compose-a-document-generation-action` e2e coverage.
 
 - **WHEN** an automation's `generateDocument` action fires
 - **THEN** `DocumentGenerationService` issues an HTTP request to

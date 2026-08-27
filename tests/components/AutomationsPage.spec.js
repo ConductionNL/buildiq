@@ -9,7 +9,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 
-vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => p }))
+vi.mock('@nextcloud/router', async (importOriginal) => ({
+	...(await importOriginal()),
+	generateUrl: (p) => p,
+}))
 vi.mock('@nextcloud/axios', () => ({
 	default: { get: vi.fn(), post: vi.fn(), delete: vi.fn() },
 }))
@@ -167,7 +170,7 @@ describe('AutomationsPage', () => {
 		await wrapper.vm.toggleEnabled(automation(), false)
 
 		expect(axios.post).toHaveBeenCalledWith(
-			expect.stringContaining('/apps/openbuild/api/automations/aut-1/disable'),
+			expect.stringContaining('/apps/buildiq/api/automations/aut-1/disable'),
 			{},
 		)
 	})

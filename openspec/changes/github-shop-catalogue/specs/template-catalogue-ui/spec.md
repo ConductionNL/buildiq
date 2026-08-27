@@ -24,7 +24,7 @@ cloneable via `POST /api/applications/from-template/{templateSlug}`.
 
 @e2e exclude retrofit component-contract spec — the tab-strip source selection is a
 `TemplateGallery` component-state contract verified by Vitest; the end-to-end
-per-source install flows are covered by the openbuild-template-catalogue Playwright
+per-source install flows are covered by the buildiq-template-catalogue Playwright
 tests.
 
 #### Scenario: The source tabs are rendered
@@ -53,13 +53,13 @@ dialog/modal introduced by this tab SHALL live in its own file under `src/modals
 
 @e2e exclude retrofit component-contract spec — the GitHub search-renders-cards and
 install-opens-dialog behaviours are `TemplateGallery` component-state contracts
-verified by Vitest; the integration is covered by the openbuild-template-catalogue
+verified by Vitest; the integration is covered by the buildiq-template-catalogue
 Playwright tests.
 
 #### Scenario: GitHub search renders result cards
 
 - **WHEN** the user types a query in the GitHub tab search box that matches
-  `topic:openbuild-app` repos
+  `topic:buildiq-app` repos
 - **THEN** the tab renders the returned GitHub app cards
 
 #### Scenario: Install opens the clone dialog seeded with the GitHub app
@@ -80,7 +80,7 @@ offending file) without creating anything.
 
 @e2e exclude retrofit component-contract spec — the dialog submit-routes-to-GitHub
 and redirect/error behaviours are dialog-component contracts verified by Vitest;
-the integration is covered by the openbuild-template-catalogue Playwright tests.
+the integration is covered by the buildiq-template-catalogue Playwright tests.
 
 #### Scenario: Successful GitHub install redirects
 

@@ -2,15 +2,15 @@
 
 ## Why
 
-OpenBuild's export-to-GitHub flow took custody of the user's GitHub Personal Access
+Buildiq's export-to-GitHub flow took custody of the user's GitHub Personal Access
 Token. The PAT was typed into `ExportDialog.vue`, POSTed to `ExportsController::submit()`,
 persisted by `ExportJobService` under `ICredentialsManager` (key
-`openbuild.export.<jobUuid>.pat`), read back by `RunExportJob`, and replayed by
+`buildiq.export.<jobUuid>.pat`), read back by `RunExportJob`, and replayed by
 `GitHubPushService` against `api.github.com`.
 
 The original design (Decision 3) called this "method-scoped": the token was never held
 on a service instance and was deleted on every terminal state. That is real hygiene, but
-it is not custody. OpenBuild could read the secret, so OpenBuild was the trust boundary —
+it is not custody. Buildiq could read the secret, so Buildiq was the trust boundary —
 a bug in any of those four files, or a support dump taken at the wrong moment, exposes a
 token that can write to every repository the user can.
 
@@ -44,7 +44,7 @@ so the blocker is gone.
 
 ## Impact
 
-- Affected specs: `openbuild-exporter`
+- Affected specs: `buildiq-exporter`
 - Affected code: `lib/Service/GitHubPushService.php`, `lib/Service/ExportJobService.php`,
   `lib/Service/SettingsService.php`, `lib/BackgroundJob/RunExportJob.php`,
   `lib/Controller/ExportsController.php`, `lib/Repair/FlagRegistryTokenSensitive.php`,

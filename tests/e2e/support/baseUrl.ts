@@ -20,9 +20,9 @@
  *
  *   1. Specs tested the wrong server. schema-access-scopes creates its fixture
  *      app through `ensureApp()` (relative URL, so the config baseURL = :8099)
- *      and then opened the schema list at `${BASE_URL}/apps/openbuild/...`
+ *      and then opened the schema list at `${BASE_URL}/apps/buildiq/...`
  *      (= :8080). The app existed on one instance and the page was opened on
- *      the other, so `.openbuild-schema-list` was never found and the whole
+ *      the other, so `.buildiq-schema-list` was never found and the whole
  *      describe failed on a fixture that was actually fine.
  *   2. Worse, the WRITE paths in those specs pointed at the shared instance,
  *      so a run could create fixture apps and schemas on somebody else's
@@ -34,7 +34,7 @@
  * NC_BASE_URL / NEXTCLOUD_URL are kept as explicit overrides for anyone driving
  * a spec directly, and the :8080 default is kept only as a last resort.
  *
- * Prefer a RELATIVE `page.goto('/apps/openbuild/...')` in new code — it uses the
+ * Prefer a RELATIVE `page.goto('/apps/buildiq/...')` in new code — it uses the
  * config baseURL and cannot drift from it at all. Import this only where an
  * absolute URL is genuinely required (e.g. building a `page.request` URL).
  *
@@ -84,14 +84,14 @@ export function resolveE2EBaseURL(): string {
 	if (process.env.CI || process.env.GITHUB_ACTIONS) {
 		// eslint-disable-next-line no-console
 		console.warn(
-			'[openbuild e2e] no PLAYWRIGHT_BASE_URL / NEXTCLOUD_URL / NC_BASE_URL / BASE_URL set; '
+			'[buildiq e2e] no PLAYWRIGHT_BASE_URL / NEXTCLOUD_URL / NC_BASE_URL / BASE_URL set; '
 				+ `using the CI-local default ${CI_DEFAULT_BASE_URL}.`,
 		)
 		return CI_DEFAULT_BASE_URL
 	}
 
 	throw new Error(
-		'[openbuild e2e] No target Nextcloud configured. Set PLAYWRIGHT_BASE_URL (preferred), '
+		'[buildiq e2e] No target Nextcloud configured. Set PLAYWRIGHT_BASE_URL (preferred), '
 			+ 'NC_BASE_URL, NEXTCLOUD_URL or BASE_URL to the instance you want to test, e.g.\n\n'
 			+ '    PLAYWRIGHT_BASE_URL=http://localhost:8099 npx playwright test\n\n'
 			+ 'There is deliberately no default off CI: the historic one was http://localhost:8080, '

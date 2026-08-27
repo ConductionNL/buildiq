@@ -28,11 +28,11 @@ import {
 const REGISTERS = [
 	{
 		slug: 'openbuild-cowboy-production',
-		title: 'OpenBuild — cowboy (production)',
+		title: 'Buildiq — cowboy (production)',
 	},
 	{
 		slug: 'openbuild-cowboy-development',
-		title: 'OpenBuild — cowboy (development)',
+		title: 'Buildiq — cowboy (development)',
 	},
 	{ slug: 'unrelated-app', title: 'Some other app' },
 	{ slug: 'another-one', title: 'Yet another' },

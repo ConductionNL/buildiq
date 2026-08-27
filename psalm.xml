@@ -19,9 +19,9 @@
                 tests/bootstrap.php that requires Nextcloud's lib/base.php (not
                 present in CI), and its own phpcs-custom-sniffs that depend on
                 PHP_CodeSniffer being installed in that subtree. None of those
-                files are part of the openbuild runtime; scanning them produces
+                files are part of the buildiq runtime; scanning them produces
                 MissingFile + UndefinedClass + UndefinedFunction noise against
-                missing neighbours, not real openbuild bugs.
+                missing neighbours, not real buildiq bugs.
             -->
             <directory name="lib/Resources/template" />
         </ignoreFiles>
@@ -83,7 +83,7 @@
                     the autoload path, so Psalm reports UndefinedClass. Unit tests
                     load stubs from tests/stubs/openregister-stubs.php; at
                     runtime the real classes are present. Suppress here to keep
-                    CI green without masking real openbuild bugs.
+                    CI green without masking real buildiq bugs.
                 -->
                 <referencedClass name="OCA\OpenRegister\Db\ObjectEntity"/>
                 <referencedClass name="OCA\OpenRegister\Db\Register"/>

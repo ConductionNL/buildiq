@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Service
+ * @package  OCA\Buildiq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,19 +22,19 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Service;
+namespace OCA\Buildiq\Tests\Unit\Service;
 
-use OCA\OpenBuild\Exception\CopilotException;
-use OCA\OpenBuild\Mcp\OpenBuildToolProvider;
-use OCA\OpenBuild\Service\AgentRunLogger;
-use OCA\OpenBuild\Service\ApplicationDeletionService;
-use OCA\OpenBuild\Service\Copilot\CopilotPlanValidator;
-use OCA\OpenBuild\Service\Copilot\CopilotPromptBuilder;
-use OCA\OpenBuild\Service\CopilotService;
-use OCA\OpenBuild\Service\PermissionResolver;
+use OCA\Buildiq\Exception\CopilotException;
+use OCA\Buildiq\Mcp\BuildiqToolProvider;
+use OCA\Buildiq\Service\AgentRunLogger;
+use OCA\Buildiq\Service\ApplicationDeletionService;
+use OCA\Buildiq\Service\Copilot\CopilotPlanValidator;
+use OCA\Buildiq\Service\Copilot\CopilotPromptBuilder;
+use OCA\Buildiq\Service\CopilotService;
+use OCA\Buildiq\Service\PermissionResolver;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -73,9 +73,9 @@ class CopilotServiceTest extends TestCase {
 	private IGroupManager&MockObject $groupManager;
 
 	/**
-	 * @var OpenBuildToolProvider&MockObject
+	 * @var BuildiqToolProvider&MockObject
 	 */
-	private OpenBuildToolProvider&MockObject $toolProvider;
+	private BuildiqToolProvider&MockObject $toolProvider;
 
 	/**
 	 * @var ApplicationDeletionService&MockObject
@@ -106,7 +106,7 @@ class CopilotServiceTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->groupManager->method('isAdmin')->willReturn(false);
 		$this->groupManager->method('getUserGroups')->willReturn([]);
-		$this->toolProvider = $this->createMock(OpenBuildToolProvider::class);
+		$this->toolProvider = $this->createMock(BuildiqToolProvider::class);
 		$this->toolProvider->method('getToolDescriptors')->willReturn($this->descriptors());
 		$this->deletionService = $this->createMock(ApplicationDeletionService::class);
 		$this->taskManager = $this->createMock(IManager::class);
@@ -238,7 +238,7 @@ class CopilotServiceTest extends TestCase {
 				'applicationSlug' => 'tool-library',
 				'name' => 'Page builder assistant',
 				'instructions' => 'Be helpful.',
-				'enabledTools' => ['openbuild.upsertPage'],
+				'enabledTools' => ['buildiq.upsertPage'],
 				'maxActionsPerRun' => 10,
 			],
 			$agent
@@ -281,7 +281,7 @@ class CopilotServiceTest extends TestCase {
 	private function descriptors(): array {
 		return [
 			[
-				'id' => 'openbuild.createApp',
+				'id' => 'buildiq.createApp',
 				'inputSchema' => [
 					'type' => 'object',
 					'properties' => [
@@ -292,7 +292,7 @@ class CopilotServiceTest extends TestCase {
 				],
 			],
 			[
-				'id' => 'openbuild.upsertPage',
+				'id' => 'buildiq.upsertPage',
 				'inputSchema' => [
 					'type' => 'object',
 					'properties' => [
@@ -335,7 +335,7 @@ class CopilotServiceTest extends TestCase {
 			}
 		);
 
-		$done = new Task(TextToText::ID, ['input' => 'x'], 'openbuild', 'alice');
+		$done = new Task(TextToText::ID, ['input' => 'x'], 'buildiq', 'alice');
 		$done->setStatus(Task::STATUS_SUCCESSFUL);
 		$done->setOutput(['output' => $outputText]);
 		$this->taskManager->method('getTask')->willReturn($done);
@@ -404,7 +404,7 @@ class CopilotServiceTest extends TestCase {
 				[
 					'summary' => 'A tool library',
 					'steps' => [
-						['tool' => 'openbuild.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
+						['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
 					],
 				]
 			)
@@ -453,7 +453,7 @@ class CopilotServiceTest extends TestCase {
 			json_encode(
 				[
 					'summary' => 'x',
-					'steps' => [['tool' => 'openbuild.deleteApp', 'arguments' => []]],
+					'steps' => [['tool' => 'buildiq.deleteApp', 'arguments' => []]],
 				]
 			)
 		);
@@ -574,7 +574,7 @@ class CopilotServiceTest extends TestCase {
 	public function testPlanRejectsStepOutsideAgentsNarrowerAllowList(): void {
 		$this->wireTaskProcessingManager();
 		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
-		$this->wireAgent(agentId: 'agent-1', agent: ['enabledTools' => ['openbuild.upsertPage']]);
+		$this->wireAgent(agentId: 'agent-1', agent: ['enabledTools' => ['buildiq.upsertPage']]);
 		$this->wireCaller(uid: 'alice');
 		$this->objectService->method('searchObjectsBySlug')->willReturn(
 			[
@@ -586,7 +586,7 @@ class CopilotServiceTest extends TestCase {
 			json_encode(
 				[
 					'summary' => 'x',
-					'steps' => [['tool' => 'openbuild.createApp', 'arguments' => ['slug' => 'x', 'name' => 'X']]],
+					'steps' => [['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'x', 'name' => 'X']]],
 				]
 			)
 		);
@@ -620,7 +620,7 @@ class CopilotServiceTest extends TestCase {
 	public function testPlanRejectsWhenMaxActionsPerRunExceeded(): void {
 		$this->wireTaskProcessingManager();
 		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
-		$this->wireAgent(agentId: 'agent-1', agent: ['enabledTools' => ['openbuild.upsertPage'], 'maxActionsPerRun' => 1]);
+		$this->wireAgent(agentId: 'agent-1', agent: ['enabledTools' => ['buildiq.upsertPage'], 'maxActionsPerRun' => 1]);
 		$this->wireCaller(uid: 'alice');
 		$this->objectService->method('searchObjectsBySlug')->willReturn(
 			[
@@ -632,8 +632,8 @@ class CopilotServiceTest extends TestCase {
 				[
 					'summary' => 'x',
 					'steps' => [
-						['tool' => 'openbuild.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'a', 'title' => 'A', 'type' => 'index', 'route' => '/a']],
-						['tool' => 'openbuild.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'b', 'title' => 'B', 'type' => 'index', 'route' => '/b']],
+						['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'a', 'title' => 'A', 'type' => 'index', 'route' => '/a']],
+						['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'b', 'title' => 'B', 'type' => 'index', 'route' => '/b']],
 					],
 				]
 			)
@@ -686,7 +686,7 @@ class CopilotServiceTest extends TestCase {
 			json_encode(
 				[
 					'summary' => 'A tool library',
-					'steps' => [['tool' => 'openbuild.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']]],
+					'steps' => [['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']]],
 				]
 			)
 		);
@@ -709,13 +709,13 @@ class CopilotServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testExecuteLogsAppliedOutcomeForAgentScopedRun(): void {
-		$this->wireAgent(agentId: 'agent-1', agent: ['enabledTools' => ['openbuild.upsertPage']]);
+		$this->wireAgent(agentId: 'agent-1', agent: ['enabledTools' => ['buildiq.upsertPage']]);
 		$this->wireCaller(uid: 'alice');
 
 		$plan = [
 			'summary' => 'x',
 			'steps' => [
-				['tool' => 'openbuild.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'home', 'title' => 'Home', 'type' => 'index', 'route' => '/']],
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'home', 'title' => 'Home', 'type' => 'index', 'route' => '/']],
 			],
 		];
 
@@ -732,7 +732,7 @@ class CopilotServiceTest extends TestCase {
 				'alice',
 				'Add a home page',
 				$plan,
-				self::callback(static fn (array $calls): bool => count($calls) === 1 && $calls[0]['tool'] === 'openbuild.upsertPage'),
+				self::callback(static fn (array $calls): bool => count($calls) === 1 && $calls[0]['tool'] === 'buildiq.upsertPage'),
 				'applied'
 			);
 
@@ -748,13 +748,13 @@ class CopilotServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testExecuteLogsRolledBackOutcomeForAgentScopedRun(): void {
-		$this->wireAgent(agentId: 'agent-1', agent: ['enabledTools' => ['openbuild.upsertPage']]);
+		$this->wireAgent(agentId: 'agent-1', agent: ['enabledTools' => ['buildiq.upsertPage']]);
 		$this->wireCaller(uid: 'alice');
 
 		$plan = [
 			'summary' => 'x',
 			'steps' => [
-				['tool' => 'openbuild.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'home', 'title' => 'Home', 'type' => 'index', 'route' => '/']],
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'home', 'title' => 'Home', 'type' => 'index', 'route' => '/']],
 			],
 		];
 
@@ -785,11 +785,11 @@ class CopilotServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testExecuteRejectsStepOutsideAgentsAllowList(): void {
-		$this->wireAgent(agentId: 'agent-1', agent: ['enabledTools' => ['openbuild.upsertPage']]);
+		$this->wireAgent(agentId: 'agent-1', agent: ['enabledTools' => ['buildiq.upsertPage']]);
 
 		$plan = [
 			'summary' => 'x',
-			'steps' => [['tool' => 'openbuild.createApp', 'arguments' => ['slug' => 'x', 'name' => 'X']]],
+			'steps' => [['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'x', 'name' => 'X']]],
 		];
 
 		$this->toolProvider->expects(self::never())->method('invokeTool');
@@ -814,7 +814,7 @@ class CopilotServiceTest extends TestCase {
 	public function testExecuteBareCopilotPathNeverLogsAgentRun(): void {
 		$plan = [
 			'summary' => 'x',
-			'steps' => [['tool' => 'openbuild.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']]],
+			'steps' => [['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']]],
 		];
 		$this->toolProvider->method('invokeTool')->willReturn(
 			[
@@ -849,7 +849,7 @@ class CopilotServiceTest extends TestCase {
 			]
 		);
 
-		$plan = ['summary' => 'x', 'steps' => [['tool' => 'openbuild.upsertPage', 'arguments' => []]]];
+		$plan = ['summary' => 'x', 'steps' => [['tool' => 'buildiq.upsertPage', 'arguments' => []]]];
 
 		$this->agentRunLogger->expects(self::once())->method('log')
 			->with(
@@ -906,8 +906,8 @@ class CopilotServiceTest extends TestCase {
 		$plan = [
 			'summary' => 'x',
 			'steps' => [
-				['tool' => 'openbuild.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
-				['tool' => 'openbuild.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'home', 'title' => 'Home', 'type' => 'index', 'route' => '/']],
+				['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'home', 'title' => 'Home', 'type' => 'index', 'route' => '/']],
 			],
 		];
 
@@ -942,7 +942,7 @@ class CopilotServiceTest extends TestCase {
 		$plan = [
 			'summary' => 'x',
 			'steps' => [
-				['tool' => 'openbuild.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'one-more', 'title' => 'One more', 'type' => 'index', 'route' => '/one-more']],
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'one-more', 'title' => 'One more', 'type' => 'index', 'route' => '/one-more']],
 			],
 		];
 
@@ -970,8 +970,8 @@ class CopilotServiceTest extends TestCase {
 		$plan = [
 			'summary' => 'x',
 			'steps' => [
-				['tool' => 'openbuild.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'home', 'title' => 'Home', 'type' => 'index', 'route' => '/']],
-				['tool' => 'openbuild.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'home', 'title' => 'Home', 'type' => 'index', 'route' => '/']],
+				['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
 			],
 		];
 
@@ -979,7 +979,7 @@ class CopilotServiceTest extends TestCase {
 		$this->toolProvider->method('invokeTool')->willReturnCallback(
 			function (string $tool) use (&$invokedOrder): array {
 				$invokedOrder[] = $tool;
-				if ($tool === 'openbuild.createApp') {
+				if ($tool === 'buildiq.createApp') {
 					return ['success' => true, 'created' => true, 'app' => ['uuid' => 'app-uuid-1', 'slug' => 'tool-library', 'name' => 'Tool Library']];
 				}
 
@@ -989,7 +989,7 @@ class CopilotServiceTest extends TestCase {
 
 		$result = $this->makeService()->execute(plan: $plan, userId: 'alice');
 
-		self::assertSame(['openbuild.createApp', 'openbuild.upsertPage'], $invokedOrder);
+		self::assertSame(['buildiq.createApp', 'buildiq.upsertPage'], $invokedOrder);
 		self::assertCount(2, $result['results']);
 	}//end testExecuteDispatchesInOrderAndReturnsResults()
 
@@ -1002,14 +1002,14 @@ class CopilotServiceTest extends TestCase {
 		$plan = [
 			'summary' => 'x',
 			'steps' => [
-				['tool' => 'openbuild.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
-				['tool' => 'openbuild.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'home', 'title' => 'Home', 'type' => 'index', 'route' => '/']],
+				['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'home', 'title' => 'Home', 'type' => 'index', 'route' => '/']],
 			],
 		];
 
 		$this->toolProvider->method('invokeTool')->willReturnCallback(
 			function (string $tool): array {
-				if ($tool === 'openbuild.createApp') {
+				if ($tool === 'buildiq.createApp') {
 					return ['success' => true, 'created' => true, 'app' => ['uuid' => 'app-uuid-1', 'slug' => 'tool-library', 'name' => 'Tool Library']];
 				}
 
@@ -1052,7 +1052,7 @@ class CopilotServiceTest extends TestCase {
 		$plan = [
 			'summary' => 'x',
 			'steps' => [
-				['tool' => 'openbuild.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'home', 'title' => 'Home', 'type' => 'index', 'route' => '/']],
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'home', 'title' => 'Home', 'type' => 'index', 'route' => '/']],
 			],
 		];
 
@@ -1086,7 +1086,7 @@ class CopilotServiceTest extends TestCase {
 		$plan = [
 			'summary' => 'x',
 			'steps' => [
-				['tool' => 'openbuild.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
+				['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
 			],
 		];
 

@@ -1,13 +1,13 @@
 <?php
 
 /**
- * Handler for the openbuild.listApps MCP tool.
+ * Handler for the buildiq.listApps MCP tool.
  *
  * Returns matching virtual apps with source descriptors, applying an optional
  * status filter and a result-count cap.
  *
  * @category Service
- * @package  OCA\OpenBuild\Mcp\Handler
+ * @package  OCA\Buildiq\Mcp\Handler
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,10 +23,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Mcp\Handler;
+namespace OCA\Buildiq\Mcp\Handler;
 
 /**
- * Handles the openbuild.listApps tool invocation.
+ * Handles the buildiq.listApps tool invocation.
  */
 class ListAppsHandler extends AbstractToolHandler {
 
@@ -91,7 +91,7 @@ class ListAppsHandler extends AbstractToolHandler {
 
 			return ['success' => true, 'apps' => $apps, 'sources' => $sources];
 		} catch (\Throwable $e) {
-			$this->logger->error('OpenBuild MCP: listApps failed', ['exception' => $e->getMessage()]);
+			$this->logger->error('Buildiq MCP: listApps failed', ['exception' => $e->getMessage()]);
 			return $this->errorResult(error: 'internal_error', message: 'Failed to retrieve virtual apps.');
 		}//end try
 

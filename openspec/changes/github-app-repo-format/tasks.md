@@ -12,7 +12,7 @@
 - [ ] 2.3 Build the descriptor per REQ-GARF-002: `formatVersion` (`"1.0"`), `slug`, `name`, `description`, `category`, `appType`, `version` (= the version's `semver`), optional `icon`/`iconDark` refs, optional `baseRef` for hybrid apps. (REQ-GARF-002)
 - [ ] 2.4 Derive the descriptor `credentials[]` (`{ provider, reason, scopes[] }`) from the manifest's top-level `credentials[]` when present. (REQ-GARF-009)
 - [ ] 2.5 Canonicalise every emitted JSON file (recursively sorted keys, stable indentation, trailing newline) and emit files in a deterministic order (descriptor, manifest, `schemas/*` sorted by slug, optional README) so re-serialising an unchanged app is byte-stable. (REQ-GARF-006)
-- [ ] 2.6 Emit an optional `README.md` (app name + description + "built with OpenBuild" provenance line) when the app has a description.
+- [ ] 2.6 Emit an optional `README.md` (app name + description + "built with Buildiq" provenance line) when the app has a description.
 
 ## 3. AppRepoParser (repo files → clone-seam payload)
 
@@ -33,7 +33,7 @@
 ## 5. Wiring & documentation of the discovery contract
 
 - [ ] 5.1 Register `AppRepoSerializer` + `AppRepoParser` in the app's DI container (`lib/AppInfo/Application.php`) as plain services (no routes, no controller — consumed by `github-shop-catalogue` and `github-app-sync`).
-- [ ] 5.2 Document the canonical repo layout + the `openbuild-app` discovery topic in the OpenBuild docs (e.g. `docs/` GitHub-format page): the file tree, the descriptor contract, and the "topic `openbuild-app` + root `openbuild-app.json`" discovery rule. (REQ-GARF-003)
+- [ ] 5.2 Document the canonical repo layout + the `buildiq-app` discovery topic in the Buildiq docs (e.g. `docs/` GitHub-format page): the file tree, the descriptor contract, and the "topic `buildiq-app` + root `openbuild-app.json`" discovery rule. (REQ-GARF-003)
 
 ## 6. Tests
 

@@ -1,6 +1,6 @@
 [
   {
-    "slug": "openbuild-runtime",
+    "slug": "buildiq-runtime",
     "title": "Build apps without code",
     "title_nl": "Bouw apps zonder code",
     "summary": "You compose an app as a manifest and run it live, with no deployment step.",
@@ -9,7 +9,7 @@
     "docsUrl": "openspec/specs/openbuild-runtime/spec.md"
   },
   {
-    "slug": "openbuild-schema-designer",
+    "slug": "buildiq-schema-designer",
     "title": "Design your data model visually",
     "title_nl": "Ontwerp je datamodel visueel",
     "summary": "You define entities, fields and relations without writing JSON Schema.",
@@ -18,7 +18,7 @@
     "docsUrl": "openspec/specs/openbuild-schema-designer/spec.md"
   },
   {
-    "slug": "openbuild-page-designer",
+    "slug": "buildiq-page-designer",
     "title": "Build pages and forms visually",
     "title_nl": "Bouw pagina's en formulieren visueel",
     "summary": "You create list, detail, form and dashboard screens yourself.",
@@ -36,7 +36,7 @@
     "docsUrl": "openspec/specs/business-rules-engine/spec.md"
   },
   {
-    "slug": "openbuild-exporter",
+    "slug": "buildiq-exporter",
     "title": "Export to a real Nextcloud app",
     "title_nl": "Exporteer naar een echte Nextcloud-app",
     "summary": "You take your app as a clean package, so there is no lock-in.",
@@ -45,7 +45,7 @@
     "docsUrl": "openspec/specs/openbuild-exporter/spec.md"
   },
   {
-    "slug": "openbuild-rbac",
+    "slug": "buildiq-rbac",
     "title": "Control who sees what",
     "title_nl": "Bepaal wie wat ziet",
     "summary": "You grant access per app, per group and per person.",
@@ -100,7 +100,7 @@
     "docsUrl": "openspec/specs/app-icon-management/spec.md"
   },
   {
-    "slug": "openbuild-remote-template-store",
+    "slug": "buildiq-remote-template-store",
     "title": "Install templates from a remote catalogue",
     "title_nl": "Installeer sjablonen uit een externe catalogus",
     "summary": "You pull curated apps from a shared store into your own instance.",

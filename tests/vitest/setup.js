@@ -1,8 +1,8 @@
 /**
- * SPDX-FileCopyrightText: 2026 ConductionNL / OpenBuild Contributors
+ * SPDX-FileCopyrightText: 2026 ConductionNL / Buildiq Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
- * Global setup for OpenBuild Vitest unit tests. Stubs the Nextcloud
+ * Global setup for Buildiq Vitest unit tests. Stubs the Nextcloud
  * `t()` and `n()` translation helpers so component renders that call
  * them resolve to the bare key string. Loaded automatically via
  * `test.setupFiles` in `vitest.config.js`.

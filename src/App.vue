@@ -1,19 +1,19 @@
 <!-- SPDX-License-Identifier: EUPL-1.2 -->
 <!--
- OpenBuild app shell. Mounts CnAppRoot with the bundled manifest and the v2
+ Buildiq app shell. Mounts CnAppRoot with the bundled manifest and the v2
  kind-tagged registry (ADR-036); CnAppRoot handles the OpenRegister dependency
  check, renders CnAppNav from manifest.menu, and routes <router-view> pages
- through CnPageRenderer. The #dependency-missing slot keeps OpenBuild's
+ through CnPageRenderer. The #dependency-missing slot keeps Buildiq's
  original "OpenRegister is required" empty state.
 
- @adr ADR-024 (app manifest) — OpenBuild is now Tier-1+ (its own shell is
+ @adr ADR-024 (app manifest) — Buildiq is now Tier-1+ (its own shell is
  manifest-driven, like the virtual apps it builds).
  @adr ADR-036 (v2 registry) — all consumer components are registered via the
  `registry` prop; the deprecated `customComponents` prop is no longer used.
 -->
 <template>
 	<CnAppRoot
-		appId="openbuild"
+		appId="buildiq"
 		:aiCompanion="true"
 		:manifest="manifest"
 		:registry="registry"
@@ -24,10 +24,10 @@
 		<template #dependency-missing>
 			<NcAppContent class="open-register-missing">
 				<NcEmptyContent
-					:name="t('openbuild', 'OpenRegister is required')"
+					:name="t('buildiq', 'OpenRegister is required')"
 					:description="
 						t(
-							'openbuild',
+							'buildiq',
 							'This app needs OpenRegister to store and manage data. Please install OpenRegister from the app store to get started.',
 						)
 					">
@@ -39,7 +39,7 @@
 							v-if="isAdmin"
 							variant="primary"
 							:href="appStoreUrl">
-							{{ t('openbuild', 'Install OpenRegister') }}
+							{{ t('buildiq', 'Install OpenRegister') }}
 						</NcButton>
 					</template>
 				</NcEmptyContent>
@@ -179,7 +179,7 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		appIcon() {
-			return imagePath('openbuild', 'app-dark.svg')
+			return imagePath('buildiq', 'app-dark.svg')
 		},
 
 		/**
@@ -206,7 +206,7 @@ export default {
 			await initializeStores()
 		} catch (e) {
 			// eslint-disable-next-line no-console
-			console.error('openbuild: initializeStores() failed', e)
+			console.error('buildiq: initializeStores() failed', e)
 		}
 	},
 
@@ -220,7 +220,7 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		translateForApp(key) {
-			return ncT('openbuild', key)
+			return ncT('buildiq', key)
 		},
 	},
 }

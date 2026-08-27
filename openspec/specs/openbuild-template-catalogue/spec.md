@@ -2,7 +2,7 @@
 status: in-progress
 ---
 
-# openbuild-template-catalogue Specification
+# buildiq-template-catalogue Specification
 
 **OpenSpec changes**: [component-blocks](../../changes/archive/2026-07-24-component-blocks/) _(archived 2026-07-24)_, [harden-xss-dos-csrf](../../changes/harden-xss-dos-csrf/)
 
@@ -10,7 +10,7 @@ status: in-progress
 
 ## Purpose
 
-Ships the starter-template gallery that turns OpenBuild's competitor-parity
+Ships the starter-template gallery that turns Buildiq's competitor-parity
 "day-one templates" promise into a working surface. Declares an `ApplicationTemplate`
 schema, seeds four Conduction-curated templates (permit-tracker,
 stakeholder-consultation, employee-onboarding, incident-reporter) via an idempotent
@@ -27,7 +27,7 @@ content are fully i18n'd (nl/en minimum).
 ### Requirement: ApplicationTemplate schema declares the template record contract
 
 The system SHALL declare an `ApplicationTemplate` schema in
-`lib/Settings/openbuild_register.json` under the existing `openbuild`
+`lib/Settings/openbuild_register.json` under the existing `buildiq`
 register namespace established by chain spec #1. The schema SHALL
 declare the following properties:
 
@@ -120,9 +120,9 @@ guarded by per-template `slug` existence checks (matching the
 
 #### Scenario: Fresh install seeds four templates
 
-- **WHEN** the OpenBuild app is installed on a fresh Nextcloud
+- **WHEN** the Buildiq app is installed on a fresh Nextcloud
 - **THEN** four `ApplicationTemplate` records exist in the
-  `openbuild` register with `isSeeded: true`
+  `buildiq` register with `isSeeded: true`
 - **AND** their slugs are `permit-tracker`, `stakeholder-consultation`,
   `employee-onboarding`, and `incident-reporter`
 
@@ -141,7 +141,7 @@ guarded by per-template `slug` existence checks (matching the
 > template" action. None of that has shipped since `github-shop-catalogue`:
 > `src/views/TemplateGallery.vue` contains no reference to
 > `application-template` at all, its heading reads "App store", and its card
-> action reads "Install". Verified live on `/apps/openbuild/templates` and
+> action reads "Install". Verified live on `/apps/buildiq/templates` and
 > against `origin/development` — the old wording described a surface that exists
 > on neither branch, which is why an e2e test asserting on it failed as though
 > the app had regressed. Seeded `ApplicationTemplate`s themselves are NOT gone:
@@ -152,13 +152,13 @@ guarded by per-template `slug` existence checks (matching the
 > gallery should list them again is a product question, tracked separately — the
 > spec's job here is to say what ships.
 
-The OpenBuild frontend SHALL register a Vue route `/templates` whose view
+The Buildiq frontend SHALL register a Vue route `/templates` whose view
 (`src/views/TemplateGallery.vue`) presents an **App store** with a top-level
 tablist toggle between "Templates" and "Blocks". The gallery SHALL:
 
 - Under "Templates", render a server-backed GitHub source: a debounced search
   field calling `GET /api/shop/github/search?q=…` (which lists repositories
-  tagged with the `openbuild-app` topic) and a grid of the returned cards,
+  tagged with the `buildiq-app` topic) and a grid of the returned cards,
   each showing `name`, `category`, `description`, `owner/repo`, and — when
   present — `appType`, `version`, star count, and the credentials the app
   declares
@@ -174,7 +174,7 @@ tablist toggle between "Templates" and "Blocks". The gallery SHALL:
   `category` and a fragment preview, with a `category` filter and NO clone
   action — blocks insert via the page designer's block library, not the
   gallery (see `component-blocks`)
-- Be reachable from a top-level OpenBuild left-nav entry and from a
+- Be reachable from a top-level Buildiq left-nav entry and from a
   "Create from template" CTA on the empty-state of the Application
   list
 
@@ -186,7 +186,7 @@ CSS variables only (per ADR-010 — no hardcoded colours).
 
 #### Scenario: Filtering by category narrows the gallery
 
-- **WHEN** a user opens `/apps/openbuild/templates` and switches to the "Blocks"
+- **WHEN** a user opens `/apps/buildiq/templates` and switches to the "Blocks"
   tab, then selects a `category` in its filter
 - **THEN** the gallery shows only the `ComponentBlock`s in that category
 - **AND** the route renders without a white screen (the "Templates" tab carries a
@@ -195,7 +195,7 @@ CSS variables only (per ADR-010 — no hardcoded colours).
 
 #### Scenario: Empty Application list surfaces the gallery CTA
 
-- **WHEN** a user with no Applications navigates to the OpenBuild
+- **WHEN** a user with no Applications navigates to the Buildiq
   shell home
 - **THEN** the empty-state of the Application list shows a "Create
   from template" CTA
@@ -211,7 +211,7 @@ CSS variables only (per ADR-010 — no hardcoded colours).
 ### Requirement: "Use this template" clones into a new Application
 
 The system SHALL expose `POST
-/index.php/apps/openbuild/api/applications/from-template/{templateSlug}`
+/index.php/apps/buildiq/api/applications/from-template/{templateSlug}`
 backed by `ApplicationsController::createFromTemplate`. The endpoint
 SHALL accept a JSON body with at least `{ name: string, slug: string
 }` for the new Application. On success, it SHALL:
@@ -242,7 +242,7 @@ state-machine or "template service" class is introduced (ADR-031).
 
 - **WHEN** an authenticated user POSTs `{ name: "My permits", slug:
   "my-permits" }` to
-  `/index.php/apps/openbuild/api/applications/from-template/permit-tracker`
+  `/index.php/apps/buildiq/api/applications/from-template/permit-tracker`
 - **THEN** the response is 201 with the new Application's UUID
 - **AND** a new `Application` record exists in OR with `slug:
   my-permits`, `status: draft`, and a `manifest` equal to the
@@ -293,7 +293,7 @@ template's companion schemas untouched.
 
 After a successful template clone, the frontend SHALL redirect the
 user to the page editor view (from chain spec #5,
-`openbuild-page-editor`) for the new Application, opened on the
+`buildiq-page-editor`) for the new Application, opened on the
 manifest's first page. The redirect SHALL preserve the new
 Application's slug in the URL so the editor loads against the right
 record.
@@ -344,7 +344,7 @@ and is explicitly deferred to a future versioning spec.
 
 The system SHALL present Conduction-shipped templates (records with
 `isSeeded: true`) as read-only in the gallery and SHALL NOT expose UI
-controls to edit or delete `isSeeded: true` records via the OpenBuild
+controls to edit or delete `isSeeded: true` records via the Buildiq
 frontend in this spec. Backend deletion via OR REST remains
 governed by OR's standard RBAC; this requirement only constrains the
 UI surface to prevent accidental damage to the curated catalogue
@@ -395,7 +395,7 @@ in REQ-OBTC-005.
 The system SHALL ensure every user-visible string in the gallery view
 (gallery section title, filter labels, category labels, "Use this
 template" button label, empty-state copy) uses i18n keys under the
-`openbuild.templates.*` namespace. Every seeded template's `title`,
+`buildiq.templates.*` namespace. Every seeded template's `title`,
 `description`, `useCase`, and `category` SHALL be stored either as
 i18n keys (preferred) or as English strings with Dutch translations
 shipped in `l10n/nl.json` so the gallery is bilingual on install
@@ -408,6 +408,6 @@ shipped in `l10n/nl.json` so the gallery is bilingual on install
 #### Scenario: Dutch user sees Dutch gallery copy
 
 - **WHEN** an authenticated Dutch-locale user opens
-  `/index.php/apps/openbuild/templates`
+  `/index.php/apps/buildiq/templates`
 - **THEN** the page title, filter labels, and the four seeded
   template descriptions render in Dutch

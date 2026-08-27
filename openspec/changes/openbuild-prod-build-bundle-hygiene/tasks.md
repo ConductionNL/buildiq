@@ -1,7 +1,7 @@
 ## 1. Webpack production source maps
 
 - [x] 1.1 In `webpack.config.js`, changed `devtool` to `isDev ? 'cheap-source-map' : false`, matching pipelinq/openregister.
-- [x] 1.2 Added the shared rationale comment (memory/time cost of full source maps; dev keeps `cheap-source-map`; openbuild bundles the nextcloud-vue lib per-entry across three entries).
+- [x] 1.2 Added the shared rationale comment (memory/time cost of full source maps; dev keeps `cheap-source-map`; buildiq bundles the nextcloud-vue lib per-entry across three entries).
 - [x] 1.3 Rebuilt (`NODE_ENV=production npm run build`, exit 0) and confirmed NO `.map` files are emitted into `js/` (`ls js/*.map` → none). `js/` is 18M (main 7.7M, builder 5.3M, settings 3.3M) with zero `.map` companions. (Exact before/after delta needs a clean baseline build for the PR; the maps are demonstrably gone.)
 
 ## 2. Remove unused bootstrap-vue dependency

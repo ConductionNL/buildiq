@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild Export Service
+ * Buildiq Export Service
  *
  * Imperative exporter that produces a standalone Nextcloud-app tree from a
  * published Application record. ADR-031 §Exceptions(3) acceptable code path —
@@ -11,7 +11,7 @@
  * in lib/Settings/openbuild_register.json).
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -31,7 +31,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 use OCP\Files\IAppData;
 use OCP\Files\NotFoundException;
@@ -40,7 +40,7 @@ use RuntimeException;
 use ZipArchive;
 
 /**
- * Generates a real Nextcloud-app tree from an OpenBuild Application + ZIPs it.
+ * Generates a real Nextcloud-app tree from an Buildiq Application + ZIPs it.
  *
  * Public surface — an entry point is public only when production calls it:
  *
@@ -189,7 +189,7 @@ class ExportService {
 
 		// Audit-trail entry names only the source — never the PAT, never secret values.
 		$this->logger->info(
-			'OpenBuild export: built tree',
+			'Buildiq export: built tree',
 			[
 				'applicationUuid' => $applicationUuid,
 				'applicationVersion' => $versionSlug,
@@ -277,7 +277,7 @@ class ExportService {
 	/**
 	 * Bundle every `dataRegisters` binding's schema definitions (always) and
 	 * row data (only when that binding's `includeData` is true) into the
-	 * exported tree (spec openbuild-exporter, ADDED Requirements "Bound
+	 * exported tree (spec buildiq-exporter, ADDED Requirements "Bound
 	 * data registers' schema definitions are bundled into every export" +
 	 * "Per-binding includeData toggle controls data-register row-data
 	 * inclusion"). Delegates to {@see DataRegisterExportBundler} (a
@@ -380,7 +380,6 @@ class ExportService {
 		return $zipPath;
 	}//end packageZip()
 
-
 	/**
 	 * Resolve placeholders across the scratch tree, in-place.
 	 *
@@ -438,7 +437,7 @@ class ExportService {
 	 * Copy the embedded template snapshot into the scratch directory.
 	 *
 	 * Skips the snapshot-meta + path-manifest helper files; they are
-	 * artefacts of OpenBuild, not of the produced app.
+	 * artefacts of Buildiq, not of the produced app.
 	 *
 	 * @param string $source Snapshot dir.
 	 * @param string $dest Scratch dir.
@@ -513,13 +512,13 @@ class ExportService {
 	 * flagged by PHPStan.
 	 *
 	 * We therefore stage on a deterministic local path under
-	 * sys_get_temp_dir()/openbuild-{name}, and additionally pin the IAppData
+	 * sys_get_temp_dir()/buildiq-{name}, and additionally pin the IAppData
 	 * folder existence so the surrounding Nextcloud bookkeeping (quotas,
 	 * audit, cleanup) is informed of our use. This satisfies the
 	 * security/cleanup contract (CleanupExpiredExports purges by job UUID)
 	 * while remaining ISimpleFolder-safe.
 	 *
-	 * @param string $name Subdir name under appdata's openbuild area.
+	 * @param string $name Subdir name under appdata's buildiq area.
 	 *
 	 * @return string Absolute local path.
 	 *
@@ -528,7 +527,7 @@ class ExportService {
 	private function getOrCreateAppDataDir(string $name): string {
 		// Best-effort: make sure the IAppData folder exists so any
 		// surrounding bookkeeping (quota, cleanup, audit) is aware of the
-		// openbuild namespace. We do NOT rely on it for local-path access —
+		// buildiq namespace. We do NOT rely on it for local-path access —
 		// ISimpleFolder is storage-opaque by design.
 		try {
 			try {
@@ -538,12 +537,12 @@ class ExportService {
 			}
 		} catch (\Throwable $e) {
 			$this->logger->debug(
-				'OpenBuild export: IAppData folder hint failed (continuing on local temp)',
+				'Buildiq export: IAppData folder hint failed (continuing on local temp)',
 				['name' => $name, 'reason' => $e->getMessage()]
 			);
 		}//end try
 
-		$local = sys_get_temp_dir() . '/openbuild-' . $name;
+		$local = sys_get_temp_dir() . '/buildiq-' . $name;
 		if (is_dir($local) === false) {
 			mkdir($local, 0o755, true);
 		}

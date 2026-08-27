@@ -1,21 +1,21 @@
-# Design: openbuild-mcp-adoption
+# Design: buildiq-mcp-adoption
 
 ## Context
 
-OpenBuild is the fleet's app builder, so "a tool that mutates a manifest" is not an abstract risk —
-it is the product. `OpenBuildToolProvider` today serves two masters through one class:
+Buildiq is the fleet's app builder, so "a tool that mutates a manifest" is not an abstract risk —
+it is the product. `BuildiqToolProvider` today serves two masters through one class:
 
 | Consumer | Path | Human in the loop? |
 |---|---|---|
 | **AI Copilot** (first-party) | `CopilotService::plan()` → predicted manifest → user reviews → `execute()` → re-validate → atomic, with rollback | **Yes** — plan writes nothing; the user approves a previewed diff |
-| **MCP** (any agent) | `IMcpToolProvider::openbuild` alias → `McpToolsService` → `invokeTool()` | **No** — a single tool call writes the manifest |
+| **MCP** (any agent) | `IMcpToolProvider::buildiq` alias → `McpToolsService` → `invokeTool()` | **No** — a single tool call writes the manifest |
 
 The same six write handlers sit behind both doors. The Copilot door is well built. The MCP door
 should not exist.
 
 ## Goals / Non-Goals
 
-**Goals.** Zero hand-written MCP tools for `openbuild`; a read-only declarative surface answering the
+**Goals.** Zero hand-written MCP tools for `buildiq`; a read-only declarative surface answering the
 questions humans actually ask; the Copilot untouched in behaviour.
 
 **Non-Goals.** Changing the Copilot's UX, plan format, validator or rollback. Deleting handler logic.
@@ -57,14 +57,14 @@ Five ON is the top of the "bias to fewer" band and every one earns it. Twelve wo
 
 | Tool id | Verdict | Disposition |
 |---|---|---|
-| `openbuild.listApps` | **Derivable CRUD** — this is `Application.search` with a `status` filter | **Deleted from the MCP surface.** Superseded by `openbuild.application.search`. Retained as a Copilot plan step (it is a legitimate read step inside a plan). |
-| `openbuild.getAppManifest` | **Derivable CRUD** — a version/manifest read | **Deleted from the MCP surface.** Superseded by `openbuild.applicationversion.get`. Retained as a Copilot plan step. |
-| `openbuild.createApp` | Non-CRUD (provisions an Application + a version chain + a register) | **Removed from MCP. NOT moved to `#[McpTool]`.** Copilot-internal only. |
-| `openbuild.promoteVersion` | Non-CRUD lifecycle (dev → prod) | **Removed from MCP. NOT moved to `#[McpTool]`.** Copilot-internal only. |
-| `openbuild.upsertSchema` | Non-CRUD (sub-document mutation of a version's register) | **Removed from MCP. NOT moved.** Copilot-internal only. |
-| `openbuild.upsertPage` | Non-CRUD (manifest sub-document mutation) | **Removed from MCP. NOT moved.** Copilot-internal only. |
-| `openbuild.addWidget` | Non-CRUD (manifest sub-document mutation) | **Removed from MCP. NOT moved.** Copilot-internal only. |
-| `openbuild.upsertMenuItem` | Non-CRUD (manifest sub-document mutation) | **Removed from MCP. NOT moved.** Copilot-internal only. |
+| `buildiq.listApps` | **Derivable CRUD** — this is `Application.search` with a `status` filter | **Deleted from the MCP surface.** Superseded by `buildiq.application.search`. Retained as a Copilot plan step (it is a legitimate read step inside a plan). |
+| `buildiq.getAppManifest` | **Derivable CRUD** — a version/manifest read | **Deleted from the MCP surface.** Superseded by `buildiq.applicationversion.get`. Retained as a Copilot plan step. |
+| `buildiq.createApp` | Non-CRUD (provisions an Application + a version chain + a register) | **Removed from MCP. NOT moved to `#[McpTool]`.** Copilot-internal only. |
+| `buildiq.promoteVersion` | Non-CRUD lifecycle (dev → prod) | **Removed from MCP. NOT moved to `#[McpTool]`.** Copilot-internal only. |
+| `buildiq.upsertSchema` | Non-CRUD (sub-document mutation of a version's register) | **Removed from MCP. NOT moved.** Copilot-internal only. |
+| `buildiq.upsertPage` | Non-CRUD (manifest sub-document mutation) | **Removed from MCP. NOT moved.** Copilot-internal only. |
+| `buildiq.addWidget` | Non-CRUD (manifest sub-document mutation) | **Removed from MCP. NOT moved.** Copilot-internal only. |
+| `buildiq.upsertMenuItem` | Non-CRUD (manifest sub-document mutation) | **Removed from MCP. NOT moved.** Copilot-internal only. |
 
 This is the one place this change departs from the fleet's default surgery recipe, so it is worth
 being explicit: **six of these tools are genuine non-CRUD, and the recipe says genuine non-CRUD moves
@@ -75,14 +75,14 @@ assistant to do this, and is it safe?"): rewriting a running app's UI from a cha
 something to enable and then govern. They keep their home and their human gate; they lose their MCP
 reachability.
 
-Net: OpenBuild's `#[McpTool]` count is **zero**, so no `IMcpScannableServices` implementation is
+Net: Buildiq's `#[McpTool]` count is **zero**, so no `IMcpScannableServices` implementation is
 added — an opt-in listing no services would be an empty seam.
 
 ## Decisions
 
 ### Decision 1: sever the alias rather than delete the class
 
-Alternative considered: delete `OpenBuildToolProvider` outright, per the pipelinq exemplar. **Rejected
+Alternative considered: delete `BuildiqToolProvider` outright, per the pipelinq exemplar. **Rejected
 — it would break the Copilot.** Unlike pipelinq's provider, this class is load-bearing for a
 first-party feature: `CopilotService:228/322` calls `getToolDescriptors()` for plan validation and
 `invokeTool()` for execution. The pipelinq recipe assumed the provider's *only* consumer was MCP. Here
@@ -107,7 +107,7 @@ entire enabled surface is that an agent tells you about an app you already own.
 ## Nextcloud Integration
 
 - Services: `Service\Copilot\CopilotToolExecutor` (renamed), `CopilotService`, `CopilotPlanValidator`, `CopilotPromptBuilder` — unchanged behaviour.
-- DI: the `OCA\OpenRegister\Mcp\IMcpToolProvider::openbuild` alias registration is **removed** from `Application.php`. No `IMcpScannableServices` alias is added.
+- DI: the `OCA\OpenRegister\Mcp\IMcpToolProvider::buildiq` alias registration is **removed** from `Application.php`. No `IMcpScannableServices` alias is added.
 
 ## Security Considerations
 
@@ -122,9 +122,9 @@ hand-written handlers did **not** do. So the surviving surface is both smaller a
 ```
 lib/
   Mcp/
-    OpenBuildToolProvider.php   ← MOVED → lib/Service/Copilot/CopilotToolExecutor.php
+    BuildiqToolProvider.php   ← MOVED → lib/Service/Copilot/CopilotToolExecutor.php
     Handler/*.php  (9 files)    ← MOVED → lib/Service/Copilot/Tools/*.php
-  AppInfo/Application.php       ← IMcpToolProvider::openbuild alias REMOVED
+  AppInfo/Application.php       ← IMcpToolProvider::buildiq alias REMOVED
   Settings/
     openbuild_register.json     ← dialect on Application, ApplicationVersion, ApplicationTemplate, exportJob
     register.d/40-automations.json ← dialect on Automation
@@ -133,7 +133,7 @@ lib/
 ## Trade-offs
 
 An agent can no longer build an app for you by chat. That is the point. The prompt-to-app experience
-already exists, is better, and keeps a human in the loop — it is the Copilot, reachable in OpenBuild's
+already exists, is better, and keeps a human in the loop — it is the Copilot, reachable in Buildiq's
 own UI at `POST /api/copilot/plan`. What this change removes is the *undefended duplicate* of that
 capability, which offered the same power with none of the preview, approval or rollback.
 

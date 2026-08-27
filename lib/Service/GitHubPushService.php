@@ -1,16 +1,16 @@
 <?php
 
 /**
- * OpenBuild GitHub Push Service
+ * Buildiq GitHub Push Service
  *
  * Pushes the generated app tree to a new GitHub repository and opens a
  * placeholder pull request, over the GitHub REST + Git Data API (create-repo,
  * create-blob, create-tree, create-commit, create-ref, create-pull).
  *
- * OpenBuild holds NO GitHub token. Decision 3 originally said the PAT was
+ * Buildiq holds NO GitHub token. Decision 3 originally said the PAT was
  * "method-scoped — never persisted on the service instance", but the PAT was
- * still typed into an OpenBuild dialog, POSTed to an OpenBuild controller,
- * persisted by OpenBuild for the duration of the job, and replayed by OpenBuild
+ * still typed into an Buildiq dialog, POSTed to an Buildiq controller,
+ * persisted by Buildiq for the duration of the job, and replayed by Buildiq
  * against api.github.com. Method scope is not custody: the app could read the
  * secret, so the app was the trust boundary.
  *
@@ -21,7 +21,7 @@
  * we fail closed — there is no token-bearing fallback left to fall back to.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -39,7 +39,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 use FilesystemIterator;
 use OCP\Server;
@@ -58,12 +58,12 @@ class GitHubPushService {
 	 * OpenRegister's credential broker.
 	 *
 	 * This service used to take the user's GitHub Personal Access Token: the PAT was
-	 * typed into an OpenBuild dialog, POSTed to an OpenBuild controller, persisted by
-	 * OpenBuild, and replayed by OpenBuild against api.github.com. Encryption at rest
+	 * typed into an Buildiq dialog, POSTed to an Buildiq controller, persisted by
+	 * Buildiq, and replayed by Buildiq against api.github.com. Encryption at rest
 	 * did not change that — custody was the app's, which is exactly what the broker
 	 * exists to prevent.
 	 *
-	 * Every GitHub call now goes through the broker: OpenBuild sends {method, path,
+	 * Every GitHub call now goes through the broker: Buildiq sends {method, path,
 	 * body} plus a credential UUID, and the broker injects the token. The token never
 	 * reaches this process. Resolved lazily (class_exists + Server::get), mirroring
 	 * GitHubAppSyncService; when the broker is absent we fail closed rather than fall
@@ -74,11 +74,11 @@ class GitHubPushService {
 	private const BROKER_CLASS = 'OCA\\OpenRegister\\Service\\Credential\\CredentialBrokerService';
 
 	/**
-	 * The broker `appId` OpenBuild identifies itself with.
+	 * The broker `appId` Buildiq identifies itself with.
 	 *
 	 * @var string
 	 */
-	private const APP_ID = 'openbuild';
+	private const APP_ID = 'buildiq';
 
 	/**
 	 * The branch the generated tree is pushed to, before the PR is opened against the
@@ -157,13 +157,13 @@ class GitHubPushService {
 	): array {
 		// Audit log names only the job + repo — never the credential, never tree contents.
 		$this->logger->info(
-			'OpenBuild GitHub push: creating repository',
+			'Buildiq GitHub push: creating repository',
 			['jobUuid' => $jobUuid, 'org' => $org, 'repo' => $repo]
 		);
 
 		if ($this->isBrokerAvailable() === false) {
 			// Fail closed. There is deliberately no token-bearing fallback: the whole
-			// point of this change is that OpenBuild can no longer hold a PAT.
+			// point of this change is that Buildiq can no longer hold a PAT.
 			throw new RuntimeException(
 				'GitHub push requires the OpenRegister credential broker, which is not available.'
 			);
@@ -207,8 +207,8 @@ class GitHubPushService {
 			repo: $repo,
 			fromBranch: self::BOOTSTRAP_BRANCH,
 			toBranch: $defaultBranch,
-			title: 'chore: bootstrap from OpenBuild',
-			body: 'This repository was bootstrapped from an OpenBuild application export. '
+			title: 'chore: bootstrap from Buildiq',
+			body: 'This repository was bootstrapped from an Buildiq application export. '
 				. 'Review the tree, then run `composer install` and `npm install` locally before merging.',
 			credentialId: $credentialId,
 			actingUserId: $actingUserId
@@ -286,7 +286,7 @@ class GitHubPushService {
 				'name' => $repo,
 				'private' => ($visibility === 'private'),
 				'auto_init' => true,
-				'description' => 'Bootstrapped from OpenBuild',
+				'description' => 'Bootstrapped from Buildiq',
 			],
 			credentialId: $credentialId,
 			actingUserId: $actingUserId
@@ -355,7 +355,7 @@ class GitHubPushService {
 		$commit = $this->postJson(
 			path: $base . '/git/commits',
 			body: [
-				'message' => 'chore: bootstrap from OpenBuild',
+				'message' => 'chore: bootstrap from Buildiq',
 				'tree' => $treeSha,
 			],
 			credentialId: $credentialId,
@@ -534,7 +534,7 @@ class GitHubPushService {
 
 			if ($failQuietly === false) {
 				$this->logger->warning(
-					'OpenBuild GitHub push: broker call failed for ' . $method . ' ' . $path
+					'Buildiq GitHub push: broker call failed for ' . $method . ' ' . $path
 					. ': ' . $scrubbed
 				);
 			}
@@ -551,7 +551,7 @@ class GitHubPushService {
 
 			if ($failQuietly === false) {
 				$this->logger->warning(
-					'OpenBuild GitHub push: ' . $method . ' ' . $path . ' returned ' . $this->lastFailureDetail
+					'Buildiq GitHub push: ' . $method . ' ' . $path . ' returned ' . $this->lastFailureDetail
 				);
 			}
 

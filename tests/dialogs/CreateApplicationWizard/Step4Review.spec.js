@@ -4,7 +4,7 @@
  *
  * Vitest unit tests for src/dialogs/CreateApplicationWizard/Step4Review.vue.
  *
- * Covers spec openbuild-app-creation-wizard task 6.5:
+ * Covers spec buildiq-app-creation-wizard task 6.5:
  *   - renders read-only name, slug, description fields
  *   - renders version chain in arrow form (e.g. development → production)
  *   - highlights the terminal/production version in the production callout

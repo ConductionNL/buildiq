@@ -9,7 +9,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 
-vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => p }))
+vi.mock('@nextcloud/router', async (importOriginal) => ({
+	...(await importOriginal()),
+	generateUrl: (p) => p,
+}))
 vi.mock('@nextcloud/axios', () => ({ default: { get: vi.fn() } }))
 
 import axios from '@nextcloud/axios'
@@ -46,7 +49,7 @@ const run = (overrides = {}) => ({
 	createdAt: '2026-07-23T10:00:00+00:00',
 	toolCalls: [
 		{
-			tool: 'openbuild.upsertPage',
+			tool: 'buildiq.upsertPage',
 			arguments: { pageId: 'contact' },
 			result: { isError: false },
 		},
@@ -65,7 +68,7 @@ describe('AgentRunHistory', () => {
 		await flush()
 
 		expect(axios.get).toHaveBeenCalledWith(
-			'/apps/openbuild/api/agents/agent-1/runs',
+			'/apps/buildiq/api/agents/agent-1/runs',
 		)
 	})
 
@@ -84,7 +87,7 @@ describe('AgentRunHistory', () => {
 
 		const toolCalls = wrapper.findAll('[data-testid="agent-run-tool-call"]')
 		expect(toolCalls).toHaveLength(1)
-		expect(toolCalls.at(0).text()).toContain('openbuild.upsertPage')
+		expect(toolCalls.at(0).text()).toContain('buildiq.upsertPage')
 	})
 
 	it('shows an empty state when the agent has no runs yet', async () => {
@@ -123,7 +126,7 @@ describe('AgentRunHistory', () => {
 		await flush()
 
 		expect(axios.get).toHaveBeenCalledWith(
-			'/apps/openbuild/api/agents/agent-2/runs',
+			'/apps/buildiq/api/agents/agent-2/runs',
 		)
 	})
 

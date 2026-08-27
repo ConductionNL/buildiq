@@ -45,12 +45,12 @@ owner-gated as in REQ-GHAS-001). Push SHALL serialize the chosen
 in-memory file map, then commit it to GitHub by porting the Git Data API tree-push
 mechanics (blob → tree → commit → ref) from `GitHubPushService`, routing **EVERY**
 outbound HTTP call through
-`CredentialBrokerService::request(credentialId, 'openbuild', method, path,
+`CredentialBrokerService::request(credentialId, 'buildiq', method, path,
 headers, body, actingUserId)` so the credential's token is used by the broker and
-NEVER reaches OpenBuild. When the Application is not yet linked to a repo (or a
+NEVER reaches Buildiq. When the Application is not yet linked to a repo (or a
 `repo` override is supplied for a new repo), push SHALL create the repository
 (`POST /user/repos` or `POST /orgs/{org}/repos` via the broker) and set the
-discovery topic `openbuild-app`. A created repository SHALL default to **PUBLIC**
+discovery topic `buildiq-app`. A created repository SHALL default to **PUBLIC**
 (`"private": false`) so the shop's anonymous catalogue search can discover it; the
 owner MAY override this via an optional `visibility` push param (`'public'` |
 `'private'`, default `'public'`). Push SHALL be non-destructive — the commit is
@@ -67,7 +67,7 @@ parented on the current branch head (push adds a commit, never a force overwrite
 - **THEN** the app's chosen version is serialized via `AppRepoSerializer` and
   committed to the linked repo
 - **AND** every GitHub call is performed through the credential broker (no token
-  in OpenBuild's process or response)
+  in Buildiq's process or response)
 - **AND** the pushed `ApplicationVersion.commitSha` records the new commit
 
 #### Scenario: Push of an unlinked app creates the repo and sets the topic
@@ -76,7 +76,7 @@ parented on the current branch head (push adds a commit, never a force overwrite
 - **WHEN** an owner pushes
 - **THEN** a GitHub repository is created via the broker
 - **AND** the repository is created PUBLIC by default (`"private": false`) so the shop can discover it
-- **AND** the repository carries the topic `openbuild-app`
+- **AND** the repository carries the topic `buildiq-app`
 - **AND** the Application's `githubRepo` + `githubDefaultBranch` are stored
 
 #### Scenario: Owner overrides created-repo visibility to private
@@ -157,29 +157,29 @@ remain owner-only.
   present
 - **THEN** the status response has `publishAvailable: false`
 
-### Requirement: Every GitHub write is broker-routed with the token never in OpenBuild
+### Requirement: Every GitHub write is broker-routed with the token never in Buildiq
 
 The system SHALL route every GitHub write (create-repo, set-topic, blob, tree,
 commit, ref) through `CredentialBrokerService::request(...)`, resolving the broker
 lazily (`class_exists` + `Server::get`, mirroring `RemoteTemplateStoreService`'s
-OR-service resolution). OpenBuild SHALL NEVER read, store, log, or return a GitHub
-token. The broker's own guards (owner / allowedApps=`openbuild` / the `github`
+OR-service resolution). Buildiq SHALL NEVER read, store, log, or return a GitHub
+token. The broker's own guards (owner / allowedApps=`buildiq` / the `github`
 write allowRules / host-lock=`api.github.com`) SHALL be treated as authoritative;
-OpenBuild SHALL NOT re-implement them and SHALL surface a broker denial as a
+Buildiq SHALL NOT re-implement them and SHALL surface a broker denial as a
 generic, hint-bearing failure (feeding the `publishAvailable` feature detection).
 When the broker class is absent, publish SHALL be reported unavailable rather than
 falling back to any token-bearing path.
 
 **ID:** REQ-GHAS-005
 
-#### Scenario: No token appears in OpenBuild during a push
+#### Scenario: No token appears in Buildiq during a push
 
 - **WHEN** an owner pushes through the broker
-- **THEN** no GitHub token is present in OpenBuild's process, logs, or response
+- **THEN** no GitHub token is present in Buildiq's process, logs, or response
 - **AND** each GitHub call is performed by the broker with the stored credential
 
 #### Scenario: Broker denial surfaces as a hint, not a token fallback
 
 - **WHEN** the broker denies a push (rules missing or credential not allowed)
 - **THEN** the response is a generic hint-bearing failure
-- **AND** OpenBuild does not attempt any token-bearing GitHub call
+- **AND** Buildiq does not attempt any token-bearing GitHub call

@@ -1,10 +1,10 @@
 <?php
 
 /**
- * OpenBuild PermissionResolver Service
+ * Buildiq PermissionResolver Service
  *
  * Single source of truth for the permission-grammar used across all four
- * call sites in OpenBuild (AbstractToolHandler, ApplicationsController,
+ * call sites in Buildiq (AbstractToolHandler, ApplicationsController,
  * VersionPromotionController, ManifestResolverService). Replaces four
  * diverging inline implementations that each parsed the same `user:` /
  * `group:` principal grammar differently.
@@ -25,7 +25,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -38,7 +38,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 use OCP\IGroup;
 use OCP\IGroupManager;
@@ -46,7 +46,7 @@ use OCP\IUser;
 use Psr\Log\LoggerInterface;
 
 /**
- * Centralised principal matching for OpenBuild Application permissions blocks.
+ * Centralised principal matching for Buildiq Application permissions blocks.
  *
  * All four previous call sites (AbstractToolHandler::callerHasWriteRole,
  * ApplicationsController::classifyPrincipal + collectAuthorisedGroups,
@@ -265,7 +265,7 @@ class PermissionResolver {
 		// Back-compat: bare value treated as group GID. Log a warning so operators
 		// can migrate to the `group:` prefix form.
 		$this->logger->warning(
-			'OpenBuild: bare principal value in permissions block — treat as group GID (migrate to group:<gid>)',
+			'Buildiq: bare principal value in permissions block — treat as group GID (migrate to group:<gid>)',
 			['principal' => $principal]
 		);
 		$groupSet[$principal] = true;

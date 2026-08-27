@@ -3,7 +3,7 @@
 /**
  * Unit tests for StoreController (remote template "store") auth + delegation.
  *
- * Covers openbuild-remote-template-store: anonymous search/install rejected
+ * Covers buildiq-remote-template-store: anonymous search/install rejected
  * (401), authenticated search proxies the store service and returns its cards,
  * an unresolvable slug yields 404 without touching the install seam, and a
  * resolvable slug delegates exactly once to
@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Controller
+ * @package  OCA\Buildiq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -28,10 +28,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Controller;
+namespace OCA\Buildiq\Tests\Unit\Controller;
 
-use OCA\OpenBuild\Controller\ApplicationsController;
-use OCA\OpenBuild\Controller\StoreController;
+use OCA\Buildiq\Controller\ApplicationsController;
+use OCA\Buildiq\Controller\StoreController;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCP\AppFramework\Http;
 use OCP\IRequest;

@@ -18,8 +18,8 @@
 		:open="open"
 		:name="
 			editing
-				? t('openbuild', 'Edit document attachment')
-				: t('openbuild', 'Attach a Docudesk template')
+				? t('buildiq', 'Edit document attachment')
+				: t('buildiq', 'Attach a Docudesk template')
 		"
 		size="normal"
 		@update:open="$emit('update:open', $event)"
@@ -48,7 +48,7 @@
 			<p v-if="!docudeskAvailable" class="ob-document-attach__warn">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'Docudesk is not installed or enabled on this instance. The template list cannot be loaded.',
 					)
 				}}
@@ -59,7 +59,7 @@
 				role="alert">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'The attached template no longer exists in Docudesk. Pick another template or detach.',
 					)
 				}}
@@ -67,7 +67,7 @@
 
 			<NcSelect
 				v-model="templateOption"
-				:inputLabel="t('openbuild', 'Template')"
+				:inputLabel="t('buildiq', 'Template')"
 				:options="templateOptions"
 				:loading="loadingTemplates"
 				:disabled="!docudeskAvailable"
@@ -75,37 +75,32 @@
 
 			<NcSelect
 				v-model="schemaOption"
-				:inputLabel="t('openbuild', 'Schema')"
+				:inputLabel="t('buildiq', 'Schema')"
 				:options="schemaOptions"
 				label="label" />
 
 			<NcTextField
 				:modelValue="label"
-				:label="t('openbuild', 'Action label')"
-				:placeholder="t('openbuild', 'e.g. Generate confirmation letter')"
+				:label="t('buildiq', 'Action label')"
+				:placeholder="t('buildiq', 'e.g. Generate confirmation letter')"
 				@update:modelValue="label = $event" />
 
 			<NcSelect
 				v-model="formatOption"
-				:inputLabel="t('openbuild', 'Output format (optional)')"
+				:inputLabel="t('buildiq', 'Output format (optional)')"
 				:options="formatOptions"
 				label="label" />
 
 			<NcTextField
 				:modelValue="filenameTemplate"
-				:label="t('openbuild', 'Filename template (optional)')"
-				:placeholder="
-					t('openbuild', 'e.g. bevestiging-{{dossiernummer}}.pdf')
-				"
+				:label="t('buildiq', 'Filename template (optional)')"
+				:placeholder="t('buildiq', 'e.g. bevestiging-{{dossiernummer}}.pdf')"
 				@update:modelValue="filenameTemplate = $event" />
 
 			<label class="ob-document-attach__toggle">
 				<input v-model="addActionsTab" type="checkbox" />
 				{{
-					t(
-						'openbuild',
-						"Add document actions to this schema's detail page",
-					)
+					t('buildiq', "Add document actions to this schema's detail page")
 				}}
 			</label>
 
@@ -116,8 +111,8 @@
 					@click="onPreview">
 					{{
 						previewing
-							? t('openbuild', 'Rendering preview…')
-							: t('openbuild', 'Preview with sample data')
+							? t('buildiq', 'Rendering preview…')
+							: t('buildiq', 'Preview with sample data')
 					}}
 				</NcButton>
 				<p
@@ -126,7 +121,7 @@
 					role="alert">
 					{{
 						t(
-							'openbuild',
+							'buildiq',
 							'Preview failed. The template could not be rendered.',
 						)
 					}}
@@ -146,7 +141,7 @@
 			<p v-if="duplicateLabel" class="ob-document-attach__error" role="alert">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'An attachment with this label already exists on this schema. Choose a different label.',
 					)
 				}}
@@ -154,10 +149,10 @@
 		</div>
 		<template #actions>
 			<NcButton @click="onClose">
-				{{ t('openbuild', 'Cancel') }}
+				{{ t('buildiq', 'Cancel') }}
 			</NcButton>
 			<NcButton variant="primary" :disabled="!canSave" @click="onSave">
-				{{ t('openbuild', 'Save') }}
+				{{ t('buildiq', 'Save') }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -250,7 +245,7 @@ export default {
 
 		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-001 */
 		formatOptions() {
-			return [{ label: t('openbuild', 'Template default'), value: '' }].concat(
+			return [{ label: t('buildiq', 'Template default'), value: '' }].concat(
 				DOCUMENT_FORMATS.map((f) => ({ label: f.toUpperCase(), value: f })),
 			)
 		},
@@ -351,7 +346,7 @@ export default {
 							label: this.attachment.format.toUpperCase(),
 							value: this.attachment.format,
 						}
-					: { label: t('openbuild', 'Template default'), value: '' }
+					: { label: t('buildiq', 'Template default'), value: '' }
 				this.filenameTemplate = this.attachment.filenameTemplate || ''
 				this.addActionsTab = false
 			} else {
@@ -359,7 +354,7 @@ export default {
 				this.schemaOption = null
 				this.label = ''
 				this.formatOption = {
-					label: t('openbuild', 'Template default'),
+					label: t('buildiq', 'Template default'),
 					value: '',
 				}
 				this.filenameTemplate = ''

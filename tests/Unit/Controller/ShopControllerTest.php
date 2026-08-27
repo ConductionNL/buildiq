@@ -13,19 +13,19 @@
  * a failing upstream is translated rather than escaping as a 500.
  *
  * @category Test
- * @package  OpenBuild
+ * @package  Buildiq
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl
- * @link     https://github.com/ConductionNL/openbuild
+ * @link     https://github.com/ConductionNL/buildiq
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Controller;
+namespace OCA\Buildiq\Tests\Unit\Controller;
 
-use OCA\OpenBuild\Controller\ApplicationsController;
-use OCA\OpenBuild\Controller\ShopController;
-use OCA\OpenBuild\Service\AppRepoParser;
-use OCA\OpenBuild\Service\GitHubCatalogService;
+use OCA\Buildiq\Controller\ApplicationsController;
+use OCA\Buildiq\Controller\ShopController;
+use OCA\Buildiq\Service\AppRepoParser;
+use OCA\Buildiq\Service\GitHubCatalogService;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
 use OCP\IUser;
@@ -38,9 +38,9 @@ use Psr\Log\LoggerInterface;
  * Contract tests for ShopController.
  *
  * @category Test
- * @package  OpenBuild
+ * @package  Buildiq
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl
- * @link     https://github.com/ConductionNL/openbuild
+ * @link     https://github.com/ConductionNL/buildiq
  */
 class ShopControllerTest extends TestCase {
 
@@ -225,7 +225,7 @@ class ShopControllerTest extends TestCase {
 		$this->request->method('getParam')->willReturnMap(
 			[
 				['owner', null, 'ConductionNL'],
-				['repo', null, 'openbuild'],
+				['repo', null, 'buildiq'],
 				['ref', null, null],
 				['name', null, ''],
 				['slug', null, ''],

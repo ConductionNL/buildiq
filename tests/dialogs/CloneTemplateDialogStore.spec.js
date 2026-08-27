@@ -5,7 +5,7 @@
  * Vitest unit tests for the remote-install behaviour of
  * `src/modals/CloneTemplateDialog.vue`.
  *
- * Covers openbuild-remote-template-store:
+ * Covers buildiq-remote-template-store:
  *   - when :remote=true with a remoteSlug, submit POSTs to the store install
  *     endpoint and emits `installed` (+ `close`) with the created app
  *   - a failed remote install surfaces a generic error and re-enables submit
@@ -20,7 +20,8 @@ const { axiosMock } = vi.hoisted(() => ({
 	axiosMock: { get: vi.fn(), post: vi.fn() },
 }))
 
-vi.mock('@nextcloud/router', () => ({
+vi.mock('@nextcloud/router', async (importOriginal) => ({
+	...(await importOriginal()),
 	// Mirror the real generateUrl path-template expansion of `{slug}`.
 	generateUrl: (path, params = {}) =>
 		path.replace(/\{(\w+)\}/g, (_, k) => params[k] ?? `{${k}}`),
@@ -97,9 +98,7 @@ describe('CloneTemplateDialog.vue — remote store install', () => {
 
 		expect(axiosMock.post).toHaveBeenCalledTimes(1)
 		const [url, payload] = axiosMock.post.mock.calls[0]
-		expect(url).toBe(
-			'/apps/openbuild/api/store/templates/permit-tracker/install',
-		)
+		expect(url).toBe('/apps/buildiq/api/store/templates/permit-tracker/install')
 		expect(payload).toEqual({ name: 'My Permits', slug: 'my-permits' })
 
 		expect(wrapper.emitted('installed')).toBeTruthy()

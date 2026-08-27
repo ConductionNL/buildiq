@@ -1,5 +1,5 @@
 /**
- * SPDX-FileCopyrightText: 2026 ConductionNL / OpenBuild Contributors
+ * SPDX-FileCopyrightText: 2026 ConductionNL / Buildiq Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Playwright end-to-end spec for the data-scopes-authoring change
@@ -27,7 +27,7 @@
  *      unscoped schema shows no badge.
  *
  * Runs against a live Nextcloud at NC_BASE_URL (default
- * http://localhost:8080) with the OpenBuild app installed. Uses the
+ * http://localhost:8080) with the Buildiq app installed. Uses the
  * shared admin `storageState` from `tests/e2e/global-setup.ts` — no
  * per-spec login needed.
  *
@@ -79,7 +79,7 @@ function accessRow(
 	op: 'read' | 'create' | 'update' | 'delete',
 ) {
 	return page
-		.locator('.openbuild-access-editor .openbuild-access-editor__row')
+		.locator('.buildiq-access-editor .buildiq-access-editor__row')
 		.filter({
 			has: page.getByRole('heading', { name: new RegExp(`^${op}$`, 'i') }),
 		})
@@ -272,12 +272,12 @@ test.describe('data-scopes-authoring — Access sub-editor (REQ-OBDSA-001/002/00
 	) {
 		// `?_version=production` targets the app's per-version register that the
 		// wizard creates; without it the designer falls back to the legacy
-		// `openbuild-{slug}` register that wizard-made apps do not have.
+		// `buildiq-{slug}` register that wizard-made apps do not have.
 		await page.goto(
-			`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/schemas?_version=production`,
+			`${BASE_URL}/apps/buildiq/builder/${APP_SLUG}/schemas?_version=production`,
 			{ waitUntil: 'domcontentloaded' },
 		)
-		await expect(page.locator('.openbuild-schema-list')).toBeVisible({
+		await expect(page.locator('.buildiq-schema-list')).toBeVisible({
 			timeout: 45_000,
 		})
 		await dismissOverlays(page)
@@ -293,7 +293,7 @@ test.describe('data-scopes-authoring — Access sub-editor (REQ-OBDSA-001/002/00
 			{ headers: { 'OCS-APIRequest': 'true' } },
 		)
 		const existingRow = page
-			.locator('.openbuild-schema-list__row')
+			.locator('.buildiq-schema-list__row')
 			.filter({ hasText: namespaced })
 			.first()
 		if (probe.status() === 404) {
@@ -327,7 +327,7 @@ test.describe('data-scopes-authoring — Access sub-editor (REQ-OBDSA-001/002/00
 
 		// Access sub-editor — set the "read" row's scope kind to "Specific
 		// groups" and tag the "vets" group.
-		const accessSection = page.locator('.openbuild-access-editor')
+		const accessSection = page.locator('.buildiq-access-editor')
 		await expect(accessSection).toBeVisible({ timeout: 45_000 })
 		const readRow = accessRow(page, 'read')
 		await readRow.getByLabel(/scope/i).click()
@@ -352,18 +352,18 @@ test.describe('data-scopes-authoring — Access sub-editor (REQ-OBDSA-001/002/00
 		page,
 	}) => {
 		await page.goto(
-			`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/schemas?_version=production`,
+			`${BASE_URL}/apps/buildiq/builder/${APP_SLUG}/schemas?_version=production`,
 			{ waitUntil: 'domcontentloaded' },
 		)
 		const row = page
-			.locator('.openbuild-schema-list__row')
+			.locator('.buildiq-schema-list__row')
 			.filter({ hasText: nsSlug(SCOPED_SCHEMA_SLUG) })
 		await row.click()
 		await expect(
 			page.getByRole('button', { name: /back to schemas/i }),
 		).toBeVisible({ timeout: 45_000 })
 
-		const accessSection = page.locator('.openbuild-access-editor')
+		const accessSection = page.locator('.buildiq-access-editor')
 		const deleteRow = accessRow(page, 'delete')
 		await deleteRow.getByLabel(/scope/i).click()
 		await page.getByRole('option', { name: /specific groups/i }).click()
@@ -394,11 +394,11 @@ test.describe('data-scopes-authoring — Access sub-editor (REQ-OBDSA-001/002/00
 		})
 
 		await page.goto(
-			`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/schemas?_version=production`,
+			`${BASE_URL}/apps/buildiq/builder/${APP_SLUG}/schemas?_version=production`,
 			{ waitUntil: 'domcontentloaded' },
 		)
 		await page
-			.locator('.openbuild-schema-list__row')
+			.locator('.buildiq-schema-list__row')
 			.filter({ hasText: nsSlug(SCOPED_SCHEMA_SLUG) })
 			.first()
 			.click()
@@ -431,11 +431,11 @@ test.describe('data-scopes-authoring — Access sub-editor (REQ-OBDSA-001/002/00
 		})
 
 		await page.goto(
-			`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/schemas?_version=production`,
+			`${BASE_URL}/apps/buildiq/builder/${APP_SLUG}/schemas?_version=production`,
 			{ waitUntil: 'domcontentloaded' },
 		)
 		await page
-			.locator('.openbuild-schema-list__row')
+			.locator('.buildiq-schema-list__row')
 			.filter({ hasText: nsSlug(SCOPED_SCHEMA_SLUG) })
 			.first()
 			.click()
@@ -446,7 +446,7 @@ test.describe('data-scopes-authoring — Access sub-editor (REQ-OBDSA-001/002/00
 		// The "update" row must render read-only — no editable scope-kind
 		// picker, just the "managed outside the designer" note (the
 		// deployed dev OR does not advertise the `creator` capability).
-		const accessSection = page.locator('.openbuild-access-editor')
+		const accessSection = page.locator('.buildiq-access-editor')
 		const updateRow = accessRow(page, 'update')
 		await expect(
 			updateRow.getByText(/managed outside the designer/i),
@@ -467,11 +467,11 @@ test.describe('data-scopes-authoring — Access sub-editor (REQ-OBDSA-001/002/00
 		page,
 	}) => {
 		await page.goto(
-			`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/schemas?_version=production`,
+			`${BASE_URL}/apps/buildiq/builder/${APP_SLUG}/schemas?_version=production`,
 			{ waitUntil: 'domcontentloaded' },
 		)
 		await page
-			.locator('.openbuild-schema-list__row')
+			.locator('.buildiq-schema-list__row')
 			.filter({ hasText: nsSlug(SCOPED_SCHEMA_SLUG) })
 			.first()
 			.click()
@@ -479,7 +479,7 @@ test.describe('data-scopes-authoring — Access sub-editor (REQ-OBDSA-001/002/00
 			page.getByRole('button', { name: /back to schemas/i }),
 		).toBeVisible({ timeout: 45_000 })
 
-		const accessSection = page.locator('.openbuild-access-editor')
+		const accessSection = page.locator('.buildiq-access-editor')
 		const createRow = accessRow(page, 'create')
 		await createRow.getByLabel(/scope/i).click()
 
@@ -500,16 +500,16 @@ test.describe('data-scopes-authoring — Access sub-editor (REQ-OBDSA-001/002/00
 		page,
 	}) => {
 		await page.goto(
-			`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/schemas?_version=production`,
+			`${BASE_URL}/apps/buildiq/builder/${APP_SLUG}/schemas?_version=production`,
 			{ waitUntil: 'domcontentloaded' },
 		)
-		await expect(page.locator('.openbuild-schema-list')).toBeVisible({
+		await expect(page.locator('.buildiq-schema-list')).toBeVisible({
 			timeout: 45_000,
 		})
 
 		// Ensure an unscoped sibling schema exists for the negative assertion.
 		const unscopedRow = page
-			.locator('.openbuild-schema-list__row')
+			.locator('.buildiq-schema-list__row')
 			.filter({ hasText: nsSlug(UNSCOPED_SCHEMA_SLUG) })
 		if ((await unscopedRow.count()) === 0) {
 			await page
@@ -526,9 +526,9 @@ test.describe('data-scopes-authoring — Access sub-editor (REQ-OBDSA-001/002/00
 		}
 
 		const scopedRow = page
-			.locator('.openbuild-schema-list__row')
+			.locator('.buildiq-schema-list__row')
 			.filter({ hasText: nsSlug(SCOPED_SCHEMA_SLUG) })
-		const scopedBadge = scopedRow.locator('.openbuild-schema-list__badge')
+		const scopedBadge = scopedRow.locator('.buildiq-schema-list__badge')
 		await expect(scopedBadge).toBeVisible({ timeout: 45_000 })
 		await expect(scopedBadge).toHaveAttribute(
 			'title',
@@ -537,9 +537,9 @@ test.describe('data-scopes-authoring — Access sub-editor (REQ-OBDSA-001/002/00
 
 		await expect(
 			page
-				.locator('.openbuild-schema-list__row')
+				.locator('.buildiq-schema-list__row')
 				.filter({ hasText: nsSlug(UNSCOPED_SCHEMA_SLUG) })
-				.locator('.openbuild-schema-list__badge'),
+				.locator('.buildiq-schema-list__badge'),
 		).toHaveCount(0)
 	})
 })

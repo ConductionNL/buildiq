@@ -8,7 +8,7 @@
   prop in, update:manifest / save-and-preview events out) so it can also
   be embedded as a tab in ApplicationEditor later.
 
-  Version routing (spec `openbuild-version-routing` REQ-OBVR-004):
+  Version routing (spec `buildiq-version-routing` REQ-OBVR-004):
   Reads `?_version=<versionSlug>` from `$route.query._version`. The
   useApplicationVersion composable resolves the active version. On 404
   (unknown or unauthorised version), the "version not found" UI state is
@@ -24,13 +24,13 @@
 					{{
 						application
 							? application.name
-							: t('openbuild', 'Page designer')
+							: t('buildiq', 'Page designer')
 					}}
 				</h2>
 				<p v-if="application" class="page-designer-host__subtitle">
 					{{
 						t(
-							'openbuild',
+							'buildiq',
 							'Design the pages and menu of this app, then publish from Apps.',
 						)
 					}}
@@ -40,13 +40,13 @@
 				<router-link
 					class="page-designer-host__link"
 					:to="{ name: 'VirtualApps' }">
-					{{ t('openbuild', 'Back to Apps') }}
+					{{ t('buildiq', 'Back to Apps') }}
 				</router-link>
 				<a
 					v-if="builderUrl"
 					class="page-designer-host__link"
 					:href="builderUrl">
-					{{ t('openbuild', 'Open app') }}
+					{{ t('buildiq', 'Open app') }}
 				</a>
 				<!-- AI copilot panel toggle (spec ai-copilot REQ-OBAIC-007) —
 				     health-gated, hidden for hybrid apps (copilot edits virtual
@@ -56,7 +56,7 @@
 					data-testid="copilot-panel-toggle"
 					:pressed="showCopilotPanel"
 					@click="showCopilotPanel = !showCopilotPanel">
-					{{ t('openbuild', 'AI copilot') }}
+					{{ t('buildiq', 'AI copilot') }}
 				</NcButton>
 				<NcButton
 					v-if="application"
@@ -64,9 +64,7 @@
 					:disabled="saving"
 					@click="save">
 					{{
-						saving
-							? t('openbuild', 'Saving…')
-							: t('openbuild', 'Save pages')
+						saving ? t('buildiq', 'Saving…') : t('buildiq', 'Save pages')
 					}}
 				</NcButton>
 			</div>
@@ -82,10 +80,10 @@
 		<!-- REQ-OBVR-009: version-not-found state — identical for both "doesn't exist" and "you can't see it" -->
 		<NcEmptyContent
 			v-if="versionNotFound"
-			:name="t('openbuild', 'Version not found')"
+			:name="t('buildiq', 'Version not found')"
 			:description="
 				t(
-					'openbuild',
+					'buildiq',
 					'The requested version does not exist or you do not have access to it.',
 				)
 			" />
@@ -94,9 +92,9 @@
 		</div>
 		<NcEmptyContent
 			v-else-if="!application"
-			:name="t('openbuild', 'No app found')"
+			:name="t('buildiq', 'No app found')"
 			:description="
-				t('openbuild', 'No app exists for the slug {slug}.', {
+				t('buildiq', 'No app exists for the slug {slug}.', {
 					slug: routeSlug,
 				})
 			" />
@@ -353,7 +351,7 @@ export default {
 				this.application.currentVersion
 				|| this.application.status === 'published'
 			return published
-				? generateUrl(`/apps/openbuild/builder/${this.application.slug}`)
+				? generateUrl(`/apps/buildiq/builder/${this.application.slug}`)
 				: ''
 		},
 
@@ -467,7 +465,7 @@ export default {
 		 * REQ-NTS-002 (design.md Decision 3, OQ-1): retarget the theme dialog's
 		 * live-preview toggle at the sandboxed live-preview-pane CnAppRoot
 		 * (PageDesigner.vue's `livePreviewProps.manifest`, which IS this same
-		 * `manifest` object by reference) instead of a separate OpenBuild-owned
+		 * `manifest` object by reference) instead of a separate Buildiq-owned
 		 * applier. Mutating `runtime.theme` here is picked up by that CnAppRoot
 		 * instance's own `useScopedTheme` watcher (REQ-STA-3) with no further
 		 * wiring. The FIRST candidate mutation snapshots the pre-preview theme
@@ -548,7 +546,7 @@ export default {
 			// add pre-seeded; the designer adds the string property with its own
 			// field validation.
 			const base = generateUrl(
-				`/apps/openbuild/builder/${this.routeSlug}/schemas`,
+				`/apps/buildiq/builder/${this.routeSlug}/schemas`,
 			)
 			window.location.href = `${base}?schema=${encodeURIComponent(schemaSlug)}&addProperty=zaakUrl`
 		},
@@ -607,7 +605,7 @@ export default {
 			this.toast = ''
 			try {
 				const url = generateUrl(
-					'/apps/openregister/api/objects/openbuild/application',
+					'/apps/openregister/api/objects/buildiq/application',
 				)
 				const { data } = await axios.get(url, { params: { _limit: 100 } })
 				const apps =
@@ -638,7 +636,7 @@ export default {
 					: { ...EMPTY_MANIFEST }
 			} catch (e) {
 				this.application = null
-				this.error = t('openbuild', 'Failed to load the app: {error}', {
+				this.error = t('buildiq', 'Failed to load the app: {error}', {
 					error: (e && e.message) || String(e),
 				})
 			} finally {
@@ -694,7 +692,7 @@ export default {
 				// onto the active ApplicationVersion when one is resolved. Use a
 				// PATCH of just the `manifest` field — a full-object PUT re-validates
 				// the whole ApplicationVersion, and its `register` property (the
-				// per-version data-register slug, e.g. `openbuild-…`) collides with
+				// per-version data-register slug, e.g. `buildiq-…`) collides with
 				// OpenRegister's reserved `register` routing metadata, so a
 				// `{ ...version, manifest }` PUT is rejected ("required property
 				// (register) is missing"). PATCH merges the new manifest into the
@@ -708,7 +706,7 @@ export default {
 						|| version.id)
 				if (version && versionUuid) {
 					const url = generateUrl(
-						`/apps/openregister/api/objects/openbuild/applicationVersion/${versionUuid}`,
+						`/apps/openregister/api/objects/buildiq/applicationVersion/${versionUuid}`,
 					)
 					const { data } = await axios.patch(url, {
 						manifest: this.manifest,
@@ -716,7 +714,7 @@ export default {
 					if (data && typeof data === 'object') {
 						this.applicationVersion = data
 					}
-					this.toast = t('openbuild', 'Pages saved.')
+					this.toast = t('buildiq', 'Pages saved.')
 					// REQ-BUR-004: a successful save is a session boundary — bump
 					// the counter so `sessionKey` changes and the designer resets
 					// its undo/redo history to the just-saved manifest.
@@ -724,7 +722,7 @@ export default {
 					return
 				}
 				const url = generateUrl(
-					`/apps/openregister/api/objects/openbuild/application/${this.applicationUuid}`,
+					`/apps/openregister/api/objects/buildiq/application/${this.applicationUuid}`,
 				)
 				const { data } = await axios.put(url, {
 					...this.application,
@@ -733,11 +731,11 @@ export default {
 				if (data && typeof data === 'object') {
 					this.application = data
 				}
-				this.toast = t('openbuild', 'Pages saved.')
+				this.toast = t('buildiq', 'Pages saved.')
 				// REQ-BUR-004: see the PATCH branch above — same session-boundary bump.
 				this.saveCounter += 1
 			} catch (e) {
-				this.error = t('openbuild', 'Failed to save: {error}', {
+				this.error = t('buildiq', 'Failed to save: {error}', {
 					error: (e && e.message) || String(e),
 				})
 			} finally {

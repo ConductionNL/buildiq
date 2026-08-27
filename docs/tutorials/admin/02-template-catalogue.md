@@ -6,7 +6,7 @@ description: Promote an exported virtual app into the template gallery so other 
 
 # Curate the template catalogue
 
-The template gallery is where new virtual apps start. The four templates that ship with OpenBuild (*Permit Tracker*, *Stakeholder Consultation*, *Employee Onboarding*, *Incident Reporter*) are a baseline; in a real deployment you will add your own and retire the ones that do not fit.
+The template gallery is where new virtual apps start. The four templates that ship with Buildiq (*Permit Tracker*, *Stakeholder Consultation*, *Employee Onboarding*, *Incident Reporter*) are a baseline; in a real deployment you will add your own and retire the ones that do not fit.
 
 ## Goal
 
@@ -14,13 +14,13 @@ By the end you will have promoted a finished virtual app into the template galle
 
 ## Prerequisites
 
-- You are an OpenBuild admin (in the *admin* group, or in a group nominated under [Manage who can build (RBAC)](./01-rbac.md)).
+- You are an Buildiq admin (in the *admin* group, or in a group nominated under [Manage who can build (RBAC)](./01-rbac.md)).
 - A virtual app that is *finished enough* to be a template — schemas stable, pages saved, a small set of well-chosen sample records.
 - A clear category to slot it under (*GOVERNMENT SERVICES*, *CITIZEN ENGAGEMENT*, *INTERNAL OPERATIONS*, *FIELD WORK*, or a custom category).
 
 ## Steps
 
-1. Open **Templates** in the OpenBuild left navigation. The gallery shows the current set, with category badges and **Use this template** buttons.
+1. Open **Templates** in the Buildiq left navigation. The gallery shows the current set, with category badges and **Use this template** buttons.
 
    ![Template gallery](/screenshots/tutorials/admin/02-template-catalogue-01.png)
 
@@ -32,7 +32,7 @@ By the end you will have promoted a finished virtual app into the template galle
 
    ![Promote dialog](/screenshots/tutorials/admin/02-template-catalogue-03.png)
 
-4. Click **Promote**. OpenBuild freezes the current manifest, copies it under a new `application-template` record, and the new card lands in the gallery at the top of its category.
+4. Click **Promote**. Buildiq freezes the current manifest, copies it under a new `application-template` record, and the new card lands in the gallery at the top of its category.
 
    ![New card in the gallery](/screenshots/tutorials/admin/02-template-catalogue-04.png)
 

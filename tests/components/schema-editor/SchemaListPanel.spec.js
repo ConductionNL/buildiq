@@ -1,5 +1,5 @@
 /**
- * SPDX-FileCopyrightText: 2026 ConductionNL / OpenBuild Contributors
+ * SPDX-FileCopyrightText: 2026 ConductionNL / Buildiq Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Vitest unit tests for `SchemaListPanel.vue` (REQ-OBSD-001 +
@@ -88,7 +88,7 @@ describe('SchemaListPanel', () => {
 			propsData: { schemas: [], loading: false },
 			stubs,
 		})
-		const empty = wrapper.find('.openbuild-schema-list__empty')
+		const empty = wrapper.find('.buildiq-schema-list__empty')
 		expect(empty.exists()).toBe(true)
 		// The empty-state NcEmptyContent surfaces the no-schemas-yet copy.
 		expect(empty.text()).toContain('No schemas yet')
@@ -111,7 +111,7 @@ describe('SchemaListPanel', () => {
 			},
 			stubs,
 		})
-		const rows = wrapper.findAll('.openbuild-schema-list__row')
+		const rows = wrapper.findAll('.buildiq-schema-list__row')
 		expect(rows).toHaveLength(2)
 		expect(rows.at(0).text()).toContain('hello-message')
 		expect(rows.at(0).text()).toContain('Hello message')
@@ -125,7 +125,7 @@ describe('SchemaListPanel', () => {
 			propsData: { schemas: [makeSchema()], loading: false },
 			stubs,
 		})
-		await wrapper.find('.openbuild-schema-list__row-main').trigger('click')
+		await wrapper.find('.buildiq-schema-list__row-main').trigger('click')
 		const events = wrapper.emitted('open')
 		expect(events).toBeTruthy()
 		expect(events[0]).toEqual(['hello-message'])
@@ -207,9 +207,9 @@ describe('SchemaListPanel', () => {
 			propsData: { schemas: [], loading: true },
 			stubs,
 		})
-		expect(wrapper.find('.openbuild-schema-list__loading').exists()).toBe(true)
+		expect(wrapper.find('.buildiq-schema-list__loading').exists()).toBe(true)
 		// Loading branch should suppress the empty-state.
-		expect(wrapper.find('.openbuild-schema-list__empty').exists()).toBe(false)
+		expect(wrapper.find('.buildiq-schema-list__empty').exists()).toBe(false)
 	})
 })
 
@@ -284,12 +284,12 @@ describe('SchemaListPanel — scope badge rendering (REQ-OBDSA-005)', () => {
 			},
 			stubs,
 		})
-		const rows = wrapper.findAll('.openbuild-schema-list__row')
-		const scopedBadge = rows.at(0).find('.openbuild-schema-list__badge')
+		const rows = wrapper.findAll('.buildiq-schema-list__row')
+		const scopedBadge = rows.at(0).find('.buildiq-schema-list__badge')
 		expect(scopedBadge.exists()).toBe(true)
 		expect(scopedBadge.text()).toContain('Restricted')
 		expect(scopedBadge.attributes('title')).toContain('read: vets')
-		expect(rows.at(1).find('.openbuild-schema-list__badge').exists()).toBe(false)
+		expect(rows.at(1).find('.buildiq-schema-list__badge').exists()).toBe(false)
 	})
 })
 

@@ -18,12 +18,12 @@
 		<div class="automation-action-list__header">
 			<span class="automation-action-list__label">{{ label }}</span>
 			<NcButton variant="tertiary" @click="addAction">
-				{{ t('openbuild', 'Add action') }}
+				{{ t('buildiq', 'Add action') }}
 			</NcButton>
 		</div>
 
 		<p v-if="items.length === 0" class="automation-action-list__hint">
-			{{ t('openbuild', 'No follow-up actions.') }}
+			{{ t('buildiq', 'No follow-up actions.') }}
 		</p>
 
 		<div
@@ -33,7 +33,7 @@
 			data-testid="follow-up-action-row">
 			<NcSelect
 				:modelValue="typeOption(item.type)"
-				:inputLabel="t('openbuild', 'Action type')"
+				:inputLabel="t('buildiq', 'Action type')"
 				:options="typeOptions"
 				:clearable="false"
 				label="label"
@@ -42,18 +42,18 @@
 			<template v-if="item.type === 'send-notification'">
 				<NcTextField
 					:modelValue="item.subjectEn"
-					:label="t('openbuild', 'Subject (English)')"
+					:label="t('buildiq', 'Subject (English)')"
 					@update:modelValue="updateItem(index, 'subjectEn', $event)" />
 				<NcTextField
 					:modelValue="item.subjectNl"
-					:label="t('openbuild', 'Subject (Dutch)')"
+					:label="t('buildiq', 'Subject (Dutch)')"
 					@update:modelValue="updateItem(index, 'subjectNl', $event)" />
 			</template>
 
 			<template v-else-if="item.type === 'object-op'">
 				<NcSelect
 					:modelValue="operationOption(item.operation)"
-					:inputLabel="t('openbuild', 'Operation')"
+					:inputLabel="t('buildiq', 'Operation')"
 					:options="operationOptions"
 					:clearable="false"
 					label="label"
@@ -66,11 +66,11 @@
 					" />
 				<NcTextField
 					:modelValue="item.schema"
-					:label="t('openbuild', 'Target schema')"
+					:label="t('buildiq', 'Target schema')"
 					@update:modelValue="updateItem(index, 'schema', $event)" />
 				<NcTextArea
 					:modelValue="item.fieldMappingText"
-					:label="t('openbuild', 'Field mapping (JSON)')"
+					:label="t('buildiq', 'Field mapping (JSON)')"
 					@update:modelValue="
 						updateItem(index, 'fieldMappingText', $event)
 					" />
@@ -79,11 +79,11 @@
 			<template v-else-if="item.type === 'webhook'">
 				<NcTextField
 					:modelValue="item.url"
-					:label="t('openbuild', 'Webhook URL')"
+					:label="t('buildiq', 'Webhook URL')"
 					@update:modelValue="updateItem(index, 'url', $event)" />
 				<NcTextArea
 					:modelValue="item.payloadTemplateText"
-					:label="t('openbuild', 'Payload template (JSON)')"
+					:label="t('buildiq', 'Payload template (JSON)')"
 					@update:modelValue="
 						updateItem(index, 'payloadTemplateText', $event)
 					" />
@@ -91,9 +91,9 @@
 
 			<NcButton
 				variant="error"
-				:aria-label="t('openbuild', 'Remove follow-up action')"
+				:aria-label="t('buildiq', 'Remove follow-up action')"
 				@click="removeAction(index)">
-				{{ t('openbuild', 'Remove') }}
+				{{ t('buildiq', 'Remove') }}
 			</NcButton>
 		</div>
 	</div>
@@ -129,24 +129,30 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec openspec/specs/automation-designer/spec.md
+		 */
 		typeOptions() {
 			return [
 				{
 					value: 'send-notification',
-					label: t('openbuild', 'Send notification'),
+					label: t('buildiq', 'Send notification'),
 				},
 				{
 					value: 'object-op',
-					label: t('openbuild', 'Create/update an object'),
+					label: t('buildiq', 'Create/update an object'),
 				},
-				{ value: 'webhook', label: t('openbuild', 'Webhook') },
+				{ value: 'webhook', label: t('buildiq', 'Webhook') },
 			]
 		},
 
+		/**
+		 * @spec openspec/specs/automation-designer/spec.md
+		 */
 		operationOptions() {
 			return [
-				{ value: 'create', label: t('openbuild', 'Create') },
-				{ value: 'update', label: t('openbuild', 'Update') },
+				{ value: 'create', label: t('buildiq', 'Create') },
+				{ value: 'update', label: t('buildiq', 'Update') },
 			]
 		},
 	},

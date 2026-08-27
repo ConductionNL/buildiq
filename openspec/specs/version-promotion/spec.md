@@ -10,7 +10,7 @@ status: in-progress
 
 Lands the promotion flow that moves a manifest + schema set + (optionally) data
 from a source `ApplicationVersion` to its single downstream `promotesTo`
-neighbour, completing the chain mechanics that `openbuild-versioning-model`
+neighbour, completing the chain mechanics that `buildiq-versioning-model`
 defines but intentionally leaves out of scope. Ships the promotion endpoint, the
 `<NcDialog>`-based `PromoteVersionDialog.vue` (modal-isolated per ADR-004), and
 three admin-chosen data strategies — `start-with-source-data` (wipe target,
@@ -29,7 +29,7 @@ empty-start), implemented identically in PHP and JS.
 
 ### Requirement: Promotion endpoint accepts a strategy and targets `sourceVersion.promotesTo`
 
-The system SHALL expose `POST /index.php/apps/openbuild/api/applications/{appUuid}/versions/{versionUuid}/promote`
+The system SHALL expose `POST /index.php/apps/buildiq/api/applications/{appUuid}/versions/{versionUuid}/promote`
 mounted on `VersionPromotionController::promote(string $appUuid, string $versionUuid)`,
 where `{versionUuid}` identifies the **source** ApplicationVersion. The endpoint SHALL
 accept a JSON request body `{"strategy": "start-with-source-data" | "migrate-existing-data"
@@ -106,7 +106,7 @@ The system SHALL, when invoked with `strategy: "migrate-existing-data"`:
 1. Acquire OR object lock on the target ApplicationVersion row (REQ-OBVP-006).
 2. Invoke OR's schema-import / register-merge API on the target's `register` with the
    source's schema set (REQ-OBVP-005). OR's own breaking-change handling drives any
-   column-level data migration; openbuild does not pre-flight diffs.
+   column-level data migration; buildiq does not pre-flight diffs.
 3. Leave the target register's existing rows in place (no delete, no copy).
 4. Write the source's `manifest` and `semver` onto the target ApplicationVersion row.
 5. Save the target row.
@@ -158,7 +158,7 @@ that the client has obtained admin intent. On success the endpoint SHALL return
 
 The promotion endpoint SHALL invoke OR's schema-import / register-merge API for the
 target register with the source's schema set; OR's own breaking-change handling
-drives the outcome. The endpoint SHALL NOT implement an openbuild-side schema-diff,
+drives the outcome. The endpoint SHALL NOT implement an buildiq-side schema-diff,
 dry-run, or breaking-change preflight. If OR's API returns a failure response, the
 endpoint SHALL treat that as a promotion failure (REQ-OBVP-009) and the on-failure
 status flip applies.

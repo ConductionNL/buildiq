@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild Icon Service
+ * Buildiq Icon Service
  *
  * Resolves per-application SVG icons from OR-attached files with a filesystem
  * fallback chain.  Decision 2 in design.md defines the fallback order:
@@ -17,7 +17,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -35,11 +35,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 
@@ -53,7 +53,7 @@ class IconService {
 	/**
 	 * Register slug that hosts Application objects.
 	 */
-	private const REGISTER_SLUG = 'openbuild';
+	private const REGISTER_SLUG = 'buildiq';
 
 	/**
 	 * Schema slug for Application objects.
@@ -101,12 +101,12 @@ class IconService {
 	}//end __construct()
 
 	/**
-	 * Absolute filesystem path to OpenBuild's bundled `img/` directory (no
+	 * Absolute filesystem path to Buildiq's bundled `img/` directory (no
 	 * trailing slash), used for the built-in fallback icons.
 	 *
 	 * Resolved via IAppManager::getAppPath so it is correct wherever the app is
 	 * installed (apps/, custom_apps/, apps-shared/, …) — the previous hardcoded
-	 * `\OC::$SERVERROOT.'/custom_apps/openbuild/img'` only matched a custom_apps
+	 * `\OC::$SERVERROOT.'/custom_apps/buildiq/img'` only matched a custom_apps
 	 * layout, so on any other layout the fallback file was missing and the icon
 	 * endpoint returned 404 for every app without a custom icon. Falls back to
 	 * the legacy serverRoot-relative path only when no app manager was injected
@@ -117,16 +117,16 @@ class IconService {
 	private function bundledImgDir(): string {
 		if ($this->appManager !== null) {
 			try {
-				return rtrim($this->appManager->getAppPath('openbuild'), '/') . '/img';
+				return rtrim($this->appManager->getAppPath('buildiq'), '/') . '/img';
 			} catch (\Throwable $e) {
 				// App path unavailable — fall through to the legacy location.
 				$this->logger->warning(
-					'IconService: could not resolve openbuild app path, using legacy fallback: ' . $e->getMessage()
+					'IconService: could not resolve buildiq app path, using legacy fallback: ' . $e->getMessage()
 				);
 			}
 		}
 
-		return $this->serverRoot . '/custom_apps/openbuild/img';
+		return $this->serverRoot . '/custom_apps/buildiq/img';
 	}//end bundledImgDir()
 
 	/**

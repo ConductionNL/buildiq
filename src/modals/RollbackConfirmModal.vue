@@ -12,24 +12,24 @@
 			<p class="rollback-confirm__body">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						"Rolling back copies this snapshot's manifest onto the current draft. Existing history is preserved (append-only).",
 					)
 				}}
 			</p>
 			<dl v-if="version" class="rollback-confirm__meta">
-				<dt>{{ t('openbuild', 'Version') }}</dt>
+				<dt>{{ t('buildiq', 'Version') }}</dt>
 				<dd>{{ version.version }}</dd>
-				<dt>{{ t('openbuild', 'Published') }}</dt>
+				<dt>{{ t('buildiq', 'Published') }}</dt>
 				<dd>{{ formattedPublishedAt }}</dd>
 			</dl>
 		</template>
 		<template #actions>
 			<NcButton variant="tertiary" @click="cancel">
-				{{ t('openbuild', 'Cancel') }}
+				{{ t('buildiq', 'Cancel') }}
 			</NcButton>
 			<NcButton variant="primary" @click="confirm">
-				{{ t('openbuild', 'Roll back') }}
+				{{ t('buildiq', 'Roll back') }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -66,7 +66,7 @@ export default {
 		 */
 		title() {
 			const v = this.version?.version || ''
-			return t('openbuild', 'Roll back to version {version}?', { version: v })
+			return t('buildiq', 'Roll back to version {version}?', { version: v })
 		},
 
 		/**

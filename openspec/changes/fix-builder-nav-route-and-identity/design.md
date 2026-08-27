@@ -4,13 +4,13 @@ Both defects sit on the same route surface — the per-published-app
 `/builder/{slug}` runtime — but are independent bugs in adjacent code:
 
 1. `AppNavigationService::registerNavEntries` (~line 185) hand-builds the nav
-   entry's `href` as `'/apps/openbuild/builder/'.$slug`, a root-relative path
+   entry's `href` as `'/apps/buildiq/builder/'.$slug`, a root-relative path
    with no `/index.php` prefix. On instances that cannot hide the front
    controller (no URL rewriting — the default posture of
    nextcloud-docker-dev), the only working URL is
-   `/index.php/apps/openbuild/builder/{slug}`, so the nav entry 404s. The
+   `/index.php/apps/buildiq/builder/{slug}`, so the nav entry 404s. The
    sibling icon URL two lines above (line ~176) already builds correctly via
-   `IURLGenerator::linkToRouteAbsolute('openbuild.icon.iconLight', ...)` — the
+   `IURLGenerator::linkToRouteAbsolute('buildiq.icon.iconLight', ...)` — the
    href just never adopted the same pattern.
 2. `ApplicationsController::getManifest` (~line 250) never injects the
    Application's authoritative `name` into the manifest it returns. The
@@ -46,9 +46,9 @@ declarative behaviour.
 
 ### Decision 1: Generate the nav href via `IURLGenerator::linkToRoute`, not a hand-built string
 
-Replace `$appUrl = '/apps/openbuild/builder/'.$slug;` with
-`$appUrl = $this->urlGenerator->linkToRoute('openbuild.dashboard.builder', ['slug' => $slug]);`
-The route `openbuild.dashboard.builder` (declared in `appinfo/routes.php` as
+Replace `$appUrl = '/apps/buildiq/builder/'.$slug;` with
+`$appUrl = $this->urlGenerator->linkToRoute('buildiq.dashboard.builder', ['slug' => $slug]);`
+The route `buildiq.dashboard.builder` (declared in `appinfo/routes.php` as
 `['name' => 'dashboard#builder', 'url' => '/builder/{slug}', 'verb' =>
 'GET', ...]`) already exists and is exercised by direct browser navigation;
 this decision only changes how the nav entry's link to it is generated.
@@ -89,7 +89,7 @@ Nextcloud's `IURLGenerator::linkToRoute()` resolves a route name to a path
 and automatically includes the `/index.php` front-controller segment when
 the instance's configuration requires it (no URL rewriting available or
 enabled), and omits it when rewriting is active. A hand-built string like
-`'/apps/openbuild/builder/'.$slug` can never reflect this per-instance
+`'/apps/buildiq/builder/'.$slug` can never reflect this per-instance
 setting — it is baked in at write time with no way to know, from inside
 `AppNavigationService`, whether the current instance needs the prefix. Every
 other link-producing call site in this app (e.g. the icon URL via

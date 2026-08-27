@@ -15,10 +15,10 @@
 				variant="tertiary"
 				:disabled="refreshing"
 				@click="$emit('refetch-sample')">
-				{{ t('openbuild', 'Re-fetch sample') }}
+				{{ t('buildiq', 'Re-fetch sample') }}
 			</NcButton>
 			<span v-if="itemsPath" class="connector-field-mapper__items-path">
-				{{ t('openbuild', 'List root: {path}', { path: itemsPath }) }}
+				{{ t('buildiq', 'List root: {path}', { path: itemsPath }) }}
 			</span>
 		</div>
 
@@ -58,7 +58,7 @@
 		<p v-else class="connector-field-mapper__hint">
 			{{
 				t(
-					'openbuild',
+					'buildiq',
 					'Select an endpoint and fetch a sample to start mapping fields.',
 				)
 			}}
@@ -68,19 +68,19 @@
 			<thead>
 				<tr>
 					<th scope="col">
-						{{ t('openbuild', 'Field') }}
+						{{ t('buildiq', 'Field') }}
 					</th>
 					<th scope="col">
-						{{ t('openbuild', 'Selector') }}
+						{{ t('buildiq', 'Selector') }}
 					</th>
 					<th scope="col">
-						{{ t('openbuild', 'Sample value') }}
+						{{ t('buildiq', 'Sample value') }}
 					</th>
 					<!-- Row-actions column: no visible caption, but still a column
 					     header, so it keeps `scope="col"` and an sr-only name. -->
 					<th scope="col">
 						<span class="hidden-visually">{{
-							t('openbuild', 'Actions')
+							t('buildiq', 'Actions')
 						}}</span>
 					</th>
 				</tr>
@@ -98,7 +98,7 @@
 						<span v-if="row.dead" class="connector-field-mapper__warn">
 							{{
 								t(
-									'openbuild',
+									'buildiq',
 									'Selector resolved to no value in the latest sample',
 								)
 							}}
@@ -108,9 +108,9 @@
 					<td>
 						<NcButton
 							variant="tertiary"
-							:aria-label="t('openbuild', 'Remove field')"
+							:aria-label="t('buildiq', 'Remove field')"
 							@click="removeField(row.name)">
-							{{ t('openbuild', 'Remove') }}
+							{{ t('buildiq', 'Remove') }}
 						</NcButton>
 					</td>
 				</tr>
@@ -119,10 +119,10 @@
 
 		<PromptTextDialog
 			v-model:open="promptOpen"
-			:name="t('openbuild', 'Add field')"
-			:label="t('openbuild', 'Display field name')"
+			:name="t('buildiq', 'Add field')"
+			:label="t('buildiq', 'Display field name')"
 			:initialValue="promptSuggestion"
-			:confirmLabel="t('openbuild', 'Confirm')"
+			:confirmLabel="t('buildiq', 'Confirm')"
 			@submit="onPromptSubmit" />
 	</div>
 </template>
@@ -236,7 +236,7 @@ export default {
 		 */
 		nodeLabel(node) {
 			if (!node.path) {
-				return t('openbuild', '(root)')
+				return t('buildiq', '(root)')
 			}
 			const segs = node.path.split('.')
 			return segs[segs.length - 1]

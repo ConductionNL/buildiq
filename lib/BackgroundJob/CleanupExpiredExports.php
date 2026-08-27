@@ -1,13 +1,13 @@
 <?php
 
 /**
- * OpenBuild Cleanup Expired Exports
+ * Buildiq Cleanup Expired Exports
  *
  * Daily background job that purges expired ZIP archives from app-data while
  * preserving the ExportJob audit trail.
  *
  * @category BackgroundJob
- * @package  OCA\OpenBuild\BackgroundJob
+ * @package  OCA\Buildiq\BackgroundJob
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -25,7 +25,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\BackgroundJob;
+namespace OCA\Buildiq\BackgroundJob;
 
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -69,7 +69,7 @@ class CleanupExpiredExports extends TimedJob {
 	protected function run($argument): void {
 		unset($argument);
 
-		$exportsRoot = sys_get_temp_dir() . '/openbuild-exports';
+		$exportsRoot = sys_get_temp_dir() . '/buildiq-exports';
 		if (is_dir($exportsRoot) === false) {
 			return;
 		}
@@ -95,7 +95,7 @@ class CleanupExpiredExports extends TimedJob {
 		}
 
 		if ($purged > 0) {
-			$this->logger->info('OpenBuild cleanup: purged ' . $purged . ' expired export archive(s)');
+			$this->logger->info('Buildiq cleanup: purged ' . $purged . ' expired export archive(s)');
 		}
 	}//end run()
 }//end class

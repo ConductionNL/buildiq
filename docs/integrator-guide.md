@@ -1,10 +1,20 @@
-# Integrator guide — authoring a virtual app by hand
+# Integrator guide, authoring a virtual app by hand
 
-This guide walks you through creating a new virtual app in OpenBuild without using the visual editor (which lives in chain spec [`openbuild-page-editor`](../openspec/changes/) — not yet shipped). At this stage, OpenBuild is integrator-only: you write JSON and the runtime renders it.
+This guide creates a virtual app by writing its JSON directly, instead of using
+the visual designers. You write the manifest and the runtime renders it.
+
+**You do not have to work this way.** Buildiq ships visual designers for pages,
+schemas and walkthroughs, and most apps are built entirely through them. Start
+at [create a virtual app](./tutorials/create-a-virtual-app.md) if that is what
+you want.
+
+Author by hand when you need something the designers do not expose yet, when you
+are diffing or reviewing a manifest, or when you are generating apps from a
+script.
 
 ## What you author
 
-A virtual app is one record in OpenBuild's `Application` OR schema. The shape is:
+A virtual app is one record in Buildiq's `Application` OR schema. The shape is:
 
 ```jsonc
 {
@@ -22,7 +32,7 @@ A virtual app is one record in OpenBuild's `Application` OR schema. The shape is
 }
 ```
 
-The `manifest` object validates against [`@conduction/nextcloud-vue/src/schemas/app-manifest.schema.json`](https://codeberg.org/Conduction/nextcloud-vue/src/branch/main/src/schemas/app-manifest.schema.json). The closed `type` enum for pages is `index | detail | dashboard | logs | settings | chat | files | form | custom`.
+The `manifest` object validates against [`@conduction/nextcloud-vue/src/schemas/app-manifest.schema.json`](https://github.com/ConductionNL/nextcloud-vue/blob/main/src/schemas/app-manifest.schema.json). The closed `type` enum for pages is `index | detail | dashboard | logs | settings | chat | files | form | custom`.
 
 ## Creating a virtual app with the wizard
 
@@ -32,7 +42,7 @@ quicker path. It walks you through three steps in one round-trip:
 1. **Identity** — pick a slug + human-readable name + description.
 2. **Versions** — accept the default chain (`development → staging → production`)
    or adjust it. Each version maps to its own per-version register
-   (`openbuild-{slug}-{versionSlug}`) so production data is physically isolated
+   (`buildiq-{slug}-{versionSlug}`) so production data is physically isolated
    from staging and development. The wizard's chain editor enforces ADR-002's
    linear-chain rule (no fan-out, no cycles, exactly one terminal `production`
    tier).
@@ -45,19 +55,20 @@ On submit the wizard atomically creates the `Application` record, the N
 register with the default schema set (`hello-message` by default) under the
 namespaced slug `{appSlug}-{versionSlug}-{originalSchemaSlug}`. The manifest's
 `config.register` and `config.schema` pointers are rewritten to match
-(`openbuild-{slug}-{tier}` and `{appSlug}-{tier}-hello-message` respectively)
+(`buildiq-{slug}-{tier}` and `{appSlug}-{tier}-hello-message` respectively)
 so the insights service and the runtime each address the right per-tier slice.
 
 **Empty-state landing** — fresh installs no longer auto-seed a `hello-world`
 Application (the legacy `SeedHelloWorld` repair step was retired by
-`openbuild-versioning-model`). New deploys land the admin on an empty Virtual
+`buildiq-versioning-model`). New deploys land the admin on an empty Virtual
 apps index with a CTA pointing at the wizard. Pre-existing installs are not
 affected; the migration step `MigrateToVersionedModel` only fires when
 pre-spec-C Application rows are present and is idempotent on re-runs.
 
 For further reading on what each step writes through to OR, see
 [`openbuild-runtime.md`](./openbuild-runtime.md) and the wizard chain spec
-[`openspec/changes/openbuild-app-creation-wizard/`](../openspec/changes/openbuild-app-creation-wizard/).
+[`openbuild-app-creation-wizard`](https://github.com/ConductionNL/buildiq/tree/development/openspec/changes/archive/2026-05-17-openbuild-app-creation-wizard),
+archived on 2026-05-17.
 
 ## Editing session: undo/redo (page designer & schema designer)
 
@@ -100,15 +111,15 @@ request — it never competes with Save.
 
 ## Step-by-step (manual / integrator path)
 
-1. **Pick a slug.** Must be kebab-case, 2–48 chars, unique within your organisation. The synthetic appId in CnAppRoot becomes `openbuild-${slug}`.
-2. **Design your schemas** in OpenRegister directly (the OpenBuild schema editor lands in chain spec `openbuild-schema-editor`). At minimum: one schema per primary entity your app shows.
-3. **Author the manifest** as JSON. The canonical example is the seeded `hello-world` Application — open it in OpenBuild's manifest editor (top-bar OpenBuild entry → Virtual apps → hello-world) and read its manifest.
+1. **Pick a slug.** Must be kebab-case, 2–48 chars, unique within your organisation. The synthetic appId in CnAppRoot becomes `buildiq-${slug}`.
+2. **Design your schemas** in OpenRegister directly (the Buildiq schema editor lands in chain spec `buildiq-schema-editor`). At minimum: one schema per primary entity your app shows.
+3. **Author the manifest** as JSON. The canonical example is the seeded `hello-world` Application — open it in Buildiq's manifest editor (top-bar Buildiq entry → Virtual apps → hello-world) and read its manifest.
 4. **Save as `draft`** while iterating. The textarea editor validates each save against the canonical schema; you see the failing JSON path on save error.
-5. **Transition to `published`** when ready (via OR's lifecycle endpoint or the editor's Publish action — landing in chain spec `openbuild-versioning`). On publish, OpenBuild's lifecycle creates the corresponding `BuiltAppRoute` so `/builder/{slug}` becomes reachable.
+5. **Transition to `published`** when ready (via OR's lifecycle endpoint or the editor's Publish action — landing in chain spec `buildiq-versioning`). On publish, Buildiq's lifecycle creates the corresponding `BuiltAppRoute` so `/builder/{slug}` becomes reachable.
 
 ## Manifest checklist
 
-Per [ADR-024](https://codeberg.org/Conduction/hydra/src/branch/main/openspec/architecture/adr-024-app-manifest.md):
+Per [ADR-024](https://github.com/ConductionNL/hydra/blob/main/openspec/architecture/adr-024-app-manifest.md):
 
 - `version` (semver) — your app's content version
 - `dependencies` — list of NC app IDs that must be installed (almost always `["openregister"]`)
@@ -116,19 +127,19 @@ Per [ADR-024](https://codeberg.org/Conduction/hydra/src/branch/main/openspec/arc
 - `pages[]` — at least one entry; every page's `id` MUST be unique and match a vue-router route name
 - `label` / `title` strings are i18n KEYS, not literals. The consuming app's `t()` resolves them. Use kebab.dot.notation: `myapp.permits.title.list`.
 
-Per [ADR-007](https://codeberg.org/Conduction/hydra/src/branch/main/openspec/architecture/adr-007-i18n.md):
+Per [ADR-007](https://github.com/ConductionNL/hydra/blob/main/openspec/architecture/adr-007-i18n.md):
 
-- Every translation key MUST exist in `l10n/en.json` AND `l10n/nl.json` of the **OpenBuild** repo (until per-virtual-app translations land in chain spec `openbuild-page-editor`).
+- Every translation key MUST exist in `l10n/en.json` AND `l10n/nl.json` of the **Buildiq** repo (until per-virtual-app translations land in chain spec `buildiq-page-editor`).
 
 ## Reading the seed manifest
 
 The seeded `hello-world` Application is the canonical reference. Its manifest exercises:
 
-- **index** page → drives `CnIndexPage` with `register: openbuild`, `schema: hello-message`, three columns
+- **index** page → drives `CnIndexPage` with `register: buildiq`, `schema: hello-message`, three columns
 - **detail** page → drives `CnDetailPage` keyed on `:id`
 - **form** page → drives `CnFormPage` with `mode: create` and `submitEndpoint` going to OR's REST
 
-See [`lib/Repair/SeedHelloWorld.php`](../lib/Repair/SeedHelloWorld.php) `buildHelloWorldManifest()` for the full JSON.
+See [`lib/Command/SeedHelloWorldFixture.php`](https://github.com/ConductionNL/buildiq/blob/development/lib/Command/SeedHelloWorldFixture.php) for the full JSON.
 
 ## When you hit a limit
 
@@ -136,14 +147,14 @@ The closed `type` enum can't be extended from a manifest — adding a new page t
 
 1. Confirm the requirement isn't satisfied by `form` (the most flexible built-in).
 2. Open an issue on `ConductionNL/nextcloud-vue` describing the new page type's shape.
-3. As an interim, mount a custom Vue component via `type: "custom"` + `component: "MyCustomPage"` and register the component in OpenBuild's `customComponents` map. (Note: spec #1 only ships the built-in types — the `customComponents` registry surface lands when a real consumer needs it.)
+3. As an interim, mount a custom Vue component via `type: "custom"` + `component: "MyCustomPage"` and register the component in Buildiq's `customComponents` map. (Note: spec #1 only ships the built-in types — the `customComponents` registry surface lands when a real consumer needs it.)
 
 ## What does NOT work yet (spec #1 limitations)
 
-- **No visual editor** — JSON textarea only. Visual editor: chain spec `openbuild-page-editor`.
+- **No visual editor** — JSON textarea only. Visual editor: chain spec `buildiq-page-editor`.
 - **No schema designer** — schemas must be authored in `lib/Settings/openbuild_register.json` and imported via the repair step. Runtime schema authoring: chain spec `openregister-runtime-schema-api`.
-- **No draft preview** — only `published` apps appear at `/builder/{slug}`. Draft preview: chain spec `openbuild-versioning`.
-- **No per-app permissions** — auth-only visibility for v1; everyone in your organisation sees every virtual app. Per-app RBAC: chain spec `openbuild-rbac`.
-- **No export to a real Nextcloud app** — virtual-only. Export pipeline: chain spec `openbuild-export-to-real-app`.
+- **No draft preview** — only `published` apps appear at `/builder/{slug}`. Draft preview: chain spec `buildiq-versioning`.
+- **No per-app permissions** — auth-only visibility for v1; everyone in your organisation sees every virtual app. Per-app RBAC: chain spec `buildiq-rbac`.
+- **No export to a real Nextcloud app** — virtual-only. Export pipeline: chain spec `buildiq-export-to-real-app`.
 
 If any of these limitations block your project, talk to Conduction — chain spec prioritisation can shift.

@@ -15,7 +15,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Controller
+ * @package  OCA\Buildiq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -30,16 +30,16 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Controller;
+namespace OCA\Buildiq\Tests\Unit\Controller;
 
-use OCA\OpenBuild\Controller\AgentsController;
-use OCA\OpenBuild\Service\PermissionResolver;
+use OCA\Buildiq\Controller\AgentsController;
+use OCA\Buildiq\Service\PermissionResolver;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
 use OCP\IGroupManager;
@@ -247,7 +247,7 @@ class AgentsControllerTest extends TestCase {
 
 		$this->objectService->method('searchObjects')->willReturn(
 			[
-				['agentId' => 'agent-1', 'outcome' => 'applied', 'createdAt' => '2026-07-20T10:00:00+00:00', 'toolCalls' => [['tool' => 'openbuild.upsertPage', 'arguments' => ['pageId' => 'a'], 'result' => ['success' => true]]]],
+				['agentId' => 'agent-1', 'outcome' => 'applied', 'createdAt' => '2026-07-20T10:00:00+00:00', 'toolCalls' => [['tool' => 'buildiq.upsertPage', 'arguments' => ['pageId' => 'a'], 'result' => ['success' => true]]]],
 				['agentId' => 'agent-1', 'outcome' => 'discarded', 'createdAt' => '2026-07-22T10:00:00+00:00', 'toolCalls' => []],
 				['agentId' => 'other-agent', 'outcome' => 'applied', 'createdAt' => '2026-07-23T10:00:00+00:00', 'toolCalls' => []],
 			]
@@ -260,12 +260,12 @@ class AgentsControllerTest extends TestCase {
 		self::assertCount(2, $data);
 		self::assertSame('discarded', $data[0]['outcome']);
 		self::assertSame('applied', $data[1]['outcome']);
-		self::assertSame('openbuild.upsertPage', $data[1]['toolCalls'][0]['tool']);
+		self::assertSame('buildiq.upsertPage', $data[1]['toolCalls'][0]['tool']);
 	}//end testRunsReturns200WithRunsNewestFirst()
 
 	/**
 	 * An admin bypasses the owners/editors check (logged) — matches the
-	 * shared `rbac.admin_bypass` posture used elsewhere in OpenBuild.
+	 * shared `rbac.admin_bypass` posture used elsewhere in Buildiq.
 	 *
 	 * @return void
 	 */

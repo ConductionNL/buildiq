@@ -7,7 +7,7 @@ import { ensureVersionChain } from './support/versionChain'
 
 /**
  * Playwright e2e — Application detail / maintainer dashboard
- * (spec openbuild-app-detail-overview, REQ-OBADO-001..012 + REQ-OBAI-001..006).
+ * (spec buildiq-app-detail-overview, REQ-OBADO-001..012 + REQ-OBAI-001..006).
  *
  * Covers:
  *   - REQ-OBADO-001 — six-row layout renders (hero, pills, window, KPIs,
@@ -22,7 +22,7 @@ import { ensureVersionChain } from './support/versionChain'
  *   - Nextcloud reachable at PLAYWRIGHT_BASE_URL with admin:admin auth
  *   - The hello-world virtual app + a multi-version chain seeded
  *     (development → staging → production) — when not present the tests
- *     skip gracefully via `OPENBUILD_E2E_LIVE` guard so the suite parses
+ *     skip gracefully via `BUILDIQ_E2E_LIVE` guard so the suite parses
  *     cleanly without a live container.
  */
 
@@ -33,7 +33,7 @@ const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 // scenarios skipped themselves via their own `pillCount < 2` guards and
 // asserted nothing. See tests/e2e/support/versionChain.ts.
 const TEST_SLUG = process.env.NC_TEST_SLUG ?? 'pw-verchain'
-const LIVE = process.env.OPENBUILD_E2E_LIVE === '1'
+const LIVE = process.env.BUILDIQ_E2E_LIVE === '1'
 
 // The per-spec form login that used to live here is gone: every block now
 // inherits globalSetup's storageState. Nextcloud's brute-force throttle fires
@@ -71,14 +71,14 @@ test.describe('Application detail — maintainer dashboard (REQ-OBADO-001..012)'
 		page,
 	}) => {
 		const appUuidRes = await page.request.get(
-			`${BASE}/index.php/apps/openregister/api/objects/openbuild/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
+			`${BASE}/index.php/apps/openregister/api/objects/buildiq/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
 		)
 		test.skip(!appUuidRes.ok(), 'hello-world Application not found')
 		const apps = (await appUuidRes.json()).results || []
 		test.skip(apps.length === 0, 'hello-world Application not seeded')
 
 		const objectId = apps[0].uuid || apps[0].id
-		await page.goto(`${BASE}/apps/openbuild/applications/${objectId}`)
+		await page.goto(`${BASE}/apps/buildiq/applications/${objectId}`)
 		await page.waitForSelector('.ob-detail-header', { timeout: 15_000 })
 
 		// REQ-OBADO-001 — hero, controls, KPIs, activity, widgets all present.
@@ -105,14 +105,14 @@ test.describe('Application detail — maintainer dashboard (REQ-OBADO-001..012)'
 		page,
 	}) => {
 		const appUuidRes = await page.request.get(
-			`${BASE}/index.php/apps/openregister/api/objects/openbuild/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
+			`${BASE}/index.php/apps/openregister/api/objects/buildiq/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
 		)
 		test.skip(!appUuidRes.ok(), 'app lookup failed')
 		const apps = (await appUuidRes.json()).results || []
 		test.skip(apps.length === 0, 'app not seeded')
 
 		const objectId = apps[0].uuid || apps[0].id
-		await page.goto(`${BASE}/apps/openbuild/applications/${objectId}`)
+		await page.goto(`${BASE}/apps/buildiq/applications/${objectId}`)
 		await page.waitForSelector('.ob-detail-header__pill', { timeout: 15_000 })
 
 		const pills = page.locator('.ob-detail-header__pill')
@@ -127,14 +127,14 @@ test.describe('Application detail — maintainer dashboard (REQ-OBADO-001..012)'
 		page,
 	}) => {
 		const appUuidRes = await page.request.get(
-			`${BASE}/index.php/apps/openregister/api/objects/openbuild/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
+			`${BASE}/index.php/apps/openregister/api/objects/buildiq/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
 		)
 		test.skip(!appUuidRes.ok(), 'app lookup failed')
 		const apps = (await appUuidRes.json()).results || []
 		test.skip(apps.length === 0, 'app not seeded')
 
 		const objectId = apps[0].uuid || apps[0].id
-		await page.goto(`${BASE}/apps/openbuild/applications/${objectId}`)
+		await page.goto(`${BASE}/apps/buildiq/applications/${objectId}`)
 		// The time-range control is a `role="group"` of NcButtons in the KPI
 		// toolbar (ApplicationDetailDashboard.vue), not a `__window-btn` in the
 		// header, and the active one is marked with `aria-pressed`, not an
@@ -168,14 +168,14 @@ test.describe('Application detail — maintainer dashboard (REQ-OBADO-001..012)'
 		page,
 	}) => {
 		const appUuidRes = await page.request.get(
-			`${BASE}/index.php/apps/openregister/api/objects/openbuild/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
+			`${BASE}/index.php/apps/openregister/api/objects/buildiq/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
 		)
 		test.skip(!appUuidRes.ok(), 'app lookup failed')
 		const apps = (await appUuidRes.json()).results || []
 		test.skip(apps.length === 0, 'app not seeded')
 
 		const objectId = apps[0].uuid || apps[0].id
-		await page.goto(`${BASE}/apps/openbuild/applications/${objectId}`)
+		await page.goto(`${BASE}/apps/buildiq/applications/${objectId}`)
 		await page.waitForSelector('.ob-detail-header__pill', { timeout: 15_000 })
 
 		const pills = page.locator('.ob-detail-header__pill-group')
@@ -214,7 +214,7 @@ test.describe('Application detail overview — content scenarios (14.4/14.5/14.7
 		page: import('@playwright/test').Page,
 	): Promise<string | null> {
 		const lookup = await page.request.get(
-			`${BASE}/index.php/apps/openregister/api/objects/openbuild/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
+			`${BASE}/index.php/apps/openregister/api/objects/buildiq/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
 			{ headers: { 'OCS-APIRequest': 'true' } },
 		)
 		if (!lookup.ok()) return null
@@ -229,13 +229,13 @@ test.describe('Application detail overview — content scenarios (14.4/14.5/14.7
 		const objectId = await loadFirstApp(page)
 		test.skip(!objectId, 'hello-world app not seeded')
 
-		await page.goto(`${BASE}/apps/openbuild/applications/${objectId}`)
+		await page.goto(`${BASE}/apps/buildiq/applications/${objectId}`)
 		await page.waitForSelector('.ob-detail-header__pill', { timeout: 15_000 })
 
 		const pillTexts = await page
 			.locator('.ob-detail-header__pill')
 			.allTextContents()
-		// The viewer-blackout assertion is exercised by openbuild-rbac;
+		// The viewer-blackout assertion is exercised by buildiq-rbac;
 		// this case asserts the contract that the admin/owner sees ALL
 		// pills AND the production pill carries the `*` marker.
 		const hasProductionMarker = pillTexts.some((t) => t.includes('*'))
@@ -248,7 +248,7 @@ test.describe('Application detail overview — content scenarios (14.4/14.5/14.7
 		const objectId = await loadFirstApp(page)
 		test.skip(!objectId, 'hello-world app not seeded')
 
-		await page.goto(`${BASE}/apps/openbuild/applications/${objectId}`)
+		await page.goto(`${BASE}/apps/buildiq/applications/${objectId}`)
 		await page.waitForSelector('.ob-detail-header__pill', { timeout: 15_000 })
 
 		const pillCount = await page.locator('.ob-detail-header__pill').count()
@@ -278,7 +278,7 @@ test.describe('Application detail overview — content scenarios (14.4/14.5/14.7
 		const objectId = await loadFirstApp(page)
 		test.skip(!objectId, 'hello-world app not seeded')
 
-		await page.goto(`${BASE}/apps/openbuild/applications/${objectId}`)
+		await page.goto(`${BASE}/apps/buildiq/applications/${objectId}`)
 		await page.waitForSelector('.ob-detail-header__pill', { timeout: 15_000 })
 
 		// Click first non-production pill to populate ?_version=.
@@ -326,7 +326,7 @@ test.describe('Application detail overview — content scenarios (14.4/14.5/14.7
 		const objectId = await loadFirstApp(page)
 		test.skip(!objectId, 'hello-world app not seeded')
 
-		await page.goto(`${BASE}/apps/openbuild/applications/${objectId}`)
+		await page.goto(`${BASE}/apps/buildiq/applications/${objectId}`)
 		await page.waitForSelector('.ob-detail-dashboard__activity', {
 			timeout: 20_000,
 		})
@@ -366,9 +366,9 @@ test.describe('Application insights — endpoint surface', () => {
 	test('invalid window enum returns 400 with the spec-defined body', async ({
 		request,
 	}) => {
-		test.skip(!LIVE, 'OPENBUILD_E2E_LIVE not set')
+		test.skip(!LIVE, 'BUILDIQ_E2E_LIVE not set')
 		const res = await request.get(
-			`${BASE}/index.php/apps/openbuild/api/applications/00000000-0000-0000-0000-000000000001/versions/00000000-0000-0000-0000-000000000002/insights?window=24h`,
+			`${BASE}/index.php/apps/buildiq/api/applications/00000000-0000-0000-0000-000000000001/versions/00000000-0000-0000-0000-000000000002/insights?window=24h`,
 			{ headers: { 'OCS-APIRequest': 'true' } },
 		)
 		expect(res.status()).toBe(400)
@@ -380,9 +380,9 @@ test.describe('Application insights — endpoint surface', () => {
 	test('unknown appUuid returns 404 without the public cache header', async ({
 		request,
 	}) => {
-		test.skip(!LIVE, 'OPENBUILD_E2E_LIVE not set')
+		test.skip(!LIVE, 'BUILDIQ_E2E_LIVE not set')
 		const res = await request.get(
-			`${BASE}/index.php/apps/openbuild/api/applications/ffffffff-ffff-ffff-ffff-ffffffffffff/versions/00000000-0000-0000-0000-000000000002/insights?window=7d`,
+			`${BASE}/index.php/apps/buildiq/api/applications/ffffffff-ffff-ffff-ffff-ffffffffffff/versions/00000000-0000-0000-0000-000000000002/insights?window=7d`,
 			{ headers: { 'OCS-APIRequest': 'true' } },
 		)
 		expect(res.status()).toBe(404)

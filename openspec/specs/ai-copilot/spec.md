@@ -6,7 +6,7 @@ The prompt-to-app surface: a natural-language brief is turned into a
 validated plan of builder operations (create app, upsert schema/page/menu
 item, add widget, promote version), which a human reviews and explicitly
 approves before anything is applied. Execution dispatches every approved
-step through `OpenBuildToolProvider::invokeTool()` — the exact handler
+step through `BuildiqToolProvider::invokeTool()` — the exact handler
 classes, RBAC, OR object locking and manifest caps the MCP tool surface
 already uses, so there is no duplicated builder logic. The LLM call rides
 Nextcloud's `OCP\TaskProcessing` API (`TextToText`, NC 30+), so the feature
@@ -75,11 +75,11 @@ embedding the tool catalogue (prefixed with the resolved agent's
 `instructions` when `agentId` is present), and return a plan
 `{ summary, steps[] }` where every step is `{ tool, arguments }` with `tool`
 restricted to the effective allow-list and `arguments` valid against that
-tool's `inputSchema` from `OpenBuildToolProvider::getToolDescriptors()`. The
+tool's `inputSchema` from `BuildiqToolProvider::getToolDescriptors()`. The
 effective allow-list SHALL be the eight allow-listed operations
-(`openbuild.createApp`, `openbuild.upsertSchema`, `openbuild.upsertPage`,
-`openbuild.addWidget`, `openbuild.upsertMenuItem`, `openbuild.promoteVersion`,
-`openbuild.listApps`, `openbuild.getAppManifest`) when no `agentId` is given,
+(`buildiq.createApp`, `buildiq.upsertSchema`, `buildiq.upsertPage`,
+`buildiq.addWidget`, `buildiq.upsertMenuItem`, `buildiq.promoteVersion`,
+`buildiq.listApps`, `buildiq.getAppManifest`) when no `agentId` is given,
 or the server-side intersection of that catalogue with the resolved agent's
 `enabledTools` when `agentId` is given — an agent SHALL NEVER expand the
 allow-list beyond the eight-tool catalogue. Unparsable LLM output SHALL
@@ -110,7 +110,7 @@ REQ-OBAIC-006/007.
 
 #### Scenario: A step outside the allow-list is rejected
 
-- **WHEN** the LLM output contains a step `{ "tool": "openbuild.deleteApp" }`
+- **WHEN** the LLM output contains a step `{ "tool": "buildiq.deleteApp" }`
   (not in the catalogue) or `upsertPage` arguments missing the required
   `route`
 - **THEN** the endpoint returns 422 `plan_invalid` naming the offending step
@@ -124,9 +124,9 @@ REQ-OBAIC-006/007.
 
 #### Scenario: An agent-scoped plan step outside that agent's narrower list is rejected
 
-- **GIVEN** an `Agent` with `enabledTools: ["openbuild.upsertPage"]`
+- **GIVEN** an `Agent` with `enabledTools: ["buildiq.upsertPage"]`
 - **WHEN** a plan request carries that agent's `agentId` and the LLM output
-  contains an `openbuild.upsertSchema` step
+  contains an `buildiq.upsertSchema` step
 - **THEN** the endpoint returns 422 `plan_invalid`, even though
   `upsertSchema` is in the bare eight-tool catalogue
 
@@ -189,7 +189,7 @@ optional `agentId` it was planned with, re-validate it server-side
 per-tool `inputSchema`, predicted caps — the server never trusts the
 client's review), snapshot the manifest of every ApplicationVersion the plan
 touches, and dispatch each step in order through
-`OpenBuildToolProvider::invokeTool()` — the same handler classes, RBAC
+`BuildiqToolProvider::invokeTool()` — the same handler classes, RBAC
 checks, OR object locks and caps as the MCP surface, with no duplicated
 builder logic. On any step failure the service SHALL restore all snapshotted
 manifests, delete an application created by this plan (via

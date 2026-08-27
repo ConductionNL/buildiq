@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild DocumentGenerationListener
+ * Buildiq DocumentGenerationListener
  *
  * Trigger-fire half of the `generateDocument` automation action (design.md
  * Decision 2 of automation-document-action). `AutomationCompilerService`
@@ -9,7 +9,7 @@
  * stateless — nothing to provision ahead of time); this listener is the
  * imperative companion that reads a matching `Automation` object's
  * `generateDocument` action(s) straight off the stored object and dispatches
- * {@see \OCA\OpenBuild\Service\DocumentGenerationService::generate()} once
+ * {@see \OCA\Buildiq\Service\DocumentGenerationService::generate()} once
  * per matching automation, per fired event — mirroring
  * {@see AutomationApprovalTriggerListener}'s exact shape (find matching
  * automations for the fired trigger, dispatch through the imperative
@@ -26,7 +26,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Listener
- * @package  OCA\OpenBuild\Listener
+ * @package  OCA\Buildiq\Listener
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -42,15 +42,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Listener;
+namespace OCA\Buildiq\Listener;
 
-use OCA\OpenBuild\Service\AutomationCompilerService;
-use OCA\OpenBuild\Service\DocumentGenerationService;
+use OCA\Buildiq\Service\AutomationCompilerService;
+use OCA\Buildiq\Service\DocumentGenerationService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Container\ContainerExceptionInterface;
@@ -126,7 +126,7 @@ class DocumentGenerationListener implements IEventListener {
 		// @codeCoverageIgnoreStart
 		if (class_exists('OCA\OpenRegister\Service\ObjectService') === false) {
 			throw new RuntimeException(
-				'openbuild requires the OpenRegister app, which is not installed on this instance.'
+				'buildiq requires the OpenRegister app, which is not installed on this instance.'
 			);
 		}
 		// @codeCoverageIgnoreEnd
@@ -139,7 +139,6 @@ class DocumentGenerationListener implements IEventListener {
 		assert($service instanceof ObjectServiceInterface);
 
 		return $service;
-
 	}//end objectService()
 
 	/**
@@ -181,7 +180,7 @@ class DocumentGenerationListener implements IEventListener {
 					);
 				} catch (Throwable $e) {
 					$this->logger->error(
-						'OpenBuild: DocumentGenerationListener failed for automation "' . ($automation['slug'] ?? '')
+						'Buildiq: DocumentGenerationListener failed for automation "' . ($automation['slug'] ?? '')
 						. '" / object "' . $objectUuid . '": ' . $e->getMessage(),
 						['exception' => $e]
 					);
@@ -262,7 +261,7 @@ class DocumentGenerationListener implements IEventListener {
 	}//end uuidOf()
 
 	/**
-	 * Scan the shared `openbuild` register's `automation` objects for every
+	 * Scan the shared `buildiq` register's `automation` objects for every
 	 * ENABLED automation whose `trigger` matches the fired event and whose
 	 * `actions[]` includes at least one `generateDocument` action.
 	 *
@@ -288,7 +287,7 @@ class DocumentGenerationListener implements IEventListener {
 				]
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenBuild: DocumentGenerationListener could not scan automations: ' . $e->getMessage());
+			$this->logger->warning('Buildiq: DocumentGenerationListener could not scan automations: ' . $e->getMessage());
 			return [];
 		}
 

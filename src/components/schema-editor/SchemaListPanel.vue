@@ -13,27 +13,27 @@
   - unit-testable without mounting.
   -->
 <template>
-	<div class="openbuild-schema-list">
-		<header class="openbuild-schema-list__header">
-			<h2>{{ t('openbuild', 'Schemas') }}</h2>
+	<div class="buildiq-schema-list">
+		<header class="buildiq-schema-list__header">
+			<h2>{{ t('buildiq', 'Schemas') }}</h2>
 			<NcButton variant="primary" @click="addOpen = true">
 				<template #icon>
 					<PlusIcon :size="20" />
 				</template>
-				{{ t('openbuild', 'Add schema') }}
+				{{ t('buildiq', 'Add schema') }}
 			</NcButton>
 		</header>
 
-		<div v-if="loading" class="openbuild-schema-list__loading">
+		<div v-if="loading" class="buildiq-schema-list__loading">
 			<NcLoadingIcon :size="32" />
 		</div>
 
-		<div v-else-if="schemas.length === 0" class="openbuild-schema-list__empty">
+		<div v-else-if="schemas.length === 0" class="buildiq-schema-list__empty">
 			<NcEmptyContent
-				:name="t('openbuild', 'No schemas yet')"
+				:name="t('buildiq', 'No schemas yet')"
 				:description="
 					t(
-						'openbuild',
+						'buildiq',
 						'Add your first schema to start designing the data model for this app.',
 					)
 				">
@@ -42,34 +42,34 @@
 				</template>
 				<template #action>
 					<NcButton variant="primary" @click="addOpen = true">
-						{{ t('openbuild', 'Add schema') }}
+						{{ t('buildiq', 'Add schema') }}
 					</NcButton>
 				</template>
 			</NcEmptyContent>
 		</div>
 
-		<ul v-else class="openbuild-schema-list__rows">
+		<ul v-else class="buildiq-schema-list__rows">
 			<li
 				v-for="schema in schemas"
 				:key="getSlug(schema)"
-				class="openbuild-schema-list__row">
+				class="buildiq-schema-list__row">
 				<button
 					type="button"
-					class="openbuild-schema-list__row-main"
+					class="buildiq-schema-list__row-main"
 					@click="onOpen(schema)">
-					<span class="openbuild-schema-list__row-title">
+					<span class="buildiq-schema-list__row-title">
 						{{ schema.title || getSlug(schema) }}
 					</span>
-					<span class="openbuild-schema-list__row-meta">
+					<span class="buildiq-schema-list__row-meta">
 						<code>{{ getSlug(schema) }}</code>
 						<span>{{
-							t('openbuild', 'v{version}', {
+							t('buildiq', 'v{version}', {
 								version: schema.version || '—',
 							})
 						}}</span>
 						<span>{{
 							n(
-								'openbuild',
+								'buildiq',
 								'{n} property',
 								'{n} properties',
 								propertyCount(schema),
@@ -79,7 +79,7 @@
 						<span>{{ lifecycleLabel(schema) }}</span>
 						<span
 							v-if="scopeSummary(schema)"
-							class="openbuild-schema-list__badge"
+							class="buildiq-schema-list__badge"
 							:title="scopeSummary(schema).title">
 							{{ scopeSummary(schema).label }}
 						</span>
@@ -90,13 +90,13 @@
 						<template #icon>
 							<PencilIcon :size="20" />
 						</template>
-						{{ t('openbuild', 'Open') }}
+						{{ t('buildiq', 'Open') }}
 					</NcActionButton>
 					<NcActionButton @click="requestDelete(schema)">
 						<template #icon>
 							<DeleteIcon :size="20" />
 						</template>
-						{{ t('openbuild', 'Delete') }}
+						{{ t('buildiq', 'Delete') }}
 					</NcActionButton>
 				</NcActions>
 			</li>
@@ -257,10 +257,10 @@ export default {
 				|| !Array.isArray(lifecycle.states)
 				|| lifecycle.states.length === 0
 			) {
-				return this.t('openbuild', 'No lifecycle')
+				return this.t('buildiq', 'No lifecycle')
 			}
 			return this.n(
-				'openbuild',
+				'buildiq',
 				'{n} lifecycle state',
 				'{n} lifecycle states',
 				lifecycle.states.length,
@@ -298,13 +298,13 @@ export default {
 			} catch (e) {
 				if (e && e.status === 409) {
 					this.addSlugError = this.t(
-						'openbuild',
+						'buildiq',
 						'A schema with this slug already exists in this app.',
 					)
 				} else {
 					this.addSlugError =
 						(e && e.message)
-						|| this.t('openbuild', 'Failed to add schema.')
+						|| this.t('buildiq', 'Failed to add schema.')
 				}
 			} finally {
 				this.addSubmitting = false
@@ -350,33 +350,33 @@ export default {
 </script>
 
 <style scoped>
-.openbuild-schema-list {
+.buildiq-schema-list {
 	display: flex;
 	flex-direction: column;
 	padding: 16px;
 	gap: 16px;
 }
 
-.openbuild-schema-list__header {
+.buildiq-schema-list__header {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 }
 
-.openbuild-schema-list__header h2 {
+.buildiq-schema-list__header h2 {
 	margin: 0;
 	font-size: 22px;
 	font-weight: 600;
 }
 
-.openbuild-schema-list__loading,
-.openbuild-schema-list__empty {
+.buildiq-schema-list__loading,
+.buildiq-schema-list__empty {
 	display: flex;
 	justify-content: center;
 	padding: 32px 0;
 }
 
-.openbuild-schema-list__rows {
+.buildiq-schema-list__rows {
 	list-style: none;
 	margin: 0;
 	padding: 0;
@@ -385,7 +385,7 @@ export default {
 	gap: 4px;
 }
 
-.openbuild-schema-list__row {
+.buildiq-schema-list__row {
 	display: flex;
 	align-items: center;
 	gap: 8px;
@@ -395,7 +395,7 @@ export default {
 	background: var(--color-main-background);
 }
 
-.openbuild-schema-list__row-main {
+.buildiq-schema-list__row-main {
 	flex: 1 1 auto;
 	display: flex;
 	flex-direction: column;
@@ -410,27 +410,27 @@ export default {
 	font: inherit;
 }
 
-.openbuild-schema-list__row-main:hover .openbuild-schema-list__row-title {
+.buildiq-schema-list__row-main:hover .buildiq-schema-list__row-title {
 	color: var(--color-primary-element);
 }
 
-.openbuild-schema-list__row-title {
+.buildiq-schema-list__row-title {
 	font-size: 15px;
 	font-weight: 600;
 }
 
-.openbuild-schema-list__row-meta {
+.buildiq-schema-list__row-meta {
 	display: flex;
 	gap: 12px;
 	font-size: 12px;
 	color: var(--color-text-maxcontrast);
 }
 
-.openbuild-schema-list__row-meta code {
+.buildiq-schema-list__row-meta code {
 	font-family: monospace;
 }
 
-.openbuild-schema-list__badge {
+.buildiq-schema-list__badge {
 	padding: 0 6px;
 	border-radius: var(--border-radius-pill, 10px);
 	background: var(--color-warning, #ffbb33);

@@ -161,7 +161,7 @@ describe('validateFormLogic', () => {
 		expect(
 			errors.some((e) =>
 				e.includes(
-					'openbuild.formLogic.warning.flat-and-structured-validation',
+					'buildiq.formLogic.warning.flat-and-structured-validation',
 				),
 			),
 		).toBe(true)

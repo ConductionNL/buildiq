@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Service
+ * @package  OCA\Buildiq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,9 +22,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Service;
+namespace OCA\Buildiq\Tests\Unit\Service;
 
-use OCA\OpenBuild\Service\Copilot\CopilotPlanValidator;
+use OCA\Buildiq\Service\Copilot\CopilotPlanValidator;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -49,7 +49,7 @@ class CopilotPlanValidatorTest extends TestCase {
 		$this->validator = new CopilotPlanValidator();
 		$this->descriptors = [
 			[
-				'id' => 'openbuild.createApp',
+				'id' => 'buildiq.createApp',
 				'inputSchema' => [
 					'type' => 'object',
 					'properties' => [
@@ -61,7 +61,7 @@ class CopilotPlanValidatorTest extends TestCase {
 				],
 			],
 			[
-				'id' => 'openbuild.upsertPage',
+				'id' => 'buildiq.upsertPage',
 				'inputSchema' => [
 					'type' => 'object',
 					'properties' => [
@@ -83,7 +83,7 @@ class CopilotPlanValidatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testRejectsToolOutsideAllowList(): void {
-		$plan = ['summary' => 'x', 'steps' => [['tool' => 'openbuild.deleteApp', 'arguments' => []]]];
+		$plan = ['summary' => 'x', 'steps' => [['tool' => 'buildiq.deleteApp', 'arguments' => []]]];
 		$violations = $this->validator->validate(plan: $plan, toolDescriptors: $this->descriptors);
 		self::assertNotEmpty($violations);
 		self::assertSame(0, $violations[0]['stepIndex']);
@@ -99,7 +99,7 @@ class CopilotPlanValidatorTest extends TestCase {
 		$plan = [
 			'summary' => 'x',
 			'steps' => [
-				['tool' => 'openbuild.upsertPage', 'arguments' => ['appSlug' => 'my-app', 'pageId' => 'home', 'title' => 'Home', 'type' => 'index']],
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'my-app', 'pageId' => 'home', 'title' => 'Home', 'type' => 'index']],
 			],
 		];
 		$violations = $this->validator->validate(plan: $plan, toolDescriptors: $this->descriptors);
@@ -117,7 +117,7 @@ class CopilotPlanValidatorTest extends TestCase {
 			'summary' => 'x',
 			'steps' => [
 				[
-					'tool' => 'openbuild.upsertPage',
+					'tool' => 'buildiq.upsertPage',
 					'arguments' => [
 						'appSlug' => 'my-app',
 						'pageId' => 'home',
@@ -142,7 +142,7 @@ class CopilotPlanValidatorTest extends TestCase {
 		$plan = [
 			'summary' => 'x',
 			'steps' => [
-				['tool' => 'openbuild.createApp', 'arguments' => ['slug' => 'Not Valid!', 'name' => 'My App']],
+				['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'Not Valid!', 'name' => 'My App']],
 			],
 		];
 		$violations = $this->validator->validate(plan: $plan, toolDescriptors: $this->descriptors);
@@ -159,7 +159,7 @@ class CopilotPlanValidatorTest extends TestCase {
 		$plan = [
 			'summary' => 'x',
 			'steps' => [
-				['tool' => 'openbuild.createApp', 'arguments' => ['slug' => 'my-app', 'name' => 'A']],
+				['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'my-app', 'name' => 'A']],
 			],
 		];
 		$violations = $this->validator->validate(plan: $plan, toolDescriptors: $this->descriptors);
@@ -176,8 +176,8 @@ class CopilotPlanValidatorTest extends TestCase {
 		$plan = [
 			'summary' => 'A tool library',
 			'steps' => [
-				['tool' => 'openbuild.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library', 'preset' => 'dev-prod']],
-				['tool' => 'openbuild.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'home', 'title' => 'Home', 'type' => 'index', 'route' => '/']],
+				['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library', 'preset' => 'dev-prod']],
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'home', 'title' => 'Home', 'type' => 'index', 'route' => '/']],
 			],
 		];
 		$violations = $this->validator->validate(plan: $plan, toolDescriptors: $this->descriptors);

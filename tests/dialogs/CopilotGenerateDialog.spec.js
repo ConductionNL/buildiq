@@ -18,7 +18,10 @@ const axiosPost = vi.fn()
 vi.mock('@nextcloud/axios', () => ({
 	default: { get: (...a) => axiosGet(...a), post: (...a) => axiosPost(...a) },
 }))
-vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => p }))
+vi.mock('@nextcloud/router', async (importOriginal) => ({
+	...(await importOriginal()),
+	generateUrl: (p) => p,
+}))
 
 import CopilotGenerateDialog from '../../src/dialogs/CopilotGenerateDialog.vue'
 import { clearCopilotHealthCache } from '../../src/composables/useCopilot.js'
@@ -82,7 +85,7 @@ describe('CopilotGenerateDialog.vue — spec ai-copilot REQ-OBAIC-001/006', () =
 					summary: 'A tool library',
 					steps: [
 						{
-							tool: 'openbuild.createApp',
+							tool: 'buildiq.createApp',
 							arguments: {
 								slug: 'tool-library',
 								name: 'Tool Library',
@@ -138,7 +141,7 @@ describe('CopilotGenerateDialog.vue — spec ai-copilot REQ-OBAIC-001/006', () =
 				summary: 'x',
 				steps: [
 					{
-						tool: 'openbuild.createApp',
+						tool: 'buildiq.createApp',
 						arguments: { slug: 'x', name: 'X' },
 					},
 				],

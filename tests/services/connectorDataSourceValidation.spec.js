@@ -42,7 +42,7 @@ describe('validateConnectorDataSource', () => {
 		const errs = validateConnectorDataSource(ds, P)
 		expect(
 			errs.some((e) =>
-				e.includes('openbuild.connector.error.credentials-forbidden'),
+				e.includes('buildiq.connector.error.credentials-forbidden'),
 			),
 		).toBe(true)
 	})
@@ -54,7 +54,7 @@ describe('validateConnectorDataSource', () => {
 		}
 		const errs = validateConnectorDataSource(ds, P)
 		expect(
-			errs.some((e) => e.includes('openbuild.connector.error.mixed-form')),
+			errs.some((e) => e.includes('buildiq.connector.error.mixed-form')),
 		).toBe(true)
 	})
 	it('rejects a mixed graphql+connector form', () => {
@@ -64,7 +64,7 @@ describe('validateConnectorDataSource', () => {
 		}
 		const errs = validateConnectorDataSource(ds, P)
 		expect(
-			errs.some((e) => e.includes('openbuild.connector.error.mixed-form')),
+			errs.some((e) => e.includes('buildiq.connector.error.mixed-form')),
 		).toBe(true)
 	})
 	it('rejects endpointPath with a scheme', () => {
