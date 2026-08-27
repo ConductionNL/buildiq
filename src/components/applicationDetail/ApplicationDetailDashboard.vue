@@ -76,6 +76,7 @@
 						:countLabel="t('buildiq', 'users')"
 						variant="primary"
 						:loading="!loaded"
+						:error="error"
 						:loadingLabel="t('buildiq', 'Loading…')"
 						:showZeroCount="loaded" />
 				</div>
@@ -98,6 +99,7 @@
 						:countLabel="t('buildiq', 'objects')"
 						variant="primary"
 						:loading="!loaded"
+						:error="error"
 						:loadingLabel="t('buildiq', 'Loading…')"
 						:showZeroCount="loaded" />
 				</div>
@@ -160,6 +162,7 @@
 						:countLabel="t('buildiq', 'events')"
 						variant="warning"
 						:loading="!loaded"
+						:error="error"
 						:loadingLabel="t('buildiq', 'Loading…')"
 						:showZeroCount="loaded" />
 				</div>
