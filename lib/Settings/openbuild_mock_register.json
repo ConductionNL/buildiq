@@ -1,0 +1,1321 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "openbuild demo data",
+    "version": "1.0.0",
+    "description": "Demo data covering every schema this app supplies, offered as the first step of the app's setup walkthrough. Generated from the schemas themselves, so every object satisfies the schema that will validate it."
+  },
+  "x-openregister": {
+    "type": "mock",
+    "app": "openbuild",
+    "description": "Demo data for openbuild. NOT installed automatically — a mock register is imported on demand, from the setup walkthrough or `occ openregister:descriptors:list --app=openbuild --import=<slug>`."
+  },
+  "paths": {},
+  "components": {
+    "registers": {
+      "buildiq": {
+        "slug": "buildiq",
+        "title": "OpenBuild Register (demo)",
+        "version": "0.9.0",
+        "description": "Demo data for OpenBuild Register. Generated from the register's own schemas — see hydra-gates/scripts/lib/generate_mock_register.py."
+      }
+    },
+    "schemas": {
+      "Application": {
+        "x-schema-org": "schema:SoftwareApplication",
+        "slug": "application",
+        "icon": "AppsBox",
+        "version": "0.6.0",
+        "title": "Application",
+        "description": "An app built or customized with OpenBuild (unify-apps-with-app-type). The `appType` discriminator distinguishes a `virtual` app (fully delivered by OpenBuild) from a `hybrid` app (a delta layered over an installed Nextcloud fleet app, linked via `baseRef`). Per ADR-002 the Application carries identity (slug, name, description, appType, baseRef, permissions) plus a productionVersion relation to the ApplicationVersion currently exposed at the canonical URL. Manifest, semver, and lifecycle live on ApplicationVersion. For a hybrid app the identity metadata (slug/name) mirrors the underlying NC app and is read-only after creation (enforced by HybridMetadataLockListener).",
+        "authorization": {
+          "read": [
+            "authenticated"
+          ],
+          "create": [
+            "admin"
+          ],
+          "update": [
+            "admin"
+          ],
+          "delete": [
+            "admin"
+          ]
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "name"
+        ],
+        "properties": {
+          "slug": {
+            "title": "Application Slug",
+            "type": "string",
+            "pattern": "^(?!.*-dark$)[a-z0-9][a-z0-9-]*[a-z0-9]$",
+            "minLength": 2,
+            "maxLength": 48,
+            "x-openregister-readonly-when": {
+              "field": "appType",
+              "equals": "hybrid"
+            },
+            "description": "Kebab-case slug; uniquely identifies the virtual app within its organisation. Drives the runtime path /builder/{slug}/*. Max 48 chars so the synthetic appId `openbuild-{slug}` fits NC appId caps (per design.md OQ-4). READ-ONLY on a hybrid app (it mirrors the installed Nextcloud app it customizes) — enforced by HybridMetadataLockListener + the abstract data widget's x-openregister-readonly-when honouring. A `-dark` suffix is RESERVED and rejected by the pattern: it would collide with the dark-variant icon route /icons/{slug}-dark.svg (a `foo-dark` app's light-icon request matches the dark route first), silently breaking that app's icon resolution (see appinfo/routes.php icon#iconDark/iconLight ordering; SlugValidator::RESERVED_APP_SLUG_SUFFIX)."
+          },
+          "name": {
+            "title": "Application Name",
+            "type": "string",
+            "x-openregister-readonly-when": {
+              "field": "appType",
+              "equals": "hybrid"
+            },
+            "description": "Human-readable name displayed in the OpenBuild shell. READ-ONLY on a hybrid app (mirrors the installed app) — enforced server-side + reflected by the data widget."
+          },
+          "description": {
+            "title": "Application Description",
+            "type": "string",
+            "x-openregister-readonly-when": {
+              "field": "appType",
+              "equals": "hybrid"
+            },
+            "description": "Optional long-form description of the app. READ-ONLY on a hybrid app (mirrors the installed app) — enforced server-side + reflected by the data widget."
+          },
+          "appType": {
+            "title": "Application Type",
+            "type": "string",
+            "enum": [
+              "virtual",
+              "hybrid"
+            ],
+            "default": "virtual",
+            "readOnly": true,
+            "description": "IMMUTABLE once created (layered-versioned-app-deltas) — enforced server-side by HybridMetadataLockListener and rendered read-only by the abstract object data widget (CnObjectDataWidget honours `readOnly`). The unified-app discriminator (unify-apps-with-app-type). `virtual` = an app fully delivered by OpenBuild (its ApplicationVersion manifest is built from scratch or from a template). `hybrid` = an app that customizes an already-installed Nextcloud fleet app (opencatalogi, pipelinq, …) — its ApplicationVersion carries a delta-only manifest layered over that fleet app's bundled manifest, served raw via GET /api/app-overrides/{appId} and merged client-side. An Application with no `appType` is treated as `virtual` on read (legacy default). Purely declarative — the Apps-list filter and the Virtual/Hybrid badge read this field directly (no Service)."
+          },
+          "status": {
+            "title": "Publication Status",
+            "type": "string",
+            "enum": [
+              "draft",
+              "published",
+              "archived"
+            ],
+            "default": "draft",
+            "description": "Publish status that gates the per-app Nextcloud top-bar navigation entry. `draft` (default) = work-in-progress, hidden from the app menu. `published` = live, listed in the menu by AppNavigationService (which filters Applications on `status == published`). `archived` = retired. Flipped via the explicit Publish / Unpublish owner action (POST /api/applications/{appUuid}/publish|unpublish). MUST be a declared property so OpenRegister persists it — an undeclared status is stripped on save."
+          },
+          "baseRef": {
+            "title": "Base Reference",
+            "type": "object",
+            "description": "Optional link to the base this app extends. For a `hybrid` app `baseRef.kind` is `fleet-app` and `baseRef.id` is the kebab-case Nextcloud app id of the installed app being customized (the canonical link used by the /api/app-overrides/{appId} shim and the all/virtual/hybrid filter). For a `virtual` app `baseRef` MAY be absent. Mirrors the per-version baseRef shape from the app-delta-override model.",
+            "properties": {
+              "kind": {
+                "title": "Base Kind",
+                "type": "string",
+                "description": "What kind of base the app extends — `fleet-app` for a hybrid app customizing an installed Nextcloud app."
+              },
+              "id": {
+                "title": "Base Identifier",
+                "type": "string",
+                "description": "Identifier of the base — for a hybrid app, the installed Nextcloud app id (e.g. `opencatalogi`)."
+              },
+              "manifestVersion": {
+                "title": "Base Manifest Version",
+                "type": "string",
+                "description": "Optional version of the bundled base manifest the delta was authored against, so a stale delta is diagnosable."
+              }
+            },
+            "additionalProperties": false
+          },
+          "productionVersion": {
+            "title": "Production Version",
+            "type": "string",
+            "format": "uuid",
+            "x-openregister-readonly-when": {
+              "field": "appType",
+              "equals": "hybrid"
+            },
+            "description": "Relation → ApplicationVersion currently exposed at the canonical /apps/openbuild/{slug} URL. READ-ONLY on a hybrid app (its production version is the admin-managed shared delta) — enforced server-side + reflected by the data widget. Set explicitly by the admin (creation wizard, detail-page version switcher), not derived from chain terminality. The referenced ApplicationVersion's `application` relation MUST point back at this Application — enforced server-side by ApplicationVersionService::guardProductionVersionOwnership() (ADR-031 §Exceptions(1) cross-row guard).",
+            "x-relation-filter": {
+              "application": "@objectId"
+            },
+            "x-openregister-relation": {
+              "target": "openbuild/applicationVersion",
+              "type": "many-to-one"
+            }
+          },
+          "icon": {
+            "title": "Light Mode Icon",
+            "type": "object",
+            "description": "Optional top-level light icon reference. Points to an SVG file attached to the Application record via OR files-attached-to-object (ADR-001). Sibling to manifest — not inside it. Drives the /icons/{slug}.svg endpoint (REQ-OBICON-002).",
+            "required": [
+              "ref"
+            ],
+            "properties": {
+              "ref": {
+                "title": "Icon File Reference",
+                "type": "string",
+                "description": "Filename of the SVG file attached to this Application record."
+              }
+            },
+            "additionalProperties": false
+          },
+          "iconDark": {
+            "title": "Dark Mode Icon",
+            "type": "object",
+            "description": "Optional top-level dark icon reference. Points to an SVG file attached to the Application record via OR files-attached-to-object (ADR-001). Sibling to manifest — not inside it. Drives the /icons/{slug}-dark.svg endpoint (REQ-OBICON-003).",
+            "required": [
+              "ref"
+            ],
+            "properties": {
+              "ref": {
+                "title": "Dark Icon File Reference",
+                "type": "string",
+                "description": "Filename of the dark-mode SVG file attached to this Application record."
+              }
+            },
+            "additionalProperties": false
+          },
+          "allowUserOverrides": {
+            "title": "Allow User Overrides",
+            "type": "boolean",
+            "default": false,
+            "description": "Per-app permission flag (layered-versioned-app-deltas). When true, users of this app MAY create/edit their own user-scoped manifest delta layered over the admin delta (base ⊕ admin ⊕ user). Default false (default-secure) — an Application with no allowUserOverrides reads as false. Read directly by the override resolver, ApplicationVersionOwnerGuard, and the dashboard 'create override' affordance; purely declarative (no Service)."
+          },
+          "permissions": {
+            "title": "Access Permissions",
+            "type": "object",
+            "description": "Per-Application RBAC block per REQ-OBRBAC-001 (openbuild-rbac). Each entry is a principal — either a Nextcloud user UID (prefix `user:<uid>`) or a Nextcloud group GID (prefix `group:<gid>` OR bare value, kept for back-compat). The caller is granted access when their UID matches a `user:` entry in any role OR when their group memberships intersect a `group:`/bare entry in any role. Bare strings continue to mean GID for backwards compatibility with pre-#37 manifests. owners gate destructive actions (publish, archive, delete, transfer, permissions edit); editors gate save; viewers gate read.",
+            "properties": {
+              "owners": {
+                "title": "Owners",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Principals with owner role (full control including publish/archive/delete/transfer-ownership/edit-permissions). Each entry is a `user:<uid>`, `group:<gid>`, or bare group GID."
+              },
+              "editors": {
+                "title": "Editors",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Principals with editor role: can save manifest drafts but cannot publish or change permissions. Each entry is a `user:<uid>`, `group:<gid>`, or bare group GID."
+              },
+              "viewers": {
+                "title": "Viewers",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Principals with viewer role: read-only access. Each entry is a `user:<uid>`, `group:<gid>`, or bare group GID."
+              }
+            },
+            "additionalProperties": false
+          },
+          "githubRepo": {
+            "title": "GitHub Repository",
+            "type": "object",
+            "description": "Optional linkage to the app's round-trip GitHub home (github-app-repo-format REQ-OBA-010). Set by the owner round-trip capability (github-app-sync) when the app is linked/pushed; omittable so every existing Application stays schema-valid. Purely declarative (stored data, no state machine, no calculation) per ADR-031 — read by the shop + sync surfaces, populated by no runtime that never touches GitHub.",
+            "required": [
+              "owner",
+              "name"
+            ],
+            "properties": {
+              "owner": {
+                "title": "Repository Owner",
+                "type": "string",
+                "description": "GitHub owner (user or organisation) of the linked repository."
+              },
+              "name": {
+                "title": "Repository Name",
+                "type": "string",
+                "description": "GitHub repository name of the app's round-trip home."
+              }
+            },
+            "additionalProperties": false
+          },
+          "githubDefaultBranch": {
+            "title": "GitHub Default Branch",
+            "type": "string",
+            "description": "Optional branch that push/pull operations target, resolved from the linked repo's default branch at link time and admin-overridable (github-app-repo-format REQ-OBA-010). Omittable; purely declarative per ADR-031."
+          }
+        },
+        "x-openregister-validation": {
+          "rules": [
+            {
+              "id": "hybrid-requires-baseRef",
+              "description": "A hybrid app MUST carry a baseRef.id naming the installed Nextcloud app it customizes (unify-apps-with-app-type). Same-row rule; the cross-row metadata-lock (slug/name immutable on hybrid) is enforced imperatively by HybridMetadataLockListener (ADR-031 §Exceptions(1) cross-row).",
+              "when": "appType == 'hybrid'",
+              "assert": "baseRef.id != null",
+              "message": "A hybrid app requires baseRef.id (the installed Nextcloud app it customizes)."
+            }
+          ]
+        }
+      },
+      "ApplicationTemplate": {
+        "x-schema-org": "schema:CreativeWork",
+        "slug": "application-template",
+        "icon": "ViewGridOutline",
+        "version": "0.1.0",
+        "title": "Application Template",
+        "description": "A pre-baked starter pack for building an Application from a recognisable use case — manifest plus companion schemas. Seeded Conduction-curated templates carry isSeeded: true. Per the hybrid register model this schema is shared across the `openbuild` register; cloned user schemas land in a per-app `openbuild-{slug}` register.",
+        "authorization": {
+          "read": [
+            "authenticated"
+          ],
+          "create": [
+            "admin"
+          ],
+          "update": [
+            "admin"
+          ],
+          "delete": [
+            "admin"
+          ]
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "title",
+          "description",
+          "useCase",
+          "category",
+          "manifest",
+          "isSeeded",
+          "version"
+        ],
+        "properties": {
+          "slug": {
+            "title": "Template Slug",
+            "type": "string",
+            "description": "Kebab-case unique slug for the template.",
+            "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+            "minLength": 2,
+            "maxLength": 48,
+            "example": "permit-tracker"
+          },
+          "title": {
+            "title": "Template Title",
+            "type": "string",
+            "description": "Human-readable title (plain English) shown in the gallery.",
+            "example": "Permit Tracker"
+          },
+          "description": {
+            "title": "Template Description",
+            "type": "string",
+            "description": "One-paragraph plain-English summary.",
+            "example": "Municipal building-permit workflow with index, detail, form, and kanban pages."
+          },
+          "useCase": {
+            "title": "Use Case",
+            "type": "string",
+            "description": "Short one-line label describing the use case (plain English).",
+            "example": "Municipal building-permit workflow"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string",
+            "description": "Top-level category used for filtering in the gallery.",
+            "enum": [
+              "government-services",
+              "internal-operations",
+              "citizen-engagement",
+              "field-work"
+            ]
+          },
+          "screenshotUrl": {
+            "title": "Screenshot URL",
+            "type": "string",
+            "description": "Relative path under the app's img/templates/ folder, or an OR Files URL.",
+            "example": "img/templates/permit-tracker.svg"
+          },
+          "manifest": {
+            "title": "App Manifest",
+            "type": "object",
+            "description": "Full app-manifest JSON blob (ADR-024) to be deep-copied on clone.",
+            "additionalProperties": true
+          },
+          "companionSchemas": {
+            "title": "Companion Schemas",
+            "type": "array",
+            "description": "JSON-schema blobs to be cloned alongside the manifest into the user's per-app register (openbuild-{slug}).",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "isSeeded": {
+            "title": "Is Seeded",
+            "type": "boolean",
+            "description": "True for Conduction-shipped templates, false for org-local templates.",
+            "default": false
+          },
+          "sourceUrl": {
+            "title": "Source URL",
+            "type": "string",
+            "description": "Link back to the originating user-story / RFP / blog post for traceability."
+          },
+          "version": {
+            "title": "Template Version",
+            "type": "string",
+            "description": "Semver version of the template — recorded on clone for one-shot snapshot semantics.",
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+            "example": "1.0.0"
+          }
+        }
+      },
+      "ApplicationVersion": {
+        "x-schema-org": "schema:SoftwareApplication",
+        "x-openregister-notifications": {
+          "version-published": {
+            "trigger": {
+              "type": "transition",
+              "action": "publish"
+            },
+            "enabled": true,
+            "channels": [
+              "nc-notification"
+            ],
+            "recipients": [
+              {
+                "kind": "object-acl",
+                "permission": "manage"
+              }
+            ],
+            "subject": {
+              "nl": "Versie {{semver}} van {{name}} is gepubliceerd",
+              "en": "Version {{semver}} of {{name}} has been published"
+            }
+          },
+          "version-archived": {
+            "trigger": {
+              "type": "transition",
+              "action": "archive"
+            },
+            "enabled": true,
+            "channels": [
+              "nc-notification"
+            ],
+            "recipients": [
+              {
+                "kind": "object-acl",
+                "permission": "manage"
+              }
+            ],
+            "subject": {
+              "nl": "Versie {{semver}} van {{name}} is gearchiveerd",
+              "en": "Version {{semver}} of {{name}} has been archived"
+            }
+          }
+        },
+        "slug": "applicationVersion",
+        "icon": "SourceBranch",
+        "version": "0.4.0",
+        "title": "Application Version",
+        "description": "A deployable runtime for an Application (ADR-002). A VIRTUAL app's version carries a full `manifest` blob and owns its own per-version OpenRegister register so production and test data are physically isolated. A HYBRID app's version (unify-apps-with-app-type) instead carries a delta-only customization: `manifest` is an empty object `{}`, `baseRef.kind` is `fleet-app`, and `manifestDelta` holds the keyed structural diff served raw via GET /api/app-overrides/{appId} and merged client-side over the installed fleet app's bundled manifest (OpenBuild holds no fleet base). The admin-defined linear promotion chain reads via the optional `promotesTo` relation. Lifecycle (draft → published → archived) is per-version; the `draft → published` transition upserts the BuiltAppRoute slug index.",
+        "authorization": {
+          "read": [
+            "authenticated"
+          ],
+          "create": [
+            "admin"
+          ],
+          "update": [
+            "admin"
+          ],
+          "delete": [
+            "admin"
+          ]
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "slug",
+          "manifest",
+          "register",
+          "semver",
+          "status",
+          "application"
+        ],
+        "properties": {
+          "name": {
+            "title": "Version Name",
+            "type": "string",
+            "description": "Human-readable display label set by the admin (e.g. `Production`, `Staging`, `Development`)."
+          },
+          "slug": {
+            "title": "Version Slug",
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+            "minLength": 2,
+            "maxLength": 48,
+            "description": "URL-safe kebab-case slug for this version (e.g. `production`, `staging`, `development`)."
+          },
+          "manifest": {
+            "title": "App Manifest",
+            "type": "object",
+            "description": "JSON manifest blob conforming to @conduction/nextcloud-vue/src/schemas/app-manifest.schema.json (v1.4.0+). Per ADR-024, this is consumed by useAppManifest + CnAppRoot at runtime. Per ADR-002 the manifest now lives on ApplicationVersion (was on Application). For a HYBRID app's version this is an empty object `{}` — the customization lives in `manifestDelta` and is merged client-side over the installed fleet app's bundled manifest (unify-apps-with-app-type).",
+            "additionalProperties": true
+          },
+          "manifestDelta": {
+            "title": "Manifest Delta",
+            "type": "object",
+            "description": "Keyed structural manifest delta (unify-apps-with-app-type), set ONLY on a HYBRID app's version. Produced by @conduction/nextcloud-vue's diffManifest and consumable by mergeManifestDelta (pages keyed by page.id, widgets by widget.id, the { \"$op\": \"remove\" } deletion marker, the optional `__order` reorder key). Served raw via GET /api/app-overrides/{appId} and merged CLIENT-SIDE over the fleet app's bundled manifest, because OpenBuild does not hold the fleet app's base. Absent on virtual apps (which carry a full `manifest`).",
+            "additionalProperties": true
+          },
+          "baseRef": {
+            "title": "Base Reference",
+            "type": "object",
+            "description": "Optional link to the base this version's delta extends (unify-apps-with-app-type / app-delta-override). For a HYBRID app's version `baseRef.kind` is `fleet-app` and `baseRef.id` is the installed Nextcloud app id. Lets base drift be diagnosed when a fleet app rebuilds and renames/removes a page the delta targeted.",
+            "properties": {
+              "kind": {
+                "title": "Base Kind",
+                "type": "string",
+                "description": "What kind of base the delta extends — `fleet-app` for a hybrid app's version."
+              },
+              "id": {
+                "title": "Base Identifier",
+                "type": "string",
+                "description": "Identifier of the base — the installed Nextcloud app id for a hybrid app's version."
+              },
+              "manifestVersion": {
+                "title": "Base Manifest Version",
+                "type": "string",
+                "description": "Optional version of the bundled base manifest the delta was authored against."
+              }
+            },
+            "additionalProperties": false
+          },
+          "register": {
+            "title": "Data Register",
+            "type": "string",
+            "pattern": "^openbuild-[a-z0-9][a-z0-9-]*[a-z0-9]$",
+            "description": "Per-version OpenRegister register name carrying this version's schemas and objects. Convention: `openbuild-{appSlug}-{versionSlug}` (e.g. `openbuild-hello-world-production`). Actual provisioning is owned by the creation-wizard capability (sibling spec)."
+          },
+          "semver": {
+            "title": "Semantic Version",
+            "type": "string",
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$",
+            "default": "0.1.0",
+            "description": "Semantic version of this ApplicationVersion. Initial value `0.1.0`. Patch-bumped automatically by ApplicationVersionService::onSave() when the manifest content changes (SHA-256 of canonicalised manifest differs from the previously-stored hash). Metadata-only edits do NOT bump semver. Minor/major bumps remain manual."
+          },
+          "status": {
+            "title": "Lifecycle Status",
+            "type": "string",
+            "enum": [
+              "draft",
+              "published",
+              "archived"
+            ],
+            "default": "draft",
+            "description": "Per-version lifecycle state. Driven by x-openregister-lifecycle below."
+          },
+          "application": {
+            "title": "Parent Application",
+            "type": "string",
+            "format": "uuid",
+            "description": "Relation → parent Application (required). Real first-class OR relation, not a UUID string (ADR-002 §Decision).",
+            "x-openregister-relation": {
+              "target": "openbuild/application",
+              "type": "many-to-one"
+            }
+          },
+          "promotesTo": {
+            "title": "Promotes To",
+            "type": "string",
+            "format": "uuid",
+            "description": "Optional relation → next ApplicationVersion in the linear promotion chain. Terminal versions have `promotesTo: null`. Cycle detection is enforced server-side by ApplicationVersionService::guardNoCycle() (ADR-031 §Exceptions(1) cross-row).",
+            "x-relation-filter": {
+              "application": "@object.application"
+            },
+            "x-openregister-relation": {
+              "target": "openbuild/applicationVersion",
+              "type": "many-to-one"
+            }
+          },
+          "scope": {
+            "title": "Delta Scope",
+            "type": "string",
+            "enum": [
+              "admin",
+              "user"
+            ],
+            "default": "admin",
+            "description": "Delta scope discriminator (layered-versioned-app-deltas). `admin` (default) = the instance-wide shared delta managed by admins (today's behaviour — the only existing scope). `user` = a per-user delta owned by a single user, layered over the admin delta and resolved as `base ⊕ admin ⊕ user` only when the parent Application's allowUserOverrides is true. An ApplicationVersion with no scope reads as `admin` (legacy default). Read by ApplicationVersionOwnerGuard + PermissionResolver + the override resolver; admin/user rows share this one schema (no new schema). On a `user` row the per-version promotion/publish fields (semver/status/promotesTo/register) are inert — the user delta is just manifestDelta + owner + baseRef."
+          },
+          "owner": {
+            "title": "Owner",
+            "type": "string",
+            "description": "Owning Nextcloud user UID. Set ONLY on a `scope: user` row; identifies the single user who may read/edit/rollback this user-scoped delta. Empty/absent on `scope: admin` rows. Read by ApplicationVersionOwnerGuard + PermissionResolver for the user-scope ownership check (a user can never read/write another user's delta — fail-closed)."
+          },
+          "commitSha": {
+            "title": "GitHub Commit SHA",
+            "type": "string",
+            "description": "Optional GitHub provenance (github-app-repo-format REQ-OBV-112). The exact Git commit this version was pushed to (on publish to GitHub) or pulled from (on import). Omittable; absent on versions with no GitHub provenance. Purely declarative per ADR-031 — a commitSha write is metadata and does NOT by itself bump `semver` (the manifest-content auto-bump, REQ-OBV-103, is unaffected)."
+          },
+          "sourceRef": {
+            "title": "GitHub Source Ref",
+            "type": "string",
+            "description": "Optional GitHub provenance (github-app-repo-format REQ-OBV-112). The branch/tag/ref a PULLED version was imported from (e.g. `refs/heads/main` or a tag name). Omittable; absent on versions with no GitHub provenance. Purely declarative per ADR-031 — no lifecycle or semver effect."
+          }
+        },
+        "x-openregister-validation": {
+          "rules": [
+            {
+              "id": "promotesTo-no-self-loop",
+              "description": "Same-row self-loop guard: an ApplicationVersion cannot promote to itself. Broader cross-row cycle detection lives in ApplicationVersionService::guardNoCycle().",
+              "when": "promotesTo != null",
+              "assert": "promotesTo != self.uuid",
+              "message": "promotesTo cannot equal the version's own UUID (self-loop)."
+            },
+            {
+              "id": "user-scope-requires-owner",
+              "description": "A user-scoped delta MUST name its owner UID (layered-versioned-app-deltas). Same-row rule; the cross-row owner-vs-caller authorization is enforced imperatively by ApplicationVersionOwnerGuard + PermissionResolver (ADR-031 §Exceptions(1) cross-row).",
+              "when": "scope == 'user'",
+              "assert": "owner != null",
+              "message": "A user-scoped ApplicationVersion requires an owner UID."
+            }
+          ]
+        },
+        "x-openregister-lifecycle": {
+          "field": "status",
+          "initial": "draft",
+          "states": {
+            "draft": {
+              "description": "Editable working version, not exposed at the canonical `/apps/openbuild/{slug}` URL unless this version is the parent Application's productionVersion."
+            },
+            "published": {
+              "description": "Reachable through routing — eligible to be the parent Application's productionVersion. The on_transition action upserts the corresponding BuiltAppRoute keyed by the parent Application's slug."
+            },
+            "archived": {
+              "description": "No longer reachable. Preserved for restore via the `reopen` transition."
+            }
+          },
+          "transitions": {
+            "publish": {
+              "from": [
+                "draft"
+              ],
+              "to": "published",
+              "description": "Mark this version as ready to be the parent Application's productionVersion. Relocated from Application schema per ADR-002 — published-ness is per-version now. Authorization (REQ-OBRBAC-004): owner of the parent Application (or a Nextcloud admin) only — enforced by the ApplicationVersionOwnerGuard `requires` tag below, which OR's LifecycleValidationListener runs on this transition.",
+              "requires": "OCA\\Buildiq\\Lifecycle\\ApplicationVersionOwnerGuard",
+              "on_transition": {
+                "upsert_relation": {
+                  "schema": "openbuild/built-app-route",
+                  "match": {
+                    "slug": "@self.application.slug"
+                  },
+                  "payload": {
+                    "slug": "@self.application.slug",
+                    "applicationUuid": "@self.application.uuid"
+                  }
+                }
+              }
+            },
+            "archive": {
+              "from": [
+                "published"
+              ],
+              "to": "archived",
+              "description": "Retire a published version. Operators are responsible for swapping the parent Application's productionVersion off this row first. Authorization (REQ-OBRBAC-004): owner of the parent Application (or a Nextcloud admin) only — enforced by ApplicationVersionOwnerGuard.",
+              "requires": "OCA\\Buildiq\\Lifecycle\\ApplicationVersionOwnerGuard"
+            },
+            "reopen": {
+              "from": [
+                "archived"
+              ],
+              "to": "draft",
+              "description": "Restore an archived ApplicationVersion to draft for further editing. Authorization (REQ-OBRBAC-004): owner of the parent Application (or a Nextcloud admin) only — enforced by ApplicationVersionOwnerGuard.",
+              "requires": "OCA\\Buildiq\\Lifecycle\\ApplicationVersionOwnerGuard"
+            }
+          }
+        }
+      },
+      "BuiltAppRoute": {
+        "slug": "built-app-route",
+        "icon": "RouterNetwork",
+        "version": "0.1.0",
+        "title": "Built App Route",
+        "description": "Index from slug → applicationUuid. Maintained by the Application lifecycle (upserted on publish, deleted on archive). Used by the runtime to resolve /builder/{slug} → manifest in a single OR lookup. Per ADR-022 this is an explicit flattened index rather than scanning the Application collection.",
+        "authorization": {
+          "read": [
+            "authenticated"
+          ],
+          "create": [
+            "admin"
+          ],
+          "update": [
+            "admin"
+          ],
+          "delete": [
+            "admin"
+          ]
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "applicationUuid"
+        ],
+        "properties": {
+          "slug": {
+            "title": "Route Slug",
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+            "minLength": 2,
+            "maxLength": 48,
+            "description": "Matches the Application slug. Unique within the organisation (enforced by lifecycle upkeep + 4xx on conflict)."
+          },
+          "applicationUuid": {
+            "title": "Application UUID",
+            "type": "string",
+            "format": "uuid",
+            "$ref": "Application",
+            "description": "UUID of the published Application this route resolves to."
+          }
+        }
+      },
+      "HelloMessage": {
+        "x-schema-org": "schema:Message",
+        "slug": "hello-message",
+        "icon": "MessageTextOutline",
+        "version": "0.1.0",
+        "title": "Hello Message",
+        "description": "Seed schema for the canonical hello-world virtual app. Three sample messages are seeded on install so the install is testable out of the box.",
+        "authorization": {
+          "read": [
+            "authenticated"
+          ],
+          "create": [
+            "admin"
+          ],
+          "update": [
+            "admin"
+          ],
+          "delete": [
+            "admin"
+          ]
+        },
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "properties": {
+          "title": {
+            "title": "Message Title",
+            "type": "string",
+            "description": "Short message title."
+          },
+          "body": {
+            "title": "Message Body",
+            "type": "string",
+            "description": "Optional longer message body."
+          }
+        }
+      },
+      "exportJob": {
+        "x-schema-org": "schema:Action",
+        "x-openregister-notifications": {
+          "export-succeeded": {
+            "trigger": {
+              "type": "transition",
+              "action": "succeed"
+            },
+            "enabled": true,
+            "channels": [
+              "nc-notification"
+            ],
+            "recipients": [
+              {
+                "kind": "object-acl",
+                "permission": "manage"
+              }
+            ],
+            "subject": {
+              "nl": "Export geslaagd voor {{applicationVersion}}",
+              "en": "Export succeeded for {{applicationVersion}}"
+            }
+          },
+          "export-failed": {
+            "trigger": {
+              "type": "transition",
+              "action": "fail"
+            },
+            "enabled": true,
+            "channels": [
+              "nc-notification"
+            ],
+            "recipients": [
+              {
+                "kind": "object-acl",
+                "permission": "manage"
+              }
+            ],
+            "subject": {
+              "nl": "Export mislukt voor {{applicationVersion}}: {{errorMessage}}",
+              "en": "Export failed for {{applicationVersion}}: {{errorMessage}}"
+            }
+          }
+        },
+        "slug": "export-job",
+        "icon": "PackageVariant",
+        "version": "1.1.0",
+        "title": "Export Job",
+        "description": "Asynchronous pipeline that turns a published Application into a standalone Nextcloud app — delivered as a ZIP download or pushed to GitHub. Lifecycle is declarative per ADR-031; the file-generation surface is an ADR-031 §Exceptions(3) imperative path.",
+        "authorization": {
+          "read": [
+            "authenticated"
+          ],
+          "create": [
+            "admin"
+          ],
+          "update": [
+            "admin"
+          ],
+          "delete": [
+            "admin"
+          ]
+        },
+        "type": "object",
+        "required": [
+          "applicationUuid",
+          "applicationVersion",
+          "target",
+          "status"
+        ],
+        "properties": {
+          "applicationUuid": {
+            "title": "Application UUID",
+            "type": "string",
+            "format": "uuid",
+            "$ref": "Application",
+            "description": "UUID of the source Application record being exported."
+          },
+          "applicationVersion": {
+            "title": "Application Version",
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+(?:[-+][\\w.-]+)?$",
+            "description": "Semver of the Application version being exported."
+          },
+          "target": {
+            "title": "Export Target",
+            "type": "string",
+            "enum": [
+              "zip",
+              "github"
+            ],
+            "description": "Delivery target — ZIP download or push to a new GitHub repository."
+          },
+          "status": {
+            "title": "Job Status",
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed"
+            ],
+            "default": "queued",
+            "description": "Lifecycle state. Transitions are enforced by OR's lifecycle engine."
+          },
+          "githubOrg": {
+            "title": "GitHub Organisation",
+            "type": "string",
+            "description": "Target GitHub organisation (only when target=github)."
+          },
+          "githubRepo": {
+            "title": "GitHub Repository",
+            "type": "string",
+            "description": "Target GitHub repository name (only when target=github)."
+          },
+          "githubVisibility": {
+            "title": "GitHub Visibility",
+            "type": "string",
+            "enum": [
+              "public",
+              "private"
+            ],
+            "description": "Visibility for the new GitHub repository (only when target=github)."
+          },
+          "githubRepoUrl": {
+            "title": "GitHub Repository URL",
+            "type": "string",
+            "format": "uri",
+            "description": "URL of the created GitHub repository (populated on success when target=github)."
+          },
+          "githubPullRequestUrl": {
+            "title": "GitHub Pull Request URL",
+            "type": "string",
+            "format": "uri",
+            "description": "URL of the placeholder pull request opened against the repo's default branch."
+          },
+          "includeSeedData": {
+            "title": "Include Seed Data",
+            "type": "boolean",
+            "default": false,
+            "description": "When true, exports seed data alongside the schema bundle."
+          },
+          "license": {
+            "title": "License",
+            "type": "string",
+            "default": "EUPL-1.2",
+            "description": "License chosen by the user for the exported app."
+          },
+          "downloadUrl": {
+            "title": "Download URL",
+            "type": "string",
+            "description": "Relative URL where the ZIP can be downloaded (only when target=zip)."
+          },
+          "downloadExpiresAt": {
+            "title": "Download Expiry",
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO-8601 timestamp at which the ZIP expires and is purged by the cleanup job."
+          },
+          "errorMessage": {
+            "title": "Error Message",
+            "type": "string",
+            "description": "Human-readable failure reason. Never contains the GitHub PAT (see Decision 3 in design.md)."
+          },
+          "log": {
+            "title": "Execution Log",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Ordered list of progress entries. Never contains the GitHub PAT."
+          }
+        },
+        "x-openregister-lifecycle": {
+          "field": "status",
+          "initial": "queued",
+          "states": {
+            "queued": {
+              "description": "Newly created; waiting to be picked up by the worker."
+            },
+            "running": {
+              "description": "Worker is actively generating the export bundle."
+            },
+            "succeeded": {
+              "description": "Generation finished; download artifact is ready."
+            },
+            "failed": {
+              "description": "Generation failed irrecoverably; see error field."
+            }
+          },
+          "final": [
+            "succeeded",
+            "failed"
+          ],
+          "transitions": {
+            "start": {
+              "from": [
+                "queued"
+              ],
+              "to": "running"
+            },
+            "succeed": {
+              "from": [
+                "running"
+              ],
+              "to": "succeeded"
+            },
+            "fail": {
+              "from": [
+                "running"
+              ],
+              "to": "failed"
+            }
+          }
+        },
+        "x-openregister-lifecycle-exception": {
+          "reference": "openspec/changes/openbuild-export-to-real-app/design.md#decision-7",
+          "rationale": "File generation, ZIP packaging, and GitHub API calls are imperative by nature. ADR-031 §Exceptions(3) allows code for OS-bound side effects. The lifecycle itself remains declarative."
+        }
+      }
+    },
+    "objects": [
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "Application",
+          "slug": "application-voorbeeld-name-1-1"
+        },
+        "slug": "aaba",
+        "name": "Voorbeeld Name 1",
+        "description": "Voorbeeld Description 1",
+        "appType": "virtual",
+        "status": "draft",
+        "baseRef": {
+          "kind": "Voorbeeld Kind 1",
+          "id": "Voorbeeld Id 1",
+          "manifestVersion": "Voorbeeld Manifestversion 1"
+        },
+        "productionVersion": "00000000-0000-4000-8000-000000000000",
+        "icon": {
+          "ref": "Voorbeeld Ref 1"
+        },
+        "iconDark": {
+          "ref": "Voorbeeld Ref 1"
+        },
+        "allowUserOverrides": false,
+        "permissions": {
+          "owners": [
+            "Voorbeeld Owners 1"
+          ],
+          "editors": [
+            "Voorbeeld Editors 1"
+          ],
+          "viewers": [
+            "Voorbeeld Viewers 1"
+          ]
+        },
+        "githubRepo": {
+          "owner": "Voorbeeld Owner 1",
+          "name": "Voorbeeld Name 1"
+        },
+        "githubDefaultBranch": "Voorbeeld Githubdefaultbranch 1"
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "Application",
+          "slug": "application-voorbeeld-name-2-2"
+        },
+        "slug": "bbcb",
+        "name": "Voorbeeld Name 2",
+        "description": "Voorbeeld Description 2",
+        "appType": "hybrid",
+        "status": "published",
+        "baseRef": {
+          "kind": "Voorbeeld Kind 2",
+          "id": "Voorbeeld Id 2",
+          "manifestVersion": "Voorbeeld Manifestversion 2"
+        },
+        "productionVersion": "00000000-0000-4000-8000-000000000001",
+        "icon": {
+          "ref": "Voorbeeld Ref 2"
+        },
+        "iconDark": {
+          "ref": "Voorbeeld Ref 2"
+        },
+        "allowUserOverrides": false,
+        "permissions": {
+          "owners": [
+            "Voorbeeld Owners 2"
+          ],
+          "editors": [
+            "Voorbeeld Editors 2"
+          ],
+          "viewers": [
+            "Voorbeeld Viewers 2"
+          ]
+        },
+        "githubRepo": {
+          "owner": "Voorbeeld Owner 2",
+          "name": "Voorbeeld Name 2"
+        },
+        "githubDefaultBranch": "Voorbeeld Githubdefaultbranch 2"
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "Application",
+          "slug": "application-voorbeeld-name-3-3"
+        },
+        "slug": "ccdc",
+        "name": "Voorbeeld Name 3",
+        "description": "Voorbeeld Description 3",
+        "appType": "virtual",
+        "status": "archived",
+        "baseRef": {
+          "kind": "Voorbeeld Kind 3",
+          "id": "Voorbeeld Id 3",
+          "manifestVersion": "Voorbeeld Manifestversion 3"
+        },
+        "productionVersion": "00000000-0000-4000-8000-000000000002",
+        "icon": {
+          "ref": "Voorbeeld Ref 3"
+        },
+        "iconDark": {
+          "ref": "Voorbeeld Ref 3"
+        },
+        "allowUserOverrides": false,
+        "permissions": {
+          "owners": [
+            "Voorbeeld Owners 3"
+          ],
+          "editors": [
+            "Voorbeeld Editors 3"
+          ],
+          "viewers": [
+            "Voorbeeld Viewers 3"
+          ]
+        },
+        "githubRepo": {
+          "owner": "Voorbeeld Owner 3",
+          "name": "Voorbeeld Name 3"
+        },
+        "githubDefaultBranch": "Voorbeeld Githubdefaultbranch 3"
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "ApplicationTemplate",
+          "slug": "applicationtemplate-voorbeeld-title-1-1"
+        },
+        "slug": "aaba",
+        "title": "Voorbeeld Title 1",
+        "description": "Voorbeeld Description 1",
+        "useCase": "Voorbeeld Usecase 1",
+        "category": "government-services",
+        "manifest": {},
+        "isSeeded": false,
+        "version": "012.012.012",
+        "screenshotUrl": "Voorbeeld Screenshoturl 1",
+        "companionSchemas": [
+          {}
+        ],
+        "sourceUrl": "Voorbeeld Sourceurl 1"
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "ApplicationTemplate",
+          "slug": "applicationtemplate-voorbeeld-title-2-2"
+        },
+        "slug": "bbcb",
+        "title": "Voorbeeld Title 2",
+        "description": "Voorbeeld Description 2",
+        "useCase": "Voorbeeld Usecase 2",
+        "category": "internal-operations",
+        "manifest": {},
+        "isSeeded": false,
+        "version": "123.123.123",
+        "screenshotUrl": "Voorbeeld Screenshoturl 2",
+        "companionSchemas": [
+          {}
+        ],
+        "sourceUrl": "Voorbeeld Sourceurl 2"
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "ApplicationTemplate",
+          "slug": "applicationtemplate-voorbeeld-title-3-3"
+        },
+        "slug": "ccdc",
+        "title": "Voorbeeld Title 3",
+        "description": "Voorbeeld Description 3",
+        "useCase": "Voorbeeld Usecase 3",
+        "category": "citizen-engagement",
+        "manifest": {},
+        "isSeeded": false,
+        "version": "234.234.234",
+        "screenshotUrl": "Voorbeeld Screenshoturl 3",
+        "companionSchemas": [
+          {}
+        ],
+        "sourceUrl": "Voorbeeld Sourceurl 3"
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "ApplicationVersion",
+          "slug": "applicationversion-voorbeeld-name-1-1"
+        },
+        "name": "Voorbeeld Name 1",
+        "slug": "aaba",
+        "manifest": {},
+        "register": "openbuild-aa",
+        "semver": "0.1.0",
+        "status": "draft",
+        "application": "00000000-0000-4000-8000-000000000000",
+        "manifestDelta": {},
+        "baseRef": {
+          "kind": "Voorbeeld Kind 1",
+          "id": "Voorbeeld Id 1",
+          "manifestVersion": "Voorbeeld Manifestversion 1"
+        },
+        "promotesTo": "00000000-0000-4000-8000-000000000000",
+        "scope": "admin",
+        "owner": "Voorbeeld Owner 1",
+        "commitSha": "Voorbeeld Commitsha 1",
+        "sourceRef": "Voorbeeld Sourceref 1"
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "ApplicationVersion",
+          "slug": "applicationversion-voorbeeld-name-2-2"
+        },
+        "name": "Voorbeeld Name 2",
+        "slug": "bbcb",
+        "manifest": {},
+        "register": "openbuild-bb",
+        "semver": "0.1.0",
+        "status": "published",
+        "application": "00000000-0000-4000-8000-000000000001",
+        "manifestDelta": {},
+        "baseRef": {
+          "kind": "Voorbeeld Kind 2",
+          "id": "Voorbeeld Id 2",
+          "manifestVersion": "Voorbeeld Manifestversion 2"
+        },
+        "promotesTo": "00000000-0000-4000-8000-000000000001",
+        "scope": "user",
+        "owner": "Voorbeeld Owner 2",
+        "commitSha": "Voorbeeld Commitsha 2",
+        "sourceRef": "Voorbeeld Sourceref 2"
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "ApplicationVersion",
+          "slug": "applicationversion-voorbeeld-name-3-3"
+        },
+        "name": "Voorbeeld Name 3",
+        "slug": "ccdc",
+        "manifest": {},
+        "register": "openbuild-cc",
+        "semver": "0.1.0",
+        "status": "archived",
+        "application": "00000000-0000-4000-8000-000000000002",
+        "manifestDelta": {},
+        "baseRef": {
+          "kind": "Voorbeeld Kind 3",
+          "id": "Voorbeeld Id 3",
+          "manifestVersion": "Voorbeeld Manifestversion 3"
+        },
+        "promotesTo": "00000000-0000-4000-8000-000000000002",
+        "scope": "admin",
+        "owner": "Voorbeeld Owner 3",
+        "commitSha": "Voorbeeld Commitsha 3",
+        "sourceRef": "Voorbeeld Sourceref 3"
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "BuiltAppRoute",
+          "slug": "builtapproute-builtapproute-1-1"
+        },
+        "slug": "aaba",
+        "applicationUuid": "00000000-0000-4000-8000-000000000000"
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "BuiltAppRoute",
+          "slug": "builtapproute-builtapproute-2-2"
+        },
+        "slug": "bbcb",
+        "applicationUuid": "00000000-0000-4000-8000-000000000001"
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "BuiltAppRoute",
+          "slug": "builtapproute-builtapproute-3-3"
+        },
+        "slug": "ccdc",
+        "applicationUuid": "00000000-0000-4000-8000-000000000002"
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "HelloMessage",
+          "slug": "hellomessage-voorbeeld-title-1-1"
+        },
+        "title": "Voorbeeld Title 1",
+        "body": "Voorbeeld Body 1"
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "HelloMessage",
+          "slug": "hellomessage-voorbeeld-title-2-2"
+        },
+        "title": "Voorbeeld Title 2",
+        "body": "Voorbeeld Body 2"
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "HelloMessage",
+          "slug": "hellomessage-voorbeeld-title-3-3"
+        },
+        "title": "Voorbeeld Title 3",
+        "body": "Voorbeeld Body 3"
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "exportJob",
+          "slug": "exportjob-exportjob-1-1"
+        },
+        "applicationUuid": "00000000-0000-4000-8000-000000000000",
+        "applicationVersion": "012.012.012",
+        "target": "zip",
+        "status": "queued",
+        "githubOrg": "Voorbeeld Githuborg 1",
+        "githubRepo": "Voorbeeld Githubrepo 1",
+        "githubVisibility": "public",
+        "githubRepoUrl": "https://example.invalid/resource/0",
+        "githubPullRequestUrl": "https://example.invalid/resource/0",
+        "includeSeedData": false,
+        "license": "EUPL-1.2",
+        "downloadUrl": "Voorbeeld Downloadurl 1",
+        "downloadExpiresAt": "2026-03-01T09:00:00+00:00",
+        "errorMessage": "Voorbeeld Errormessage 1",
+        "log": [
+          "Voorbeeld Log 1"
+        ]
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "exportJob",
+          "slug": "exportjob-exportjob-2-2"
+        },
+        "applicationUuid": "00000000-0000-4000-8000-000000000001",
+        "applicationVersion": "123.123.123",
+        "target": "github",
+        "status": "running",
+        "githubOrg": "Voorbeeld Githuborg 2",
+        "githubRepo": "Voorbeeld Githubrepo 2",
+        "githubVisibility": "private",
+        "githubRepoUrl": "https://example.invalid/resource/1",
+        "githubPullRequestUrl": "https://example.invalid/resource/1",
+        "includeSeedData": false,
+        "license": "EUPL-1.2",
+        "downloadUrl": "Voorbeeld Downloadurl 2",
+        "downloadExpiresAt": "2026-03-02T09:00:00+00:00",
+        "errorMessage": "Voorbeeld Errormessage 2",
+        "log": [
+          "Voorbeeld Log 2"
+        ]
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "exportJob",
+          "slug": "exportjob-exportjob-3-3"
+        },
+        "applicationUuid": "00000000-0000-4000-8000-000000000002",
+        "applicationVersion": "234.234.234",
+        "target": "zip",
+        "status": "succeeded",
+        "githubOrg": "Voorbeeld Githuborg 3",
+        "githubRepo": "Voorbeeld Githubrepo 3",
+        "githubVisibility": "public",
+        "githubRepoUrl": "https://example.invalid/resource/2",
+        "githubPullRequestUrl": "https://example.invalid/resource/2",
+        "includeSeedData": false,
+        "license": "EUPL-1.2",
+        "downloadUrl": "Voorbeeld Downloadurl 3",
+        "downloadExpiresAt": "2026-03-03T09:00:00+00:00",
+        "errorMessage": "Voorbeeld Errormessage 3",
+        "log": [
+          "Voorbeeld Log 3"
+        ]
+      }
+    ]
+  }
+}
