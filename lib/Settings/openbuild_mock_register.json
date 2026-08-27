@@ -236,6 +236,119 @@
             "title": "GitHub Default Branch",
             "type": "string",
             "description": "Optional branch that push/pull operations target, resolved from the linked repo's default branch at link time and admin-overridable (github-app-repo-format REQ-OBA-010). Omittable; purely declarative per ADR-031."
+          },
+          "dataRegisters": {
+            "title": "Data Registers",
+            "type": "array",
+            "default": [],
+            "items": {
+              "type": "object",
+              "title": "Data Register Binding",
+              "required": [
+                "register"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "register": {
+                  "title": "Register Slug",
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+                  "minLength": 2,
+                  "maxLength": 64,
+                  "description": "Slug of the shared OpenRegister register this app binds to (e.g. `spectr`). Unlike ApplicationVersion.register, this register is NOT owned or provisioned by Buildiq and carries NO `buildiq-` prefix convention — it is an existing register OpenConnector or another process feeds independently."
+                },
+                "label": {
+                  "title": "Display Label",
+                  "type": "string",
+                  "maxLength": 128,
+                  "description": "Optional human-readable label shown in the builder's data-source pickers instead of the raw register slug (e.g. `Spectr market intelligence data`). Purely a UI convenience; absent falls back to the raw slug."
+                }
+              }
+            },
+            "description": "Shared, non-versioned OpenRegister registers this Application binds to alongside its own per-version register (ADR-002 `ApplicationVersion.register`). Declared per SPECTR-NEXTCLOUD-PLAN.md §4.2 / hydra ADR-050 decision #2. Version promotion (`VersionPromotionService`) never reads or writes this property — it operates exclusively on `ApplicationVersion.register` — so promoting a version neither copies nor migrates any row in a data register. Sibling to `baseRef` on the `Application` schema; absent on every Application created before this property existed."
+          },
+          "connectors": {
+            "title": "Connectors",
+            "type": "array",
+            "default": [],
+            "description": "OpenConnector configuration objects this application explicitly declares as its own. Exported into `connectors/<kind>/<slug>.json` by app-repo-format-v2 so an installed app arrives with the ingestion that populates the registers its pages read. Declared entries are exported as declared; the exporter additionally resolves the objects a declared entry DIRECTLY references (one level only — a synchronization's source, mapping and target), because a synchronization without its source installs into something that cannot run. Credential VALUES are never exported: configs carry credential references only, and any inline secret-shaped value is stripped and the strip recorded.",
+            "items": {
+              "type": "object",
+              "title": "Connector Binding",
+              "required": [
+                "kind",
+                "uuid"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "title": "Connector Kind",
+                  "type": "string",
+                  "enum": [
+                    "source",
+                    "mapping",
+                    "synchronization",
+                    "job"
+                  ],
+                  "description": "Which OpenConnector schema the entry refers to. Constrained to the four configuration kinds that define ingestion; `endpoint` and `rule` are deliberately excluded — an endpoint is instance-facing surface and a rule belongs to the automations channel."
+                },
+                "uuid": {
+                  "title": "Connector UUID",
+                  "type": "string",
+                  "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                  "description": "UUID of the OpenConnector object in the shared `openconnector` register. The binding is UUID-keyed, NOT slug-keyed, because OpenConnector objects overwhelmingly have no slug: measured on a live instance, only 13 of 369 sources, 1 of 291 mappings, 7 of 206 synchronizations and 0 of 74 jobs carry one, while every object has a UUID. A slug-keyed binding could therefore reference almost none of a real app's ingestion — the export would silently collect nothing. Validated as a UUID BEFORE it is ever used as a path component, so a crafted value cannot escape the `connectors/<kind>/` prefix on export."
+                },
+                "slug": {
+                  "title": "Connector Slug",
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+                  "minLength": 2,
+                  "maxLength": 64,
+                  "description": "OPTIONAL human-readable slug. Used as the exported filename when present and safe (`connectors/<kind>/<slug>.json`), because a slug is far more reviewable in a diff than a UUID; the export falls back to the UUID when absent. Never used for resolution — the UUID is the identity."
+                },
+                "label": {
+                  "title": "Label",
+                  "type": "string",
+                  "maxLength": 128,
+                  "description": "Optional human-readable label for the binding, shown in the builder. Never used as a path component."
+                }
+              }
+            }
+          },
+          "flows": {
+            "title": "Flows",
+            "type": "array",
+            "default": [],
+            "items": {
+              "type": "object",
+              "title": "Flow Binding",
+              "required": [
+                "flow"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "flow": {
+                  "title": "Flow UUID",
+                  "type": "string",
+                  "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                  "description": "UUID of the OpenRegister flow this app is composed of, resolved against the OpenRegister `Flow` ENTITY (OCA\\OpenRegister\\Db\\FlowMapper::findByUuid) — the store the flow engine actually executes. ⚠️ UUID and NOT the numeric `id`: an id is an auto-increment column, per-instance, and would resolve to a different flow or to nothing after an export; a UUID is globally unique and survives the trip provided the importing side seeds the flow with the same one, which the follower spec requires. The `Flow` entity carries uuid/name/app and NO slug, so there is no slug to bind by. ⚠️ An `agentflow` OBJECT store in the hermiq register mirrors some definitions and drifts from the entity: a definition written to the object left the engine executing the previous graph, with the run log showing the old node set and no error surfaced anywhere. Consumers MUST resolve the entity. Per ADR-065 there is exactly ONE flow engine, in OpenRegister; a flow that calls an agent is an ORDINARY flow whose nodes are agentic node types contributed to the engine's registry by hermiq (`hermiq.workload-step`, `hermiq.workload-collect`), not a separate kind of object, and it binds through this property like any other flow.",
+                  "example": "00000000-0000-0000-0000-000000000000"
+                },
+                "label": {
+                  "title": "Display Label",
+                  "type": "string",
+                  "maxLength": 128,
+                  "description": "Optional human-readable label shown instead of the raw UUID (e.g. `Hydra sequencer`). A UUID is unreadable in a picker, so this matters more here than it does for a slug-addressed binding; absent falls back to the flow's own name."
+                },
+                "sourceUuid": {
+                  "title": "Source UUID",
+                  "type": "string",
+                  "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                  "description": "OPTIONAL. Set only when this binding was created by applying a published `flows/` channel entry (app-repo-format-flow-agent-export). Carries the UUID the flow was PUBLISHED under on the source instance — never the same as `flow` on this instance, because a fresh install mints its OWN flow UUID through `FlowService::save()` rather than seeding the published one (that entry point stamps `owner`/`organisation` and rebuilds the trigger index; a raw insert at a caller-chosen UUID would have to reimplement both by hand). Re-applying the same published repository checks THIS property, not `flow`, so a repeat pull is idempotent rather than duplicating the flow on every run. Absent on every binding authored directly in the builder."
+                }
+              }
+            },
+            "description": "OpenRegister flows this Application is composed of. Read by the export so an exported app carries the flows that make it do anything; absent means the app binds none. A binding whose UUID resolves to nothing MUST NOT make the Application invalid — deleting a flow is ordinary — and is reported by the consumer rather than dropped at write time. There is deliberately no sibling `agents` binding: agents already point at their application via `agent.applicationSlug`."
           }
         },
         "x-openregister-validation": {
@@ -881,6 +994,69 @@
               "type": "string"
             },
             "description": "Ordered list of progress entries. Never contains the GitHub PAT."
+          },
+          "dataRegisters": {
+            "title": "Data Registers",
+            "type": "array",
+            "default": [],
+            "items": {
+              "type": "object",
+              "title": "Export Data Register Choice",
+              "required": [
+                "register"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "register": {
+                  "title": "Register Slug",
+                  "type": "string",
+                  "description": "Slug of a register named in the source Application's `dataRegisters`, as declared at export-submission time."
+                },
+                "includeData": {
+                  "title": "Include Row Data",
+                  "type": "boolean",
+                  "default": false,
+                  "description": "When true, the export additionally bundles this register's current row data as a reference fixture alongside its schema definitions (which are always bundled). Defaults to false (schema definitions only)."
+                }
+              }
+            },
+            "description": "Per-export choice of which of the source Application's `dataRegisters` bindings to bundle, and whether to include each one's row data. Export-flow state persisted on the ExportJob record by ExportJobService::queue() — not Application configuration. Absent on every ExportJob created before this property existed; ExportJobService::queue() defaults it to []."
+          },
+          "githubCredentialId": {
+            "title": "GitHub Credential",
+            "type": "string",
+            "description": "UUID of the `github` credential in OpenRegister's credential broker to push with (only when target=github). A reference, never a token: Buildiq sends {method, path, body} plus this UUID to the broker, which checks ownership, the allowed-app grant and the allow-rules, then injects the secret. Buildiq cannot read the secret behind it."
+          },
+          "requestedBy": {
+            "title": "Requested By",
+            "type": "string",
+            "description": "Nextcloud UID of the user who queued the export. Carried so the session-less background job can tell the broker which identity owns `githubCredentialId` — the broker's owner/IDOR guard needs an identity, and a cron run has no session to read one from."
+          },
+          "applicationSlug": {
+            "title": "Application Slug",
+            "type": "string",
+            "description": "Slug of the source Application, captured at submission time by ExportJobService::queue() from the route parameter. RunExportJob reads it back to build the export context (appId, appNamespace, appName) and to resolve the agents that point at this application via `agent.applicationSlug`. Persisted on the job rather than re-derived from applicationUuid because the export runs as a background job, long after the request, and the slug is the identity the exported app is BUILT with — re-resolving it later would let a renamed Application change the appId of an export already in flight."
+          },
+          "flows": {
+            "title": "Flows",
+            "type": "array",
+            "default": [],
+            "items": {
+              "type": "object",
+              "title": "Export Flow Choice",
+              "required": [
+                "flow"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "flow": {
+                  "title": "Flow UUID",
+                  "type": "string",
+                  "description": "UUID of an OpenRegister flow named in the source Application's `flows` bindings, as chosen at export-submission time. Resolved by FlowAndAgentExportBundler against the OpenRegister `Flow` ENTITY (FlowMapper::findByUuid) — the store the engine executes — and NOT against the `agentflow` object mirror, which drifts from it. A UUID and not the numeric `id`: an id is a per-instance auto-increment column and would resolve to a different flow, or to nothing, on the importing instance."
+                }
+              }
+            },
+            "description": "Per-export choice of which of the source Application's `flows` bindings to bundle. Export-flow state persisted on the ExportJob record by ExportJobService::queue() (via sanitiseFlows(), which keeps only `flow` and drops the builder-UI `label`) — not Application configuration; the Application's own binding lives on Application.flows, declared in 22-flows-and-agents.json. Absent on every ExportJob created before this property existed; ExportJobService::queue() defaults it to []."
           }
         },
         "x-openregister-lifecycle": {
@@ -971,7 +1147,10 @@
           "owner": "Voorbeeld Owner 1",
           "name": "Voorbeeld Name 1"
         },
-        "githubDefaultBranch": "Voorbeeld Githubdefaultbranch 1"
+        "githubDefaultBranch": "Voorbeeld Githubdefaultbranch 1",
+        "dataRegisters": [],
+        "connectors": [],
+        "flows": []
       },
       {
         "@self": {
@@ -1012,7 +1191,10 @@
           "owner": "Voorbeeld Owner 2",
           "name": "Voorbeeld Name 2"
         },
-        "githubDefaultBranch": "Voorbeeld Githubdefaultbranch 2"
+        "githubDefaultBranch": "Voorbeeld Githubdefaultbranch 2",
+        "dataRegisters": [],
+        "connectors": [],
+        "flows": []
       },
       {
         "@self": {
@@ -1053,7 +1235,10 @@
           "owner": "Voorbeeld Owner 3",
           "name": "Voorbeeld Name 3"
         },
-        "githubDefaultBranch": "Voorbeeld Githubdefaultbranch 3"
+        "githubDefaultBranch": "Voorbeeld Githubdefaultbranch 3",
+        "dataRegisters": [],
+        "connectors": [],
+        "flows": []
       },
       {
         "@self": {
@@ -1266,7 +1451,12 @@
         "errorMessage": "Voorbeeld Errormessage 1",
         "log": [
           "Voorbeeld Log 1"
-        ]
+        ],
+        "dataRegisters": [],
+        "githubCredentialId": "Voorbeeld Githubcredentialid 1",
+        "requestedBy": "Voorbeeld Requestedby 1",
+        "applicationSlug": "Voorbeeld Applicationslug 1",
+        "flows": []
       },
       {
         "@self": {
@@ -1290,7 +1480,12 @@
         "errorMessage": "Voorbeeld Errormessage 2",
         "log": [
           "Voorbeeld Log 2"
-        ]
+        ],
+        "dataRegisters": [],
+        "githubCredentialId": "Voorbeeld Githubcredentialid 2",
+        "requestedBy": "Voorbeeld Requestedby 2",
+        "applicationSlug": "Voorbeeld Applicationslug 2",
+        "flows": []
       },
       {
         "@self": {
@@ -1314,7 +1509,12 @@
         "errorMessage": "Voorbeeld Errormessage 3",
         "log": [
           "Voorbeeld Log 3"
-        ]
+        ],
+        "dataRegisters": [],
+        "githubCredentialId": "Voorbeeld Githubcredentialid 3",
+        "requestedBy": "Voorbeeld Requestedby 3",
+        "applicationSlug": "Voorbeeld Applicationslug 3",
+        "flows": []
       }
     ]
   }
