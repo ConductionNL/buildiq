@@ -1044,7 +1044,8 @@
         "Exports": "Exports",
         "History": "Geschiedenis",
         "Walkthrough designer": "Rondleidingontwerper",
-        "Agents": "Agents"
+        "Agents": "Agents",
+        "Flow": "Flow"
     },
     "plurals": null,
     "pluralForm": "nplurals=2; plural=(n != 1);"
