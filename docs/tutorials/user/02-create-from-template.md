@@ -14,8 +14,8 @@ By the end you will have cloned a template into an editable draft virtual app, n
 
 ## Prerequisites
 
-- You completed [Open OpenBuild for the first time](./01-first-launch.md).
-- At least one template in the gallery — OpenBuild ships four out of the box (*Permit Tracker*, *Stakeholder Consultation*, *Employee Onboarding*, *Incident Reporter*). Admins add more via [Manage the template catalogue](../admin/02-template-catalogue.md).
+- You completed [Open Buildiq for the first time](./01-first-launch.md).
+- At least one template in the gallery — Buildiq ships four out of the box (*Permit Tracker*, *Stakeholder Consultation*, *Employee Onboarding*, *Incident Reporter*). Admins add more via [Manage the template catalogue](../admin/02-template-catalogue.md).
 
 ## Steps
 
@@ -31,7 +31,7 @@ By the end you will have cloned a template into an editable draft virtual app, n
 
    ![Use-template dialog](/screenshots/tutorials/user/02-create-from-template-03.png)
 
-4. Click **Create**. OpenBuild clones the template's schemas, pages and sample data under a new application record, sets the status to *Draft* and returns you to the Virtual apps list.
+4. Click **Create**. Buildiq clones the template's schemas, pages and sample data under a new application record, sets the status to *Draft* and returns you to the Virtual apps list.
 
    ![New app in the list](/screenshots/tutorials/user/02-create-from-template-04.png)
 

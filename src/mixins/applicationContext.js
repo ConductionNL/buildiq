@@ -16,7 +16,7 @@ import { generateUrl } from '@nextcloud/router'
 import { fetchApplicationRecord } from '../composables/useApplicationRecord.js'
 import { getCurrentUserGroups, useRole } from '../composables/useRole.js'
 
-const OR_OBJECTS = '/apps/openregister/api/objects/openbuild/application'
+const OR_OBJECTS = '/apps/openregister/api/objects/buildiq/application'
 
 export default {
 	props: {
@@ -85,7 +85,7 @@ export default {
 			}
 			const uuid = this.obAppUuid
 			if (!uuid) {
-				this.obAppError = t('openbuild', 'No application selected.')
+				this.obAppError = t('buildiq', 'No application selected.')
 				return
 			}
 			this.obAppLoading = true
@@ -106,7 +106,7 @@ export default {
 							? data
 							: data
 			} catch (e) {
-				this.obAppError = `${t('openbuild', 'Failed to load application')}: ${e.message || e}`
+				this.obAppError = `${t('buildiq', 'Failed to load application')}: ${e.message || e}`
 			} finally {
 				this.obAppLoading = false
 			}

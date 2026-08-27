@@ -2,18 +2,18 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * Playwright end-to-end test for the openbuild-rbac change covering the
+ * Playwright end-to-end test for the buildiq-rbac change covering the
  * non-member's blackout: no Applications visible in the editor list AND a
  * deny screen on direct /builder/{slug} navigation. Together with the
  * Newman + PHPUnit suites this closes REQ-OBRBAC-002 (manifest 403) and
  * REQ-OBRBAC-003 (list filter) at the rendered-UI layer.
  *
  * Pre-conditions assumed by this spec — set up by Newman's Setup folder
- * (tests/integration/openbuild-rbac.postman_collection.json) before the
+ * (tests/integration/buildiq-rbac.postman_collection.json) before the
  * Playwright run kicks off, OR by the CI harness:
  *
  *   - Nextcloud reachable at NC_BASE_URL (default http://localhost:8080)
- *     with the openbuild app enabled and the SeedHelloWorld repair step
+ *     with the buildiq app enabled and the SeedHelloWorld repair step
  *     having produced a `hello-world` Application.
  *   - Test user `rbac-outsider` / `RbacOutsider-1!` exists and is NOT a
  *     member of any group referenced in the hello-world Application's
@@ -38,7 +38,7 @@ const TEST_SLUG = process.env.NC_RBAC_TEST_SLUG ?? 'hello-world'
 //
 // Blocker 1 (hard): needs the Nextcloud user `rbac-outsider` / `RbacOutsider-1!`,
 // in no group named by hello-world's `permissions` block. It is created by
-// tests/integration/openbuild-rbac.postman_collection.json step 1.6, and this
+// tests/integration/buildiq-rbac.postman_collection.json step 1.6, and this
 // Playwright suite does not run Newman. Without that user the whole premise —
 // a NON-admin, NON-member session — is unreachable; the shared admin
 // storageState exercises the admin bypass (REQ-OBRBAC-006) instead.
@@ -47,11 +47,11 @@ const TEST_SLUG = process.env.NC_RBAC_TEST_SLUG ?? 'hello-world'
 // assertion is `expect(page.locator('[data-app-slug="hello-world"],
 // [data-testid="builder-host-hello-world"]')).toHaveCount(0)`. Neither attribute
 // is emitted anywhere in src/ — BuilderHost.vue stamps
-// data-testid="openbuild-builder-host", with no slug in it. So that count is 0
+// data-testid="buildiq-builder-host", with no slug in it. So that count is 0
 // for an admin who CAN see the app, and the assertion proves nothing. Retarget
 // it before re-enabling.
 //
-// This block is also the canonical home the openbuild-runtime spec points at
+// This block is also the canonical home the buildiq-runtime spec points at
 // for REQ-OBR-006c ("@e2e exclude … already covered by rbac-403.spec.ts") and
 // is where REQ-OBR-007c's empty-list scenario belongs, since both need exactly
 // this outsider session.
@@ -66,13 +66,13 @@ const TEST_SLUG = process.env.NC_RBAC_TEST_SLUG ?? 'hello-world'
 //
 // Blocker 2 (fixed): the deny assertions targeted `[data-app-slug="…"]` and
 // `[data-testid="builder-host-hello-world"]`. Neither is emitted anywhere in
-// src/ — BuilderHost.vue stamps `data-testid="openbuild-builder-host"`, with no
+// src/ — BuilderHost.vue stamps `data-testid="buildiq-builder-host"`, with no
 // slug — so both counts were 0 for an admin who CAN see the app and the
 // assertions proved nothing. Retargeted at what an outsider actually gets,
 // measured against the instance: an empty application list carrying no cards
 // and no mention of the slug, and an "App not found" screen with no builder
 // host mounted.
-test.describe('openbuild-rbac — non-member blackout (REQ-OBRBAC-002 / REQ-OBRBAC-003)', () => {
+test.describe('buildiq-rbac — non-member blackout (REQ-OBRBAC-002 / REQ-OBRBAC-003)', () => {
 	// A NON-admin, NON-member session. The shared admin storageState would
 	// exercise the admin bypass (REQ-OBRBAC-006) and never reach the deny path.
 	test.use({ storageState: 'tests/e2e/.auth/rbac-outsider.json' })
@@ -80,7 +80,7 @@ test.describe('openbuild-rbac — non-member blackout (REQ-OBRBAC-002 / REQ-OBRB
 	test('REQ-OBRBAC-003: outsider sees no Applications in the editor list', async ({
 		page,
 	}) => {
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/applications`, {
+		await page.goto(`${NEXTCLOUD_URL}/apps/buildiq/applications`, {
 			waitUntil: 'domcontentloaded',
 		})
 
@@ -95,7 +95,7 @@ test.describe('openbuild-rbac — non-member blackout (REQ-OBRBAC-002 / REQ-OBRB
 	test('REQ-OBRBAC-002: direct /builder/{slug} URL renders the no-access screen', async ({
 		page,
 	}) => {
-		await page.goto(`${NEXTCLOUD_URL}/apps/openbuild/builder/${TEST_SLUG}`, {
+		await page.goto(`${NEXTCLOUD_URL}/apps/buildiq/builder/${TEST_SLUG}`, {
 			waitUntil: 'domcontentloaded',
 		})
 
@@ -107,7 +107,7 @@ test.describe('openbuild-rbac — non-member blackout (REQ-OBRBAC-002 / REQ-OBRB
 
 		// And the builder host itself must never mount for a non-member.
 		await expect(
-			page.locator('[data-testid="openbuild-builder-host"]'),
+			page.locator('[data-testid="buildiq-builder-host"]'),
 		).toHaveCount(0)
 	})
 })

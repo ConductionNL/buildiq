@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild ConditionActionExecutor
+ * Buildiq ConditionActionExecutor
  *
  * Evaluates a chain of ConditionActionRules against a payload and executes the
  * actions of each rule whose FEEL condition is true. Rules fire in
@@ -21,7 +21,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -37,7 +37,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 use Throwable;
 
@@ -61,7 +61,7 @@ class ConditionActionExecutor {
 	 * wired `RuleActionDispatcher`.
 	 *
 	 * `approval` was added by the automation-approval-steps change (spec
-	 * REQ-AUTD-007) so {@see \OCA\OpenBuild\Service\AutomationCompilerService::compileDryRunRule()}'s
+	 * REQ-AUTD-007) so {@see \OCA\Buildiq\Service\AutomationCompilerService::compileDryRunRule()}'s
 	 * synthetic rule marks it "dry-run, skipped" instead of an "unknown
 	 * action type" error. The real compile path never hands this executor a
 	 * ConditionActionRule containing an `approval` action — it is blocked on

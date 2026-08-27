@@ -25,7 +25,7 @@ bump per the OpenRegister version-gate rule.
 
 #### Scenario: Schema declares the provenance fields after install
 
-- **WHEN** the OpenBuild repair step runs (fresh install or upgrade)
+- **WHEN** the Buildiq repair step runs (fresh install or upgrade)
 - **THEN** the `ApplicationVersion` schema exposes optional `commitSha` and
   `sourceRef` properties
 - **AND** an ApplicationVersion object that omits both remains schema-valid

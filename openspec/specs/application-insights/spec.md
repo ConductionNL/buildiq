@@ -17,7 +17,7 @@ activity timeline, sourced from OR aggregation calls over the version's per-vers
 register schema-set. Schema-set is derived server-side by walking
 `manifest.pages[].config.{register,schema}` and unique-ing to the version's own
 register; cross-register references are ignored. Auth gate mirrors
-`openbuild-version-routing` REQ-OBVR-003 exactly (production: viewers OK;
+`buildiq-version-routing` REQ-OBVR-003 exactly (production: viewers OK;
 non-production: editors-or-better; no admin auto-grant; failure → 404 not 403);
 responses carry `Cache-Control: public, max-age=60`.
 
@@ -26,7 +26,7 @@ responses carry `Cache-Control: public, max-age=60`.
 ### Requirement: Insights endpoint returns KPIs and activity timeline for a version
 
 The system SHALL expose
-`GET /index.php/apps/openbuild/api/applications/{appUuid}/versions/{versionUuid}/insights?window=7d|30d|90d`,
+`GET /index.php/apps/buildiq/api/applications/{appUuid}/versions/{versionUuid}/insights?window=7d|30d|90d`,
 returning a single JSON payload containing four KPI scalars and an activity
 timeline scoped to the named ApplicationVersion's per-version register.
 
@@ -64,7 +64,7 @@ The response SHALL carry the header `Cache-Control: public, max-age=60`.
 #### Scenario: Valid call returns kpis + activity payload
 
 - **GIVEN** an Application `<nil>` with an ApplicationVersion `<nil>` whose register
-  is `openbuild-hello-world-production`
+  is `buildiq-hello-world-production`
 - **AND** the caller is in `permissions.viewers` on the Application
 - **WHEN** the caller GETs
   `/api/applications/<nil>/versions/<nil>/insights?window=7d`
@@ -101,10 +101,10 @@ The response SHALL carry the header `Cache-Control: public, max-age=60`.
   `/api/applications/<nil>/versions/<nil>/insights?window=7d`
 - **THEN** the response is `404 Not Found`
 
-### Requirement: Auth gate mirrors openbuild-version-routing
+### Requirement: Auth gate mirrors buildiq-version-routing
 
 The endpoint SHALL apply the same RBAC gate as
-`openbuild-version-routing` REQ-OBVR-003:
+`buildiq-version-routing` REQ-OBVR-003:
 
 - If the resolved version's UUID equals `Application.productionVersion.uuid`, the
   caller MUST be in `permissions.viewers` ∪ `permissions.editors` ∪
@@ -113,7 +113,7 @@ The endpoint SHALL apply the same RBAC gate as
 - Otherwise (non-production version), the caller MUST be in `permissions.editors` ∪
   `permissions.owners`. Failure → `404`.
 - Nextcloud admins are NOT auto-granted (same policy as
-  `openbuild-version-routing`).
+  `buildiq-version-routing`).
 
 The controller SHALL carry `#[NoAdminRequired]`. The RBAC check SHALL live inside
 the service layer (`ApplicationInsightsService`), not the controller, so the gate is
@@ -149,7 +149,7 @@ testable in isolation and mirrors the shape of `ManifestResolverService`.
 - **AND** the requested version is `staging`
 - **WHEN** the caller GETs the insights endpoint with `window=7d`
 - **THEN** the response is `404 Not Found`
-  _(admins are not auto-granted — same policy as openbuild-version-routing)_
+  _(admins are not auto-granted — same policy as buildiq-version-routing)_
 
 ### Requirement: Schema-set walk over the version's manifest.pages[].config
 
@@ -162,7 +162,7 @@ server-side and unique-ing the resulting schema IDs. The walk SHALL:
    `config.schema`. Collect `(registerSlug, schemaId)` tuples; skip entries with
    missing or null values.
 3. Filter to tuples where `registerSlug` equals
-   `openbuild-{appSlug}-{versionSlug}` (the version's own per-version register).
+   `buildiq-{appSlug}-{versionSlug}` (the version's own per-version register).
    Tuples referencing other registers SHALL be ignored — the insights endpoint
    scopes to the version's own register only.
 4. Unique by schema ID.
@@ -176,9 +176,9 @@ call. An empty schema-set is a valid input — all four KPIs return `0` and
 #### Scenario: Walk derives unique schema IDs from manifest.pages
 
 - **GIVEN** a manifest with three page entries:
-  `[{config:{register:"openbuild-hello-world-production", schema:"<nil>"}},
-   {config:{register:"openbuild-hello-world-production", schema:"<nil>"}},
-   {config:{register:"openbuild-hello-world-production", schema:"<nil>"}}]`
+  `[{config:{register:"buildiq-hello-world-production", schema:"<nil>"}},
+   {config:{register:"buildiq-hello-world-production", schema:"<nil>"}},
+   {config:{register:"buildiq-hello-world-production", schema:"<nil>"}}]`
   (the same schema referenced twice plus a distinct one)
 - **WHEN** the service walks the manifest
 - **THEN** the resulting schema-set contains two unique schema IDs

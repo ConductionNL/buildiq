@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild DecisionTableEvaluator
+ * Buildiq DecisionTableEvaluator
  *
  * Evaluates a DMN 1.4 decision table against an input payload and implements
  * the hit policies first / unique / priority / any / collect / rule-order
@@ -20,7 +20,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -36,7 +36,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 use RuntimeException;
 

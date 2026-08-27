@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2026 OpenBuild Contributors
+ * SPDX-FileCopyrightText: 2026 Buildiq Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Vitest spec for IndexPageEditor (REQ-OBPD-004).
@@ -21,7 +21,7 @@ import { mount } from '@vue/test-utils'
 
 const fetchRegisters = vi.fn(async () => [
 	{ slug: 'openbuild-hello-world', title: 'Hello World' },
-	{ slug: 'openbuild', title: 'OpenBuild apps' },
+	{ slug: 'buildiq', title: 'Buildiq apps' },
 ])
 const fetchSchemas = vi.fn(async () => [
 	{ slug: 'page', title: 'Page' },
@@ -132,7 +132,7 @@ describe('IndexPageEditor', () => {
 		// property no longer exists.
 		const slugs = wrapper.findAll('option').map((w) => w.element.value)
 		expect(slugs).toContain('openbuild-hello-world')
-		expect(slugs).toContain('openbuild')
+		expect(slugs).toContain('buildiq')
 	})
 
 	it('schema picker is disabled until a register is selected', () => {
@@ -154,12 +154,12 @@ describe('IndexPageEditor', () => {
 			register: 'openbuild-hello-world',
 			schema: 'page',
 		})
-		wrapper.vm.update('register', 'openbuild')
+		wrapper.vm.update('register', 'buildiq')
 		await wrapper.vm.$nextTick()
 		const emitted = wrapper.emitted('update:config')
 		expect(emitted).toBeTruthy()
 		const next = emitted[0][0]
-		expect(next.register).toBe('openbuild')
+		expect(next.register).toBe('buildiq')
 		expect(next).not.toHaveProperty('schema')
 	})
 
@@ -218,10 +218,10 @@ describe('IndexPageEditor', () => {
 
 	it('updates `cardComponent` via the optional input', async () => {
 		const wrapper = mountEditor({ register: 'r' })
-		wrapper.vm.update('cardComponent', 'OpenBuildDefaultCard')
+		wrapper.vm.update('cardComponent', 'BuildiqDefaultCard')
 		await wrapper.vm.$nextTick()
 		const next = wrapper.emitted('update:config')[0][0]
-		expect(next.cardComponent).toBe('OpenBuildDefaultCard')
+		expect(next.cardComponent).toBe('BuildiqDefaultCard')
 	})
 
 	// data-registers-runtime task 2.4/2.1: dataRegisters prop pass-through.

@@ -14,35 +14,32 @@
   - { properties, required } before Save.
   -->
 <template>
-	<section class="openbuild-field-editor">
-		<header class="openbuild-field-editor__header">
-			<h3>{{ t('openbuild', 'Fields') }}</h3>
+	<section class="buildiq-field-editor">
+		<header class="buildiq-field-editor__header">
+			<h3>{{ t('buildiq', 'Fields') }}</h3>
 			<NcButton @click="addField">
 				<template #icon>
 					<PlusIcon :size="20" />
 				</template>
-				{{ t('openbuild', 'Add field') }}
+				{{ t('buildiq', 'Add field') }}
 			</NcButton>
 		</header>
 
-		<p v-if="fields.length === 0" class="openbuild-field-editor__empty">
+		<p v-if="fields.length === 0" class="buildiq-field-editor__empty">
 			{{
-				t(
-					'openbuild',
-					'No fields yet. Add the first property to your schema.',
-				)
+				t('buildiq', 'No fields yet. Add the first property to your schema.')
 			}}
 		</p>
 
-		<ul v-else class="openbuild-field-editor__rows">
+		<ul v-else class="buildiq-field-editor__rows">
 			<li
 				v-for="(field, index) in fields"
 				:key="field._key"
-				class="openbuild-field-editor__row">
-				<div class="openbuild-field-editor__handle">
+				class="buildiq-field-editor__row">
+				<div class="buildiq-field-editor__handle">
 					<NcButton
 						variant="tertiary"
-						:aria-label="t('openbuild', 'Move up')"
+						:aria-label="t('buildiq', 'Move up')"
 						:disabled="index === 0"
 						@click="moveUp(index)">
 						<template #icon>
@@ -51,7 +48,7 @@
 					</NcButton>
 					<NcButton
 						variant="tertiary"
-						:aria-label="t('openbuild', 'Move down')"
+						:aria-label="t('buildiq', 'Move down')"
 						:disabled="index === fields.length - 1"
 						@click="moveDown(index)">
 						<template #icon>
@@ -60,16 +57,16 @@
 					</NcButton>
 				</div>
 
-				<div class="openbuild-field-editor__row-grid">
+				<div class="buildiq-field-editor__row-grid">
 					<NcTextField
 						:modelValue="field.name"
-						:label="t('openbuild', 'Name')"
+						:label="t('buildiq', 'Name')"
 						:error="!!nameError(field, index)"
 						:helperText="nameError(field, index)"
 						@update:modelValue="updateField(index, 'name', $event)" />
 
 					<NcSelect
-						:inputLabel="t('openbuild', 'Type')"
+						:inputLabel="t('buildiq', 'Type')"
 						:modelValue="typeOption(field.type)"
 						:options="typeOptions"
 						:clearable="false"
@@ -87,30 +84,30 @@
 						:modelValue="!!field.required"
 						type="switch"
 						@update:modelValue="updateField(index, 'required', $event)">
-						{{ t('openbuild', 'Required') }}
+						{{ t('buildiq', 'Required') }}
 					</NcCheckboxRadioSwitch>
 
 					<NcTextField
 						:modelValue="field.description || ''"
-						:label="t('openbuild', 'Description')"
+						:label="t('buildiq', 'Description')"
 						@update:modelValue="
 							updateField(index, 'description', $event)
 						" />
 				</div>
 
-				<div class="openbuild-field-editor__validation">
+				<div class="buildiq-field-editor__validation">
 					<!-- string -->
 					<template v-if="field.type === 'string'">
 						<NcTextField
 							:modelValue="field.validation.format || ''"
-							:label="t('openbuild', 'Format (optional)')"
+							:label="t('buildiq', 'Format (optional)')"
 							placeholder="email, uri, date, …"
 							@update:modelValue="
 								updateValidation(index, 'format', $event)
 							" />
 						<NcTextField
 							:modelValue="field.validation.pattern || ''"
-							:label="t('openbuild', 'Pattern (regex, optional)')"
+							:label="t('buildiq', 'Pattern (regex, optional)')"
 							@update:modelValue="
 								updateValidation(index, 'pattern', $event)
 							" />
@@ -120,7 +117,7 @@
 									? String(field.validation.minLength)
 									: ''
 							"
-							:label="t('openbuild', 'Min length')"
+							:label="t('buildiq', 'Min length')"
 							@update:modelValue="
 								updateValidation(
 									index,
@@ -134,7 +131,7 @@
 									? String(field.validation.maxLength)
 									: ''
 							"
-							:label="t('openbuild', 'Max length')"
+							:label="t('buildiq', 'Max length')"
 							@update:modelValue="
 								updateValidation(
 									index,
@@ -155,7 +152,7 @@
 									? String(field.validation.minimum)
 									: ''
 							"
-							:label="t('openbuild', 'Minimum')"
+							:label="t('buildiq', 'Minimum')"
 							@update:modelValue="
 								updateValidation(
 									index,
@@ -169,7 +166,7 @@
 									? String(field.validation.maximum)
 									: ''
 							"
-							:label="t('openbuild', 'Maximum')"
+							:label="t('buildiq', 'Maximum')"
 							@update:modelValue="
 								updateValidation(
 									index,
@@ -183,7 +180,7 @@
 									? String(field.validation.multipleOf)
 									: ''
 							"
-							:label="t('openbuild', 'Multiple of')"
+							:label="t('buildiq', 'Multiple of')"
 							@update:modelValue="
 								updateValidation(
 									index,
@@ -196,7 +193,7 @@
 					<!-- array -->
 					<template v-else-if="field.type === 'array'">
 						<NcSelect
-							:inputLabel="t('openbuild', 'Items type')"
+							:inputLabel="t('buildiq', 'Items type')"
 							:modelValue="
 								typeOption(field.validation.itemsType || 'string')
 							"
@@ -217,7 +214,7 @@
 									? String(field.validation.minItems)
 									: ''
 							"
-							:label="t('openbuild', 'Min items')"
+							:label="t('buildiq', 'Min items')"
 							@update:modelValue="
 								updateValidation(
 									index,
@@ -231,7 +228,7 @@
 									? String(field.validation.maxItems)
 									: ''
 							"
-							:label="t('openbuild', 'Max items')"
+							:label="t('buildiq', 'Max items')"
 							@update:modelValue="
 								updateValidation(
 									index,
@@ -244,7 +241,7 @@
 					<!-- relation -->
 					<template v-else-if="field.type === 'relation'">
 						<NcSelect
-							:inputLabel="t('openbuild', 'Target schema')"
+							:inputLabel="t('buildiq', 'Target schema')"
 							:modelValue="schemaOption(field.validation.target)"
 							:options="schemaOptions"
 							:clearable="false"
@@ -258,7 +255,7 @@
 								)
 							" />
 						<NcSelect
-							:inputLabel="t('openbuild', 'Cardinality')"
+							:inputLabel="t('buildiq', 'Cardinality')"
 							:modelValue="
 								cardinalityOption(
 									field.validation.cardinality || 'one',
@@ -277,19 +274,19 @@
 							" />
 						<NcTextField
 							:modelValue="field.validation.inverseOf || ''"
-							:label="t('openbuild', 'Inverse-of property (optional)')"
+							:label="t('buildiq', 'Inverse-of property (optional)')"
 							@update:modelValue="
 								updateValidation(index, 'inverseOf', $event)
 							" />
 					</template>
 				</div>
 
-				<div class="openbuild-field-editor__actions">
+				<div class="buildiq-field-editor__actions">
 					<NcButton variant="error" @click="requestRemove(index)">
 						<template #icon>
 							<DeleteIcon :size="20" />
 						</template>
-						{{ t('openbuild', 'Remove field') }}
+						{{ t('buildiq', 'Remove field') }}
 					</NcButton>
 				</div>
 			</li>
@@ -378,7 +375,7 @@ export default {
 		typeOptions() {
 			return SUPPORTED_TYPES.map((value) => ({
 				value,
-				label: this.t('openbuild', value),
+				label: this.t('buildiq', value),
 			}))
 		},
 
@@ -391,7 +388,7 @@ export default {
 		itemsTypeOptions() {
 			return ITEMS_TYPES.map((value) => ({
 				value,
-				label: this.t('openbuild', value),
+				label: this.t('buildiq', value),
 			}))
 		},
 
@@ -416,8 +413,8 @@ export default {
 				value,
 				label:
 					value === 'one'
-						? this.t('openbuild', 'One')
-						: this.t('openbuild', 'Many'),
+						? this.t('buildiq', 'One')
+						: this.t('buildiq', 'Many'),
 			}))
 		},
 	},
@@ -471,11 +468,11 @@ export default {
 		 */
 		nameError(field, index) {
 			if (!field.name) {
-				return this.t('openbuild', 'Name is required.')
+				return this.t('buildiq', 'Name is required.')
 			}
 			if (!FIELD_NAME_PATTERN.test(field.name)) {
 				return this.t(
-					'openbuild',
+					'buildiq',
 					'Name must start with a letter and use letters, digits, underscores, or hyphens only.',
 				)
 			}
@@ -484,7 +481,7 @@ export default {
 					otherIndex !== index && other.name === field.name,
 			)
 			if (duplicate) {
-				return this.t('openbuild', 'Name must be unique within the schema.')
+				return this.t('buildiq', 'Name must be unique within the schema.')
 			}
 			return ''
 		},
@@ -639,7 +636,7 @@ export default {
 		requestRemove(index) {
 			this.pendingRemoveIndex = index
 			this.pendingRemoveName =
-				this.fields[index]?.name || this.t('openbuild', '(unnamed)')
+				this.fields[index]?.name || this.t('buildiq', '(unnamed)')
 			this.removeDialogOpen = true
 		},
 
@@ -831,30 +828,30 @@ function propertyFromField(field) {
 </script>
 
 <style scoped>
-.openbuild-field-editor {
+.buildiq-field-editor {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
 }
 
-.openbuild-field-editor__header {
+.buildiq-field-editor__header {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 }
 
-.openbuild-field-editor__header h3 {
+.buildiq-field-editor__header h3 {
 	margin: 0;
 	font-size: 18px;
 	font-weight: 600;
 }
 
-.openbuild-field-editor__empty {
+.buildiq-field-editor__empty {
 	margin: 0;
 	color: var(--color-text-maxcontrast);
 }
 
-.openbuild-field-editor__rows {
+.buildiq-field-editor__rows {
 	list-style: none;
 	margin: 0;
 	padding: 0;
@@ -863,7 +860,7 @@ function propertyFromField(field) {
 	gap: 8px;
 }
 
-.openbuild-field-editor__row {
+.buildiq-field-editor__row {
 	display: grid;
 	grid-template-columns: auto 1fr;
 	gap: 8px;
@@ -873,26 +870,26 @@ function propertyFromField(field) {
 	background: var(--color-main-background);
 }
 
-.openbuild-field-editor__handle {
+.buildiq-field-editor__handle {
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
 }
 
-.openbuild-field-editor__row-grid {
+.buildiq-field-editor__row-grid {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	gap: 8px;
 }
 
-.openbuild-field-editor__validation {
+.buildiq-field-editor__validation {
 	grid-column: 2;
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	gap: 8px;
 }
 
-.openbuild-field-editor__actions {
+.buildiq-field-editor__actions {
 	grid-column: 2;
 	display: flex;
 	justify-content: flex-end;

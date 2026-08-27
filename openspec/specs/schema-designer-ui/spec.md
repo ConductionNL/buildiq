@@ -6,7 +6,7 @@ retrofit: true
 
 ## Purpose
 
-The Schema Designer is OpenBuild's visual editor for authoring an
+The Schema Designer is Buildiq's visual editor for authoring an
 Application version's OpenRegister schemas: their header (slug, title,
 description, version), property fields, lifecycle state machine,
 relations, widgets, and derived-value blocks (aggregations,
@@ -33,7 +33,7 @@ gate before allowing delete; `DeleteFieldDialog` SHALL confirm
 field-level removal. The `schemas` store SHALL resolve the register
 slug for a given application (`registerSlugForApp`).
 
-@e2e exclude retrofit component-contract spec — `AddSchemaDialog` slug/title validation, `DeleteSchemaDialog` confirmation gate, `DeleteFieldDialog` field-removal guard, and `registerSlugForApp` store resolution are component-internal contracts verified by Vitest unit tests; schema list navigation and open/delete flows are covered by the openbuild-schema-designer Playwright tests
+@e2e exclude retrofit component-contract spec — `AddSchemaDialog` slug/title validation, `DeleteSchemaDialog` confirmation gate, `DeleteFieldDialog` field-removal guard, and `registerSlugForApp` store resolution are component-internal contracts verified by Vitest unit tests; schema list navigation and open/delete flows are covered by the buildiq-schema-designer Playwright tests
 
 #### Scenario: Open a schema
 
@@ -56,7 +56,7 @@ field-name uniqueness/presence (`nameError`), and emitting the updated
 field array upward. Removal SHALL be guarded by a request/confirm/cancel
 flow.
 
-@e2e exclude retrofit component-contract spec — `toIntOrNull`, `toNumberOrNull`, `nameError`, field-array emit, and remove-guard request/confirm/cancel flow are component-internal contracts verified by Vitest unit tests; field-editor interactions are covered by the openbuild-schema-designer Playwright tests
+@e2e exclude retrofit component-contract spec — `toIntOrNull`, `toNumberOrNull`, `nameError`, field-array emit, and remove-guard request/confirm/cancel flow are component-internal contracts verified by Vitest unit tests; field-editor interactions are covered by the buildiq-schema-designer Playwright tests
 
 #### Scenario: Add and edit a field
 
@@ -77,7 +77,7 @@ lists, validate state-name correctness (`stateNameValid`), track the
 number of initial states (`initialCount`), enforce exactly one initial
 state via `setInitial`, and emit updated states and transitions upward.
 
-@e2e exclude retrofit component-contract spec — `stateNameValid`, `initialCount`, `setInitial`, state/transition emit contracts are component-internal contracts verified by Vitest unit tests; lifecycle editor rendering is covered by the openbuild-schema-designer Playwright tests
+@e2e exclude retrofit component-contract spec — `stateNameValid`, `initialCount`, `setInitial`, state/transition emit contracts are component-internal contracts verified by Vitest unit tests; lifecycle editor rendering is covered by the buildiq-schema-designer Playwright tests
 
 #### Scenario: Define a state machine
 
@@ -96,7 +96,7 @@ the widgets array). The `AggregationEditor`, `CalculationEditor`, and
 `NotificationEditor` SHALL render a formatted, human-readable summary
 of their respective derived-value blocks.
 
-@e2e exclude retrofit component-contract spec — relation-array emit, widget JSON-config validation per-row, and `AggregationEditor`/`CalculationEditor`/`NotificationEditor` human-readable render are component-internal contracts verified by Vitest unit tests; relations/widgets rendering is covered by the openbuild-schema-designer Playwright tests
+@e2e exclude retrofit component-contract spec — relation-array emit, widget JSON-config validation per-row, and `AggregationEditor`/`CalculationEditor`/`NotificationEditor` human-readable render are component-internal contracts verified by Vitest unit tests; relations/widgets rendering is covered by the buildiq-schema-designer Playwright tests
 
 #### Scenario: Author a relation
 
@@ -123,7 +123,7 @@ handler (`onFieldsChange`, `onStatesChange`, `onTransitionsChange`,
 `onRelationsChange`, `onWidgetsChange`, `onHeaderChange`) SHALL update
 the staged body.
 
-@e2e exclude retrofit component-contract spec — `composeSchemaBody`, `bodyToStaged`, `canSave` gate (`hasStagedChanges`, `fieldNamesUnique`, `hasInitialLifecycleState`), `onFieldsChange`/`onStatesChange`/`onTransitionsChange` change handlers, and discard/add/delete list mutations are staged-state contracts verified by Vitest unit tests; save/validation integration is covered by the openbuild-schema-designer Playwright tests
+@e2e exclude retrofit component-contract spec — `composeSchemaBody`, `bodyToStaged`, `canSave` gate (`hasStagedChanges`, `fieldNamesUnique`, `hasInitialLifecycleState`), `onFieldsChange`/`onStatesChange`/`onTransitionsChange` change handlers, and discard/add/delete list mutations are staged-state contracts verified by Vitest unit tests; save/validation integration is covered by the buildiq-schema-designer Playwright tests
 
 #### Scenario: Save a valid edit
 

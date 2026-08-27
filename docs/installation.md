@@ -49,7 +49,7 @@ The fastest path:
 2. Open `Apps` → search for `OpenRegister` — install + enable.
 3. Search for `OpenBuilt` — install + enable.
 4. Navigate to `https://your-nextcloud/index.php/apps/openbuilt` to land on the Virtual apps index.
-5. Click `New application` to launch the wizard. See the [`02-create-from-template` tutorial](./user-guide/) for screenshots.
+5. Click `New application` to launch the wizard. See the [`02-create-from-template` tutorial](./user-guide/index.md) for screenshots.
 
 ## From source (developer install)
 
@@ -100,6 +100,6 @@ If any of these fail: `occ log:tail` + check the OR repair-step output. Common g
 
 ## Next steps
 
-- Read the [User guide](./user-guide/) for the citizen-developer walkthrough.
-- Read the [Integrator guide](./integrator-guide) if you want to author manifests by hand.
-- Read [Technical](./Technical/) for the ADR list, the test gate matrix, and the MCP tool catalogue.
+- Read the [User guide](./user-guide/index.md) for the citizen-developer walkthrough.
+- Read the [Integrator guide](./integrator-guide.md) if you want to author manifests by hand.
+- Read [Technical](./Technical/index.md) for the ADR list, the test gate matrix, and the MCP tool catalogue.

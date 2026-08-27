@@ -7,7 +7,7 @@
  * This is a regression test for a failure that took three attempts to fix, and
  * every one of the first two looked green:
  *
- *  1. openbuild#76 — every schema declared a non-empty `authorization` block
+ *  1. buildiq#76 — every schema declared a non-empty `authorization` block
  *     with no `read` key. OpenRegister fails that closed to owner-only rows, so
  *     a non-admin saw ZERO objects. Fixed by `read: ["authenticated"]` (#81).
  *  2. ConductionNL/nextcloud-vue#574/#575 — with objects finally visible, a
@@ -41,7 +41,7 @@ test.describe('a non-admin with an app role can use the app', () => {
 		try {
 			await suppressSupportDialog(page)
 			await suppressSetupWizard(page)
-			await page.goto(`${BASE_URL}/apps/openbuild/`, {
+			await page.goto(`${BASE_URL}/apps/buildiq/`, {
 				waitUntil: 'domcontentloaded',
 			})
 			await ensureVersionChain(page, TEST_SLUG, 'PW Version Chain')
@@ -63,7 +63,7 @@ test.describe('a non-admin with an app role can use the app', () => {
 		const page = await context.newPage()
 		try {
 			await page.goto(
-				`${BASE_URL}/apps/openbuild/builder/${TEST_SLUG}/schemas`,
+				`${BASE_URL}/apps/buildiq/builder/${TEST_SLUG}/schemas`,
 				{ waitUntil: 'domcontentloaded' },
 			)
 
@@ -76,14 +76,14 @@ test.describe('a non-admin with an app role can use the app', () => {
 			// would pass on a blank page — so prove the real surface rendered,
 			// then prove the wizard is not on it.
 			await expect(
-				page.locator('.openbuild-schema-list'),
+				page.locator('.buildiq-schema-list'),
 				'the schema designer must render for an editor',
 			).toBeVisible({ timeout: 30_000 })
 
 			// The setup wizard is admin-only work. A non-admin meeting it is the
 			// regression — they cannot complete it, and it covers the whole app.
 			await expect(
-				page.getByText(/Set up this app|Welcome to OpenBuild/i),
+				page.getByText(/Set up this app|Welcome to Buildiq/i),
 				'a non-admin must never be shown the first-time-setup wizard',
 			).toHaveCount(0)
 		} finally {
@@ -100,7 +100,7 @@ test.describe('a non-admin with an app role can use the app', () => {
 		const page = await context.newPage()
 		try {
 			const resp = await page.request.get(
-				`${BASE_URL}/index.php/apps/openbuild/api/applications`,
+				`${BASE_URL}/index.php/apps/buildiq/api/applications`,
 				{ headers: { 'OCS-APIRequest': 'true' } },
 			)
 			expect(
@@ -110,8 +110,8 @@ test.describe('a non-admin with an app role can use the app', () => {
 			const body = await resp.json()
 			const rows = Array.isArray(body) ? body : (body?.results ?? [])
 
-			// Non-zero is the openbuild#76 regression guard: OR used to filter
-			// every row out one layer below openbuild's own permission check.
+			// Non-zero is the buildiq#76 regression guard: OR used to filter
+			// every row out one layer below buildiq's own permission check.
 			expect(
 				rows.length,
 				'a granted editor must see at least their app',
@@ -134,14 +134,14 @@ test.describe('a non-admin with an app role can use the app', () => {
 		const page = await context.newPage()
 		try {
 			const resp = await page.request.get(
-				`${BASE_URL}/index.php/apps/openbuild/api/applications`,
+				`${BASE_URL}/index.php/apps/buildiq/api/applications`,
 				{ headers: { 'OCS-APIRequest': 'true' } },
 			)
 			const body = await resp.json().catch(() => null)
 			const rows = Array.isArray(body) ? body : (body?.results ?? [])
 
 			// The control for the test above: `read: ["authenticated"]` is a COARSE
-			// grant at the OpenRegister layer. If openbuild's own row-level filter
+			// grant at the OpenRegister layer. If buildiq's own row-level filter
 			// ever stopped running, this is the test that would notice.
 			expect(
 				rows.length,

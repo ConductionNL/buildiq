@@ -65,7 +65,7 @@ export async function ensureVersionChain(
 				'OCS-APIRequest': 'true',
 				'Content-Type': 'application/json',
 			}
-			const versionsUrl = `/index.php/apps/openbuild/api/applications/${slug}/versions`
+			const versionsUrl = `/index.php/apps/buildiq/api/applications/${slug}/versions`
 
 			const list = async () => {
 				const resp = await fetch(versionsUrl, { headers })
@@ -126,7 +126,7 @@ export async function listVersions(
 ): Promise<Array<Record<string, unknown>>> {
 	return page.evaluate(async (slug) => {
 		const resp = await fetch(
-			`/index.php/apps/openbuild/api/applications/${slug}/versions`,
+			`/index.php/apps/buildiq/api/applications/${slug}/versions`,
 			{
 				headers: { 'OCS-APIRequest': 'true' },
 			},

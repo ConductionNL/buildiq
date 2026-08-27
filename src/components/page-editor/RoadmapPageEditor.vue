@@ -13,7 +13,7 @@
   - `openregister::features_roadmap_enabled` flag), and the four CTA/doc URL
   - overrides (`documentationUrl`, `suggestUrl`, `openbuiltUrl`,
   - `llmSkillsUrl`). `features[]` is normally server-provided via
-  - initialState (see OpenBuild's own FeaturesRoadmap.vue) and is
+  - initialState (see Buildiq's own FeaturesRoadmap.vue) and is
   - deliberately Raw-JSON-only here (design.md Decision 4) — this editor
   - never touches it, so it survives every form edit untouched.
   -
@@ -24,26 +24,26 @@
 <template>
 	<div class="roadmap-page-editor">
 		<h3 class="roadmap-page-editor__title">
-			{{ t('openbuild', 'Roadmap page') }}
+			{{ t('buildiq', 'Roadmap page') }}
 		</h3>
 
 		<p class="roadmap-page-editor__hint" role="note">
 			{{
 				t(
-					'openbuild',
+					'buildiq',
 					'Every field below resolves manifest config first, then the matching features_roadmap_KEY initialState value, then a built-in fallback. The features list itself is normally server-provided; edit it via the Raw JSON tab.',
 				)
 			}}
 		</p>
 
 		<fieldset class="roadmap-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Repository') }}</legend>
+			<legend>{{ t('buildiq', 'Repository') }}</legend>
 			<label class="roadmap-page-editor__group-row">
-				{{ t('openbuild', 'Repo') }}
+				{{ t('buildiq', 'Repo') }}
 				<input
 					type="text"
 					:value="config.repo || ''"
-					:placeholder="t('openbuild', 'owner/repo')"
+					:placeholder="t('buildiq', 'owner/repo')"
 					:aria-invalid="isInvalid('repo')"
 					@input="update('repo', $event.target.value)" />
 				<InlineFieldMark :error="markFor('repo')" />
@@ -51,15 +51,15 @@
 		</fieldset>
 
 		<fieldset class="roadmap-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Forge') }}</legend>
+			<legend>{{ t('buildiq', 'Forge') }}</legend>
 			<label class="roadmap-page-editor__group-row">
-				{{ t('openbuild', 'Forge type') }}
+				{{ t('buildiq', 'Forge type') }}
 				<select
 					:value="(config.forge && config.forge.type) || ''"
 					:aria-invalid="isInvalid('forge')"
 					@change="updateForgeType($event.target.value)">
 					<option value="">
-						{{ t('openbuild', '— not set —') }}
+						{{ t('buildiq', '— not set —') }}
 					</option>
 					<option value="codeberg">codeberg</option>
 					<option value="forgejo">forgejo</option>
@@ -68,33 +68,33 @@
 				</select>
 			</label>
 			<label class="roadmap-page-editor__group-row">
-				{{ t('openbuild', 'Forge base URL (optional)') }}
+				{{ t('buildiq', 'Forge base URL (optional)') }}
 				<input
 					type="text"
 					:value="(config.forge && config.forge.baseUrl) || ''"
 					:disabled="!(config.forge && config.forge.type)"
-					:placeholder="t('openbuild', 'https://codeberg.org')"
+					:placeholder="t('buildiq', 'https://codeberg.org')"
 					@input="updateForgeField('baseUrl', $event.target.value)" />
 			</label>
 			<InlineFieldMark :error="markFor('forge')" />
 		</fieldset>
 
 		<fieldset class="roadmap-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Admin opt-out') }}</legend>
+			<legend>{{ t('buildiq', 'Admin opt-out') }}</legend>
 			<label class="roadmap-page-editor__inline">
 				<input
 					type="checkbox"
 					:checked="config.disabled === true"
 					@change="update('disabled', $event.target.checked)" />
-				{{ t('openbuild', 'Disabled') }}
+				{{ t('buildiq', 'Disabled') }}
 			</label>
 			<InlineFieldMark :error="markFor('disabled')" />
 		</fieldset>
 
 		<fieldset class="roadmap-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Overrides (optional)') }}</legend>
+			<legend>{{ t('buildiq', 'Overrides (optional)') }}</legend>
 			<label class="roadmap-page-editor__group-row">
-				{{ t('openbuild', 'Documentation URL') }}
+				{{ t('buildiq', 'Documentation URL') }}
 				<input
 					type="text"
 					:value="config.documentationUrl || ''"
@@ -103,7 +103,7 @@
 				<InlineFieldMark :error="markFor('documentationUrl')" />
 			</label>
 			<label class="roadmap-page-editor__group-row">
-				{{ t('openbuild', 'Suggest URL') }}
+				{{ t('buildiq', 'Suggest URL') }}
 				<input
 					type="text"
 					:value="config.suggestUrl || ''"
@@ -112,7 +112,7 @@
 				<InlineFieldMark :error="markFor('suggestUrl')" />
 			</label>
 			<label class="roadmap-page-editor__group-row">
-				{{ t('openbuild', 'OpenBuilt URL') }}
+				{{ t('buildiq', 'OpenBuilt URL') }}
 				<input
 					type="text"
 					:value="config.openbuiltUrl || ''"
@@ -121,7 +121,7 @@
 				<InlineFieldMark :error="markFor('openbuiltUrl')" />
 			</label>
 			<label class="roadmap-page-editor__group-row">
-				{{ t('openbuild', 'LLM skills URL') }}
+				{{ t('buildiq', 'LLM skills URL') }}
 				<input
 					type="text"
 					:value="config.llmSkillsUrl || ''"

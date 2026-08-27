@@ -1,13 +1,13 @@
 <?php
 
 /**
- * Handler for the openbuild.getAppManifest MCP tool.
+ * Handler for the buildiq.getAppManifest MCP tool.
  *
  * Resolves a published virtual-app slug to its runtime manifest blob via the
- * built-app-route schema in the openbuild OR register.
+ * built-app-route schema in the buildiq OR register.
  *
  * @category Service
- * @package  OCA\OpenBuild\Mcp\Handler
+ * @package  OCA\Buildiq\Mcp\Handler
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,10 +23,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Mcp\Handler;
+namespace OCA\Buildiq\Mcp\Handler;
 
 /**
- * Handles the openbuild.getAppManifest tool invocation.
+ * Handles the buildiq.getAppManifest tool invocation.
  *
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
  */
@@ -88,7 +88,7 @@ class GetAppManifestHandler extends AbstractToolHandler {
 			];
 		} catch (\Throwable $e) {
 			$this->logger->error(
-				'OpenBuild MCP: getAppManifest failed',
+				'Buildiq MCP: getAppManifest failed',
 				['slug' => $slug, 'exception' => $e->getMessage()]
 			);
 			return $this->errorResult(error: 'internal_error', message: 'Failed to resolve manifest.');

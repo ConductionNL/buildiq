@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild RuleActionDispatcher
+ * Buildiq RuleActionDispatcher
  *
  * Completes the ADR-031 §Exceptions rules-engine code path: the concrete
  * side-effect dispatcher `ConditionActionExecutor` has always accepted as an
@@ -20,13 +20,13 @@
  *     (ADR-022), never a bespoke persistence path. Params: `schema`
  *     (required), `operation` (`create`|`update`, default `create`),
  *     `object` (the field-mapped payload, required), `register` (default
- *     `openbuild`), `id` (required when `operation: update`). When no NC
+ *     `buildiq`), `id` (required when `operation: update`). When no NC
  *     session user is active (background/dry-evaluation contexts),
  *     {@see JobOwnerImpersonator} is used so the write is attributed the
  *     same way OR attributes any other write.
  *   - `webhook` — POSTs the compiled target via `OCP\Http\Client\IClientService`.
  *     Params: `url` (required), `payload` (object, default `[]`).
- *   - `start-workflow` — reserved: no workflow engine exists in openbuild
+ *   - `start-workflow` — reserved: no workflow engine exists in buildiq
  *     (design.md non-goal); logged and treated as a no-op so the action type
  *     stays declaratively valid without inventing a new imperative engine.
  *   - `call-rule-set` — recursively invokes `RuleEngineService::evaluate()`
@@ -45,7 +45,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -61,7 +61,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 use DateTime;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -79,7 +79,7 @@ class RuleActionDispatcher {
 	/**
 	 * App identifier stamped on every created NC notification.
 	 */
-	private const NOTIFICATION_APP = 'openbuild';
+	private const NOTIFICATION_APP = 'buildiq';
 
 	/**
 	 * Constructor.
@@ -128,7 +128,7 @@ class RuleActionDispatcher {
 			};
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: RuleActionDispatcher failed for action "' . $type . '": ' . $e->getMessage(),
+				'Buildiq: RuleActionDispatcher failed for action "' . $type . '": ' . $e->getMessage(),
 				['exception' => $e]
 			);
 			return null;
@@ -163,7 +163,7 @@ class RuleActionDispatcher {
 		}
 
 		if ($recipients === []) {
-			$this->logger->info('OpenBuild: send-notification action had no resolvable recipient — skipped.');
+			$this->logger->info('Buildiq: send-notification action had no resolvable recipient — skipped.');
 			return 0;
 		}
 
@@ -193,11 +193,11 @@ class RuleActionDispatcher {
 	private function dispatchObjectOp(array $params): ?array {
 		$schema = (string)($params['schema'] ?? '');
 		if ($schema === '') {
-			$this->logger->warning('OpenBuild: object-op action missing "schema" — skipped.');
+			$this->logger->warning('Buildiq: object-op action missing "schema" — skipped.');
 			return null;
 		}
 
-		$register = (string)($params['register'] ?? 'openbuild');
+		$register = (string)($params['register'] ?? 'buildiq');
 		$operation = (string)($params['operation'] ?? 'create');
 		$object = [];
 		if (is_array($params['object'] ?? null) === true) {
@@ -207,7 +207,7 @@ class RuleActionDispatcher {
 		$id = (string)($params['id'] ?? '');
 
 		if ($operation === 'update' && $id === '') {
-			$this->logger->warning('OpenBuild: object-op update action missing "id" — skipped.');
+			$this->logger->warning('Buildiq: object-op update action missing "id" — skipped.');
 			return null;
 		}
 
@@ -238,7 +238,7 @@ class RuleActionDispatcher {
 	private function dispatchWebhook(array $params): ?int {
 		$url = (string)($params['url'] ?? '');
 		if ($url === '') {
-			$this->logger->warning('OpenBuild: webhook action missing "url" — skipped.');
+			$this->logger->warning('Buildiq: webhook action missing "url" — skipped.');
 			return null;
 		}
 
@@ -254,7 +254,7 @@ class RuleActionDispatcher {
 	}//end dispatchWebhook()
 
 	/**
-	 * Start-workflow — reserved: no workflow engine exists in openbuild
+	 * Start-workflow — reserved: no workflow engine exists in buildiq
 	 * (design.md non-goal). Logged, never throws.
 	 *
 	 * @param array<string,mixed> $params Action parameters.
@@ -263,7 +263,7 @@ class RuleActionDispatcher {
 	 */
 	private function dispatchStartWorkflow(array $params): null {
 		$this->logger->info(
-			'OpenBuild: start-workflow action dispatched but no workflow engine is wired in openbuild — no-op.',
+			'Buildiq: start-workflow action dispatched but no workflow engine is wired in buildiq — no-op.',
 			['workflowId' => ($params['workflowId'] ?? null)]
 		);
 		return null;
@@ -283,12 +283,12 @@ class RuleActionDispatcher {
 	private function dispatchCallRuleSet(array $params, array $payload): ?array {
 		$ruleSetSlug = (string)($params['ruleSetSlug'] ?? '');
 		if ($ruleSetSlug === '') {
-			$this->logger->warning('OpenBuild: call-rule-set action missing "ruleSetSlug" — skipped.');
+			$this->logger->warning('Buildiq: call-rule-set action missing "ruleSetSlug" — skipped.');
 			return null;
 		}
 
 		if ($this->container->has(RuleEngineService::class) === false) {
-			$this->logger->warning('OpenBuild: call-rule-set could not resolve RuleEngineService — skipped.');
+			$this->logger->warning('Buildiq: call-rule-set could not resolve RuleEngineService — skipped.');
 			return null;
 		}
 
@@ -307,7 +307,7 @@ class RuleActionDispatcher {
 	 * @return null
 	 */
 	private function logUnknown(string $type): null {
-		$this->logger->warning('OpenBuild: RuleActionDispatcher received an unrecognised action type "' . $type . '".');
+		$this->logger->warning('Buildiq: RuleActionDispatcher received an unrecognised action type "' . $type . '".');
 		return null;
 	}//end logUnknown()
 

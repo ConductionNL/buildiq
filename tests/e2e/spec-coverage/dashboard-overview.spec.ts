@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
 /**
- * E2E coverage for the OpenBuild Dashboard landing page (manifest page
+ * E2E coverage for the Buildiq Dashboard landing page (manifest page
  * `Dashboard`, route `/`). This is the default landing surface and was
  * previously only smoke-touched by the rbac / chat-companion specs.
  *
@@ -16,13 +16,13 @@
  *
  * The numeric values are data-dependent, so these tests assert the widget
  * *titles* and the in-app navigation, which are static, plus a console
- * hygiene check scoped to the openbuild surface.
+ * hygiene check scoped to the buildiq surface.
  *
  * ROUTING FORM (read before touching a locator here)
  * --------------------------------------------------
- * The openbuild admin surface runs a HISTORY-mode router, so vue-router
- * emits plain path hrefs (`/apps/openbuild/applications`). An earlier
- * revision of this spec matched `a[href$="/apps/openbuild/#/applications"]`
+ * The buildiq admin surface runs a HISTORY-mode router, so vue-router
+ * emits plain path hrefs (`/apps/buildiq/applications`). An earlier
+ * revision of this spec matched `a[href$="/apps/buildiq/#/applications"]`
  * on the assumption of a hash router; that selector can never match, which
  * is why all four tests here failed. Live-verified against the running
  * instance before this was changed.
@@ -45,23 +45,23 @@ const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 // (src/views/DashboardIndex.vue, the manifest's `Dashboard` page at `/`).
 // The name was only ever in the prose above, so nothing reading executable
 // code could tell this view was covered — it is, by every test below.
-const DashboardIndex = `${BASE}/apps/openbuild/`
+const DashboardIndex = `${BASE}/apps/buildiq/`
 
-// In-app nav link scoped by its openbuild href (avoids the NC top-bar).
+// In-app nav link scoped by its buildiq href (avoids the NC top-bar).
 // History-mode router => plain path hrefs, no `#` segment.
 //
 // ⚠️ SCOPED TO THE IN-APP NAVIGATION, NOT THE PAGE.
 //
-// `a[href$="/apps/openbuild/"]` matches TWO links on this page, and the first
+// `a[href$="/apps/buildiq/"]` matches TWO links on this page, and the first
 // in DOM order is the wrong one: Nextcloud's own global app menu, in the
 // <banner>, whose entry is labelled with the APP name. Measured from the
 // failure's ARIA snapshot on run 31040914410:
 //
-//   - banner > navigation "Applications menu" > link "OpenBuild" -> /apps/openbuild/
-//   - navigation > list > link "Dashboard"    -> /apps/openbuild/
+//   - banner > navigation "Applications menu" > link "Buildiq" -> /apps/buildiq/
+//   - navigation > list > link "Dashboard"    -> /apps/buildiq/
 //
 // so `.first()` asserted `toHaveText('Dashboard')` against a link that reads
-// "OpenBuild" and always failed. The other three entries passed only because
+// "Buildiq" and always failed. The other three entries passed only because
 // no global menu link ends in `/applications`, `/templates` or
 // `/features-roadmap` — i.e. this was luck, not scoping.
 //
@@ -71,17 +71,17 @@ const DashboardIndex = `${BASE}/apps/openbuild/`
 // is a NARROWER locator, not a weaker assertion: the label check below is
 // unchanged, and it now runs against the element it was written for.
 const navLink = (page: import('@playwright/test').Page, path: string) => {
-	const suffix = path === '/' ? '/apps/openbuild/' : `/apps/openbuild${path}`
+	const suffix = path === '/' ? '/apps/buildiq/' : `/apps/buildiq${path}`
 	return page
 		.locator('#app-navigation-vue')
 		.locator(`a[href$="${suffix}"]`)
 		.first()
 }
 
-test.describe('OpenBuild Dashboard', () => {
+test.describe('Buildiq Dashboard', () => {
 	test('renders the KPI and table widget titles', async ({ page }) => {
 		await page.goto(DashboardIndex)
-		await expect(page).toHaveTitle(/openbuild/i)
+		await expect(page).toHaveTitle(/buildiq/i)
 
 		// Widget titles come from DashboardIndex's `widgets` definition and are
 		// independent of the data. They render as headings, which distinguishes
@@ -145,14 +145,14 @@ test.describe('OpenBuild Dashboard', () => {
 		).toBeVisible({ timeout: 15_000 })
 	})
 
-	test('dashboard load produces no openbuild-originated console errors', async ({
+	test('dashboard load produces no buildiq-originated console errors', async ({
 		page,
 	}) => {
 		const errors: string[] = []
 		page.on('console', (m) => {
 			if (m.type() !== 'error') return
 			const text = m.text()
-			// NC-core/env noise on the dev container, not openbuild.
+			// NC-core/env noise on the dev container, not buildiq.
 			if (
 				/user_status|Failed to load user status|Failed to load resource/i.test(
 					text,

@@ -1,5 +1,5 @@
 /**
- * OpenBuild landing page.
+ * Buildiq landing page.
  *
  * Composes the brand <DetailHero> + <WidgetShelf> from
  * @conduction/docusaurus-preset/components.
@@ -21,7 +21,7 @@ import {
 /* Builder glyph: a stylised stack of blocks being assembled — the
    citizen developer composing an app from registers, connectors,
    workflows, and documents. */
-const OPENBUILD_ICON = (
+const BUILDIQ_ICON = (
   <svg viewBox="0 0 24 24">
     <path d="M4 7l8-4 8 4-8 4-8-4zm0 5l8 4 8-4M4 17l8 4 8-4" />
   </svg>
@@ -29,10 +29,10 @@ const OPENBUILD_ICON = (
 
 const TAGLINE = (
   <>
-    App builder on your <span className="next-blue">Nextcloud</span>. Compose
-    a working app from typed registers, connectors, workflows, and document
-    templates — design schemas and pages, wire data, preview, version, export.
-    No code, no second platform.
+    App builder on your own <span className="next-blue">Nextcloud</span>.
+    Build the app your business actually runs on, from a template, without
+    code. It runs where your files and your people already are. No second
+    platform to buy, host, or log into.
   </>
 );
 
@@ -214,17 +214,17 @@ function VersionSnapshotPanel() {
 const WIDGETS = [
   {
     title: 'Template gallery',
-    desc: 'Start from a curated template — CRM, intake form, asset register, help desk — or a blank app. Admins decide what shows up here.',
+    desc: 'CRM, intake form, asset register, help desk, or a blank app. Your admin decides what appears here.',
     panel: <TemplateGalleryPanel />,
   },
   {
     title: 'Schema designer',
-    desc: 'Define your data model field by field. Strings, enums, dates, relations — typed registers backed by OpenRegister, no migrations.',
+    desc: 'Define your data field by field: text, numbers, dates, and links between records. Change it tomorrow without losing what you stored today.',
     panel: <SchemaDesignerPanel />,
   },
   {
     title: 'Version snapshots',
-    desc: 'Snapshot the whole app — schemas, pages, wiring — and roll back when an edit goes wrong. Export the bundle as a ZIP any time.',
+    desc: 'Save a version of the whole app, then roll back when an edit goes wrong. Export it as a ZIP whenever you want.',
     panel: <VersionSnapshotPanel />,
   },
 ];
@@ -232,33 +232,37 @@ const WIDGETS = [
 export default function Home() {
   return (
     <Layout
-      title="OpenBuild, no-code app builder inside Nextcloud"
-      description="Citizen-developer app builder for Nextcloud. Compose apps from registers, connectors, workflows, and documents without writing code."
+      title="Buildiq, no-code app builder inside Nextcloud"
+      description="Build the app your business runs on, inside the Nextcloud you already have. Start from a template, no code, no second platform."
     >
       <main className="marketing-page">
         <DetailHero
           background="cobalt"
-          appId="openbuild"
+          appId="buildiq"
           status={{ label: 'Beta', color: 'var(--c-orange-knvb)' }}
           version="v0.x"
           locales="NL · EN"
-          title="OpenBuild"
+          title="Buildiq"
           tagline={TAGLINE}
           primaryCta={{
-            label: 'View on GitHub',
-            href: 'https://codeberg.org/Conduction/openbuild',
+            label: 'Install from app store',
+            href: 'https://apps.nextcloud.com/apps/buildiq',
             tone: 'orange',
           }}
           secondaryCta={{ label: 'Read the docs', href: '/docs/intro' }}
+          tertiaryCta={{
+            label: 'View on GitHub',
+            href: 'https://github.com/ConductionNL/buildiq',
+          }}
           iconColor="var(--c-orange-knvb)"
-          icon={OPENBUILD_ICON}
-          illustration={<AppMock app="openbuild" />}
+          icon={BUILDIQ_ICON}
+          illustration={<AppMock app="buildiq" />}
         />
 
         <WidgetShelf
           eyebrow="What you build with"
           title="Compose an app, no code required."
-          lede="Pick a template, design your schemas and pages, wire in registers and connectors, preview the running app, snapshot a version, export when you're done."
+          lede="Start from a template and shape it to your process. Your team can use it the same afternoon."
           widgets={WIDGETS}
         />
       </main>

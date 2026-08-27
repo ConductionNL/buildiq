@@ -1,7 +1,7 @@
 ---
 kind: reference
 status: informational
-scope: OpenBuild app own code (branch development)
+scope: Buildiq app own code (branch development)
 method: three read-only enumeration sweeps (XSS / DoS / CSRF), findings spot-verified
 ---
 
@@ -32,7 +32,7 @@ page CSP. No `innerHTML` / `insertAdjacentHTML` / `document.write` /
 | 5 | `…/Step4Review.vue:61` (`darkIconSvg`) | same | No | same | **Low** |
 
 **Why 2–5 are self-only:** the persisted icon is served to other users as
-`<img src="/apps/openbuild/icons/{slug}.svg">` (never `v-html`), and
+`<img src="/apps/buildiq/icons/{slug}.svg">` (never `v-html`), and
 `IconController::buildIconResponse` serves it with `Content-Security-Policy:
 default-src 'none'` + `X-Content-Type-Options: nosniff`. The `v-html` exposure is
 confined to the author's own preview. (This corrects an earlier note that treated
@@ -53,8 +53,8 @@ cannot catch a C-level stack-overflow fatal.
 | 3 | Unbounded `payload` logged every evaluate — `RulesController.php:103`, `RuleEngineService.php:242,258`; recursive `maskPii` :301 uncapped | **any authed user** | rate 60/60 | DB storage / write load |
 | 4 | `createFromTemplate` no admin gate, no rate limit — `ApplicationsController.php:1078` (the wizard doing the same fan-out *is* gated + `#[UserRateLimit(10/3600)]`) | **any authed user** | none | register/schema sprawl |
 | 5 | `testAll` fetches unbounded test cases — `RulesController.php:258` (`limit: null`) | any authed user | rate 20/60 | CPU burn (×#2) |
-| 6 | AppOverride delta writes: no rate limit + uncapped recursive validator — `AppOverrideController.php:234,447`, `AppOverrideDeltaValidator.php:144-245` | any OpenBuild user | framework json depth 512 | CPU/stack + write load |
-| 7 | MCP write tools bypass `#[UserRateLimit]` — `OpenBuildToolProvider.php:290` (known L3) | admin/editor | manifest caps (256 KB / 100 pages / 30 menu / 50 widgets) + authz | fan-out (capped) |
+| 6 | AppOverride delta writes: no rate limit + uncapped recursive validator — `AppOverrideController.php:234,447`, `AppOverrideDeltaValidator.php:144-245` | any Buildiq user | framework json depth 512 | CPU/stack + write load |
+| 7 | MCP write tools bypass `#[UserRateLimit]` — `BuildiqToolProvider.php:290` (known L3) | admin/editor | manifest caps (256 KB / 100 pages / 30 menu / 50 widgets) + authz | fan-out (capped) |
 | 8 | GitHub/Store/Shop egress endpoints, no rate limit — `GitHubSyncController.php:142` etc. | owner/authed | client timeouts | egress amplification |
 
 **Notes.** Vector 1's `RuleActionDispatcher` was "WIP-branch only" in the original

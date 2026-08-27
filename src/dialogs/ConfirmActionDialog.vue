@@ -33,7 +33,7 @@
 		</div>
 		<template #actions>
 			<NcButton :disabled="busy" @click="$emit('update:open', false)">
-				{{ t('openbuild', 'Cancel') }}
+				{{ t('buildiq', 'Cancel') }}
 			</NcButton>
 			<NcButton
 				:variant="destructive ? 'error' : 'primary'"
@@ -42,7 +42,7 @@
 				<template v-if="busy" #icon>
 					<NcLoadingIcon :size="20" />
 				</template>
-				{{ confirmLabel || t('openbuild', 'Confirm') }}
+				{{ confirmLabel || t('buildiq', 'Confirm') }}
 			</NcButton>
 		</template>
 	</NcDialog>

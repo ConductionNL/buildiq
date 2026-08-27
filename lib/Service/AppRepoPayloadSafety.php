@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild AppRepoPayloadSafety
+ * Buildiq AppRepoPayloadSafety
  *
  * Pure, stateless validation and redaction primitives shared by every v2
  * channel collector in `AppRepoSerializer`: is a string safe to use as a path
@@ -19,7 +19,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -33,7 +33,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 /**
  * Path-safety and secret-redaction primitives for the v2 repo channels.

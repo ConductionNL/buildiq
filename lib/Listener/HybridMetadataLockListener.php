@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild HybridMetadataLockListener
+ * Buildiq HybridMetadataLockListener
  *
  * Listens for OpenRegister's `ObjectUpdatingEvent` on Application rows and
  * rejects updates that change a HYBRID app's identity metadata (`slug` or
@@ -27,7 +27,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Listener
- * @package  OCA\OpenBuild\Listener
+ * @package  OCA\Buildiq\Listener
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -42,7 +42,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Listener;
+namespace OCA\Buildiq\Listener;
 
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCP\EventDispatcher\Event;
@@ -194,14 +194,14 @@ class HybridMetadataLockListener implements IEventListener {
 			$event->setErrors(
 				[
 					'status' => 422,
-					'code' => 'openbuild.hybrid_metadata.locked',
+					'code' => 'buildiq.hybrid_metadata.locked',
 					'message' => $message,
 				]
 			);
 		}
 
 		$this->logger->info(
-			message: 'OpenBuild: blocked Application update — hybrid metadata-lock rejected the change.',
+			message: 'Buildiq: blocked Application update — hybrid metadata-lock rejected the change.',
 			context: [
 				'field' => $field,
 				'slug' => ($old['slug'] ?? null),

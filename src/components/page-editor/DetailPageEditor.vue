@@ -7,17 +7,17 @@
 <template>
 	<div class="detail-page-editor">
 		<h3 class="detail-page-editor__title">
-			{{ t('openbuild', 'Detail page') }}
+			{{ t('buildiq', 'Detail page') }}
 		</h3>
 		<div class="detail-page-editor__group">
 			<label>
-				{{ t('openbuild', 'Register') }}
+				{{ t('buildiq', 'Register') }}
 				<select
 					:value="config.register || ''"
 					:aria-invalid="isInvalid('register')"
 					@change="update('register', $event.target.value)">
 					<option value="">
-						{{ t('openbuild', '— select register —') }}
+						{{ t('buildiq', '— select register —') }}
 					</option>
 					<option
 						v-for="r in registers"
@@ -29,14 +29,14 @@
 				<InlineFieldMark :error="markFor('register')" />
 			</label>
 			<label>
-				{{ t('openbuild', 'Schema') }}
+				{{ t('buildiq', 'Schema') }}
 				<select
 					:value="config.schema || ''"
 					:disabled="!config.register"
 					:aria-invalid="isInvalid('schema')"
 					@change="update('schema', $event.target.value)">
 					<option value="">
-						{{ t('openbuild', '— select schema —') }}
+						{{ t('buildiq', '— select schema —') }}
 					</option>
 					<option
 						v-for="s in schemas"
@@ -52,18 +52,18 @@
 		<p v-if="!routeHasParam" class="detail-page-editor__warn" role="alert">
 			{{
 				t(
-					'openbuild',
+					'buildiq',
 					'The parent page route has no :param segment — detail pages typically need one (e.g. /messages/:id).',
 				)
 			}}
 		</p>
 		<p v-else class="detail-page-editor__note">
-			{{ t('openbuild', 'Route params detected:') }}
+			{{ t('buildiq', 'Route params detected:') }}
 			{{ routeParams.join(', ') }}
 		</p>
 
 		<fieldset class="detail-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Sidebar') }}</legend>
+			<legend>{{ t('buildiq', 'Sidebar') }}</legend>
 			<div class="detail-page-editor__sidebar-shape">
 				<label class="detail-page-editor__inline">
 					<input
@@ -71,7 +71,7 @@
 						:checked="sidebarShape === 'object'"
 						value="object"
 						@change="setSidebarShape('object')" />
-					{{ t('openbuild', 'Object form (preferred)') }}
+					{{ t('buildiq', 'Object form (preferred)') }}
 				</label>
 				<label class="detail-page-editor__inline">
 					<input
@@ -79,7 +79,7 @@
 						:checked="sidebarShape === 'boolean'"
 						value="boolean"
 						@change="setSidebarShape('boolean')" />
-					{{ t('openbuild', 'Boolean form (legacy)') }}
+					{{ t('buildiq', 'Boolean form (legacy)') }}
 				</label>
 				<label class="detail-page-editor__inline">
 					<input
@@ -87,7 +87,7 @@
 						:checked="sidebarShape === 'none'"
 						value="none"
 						@change="setSidebarShape('none')" />
-					{{ t('openbuild', 'Not set') }}
+					{{ t('buildiq', 'Not set') }}
 				</label>
 			</div>
 			<label
@@ -97,7 +97,7 @@
 					type="checkbox"
 					:checked="config.sidebar === true"
 					@change="update('sidebar', $event.target.checked)" />
-				{{ t('openbuild', 'Sidebar enabled') }}
+				{{ t('buildiq', 'Sidebar enabled') }}
 			</label>
 			<div
 				v-else-if="sidebarShape === 'object'"
@@ -109,14 +109,14 @@
 						@change="
 							updateSidebarKey('enabled', $event.target.checked)
 						" />
-					{{ t('openbuild', 'Enabled') }}
+					{{ t('buildiq', 'Enabled') }}
 				</label>
 				<label class="detail-page-editor__inline">
 					<input
 						type="checkbox"
 						:checked="(config.sidebar || {}).show !== false"
 						@change="updateSidebarKey('show', $event.target.checked)" />
-					{{ t('openbuild', 'Show') }}
+					{{ t('buildiq', 'Show') }}
 				</label>
 				<SidebarTabBuilder
 					:modelValue="(config.sidebar && config.sidebar.tabs) || []"
@@ -127,7 +127,7 @@
 
 		<fieldset class="detail-page-editor__fieldset">
 			<legend>
-				{{ t('openbuild', 'sidebarProps.tabs (alternate path)') }}
+				{{ t('buildiq', 'sidebarProps.tabs (alternate path)') }}
 			</legend>
 			<SidebarTabBuilder
 				:modelValue="(config.sidebarProps && config.sidebarProps.tabs) || []"
@@ -159,7 +159,7 @@ export default {
 		},
 
 		// Current Application slug. Drives the hybrid register model so the
-		// register picker hoists `openbuild-{slug}` to the top of the list.
+		// register picker hoists `buildiq-{slug}` to the top of the list.
 		appSlug: {
 			type: String,
 			default: '',
@@ -184,7 +184,7 @@ export default {
 	 * cannot see props at construction time, so the picker is created here
 	 * from the resolved props and exposed as `this.picker`.
 	 *
-	 * @param {{appSlug: string, dataRegisters: Array<{register: string, label?: string}>, config: object, pageType: string, parentRoute: string}} props - the resolved component props; only `appSlug` (hoists `openbuild-{slug}` in the register list) and `dataRegisters` (labels/hoists the Application's declared bindings) are read.
+	 * @param {{appSlug: string, dataRegisters: Array<{register: string, label?: string}>, config: object, pageType: string, parentRoute: string}} props - the resolved component props; only `appSlug` (hoists `buildiq-{slug}` in the register list) and `dataRegisters` (labels/hoists the Application's declared bindings) are read.
 	 * @return {{picker: object}} - bindings merged into the instance; `picker` exposes fetchRegisters/fetchSchemas.
 	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-2.1

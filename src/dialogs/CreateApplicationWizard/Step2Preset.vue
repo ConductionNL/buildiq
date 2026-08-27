@@ -6,17 +6,17 @@
   Four radio-card options: single, dev-prod, dev-staging-prod, custom.
   Selecting a canned preset pre-populates payload.versions with the hardcoded chain.
   Selecting custom marks the selection so the wizard shell shows step 3.
-  spec: openbuild-app-creation-wizard REQ-OBWIZ-002, REQ-OBWIZ-003
+  spec: buildiq-app-creation-wizard REQ-OBWIZ-002, REQ-OBWIZ-003
 -->
 <template>
 	<div class="wizard-step2">
 		<h3 class="wizard-step2__heading">
-			{{ t('openbuild', 'Choose a version preset') }}
+			{{ t('buildiq', 'Choose a version preset') }}
 		</h3>
 		<p class="wizard-step2__description">
 			{{
 				t(
-					'openbuild',
+					'buildiq',
 					'Select how many deployment versions your app will have. You can always add more versions later.',
 				)
 			}}
@@ -25,7 +25,7 @@
 		<div
 			class="wizard-step2__presets"
 			role="radiogroup"
-			:aria-label="t('openbuild', 'Version presets')">
+			:aria-label="t('buildiq', 'Version presets')">
 			<button
 				v-for="option in presetOptions"
 				:key="option.id"
@@ -87,37 +87,37 @@ export default {
 			return [
 				{
 					id: 'single',
-					label: t('openbuild', 'Single'),
+					label: t('buildiq', 'Single'),
 					chain: 'production',
 					description: t(
-						'openbuild',
+						'buildiq',
 						'One version only. Best for simple apps without a staging environment.',
 					),
 				},
 				{
 					id: 'dev-prod',
-					label: t('openbuild', 'Development + Production'),
+					label: t('buildiq', 'Development + Production'),
 					chain: 'development → production',
 					description: t(
-						'openbuild',
+						'buildiq',
 						'A safe playground for changes before they go live.',
 					),
 				},
 				{
 					id: 'dev-staging-prod',
-					label: t('openbuild', 'Development + Staging + Production'),
+					label: t('buildiq', 'Development + Staging + Production'),
 					chain: 'development → staging → production',
 					description: t(
-						'openbuild',
+						'buildiq',
 						'Classic three-tier pipeline for larger teams.',
 					),
 				},
 				{
 					id: 'custom',
-					label: t('openbuild', 'Custom'),
-					chain: t('openbuild', 'Define your own chain'),
+					label: t('buildiq', 'Custom'),
+					chain: t('buildiq', 'Define your own chain'),
 					description: t(
-						'openbuild',
+						'buildiq',
 						'Name and order your versions however your team works.',
 					),
 				},

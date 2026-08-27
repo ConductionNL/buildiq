@@ -2,15 +2,15 @@
 kind: code
 ---
 
-# Proposal: openbuild-mcp-adoption
+# Proposal: buildiq-mcp-adoption
 
 ## Why
 
-OpenBuild builds apps. Its MCP provider therefore exposes the most dangerous write surface in the
-fleet: `lib/Mcp/OpenBuildToolProvider.php` registers **eight** tools under the
-`IMcpToolProvider::openbuild` alias, six of which mutate a virtual app —
-`openbuild.upsertPage`, `openbuild.addWidget`, `openbuild.upsertMenuItem`,
-`openbuild.upsertSchema`, `openbuild.createApp`, `openbuild.promoteVersion`. Any agent holding a
+Buildiq builds apps. Its MCP provider therefore exposes the most dangerous write surface in the
+fleet: `lib/Mcp/BuildiqToolProvider.php` registers **eight** tools under the
+`IMcpToolProvider::buildiq` alias, six of which mutate a virtual app —
+`buildiq.upsertPage`, `buildiq.addWidget`, `buildiq.upsertMenuItem`,
+`buildiq.upsertSchema`, `buildiq.createApp`, `buildiq.promoteVersion`. Any agent holding a
 grant for those tools **can rewrite the UI of a running app**. That is remote code-authoring
 delivered through a chat prompt, and today it is reachable by any MCP client OpenRegister serves,
 with no plan, no preview and no human in the loop.
@@ -18,38 +18,38 @@ with no plan, no preview and no human in the loop.
 Two facts make this worse, and both were verified at HEAD:
 
 1. **The blast radius is not the MCP surface's to own.** Those same eight tools are *also*
-   OpenBuild's AI Copilot vocabulary. `Service/CopilotService` executes plan steps through
-   `OpenBuildToolProvider::invokeTool()`, and `Copilot/CopilotPlanValidator` +
+   Buildiq's AI Copilot vocabulary. `Service/CopilotService` executes plan steps through
+   `BuildiqToolProvider::invokeTool()`, and `Copilot/CopilotPlanValidator` +
    `Copilot/CopilotPromptBuilder` restrict LLM-proposed plans to
-   `OpenBuildToolProvider::getToolDescriptors()`. In the **Copilot** context these tools are safe:
+   `BuildiqToolProvider::getToolDescriptors()`. In the **Copilot** context these tools are safe:
    `POST /api/copilot/plan` performs zero writes and returns a predicted manifest, a human reviews
    it, and `POST /api/copilot/execute` re-validates server-side and rolls back atomically on failure.
    In the **MCP** context none of that exists. The same handlers are safe behind one door and unsafe
    behind the other — and they are currently behind both.
-2. **OpenBuild has no declarative surface at all.** Zero of its schemas carry `x-openregister-mcp`,
-   so `SchemaDerivedToolProvider` emits nothing for `openbuild`. The read questions a human actually
+2. **Buildiq has no declarative surface at all.** Zero of its schemas carry `x-openregister-mcp`,
+   so `SchemaDerivedToolProvider` emits nothing for `buildiq`. The read questions a human actually
    asks ("which apps exist? did my export to GitHub finish?") are unanswerable, while the write
    questions nobody should be able to ask are wide open. Exactly backwards.
 
-ADR-063 also forbids hand-writing derivable CRUD. `openbuild.listApps` is `Application.search` and
-`openbuild.getAppManifest` is a version read — both belong in the dialect, not in PHP.
+ADR-063 also forbids hand-writing derivable CRUD. `buildiq.listApps` is `Application.search` and
+`buildiq.getAppManifest` is a version read — both belong in the dialect, not in PHP.
 
 ## What Changes
 
-**The authoring tools stay; the door they are behind changes.** OpenBuild's agent-facing MCP surface
+**The authoring tools stay; the door they are behind changes.** Buildiq's agent-facing MCP surface
 becomes **100% declarative and 100% read-only**, and the write surface is retained for the Copilot's
 human-in-the-loop flow only:
 
-- **Sever the provider from MCP.** `OpenBuildToolProvider` stops implementing `IMcpToolProvider`, the
-  `IMcpToolProvider::openbuild` alias is removed from `lib/AppInfo/Application.php`, and the class is
+- **Sever the provider from MCP.** `BuildiqToolProvider` stops implementing `IMcpToolProvider`, the
+  `IMcpToolProvider::buildiq` alias is removed from `lib/AppInfo/Application.php`, and the class is
   renamed to `Service\Copilot\CopilotToolExecutor` to say what it actually is. The handler classes
   under `lib/Mcp/Handler/` move with it. **No handler logic is deleted** — the Copilot keeps working,
   unchanged, and `CopilotService` / `CopilotPlanValidator` / `CopilotPromptBuilder` keep their
   vocabulary.
 - **Declare `x-openregister-mcp` on 5 of 12 schemas, `search` + `get` only**: `Application`,
   `ApplicationVersion`, `ApplicationTemplate`, `exportJob`, `Automation`. No write verb anywhere.
-- OpenBuild ends up with **zero hand-written MCP tools**, so no `IMcpScannableServices` opt-in is
-  needed: nothing in OpenBuild is genuine non-CRUD *agent* behaviour.
+- Buildiq ends up with **zero hand-written MCP tools**, so no `IMcpScannableServices` opt-in is
+  needed: nothing in Buildiq is genuine non-CRUD *agent* behaviour.
 
 The result: an agent can tell you what apps you have and whether your export succeeded. It cannot
 touch a manifest.
@@ -57,16 +57,16 @@ touch a manifest.
 ## Capabilities
 
 ### New Capabilities
-- `openbuild-mcp-surface`: OpenBuild's agent-facing MCP tool surface — the curated read-only dialect, and the normative refusal of every manifest- and app-mutating tool on the MCP surface.
+- `buildiq-mcp-surface`: Buildiq's agent-facing MCP tool surface — the curated read-only dialect, and the normative refusal of every manifest- and app-mutating tool on the MCP surface.
 
 ### Modified Capabilities
 - `ai-copilot`: the Copilot's tool catalogue is now sourced from a Copilot-owned executor rather than from an `IMcpToolProvider`; the catalogue contents, the plan/preview/approve/execute flow and the rollback semantics are unchanged.
 
 ## Impact
 
-- `lib/Mcp/OpenBuildToolProvider.php` → `lib/Service/Copilot/CopilotToolExecutor.php`; `implements IMcpToolProvider` dropped.
+- `lib/Mcp/BuildiqToolProvider.php` → `lib/Service/Copilot/CopilotToolExecutor.php`; `implements IMcpToolProvider` dropped.
 - `lib/Mcp/Handler/*` (9 files) → `lib/Service/Copilot/Tools/*`; bodies unchanged.
-- `lib/AppInfo/Application.php` — `IMcpToolProvider::openbuild` alias **removed**.
+- `lib/AppInfo/Application.php` — `IMcpToolProvider::buildiq` alias **removed**.
 - `lib/Service/CopilotService.php`, `lib/Service/Copilot/CopilotPlanValidator.php`, `lib/Service/Copilot/CopilotPromptBuilder.php` — type-hint updates only.
 - `lib/Settings/openbuild_register.json` — dialect on `Application`, `ApplicationVersion`, `ApplicationTemplate`, `exportJob`.
 - `lib/Settings/register.d/40-automations.json` — dialect on `Automation`.
@@ -79,7 +79,7 @@ touch a manifest.
 Mitigation: remove the alias, so the tools are never emitted into any MCP catalog. Refusing at
 registration is strictly stronger than gating at invoke time. Note the authoring tools default
 `versionSlug` to `development`, which bounds but does not eliminate the damage —
-`openbuild.promoteVersion` exists, and a two-step agent can promote what it just wrote.
+`buildiq.promoteVersion` exists, and a two-step agent can promote what it just wrote.
 
 **Risk 2 — the rename breaks the Copilot. Severity: Medium.** Mitigation: it is a pure move —
 class renamed, namespace changed, `implements` clause dropped. `getToolDescriptors()`,

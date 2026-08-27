@@ -20,7 +20,8 @@ const axiosPostMock = vi.fn()
 vi.mock('@nextcloud/axios', () => ({
 	default: { post: (...args) => axiosPostMock(...args) },
 }))
-vi.mock('@nextcloud/router', () => ({
+vi.mock('@nextcloud/router', async (importOriginal) => ({
+	...(await importOriginal()),
 	generateUrl: (p) => p,
 }))
 

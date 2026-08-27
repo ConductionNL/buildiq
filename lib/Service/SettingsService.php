@@ -1,15 +1,15 @@
 <?php
 
 /**
- * OpenBuild Settings Service
+ * Buildiq Settings Service
  *
- * Service for managing OpenBuild application configuration and settings.
+ * Service for managing Buildiq application configuration and settings.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,9 +22,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
-use OCA\OpenBuild\AppInfo\Application;
+use OCA\Buildiq\AppInfo\Application;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -33,7 +33,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * Service for managing OpenBuild application configuration and settings.
+ * Service for managing Buildiq application configuration and settings.
  *
  * @spec openspec/changes/openbuild-remote-template-store/specs/openbuild-remote-template-store/spec.md
  */
@@ -52,14 +52,14 @@ class SettingsService {
 
 	/**
 	 * Per-key default values. Keys absent here default to ''.
-	 * `registry_register` defaults to `openbuild` (the catalogue's register
+	 * `registry_register` defaults to `buildiq` (the catalogue's register
 	 * segment); `registry_url` defaults to '' so the store stays hidden until an
 	 * admin configures it (the placeholder URL is only a UI hint, never stored).
 	 *
 	 * @var array<string, string>
 	 */
 	private const CONFIG_DEFAULTS = [
-		'registry_register' => 'openbuild',
+		'registry_register' => 'buildiq',
 	];
 
 	/**
@@ -125,7 +125,7 @@ class SettingsService {
 		$user = $this->userSession->getUser();
 		$isAdmin = ($user !== null && $this->groupManager->isAdmin($user->getUID()));
 
-		// Remote template store (openbuild-remote-template-store): expose a
+		// Remote template store (buildiq-remote-template-store): expose a
 		// token-presence flag + a storeConfigured flag, but NEVER the token value.
 		$registryToken = $this->appConfig->getValueString(Application::APP_ID, 'registry_token', '');
 
@@ -135,7 +135,9 @@ class SettingsService {
 				'openregisters' => $this->isOpenRegisterAvailable(),
 				'isAdmin' => $isAdmin,
 				'registry_token_set' => ($registryToken !== ''),
-				'storeConfigured' => (trim($settings['registry_url'] ?? '') !== ''),
+				// `registry_url` is one of self::CONFIG_KEYS, so the loop above
+				// always set it — the `?? ''` this replaces was unreachable.
+				'storeConfigured' => (trim($settings['registry_url']) !== ''),
 			]
 		);
 	}//end getSettings()
@@ -162,7 +164,7 @@ class SettingsService {
 		//
 		// `sensitive: true` is the half that was missing. The token was already never
 		// returned to the browser, but it was written as an ordinary appconfig string —
-		// so it sat in cleartext in `occ config:app:get openbuild registry_token`, in
+		// so it sat in cleartext in `occ config:app:get buildiq registry_token`, in
 		// `occ config:list`, and in every support/status dump those feed. The flag makes
 		// Nextcloud encrypt it at rest and redact it from that output.
 		foreach (self::SECRET_KEYS as $key) {
@@ -218,7 +220,7 @@ class SettingsService {
 	 */
 	private function doLoadConfiguration(bool $force): array {
 		if ($this->isOpenRegisterAvailable() === false) {
-			$this->logger->warning('OpenBuild: OpenRegister not available, skipping register initialization');
+			$this->logger->warning('Buildiq: OpenRegister not available, skipping register initialization');
 			return [
 				'success' => false,
 				'message' => 'OpenRegister is not installed or enabled.',
@@ -227,7 +229,7 @@ class SettingsService {
 
 		$configPath = __DIR__ . '/../Settings/openbuild_register.json';
 		if (file_exists($configPath) === false) {
-			$this->logger->error('OpenBuild: openbuild_register.json not found at ' . $configPath);
+			$this->logger->error('Buildiq: openbuild_register.json not found at ' . $configPath);
 			return [
 				'success' => false,
 				'message' => 'Configuration file openbuild_register.json not found.',
@@ -236,7 +238,7 @@ class SettingsService {
 
 		$configContent = file_get_contents($configPath);
 		if ($configContent === false) {
-			$this->logger->error('OpenBuild: failed to read openbuild_register.json');
+			$this->logger->error('Buildiq: failed to read openbuild_register.json');
 			return [
 				'success' => false,
 				'message' => 'Failed to read configuration file.',
@@ -245,7 +247,7 @@ class SettingsService {
 
 		$configData = json_decode($configContent, true);
 		if (json_last_error() !== JSON_ERROR_NONE) {
-			$this->logger->error('OpenBuild: failed to parse openbuild_register.json: ' . json_last_error_msg());
+			$this->logger->error('Buildiq: failed to parse openbuild_register.json: ' . json_last_error_msg());
 			return [
 				'success' => false,
 				'message' => 'Failed to parse configuration file: ' . json_last_error_msg(),
@@ -271,7 +273,7 @@ class SettingsService {
 				$fragmentData = json_decode($fragmentContent, true);
 				if (json_last_error() !== JSON_ERROR_NONE) {
 					$this->logger->warning(
-						'OpenBuild: skipping malformed register fragment ' . basename($fragmentFile)
+						'Buildiq: skipping malformed register fragment ' . basename($fragmentFile)
 						. ': ' . json_last_error_msg()
 					);
 					continue;
@@ -299,7 +301,7 @@ class SettingsService {
 			);
 
 			if (empty($result) === false) {
-				$this->logger->info('OpenBuild: register configuration imported successfully');
+				$this->logger->info('Buildiq: register configuration imported successfully');
 				return [
 					'success' => true,
 					'message' => 'Configuration imported successfully.',
@@ -313,7 +315,7 @@ class SettingsService {
 			];
 		} catch (\Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: configuration import failed',
+				'Buildiq: configuration import failed',
 				['exception' => $e->getMessage()]
 			);
 			return [

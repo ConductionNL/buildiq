@@ -16,7 +16,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Service
+ * @package  OCA\Buildiq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -29,12 +29,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Service;
+namespace OCA\Buildiq\Tests\Unit\Service;
 
-use OCA\OpenBuild\Exception\AppRepoParseException;
-use OCA\OpenBuild\Service\AppRepoParser;
-use OCA\OpenBuild\Service\AppRepoSerializer;
-use OCA\OpenBuild\Service\TemplateRepoSerializer;
+use OCA\Buildiq\Exception\AppRepoParseException;
+use OCA\Buildiq\Service\AppRepoParser;
+use OCA\Buildiq\Service\AppRepoSerializer;
+use OCA\Buildiq\Service\TemplateRepoSerializer;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use PHPUnit\Framework\TestCase;
@@ -209,7 +209,7 @@ class AppRepoFormatV2Test extends TestCase {
 					'formatVersion' => '3.0',
 					'slug' => 'future-app',
 					'name' => 'Future App',
-					'description' => 'From a newer OpenBuild',
+					'description' => 'From a newer Buildiq',
 					'category' => 'general',
 					'appType' => 'virtual',
 					'version' => '1.0.0',

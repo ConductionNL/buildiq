@@ -14,18 +14,18 @@
  * outbound GitHub call.
  *
  * @category Test
- * @package  OpenBuild
+ * @package  Buildiq
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl
- * @link     https://github.com/ConductionNL/openbuild
+ * @link     https://github.com/ConductionNL/buildiq
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Controller;
+namespace OCA\Buildiq\Tests\Unit\Controller;
 
-use OCA\OpenBuild\Controller\GitHubSyncController;
-use OCA\OpenBuild\Service\GitHubAppSyncService;
-use OCA\OpenBuild\Service\PermissionResolver;
+use OCA\Buildiq\Controller\GitHubSyncController;
+use OCA\Buildiq\Service\GitHubAppSyncService;
+use OCA\Buildiq\Service\PermissionResolver;
 use OCP\AppFramework\Http;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -39,9 +39,9 @@ use Psr\Log\LoggerInterface;
  * Contract tests for GitHubSyncController.
  *
  * @category Test
- * @package  OpenBuild
+ * @package  Buildiq
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl
- * @link     https://github.com/ConductionNL/openbuild
+ * @link     https://github.com/ConductionNL/buildiq
  */
 class GitHubSyncControllerTest extends TestCase {
 

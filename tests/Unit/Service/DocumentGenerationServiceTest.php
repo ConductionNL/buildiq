@@ -11,7 +11,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Service
+ * @package  OCA\Buildiq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,16 +24,16 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Service;
+namespace OCA\Buildiq\Tests\Unit\Service;
 
-use OCA\OpenBuild\Service\DocumentGenerationService;
-use OCA\OpenBuild\Service\JobOwnerImpersonator;
-use OCA\OpenBuild\Service\RuleActionDispatcher;
+use OCA\Buildiq\Service\DocumentGenerationService;
+use OCA\Buildiq\Service\JobOwnerImpersonator;
+use OCA\Buildiq\Service\RuleActionDispatcher;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Files\AppData\IAppDataFactory;
 use OCP\Files\Folder;
@@ -261,7 +261,7 @@ final class DocumentGenerationServiceTest extends TestCase {
 
 		$this->assertArrayHasKey('json', $captured);
 		$this->assertSame(
-			[['register' => 'openbuild', 'schema' => 'permit', 'id' => 'obj-uuid-9']],
+			[['register' => 'buildiq', 'schema' => 'permit', 'id' => 'obj-uuid-9']],
 			$captured['json']['dataRefs']
 		);
 		$this->assertSame('tpl-1', $captured['json']['templateId']);
@@ -297,7 +297,7 @@ final class DocumentGenerationServiceTest extends TestCase {
 			->with(
 				$this->equalTo([DocumentGenerationService::ATTACHMENT_FIELD => ['ref' => '42']]),
 				$this->equalTo([]),
-				$this->equalTo('openbuild'),
+				$this->equalTo('buildiq'),
 				$this->equalTo('permit'),
 				$this->equalTo('obj-uuid-9')
 			);

@@ -2,12 +2,12 @@
 kind: code
 depends_on:
   - app-delta-override
-  - openbuild-inline-edit-persistence
+  - buildiq-inline-edit-persistence
 ---
 
 ## Why
 
-OpenBuild apps — especially HYBRID apps that layer a delta over an installed
+Buildiq apps — especially HYBRID apps that layer a delta over an installed
 Nextcloud fleet app — today support exactly TWO layers of manifest
 customization: the installed app's BASE manifest, and one instance-wide ADMIN
 delta (the `manifestDelta` on a hybrid `Application`'s `ApplicationVersion`,
@@ -63,7 +63,7 @@ their OpenRegister version history.
   - **Register widget** — DEEP-LINK ONLY: the app's OpenRegister register(s) +
     current counts, deep-linking into the OpenRegister app for
     version/rollback/time-travel. No register-delta is modelled; register
-    versioning is NOT rebuilt in OpenBuild.
+    versioning is NOT rebuilt in Buildiq.
   - Create/edit/rollback modals for a delta (modals in `src/modals/`, dialogs in
     `src/dialogs/` per ADR-004).
 - **No BREAKING changes.** Every new field is optional with a today-equivalent
@@ -75,7 +75,7 @@ their OpenRegister version history.
 
 This change BUILDS ON two active changes and must not duplicate their work:
 `app-delta-override` (the `baseRef` + `manifestDelta` storage model and PHP
-merge port for OpenBuilt apps) and `openbuild-inline-edit-persistence` (the
+merge port for OpenBuilt apps) and `buildiq-inline-edit-persistence` (the
 admin/shared `/api/app-overrides/{appId}` store-and-serve for fleet apps). The
 ADMIN delta layer is THEIRS. This change adds ONLY the USER layer on top, the
 per-app `allowUserOverrides` flag, the user-scope RBAC, and the dashboard
@@ -102,7 +102,7 @@ keyed-delta merge contract, "hybrid app") is kept identical.
 
 ### Modified Capabilities
 
-- `openbuild-rbac`: The per-Application role model gains a user-scope ownership
+- `buildiq-rbac`: The per-Application role model gains a user-scope ownership
   rule — a `scope: user` `ApplicationVersion` is writable/readable only by its
   `owner` UID (and an audited admin), and only when the parent `Application`'s
   `allowUserOverrides` is `true`. Enforced fail-closed by the extended
@@ -133,7 +133,7 @@ keyed-delta merge contract, "hybrid app") is kept identical.
   `src/components/tabs/ApplicationVersionsTab.vue`,
   `src/modals/RollbackConfirmModal.vue`; create/edit/rollback modals in
   `src/modals/` / `src/dialogs/`.
-- **Hard dependency:** `app-delta-override` + `openbuild-inline-edit-persistence`
+- **Hard dependency:** `app-delta-override` + `buildiq-inline-edit-persistence`
   (admin layer) must land first — this change layers on top of them.
 - **RBAC / Hydra gates:** no-admin-idor (user-scope rows owner-gated),
   route-auth, modal-isolation, spec-coverage, spec/e2e traceability.

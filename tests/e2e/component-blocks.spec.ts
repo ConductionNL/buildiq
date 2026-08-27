@@ -17,7 +17,7 @@
  *   - "Cross-app insert with no matching schema requires remap"
  *   - "Unresolved remap inserts a visible placeholder, not a silent drop"
  *   - "Blocks filter shows only blocks"
- *   - "Blocks filter shows blocks without the clone action" (openbuild-template-catalogue)
+ *   - "Blocks filter shows blocks without the clone action" (buildiq-template-catalogue)
  *
  * NOT covered here, deliberately: "cross-app insert with a MATCHING schema
  * name needs no prompt" and the resolved-remap path both require the target
@@ -62,8 +62,7 @@ const PAGE_ID = 'e2e-cb-page'
 /** Every fixture block slug shares this prefix so the baseline reset can find them. */
 const BLOCK_PREFIX = 'pw-cb-'
 /** Blocks live as OpenRegister objects, not in the app manifest. */
-const BLOCKS_API =
-	'/index.php/apps/openregister/api/objects/openbuild/component-block'
+const BLOCKS_API = '/index.php/apps/openregister/api/objects/buildiq/component-block'
 /** blockInsert.js#UNRESOLVED_SCHEMA_PLACEHOLDER — the "needs remap" sentinel. */
 const UNRESOLVED = '__needs-remap__'
 
@@ -83,7 +82,7 @@ const SOURCE_WIDGETS = [
 	},
 ]
 
-test.describe('OpenBuild component blocks', () => {
+test.describe('Buildiq component blocks', () => {
 	// The page designer is a three-pane desktop surface; at the default 1280x720
 	// the page-list rows land below the fold where a click never settles.
 	test.use({ viewport: { width: 1600, height: 1200 } })
@@ -142,7 +141,7 @@ test.describe('OpenBuild component blocks', () => {
 	 * @return {Promise<number>} Index of the seeded page in `manifest.pages`.
 	 */
 	async function seedPage(page, app, widgets) {
-		const base = `/index.php/apps/openbuild/api/applications/${app}/manifest`
+		const base = `/index.php/apps/buildiq/api/applications/${app}/manifest`
 		const current = await api(page, 'GET', base)
 		expect(current.status, `GET ${app} manifest`).toBe(200)
 		const pages = (current.data.pages || []).filter((p) => p.id !== PAGE_ID)
@@ -174,7 +173,7 @@ test.describe('OpenBuild component blocks', () => {
 	 */
 	async function openDesigner(page, app, index) {
 		await page.goto(
-			`${BASE_URL}/apps/openbuild/builder/${app}/pages?_version=production`,
+			`${BASE_URL}/apps/buildiq/builder/${app}/pages?_version=production`,
 			{
 				waitUntil: 'domcontentloaded',
 			},
@@ -479,7 +478,7 @@ test.describe('OpenBuild component blocks', () => {
 					const resp = await api(
 						page,
 						'GET',
-						`/index.php/apps/openbuild/api/applications/${TARGET_APP}/manifest`,
+						`/index.php/apps/buildiq/api/applications/${TARGET_APP}/manifest`,
 					)
 					return (
 						(resp.data.pages || []).find((p) => p.id === PAGE_ID)
@@ -494,7 +493,7 @@ test.describe('OpenBuild component blocks', () => {
 			await api(
 				page,
 				'GET',
-				`/index.php/apps/openbuild/api/applications/${TARGET_APP}/manifest`,
+				`/index.php/apps/buildiq/api/applications/${TARGET_APP}/manifest`,
 			)
 		).data.pages.find((p) => p.id === PAGE_ID).widgets[0]
 
@@ -524,7 +523,7 @@ test.describe('OpenBuild component blocks', () => {
 			await api(
 				page,
 				'GET',
-				`/index.php/apps/openbuild/api/applications/${TARGET_APP}/manifest`,
+				`/index.php/apps/buildiq/api/applications/${TARGET_APP}/manifest`,
 			)
 		).data.pages.find((p) => p.id === PAGE_ID).widgets[0]
 		expect(after).toEqual(before)
@@ -537,14 +536,14 @@ test.describe('OpenBuild component blocks', () => {
 	//
 	// ⚠️ The second anchor used to read `component-blocks::blocks-filter-shows-
 	// blocks-without-the-clone-action`. That scenario lives in
-	// `openbuild-template-catalogue`, not `component-blocks`, so the ref
+	// `buildiq-template-catalogue`, not `component-blocks`, so the ref
 	// resolved to NOTHING: gate-19 credited no scenario, reported no error, and
 	// the real scenario sat in the uncovered list while a test that proves it
 	// was right here. A dangling anchor is silent — it looks exactly like
 	// coverage in the file and exactly like an absence in the gate.
 	//
 	// Found by walking every anchor in the suite against the gate's own parser
-	// (script on the fleet board); openbuild had 15 such anchors, 14 of them
+	// (script on the fleet board); buildiq had 15 such anchors, 14 of them
 	// pointing at `page-designer-ui` scenario names that no longer exist.
 	//
 	// NOT ASSERTED, stated so nobody reads more into this anchor than it earns:
@@ -555,7 +554,7 @@ test.describe('OpenBuild component blocks', () => {
 		page,
 	}) => {
 		const block = await seedBlock(page)
-		await page.goto(`${BASE_URL}/apps/openbuild/templates`, {
+		await page.goto(`${BASE_URL}/apps/buildiq/templates`, {
 			waitUntil: 'domcontentloaded',
 		})
 		await expect(page.locator('.template-gallery')).toBeVisible({

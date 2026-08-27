@@ -1,5 +1,5 @@
 /**
- * OpenBuild v2 component registry (ADR-036).
+ * Buildiq v2 component registry (ADR-036).
  *
  * Kind-tagged map passed as the `registry` prop to CnAppRoot. CnPageRenderer
  * resolves every manifest-referenced component name (type:"custom" pages,
@@ -37,7 +37,7 @@ import ApplicationCard from './components/ApplicationCard.vue'
 // structural widgets, rendered in CnDetailPage's #before-body slot (in the page
 // body, below the action-menu line, above the auto Data/Related sections).
 import ApplicationDetailDashboard from './components/applicationDetail/ApplicationDetailDashboard.vue'
-// VirtualAppDetail headerComponent (openbuild-app-detail-overview
+// VirtualAppDetail headerComponent (buildiq-app-detail-overview
 // REQ-OBADO-001 / REQ-OBADO-011) — identity + controls header: hero strip +
 // version pill tabs + window toggle. The analytics (KPI grid, activity chart,
 // structural widgets) live in the body dashboard below (grid-built page).
@@ -58,10 +58,10 @@ import ApplicationManifestTab from './components/tabs/ApplicationManifestTab.vue
 // VirtualAppDetail sidebar tab: version history + rollback.
 import ApplicationVersionsTab from './components/tabs/ApplicationVersionsTab.vue'
 // Export jobs tab — wraps ExportJobsList as the "Exports" sidebar tab on the
-// VirtualAppDetail page (spec openbuild-exporter task 9.2).
+// VirtualAppDetail page (spec buildiq-exporter task 9.2).
 import ExportJobsTab from './components/tabs/ExportJobsTab.vue'
 // VirtualApps index actions bar — "Add application" button that opens the
-// four-step CreateApplicationWizard (openbuild-app-creation-wizard).
+// four-step CreateApplicationWizard (buildiq-app-creation-wizard).
 import VirtualAppsActions from './components/VirtualAppsActions.vue'
 // ── Custom page components (kind: "page") ────────────────────────────────────
 // Agent workspace — named, tool-scoped AI agents reusing the ai-copilot
@@ -102,7 +102,7 @@ import RuleSetsPageView from './views/RuleSetsPage.vue'
 import SchemaDesignerView from './views/SchemaDesigner.vue'
 // TemplateGallery — the Templates page as a store-aware gallery: remote store
 // search (when a registry is configured) primary + built-in local templates,
-// install via CloneTemplateDialog (openbuild-remote-template-store).
+// install via CloneTemplateDialog (buildiq-remote-template-store).
 import TemplateGalleryView from './views/TemplateGallery.vue'
 // Visual walkthrough designer — form-based editor for the manifest `walkthrough`
 // block (ADR-043); persists onto the active ApplicationVersion like PageDesigner.
@@ -248,6 +248,6 @@ export default {
 	// Agent workspace dashboard (type:"custom" page).
 	AgentsPageView: page(AgentsPageView),
 
-	// Export jobs sidebar tab on VirtualAppDetail (spec openbuild-exporter task 9.2).
+	// Export jobs sidebar tab on VirtualAppDetail (spec buildiq-exporter task 9.2).
 	ExportJobsTab: tab(ExportJobsTab),
 }

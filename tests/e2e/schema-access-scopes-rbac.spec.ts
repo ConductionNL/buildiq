@@ -1,5 +1,5 @@
 /**
- * SPDX-FileCopyrightText: 2026 ConductionNL / OpenBuild Contributors
+ * SPDX-FileCopyrightText: 2026 ConductionNL / Buildiq Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Playwright end-to-end spec for the data-scopes-authoring change's
@@ -76,7 +76,7 @@ async function loginAs(page: Page, user: string, pass: string): Promise<void> {
 async function openSchemaDetail(page: Page, versionSlug?: string): Promise<void> {
 	const query = versionSlug ? `?_version=${versionSlug}` : ''
 	await page.goto(
-		`${BASE_URL}/apps/openbuild/builder/${APP_SLUG}/schemas/${SCHEMA_SLUG}${query}`,
+		`${BASE_URL}/apps/buildiq/builder/${APP_SLUG}/schemas/${SCHEMA_SLUG}${query}`,
 		{ waitUntil: 'domcontentloaded' },
 	)
 }
@@ -95,7 +95,7 @@ async function openSchemaDetail(page: Page, versionSlug?: string): Promise<void>
 // RESOLVED — Blocker 3 (dead selector). The feature is real and the copy exists:
 //   SchemaDesigner.vue renders `<NcNoteCard type="warning">` gated on
 //   `authorLockedOut`, with the text "…invisible to you…". It is a SIBLING of
-//   `.openbuild-access-editor`, not a child. Target `.notecard--warning` filtered
+//   `.buildiq-access-editor`, not a child. Target `.notecard--warning` filtered
 //   by that text; `.note-stub` never existed.
 //
 // RESOLVED — Blocker 4 (designer unreachable for non-admins). A non-admin used
@@ -146,11 +146,11 @@ test.describe
 		}
 
 		await openSchemaDetail(page)
-		const accessSection = page.locator('.openbuild-access-editor')
+		const accessSection = page.locator('.buildiq-access-editor')
 		await expect(accessSection).toBeVisible({ timeout: 10_000 })
 
 		const readRow = accessSection
-			.locator('.openbuild-access-editor__row')
+			.locator('.buildiq-access-editor__row')
 			.filter({ hasText: /^read$/i })
 		await readRow.getByLabel(/scope/i).click()
 		await page.getByRole('option', { name: /specific groups/i }).click()
@@ -177,7 +177,7 @@ test.describe
 			return
 		}
 		await openSchemaDetail(page)
-		await expect(page.locator('.openbuild-access-editor')).toBeVisible({
+		await expect(page.locator('.buildiq-access-editor')).toBeVisible({
 			timeout: 10_000,
 		})
 		await expect(
@@ -195,7 +195,7 @@ test.describe
 		// Verify the staging version exists before proceeding (mirrors the
 		// precondition-check-then-skip pattern in versionRouting.spec.ts).
 		const stagingCheck = await page.request.get(
-			`${BASE_URL}/index.php/apps/openbuild/api/applications/${APP_SLUG}/versions/${STAGING_VERSION}`,
+			`${BASE_URL}/index.php/apps/buildiq/api/applications/${APP_SLUG}/versions/${STAGING_VERSION}`,
 			{ headers: { 'OCS-APIRequest': 'true' } },
 		)
 		if (stagingCheck.status() !== 200) {
@@ -226,10 +226,10 @@ test.describe
 		const prodBeforeBody = await prodBefore.json()
 
 		await openSchemaDetail(page, STAGING_VERSION)
-		const accessSection = page.locator('.openbuild-access-editor')
+		const accessSection = page.locator('.buildiq-access-editor')
 		await expect(accessSection).toBeVisible({ timeout: 10_000 })
 		const readRow = accessSection
-			.locator('.openbuild-access-editor__row')
+			.locator('.buildiq-access-editor__row')
 			.filter({ hasText: /^read$/i })
 		await readRow.getByLabel(/scope/i).click()
 		await page.getByRole('option', { name: /specific groups/i }).click()
@@ -273,7 +273,7 @@ test.describe
 			return
 		}
 		await openSchemaDetail(page, PRODUCTION_VERSION)
-		const accessSection = page.locator('.openbuild-access-editor')
+		const accessSection = page.locator('.buildiq-access-editor')
 		await expect(accessSection).toBeVisible({ timeout: 10_000 })
 		await expect(
 			accessSection.getByText(/only be changed by an owner/i),
@@ -287,7 +287,7 @@ test.describe
 
 		await loginAs(page, OWNER.user, OWNER.pass)
 		await openSchemaDetail(page, PRODUCTION_VERSION)
-		const ownerAccessSection = page.locator('.openbuild-access-editor')
+		const ownerAccessSection = page.locator('.buildiq-access-editor')
 		await expect(ownerAccessSection).toBeVisible({ timeout: 10_000 })
 		await expect(
 			ownerAccessSection.getByText(/only be changed by an owner/i),

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2026 OpenBuild Contributors
+ * SPDX-FileCopyrightText: 2026 Buildiq Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Vitest spec for the PageDesigner live-preview pane (REQ-OBPD-008,
@@ -26,7 +26,8 @@ const axiosGetMock = vi.fn()
 vi.mock('@nextcloud/axios', () => ({
 	default: { get: (...args) => axiosGetMock(...args) },
 }))
-vi.mock('@nextcloud/router', () => ({
+vi.mock('@nextcloud/router', async (importOriginal) => ({
+	...(await importOriginal()),
 	generateUrl: (p) => p,
 }))
 // Partial mock: only `translate` is pinned to the raw key. `@nextcloud/vue`

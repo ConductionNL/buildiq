@@ -10,7 +10,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Listener
+ * @package  OCA\Buildiq\Tests\Unit\Listener
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,12 +23,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Listener;
+namespace OCA\Buildiq\Tests\Unit\Listener;
 
-use OCA\OpenBuild\Listener\AutomationCleanupListener;
-use OCA\OpenBuild\Service\AutomationCompilerService;
-use OCA\OpenBuild\Service\ListenerSlugContract;
-use OCA\OpenBuild\Service\ObjectSchemaSlugResolver;
+use OCA\Buildiq\Listener\AutomationCleanupListener;
+use OCA\Buildiq\Service\AutomationCompilerService;
+use OCA\Buildiq\Service\ListenerSlugContract;
+use OCA\Buildiq\Service\ObjectSchemaSlugResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
@@ -121,7 +121,7 @@ final class AutomationCleanupListenerTest extends TestCase {
 		$entity->method('getObject')->willReturn($automation);
 
 		// Not even the slug lookup happens — the gate returns first.
-		$slugs->expects($this->never())->method('isOpenBuildSchema');
+		$slugs->expects($this->never())->method('isBuildiqSchema');
 		$compiler->expects($this->never())->method('remove');
 
 		$listener->handle(new ObjectDeletedEvent($entity));
@@ -149,7 +149,7 @@ final class AutomationCleanupListenerTest extends TestCase {
 		$entity->method('getObject')->willReturn($automation);
 
 		$this->slugs->expects($this->once())
-			->method('isOpenBuildSchema')
+			->method('isBuildiqSchema')
 			->with($entity, AutomationCompilerService::AUTOMATION_SCHEMA)
 			->willReturn(true);
 
@@ -176,7 +176,7 @@ final class AutomationCleanupListenerTest extends TestCase {
 		$entity->method('jsonSerialize')->willReturn(['@self' => ['schema' => '117']]);
 		$entity->method('getObject')->willReturn([]);
 
-		$this->slugs->method('isOpenBuildSchema')->willReturn(false);
+		$this->slugs->method('isBuildiqSchema')->willReturn(false);
 
 		$event = new ObjectDeletedEvent($entity);
 
@@ -212,7 +212,7 @@ final class AutomationCleanupListenerTest extends TestCase {
 		$entity->method('jsonSerialize')->willReturn($automation);
 		$entity->method('getObject')->willReturn($automation);
 
-		$this->slugs->method('isOpenBuildSchema')->willReturn(true);
+		$this->slugs->method('isBuildiqSchema')->willReturn(true);
 
 		$event = new ObjectDeletedEvent($entity);
 

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild OpenRegister autoload prelude
+ * Buildiq OpenRegister autoload prelude
  *
  * Puts OpenRegister's PSR-4 prefix on the autoloader so this app can reference
  * `OCA\OpenRegister\AppHost\…` from its own `Application::register()`.
@@ -10,7 +10,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category AppInfo
- * @package  OCA\OpenBuild\AppInfo
+ * @package  OCA\Buildiq\AppInfo
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,7 +23,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\AppInfo;
+namespace OCA\Buildiq\AppInfo;
 
 /**
  * Registers OpenRegister's autoload prefix before AppHost is referenced.
@@ -36,14 +36,14 @@ namespace OCA\OpenBuild\AppInfo;
  * one app at a time. So every app's `register()` runs BEFORE the PSR-4 prefix
  * of every alphabetically-LATER app exists.
  *
- * `openbuild` sorts before `openregister`, so `OCA\OpenRegister\` is NOT
+ * `buildiq` sorts before `openregister`, so `OCA\OpenRegister\` is NOT
  * autoloadable inside `Application::register()` on a perfectly healthy
  * instance with OpenRegister enabled. This was measured, not theorised:
- * `OpenBuild: OpenRegister AppHost\Bootstrap is not autoloadable` was logged on
+ * `Buildiq: OpenRegister AppHost\Bootstrap is not autoloadable` was logged on
  * EVERY occ call in CI (3 per E2E run, run 31081906401), while
  * `lib/AppHost/Bootstrap.php` existed and was enabled the whole time.
  *
- * OpenBuild's `class_exists()` guard meant this degraded SILENTLY rather than
+ * Buildiq's `class_exists()` guard meant this degraded SILENTLY rather than
  * fatally: under the CLI SAPI `Bootstrap::register()` did not run, so the
  * generic dashboard / settings / preferences controllers, the observability
  * (health + metrics) controllers, the install repair steps and the

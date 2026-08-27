@@ -8,7 +8,7 @@
  * REQ-OBS-003 (load/reload configuration idempotent / force).
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Service
+ * @package  OCA\Buildiq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -21,9 +21,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Service;
+namespace OCA\Buildiq\Tests\Unit\Service;
 
-use OCA\OpenBuild\Service\SettingsService;
+use OCA\Buildiq\Service\SettingsService;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -140,15 +140,15 @@ final class SettingsServiceTest extends TestCase {
 	public function testUpdateSettingsPersistsOnlyWhitelistedKeys(): void {
 		$this->appConfig->expects(self::once())
 			->method('setValueString')
-			->with(self::anything(), 'register', 'openbuild');
+			->with(self::anything(), 'register', 'buildiq');
 
-		$this->appConfig->method('getValueString')->willReturn('openbuild');
+		$this->appConfig->method('getValueString')->willReturn('buildiq');
 		$this->appManager->method('isInstalled')->willReturn(false);
 		$this->userSession->method('getUser')->willReturn(null);
 
-		$result = $this->sut()->updateSettings(['register' => 'openbuild', 'unknown_key' => 'ignored']);
+		$result = $this->sut()->updateSettings(['register' => 'buildiq', 'unknown_key' => 'ignored']);
 
-		self::assertSame('openbuild', $result['register']);
+		self::assertSame('buildiq', $result['register']);
 	}//end testUpdateSettingsPersistsOnlyWhitelistedKeys()
 
 	/**

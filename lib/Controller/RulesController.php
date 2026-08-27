@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild RulesController
+ * Buildiq RulesController
  *
  * REST surface for the business-rules engine (spec business-rules-engine
  * REQ-BRE-006 / REQ-BRE-004). Three endpoints:
@@ -12,7 +12,7 @@
  *
  * All endpoints carry `#[NoAdminRequired]` per ADR-005: any authenticated user
  * may evaluate a RuleSet. Resolution runs through OpenRegister
- * `searchObjectsBySlug`, which applies the schema's RBAC. IMPORTANT: `openbuild`
+ * `searchObjectsBySlug`, which applies the schema's RBAC. IMPORTANT: `buildiq`
  * is a system-wide register (not org-scoped), so this is NOT per-owner or
  * per-organisation read isolation — with a read-open rule-set schema, any
  * authenticated caller can resolve a RuleSet by slug; write operations stay
@@ -25,7 +25,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
- * @package  OCA\OpenBuild\Controller
+ * @package  OCA\Buildiq\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -41,11 +41,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Controller;
+namespace OCA\Buildiq\Controller;
 
-use OCA\OpenBuild\AppInfo\Application;
-use OCA\OpenBuild\Service\RuleEngineService;
-use OCA\OpenBuild\Service\RuleSetVersioningService;
+use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Service\RuleEngineService;
+use OCA\Buildiq\Service\RuleSetVersioningService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -107,7 +107,7 @@ class RulesController extends Controller {
 	 * @no-admin-idor-exempt Authorization is delegated to OpenRegister's schema RBAC:
 	 *   every read here goes through this controller's private `query()`, which calls
 	 *   `searchObjectsBySlug(..., _rbac: true, _multitenancy: false)`. The tenancy
-	 *   opt-out is deliberate and documented there — `openbuild` is a SYSTEM-WIDE
+	 *   opt-out is deliberate and documented there — `buildiq` is a SYSTEM-WIDE
 	 *   register, not org-scoped, so a true org filter would throw and break
 	 *   resolution for every caller. `_rbac: true` is the guard, and it is explicit.
 	 */
@@ -153,7 +153,7 @@ class RulesController extends Controller {
 			}
 
 			$this->logger->error(
-				'OpenBuild: rule evaluation failed for ' . $ruleSetSlug,
+				'Buildiq: rule evaluation failed for ' . $ruleSetSlug,
 				['exception' => $e->getMessage()]
 			);
 			return $this->error(code: 'evaluation_failed', detail: 'Rule evaluation failed', status: Http::STATUS_UNPROCESSABLE_ENTITY);
@@ -187,7 +187,7 @@ class RulesController extends Controller {
 	 * @no-admin-idor-exempt Authorization is delegated to OpenRegister's schema RBAC:
 	 *   every read here goes through this controller's private `query()`, which calls
 	 *   `searchObjectsBySlug(..., _rbac: true, _multitenancy: false)`. The tenancy
-	 *   opt-out is deliberate and documented there — `openbuild` is a SYSTEM-WIDE
+	 *   opt-out is deliberate and documented there — `buildiq` is a SYSTEM-WIDE
 	 *   register, not org-scoped, so a true org filter would throw and break
 	 *   resolution for every caller. `_rbac: true` is the guard, and it is explicit.
 	 */
@@ -227,7 +227,7 @@ class RulesController extends Controller {
 	 * @no-admin-idor-exempt Authorization is delegated to OpenRegister's schema RBAC:
 	 *   every read here goes through this controller's private `query()`, which calls
 	 *   `searchObjectsBySlug(..., _rbac: true, _multitenancy: false)`. The tenancy
-	 *   opt-out is deliberate and documented there — `openbuild` is a SYSTEM-WIDE
+	 *   opt-out is deliberate and documented there — `buildiq` is a SYSTEM-WIDE
 	 *   register, not org-scoped, so a true org filter would throw and break
 	 *   resolution for every caller. `_rbac: true` is the guard, and it is explicit.
 	 */
@@ -248,7 +248,7 @@ class RulesController extends Controller {
 			$failures = $this->versioningService->runTestGate($ruleSetSlug, $testCases);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: test-all failed for ' . $ruleSetSlug,
+				'Buildiq: test-all failed for ' . $ruleSetSlug,
 				['exception' => $e->getMessage()]
 			);
 			return $this->error(code: 'test_run_failed', detail: 'Test run failed', status: Http::STATUS_UNPROCESSABLE_ENTITY);
@@ -308,7 +308,7 @@ class RulesController extends Controller {
 	private function query(string $schema, array $filters, ?int $limit): array {
 		// Authorization-aware resolution (harden-rules-authz-and-audit-parity,
 		// M1): resolve through searchObjectsBySlug (which applies the schema's
-		// RBAC) rather than a raw findAll. `openbuild` is a SYSTEM-WIDE register
+		// RBAC) rather than a raw findAll. `buildiq` is a SYSTEM-WIDE register
 		// (not org-scoped) — mirror ListAppsHandler and pass _multitenancy:false
 		// so cross-org callers still resolve it (a true org filter would throw
 		// and break resolution).
@@ -322,7 +322,7 @@ class RulesController extends Controller {
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
-				'OpenBuild: RulesController query failed',
+				'Buildiq: RulesController query failed',
 				['schema' => $schema, 'exception' => $e->getMessage()]
 			);
 			return [];

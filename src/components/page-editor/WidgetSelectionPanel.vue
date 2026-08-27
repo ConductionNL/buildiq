@@ -11,10 +11,10 @@
 -->
 <template>
 	<fieldset class="widget-selection-panel">
-		<legend>{{ t('openbuild', 'Widgets on this page') }}</legend>
+		<legend>{{ t('buildiq', 'Widgets on this page') }}</legend>
 
 		<p v-if="!widgets.length" class="widget-selection-panel__empty">
-			{{ t('openbuild', 'This page has no widgets yet.') }}
+			{{ t('buildiq', 'This page has no widgets yet.') }}
 		</p>
 
 		<ul v-else class="widget-selection-panel__list">
@@ -44,8 +44,8 @@
 			@click="openSaveDialog">
 			{{
 				selectedIds.length > 1
-					? t('openbuild', 'Save selected section as block')
-					: t('openbuild', 'Save selected widget as block')
+					? t('buildiq', 'Save selected section as block')
+					: t('buildiq', 'Save selected widget as block')
 			}}
 		</button>
 

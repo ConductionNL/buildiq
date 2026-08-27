@@ -1,10 +1,10 @@
 ## Context
 
-Per ADR-002, an OpenBuild `Application` (the logical app) already has two
+Per ADR-002, an Buildiq `Application` (the logical app) already has two
 reference-shaped properties: `baseRef` (object `{ kind, id, manifestVersion? }`,
 pointing at an installed fleet app for hybrid apps) and, via its production
 version, `ApplicationVersion.register` (a plain string slug, pattern
-`^openbuild-[a-z0-9][a-z0-9-]*[a-z0-9]$`, naming the per-version register the
+`^buildiq-[a-z0-9][a-z0-9-]*[a-z0-9]$`, naming the per-version register the
 app owns and that promotion copies/migrates). Neither shape fits a **shared
 data register**: `baseRef` is single-valued and app-authored-vs-fleet-app
 specific; `ApplicationVersion.register` is owned-and-versioned, exactly the
@@ -34,7 +34,7 @@ follower spec `data-registers-runtime` (`kind: code`), per ADR-032.
   schema-valid with `dataRegisters` absent.
 - Ship via a `register.d/` fragment (ADR-037) so this change never touches
   the `openbuild_register.json` monolith and never collides with any other
-  concurrent OpenBuild change.
+  concurrent Buildiq change.
 
 **Non-Goals:**
 - No builder UI to add/remove a data-register binding (follower spec).
@@ -74,7 +74,7 @@ follower spec `data-registers-runtime` (`kind: code`), per ADR-032.
         "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
         "minLength": 2,
         "maxLength": 64,
-        "description": "Slug of the shared OpenRegister register this app binds to (e.g. `spectr`). Unlike ApplicationVersion.register, this register is NOT owned or provisioned by OpenBuild and carries NO `openbuild-` prefix convention — it is an existing register OpenConnector or another process feeds independently."
+        "description": "Slug of the shared OpenRegister register this app binds to (e.g. `spectr`). Unlike ApplicationVersion.register, this register is NOT owned or provisioned by Buildiq and carries NO `buildiq-` prefix convention — it is an existing register OpenConnector or another process feeds independently."
       },
       "label": {
         "title": "Display Label",
@@ -108,8 +108,8 @@ bundled manifest) has no analogue for a data register — there is no
 "manifest" to drift.
 
 **Why not reuse `ApplicationVersion.register`'s plain-string shape
-verbatim (no label, `openbuild-` prefix pattern)**: the prefix pattern
-encodes ownership ("OpenBuild provisioned and names this register"), which is
+verbatim (no label, `buildiq-` prefix pattern)**: the prefix pattern
+encodes ownership ("Buildiq provisioned and names this register"), which is
 precisely untrue for a shared data register (`spectr`, or a municipality's
 `brp-personen`) — reusing the pattern would make every real-world consumer's
 first binding a validation failure.
@@ -144,7 +144,7 @@ with the monolith's existing `Application.properties` — `SettingsService`'s
 `properties`) and only adds the new `dataRegisters` key, leaving every
 existing property (and the `required` array, which this fragment does not
 touch) untouched. This keeps the change concurrency-safe against any other
-in-flight OpenBuild change per ADR-037's stated purpose.
+in-flight Buildiq change per ADR-037's stated purpose.
 
 ### Declarative-vs-imperative decision (ADR-031)
 
@@ -153,13 +153,13 @@ in-flight OpenBuild change per ADR-037's stated purpose.
   No service class is introduced; this is the default case ADR-031 asks for,
   identical in kind to how `baseRef`/`icon`/`iconDark`/`permissions` were
   previously added to `Application` as schema-only patches (see
-  `openbuild-application-register` REQ-OBA-002/REQ-OBA-006).
+  `buildiq-application-register` REQ-OBA-002/REQ-OBA-006).
 - **The follower's picker/export/promotion-guard work is imperative, and
   that is correct, not an ADR-031 gap**:
   - *Pickers* (`useRegisterPicker.js` + its Vue consumers) render UI —
     exactly the same class ADR-031 already carves out in this repo's own
     precedent ("the diff and version-history UI are unavoidably code",
-    `openbuild-versioning` proposal.md). There is no `x-openregister-*`
+    `buildiq-versioning` proposal.md). There is no `x-openregister-*`
     extension for "render a dropdown"; this was never a declarative
     candidate.
   - *Export inclusion* (`ExportService.php` bundling data-register schema
@@ -254,7 +254,7 @@ own register):**
 Both examples validate against Decision 1's schema: `dataRegisters` is an
 array of `{ register, label? }`; `register` matches the kebab-case pattern
 in both cases; neither example's app-owned `ApplicationVersion.register`
-(e.g. `openbuild-spectr-production`, not shown) is confused with a bound
+(e.g. `buildiq-spectr-production`, not shown) is confused with a bound
 data register — the two remain visibly distinct property surfaces.
 
 ## Risks / Trade-offs
@@ -265,12 +265,12 @@ data register — the two remain visibly distinct property surfaces.
   → **Mitigation**: explicitly out of scope (see Non-Goals); `ApplicationVersion.register`
   already sets the precedent of "just a string, resolved at consume time,
   not at save time" and this spec follows it.
-- **[Risk]** Two OpenBuild apps could declare the same `dataRegisters[].register`
+- **[Risk]** Two Buildiq apps could declare the same `dataRegisters[].register`
   slug and both expect exclusive write access. → **Mitigation**: not a new risk
   — this is already true of any two processes (OpenConnector syncs, other
   apps) that reference the same OR register today; RBAC is schema-level, not
   app-level, so concurrent readers of the same register are the expected
-  shape (this is the entire point of "shared"), and OpenBuild introduces no
+  shape (this is the entire point of "shared"), and Buildiq introduces no
   writer of its own.
 - **[Trade-off]** The `label` property has no enforced relationship to the
   register's actual OR-side display name — an admin could set a misleading

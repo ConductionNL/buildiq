@@ -20,7 +20,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Service
+ * @package  OCA\Buildiq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -33,13 +33,13 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Service;
+namespace OCA\Buildiq\Tests\Unit\Service;
 
-use OCA\OpenBuild\Service\AppRepoParser;
-use OCA\OpenBuild\Service\AppRepoSerializer;
-use OCA\OpenBuild\Service\FlowAgentChannelCollector;
-use OCA\OpenBuild\Service\FlowAndAgentExportBundler;
-use OCA\OpenBuild\Service\TemplateRepoSerializer;
+use OCA\Buildiq\Service\AppRepoParser;
+use OCA\Buildiq\Service\AppRepoSerializer;
+use OCA\Buildiq\Service\FlowAgentChannelCollector;
+use OCA\Buildiq\Service\FlowAndAgentExportBundler;
+use OCA\Buildiq\Service\TemplateRepoSerializer;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\RegisterMapper;

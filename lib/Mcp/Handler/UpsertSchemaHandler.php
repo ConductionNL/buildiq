@@ -1,13 +1,13 @@
 <?php
 
 /**
- * Handler for the openbuild.upsertSchema MCP tool.
+ * Handler for the buildiq.upsertSchema MCP tool.
  *
  * Creates or updates a JSON Schema in the given app version's per-version OR
  * register. The slug is automatically namespaced with appSlug+versionSlug.
  *
  * @category Service
- * @package  OCA\OpenBuild\Mcp\Handler
+ * @package  OCA\Buildiq\Mcp\Handler
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,10 +23,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Mcp\Handler;
+namespace OCA\Buildiq\Mcp\Handler;
 
 /**
- * Handles the openbuild.upsertSchema tool invocation.
+ * Handles the buildiq.upsertSchema tool invocation.
  *
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-8
  */
@@ -134,7 +134,7 @@ class UpsertSchemaHandler extends AbstractToolHandler {
 			];
 		} catch (\Throwable $e) {
 			$this->logger->error(
-				'OpenBuild MCP: upsertSchema failed',
+				'Buildiq MCP: upsertSchema failed',
 				['appSlug' => $appSlug, 'slug' => $rawSlug, 'exception' => $e->getMessage(), 'trace' => $e->getTraceAsString()]
 			);
 			return $this->errorResult(error: 'upsert_failed', message: 'Failed to upsert schema. See server logs for details.');
@@ -301,7 +301,7 @@ class UpsertSchemaHandler extends AbstractToolHandler {
 			$schemas = $register->getSchemas();
 			if (is_array($schemas) === false || in_array(needle: $schemaId, haystack: $schemas, strict: true) === false) {
 				$this->logger->warning(
-					'OpenBuild MCP: upsertSchema ownership check failed',
+					'Buildiq MCP: upsertSchema ownership check failed',
 					['register' => $registerSlug, 'schemaId' => $schemaId]
 				);
 				return $this->errorResult(
@@ -312,7 +312,7 @@ class UpsertSchemaHandler extends AbstractToolHandler {
 		} catch (\Throwable $e) {
 			// Register not found: also deny (schema cannot belong to it).
 			$this->logger->warning(
-				'OpenBuild MCP: upsertSchema register not found during ownership check',
+				'Buildiq MCP: upsertSchema register not found during ownership check',
 				['register' => $registerSlug, 'exception' => $e->getMessage()]
 			);
 			return $this->errorResult(
@@ -347,7 +347,7 @@ class UpsertSchemaHandler extends AbstractToolHandler {
 			$registerMapper->update($register);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
-				'OpenBuild MCP: upsertSchema attach-to-register failed',
+				'Buildiq MCP: upsertSchema attach-to-register failed',
 				['register' => $registerSlug, 'exception' => $e->getMessage()]
 			);
 		}

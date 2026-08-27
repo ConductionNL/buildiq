@@ -32,7 +32,7 @@
 - [x] 4.1 Replace the PAT password field in `ExportDialog.vue` with an `NcSelect` over the
       user's `github` credentials from `GET /apps/openregister/api/credentials`.
 - [x] 4.2 Auto-select when the user has exactly one; refuse to submit with none.
-- [x] 4.3 Explain the model in the hint text — the token stays in the vault; OpenBuild
+- [x] 4.3 Explain the model in the hint text — the token stays in the vault; Buildiq
       sends only the request it wants made.
 
 ## Task 5: Tests

@@ -1,6 +1,6 @@
-# OpenBuild — OpenSpec
+# Buildiq — OpenSpec
 
-This folder contains feature specifications, architectural decisions, and implementation specs for **OpenBuild** — a citizen-developer app builder for Nextcloud that composes apps from OpenRegister schemas, OpenConnector APIs, Procest workflows, Docudesk documents, NL Design themes, and LaunchPad dashboards without scaffolding PHP for each new app. Built apps are rendered at runtime via `CnAppRoot` from manifests stored in OpenBuild's own register (ADR-024 + ADR-031).
+This folder contains feature specifications, architectural decisions, and implementation specs for **Buildiq** — a citizen-developer app builder for Nextcloud that composes apps from OpenRegister schemas, OpenConnector APIs, Procest workflows, Docudesk documents, NL Design themes, and LaunchPad dashboards without scaffolding PHP for each new app. Built apps are rendered at runtime via `CnAppRoot` from manifests stored in Buildiq's own register (ADR-024 + ADR-031).
 
 ## Structure
 
@@ -12,7 +12,7 @@ This folder contains feature specifications, architectural decisions, and implem
 | `architecture/` | App-specific Architectural Decision Records (ADRs) |
 | `changes/` | Individual change directories, each with a full set of specification artifacts (created on first change) |
 
-> If `app-config.json` has `"requiresOpenRegister": true`, install [OpenRegister](https://codeberg.org/Conduction/openregister) before enabling this app. Set to `false` if your app does not use OpenRegister.
+> If `app-config.json` has `"requiresOpenRegister": true`, install [OpenRegister](https://github.com/ConductionNL/openregister) before enabling this app. Set to `false` if your app does not use OpenRegister.
 
 ## app-config.json — Key Fields
 

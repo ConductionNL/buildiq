@@ -113,7 +113,7 @@ function installGet({ app, userDelta, overrides, versions } = {}) {
 				data: userDelta ?? { allowed: false, exists: false },
 			})
 		}
-		if (url.includes('/objects/openbuild/application/')) {
+		if (url.includes('/objects/buildiq/application/')) {
 			if (app === 'error') return Promise.reject(new Error('boom'))
 			return Promise.resolve({ data: app ?? null })
 		}
@@ -322,7 +322,7 @@ describe('ManifestLayersDetail', () => {
 			await flush(wrapper)
 			await wrapper.vm.createOverride()
 			expect(axiosPutMock).toHaveBeenCalledWith(
-				'/apps/openbuild/api/app-overrides/petstore/user',
+				'/apps/buildiq/api/app-overrides/petstore/user',
 				{},
 			)
 		})
@@ -342,7 +342,7 @@ describe('ManifestLayersDetail', () => {
 			await flush(wrapper)
 			await wrapper.vm.resetOverride()
 			expect(axiosDeleteMock).toHaveBeenCalledWith(
-				'/apps/openbuild/api/app-overrides/petstore/user',
+				'/apps/buildiq/api/app-overrides/petstore/user',
 			)
 		})
 
@@ -395,7 +395,7 @@ describe('ManifestLayersDetail', () => {
 			await wrapper.vm.createDraft()
 			expect(axiosPostMock).toHaveBeenCalledTimes(1)
 			const [url, body] = axiosPostMock.mock.calls[0]
-			expect(url).toBe('/apps/openbuild/api/applications/petstore/versions')
+			expect(url).toBe('/apps/buildiq/api/applications/petstore/versions')
 			expect(body.name).toBe('Draft 2')
 			expect(body.slug).toBe('draft-2')
 			expect(body.status).toBe('draft')
@@ -433,7 +433,7 @@ describe('ManifestLayersDetail', () => {
 				expect(window.location.href).toBe('about:blank')
 				wrapper.vm.openInOpenRegister('ver-9')
 				expect(window.location.href).toBe(
-					'/apps/openregister/objects/openbuild/applicationVersion/ver-9',
+					'/apps/openregister/objects/buildiq/applicationVersion/ver-9',
 				)
 			} finally {
 				Object.defineProperty(window, 'location', {

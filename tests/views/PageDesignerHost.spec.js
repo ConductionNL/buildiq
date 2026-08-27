@@ -12,7 +12,7 @@
  *    versionNotFound, applicationUuid, builderUrl.
  *  - onManifestUpdate / onThemePreview / onCreateLinkProperty.
  *  - save(): guard, version PUT, application PUT, and the failure path.
- *  - onThemePreview retargets the in-flight manifest (no OpenBuild-owned
+ *  - onThemePreview retargets the in-flight manifest (no Buildiq-owned
  *    applier, theme-picker-consumes-nldesign REQ-NTS-002/003) and
  *    livePreviewAvailable gates the toggle (design.md OQ-1, task 3.3).
  */
@@ -30,7 +30,8 @@ vi.mock('@nextcloud/axios', () => ({
 		patch: (...a) => axiosPatchMock(...a),
 	},
 }))
-vi.mock('@nextcloud/router', () => ({
+vi.mock('@nextcloud/router', async (importOriginal) => ({
+	...(await importOriginal()),
 	generateUrl: (p) => p,
 }))
 
@@ -247,6 +248,13 @@ describe('PageDesignerHost', () => {
 
 	it('surfaces a load error and clears the application', async () => {
 		const wrapper = mountHost({ appList: [] })
+		// Let the MOUNT-TIME load settle before arming the rejection. mountHost()
+		// mounts the component, whose own mounted hook calls load(); a
+		// `mockRejectedValueOnce` queued before that settles is consumed by the
+		// mount's request instead of the explicit one below, so the assertion
+		// reads a component that loaded fine. vitest 1 happened to order these
+		// the other way round.
+		await flush(wrapper)
 		axiosGetMock.mockRejectedValueOnce(new Error('load boom'))
 		wrapper.vm.load()
 		await flush(wrapper)
@@ -334,9 +342,9 @@ describe('PageDesignerHost', () => {
 		await flush(wrapper)
 		expect(wrapper.vm.builderUrl).toBe('')
 		wrapper.vm.application = { slug: 'petstore', status: 'published' }
-		expect(wrapper.vm.builderUrl).toBe('/apps/openbuild/builder/petstore')
+		expect(wrapper.vm.builderUrl).toBe('/apps/buildiq/builder/petstore')
 		wrapper.vm.application = { slug: 'petstore', currentVersion: 'v1' }
-		expect(wrapper.vm.builderUrl).toBe('/apps/openbuild/builder/petstore')
+		expect(wrapper.vm.builderUrl).toBe('/apps/buildiq/builder/petstore')
 		wrapper.vm.application = null
 		expect(wrapper.vm.builderUrl).toBe('')
 	})
@@ -358,7 +366,7 @@ describe('PageDesignerHost', () => {
 		wrapper.vm.onThemePreview({ primaryColor: '#123' })
 		// Mutates THIS SAME manifest object (the one bound to PageDesigner's
 		// prop, and therefore the live-preview-pane's CnAppRoot) — no
-		// OpenBuild-owned applier call, per REQ-STA-3.
+		// Buildiq-owned applier call, per REQ-STA-3.
 		expect(wrapper.vm.manifest.runtime.theme).toEqual({ primaryColor: '#123' })
 		wrapper.vm.onThemePreview(null)
 		// Reverts to the theme that was persisted BEFORE the first preview
@@ -402,7 +410,7 @@ describe('PageDesignerHost', () => {
 			expect(window.location.href).toBe('about:blank')
 			wrapper.vm.onCreateLinkProperty('pet')
 			expect(window.location.href).toBe(
-				'/apps/openbuild/builder/petstore/schemas?schema=pet&addProperty=zaakUrl',
+				'/apps/buildiq/builder/petstore/schemas?schema=pet&addProperty=zaakUrl',
 			)
 		} finally {
 			Object.defineProperty(window, 'location', {
@@ -435,7 +443,7 @@ describe('PageDesignerHost', () => {
 		// PATCH the manifest only — a full-object PUT trips the reserved `register`
 		// property collision on the ApplicationVersion schema.
 		expect(axiosPatchMock).toHaveBeenCalledWith(
-			'/apps/openregister/api/objects/openbuild/applicationVersion/ver-uuid',
+			'/apps/openregister/api/objects/buildiq/applicationVersion/ver-uuid',
 			{ manifest: expect.any(Object) },
 		)
 		expect(axiosPutMock).not.toHaveBeenCalled()
@@ -453,7 +461,7 @@ describe('PageDesignerHost', () => {
 		})
 		await wrapper.vm.save()
 		expect(axiosPutMock).toHaveBeenCalledWith(
-			'/apps/openregister/api/objects/openbuild/application/app-1',
+			'/apps/openregister/api/objects/buildiq/application/app-1',
 			expect.objectContaining({ manifest: expect.any(Object) }),
 		)
 		expect(wrapper.vm.toast).toBe('Pages saved.')
@@ -470,7 +478,7 @@ describe('PageDesignerHost', () => {
 		expect(wrapper.vm.error).toContain('Failed to save')
 	})
 
-	it('unmounts cleanly with no OpenBuild-owned theme teardown call (REQ-NTS-003 — CnAppRoot tears itself down)', async () => {
+	it('unmounts cleanly with no Buildiq-owned theme teardown call (REQ-NTS-003 — CnAppRoot tears itself down)', async () => {
 		const wrapper = mountHost({ appList: [{ slug: 'petstore' }] })
 		await flush(wrapper)
 		expect(wrapper.vm.appTheme).toBeUndefined()

@@ -24,15 +24,15 @@
 				:value="field.key || ''"
 				type="text"
 				class="form-field-builder__field"
-				:placeholder="t('openbuild', 'Key')"
-				:aria-label="t('openbuild', 'Key')"
+				:placeholder="t('buildiq', 'Key')"
+				:aria-label="t('buildiq', 'Key')"
 				@input="updateField(index, 'key', $event.target.value)" />
 			<input
 				:value="field.label || ''"
 				type="text"
 				class="form-field-builder__field"
-				:placeholder="t('openbuild', 'Label')"
-				:aria-label="t('openbuild', 'Label')"
+				:placeholder="t('buildiq', 'Label')"
+				:aria-label="t('buildiq', 'Label')"
 				@input="updateField(index, 'label', $event.target.value)" />
 			<select
 				:value="field.type || 'string'"
@@ -51,14 +51,14 @@
 						@change="
 							updateField(index, 'required', $event.target.checked)
 						" />
-					{{ t('openbuild', 'Required') }}
+					{{ t('buildiq', 'Required') }}
 				</label>
 				<input
 					:value="field.pattern || ''"
 					type="text"
 					class="form-field-builder__field form-field-builder__field--narrow"
-					:placeholder="t('openbuild', 'Pattern')"
-					:aria-label="t('openbuild', 'Pattern')"
+					:placeholder="t('buildiq', 'Pattern')"
+					:aria-label="t('buildiq', 'Pattern')"
 					@input="updateField(index, 'pattern', $event.target.value)" />
 			</template>
 			<template v-else>
@@ -71,14 +71,14 @@
 					:aria-expanded="isExpanded(index)"
 					@click="toggleExpanded(index)">
 					{{ isExpanded(index) ? '▲' : '▼' }}
-					{{ t('openbuild', 'Details') }}
+					{{ t('buildiq', 'Details') }}
 				</button>
 			</template>
 
 			<button
 				type="button"
 				class="form-field-builder__remove"
-				:title="t('openbuild', 'Remove field')"
+				:title="t('buildiq', 'Remove field')"
 				@click="removeField(index)">
 				✕
 			</button>
@@ -88,7 +88,7 @@
 				class="form-field-builder__details">
 				<div class="form-field-builder__section">
 					<span class="form-field-builder__section-label">{{
-						t('openbuild', 'Conditions')
+						t('buildiq', 'Conditions')
 					}}</span>
 					<VisibleWhenBuilder
 						:modelValue="field.visibleWhen || null"
@@ -98,7 +98,7 @@
 				</div>
 				<div class="form-field-builder__section">
 					<span class="form-field-builder__section-label">{{
-						t('openbuild', 'Validation')
+						t('buildiq', 'Validation')
 					}}</span>
 					<FieldValidationBuilder
 						:modelValue="field.validation || null"
@@ -109,7 +109,7 @@
 			</div>
 		</div>
 		<button type="button" class="form-field-builder__add" @click="addField">
-			+ {{ t('openbuild', 'Add field') }}
+			+ {{ t('buildiq', 'Add field') }}
 		</button>
 	</div>
 </template>
@@ -305,6 +305,8 @@ export default {
 		 *
 		 * @param {object} field - the field entry.
 		 * @return {{hasError: boolean, message: string}}
+		 *
+		 * @spec openspec/specs/form-editor-logic/spec.md
 		 */
 		danglingConditionMark(field) {
 			const vw = field && field.visibleWhen
@@ -316,11 +318,9 @@ export default {
 			}
 			return {
 				hasError: true,
-				message: t(
-					'openbuild',
-					"Condition references removed field '{key}'",
-					{ key: vw.field },
-				),
+				message: t('buildiq', "Condition references removed field '{key}'", {
+					key: vw.field,
+				}),
 			}
 		},
 
@@ -330,6 +330,8 @@ export default {
 		 *
 		 * @param {object} field - the field entry.
 		 * @return {string}
+		 *
+		 * @spec openspec/specs/form-editor-logic/spec.md
 		 */
 		summaryFor(field) {
 			const validation = field && field.validation
@@ -338,17 +340,17 @@ export default {
 				? !!validation.required
 				: !!(field && field.required)
 			if (hasRequired) {
-				parts.push(t('openbuild', 'required'))
+				parts.push(t('buildiq', 'required'))
 			}
 			const hasPattern =
 				validation && validation.pattern !== undefined
 					? true
 					: !!(field && field.pattern)
 			if (hasPattern) {
-				parts.push(t('openbuild', 'pattern'))
+				parts.push(t('buildiq', 'pattern'))
 			}
 			if (field && field.visibleWhen) {
-				parts.push(t('openbuild', '1 condition'))
+				parts.push(t('buildiq', '1 condition'))
 			}
 			return parts.join(' · ')
 		},

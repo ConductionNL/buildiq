@@ -2,15 +2,15 @@
 
 The Templates page ("the shop") is `src/views/TemplateGallery.vue`. It already
 renders two sources: locally-seeded `application-template` records
-(`openbuild-template-catalogue`) and, when `storeConfigured`, a remote
+(`buildiq-template-catalogue`) and, when `storeConfigured`, a remote
 OpenRegister catalogue proxied by `RemoteTemplateStoreService` + `StoreController`
-(`openbuild-remote-template-store`). Installing any card runs through
+(`buildiq-remote-template-store`). Installing any card runs through
 `ApplicationsController::installFromTemplateArray` — the reusable clone seam that
 takes an `ApplicationTemplate`-shaped array and produces a namespaced local
 `Application` + per-app register.
 
 Change `github-app-repo-format` defined the canonical GitHub repo layout
-(discovery topic `openbuild-app`, root `openbuild-app.json` descriptor,
+(discovery topic `buildiq-app`, root `openbuild-app.json` descriptor,
 `manifest.json`, `schemas/*.json`) and `AppRepoParser::parse(array $files)`, which
 turns a fetched repo file map into exactly that clone-seam array. So the GitHub
 source needs only the network leg: search GitHub, fetch each hit's descriptor for
@@ -34,13 +34,13 @@ are for `github-app-sync` (change 3).
 
 - Add GitHub as a **third shop source alongside** Local + Registry (union-merge,
   zero regression to the existing two).
-- Search `topic:openbuild-app` server-side, SSRF-safe (fixed host), cached
+- Search `topic:buildiq-app` server-side, SSRF-safe (fixed host), cached
   (anonymous search is ~10 req/min), and render the hits as installable cards.
 - Install a chosen GitHub app by parsing its repo (change 1) into the existing
   clone seam — no new clone/namespacing logic.
 - Browse anonymously by default; transparently upgrade to an authenticated
   request when the acting user has an allowed broker `github` credential
-  (higher rate limit + private repos), keeping the secret out of OpenBuild.
+  (higher rate limit + private repos), keeping the secret out of Buildiq.
 - Feature-detect the widened broker rules and fall back to anonymous cleanly.
 
 **Non-Goals:**
@@ -78,7 +78,7 @@ no admin-supplied URL, so there is no SSRF surface; the service still validates
 Operations:
 
 - `search(?string $query, ?string $actingUserId): array` — GET
-  `https://api.github.com/search/repositories?q=topic:openbuild-app{+ ' ' + query}`
+  `https://api.github.com/search/repositories?q=topic:buildiq-app{+ ' ' + query}`
   with `Accept: application/vnd.github+json`. Returns normalised cards.
 - `fetchDescriptor(string $owner, string $repo, ?string $ref, ?string $actingUserId): ?array`
   — GET the repo's root `openbuild-app.json` via the contents API; decode for the
@@ -110,16 +110,16 @@ to a minute to appear — acceptable for a discovery surface, and an authenticat
 ### Decision 4 — Credential upgrade via the OR broker (lazy, optional)
 
 When the acting user has an **allowed** broker `github` credential, search + fetch
-are routed through `CredentialBrokerService::request(credentialId, 'openbuild',
+are routed through `CredentialBrokerService::request(credentialId, 'buildiq',
 'GET', path, headers, null, actingUserId)` instead of the anonymous
 `IClientService` call. The broker performs the authenticated GitHub call with its
-stored token and returns the response — **the token never reaches OpenBuild**.
+stored token and returns the response — **the token never reaches Buildiq**.
 Resolution is **lazy**, mirroring how `RemoteTemplateStoreService` resolves OR
 services: `class_exists(CredentialBrokerService::class)` + `Server::get(...)`, so
-OpenBuild builds and runs even if the broker class is absent (older OR), falling
+Buildiq builds and runs even if the broker class is absent (older OR), falling
 back to anonymous. "Allowed" is decided by the broker's own guards (owner /
-allowedApps=`openbuild` / allowRules including `GET /search/repositories` +
-`GET /repos/*` / host-lock=`api.github.com`); OpenBuild does not re-implement the
+allowedApps=`buildiq` / allowRules including `GET /search/repositories` +
+`GET /repos/*` / host-lock=`api.github.com`); Buildiq does not re-implement the
 check — it feature-detects by attempting the broker call and falling back to
 anonymous on a `not-allowed` / rules-missing outcome. The frontend independently
 lists the user's github credentials via OR's `GET /apps/openregister/api/credentials`
@@ -194,7 +194,7 @@ never persisted into the local catalogue; installing one produces a normal local
 `Application` (via the existing clone seam), not a stored catalogue record. The
 only OR objects involved (`Application`, per-app companion schemas) already have
 their seed/creation home in the existing capabilities. Seed data for this change =
-**N/A**. Test fixtures use an example `topic:openbuild-app` search response + a
+**N/A**. Test fixtures use an example `topic:buildiq-app` search response + a
 `permit-tracker` repo file map (test data, not OR seed data).
 
 ### Decision 9 — Security (ADR-005)
@@ -202,9 +202,9 @@ their seed/creation home in the existing capabilities. Seed data for this change
 - **No SSRF surface.** Every outbound host is a compile-time constant
   (`api.github.com`); there is no admin-configurable URL. `owner`/`repo`/`ref` are
   pattern-validated before path interpolation.
-- **Anonymous-first, secret-never-in-OpenBuild.** Default browsing is anonymous.
+- **Anonymous-first, secret-never-in-Buildiq.** Default browsing is anonymous.
   The optional credential upgrade goes through the OR broker, which holds the
-  token and performs the call — OpenBuild passes a `credentialId`, never a secret,
+  token and performs the call — Buildiq passes a `credentialId`, never a secret,
   and never sees the token (broker guards: owner / allowedApps / allowRules /
   host-lock).
 - **Authenticated user required.** Both endpoints reject an unauthenticated
@@ -252,7 +252,7 @@ their seed/creation home in the existing capabilities. Seed data for this change
 
 ## Open Questions
 
-- **OQ-1 (search query composition):** the base query is `topic:openbuild-app`;
+- **OQ-1 (search query composition):** the base query is `topic:buildiq-app`;
   a user term is appended as a free-text qualifier. Whether to also match repo
   name/description or restrict strictly to the topic is provisionally
   **topic-scoped + free-text append** — revisit if results are too broad/narrow.
@@ -260,7 +260,7 @@ their seed/creation home in the existing capabilities. Seed data for this change
   (on card render / hover) and cache, to stay within the anonymous contents
   limit; an authenticated (broker) session can eager-fetch. Revisit against real
   rate-limit behaviour.
-- **OQ-3 (install authorization):** provisionally any authenticated OpenBuild user
+- **OQ-3 (install authorization):** provisionally any authenticated Buildiq user
   may install a GitHub app (mirrors the local + registry installs, both
   `#[NoAdminRequired]`). An admin-or-builder-group gate is a clean follow-up if
   GitHub installs need tighter control.

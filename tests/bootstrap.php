@@ -19,6 +19,31 @@ require_once __DIR__ . '/../vendor/autoload.php';
 // `phpunit.xml` boots THIS file, so it never loaded here. It must come before
 // the OCP resolver below can be triggered, and it is `interface_exists`-guarded
 // so a real in-container Nextcloud still wins.
+// Doctrine placeholders, loaded BEFORE anything can mock an OCP DB interface.
+// IQueryBuilder evaluates class constants referencing Doctrine\DBAL\ParameterType
+// at parse time, and IDBConnection::getQueryBuilder() returns IQueryBuilder — so
+// without these, createMock(IDBConnection::class) dies with
+// `Class "Doctrine\DBAL\ParameterType" not found`, raised from inside
+// createMock(), which reads as a broken test rather than a missing dependency.
+// Only the two CONSTANT HOLDERS are stubbed: stubbing Doctrine\DBAL\Connection
+// as well fatals a full-server run, because OC\DB\Connection extends it.
+//
+// ONLY WHEN THERE IS NO REAL NEXTCLOUD. The stub's own docblock explains that
+// class_exists() cannot protect it — at the moment this file runs the genuine
+// Doctrine is not yet reachable, so the guard passes and the STUB WINS THE NAME
+// for the rest of the process. In a full-server leg that is not a harmless
+// shadow: Nextcloud's AppConfig reads ArrayParameterType::BINARY while loading
+// app versions, and the stub does not have it, so every PHPUnit cell died in the
+// bootstrap with "Undefined constant Doctrine\DBAL\ArrayParameterType::BINARY"
+// — before a single test ran, and long before any code this app owns.
+//
+// Completing the constant list would fix that one symbol and leave the next one
+// waiting. The real fix is not to shadow a class that is genuinely present: when
+// lib/base.php exists, the server ships doctrine/dbal in 3rdparty and the stub
+// has nothing to add.
+if (file_exists(__DIR__ . '/../../../lib/base.php') === false) {
+	require_once __DIR__ . '/stubs/DoctrineStubs.php';
+}
 require_once __DIR__ . '/stubs/nc-hooks-emitter.stub.php';
 
 // vendor/nextcloud/ocp doesn't ship an autoload entry — it's intended as
@@ -39,6 +64,32 @@ if (is_dir($ocpStubs)) {
 			require_once $path;
 		}
 	});
+}
+
+// THE OpenRegister CONTRACT INTERFACES, OPTED INTO RATHER THAN AUTOLOADED.
+//
+// conduction/hydra-gates used to claim `OCA\OpenRegister\Contract\` as a
+// RUNTIME psr-4 prefix, so every consumer got these interfaces implicitly. That
+// prefix is LONGER than openregister's own `OCA\OpenRegister\` -> `lib/`, and
+// PSR-4 is longest-prefix-wins, so whichever app's autoloader registered first
+// defined OpenRegister's contract for the whole process (ConductionNL/.github#531).
+//
+// Asking whether the interface is RESOLVABLE is order-independent, which
+// appending a fallback autoloader is not: spl_autoload_register appends
+// relative to registration order, and registration order across independently
+// loaded apps is exactly what nobody controls.
+//
+// Both are needed here, before the stub file below: it declares
+// `class ObjectEntity ... implements \OCA\OpenRegister\Contract\ObjectEntityInterface`,
+// so the interface must exist by then or PHP fatals in the bootstrap itself.
+// Same shape as the OCP stub guards already used across the fleet.
+foreach (['ObjectEntityInterface', 'ObjectServiceInterface'] as $contract) {
+	if (interface_exists('\\OCA\\OpenRegister\\Contract\\' . $contract) === false) {
+		$shipped = __DIR__ . '/../vendor/conduction/hydra-gates/hydra-gates/contracts/' . $contract . '.php';
+		if (file_exists($shipped)) {
+			require_once $shipped;
+		}
+	}
 }
 
 // OpenRegister types are referenced by hard-typed constructor parameters in
@@ -68,7 +119,7 @@ if (!defined('OC_CONSOLE')) {
 
 		if (class_exists(\OC_App::class)) {
 			\OC_App::loadApps();
-			\OC_App::loadApp('openbuild');
+			\OC_App::loadApp('buildiq');
 		}
 
 		if (class_exists(\OC_Hook::class)) {

@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   application's bound OpenRegister flows and the agents that point at it —
   `flows/<uuid>.json` and `agents/<uuid>.json`, alongside the existing
   data-registers/connectors/automations/skills channels. Export reuses
-  `FlowAndAgentExportBundler` (openbuild-exporter) unmodified via a new
+  `FlowAndAgentExportBundler` (buildiq-exporter) unmodified via a new
   adapter, `FlowAgentChannelCollector`. Import creates each flow through
   `FlowService::save()` and rebinds it onto the local application's
   `flows[]` with the published uuid tracked as `sourceUuid` (a new OPTIONAL
@@ -31,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   data-registers/connectors/automations/skills. Found live during round-trip
   verification: a repository publishing both channels pulled back with both
   declared `0` until the two missing prefixes were added.
-- **Every app OpenBuild has ever generated was born declaring the wrong licence.**
+- **Every app Buildiq has ever generated was born declaring the wrong licence.**
   The embedded template snapshot's `appinfo/info.xml` hardcoded
   `<licence>agpl</licence>` while the very same file's description read "Free and
   open source under the EUPL-1.2 license". It now reads `<licence>{{license}}</licence>`,
@@ -56,8 +56,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `lib/Resources/template/.snapshot-meta.json` and `docs/releasing.md` now record
   that the embedded template is a **fork**, not a snapshot, and that the
   documented `rsync -a --delete` refresh is unsafe to run as written — it would
-  revert OpenBuild-only fixes (including "the generated app could not be built at
-  all", #39) and swap OpenBuild's `{{token}}` placeholder dialect for upstream's
+  revert Buildiq-only fixes (including "the generated app could not be built at
+  all", #39) and swap Buildiq's `{{token}}` placeholder dialect for upstream's
   `{APP_NAME}` dialect, which `PlaceholderResolver` does not resolve and no test
   would catch. `docs/releasing.md` also now records that the "CI drift check" it
   describes **does not exist**.
@@ -77,14 +77,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `GET /api/token-sets` endpoint, and adds a warn-only WCAG contrast preview
   via `evaluateContrast()` that never blocks Save. Live theme preview now
   retargets the page-designer's sandboxed live-preview-pane `CnAppRoot`
-  instance instead of a separate OpenBuild-owned applier.
+  instance instead of a separate Buildiq-owned applier.
 
 ### Removed
-- `src/composables/useAppTheme.js` — OpenBuild's own scoped-CSS
+- `src/composables/useAppTheme.js` — Buildiq's own scoped-CSS
   `:root`-rewriter and injector; `CnAppRoot`'s own `useScopedTheme` watcher
-  now owns runtime theme application end-to-end, with zero OpenBuild-side
+  now owns runtime theme application end-to-end, with zero Buildiq-side
   wiring in `BuilderHost.vue` or `PageDesignerHost.vue`.
-- `src/services/manifestValidation/theme.js` — OpenBuild's own
+- `src/services/manifestValidation/theme.js` — Buildiq's own
   `runtime.theme` shape validator; `@conduction/nextcloud-vue`'s
   `validateManifest()` (schema 2.21.0, `$defs/runtimeTheme`) is now the
   single source for this validation.
@@ -110,7 +110,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Agent workspace** (agent-workspace) — named, tool-scoped AI agents
   layered on the existing `ai-copilot` plan/execute engine (ADR-022
   consume-not-rebuild): an `Agent` (instructions, an explicit subset of the
-  eight `OpenBuildToolProvider` tools, `maxActionsPerRun`) is never a wider
+  eight `BuildiqToolProvider` tools, `maxActionsPerRun`) is never a wider
   capability surface than the bare copilot — enforced server-side as a
   narrowed intersection of the existing eight-tool catalogue on every
   plan/execute request, never trusted from the client.
@@ -162,7 +162,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Files and sets a `{ "ref": "<fileId>" }` reference on the triggering
   object's `generatedDocument` field), `download-link` (a short-lived,
   ~24h signed URL served by the new `GeneratedDocumentController` from
-  OpenBuild's own app-private storage — never the user's Files tree), and
+  Buildiq's own app-private storage — never the user's Files tree), and
   `notify` (reuses the existing `RuleActionDispatcher` send-notification
   path; must be paired with `attach` and/or `download-link`).
 - `AutomationEditDialog` gains the `generateDocument` action editor: a
@@ -182,7 +182,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   action kind on `object-created`/`object-updated`/`object-deleted`/
   `lifecycle-transition` triggers, group-only assignee, compiling to an
   OpenRegister `ApprovalChain` instantiated against the trigger object
-  (consume-not-rebuild, ADR-022 — no new approval engine in OpenBuild).
+  (consume-not-rebuild, ADR-022 — no new approval engine in Buildiq).
 - On-approve/on-reject follow-up actions, composed from the same typed-action
   vocabulary (send-notification/object-op/webhook), dispatched by a typed
   listener on OR's `ApprovalStepApprovedEvent`/`ApprovalStepRejectedEvent`.
@@ -215,7 +215,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   objects endpoint and filtered on a non-existent `applicationUuid` field; it now
   uses `/api/applications/{slug}/versions` with the real fields.
 - App-detail Register widget (and KPI register links) showed a phantom
-  `openbuild-{slug}-{versionSlug}` register for shared-register versions; they now
+  `buildiq-{slug}-{versionSlug}` register for shared-register versions; they now
   use the active version's real `register` field.
 
 ### Security
@@ -226,7 +226,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.5.7] - 2026-06-20
 
 ### Added
-- Remote template store (openbuild-remote-template-store): search + install
+- Remote template store (buildiq-remote-template-store): search + install
   virtual-app templates from a remote OpenRegister-backed catalogue. Admin
   registry config (URL/register/token, token write-only), a server-side
   SSRF-guarded proxy (`RemoteTemplateStoreService`), `StoreController`
@@ -270,7 +270,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 - Hybrid metadata-lock: a hybrid app's `slug`/`name` are read-only (mirror the installed
-  app), enforced by a pre-save guard (`openbuild.hybrid_metadata.locked`).
+  app), enforced by a pre-save guard (`buildiq.hybrid_metadata.locked`).
 
 ## [0.4.0] - 2026-06-02
 
@@ -283,7 +283,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   stored on the instance, never logged).
 - Exporter end-to-end integration test (`tests/Integration/ExporterEndToEndTest.php`)
   asserting the resolved tree carries no unresolved `{{placeholder}}` tokens, no
-  `openbuild` dependency reference (REQ-OBEX-010), and is byte-equivalent across
+  `buildiq` dependency reference (REQ-OBEX-010), and is byte-equivalent across
   re-exports (REQ-OBEX-008).
 - `CleanupExpiredExportsTest` unit test (expired-ZIP purge + fresh-ZIP retention +
   idempotency).
@@ -291,7 +291,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `docs/releasing.md` (embedded-template resnapshot procedure).
 - `.github/workflows/exporter-e2e.yml` running the exporter integration + unit tests on
   every PR, parallel to the main Code Quality job.
-- `openbuild-exporter` capability registered in `openspec/app-config.json`.
+- `buildiq-exporter` capability registered in `openspec/app-config.json`.
 
 ### Changed
 - `ExportService::scratchTreeDir()` split out as a pure path resolver so the GitHub push
@@ -300,13 +300,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.12] - 2026-06-01
 
 ### Added
-- Full Dutch + English translations for the visual page designer (170 strings, en↔nl parity) — the designer UI was previously untranslated (ADR-007 / `openbuild-page-designer` REQ-OBPD spec, tasks 6.1/6.2).
+- Full Dutch + English translations for the visual page designer (170 strings, en↔nl parity) — the designer UI was previously untranslated (ADR-007 / `buildiq-page-designer` REQ-OBPD spec, tasks 6.1/6.2).
 
 ### Changed
-- Page designer save path now targets the active `ApplicationVersion.manifest` (`PUT /api/objects/openbuild/applicationVersion/{uuid}`) per ADR-002 / Decision 6 / REQ-OBPD-009, surgical-merging the UI-controlled `manifest` field for round-trip safety; falls back to the `Application` object for apps that predate the versioned model.
+- Page designer save path now targets the active `ApplicationVersion.manifest` (`PUT /api/objects/buildiq/applicationVersion/{uuid}`) per ADR-002 / Decision 6 / REQ-OBPD-009, surgical-merging the UI-controlled `manifest` field for round-trip safety; falls back to the `Application` object for apps that predate the versioned model.
 
 ### Fixed
-- Removed two designer strings that leaked the internal `openbuild.page-designer.*` dotted-key prefix into the user-facing UI (live-preview unavailable note and the menu nesting-depth error).
+- Removed two designer strings that leaked the internal `buildiq.page-designer.*` dotted-key prefix into the user-facing UI (live-preview unavailable note and the menu nesting-depth error).
 
 ## [0.3.11] - 2026-05-31
 

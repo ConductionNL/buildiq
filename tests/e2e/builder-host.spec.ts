@@ -11,7 +11,7 @@ import { dismissFirstVisitOverlays } from './support/overlays'
  *
  * Preconditions:
  *  - Docker stack up (`bash clean-env.sh`).
- *  - OpenBuild enabled (`docker exec nextcloud php occ app:enable openbuild`).
+ *  - Buildiq enabled (`docker exec nextcloud php occ app:enable buildiq`).
  *  - SeedHelloWorld has run (post-migration repair step).
  */
 // UN-QUARANTINED 2026-07-30. The old reason — "builder host blank
@@ -24,14 +24,14 @@ test.describe('BuilderHost — hello-world journey', () => {
 	test('loads /builder/hello-world and renders the seeded index page', async ({
 		page,
 	}) => {
-		await page.goto('/apps/openbuild/builder/hello-world')
+		await page.goto('/apps/buildiq/builder/hello-world')
 
-		await expect(page).toHaveURL(/\/apps\/openbuild\/builder\/hello-world/)
+		await expect(page).toHaveURL(/\/apps\/buildiq\/builder\/hello-world/)
 
 		// The hello-world manifest's index page lists hello-message objects.
 		// The three seeded titles must all be visible before this passes.
 		const expectedTitles = [
-			'Welcome to OpenBuild',
+			'Welcome to Buildiq',
 			'Edit me',
 			'Built from a manifest',
 		]
@@ -44,8 +44,8 @@ test.describe('BuilderHost — hello-world journey', () => {
 	})
 
 	test('navigates to a hello-message detail page', async ({ page }) => {
-		await page.goto('/apps/openbuild/builder/hello-world')
-		// The NESTED CnAppRoot mounts with appId `openbuild-hello-world`, so
+		await page.goto('/apps/buildiq/builder/hello-world')
+		// The NESTED CnAppRoot mounts with appId `buildiq-hello-world`, so
 		// nc-vue's first-visit support dialog has never been seen for THAT app id
 		// and opens over the virtual app. It is a real modal (aria-modal, backdrop),
 		// so it correctly swallows the click below — measured: 55 retries, all
@@ -55,7 +55,7 @@ test.describe('BuilderHost — hello-world journey', () => {
 		// Click the first seeded message — the manifest defines the detail
 		// page at /messages/:id so the inner router forwards us there.
 		const firstMessage = page
-			.getByText('Welcome to OpenBuild', { exact: false })
+			.getByText('Welcome to Buildiq', { exact: false })
 			.first()
 		await expect(firstMessage).toBeVisible({ timeout: 15_000 })
 		await firstMessage.click()
@@ -77,7 +77,7 @@ test.describe('BuilderHost — hello-world journey', () => {
 		// The manifest declares a form page at /messages/new. Hit it directly
 		// to skip menu/CTA discovery (DOM may be in flux until the page-editor
 		// spec lands).
-		await page.goto('/apps/openbuild/builder/hello-world/messages/new')
+		await page.goto('/apps/buildiq/builder/hello-world/messages/new')
 
 		await expect(page).toHaveURL(/\/builder\/hello-world\/messages\/new/)
 

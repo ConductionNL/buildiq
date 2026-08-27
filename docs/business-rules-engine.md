@@ -11,7 +11,7 @@ from UI and code. Two paradigms are supported:
 - **Decision tables** (DMN 1.4) — multi-factor mapping (e.g. loan eligibility).
 - **Condition-action rules** — sequential triggers (e.g. invoice routing).
 
-RuleSets are first-class OpenRegister objects in the shared `openbuild`
+RuleSets are first-class OpenRegister objects in the shared `buildiq`
 register, versioned and deployed per tenant without an app redeploy.
 
 ## Lifecycle
@@ -46,8 +46,7 @@ Conditions use a small, auditable FEEL subset:
 
 **Not supported:** string interpolation, function calls (`now()`,
 `length()`), custom user-defined functions, external library calls. Move that
-logic into an n8n workflow (via the `start-workflow` action) or a backend
-service.
+logic into an OpenRegister flow or a backend service.
 
 ### Decision-table cell conditions
 
@@ -73,8 +72,12 @@ A matching rule runs its actions in order:
 
 - `set-veld` — set a field on the working payload.
 - `send-notification` — dispatch a Nextcloud notification.
-- `start-workflow` — start an n8n workflow.
 - `call-rule-set` — evaluate another RuleSet.
+
+`start-workflow` is accepted by the schema but **reserved and currently a
+no-op**. Buildiq wires no workflow engine, so dispatching it logs a warning and
+changes nothing (`RuleActionDispatcher::dispatchStartWorkflow`). Do not build on
+it yet. To run business logic beyond a rule set, use an OpenRegister flow.
 
 A failing action aborts the rule unless `continueOnError` is set. In dry-run
 mode side-effecting actions are recorded but not dispatched.
@@ -104,7 +107,7 @@ for explaining an automated decision. The `RuleExecutionLogCleanup` background
 job (7-day interval) purges logs past the 90-day retention window.
 
 To query the audit trail for compliance, list `rule-execution-log` objects in
-the `openbuild` register filtered by `ruleSetId` and time window.
+the `buildiq` register filtered by `ruleSetId` and time window.
 
 ## Automation designer
 

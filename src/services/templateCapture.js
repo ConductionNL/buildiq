@@ -133,7 +133,7 @@ export class SlugCollisionError extends Error {
 	 */
 	constructor(canonicalSlug, sourceSlugs) {
 		super(
-			`openbuild.templates.saveAs.error.slug-collision: ${sourceSlugs.join(', ')} → ${canonicalSlug}`,
+			`buildiq.templates.saveAs.error.slug-collision: ${sourceSlugs.join(', ')} → ${canonicalSlug}`,
 		)
 		this.name = 'SlugCollisionError'
 		this.code = 'slug-collision'
@@ -246,7 +246,7 @@ export function bumpMinor(version) {
  *
  * Pure decision function — the dialog supplies the candidate list it
  * already fetched for the gallery; this never performs I/O. Writability
- * is read from OR's standard per-object rights (no openbuild-local role
+ * is read from OR's standard per-object rights (no buildiq-local role
  * logic — REQ-SAT-006).
  *
  * @param {string} slug - the chosen template slug.

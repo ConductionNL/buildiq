@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild InvalidStrategyException
+ * Buildiq InvalidStrategyException
  *
  * Thrown when the promotion endpoint receives a missing or unrecognised
  * `strategy` value (spec REQ-OBVP-001 — 400 / `code: "invalid_strategy"`).
@@ -10,7 +10,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Exception
- * @package  OCA\OpenBuild\Exception
+ * @package  OCA\Buildiq\Exception
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,7 +23,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Exception;
+namespace OCA\Buildiq\Exception;
 
 use Throwable;
 

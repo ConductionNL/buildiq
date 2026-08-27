@@ -6,13 +6,13 @@ Persists and serves a fleet app's shared manifest customization — the keyed
 `manifestDelta` produced by `@conduction/nextcloud-vue`'s `diffManifest` — keyed by
 the fleet app id, and exposes the `GET`/`PUT`/`DELETE /api/app-overrides/{appId}`
 endpoints the fleet app's `mergeStrategy:'delta'` loader consumes client-side
-(OpenBuild holds no fleet base, so the delta is merged on the client). Originally
+(Buildiq holds no fleet base, so the delta is merged on the client). Originally
 backed by a standalone `AppOverride` record; the `unify-apps-with-app-type` change
 repoints storage to a hybrid `Application` + delta-only `ApplicationVersion` and keeps
 the three endpoints as compatibility shims so live fleet apps stay byte-for-byte
 compatible.
 
-**OpenSpec changes**: [layered-versioned-app-deltas](../../changes/layered-versioned-app-deltas/), [openbuild-inline-edit-persistence](../../changes/openbuild-inline-edit-persistence/), [unify-apps-with-app-type](../../changes/archive/2026-06-20-unify-apps-with-app-type/) _(archived 2026-06-20)_
+**OpenSpec changes**: [layered-versioned-app-deltas](../../changes/layered-versioned-app-deltas/), [buildiq-inline-edit-persistence](../../changes/buildiq-inline-edit-persistence/), [unify-apps-with-app-type](../../changes/archive/2026-06-20-unify-apps-with-app-type/) _(archived 2026-06-20)_
 
 **Status**: in-progress
 
@@ -36,7 +36,7 @@ The system SHALL persist a fleet app's manifest customization as a **hybrid `App
 
 ### Requirement: Read endpoint returns the raw delta for client-side merge
 
-The system SHALL keep `GET /index.php/apps/openbuild/api/app-overrides/{appId}` as a **compatibility shim** returning the stored `manifestDelta` for that `appId` unchanged, now sourced from the hybrid `Application`'s production `ApplicationVersion` (resolved by `baseRef.id == {appId}` or `slug == {appId}`). The fleet app's `@conduction/nextcloud-vue` loader configured with `mergeStrategy:'delta'` and `options.endpoint` pointed at this URL SHALL apply the delta over its own bundled manifest via `mergeManifestDelta(bundledManifest, delta)`. When no hybrid Application exists for the `appId`, the endpoint SHALL return an empty delta so the merge is a no-op and the bundled manifest passes through unchanged. The endpoint SHALL require an authenticated session. The system SHALL NOT merge a fleet app's manifest server-side, because OpenBuild does not hold the fleet app's bundled base manifest.
+The system SHALL keep `GET /index.php/apps/buildiq/api/app-overrides/{appId}` as a **compatibility shim** returning the stored `manifestDelta` for that `appId` unchanged, now sourced from the hybrid `Application`'s production `ApplicationVersion` (resolved by `baseRef.id == {appId}` or `slug == {appId}`). The fleet app's `@conduction/nextcloud-vue` loader configured with `mergeStrategy:'delta'` and `options.endpoint` pointed at this URL SHALL apply the delta over its own bundled manifest via `mergeManifestDelta(bundledManifest, delta)`. When no hybrid Application exists for the `appId`, the endpoint SHALL return an empty delta so the merge is a no-op and the bundled manifest passes through unchanged. The endpoint SHALL require an authenticated session. The system SHALL NOT merge a fleet app's manifest server-side, because Buildiq does not hold the fleet app's bundled base manifest.
 
 #### Scenario: Existing override returns the stored delta from the hybrid Application
 
@@ -51,11 +51,11 @@ The system SHALL keep `GET /index.php/apps/openbuild/api/app-overrides/{appId}` 
 
 ### Requirement: Write endpoint upserts the delta and records who saved
 
-The system SHALL keep `PUT /index.php/apps/openbuild/api/app-overrides/{appId}` as a **compatibility shim** that accepts a `diffManifest` delta in the request body, validates the delta shape, and upserts the per-`appId` hybrid `Application` + delta-only `ApplicationVersion` (creating both on first write, exactly as the wizard's hybrid branch would), recording the calling user's UID as provenance. The endpoint SHALL require an authenticated session and SHALL enforce CSRF; it SHALL reject an anonymous caller and SHALL reject a caller without OpenBuild access with a forbidden response.
+The system SHALL keep `PUT /index.php/apps/buildiq/api/app-overrides/{appId}` as a **compatibility shim** that accepts a `diffManifest` delta in the request body, validates the delta shape, and upserts the per-`appId` hybrid `Application` + delta-only `ApplicationVersion` (creating both on first write, exactly as the wizard's hybrid branch would), recording the calling user's UID as provenance. The endpoint SHALL require an authenticated session and SHALL enforce CSRF; it SHALL reject an anonymous caller and SHALL reject a caller without Buildiq access with a forbidden response.
 
 #### Scenario: Authenticated save creates or updates the hybrid Application
 
-- **WHEN** an authenticated user with OpenBuild access PUTs a valid delta to `/api/app-overrides/pipelinq`
+- **WHEN** an authenticated user with Buildiq access PUTs a valid delta to `/api/app-overrides/pipelinq`
 - **THEN** the endpoint SHALL upsert the hybrid Application for `pipelinq` and respond `2xx`
 - **AND** the stored version delta SHALL equal the supplied delta
 
@@ -66,11 +66,11 @@ The system SHALL keep `PUT /index.php/apps/openbuild/api/app-overrides/{appId}` 
 
 ### Requirement: Reset endpoint clears an override
 
-The system SHALL keep `DELETE /index.php/apps/openbuild/api/app-overrides/{appId}` as a **compatibility shim** that clears the hybrid `Application`'s override for that `appId` (archiving/removing the override so the fleet app reverts to its bundled manifest on the next manifest load). The endpoint SHALL require an authenticated session, SHALL enforce CSRF, and SHALL reject an anonymous caller and a caller without OpenBuild access.
+The system SHALL keep `DELETE /index.php/apps/buildiq/api/app-overrides/{appId}` as a **compatibility shim** that clears the hybrid `Application`'s override for that `appId` (archiving/removing the override so the fleet app reverts to its bundled manifest on the next manifest load). The endpoint SHALL require an authenticated session, SHALL enforce CSRF, and SHALL reject an anonymous caller and a caller without Buildiq access.
 
 #### Scenario: Delete clears the hybrid Application override
 
-- **WHEN** an authenticated user with OpenBuild access DELETEs `/api/app-overrides/opencatalogi` and a hybrid Application exists
+- **WHEN** an authenticated user with Buildiq access DELETEs `/api/app-overrides/opencatalogi` and a hybrid Application exists
 - **THEN** the system SHALL clear the override and respond `2xx`
 - **AND** a subsequent GET for that `appId` SHALL return an empty delta
 

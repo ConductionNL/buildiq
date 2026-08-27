@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild Job Owner Impersonator
+ * Buildiq Job Owner Impersonator
  *
  * Impersonates an OR object's OWNER on the current session for the
  * duration of a piece of work — the fleet-wide pattern for background jobs
@@ -9,7 +9,7 @@
  * hermiq's ScheduleService::runAgentAsOwner().
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -27,7 +27,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 use OCP\IUserManager;
 use OCP\IUserSession;
@@ -149,7 +149,7 @@ class JobOwnerImpersonator {
 			// read is therefore evaluated as `Anonymous` and refused by any
 			// schema that does not grant anonymous `read`:
 			//
-			//   OpenBuild: owner impersonation lookup failed for object <uuid>:
+			//   Buildiq: owner impersonation lookup failed for object <uuid>:
 			//   User 'Anonymous' does not have permission to 'read' objects in
 			//   schema 'Export Job'
 			//
@@ -188,7 +188,7 @@ class JobOwnerImpersonator {
 			$ownerUid = $object->getOwner();
 			if ($ownerUid === null || $ownerUid === '') {
 				$this->logger->warning(
-					'OpenBuild: object ' . $objectId . ' has no recorded owner — '
+					'Buildiq: object ' . $objectId . ' has no recorded owner — '
 					. 'cannot impersonate for this background-job write.'
 				);
 				return [null, false];
@@ -197,7 +197,7 @@ class JobOwnerImpersonator {
 			$user = $this->userManager->get($ownerUid);
 			if ($user === null) {
 				$this->logger->warning(
-					'OpenBuild: object ' . $objectId . ' owner "' . $ownerUid . '" '
+					'Buildiq: object ' . $objectId . ' owner "' . $ownerUid . '" '
 					. 'no longer resolves to a Nextcloud user — cannot impersonate.'
 				);
 				return [null, false];
@@ -209,7 +209,7 @@ class JobOwnerImpersonator {
 			return [$priorUser, true];
 		} catch (\Throwable $e) {
 			$this->logger->warning(
-				'OpenBuild: owner impersonation lookup failed for object '
+				'Buildiq: owner impersonation lookup failed for object '
 				. $objectId . ': ' . $e->getMessage()
 			);
 			return [null, false];

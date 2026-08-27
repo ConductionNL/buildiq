@@ -8,11 +8,11 @@
 <template>
 	<div class="form-page-editor">
 		<h3 class="form-page-editor__title">
-			{{ t('openbuild', 'Form page') }}
+			{{ t('buildiq', 'Form page') }}
 		</h3>
 
 		<fieldset class="form-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Submit') }}</legend>
+			<legend>{{ t('buildiq', 'Submit') }}</legend>
 			<div class="form-page-editor__submit-shape">
 				<label class="form-page-editor__inline">
 					<input
@@ -20,7 +20,7 @@
 						:checked="submitShape === 'handler'"
 						value="handler"
 						@change="setSubmitShape('handler')" />
-					{{ t('openbuild', 'submitHandler (registry key)') }}
+					{{ t('buildiq', 'submitHandler (registry key)') }}
 				</label>
 				<label class="form-page-editor__inline">
 					<input
@@ -28,7 +28,7 @@
 						:checked="submitShape === 'endpoint'"
 						value="endpoint"
 						@change="setSubmitShape('endpoint')" />
-					{{ t('openbuild', 'submitEndpoint (URL)') }}
+					{{ t('buildiq', 'submitEndpoint (URL)') }}
 				</label>
 			</div>
 			<input
@@ -36,8 +36,8 @@
 				type="text"
 				class="form-page-editor__input"
 				:value="config.submitHandler || ''"
-				:placeholder="t('openbuild', 'customComponents registry key')"
-				:aria-label="t('openbuild', 'customComponents registry key')"
+				:placeholder="t('buildiq', 'customComponents registry key')"
+				:aria-label="t('buildiq', 'customComponents registry key')"
 				:aria-invalid="isInvalid('submitHandler')"
 				@input="setSubmitHandler($event.target.value)" />
 			<input
@@ -45,8 +45,8 @@
 				type="text"
 				class="form-page-editor__input"
 				:value="config.submitEndpoint || ''"
-				:placeholder="t('openbuild', '/api/objects/:slug/…')"
-				:aria-label="t('openbuild', '/api/objects/:slug/…')"
+				:placeholder="t('buildiq', '/api/objects/:slug/…')"
+				:aria-label="t('buildiq', '/api/objects/:slug/…')"
 				:aria-invalid="isInvalid('submitEndpoint')"
 				@input="setSubmitEndpoint($event.target.value)" />
 			<InlineFieldMark
@@ -58,7 +58,7 @@
 					)
 				" />
 			<label class="form-page-editor__group-row">
-				{{ t('openbuild', 'Method') }}
+				{{ t('buildiq', 'Method') }}
 				<select
 					:value="config.submitMethod || 'POST'"
 					@change="update('submitMethod', $event.target.value)">
@@ -68,7 +68,7 @@
 				</select>
 			</label>
 			<label class="form-page-editor__group-row">
-				{{ t('openbuild', 'Mode') }}
+				{{ t('buildiq', 'Mode') }}
 				<select
 					:value="config.mode || 'public'"
 					@change="update('mode', $event.target.value)">
@@ -78,25 +78,25 @@
 				</select>
 			</label>
 			<label class="form-page-editor__group-row">
-				{{ t('openbuild', 'Submit label (optional)') }}
+				{{ t('buildiq', 'Submit label (optional)') }}
 				<input
 					type="text"
 					:value="config.submitLabel || ''"
-					:placeholder="t('openbuild', 'i18n key')"
+					:placeholder="t('buildiq', 'i18n key')"
 					@input="update('submitLabel', $event.target.value)" />
 			</label>
 			<label class="form-page-editor__group-row">
-				{{ t('openbuild', 'Success message (optional)') }}
+				{{ t('buildiq', 'Success message (optional)') }}
 				<input
 					type="text"
 					:value="config.successMessage || ''"
-					:placeholder="t('openbuild', 'i18n key')"
+					:placeholder="t('buildiq', 'i18n key')"
 					@input="update('successMessage', $event.target.value)" />
 			</label>
 		</fieldset>
 
 		<fieldset class="form-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Fields') }}</legend>
+			<legend>{{ t('buildiq', 'Fields') }}</legend>
 			<FormFieldBuilder
 				:modelValue="config.fields || []"
 				showLogic
@@ -105,7 +105,7 @@
 		</fieldset>
 
 		<fieldset class="form-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Steps') }}</legend>
+			<legend>{{ t('buildiq', 'Steps') }}</legend>
 			<FormStepsManager
 				:steps="config.steps || []"
 				:fields="config.fields || []"
@@ -116,21 +116,21 @@
 		<!-- REQ-EFP-002: External access — provisions OR schema authorization
 		     (+ optional Portaliq portalPage) via ExternalFormAccessDialog. Only
 		     offered for endpoint-shaped forms whose submitEndpoint resolves to
-		     an OR `/api/objects/{register}/{schema}` target; OpenBuild never
+		     an OR `/api/objects/{register}/{schema}` target; Buildiq never
 		     hosts the anonymous surface itself (design.md, thin-leaf rule). -->
 		<fieldset class="form-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'External access') }}</legend>
+			<legend>{{ t('buildiq', 'External access') }}</legend>
 			<template v-if="externalTarget">
 				<p class="form-page-editor__external-status">
 					{{
 						externalFormEntry && externalFormEntry.status === 'enabled'
 							? t(
-									'openbuild',
+									'buildiq',
 									'Externally fillable ({register}/{schema})',
 									externalTarget,
 								)
 							: t(
-									'openbuild',
+									'buildiq',
 									'Not externally fillable yet ({register}/{schema})',
 									externalTarget,
 								)
@@ -140,7 +140,7 @@
 					type="button"
 					class="form-page-editor__external-btn"
 					@click="externalDialogOpen = true">
-					{{ t('openbuild', 'Configure') }}
+					{{ t('buildiq', 'Configure') }}
 				</button>
 				<ExternalFormAccessDialog
 					v-model:open="externalDialogOpen"
@@ -153,7 +153,7 @@
 			<p v-else class="form-page-editor__hint">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'External access requires a submitEndpoint shaped like /api/objects/{register}/{schema}.',
 					)
 				}}

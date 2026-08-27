@@ -11,7 +11,7 @@
   - /applications/{applicationUuid} so they land on the detail page of the
   - newly-created app.
   -
-  - spec: openbuild-app-creation-wizard REQ-OBWIZ-001
+  - spec: buildiq-app-creation-wizard REQ-OBWIZ-001
   - spec: openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
   -->
 <template>
@@ -19,7 +19,7 @@
 		<div
 			class="ob-va-actions__filter"
 			role="group"
-			:aria-label="t('openbuild', 'Filter apps by type')">
+			:aria-label="t('buildiq', 'Filter apps by type')">
 			<NcButton
 				v-for="opt in filterOptions"
 				:key="opt.value"
@@ -31,7 +31,7 @@
 		</div>
 
 		<NcButton variant="primary" @click="showWizard = true">
-			{{ t('openbuild', 'Add app') }}
+			{{ t('buildiq', 'Add app') }}
 		</NcButton>
 
 		<CreateApplicationWizard
@@ -67,9 +67,9 @@ export default {
 		 */
 		filterOptions() {
 			return [
-				{ value: 'all', label: t('openbuild', 'All') },
-				{ value: 'virtual', label: t('openbuild', 'Virtual') },
-				{ value: 'hybrid', label: t('openbuild', 'Hybrid') },
+				{ value: 'all', label: t('buildiq', 'All') },
+				{ value: 'virtual', label: t('buildiq', 'Virtual') },
+				{ value: 'hybrid', label: t('buildiq', 'Hybrid') },
 			]
 		},
 

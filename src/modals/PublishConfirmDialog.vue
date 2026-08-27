@@ -12,41 +12,41 @@
 <template>
 	<NcModal v-if="open" size="small" @close="onClose">
 		<div class="publish-confirm">
-			<h2>{{ t('openbuild', 'Publish to GitHub') }}</h2>
+			<h2>{{ t('buildiq', 'Publish to GitHub') }}</h2>
 			<p class="publish-confirm__summary">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'Publishing adds a new commit to {repo} on branch {branch}. It never overwrites history.',
 						{
 							repo: repoLabel,
 							branch:
 								repo && repo.branch
 									? repo.branch
-									: t('openbuild', 'the default branch'),
+									: t('buildiq', 'the default branch'),
 						},
 					)
 				}}
 			</p>
 			<p class="publish-confirm__cred">
 				{{
-					t('openbuild', 'Using credential: {name}', {
-						name: credentialName || t('openbuild', 'none selected'),
+					t('buildiq', 'Using credential: {name}', {
+						name: credentialName || t('buildiq', 'none selected'),
 					})
 				}}
 			</p>
 			<NcSelect
 				v-model="selectedVersion"
-				:inputLabel="t('openbuild', 'Version to publish')"
+				:inputLabel="t('buildiq', 'Version to publish')"
 				:options="versionOptions"
-				:placeholder="t('openbuild', 'Production version')"
+				:placeholder="t('buildiq', 'Production version')"
 				:clearable="true" />
 			<p v-if="error" class="publish-confirm__error" role="alert">
 				{{ error }}
 			</p>
 			<div class="publish-confirm__actions">
 				<NcButton @click="onClose">
-					{{ t('openbuild', 'Cancel') }}
+					{{ t('buildiq', 'Cancel') }}
 				</NcButton>
 				<NcButton
 					variant="primary"
@@ -54,8 +54,8 @@
 					@click="submit">
 					{{
 						submitting
-							? t('openbuild', 'Publishing…')
-							: t('openbuild', 'Publish')
+							? t('buildiq', 'Publishing…')
+							: t('buildiq', 'Publish')
 					}}
 				</NcButton>
 			</div>
@@ -106,7 +106,7 @@ export default {
 			if (this.repo && this.repo.owner && this.repo.name) {
 				return `${this.repo.owner}/${this.repo.name}`
 			}
-			return t('openbuild', 'the linked repository')
+			return t('buildiq', 'the linked repository')
 		},
 
 		/**
@@ -156,27 +156,27 @@ export default {
 		outcomeMessage(outcome) {
 			const messages = {
 				push_conflict: t(
-					'openbuild',
+					'buildiq',
 					'The remote branch moved ahead. Pull the latest changes first, then publish again.',
 				),
 
 				broker_denied: t(
-					'openbuild',
+					'buildiq',
 					"The credential broker denied this publish. Check the credential's allowed apps and scopes.",
 				),
 
 				broker_unavailable: t(
-					'openbuild',
+					'buildiq',
 					'The credential broker is unavailable. Publishing is disabled until it is configured.',
 				),
 
-				not_linked: t('openbuild', 'Link a repository before publishing.'),
+				not_linked: t('buildiq', 'Link a repository before publishing.'),
 				github_unreachable: t(
-					'openbuild',
+					'buildiq',
 					'GitHub could not be reached. Try again shortly.',
 				),
 			}
-			return messages[outcome] || t('openbuild', 'Publishing failed.')
+			return messages[outcome] || t('buildiq', 'Publishing failed.')
 		},
 
 		/**
@@ -195,7 +195,7 @@ export default {
 			this.error = ''
 			try {
 				const url = generateUrl(
-					'/apps/openbuild/api/applications/{slug}/github/push',
+					'/apps/buildiq/api/applications/{slug}/github/push',
 					{ slug: this.slug },
 				)
 				const body = { credentialId: this.credentialId }
@@ -220,7 +220,7 @@ export default {
 					|| data?.detail
 					|| data?.error
 					|| e?.message
-					|| t('openbuild', 'Publishing failed.')
+					|| t('buildiq', 'Publishing failed.')
 				this.submitting = false
 			}
 		},

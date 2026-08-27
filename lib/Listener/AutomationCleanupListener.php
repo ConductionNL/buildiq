@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild AutomationCleanupListener
+ * Buildiq AutomationCleanupListener
  *
  * Listens for OpenRegister's `ObjectDeletedEvent` on `automation` rows and
  * removes exactly the provenance-listed compiled artifacts (design.md
@@ -22,7 +22,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Listener
- * @package  OCA\OpenBuild\Listener
+ * @package  OCA\Buildiq\Listener
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -38,11 +38,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Listener;
+namespace OCA\Buildiq\Listener;
 
-use OCA\OpenBuild\Service\AutomationCompilerService;
-use OCA\OpenBuild\Service\ListenerSlugContract;
-use OCA\OpenBuild\Service\ObjectSchemaSlugResolver;
+use OCA\Buildiq\Service\AutomationCompilerService;
+use OCA\Buildiq\Service\ListenerSlugContract;
+use OCA\Buildiq\Service\ObjectSchemaSlugResolver;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -80,6 +80,8 @@ class AutomationCleanupListener implements IEventListener {
 	 * @param Event $event Dispatched event.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/automation-designer/spec.md
 	 */
 	public function handle(Event $event): void {
 		if (($event instanceof ObjectDeletedEvent) === false) {
@@ -103,7 +105,7 @@ class AutomationCleanupListener implements IEventListener {
 		// The register is checked as well as the schema: `automation` is not a
 		// unique slug on this instance (two schemas carry it), so matching on
 		// the schema slug alone would delete artifacts for another app's rows.
-		if ($this->slugs->isOpenBuildSchema(
+		if ($this->slugs->isBuildiqSchema(
 			entity: $entity,
 			schemaSlug: AutomationCompilerService::AUTOMATION_SCHEMA
 		) === false
@@ -122,7 +124,7 @@ class AutomationCleanupListener implements IEventListener {
 		} catch (Throwable $e) {
 			$slug = (string)($automation['slug'] ?? '');
 			$this->logger->error(
-				'OpenBuild: AutomationCleanupListener failed to remove compiled artifacts for deleted automation "' . $slug . '": ' . $e->getMessage(),
+				'Buildiq: AutomationCleanupListener failed to remove compiled artifacts for deleted automation "' . $slug . '": ' . $e->getMessage(),
 				['exception' => $e]
 			);
 		}

@@ -1,4 +1,4 @@
-# OpenBuild — Conduction PHPStan config.
+# Buildiq — Conduction PHPStan config.
 #
 # The shared base is the single source of truth. Everything here is either the
 # app's own tracked debt or an ignore naming a symbol that exists in no other
@@ -25,7 +25,7 @@ parameters:
     scanFiles:
         # OpenRegister lifecycle-guard contract (GuardResult + LifecycleGuardInterface)
         # so the app-registered ApplicationVersionOwnerGuard resolves the OR
-        # interface it implements during static analysis (openbuild-rbac).
+        # interface it implements during static analysis (buildiq-rbac).
         - tests/stubs/openregister-lifecycle.stub.php
         # AppHost Settings engine stubs (GenericSettingsSection + GenericAdminSettings)
         # so SettingsSection and AdminSettings resolve their parent constructors during

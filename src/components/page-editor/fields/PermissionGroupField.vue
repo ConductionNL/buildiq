@@ -19,12 +19,12 @@
 <template>
 	<div class="permission-group-field">
 		<NcSelect
-			:inputLabel="t('openbuild', 'Visible only to group (optional)')"
+			:inputLabel="t('buildiq', 'Visible only to group (optional)')"
 			:modelValue="selectedOption"
 			:options="options"
 			:taggable="true"
 			:clearable="true"
-			:placeholder="t('openbuild', 'Everyone with app access')"
+			:placeholder="t('buildiq', 'Everyone with app access')"
 			label="label"
 			trackBy="value"
 			@update:modelValue="onChange"
@@ -32,7 +32,7 @@
 		<p class="permission-group-field__hint">
 			{{
 				t(
-					'openbuild',
+					'buildiq',
 					'Hides this entry from members outside the group. This is navigation only — set OpenRegister schema authorization to actually restrict the underlying data.',
 				)
 			}}

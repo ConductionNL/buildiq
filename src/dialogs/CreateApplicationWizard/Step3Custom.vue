@@ -5,17 +5,17 @@
   Step 3 — Custom chain composer
   Add-row list with drag-to-reorder and keyboard ↑/↓ accessible buttons.
   Only shown when preset === 'custom'.
-  spec: openbuild-app-creation-wizard REQ-OBWIZ-004, REQ-OBWIZ-005, REQ-OBWIZ-006
+  spec: buildiq-app-creation-wizard REQ-OBWIZ-004, REQ-OBWIZ-005, REQ-OBWIZ-006
 -->
 <template>
 	<div class="wizard-step3">
 		<h3 class="wizard-step3__heading">
-			{{ t('openbuild', 'Define your version chain') }}
+			{{ t('buildiq', 'Define your version chain') }}
 		</h3>
 		<p class="wizard-step3__description">
 			{{
 				t(
-					'openbuild',
+					'buildiq',
 					'Versions are ordered top-to-bottom: upstream (e.g. Development) at top, downstream (e.g. Production) at bottom.',
 				)
 			}}
@@ -46,12 +46,8 @@
 						class="wizard-step3__input"
 						type="text"
 						:value="row.name"
-						:placeholder="
-							t('openbuild', 'Version name (e.g. Production)')
-						"
-						:aria-label="
-							t('openbuild', 'Version name (e.g. Production)')
-						"
+						:placeholder="t('buildiq', 'Version name (e.g. Production)')"
+						:aria-label="t('buildiq', 'Version name (e.g. Production)')"
 						autocomplete="off"
 						@input="onNameInput(index, $event)" />
 				</div>
@@ -72,8 +68,8 @@
 						@click="toggleAdvanced(index)">
 						{{
 							advancedOpen[index]
-								? t('openbuild', 'Hide')
-								: t('openbuild', 'Advanced')
+								? t('buildiq', 'Hide')
+								: t('buildiq', 'Advanced')
 						}}
 					</button>
 				</div>
@@ -87,8 +83,8 @@
 						}"
 						type="text"
 						:value="row.slug"
-						:placeholder="t('openbuild', 'kebab-case-slug')"
-						:aria-label="t('openbuild', 'kebab-case-slug')"
+						:placeholder="t('buildiq', 'kebab-case-slug')"
+						:aria-label="t('buildiq', 'kebab-case-slug')"
 						autocomplete="off"
 						@input="onSlugInput(index, $event)" />
 					<p
@@ -105,8 +101,8 @@
 						type="button"
 						class="wizard-step3__btn-icon"
 						:disabled="index === 0"
-						:aria-label="t('openbuild', 'Move version up')"
-						:title="t('openbuild', 'Move up')"
+						:aria-label="t('buildiq', 'Move version up')"
+						:title="t('buildiq', 'Move up')"
 						@click="moveUp(index)">
 						↑
 					</button>
@@ -114,16 +110,16 @@
 						type="button"
 						class="wizard-step3__btn-icon"
 						:disabled="index === localVersions.length - 1"
-						:aria-label="t('openbuild', 'Move version down')"
-						:title="t('openbuild', 'Move down')"
+						:aria-label="t('buildiq', 'Move version down')"
+						:title="t('buildiq', 'Move down')"
 						@click="moveDown(index)">
 						↓
 					</button>
 					<button
 						type="button"
 						class="wizard-step3__btn-icon wizard-step3__btn-remove"
-						:aria-label="t('openbuild', 'Remove version')"
-						:title="t('openbuild', 'Remove')"
+						:aria-label="t('buildiq', 'Remove version')"
+						:title="t('buildiq', 'Remove')"
 						@click="removeRow(index)">
 						×
 					</button>
@@ -136,7 +132,7 @@
 		</p>
 
 		<button type="button" class="wizard-step3__add-btn" @click="addRow">
-			+ {{ t('openbuild', 'Add version') }}
+			+ {{ t('buildiq', 'Add version') }}
 		</button>
 	</div>
 </template>
@@ -200,8 +196,7 @@ export default {
 		 */
 		slugErrors() {
 			return this.localVersions.map((row) => {
-				if (!row.name)
-					return t('openbuild', 'Version name must not be empty.')
+				if (!row.name) return t('buildiq', 'Version name must not be empty.')
 				const result = validateSlug(row.slug)
 				return result.valid ? null : result.message
 			})
@@ -299,7 +294,7 @@ export default {
 		getSlugError(index) {
 			if (this.isDuplicate(index)) {
 				return t(
-					'openbuild',
+					'buildiq',
 					`Slug \`${this.localVersions[index].slug}\` is already used in this chain`,
 				)
 			}
@@ -392,7 +387,7 @@ export default {
 		 */
 		removeRow(index) {
 			if (this.localVersions.length <= 1) {
-				this.minRowError = t('openbuild', 'At least one version is required')
+				this.minRowError = t('buildiq', 'At least one version is required')
 				return
 			}
 

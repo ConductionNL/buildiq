@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild ChannelApplyReport
+ * Buildiq ChannelApplyReport
  *
  * The outcome record for applying a parsed v2 app repo's channels onto this
  * instance (app-channel-application). OpenRegister offers no cross-object
@@ -23,7 +23,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -38,7 +38,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 use RuntimeException;
 
@@ -358,7 +358,7 @@ class ChannelApplyReport {
 			$accounted = ($channel['created'] + $channel['skipped'] + $channel['failed']);
 			if ($accounted !== $channel['declared']) {
 				throw new RuntimeException(
-					'OpenBuild channel apply: report for channel "' . $name . '" does not balance — declared '
+					'Buildiq channel apply: report for channel "' . $name . '" does not balance — declared '
 					. $channel['declared'] . ' but accounted for ' . $accounted
 					. ' (created ' . $channel['created'] . ', skipped ' . $channel['skipped']
 					. ', failed ' . $channel['failed'] . '). An item was dropped.'

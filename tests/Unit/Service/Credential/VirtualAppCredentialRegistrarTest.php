@@ -3,8 +3,8 @@
 /**
  * Unit tests for VirtualAppCredentialRegistrar.
  *
- * Covers the OpenBuild-side credential-broker onboarding trigger for a
- * published virtual app: manifest `credentials[]` gating, the `openbuild-{slug}`
+ * Covers the Buildiq-side credential-broker onboarding trigger for a
+ * published virtual app: manifest `credentials[]` gating, the `buildiq-{slug}`
  * app-id, guarded (non-rotating) broker app-key registration, delegated
  * per-app Doriath registration, and never-throw degradation when either
  * OpenRegister service is absent or errors.
@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Service\Credential
+ * @package  OCA\Buildiq\Tests\Unit\Service\Credential
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,17 +26,17 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Service\Credential;
+namespace OCA\Buildiq\Tests\Unit\Service\Credential;
 
-use OCA\OpenBuild\Service\Credential\VirtualAppCredentialRegistrar;
-use OCA\OpenBuild\Service\ManifestResolverService;
+use OCA\Buildiq\Service\Credential\VirtualAppCredentialRegistrar;
+use OCA\Buildiq\Service\ManifestResolverService;
 use OCP\IUser;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * @covers \OCA\OpenBuild\Service\Credential\VirtualAppCredentialRegistrar
+ * @covers \OCA\Buildiq\Service\Credential\VirtualAppCredentialRegistrar
  */
 class VirtualAppCredentialRegistrarTest extends TestCase {
 	/**
@@ -151,7 +151,7 @@ class VirtualAppCredentialRegistrarTest extends TestCase {
 	}//end makeRegistrar()
 
 	/**
-	 * A manifest declaring credentials[] onboards the app under `openbuild-{slug}`.
+	 * A manifest declaring credentials[] onboards the app under `buildiq-{slug}`.
 	 *
 	 * @return void
 	 */

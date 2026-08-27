@@ -29,11 +29,11 @@ import type { Page } from '@playwright/test'
  * network non-idle so `waitForLoadState('networkidle')` never resolves.
  *
  * KNOWN UPSTREAM DEFECT: closing the tour persists nothing. The manifest
- * declares `walkthrough.completionConfigKey` and OpenBuild serves
+ * declares `walkthrough.completionConfigKey` and Buildiq serves
  * `GET|PUT /api/preferences/{key}` (GET returns `{"value":null}`, i.e. never
  * written), but dismissing the tour fires no request at all — verified live by
  * capturing the network while clicking "Close tour". CnWalkthrough is rendered
- * by nc-vue's CnAppRoot from the manifest, not by OpenBuild, so the fix belongs
+ * by nc-vue's CnAppRoot from the manifest, not by Buildiq, so the fix belongs
  * in nc-vue. Until then the tour reopens on every visit for every user and each
  * spec must clear it itself.
  *

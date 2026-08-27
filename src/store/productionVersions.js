@@ -21,14 +21,14 @@
  * WHY CLIENT-SIDE, AND WHY THIS SOURCE
  * ------------------------------------
  * The index page is a manifest `type: index` page over
- * `register: openbuild / schema: application`, so `CnIndexPage` fetches the rows
+ * `register: buildiq / schema: application`, so `CnIndexPage` fetches the rows
  * from OpenRegister's GENERIC objects endpoint
- * (`/apps/openregister/api/objects/openbuild/application`) — it never calls
- * OpenBuild's own `/api/applications`. Enriching the row payload the cards
+ * (`/apps/openregister/api/objects/buildiq/application`) — it never calls
+ * Buildiq's own `/api/applications`. Enriching the row payload the cards
  * receive is therefore not possible from the controller; the resolution has to
  * happen on the client.
  *
- * The lookup reads `/apps/openbuild/api/applications`, whose `listMine` resolves
+ * The lookup reads `/apps/buildiq/api/applications`, whose `listMine` resolves
  * each app's production version and projects it as `productionVersionDetail`
  * (`ApplicationsController::attachProductionVersionDetail`). Two alternatives
  * were measured and rejected:
@@ -73,6 +73,8 @@ let inflight = null
  * exact defect this module fixes.
  *
  * @return {Promise<object>} The (possibly empty) uuid -> version map.
+ *
+ * @spec openspec/specs/application-versions/spec.md
  */
 export function ensureProductionVersionsLoaded() {
 	if (inflight) {
@@ -80,7 +82,7 @@ export function ensureProductionVersionsLoaded() {
 	}
 	inflight = (async () => {
 		try {
-			const url = generateUrl('/apps/openbuild/api/applications')
+			const url = generateUrl('/apps/buildiq/api/applications')
 			const { data } = await axios.get(url)
 			const rows = Array.isArray(data) ? data : (data?.results ?? [])
 			for (const row of rows) {
@@ -98,7 +100,7 @@ export function ensureProductionVersionsLoaded() {
 		} catch (e) {
 			// eslint-disable-next-line no-console
 			console.warn(
-				'[openbuild] could not resolve production versions; app cards will show '
+				'[buildiq] could not resolve production versions; app cards will show '
 					+ 'their placeholder status/version until this succeeds',
 				e,
 			)

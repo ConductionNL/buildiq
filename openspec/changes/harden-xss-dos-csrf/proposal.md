@@ -7,7 +7,7 @@ depends_on: []
 
 ## Why
 
-A per-category attack-surface sweep of OpenBuild's own code (full enumeration in
+A per-category attack-surface sweep of Buildiq's own code (full enumeration in
 `attack-surface-map.md`) found a small number of concrete, fixable weaknesses in
 three categories, plus a large majority of surfaces that are already correctly
 defended. The exploitable items concentrate in the business-rules engine (two
@@ -75,7 +75,7 @@ Two items matter beyond their category label:
   bound. (Interruptibility remains out of reach; caps prevent the crash instead.)
 - **settings-and-observability** — CSRF enforced on `settings#create` / `#load`,
   and on `preferences#setPreference`.
-- **openbuild-template-catalogue** — `createFromTemplate` gains the creation
+- **buildiq-template-catalogue** — `createFromTemplate` gains the creation
   wizard's rate limit + authorization gate (DoS #4 parity).
 - **docudesk-document-templates** — the document-template preview is sanitized
   before render.
@@ -83,7 +83,7 @@ Two items matter beyond their category label:
   before persistence.
 
 ### Referenced (no change here)
-- **openbuild-remote-template-store** — the SSRF redirect fix (H2) already landed
+- **buildiq-remote-template-store** — the SSRF redirect fix (H2) already landed
   against this surface.
 - Preferences per-user config — `setPreference` CSRF posture corrected; no
   dedicated spec capability, tracked here.

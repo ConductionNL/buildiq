@@ -27,42 +27,42 @@
 				type="checkbox"
 				:checked="requiredDisplay"
 				@change="onRequiredChange($event.target.checked)" />
-			{{ t('openbuild', 'Required') }}
+			{{ t('buildiq', 'Required') }}
 		</label>
 		<input
 			type="number"
 			class="field-validation-builder__field field-validation-builder__field--narrow"
-			:placeholder="t('openbuild', 'Min')"
-			:aria-label="t('openbuild', 'Minimum')"
+			:placeholder="t('buildiq', 'Min')"
+			:aria-label="t('buildiq', 'Minimum')"
 			:value="minDisplay"
 			@input="onMinInput($event.target.value)" />
 		<input
 			type="number"
 			class="field-validation-builder__field field-validation-builder__field--narrow"
-			:placeholder="t('openbuild', 'Max')"
-			:aria-label="t('openbuild', 'Maximum')"
+			:placeholder="t('buildiq', 'Max')"
+			:aria-label="t('buildiq', 'Maximum')"
 			:value="maxDisplay"
 			@input="onMaxInput($event.target.value)" />
 		<input
 			type="text"
 			class="field-validation-builder__field"
-			:placeholder="t('openbuild', 'Pattern (regex)')"
-			:aria-label="t('openbuild', 'Pattern')"
+			:placeholder="t('buildiq', 'Pattern (regex)')"
+			:aria-label="t('buildiq', 'Pattern')"
 			:aria-invalid="patternError"
 			:value="patternDisplayValue"
 			@input="onPatternInput($event.target.value)" />
 		<input
 			type="text"
 			class="field-validation-builder__field"
-			:placeholder="t('openbuild', 'Custom message (i18n key)')"
-			:aria-label="t('openbuild', 'Message')"
+			:placeholder="t('buildiq', 'Custom message (i18n key)')"
+			:aria-label="t('buildiq', 'Message')"
 			:value="messageDisplay"
 			@input="onMessageInput($event.target.value)" />
 		<span
 			v-if="patternError"
 			class="field-validation-builder__pattern-error"
 			role="alert">
-			{{ t('openbuild', 'This pattern is not a valid regular expression.') }}
+			{{ t('buildiq', 'This pattern is not a valid regular expression.') }}
 		</span>
 	</div>
 </template>

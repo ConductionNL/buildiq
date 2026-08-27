@@ -1,9 +1,9 @@
 <?php
 
 /**
- * OpenBuild UnsupportedAutomationCombinationException
+ * Buildiq UnsupportedAutomationCombinationException
  *
- * Thrown by {@see \OCA\OpenBuild\Service\AutomationCompilerService::compile()}
+ * Thrown by {@see \OCA\Buildiq\Service\AutomationCompilerService::compile()}
  * when a trigger/action combination or a condition placement is a ⛔ cell of
  * the v1 compilation matrix (design.md Decision 2 of the automation-designer
  * change) — i.e. no existing declarative primitive (notifications dialect,
@@ -16,7 +16,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Exception
- * @package  OCA\OpenBuild\Exception
+ * @package  OCA\Buildiq\Exception
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -31,7 +31,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Exception;
+namespace OCA\Buildiq\Exception;
 
 use RuntimeException;
 use Throwable;

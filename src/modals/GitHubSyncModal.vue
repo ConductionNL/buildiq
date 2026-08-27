@@ -15,17 +15,17 @@
 <template>
 	<NcModal
 		v-if="open"
-		:name="t('openbuild', 'GitHub')"
+		:name="t('buildiq', 'GitHub')"
 		size="normal"
 		@close="$emit('update:open', false)">
 		<div class="github-sync">
 			<h2 class="github-sync__title">
-				{{ t('openbuild', 'GitHub') }}
+				{{ t('buildiq', 'GitHub') }}
 			</h2>
 
 			<div v-if="loading" class="github-sync__loading">
 				<NcLoadingIcon :size="28" />
-				<span>{{ t('openbuild', 'Loading GitHub status…') }}</span>
+				<span>{{ t('buildiq', 'Loading GitHub status…') }}</span>
 			</div>
 
 			<template v-else>
@@ -34,13 +34,13 @@
 					<template v-if="linked">
 						<p class="github-sync__row">
 							<span class="github-sync__label">{{
-								t('openbuild', 'Linked repository')
+								t('buildiq', 'Linked repository')
 							}}</span>
 							<span class="github-sync__value">{{ repoLabel }}</span>
 						</p>
 						<p class="github-sync__row">
 							<span class="github-sync__label">{{
-								t('openbuild', 'Default branch')
+								t('buildiq', 'Default branch')
 							}}</span>
 							<span class="github-sync__value">{{
 								status.githubDefaultBranch || '—'
@@ -48,7 +48,7 @@
 						</p>
 						<p class="github-sync__row">
 							<span class="github-sync__label">{{
-								t('openbuild', 'Last published commit')
+								t('buildiq', 'Last published commit')
 							}}</span>
 							<span
 								class="github-sync__value github-sync__value--mono"
@@ -57,7 +57,7 @@
 						</p>
 						<p class="github-sync__row">
 							<span class="github-sync__label">{{
-								t('openbuild', 'Last pulled commit')
+								t('buildiq', 'Last pulled commit')
 							}}</span>
 							<span
 								class="github-sync__value github-sync__value--mono"
@@ -68,7 +68,7 @@
 					<NcNoteCard v-else type="info">
 						{{
 							t(
-								'openbuild',
+								'buildiq',
 								'This app is not linked to a GitHub repository yet.',
 							)
 						}}
@@ -80,16 +80,16 @@
 					<div class="github-sync__credential">
 						<NcSelect
 							v-model="selectedCredential"
-							:inputLabel="t('openbuild', 'GitHub credential')"
+							:inputLabel="t('buildiq', 'GitHub credential')"
 							:options="credentialOptions"
-							:placeholder="t('openbuild', 'Select a credential')"
+							:placeholder="t('buildiq', 'Select a credential')"
 							:clearable="true" />
 						<NcNoteCard
 							v-if="credentialOptions.length === 0"
 							type="warning">
 							{{
 								t(
-									'openbuild',
+									'buildiq',
 									'No GitHub credential found. Add one in your OpenRegister credentials settings to publish and to pull private repositories.',
 								)
 							}}
@@ -104,21 +104,21 @@
 						<NcButton @click="linkOpen = true">
 							{{
 								linked
-									? t('openbuild', 'Re-link repository')
-									: t('openbuild', 'Link repository')
+									? t('buildiq', 'Re-link repository')
+									: t('buildiq', 'Link repository')
 							}}
 						</NcButton>
 						<NcButton
 							variant="primary"
 							:disabled="!canPublish"
 							@click="openPublish">
-							{{ t('openbuild', 'Publish') }}
+							{{ t('buildiq', 'Publish') }}
 						</NcButton>
 						<NcButton :disabled="!linked || pulling" @click="doPull">
 							{{
 								pulling
-									? t('openbuild', 'Pulling…')
-									: t('openbuild', 'Pull')
+									? t('buildiq', 'Pulling…')
+									: t('buildiq', 'Pull')
 							}}
 						</NcButton>
 					</div>
@@ -126,7 +126,7 @@
 					<NcNoteCard v-if="pullResult" type="success">
 						{{
 							t(
-								'openbuild',
+								'buildiq',
 								'Pulled a new draft version "{name}" from {ref}. Promote it via the version history when you are ready — your production version is unchanged.',
 								{
 									name:
@@ -335,12 +335,12 @@ export default {
 		publishHint() {
 			if (this.status && !this.status.brokerCredentialAvailable) {
 				return t(
-					'openbuild',
+					'buildiq',
 					'Publishing is unavailable: the credential broker or its GitHub write rules are not enabled on this instance. Pulling public repositories still works.',
 				)
 			}
 			return t(
-				'openbuild',
+				'buildiq',
 				'Publishing is unavailable until a GitHub credential is configured. Pulling public repositories still works.',
 			)
 		},
@@ -380,14 +380,14 @@ export default {
 			this.loading = true
 			try {
 				const url = generateUrl(
-					'/apps/openbuild/api/applications/{slug}/github/status',
+					'/apps/buildiq/api/applications/{slug}/github/status',
 					{ slug: this.slug },
 				)
 				const { data } = await axios.get(url)
 				this.status = data
 			} catch (e) {
 				this.status = null
-				this.error = t('openbuild', 'Could not load the GitHub status.')
+				this.error = t('buildiq', 'Could not load the GitHub status.')
 			} finally {
 				this.loading = false
 			}
@@ -424,7 +424,7 @@ export default {
 		async loadVersions() {
 			try {
 				const url = generateUrl(
-					'/apps/openbuild/api/applications/{slug}/versions',
+					'/apps/buildiq/api/applications/{slug}/versions',
 					{ slug: this.slug },
 				)
 				const { data } = await axios.get(url)
@@ -446,7 +446,7 @@ export default {
 		 */
 		onLinked() {
 			this.linkOpen = false
-			showSuccess(t('openbuild', 'Repository linked.'))
+			showSuccess(t('buildiq', 'Repository linked.'))
 			this.loadStatus()
 		},
 
@@ -477,7 +477,7 @@ export default {
 				this.status = { ...this.status, lastPushedSha: result.commitSha }
 			}
 			showSuccess(
-				t('openbuild', 'Published commit {sha}.', {
+				t('buildiq', 'Published commit {sha}.', {
 					sha: this.shortSha(result && result.commitSha),
 				}),
 			)
@@ -500,7 +500,7 @@ export default {
 			this.pullResult = null
 			try {
 				const url = generateUrl(
-					'/apps/openbuild/api/applications/{slug}/github/pull',
+					'/apps/buildiq/api/applications/{slug}/github/pull',
 					{ slug: this.slug },
 				)
 				const body = {
@@ -517,7 +517,7 @@ export default {
 					&& !data.versionUuid
 				) {
 					this.error =
-						data.detail || data.error || t('openbuild', 'Pull failed.')
+						data.detail || data.error || t('buildiq', 'Pull failed.')
 					return
 				}
 				this.pullResult = data
@@ -529,9 +529,9 @@ export default {
 					data?.detail
 					|| data?.error
 					|| e?.message
-					|| t('openbuild', 'Pull failed.')
+					|| t('buildiq', 'Pull failed.')
 				this.error = file
-					? t('openbuild', '{message} (in {file})', {
+					? t('buildiq', '{message} (in {file})', {
 							message: base,
 							file,
 						})

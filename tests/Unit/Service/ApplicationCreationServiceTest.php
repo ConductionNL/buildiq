@@ -3,7 +3,7 @@
 /**
  * Unit tests for ApplicationCreationService.
  *
- * Covers spec `openbuild-app-creation-wizard` REQ-OBWIZ-007 through
+ * Covers spec `buildiq-app-creation-wizard` REQ-OBWIZ-007 through
  * REQ-OBWIZ-010:
  *   - Success paths for each of the four presets
  *   - Validation failure returns WizardCreationException with failedAtStep=validate
@@ -17,7 +17,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Service
+ * @package  OCA\Buildiq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -30,17 +30,16 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Service;
+namespace OCA\Buildiq\Tests\Unit\Service;
 
-use OCA\OpenBuild\Exception\WizardCreationException;
-use OCA\OpenBuild\Service\ApplicationCreationService;
-use OCA\OpenBuild\Service\SlugValidator;
+use OCA\Buildiq\Exception\WizardCreationException;
+use OCA\Buildiq\Service\ApplicationCreationService;
+use OCA\Buildiq\Service\SlugValidator;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\RegisterService;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -171,7 +170,7 @@ class ApplicationCreationServiceTest extends TestCase {
 	/**
 	 * substituteVersionContext rewrites both register AND schema.
 	 *
-	 * openbuild#75 — without this the KPI / insights cards aggregate
+	 * buildiq#75 — without this the KPI / insights cards aggregate
 	 * against `hello-message` (the un-namespaced template slug), which
 	 * doesn't exist in the per-version register, so counts leak the
 	 * same numbers across all tiers.

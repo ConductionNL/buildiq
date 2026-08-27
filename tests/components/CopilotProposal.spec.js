@@ -15,7 +15,10 @@ import { mount } from '@vue/test-utils'
 vi.mock('@nextcloud/axios', () => ({
 	default: { get: vi.fn(() => Promise.resolve({ data: {} })) },
 }))
-vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => p }))
+vi.mock('@nextcloud/router', async (importOriginal) => ({
+	...(await importOriginal()),
+	generateUrl: (p) => p,
+}))
 
 import CopilotProposal from '../../src/components/copilot/CopilotProposal.vue'
 
@@ -24,11 +27,11 @@ function makePlan(overrides = {}) {
 		summary: 'A tool library',
 		steps: [
 			{
-				tool: 'openbuild.createApp',
+				tool: 'buildiq.createApp',
 				arguments: { slug: 'tool-library', name: 'Tool Library' },
 			},
 			{
-				tool: 'openbuild.upsertPage',
+				tool: 'buildiq.upsertPage',
 				arguments: {
 					appSlug: 'tool-library',
 					pageId: 'home',
@@ -59,8 +62,8 @@ describe('CopilotProposal.vue — spec ai-copilot REQ-OBAIC-003/007', () => {
 		})
 		expect(wrapper.text()).toContain('A tool library')
 		expect(wrapper.findAll('.copilot-proposal__step')).toHaveLength(2)
-		expect(wrapper.text()).toContain('openbuild.createApp')
-		expect(wrapper.text()).toContain('openbuild.upsertPage')
+		expect(wrapper.text()).toContain('buildiq.createApp')
+		expect(wrapper.text()).toContain('buildiq.upsertPage')
 	})
 
 	it('mounts one ManifestDiff per touched version', () => {

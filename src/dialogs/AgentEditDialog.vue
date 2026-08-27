@@ -4,7 +4,7 @@
 <!--
   AgentEditDialog — standalone dialog (modal-isolation rule) composing one
   Agent: name, instructions, modelTaskType, enabledTools (a subset of the
-  eight OpenBuildToolProvider tool ids — never a superset), maxActionsPerRun
+  eight BuildiqToolProvider tool ids — never a superset), maxActionsPerRun
   (spec agent-workspace REQ "Agent entity declares a named, tool-scoped
   configuration"). CRUD goes through OpenRegister's generic REST surface
   (ADR-022), mirroring AutomationEditDialog's posture for the `automation`
@@ -15,29 +15,27 @@
 	<NcModal
 		v-if="open"
 		size="normal"
-		:name="editing ? t('openbuild', 'Edit agent') : t('openbuild', 'New agent')"
+		:name="editing ? t('buildiq', 'Edit agent') : t('buildiq', 'New agent')"
 		@close="onClose">
 		<div class="agent-edit">
 			<h2 class="agent-edit__title">
 				{{
-					editing
-						? t('openbuild', 'Edit agent')
-						: t('openbuild', 'New agent')
+					editing ? t('buildiq', 'Edit agent') : t('buildiq', 'New agent')
 				}}
 			</h2>
 
 			<NcTextField
 				:modelValue="name"
-				:label="t('openbuild', 'Name')"
+				:label="t('buildiq', 'Name')"
 				data-testid="agent-name-field"
 				@update:modelValue="name = $event" />
 
 			<NcTextArea
 				:modelValue="instructions"
-				:label="t('openbuild', 'Instructions')"
+				:label="t('buildiq', 'Instructions')"
 				:placeholder="
 					t(
-						'openbuild',
+						'buildiq',
 						'Tell this agent how it should help — prefixed onto its system prompt for every message.',
 					)
 				"
@@ -46,7 +44,7 @@
 
 			<NcSelect
 				v-model="modelTaskTypeOption"
-				:inputLabel="t('openbuild', 'Model task type')"
+				:inputLabel="t('buildiq', 'Model task type')"
 				:options="modelTaskTypeOptions"
 				:clearable="false"
 				label="label"
@@ -54,7 +52,7 @@
 
 			<NcSelect
 				:modelValue="enabledToolsSelection"
-				:inputLabel="t('openbuild', 'Enabled tools')"
+				:inputLabel="t('buildiq', 'Enabled tools')"
 				:options="toolOptions"
 				:multiple="true"
 				:clearable="false"
@@ -64,7 +62,7 @@
 			<p class="agent-edit__hint">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'This agent can never use a tool outside this list — enforced server-side on every request.',
 					)
 				}}
@@ -73,7 +71,7 @@
 			<NcTextField
 				:modelValue="String(maxActionsPerRun)"
 				type="number"
-				:label="t('openbuild', 'Max actions per run')"
+				:label="t('buildiq', 'Max actions per run')"
 				data-testid="agent-max-actions-field"
 				@update:modelValue="onMaxActionsInput" />
 
@@ -89,14 +87,14 @@
 
 			<div class="agent-edit__actions">
 				<NcButton @click="onClose">
-					{{ t('openbuild', 'Cancel') }}
+					{{ t('buildiq', 'Cancel') }}
 				</NcButton>
 				<NcButton
 					variant="primary"
 					:disabled="saving"
 					data-testid="agent-save-button"
 					@click="onSave">
-					{{ saving ? t('openbuild', 'Saving…') : t('openbuild', 'Save') }}
+					{{ saving ? t('buildiq', 'Saving…') : t('buildiq', 'Save') }}
 				</NcButton>
 			</div>
 		</div>
@@ -135,7 +133,7 @@ export default {
 			instructions: '',
 			modelTaskTypeOption: {
 				value: 'TextToText',
-				label: t('openbuild', 'Text to text'),
+				label: t('buildiq', 'Text to text'),
 			},
 
 			enabledTools: [],
@@ -153,41 +151,41 @@ export default {
 		},
 
 		/**
-		 * The eight OpenBuildToolProvider tool ids, mirrored 1:1 with the schema enum.
+		 * The eight BuildiqToolProvider tool ids, mirrored 1:1 with the schema enum.
 		 *
 		 * @return {Array<object>}
 		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
 		 */
 		toolOptions() {
 			return [
-				{ value: 'openbuild.listApps', label: t('openbuild', 'List apps') },
+				{ value: 'buildiq.listApps', label: t('buildiq', 'List apps') },
 				{
-					value: 'openbuild.getAppManifest',
-					label: t('openbuild', 'Get app manifest'),
+					value: 'buildiq.getAppManifest',
+					label: t('buildiq', 'Get app manifest'),
 				},
 				{
-					value: 'openbuild.createApp',
-					label: t('openbuild', 'Create app'),
+					value: 'buildiq.createApp',
+					label: t('buildiq', 'Create app'),
 				},
 				{
-					value: 'openbuild.promoteVersion',
-					label: t('openbuild', 'Promote version'),
+					value: 'buildiq.promoteVersion',
+					label: t('buildiq', 'Promote version'),
 				},
 				{
-					value: 'openbuild.upsertSchema',
-					label: t('openbuild', 'Create or update schema'),
+					value: 'buildiq.upsertSchema',
+					label: t('buildiq', 'Create or update schema'),
 				},
 				{
-					value: 'openbuild.upsertPage',
-					label: t('openbuild', 'Create or update page'),
+					value: 'buildiq.upsertPage',
+					label: t('buildiq', 'Create or update page'),
 				},
 				{
-					value: 'openbuild.addWidget',
-					label: t('openbuild', 'Add widget'),
+					value: 'buildiq.addWidget',
+					label: t('buildiq', 'Add widget'),
 				},
 				{
-					value: 'openbuild.upsertMenuItem',
-					label: t('openbuild', 'Create or update menu item'),
+					value: 'buildiq.upsertMenuItem',
+					label: t('buildiq', 'Create or update menu item'),
 				},
 			]
 		},
@@ -199,7 +197,7 @@ export default {
 		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
 		 */
 		modelTaskTypeOptions() {
-			return [{ value: 'TextToText', label: t('openbuild', 'Text to text') }]
+			return [{ value: 'TextToText', label: t('buildiq', 'Text to text') }]
 		},
 
 		/**
@@ -232,12 +230,12 @@ export default {
 		 */
 		validationMessage() {
 			if (this.name.trim().length < 2) {
-				return t('openbuild', 'Name must be at least 2 characters.')
+				return t('buildiq', 'Name must be at least 2 characters.')
 			}
 			if (this.enabledTools.length === 0) {
-				return t('openbuild', 'Select at least one enabled tool.')
+				return t('buildiq', 'Select at least one enabled tool.')
 			}
-			return t('openbuild', 'Max actions per run must be at least 1.')
+			return t('buildiq', 'Max actions per run must be at least 1.')
 		},
 	},
 
@@ -334,7 +332,7 @@ export default {
 			}
 			try {
 				const base = generateUrl(
-					'/apps/openregister/api/objects/openbuild/agent',
+					'/apps/openregister/api/objects/buildiq/agent',
 				)
 				if (this.editing && this.id) {
 					await axios.put(`${base}/${this.id}`, payload)
@@ -343,7 +341,7 @@ export default {
 				}
 				this.$emit('saved')
 			} catch (error) {
-				this.errorMessage = t('openbuild', 'Could not save the agent.')
+				this.errorMessage = t('buildiq', 'Could not save the agent.')
 			} finally {
 				this.saving = false
 			}

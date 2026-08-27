@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild AgentChannelProvisioner
+ * Buildiq AgentChannelProvisioner
  *
  * Applies a published app repo's `agents/` channel: writes each published
  * agent at its published uuid, with the same create-or-skip rules as
@@ -34,7 +34,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -47,10 +47,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
-use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Exception\ObjectExistsException;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -69,12 +69,12 @@ class AgentChannelProvisioner {
 	private const CHANNEL = 'agents';
 
 	/**
-	 * The register agents live in — the shared OpenBuild register, same as the
+	 * The register agents live in — the shared Buildiq register, same as the
 	 * Application object itself.
 	 *
 	 * @var string
 	 */
-	private const AGENT_REGISTER = 'openbuild';
+	private const AGENT_REGISTER = 'buildiq';
 
 	/**
 	 * The agent schema slug.
@@ -134,7 +134,7 @@ class AgentChannelProvisioner {
 
 			if ($applied >= self::MAX_AGENTS) {
 				$this->logger->warning(
-					'OpenBuild channel apply: channel "' . self::CHANNEL . '" declared ' . count($agents)
+					'Buildiq channel apply: channel "' . self::CHANNEL . '" declared ' . count($agents)
 					. ' items but the bound is ' . self::MAX_AGENTS . ' — the excess was NOT applied.'
 				);
 				$report->recordTruncated(channel: self::CHANNEL, item: $item);
@@ -180,7 +180,7 @@ class AgentChannelProvisioner {
 		} catch (ObjectExistsException) {
 			$report->recordSkipped(channel: self::CHANNEL, item: $item, reason: ChannelApplyReport::REASON_EXISTS);
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenBuild channel apply: agent "' . $item . '" failed: ' . $e->getMessage());
+			$this->logger->warning('Buildiq channel apply: agent "' . $item . '" failed: ' . $e->getMessage());
 			$report->recordFailed(channel: self::CHANNEL, item: $item, reason: $e->getMessage());
 		}//end try
 	}//end applyOne()

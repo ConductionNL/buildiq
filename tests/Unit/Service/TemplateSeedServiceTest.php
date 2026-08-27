@@ -3,7 +3,7 @@
 /**
  * Unit tests for TemplateSeedService.
  *
- * Covers the shared idempotent seeding logic (openbuild-first-time-setup
+ * Covers the shared idempotent seeding logic (buildiq-first-time-setup
  * task 1.3): seed-on-empty creates all fixtures; a re-run skips all; a
  * partial pre-existing set only creates the missing ones; a missing fixtures
  * directory returns an error entry WITHOUT throwing (non-throwing contract,
@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Service
+ * @package  OCA\Buildiq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,11 +26,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Service;
+namespace OCA\Buildiq\Tests\Unit\Service;
 
-use OCA\OpenBuild\Service\TemplateSeedService;
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\Buildiq\Service\TemplateSeedService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -122,7 +122,7 @@ class TemplateSeedServiceTest extends TestCase {
 	 * @return void
 	 */
 	private function seedFixturesDir(array $fixturesBySlug, bool $createDir = true): void {
-		$appRoot = sys_get_temp_dir() . '/openbuild-svc-test-' . uniqid();
+		$appRoot = sys_get_temp_dir() . '/buildiq-svc-test-' . uniqid();
 		$fixturesDir = $appRoot . '/lib/Settings/templates';
 
 		if ($createDir === true) {

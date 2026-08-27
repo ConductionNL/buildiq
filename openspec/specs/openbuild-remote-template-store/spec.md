@@ -2,13 +2,13 @@
 status: in-progress
 ---
 
-# openbuild-remote-template-store Specification
+# buildiq-remote-template-store Specification
 
 ## Purpose
 
-Opens OpenBuild's template catalogue to a **remote OpenRegister-backed store**.
+Opens Buildiq's template catalogue to a **remote OpenRegister-backed store**.
 A configurable remote OpenRegister instance exposes `ApplicationTemplate` objects
-over its public objects API; OpenBuild reads them via an admin-configured
+over its public objects API; Buildiq reads them via an admin-configured
 **registry base URL** (with an optional read token), browses/searches them on the
 Templates page, and installs a chosen template into the local instance by reusing
 the existing template-clone path so the result is a normal local `Application`
@@ -19,7 +19,7 @@ scope for this cut. When no registry is configured, local templates keep working
 unchanged (additive, no regression). No new OpenRegister schema is introduced;
 the registry connection is an admin app-config value.
 
-**OpenSpec changes**: [openbuild-remote-template-store](../../changes/archive/2026-06-20-openbuild-remote-template-store/) _(archived 2026-06-20)_
+**OpenSpec changes**: [buildiq-remote-template-store](../../changes/archive/2026-06-20-buildiq-remote-template-store/) _(archived 2026-06-20)_
 
 **Status**: done
 
@@ -29,14 +29,14 @@ the registry connection is an admin app-config value.
 
 ### Requirement: Registry connection is an admin app-config value
 
-The system SHALL store the remote-registry connection as OpenBuild admin
-app-config values via `OCP\IAppConfig` under the `openbuild` app: a base URL
+The system SHALL store the remote-registry connection as Buildiq admin
+app-config values via `OCP\IAppConfig` under the `buildiq` app: a base URL
 (`registry_url`), an optional read token (`registry_token`), and an optional
-register name (`registry_register`, default `openbuild`). These values SHALL be
+register name (`registry_register`, default `buildiq`). These values SHALL be
 read and written through the existing `SettingsService` and surfaced on the
-OpenBuild admin settings page (admin-only via the Nextcloud settings framework).
+Buildiq admin settings page (admin-only via the Nextcloud settings framework).
 The default `registry_url` SHALL be a placeholder
-(`https://store.openbuild.example/`) and an empty `registry_url` SHALL mean "no
+(`https://store.buildiq.example/`) and an empty `registry_url` SHALL mean "no
 store configured". The token SHALL be write-only from the UI: `getSettings()`
 SHALL expose only a boolean presence flag (`registry_token_set`) and SHALL NOT
 return the token value; saving an empty token SHALL leave the stored token
@@ -44,9 +44,9 @@ unchanged. No new OpenRegister schema is introduced by this requirement.
 
 #### Scenario: Saving a registry URL persists it as an app-config value
 
-- **WHEN** an admin saves a non-empty `registry_url` on the OpenBuild admin
+- **WHEN** an admin saves a non-empty `registry_url` on the Buildiq admin
   settings page
-- **THEN** the value is stored under the `openbuild` app config
+- **THEN** the value is stored under the `buildiq` app config
 - **AND** a subsequent `getSettings()` returns that `registry_url`
 
 #### Scenario: The registry token is never returned to the client
@@ -151,7 +151,7 @@ The system SHALL register two routes in `appinfo/routes.php` backed by a
 carry `#[NoAdminRequired]` and SHALL reject an unauthenticated session
 (`IUserSession::getUser() === null`) with a 401 before performing any work. The
 search endpoint is an instance-shared read available to any authenticated
-OpenBuild user; the install endpoint is available to any authenticated OpenBuild
+Buildiq user; the install endpoint is available to any authenticated Buildiq
 user and makes the caller the owner of the resulting Application. The `{slug}`
 path parameter SHALL be validated against the kebab-case slug pattern and the
 `q` search term SHALL be URL-encoded before use in the outbound request.

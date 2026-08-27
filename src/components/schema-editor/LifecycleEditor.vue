@@ -8,13 +8,13 @@
   - field is a typed input.
   -->
 <template>
-	<section class="openbuild-lifecycle-editor">
-		<header class="openbuild-lifecycle-editor__header">
-			<h3>{{ t('openbuild', 'Lifecycle') }}</h3>
-			<p class="openbuild-lifecycle-editor__hint">
+	<section class="buildiq-lifecycle-editor">
+		<header class="buildiq-lifecycle-editor__header">
+			<h3>{{ t('buildiq', 'Lifecycle') }}</h3>
+			<p class="buildiq-lifecycle-editor__hint">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'Declare states and transitions. Every action is a typed declarative record per ADR-031 — no free-text code.',
 					)
 				}}
@@ -22,40 +22,40 @@
 		</header>
 
 		<!-- States -->
-		<div class="openbuild-lifecycle-editor__section">
-			<div class="openbuild-lifecycle-editor__section-header">
-				<h4>{{ t('openbuild', 'States') }}</h4>
+		<div class="buildiq-lifecycle-editor__section">
+			<div class="buildiq-lifecycle-editor__section-header">
+				<h4>{{ t('buildiq', 'States') }}</h4>
 				<NcButton @click="addState">
 					<template #icon>
 						<PlusIcon :size="20" />
 					</template>
-					{{ t('openbuild', 'Add state') }}
+					{{ t('buildiq', 'Add state') }}
 				</NcButton>
 			</div>
-			<p v-if="states.length === 0" class="openbuild-lifecycle-editor__empty">
-				{{ t('openbuild', 'No states yet.') }}
+			<p v-if="states.length === 0" class="buildiq-lifecycle-editor__empty">
+				{{ t('buildiq', 'No states yet.') }}
 			</p>
-			<ul v-else class="openbuild-lifecycle-editor__list">
+			<ul v-else class="buildiq-lifecycle-editor__list">
 				<li
 					v-for="(state, sIndex) in states"
 					:key="state._key"
-					class="openbuild-lifecycle-editor__state-row">
+					class="buildiq-lifecycle-editor__state-row">
 					<NcCheckboxRadioSwitch
 						type="radio"
 						:modelValue="state.initial ? state._key : null"
 						:value="state._key"
 						name="lifecycle-initial-state"
 						@update:modelValue="setInitial(sIndex)">
-						{{ t('openbuild', 'Initial') }}
+						{{ t('buildiq', 'Initial') }}
 					</NcCheckboxRadioSwitch>
 					<NcTextField
 						:modelValue="state.name"
-						:label="t('openbuild', 'State slug')"
+						:label="t('buildiq', 'State slug')"
 						:error="!stateNameValid(state, sIndex)"
 						:helperText="
 							!stateNameValid(state, sIndex)
 								? t(
-										'openbuild',
+										'buildiq',
 										'State slug must be kebab-case and unique.',
 									)
 								: ''
@@ -63,11 +63,11 @@
 						@update:modelValue="updateState(sIndex, 'name', $event)" />
 					<NcTextField
 						:modelValue="state.label"
-						:label="t('openbuild', 'Label')"
+						:label="t('buildiq', 'Label')"
 						@update:modelValue="updateState(sIndex, 'label', $event)" />
 					<NcButton
 						variant="error"
-						:aria-label="t('openbuild', 'Remove state')"
+						:aria-label="t('buildiq', 'Remove state')"
 						@click="removeState(sIndex)">
 						<template #icon>
 							<DeleteIcon :size="20" />
@@ -77,35 +77,35 @@
 			</ul>
 			<p
 				v-if="states.length > 0 && initialCount !== 1"
-				class="openbuild-lifecycle-editor__error">
-				{{ t('openbuild', 'Exactly one initial state is required.') }}
+				class="buildiq-lifecycle-editor__error">
+				{{ t('buildiq', 'Exactly one initial state is required.') }}
 			</p>
 		</div>
 
 		<!-- Transitions -->
-		<div class="openbuild-lifecycle-editor__section">
-			<div class="openbuild-lifecycle-editor__section-header">
-				<h4>{{ t('openbuild', 'Transitions') }}</h4>
+		<div class="buildiq-lifecycle-editor__section">
+			<div class="buildiq-lifecycle-editor__section-header">
+				<h4>{{ t('buildiq', 'Transitions') }}</h4>
 				<NcButton :disabled="states.length < 2" @click="addTransition">
 					<template #icon>
 						<PlusIcon :size="20" />
 					</template>
-					{{ t('openbuild', 'Add transition') }}
+					{{ t('buildiq', 'Add transition') }}
 				</NcButton>
 			</div>
 			<p
 				v-if="transitions.length === 0"
-				class="openbuild-lifecycle-editor__empty">
-				{{ t('openbuild', 'No transitions yet.') }}
+				class="buildiq-lifecycle-editor__empty">
+				{{ t('buildiq', 'No transitions yet.') }}
 			</p>
-			<ul v-else class="openbuild-lifecycle-editor__list">
+			<ul v-else class="buildiq-lifecycle-editor__list">
 				<li
 					v-for="(transition, tIndex) in transitions"
 					:key="transition._key"
-					class="openbuild-lifecycle-editor__transition-row">
-					<div class="openbuild-lifecycle-editor__transition-grid">
+					class="buildiq-lifecycle-editor__transition-row">
+					<div class="buildiq-lifecycle-editor__transition-grid">
 						<NcSelect
-							:inputLabel="t('openbuild', 'From')"
+							:inputLabel="t('buildiq', 'From')"
 							:modelValue="stateOption(transition.from)"
 							:options="stateOptions"
 							:clearable="false"
@@ -119,7 +119,7 @@
 								)
 							" />
 						<NcSelect
-							:inputLabel="t('openbuild', 'To')"
+							:inputLabel="t('buildiq', 'To')"
 							:modelValue="stateOption(transition.to)"
 							:options="stateOptions"
 							:clearable="false"
@@ -134,13 +134,13 @@
 							" />
 						<NcTextField
 							:modelValue="transition.label || ''"
-							:label="t('openbuild', 'Label (optional)')"
+							:label="t('buildiq', 'Label (optional)')"
 							@update:modelValue="
 								updateTransition(tIndex, 'label', $event)
 							" />
 						<NcButton
 							variant="error"
-							:aria-label="t('openbuild', 'Remove transition')"
+							:aria-label="t('buildiq', 'Remove transition')"
 							@click="removeTransition(tIndex)">
 							<template #icon>
 								<DeleteIcon :size="20" />
@@ -149,14 +149,14 @@
 					</div>
 
 					<!-- Actions for this transition -->
-					<div class="openbuild-lifecycle-editor__actions-block">
-						<div class="openbuild-lifecycle-editor__section-header">
-							<h5>{{ t('openbuild', 'On-transition actions') }}</h5>
+					<div class="buildiq-lifecycle-editor__actions-block">
+						<div class="buildiq-lifecycle-editor__section-header">
+							<h5>{{ t('buildiq', 'On-transition actions') }}</h5>
 							<NcButton @click="addAction(tIndex)">
 								<template #icon>
 									<PlusIcon :size="18" />
 								</template>
-								{{ t('openbuild', 'Add action') }}
+								{{ t('buildiq', 'Add action') }}
 							</NcButton>
 						</div>
 						<p
@@ -164,16 +164,16 @@
 								!transition.actions
 								|| transition.actions.length === 0
 							"
-							class="openbuild-lifecycle-editor__empty">
-							{{ t('openbuild', 'No actions on this transition.') }}
+							class="buildiq-lifecycle-editor__empty">
+							{{ t('buildiq', 'No actions on this transition.') }}
 						</p>
-						<ul v-else class="openbuild-lifecycle-editor__list">
+						<ul v-else class="buildiq-lifecycle-editor__list">
 							<li
 								v-for="(action, aIndex) in transition.actions"
 								:key="action._key"
-								class="openbuild-lifecycle-editor__action-row">
+								class="buildiq-lifecycle-editor__action-row">
 								<NcSelect
-									:inputLabel="t('openbuild', 'Action type')"
+									:inputLabel="t('buildiq', 'Action type')"
 									:modelValue="actionOption(action.type)"
 									:options="actionOptions"
 									:clearable="false"
@@ -192,11 +192,11 @@
 								<NcTextField
 									:modelValue="action.payload || ''"
 									:label="
-										t('openbuild', 'Payload key (declarative)')
+										t('buildiq', 'Payload key (declarative)')
 									"
 									:placeholder="
 										t(
-											'openbuild',
+											'buildiq',
 											'e.g. event name, template slug',
 										)
 									"
@@ -210,7 +210,7 @@
 									" />
 								<NcButton
 									variant="error"
-									:aria-label="t('openbuild', 'Remove action')"
+									:aria-label="t('buildiq', 'Remove action')"
 									@click="removeAction(tIndex, aIndex)">
 									<template #icon>
 										<DeleteIcon :size="18" />
@@ -304,7 +304,7 @@ export default {
 		actionOptions() {
 			return ACTION_TYPES.map((value) => ({
 				value,
-				label: this.t('openbuild', value),
+				label: this.t('buildiq', value),
 			}))
 		},
 	},
@@ -625,46 +625,46 @@ export function editorToLifecycle(states, transitions) {
 </script>
 
 <style scoped>
-.openbuild-lifecycle-editor {
+.buildiq-lifecycle-editor {
 	display: flex;
 	flex-direction: column;
 	gap: 16px;
 }
 
-.openbuild-lifecycle-editor__header h3 {
+.buildiq-lifecycle-editor__header h3 {
 	margin: 0 0 4px;
 	font-size: 18px;
 	font-weight: 600;
 }
 
-.openbuild-lifecycle-editor__hint {
+.buildiq-lifecycle-editor__hint {
 	margin: 0;
 	color: var(--color-text-maxcontrast);
 	font-size: 13px;
 }
 
-.openbuild-lifecycle-editor__section {
+.buildiq-lifecycle-editor__section {
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius);
 	padding: 12px;
 	background: var(--color-main-background);
 }
 
-.openbuild-lifecycle-editor__section-header {
+.buildiq-lifecycle-editor__section-header {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 	margin-bottom: 8px;
 }
 
-.openbuild-lifecycle-editor__section-header h4,
-.openbuild-lifecycle-editor__section-header h5 {
+.buildiq-lifecycle-editor__section-header h4,
+.buildiq-lifecycle-editor__section-header h5 {
 	margin: 0;
 	font-size: 15px;
 	font-weight: 600;
 }
 
-.openbuild-lifecycle-editor__list {
+.buildiq-lifecycle-editor__list {
 	list-style: none;
 	margin: 0;
 	padding: 0;
@@ -673,15 +673,15 @@ export function editorToLifecycle(states, transitions) {
 	gap: 8px;
 }
 
-.openbuild-lifecycle-editor__state-row,
-.openbuild-lifecycle-editor__action-row {
+.buildiq-lifecycle-editor__state-row,
+.buildiq-lifecycle-editor__action-row {
 	display: grid;
 	grid-template-columns: auto 1fr 1fr auto;
 	gap: 8px;
 	align-items: center;
 }
 
-.openbuild-lifecycle-editor__transition-row {
+.buildiq-lifecycle-editor__transition-row {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
@@ -690,23 +690,23 @@ export function editorToLifecycle(states, transitions) {
 	border-radius: var(--border-radius);
 }
 
-.openbuild-lifecycle-editor__transition-grid {
+.buildiq-lifecycle-editor__transition-grid {
 	display: grid;
 	grid-template-columns: 1fr 1fr 1fr auto;
 	gap: 8px;
 }
 
-.openbuild-lifecycle-editor__actions-block {
+.buildiq-lifecycle-editor__actions-block {
 	padding-left: 12px;
 	border-left: 2px solid var(--color-border);
 }
 
-.openbuild-lifecycle-editor__empty {
+.buildiq-lifecycle-editor__empty {
 	margin: 0;
 	color: var(--color-text-maxcontrast);
 }
 
-.openbuild-lifecycle-editor__error {
+.buildiq-lifecycle-editor__error {
 	margin: 4px 0 0;
 	color: var(--color-error);
 	font-size: 13px;

@@ -6,7 +6,7 @@
  * (theme-picker-consumes-nldesign REQ-NTS-003).
  *
  * Confirms the deletion of `useAppTheme.js` and the
- * `data-openbuild-theme-scope` host wiring is complete: BuilderHost mounts
+ * `data-buildiq-theme-scope` host wiring is complete: BuilderHost mounts
  * its nested CnAppRoot with ZERO theme-related props/attributes of its own
  * — `data-nldesign-theme-scope` is CnAppRoot's own self-applied attribute
  * (scoped-theme-applier REQ-STA-1/3), never something BuilderHost sets.
@@ -15,7 +15,8 @@ import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { h, ref } from 'vue'
 
-vi.mock('@nextcloud/router', () => ({
+vi.mock('@nextcloud/router', async (importOriginal) => ({
+	...(await importOriginal()),
 	generateUrl: (p) => p,
 }))
 
@@ -46,7 +47,7 @@ vi.mock('../../src/composables/useRegisterPicker.js', () => ({
 }))
 
 vi.mock('../../src/store/schemas.js', () => ({
-	registerSlugForApp: (slug) => `openbuild-${slug}`,
+	registerSlugForApp: (slug) => `buildiq-${slug}`,
 }))
 
 // `useAppTheme.js` no longer exists (deleted, REQ-NTS-003) — importing it
@@ -77,12 +78,12 @@ function mountHost(slug = 'petstore') {
 	})
 }
 
-describe('BuilderHost (REQ-NTS-003 — CnAppRoot owns theme application, zero OpenBuild wiring)', () => {
-	it('renders with no data-openbuild-theme-scope attribute anywhere', async () => {
+describe('BuilderHost (REQ-NTS-003 — CnAppRoot owns theme application, zero Buildiq wiring)', () => {
+	it('renders with no data-buildiq-theme-scope attribute anywhere', async () => {
 		const wrapper = mountHost()
 		await wrapper.vm.$nextTick()
-		expect(wrapper.html()).not.toContain('data-openbuild-theme-scope')
-		expect(wrapper.find('[data-openbuild-theme-scope]').exists()).toBe(false)
+		expect(wrapper.html()).not.toContain('data-buildiq-theme-scope')
+		expect(wrapper.find('[data-buildiq-theme-scope]').exists()).toBe(false)
 	})
 
 	it('passes CnAppRoot no theme-related prop — only its pre-existing runtime props', async () => {
@@ -91,7 +92,7 @@ describe('BuilderHost (REQ-NTS-003 — CnAppRoot owns theme application, zero Op
 		const cnAppRoot = wrapper.findComponent(CnAppRootStub)
 		expect(cnAppRoot.exists()).toBe(true)
 		// BuilderHost's own declared props to CnAppRoot — no `theme`, no
-		// `data-nldesign-theme-scope` override, no `data-openbuild-theme-scope`.
+		// `data-nldesign-theme-scope` override, no `data-buildiq-theme-scope`.
 		expect(Object.keys(cnAppRoot.props())).toEqual(
 			expect.arrayContaining([
 				'appId',

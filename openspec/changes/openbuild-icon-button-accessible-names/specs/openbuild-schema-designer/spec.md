@@ -2,7 +2,7 @@
 
 ### Requirement: Icon-only action buttons carry an accessible name
 
-Every `NcButton` in the schema designer's sub-editors (`LifecycleEditor.vue`, `WidgetEditor.vue`, `RelationEditor.vue`, and the shared editor pattern they follow) that renders only an icon in its `#icon` template slot — with no visible text label — SHALL carry an `:aria-label` (or equivalent accessible-name prop) describing the action, sourced through `t('openbuild', '...')` with an English-language key.
+Every `NcButton` in the schema designer's sub-editors (`LifecycleEditor.vue`, `WidgetEditor.vue`, `RelationEditor.vue`, and the shared editor pattern they follow) that renders only an icon in its `#icon` template slot — with no visible text label — SHALL carry an `:aria-label` (or equivalent accessible-name prop) describing the action, sourced through `t('buildiq', '...')` with an English-language key.
 
 #### Scenario: Remove-state button exposes its action to assistive technology
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2026 OpenBuild Contributors
+ * SPDX-FileCopyrightText: 2026 Buildiq Contributors
  * SPDX-License-Identifier: EUPL-1.2
  *
  * Vitest spec for LogsPageEditor (task 4.4 — `type: "logs"`).
@@ -20,7 +20,7 @@ import { mount } from '@vue/test-utils'
 
 const fetchRegisters = vi.fn(async () => [
 	{ slug: 'openbuild-hello-world', title: 'Hello World' },
-	{ slug: 'openbuild', title: 'OpenBuild apps' },
+	{ slug: 'buildiq', title: 'Buildiq apps' },
 ])
 const fetchSchemas = vi.fn(async () => [{ slug: 'audit', title: 'Audit' }])
 const fetchSchemaProperties = vi.fn(async () => ({ action: { type: 'string' } }))
@@ -110,10 +110,10 @@ describe('LogsPageEditor', () => {
 
 	it('setting a register drops a previously-set source and schema', async () => {
 		const wrapper = mountEditor({ source: '/x', schema: 'old' })
-		wrapper.vm.update('register', 'openbuild')
+		wrapper.vm.update('register', 'buildiq')
 		await wrapper.vm.$nextTick()
 		const next = wrapper.emitted('update:config')[0][0]
-		expect(next.register).toBe('openbuild')
+		expect(next.register).toBe('buildiq')
 		expect(next).not.toHaveProperty('source')
 		expect(next).not.toHaveProperty('schema')
 	})

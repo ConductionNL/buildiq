@@ -7,7 +7,7 @@ const FeatureList = [
     title: 'Compose, don\'t code',
     description: (
       <>
-        Build an app from typed registers, OpenConnector connectors, n8n workflows, and DocuDesk templates. Design schemas and pages in the browser — no migrations, no deployment pipeline.
+        Build an app from typed registers, OpenConnector connectors, OpenRegister flows, and DocuDesk templates. Design schemas and pages in the browser. No migrations, no deployment pipeline.
       </>
     ),
   },

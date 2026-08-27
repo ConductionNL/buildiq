@@ -1,7 +1,7 @@
 <!--
   - SPDX-License-Identifier: EUPL-1.2
   -
-  - SchemaDesigner — the top-level view for the OpenBuild schema
+  - SchemaDesigner — the top-level view for the Buildiq schema
   - designer (REQ-OBSD-001 — REQ-OBSD-008). Mounted at
   - `/builder/:slug/schemas` (list mode) and
   - `/builder/:slug/schemas/:schemaId` (detail mode). Owns the staged
@@ -16,16 +16,16 @@
   - All OR CRUD goes through the `useSchemasStore` Pinia store (which
   - wraps `createObjectStore` from `@conduction/nextcloud-vue`) — never
   - via direct axios calls. The store hits the per-virtual-app register
-  - `openbuild-{slug}` per the hybrid register model: system schemas
-  - live in shared `openbuild`, user-authored schemas live per-app.
+  - `buildiq-{slug}` per the hybrid register model: system schemas
+  - live in shared `buildiq`, user-authored schemas live per-app.
   -->
 <template>
-	<div class="openbuild-schema-designer">
+	<div class="buildiq-schema-designer">
 		<!-- List mode -->
 		<template v-if="!schemaId">
-			<div v-if="canImport" class="openbuild-schema-designer__toolbar">
+			<div v-if="canImport" class="buildiq-schema-designer__toolbar">
 				<NcButton variant="secondary" @click="showImportWizard = true">
-					{{ t('openbuild', 'Import data') }}
+					{{ t('buildiq', 'Import data') }}
 				</NcButton>
 			</div>
 			<SchemaListPanel
@@ -37,51 +37,47 @@
 		</template>
 
 		<!-- Detail mode -->
-		<div v-else class="openbuild-schema-designer__detail">
-			<header class="openbuild-schema-designer__detail-header">
+		<div v-else class="buildiq-schema-designer__detail">
+			<header class="buildiq-schema-designer__detail-header">
 				<div>
 					<NcButton variant="tertiary" @click="goToList">
 						<template #icon>
 							<ArrowLeftIcon :size="20" />
 						</template>
-						{{ t('openbuild', 'Back to schemas') }}
+						{{ t('buildiq', 'Back to schemas') }}
 					</NcButton>
 					<h2 v-if="staged">
 						{{ staged.title || schemaId }}
 					</h2>
 				</div>
-				<div class="openbuild-schema-designer__detail-actions">
+				<div class="buildiq-schema-designer__detail-actions">
 					<NcButton
 						variant="tertiary"
 						:disabled="!canUndo"
-						:title="t('openbuild', 'Undo (Ctrl+Z)')"
+						:title="t('buildiq', 'Undo (Ctrl+Z)')"
 						@click="undo">
 						<template #icon>
 							<UndoIcon :size="20" />
 						</template>
-						{{ t('openbuild', 'Undo') }}
+						{{ t('buildiq', 'Undo') }}
 					</NcButton>
 					<NcButton
 						variant="tertiary"
 						:disabled="!canRedo"
-						:title="t('openbuild', 'Redo (Ctrl+Shift+Z / Ctrl+Y)')"
+						:title="t('buildiq', 'Redo (Ctrl+Shift+Z / Ctrl+Y)')"
 						@click="redo">
 						<template #icon>
 							<RedoIcon :size="20" />
 						</template>
-						{{ t('openbuild', 'Redo') }}
+						{{ t('buildiq', 'Redo') }}
 					</NcButton>
 					<NcButton
 						:disabled="!hasStagedChanges || saving"
 						@click="discardChanges">
-						{{ t('openbuild', 'Discard staged edits') }}
+						{{ t('buildiq', 'Discard staged edits') }}
 					</NcButton>
 					<NcButton variant="primary" :disabled="!canSave" @click="save">
-						{{
-							saving
-								? t('openbuild', 'Saving…')
-								: t('openbuild', 'Save')
-						}}
+						{{ saving ? t('buildiq', 'Saving…') : t('buildiq', 'Save') }}
 					</NcButton>
 				</div>
 			</header>
@@ -98,7 +94,7 @@
 			-->
 			<div
 				v-if="loadingDetail || !detailAttempted"
-				class="openbuild-schema-designer__loading">
+				class="buildiq-schema-designer__loading">
 				<NcLoadingIcon :size="32" />
 			</div>
 
@@ -112,7 +108,7 @@
 					type="warning">
 					{{
 						t(
-							'openbuild',
+							'buildiq',
 							'Exactly one lifecycle state must be marked as initial before you can save.',
 						)
 					}}
@@ -142,7 +138,7 @@
 				<NcNoteCard v-if="authorLockedOut" type="warning">
 					{{
 						t(
-							'openbuild',
+							'buildiq',
 							"Saving this read scope will make this schema's records invisible to you. Save remains available — this may be an intentional admin-assisted handover.",
 						)
 					}}
@@ -166,16 +162,16 @@
 
 			<NcEmptyContent
 				v-else
-				:name="t('openbuild', 'Schema not found')"
+				:name="t('buildiq', 'Schema not found')"
 				:description="
 					t(
-						'openbuild',
+						'buildiq',
 						'No schema with this slug exists in the current app.',
 					)
 				">
 				<template #action>
 					<NcButton @click="goToList">
-						{{ t('openbuild', 'Back to schemas') }}
+						{{ t('buildiq', 'Back to schemas') }}
 					</NcButton>
 				</template>
 			</NcEmptyContent>
@@ -291,7 +287,7 @@ export default {
 			applicationVersion: null,
 			versionLoading: false,
 			versionError: null,
-			// Import-data wizard state (openbuild-data-import-wizard).
+			// Import-data wizard state (buildiq-data-import-wizard).
 			applicationRecord: null,
 			showImportWizard: false,
 		}
@@ -322,7 +318,7 @@ export default {
 
 		/**
 		 * REQ-OBVR-004: read `?_version=` from the URL query.
-		 * The underscore-prefix param name is OpenBuild's system-reserved marker
+		 * The underscore-prefix param name is Buildiq's system-reserved marker
 		 * to avoid colliding with user-defined `?version=` params.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
@@ -341,7 +337,7 @@ export default {
 		store() {
 			// Re-creates the binding when appSlug changes; the store
 			// factory re-registers the `schema` type to the per-app
-			// register `openbuild-{slug}` on every call (idempotent).
+			// register `buildiq-{slug}` on every call (idempotent).
 			// REQ-OBVR-007: pass versionSlug so the store targets the correct register.
 			return useSchemasStore(this.appSlug, this.versionSlug)
 		},
@@ -724,7 +720,7 @@ export default {
 		 */
 		async loadApplicationRecord() {
 			try {
-				const url = generateUrl('/apps/openbuild/api/applications')
+				const url = generateUrl('/apps/buildiq/api/applications')
 				const { data } = await axios.get(url, {
 					headers: { 'OCS-APIREQUEST': 'true' },
 				})
@@ -816,7 +812,7 @@ export default {
 				const err = this.store.errors[SCHEMA_TYPE]
 				if (err) {
 					showError(
-						this.t('openbuild', 'Failed to load schemas: {error}', {
+						this.t('buildiq', 'Failed to load schemas: {error}', {
 							error: err,
 						}),
 					)
@@ -824,7 +820,7 @@ export default {
 			} catch (e) {
 				this.schemas = []
 				showError(
-					this.t('openbuild', 'Failed to load schemas: {error}', {
+					this.t('buildiq', 'Failed to load schemas: {error}', {
 						error: this.errorMessage(e),
 					}),
 				)
@@ -869,7 +865,7 @@ export default {
 					const err = this.store.errors[SCHEMA_TYPE]
 					if (err) {
 						showError(
-							this.t('openbuild', 'Failed to load schema: {error}', {
+							this.t('buildiq', 'Failed to load schema: {error}', {
 								error: err,
 							}),
 						)
@@ -882,7 +878,7 @@ export default {
 				this.staged = null
 				this.persisted = null
 				showError(
-					this.t('openbuild', 'Failed to load schema: {error}', {
+					this.t('buildiq', 'Failed to load schema: {error}', {
 						error: this.errorMessage(e),
 					}),
 				)
@@ -1159,6 +1155,8 @@ export default {
 		 *
 		 * @param {object} data The created schema as returned by the store.
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		async attachSchemaToRegister(data) {
 			const schemaId =
@@ -1195,7 +1193,7 @@ export default {
 				// listed on the register yet. Surface it so the builder knows.
 				showError(
 					this.t(
-						'openbuild',
+						'buildiq',
 						'Schema created, but could not be attached to register {register}: {error}',
 						{ register, error: this.errorMessage(e) },
 					),
@@ -1218,7 +1216,7 @@ export default {
 			// So a schema created with the raw user-typed slug was invisible in
 			// the list it was created from AND unattached to the app's register,
 			// leaving the follow-on detail navigation on "Schema not found"
-			// (openbuild#41). Namespace the slug to the same convention the
+			// (buildiq#41). Namespace the slug to the same convention the
 			// wizard uses, then attach the new schema to the app's register.
 			const body = {
 				slug: this.namespacedSlug(payload.slug),
@@ -1233,7 +1231,7 @@ export default {
 			if (!data) {
 				const err =
 					this.store.errors[SCHEMA_TYPE]
-					|| this.t('openbuild', 'Unknown error')
+					|| this.t('buildiq', 'Unknown error')
 				// Surface duplicate-slug specifically so the AddSchemaDialog
 				// can render an inline field error per REQ-OBSD-002.
 				if (
@@ -1247,7 +1245,7 @@ export default {
 				throw new Error(
 					typeof err === 'string'
 						? err
-						: this.t('openbuild', 'Failed to create schema'),
+						: this.t('buildiq', 'Failed to create schema'),
 				)
 			}
 			const newSlug =
@@ -1285,7 +1283,7 @@ export default {
 				),
 			)
 			showSuccess(
-				this.t('openbuild', 'Schema {slug} created.', { slug: newSlug }),
+				this.t('buildiq', 'Schema {slug} created.', { slug: newSlug }),
 			)
 		},
 
@@ -1348,14 +1346,14 @@ export default {
 			if (!ok) {
 				const err = this.store.errors[SCHEMA_TYPE]
 				showError(
-					this.t('openbuild', 'Failed to delete schema: {error}', {
+					this.t('buildiq', 'Failed to delete schema: {error}', {
 						error: err || '',
 					}),
 				)
 				return
 			}
 			await this.refreshList()
-			showSuccess(this.t('openbuild', 'Schema {slug} deleted.', { slug }))
+			showSuccess(this.t('buildiq', 'Schema {slug} deleted.', { slug }))
 			if (this.schemaId === slug) {
 				// goToList uses buildVersionedRoute internally — ?_version= is preserved.
 				this.goToList()
@@ -1396,7 +1394,7 @@ export default {
 					this.saveError =
 						typeof err === 'string'
 							? err
-							: this.t('openbuild', 'Failed to save schema')
+							: this.t('buildiq', 'Failed to save schema')
 					return
 				}
 				this.persisted = data
@@ -1407,7 +1405,7 @@ export default {
 				if (this.history) {
 					this.history.reset(this.staged)
 				}
-				showSuccess(this.t('openbuild', 'Schema saved.'))
+				showSuccess(this.t('buildiq', 'Schema saved.'))
 			} catch (e) {
 				this.saveError = this.errorMessage(e)
 			} finally {
@@ -1520,42 +1518,42 @@ export default {
 </script>
 
 <style scoped>
-.openbuild-schema-designer {
+.buildiq-schema-designer {
 	padding: 16px;
 	max-width: 1400px;
 }
 
-.openbuild-schema-designer__detail {
+.buildiq-schema-designer__detail {
 	display: flex;
 	flex-direction: column;
 	gap: 16px;
 }
 
-.openbuild-schema-designer__detail-header {
+.buildiq-schema-designer__detail-header {
 	display: flex;
 	align-items: flex-start;
 	justify-content: space-between;
 	gap: 16px;
 }
 
-.openbuild-schema-designer__detail-header h2 {
+.buildiq-schema-designer__detail-header h2 {
 	margin: 8px 0 0;
 	font-size: 22px;
 	font-weight: 600;
 }
 
-.openbuild-schema-designer__detail-actions {
+.buildiq-schema-designer__detail-actions {
 	display: flex;
 	gap: 8px;
 }
 
-.openbuild-schema-designer__loading {
+.buildiq-schema-designer__loading {
 	display: flex;
 	justify-content: center;
 	padding: 32px 0;
 }
 
-.openbuild-schema-designer__toolbar {
+.buildiq-schema-designer__toolbar {
 	display: flex;
 	justify-content: flex-end;
 	margin-bottom: 12px;

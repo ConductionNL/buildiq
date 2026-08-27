@@ -27,20 +27,20 @@
 					:value="section.title || ''"
 					type="text"
 					class="settings-section-builder__field"
-					:placeholder="t('openbuild', 'Section title (i18n key)')"
-					:aria-label="t('openbuild', 'Section title (i18n key)')"
+					:placeholder="t('buildiq', 'Section title (i18n key)')"
+					:aria-label="t('buildiq', 'Section title (i18n key)')"
 					@input="updateField(index, 'title', $event.target.value)" />
 				<input
 					:value="section.id || ''"
 					type="text"
 					class="settings-section-builder__field settings-section-builder__field--narrow"
-					:placeholder="t('openbuild', 'id (optional)')"
-					:aria-label="t('openbuild', 'id (optional)')"
+					:placeholder="t('buildiq', 'id (optional)')"
+					:aria-label="t('buildiq', 'id (optional)')"
 					@input="updateField(index, 'id', $event.target.value)" />
 				<button
 					type="button"
 					class="settings-section-builder__remove"
-					:title="t('openbuild', 'Remove section')"
+					:title="t('buildiq', 'Remove section')"
 					@click="removeSection(index)">
 					✕
 				</button>
@@ -53,7 +53,7 @@
 						:checked="bodyKind(section) === 'fields'"
 						value="fields"
 						@change="setBodyKind(index, 'fields')" />
-					{{ t('openbuild', 'Fields') }}
+					{{ t('buildiq', 'Fields') }}
 				</label>
 				<label class="settings-section-builder__inline">
 					<input
@@ -61,7 +61,7 @@
 						:checked="bodyKind(section) === 'component'"
 						value="component"
 						@change="setBodyKind(index, 'component')" />
-					{{ t('openbuild', 'Component') }}
+					{{ t('buildiq', 'Component') }}
 				</label>
 				<label class="settings-section-builder__inline">
 					<input
@@ -69,7 +69,7 @@
 						:checked="bodyKind(section) === 'widgets'"
 						value="widgets"
 						@change="setBodyKind(index, 'widgets')" />
-					{{ t('openbuild', 'Widgets') }}
+					{{ t('buildiq', 'Widgets') }}
 				</label>
 			</div>
 
@@ -84,18 +84,18 @@
 				v-else-if="bodyKind(section) === 'component'"
 				class="settings-section-builder__body">
 				<label class="settings-section-builder__row">
-					{{ t('openbuild', 'customComponents key') }}
+					{{ t('buildiq', 'customComponents key') }}
 					<input
 						:value="section.component || ''"
 						type="text"
-						:placeholder="t('openbuild', 'e.g. AppSettingsPanel')"
-						:aria-label="t('openbuild', 'e.g. AppSettingsPanel')"
+						:placeholder="t('buildiq', 'e.g. AppSettingsPanel')"
+						:aria-label="t('buildiq', 'e.g. AppSettingsPanel')"
 						@input="
 							updateField(index, 'component', $event.target.value)
 						" />
 				</label>
 				<label class="settings-section-builder__row">
-					{{ t('openbuild', 'props (JSON, optional)') }}
+					{{ t('buildiq', 'props (JSON, optional)') }}
 					<textarea
 						class="settings-section-builder__textarea"
 						spellcheck="false"
@@ -134,10 +134,10 @@
 						type="text"
 						class="settings-section-builder__field"
 						:placeholder="
-							t('openbuild', 'componentName (customComponents key)')
+							t('buildiq', 'componentName (customComponents key)')
 						"
 						:aria-label="
-							t('openbuild', 'componentName (customComponents key)')
+							t('buildiq', 'componentName (customComponents key)')
 						"
 						@input="
 							updateWidget(
@@ -151,15 +151,15 @@
 						:value="stringifyProps(widget.props)"
 						type="text"
 						class="settings-section-builder__field"
-						:placeholder="t('openbuild', 'props (JSON, optional)')"
-						:aria-label="t('openbuild', 'props (JSON, optional)')"
+						:placeholder="t('buildiq', 'props (JSON, optional)')"
+						:aria-label="t('buildiq', 'props (JSON, optional)')"
 						@input="
 							onWidgetPropsInput(index, wIndex, $event.target.value)
 						" />
 					<button
 						type="button"
 						class="settings-section-builder__remove"
-						:title="t('openbuild', 'Remove widget')"
+						:title="t('buildiq', 'Remove widget')"
 						@click="removeWidget(index, wIndex)">
 						✕
 					</button>
@@ -168,7 +168,7 @@
 					type="button"
 					class="settings-section-builder__add"
 					@click="addWidget(index)">
-					+ {{ t('openbuild', 'Add widget') }}
+					+ {{ t('buildiq', 'Add widget') }}
 				</button>
 			</div>
 		</div>
@@ -176,7 +176,7 @@
 			type="button"
 			class="settings-section-builder__add"
 			@click="addSection">
-			+ {{ t('openbuild', 'Add section') }}
+			+ {{ t('buildiq', 'Add section') }}
 		</button>
 	</div>
 </template>

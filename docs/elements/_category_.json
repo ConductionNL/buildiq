@@ -1,0 +1,8 @@
+{
+  "label": "App elements",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "description": "One page per part of the model: navigation, pages, data and business logic."
+  }
+}

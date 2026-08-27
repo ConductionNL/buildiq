@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild CopilotController
+ * Buildiq CopilotController
  *
  * REST surface for the AI copilot / prompt-to-app flow (spec `ai-copilot`),
  * extended with optional agent-scoping (spec `agent-workspace`). Four
@@ -28,7 +28,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
- * @package  OCA\OpenBuild\Controller
+ * @package  OCA\Buildiq\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -43,11 +43,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Controller;
+namespace OCA\Buildiq\Controller;
 
-use OCA\OpenBuild\AppInfo\Application;
-use OCA\OpenBuild\Exception\CopilotException;
-use OCA\OpenBuild\Service\CopilotService;
+use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Exception\CopilotException;
+use OCA\Buildiq\Service\CopilotService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -135,7 +135,7 @@ class CopilotController extends Controller {
 		} catch (CopilotException $e) {
 			return $this->mapExceptionToResponse(error: $e);
 		} catch (Throwable $e) {
-			$this->logger->error('OpenBuild Copilot: plan() unhandled exception: ' . $e->getMessage(), ['exception' => $e]);
+			$this->logger->error('Buildiq Copilot: plan() unhandled exception: ' . $e->getMessage(), ['exception' => $e]);
 			return new JSONResponse(
 				data: ['error' => 'internal_error', 'message' => 'Failed to generate a plan. See server logs for details.'],
 				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
@@ -174,7 +174,7 @@ class CopilotController extends Controller {
 		} catch (CopilotException $e) {
 			return $this->mapExceptionToResponse(error: $e);
 		} catch (Throwable $e) {
-			$this->logger->error('OpenBuild Copilot: execute() unhandled exception: ' . $e->getMessage(), ['exception' => $e]);
+			$this->logger->error('Buildiq Copilot: execute() unhandled exception: ' . $e->getMessage(), ['exception' => $e]);
 			return new JSONResponse(
 				data: ['error' => 'internal_error', 'message' => 'Failed to execute the plan. See server logs for details.'],
 				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
@@ -220,7 +220,7 @@ class CopilotController extends Controller {
 		} catch (CopilotException $e) {
 			return $this->mapExceptionToResponse(error: $e);
 		} catch (Throwable $e) {
-			$this->logger->error('OpenBuild Copilot: discard() unhandled exception: ' . $e->getMessage(), ['exception' => $e]);
+			$this->logger->error('Buildiq Copilot: discard() unhandled exception: ' . $e->getMessage(), ['exception' => $e]);
 			return new JSONResponse(
 				data: ['error' => 'internal_error', 'message' => 'Failed to log the discarded run. See server logs for details.'],
 				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
@@ -280,7 +280,7 @@ class CopilotController extends Controller {
 		}
 
 		if ($error->getHttpStatus() >= Http::STATUS_INTERNAL_SERVER_ERROR) {
-			$this->logger->error('OpenBuild Copilot: ' . $error->getErrorCode() . ': ' . $error->getMessage(), ['exception' => $error]);
+			$this->logger->error('Buildiq Copilot: ' . $error->getErrorCode() . ': ' . $error->getMessage(), ['exception' => $error]);
 		}
 
 		return new JSONResponse(data: $body, statusCode: $error->getHttpStatus());

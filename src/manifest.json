@@ -1,5 +1,5 @@
 {
-	"$schema": "https://codeberg.org/Conduction/nextcloud-vue/raw/branch/main/src/schemas/app-manifest-v2.schema.json",
+	"$schema": "https://github.com/ConductionNL/nextcloud-vue/raw/main/src/schemas/app-manifest-v2.schema.json",
 	"version": "2.0.0",
 	"openbuildEditable": false,
 	"dependencies": [
@@ -13,8 +13,8 @@
 			{
 				"id": "welcome",
 				"type": "info",
-				"title": "Welcome to OpenBuild",
-				"body": "OpenBuild builds apps from templates. This quick setup makes sure the bundled starter templates are available and, optionally, connects a remote template store. It is safe to run more than once."
+				"title": "Welcome to Buildiq",
+				"body": "Buildiq builds apps from templates. This quick setup makes sure the bundled starter templates are available and, optionally, connects a remote template store. It is safe to run more than once."
 			},
 			{
 				"id": "seed",
@@ -22,13 +22,13 @@
 				"title": "Install starter templates",
 				"required": true,
 				"action": "seed-templates",
-				"body": "Create the Conduction-curated ApplicationTemplate records so the Store and the create-from-template flow have something to offer. This normally runs automatically on install; run it here if OpenRegister was enabled after OpenBuild, or to repair a partial install. Idempotent — existing templates are left untouched."
+				"body": "Fills the Store with the starter templates, so the create-from-template flow has something to offer. This normally runs on install. Run it here if OpenRegister was enabled after Buildiq, or to repair a partial install. Safe to run twice: existing templates are left untouched."
 			},
 			{
 				"id": "store",
 				"type": "config-fields",
 				"title": "Remote template store (optional)",
-				"body": "Connect a remote template catalogue to offer more starter apps. Optional — the bundled local templates work without it. Leave blank to skip.",
+				"body": "Connect a remote template catalogue to offer more starter apps. The bundled templates work without it, so leave this blank to skip.",
 				"schema": {
 					"type": "object",
 					"properties": {
@@ -53,7 +53,7 @@
 				"type": "summary",
 				"title": "All set",
 				"healthCheck": true,
-				"body": "OpenBuild is ready. Open the Store to clone a template into your first app."
+				"body": "Buildiq is ready. Open the Store to clone a template into your first app."
 			}
 		]
 	},
@@ -63,16 +63,122 @@
 		"completionConfigKey": "walkthrough_completed_version",
 		"tours": [
 			{
-				"id": "openbuild:getting-started",
-				"title": "Getting started",
+				"id": "buildiq:getting-started",
+				"title": "Build the pet store",
 				"trigger": "first-visit",
 				"minAppVersion": "0.5.9",
 				"steps": [
-					{ "id": "welcome", "sinceVersion": "0.5.9", "placement": "center", "title": "Welcome to OpenBuild", "body": "Let's take a quick spin through the app builder — we'll create your first app from a template so you can see how the pieces fit. You'll do each step yourself.", "target": { "kind": "page", "ref": "Dashboard" }, "advanceOn": { "type": "manual" } },
-					{ "id": "go-apps", "sinceVersion": "0.5.9", "placement": "right", "body": "Apps are the heart of OpenBuild — every app you build lives here. Open Apps from the menu to see what's already there.", "task": "Click Apps in the menu", "target": { "kind": "nav-item", "ref": "VirtualApps" }, "advanceOn": { "type": "route-match", "route": "VirtualApps" } },
-					{ "id": "go-store", "sinceVersion": "0.5.9", "placement": "right", "body": "The fastest way to start is from a template. Open the Store to browse ready-made apps you can clone and make your own.", "task": "Click Store in the menu", "target": { "kind": "nav-item", "ref": "Templates" }, "advanceOn": { "type": "route-match", "route": "Templates" } },
-					{ "id": "create-app", "sinceVersion": "0.5.9", "placement": "bottom", "allowManualNext": true, "body": "Pick a template and clone it — give your new app a name, then create it. Once it exists you can shape its schemas and pages.", "task": "Clone a template into a new app", "target": { "kind": "page", "ref": "templates-grid" }, "advanceOn": { "type": "object-created", "register": "openbuild", "schema": "application", "capture": { "applicationId": ":id" } } },
-					{ "id": "done", "sinceVersion": "0.5.9", "placement": "center", "title": "You're all set", "body": "Nicely done — your first app exists. Open it from Apps to design its schemas and pages, and reopen this tour anytime from the … menu.", "target": { "kind": "page", "ref": "Dashboard" }, "advanceOn": { "type": "manual" } }
+					{
+						"id": "welcome",
+						"sinceVersion": "0.5.9",
+						"placement": "center",
+						"title": "Build the pet store",
+						"body": "You'll build a working pet store. A Pet record, a page that lists them, a live preview. Each step is yours to do.",
+						"target": {
+							"kind": "page",
+							"ref": "Dashboard"
+						},
+						"advanceOn": {
+							"type": "manual"
+						}
+					},
+					{
+						"id": "go-apps",
+						"sinceVersion": "0.5.9",
+						"placement": "right",
+						"body": "Every app you build lives here, ready to open, edit or export.",
+						"task": "Click Apps in the menu",
+						"target": {
+							"kind": "nav-item",
+							"ref": "VirtualApps"
+						},
+						"advanceOn": {
+							"type": "route-match",
+							"route": "VirtualApps"
+						}
+					},
+					{
+						"id": "create-app",
+						"sinceVersion": "0.5.9",
+						"placement": "bottom",
+						"body": "Name it Pet Store. A blank app gives you an empty register to shape yourself.",
+						"task": "Create an app called Pet Store",
+						"allowManualNext": true,
+						"target": {
+							"kind": "page",
+							"ref": "VirtualApps"
+						},
+						"advanceOn": {
+							"type": "object-created",
+							"register": "buildiq",
+							"schema": "application",
+							"capture": {
+								"applicationId": ":id"
+							}
+						}
+					},
+					{
+						"id": "add-schema",
+						"sinceVersion": "0.5.9",
+						"placement": "bottom",
+						"body": "A schema is the shape of one record. Yours is a Pet: it needs a name, a species and a status.",
+						"task": "Add a schema called Pet",
+						"allowManualNext": true,
+						"target": {
+							"kind": "page",
+							"ref": "SchemaDesignerList"
+						},
+						"advanceOn": {
+							"type": "route-match",
+							"route": "SchemaDesigner"
+						}
+					},
+					{
+						"id": "add-page",
+						"sinceVersion": "0.5.9",
+						"placement": "bottom",
+						"body": "An index page lists every record of one schema. Point it at Pet and the store has a shop floor.",
+						"task": "Add an index page over Pet",
+						"allowManualNext": true,
+						"target": {
+							"kind": "page",
+							"ref": "PageDesigner"
+						},
+						"advanceOn": {
+							"type": "route-match",
+							"route": "PageDesigner"
+						}
+					},
+					{
+						"id": "preview",
+						"sinceVersion": "0.5.9",
+						"placement": "center",
+						"body": "Open the app to see the page you just laid out, running on real data.",
+						"task": "Open the app and add your first pet",
+						"allowManualNext": true,
+						"target": {
+							"kind": "page",
+							"ref": "BuilderHost"
+						},
+						"advanceOn": {
+							"type": "manual"
+						}
+					},
+					{
+						"id": "done",
+						"sinceVersion": "0.5.9",
+						"placement": "center",
+						"title": "Your pet store runs",
+						"body": "You built a schema, a page and a working app. The docs cover flows, widgets and publishing to other instances.",
+						"task": "Open the documentation to keep building",
+						"target": {
+							"kind": "nav-item",
+							"ref": "Documentation"
+						},
+						"advanceOn": {
+							"type": "manual"
+						}
+					}
 				]
 			}
 		]
@@ -136,7 +242,7 @@
 				"delete-dialog": "AppDeleteDialogSlot"
 			},
 			"config": {
-				"register": "openbuild",
+				"register": "buildiq",
 				"schema": "application",
 				"viewMode": "cards",
 				"cardComponent": "ApplicationCard",
@@ -175,7 +281,7 @@
 				"before-body": "ApplicationDetailDashboard"
 			},
 			"config": {
-				"register": "openbuild",
+				"register": "buildiq",
 				"schema": "application",
 				"maxWidth": "none",
 				"showRelatedObjects": false,
@@ -226,7 +332,11 @@
 						"id": "audit",
 						"label": "History",
 						"icon": "History",
-						"widgets": [ { "type": "audit" } ],
+						"widgets": [
+							{
+								"type": "audit"
+							}
+						],
 						"order": 70
 					}
 				]
@@ -241,7 +351,7 @@
 				"default": "SchemaDesignerView"
 			},
 			"config": {
-				"register": "openbuild",
+				"register": "buildiq",
 				"schema": "application",
 				"createForm": "never",
 				"sidebar": {
@@ -249,7 +359,7 @@
 				},
 				"documentationUrl": "https://openbuild.conduction.nl"
 			},
-			"_note": "Top-level schemas overview \u2014 renders the SchemaDesignerView (list mode) via the registry-backed `slots.default` override so the primary action is the native \"Add schema\" flow (SchemaListPanel + AddSchemaDialog). Previously this page was type:\"index\" and fell through to the generic CnIndexPage, which keys its Add button off config.schema (\"application\") and so mislabelled the action \"Add Application\". A type:\"custom\" + top-level `component` does NOT resolve here because CnPageRenderer (beta.107) dispatches custom pages via the empty legacy customComponents map, not the v2 registry; the slot-override path (resolvedSlotEntries) is the one that reads cnRegistry. With no :schemaId route param SchemaDesignerView renders list mode and the no-slug /schemas shortcut falls back to the hello-world app. Per-app drill-down lives under /builder/:slug/schemas."
+			"_note": "Top-level schemas overview — renders the SchemaDesignerView (list mode) via the registry-backed `slots.default` override so the primary action is the native \"Add schema\" flow (SchemaListPanel + AddSchemaDialog). Previously this page was type:\"index\" and fell through to the generic CnIndexPage, which keys its Add button off config.schema (\"application\") and so mislabelled the action \"Add Application\". A type:\"custom\" + top-level `component` does NOT resolve here because CnPageRenderer (beta.107) dispatches custom pages via the empty legacy customComponents map, not the v2 registry; the slot-override path (resolvedSlotEntries) is the one that reads cnRegistry. With no :schemaId route param SchemaDesignerView renders list mode and the no-slug /schemas shortcut falls back to the hello-world app. Per-app drill-down lives under /builder/:slug/schemas."
 		},
 		{
 			"id": "Templates",
@@ -258,11 +368,11 @@
 			"title": "Store",
 			"component": "TemplateGallery",
 			"config": {
-				"register": "openbuild",
+				"register": "buildiq",
 				"schema": "application-template",
 				"documentationUrl": "https://openbuild.conduction.nl"
 			},
-			"_note": "Templates renders the store-aware TemplateGallery view (openbuild-remote-template-store): when a registry is configured the remote store search is the primary surface with built-in templates secondary; with no registry it falls back to the built-in templates as today. Install clones via CloneTemplateDialog."
+			"_note": "Templates renders the store-aware TemplateGallery view (buildiq-remote-template-store): when a registry is configured the remote store search is the primary surface with built-in templates secondary; with no registry it falls back to the built-in templates as today. Install clones via CloneTemplateDialog."
 		},
 		{
 			"id": "SchemaDesignerList",
@@ -273,7 +383,7 @@
 				"default": "SchemaDesignerView"
 			},
 			"config": {
-				"register": "openbuild",
+				"register": "buildiq",
 				"schema": "application",
 				"createForm": "never",
 				"sidebar": {
@@ -281,7 +391,7 @@
 				},
 				"documentationUrl": "https://openbuild.conduction.nl"
 			},
-			"_note": "Per-app schema list under the builder route — renders SchemaDesignerView (list mode, since there is no :schemaId param) via the registry-backed `slots.default` override, scoped to the virtual app identified by :slug (SchemaDesigner.vue reads `$route.params.slug`). Previously type:\"index\" with no slot, which fell through to the generic CnIndexPage keyed on config.schema (\"application\") and so listed Applications instead of the app's schemas (openbuild#41). Mirrors the top-level `/schemas` page fix above; per-schema drill-down lives at /builder/:slug/schemas/:schemaId (SchemaDesigner, detail mode)."
+			"_note": "Per-app schema list under the builder route — renders SchemaDesignerView (list mode, since there is no :schemaId param) via the registry-backed `slots.default` override, scoped to the virtual app identified by :slug (SchemaDesigner.vue reads `$route.params.slug`). Previously type:\"index\" with no slot, which fell through to the generic CnIndexPage keyed on config.schema (\"application\") and so listed Applications instead of the app's schemas (buildiq#41). Mirrors the top-level `/schemas` page fix above; per-schema drill-down lives at /builder/:slug/schemas/:schemaId (SchemaDesigner, detail mode)."
 		},
 		{
 			"id": "SchemaDesigner",
@@ -289,7 +399,7 @@
 			"type": "detail",
 			"title": "Schema",
 			"config": {
-				"register": "openbuild",
+				"register": "buildiq",
 				"schema": "application",
 				"createForm": "never",
 				"sidebar": {
@@ -308,7 +418,7 @@
 			"type": "detail",
 			"title": "Page designer",
 			"config": {
-				"register": "openbuild",
+				"register": "buildiq",
 				"schema": "application",
 				"createForm": "never",
 				"sidebar": {
@@ -327,7 +437,7 @@
 			"type": "detail",
 			"title": "Walkthrough designer",
 			"config": {
-				"register": "openbuild",
+				"register": "buildiq",
 				"schema": "application",
 				"createForm": "never",
 				"sidebar": {
@@ -346,7 +456,7 @@
 			"type": "index",
 			"title": "Exports",
 			"config": {
-				"register": "openbuild",
+				"register": "buildiq",
 				"schema": "export-job",
 				"viewMode": "table",
 				"sidebar": {
@@ -362,7 +472,7 @@
 			"type": "custom",
 			"title": "App",
 			"component": "BuilderHostView",
-			"_note": "Virtual-app host that mounts a nested CnAppRoot rendering the virtual app's own manifest from GET /api/applications/{slug}/manifest. This is a meta-app-shell (app inside app) pattern that no standard page type supports. It is the core runtime surface of openbuild and will always require a custom host component."
+			"_note": "Virtual-app host that mounts a nested CnAppRoot rendering the virtual app's own manifest from GET /api/applications/{slug}/manifest. This is a meta-app-shell (app inside app) pattern that no standard page type supports. It is the core runtime surface of buildiq and will always require a custom host component."
 		},
 		{
 			"id": "FeaturesRoadmap",
@@ -378,8 +488,15 @@
 		"health": {
 			"statusCodePolicy": "adr006",
 			"checks": [
-				{ "id": "database", "type": "database" },
-				{ "id": "openregister", "type": "orAvailable", "severity": "degraded" }
+				{
+					"id": "database",
+					"type": "database"
+				},
+				{
+					"id": "openregister",
+					"type": "orAvailable",
+					"severity": "degraded"
+				}
 			]
 		},
 		"metrics": [
@@ -387,19 +504,37 @@
 				"name": "export_jobs_total",
 				"type": "gauge",
 				"help": "Export jobs by lifecycle status",
-				"source": { "kind": "objectCount", "register": "openbuild", "schema": "export-job", "groupBy": ["status"] }
+				"source": {
+					"kind": "objectCount",
+					"register": "buildiq",
+					"schema": "export-job",
+					"groupBy": [
+						"status"
+					]
+				}
 			},
 			{
 				"name": "applications_total",
 				"type": "gauge",
 				"help": "Virtual applications (one nav entry per published app)",
-				"source": { "kind": "objectCount", "register": "openbuild", "schema": "application" }
+				"source": {
+					"kind": "objectCount",
+					"register": "buildiq",
+					"schema": "application"
+				}
 			},
 			{
 				"name": "application_versions_total",
 				"type": "gauge",
 				"help": "Application versions by lifecycle status",
-				"source": { "kind": "objectCount", "register": "openbuild", "schema": "applicationVersion", "groupBy": ["status"] }
+				"source": {
+					"kind": "objectCount",
+					"register": "buildiq",
+					"schema": "applicationVersion",
+					"groupBy": [
+						"status"
+					]
+				}
 			}
 		]
 	},

@@ -10,13 +10,13 @@ retrofit_extensions:
 
 ## Purpose
 
-Lets an operator brand each published OpenBuild virtual app with per-app SVG icons
+Lets an operator brand each published Buildiq virtual app with per-app SVG icons
 (light + dark) so the published app surfaces with its own identity in the Nextcloud
-top bar and in OpenBuild's own card grid. Adds top-level `icon` / `iconDark` ref
+top bar and in Buildiq's own card grid. Adds top-level `icon` / `iconDark` ref
 fields to the `Application` schema (sibling to `slug`, `name`, `manifest`,
 `permissions`), thin icon-serving endpoints with a clear fallback chain, and the
 upload / preview / remove UX on the Application detail page — all routed through
-OR's existing files-attached-to-object mechanism (ADR-001) so no new openbuild-side
+OR's existing files-attached-to-object mechanism (ADR-001) so no new buildiq-side
 file storage is introduced.
 
 ## Requirements
@@ -34,7 +34,7 @@ SHALL NOT cause schema validation failure.
 
 **ID:** REQ-OBICON-001
 
-Icons live outside the `manifest` object deliberately: they are openbuild-side admin
+Icons live outside the `manifest` object deliberately: they are buildiq-side admin
 metadata, not part of the manifest the citizen developer designs and the runtime serves
 to `CnAppRoot`. This keeps the change orthogonal to `app-manifest.schema.json` and avoids
 any upstream coupling with `@conduction/nextcloud-vue`.
@@ -59,7 +59,7 @@ any upstream coupling with `@conduction/nextcloud-vue`.
 
 ### Requirement: Icon-serving endpoint (light)
 
-The system SHALL expose `GET /index.php/apps/openbuild/icons/{slug}.svg` backed by
+The system SHALL expose `GET /index.php/apps/buildiq/icons/{slug}.svg` backed by
 `IconController::iconLight`. The endpoint SHALL:
 
 1. Look up the published Application by slug via OR's ObjectService.
@@ -67,7 +67,7 @@ The system SHALL expose `GET /index.php/apps/openbuild/icons/{slug}.svg` backed 
    fetch the corresponding attached file from OR and return its bytes with
    `Content-Type: image/svg+xml`.
 3. If the icon ref is absent or the attached file cannot be retrieved, fall back to
-   OpenBuild's own `/img/app.svg` filesystem asset.
+   Buildiq's own `/img/app.svg` filesystem asset.
 4. Set `Cache-Control: public, max-age=60` on every successful response.
 5. Require any valid NC session (`#[NoAdminRequired]`); return `401` when no session exists.
 
@@ -88,7 +88,7 @@ The system SHALL expose `GET /index.php/apps/openbuild/icons/{slug}.svg` backed 
 - **WHEN** an authenticated user requests `/icons/no-icon-app.svg`
 - **AND** the no-icon-app Application has no `icon` field
 - **THEN** the response is `200 image/svg+xml` and the body is the contents of
-  OpenBuild's `/img/app.svg`
+  Buildiq's `/img/app.svg`
 
 #### Scenario: Unauthenticated request is rejected
 
@@ -97,13 +97,13 @@ The system SHALL expose `GET /index.php/apps/openbuild/icons/{slug}.svg` backed 
 
 ### Requirement: Icon-serving endpoint (dark)
 
-The system SHALL expose `GET /index.php/apps/openbuild/icons/{slug}-dark.svg` backed by
+The system SHALL expose `GET /index.php/apps/buildiq/icons/{slug}-dark.svg` backed by
 `IconController::iconDark`. The endpoint SHALL apply the following fallback chain in order:
 
 1. `iconDark.ref` (top-level on the Application) → attached file on the Application record.
 2. `icon.ref` (top-level on the Application) → attached file on the Application record.
-3. OpenBuild's own `/img/app-dark.svg` filesystem asset.
-4. OpenBuild's own `/img/app.svg` filesystem asset (final fallback).
+3. Buildiq's own `/img/app-dark.svg` filesystem asset.
+4. Buildiq's own `/img/app.svg` filesystem asset (final fallback).
 
 Cache and auth posture SHALL be identical to REQ-OBICON-002.
 
@@ -130,7 +130,7 @@ Cache and auth posture SHALL be identical to REQ-OBICON-002.
 - **WHEN** an authenticated user requests `/icons/no-icon-app-dark.svg`
 - **AND** the Application has neither `icon` nor `iconDark`
 - **THEN** the response is `200 image/svg+xml` containing the contents of
-  OpenBuild's `/img/app-dark.svg`
+  Buildiq's `/img/app-dark.svg`
 
 ### Requirement: Icon section on Application detail page
 
@@ -147,7 +147,7 @@ The Application detail page SHALL include an **Icon** section exposing:
 - A remove button for each slot that detaches the file from OR and clears the corresponding
   top-level ref.
 
-The section SHALL NOT introduce a new openbuild-side file-storage mechanism; all file I/O
+The section SHALL NOT introduce a new buildiq-side file-storage mechanism; all file I/O
 goes through OR's existing files-attached-to-object endpoint (ADR-001).
 
 **ID:** REQ-OBICON-004

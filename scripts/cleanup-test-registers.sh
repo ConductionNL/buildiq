@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# cleanup-test-registers.sh — remove PHPUnit / OpenBuild-e2e / CI test debris
+# cleanup-test-registers.sh — remove PHPUnit / Buildiq-e2e / CI test debris
 # from OpenRegister so the register & schema pickers stay usable for testing.
 #
 # It deletes, in the only order OpenRegister's guards allow:
@@ -34,7 +34,7 @@ PG_USER="${PG_USER:-nextcloud}"
 PG_DB="${PG_DB:-nextcloud}"
 
 # Slugs matching ANY of these (anchored where it matters) are test debris.
-TEST_PATTERN='^phpunit|^openbuild-e2e-|^e2e-[0-9]|-register-[0-9]{6,}|^test-register-|^mdm-verify-reg-|newman|throttle-probe|dup-test|^dsr-scratch|^reverify-'
+TEST_PATTERN='^phpunit|^buildiq-e2e-|^e2e-[0-9]|-register-[0-9]{6,}|^test-register-|^mdm-verify-reg-|newman|throttle-probe|dup-test|^dsr-scratch|^reverify-'
 
 MODE="dry-run"
 case "${1:-}" in

@@ -9,7 +9,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 
-vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => p }))
+vi.mock('@nextcloud/router', async (importOriginal) => ({
+	...(await importOriginal()),
+	generateUrl: (p) => p,
+}))
 vi.mock('@nextcloud/axios', () => ({
 	default: { get: vi.fn(), post: vi.fn(), delete: vi.fn() },
 }))
@@ -80,7 +83,7 @@ const agent = (overrides = {}) => ({
 	id: 'agent-1',
 	name: 'Page builder assistant',
 	applicationSlug: 'tool-library',
-	enabledTools: ['openbuild.upsertPage', 'openbuild.addWidget'],
+	enabledTools: ['buildiq.upsertPage', 'buildiq.addWidget'],
 	maxActionsPerRun: 5,
 	...overrides,
 })
@@ -179,7 +182,7 @@ describe('AgentsPage', () => {
 		await flush()
 
 		expect(axios.delete).toHaveBeenCalledWith(
-			'/apps/openregister/api/objects/openbuild/agent/agent-1',
+			'/apps/openregister/api/objects/buildiq/agent/agent-1',
 		)
 	})
 

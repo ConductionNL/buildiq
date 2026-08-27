@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: EUPL-1.2
 /**
- * Schemas store for the OpenBuild schema designer.
+ * Schemas store for the Buildiq schema designer.
  *
  * Wraps `createObjectStore` from `@conduction/nextcloud-vue` (memory rule:
  * no bespoke `defineStore` Pinia module layered over `useObjectStore`).
@@ -16,7 +16,7 @@
  *
  * The base store treats schemas as a registered object type named
  * `schema`, scoped to the per-virtual-app register namespace
- * `openbuild-{slug}` (design OQ-2 provisional decision: one register per
+ * `buildiq-{slug}` (design OQ-2 provisional decision: one register per
  * virtual app).
  *
  * Until chain #3 lands the endpoints, the store is still importable and
@@ -48,12 +48,22 @@ const useSchemasStoreRaw = createObjectStore(STORE_ID, {
  * Resolve the per-virtual-app register slug for a built-app slug + version.
  *
  * REQ-OBVR-007: when a versionSlug is provided, the register name follows
- * spec C's naming convention: `openbuild-{appSlug}-{versionSlug}`.
+ * spec C's naming convention: `openbuild-{appSlug}-{versionSlug}`
  * (e.g. `openbuild-hello-world-staging`).
  *
  * When no versionSlug is provided, falls back to the old per-app register
  * `openbuild-{appSlug}` for backwards compatibility with apps created before
  * spec C's per-version register model was introduced.
+ *
+ * WHY THE PREFIX STAYS `openbuild-` AFTER THE APP-ID RENAME. The app id moved
+ * to `buildiq` and the CONTROL register moved with it (see
+ * `lib/Repair/MigrateRegisterSlug`, whose map is `openbuild => buildiq` and
+ * covers that one row only). These PER-APP registers are a different set: a
+ * register slug is frozen once objects live under it, and renaming one is a
+ * data migration per virtual app, not a find-and-replace. Every existing
+ * per-app register on a live instance is named `openbuild-*`, so this prefix is
+ * the correct value, not leftover. The docblock previously said `buildiq-`
+ * while the code returned `openbuild-`; the code was right.
  *
  * @param {string}           appSlug     Virtual app slug (e.g. `hello-world`).
  * @param {string|undefined} [versionSlug] Optional version slug (e.g. `staging`).
@@ -75,8 +85,8 @@ export function registerSlugForApp(appSlug, versionSlug) {
  * for the given virtual app's register namespace on first call.
  *
  * REQ-OBVR-007: accepts an optional `versionSlug` and routes to the
- * correct per-version register `openbuild-{appSlug}-{versionSlug}` when
- * provided (spec C's naming convention). Falls back to `openbuild-{appSlug}`
+ * correct per-version register `buildiq-{appSlug}-{versionSlug}` when
+ * provided (spec C's naming convention). Falls back to `buildiq-{appSlug}`
  * when versionSlug is absent.
  *
  * @param {string}           appSlug    Virtual app slug.

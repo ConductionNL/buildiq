@@ -16,20 +16,20 @@ apps MUST build their effective manifest via the shared
 util — "No app may re-implement `mergeMenuItems` / `applyMenuRelocations`
 / `applyMenuRemovals` / `applySettingsSection` inline."
 
-OpenBuild already satisfies the ADR's prerequisite (§6): it has a working
+Buildiq already satisfies the ADR's prerequisite (§6): it has a working
 `src/manifest.d/` fragment pipeline (confirmed at
 `src/main.js:71-82`, collecting via `require.context('./manifest.d/', ...)`),
 unlike the "monolithic manifest" apps the ADR calls out as needing an extra
-refactor step first. But OpenBuild is not among the "Shipped 2026-06" adopter
+refactor step first. But Buildiq is not among the "Shipped 2026-06" adopter
 list in the ADR's Consequences section (shillinq, pipelinq, procest,
 openregister, decidesk, openconnector, opencatalogi, softwarecatalog,
 larpingapp, doriath) — it is the one fragment-pipeline-ready app that has not
 adopted the shared `buildManifest()` util, and it has no
 `src/menu-layout.json` (checked: no such file exists in `src/`).
 
-Practically, OpenBuild's own `mergeManifestFragments` only concatenates
+Practically, Buildiq's own `mergeManifestFragments` only concatenates
 `pages`/`menu` arrays — it has none of `buildManifest()`'s relocation,
-removal, or settings-foldout-placement logic, so OpenBuild cannot declare a
+removal, or settings-foldout-placement logic, so Buildiq cannot declare a
 `menu-layout.json` today even if a future navigation change wanted to move
 an entry (e.g. "Documentation") into the settings foldout without editing
 `main.js` again.
@@ -53,7 +53,7 @@ an entry (e.g. "Documentation") into the settings foldout without editing
   gate).
 - Explicitly out of scope: any actual menu-layout redesign (moving
   "Documentation" or other entries into the settings foldout, cards-collapse
-  for deep groups). OpenBuild's menu is currently shallow (5 top-level
+  for deep groups). Buildiq's menu is currently shallow (5 top-level
   items, no children), so §3/§4 of the ADR do not yet apply substantively —
   this change only closes the "shared pipeline, not a per-app copy" gap
   (§1) and puts `menu-layout.json` in place for future navigation work.

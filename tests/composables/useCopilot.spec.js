@@ -172,7 +172,7 @@ describe('useCopilot — spec ai-copilot REQ-OBAIC-001/002/003', () => {
 			.mockResolvedValueOnce({
 				data: {
 					summary: 'x',
-					steps: [{ tool: 'openbuild.createApp', arguments: {} }],
+					steps: [{ tool: 'buildiq.createApp', arguments: {} }],
 					manifests: {},
 				},
 			})
@@ -213,7 +213,7 @@ describe('useCopilot — spec ai-copilot REQ-OBAIC-001/002/003', () => {
 		await copilot.generatePlan('add a page', 'tool-library', 'agent-1')
 
 		expect(axiosPost).toHaveBeenCalledWith(
-			'/apps/openbuild/api/copilot/plan',
+			'/apps/buildiq/api/copilot/plan',
 			expect.objectContaining({
 				brief: 'add a page',
 				appSlug: 'tool-library',
@@ -227,7 +227,7 @@ describe('useCopilot — spec ai-copilot REQ-OBAIC-001/002/003', () => {
 			.mockResolvedValueOnce({
 				data: {
 					summary: 'x',
-					steps: [{ tool: 'openbuild.createApp', arguments: {} }],
+					steps: [{ tool: 'buildiq.createApp', arguments: {} }],
 					manifests: {},
 				},
 			})
@@ -239,7 +239,7 @@ describe('useCopilot — spec ai-copilot REQ-OBAIC-001/002/003', () => {
 
 		expect(axiosPost).toHaveBeenNthCalledWith(
 			2,
-			'/apps/openbuild/api/copilot/execute',
+			'/apps/buildiq/api/copilot/execute',
 			expect.objectContaining({ agentId: 'agent-1', prompt: 'add a page' }),
 		)
 		expect(copilot.state.value).toBe('done')
@@ -258,7 +258,7 @@ describe('useCopilot — spec ai-copilot REQ-OBAIC-001/002/003', () => {
 		await Promise.resolve()
 
 		expect(axiosPost).toHaveBeenCalledWith(
-			'/apps/openbuild/api/copilot/discard',
+			'/apps/buildiq/api/copilot/discard',
 			expect.objectContaining({ agentId: 'agent-1', prompt: 'add a page' }),
 		)
 		expect(copilot.state.value).toBe('idle')

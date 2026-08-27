@@ -9,7 +9,7 @@
  * `loginAsAdmin` helpers are no longer required.
  *
  * Before this hook existed, specs without an explicit form-login step
- * (applicationCard, builder-host, bootstrap-openbuild, …) landed on
+ * (applicationCard, builder-host, bootstrap-buildiq, …) landed on
  * `/login` and every locator timed out. Nextcloud's session is cookie-
  * based; basic auth alone doesn't satisfy the SPA's auth check.
  *
@@ -35,7 +35,7 @@ export const DOCUDESK_TEMPLATE_NAMES = ['Bevestigingsbrief', 'Besluit'] as const
  * against. Production no longer ships a hello-world seed (the SeedHelloWorld
  * repair step was retired with the versioned-model migration), so the suite
  * seeds it itself via the test-only occ command. Override the invocation with
- * OPENBUILD_SEED_CMD when occ is reached differently (e.g. a non-docker CI).
+ * BUILDIQ_SEED_CMD when occ is reached differently (e.g. a non-docker CI).
  * Non-fatal: a failure is logged and specs surface the missing fixture.
  */
 /**
@@ -68,7 +68,7 @@ export const DOCUDESK_TEMPLATE_NAMES = ['Bevestigingsbrief', 'Besluit'] as const
  * @return {?string} The container name, or null when it cannot be resolved.
  */
 function resolveContainerFor(baseURL: string): string | null {
-	const override = process.env.OPENBUILD_E2E_CONTAINER
+	const override = process.env.BUILDIQ_E2E_CONTAINER
 	if (override) {
 		return override
 	}
@@ -98,15 +98,15 @@ function resolveContainerFor(baseURL: string): string | null {
 
 function seedHelloWorldFixture(container: string | null): void {
 	const cmd =
-		process.env.OPENBUILD_SEED_CMD
+		process.env.BUILDIQ_SEED_CMD
 		|| (container
-			? `docker exec -u www-data ${container} php occ openbuild:seed-hello-world-fixture`
+			? `docker exec -u www-data ${container} php occ buildiq:seed-hello-world-fixture`
 			: null)
 	if (!cmd) {
 		// eslint-disable-next-line no-console
 		console.warn(
 			'[globalSetup] hello-world fixture NOT seeded: could not resolve the container '
-				+ 'serving the instance under test. Set OPENBUILD_E2E_CONTAINER or OPENBUILD_SEED_CMD. '
+				+ 'serving the instance under test. Set BUILDIQ_E2E_CONTAINER or BUILDIQ_SEED_CMD. '
 				+ 'Deliberately not falling back to a hardcoded container — that would seed a DIFFERENT instance.',
 		)
 		return
@@ -149,7 +149,7 @@ function seedHelloWorldFixture(container: string | null): void {
  * machine where someone remembered to set it.
  *
  * `occ` is reached the same way the fixture seed reaches it; override with
- * OPENBUILD_RATELIMIT_CMD for a non-docker CI. Non-fatal: on failure the run
+ * BUILDIQ_RATELIMIT_CMD for a non-docker CI. Non-fatal: on failure the run
  * continues and the 429s simply reappear, with this warning explaining them.
  *
  * @param container The container serving the instance under test, or null when
@@ -163,7 +163,7 @@ function disableRateLimitProtection(container: string | null): void {
 	// first specs to 429 anyway. Measured: setting the value alone left the
 	// endpoint still returning 429; it only took effect after the reload.
 	const cmd =
-		process.env.OPENBUILD_RATELIMIT_CMD
+		process.env.BUILDIQ_RATELIMIT_CMD
 		|| (container
 			? `docker exec -u www-data ${container} php occ config:system:set `
 				+ 'ratelimit.protection.enabled --value=false --type=boolean '
@@ -173,7 +173,7 @@ function disableRateLimitProtection(container: string | null): void {
 		// eslint-disable-next-line no-console
 		console.warn(
 			'[globalSetup] rate-limit protection left ALONE: could not resolve the container '
-				+ 'serving the instance under test. Set OPENBUILD_E2E_CONTAINER or OPENBUILD_RATELIMIT_CMD. '
+				+ 'serving the instance under test. Set BUILDIQ_E2E_CONTAINER or BUILDIQ_RATELIMIT_CMD. '
 				+ 'This one writes config and gracefully restarts Apache, so it must never guess an instance.',
 		)
 		return
@@ -216,7 +216,7 @@ function disableRateLimitProtection(container: string | null): void {
  * Graceful when Docudesk is absent: a 404/501 from the settings probe is a
  * documented capability state (the specs' own probe treats it identically), so
  * seeding is skipped with a log rather than failing the run. Set
- * OPENBUILD_DOCUDESK_SEED=0 to skip deliberately.
+ * BUILDIQ_DOCUDESK_SEED=0 to skip deliberately.
  *
  * @param baseURL Absolute base URL of the instance under test.
  * @param user Admin username.
@@ -228,10 +228,10 @@ async function seedDocudeskTemplateFixtures(
 	user: string,
 	password: string,
 ): Promise<void> {
-	if (process.env.OPENBUILD_DOCUDESK_SEED === '0') {
+	if (process.env.BUILDIQ_DOCUDESK_SEED === '0') {
 		// eslint-disable-next-line no-console
 		console.log(
-			'[globalSetup] docudesk seeding skipped (OPENBUILD_DOCUDESK_SEED=0)',
+			'[globalSetup] docudesk seeding skipped (BUILDIQ_DOCUDESK_SEED=0)',
 		)
 		return
 	}
@@ -312,6 +312,7 @@ async function seedDocudeskTemplateFixtures(
 			(tpl: Record<string, any>) => tpl.name,
 		)
 		const created: string[] = []
+		const failed: string[] = []
 		for (const name of DOCUDESK_TEMPLATE_NAMES) {
 			if (existing.includes(name)) {
 				continue
@@ -319,8 +320,8 @@ async function seedDocudeskTemplateFixtures(
 			const resp = await api.post('/index.php/apps/docudesk/api/templates', {
 				data: {
 					name,
-					description: 'openbuild e2e fixture template',
-					namespace: 'openbuild',
+					description: 'buildiq e2e fixture template',
+					namespace: 'buildiq',
 					// `{{dossiernummer}}` is what the filename-interpolation
 					// scenario (REQ-DDT-003) renders against.
 					content: `<h1>${name}</h1><p>Dossier {{dossiernummer}}</p>`,
@@ -331,19 +332,42 @@ async function seedDocudeskTemplateFixtures(
 			if (resp.ok()) {
 				created.push(name)
 			} else {
+				failed.push(`${name} (HTTP ${resp.status()})`)
 				// eslint-disable-next-line no-console
 				console.warn(
 					`[globalSetup] docudesk template "${name}" create returned ${resp.status()}`,
 				)
 			}
 		}
-		// eslint-disable-next-line no-console
-		console.log(
-			`[globalSetup] docudesk templates ready: ${DOCUDESK_TEMPLATE_NAMES.join(', ')}`
-				+ (created.length
-					? ` (created ${created.join(', ')})`
-					: ' (already present)'),
-		)
+		// "READY" HAS TO MEAN READY.
+		//
+		// This line used to read `created.length ? '(created …)' : '(already
+		// present)'`, so a run where every create returned 500 announced
+		// "templates ready: Bevestigingsbrief, Besluit (already present)". It had
+		// created nothing and nothing was present — `created` is empty in both
+		// cases, and the message picked the innocent reading.
+		//
+		// Measured on the drift sweep 2026-08-22: both creates returned HTTP 500,
+		// this line still said "already present", and the failure surfaced 30
+		// minutes later as a Playwright timeout waiting for an option in a picker
+		// whose list was empty. The seeding log had the answer and phrased it as
+		// success.
+		if (failed.length > 0) {
+			// eslint-disable-next-line no-console
+			console.error(
+				`[globalSetup] docudesk templates NOT ready — create failed for ${failed.join(', ')}. `
+					+ 'Specs that attach a template will fail with an empty picker rather than a server error, '
+					+ 'so read THIS line, not the timeout.',
+			)
+		} else {
+			// eslint-disable-next-line no-console
+			console.log(
+				`[globalSetup] docudesk templates ready: ${DOCUDESK_TEMPLATE_NAMES.join(', ')}`
+					+ (created.length
+						? ` (created ${created.join(', ')})`
+						: ' (already present on the instance)'),
+			)
+		}
 	} catch (e) {
 		// eslint-disable-next-line no-console
 		console.warn(
@@ -652,7 +676,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 			const authed = await page.evaluate(async () => {
 				try {
 					const resp = await fetch(
-						'/index.php/apps/openbuild/api/applications',
+						'/index.php/apps/buildiq/api/applications',
 						{
 							headers: { 'OCS-APIRequest': 'true' },
 						},

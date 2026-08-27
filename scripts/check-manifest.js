@@ -3,15 +3,15 @@
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
 /**
- * check-manifest — validate openbuild manifests against the canonical
+ * check-manifest — validate buildiq manifests against the canonical
  * @conduction/nextcloud-vue ADR-024 schema.
  *
- * Implements openbuild#10 task 4.3 — "Run npm run check:manifest on the
+ * Implements buildiq#10 task 4.3 — "Run npm run check:manifest on the
  * seeded hello-world manifest blob in tests; passes against the canonical
  * schema pinned in package.json."
  *
  * Defaults to validating:
- *   - src/manifest.json (the OpenBuild shell manifest)
+ *   - src/manifest.json (the Buildiq shell manifest)
  *   - lib/Resources/wizard/default-manifest.json (the wizard seed)
  *
  * Pass alternate paths as CLI args. The wizard seed carries the literal

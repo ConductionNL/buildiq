@@ -19,11 +19,11 @@
 <template>
 	<div class="logs-page-editor">
 		<h3 class="logs-page-editor__title">
-			{{ t('openbuild', 'Logs page') }}
+			{{ t('buildiq', 'Logs page') }}
 		</h3>
 
 		<fieldset class="logs-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Data source') }}</legend>
+			<legend>{{ t('buildiq', 'Data source') }}</legend>
 			<div class="logs-page-editor__shape">
 				<label class="logs-page-editor__inline">
 					<input
@@ -31,7 +31,7 @@
 						:checked="sourceShape === 'register'"
 						value="register"
 						@change="setSourceShape('register')" />
-					{{ t('openbuild', 'Register + schema') }}
+					{{ t('buildiq', 'Register + schema') }}
 				</label>
 				<label class="logs-page-editor__inline">
 					<input
@@ -39,19 +39,19 @@
 						:checked="sourceShape === 'source'"
 						value="source"
 						@change="setSourceShape('source')" />
-					{{ t('openbuild', 'Source (URL or registry key)') }}
+					{{ t('buildiq', 'Source (URL or registry key)') }}
 				</label>
 			</div>
 
 			<div v-if="sourceShape === 'register'" class="logs-page-editor__group">
 				<label>
-					{{ t('openbuild', 'Register') }}
+					{{ t('buildiq', 'Register') }}
 					<select
 						:value="config.register || ''"
 						:aria-invalid="isInvalid('register')"
 						@change="update('register', $event.target.value)">
 						<option value="">
-							{{ t('openbuild', '— select register —') }}
+							{{ t('buildiq', '— select register —') }}
 						</option>
 						<option
 							v-for="r in registers"
@@ -63,14 +63,14 @@
 					<InlineFieldMark :error="markFor('register')" />
 				</label>
 				<label>
-					{{ t('openbuild', 'Schema') }}
+					{{ t('buildiq', 'Schema') }}
 					<select
 						:value="config.schema || ''"
 						:disabled="!config.register"
 						:aria-invalid="isInvalid('schema')"
 						@change="update('schema', $event.target.value)">
 						<option value="">
-							{{ t('openbuild', '— select schema —') }}
+							{{ t('buildiq', '— select schema —') }}
 						</option>
 						<option
 							v-for="s in schemas"
@@ -84,13 +84,13 @@
 			</div>
 			<div v-else class="logs-page-editor__group">
 				<label>
-					{{ t('openbuild', 'Source') }}
+					{{ t('buildiq', 'Source') }}
 					<input
 						type="text"
 						:value="config.source || ''"
 						:placeholder="
 							t(
-								'openbuild',
+								'buildiq',
 								'/api/objects/:slug/audit or a customComponents key',
 							)
 						"
@@ -102,7 +102,7 @@
 			<p class="logs-page-editor__hint">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'Exactly one of (register + schema) or source must be set.',
 					)
 				}}
@@ -110,7 +110,7 @@
 		</fieldset>
 
 		<fieldset class="logs-page-editor__fieldset">
-			<legend>{{ t('openbuild', 'Columns') }}</legend>
+			<legend>{{ t('buildiq', 'Columns') }}</legend>
 			<ColumnBuilder
 				:modelValue="config.columns || []"
 				:schemaProperties="schemaProperties"
@@ -165,7 +165,7 @@ export default {
 	 * cannot see props at construction time, so the picker is created here
 	 * from the resolved props and exposed as `this.picker`.
 	 *
-	 * @param {{appSlug: string, dataRegisters: Array<{register: string, label?: string}>, config: object, pageType: string, parentRoute: string}} props - the resolved component props; only `appSlug` (hoists `openbuild-{slug}` in the register list) and `dataRegisters` (labels/hoists the Application's declared bindings) are read.
+	 * @param {{appSlug: string, dataRegisters: Array<{register: string, label?: string}>, config: object, pageType: string, parentRoute: string}} props - the resolved component props; only `appSlug` (hoists `buildiq-{slug}` in the register list) and `dataRegisters` (labels/hoists the Application's declared bindings) are read.
 	 * @return {{picker: object}} - bindings merged into the instance; `picker` exposes fetchRegisters/fetchSchemas/fetchSchemaProperties.
 	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-2.1

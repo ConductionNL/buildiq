@@ -4,8 +4,8 @@
  * passed as the `registry` prop to the NESTED CnAppRoot in BuilderHost.
  *
  * Kept separate from the shell `registry.js` (which the manifest test guards
- * as "every entry referenced by openbuild's own manifest") because these
- * entries are referenced by VIRTUAL-app manifests, not openbuild's own shell.
+ * as "every entry referenced by buildiq's own manifest") because these
+ * entries are referenced by VIRTUAL-app manifests, not buildiq's own shell.
  * Self-contained (no import from `registry.js`) to avoid the
  * registry → BuilderHost → runtimeRegistry import cycle.
  *

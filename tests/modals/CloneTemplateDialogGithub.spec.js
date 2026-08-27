@@ -45,7 +45,8 @@ const { axiosMock } = vi.hoisted(() => ({
 	axiosMock: { get: vi.fn(), post: vi.fn() },
 }))
 
-vi.mock('@nextcloud/router', () => ({
+vi.mock('@nextcloud/router', async (importOriginal) => ({
+	...(await importOriginal()),
 	generateUrl: (path, params = {}) =>
 		path.replace(/\{(\w+)\}/g, (_, k) => params[k] ?? `{${k}}`),
 }))
@@ -117,7 +118,7 @@ describe('CloneTemplateDialog.vue — GitHub shop install', () => {
 
 		expect(axiosMock.post).toHaveBeenCalledTimes(1)
 		const [url, body] = axiosMock.post.mock.calls[0]
-		expect(url).toBe('/apps/openbuild/api/shop/github/install')
+		expect(url).toBe('/apps/buildiq/api/shop/github/install')
 		expect(body).toEqual({
 			owner: 'conduction',
 			repo: 'petstore',

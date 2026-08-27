@@ -1,5 +1,5 @@
 {
-	"_comment": "ADR-037 register fragment — data-registers-schema-declaration (chain head, kind: config; hydra ADR-050 decision #2 / SPECTR-NEXTCLOUD-PLAN.md §4.2). Adds the optional dataRegisters array property to the shared `openbuild` register's Application schema, sibling to baseRef. SettingsService::deepMergeConfig recurses into components.schemas.Application.properties (both keyed objects already present in the base config) and adds only the new dataRegisters key — Application.required and every other Application property are untouched, and no other schema is touched. Each entry names a shared, non-versioned OpenRegister register this Application binds to alongside its own per-version register (ApplicationVersion.register, ADR-002); promotion never reads/writes this property. Declarative schema metadata only (ADR-031) — no service class, no route. The follower spec data-registers-runtime (kind: code) adds the builder data-source pickers, the promotion-skip regression test, and export schema-def inclusion. See design.md Decisions 1-2 and specs/openbuild-application-register/spec.md REQ-OBA-010.",
+	"_comment": "ADR-037 register fragment — data-registers-schema-declaration (chain head, kind: config; hydra ADR-050 decision #2 / SPECTR-NEXTCLOUD-PLAN.md §4.2). Adds the optional dataRegisters array property to the shared `buildiq` register's Application schema, sibling to baseRef. SettingsService::deepMergeConfig recurses into components.schemas.Application.properties (both keyed objects already present in the base config) and adds only the new dataRegisters key — Application.required and every other Application property are untouched, and no other schema is touched. Each entry names a shared, non-versioned OpenRegister register this Application binds to alongside its own per-version register (ApplicationVersion.register, ADR-002); promotion never reads/writes this property. Declarative schema metadata only (ADR-031) — no service class, no route. The follower spec data-registers-runtime (kind: code) adds the builder data-source pickers, the promotion-skip regression test, and export schema-def inclusion. See design.md Decisions 1-2 and specs/buildiq-application-register/spec.md REQ-OBA-010.",
 	"components": {
 		"schemas": {
 			"Application": {
@@ -22,7 +22,7 @@
 									"pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
 									"minLength": 2,
 									"maxLength": 64,
-									"description": "Slug of the shared OpenRegister register this app binds to (e.g. `spectr`). Unlike ApplicationVersion.register, this register is NOT owned or provisioned by OpenBuild and carries NO `openbuild-` prefix convention — it is an existing register OpenConnector or another process feeds independently."
+									"description": "Slug of the shared OpenRegister register this app binds to (e.g. `spectr`). Unlike ApplicationVersion.register, this register is NOT owned or provisioned by Buildiq and carries NO `buildiq-` prefix convention — it is an existing register OpenConnector or another process feeds independently."
 								},
 								"label": {
 									"title": "Display Label",

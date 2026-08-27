@@ -11,7 +11,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Repair
+ * @package  OCA\Buildiq\Tests\Unit\Repair
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,15 +26,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Repair;
+namespace OCA\Buildiq\Tests\Unit\Repair;
 
-use OCA\OpenBuild\Repair\MigrateAppOverridesToHybrid;
-use OCA\OpenBuild\Service\AppOverrideService;
+use OCA\Buildiq\Repair\MigrateAppOverridesToHybrid;
+use OCA\Buildiq\Service\AppOverrideService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Service\ObjectService;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;

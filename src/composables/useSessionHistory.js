@@ -2,7 +2,7 @@
 /**
  * useSessionHistory — thin per-app adapter over nc-vue's
  * `useManifestEditHistory` leaf (`@conduction/nextcloud-vue`, change
- * `manifest-edit-history`), bridging the narrow surface OpenBuild's
+ * `manifest-edit-history`), bridging the narrow surface Buildiq's
  * designers consume (`push`, `undo`, `redo`, `reset`, reactive
  * `canUndo`/`canRedo`, `size`) onto the leaf's actual surface
  * (`push`, `undo`, `redo`, `clear`, reactive `canUndo`/`canRedo`/`size`/

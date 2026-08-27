@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild DataRegisterProvisioner
+ * Buildiq DataRegisterProvisioner
  *
  * Applies a published app repo's `data-registers/` channel: creates registers and
  * schemas that do not exist yet, and leaves existing ones exactly as they are.
@@ -19,7 +19,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -34,7 +34,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -94,7 +94,7 @@ class DataRegisterProvisioner {
 			$slug = (string)$slug;
 			if ($applied >= self::MAX_REGISTERS) {
 				$this->logger->warning(
-					'OpenBuild channel apply: channel "' . self::CHANNEL . '" declared ' . count($registers)
+					'Buildiq channel apply: channel "' . self::CHANNEL . '" declared ' . count($registers)
 					. ' items but the bound is ' . self::MAX_REGISTERS . ' — the excess was NOT applied.'
 				);
 				$report->recordTruncated(channel: self::CHANNEL, item: $slug);
@@ -107,7 +107,7 @@ class DataRegisterProvisioner {
 				$this->applyOne(slug: $slug, blob: (array)$blob, report: $report);
 			} catch (Throwable $e) {
 				$this->logger->warning(
-					'OpenBuild channel apply: data register "' . $slug . '" failed: ' . $e->getMessage()
+					'Buildiq channel apply: data register "' . $slug . '" failed: ' . $e->getMessage()
 				);
 				$report->recordFailed(channel: self::CHANNEL, item: $slug, reason: $e->getMessage());
 			}
@@ -149,7 +149,7 @@ class DataRegisterProvisioner {
 			[
 				'slug' => $slug,
 				'title' => (string)($blob['title'] ?? $slug),
-				'description' => 'Installed by OpenBuild from a published app repository.',
+				'description' => 'Installed by Buildiq from a published app repository.',
 				'version' => '0.1.0',
 				'schemas' => $schemaIds,
 			]
@@ -194,7 +194,7 @@ class DataRegisterProvisioner {
 			return $created->getId();
 		} catch (Throwable $e) {
 			$this->logger->warning(
-				'OpenBuild channel apply: schema "' . $slug . '" could not be created: ' . $e->getMessage()
+				'Buildiq channel apply: schema "' . $slug . '" could not be created: ' . $e->getMessage()
 			);
 			return null;
 		}

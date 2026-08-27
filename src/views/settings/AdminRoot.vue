@@ -1,8 +1,8 @@
 <!-- SPDX-License-Identifier: EUPL-1.2 -->
 <template>
 	<CnAdminSettingsShell
-		appId="openbuild"
-		appName="OpenBuild"
+		appId="buildiq"
+		appName="Buildiq"
 		@reimported="onReimported">
 		<Settings v-if="storesReady" :key="settingsKey" />
 	</CnAdminSettingsShell>

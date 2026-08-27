@@ -8,14 +8,14 @@
   -->
 <template>
 	<NcDialog
-		:name="t('openbuild', 'Delete schema')"
+		:name="t('buildiq', 'Delete schema')"
 		:open="open"
 		size="small"
 		@update:open="onOpenUpdate">
-		<p class="openbuild-delete-schema-dialog__warning">
+		<p class="buildiq-delete-schema-dialog__warning">
 			{{
 				t(
-					'openbuild',
+					'buildiq',
 					'You are about to delete the schema {slug}. All objects of this schema may be affected. Type the schema slug below to confirm.',
 					{ slug: schemaSlug },
 				)
@@ -23,15 +23,15 @@
 		</p>
 		<NcTextField
 			:modelValue="typed"
-			:label="t('openbuild', 'Type the slug to confirm')"
+			:label="t('buildiq', 'Type the slug to confirm')"
 			:placeholder="schemaSlug"
 			@update:modelValue="typed = $event" />
 		<template #actions>
 			<NcButton @click="onCancel">
-				{{ t('openbuild', 'Cancel') }}
+				{{ t('buildiq', 'Cancel') }}
 			</NcButton>
 			<NcButton variant="error" :disabled="!canDelete" @click="onConfirm">
-				{{ t('openbuild', 'Delete schema') }}
+				{{ t('buildiq', 'Delete schema') }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -127,7 +127,7 @@ export default {
 </script>
 
 <style scoped>
-.openbuild-delete-schema-dialog__warning {
+.buildiq-delete-schema-dialog__warning {
 	margin: 0 0 12px;
 	line-height: 1.5;
 	color: var(--color-text-maxcontrast);

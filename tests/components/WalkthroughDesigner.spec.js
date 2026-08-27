@@ -6,7 +6,7 @@ import { shallowMount } from '@vue/test-utils'
 import WalkthroughDesigner from '../../src/components/walkthrough-editor/WalkthroughDesigner.vue'
 
 /**
- * Spec: openbuild-walkthrough-editor (ADR-043). The controlled designer edits a
+ * Spec: buildiq-walkthrough-editor (ADR-043). The controlled designer edits a
  * manifest `walkthrough` block and emits `update:manifest` on every mutation.
  */
 const baseManifest = (walkthrough) => ({

@@ -6,43 +6,43 @@ description: Decide which Nextcloud groups can open the builder, edit virtual ap
 
 # Manage who can build (RBAC)
 
-OpenBuild scopes builder access through Nextcloud groups. Anyone in the *admin* group has the full ride; everyone else needs explicit membership in an OpenBuild builder group. This is what stops an end user from opening the schema designer for an app they only meant to *use*.
+Buildiq scopes builder access through Nextcloud groups. Anyone in the *admin* group has the full ride; everyone else needs explicit membership in an Buildiq builder group. This is what stops an end user from opening the schema designer for an app they only meant to *use*.
 
 ## Goal
 
-By the end you will have nominated a Nextcloud group as the *OpenBuild builders* group, added a user to it, and confirmed they can open the page designer.
+By the end you will have nominated a Nextcloud group as the *Buildiq builders* group, added a user to it, and confirmed they can open the page designer.
 
 ## Prerequisites
 
 - You are in the Nextcloud *admin* group.
 - The user (or users) you want to give builder access exist on the Nextcloud and are in at least one group.
-- A sense of the access matrix you want — for most teams *one builder group per virtual app* is overkill; a single *OpenBuild builders* group is the right starting point.
+- A sense of the access matrix you want — for most teams *one builder group per virtual app* is overkill; a single *Buildiq builders* group is the right starting point.
 
 ## Steps
 
-1. Open **Settings → Administration → OpenBuild** in Nextcloud. The OpenBuild admin settings page opens with three sections: *Version Information*, *Support* and *Configuration*.
+1. Open **Settings → Administration → Buildiq** in Nextcloud. The Buildiq admin settings page opens with three sections: *Version Information*, *Support* and *Configuration*.
 
-   ![OpenBuild admin settings](/screenshots/tutorials/admin/01-rbac-01.png)
+   ![Buildiq admin settings](/screenshots/tutorials/admin/01-rbac-01.png)
 
 2. Scroll to **Configuration**. Find the **Builder groups** dropdown — it is a multi-select picker of Nextcloud groups; on a fresh install it is empty, which is why only *admin* can open the builder today.
 
    ![Builder groups picker](/screenshots/tutorials/admin/01-rbac-02.png)
 
-3. Pick the group you want to nominate (for example *openbuild-builders*). If the group does not exist yet, create it first under **Settings → Users → Groups**.
+3. Pick the group you want to nominate (for example *buildiq-builders*). If the group does not exist yet, create it first under **Settings → Users → Groups**.
 
    ![Group picked](/screenshots/tutorials/admin/01-rbac-03.png)
 
-4. Click **Save**. The setting persists to `IAppConfig`; the next call to the OpenBuild API checks the new group membership.
+4. Click **Save**. The setting persists to `IAppConfig`; the next call to the Buildiq API checks the new group membership.
 
    ![Configuration saved](/screenshots/tutorials/admin/01-rbac-04.png)
 
-5. Add the user you want to give builder access to that group (under **Settings → Users**). Ask them to reload OpenBuild — they should now see the **Open builder** / **Edit pages** controls on every virtual app.
+5. Add the user you want to give builder access to that group (under **Settings → Users**). Ask them to reload Buildiq — they should now see the **Open builder** / **Edit pages** controls on every virtual app.
 
    ![User can open builder](/screenshots/tutorials/admin/01-rbac-05.png)
 
 ## Verification
 
-The RBAC change is good when: a user in the nominated group can open `/apps/openbuild/builder/\<slug\>/pages` without a 403, and a user *not* in the group gets the 403 they should.
+The RBAC change is good when: a user in the nominated group can open `/apps/buildiq/builder/\<slug\>/pages` without a 403, and a user *not* in the group gets the 403 they should.
 
 ## Common issues
 

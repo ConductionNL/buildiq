@@ -1,11 +1,11 @@
 <?php
 
 /**
- * OpenBuild Populate Application Permissions Repair Step
+ * Buildiq Populate Application Permissions Repair Step
  *
  * Idempotent migration that populates the `permissions` block on every
  * existing Application whose `permissions` is missing or empty.
- * Per design.md "Migration Plan" of openbuild-rbac, the default is
+ * Per design.md "Migration Plan" of buildiq-rbac, the default is
  * `{ owners: ['admin'], editors: [], viewers: [] }`. The migration
  * skips any Application whose `permissions.owners` is already
  * non-empty (idempotent re-runs).
@@ -19,7 +19,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Repair
- * @package  OCA\OpenBuild\Repair
+ * @package  OCA\Buildiq\Repair
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -31,18 +31,16 @@
  *
  * Runs without a Nextcloud user session (Anonymous), which OpenRegister RBAC
  * denies read/write access to by default. The find-and-patch body runs inside
- * `ObjectService::runAsSystem()` when the installed OpenRegister ships it,
- * elevating the caller to a trusted system principal for the callable only.
- * Guarded with `method_exists()` for back-compat with an OpenRegister release
- * that predates the elevation API — the pre-existing `_rbac`/`_multitenancy`
- * bypass on the save call remains as the fallback path.
+ * `ObjectService::runAsSystem()`, elevating the caller to a trusted system
+ * principal for the callable only. The `_rbac`/`_multitenancy` bypass on the
+ * save call remains as defence in depth.
  *
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-30
  */
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Repair;
+namespace OCA\Buildiq\Repair;
 
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\Migration\IOutput;
@@ -79,7 +77,7 @@ class PopulateApplicationPermissions implements IRepairStep {
 	 * @return string
 	 */
 	public function getName(): string {
-		return 'Populate permissions on pre-existing OpenBuild Applications';
+		return 'Populate permissions on pre-existing Buildiq Applications';
 	}//end getName()
 
 	/**
@@ -104,39 +102,35 @@ class PopulateApplicationPermissions implements IRepairStep {
 
 			$output->info('Permissions populated on ' . $patched . ' Application(s).');
 			$this->logger->info(
-				'OpenBuild: PopulateApplicationPermissions completed',
+				'Buildiq: PopulateApplicationPermissions completed',
 				['patched' => $patched]
 			);
 		} catch (\Throwable $e) {
 			$output->warning('Could not populate permissions: ' . $e->getMessage());
 			$this->logger->error(
-				'OpenBuild: PopulateApplicationPermissions failed',
+				'Buildiq: PopulateApplicationPermissions failed',
 				['exception' => $e->getMessage()]
 			);
 		}//end try
 	}//end run()
 
 	/**
-	 * Patch every Application, elevating to a system context when the installed
-	 * ObjectService offers one.
+	 * Patch every Application inside OpenRegister's system context.
 	 *
-	 * Extracted from {@see self::run()}: the elevated and plain paths call the
-	 * same worker, so an early return expresses the choice without an else
-	 * branch. Older ObjectService builds have no `runAsSystem()`, hence the
-	 * duck-typed probe.
+	 * Extracted from {@see self::run()} so the whole find-and-patch body can be
+	 * handed to `runAsSystem()` as a single callable.
 	 *
 	 * @param IOutput $output Repair output channel.
 	 *
 	 * @return int|null The number patched, or null when no Applications exist.
 	 */
 	private function patchAllApplications(IOutput $output): ?int {
-		if (method_exists($this->objectService, 'runAsSystem') === true) {
-			return $this->objectService->runAsSystem(
-				fn (): ?int => $this->patchApplicationsMissingPermissions(output: $output)
-			);
-		}
-
-		return $this->patchApplicationsMissingPermissions(output: $output);
+		// `runAsSystem()` is declared on ObjectServiceInterface, so the
+		// method_exists() probe this replaces could never be false and the
+		// un-elevated fallback was unreachable.
+		return $this->objectService->runAsSystem(
+			fn (): ?int => $this->patchApplicationsMissingPermissions(output: $output)
+		);
 	}//end patchAllApplications()
 
 	/**
@@ -156,7 +150,7 @@ class PopulateApplicationPermissions implements IRepairStep {
 		$applications = $this->objectService->findAll(
 			config: [
 				'filters' => [
-					'register' => 'openbuild',
+					'register' => 'buildiq',
 					'schema' => 'application',
 				],
 				'limit' => 1000,
@@ -186,13 +180,12 @@ class PopulateApplicationPermissions implements IRepairStep {
 				'viewers' => [],
 			];
 
-			// Kept as a defence-in-depth fallback for an OpenRegister release
-			// that predates runAsSystem(): the Application schema's
-			// update:[admin] guard would otherwise deny the Anonymous
-			// repair-step caller.
+			// Defence in depth alongside the runAsSystem() elevation: the
+			// Application schema's update:[admin] guard would otherwise deny
+			// the Anonymous repair-step caller.
 			$this->objectService->saveObject(
 				object: $applicationArray,
-				register: 'openbuild',
+				register: 'buildiq',
 				schema: 'application',
 				_rbac: false,
 				_multitenancy: false

@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Repair
+ * @package  OCA\Buildiq\Tests\Unit\Repair
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,9 +20,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Repair;
+namespace OCA\Buildiq\Tests\Unit\Repair;
 
-use OCA\OpenBuild\Repair\PopulateApplicationPermissions;
+use OCA\Buildiq\Repair\PopulateApplicationPermissions;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Migration\IOutput;

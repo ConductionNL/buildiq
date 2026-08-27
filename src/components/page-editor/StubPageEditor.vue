@@ -18,7 +18,7 @@
 			class="stub-page-editor__textarea"
 			spellcheck="false"
 			:value="jsonDraft"
-			:aria-label="t('openbuild', 'Raw page configuration (JSON)')"
+			:aria-label="t('buildiq', 'Raw page configuration (JSON)')"
 			@input="onInput($event.target.value)" />
 		<p v-if="parseError" class="stub-page-editor__error" role="alert">
 			{{ parseError }}

@@ -26,7 +26,7 @@ export const useSettingsStore = defineStore('settings', {
 			this.loading = true
 			try {
 				const response = await fetch(
-					generateUrl('/apps/openbuild/api/settings'),
+					generateUrl('/apps/buildiq/api/settings'),
 					{
 						headers: { requesttoken: getRequestToken() },
 					},
@@ -69,7 +69,7 @@ export const useSettingsStore = defineStore('settings', {
 			this.loading = true
 			try {
 				const response = await fetch(
-					generateUrl('/apps/openbuild/api/settings'),
+					generateUrl('/apps/buildiq/api/settings'),
 					{
 						method: 'POST',
 						headers: {

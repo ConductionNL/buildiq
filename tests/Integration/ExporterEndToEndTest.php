@@ -1,17 +1,17 @@
 <?php
 
 /**
- * OpenBuild Exporter end-to-end integration test
+ * Buildiq Exporter end-to-end integration test
  *
  * Exercises the file-generation pipeline against the real embedded template
  * snapshot through the one entry point production uses — ExportService::
  * generateAppZip(), which RunExportJob calls. Asserts the produced archive has
  * no unresolved tokens, is byte-equivalent across re-runs (REQ-OBEX-008), and
- * carries no `openbuild` dependency reference in its dependency manifests
+ * carries no `buildiq` dependency reference in its dependency manifests
  * (REQ-OBEX-010).
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Integration
+ * @package  OCA\Buildiq\Tests\Integration
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -27,14 +27,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Integration;
+namespace OCA\Buildiq\Tests\Integration;
 
-use OCA\OpenBuild\Service\DataRegisterExportBundler;
-use OCA\OpenBuild\Service\ExportService;
-use OCA\OpenBuild\Service\PlaceholderResolver;
+use OCA\Buildiq\Service\DataRegisterExportBundler;
+use OCA\Buildiq\Service\ExportService;
+use OCA\Buildiq\Service\PlaceholderResolver;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\Files\IAppData;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -76,7 +76,7 @@ final class ExporterEndToEndTest extends TestCase {
 
 	/**
 	 * The exporter resolves the template into an archive with no unresolved
-	 * placeholders and no leftover `openbuild` dependency reference.
+	 * placeholders and no leftover `buildiq` dependency reference.
 	 *
 	 * @return void
 	 */
@@ -101,16 +101,16 @@ final class ExporterEndToEndTest extends TestCase {
 			);
 		}
 
-		// REQ-OBEX-010: dependency manifests must not reference openbuild.
+		// REQ-OBEX-010: dependency manifests must not reference buildiq.
 		foreach (['composer.json', 'package.json', 'appinfo/info.xml'] as $manifest) {
 			if (array_key_exists($manifest, $entries) === false) {
 				continue;
 			}
 
 			self::assertStringNotContainsStringIgnoringCase(
-				'openbuild',
+				'buildiq',
 				$entries[$manifest],
-				$manifest . ' must not reference openbuild as a dependency'
+				$manifest . ' must not reference buildiq as a dependency'
 			);
 		}
 	}//end testResolvedTreeIsStandaloneAndComplete()
@@ -122,7 +122,7 @@ final class ExporterEndToEndTest extends TestCase {
 	 * This exists because it did not. The embedded snapshot's
 	 * `appinfo/info.xml` hardcoded `<licence>agpl</licence>` while the very
 	 * same file's description read "Free and open source under the EUPL-1.2
-	 * license", so every app OpenBuild has ever generated was born declaring a
+	 * license", so every app Buildiq has ever generated was born declaring a
 	 * licence the fleet does not use — and nothing failed. The `{{license}}`
 	 * token was already wired end to end (ExportJobService -> RunExportJob ->
 	 * PlaceholderResolver, defaulting to EUPL-1.2 at all three layers) and
@@ -211,7 +211,7 @@ final class ExporterEndToEndTest extends TestCase {
 		);
 
 		$this->litter[] = $zipPath;
-		$this->litter[] = sys_get_temp_dir() . '/openbuild-work/' . $jobUuid;
+		$this->litter[] = sys_get_temp_dir() . '/buildiq-work/' . $jobUuid;
 
 		self::assertFileExists($zipPath);
 
@@ -269,9 +269,9 @@ final class ExporterEndToEndTest extends TestCase {
 			'appId' => 'melding-systeem',
 			'appNamespace' => 'MeldingSysteem',
 			'appName' => 'Melding Systeem',
-			'appDescription' => 'Exported from OpenBuild',
+			'appDescription' => 'Exported from Buildiq',
 			'appVersion' => '1.0.0',
-			'authorName' => 'OpenBuild Citizen Developer',
+			'authorName' => 'Buildiq Citizen Developer',
 			'authorEmail' => 'dev@conduction.nl',
 			'license' => 'EUPL-1.2',
 		];
@@ -299,7 +299,7 @@ final class ExporterEndToEndTest extends TestCase {
 			// The flow/agent bundler. Injected as a no-op double: these tests
 			// are about the data-register path and the ZIP mechanics, and a
 			// real one here would couple them to a second store.
-			new \OCA\OpenBuild\Service\FlowAndAgentExportBundler(
+			new \OCA\Buildiq\Service\FlowAndAgentExportBundler(
 				$this->createMock(\OCA\OpenRegister\Db\FlowMapper::class),
 				$this->createMock(\OCA\OpenRegister\Service\ObjectService::class),
 				appManager: $this->createMock(originalClassName: \OCP\App\IAppManager::class),

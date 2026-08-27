@@ -22,24 +22,24 @@
   -             — partial-merge the icon / iconDark refs on the Application record
   -             (a PUT would replace the whole object and fail validation)
   -
-  - REQ-OBICON-004 / openbuild-nextcloud-nav
+  - REQ-OBICON-004 / buildiq-nextcloud-nav
   -->
 <template>
 	<div class="ob-icon-section">
 		<h3 class="ob-icon-section__heading">
-			{{ t('openbuild', 'App icon') }}
+			{{ t('buildiq', 'App icon') }}
 		</h3>
 
 		<!-- Light icon -->
 		<div class="ob-icon-section__row">
 			<div class="ob-icon-section__label">
-				{{ t('openbuild', 'Light icon') }}
+				{{ t('buildiq', 'Light icon') }}
 			</div>
 			<div class="ob-icon-section__preview ob-icon-section__preview--light">
 				<img
 					v-if="iconLightUrl"
 					:src="iconLightUrl"
-					:alt="t('openbuild', 'Light icon preview')"
+					:alt="t('buildiq', 'Light icon preview')"
 					class="ob-icon-section__preview-img"
 					@error="onLightPreviewError" />
 				<span v-else class="ob-icon-section__preview-empty">—</span>
@@ -52,14 +52,14 @@
 					class="ob-icon-section__file-input"
 					:disabled="uploading"
 					@change="onLightFileChange" />
-				<span>{{ t('openbuild', 'Upload SVG') }}</span>
+				<span>{{ t('buildiq', 'Upload SVG') }}</span>
 			</label>
 			<button
 				v-if="lightRef"
 				class="ob-icon-section__remove-btn"
 				:disabled="uploading"
 				@click="removeLightIcon">
-				{{ t('openbuild', 'Remove') }}
+				{{ t('buildiq', 'Remove') }}
 			</button>
 			<span v-if="lightError" class="ob-icon-section__error">{{
 				lightError
@@ -69,13 +69,13 @@
 		<!-- Dark icon -->
 		<div class="ob-icon-section__row">
 			<div class="ob-icon-section__label">
-				{{ t('openbuild', 'Dark icon') }}
+				{{ t('buildiq', 'Dark icon') }}
 			</div>
 			<div class="ob-icon-section__preview ob-icon-section__preview--dark">
 				<img
 					v-if="iconDarkUrl"
 					:src="iconDarkUrl"
-					:alt="t('openbuild', 'Dark icon preview')"
+					:alt="t('buildiq', 'Dark icon preview')"
 					class="ob-icon-section__preview-img"
 					@error="onDarkPreviewError" />
 				<span v-else class="ob-icon-section__preview-empty">—</span>
@@ -88,14 +88,14 @@
 					class="ob-icon-section__file-input"
 					:disabled="uploading"
 					@change="onDarkFileChange" />
-				<span>{{ t('openbuild', 'Upload SVG') }}</span>
+				<span>{{ t('buildiq', 'Upload SVG') }}</span>
 			</label>
 			<button
 				v-if="darkRef"
 				class="ob-icon-section__remove-btn"
 				:disabled="uploading"
 				@click="removeDarkIcon">
-				{{ t('openbuild', 'Remove') }}
+				{{ t('buildiq', 'Remove') }}
 			</button>
 			<span v-if="darkError" class="ob-icon-section__error">{{
 				darkError
@@ -112,7 +112,7 @@
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 
-const REGISTER = 'openbuild'
+const REGISTER = 'buildiq'
 const SCHEMA = 'application'
 
 export default {
@@ -157,7 +157,7 @@ export default {
 		 */
 		iconLightUrl() {
 			if (!this.objectUuid) return null
-			return `/index.php/apps/openbuild/icons/${this.application.slug}.svg?v=${this.lightNonce}`
+			return `/index.php/apps/buildiq/icons/${this.application.slug}.svg?v=${this.lightNonce}`
 		},
 
 		/**
@@ -167,7 +167,7 @@ export default {
 		 */
 		iconDarkUrl() {
 			if (!this.objectUuid) return null
-			return `/index.php/apps/openbuild/icons/${this.application.slug}-dark.svg?v=${this.darkNonce}`
+			return `/index.php/apps/buildiq/icons/${this.application.slug}-dark.svg?v=${this.darkNonce}`
 		},
 	},
 
@@ -251,7 +251,7 @@ export default {
 			this.lightError = ''
 			const file = event.target.files?.[0]
 			if (!this.validateSvgFile(file)) {
-				this.lightError = t('openbuild', 'Only .svg files are accepted')
+				this.lightError = t('buildiq', 'Only .svg files are accepted')
 				this.$refs.lightInput.value = ''
 				return
 			}
@@ -271,7 +271,7 @@ export default {
 			this.darkError = ''
 			const file = event.target.files?.[0]
 			if (!this.validateSvgFile(file)) {
-				this.darkError = t('openbuild', 'Only .svg files are accepted')
+				this.darkError = t('buildiq', 'Only .svg files are accepted')
 				this.$refs.darkInput.value = ''
 				return
 			}
@@ -332,7 +332,7 @@ export default {
 			} catch (error) {
 				this.uploadError =
 					error?.response?.data?.message
-					|| t('openbuild', 'Upload failed — please try again')
+					|| t('buildiq', 'Upload failed — please try again')
 			} finally {
 				this.uploading = false
 				if (variant === 'dark') {
@@ -420,7 +420,7 @@ export default {
 					// advertising an attachment that is not there.
 					// eslint-disable-next-line no-console
 					console.warn(
-						`[openbuild] no OR attachment named ${filename}; clearing the ref only`,
+						`[buildiq] no OR attachment named ${filename}; clearing the ref only`,
 					)
 				} else {
 					const deleteUrl = generateUrl(
@@ -448,7 +448,7 @@ export default {
 			} catch (error) {
 				this.uploadError =
 					error?.response?.data?.message
-					|| t('openbuild', 'Remove failed — please try again')
+					|| t('buildiq', 'Remove failed — please try again')
 			} finally {
 				this.uploading = false
 			}

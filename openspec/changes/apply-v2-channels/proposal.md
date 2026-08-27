@@ -4,11 +4,11 @@ kind: code
 
 ## Why
 
-App-repo **format v2** added four channels to a published OpenBuild app —
+App-repo **format v2** added four channels to a published Buildiq app —
 `data-registers/`, `connectors/`, `automations/` and `skills/` — so that installing an
 app yields something that actually runs, not just a manifest.
 
-The serializer emits all four. The parser reads all four. As of openbuild#80 the fetcher
+The serializer emits all four. The parser reads all four. As of buildiq#80 the fetcher
 fetches all four. **No install path applies any of them.** They are parsed into the
 template array and dropped on the floor.
 
@@ -55,7 +55,7 @@ cannot drift apart again.
   infrastructure, and installing an app must not silently rewrite a source another app
   depends on.
 - **Skills** — delegated to hermiq's existing `POST /api/skills/bundle/install` by repo
-  **coordinates** (owner/repo/ref), which hermiq fetches itself. OpenBuild does not
+  **coordinates** (owner/repo/ref), which hermiq fetches itself. Buildiq does not
   reimplement skill installation.
 - **Automations** — same shape as connectors.
 - **Credential reporting** — `stripSecrets()` blanks secrets at publish time while keeping
@@ -71,7 +71,7 @@ Every channel is **bounded**, and truncation is **logged and reported** — neve
 An install that quietly drops half an app is precisely the failure this change exists to
 prevent.
 
-OpenBuild declares only `openregister` as a dependency. `openconnector` and `hermiq`
+Buildiq declares only `openregister` as a dependency. `openconnector` and `hermiq`
 are therefore optional: when absent, the dependent channel is skipped with a machine-
 readable reason, and the install still succeeds for the channels that can be applied.
 
@@ -84,7 +84,7 @@ readable reason, and the install still succeeds for the channels that can be app
   bounds.
 
 ### Modified Capabilities
-- `openbuild-application-register`: installing an application from a linked GitHub repo
+- `buildiq-application-register`: installing an application from a linked GitHub repo
   now provisions its bound registers and connectors, rather than only its manifest.
 
 ## Impact

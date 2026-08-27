@@ -12,7 +12,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Service
+ * @package  OCA\Buildiq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -25,14 +25,13 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Service;
+namespace OCA\Buildiq\Tests\Unit\Service;
 
-use OCA\OpenBuild\Service\ApplicationVersionService;
+use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\RegisterService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -94,7 +93,7 @@ class ApplicationVersionServiceTest extends TestCase {
 			objectService: $this->objectService,
 			registerService: $this->registerService,
 			registerMapper: $this->registerMapper,
-			automationCompiler: $this->createMock(\OCA\OpenBuild\Service\AutomationCompilerService::class),
+			automationCompiler: $this->createMock(\OCA\Buildiq\Service\AutomationCompilerService::class),
 		);
 	}//end setUp()
 

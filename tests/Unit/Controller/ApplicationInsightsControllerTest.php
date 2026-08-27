@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests for ApplicationInsightsController (spec openbuild-app-detail-overview /
+ * Unit tests for ApplicationInsightsController (spec buildiq-app-detail-overview /
  * capability application-insights, REQ-OBAI-001 / REQ-OBAI-006).
  *
  * Covers:
@@ -14,7 +14,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Controller
+ * @package  OCA\Buildiq\Tests\Unit\Controller
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -27,10 +27,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Controller;
+namespace OCA\Buildiq\Tests\Unit\Controller;
 
-use OCA\OpenBuild\Controller\ApplicationInsightsController;
-use OCA\OpenBuild\Service\ApplicationInsightsService;
+use OCA\Buildiq\Controller\ApplicationInsightsController;
+use OCA\Buildiq\Service\ApplicationInsightsService;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
 use OCP\IUserSession;

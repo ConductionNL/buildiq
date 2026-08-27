@@ -1,15 +1,15 @@
 <?php
 
 /**
- * OpenBuild Application
+ * Buildiq Application
  *
- * Main application class for the OpenBuild Nextcloud app.
+ * Main application class for the Buildiq Nextcloud app.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category AppInfo
- * @package  OCA\OpenBuild\AppInfo
+ * @package  OCA\Buildiq\AppInfo
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,26 +22,26 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\AppInfo;
+namespace OCA\Buildiq\AppInfo;
 
-use OCA\OpenBuild\Capabilities;
-use OCA\OpenBuild\Controller\DashboardController;
-use OCA\OpenBuild\Controller\PreferencesController;
-use OCA\OpenBuild\Controller\SettingsController;
-use OCA\OpenBuild\Lifecycle\ApplicationVersionOwnerGuard;
-use OCA\OpenBuild\Listener\ApprovalOutcomeListener;
-use OCA\OpenBuild\Listener\AutomationApprovalTriggerListener;
-use OCA\OpenBuild\Listener\AutomationCleanupListener;
-use OCA\OpenBuild\Listener\DocumentGenerationListener;
-use OCA\OpenBuild\Listener\HybridMetadataLockListener;
-use OCA\OpenBuild\Listener\ProductionVersionGuardListener;
-use OCA\OpenBuild\Mcp\OpenBuildToolProvider;
-use OCA\OpenBuild\Repair\InitializeSettings;
-use OCA\OpenBuild\Sections\SettingsSection;
-use OCA\OpenBuild\Service\AppNavigationService;
-use OCA\OpenBuild\Service\PermissionResolver;
-use OCA\OpenBuild\Service\SettingsService;
-use OCA\OpenBuild\Settings\AdminSettings;
+use OCA\Buildiq\Capabilities;
+use OCA\Buildiq\Controller\DashboardController;
+use OCA\Buildiq\Controller\PreferencesController;
+use OCA\Buildiq\Controller\SettingsController;
+use OCA\Buildiq\Lifecycle\ApplicationVersionOwnerGuard;
+use OCA\Buildiq\Listener\ApprovalOutcomeListener;
+use OCA\Buildiq\Listener\AutomationApprovalTriggerListener;
+use OCA\Buildiq\Listener\AutomationCleanupListener;
+use OCA\Buildiq\Listener\DocumentGenerationListener;
+use OCA\Buildiq\Listener\HybridMetadataLockListener;
+use OCA\Buildiq\Listener\ProductionVersionGuardListener;
+use OCA\Buildiq\Mcp\BuildiqToolProvider;
+use OCA\Buildiq\Repair\InitializeSettings;
+use OCA\Buildiq\Sections\SettingsSection;
+use OCA\Buildiq\Service\AppNavigationService;
+use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Service\SettingsService;
+use OCA\Buildiq\Settings\AdminSettings;
 use OCA\OpenRegister\AppHost\Bootstrap;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Event\ApprovalStepApprovedEvent;
@@ -67,12 +67,12 @@ use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
 
 /**
- * Main application class for the OpenBuild Nextcloud app.
+ * Main application class for the Buildiq Nextcloud app.
  *
  * @spec openspec/specs/openbuild-rbac/spec.md
  */
 class Application extends App implements IBootstrap {
-	public const APP_ID = 'openbuild';
+	public const APP_ID = 'buildiq';
 
 	/**
 	 * Constructor for the Application class.
@@ -132,7 +132,7 @@ class Application extends App implements IBootstrap {
 		// below — silently disabling the per-Application RBAC guards and the
 		// hybrid metadata-lock (so a hybrid app's immutable identity fields would
 		// become writable). Skip the generic AppHost plumbing when it is absent
-		// and fall through to OpenBuild's own concrete controllers + listeners,
+		// and fall through to Buildiq's own concrete controllers + listeners,
 		// which is what this app actually relies on (the comment that the lazy
 		// closures "never fatal NC bootstrap" only held for the closures, not for
 		// resolving the Bootstrap class itself).
@@ -141,11 +141,11 @@ class Application extends App implements IBootstrap {
 		// sort()s the app list, and Coordinator::registerApps() walks THAT sorted
 		// list calling OC_App::registerAutoloading($appId) and then $app->register()
 		// for one app at a time. So every app registers before the PSR-4 prefix of
-		// every alphabetically-LATER app exists: `openbuild` < `openregister`, so
+		// every alphabetically-LATER app exists: `buildiq` < `openregister`, so
 		// OCA\OpenRegister\ is not autoloadable at this point on a perfectly
 		// healthy instance with OpenRegister enabled.
 		//
-		// That is what actually happened here, under the CLI SAPI: `OpenBuild:
+		// That is what actually happened here, under the CLI SAPI: `Buildiq:
 		// OpenRegister AppHost\Bootstrap is not autoloadable` was logged on EVERY
 		// occ call in CI (3 per E2E run, run 31081906401) while
 		// lib/AppHost/Bootstrap.php existed on OpenRegister all along. The
@@ -182,8 +182,8 @@ class Application extends App implements IBootstrap {
 				$context,
 				self::APP_ID,
 				[
-					'namespace' => 'OCA\\OpenBuild',
-					'sectionName' => 'OpenBuild',
+					'namespace' => 'OCA\\Buildiq',
+					'sectionName' => 'Buildiq',
 					'observability' => true,
 				]
 			);
@@ -204,7 +204,7 @@ class Application extends App implements IBootstrap {
 		// read instead — /api/health, wired by `observability => true` and bound
 		// below regardless of load order. Same choice doriath made.
 		//
-		// OpenBuild keeps three concrete controllers + the settings service that
+		// Buildiq keeps three concrete controllers + the settings service that
 		// the AppHost generics cannot cover on OpenRegister `development` (see
 		// openspec/changes/adopt-apphost/design.md "Engine reality"):
 		//
@@ -219,12 +219,12 @@ class Application extends App implements IBootstrap {
 		// AppHostSettingsService::loadConfiguration() calls OR's
 		// ConfigurationService::importFromApp() with a 2-argument signature
 		// that no longer matches `development` (4 required args) and performs
-		// no ADR-037 `register.d/` fragment merge, which OpenBuild relies on
+		// no ADR-037 `register.d/` fragment merge, which Buildiq relies on
 		// (10-business-rules.json). The bespoke SettingsController also
 		// enforces body-level admin guards on create()/load().
 		//
 		// Re-registering these concrete classes AFTER Bootstrap::register lets
-		// NC's DI container resolve the leaf class names to the real OpenBuild
+		// NC's DI container resolve the leaf class names to the real Buildiq
 		// controllers (last registration wins), so the canonical routes keep
 		// working while everything else is generic.
 		$context->registerService(
@@ -245,7 +245,7 @@ class Application extends App implements IBootstrap {
 				userSession: $c->get('OCP\\IUserSession')
 			)
 		);
-		// SettingsService — bind the concrete OpenBuild implementation so it wins
+		// SettingsService — bind the concrete Buildiq implementation so it wins
 		// over the generic AppHost binding (last registration wins). When
 		// Bootstrap::register ran (above), it aliases this leaf class name to
 		// OpenRegister's generic AppHostSettingsService, whose loadConfiguration()
@@ -255,11 +255,11 @@ class Application extends App implements IBootstrap {
 		// factory below also resolves `$c->get(SettingsService::class)` to the
 		// generic AppHostSettingsService and fatals with a TypeError (constructor
 		// arg #2 type mismatch), 500-ing `GET /api/settings` and leaving the app
-		// detail page in its empty fallback ("Untitled application", `openbuild--`
+		// detail page in its empty fallback ("Untitled application", `buildiq--`
 		// register). On the app-enable/install path the InitializeSettings repair
 		// step resolves THIS class directly, so under the generic binding the
 		// register import fails with "importFromApp(): Argument #2 ($data) not
-		// passed" — leaving the openbuild register uncreated until a manual
+		// passed" — leaving the buildiq register uncreated until a manual
 		// re-import. Registering the concrete class here (mirroring the controllers
 		// above) guarantees every caller — the InitializeSettings repair step AND
 		// SettingsController — uses the correct 4-arg importer + fragment merge on
@@ -275,15 +275,15 @@ class Application extends App implements IBootstrap {
 				logger: $c->get('Psr\\Log\\LoggerInterface')
 			)
 		);
-		// InitializeSettings repair step — bind OpenBuild's own class so it wins
+		// InitializeSettings repair step — bind Buildiq's own class so it wins
 		// over the generic AppHost binding (last registration wins). Bootstrap
 		// above re-registers this exact class name to OpenRegister's
 		// GenericInitializeSettings, which imports via the broken generic
 		// AppHostSettingsService (2-arg importFromApp) and does NO register.d/
-		// fragment merge. info.xml declares OCA\OpenBuild\Repair\InitializeSettings
+		// fragment merge. info.xml declares OCA\Buildiq\Repair\InitializeSettings
 		// as an <install>/<post-migration> step; NC's repair runner resolves that
 		// class name through the container, so without this the generic (failing)
-		// step runs on install and the openbuild register is never created.
+		// step runs on install and the buildiq register is never created.
 		// Re-registering the concrete step here makes install use the correct
 		// 4-arg importer + fragment merge (via the concrete SettingsService above).
 		$context->registerService(
@@ -310,19 +310,19 @@ class Application extends App implements IBootstrap {
 		// that are NOT autowireable — they MUST be bound by a service factory.
 		// Bootstrap::register() normally binds them, but when Bootstrap is not
 		// autoloadable at register() time (it lives in OCA\OpenRegister and that
-		// app's autoloader is not guaranteed to be registered before OpenBuild
-		// boots — `openbuild` sorts before `openregister`), the else branch above
+		// app's autoloader is not guaranteed to be registered before Buildiq
+		// boots — `buildiq` sorts before `openregister`), the else branch above
 		// skips it. NC's settings Manager instantiates EVERY registered section to
 		// render ANY settings page, so an unbound `sectionId` throws
 		// QueryNotFoundException that escapes NC's catch and blanks ALL admin AND
-		// personal settings pages instance-wide (not just OpenBuild's). Register
+		// personal settings pages instance-wide (not just Buildiq's). Register
 		// the leaf classes unconditionally here with Bootstrap's exact defaults so
 		// they resolve regardless of app load order (last registration wins).
 		$context->registerService(
 			SettingsSection::class,
 			static fn ($c): SettingsSection => new SettingsSection(
 				sectionId: self::APP_ID,
-				name: 'OpenBuild',
+				name: 'Buildiq',
 				appId: self::APP_ID,
 				iconFile: 'app-dark.svg',
 				priority: 75,
@@ -348,11 +348,11 @@ class Application extends App implements IBootstrap {
 		// evaluated at request-routing time, by which point OpenRegister's
 		// autoloader IS registered — so the routes always exist. The controllers
 		// behind them, however, are only bound by Bootstrap::register(), which
-		// the guard above skips because `openbuild` sorts before `openregister`
+		// the guard above skips because `buildiq` sorts before `openregister`
 		// and OR is not autoloadable that early. The result is a routed endpoint
 		// with no controller: GET /api/health and GET /api/metrics both 500.
 		//
-		// OpenBuild has no concrete Health/MetricsController of its own (ADR-040
+		// Buildiq has no concrete Health/MetricsController of its own (ADR-040
 		// moved them to the AppHost engine), so bind the leaf class names to the
 		// generic implementations here, mirroring Bootstrap::registerControllers.
 		// The OpenRegister class names are referenced as STRINGS and every
@@ -360,7 +360,7 @@ class Application extends App implements IBootstrap {
 		// OCA\OpenRegister namespace until the container resolves the controller
 		// at request time — deferring the binding instead of guarding at boot.
 		$context->registerService(
-			'OCA\\OpenBuild\\Controller\\HealthController',
+			'OCA\\Buildiq\\Controller\\HealthController',
 			static function ($c) {
 				$class = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericHealthController';
 				return new $class(
@@ -372,7 +372,7 @@ class Application extends App implements IBootstrap {
 			}
 		);
 		$context->registerService(
-			'OCA\\OpenBuild\\Controller\\MetricsController',
+			'OCA\\Buildiq\\Controller\\MetricsController',
 			static function ($c) {
 				$class = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericMetricsController';
 				return new $class(
@@ -390,7 +390,7 @@ class Application extends App implements IBootstrap {
 		// been removed in favour of an explicit `productionVersion` relation
 		// set by the admin. Object time-travel on the ApplicationVersion row
 		// captures audit history. The corresponding spec retirement lives
-		// in openbuild-versioning-model/specs/openbuild-version-snapshots.
+		// in buildiq-versioning-model/specs/buildiq-version-snapshots.
 		// Cross-row integrity guard: on every Application save (create or
 		// update), verify that `productionVersion` (when set) points at an
 		// ApplicationVersion whose `application` relation refers back to
@@ -504,17 +504,17 @@ class Application extends App implements IBootstrap {
 			listener: DocumentGenerationListener::class
 		);
 
-		// Register OpenBuildToolProvider as the MCP tool provider for the AI Chat Companion.
-		// The alias key 'OCA\OpenRegister\Mcp\IMcpToolProvider::openbuild' is the format
+		// Register BuildiqToolProvider as the MCP tool provider for the AI Chat Companion.
+		// The alias key 'OCA\OpenRegister\Mcp\IMcpToolProvider::buildiq' is the format
 		// that OR's McpToolsService enumerates to discover per-app providers (hydra ADR-035).
 		// The interface ships in openregister PR #1466 (ai-chat-companion-orchestrator);
-		// until then OpenBuild implements the test stub at tests/Stubs/Mcp/IMcpToolProvider.php.
+		// until then Buildiq implements the test stub at tests/Stubs/Mcp/IMcpToolProvider.php.
 		$context->registerServiceAlias(
-			'OCA\\OpenRegister\\Mcp\\IMcpToolProvider::openbuild',
-			OpenBuildToolProvider::class
+			'OCA\\OpenRegister\\Mcp\\IMcpToolProvider::buildiq',
+			BuildiqToolProvider::class
 		);
 
-		// Per-Application RBAC lifecycle guard (ADR-022/ADR-023; openbuild-rbac).
+		// Per-Application RBAC lifecycle guard (ADR-022/ADR-023; buildiq-rbac).
 		// OpenRegister's LifecycleGuardRegistry resolves the destructive
 		// ApplicationVersion transitions' `requires` tag — keyed by this guard's
 		// FQCN in the schema's x-openregister-lifecycle.transitions[*].requires —
@@ -534,8 +534,8 @@ class Application extends App implements IBootstrap {
 			}
 		);
 
-		// Edit-availability capability (openbuild-inline-edit-persistence, spec
-		// openbuild-capability). Advertises `{ openbuild: { enabled, canEdit } }`
+		// Edit-availability capability (buildiq-inline-edit-persistence, spec
+		// buildiq-capability). Advertises `{ buildiq: { enabled, canEdit } }`
 		// so a fleet app's in-place edit button has a robust per-user signal
 		// (IAppManager::isEnabledForUser respects the NC app group-restriction)
 		// instead of inferring availability from OC.appswebroots. `canEdit` is a
@@ -551,7 +551,7 @@ class Application extends App implements IBootstrap {
 	 * OpenRegister's `ObjectEventSubscription` records the register/schema slugs
 	 * a listener reacts to and routes dispatches through a single shared proxy,
 	 * so an uninterested listener is neither constructed nor invoked. When
-	 * OpenRegister is absent — OpenBuild carries no hard dependency on it — this
+	 * OpenRegister is absent — Buildiq carries no hard dependency on it — this
 	 * degrades to the plain global registration it replaced, which is exactly
 	 * the behaviour every listener had before.
 	 *
@@ -606,7 +606,7 @@ class Application extends App implements IBootstrap {
 	 * Boot the application.
 	 *
 	 * Registers per-published-app top-bar navigation entries via
-	 * AppNavigationService (REQ-OBNAV-001 / openbuild-nextcloud-nav).
+	 * AppNavigationService (REQ-OBNAV-001 / buildiq-nextcloud-nav).
 	 * Lazily resolved from the DI container to avoid instantiating the
 	 * service tree when OR is not installed.
 	 *
@@ -628,9 +628,9 @@ class Application extends App implements IBootstrap {
 		// `$schema !== ApplicationVersionService::APPLICATION_SCHEMA` (= the
 		// `application` schema slug), read off the entity's own
 		// `getSchemaSlug()`. Registered globally it woke on every object write
-		// on the instance. No register is declared on purpose — OpenBuild
+		// on the instance. No register is declared on purpose — Buildiq
 		// creates registers dynamically, one per built app and environment
-		// (`openbuild-pet-store-production`, `openbuild-library-desk-development`,
+		// (`buildiq-pet-store-production`, `buildiq-library-desk-development`,
 		// …), so a static register list could never cover a register that does
 		// not exist yet. Schema-only is exactly the handler's own guard.
 		$this->registerFilteredObjectListener(
@@ -652,7 +652,7 @@ class Application extends App implements IBootstrap {
 		// `$schema !== AutomationCompilerService::AUTOMATION_SCHEMA` (= the
 		// `automation` schema slug), read off the entity's own
 		// `getSchemaSlug()`. Schema-only, no register — see the
-		// ProductionVersionGuardListener note above on OpenBuild's dynamically
+		// ProductionVersionGuardListener note above on Buildiq's dynamically
 		// created per-app registers.
 		$this->registerFilteredObjectListener(
 			dispatcher: $dispatcher,
@@ -670,7 +670,7 @@ class Application extends App implements IBootstrap {
 			// Boot must never throw — log and continue.
 			// OpenRegister may not be installed on this instance.
 			\OCP\Server::get(LoggerInterface::class)->warning(
-				'OpenBuild: nav-entry registration failed during boot: ' . $e->getMessage(),
+				'Buildiq: nav-entry registration failed during boot: ' . $e->getMessage(),
 				['exception' => $e]
 			);
 		}//end try

@@ -10,14 +10,14 @@
  * Strategy: a dependency is auto-ADDED when ≥1 binding for the app exists,
  * and auto-REMOVED when the last binding is gone — but ONLY entries this
  * layer added are tracked for removal, via a non-enumerable marker on the
- * manifest (`_openbuildAutoDeps`). A dependency a builder added manually (or
+ * manifest (`_buildiqAutoDeps`). A dependency a builder added manually (or
  * that predates this layer) is never silently removed.
  *
  * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-006
  * @spec openspec/changes/openconnector-api-sources/tasks.md#task-5.1
  */
 
-const MARKER = '_openbuildAutoDeps'
+const MARKER = '_buildiqAutoDeps'
 
 /**
  * Whether the manifest declares at least one workflow attachment.

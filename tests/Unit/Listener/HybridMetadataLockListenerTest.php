@@ -12,7 +12,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Listener
+ * @package  OCA\Buildiq\Tests\Unit\Listener
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -27,9 +27,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Listener;
+namespace OCA\Buildiq\Tests\Unit\Listener;
 
-use OCA\OpenBuild\Listener\HybridMetadataLockListener;
+use OCA\Buildiq\Listener\HybridMetadataLockListener;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -73,7 +73,7 @@ class HybridMetadataLockListenerTest extends TestCase {
 
 		self::assertTrue($event->isPropagationStopped());
 		self::assertSame(422, $event->getErrors()['status']);
-		self::assertSame('openbuild.hybrid_metadata.locked', $event->getErrors()['code']);
+		self::assertSame('buildiq.hybrid_metadata.locked', $event->getErrors()['code']);
 
 	}//end testRejectsSlugChangeOnHybrid()
 

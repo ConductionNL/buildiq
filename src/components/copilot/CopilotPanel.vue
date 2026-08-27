@@ -24,7 +24,7 @@
 			v-if="agentId"
 			data-testid="copilot-acting-as"
 			class="copilot-panel__acting-as">
-			<strong>{{ t('openbuild', 'Acting as:') }} {{ name || agentId }}</strong>
+			<strong>{{ t('buildiq', 'Acting as:') }} {{ name || agentId }}</strong>
 			<span
 				v-if="instructions"
 				class="copilot-panel__acting-as-instructions"
@@ -66,13 +66,13 @@
 				:disabled="inputDisabled"
 				:placeholder="
 					t(
-						'openbuild',
+						'buildiq',
 						'Ask the copilot to add a page, widget, or menu item…',
 					)
 				"
 				:aria-label="
 					t(
-						'openbuild',
+						'buildiq',
 						'Ask the copilot to add a page, widget, or menu item…',
 					)
 				"
@@ -82,7 +82,7 @@
 				variant="primary"
 				:disabled="inputDisabled || !draft.trim()"
 				@click="onSend">
-				{{ t('openbuild', 'Send') }}
+				{{ t('buildiq', 'Send') }}
 			</NcButton>
 		</div>
 	</div>

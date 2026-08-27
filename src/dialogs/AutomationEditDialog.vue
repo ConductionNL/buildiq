@@ -17,38 +17,38 @@
 		size="large"
 		:name="
 			editing
-				? t('openbuild', 'Edit automation')
-				: t('openbuild', 'New automation')
+				? t('buildiq', 'Edit automation')
+				: t('buildiq', 'New automation')
 		"
 		@close="onClose">
 		<div class="automation-edit">
 			<h2 class="automation-edit__title">
 				{{
 					editing
-						? t('openbuild', 'Edit automation')
-						: t('openbuild', 'New automation')
+						? t('buildiq', 'Edit automation')
+						: t('buildiq', 'New automation')
 				}}
 			</h2>
 
 			<NcTextField
 				:modelValue="name"
-				:label="t('openbuild', 'Name')"
+				:label="t('buildiq', 'Name')"
 				@update:modelValue="onNameInput" />
 			<p class="automation-edit__hint">
-				{{ t('openbuild', 'Identifier') }}:
+				{{ t('buildiq', 'Identifier') }}:
 				<code>{{ derivedSlug || '—' }}</code>
 			</p>
 			<NcTextField
 				:modelValue="description"
-				:label="t('openbuild', 'Description (optional)')"
+				:label="t('buildiq', 'Description (optional)')"
 				@update:modelValue="description = $event" />
 
 			<!-- Trigger -->
 			<section class="automation-edit__section">
-				<h3>{{ t('openbuild', 'Trigger') }}</h3>
+				<h3>{{ t('buildiq', 'Trigger') }}</h3>
 				<NcSelect
 					v-model="triggerOption"
-					:inputLabel="t('openbuild', 'When')"
+					:inputLabel="t('buildiq', 'When')"
 					:options="triggerOptions"
 					:clearable="false"
 					label="label"
@@ -59,7 +59,7 @@
 					<NcSelect
 						v-if="schemaPickerAvailable"
 						v-model="schemaOption"
-						:inputLabel="t('openbuild', 'Schema')"
+						:inputLabel="t('buildiq', 'Schema')"
 						:options="schemaOptions"
 						:loading="schemaLoading"
 						label="label"
@@ -67,7 +67,7 @@
 					<NcTextField
 						v-else
 						:modelValue="triggerSchema"
-						:label="t('openbuild', 'Schema slug')"
+						:label="t('buildiq', 'Schema slug')"
 						@update:modelValue="triggerSchema = $event" />
 				</template>
 
@@ -75,41 +75,41 @@
 					<NcSelect
 						v-if="transitionPickerAvailable"
 						v-model="transitionOption"
-						:inputLabel="t('openbuild', 'Transition')"
+						:inputLabel="t('buildiq', 'Transition')"
 						:options="transitionOptions"
 						:loading="transitionLoading"
 						label="label" />
 					<NcTextField
 						v-else
 						:modelValue="triggerTransition"
-						:label="t('openbuild', 'Transition action name')"
+						:label="t('buildiq', 'Transition action name')"
 						@update:modelValue="triggerTransition = $event" />
 				</template>
 
 				<template v-if="triggerType === 'schedule'">
 					<NcSelect
 						v-model="cadenceOption"
-						:inputLabel="t('openbuild', 'Cadence')"
+						:inputLabel="t('buildiq', 'Cadence')"
 						:options="cadenceOptions"
 						:clearable="false"
 						label="label" />
 					<NcTextField
 						v-if="isCustomCron"
 						:modelValue="triggerCron"
-						:label="t('openbuild', 'Cron expression (5 fields)')"
+						:label="t('buildiq', 'Cron expression (5 fields)')"
 						@update:modelValue="triggerCron = $event" />
 					<NcTextField
 						v-if="isCustomInterval"
 						:modelValue="String(triggerInterval)"
 						type="number"
-						:label="t('openbuild', 'Interval (seconds)')"
+						:label="t('buildiq', 'Interval (seconds)')"
 						@update:modelValue="triggerInterval = Number($event)" />
 				</template>
 			</section>
 
 			<!-- Condition -->
 			<section class="automation-edit__section">
-				<h3>{{ t('openbuild', 'Condition (optional)') }}</h3>
+				<h3>{{ t('buildiq', 'Condition (optional)') }}</h3>
 				<NcNoteCard
 					v-if="conditionBlockedReason"
 					type="warning"
@@ -119,19 +119,19 @@
 				<template v-else>
 					<NcSelect
 						v-model="conditionKindOption"
-						:inputLabel="t('openbuild', 'Condition type')"
+						:inputLabel="t('buildiq', 'Condition type')"
 						:options="conditionKindOptions"
 						label="label" />
 					<NcTextField
 						v-if="conditionKind === 'feel'"
 						:modelValue="conditionExpression"
-						:label="t('openbuild', 'FEEL expression')"
+						:label="t('buildiq', 'FEEL expression')"
 						placeholder="payload.amount > 1000"
 						@update:modelValue="conditionExpression = $event" />
 					<NcTextField
 						v-if="conditionKind === 'rule-set'"
 						:modelValue="conditionRuleSetSlug"
-						:label="t('openbuild', 'Rule set slug')"
+						:label="t('buildiq', 'Rule set slug')"
 						@update:modelValue="conditionRuleSetSlug = $event" />
 				</template>
 			</section>
@@ -139,14 +139,14 @@
 			<!-- Actions -->
 			<section class="automation-edit__section">
 				<div class="automation-edit__section-header">
-					<h3>{{ t('openbuild', 'Actions') }}</h3>
+					<h3>{{ t('buildiq', 'Actions') }}</h3>
 					<NcButton @click="addAction">
-						{{ t('openbuild', 'Add action') }}
+						{{ t('buildiq', 'Add action') }}
 					</NcButton>
 				</div>
 
 				<p v-if="actions.length === 0" class="automation-edit__hint">
-					{{ t('openbuild', 'No actions yet.') }}
+					{{ t('buildiq', 'No actions yet.') }}
 				</p>
 
 				<div
@@ -156,7 +156,7 @@
 					data-testid="action-row">
 					<NcSelect
 						:modelValue="actionTypeOption(action.type)"
-						:inputLabel="t('openbuild', 'Action type')"
+						:inputLabel="t('buildiq', 'Action type')"
 						:options="actionTypeOptions"
 						:clearable="false"
 						label="label"
@@ -172,13 +172,13 @@
 					<template v-else-if="action.type === 'send-notification'">
 						<NcTextField
 							:modelValue="action.subjectEn"
-							:label="t('openbuild', 'Subject (English)')"
+							:label="t('buildiq', 'Subject (English)')"
 							@update:modelValue="
 								updateAction(index, 'subjectEn', $event)
 							" />
 						<NcTextField
 							:modelValue="action.subjectNl"
-							:label="t('openbuild', 'Subject (Dutch)')"
+							:label="t('buildiq', 'Subject (Dutch)')"
 							@update:modelValue="
 								updateAction(index, 'subjectNl', $event)
 							" />
@@ -188,7 +188,7 @@
 						<NcSelect
 							v-if="syncPickerAvailable"
 							:modelValue="syncOption(action.synchronizationId)"
-							:inputLabel="t('openbuild', 'Synchronization')"
+							:inputLabel="t('buildiq', 'Synchronization')"
 							:options="syncOptions"
 							:loading="syncLoading"
 							label="label"
@@ -196,7 +196,7 @@
 						<NcTextField
 							v-else
 							:modelValue="action.synchronizationId"
-							:label="t('openbuild', 'Synchronization id')"
+							:label="t('buildiq', 'Synchronization id')"
 							@update:modelValue="
 								updateAction(index, 'synchronizationId', $event)
 							" />
@@ -205,7 +205,7 @@
 					<template v-else-if="action.type === 'object-op'">
 						<NcSelect
 							v-model="objectOpOperationOption[index]"
-							:inputLabel="t('openbuild', 'Operation')"
+							:inputLabel="t('buildiq', 'Operation')"
 							:options="objectOpOperationOptions"
 							:clearable="false"
 							label="label"
@@ -218,13 +218,13 @@
 							" />
 						<NcTextField
 							:modelValue="action.schema"
-							:label="t('openbuild', 'Target schema')"
+							:label="t('buildiq', 'Target schema')"
 							@update:modelValue="
 								updateAction(index, 'schema', $event)
 							" />
 						<NcTextArea
 							:modelValue="action.fieldMappingText"
-							:label="t('openbuild', 'Field mapping (JSON)')"
+							:label="t('buildiq', 'Field mapping (JSON)')"
 							@update:modelValue="
 								updateAction(index, 'fieldMappingText', $event)
 							" />
@@ -233,13 +233,13 @@
 					<template v-else-if="action.type === 'webhook'">
 						<NcTextField
 							:modelValue="action.url"
-							:label="t('openbuild', 'Webhook URL')"
+							:label="t('buildiq', 'Webhook URL')"
 							@update:modelValue="
 								updateAction(index, 'url', $event)
 							" />
 						<NcTextArea
 							:modelValue="action.payloadTemplateText"
-							:label="t('openbuild', 'Payload template (JSON)')"
+							:label="t('buildiq', 'Payload template (JSON)')"
 							@update:modelValue="
 								updateAction(index, 'payloadTemplateText', $event)
 							" />
@@ -249,7 +249,7 @@
 						<NcSelect
 							v-if="groupPickerAvailable"
 							:modelValue="groupOption(action.assigneeGroup)"
-							:inputLabel="t('openbuild', 'Assignee group')"
+							:inputLabel="t('buildiq', 'Assignee group')"
 							:options="groupOptions"
 							:loading="groupLoading"
 							label="label"
@@ -257,21 +257,21 @@
 						<NcTextField
 							v-else
 							:modelValue="action.assigneeGroup"
-							:label="t('openbuild', 'Assignee group id')"
+							:label="t('buildiq', 'Assignee group id')"
 							@update:modelValue="
 								updateAction(index, 'assigneeGroup', $event)
 							" />
 
 						<AutomationActionListEditor
 							:modelValue="action.onApprove"
-							:label="t('openbuild', 'On approve')"
+							:label="t('buildiq', 'On approve')"
 							data-testid="on-approve-editor"
 							@update:modelValue="
 								updateAction(index, 'onApprove', $event)
 							" />
 						<AutomationActionListEditor
 							:modelValue="action.onReject"
-							:label="t('openbuild', 'On reject')"
+							:label="t('buildiq', 'On reject')"
 							data-testid="on-reject-editor"
 							@update:modelValue="
 								updateAction(index, 'onReject', $event)
@@ -282,7 +282,7 @@
 						<NcSelect
 							v-if="templatePickerAvailable"
 							:modelValue="templateOption(action.templateId)"
-							:inputLabel="t('openbuild', 'Document template')"
+							:inputLabel="t('buildiq', 'Document template')"
 							:options="docudeskTemplateOptions"
 							:loading="docudeskTemplatesLoading"
 							label="label"
@@ -291,14 +291,14 @@
 						<NcTextField
 							v-else
 							:modelValue="action.templateId"
-							:label="t('openbuild', 'Template id')"
+							:label="t('buildiq', 'Template id')"
 							data-testid="generate-document-template-text"
 							@update:modelValue="
 								updateAction(index, 'templateId', $event)
 							" />
 						<NcSelect
 							:modelValue="outputModeSelection(action)"
-							:inputLabel="t('openbuild', 'Output')"
+							:inputLabel="t('buildiq', 'Output')"
 							:options="outputModeOptions"
 							:multiple="true"
 							:clearable="false"
@@ -311,9 +311,9 @@
 
 					<NcButton
 						variant="error"
-						:aria-label="t('openbuild', 'Remove action')"
+						:aria-label="t('buildiq', 'Remove action')"
 						@click="removeAction(index)">
-						{{ t('openbuild', 'Remove') }}
+						{{ t('buildiq', 'Remove') }}
 					</NcButton>
 				</div>
 			</section>
@@ -330,10 +330,10 @@
 
 			<div class="automation-edit__actions">
 				<NcButton @click="onClose">
-					{{ t('openbuild', 'Cancel') }}
+					{{ t('buildiq', 'Cancel') }}
 				</NcButton>
 				<NcButton variant="primary" :disabled="saving" @click="onSave">
-					{{ saving ? t('openbuild', 'Saving…') : t('openbuild', 'Save') }}
+					{{ saving ? t('buildiq', 'Saving…') : t('buildiq', 'Save') }}
 				</NcButton>
 			</div>
 		</div>
@@ -477,17 +477,20 @@ export default {
 			return slugify(this.name)
 		},
 
+		/**
+		 * @spec openspec/specs/automation-designer/spec.md
+		 */
 		triggerOptions() {
 			return [
-				{ value: 'object-created', label: t('openbuild', 'Object created') },
-				{ value: 'object-updated', label: t('openbuild', 'Object updated') },
-				{ value: 'object-deleted', label: t('openbuild', 'Object deleted') },
+				{ value: 'object-created', label: t('buildiq', 'Object created') },
+				{ value: 'object-updated', label: t('buildiq', 'Object updated') },
+				{ value: 'object-deleted', label: t('buildiq', 'Object deleted') },
 				{
 					value: 'lifecycle-transition',
-					label: t('openbuild', 'Lifecycle transition'),
+					label: t('buildiq', 'Lifecycle transition'),
 				},
-				{ value: 'schedule', label: t('openbuild', 'Cron schedule') },
-				{ value: 'manual', label: t('openbuild', 'Manual') },
+				{ value: 'schedule', label: t('buildiq', 'Cron schedule') },
+				{ value: 'manual', label: t('buildiq', 'Manual') },
 			]
 		},
 
@@ -510,16 +513,19 @@ export default {
 			)
 		},
 
+		/**
+		 * @spec openspec/specs/automation-designer/spec.md
+		 */
 		cadenceOptions() {
 			return [
-				{ id: 'hourly', label: t('openbuild', 'Hourly') },
-				{ id: 'daily', label: t('openbuild', 'Daily') },
-				{ id: 'weekly', label: t('openbuild', 'Weekly') },
-				{ id: 'monthly', label: t('openbuild', 'Monthly') },
-				{ id: 'custom-cron', label: t('openbuild', 'Custom (cron)') },
+				{ id: 'hourly', label: t('buildiq', 'Hourly') },
+				{ id: 'daily', label: t('buildiq', 'Daily') },
+				{ id: 'weekly', label: t('buildiq', 'Weekly') },
+				{ id: 'monthly', label: t('buildiq', 'Monthly') },
+				{ id: 'custom-cron', label: t('buildiq', 'Custom (cron)') },
 				{
 					id: 'custom-interval',
-					label: t('openbuild', 'Custom interval (seconds)'),
+					label: t('buildiq', 'Custom interval (seconds)'),
 				},
 			]
 		},
@@ -532,11 +538,14 @@ export default {
 			return this.cadenceOption && this.cadenceOption.id === 'custom-interval'
 		},
 
+		/**
+		 * @spec openspec/specs/automation-designer/spec.md
+		 */
 		conditionKindOptions() {
 			return [
-				{ value: 'none', label: t('openbuild', 'None') },
-				{ value: 'feel', label: t('openbuild', 'FEEL expression') },
-				{ value: 'rule-set', label: t('openbuild', 'Reference a rule set') },
+				{ value: 'none', label: t('buildiq', 'None') },
+				{ value: 'feel', label: t('buildiq', 'FEEL expression') },
+				{ value: 'rule-set', label: t('buildiq', 'Reference a rule set') },
 			]
 		},
 
@@ -558,21 +567,21 @@ export default {
 			return [
 				{
 					value: 'send-notification',
-					label: t('openbuild', 'Send notification'),
+					label: t('buildiq', 'Send notification'),
 				},
 				{
 					value: 'run-synchronization',
-					label: t('openbuild', 'Run a synchronization'),
+					label: t('buildiq', 'Run a synchronization'),
 				},
 				{
 					value: 'object-op',
-					label: t('openbuild', 'Create/update an object'),
+					label: t('buildiq', 'Create/update an object'),
 				},
-				{ value: 'webhook', label: t('openbuild', 'Webhook') },
-				{ value: 'approval', label: t('openbuild', 'Require approval') },
+				{ value: 'webhook', label: t('buildiq', 'Webhook') },
+				{ value: 'approval', label: t('buildiq', 'Require approval') },
 				{
 					value: 'generateDocument',
-					label: t('openbuild', 'Generate document'),
+					label: t('buildiq', 'Generate document'),
 				},
 			]
 		},
@@ -601,9 +610,9 @@ export default {
 		 */
 		outputModeOptions() {
 			return [
-				{ value: 'attach', label: t('openbuild', 'Attach to object') },
-				{ value: 'download-link', label: t('openbuild', 'Download link') },
-				{ value: 'notify', label: t('openbuild', 'Notify') },
+				{ value: 'attach', label: t('buildiq', 'Attach to object') },
+				{ value: 'download-link', label: t('buildiq', 'Download link') },
+				{ value: 'notify', label: t('buildiq', 'Notify') },
 			]
 		},
 
@@ -621,10 +630,13 @@ export default {
 			)
 		},
 
+		/**
+		 * @spec openspec/specs/automation-designer/spec.md
+		 */
 		objectOpOperationOptions() {
 			return [
-				{ value: 'create', label: t('openbuild', 'Create') },
-				{ value: 'update', label: t('openbuild', 'Update') },
+				{ value: 'create', label: t('buildiq', 'Create') },
+				{ value: 'update', label: t('buildiq', 'Update') },
 			]
 		},
 
@@ -688,15 +700,18 @@ export default {
 				.every((a) => this.generateDocumentActionValid(a))
 		},
 
+		/**
+		 * @spec openspec/specs/automation-designer/spec.md
+		 */
 		validationMessage() {
 			if (this.derivedSlug === '' || this.name.trim() === '') {
-				return t('openbuild', 'Please enter a name.')
+				return t('buildiq', 'Please enter a name.')
 			}
 			if (this.actions.length === 0) {
-				return t('openbuild', 'Add at least one action.')
+				return t('buildiq', 'Add at least one action.')
 			}
 			return t(
-				'openbuild',
+				'buildiq',
 				'Please resolve the highlighted blocked combination(s) before saving.',
 			)
 		},
@@ -1161,7 +1176,7 @@ export default {
 			}
 			if (type === 'generateDocument' && !this.docudeskAvailable) {
 				return t(
-					'openbuild',
+					'buildiq',
 					'Docudesk is not installed — document-generation actions are unavailable.',
 				)
 			}
@@ -1329,10 +1344,10 @@ export default {
 		},
 
 		/**
-		 * Persist the working automation through OpenBuild's own write routes.
+		 * Persist the working automation through Buildiq's own write routes.
 		 *
 		 * This method is the whole reason those routes exist: it used to POST/PUT
-		 * `openregister/api/objects/openbuild/automation` directly, which the
+		 * `openregister/api/objects/buildiq/automation` directly, which the
 		 * `automation` schema's admin-only `create`/`update` ACL refused for every
 		 * editor and owner — precisely the people REQ-AUTD-008 says may author one.
 		 *
@@ -1359,15 +1374,15 @@ export default {
 				actions: this.buildActions(),
 			}
 			try {
-				// OpenBuild's own endpoints, NOT OR REST directly.
+				// Buildiq's own endpoints, NOT OR REST directly.
 				//
 				// The `automation` schema is admin-only on `create`/`update` at
 				// the OpenRegister layer, so this dialog used to 403 for every
 				// editor and owner — the exact people REQ-AUTD-008 says may
 				// author one. These routes authorise against the parent
 				// Application's `permissions` block first and then write in
-				// system context. See Conduction/openbuild#173.
-				const base = generateUrl('/apps/openbuild/api/automations')
+				// system context. See Conduction/buildiq#173.
+				const base = generateUrl('/apps/buildiq/api/automations')
 				let uuid = this.id
 				if (this.editing && this.id) {
 					await axios.put(`${base}/${this.id}`, payload)
@@ -1381,15 +1396,13 @@ export default {
 				}
 				if (uuid) {
 					await axios.post(
-						generateUrl(
-							`/apps/openbuild/api/automations/${uuid}/compile`,
-						),
+						generateUrl(`/apps/buildiq/api/automations/${uuid}/compile`),
 						{},
 					)
 				}
 				this.$emit('saved')
 			} catch (error) {
-				this.errorMessage = t('openbuild', 'Could not save the automation.')
+				this.errorMessage = t('buildiq', 'Could not save the automation.')
 			} finally {
 				this.saving = false
 			}

@@ -1,4 +1,4 @@
-# Tasks — openbuild-walkthrough-editor
+# Tasks — buildiq-walkthrough-editor
 
 ## 1. Edit-shell mode
 - [x] Delivered as a standalone **WalkthroughDesigner view** (route
@@ -6,7 +6,7 @@
       linked from `ApplicationDetailActions` "Design walkthrough").
 - [x] Live **recorder**: a "Record from app" button (shown when an `appSlug` +
       active tour exist) mounts `WalkthroughRecorder.vue`, which embeds the running
-      virtual app (`/apps/openbuild/builder/{slug}`) in a same-origin iframe and,
+      virtual app (`/apps/buildiq/builder/{slug}`) in a same-origin iframe and,
       while armed, captures clicks inside it to create steps (instead of hover-
       highlight). Toggle recording off to navigate the app, back on to keep picking.
 
@@ -47,14 +47,14 @@
       same controlled contract + host persistence. 6 added vitest specs (12 total).
 
 ## 7. Validate
-- [x] `openspec validate openbuild-walkthrough-editor --strict` passes.
+- [x] `openspec validate buildiq-walkthrough-editor --strict` passes.
 - [x] vitest: WalkthroughDesigner 14 tests + recorderTargetResolver 6 tests green
       (20 total); manifest tests unaffected.
 - [x] Live (:8080): designer renders, authors tour+step (all fields), validates.
       Save initially 400'd — root-caused to a PRE-EXISTING bug (ApplicationVersion
       schema requires `register`, which collides with OR's reserved system field;
       every raw /api/objects/.../applicationVersion PUT 400s, no-op round-trip
-      included, affecting PageDesignerHost too). FIXED: persist via openbuild's
+      included, affecting PageDesignerHost too). FIXED: persist via buildiq's
       ApplicationVersionsController#update; walkthrough manifest now persists (200,
       verified).
 - [x] Live (:8080) recorder: on test23, "Record from app" mounts the iframe runtime

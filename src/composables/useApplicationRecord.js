@@ -7,7 +7,7 @@
  * props, not the resolved record — and each is driven by three independent
  * triggers (`mounted()`, the `objectId` watcher, the `object` watcher). None of
  * them knew about the others, so one load of `/applications/hydra-console`
- * issued TEN identical `GET .../objects/openbuild/application/hydra-console`
+ * issued TEN identical `GET .../objects/buildiq/application/hydra-console`
  * requests, all 200.
  *
  * That is not just waste: it is most of the reason the page takes so long to
@@ -39,6 +39,8 @@ const inFlight = new Map()
  *
  * @param {string} uuid Application uuid or slug.
  * @return {Promise<object|null>} The record, or null when the payload is empty.
+ *
+ * @spec openspec/specs/application-detail-ui/spec.md
  */
 export function fetchApplicationRecord(uuid) {
 	if (!uuid) return Promise.resolve(null)
@@ -48,7 +50,7 @@ export function fetchApplicationRecord(uuid) {
 
 	const request = (async () => {
 		const url = generateUrl(
-			`/apps/openregister/api/objects/openbuild/application/${encodeURIComponent(uuid)}`,
+			`/apps/openregister/api/objects/buildiq/application/${encodeURIComponent(uuid)}`,
 		)
 		const { data } = await axios.get(url)
 		// Keep user-visible fields from `data` and stash OR's internal metadata

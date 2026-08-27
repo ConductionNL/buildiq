@@ -82,7 +82,7 @@ The slug case is kept as a permanent regression guard: it is what this spec orig
 
 "An existing application validates and re-saves untouched — verified against one of the 30 objects already on the instance."
 
-Re-saving any of the 30 is refused by OpenBuild business rules unrelated to this change: `An app's type is immutable once created` and `A hybrid app's slug is read-only`. Copying a real payload to a new slug hits the same guards — 8 of 8 rejected, none by schema validation. Calling `ValidateObject::validateObject()` directly throws inside opis/json-schema on the schema argument form.
+Re-saving any of the 30 is refused by Buildiq business rules unrelated to this change: `An app's type is immutable once created` and `A hybrid app's slug is read-only`. Copying a real payload to a new slug hits the same guards — 8 of 8 rejected, none by schema validation. Calling `ValidateObject::validateObject()` directly throws inside opis/json-schema on the schema argument form.
 
 What IS established: both properties are optional (`required` unchanged, measured), and an object carrying no bindings saves (measured). An absent optional property cannot fail validation, so the 30 existing objects remain valid — but that is an argument from two measurements, not a direct observation of those objects passing, and it is recorded as such rather than ticked as if it ran.
 

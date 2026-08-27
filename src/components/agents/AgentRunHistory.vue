@@ -16,10 +16,10 @@
 
 		<NcEmptyContent
 			v-else-if="runs.length === 0"
-			:name="t('openbuild', 'No runs yet')"
+			:name="t('buildiq', 'No runs yet')"
 			:description="
 				t(
-					'openbuild',
+					'buildiq',
 					'Every plan this agent generates — applied, rolled back, or discarded — appears here with full tool-call detail.',
 				)
 			" />
@@ -58,7 +58,7 @@
 						}}</code>
 						<details class="agent-run-history__tool-detail">
 							<summary>
-								{{ t('openbuild', 'Arguments & result') }}
+								{{ t('buildiq', 'Arguments & result') }}
 							</summary>
 							<pre class="agent-run-history__tool-json">{{
 								formatJson(call.arguments)
@@ -70,7 +70,7 @@
 					</li>
 				</ul>
 				<p v-else class="agent-run-history__no-calls">
-					{{ t('openbuild', 'No tool calls in this run.') }}
+					{{ t('buildiq', 'No tool calls in this run.') }}
 				</p>
 			</li>
 		</ul>
@@ -136,12 +136,12 @@ export default {
 			this.errorMessage = ''
 			try {
 				const url = generateUrl(
-					`/apps/openbuild/api/agents/${this.agentId}/runs`,
+					`/apps/buildiq/api/agents/${this.agentId}/runs`,
 				)
 				const { data } = await axios.get(url)
 				this.runs = Array.isArray(data) ? data : []
 			} catch (error) {
-				this.errorMessage = t('openbuild', 'Could not load run history.')
+				this.errorMessage = t('buildiq', 'Could not load run history.')
 			} finally {
 				this.loading = false
 			}
@@ -156,10 +156,10 @@ export default {
 		 */
 		outcomeLabel(outcome) {
 			const labels = {
-				applied: t('openbuild', 'Applied'),
-				'rolled-back': t('openbuild', 'Rolled back'),
-				discarded: t('openbuild', 'Discarded'),
-				'plan-rejected': t('openbuild', 'Plan rejected'),
+				applied: t('buildiq', 'Applied'),
+				'rolled-back': t('buildiq', 'Rolled back'),
+				discarded: t('buildiq', 'Discarded'),
+				'plan-rejected': t('buildiq', 'Plan rejected'),
 			}
 			return labels[outcome] || outcome
 		},

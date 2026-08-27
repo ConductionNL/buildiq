@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * End-to-end coverage for openbuild-exports-flows-and-agents, driven through
+ * End-to-end coverage for buildiq-exports-flows-and-agents, driven through
  * the UI an operator actually uses.
  *
  * WHAT THIS HAS TO CATCH
@@ -39,17 +39,52 @@ import { E2E_BASE_URL as BASE } from './support/baseUrl'
 const TEST_SLUG = 'hello-world'
 const POLL_TIMEOUT_MS = 90_000
 
+/**
+ * The identity a scheduled fixture flow runs as.
+ *
+ * openregister's `TriggerScheduleNode` refuses a schedule trigger whose config
+ * carries no `runAs` (ADR-099): nobody is present when a schedule fires, so
+ * there is no session to take an identity from, and the flow's owner is
+ * deliberately NOT used as a fallback — authoring a flow is not consent to
+ * unattended execution as its author.
+ *
+ * It is validated against real accounts (`userManager->get()`), so this cannot
+ * be an arbitrary label. It tracks the account the suite authenticates as, set
+ * in playwright.config.ts from the same environment variable.
+ */
+const RUN_AS = process.env.NC_ADMIN_USER || 'admin'
+
+/**
+ * The schedule a fixture flow claims, alongside {@link RUN_AS}.
+ *
+ * `cron` and `runAs` are BOTH mandatory, and each is refused separately — so
+ * supplying only one still fails, with an error naming only the other. Probed
+ * against a live instance:
+ *
+ *     {cron, runAs} -> 201
+ *     {cron}        -> 400  "must carry a \"runAs\" naming the user its runs act as"
+ *     {runAs}       -> 400  "must carry a \"cron\" expression"
+ *
+ * These fixtures previously sent `config: {}`, which is why the first fix here
+ * — adding `runAs` alone — moved the error rather than clearing it.
+ *
+ * A five-field expression, not a macro: `@hourly` and friends are refused.
+ * Nothing in this suite waits for the schedule to fire; the flows are created
+ * disabled or driven directly, so the time chosen only has to be valid.
+ */
+const FIXTURE_CRON = '0 3 * * *'
+
 /** The fixture flow's name. One constant: the creating POST and the picker
  * assertion must not be able to drift apart. */
 const FIXTURE_FLOW_NAME = 'PW export fixture agentic'
 
 /** The background job that turns a queued ExportJob into a ZIP. */
-const EXPORT_JOB_CLASS = 'OCA\\OpenBuild\\BackgroundJob\\RunExportJob'
+const EXPORT_JOB_CLASS = 'OCA\\Buildiq\\BackgroundJob\\RunExportJob'
 
 /**
  * Run one pass of the export background job and SAY WHAT HAPPENED.
  *
- * Playwright's cwd is the app directory (`server/apps/openbuild` in CI), so
+ * Playwright's cwd is the app directory (`server/apps/buildiq` in CI), so
  * the server root — and `occ` — is two levels up.
  *
  * ⚠️ THIS RETURNS ITS OUTCOME ON PURPOSE. The first version swallowed every
@@ -136,7 +171,7 @@ function runExportJobWorker(): string {
  * whose deployed version is >= the declared one never receives an
  * annotation-only change (`ImportHandler` skips the import, and its
  * `schemaContentDiffers()` escape hatch compares only properties, required and
- * authorization) — ConductionNL/openbuild#219.
+ * authorization) — ConductionNL/buildiq#219.
  *
  * #229 shipped that bump (`exportJob` 0.1.0 -> 1.1.0), so on a converged
  * instance the block IS present. That makes this probe MORE useful, not less:
@@ -297,7 +332,7 @@ test.describe('Exporting the flows an app is made of', () => {
 	}) => {
 		// A Nextcloud document must exist before apiPost() can read the
 		// requesttoken off it, so navigate first.
-		await page.goto(`${BASE}/apps/openbuild/`)
+		await page.goto(`${BASE}/apps/buildiq/`)
 		await dismissOverlays(page)
 
 		// A real flow to bind. Created up front rather than assumed to exist:
@@ -314,7 +349,7 @@ test.describe('Exporting the flows an app is made of', () => {
 					{
 						id: 'start',
 						type: 'openregister.trigger-schedule',
-						config: {},
+						config: { cron: FIXTURE_CRON, runAs: RUN_AS },
 					},
 					// An AGENTIC node: this fixture proves ADR-065's rule that
 					// such a flow takes the ordinary path, not only the plain case.
@@ -338,7 +373,7 @@ test.describe('Exporting the flows an app is made of', () => {
 
 		// The detail route takes the OR OBJECT ID, not the slug.
 		const lookup = await page.request.get(
-			`${BASE}/index.php/apps/openregister/api/objects/openbuild/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
+			`${BASE}/index.php/apps/openregister/api/objects/buildiq/application?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
 		)
 		expect(lookup.ok(), 'the application lookup must succeed').toBeTruthy()
 		const apps = (await lookup.json()).results || []
@@ -348,7 +383,7 @@ test.describe('Exporting the flows an app is made of', () => {
 		).toBeGreaterThan(0)
 		const objectId = apps[0].uuid || apps[0].id
 
-		await page.goto(`${BASE}/apps/openbuild/applications/${objectId}`)
+		await page.goto(`${BASE}/apps/buildiq/applications/${objectId}`)
 		await dismissOverlays(page)
 		await page.waitForSelector('.ob-detail-header', { timeout: 20_000 })
 
@@ -439,15 +474,15 @@ test.describe('Exporting the flows an app is made of', () => {
 		// fixed sleep, so a slow instance does not produce a flaky pass.
 		//
 		// ⚠️ It is a PUT to the OpenRegister OBJECT
-		// (/apps/openregister/api/objects/openbuild/application/{uuid}), not to
-		// an openbuild route — `obPatchApp()` writes the Application object
-		// directly. Waiting on /apps/openbuild/api/applications would wait for
+		// (/apps/openregister/api/objects/buildiq/application/{uuid}), not to
+		// an buildiq route — `obPatchApp()` writes the Application object
+		// directly. Waiting on /apps/buildiq/api/applications would wait for
 		// a request that is never made.
 		await page.waitForResponse(
 			(response) =>
 				response
 					.url()
-					.includes('/apps/openregister/api/objects/openbuild/application')
+					.includes('/apps/openregister/api/objects/buildiq/application')
 				&& response.request().method() === 'PUT',
 			{ timeout: 20_000 },
 		)
@@ -502,7 +537,7 @@ test.describe('Exporting the flows an app is made of', () => {
 					// /api/applications/{slug}/exports — not /api/exports,
 					// which is only the download path. Matching the wrong URL
 					// here made this test wait for a request that never came.
-					/\/apps\/openbuild\/api\/applications\/[^/]+\/exports$/.test(
+					/\/apps\/buildiq\/api\/applications\/[^/]+\/exports$/.test(
 						request.url(),
 					) && request.method() === 'POST',
 				{ timeout: 20_000 },
@@ -520,9 +555,9 @@ test.describe('Exporting the flows an app is made of', () => {
 
 		// 3. Poll to completion and look inside the ZIP.
 		//
-		// An ExportJob is an OpenRegister OBJECT, not an openbuild route: there
+		// An ExportJob is an OpenRegister OBJECT, not an buildiq route: there
 		// is no GET /api/exports. `ExportJobsList.vue` reads it the same way.
-		const jobsUrl = `${BASE}/index.php/apps/openregister/api/objects/openbuild/export-job?applicationUuid=${encodeURIComponent(objectId)}`
+		const jobsUrl = `${BASE}/index.php/apps/openregister/api/objects/buildiq/export-job?applicationUuid=${encodeURIComponent(objectId)}`
 
 		let status = ''
 		let jobUuid = ''
@@ -565,7 +600,7 @@ test.describe('Exporting the flows an app is made of', () => {
 		).toBe('succeeded')
 
 		const download = await page.request.get(
-			`${BASE}/index.php/apps/openbuild/api/exports/${jobUuid}/download`,
+			`${BASE}/index.php/apps/buildiq/api/exports/${jobUuid}/download`,
 		)
 		// ↑ the one /api/exports/… route that DOES exist.
 		expect(download.ok()).toBeTruthy()
@@ -620,7 +655,7 @@ test.describe('Exporting the flows an app is made of', () => {
 		// RELATIVE url, and a page still on about:blank has no base to resolve
 		// it against — "Failed to parse URL from /index.php/…". My previous
 		// edit removed this goto along with the block it was sitting in.
-		await page.goto(`${BASE}/apps/openbuild/`)
+		await page.goto(`${BASE}/apps/buildiq/`)
 		await dismissOverlays(page)
 
 		const seeded = await apiPost(
@@ -633,7 +668,7 @@ test.describe('Exporting the flows an app is made of', () => {
 					{
 						id: 'start',
 						type: 'openregister.trigger-schedule',
-						config: {},
+						config: { cron: FIXTURE_CRON, runAs: RUN_AS },
 					},
 					{ id: 'done', type: 'openregister.end', config: {} },
 				],

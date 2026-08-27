@@ -13,7 +13,7 @@ import { test, expect } from '@playwright/test'
  *     top-level Application.status / Application.version fields.
  *
  * Preconditions:
- *   - Nextcloud reachable with openbuild enabled.
+ *   - Nextcloud reachable with buildiq enabled.
  *   - SeedHelloWorld repair step has produced the hello-world virtual app.
  *   - Playwright auth via httpCredentials (admin:admin) in playwright.config.ts.
  *
@@ -57,12 +57,9 @@ import { test, expect } from '@playwright/test'
  * @return {Promise<object|null>} `{uuid, slug, name, semver, status}` or null.
  */
 async function productionVersionDetail(page) {
-	const res = await page.request.get(
-		'/index.php/apps/openbuild/api/applications',
-		{
-			headers: { 'OCS-APIRequest': 'true' },
-		},
-	)
+	const res = await page.request.get('/index.php/apps/buildiq/api/applications', {
+		headers: { 'OCS-APIRequest': 'true' },
+	})
 	expect(res.ok(), 'the applications API must answer').toBeTruthy()
 	const body = await res.json()
 	const rows = Array.isArray(body) ? body : (body.results ?? [])
@@ -74,7 +71,7 @@ test.describe('ApplicationCard — icon + productionVersion fields (spec A / spe
 	test('index page renders ApplicationCards with icon <img> elements', async ({
 		page,
 	}) => {
-		await page.goto('/apps/openbuild/applications')
+		await page.goto('/apps/buildiq/applications')
 
 		// Wait for the SPA to hydrate and the Applications list to appear.
 		// The list renders one card per Application. The seeded hello-world
@@ -85,7 +82,7 @@ test.describe('ApplicationCard — icon + productionVersion fields (spec A / spe
 		).toBeVisible({ timeout: 15_000 })
 
 		// Each card must contain an <img> from the icon-serving endpoint.
-		// icon src pattern: /index.php/apps/openbuild/icons/{slug}.svg
+		// icon src pattern: /index.php/apps/buildiq/icons/{slug}.svg
 		const firstCard = page.locator('.ob-app-card').first()
 		const icon = firstCard.locator('img.ob-app-card__icon')
 		await expect(
@@ -101,7 +98,7 @@ test.describe('ApplicationCard — icon + productionVersion fields (spec A / spe
 	test('hello-world ApplicationCard shows a status badge (not raw "Live" chip)', async ({
 		page,
 	}) => {
-		await page.goto('/apps/openbuild/applications')
+		await page.goto('/apps/buildiq/applications')
 
 		// Wait for at least the seeded hello-world card.
 		await expect(page.locator('.ob-app-card').first()).toBeVisible({
@@ -128,7 +125,7 @@ test.describe('ApplicationCard — icon + productionVersion fields (spec A / spe
 	test('hello-world ApplicationCard status badge is one of the known values', async ({
 		page,
 	}) => {
-		await page.goto('/apps/openbuild/applications')
+		await page.goto('/apps/buildiq/applications')
 
 		// Target hello-world for real. The previous selector was
 		// `[data-slug="hello-world"], .ob-app-card` + `.first()` — ApplicationCard.vue
@@ -173,7 +170,7 @@ test.describe('ApplicationCard — icon + productionVersion fields (spec A / spe
 	test('hello-world ApplicationCard version chip shows semver or — placeholder', async ({
 		page,
 	}) => {
-		await page.goto('/apps/openbuild/applications')
+		await page.goto('/apps/buildiq/applications')
 
 		const helloCard = page
 			.locator('.ob-app-card')

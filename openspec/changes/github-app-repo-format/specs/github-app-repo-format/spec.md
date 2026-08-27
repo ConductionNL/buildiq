@@ -1,9 +1,9 @@
 ## ADDED Requirements
 
-### Requirement: Canonical GitHub repo layout for an OpenBuild app
+### Requirement: Canonical GitHub repo layout for an Buildiq app
 
 The system SHALL define one canonical GitHub repository layout that represents an
-OpenBuild app as a round-trippable **data** definition (not the exporter's PHP
+Buildiq app as a round-trippable **data** definition (not the exporter's PHP
 scaffold). A conforming repo SHALL contain, at its root:
 
 - `openbuild-app.json` — the app descriptor (REQ-GARF-002).
@@ -15,7 +15,7 @@ scaffold). A conforming repo SHALL contain, at its root:
 A conforming repo MAY additionally contain an optional `README.md` and an
 optional `img/` directory (screenshots + icon SVGs referenced by the descriptor).
 The format SHALL NOT require any PHP, `appinfo/`, or build-tool files — the repo
-is a definition only OpenBuild parses, never an installable Nextcloud app.
+is a definition only Buildiq parses, never an installable Nextcloud app.
 
 **ID:** REQ-GARF-001
 
@@ -23,10 +23,10 @@ is a definition only OpenBuild parses, never an installable Nextcloud app.
 
 - **WHEN** a repo file map contains `openbuild-app.json` and `manifest.json` at
   the root and one or more `schemas/<slug>.json` files
-- **THEN** the parser (REQ-GARF-006) recognises it as a conforming OpenBuild app
+- **THEN** the parser (REQ-GARF-006) recognises it as a conforming Buildiq app
   repo and produces an in-memory install payload
 
-#### Scenario: A repo without a root descriptor is not an OpenBuild app repo
+#### Scenario: A repo without a root descriptor is not an Buildiq app repo
 
 - **WHEN** a repo file map has no `openbuild-app.json` at its root
 - **THEN** the parser rejects it with the `descriptor_missing` error and produces
@@ -62,10 +62,10 @@ schema blobs (those live in `manifest.json` / `schemas/*.json`).
 - **THEN** the parse fails with the `app_type_unknown` error naming the offending
   value
 
-### Requirement: Discovery contract via the openbuild-app topic
+### Requirement: Discovery contract via the buildiq-app topic
 
-The system SHALL define that a GitHub repository is discoverable as an OpenBuild
-app **iff** it carries the GitHub **topic `openbuild-app`** AND exposes a
+The system SHALL define that a GitHub repository is discoverable as an Buildiq
+app **iff** it carries the GitHub **topic `buildiq-app`** AND exposes a
 parseable `openbuild-app.json` at its root. The topic is the search key that the
 shop (change `github-shop-catalogue`) queries; the root descriptor is the
 authoritative parse target. A repo carrying the topic but no parseable descriptor
@@ -77,7 +77,7 @@ silently skipped).
 #### Scenario: The topic is the declared discovery key
 
 - **WHEN** the format's discovery contract is consulted
-- **THEN** it names the GitHub topic `openbuild-app` as the search key AND a root
+- **THEN** it names the GitHub topic `buildiq-app` as the search key AND a root
   `openbuild-app.json` as the parse target
 
 ### Requirement: manifest.json carries the ApplicationVersion manifest blob
@@ -212,7 +212,7 @@ bad file.
 #### Scenario: An unsupported format version is rejected loudly
 
 - **WHEN** the parser reads a descriptor whose `formatVersion` major is not
-  supported by this OpenBuild
+  supported by this Buildiq
 - **THEN** the parse fails with the `format_version_unsupported` error naming the
   version
 

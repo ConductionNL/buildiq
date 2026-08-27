@@ -10,7 +10,7 @@ status: done
 
 Ships the one-shot destructive repair step that retires the pre-versioning
 `Application` schema in favour of the two-object `Application` + `ApplicationVersion`
-model introduced by `openbuild-versioning-model` (ADR-002). Per ADR-002 existing
+model introduced by `buildiq-versioning-model` (ADR-002). Per ADR-002 existing
 installs hold only test data; this step drops every pre-migration `Application` row
 and its per-app register entirely, leaving the install in a clean state for the
 creation-wizard to re-seed Hello World. Idempotent via a versioned-shape short-circuit,
@@ -25,13 +25,13 @@ The system SHALL ship a Nextcloud `\\OCP\\Migration\\IRepairStep` implementation
 `lib/Repair/MigrateToVersionedModel.php`. The repair step SHALL be registered in
 `appinfo/info.xml` under `<repair-steps><post-migration>` so that it runs on every
 install and every upgrade. The step SHALL perform a destructive green-field
-migration: for every pre-migration `Application` row in the `openbuild` register, it
-SHALL drop the corresponding per-app register (named `openbuild-{slug}`) entirely
+migration: for every pre-migration `Application` row in the `buildiq` register, it
+SHALL drop the corresponding per-app register (named `buildiq-{slug}`) entirely
 (removing every object inside it) and then delete the `Application` row itself.
 
 **ID:** REQ-OBGFM-001
 
-The destructive behaviour is intentional. ADR-002 records that existing OpenBuild
+The destructive behaviour is intentional. ADR-002 records that existing Buildiq
 installs hold only test data and that the new versioning model re-seeds Hello World
 at install time via the creation-wizard capability (out of scope for this spec).
 
@@ -39,28 +39,28 @@ at install time via the creation-wizard capability (out of scope for this spec).
 
 - **GIVEN** a pre-migration install with one Application row (`slug: <slug>`,
   `currentVersion: 00000000-0000-0000-0000-000000000000`) and its per-app register
-  `openbuild-<slug>`
-- **WHEN** the OpenBuild app's post-migration repair step runs
-- **THEN** the Application row no longer exists in the `openbuild` register
-- **AND** the per-app register `openbuild-<slug>` no longer exists
+  `buildiq-<slug>`
+- **WHEN** the Buildiq app's post-migration repair step runs
+- **THEN** the Application row no longer exists in the `buildiq` register
+- **AND** the per-app register `buildiq-<slug>` no longer exists
 - **AND** every object that lived in that register is gone
 
 #### Scenario: Migration drops multiple pre-migration Applications
 
 - **GIVEN** a pre-migration install with three Application rows and their three
   per-app registers
-- **WHEN** the OpenBuild app's post-migration repair step runs
+- **WHEN** the Buildiq app's post-migration repair step runs
 - **THEN** all three Application rows are gone
 - **AND** all three per-app registers are gone
 
 ### Requirement: Migration is idempotent via versioned-shape short-circuit
 
 The repair step SHALL be safe to re-run. On every invocation, it SHALL first detect
-whether the OpenBuild schema is already in versioned shape and SHALL short-circuit
+whether the Buildiq schema is already in versioned shape and SHALL short-circuit
 to a no-op when it is. The detection SHALL fire on either of:
 
-- The `applicationVersion` schema exists in the `openbuild` register, OR
-- No pre-migration `Application` row in the `openbuild` register carries a
+- The `applicationVersion` schema exists in the `buildiq` register, OR
+- No pre-migration `Application` row in the `buildiq` register carries a
   `currentVersion` field (i.e. all surviving rows already match the new shape).
 
 A short-circuit run SHALL produce no log output beyond a single info line indicating
@@ -71,7 +71,7 @@ skipping`).
 
 #### Scenario: Already-versioned install is a no-op
 
-- **GIVEN** an install whose `openbuild` register exposes the `applicationVersion`
+- **GIVEN** an install whose `buildiq` register exposes the `applicationVersion`
   schema and contains zero pre-migration Application rows
 - **WHEN** the repair step runs
 - **THEN** no register is dropped
@@ -92,7 +92,7 @@ The repair step SHALL emit exactly one `$output->info()` log line per deleted
 Application, with the literal format:
 
 ```
-Migrated-to-versioned-model: dropped Application '<slug>' and register 'openbuild-<slug>'
+Migrated-to-versioned-model: dropped Application '<slug>' and register 'buildiq-<slug>'
 ```
 
 where `<slug>` is the deleted Application's `slug` value. The line SHALL surface in
@@ -107,7 +107,7 @@ standard OCC upgrade output so the migration is observable during deployment.
 - **WHEN** the repair step runs
 - **THEN** the output contains exactly one line
   `Migrated-to-versioned-model: dropped Application '<slug-a>' and register
-  'openbuild-<slug-a>'`
+  'buildiq-<slug-a>'`
 - **AND** one line for `<slug-b>`
 - **AND** one line for `<slug-c>`
 
@@ -125,7 +125,7 @@ operator is expected to inspect the OCC log and retry on the next upgrade.
 
 #### Scenario: Register-delete failure is logged and the Application row is preserved
 
-- **GIVEN** a pre-migration install where dropping the register `openbuild-<slug>`
+- **GIVEN** a pre-migration install where dropping the register `buildiq-<slug>`
   fails (e.g. OR returns 500)
 - **WHEN** the repair step runs
 - **THEN** the failure is logged with the slug and an error message

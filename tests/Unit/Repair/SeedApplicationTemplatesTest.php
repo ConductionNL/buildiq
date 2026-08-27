@@ -11,7 +11,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Repair
+ * @package  OCA\Buildiq\Tests\Unit\Repair
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,12 +24,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Repair;
+namespace OCA\Buildiq\Tests\Unit\Repair;
 
-use OCA\OpenBuild\Repair\SeedApplicationTemplates;
-use OCA\OpenBuild\Service\TemplateSeedService;
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\Buildiq\Repair\SeedApplicationTemplates;
+use OCA\Buildiq\Service\TemplateSeedService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\App\IAppManager;
 use OCP\Migration\IOutput;
@@ -131,14 +131,14 @@ class SeedApplicationTemplatesTest extends TestCase {
 	/**
 	 * Create a temp app root with a Settings/templates dir containing fixtures.
 	 *
-	 * Returns the path that the SUT will receive from $appManager->getAppPath('openbuild').
+	 * Returns the path that the SUT will receive from $appManager->getAppPath('buildiq').
 	 *
 	 * @param array<string,array<string,mixed>|null> $fixturesBySlug Map of slug → fixture data (null = skip file).
 	 *
 	 * @return string The pseudo-app-root path.
 	 */
 	private function seedFixturesDir(array $fixturesBySlug): string {
-		$appRoot = sys_get_temp_dir() . '/openbuild-test-' . uniqid();
+		$appRoot = sys_get_temp_dir() . '/buildiq-test-' . uniqid();
 		$fixturesDir = $appRoot . '/lib/Settings/templates';
 		$this->tempDir = $fixturesDir;
 		mkdir($fixturesDir, 0777, true);

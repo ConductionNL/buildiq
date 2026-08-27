@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\AppInfo
+ * @package  OCA\Buildiq\Tests\Unit\AppInfo
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\AppInfo;
+namespace OCA\Buildiq\Tests\Unit\AppInfo;
 
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -31,7 +31,7 @@ use ReflectionClass;
  * controller when this app does not ship a class of that name.
  *
  * `\OCA\OpenRegister\AppHost\Bootstrap::aliasControllerUnlessLeafDefinesIt()`
- * registers the DI alias `OCA\OpenBuild\Controller\XController` ->
+ * registers the DI alias `OCA\Buildiq\Controller\XController` ->
  * `OCA\OpenRegister\AppHost\Controller\GenericXController` ONLY when the leaf
  * class does not exist. So the seam has two sides, and they fail differently:
  *
@@ -45,14 +45,14 @@ use ReflectionClass;
  *     matches the URL, the dispatcher reflects the method, and the request
  *     dies with a 500.
  *
- * Measured 2026-08-08 on the running dev instance: OpenBuild shipped its own
+ * Measured 2026-08-08 on the running dev instance: Buildiq shipped its own
  * SettingsController with `index/create/load` but no `update()`, while the
  * canonical table routes `PUT /api/settings` to `settings#update`.
  *
- *     GET  /apps/openbuild/api/settings -> 200
- *     PUT  /apps/openbuild/api/settings -> 500
+ *     GET  /apps/buildiq/api/settings -> 200
+ *     PUT  /apps/buildiq/api/settings -> 500
  *     ReflectionException: Method
- *     OCA\OpenBuild\Controller\SettingsController::update() does not exist
+ *     OCA\Buildiq\Controller\SettingsController::update() does not exist
  *     at lib/private/AppFramework/Utility/ControllerMethodReflector.php:40
  *
  * This test asserts the ITEM (each individual method), never the container
@@ -91,7 +91,7 @@ class CanonicalRouteMethodContractTest extends TestCase {
 	/**
 	 * Positive control #1 — the canonical table must actually be in play.
 	 *
-	 * OpenBuild's `appinfo/routes.php` declares NO settings routes of its own;
+	 * Buildiq's `appinfo/routes.php` declares NO settings routes of its own;
 	 * it delegates the whole canonical set to `Routes::standard()`. If that
 	 * call were ever removed, the method assertions below would still pass
 	 * while nothing routed to them — a vacuous green. Read a green from the
@@ -183,7 +183,7 @@ class CanonicalRouteMethodContractTest extends TestCase {
 		$missing = [];
 
 		foreach (self::CANONICAL_ROUTES as $prefix => $methods) {
-			$class = 'OCA\\OpenBuild\\Controller\\' . $prefix . 'Controller';
+			$class = 'OCA\\Buildiq\\Controller\\' . $prefix . 'Controller';
 
 			// The class file existing on disk is what makes the AppHost skip
 			// the alias. `class_exists()` alone would also be satisfied by the
@@ -239,7 +239,7 @@ class CanonicalRouteMethodContractTest extends TestCase {
 			$missing,
 			sprintf(
 				'The canonical AppHost route table routes to these method(s), but '
-				. 'OpenBuild ships the controller itself so no generic is aliased in. '
+				. 'Buildiq ships the controller itself so no generic is aliased in. '
 				. "Each of these is a 500, not a 404.\n  - %s",
 				implode("\n  - ", $missing)
 			)

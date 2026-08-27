@@ -8,7 +8,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Service\Copilot
+ * @package  OCA\Buildiq\Tests\Unit\Service\Copilot
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,10 +23,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Service\Copilot;
+namespace OCA\Buildiq\Tests\Unit\Service\Copilot;
 
-use OCA\OpenBuild\Mcp\OpenBuildToolProvider;
-use OCA\OpenBuild\Service\Copilot\CopilotPromptBuilder;
+use OCA\Buildiq\Mcp\BuildiqToolProvider;
+use OCA\Buildiq\Service\Copilot\CopilotPromptBuilder;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -36,9 +36,9 @@ use PHPUnit\Framework\TestCase;
 class CopilotPromptBuilderTest extends TestCase {
 
 	/**
-	 * @var OpenBuildToolProvider&MockObject
+	 * @var BuildiqToolProvider&MockObject
 	 */
-	private OpenBuildToolProvider&MockObject $toolProvider;
+	private BuildiqToolProvider&MockObject $toolProvider;
 
 	/**
 	 * Set up shared mocks + the SUT dependency.
@@ -48,11 +48,11 @@ class CopilotPromptBuilderTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 
-		$this->toolProvider = $this->createMock(OpenBuildToolProvider::class);
+		$this->toolProvider = $this->createMock(BuildiqToolProvider::class);
 		$this->toolProvider->method('getToolDescriptors')->willReturn(
 			[
-				['id' => 'openbuild.createApp', 'description' => 'Create app', 'inputSchema' => ['type' => 'object']],
-				['id' => 'openbuild.upsertPage', 'description' => 'Upsert page', 'inputSchema' => ['type' => 'object']],
+				['id' => 'buildiq.createApp', 'description' => 'Create app', 'inputSchema' => ['type' => 'object']],
+				['id' => 'buildiq.upsertPage', 'description' => 'Upsert page', 'inputSchema' => ['type' => 'object']],
 			]
 		);
 	}//end setUp()
@@ -66,8 +66,8 @@ class CopilotPromptBuilderTest extends TestCase {
 		$builder = new CopilotPromptBuilder(toolProvider: $this->toolProvider);
 		$prompt = $builder->build(brief: 'x');
 
-		self::assertStringContainsString('openbuild.createApp', $prompt);
-		self::assertStringContainsString('openbuild.upsertPage', $prompt);
+		self::assertStringContainsString('buildiq.createApp', $prompt);
+		self::assertStringContainsString('buildiq.upsertPage', $prompt);
 	}//end testBuildEmbedsFullCatalogueByDefault()
 
 	/**
@@ -81,11 +81,11 @@ class CopilotPromptBuilderTest extends TestCase {
 		$builder = new CopilotPromptBuilder(toolProvider: $this->toolProvider);
 		$prompt = $builder->build(
 			brief: 'x',
-			toolDescriptors: [['id' => 'openbuild.upsertPage', 'description' => 'Upsert page', 'inputSchema' => ['type' => 'object']]]
+			toolDescriptors: [['id' => 'buildiq.upsertPage', 'description' => 'Upsert page', 'inputSchema' => ['type' => 'object']]]
 		);
 
-		self::assertStringContainsString('openbuild.upsertPage', $prompt);
-		self::assertStringNotContainsString('openbuild.createApp', $prompt);
+		self::assertStringContainsString('buildiq.upsertPage', $prompt);
+		self::assertStringNotContainsString('buildiq.createApp', $prompt);
 	}//end testBuildEmbedsOnlyNarrowedCatalogueWhenGiven()
 
 	/**
@@ -125,12 +125,12 @@ class CopilotPromptBuilderTest extends TestCase {
 			brief: 'x',
 			previousOutput: 'not json',
 			parseError: 'syntax error',
-			toolDescriptors: [['id' => 'openbuild.upsertPage', 'description' => 'Upsert page', 'inputSchema' => ['type' => 'object']]],
+			toolDescriptors: [['id' => 'buildiq.upsertPage', 'description' => 'Upsert page', 'inputSchema' => ['type' => 'object']]],
 			instructionsPrefix: 'Be concise.'
 		);
 
-		self::assertStringContainsString('openbuild.upsertPage', $prompt);
-		self::assertStringNotContainsString('openbuild.createApp', $prompt);
+		self::assertStringContainsString('buildiq.upsertPage', $prompt);
+		self::assertStringNotContainsString('buildiq.createApp', $prompt);
 		self::assertStringContainsString('Be concise.', $prompt);
 	}//end testBuildRepairPromptHonoursNarrowingAndInstructions()
 }//end class

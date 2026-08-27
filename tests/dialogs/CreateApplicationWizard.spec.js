@@ -23,7 +23,10 @@ import axios from '@nextcloud/axios'
 import CreateApplicationWizard from '../../src/dialogs/CreateApplicationWizard.vue'
 
 vi.mock('@nextcloud/axios', () => ({ default: { post: vi.fn() } }))
-vi.mock('@nextcloud/router', () => ({ generateUrl: (url) => url }))
+vi.mock('@nextcloud/router', async (importOriginal) => ({
+	...(await importOriginal()),
+	generateUrl: (url) => url,
+}))
 
 const CnWizardDialogStub = {
 	name: 'CnWizardDialog',
@@ -137,7 +140,7 @@ describe('CreateApplicationWizard', () => {
 		})
 
 		expect(axios.post).toHaveBeenCalledWith(
-			'/apps/openbuild/api/applications/wizard',
+			'/apps/buildiq/api/applications/wizard',
 			{
 				name: 'X',
 				slug: 'x',

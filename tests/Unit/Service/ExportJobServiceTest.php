@@ -1,18 +1,18 @@
 <?php
 
 /**
- * OpenBuild ExportJobService unit tests
+ * Buildiq ExportJobService unit tests
  *
  * Covers queue semantics (ZIP vs. GitHub targets) and the no-secret contract.
  *
  * These tests used to cover "the PAT-handling surface (ICredentialsManager wiring)
- * and the credential-key format" — careful handling of a secret OpenBuild should
+ * and the credential-key format" — careful handling of a secret Buildiq should
  * never have held. It no longer holds one: a GitHub export names a broker credential
  * by UUID and the token is injected server-side. What is security-critical now is the
  * ABSENCE of that surface, which `testPatSurfaceDoesNotExist()` pins.
  *
  * @category Test
- * @package  OCA\OpenBuild\Tests\Unit\Service
+ * @package  OCA\Buildiq\Tests\Unit\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -28,13 +28,13 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Tests\Unit\Service;
+namespace OCA\Buildiq\Tests\Unit\Service;
 
-use OCA\OpenBuild\AppInfo\Application;
-use OCA\OpenBuild\Service\ExportJobService;
-use OCA\OpenBuild\Service\JobOwnerImpersonator;
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Service\ExportJobService;
+use OCA\Buildiq\Service\JobOwnerImpersonator;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\BackgroundJob\IJobList;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -86,7 +86,7 @@ final class ExportJobServiceTest extends TestCase {
 	/**
 	 * Owner-impersonation collaborator mock (#105). Its OWN impersonation
 	 * contract (resolve owner, swap session, always restore) is covered by
-	 * {@see \OCA\OpenBuild\Tests\Unit\Service\JobOwnerImpersonatorTest} —
+	 * {@see \OCA\Buildiq\Tests\Unit\Service\JobOwnerImpersonatorTest} —
 	 * here we only need to verify ExportJobService::transitionJob() wires
 	 * into it correctly (delegates the work through `runAsOwner()`).
 	 *
@@ -129,7 +129,7 @@ final class ExportJobServiceTest extends TestCase {
 	 * queueing user's UID — and no secret anywhere on the record.
 	 *
 	 * This inverts what this file used to assert. The old tests pinned that the PAT
-	 * was stored under `openbuild.export.<uuid>.pat` and cleared on every terminal
+	 * was stored under `buildiq.export.<uuid>.pat` and cleared on every terminal
 	 * state — careful handling of a secret the app should never have held. It no
 	 * longer holds one: `githubCredentialId` is a UUID whose token lives in the vault
 	 * and is injected by the broker server-side.
@@ -253,7 +253,7 @@ final class ExportJobServiceTest extends TestCase {
 		foreach (['fetchPat', 'clearPat', 'credentialKey'] as $method) {
 			self::assertFalse(
 				$reflection->hasMethod($method),
-				$method . '() must not exist — OpenBuild holds no GitHub token'
+				$method . '() must not exist — Buildiq holds no GitHub token'
 			);
 		}
 
@@ -394,7 +394,7 @@ final class ExportJobServiceTest extends TestCase {
 	 * ObjectService::saveObject() (#104). Omitting them let saveObject()
 	 * fall back to whatever register/schema an EARLIER call in the same
 	 * request left as ambient state (e.g. ExportsController's
-	 * searchObjectsBySlug('openbuild', 'application', ...) re-anchors it to
+	 * searchObjectsBySlug('buildiq', 'application', ...) re-anchors it to
 	 * schema=application) and let OR auto-generate its own identity instead
 	 * of the job's own UUID — so a later loadJob($jobUuid) could never find
 	 * the record it just "persisted".
@@ -432,7 +432,7 @@ final class ExportJobServiceTest extends TestCase {
 			'status' => 'queued',
 		]);
 
-		self::assertSame('openbuild', $capturedArgs['register'], 'persistJob() must target the openbuild register');
+		self::assertSame('buildiq', $capturedArgs['register'], 'persistJob() must target the buildiq register');
 		self::assertSame('export-job', $capturedArgs['schema'], 'persistJob() must target the export-job schema SLUG (not the exportJob JSON key)');
 		self::assertSame('job-uuid-123', $capturedArgs['uuid'], 'persistJob() must persist under the job\'s OWN uuid, not an OR-auto-generated identity');
 	}//end testPersistJobPassesExplicitRegisterSchemaAndUuidToSaveObject()
@@ -454,7 +454,7 @@ final class ExportJobServiceTest extends TestCase {
 
 		$existing = new ObjectEntity();
 		$existing->setUuid('job-uuid-456');
-		$existing->setRegister('openbuild');
+		$existing->setRegister('buildiq');
 		$existing->setSchema('export-job');
 		$existing->setObject([
 			'applicationUuid' => 'app-uuid-1',
@@ -480,12 +480,12 @@ final class ExportJobServiceTest extends TestCase {
 			new NullLogger(),
 			$this->jobOwnerImpersonator
 		);
-		$service->mergeJobFields('job-uuid-456', ['downloadUrl' => '/index.php/apps/openbuild/api/exports/job-uuid-456/download']);
+		$service->mergeJobFields('job-uuid-456', ['downloadUrl' => '/index.php/apps/buildiq/api/exports/job-uuid-456/download']);
 
-		self::assertSame('openbuild', $capturedArgs['register'], 'mergeJobFields() must target the openbuild register');
+		self::assertSame('buildiq', $capturedArgs['register'], 'mergeJobFields() must target the buildiq register');
 		self::assertSame('export-job', $capturedArgs['schema'], 'mergeJobFields() must target the export-job schema SLUG');
 		self::assertSame('job-uuid-456', $capturedArgs['uuid'], 'mergeJobFields() must update the SAME existing record by uuid');
-		self::assertSame('/index.php/apps/openbuild/api/exports/job-uuid-456/download', $capturedArgs['job']['downloadUrl']);
+		self::assertSame('/index.php/apps/buildiq/api/exports/job-uuid-456/download', $capturedArgs['job']['downloadUrl']);
 	}//end testMergeJobFieldsPassesExplicitRegisterSchemaAndUuidToSaveObject()
 
 	/**
@@ -493,7 +493,7 @@ final class ExportJobServiceTest extends TestCase {
 	 * class-string. Owner impersonation is delegated to the (mocked)
 	 * {@see JobOwnerImpersonator} collaborator — its own ObjectService/
 	 * IUserSession/IUserManager wiring is covered by
-	 * {@see \OCA\OpenBuild\Tests\Unit\Service\JobOwnerImpersonatorTest} —
+	 * {@see \OCA\Buildiq\Tests\Unit\Service\JobOwnerImpersonatorTest} —
 	 * so transitionJob()'s own tests only need the engine resolvable.
 	 *
 	 * @param FakeTransitionEngineForTest&MockObject $engine Engine double.
@@ -559,7 +559,7 @@ final class ExportJobServiceTest extends TestCase {
 
 		$existing = new ObjectEntity();
 		$existing->setUuid('job-uuid-extra');
-		$existing->setRegister('openbuild');
+		$existing->setRegister('buildiq');
 		$existing->setSchema('export-job');
 		$existing->setObject(['status' => 'running']);
 
@@ -601,12 +601,12 @@ final class ExportJobServiceTest extends TestCase {
 		$result = $service->transitionJob(
 			jobUuid: 'job-uuid-extra',
 			action: 'succeed',
-			extraFields: ['downloadUrl' => '/index.php/apps/openbuild/api/exports/job-uuid-extra/download']
+			extraFields: ['downloadUrl' => '/index.php/apps/buildiq/api/exports/job-uuid-extra/download']
 		);
 
 		self::assertTrue($result);
 		self::assertSame(
-			'/index.php/apps/openbuild/api/exports/job-uuid-extra/download',
+			'/index.php/apps/buildiq/api/exports/job-uuid-extra/download',
 			$captured['downloadUrl']
 		);
 	}//end testTransitionJobMergesExtraFieldsInsideTheImpersonatedWork()

@@ -6,7 +6,7 @@
 
 #### Scenario: New English string ships without its Dutch translation
 
-- **GIVEN** a PR that adds a new `t('openbuild', '...')` call with a new English source key
+- **GIVEN** a PR that adds a new `t('buildiq', '...')` call with a new English source key
 - **WHEN** the PR does not add the corresponding key to `l10n/nl.json`
 - **THEN** the `check-l10n-parity` CI step SHALL fail, blocking merge
 

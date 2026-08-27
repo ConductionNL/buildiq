@@ -1,10 +1,10 @@
 <?php
 
 /**
- * OpenBuild VersionPromotionException
+ * Buildiq VersionPromotionException
  *
  * Base exception for the version-promotion flow (spec
- * openbuild-version-promotion). Each subclass carries the spec-defined
+ * buildiq-version-promotion). Each subclass carries the spec-defined
  * machine-readable `code` string and any associated context (locked-by,
  * strategy, etc.) so the controller can map a single catch arm onto the
  * correct HTTP status + error envelope without reflecting on message text.
@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Exception
- * @package  OCA\OpenBuild\Exception
+ * @package  OCA\Buildiq\Exception
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,7 +26,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Exception;
+namespace OCA\Buildiq\Exception;
 
 use RuntimeException;
 use Throwable;

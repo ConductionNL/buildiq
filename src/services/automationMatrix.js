@@ -18,7 +18,7 @@
  * `lib/Service/AutomationCompilerService.php` class docblock): design.md's
  * Decision 2 table marks `manual` + `run-synchronization` as a ✅ "rules
  * backend" cell. No primitive to invoke an OpenConnector synchronization on
- * demand exists anywhere in openbuild; the compiler blocks that cell
+ * demand exists anywhere in buildiq; the compiler blocks that cell
  * fail-closed pending a verified OpenConnector "run now" API, so the matrix
  * here matches the compiler's ACTUAL enforced behaviour, not the
  * originally-proposed table.
@@ -130,18 +130,18 @@ export function blockedActionReason(triggerType, actionType) {
 	}
 	if (actionType === 'approval') {
 		return t(
-			'openbuild',
+			'buildiq',
 			'Approval actions are only supported on object-event and lifecycle-transition triggers in v1.',
 		)
 	}
 	if (actionType === 'generateDocument') {
 		return t(
-			'openbuild',
+			'buildiq',
 			'Document-generation actions are only supported on object-event and lifecycle-transition triggers in v1.',
 		)
 	}
 	return t(
-		'openbuild',
+		'buildiq',
 		'Trigger "{trigger}" + action "{action}" is not yet expressible declaratively.',
 		{ trigger: triggerType, action: actionType },
 	)
@@ -153,13 +153,15 @@ export function blockedActionReason(triggerType, actionType) {
  *
  * @param {string} triggerType - the automation's trigger type.
  * @return {string}
+ *
+ * @spec openspec/specs/automation-designer/spec.md
  */
 export function blockedConditionReason(triggerType) {
 	if (isConditionAllowed(triggerType)) {
 		return ''
 	}
 	return t(
-		'openbuild',
+		'buildiq',
 		'A condition is only supported on the "manual" trigger in v1.',
 	)
 }

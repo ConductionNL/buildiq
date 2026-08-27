@@ -17,7 +17,7 @@
 			class="ob-document-actions__unavailable">
 			{{
 				t(
-					'openbuild',
+					'buildiq',
 					'Docudesk is not available — document generation is disabled.',
 				)
 			}}
@@ -31,7 +31,7 @@
 					variant="secondary"
 					:disabled="isBusy(att)"
 					@click="onGenerate(att)">
-					{{ isBusy(att) ? t('openbuild', 'Generating…') : att.label }}
+					{{ isBusy(att) ? t('buildiq', 'Generating…') : att.label }}
 				</NcButton>
 				<span
 					v-if="errorCode(att)"
@@ -224,9 +224,9 @@ export default {
 		 */
 		errorMessage(att) {
 			return this.errorCode(att) === 'no-access'
-				? t('openbuild', 'You do not have access to generate this document.')
+				? t('buildiq', 'You do not have access to generate this document.')
 				: t(
-						'openbuild',
+						'buildiq',
 						'Generating the document failed. The object is unchanged — you can try again.',
 					)
 		},

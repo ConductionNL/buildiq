@@ -10,25 +10,25 @@
 				{{
 					recording
 						? t(
-								'openbuild',
+								'buildiq',
 								'Recording — click an element to capture its target',
 							)
 						: t(
-								'openbuild',
+								'buildiq',
 								'Paused — navigate the app, then resume recording',
 							)
 				}}
 			</NcCheckboxRadioSwitch>
 			<span class="wt-recorder__spacer" />
 			<span v-if="lastPick" class="wt-recorder__last">
-				{{ t('openbuild', 'Last:') }}
+				{{ t('buildiq', 'Last:') }}
 				<code
 					>{{ lastPick.kind
 					}}{{ lastPick.ref ? ' · ' + lastPick.ref : '' }}</code
 				>
 			</span>
 			<NcButton variant="tertiary" @click="$emit('close')">
-				{{ t('openbuild', 'Done recording') }}
+				{{ t('buildiq', 'Done recording') }}
 			</NcButton>
 		</div>
 		<div
@@ -38,7 +38,7 @@
 				ref="frame"
 				class="wt-recorder__frame"
 				:src="iframeSrc"
-				:title="t('openbuild', 'App preview')"
+				:title="t('buildiq', 'App preview')"
 				@load="onIframeLoad" />
 		</div>
 	</div>
@@ -52,7 +52,7 @@ import { resolveTargetFromElement } from './recorderTargetResolver.js'
 
 /**
  * WalkthroughRecorder — live click-to-record surface (ADR-043). Embeds the
- * running virtual app (its own CnAppRoot runtime at `/apps/openbuild/builder/
+ * running virtual app (its own CnAppRoot runtime at `/apps/buildiq/builder/
  * {slug}`) in a same-origin iframe and, while armed, captures clicks inside it:
  * each click is resolved to the most stable walkthrough target via
  * {@link resolveTargetFromElement} and emitted as `pick` (the designer turns it
@@ -78,8 +78,11 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec openspec/specs/application-detail-ui/spec.md
+		 */
 		iframeSrc() {
-			const base = generateUrl(`/apps/openbuild/builder/${this.appSlug}`)
+			const base = generateUrl(`/apps/buildiq/builder/${this.appSlug}`)
 			return this.versionSlug
 				? `${base}?_version=${encodeURIComponent(this.versionSlug)}`
 				: base

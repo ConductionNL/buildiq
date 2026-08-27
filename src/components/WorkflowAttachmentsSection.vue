@@ -13,17 +13,17 @@
 	<section class="ob-workflows-section">
 		<header class="ob-workflows-section__header">
 			<h3 class="ob-workflows-section__title">
-				{{ t('openbuild', 'Workflows') }}
+				{{ t('buildiq', 'Workflows') }}
 			</h3>
 			<NcButton variant="secondary" @click="openAdd">
-				{{ t('openbuild', 'Attach case type') }}
+				{{ t('buildiq', 'Attach case type') }}
 			</NcButton>
 		</header>
 
 		<p v-if="attachments.length === 0" class="ob-workflows-section__empty">
 			{{
 				t(
-					'openbuild',
+					'buildiq',
 					'No Procest case types are attached yet. Attach one to start a case when an object is created.',
 				)
 			}}
@@ -37,7 +37,7 @@
 					<strong>{{ wf.caseTypeName }}</strong>
 					<span class="ob-workflows-section__item-meta">
 						{{
-							t('openbuild', 'on schema {schema} → {property}', {
+							t('buildiq', 'on schema {schema} → {property}', {
 								schema: wf.schema,
 								property: wf.linkProperty,
 							})
@@ -46,10 +46,10 @@
 				</div>
 				<div class="ob-workflows-section__item-actions">
 					<NcButton variant="tertiary" @click="openEdit(wf)">
-						{{ t('openbuild', 'Edit') }}
+						{{ t('buildiq', 'Edit') }}
 					</NcButton>
 					<NcButton variant="tertiary" @click="detach(wf)">
-						{{ t('openbuild', 'Detach') }}
+						{{ t('buildiq', 'Detach') }}
 					</NcButton>
 				</div>
 			</li>
@@ -66,14 +66,14 @@
 
 		<ConfirmActionDialog
 			v-model:open="confirmDetachOpen"
-			:name="t('openbuild', 'Detach case type')"
+			:name="t('buildiq', 'Detach case type')"
 			:message="
 				t(
-					'openbuild',
+					'buildiq',
 					'Detach this case type? Existing linked cases are NOT deleted and object links are kept.',
 				)
 			"
-			:confirmLabel="t('openbuild', 'Detach')"
+			:confirmLabel="t('buildiq', 'Detach')"
 			destructive
 			@confirm="onConfirmDetach" />
 	</section>

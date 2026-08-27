@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild RuleExecutionLogCleanup
+ * Buildiq RuleExecutionLogCleanup
  *
  * Weekly TimedJob (7-day interval) that enforces the RuleExecutionLog retention
  * policy (REQ-BRE-013). Logs older than the retention window (default 90 days)
@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category BackgroundJob
- * @package  OCA\OpenBuild\BackgroundJob
+ * @package  OCA\Buildiq\BackgroundJob
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -28,9 +28,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\BackgroundJob;
+namespace OCA\Buildiq\BackgroundJob;
 
-use OCA\OpenBuild\Service\RuleEngineService;
+use OCA\Buildiq\Service\RuleEngineService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -98,7 +98,7 @@ class RuleExecutionLogCleanup extends TimedJob {
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'OpenBuild: RuleExecutionLog cleanup query failed',
+				'Buildiq: RuleExecutionLog cleanup query failed',
 				['exception' => $e->getMessage()]
 			);
 			return;
@@ -122,14 +122,14 @@ class RuleExecutionLogCleanup extends TimedJob {
 				++$purged;
 			} catch (Throwable $e) {
 				$this->logger->warning(
-					'OpenBuild: failed to purge RuleExecutionLog record',
+					'Buildiq: failed to purge RuleExecutionLog record',
 					['uuid' => $uuid, 'exception' => $e->getMessage()]
 				);
 			}
 		}//end foreach
 
 		if ($purged > 0) {
-			$this->logger->info('OpenBuild cleanup: purged ' . $purged . ' expired rule-execution log(s)');
+			$this->logger->info('Buildiq cleanup: purged ' . $purged . ' expired rule-execution log(s)');
 		}
 
 	}//end run()

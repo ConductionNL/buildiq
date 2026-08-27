@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenBuild AppRepoParser
+ * Buildiq AppRepoParser
  *
  * Turns a fetched GitHub app-repo file map (`path => contents`, exactly what a
  * GitHub contents-API fetch yields) into an in-memory `ApplicationTemplate`-shaped
@@ -23,7 +23,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenBuild\Service
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -38,9 +38,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuild\Service;
+namespace OCA\Buildiq\Service;
 
-use OCA\OpenBuild\Exception\AppRepoParseException;
+use OCA\Buildiq\Exception\AppRepoParseException;
 
 /**
  * Strict, all-or-nothing parser for the canonical GitHub app-repo layout.
@@ -64,7 +64,7 @@ class AppRepoParser {
 	public const SCHEMAS_PREFIX = 'schemas/';
 
 	/**
-	 * The only `formatVersion` major this OpenBuild parses (OQ-1: reject unknown
+	 * The only `formatVersion` major this Buildiq parses (OQ-1: reject unknown
 	 * majors, tolerate unknown minors/keys for forward compatibility).
 	 */
 	private const SUPPORTED_FORMAT_MAJOR = 1;
@@ -225,7 +225,7 @@ class AppRepoParser {
 		if (array_key_exists(self::DESCRIPTOR_FILE, $files) === false) {
 			throw new AppRepoParseException(
 				errorCode: 'descriptor_missing',
-				message: 'No openbuild-app.json at the repo root — not an OpenBuild app repo.',
+				message: 'No openbuild-app.json at the repo root — not an Buildiq app repo.',
 				filePath: self::DESCRIPTOR_FILE
 			);
 		}
@@ -241,7 +241,7 @@ class AppRepoParser {
 		if (in_array($major, [self::SUPPORTED_FORMAT_MAJOR, self::SUPPORTED_FORMAT_MAJOR_V2], true) === false) {
 			throw new AppRepoParseException(
 				errorCode: 'format_version_unsupported',
-				message: 'openbuild-app.json formatVersion "' . $formatVersion . '" is not supported by this OpenBuild.',
+				message: 'openbuild-app.json formatVersion "' . $formatVersion . '" is not supported by this Buildiq.',
 				filePath: self::DESCRIPTOR_FILE
 			);
 		}

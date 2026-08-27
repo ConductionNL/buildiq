@@ -13,24 +13,24 @@
 				{{ dialogSummaryLead }}
 				<strong>{{ resolvedTitle }}</strong
 				>.
-				{{ t('openbuild', 'You can edit everything after cloning.') }}
+				{{ t('buildiq', 'You can edit everything after cloning.') }}
 			</p>
 			<NcTextField
 				:modelValue="localName"
-				:label="t('openbuild', 'Application name')"
-				:placeholder="t('openbuild', 'My permits')"
+				:label="t('buildiq', 'Application name')"
+				:placeholder="t('buildiq', 'My permits')"
 				@update:modelValue="localName = $event" />
 			<NcTextField
 				:modelValue="localSlug"
-				:label="t('openbuild', 'Slug (kebab-case, max 32 chars)')"
-				:placeholder="t('openbuild', 'my-permits')"
+				:label="t('buildiq', 'Slug (kebab-case, max 32 chars)')"
+				:placeholder="t('buildiq', 'my-permits')"
 				@update:modelValue="localSlug = $event" />
 			<p v-if="error" class="clone-dialog__error" role="alert">
 				{{ error }}
 			</p>
 			<div class="clone-dialog__actions">
 				<NcButton @click="onClose">
-					{{ t('openbuild', 'Cancel') }}
+					{{ t('buildiq', 'Cancel') }}
 				</NcButton>
 				<NcButton
 					variant="primary"
@@ -83,11 +83,13 @@ export default {
 		 * (required for accessibility — provides the modal's accessible label).
 		 *
 		 * @return {string} The translated dialog title.
+		 *
+		 * @spec openspec/specs/application-creation-wizard/spec.md
 		 */
 		dialogTitle() {
 			return this.remote
-				? t('openbuild', 'Install template')
-				: t('openbuild', 'Use this template')
+				? t('buildiq', 'Install template')
+				: t('buildiq', 'Use this template')
 		},
 
 		/**
@@ -97,7 +99,7 @@ export default {
 		 */
 		resolvedTitle() {
 			if (!this.template) return ''
-			return t('openbuild', this.template.title || this.template.slug)
+			return t('buildiq', this.template.title || this.template.slug)
 		},
 
 		/**
@@ -123,12 +125,12 @@ export default {
 		submitLabel() {
 			if (this.remote || this.github) {
 				return this.submitting
-					? t('openbuild', 'Installing…')
-					: t('openbuild', 'Install')
+					? t('buildiq', 'Installing…')
+					: t('buildiq', 'Install')
 			}
 			return this.submitting
-				? t('openbuild', 'Cloning…')
-				: t('openbuild', 'Clone template')
+				? t('buildiq', 'Cloning…')
+				: t('buildiq', 'Clone template')
 		},
 
 		/**
@@ -140,11 +142,11 @@ export default {
 		 */
 		dialogHeading() {
 			if (this.github) {
-				return t('openbuild', 'Install app from GitHub')
+				return t('buildiq', 'Install app from GitHub')
 			}
 			return this.remote
-				? t('openbuild', 'Install template')
-				: t('openbuild', 'Use this template')
+				? t('buildiq', 'Install template')
+				: t('buildiq', 'Use this template')
 		},
 
 		/**
@@ -155,9 +157,9 @@ export default {
 		 */
 		dialogSummaryLead() {
 			if (this.remote || this.github) {
-				return t('openbuild', 'Install a new application from')
+				return t('buildiq', 'Install a new application from')
 			}
-			return t('openbuild', 'Create a new application from')
+			return t('buildiq', 'Create a new application from')
 		},
 	},
 
@@ -203,7 +205,7 @@ export default {
 		async submit() {
 			if (!this.canSubmit) {
 				this.error = t(
-					'openbuild',
+					'buildiq',
 					'Provide a name and a kebab-case slug (max 32 chars).',
 				)
 				return
@@ -225,7 +227,7 @@ export default {
 			try {
 				await this.$emit('submit', payload)
 			} catch (e) {
-				this.error = e?.message || t('openbuild', 'Clone failed.')
+				this.error = e?.message || t('buildiq', 'Clone failed.')
 				this.submitting = false
 			}
 		},
@@ -242,7 +244,7 @@ export default {
 		async installRemote(payload) {
 			try {
 				const url = generateUrl(
-					'/apps/openbuild/api/store/templates/{slug}/install',
+					'/apps/buildiq/api/store/templates/{slug}/install',
 					{ slug: this.remoteSlug },
 				)
 				const resp = await axios.post(url, payload)
@@ -254,7 +256,7 @@ export default {
 					data?.detail
 					|| data?.error
 					|| e?.message
-					|| t('openbuild', 'Install failed.')
+					|| t('buildiq', 'Install failed.')
 				this.submitting = false
 			}
 		},
@@ -273,14 +275,14 @@ export default {
 			const repo = this.githubRepo || {}
 			if (!repo.owner || !repo.repo) {
 				this.error = t(
-					'openbuild',
+					'buildiq',
 					'This GitHub app is missing its repository identity.',
 				)
 				this.submitting = false
 				return
 			}
 			try {
-				const url = generateUrl('/apps/openbuild/api/shop/github/install')
+				const url = generateUrl('/apps/buildiq/api/shop/github/install')
 				const body = {
 					owner: repo.owner,
 					repo: repo.repo,
@@ -302,9 +304,9 @@ export default {
 					data?.detail
 					|| data?.error
 					|| e?.message
-					|| t('openbuild', 'Install failed.')
+					|| t('buildiq', 'Install failed.')
 				this.error = file
-					? t('openbuild', '{message} (in {file})', {
+					? t('buildiq', '{message} (in {file})', {
 							message: base,
 							file,
 						})

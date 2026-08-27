@@ -10,36 +10,36 @@
 <template>
 	<NcModal v-if="open" size="small" @close="onClose">
 		<div class="link-repo">
-			<h2>{{ t('openbuild', 'Link a GitHub repository') }}</h2>
+			<h2>{{ t('buildiq', 'Link a GitHub repository') }}</h2>
 			<p class="link-repo__summary">
 				{{
 					t(
-						'openbuild',
+						'buildiq',
 						'Connect this app to a GitHub repository so you can publish and pull versions.',
 					)
 				}}
 			</p>
 			<NcTextField
 				:modelValue="owner"
-				:label="t('openbuild', 'Repository owner (user or org)')"
-				:placeholder="t('openbuild', 'conduction')"
+				:label="t('buildiq', 'Repository owner (user or org)')"
+				:placeholder="t('buildiq', 'conduction')"
 				@update:modelValue="owner = $event" />
 			<NcTextField
 				:modelValue="name"
-				:label="t('openbuild', 'Repository name')"
-				:placeholder="t('openbuild', 'my-app')"
+				:label="t('buildiq', 'Repository name')"
+				:placeholder="t('buildiq', 'my-app')"
 				@update:modelValue="name = $event" />
 			<NcTextField
 				:modelValue="org"
-				:label="t('openbuild', 'Create under organisation (optional)')"
-				:placeholder="t('openbuild', 'Leave empty to use your own account')"
+				:label="t('buildiq', 'Create under organisation (optional)')"
+				:placeholder="t('buildiq', 'Leave empty to use your own account')"
 				@update:modelValue="org = $event" />
 			<p v-if="error" class="link-repo__error" role="alert">
 				{{ error }}
 			</p>
 			<div class="link-repo__actions">
 				<NcButton @click="onClose">
-					{{ t('openbuild', 'Cancel') }}
+					{{ t('buildiq', 'Cancel') }}
 				</NcButton>
 				<NcButton
 					variant="primary"
@@ -47,8 +47,8 @@
 					@click="submit">
 					{{
 						submitting
-							? t('openbuild', 'Linking…')
-							: t('openbuild', 'Link repository')
+							? t('buildiq', 'Linking…')
+							: t('buildiq', 'Link repository')
 					}}
 				</NcButton>
 			</div>
@@ -134,7 +134,7 @@ export default {
 			this.error = ''
 			try {
 				const url = generateUrl(
-					'/apps/openbuild/api/applications/{slug}/github/link',
+					'/apps/buildiq/api/applications/{slug}/github/link',
 					{ slug: this.slug },
 				)
 				const body = { owner: this.owner.trim(), name: this.name.trim() }
@@ -150,7 +150,7 @@ export default {
 					data?.detail
 					|| data?.error
 					|| e?.message
-					|| t('openbuild', 'Could not link the repository.')
+					|| t('buildiq', 'Could not link the repository.')
 				this.submitting = false
 			}
 		},

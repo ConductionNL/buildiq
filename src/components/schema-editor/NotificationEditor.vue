@@ -9,23 +9,23 @@
   - `x-openregister-notifications` block + a "coming in v1.1" message.
   -->
 <template>
-	<section class="openbuild-notification-editor">
-		<header class="openbuild-notification-editor__header">
-			<h3>{{ t('openbuild', 'Notifications') }}</h3>
+	<section class="buildiq-notification-editor">
+		<header class="buildiq-notification-editor__header">
+			<h3>{{ t('buildiq', 'Notifications') }}</h3>
 		</header>
 		<NcNoteCard type="info">
 			{{
 				t(
-					'openbuild',
+					'buildiq',
 					'The notification editor ships in v1.1 (see design Decision 7). Existing notifications declared on this schema are shown read-only below.',
 				)
 			}}
 		</NcNoteCard>
-		<pre v-if="notifications" class="openbuild-notification-editor__readonly">{{
+		<pre v-if="notifications" class="buildiq-notification-editor__readonly">{{
 			formatted
 		}}</pre>
-		<p v-else class="openbuild-notification-editor__empty">
-			{{ t('openbuild', 'No notifications declared on this schema.') }}
+		<p v-else class="buildiq-notification-editor__empty">
+			{{ t('buildiq', 'No notifications declared on this schema.') }}
 		</p>
 	</section>
 </template>
@@ -59,19 +59,19 @@ export default {
 </script>
 
 <style scoped>
-.openbuild-notification-editor {
+.buildiq-notification-editor {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
 }
 
-.openbuild-notification-editor__header h3 {
+.buildiq-notification-editor__header h3 {
 	margin: 0;
 	font-size: 18px;
 	font-weight: 600;
 }
 
-.openbuild-notification-editor__readonly {
+.buildiq-notification-editor__readonly {
 	margin: 0;
 	padding: 8px;
 	background: var(--color-background-dark);
@@ -81,7 +81,7 @@ export default {
 	overflow: auto;
 }
 
-.openbuild-notification-editor__empty {
+.buildiq-notification-editor__empty {
 	margin: 0;
 	color: var(--color-text-maxcontrast);
 }
