@@ -718,6 +718,20 @@ export default {
 				.catch(() => {})
 		},
 
+		/**
+		 * Track the settings modal's open state and load the flow list once.
+		 *
+		 * The flows are fetched lazily rather than with the rest of the page:
+		 * they are only ever read inside this modal, and most visits to an
+		 * application never open it. The three guards make the fetch happen
+		 * exactly once — not on close, not when a previous open already
+		 * filled the list, and not while a request is still in flight.
+		 *
+		 * @param {boolean} open Whether the settings modal is now open.
+		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
+		 */
 		async onSettingsOpen(open) {
 			this.settingsOpen = open
 			if (!open || this.availableFlows.length || this.loadingFlows) {
