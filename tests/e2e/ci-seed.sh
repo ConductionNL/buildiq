@@ -441,6 +441,42 @@ set_pref() {
 set_pref 'walkthrough_completed_version' '999.0.0'
 set_pref 'support-dialog-seen' '1'
 
+# ── THE THIRD FIRST-RUN OVERLAY: the SETUP WIZARD ───────────────────────────
+#
+# The two preferences above cover the walkthrough and the support note. They do
+# NOT cover the configuration wizard, which is a different mechanism: the
+# manifest declares `setup.completionConfigKey`, and CnAppRoot reads it from
+# APP CONFIG rather than from a per-user preference.
+#
+# This did not matter until @conduction/nextcloud-vue 2.21. Before it,
+# `CnAppRoot.optionalSetupPending` short-circuited on `/api/setup/status`
+# reporting `completed: true` — which it does whenever no REQUIRED step is
+# outstanding — so the wizard never opened and nothing here had to suppress it.
+# nextcloud-vue#806 fixed that bug. The wizard now opens as designed, lands a
+# `role="dialog" aria-modal="true"` over the page, and every click in the suite
+# is intercepted by `.modal-container__content`.
+#
+# The symptom is NOT "the wizard is up". Playwright reports the target element
+# as found, visible, enabled and stable, and then retries the click ~55 times
+# against the overlay until the test times out — so it reads as a slow or flaky
+# page, not as a modal. 38 specs across agents, applications and automations
+# failed this way while the app itself was healthy: the bundle served 200 at
+# 14MB, every register and schema seeded, `api/applications` answered 200.
+#
+# Same principle as the block above: use the product's own returning-user
+# mechanism rather than a per-spec dismissal. Writing the completed version
+# makes the instance one that has already been configured.
+#
+# Non-fatal on purpose. If this fails the wizard reappears and the specs fail
+# visibly, which is the honest outcome.
+if [ -f "${SERVER_DIR}/occ" ]; then
+	if (cd "${SERVER_DIR}" && php occ config:app:set buildiq setup_completed_version --value=1); then
+		echo "[ci-seed] setup wizard marked complete (setup_completed_version=1)."
+	else
+		echo "::warning::Could not set buildiq setup_completed_version — the configuration wizard will open over every page and swallow clicks."
+	fi
+fi
+
 # ── 3d. Configure Docudesk's template register, when Docudesk is installed ───
 #
 # WHY THIS IS HERE AND NOT IN global-setup.ts. It WAS only there
