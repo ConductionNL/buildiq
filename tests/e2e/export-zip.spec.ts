@@ -100,7 +100,14 @@ test.describe('Buildiq export dialog', () => {
 //
 // Retarget it at ExportJobsTab/ExportDialog and resolve the object id first;
 // the ZIP contract itself is covered at the unit/controller level meanwhile.
-test.describe.skip('Buildiq ZIP export', () => {
+test.describe('Buildiq ZIP export', () => {
+	// `describe.skip` records NO reason in the Playwright report, which is the
+	// only place the skip-discipline gate can read one. Same skip, same tests,
+	// reason now attributable.
+	test.skip(
+		true,
+		'STILL SKIPPED, with the true reason replacing the #41 one. - It polls `[data-test="export-job-row"]:has-text("succeeded")`. That attribute is emitted nowhere in src/; the jobs surface is src/components/tabs/ExportJobsTab.vue + src/views/ExportJobsList.vue, and the export trigger is now the "Export" button in ApplicationDetailActions opening ExportDialog — not the flow this f...',
+	)
 	test.beforeEach(async ({ page }) => {
 		// Login via the Nextcloud login form. CI uses storageState; this
 		// fallback keeps the spec runnable in local dev.

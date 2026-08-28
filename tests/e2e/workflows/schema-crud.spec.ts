@@ -153,9 +153,13 @@ test.describe('Schema — full CRUD with persistence (OR runtime schema API)', (
 	})
 
 	// ---- #41: schema designer UI quarantined -------------------------------
-	test.fixme('CRUD via the in-app schema designer UI (Conduction/buildiq#41: builder routes do not render)', async ({
+	test('CRUD via the in-app schema designer UI (Conduction/buildiq#41: builder routes do not render)', async ({
 		page,
 	}) => {
+		test.fixme(
+			true,
+			'Conduction/buildiq#41: builder routes do not render #41: schema designer UI quarantined -------------------------------',
+		)
 		// The /builder/{slug}/schemas designer ("Add schema" → field editor →
 		// Save) is part of the #41-quarantined nested builder routes. When #41
 		// is fixed this should drive: Add schema → add 2 fields → Save →

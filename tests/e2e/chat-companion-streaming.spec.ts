@@ -148,10 +148,14 @@ test.describe('AI Chat Companion — FAB + thinking + response (spec: ai-chat-co
 	})
 
 	// QUARANTINED: requires a live AI chat backend not available in this environment.
-	test.skip('Thinking indicator clears once the response arrives', async ({
+	test('Thinking indicator clears once the response arrives', async ({
 		page,
 		request,
 	}) => {
+		test.skip(
+			true,
+			'QUARANTINED: requires a live AI chat backend not available in this environment.',
+		)
 		const health = await request.get(CHAT_HEALTH_URL)
 		test.skip(chatUnavailable(health.status()), 'No chat backend reachable')
 

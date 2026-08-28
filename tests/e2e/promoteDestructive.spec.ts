@@ -87,8 +87,16 @@ async function loginAs(
 // scenarios to THAT selector is the un-quarantine, and it needs a multi-version
 // chain to have a non-terminal pill to promote from, which this instance has
 // not got (hello-world has exactly one version, `production`).
-test.describe
-	.skip('PromoteVersionDialog — e2e with live call site (pending spec B / buildiq-app-detail-overview)', () => {
+test.describe('PromoteVersionDialog — e2e with live call site (pending spec B / buildiq-app-detail-overview)', () => {
+	// `describe.skip` records NO reason in the Playwright report, which is the
+	// only place the skip-discipline gate can read one. Same skip, same tests;
+	// the reason above is now attributable. Note the form: prettier had split
+	// this as `test.describe` / `.skip(...)` across two lines, so a search for
+	// `test.describe.skip(` does not find it.
+	test.skip(
+		true,
+		'the call site that opens PromoteVersionDialog does not exist: every scenario here reaches it through TODO_PROMOTE_BUTTON_SELECTOR (promote-version-btn), which appears nowhere in src/. The dialog itself ships and its gate logic is unit-tested in tests/dialogs/PromoteVersionDialog.spec.js. ApplicationDetailHeader.vue does render a .ob-detail-header__pill-promote affordance — retargeting these scenarios at THAT selector is the un-quarantine, and it needs a multi-version chain to have a non-terminal pill to promote from, which this instance has not got (hello-world has exactly one version, production).',
+	)
 	// TODO: Replace this selector with the actual Promote button once spec B
 	// wires the dialog into the ApplicationVersion list in the detail page.
 	const TODO_PROMOTE_BUTTON_SELECTOR =
