@@ -1045,7 +1045,8 @@ OC.L10N.register(
         "Exports": "Exports",
         "History": "Geschiedenis",
         "Walkthrough designer": "Rondleidingontwerper",
-        "Agents": "Agents"
+        "Agents": "Agents",
+        "Flow": "Flow"
     },
     "nplurals=2; plural=(n != 1);"
 )
