@@ -148,10 +148,14 @@ test.describe('AI Chat Companion — FAB + thinking + response (spec: ai-chat-co
 	})
 
 	// QUARANTINED: requires a live AI chat backend not available in this environment.
-	test.skip('Thinking indicator clears once the response arrives', async ({
+	test('Thinking indicator clears once the response arrives', async ({
 		page,
 		request,
 	}) => {
+		test.skip(
+			true,
+			'QUARANTINED: requires a live AI chat backend not available in this environment.',
+		)
 		const health = await request.get(CHAT_HEALTH_URL)
 		test.skip(chatUnavailable(health.status()), 'No chat backend reachable')
 
@@ -187,7 +191,7 @@ test.describe('AI Chat Companion — true streaming (gated on ai-chat-companion-
 		// Toggle this off once the streaming change is applied + the
 		// configured provider exposes generateStreamOfText.
 		return true
-	}, 'Streaming surface not yet wired — see openspec/changes/ai-chat-companion-streaming/')
+	}, 'the streaming surface is not built yet, and both tests below are EMPTY — enabling them would report coverage that does not exist. Tracked in openspec/changes/ai-chat-companion-streaming/, which now exists: that change carries the token-event and heartbeat requirements plus tasks 4.1/4.2 to write these two bodies. Remove this guard only once they assert something.')
 
 	test('partial response text appears before the call completes', async ({
 		page,
