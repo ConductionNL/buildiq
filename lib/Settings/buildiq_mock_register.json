@@ -1,0 +1,434 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "buildiq demo data",
+    "version": "1.0.0",
+    "description": "Demo data covering every schema this app supplies, offered as the first step of the app's setup walkthrough. Generated from the schemas themselves, so every object satisfies the schema that will validate it."
+  },
+  "x-openregister": {
+    "type": "mock",
+    "app": "buildiq",
+    "description": "Demo data for buildiq. NOT installed automatically — a mock register is imported on demand, from the setup walkthrough or `occ openregister:descriptors:list --app=buildiq --import=<slug>`."
+  },
+  "paths": {},
+  "components": {
+    "registers": {
+      "buildiq": {
+        "slug": "buildiq",
+        "title": "OpenBuild Register (demo)",
+        "version": "0.9.0",
+        "description": "Demo data for OpenBuild Register. Generated from the register's own schemas — see hydra-gates/scripts/lib/generate_mock_register.py."
+      }
+    },
+    "objects": [
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "Application",
+          "slug": "application-voorbeeld-name-1-1"
+        },
+        "slug": "aaba",
+        "name": "Voorbeeld Name 1",
+        "description": "Voorbeeld Description 1",
+        "appType": "virtual",
+        "status": "draft",
+        "baseRef": {
+          "kind": "Voorbeeld Kind 1",
+          "id": "Voorbeeld Id 1",
+          "manifestVersion": "Voorbeeld Manifestversion 1"
+        },
+        "productionVersion": "00000000-0000-4000-8000-000000000000",
+        "icon": {
+          "ref": "Voorbeeld Ref 1"
+        },
+        "iconDark": {
+          "ref": "Voorbeeld Ref 1"
+        },
+        "allowUserOverrides": false,
+        "permissions": {
+          "owners": [
+            "Voorbeeld Owners 1"
+          ],
+          "editors": [
+            "Voorbeeld Editors 1"
+          ],
+          "viewers": [
+            "Voorbeeld Viewers 1"
+          ]
+        },
+        "githubRepo": {
+          "owner": "Voorbeeld Owner 1",
+          "name": "Voorbeeld Name 1"
+        },
+        "githubDefaultBranch": "Voorbeeld Githubdefaultbranch 1",
+        "dataRegisters": [],
+        "connectors": [],
+        "flows": []
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "Application",
+          "slug": "application-voorbeeld-name-2-2"
+        },
+        "slug": "bbcb",
+        "name": "Voorbeeld Name 2",
+        "description": "Voorbeeld Description 2",
+        "appType": "hybrid",
+        "status": "published",
+        "baseRef": {
+          "kind": "Voorbeeld Kind 2",
+          "id": "Voorbeeld Id 2",
+          "manifestVersion": "Voorbeeld Manifestversion 2"
+        },
+        "productionVersion": "00000000-0000-4000-8000-000000000001",
+        "icon": {
+          "ref": "Voorbeeld Ref 2"
+        },
+        "iconDark": {
+          "ref": "Voorbeeld Ref 2"
+        },
+        "allowUserOverrides": false,
+        "permissions": {
+          "owners": [
+            "Voorbeeld Owners 2"
+          ],
+          "editors": [
+            "Voorbeeld Editors 2"
+          ],
+          "viewers": [
+            "Voorbeeld Viewers 2"
+          ]
+        },
+        "githubRepo": {
+          "owner": "Voorbeeld Owner 2",
+          "name": "Voorbeeld Name 2"
+        },
+        "githubDefaultBranch": "Voorbeeld Githubdefaultbranch 2",
+        "dataRegisters": [],
+        "connectors": [],
+        "flows": []
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "Application",
+          "slug": "application-voorbeeld-name-3-3"
+        },
+        "slug": "ccdc",
+        "name": "Voorbeeld Name 3",
+        "description": "Voorbeeld Description 3",
+        "appType": "virtual",
+        "status": "archived",
+        "baseRef": {
+          "kind": "Voorbeeld Kind 3",
+          "id": "Voorbeeld Id 3",
+          "manifestVersion": "Voorbeeld Manifestversion 3"
+        },
+        "productionVersion": "00000000-0000-4000-8000-000000000002",
+        "icon": {
+          "ref": "Voorbeeld Ref 3"
+        },
+        "iconDark": {
+          "ref": "Voorbeeld Ref 3"
+        },
+        "allowUserOverrides": false,
+        "permissions": {
+          "owners": [
+            "Voorbeeld Owners 3"
+          ],
+          "editors": [
+            "Voorbeeld Editors 3"
+          ],
+          "viewers": [
+            "Voorbeeld Viewers 3"
+          ]
+        },
+        "githubRepo": {
+          "owner": "Voorbeeld Owner 3",
+          "name": "Voorbeeld Name 3"
+        },
+        "githubDefaultBranch": "Voorbeeld Githubdefaultbranch 3",
+        "dataRegisters": [],
+        "connectors": [],
+        "flows": []
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "ApplicationTemplate",
+          "slug": "applicationtemplate-voorbeeld-title-1-1"
+        },
+        "slug": "aaba",
+        "title": "Voorbeeld Title 1",
+        "description": "Voorbeeld Description 1",
+        "useCase": "Voorbeeld Usecase 1",
+        "category": "government-services",
+        "manifest": {},
+        "isSeeded": false,
+        "version": "012.012.012",
+        "screenshotUrl": "Voorbeeld Screenshoturl 1",
+        "companionSchemas": [
+          {}
+        ],
+        "sourceUrl": "Voorbeeld Sourceurl 1"
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "ApplicationTemplate",
+          "slug": "applicationtemplate-voorbeeld-title-2-2"
+        },
+        "slug": "bbcb",
+        "title": "Voorbeeld Title 2",
+        "description": "Voorbeeld Description 2",
+        "useCase": "Voorbeeld Usecase 2",
+        "category": "internal-operations",
+        "manifest": {},
+        "isSeeded": false,
+        "version": "123.123.123",
+        "screenshotUrl": "Voorbeeld Screenshoturl 2",
+        "companionSchemas": [
+          {}
+        ],
+        "sourceUrl": "Voorbeeld Sourceurl 2"
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "ApplicationTemplate",
+          "slug": "applicationtemplate-voorbeeld-title-3-3"
+        },
+        "slug": "ccdc",
+        "title": "Voorbeeld Title 3",
+        "description": "Voorbeeld Description 3",
+        "useCase": "Voorbeeld Usecase 3",
+        "category": "citizen-engagement",
+        "manifest": {},
+        "isSeeded": false,
+        "version": "234.234.234",
+        "screenshotUrl": "Voorbeeld Screenshoturl 3",
+        "companionSchemas": [
+          {}
+        ],
+        "sourceUrl": "Voorbeeld Sourceurl 3"
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "ApplicationVersion",
+          "slug": "applicationversion-voorbeeld-name-1-1"
+        },
+        "name": "Voorbeeld Name 1",
+        "slug": "aaba",
+        "manifest": {},
+        "register": "openbuild-aa",
+        "semver": "0.1.0",
+        "status": "draft",
+        "application": "00000000-0000-4000-8000-000000000000",
+        "manifestDelta": {},
+        "baseRef": {
+          "kind": "Voorbeeld Kind 1",
+          "id": "Voorbeeld Id 1",
+          "manifestVersion": "Voorbeeld Manifestversion 1"
+        },
+        "promotesTo": "00000000-0000-4000-8000-000000000000",
+        "scope": "admin",
+        "owner": "Voorbeeld Owner 1",
+        "commitSha": "Voorbeeld Commitsha 1",
+        "sourceRef": "Voorbeeld Sourceref 1"
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "ApplicationVersion",
+          "slug": "applicationversion-voorbeeld-name-2-2"
+        },
+        "name": "Voorbeeld Name 2",
+        "slug": "bbcb",
+        "manifest": {},
+        "register": "openbuild-bb",
+        "semver": "0.1.0",
+        "status": "published",
+        "application": "00000000-0000-4000-8000-000000000001",
+        "manifestDelta": {},
+        "baseRef": {
+          "kind": "Voorbeeld Kind 2",
+          "id": "Voorbeeld Id 2",
+          "manifestVersion": "Voorbeeld Manifestversion 2"
+        },
+        "promotesTo": "00000000-0000-4000-8000-000000000001",
+        "scope": "user",
+        "owner": "Voorbeeld Owner 2",
+        "commitSha": "Voorbeeld Commitsha 2",
+        "sourceRef": "Voorbeeld Sourceref 2"
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "ApplicationVersion",
+          "slug": "applicationversion-voorbeeld-name-3-3"
+        },
+        "name": "Voorbeeld Name 3",
+        "slug": "ccdc",
+        "manifest": {},
+        "register": "openbuild-cc",
+        "semver": "0.1.0",
+        "status": "archived",
+        "application": "00000000-0000-4000-8000-000000000002",
+        "manifestDelta": {},
+        "baseRef": {
+          "kind": "Voorbeeld Kind 3",
+          "id": "Voorbeeld Id 3",
+          "manifestVersion": "Voorbeeld Manifestversion 3"
+        },
+        "promotesTo": "00000000-0000-4000-8000-000000000002",
+        "scope": "admin",
+        "owner": "Voorbeeld Owner 3",
+        "commitSha": "Voorbeeld Commitsha 3",
+        "sourceRef": "Voorbeeld Sourceref 3"
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "BuiltAppRoute",
+          "slug": "builtapproute-builtapproute-1-1"
+        },
+        "slug": "aaba",
+        "applicationUuid": "00000000-0000-4000-8000-000000000000"
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "BuiltAppRoute",
+          "slug": "builtapproute-builtapproute-2-2"
+        },
+        "slug": "bbcb",
+        "applicationUuid": "00000000-0000-4000-8000-000000000001"
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "BuiltAppRoute",
+          "slug": "builtapproute-builtapproute-3-3"
+        },
+        "slug": "ccdc",
+        "applicationUuid": "00000000-0000-4000-8000-000000000002"
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "HelloMessage",
+          "slug": "hellomessage-voorbeeld-title-1-1"
+        },
+        "title": "Voorbeeld Title 1",
+        "body": "Voorbeeld Body 1"
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "HelloMessage",
+          "slug": "hellomessage-voorbeeld-title-2-2"
+        },
+        "title": "Voorbeeld Title 2",
+        "body": "Voorbeeld Body 2"
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "HelloMessage",
+          "slug": "hellomessage-voorbeeld-title-3-3"
+        },
+        "title": "Voorbeeld Title 3",
+        "body": "Voorbeeld Body 3"
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "exportJob",
+          "slug": "exportjob-exportjob-1-1"
+        },
+        "applicationUuid": "00000000-0000-4000-8000-000000000000",
+        "applicationVersion": "012.012.012",
+        "target": "zip",
+        "status": "queued",
+        "githubOrg": "Voorbeeld Githuborg 1",
+        "githubRepo": "Voorbeeld Githubrepo 1",
+        "githubVisibility": "public",
+        "githubRepoUrl": "https://example.invalid/resource/0",
+        "githubPullRequestUrl": "https://example.invalid/resource/0",
+        "includeSeedData": false,
+        "license": "EUPL-1.2",
+        "downloadUrl": "Voorbeeld Downloadurl 1",
+        "downloadExpiresAt": "2026-03-01T09:00:00+00:00",
+        "errorMessage": "Voorbeeld Errormessage 1",
+        "log": [
+          "Voorbeeld Log 1"
+        ],
+        "dataRegisters": [],
+        "githubCredentialId": "Voorbeeld Githubcredentialid 1",
+        "requestedBy": "Voorbeeld Requestedby 1",
+        "applicationSlug": "Voorbeeld Applicationslug 1",
+        "flows": []
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "exportJob",
+          "slug": "exportjob-exportjob-2-2"
+        },
+        "applicationUuid": "00000000-0000-4000-8000-000000000001",
+        "applicationVersion": "123.123.123",
+        "target": "github",
+        "status": "running",
+        "githubOrg": "Voorbeeld Githuborg 2",
+        "githubRepo": "Voorbeeld Githubrepo 2",
+        "githubVisibility": "private",
+        "githubRepoUrl": "https://example.invalid/resource/1",
+        "githubPullRequestUrl": "https://example.invalid/resource/1",
+        "includeSeedData": false,
+        "license": "EUPL-1.2",
+        "downloadUrl": "Voorbeeld Downloadurl 2",
+        "downloadExpiresAt": "2026-03-02T09:00:00+00:00",
+        "errorMessage": "Voorbeeld Errormessage 2",
+        "log": [
+          "Voorbeeld Log 2"
+        ],
+        "dataRegisters": [],
+        "githubCredentialId": "Voorbeeld Githubcredentialid 2",
+        "requestedBy": "Voorbeeld Requestedby 2",
+        "applicationSlug": "Voorbeeld Applicationslug 2",
+        "flows": []
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "exportJob",
+          "slug": "exportjob-exportjob-3-3"
+        },
+        "applicationUuid": "00000000-0000-4000-8000-000000000002",
+        "applicationVersion": "234.234.234",
+        "target": "zip",
+        "status": "succeeded",
+        "githubOrg": "Voorbeeld Githuborg 3",
+        "githubRepo": "Voorbeeld Githubrepo 3",
+        "githubVisibility": "public",
+        "githubRepoUrl": "https://example.invalid/resource/2",
+        "githubPullRequestUrl": "https://example.invalid/resource/2",
+        "includeSeedData": false,
+        "license": "EUPL-1.2",
+        "downloadUrl": "Voorbeeld Downloadurl 3",
+        "downloadExpiresAt": "2026-03-03T09:00:00+00:00",
+        "errorMessage": "Voorbeeld Errormessage 3",
+        "log": [
+          "Voorbeeld Log 3"
+        ],
+        "dataRegisters": [],
+        "githubCredentialId": "Voorbeeld Githubcredentialid 3",
+        "requestedBy": "Voorbeeld Requestedby 3",
+        "applicationSlug": "Voorbeeld Applicationslug 3",
+        "flows": []
+      }
+    ]
+  }
+}
