@@ -470,10 +470,35 @@ set_pref 'support-dialog-seen' '1'
 # Non-fatal on purpose. If this fails the wizard reappears and the specs fail
 # visibly, which is the honest outcome.
 if [ -f "${SERVER_DIR}/occ" ]; then
-	if (cd "${SERVER_DIR}" && php occ config:app:set buildiq setup_completed_version --value=1); then
-		echo "[ci-seed] setup wizard marked complete (setup_completed_version=1)."
+	# EVERY STEP, not just the completion key. Setting setup_completed_version
+	# alone does NOT close the wizard, which is what the first attempt at this
+	# got wrong: SetupController::status() recomputes each step from its own
+	# evidence on every call and only then writes the completion key, so the
+	# key is an OUTPUT of that computation, never an input to it.
+	#
+	#   seed      done <- seedService->countSeeded() > 0   (occ seed, above)
+	#   store     done <- appconfig registry_url is set
+	#   demo-data done <- appconfig demo_data_decided is set
+	#
+	# Since nextcloud-vue 2.21 an OUTSTANDING OPTIONAL step is enough to open
+	# the wizard (nextcloud-vue#806 fixed it short-circuiting on `completed`),
+	# so `store` and `demo-data` being undone is what puts the dialog up — even
+	# though `completed` is true because the required `seed` step is done.
+	#
+	# `demo_data_decided` is the app's own "dealt with" flag, not "objects
+	# exist": its comment says re-offering the import every visit would make
+	# "no thanks" impossible to express. Writing it is exactly what an operator
+	# who declined would leave behind.
+	ok=1
+	for kv in "registry_url=https://example.invalid/e2e-registry" "demo_data_decided=skipped" "setup_completed_version=1"; do
+		if ! (cd "${SERVER_DIR}" && php occ config:app:set buildiq "${kv%%=*}" --value="${kv#*=}"); then
+			ok=0
+		fi
+	done
+	if [ "$ok" = "1" ]; then
+		echo "[ci-seed] setup wizard closed: every step marked dealt with."
 	else
-		echo "::warning::Could not set buildiq setup_completed_version — the configuration wizard will open over every page and swallow clicks."
+		echo "::warning::Could not mark all buildiq setup steps — the configuration wizard will open over every page and swallow clicks."
 	fi
 fi
 
