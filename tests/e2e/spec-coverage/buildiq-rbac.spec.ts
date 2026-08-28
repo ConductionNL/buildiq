@@ -41,9 +41,10 @@ const LIVE = process.env.BUILDIQ_E2E_LIVE === '1'
 //
 // Writing this honestly needs a session for the `rbac-viewer` fixture user,
 // which tests/e2e/global-setup.ts already mints, plus a viewer grant on the app.
-test.skip('REQ-OBRBAC-004 — owner sees edit controls on the application detail page', async ({
+test('REQ-OBRBAC-004 — owner sees edit controls on the application detail page', async ({
 	page,
 }) => {
+	test.skip(true, 'As admin (owner), the editor must show Save/Publish controls')
 	// As admin (owner), the editor must show Save/Publish controls
 	await page.goto(`${BASE}/apps/buildiq/applications`)
 
@@ -75,9 +76,13 @@ test.skip('REQ-OBRBAC-004 — owner sees edit controls on the application detail
 // in its own words ("the test passes because the gate logic is still in place").
 // A tag on an unfalsifiable assertion is the purest form of the .github#343
 // defect: the tag is not the test.
-test.skip('REQ-OBRBAC-004 — admin sees Publish capability (owner role confirmed)', async ({
+test('REQ-OBRBAC-004 — admin sees Publish capability (owner role confirmed)', async ({
 	page,
 }) => {
+	test.skip(
+		true,
+		'STUB/QUARANTINE NOTE CORRECTED 2026-08-25. The old text blamed buildiq#41 for the admin UI "not functional in this build". #41 is a PR that MERGED on 2026-07-27, and 47 spec files in this suite already pass against that UI — applicationDetailOverview.spec.ts alone has 9 passing tests. What actually blocks these is that their bodies are stubs (goto + main-visible), so enabling them would pass wh...',
+	)
 	test.skip(
 		!LIVE,
 		'Requires live dev env with a draft Application — set BUILDIQ_E2E_LIVE=1',
