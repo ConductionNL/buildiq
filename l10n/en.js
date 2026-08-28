@@ -1423,7 +1423,9 @@ OC.L10N.register(
         "This application has no flows yet.": "This application has no flows yet.",
         "No flows bound to this app yet.": "No flows bound to this app yet.",
         "Failed to load settings": "Failed to load settings",
-        "Support & donation": "Support & donation"
+        "Support & donation": "Support & donation",
+        "Demo data (optional)": "Demo data (optional)",
+        "Load example projects and components so lists, the Store and the detail pages show a working product right away. Optional, and safe to run more than once. Skip this on a production install.": "Load example projects and components so lists, the Store and the detail pages show a working product right away. Optional, and safe to run more than once. Skip this on a production install."
     },
     "nplurals=2; plural=(n != 1);"
 )

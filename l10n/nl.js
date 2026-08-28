@@ -1045,7 +1045,9 @@ OC.L10N.register(
         "Exports": "Exports",
         "History": "Geschiedenis",
         "Walkthrough designer": "Rondleidingontwerper",
-        "Agents": "Agents"
+        "Agents": "Agents",
+        "Demo data (optional)": "Demodata (optioneel)",
+        "Load example projects and components so lists, the Store and the detail pages show a working product right away. Optional, and safe to run more than once. Skip this on a production install.": "Laad voorbeeldprojecten en -componenten, zodat lijsten, de Store en de detailpagina's meteen een werkend product tonen. Optioneel en veilig om vaker uit te voeren. Sla dit over bij een productie-installatie."
     },
     "nplurals=2; plural=(n != 1);"
 )
