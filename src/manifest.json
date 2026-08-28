@@ -214,6 +214,14 @@
 			"order": 30
 		},
 		{
+			"id": "FlowsMenu",
+			"label": "Flows",
+			"icon": "Sitemap",
+			"route": "Flows",
+			"section": "settings",
+			"order": 96
+		},
+		{
 			"id": "Documentation",
 			"label": "Documentation",
 			"icon": "BookOpenVariantOutline",
@@ -490,6 +498,22 @@
 			"config": {
 				"documentationUrl": "https://openbuild.conduction.nl"
 			}
+		},
+		{
+			"id": "Flows",
+			"route": "/flows",
+			"type": "flows",
+			"title": "Flows",
+			"config": { "app": "buildiq" },
+			"_note": "A flow is app-specific - a buildiq flow operates on buildiq's objects - so the authoring surface lives here rather than behind a deep link to OpenRegister's list. Custom page rather than type:index because a flow lives in the shared native flow store, not a register/schema pair, so the object-backed index cannot address it. Same store OpenRegister, integriq and hermiq use, so list and status semantics stay identical fleet-wide."
+		},
+		{
+			"id": "FlowDetail",
+			"route": "/flows/:id",
+			"type": "flow-detail",
+			"title": "Flow",
+			"config": { "app": "buildiq" },
+			"_note": "The shared flow canvas over the same native flow store the rest of the fleet uses - not an app-owned editor."
 		}
 	],
 	"observability": {
