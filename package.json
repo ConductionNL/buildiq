@@ -94,7 +94,7 @@
     "path-browserify": "^1.0.1",
     "postcss-html": "^1.6.0",
     "prettier": "^3.9.6",
-    "sass": "^1.77.8",
+    "sass": "^1.103.1",
     "sass-loader": "^17.0.0",
     "style-loader": "~4.0.0",
     "stylelint": "^17.14.1",
