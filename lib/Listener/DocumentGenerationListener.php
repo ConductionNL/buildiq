@@ -274,12 +274,17 @@ class DocumentGenerationListener implements IEventListener {
 	 */
 	private function findMatchingAutomations(string $triggerType, string $schemaSlug, ?string $transitionAction): array {
 		try {
+			// ADR-078 (gate-61): bounded, not unbounded — a real install's
+			// configured automations number in the tens, never the thousands
+			// this limit would need to matter; the bound exists to cap worst
+			// case, not to reflect an expected count.
 			$results = $this->objectService()->findAll(
 				config: [
 					'filters' => [
 						'register' => AutomationCompilerService::REGISTER_SLUG,
 						'schema' => AutomationCompilerService::AUTOMATION_SCHEMA,
 					],
+					'limit' => 1000,
 				]
 			);
 		} catch (Throwable $e) {
