@@ -1,0 +1,20 @@
+{
+  "id": "template-store",
+  "title": "Remote template store",
+  "description": "The template store lets you discover and install apps from a remote",
+  "source": "@site/template-store.md",
+  "sourceDirName": ".",
+  "slug": "/template-store",
+  "permalink": "/docs/template-store",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://codeberg.org/Conduction/openbuild/src/branch/main/docs/template-store.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Releasing OpenBuild",
+    "permalink": "/docs/releasing"
+  }
+}

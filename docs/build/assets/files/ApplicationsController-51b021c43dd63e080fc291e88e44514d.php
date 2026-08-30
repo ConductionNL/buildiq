@@ -1,0 +1,1657 @@
+<?php
+
+/**
+ * OpenBuild Applications Controller
+ *
+ * Serves the per-virtual-app manifest endpoint, the RBAC-filtered list
+ * endpoint used by the editor (REQ-OBRBAC-002 / REQ-OBR-007), the
+ * manifest-diff endpoint (openbuild-versioning REQ-OBV-005) and the
+ * clone-from-template action (openbuild-templates-marketplace
+ * REQ-OBTC-004 / REQ-OBTC-005). Per design.md Decision 6 this is the
+ * single app-local HTTP surface; `listMine` exists because OR's
+ * schema-level read rule is a coarse group-ACL (not a row-level filter on
+ * the Application's `permissions` block) so the list MUST be filtered
+ * server-side here, and `createFromTemplate` is the thin-glue clone action
+ * (ADR-032) that provisions a per-app `openbuild-{slug}` register and
+ * deep-copies the template's companion schemas into it (hybrid register
+ * model).
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Controller
+ * @package  OCA\OpenBuild\Controller
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://conduction.nl
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-45
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-46
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-48
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-49
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-51
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-55
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-58
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-69
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenBuild\Controller;
+
+use DateTimeImmutable;
+use DateTimeInterface;
+use OCA\OpenBuild\AppInfo\Application;
+use OCA\OpenBuild\Service\ApplicationVersionService;
+use OCA\OpenBuild\Service\ManifestResolverService;
+use OCA\OpenBuild\Service\PermissionResolver;
+use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\ObjectService;
+use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
+use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
+use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
+use Throwable;
+
+/**
+ * Controller for the OpenBuild manifest, list, diff and clone-from-template endpoints.
+ */
+class ApplicationsController extends Controller
+{
+    /**
+     * Nextcloud admin group identifier used as the bypass anchor and the
+     * fallback owner per design.md Decision 5 of openbuild-rbac.
+     */
+    private const ADMIN_GROUP = 'admin';
+
+    /**
+     * Audit-event identifier emitted to the OR audit trail when an admin
+     * bypasses the per-Application permissions check (REQ-OBRBAC-006).
+     */
+    private const EVENT_ADMIN_BYPASS = 'rbac.admin_bypass';
+
+    /**
+     * Constructor.
+     *
+     * @param IRequest                $request            The current HTTP request
+     * @param LoggerInterface         $logger             PSR logger for diagnostics
+     * @param ObjectService           $objectService      OpenRegister object service (hard dep via info.xml)
+     * @param RegisterMapper          $registerMapper     Resolves slugs/UUIDs to numeric register IDs
+     * @param SchemaMapper            $schemaMapper       Resolves slugs/UUIDs to numeric schema IDs
+     * @param IUserSession            $userSession        Current Nextcloud user session
+     * @param IGroupManager           $groupManager       Group membership resolver
+     * @param ManifestResolverService $manifestResolver   Version-aware manifest resolver (REQ-OBVR-002)
+     * @param PermissionResolver      $permissionResolver Shared permission-grammar resolver (H1/H2 fix)
+     * @param AuditTrailMapper|null   $auditTrailMapper   Optional OR audit-trail writer (null until OR loaded)
+     *
+     * @return void
+     */
+    public function __construct(
+        IRequest $request,
+        private readonly LoggerInterface $logger,
+        private readonly ObjectService $objectService,
+        private readonly RegisterMapper $registerMapper,
+        private readonly SchemaMapper $schemaMapper,
+        private readonly IUserSession $userSession,
+        private readonly IGroupManager $groupManager,
+        private readonly ManifestResolverService $manifestResolver,
+        private readonly PermissionResolver $permissionResolver,
+        private readonly ?AuditTrailMapper $auditTrailMapper=null,
+    ) {
+        parent::__construct(appName: Application::APP_ID, request: $request);
+    }//end __construct()
+
+    /**
+     * Return the stored manifest JSON blob for a given virtual-app slug.
+     *
+     * Lookup path: slug → BuiltAppRoute → applicationUuid → Application →
+     * manifest. The manifest is returned UNWRAPPED (no OR envelope) so
+     * useAppManifest in @conduction/nextcloud-vue consumes it directly.
+     *
+     * Version routing (spec `openbuild-version-routing` REQ-OBVR-001):
+     * ---------------------------------------------------------------
+     * An optional `?_version=<versionSlug>` query parameter selects a specific
+     * ApplicationVersion. The underscore-prefix form (`_version`, not `version`)
+     * is OpenBuild's system-reserved namespace marker — it prevents collision
+     * with user-defined `?version=` params that citizen developers may add to
+     * their virtual apps' routes.
+     *
+     * When `?_version=` is present, the request is routed through
+     * ManifestResolverService which enforces RBAC: viewers and non-members
+     * receive 404 (not 403) for non-production versions; unknown version slugs
+     * also 404 (same response — no existence leak, REQ-OBVR-003 / Decision 8).
+     *
+     * When `?_version=` is absent the endpoint behaves exactly as before,
+     * returning the production manifest to any authenticated caller with any
+     * role on the Application (the existing requirePermission check).
+     *
+     * Visibility model
+     * ----------------
+     * `#[NoAdminRequired]` is intentional: the hello-world seed app (and any
+     * future "always-on" virtual app) is publicly mountable as soon as a route
+     * exists. RBAC lives inside ManifestResolverService (for versioned access)
+     * and requirePermission (for the production path).
+     *
+     * @param string $slug The virtual-app slug from the URL
+     *
+     * @return JSONResponse The manifest blob, or a 404 envelope when not found
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-51
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function getManifest(string $slug): JSONResponse
+    {
+        try {
+            // REQ-OBVR-001: read the `?_version=` query parameter.
+            // The param name uses a leading underscore to avoid colliding with any
+            // user-defined `?version=` params in citizen-developer apps. Null when absent.
+            $versionSlugRaw = $this->request->getParam('_version');
+            $versionSlug    = null;
+            if ($versionSlugRaw !== null && $versionSlugRaw !== '') {
+                $versionSlug = $versionSlugRaw;
+            }
+
+            // When `?_version=` is present, delegate to ManifestResolverService which
+            // performs the two-step lookup (Application → ApplicationVersion) and RBAC
+            // gate (REQ-OBVR-002 / REQ-OBVR-003). Both "unknown version" and
+            // "unauthorised caller" return identical 404 to prevent slug enumeration.
+            if ($versionSlug !== null) {
+                return $this->resolveVersionedManifestResponse(slug: $slug, versionSlug: $versionSlug);
+            }
+
+            // No `?_version=` param: original production-manifest path (backwards-compat).
+            $resolved = $this->resolveApplicationBySlug(slug: $slug);
+            if ($resolved instanceof JSONResponse) {
+                return $resolved;
+            }
+
+            [$application, $applicationArray, $applicationUuid] = $resolved;
+
+            // RBAC enforcement per REQ-OBRBAC-002 / REQ-OBR-006 — deny-by-default
+            // before any branch that would emit the manifest payload (ADR-005,
+            // ADR-022 §Exceptions(1)). Returns 403 with a fixed error envelope
+            // when the caller has no role intersection and is not exercising
+            // the audited admin bypass declared in REQ-OBRBAC-006.
+            $applicationEntity = null;
+            if ($application instanceof ObjectEntity) {
+                $applicationEntity = $application;
+            }
+
+            $denial = $this->requirePermission(
+                application: $applicationEntity,
+                applicationArray: $applicationArray,
+                slug: $slug
+            );
+            if ($denial !== null) {
+                return $denial;
+            }
+
+            // Resolve the production manifest from the application's
+            // productionVersion. The versioned model (ADR-002) stores the
+            // manifest on the ApplicationVersion, not on the Application, so
+            // reading `applicationArray['manifest']` directly returns null for
+            // every app. ManifestResolverService resolves productionVersion →
+            // version.manifest and itself falls back to a legacy
+            // application-level `manifest` field; the direct read is kept as a
+            // last-resort fallback for safety.
+            $manifest = $this->manifestResolver->resolve(
+                appSlug: $slug,
+                versionSlug: null,
+                caller: $this->userSession->getUser()
+            );
+            if ($manifest === null) {
+                $manifest = ($applicationArray['manifest'] ?? null);
+            }
+
+            if ($manifest === null) {
+                $this->logger->warning('OpenBuild: Application '.$applicationUuid.' has no resolvable manifest');
+                return new JSONResponse(
+                    data: ['error' => 'no_manifest', 'message' => 'Application has no manifest'],
+                    statusCode: Http::STATUS_NOT_FOUND
+                );
+            }
+
+            // Strip the `permissions` block (and any other owning-user PII) from
+            // the public manifest response (issue #165). The caller's own role was
+            // already verified by requirePermission above; they do not need the
+            // full owners/editors/viewers roster to render the app.
+            if (is_array($manifest) === true) {
+                unset($manifest['permissions']);
+            }
+
+            // Return the manifest UNWRAPPED — useAppManifest expects the bare object.
+            return new JSONResponse(data: $manifest, statusCode: Http::STATUS_OK);
+        } catch (Throwable $e) {
+            // Generate a correlation ID so the client and server logs share an
+            // identifier — operators can grep `correlationId=<id>` in app.log
+            // without needing the request timestamp. Per MWest review on PR #2.
+            $correlationId = bin2hex(random_bytes(8));
+            $this->logger->error(
+                'OpenBuild: getManifest failed for slug '.$slug.': '.$e->getMessage(),
+                ['exception' => $e, 'correlationId' => $correlationId, 'slug' => $slug]
+            );
+            return new JSONResponse(
+                data: [
+                    'error'         => 'internal_error',
+                    'message'       => 'Failed to resolve manifest',
+                    'correlationId' => $correlationId,
+                ],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }//end try
+    }//end getManifest()
+
+    /**
+     * Persist an in-app manifest edit (pages / menu / settings / sidebar / actions).
+     *
+     * Symmetric write counterpart to {@see getManifest}: the standalone runtime's
+     * OpenBuild edit shell (ADR-041) PUTs the full edited manifest here on Save.
+     * Resolves the app by slug, enforces owner/editor RBAC (viewers are read-only;
+     * NC admins get an audited bypass), then surgically writes the `manifest` field
+     * onto the production ApplicationVersion (versioned model, ADR-002), falling
+     * back to the Application object for legacy un-versioned apps. The caller-
+     * supplied `permissions` block is stripped so a non-owner cannot escalate.
+     *
+     * @param string $slug The virtual-app slug from the URL.
+     *
+     * @return JSONResponse 200 on save, 400 on bad body, 403 without write role.
+     *
+     * @spec openspec/specs/openbuild-rbac/spec.md
+     */
+    #[NoAdminRequired]
+    public function saveManifest(string $slug): JSONResponse
+    {
+        try {
+            $resolved = $this->resolveApplicationBySlug(slug: $slug);
+            if ($resolved instanceof JSONResponse) {
+                return $resolved;
+            }
+
+            [$application, $applicationArray, $applicationUuid] = $resolved;
+
+            $user = $this->userSession->getUser();
+            if ($user === null) {
+                return new JSONResponse(
+                    data: ['error' => 'forbidden', 'code' => 'openbuild.rbac.no_role'],
+                    statusCode: Http::STATUS_FORBIDDEN
+                );
+            }
+
+            // Write requires owner/editor (NOT viewer). NC admins get an audited bypass.
+            $hasWrite = $this->permissionResolver->matchesCaller(
+                permissions: ($applicationArray['permissions'] ?? []),
+                caller: $user,
+                userGroups: $this->permissionResolver->resolveUserGroups($user),
+                allowAdminBypass: false,
+                roles: ['owners', 'editors']
+            );
+            if ($hasWrite === false) {
+                if ($this->groupManager->isInGroup($user->getUID(), self::ADMIN_GROUP) === true) {
+                    $this->recordAdminBypass(
+                        application: ($application instanceof ObjectEntity ? $application : null),
+                        slug: $slug,
+                        actor: $user->getUID()
+                    );
+                } else {
+                    return new JSONResponse(
+                        data: ['error' => 'forbidden', 'code' => 'openbuild.rbac.no_role'],
+                        statusCode: Http::STATUS_FORBIDDEN
+                    );
+                }
+            }
+
+            $manifest = $this->request->getParam('manifest');
+            if (is_array($manifest) === false) {
+                return new JSONResponse(
+                    data: ['error' => 'bad_request', 'message' => 'Missing or invalid manifest'],
+                    statusCode: Http::STATUS_BAD_REQUEST
+                );
+            }
+
+            // Never let a manifest body inject/overwrite the permissions roster.
+            unset($manifest['permissions']);
+
+            // Versioned model: write onto the production ApplicationVersion when one
+            // is resolvable; fall back to the Application object for legacy apps.
+            // Mirror ManifestResolverService::resolveProductionManifest's read
+            // shape EXACTLY so the write target matches the read target:
+            // productionVersion is either a UUID string (→ the ApplicationVersion
+            // object), an inline embedded object (→ its nested manifest on the
+            // Application), or absent (→ legacy application-level manifest).
+            $productionVersion = ($applicationArray['productionVersion'] ?? null);
+
+            // Case 1: UUID reference — write onto that ApplicationVersion. The
+            // uuid comes from the already-RBAC'd Application, so no cross-app check
+            // is needed (and the version's app-link field is `application`, not
+            // `applicationUuid`).
+            if (is_string($productionVersion) === true && $productionVersion !== '' && $productionVersion !== 'draft') {
+                $versionEntity = $this->objectService->find(
+                    id: $productionVersion,
+                    register: 'openbuild',
+                    schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+                );
+                if ($versionEntity !== null) {
+                    $versionArray             = $this->normaliseObject(object: $versionEntity);
+                    $versionArray['manifest'] = $manifest;
+                    $this->objectService->saveObject(
+                        object: $versionArray,
+                        register: 'openbuild',
+                        schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+                    );
+                    return new JSONResponse(data: ['status' => 'ok', 'target' => 'version'], statusCode: Http::STATUS_OK);
+                }
+            }
+
+            // Case 2: inline embedded version object — update its nested manifest
+            // and persist the Application (the embedded version travels with it).
+            if (is_array($productionVersion) === true) {
+                $applicationArray['productionVersion']['manifest'] = $manifest;
+                $this->objectService->saveObject(
+                    object: $applicationArray,
+                    register: 'openbuild',
+                    schema: 'application'
+                );
+                return new JSONResponse(data: ['status' => 'ok', 'target' => 'embedded'], statusCode: Http::STATUS_OK);
+            }
+
+            // Case 3: legacy un-versioned app — application-level manifest.
+            $applicationArray['manifest'] = $manifest;
+            $this->objectService->saveObject(
+                object: $applicationArray,
+                register: 'openbuild',
+                schema: 'application'
+            );
+            return new JSONResponse(data: ['status' => 'ok', 'target' => 'application'], statusCode: Http::STATUS_OK);
+        } catch (Throwable $e) {
+            $correlationId = bin2hex(random_bytes(8));
+            $this->logger->error(
+                'OpenBuild: saveManifest failed for slug '.$slug.': '.$e->getMessage(),
+                ['exception' => $e, 'correlationId' => $correlationId, 'slug' => $slug]
+            );
+            return new JSONResponse(
+                data: ['error' => 'internal_error', 'message' => 'Failed to save manifest', 'correlationId' => $correlationId],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }//end try
+    }//end saveManifest()
+
+    /**
+     * Delegate to ManifestResolverService for versioned-manifest access.
+     *
+     * Performs the two-step lookup (Application → ApplicationVersion) and RBAC
+     * gate (REQ-OBVR-002 / REQ-OBVR-003). Both "unknown version" and
+     * "unauthorised caller" return identical 404 to prevent slug enumeration.
+     *
+     * @param string $slug        The virtual-app slug from the URL.
+     * @param string $versionSlug The version slug from `?_version=`.
+     *
+     * @return JSONResponse 200 with manifest, or 404 when not found / not authorised.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-69
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
+     */
+    private function resolveVersionedManifestResponse(string $slug, string $versionSlug): JSONResponse
+    {
+        $caller   = $this->userSession->getUser();
+        $manifest = $this->manifestResolver->resolve(
+            appSlug: $slug,
+            versionSlug: $versionSlug,
+            caller: $caller
+        );
+
+        if ($manifest === null) {
+            return new JSONResponse(
+                data: ['status' => Http::STATUS_NOT_FOUND, 'message' => 'Version not found'],
+                statusCode: Http::STATUS_NOT_FOUND
+            );
+        }
+
+        return new JSONResponse(data: $manifest, statusCode: Http::STATUS_OK);
+    }//end resolveVersionedManifestResponse()
+
+    /**
+     * Return two manifest blobs side-by-side so the client diff component
+     * can render without a second round-trip (REQ-OBV-005, chain spec #6).
+     *
+     * Resolves `{slug}` to an Application via the BuiltAppRoute index,
+     * accepts the literal string `draft` for either `from`/`to` to mean
+     * "the current draft manifest on the Application", otherwise looks
+     * up both referenced ApplicationVersion rows. Returns a shape of
+     * `{ from: { manifest, version, publishedAt }, to: { manifest,
+     * version, publishedAt } }`. Per ADR-032 this is thin glue
+     * (~30 LOC of logic); no service class.
+     *
+     * @param string $slug The virtual-app slug from the URL
+     * @param string $from ApplicationVersion UUID or the literal `draft`
+     * @param string $to   ApplicationVersion UUID or the literal `draft`
+     *
+     * @return JSONResponse Both blobs on 200, or a 404 envelope on miss
+     *
+     * IDOR-safe: slug → BuiltAppRoute lookup enforces org scope via OR's
+     * standard multitenancy (RegisterMapper::find + ObjectService::searchObjects),
+     * and the resolveVersionBlob() check on `applicationUuid` rejects snapshots
+     * that do not belong to this Application. Mirrors getManifest()'s pattern.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-58
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function diffVersions(string $slug, string $from, string $to): JSONResponse
+    {
+        if ($this->userSession->getUser() === null) {
+            return $this->errorResponse(code: 'unauthenticated', status: Http::STATUS_UNAUTHORIZED);
+        }
+
+        try {
+            $registerId  = $this->registerMapper->find('openbuild', _multitenancy: false)->getId();
+            $routeSchema = $this->schemaMapper->find('built-app-route', _multitenancy: false)->getId();
+
+            $routeResults = $this->objectService->searchObjects(
+                query: [
+                    '@self' => [
+                        'register' => $registerId,
+                        'schema'   => $routeSchema,
+                    ],
+                    'slug'  => $slug,
+                ]
+            );
+
+            if (empty($routeResults) === true) {
+                return new JSONResponse(
+                    data: ['error' => 'not_found', 'message' => 'No published virtual app found for slug '.$slug],
+                    statusCode: Http::STATUS_NOT_FOUND
+                );
+            }
+
+            $route           = $this->normaliseObject(object: $routeResults[0]);
+            $applicationUuid = ($route['applicationUuid'] ?? null);
+
+            if ($applicationUuid === null) {
+                return new JSONResponse(
+                    data: ['error' => 'inconsistent_state', 'message' => 'Route exists but has no applicationUuid'],
+                    statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+                );
+            }
+
+            $application = $this->objectService->find(
+                id: $applicationUuid,
+                register: 'openbuild',
+                schema: 'application'
+            );
+
+            if ($application === null) {
+                return new JSONResponse(
+                    data: ['error' => 'not_found', 'message' => 'Application not found'],
+                    statusCode: Http::STATUS_NOT_FOUND
+                );
+            }
+
+            $applicationArray = $this->normaliseObject(object: $application);
+
+            // RBAC enforcement (C5 / REQ-OBRBAC-002): deny-by-default before
+            // returning any manifest data. Mirrors the identical gate in getManifest().
+            // Both `from` and `to` blobs come from this Application, so a single
+            // requirePermission call on the resolved Application is sufficient.
+            $applicationEntity = null;
+            if ($application instanceof ObjectEntity) {
+                $applicationEntity = $application;
+            }
+
+            $denial = $this->requirePermission(
+                application: $applicationEntity,
+                applicationArray: $applicationArray,
+                slug: $slug
+            );
+            if ($denial !== null) {
+                return $denial;
+            }
+
+            $fromBlob = $this->resolveVersionBlob(token: $from, application: $applicationArray, applicationUuid: $applicationUuid);
+            if ($fromBlob === null) {
+                return new JSONResponse(
+                    data: ['error' => 'not_found', 'message' => 'from version not found: '.$from],
+                    statusCode: Http::STATUS_NOT_FOUND
+                );
+            }
+
+            $toBlob = $this->resolveVersionBlob(token: $to, application: $applicationArray, applicationUuid: $applicationUuid);
+            if ($toBlob === null) {
+                return new JSONResponse(
+                    data: ['error' => 'not_found', 'message' => 'to version not found: '.$to],
+                    statusCode: Http::STATUS_NOT_FOUND
+                );
+            }
+
+            return new JSONResponse(
+                data: ['from' => $fromBlob, 'to' => $toBlob],
+                statusCode: Http::STATUS_OK
+            );
+        } catch (\Throwable $e) {
+            $this->logger->error('OpenBuild: diffVersions failed for slug '.$slug.': '.$e->getMessage(), ['exception' => $e]);
+            return new JSONResponse(
+                data: ['error' => 'internal_error', 'message' => 'Failed to resolve diff'],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }//end try
+    }//end diffVersions()
+
+    /**
+     * Resolve a `from`/`to` token to a `{ manifest, version, publishedAt }` blob.
+     *
+     * The literal string `draft` returns the Application's current draft
+     * fields. Any other value is treated as an ApplicationVersion UUID
+     * and looked up via OR's ObjectService. Returns null on miss so the
+     * caller can surface 404.
+     *
+     * @param string               $token           Token (`draft` or UUID).
+     * @param array<string, mixed> $application     Normalised Application data.
+     * @param string               $applicationUuid Parent Application UUID for scoping.
+     *
+     * @return array<string, mixed>|null Blob or null if the version is missing.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-58
+     */
+    private function resolveVersionBlob(string $token, array $application, string $applicationUuid): ?array
+    {
+        if ($token === 'draft') {
+            return [
+                'manifest'    => ($application['manifest'] ?? null),
+                'version'     => ($application['version'] ?? null),
+                'publishedAt' => null,
+            ];
+        }
+
+        $version = $this->objectService->find(
+            id: $token,
+            register: 'openbuild',
+            schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+        );
+
+        if ($version === null) {
+            return null;
+        }
+
+        $versionArray = $this->normaliseObject(object: $version);
+
+        // Organisation-scope enforcement: a snapshot from another Application is a miss.
+        if (($versionArray['applicationUuid'] ?? null) !== $applicationUuid) {
+            return null;
+        }
+
+        return [
+            'manifest'    => ($versionArray['manifest'] ?? null),
+            'version'     => ($versionArray['version'] ?? null),
+            'publishedAt' => ($versionArray['publishedAt'] ?? null),
+        ];
+    }//end resolveVersionBlob()
+
+    /**
+     * Resolve a virtual-app slug to the Application object + array form + uuid.
+     *
+     * Returns either a `JSONResponse` (404 / 500) when resolution fails, or a
+     * tuple `[ObjectEntity|array, array, string]` of (raw entity, normalised
+     * data, applicationUuid) for the happy path. Splitting this out keeps
+     * `getManifest` below PHPMD's 100-line method-length budget.
+     *
+     * @param string $slug The virtual-app slug from the URL
+     *
+     * @return JSONResponse|array{0: ObjectEntity|array<string, mixed>, 1: array<string, mixed>, 2: string}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
+     */
+    private function resolveApplicationBySlug(string $slug): JSONResponse|array
+    {
+        // Resolve register + schema slugs to numeric IDs. OR's searchObjects
+        // expects numeric IDs in @self; the slug-resolution shortcut isn't
+        // applied at this layer (verified during smoke-test 2026-05-11).
+        // _multitenancy=false bypasses the org filter on the LOOKUP only —
+        // object-level multitenancy is still enforced via searchObjects below.
+        $registerId  = $this->registerMapper->find('openbuild', _multitenancy: false)->getId();
+        $routeSchema = $this->schemaMapper->find('built-app-route', _multitenancy: false)->getId();
+
+        // Step 1 — resolve slug → applicationUuid via the BuiltAppRoute index.
+        $routeResults = $this->objectService->searchObjects(
+            query: [
+                '@self' => [
+                    'register' => $registerId,
+                    'schema'   => $routeSchema,
+                ],
+                'slug'  => $slug,
+            ]
+        );
+
+        if (empty($routeResults) === true) {
+            $this->logger->debug('OpenBuild: no BuiltAppRoute found for slug='.$slug);
+            return new JSONResponse(
+                data: ['error' => 'not_found', 'message' => 'No published virtual app found for slug '.$slug],
+                statusCode: Http::STATUS_NOT_FOUND
+            );
+        }
+
+        // FindAll renders entities; result entries may be ObjectEntity or arrays.
+        $route           = $this->normaliseObject(object: $routeResults[0]);
+        $applicationUuid = ($route['applicationUuid'] ?? null);
+
+        if ($applicationUuid === null) {
+            $this->logger->warning('OpenBuild: BuiltAppRoute for slug '.$slug.' is missing applicationUuid');
+            return new JSONResponse(
+                data: ['error' => 'inconsistent_state', 'message' => 'Route exists but has no applicationUuid'],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }
+
+        // Step 2 — load the Application object.
+        $application = $this->objectService->find(
+            id: $applicationUuid,
+            register: 'openbuild',
+            schema: 'application'
+        );
+
+        if ($application === null) {
+            $this->logger->warning('OpenBuild: Application '.$applicationUuid.' (for slug '.$slug.') not found');
+            return new JSONResponse(
+                data: ['error' => 'inconsistent_state', 'message' => 'Route points to an Application that does not exist'],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }
+
+        return [$application, $this->normaliseObject(object: $application), (string) $applicationUuid];
+    }//end resolveApplicationBySlug()
+
+    /**
+     * Return the list of Applications the caller has any role on.
+     *
+     * Closes the list-endpoint IDOR (REQ-OBRBAC-002 / REQ-OBR-007). OR's
+     * schema-level read rule is a coarse group ACL — not a row-level
+     * predicate on `permissions.owners ∪ editors ∪ viewers` — so the
+     * frontend cannot rely on OR's REST list endpoint without leaking
+     * every Application's permissions block and manifest to every
+     * authenticated user. This action fetches all Applications via OR
+     * and filters them server-side using the same role-derivation rule
+     * as `requirePermission`. Admin callers receive the full unfiltered
+     * list and a single audit event is recorded (REQ-OBRBAC-006).
+     *
+     * Output shape mirrors what `ApplicationEditor.vue` previously
+     * received from OR REST: a flat array of Application objects with
+     * `uuid`, `id`, `slug`, `name`, `status`, `version`, `manifest`,
+     * `permissions` — no OR envelope, no pagination metadata.
+     *
+     * @return JSONResponse The filtered Application list
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-46
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-48
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function listMine(): JSONResponse
+    {
+        try {
+            $user = $this->userSession->getUser();
+            if ($user === null) {
+                return new JSONResponse(
+                    data: ['error' => 'forbidden', 'code' => 'openbuild.rbac.no_role'],
+                    statusCode: Http::STATUS_FORBIDDEN
+                );
+            }
+
+            $registerId = $this->registerMapper->find('openbuild', _multitenancy: false)->getId();
+            $appSchema  = $this->schemaMapper->find('application', _multitenancy: false)->getId();
+
+            // Fetch all Applications scoped to the openbuild register +
+            // application schema. OR's multitenancy + RBAC still applies;
+            // the per-Application filter below is the load-bearing
+            // authorization boundary.
+            $results = $this->objectService->searchObjects(
+                query: [
+                    '@self' => [
+                        'register' => $registerId,
+                        'schema'   => $appSchema,
+                    ],
+                ]
+            );
+
+            if (is_array($results) === false) {
+                $results = [];
+            }
+
+            $userGroups = $this->permissionResolver->resolveUserGroups($user);
+            $isAdmin    = $this->groupManager->isInGroup($user->getUID(), self::ADMIN_GROUP);
+
+            [$filtered, $adminBypassUsed] = $this->filterApplicationsByRole(
+                results: $results,
+                userGroups: $userGroups,
+                isAdmin: $isAdmin
+            );
+
+            if ($adminBypassUsed === true) {
+                $this->logger->info(
+                    'OpenBuild: rbac.admin_bypass exercised on Application list',
+                    [
+                        'actor'     => $user->getUID(),
+                        'event'     => self::EVENT_ADMIN_BYPASS.'.list',
+                        'count'     => count($filtered),
+                        'timestamp' => (new DateTimeImmutable())->format(DateTimeInterface::ATOM),
+                    ]
+                );
+            }
+
+            return new JSONResponse(data: $filtered, statusCode: Http::STATUS_OK);
+        } catch (Throwable $e) {
+            $this->logger->error(
+                'OpenBuild: listMine failed: '.$e->getMessage(),
+                ['exception' => $e]
+            );
+            return new JSONResponse(
+                data: ['error' => 'internal_error', 'message' => 'Failed to load applications'],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }//end try
+    }//end listMine()
+
+    /**
+     * Filter a raw OR result set to Applications the caller is authorised to see.
+     *
+     * Returns a two-element tuple: [filteredApps, adminBypassUsed].
+     *
+     * @param array<mixed>  $results    Raw OR search result entries.
+     * @param array<string> $userGroups Caller's group IDs.
+     * @param bool          $isAdmin    Whether the caller is in the Nextcloud admin group.
+     *
+     * @return array{0: array<array<string,mixed>>, 1: bool} [filtered list, adminBypassUsed].
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-48
+     */
+    private function filterApplicationsByRole(
+        array $results,
+        array $userGroups,
+        bool $isAdmin
+    ): array {
+        $filtered        = [];
+        $adminBypassUsed = false;
+
+        $caller = $this->userSession->getUser();
+        if ($caller === null) {
+            return [[], false];
+        }
+
+        foreach ($results as $entry) {
+            $app = $this->normaliseObject(object: $entry);
+            if ($app === []) {
+                continue;
+            }
+
+            $permissions = ($app['permissions'] ?? []);
+
+            // Check all three roles (owners + editors + viewers) for list visibility.
+            $hasRole = $this->permissionResolver->matchesCaller(
+                permissions: $permissions,
+                caller: $caller,
+                userGroups: $userGroups,
+                allowAdminBypass: false,
+                roles: ['owners', 'editors', 'viewers']
+            );
+
+            if ($hasRole === true) {
+                // L1: strip the internal permissions roster for callers who are
+                // viewers-only (not owner/editor). Owners and editors need the
+                // permissions block to manage the app; viewers do not.
+                $hasWriteRole = $this->permissionResolver->matchesCaller(
+                    permissions: $permissions,
+                    caller: $caller,
+                    userGroups: $userGroups,
+                    allowAdminBypass: false,
+                    roles: ['owners', 'editors']
+                );
+                if ($hasWriteRole === false) {
+                    unset($app['permissions']);
+                }
+
+                $filtered[] = $app;
+                continue;
+            }
+
+            if ($isAdmin === true) {
+                $filtered[]      = $app;
+                $adminBypassUsed = true;
+            }
+        }//end foreach
+
+        return [$filtered, $adminBypassUsed];
+    }//end filterApplicationsByRole()
+
+    /**
+     * Enforce the per-Application RBAC permissions block.
+     *
+     * Computes the caller's group set and intersects with the Application's
+     * `permissions.owners ∪ permissions.editors ∪ permissions.viewers`.
+     * Returns null when the caller has any role, or a `JSONResponse` 403
+     * with the fixed `openbuild.rbac.no_role` error envelope otherwise.
+     *
+     * Admin bypass per design.md Decision 5: a caller in the Nextcloud
+     * `admin` group always passes; the bypass is recorded as a
+     * `rbac.admin_bypass` event in OR's per-object audit trail
+     * (REQ-OBRBAC-006) so it surfaces in REQ-OBRBAC-007's permission
+     * history panel. The bypass MUST stay narrow — controller-only,
+     * audited — to avoid becoming a hidden parallel auth pathway.
+     *
+     * @param ObjectEntity|null    $application      The Application entity (for audit-trail write)
+     * @param array<string, mixed> $applicationArray The Application data (for permission inspection)
+     * @param string               $slug             The slug used in the audit envelope
+     *
+     * @return JSONResponse|null Null on allow, 403 JSONResponse on deny
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-45
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
+     */
+    private function requirePermission(
+        ?ObjectEntity $application,
+        array $applicationArray,
+        string $slug
+    ): ?JSONResponse {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            // Unauthenticated callers should not reach a #[NoAdminRequired]
+            // route — Nextcloud's framework rejects them earlier. Treat as
+            // forbidden defensively (ADR-005 deny-by-default).
+            return new JSONResponse(
+                data: ['error' => 'forbidden', 'code' => 'openbuild.rbac.no_role'],
+                statusCode: Http::STATUS_FORBIDDEN
+            );
+        }
+
+        $userGroups  = $this->permissionResolver->resolveUserGroups($user);
+        $permissions = ($applicationArray['permissions'] ?? []);
+
+        // Check all three roles (any role grants read access to the manifest).
+        $hasRole = $this->permissionResolver->matchesCaller(
+            permissions: $permissions,
+            caller: $user,
+            userGroups: $userGroups,
+            allowAdminBypass: false,
+            roles: ['owners', 'editors', 'viewers']
+        );
+
+        if ($hasRole === true) {
+            return null;
+        }
+
+        if ($this->groupManager->isInGroup($user->getUID(), self::ADMIN_GROUP) === true) {
+            $this->recordAdminBypass(application: $application, slug: $slug, actor: $user->getUID());
+            return null;
+        }
+
+        return new JSONResponse(
+            data: ['error' => 'forbidden', 'code' => 'openbuild.rbac.no_role'],
+            statusCode: Http::STATUS_FORBIDDEN
+        );
+    }//end requirePermission()
+
+    /**
+     * Record an admin-bypass event in OR's audit trail (REQ-OBRBAC-006).
+     *
+     * Writes a structured entry to OpenRegister's per-object audit trail
+     * via AuditTrailMapper so the bypass surfaces in REQ-OBRBAC-007's
+     * Permission history panel rather than being buried in the Nextcloud
+     * log. Falls back to the PSR logger when OR's audit mapper is
+     * unavailable (e.g. OR not loaded in a unit-test harness) so the
+     * controller never silently drops an audit event.
+     *
+     * @param ObjectEntity|null $application The Application entity bypassed
+     * @param string            $slug        The slug used in the audit envelope
+     * @param string            $actor       The bypassing user's UID
+     *
+     * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-49
+     */
+    private function recordAdminBypass(?ObjectEntity $application, string $slug, string $actor): void
+    {
+        $timestamp = (new DateTimeImmutable())->format(DateTimeInterface::ATOM);
+        $context   = [
+            'event'     => self::EVENT_ADMIN_BYPASS,
+            'actor'     => $actor,
+            'slug'      => $slug,
+            'timestamp' => $timestamp,
+        ];
+
+        if ($this->auditTrailMapper !== null && $application !== null) {
+            try {
+                $this->auditTrailMapper->createAuditTrailEntry(
+                    object: $application,
+                    action: self::EVENT_ADMIN_BYPASS,
+                    context: $context
+                );
+                // Mirror to the PSR logger at info level so the bypass is
+                // discoverable in operator-facing log streams as well — the
+                // audit trail is the system of record, the PSR log is the
+                // operational tap.
+                $this->logger->info(
+                    'OpenBuild: rbac.admin_bypass exercised',
+                    $context
+                );
+                return;
+            } catch (Throwable $e) {
+                // WF3: audit-trail write failure is a COMPLIANCE gap, not a
+                // routine warning. Emit at CRITICAL so ops alerting picks it up.
+                // Per REQ-OBRBAC-007 the OR audit trail is the system of record
+                // for admin-bypass events; silent fallback defeats forensic review.
+                $this->logger->critical(
+                    'OpenBuild: failed to record admin bypass in OR audit trail — COMPLIANCE GAP; bypass event lost from system of record',
+                    array_merge($context, ['exception' => $e->getMessage()])
+                );
+            }//end try
+        }//end if
+
+        // Fallback path — audit mapper unavailable or no Application
+        // entity (defensive). Emit to PSR logger at info level so the
+        // event still surfaces somewhere reviewable.
+        $this->logger->info(
+            'OpenBuild: rbac.admin_bypass exercised',
+            $context
+        );
+    }//end recordAdminBypass()
+
+    /**
+     * Clone an Application from a template.
+     *
+     * Reads the ApplicationTemplate identified by $templateSlug, creates a
+     * per-app `openbuild-{newSlug}` register, deep-copies its companion JSON
+     * schemas into that per-app register (REQ-OBTC-005 / hybrid register
+     * model), rewrites manifest schema refs to the new slug, and creates a
+     * new Application record in the shared `openbuild` register, tagged
+     * with the caller's UID (multi-user isolation).
+     *
+     * @param string $templateSlug The source template slug
+     *
+     * @return JSONResponse The new application's uuid + slug, or an error envelope
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-55
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
+     */
+    #[NoAdminRequired]
+    public function createFromTemplate(string $templateSlug): JSONResponse
+    {
+        // 1. Auth + request validation.
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return $this->errorResponse(code: 'unauthenticated', status: Http::STATUS_UNAUTHORIZED);
+        }
+
+        $ownerUid = $user->getUID();
+
+        $validation = $this->validateCloneRequest(body: $this->request->getParams());
+        if (isset($validation['error']) === true) {
+            return new JSONResponse(data: $validation['error'], statusCode: $validation['status']);
+        }
+
+        [$name, $newSlug] = $validation;
+
+        // 2. Resolve shared register + schemas.
+        $ctx = $this->resolveSharedContext();
+        if ($ctx === null) {
+            return $this->errorResponse(
+                code: 'not_configured',
+                detail: 'OpenBuild register/schemas not initialised',
+                status: Http::STATUS_SERVICE_UNAVAILABLE
+            );
+        }
+
+        // 3. Lookup the local template, then delegate the clone to the shared
+        // seam (also reused by the remote-template store install path).
+        $template = $this->lookupOne(
+            registerId: $ctx['register'],
+            schemaId: $ctx['templateSchema'],
+            slug: $templateSlug
+        );
+        if ($template === null) {
+            return $this->errorResponse(
+                code: 'template_not_found',
+                detail: $templateSlug,
+                status: Http::STATUS_NOT_FOUND
+            );
+        }
+
+        $result = $this->installFromTemplateArray(
+            template: $template,
+            name: $name,
+            newSlug: $newSlug,
+            ownerUid: $ownerUid
+        );
+
+        return new JSONResponse(data: $result['data'], statusCode: $result['status']);
+    }//end createFromTemplate()
+
+    /**
+     * Clone a template ARRAY into a new local Application (shared install seam).
+     *
+     * This is the reusable clone body extracted from createFromTemplate so the
+     * remote-template store (openbuild-remote-template-store) can install a
+     * template fetched from a remote catalogue through the exact same path —
+     * companion-schema namespacing, manifest rewrite, per-app register
+     * provisioning, owner-tagged persist. The only difference between the local
+     * and remote callers is WHERE the `$template` array comes from.
+     *
+     * Returns a plain `{status, data}` result (NOT a Response) so both thin
+     * controller actions — the local createFromTemplate and the remote
+     * StoreController::install — own their own JSONResponse; this also keeps it
+     * out of the route-reachability surface (ADR-029: a Response-returning
+     * public controller method without a route is a latent unrouted action; a
+     * result-computer returning an array is not).
+     *
+     * @param array<string,mixed> $template The template record (local or remote payload).
+     * @param string              $name     Human-readable name for the new app.
+     * @param string              $newSlug  The new (kebab-case, pre-validated) app slug.
+     * @param string              $ownerUid The owner UID (becomes the app owner).
+     *
+     * @return array{status:int,data:array<string,mixed>} 201 + app on success; 409/500/503 on failure.
+     *
+     * @spec openspec/changes/openbuild-remote-template-store/specs/openbuild-remote-template-store/spec.md
+     */
+    public function installFromTemplateArray(
+        array $template,
+        string $name,
+        string $newSlug,
+        string $ownerUid
+    ): array {
+        $ctx = $this->resolveSharedContext();
+        if ($ctx === null) {
+            return [
+                'status' => Http::STATUS_SERVICE_UNAVAILABLE,
+                'data'   => ['error' => 'not_configured', 'detail' => 'OpenBuild register/schemas not initialised'],
+            ];
+        }
+
+        // Slug uniqueness org-wide (no owner filter) to prevent squatting.
+        $existing = $this->lookupOne(
+            registerId: $ctx['register'],
+            schemaId: $ctx['applicationSchema'],
+            slug: $newSlug
+        );
+        if ($existing !== null) {
+            return [
+                'status' => Http::STATUS_CONFLICT,
+                'data'   => ['error' => 'slug_collision', 'detail' => $newSlug],
+            ];
+        }
+
+        // Prepare manifest + companion-schema clone map.
+        $companionInput = $this->extractCompanionSchemas(template: $template);
+        $rewriteMap     = $this->buildRewriteMap(companions: $companionInput, newSlug: $newSlug);
+        $manifest       = $this->buildClonedManifest(template: $template, rewriteMap: $rewriteMap);
+
+        // Provision per-app register + clone companion schemas into it.
+        $cloneResult = $this->provisionPerAppArtifacts(
+            newSlug: $newSlug,
+            ownerUid: $ownerUid,
+            companions: $companionInput,
+            rewriteMap: $rewriteMap
+        );
+        if (isset($cloneResult['error']) === true) {
+            return ['status' => $cloneResult['status'], 'data' => $cloneResult['error']];
+        }
+
+        // Persist the Application record (shared register), tagged with owner.
+        $persistResult = $this->persistApplication(
+            name: $name,
+            newSlug: $newSlug,
+            ownerUid: $ownerUid,
+            manifest: $manifest,
+            template: $template,
+            templateSlug: (string) ($template['slug'] ?? $newSlug),
+            ctx: $ctx
+        );
+        if (isset($persistResult['error']) === true) {
+            return ['status' => $persistResult['status'], 'data' => $persistResult['error']];
+        }
+
+        return [
+            'status' => Http::STATUS_CREATED,
+            'data'   => [
+                'uuid'             => $persistResult['uuid'],
+                'slug'             => $newSlug,
+                'register'         => $cloneResult['register']->getSlug(),
+                'companionSchemas' => $cloneResult['schemaIds'],
+            ],
+        ];
+    }//end installFromTemplateArray()
+
+    /**
+     * Build a uniform error response.
+     *
+     * @param string      $code   The error code
+     * @param string|null $detail Optional detail message
+     * @param int         $status The HTTP status code
+     *
+     * @return JSONResponse
+     */
+    private function errorResponse(string $code, ?string $detail=null, int $status=Http::STATUS_BAD_REQUEST): JSONResponse
+    {
+        $body = ['error' => $code];
+        if ($detail !== null) {
+            $body['detail'] = $detail;
+        }
+
+        return new JSONResponse(data: $body, statusCode: $status);
+    }//end errorResponse()
+
+    /**
+     * Resolve the shared register + schema IDs (template, application).
+     *
+     * @return array{register:int,templateSchema:int,applicationSchema:int}|null
+     */
+    private function resolveSharedContext(): ?array
+    {
+        try {
+            return [
+                'register'          => $this->registerMapper->find('openbuild', _multitenancy: false)->getId(),
+                'templateSchema'    => $this->schemaMapper->find('application-template', _multitenancy: false)->getId(),
+                'applicationSchema' => $this->schemaMapper->find('application', _multitenancy: false)->getId(),
+            ];
+        } catch (Throwable $e) {
+            $this->logger->error(
+                'OpenBuild: register/schema resolution failed',
+                ['exception' => $e->getMessage()]
+            );
+            return null;
+        }
+    }//end resolveSharedContext()
+
+    /**
+     * Build the cloned manifest (apply rewrite map to template manifest).
+     *
+     * @param array<string,mixed>  $template   The template record
+     * @param array<string,string> $rewriteMap Source-slug → prefixed-slug map
+     *
+     * @return array<string,mixed>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
+     */
+    private function buildClonedManifest(array $template, array $rewriteMap): array
+    {
+        $manifestRaw = ($template['manifest'] ?? null);
+        $manifest    = [];
+        if (is_array($manifestRaw) === true) {
+            $manifest = $manifestRaw;
+        }
+
+        $rewritten = $this->rewriteSchemaRefs(node: $manifest, map: $rewriteMap);
+        if (is_array($rewritten) === true) {
+            return $rewritten;
+        }
+
+        return [];
+    }//end buildClonedManifest()
+
+    /**
+     * Provision per-app register + clone companion schemas.
+     *
+     * @param string                         $newSlug    The new application slug
+     * @param string                         $ownerUid   The owner UID
+     * @param array<int,array<string,mixed>> $companions The companion schema blobs
+     * @param array<string,string>           $rewriteMap Source-slug → prefixed-slug map
+     *
+     * @return array{register:\OCA\OpenRegister\Db\Register,schemaIds:array<int,int>}|array{error:array<string,mixed>,status:int}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
+     */
+    private function provisionPerAppArtifacts(
+        string $newSlug,
+        string $ownerUid,
+        array $companions,
+        array $rewriteMap
+    ): array {
+        try {
+            $register  = $this->provisionPerAppRegister(newSlug: $newSlug, ownerUid: $ownerUid);
+            $schemaIds = $this->cloneCompanionSchemas(
+                companions: $companions,
+                rewriteMap: $rewriteMap,
+                perAppRegister: $register
+            );
+
+            return ['register' => $register, 'schemaIds' => $schemaIds];
+        } catch (Throwable $e) {
+            $this->logger->error(
+                'OpenBuild: companion-schema clone failed',
+                ['exception' => $e->getMessage()]
+            );
+            return [
+                'error'  => ['error' => 'clone_failed', 'detail' => 'Failed to provision per-app register/schemas'],
+                'status' => Http::STATUS_INTERNAL_SERVER_ERROR,
+            ];
+        }
+    }//end provisionPerAppArtifacts()
+
+    /**
+     * Persist the cloned Application record.
+     *
+     * @param string                                                       $name         Human-readable name
+     * @param string                                                       $newSlug      The new application slug
+     * @param string                                                       $ownerUid     The owner UID (multi-user isolation)
+     * @param array<string,mixed>                                          $manifest     The cloned manifest
+     * @param array<string,mixed>                                          $template     The source template record
+     * @param string                                                       $templateSlug The source template slug
+     * @param array{register:int,templateSchema:int,applicationSchema:int} $ctx          Shared context
+     *
+     * @return array{uuid:string|null}|array{error:array<string,mixed>,status:int}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-55
+     */
+    private function persistApplication(
+        string $name,
+        string $newSlug,
+        string $ownerUid,
+        array $manifest,
+        array $template,
+        string $templateSlug,
+        array $ctx
+    ): array {
+        try {
+            $created = $this->objectService->saveObject(
+                object: [
+                    'name'           => $name,
+                    'slug'           => $newSlug,
+                    'status'         => 'draft',
+                    'version'        => '0.1.0',
+                    'owner'          => $ownerUid,
+                    'manifest'       => $manifest,
+                    'templateOrigin' => [
+                        'slug'    => (string) ($template['slug'] ?? $templateSlug),
+                        'version' => (string) ($template['version'] ?? ''),
+                    ],
+                    // Grant the creating user full ownership so PermissionResolver
+                    // grants them access to read/edit/delete their own clone
+                    // (REQ-OBP-008). Without this block, matchesCaller returns false
+                    // on empty permissions and the user is immediately 403'd.
+                    'permissions'    => [
+                        'owners'  => ['user:'.$ownerUid],
+                        'editors' => [],
+                        'viewers' => [],
+                    ],
+                ],
+                register: $ctx['register'],
+                schema: $ctx['applicationSchema']
+            );
+        } catch (Throwable $e) {
+            $this->logger->error('OpenBuild: application save failed', ['exception' => $e->getMessage()]);
+            return [
+                'error'  => ['error' => 'clone_failed', 'detail' => $e->getMessage()],
+                'status' => Http::STATUS_INTERNAL_SERVER_ERROR,
+            ];
+        }//end try
+
+        $createdArray = $this->normaliseObject(object: $created);
+        return ['uuid' => ($createdArray['uuid'] ?? $createdArray['id'] ?? null)];
+    }//end persistApplication()
+
+    /**
+     * Validate the clone-from-template request body.
+     *
+     * @param array<string,mixed> $body The request params
+     *
+     * @return array{0:string,1:string}|array{error:array<string,mixed>,status:int}
+     *         Either [name, slug] on success, or an error+status envelope.
+     */
+    private function validateCloneRequest(array $body): array
+    {
+        $name = (string) ($body['name'] ?? '');
+        $slug = (string) ($body['slug'] ?? '');
+
+        if ($name === '' || $slug === '' || preg_match('/^[a-z0-9][a-z0-9-]*[a-z0-9]$/', $slug) !== 1) {
+            return [
+                'error'  => ['error' => 'invalid_request', 'detail' => 'name and kebab-case slug required'],
+                'status' => Http::STATUS_BAD_REQUEST,
+            ];
+        }
+
+        if (strlen($slug) > 32) {
+            return [
+                'error'  => ['error' => 'slug_too_long', 'detail' => 'slug must be <= 32 chars'],
+                'status' => Http::STATUS_BAD_REQUEST,
+            ];
+        }
+
+        return [$name, $slug];
+    }//end validateCloneRequest()
+
+    /**
+     * Extract companionSchemas array from a template record.
+     *
+     * @param array<string,mixed> $template The template record
+     *
+     * @return array<int,array<string,mixed>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
+     */
+    private function extractCompanionSchemas(array $template): array
+    {
+        $companionRaw = ($template['companionSchemas'] ?? null);
+        if (is_array($companionRaw) === false) {
+            return [];
+        }
+
+        return array_values(
+            array_filter(
+                $companionRaw,
+                static fn ($entry): bool => is_array($entry) === true && isset($entry['slug']) === true
+            )
+        );
+    }//end extractCompanionSchemas()
+
+    /**
+     * Build the source-slug → prefixed-slug rewrite map.
+     *
+     * @param array<int,array<string,mixed>> $companions The companion schema blobs
+     * @param string                         $newSlug    The new app slug used as prefix
+     *
+     * @return array<string,string>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
+     */
+    private function buildRewriteMap(array $companions, string $newSlug): array
+    {
+        $map = [];
+        foreach ($companions as $companion) {
+            $sourceSlug       = (string) $companion['slug'];
+            $map[$sourceSlug] = $newSlug.'-'.$sourceSlug;
+        }
+
+        return $map;
+    }//end buildRewriteMap()
+
+    /**
+     * Provision (or fetch existing) the per-app register `openbuild-{newSlug}`.
+     *
+     * Per the hybrid register model, each cloned app gets its own register so
+     * companion schemas don't collide across apps.
+     *
+     * @param string $newSlug  The new app slug
+     * @param string $ownerUid The Nextcloud UID of the owner
+     *
+     * @return \OCA\OpenRegister\Db\Register
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
+     */
+    private function provisionPerAppRegister(string $newSlug, string $ownerUid): \OCA\OpenRegister\Db\Register
+    {
+        // Cross-user collision guard (#77): OR's register slugs are
+        // organisation-wide unique, so two callers wanting the same
+        // template+slug would otherwise share a register. The first
+        // attempt at scoping always namespaced by owner, but that
+        // breaks every existing single-tenant install (their existing
+        // registers are still at `openbuild-{slug}`). So we keep the
+        // legacy un-namespaced slug AS LONG AS the existing register
+        // belongs to the caller; otherwise fall back to the
+        // owner-namespaced form.
+        $legacyRegisterSlug = 'openbuild-'.$newSlug;
+
+        try {
+            $existing = $this->registerMapper->find($legacyRegisterSlug, _multitenancy: false);
+
+            $existingOwner = $this->extractRegisterOwner(register: $existing);
+            if ($existingOwner === '' || $existingOwner === $ownerUid) {
+                return $existing;
+            }
+
+            // Different user owns the org-wide slug — namespace ours.
+            return $this->findOrCreateRegister(
+                slug: 'openbuild-'.$ownerUid.'-'.$newSlug,
+                appSlug: $newSlug,
+                ownerUid: $ownerUid,
+            );
+        } catch (Throwable) {
+            // Legacy slug not taken — claim it for this user.
+        }
+
+        return $this->findOrCreateRegister(
+            slug: $legacyRegisterSlug,
+            appSlug: $newSlug,
+            ownerUid: $ownerUid,
+        );
+    }//end provisionPerAppRegister()
+
+    /**
+     * Find or create a per-app register at an exact slug.
+     *
+     * @param string $slug     The register slug to find/create
+     * @param string $appSlug  The application slug (for the title)
+     * @param string $ownerUid The owner UID (for the description audit trail)
+     *
+     * @return \OCA\OpenRegister\Db\Register
+     */
+    private function findOrCreateRegister(
+        string $slug,
+        string $appSlug,
+        string $ownerUid,
+    ): \OCA\OpenRegister\Db\Register {
+        try {
+            return $this->registerMapper->find($slug, _multitenancy: false);
+        } catch (Throwable) {
+            // Not found — create it.
+        }
+
+        return $this->registerMapper->createFromArray(
+            [
+                'slug'        => $slug,
+                'title'       => 'OpenBuild — '.$appSlug,
+                'description' => 'Per-app schema namespace for OpenBuild app `'.$appSlug.'` (owner: '.$ownerUid.').',
+                'version'     => '0.1.0',
+                'schemas'     => [],
+            ]
+        );
+    }//end findOrCreateRegister()
+
+    /**
+     * Extract the owner UID from a Register entity, tolerating either an
+     * `owner` field on the entity itself or one inside an `@self` block.
+     *
+     * @param mixed $register The Register entity (or non-Register junk).
+     *
+     * @return string The owner UID, or empty string when not determinable.
+     */
+    private function extractRegisterOwner(mixed $register): string
+    {
+        if (is_object($register) === true && method_exists($register, 'getOwner') === true) {
+            $owner = $register->getOwner();
+            if (is_string($owner) === true) {
+                return $owner;
+            }
+        }
+
+        if (is_object($register) === true && method_exists($register, 'jsonSerialize') === true) {
+            $data = $register->jsonSerialize();
+            if (is_array($data) === true) {
+                $owner = ($data['owner'] ?? ($data['@self']['owner'] ?? null));
+                if (is_string($owner) === true) {
+                    return $owner;
+                }
+            }
+        }
+
+        return '';
+    }//end extractRegisterOwner()
+
+    /**
+     * Clone companion schemas into the per-app register.
+     *
+     * Critical fix: companion schemas are CREATED AS SCHEMAS via SchemaMapper
+     * (NOT saved as Application objects, which was the bug at the previous
+     * line 168). The per-app register's `schemas` array is updated to include
+     * the new schema IDs.
+     *
+     * @param array<int,array<string,mixed>> $companions     The companion schema blobs from the template
+     * @param array<string,string>           $rewriteMap     Source-slug → prefixed-slug map
+     * @param \OCA\OpenRegister\Db\Register  $perAppRegister The target per-app register
+     *
+     * @return array<int,int> List of created schema IDs
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
+     */
+    private function cloneCompanionSchemas(
+        array $companions,
+        array $rewriteMap,
+        \OCA\OpenRegister\Db\Register $perAppRegister
+    ): array {
+        $createdIds = [];
+
+        foreach ($companions as $companion) {
+            $sourceSlug = (string) $companion['slug'];
+            if (isset($rewriteMap[$sourceSlug]) === false) {
+                continue;
+            }
+
+            $schemaPayload         = $companion;
+            $schemaPayload['slug'] = $rewriteMap[$sourceSlug];
+            // Ensure a stable version (templates ship with their own; default to 0.1.0).
+            if (isset($schemaPayload['version']) === false) {
+                $schemaPayload['version'] = '0.1.0';
+            }
+
+            $schema       = $this->schemaMapper->createFromArray(object: $schemaPayload);
+            $createdIds[] = $schema->getId();
+        }
+
+        if ($createdIds !== []) {
+            $existing = $perAppRegister->getSchemas();
+            $perAppRegister->setSchemas(array_values(array_unique(array_merge($existing, $createdIds))));
+            $this->registerMapper->update($perAppRegister);
+        }
+
+        return $createdIds;
+    }//end cloneCompanionSchemas()
+
+    /**
+     * Recursively rewrite manifest page-config schema references.
+     *
+     * @param mixed                $node The manifest node
+     * @param array<string,string> $map  Map of source-slug => prefixed-slug
+     *
+     * @return mixed The rewritten node
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
+     */
+    private function rewriteSchemaRefs(mixed $node, array $map): mixed
+    {
+        if (is_array($node) === false) {
+            return $node;
+        }
+
+        foreach ($node as $key => $value) {
+            if (($key === 'schema' || $key === 'relatedSchema')
+                && is_string($value) === true
+                && isset($map[$value]) === true
+            ) {
+                $node[$key] = $map[$value];
+                continue;
+            }
+
+            if (is_array($value) === true) {
+                $node[$key] = $this->rewriteSchemaRefs(node: $value, map: $map);
+            }
+        }
+
+        return $node;
+    }//end rewriteSchemaRefs()
+
+    /**
+     * Look up a single object by slug (optionally scoped by owner).
+     *
+     * @param int|string  $registerId The register ID
+     * @param int|string  $schemaId   The schema ID
+     * @param string      $slug       The slug to look up
+     * @param string|null $owner      Optional owner UID (multi-user isolation scope)
+     *
+     * @return array<string,mixed>|null
+     */
+    private function lookupOne(
+        int | string $registerId,
+        int | string $schemaId,
+        string $slug,
+        ?string $owner=null
+    ): ?array {
+        try {
+            $query = [
+                '@self' => [
+                    'register' => $registerId,
+                    'schema'   => $schemaId,
+                ],
+                'slug'  => $slug,
+            ];
+
+            if ($owner !== null) {
+                // OR records ownership under `@self.owner`, not at the
+                // top level. Placing the filter on the top-level `owner`
+                // field made every owner-scoped lookup miss (#51) — the
+                // slug-collision check then fell through and the org-wide
+                // register-slug unique constraint raised `clone_failed`
+                // instead of the documented `slug_collision`.
+                $query['@self']['owner'] = $owner;
+            }
+
+            $results = $this->objectService->searchObjects(query: $query);
+
+            if (is_array($results) === false || count($results) === 0) {
+                return null;
+            }
+
+            return $this->normaliseObject(object: $results[0]);
+        } catch (Throwable $e) {
+            $this->logger->warning('OpenBuild: lookup failed', ['exception' => $e->getMessage()]);
+            return null;
+        }//end try
+    }//end lookupOne()
+
+    /**
+     * Coerce an OR result entry (ObjectEntity or array) to a plain associative array.
+     *
+     * FindAll() and find() may return ObjectEntity instances; we normalise to an
+     * array so the caller can use array access uniformly. Uses jsonSerialize()
+     * when present (the canonical ObjectEntity surface).
+     *
+     * @param mixed $object The OR object/result entry.
+     *
+     * @return array<string, mixed>
+     */
+    private function normaliseObject(mixed $object): array
+    {
+        if (is_array($object) === true) {
+            return $object;
+        }
+
+        if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
+            $serialised = $object->jsonSerialize();
+            if (is_array($serialised) === true) {
+                return $serialised;
+            }
+        }
+
+        if (is_object($object) === true && method_exists($object, 'getObject') === true) {
+            $inner = $object->getObject();
+            if (is_array($inner) === true) {
+                return $inner;
+            }
+        }
+
+        return [];
+    }//end normaliseObject()
+}//end class

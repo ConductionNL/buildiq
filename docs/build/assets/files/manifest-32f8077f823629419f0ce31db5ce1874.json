@@ -1,0 +1,348 @@
+{
+	"$schema": "https://codeberg.org/Conduction/nextcloud-vue/raw/branch/main/src/schemas/app-manifest-v2.schema.json",
+	"version": "2.0.0",
+	"openbuildEditable": false,
+	"dependencies": [
+		"openregister"
+	],
+	"walkthrough": {
+		"enabled": true,
+		"version": 1,
+		"completionConfigKey": "walkthrough_completed_version",
+		"tours": [
+			{
+				"id": "openbuild:getting-started",
+				"title": "Getting started",
+				"trigger": "first-visit",
+				"minAppVersion": "0.5.9",
+				"steps": [
+					{ "id": "welcome", "sinceVersion": "0.5.9", "placement": "center", "title": "Welcome to OpenBuild", "body": "Let's take a quick spin through the app builder — we'll create your first app from a template so you can see how the pieces fit. You'll do each step yourself.", "target": { "kind": "page", "ref": "Dashboard" }, "advanceOn": { "type": "manual" } },
+					{ "id": "go-apps", "sinceVersion": "0.5.9", "placement": "right", "body": "Apps are the heart of OpenBuild — every app you build lives here. Open Apps from the menu to see what's already there.", "task": "Click Apps in the menu", "target": { "kind": "nav-item", "ref": "VirtualApps" }, "advanceOn": { "type": "route-match", "route": "VirtualApps" } },
+					{ "id": "go-store", "sinceVersion": "0.5.9", "placement": "right", "body": "The fastest way to start is from a template. Open the Store to browse ready-made apps you can clone and make your own.", "task": "Click Store in the menu", "target": { "kind": "nav-item", "ref": "Store" }, "advanceOn": { "type": "route-match", "route": "Templates" } },
+					{ "id": "create-app", "sinceVersion": "0.5.9", "placement": "bottom", "allowManualNext": true, "body": "Pick a template and clone it — give your new app a name, then create it. Once it exists you can shape its schemas and pages.", "task": "Clone a template into a new app", "target": { "kind": "page", "ref": "Templates" }, "advanceOn": { "type": "object-created", "register": "openbuild", "schema": "application", "capture": { "applicationId": ":id" } } },
+					{ "id": "done", "sinceVersion": "0.5.9", "placement": "center", "title": "You're all set", "body": "Nicely done — your first app exists. Open it from Apps to design its schemas and pages, and reopen this tour anytime from the … menu.", "target": { "kind": "page", "ref": "Dashboard" }, "advanceOn": { "type": "manual" } }
+				]
+			}
+		]
+	},
+	"menu": [
+		{
+			"id": "Dashboard",
+			"label": "Dashboard",
+			"icon": "icon-category-dashboard",
+			"route": "Dashboard",
+			"order": 10
+		},
+		{
+			"id": "VirtualApps",
+			"label": "Apps",
+			"icon": "icon-category-app-bundles",
+			"route": "VirtualApps",
+			"order": 20
+		},
+		{
+			"id": "Store",
+			"label": "Store",
+			"icon": "icon-category-organization",
+			"route": "Templates",
+			"order": 30
+		},
+		{
+			"id": "Documentation",
+			"label": "Documentation",
+			"icon": "icon-info",
+			"href": "https://openbuild.conduction.nl",
+			"section": "footer",
+			"order": 90
+		},
+		{
+			"id": "FeaturesRoadmapMenu",
+			"label": "Features & roadmap",
+			"icon": "icon-toggle",
+			"route": "FeaturesRoadmap",
+			"section": "footer",
+			"order": 95
+		}
+	],
+	"pages": [
+		{
+			"id": "Dashboard",
+			"route": "/",
+			"type": "custom",
+			"title": "Dashboard",
+			"component": "DashboardIndex",
+			"config": {},
+			"_note": "Dashboard renders the self-contained DashboardIndex view (one CnDashboardPage: 4 KPI cards + Recent apps table + Quick start panel), modelled on the DocuDesk dashboard. type:custom mounts a single CnDashboardPage to avoid the dashboard-in-dashboard antipattern (hydra gate-15)."
+		},
+		{
+			"id": "VirtualApps",
+			"route": "/applications",
+			"type": "index",
+			"title": "Apps",
+			"actionsComponent": "VirtualAppsActions",
+			"config": {
+				"register": "openbuild",
+				"schema": "application",
+				"viewMode": "cards",
+				"cardComponent": "ApplicationCard",
+				"columns": [
+					"name",
+					"status",
+					"version",
+					"@self.updated"
+				],
+				"showAdd": false,
+				"showMassImport": true,
+				"sidebar": {
+					"enabled": true,
+					"showMetadata": true
+				},
+				"documentationUrl": "https://openbuild.conduction.nl"
+			}
+		},
+		{
+			"id": "ApplicationManifestDetail",
+			"route": "/applications/:objectId/manifest",
+			"type": "custom",
+			"title": "Manifest layers",
+			"component": "ApplicationManifestDetail",
+			"config": {},
+			"_note": "Routed Manifest detail page (layered-versioned-app-deltas). Surfaces the three manifest customization layers (Base / Admin delta / Your delta), the per-layer OpenRegister version history + rollback (reusing VersionHistory), and the per-user create/edit/reset of the caller's own delta. type:custom mounts ManifestLayersDetail; reached from the app-detail Manifest widget. Declared before /applications/:objectId so the extra /manifest segment matches first."
+		},
+		{
+			"id": "VirtualAppDetail",
+			"route": "/applications/:objectId",
+			"type": "detail",
+			"title": "App",
+			"headerComponent": "ApplicationDetailHeader",
+			"actionsComponent": "ApplicationDetailActions",
+			"slots": {
+				"before-body": "ApplicationDetailDashboard"
+			},
+			"config": {
+				"register": "openbuild",
+				"schema": "application",
+				"maxWidth": "none",
+				"showRelatedObjects": false,
+				"showRefresh": false,
+				"showRequestFeature": false,
+				"sidebarTabs": [
+					{
+						"id": "manifest",
+						"label": "Manifest",
+						"icon": "icon-edit",
+						"component": "ApplicationManifestTab",
+						"order": 20
+					},
+					{
+						"id": "history",
+						"label": "Version history",
+						"icon": "icon-history",
+						"component": "ApplicationVersionsTab",
+						"order": 30
+					},
+					{
+						"id": "diff",
+						"label": "Diff",
+						"icon": "icon-files",
+						"component": "ApplicationDiffTab",
+						"order": 40
+					},
+					{
+						"id": "icons",
+						"label": "Icons",
+						"icon": "icon-image",
+						"component": "ApplicationIconTab",
+						"order": 50
+					},
+					{
+						"id": "exports",
+						"label": "Exports",
+						"icon": "icon-download",
+						"component": "ExportJobsTab",
+						"order": 60
+					},
+					{
+						"id": "audit",
+						"label": "Audit trail",
+						"icon": "icon-history",
+						"component": "audit-trail",
+						"order": 70
+					}
+				]
+			}
+		},
+		{
+			"id": "Schemas",
+			"route": "/schemas",
+			"type": "detail",
+			"title": "Schemas",
+			"slots": {
+				"default": "SchemaDesignerView"
+			},
+			"config": {
+				"register": "openbuild",
+				"schema": "application",
+				"sidebar": {
+					"enabled": false
+				},
+				"documentationUrl": "https://openbuild.conduction.nl"
+			},
+			"_note": "Top-level schemas overview \u2014 renders the SchemaDesignerView (list mode) via the registry-backed `slots.default` override so the primary action is the native \"Add schema\" flow (SchemaListPanel + AddSchemaDialog). Previously this page was type:\"index\" and fell through to the generic CnIndexPage, which keys its Add button off config.schema (\"application\") and so mislabelled the action \"Add Application\". A type:\"custom\" + top-level `component` does NOT resolve here because CnPageRenderer (beta.107) dispatches custom pages via the empty legacy customComponents map, not the v2 registry; the slot-override path (resolvedSlotEntries) is the one that reads cnRegistry. With no :schemaId route param SchemaDesignerView renders list mode and the no-slug /schemas shortcut falls back to the hello-world app. Per-app drill-down lives under /builder/:slug/schemas."
+		},
+		{
+			"id": "Templates",
+			"route": "/templates",
+			"type": "custom",
+			"title": "Store",
+			"component": "TemplateGallery",
+			"config": {
+				"register": "openbuild",
+				"schema": "application-template",
+				"documentationUrl": "https://openbuild.conduction.nl"
+			},
+			"_note": "Templates renders the store-aware TemplateGallery view (openbuild-remote-template-store): when a registry is configured the remote store search is the primary surface with built-in templates secondary; with no registry it falls back to the built-in templates as today. Install clones via CloneTemplateDialog."
+		},
+		{
+			"id": "SchemaDesignerList",
+			"route": "/builder/:slug/schemas",
+			"type": "index",
+			"title": "Schemas",
+			"config": {
+				"register": "openbuild",
+				"schema": "application",
+				"viewMode": "cards",
+				"sidebar": {
+					"enabled": true,
+					"showMetadata": true
+				},
+				"documentationUrl": "https://openbuild.conduction.nl"
+			},
+			"_note": "Per-app schema list under the builder route. Scoped to the virtual app identified by :slug — the index page type's filter wiring kicks in via the route param."
+		},
+		{
+			"id": "SchemaDesigner",
+			"route": "/builder/:slug/schemas/:schemaId",
+			"type": "detail",
+			"title": "Schema",
+			"config": {
+				"register": "openbuild",
+				"schema": "application",
+				"sidebar": {
+					"enabled": true,
+					"showMetadata": true
+				},
+				"documentationUrl": "https://openbuild.conduction.nl"
+			},
+			"slots": {
+				"default": "SchemaDesignerView"
+			}
+		},
+		{
+			"id": "PageDesigner",
+			"route": "/builder/:slug/pages",
+			"type": "detail",
+			"title": "Page designer",
+			"config": {
+				"register": "openbuild",
+				"schema": "application",
+				"sidebar": {
+					"enabled": true,
+					"showMetadata": true
+				},
+				"documentationUrl": "https://openbuild.conduction.nl"
+			},
+			"slots": {
+				"default": "PageDesignerView"
+			}
+		},
+		{
+			"id": "WalkthroughDesigner",
+			"route": "/builder/:slug/walkthrough",
+			"type": "detail",
+			"title": "Walkthrough designer",
+			"config": {
+				"register": "openbuild",
+				"schema": "application",
+				"sidebar": {
+					"enabled": true,
+					"showMetadata": true
+				},
+				"documentationUrl": "https://openbuild.conduction.nl"
+			},
+			"slots": {
+				"default": "WalkthroughDesignerView"
+			}
+		},
+		{
+			"id": "Exports",
+			"route": "/exports",
+			"type": "index",
+			"title": "Exports",
+			"config": {
+				"register": "openbuild",
+				"schema": "export-job",
+				"viewMode": "table",
+				"sidebar": {
+					"enabled": true,
+					"showMetadata": true
+				},
+				"documentationUrl": "https://openbuild.conduction.nl"
+			}
+		},
+		{
+			"id": "BuilderHost",
+			"route": "/builder/:slug/:pathMatch(.*)?",
+			"type": "custom",
+			"title": "App",
+			"component": "BuilderHostView",
+			"_note": "Virtual-app host that mounts a nested CnAppRoot rendering the virtual app's own manifest from GET /api/applications/{slug}/manifest. This is a meta-app-shell (app inside app) pattern that no standard page type supports. It is the core runtime surface of openbuild and will always require a custom host component."
+		},
+		{
+			"id": "FeaturesRoadmap",
+			"route": "/features-roadmap",
+			"type": "roadmap",
+			"title": "Features & roadmap",
+			"config": {
+				"documentationUrl": "https://openbuild.conduction.nl"
+			}
+		}
+	],
+	"observability": {
+		"health": {
+			"statusCodePolicy": "adr006",
+			"checks": [
+				{ "id": "database", "type": "database" },
+				{ "id": "openregister", "type": "orAvailable", "severity": "degraded" }
+			]
+		},
+		"metrics": [
+			{
+				"name": "export_jobs_total",
+				"type": "gauge",
+				"help": "Export jobs by lifecycle status",
+				"source": { "kind": "objectCount", "register": "openbuild", "schema": "export-job", "groupBy": ["status"] }
+			},
+			{
+				"name": "applications_total",
+				"type": "gauge",
+				"help": "Virtual applications (one nav entry per published app)",
+				"source": { "kind": "objectCount", "register": "openbuild", "schema": "application" }
+			},
+			{
+				"name": "application_versions_total",
+				"type": "gauge",
+				"help": "Application versions by lifecycle status",
+				"source": { "kind": "objectCount", "register": "openbuild", "schema": "applicationVersion", "groupBy": ["status"] }
+			}
+		]
+	},
+	"deepLinks": [
+		{
+			"registerSlug": "openbuild",
+			"schemaSlug": "example",
+			"urlTemplate": "/apps/openbuild/#/examples/{uuid}",
+			"displayName": "Example"
+		}
+	]
+}

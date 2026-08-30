@@ -3,21 +3,56 @@ import ComponentCreator from '@docusaurus/ComponentCreator';
 
 export default [
   {
+    path: '/__docusaurus/debug/',
+    component: ComponentCreator('/__docusaurus/debug/', '546'),
+    exact: true
+  },
+  {
+    path: '/__docusaurus/debug/config/',
+    component: ComponentCreator('/__docusaurus/debug/config/', '8a8'),
+    exact: true
+  },
+  {
+    path: '/__docusaurus/debug/content/',
+    component: ComponentCreator('/__docusaurus/debug/content/', '2da'),
+    exact: true
+  },
+  {
+    path: '/__docusaurus/debug/globalData/',
+    component: ComponentCreator('/__docusaurus/debug/globalData/', '178'),
+    exact: true
+  },
+  {
+    path: '/__docusaurus/debug/metadata/',
+    component: ComponentCreator('/__docusaurus/debug/metadata/', 'd6c'),
+    exact: true
+  },
+  {
+    path: '/__docusaurus/debug/registry/',
+    component: ComponentCreator('/__docusaurus/debug/registry/', '6e3'),
+    exact: true
+  },
+  {
+    path: '/__docusaurus/debug/routes/',
+    component: ComponentCreator('/__docusaurus/debug/routes/', 'cab'),
+    exact: true
+  },
+  {
     path: '/features/',
     component: ComponentCreator('/features/', 'cbb'),
     exact: true
   },
   {
     path: '/docs/',
-    component: ComponentCreator('/docs/', '440'),
+    component: ComponentCreator('/docs/', '6be'),
     routes: [
       {
         path: '/docs/',
-        component: ComponentCreator('/docs/', 'e7e'),
+        component: ComponentCreator('/docs/', '6ca'),
         routes: [
           {
             path: '/docs/',
-            component: ComponentCreator('/docs/', '941'),
+            component: ComponentCreator('/docs/', '1ec'),
             routes: [
               {
                 path: '/docs/business-rules-engine/',
@@ -76,6 +111,12 @@ export default [
               {
                 path: '/docs/releasing/',
                 component: ComponentCreator('/docs/releasing/', '278'),
+                exact: true,
+                sidebar: "tutorialSidebar"
+              },
+              {
+                path: '/docs/template-store/',
+                component: ComponentCreator('/docs/template-store/', 'f45'),
                 exact: true,
                 sidebar: "tutorialSidebar"
               },
@@ -154,6 +195,12 @@ export default [
               {
                 path: '/docs/tutorials/user/version-snapshots/',
                 component: ComponentCreator('/docs/tutorials/user/version-snapshots/', '9d8'),
+                exact: true,
+                sidebar: "tutorialSidebar"
+              },
+              {
+                path: '/docs/widgets/',
+                component: ComponentCreator('/docs/widgets/', '86a'),
                 exact: true,
                 sidebar: "tutorialSidebar"
               }
