@@ -1,0 +1,791 @@
+{
+	"_comment": "ADR-037 register fragment — business-rules-engine. Adds the RuleSet, DecisionTable, ConditionActionRule, RuleExecutionLog and TestCase schemas to the shared `buildiq` register, plus three seed RuleSets with companion tables/rules/test-cases. SettingsService::deepMergeConfig unions components.schemas by key and concatenates components.objects[]. RuleSet carries x-openregister-lifecycle (draft → test → active → archived) and x-openregister-notifications (rule-change alerts), so no custom *LifecycleService / *NotificationService class is needed (ADR-031 §Schema-declarative). Evaluation logic (FeelParser, DecisionTableEvaluator, ConditionActionExecutor, RuleEngineService) is the documented ADR-031 §Exceptions code path. ADR-062 rule 7 note: DecisionTable/ConditionActionRule/RuleExecutionLog/TestCase.ruleSetId is a plain `type:\"string\"` slug reference (NOT format:uuid, NOT a $ref relation) BY DESIGN — RuleSet's natural key is its kebab-case slug because it drives the public runtime route `POST /api/rules/{ruleSetSlug}/evaluate`; the slug is stable across RuleSet re-import/versioning while a uuid would churn. This is a deliberate business-key reference, not a bare-string-FK-by-convention violation (gate 31 does not flag it — the heuristic only fires on format:uuid properties).",
+	"components": {
+		"schemas": {
+			"RuleSet": {
+				"x-schema-org": "schema:CreativeWork",
+				"slug": "rule-set",
+				"icon": "Sitemap",
+				"version": "1.0.0",
+				"title": "RuleSet",
+				"description": "A versioned container of business rules (DecisionTables and/or ConditionActionRules) that a consumer app evaluates against an input payload. Lifecycle (draft → test → active → archived) is declarative via x-openregister-lifecycle. Tenant-scoped by OR multitenancy.",
+				"authorization": {
+					"read": [
+						"authenticated"
+					],
+					"create": [
+						"admin"
+					],
+					"update": [
+						"admin"
+					],
+					"delete": [
+						"admin"
+					]
+				},
+				"type": "object",
+				"required": [
+					"slug",
+					"name"
+				],
+				"properties": {
+					"slug": {
+						"title": "Rule Set Slug",
+						"type": "string",
+						"pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+						"minLength": 2,
+						"maxLength": 64,
+						"description": "Kebab-case slug; uniquely identifies the RuleSet. Drives POST /api/rules/{ruleSetSlug}/evaluate."
+					},
+					"name": {
+						"title": "Name",
+						"type": "string",
+						"description": "Human-readable name of the RuleSet."
+					},
+					"description": {
+						"title": "Description",
+						"type": "string",
+						"description": "Optional long-form description."
+					},
+					"version": {
+						"title": "Version",
+						"type": "string",
+						"default": "1.0.0",
+						"description": "Semver version, auto-incremented on activation by RuleSetVersioningService."
+					},
+					"status": {
+						"title": "Lifecycle Status",
+						"type": "string",
+						"enum": [
+							"draft",
+							"test",
+							"active",
+							"archived"
+						],
+						"default": "draft",
+						"description": "Lifecycle state. Driven by x-openregister-lifecycle below."
+					},
+					"ruleType": {
+						"title": "Rule Type",
+						"type": "string",
+						"enum": [
+							"decision-table",
+							"condition-action"
+						],
+						"default": "decision-table",
+						"description": "Which paradigm the RuleSet uses: a DMN DecisionTable or a chain of ConditionActionRules."
+					},
+					"ownerApp": {
+						"title": "Owner App",
+						"type": "string",
+						"description": "Owning consumer app identifier (e.g. buildiq-lending)."
+					},
+					"activatedOn": {
+						"title": "Activated At",
+						"type": "string",
+						"format": "date-time",
+						"description": "Timestamp of the last test → active transition."
+					},
+					"validFrom": {
+						"title": "Valid From",
+						"type": "string",
+						"format": "date",
+						"description": "Date from which the active version takes effect."
+					},
+					"validUntil": {
+						"title": "Valid Until",
+						"type": "string",
+						"format": "date",
+						"description": "Optional end-of-validity date."
+					},
+					"isGlobal": {
+						"title": "Is Global",
+						"type": "boolean",
+						"default": false,
+						"description": "When true the RuleSet is a platform-level compliance rule, read-only to tenants (design.md Decision 8)."
+					}
+				},
+				"x-openregister-lifecycle": {
+					"field": "status",
+					"initial": "draft",
+					"states": {
+						"draft": {
+							"description": "Editable working version. Not evaluated by consumer apps."
+						},
+						"test": {
+							"description": "Frozen for sandbox validation. TestCases run against this state before promotion."
+						},
+						"active": {
+							"description": "Live — the version consumer apps evaluate. Immutable; edits require reopening to draft."
+						},
+						"archived": {
+							"description": "Retired. Preserved for audit and restore."
+						}
+					},
+					"transitions": {
+						"submit": {
+							"from": [
+								"draft"
+							],
+							"to": "test",
+							"description": "Freeze the draft for sandbox validation."
+						},
+						"reopen": {
+							"from": [
+								"test"
+							],
+							"to": "draft",
+							"description": "Return a test RuleSet to draft for further editing."
+						},
+						"activate": {
+							"from": [
+								"test"
+							],
+							"to": "active",
+							"description": "Promote a validated RuleSet to live. RuleSetVersioningService bumps the semver and archives the previous active version."
+						},
+						"archive": {
+							"from": [
+								"active"
+							],
+							"to": "archived",
+							"description": "Retire a live RuleSet."
+						}
+					}
+				},
+				"x-openregister-notifications": {
+					"ruleset-activated": {
+						"trigger": {
+							"type": "transition",
+							"action": "activate"
+						},
+						"enabled": true,
+						"channels": [
+							"nc-notification"
+						],
+						"recipients": [
+							{
+								"kind": "object-acl",
+								"permission": "manage"
+							}
+						],
+						"subject": {
+							"nl": "Regelset {{name}} is geactiveerd (versie {{version}})",
+							"en": "Rule set {{name}} has been activated (version {{version}})"
+						}
+					},
+					"ruleset-archived": {
+						"trigger": {
+							"type": "transition",
+							"action": "archive"
+						},
+						"enabled": true,
+						"channels": [
+							"nc-notification"
+						],
+						"recipients": [
+							{
+								"kind": "object-acl",
+								"permission": "manage"
+							}
+						],
+						"subject": {
+							"nl": "Regelset {{name}} is gearchiveerd",
+							"en": "Rule set {{name}} has been archived"
+						}
+					}
+				}
+			},
+			"DecisionTable": {
+				"slug": "decision-table",
+				"icon": "Table",
+				"version": "1.0.0",
+				"title": "DecisionTable",
+				"description": "A DMN 1.4 decision table belonging to a RuleSet. Maps multi-factor input conditions to output values via a hit policy. Cell conditions use the FEEL subset (ranges, lists, comparisons).",
+				"authorization": {
+					"read": [
+						"authenticated"
+					],
+					"create": [
+						"admin"
+					],
+					"update": [
+						"admin"
+					],
+					"delete": [
+						"admin"
+					]
+				},
+				"type": "object",
+				"required": [
+					"ruleSetId",
+					"hitPolicy"
+				],
+				"properties": {
+					"ruleSetId": {
+						"title": "Rule Set ID",
+						"type": "string",
+						"description": "Slug of the owning RuleSet."
+					},
+					"hitPolicy": {
+						"title": "Hit Policy",
+						"type": "string",
+						"enum": [
+							"unique",
+							"first",
+							"priority",
+							"any",
+							"collect",
+							"rule-order"
+						],
+						"default": "first",
+						"description": "DMN hit policy determining which matching rule(s) win."
+					},
+					"inputColumns": {
+						"title": "Input Columns",
+						"type": "array",
+						"description": "Input columns: each carries a name, a type and a dot-notation expression path into the payload.",
+						"items": {
+							"type": "object",
+							"properties": {
+								"name": {
+									"title": "Column Name",
+									"description": "Name of the input column.",
+									"type": "string"
+								},
+								"type": {
+									"title": "Column Type",
+									"description": "Data type of the input column (e.g. string, integer, number).",
+									"type": "string"
+								},
+								"expressionPath": {
+									"title": "Expression Path",
+									"description": "Dot-notation path into the payload for this input column.",
+									"type": "string"
+								}
+							}
+						}
+					},
+					"outputColumns": {
+						"title": "Output Columns",
+						"type": "array",
+						"description": "Output columns: each carries a name, a type and an optional default value.",
+						"items": {
+							"type": "object",
+							"properties": {
+								"name": {
+									"title": "Column Name",
+									"description": "Name of the output column.",
+									"type": "string"
+								},
+								"type": {
+									"title": "Column Type",
+									"description": "Data type of the output column.",
+									"type": "string"
+								},
+								"defaultValue": {
+									"title": "Default Value",
+									"description": "Optional default value for this output column, expressed as text.",
+									"type": "string"
+								}
+							}
+						}
+					},
+					"rules": {
+						"title": "Rules",
+						"type": "array",
+						"description": "The rule rows: each maps input-column FEEL conditions to output-column values.",
+						"items": {
+							"type": "object",
+							"properties": {
+								"conditions": {
+									"title": "Conditions",
+									"description": "Map of input-column names to FEEL condition expressions for this rule row.",
+									"type": "object"
+								},
+								"values": {
+									"title": "Output Values",
+									"description": "Map of output-column names to their values when this rule row matches.",
+									"type": "object"
+								},
+								"label": {
+									"title": "Rule Label",
+									"description": "Human-readable label for this rule row.",
+									"type": "string"
+								},
+								"priority": {
+									"title": "Priority",
+									"description": "Execution priority for this rule row (higher = evaluated first).",
+									"type": "integer",
+									"default": 0
+								}
+							}
+						}
+					}
+				}
+			},
+			"ConditionActionRule": {
+				"slug": "condition-action-rule",
+				"icon": "Flash",
+				"version": "1.0.0",
+				"title": "ConditionActionRule",
+				"description": "A condition-driven action chain belonging to a RuleSet. When its FEEL condition is true, its actions execute in declaration order (set-field / send-notification / start-workflow / call-rule-set).",
+				"authorization": {
+					"read": [
+						"authenticated"
+					],
+					"create": [
+						"admin"
+					],
+					"update": [
+						"admin"
+					],
+					"delete": [
+						"admin"
+					]
+				},
+				"type": "object",
+				"required": [
+					"ruleSetId",
+					"name",
+					"condition"
+				],
+				"properties": {
+					"ruleSetId": {
+						"title": "Rule Set ID",
+						"type": "string",
+						"description": "Slug of the owning RuleSet."
+					},
+					"name": {
+						"title": "Name",
+						"type": "string",
+						"description": "Human-readable name of the rule."
+					},
+					"description": {
+						"title": "Description",
+						"type": "string",
+						"description": "Optional description."
+					},
+					"priority": {
+						"title": "Priority",
+						"type": "integer",
+						"default": 0,
+						"description": "Primary ordering key (DESC) — higher fires first."
+					},
+					"salience": {
+						"title": "Salience",
+						"type": "integer",
+						"default": 0,
+						"description": "Secondary ordering key (DESC), tie-broken by declaration order."
+					},
+					"condition": {
+						"title": "Condition",
+						"type": "string",
+						"description": "FEEL-subset boolean expression evaluated against the payload."
+					},
+					"actions": {
+						"title": "Actions",
+						"type": "array",
+						"description": "Ordered actions to execute when the condition is true.",
+						"items": {
+							"type": "object",
+							"properties": {
+								"type": {
+									"title": "Action Type",
+									"description": "Type of action to execute (set-field, send-notification, start-workflow, call-rule-set).",
+									"type": "string",
+									"enum": [
+										"set-field",
+										"send-notification",
+										"start-workflow",
+										"call-rule-set"
+									]
+								},
+								"parameters": {
+									"title": "Action Parameters",
+									"description": "Key-value parameters specific to the action type.",
+									"type": "object"
+								}
+							}
+						}
+					},
+					"continueOnError": {
+						"title": "Continue On Error",
+						"type": "boolean",
+						"default": false,
+						"description": "When true, a failing action does not abort the remaining actions in this rule."
+					},
+					"active": {
+						"title": "Active",
+						"type": "boolean",
+						"default": true,
+						"description": "Whether the rule participates in evaluation."
+					}
+				}
+			},
+			"RuleExecutionLog": {
+				"x-schema-org": "schema:Event",
+				"slug": "rule-execution-log",
+				"icon": "ClipboardText",
+				"version": "1.0.0",
+				"title": "RuleExecutionLog",
+				"description": "Append-only audit record of a single rule evaluation (GDPR art. 22 explainability). Captures input (optionally PII-masked), output, triggered rules, duration and any errors.",
+				"authorization": {
+					"read": [
+						"authenticated"
+					],
+					"create": [
+						"admin"
+					],
+					"update": [
+						"admin"
+					],
+					"delete": [
+						"admin"
+					]
+				},
+				"type": "object",
+				"required": [
+					"ruleSetId"
+				],
+				"properties": {
+					"ruleSetId": {
+						"title": "Rule Set ID",
+						"type": "string",
+						"description": "Slug of the evaluated RuleSet."
+					},
+					"ruleSetVersion": {
+						"title": "Rule Set Version",
+						"type": "string",
+						"description": "Semver of the evaluated version."
+					},
+					"timestamp": {
+						"title": "Timestamp",
+						"type": "string",
+						"format": "date-time",
+						"description": "Evaluation timestamp."
+					},
+					"triggerContext": {
+						"title": "Trigger Context",
+						"type": "string",
+						"description": "Origin of the evaluation (e.g. form-submit, api)."
+					},
+					"inputPayload": {
+						"title": "Input Payload",
+						"type": "object",
+						"description": "Input payload, with configured PII fields masked."
+					},
+					"outputResult": {
+						"title": "Output Result",
+						"type": "object",
+						"description": "Evaluation result."
+					},
+					"triggeredRules": {
+						"title": "Triggered Rules",
+						"type": "array",
+						"description": "Triggered rule identifiers.",
+						"items": {
+							"type": "string"
+						}
+					},
+					"executionDurationMs": {
+						"title": "Execution Duration (ms)",
+						"type": "integer",
+						"description": "Execution duration in milliseconds."
+					},
+					"errors": {
+						"title": "Errors",
+						"type": "array",
+						"description": "Any errors raised during evaluation.",
+						"items": {
+							"type": "string"
+						}
+					},
+					"userId": {
+						"title": "User ID",
+						"type": "string",
+						"description": "UID of the user who triggered the evaluation."
+					},
+					"consumerApp": {
+						"title": "Consumer App",
+						"type": "string",
+						"description": "Consuming app identifier, for impact analysis."
+					},
+					"archived": {
+						"title": "Archived",
+						"type": "boolean",
+						"default": false,
+						"description": "Set by the cleanup job once past retention."
+					}
+				}
+			},
+			"TestCase": {
+				"x-schema-org": "schema:CreativeWork",
+				"slug": "rule-test-case",
+				"icon": "CheckCircle",
+				"version": "1.0.0",
+				"title": "TestCase",
+				"description": "A sample payload + expected result tied to a RuleSet, run in the sandbox before promotion to active.",
+				"authorization": {
+					"read": [
+						"authenticated"
+					],
+					"create": [
+						"admin"
+					],
+					"update": [
+						"admin"
+					],
+					"delete": [
+						"admin"
+					]
+				},
+				"type": "object",
+				"required": [
+					"ruleSetId",
+					"name"
+				],
+				"properties": {
+					"ruleSetId": {
+						"title": "Rule Set ID",
+						"type": "string",
+						"description": "Slug of the RuleSet under test."
+					},
+					"name": {
+						"title": "Name",
+						"type": "string",
+						"description": "Test case name."
+					},
+					"description": {
+						"title": "Description",
+						"type": "string",
+						"description": "What the case verifies."
+					},
+					"inputPayload": {
+						"title": "Input Payload",
+						"type": "object",
+						"description": "Sample input payload."
+					},
+					"expectedResult": {
+						"title": "Expected Result",
+						"type": "object",
+						"description": "Expected evaluation output."
+					},
+					"lastTestResult": {
+						"title": "Last Test Result",
+						"type": "string",
+						"enum": [
+							"passed",
+							"failed",
+							"not-run"
+						],
+						"default": "not-run",
+						"description": "Result of the most recent run."
+					},
+					"lastTestOutput": {
+						"title": "Last Test Output",
+						"type": "object",
+						"description": "Actual output of the most recent run."
+					}
+				}
+			}
+		},
+		"objects": [
+			{
+				"@self": {
+					"register": "buildiq",
+					"schema": "rule-set",
+					"slug": "loan-eligibility"
+				},
+				"slug": "loan-eligibility",
+				"name": "Loan Eligibility Decision",
+				"description": "Multi-factor lending decision based on age, income, and credit score",
+				"version": "1.0.0",
+				"status": "active",
+				"ruleType": "decision-table",
+				"ownerApp": "buildiq-lending",
+				"validFrom": "2026-05-22"
+			},
+			{
+				"@self": {
+					"register": "buildiq",
+					"schema": "decision-table",
+					"slug": "loan-eligibility-table"
+				},
+				"ruleSetId": "loan-eligibility",
+				"hitPolicy": "first",
+				"inputColumns": [
+					{
+						"name": "applicantAge",
+						"type": "integer",
+						"expressionPath": "applicant.age"
+					},
+					{
+						"name": "monthlyIncome",
+						"type": "number",
+						"expressionPath": "applicant.monthlyIncome"
+					},
+					{
+						"name": "creditScore",
+						"type": "integer",
+						"expressionPath": "applicant.creditScore"
+					}
+				],
+				"outputColumns": [
+					{
+						"name": "decision",
+						"type": "string",
+						"defaultValue": "deny"
+					},
+					{
+						"name": "reason",
+						"type": "string",
+						"defaultValue": "Eligibility criteria not met"
+					}
+				],
+				"rules": [
+					{
+						"conditions": {
+							"applicantAge": ">=18",
+							"monthlyIncome": ">=2000",
+							"creditScore": ">=600"
+						},
+						"values": {
+							"decision": "approve",
+							"reason": "All criteria met"
+						},
+						"label": "Standard approval"
+					},
+					{
+						"conditions": {
+							"applicantAge": ">=18",
+							"monthlyIncome": ">=1500",
+							"creditScore": ">=500"
+						},
+						"values": {
+							"decision": "review",
+							"reason": "Manual review required"
+						},
+						"label": "Marginal case"
+					},
+					{
+						"values": {
+							"decision": "deny",
+							"reason": "Eligibility criteria not met"
+						},
+						"label": "Default deny"
+					}
+				]
+			},
+			{
+				"@self": {
+					"register": "buildiq",
+					"schema": "rule-test-case",
+					"slug": "loan-eligibility-test-1"
+				},
+				"ruleSetId": "loan-eligibility",
+				"name": "Eligible applicant",
+				"description": "A 25-year-old with EUR 3,000 monthly income and 650 credit score should be approved",
+				"inputPayload": {
+					"applicant": {
+						"age": 25,
+						"monthlyIncome": 3000,
+						"creditScore": 650
+					}
+				},
+				"expectedResult": {
+					"decision": "approve",
+					"reason": "All criteria met"
+				},
+				"lastTestResult": "not-run"
+			},
+			{
+				"@self": {
+					"register": "buildiq",
+					"schema": "rule-set",
+					"slug": "invoice-routing"
+				},
+				"slug": "invoice-routing",
+				"name": "Invoice Routing Rules",
+				"description": "Route invoices to approvers based on amount and department",
+				"version": "1.0.0",
+				"status": "active",
+				"ruleType": "condition-action",
+				"ownerApp": "buildiq-invoicing",
+				"validFrom": "2026-05-22"
+			},
+			{
+				"@self": {
+					"register": "buildiq",
+					"schema": "condition-action-rule",
+					"slug": "invoice-routing-rule-1"
+				},
+				"ruleSetId": "invoice-routing",
+				"name": "High-value invoice escalation",
+				"priority": 100,
+				"salience": 10,
+				"condition": "invoice.total > 5000 and invoice.department == 'procurement'",
+				"actions": [
+					{
+						"type": "send-notification",
+						"parameters": {
+							"recipient": "finance-director",
+							"template": "high-value-invoice"
+						}
+					},
+					{
+						"type": "start-workflow",
+						"parameters": {
+							"workflowId": "invoice-approval-chain"
+						}
+					}
+				],
+				"active": true
+			},
+			{
+				"@self": {
+					"register": "buildiq",
+					"schema": "rule-set",
+					"slug": "complaint-escalation"
+				},
+				"slug": "complaint-escalation",
+				"name": "Complaint Escalation Rules",
+				"description": "Auto-escalate complaints based on severity and age",
+				"version": "2.1.0",
+				"status": "active",
+				"ruleType": "condition-action",
+				"ownerApp": "buildiq-complaints",
+				"validFrom": "2026-05-15"
+			},
+			{
+				"@self": {
+					"register": "buildiq",
+					"schema": "condition-action-rule",
+					"slug": "complaint-escalation-rule-1"
+				},
+				"ruleSetId": "complaint-escalation",
+				"name": "Critical complaint auto-escalate",
+				"priority": 200,
+				"salience": 0,
+				"condition": "complaint.severity == 'critical' or complaint.status == 'open'",
+				"actions": [
+					{
+						"type": "send-notification",
+						"parameters": {
+							"recipient": "complaints-manager",
+							"template": "escalated-complaint"
+						}
+					},
+					{
+						"type": "set-field",
+						"parameters": {
+							"field": "escalatedAt",
+							"value": "@now"
+						}
+					}
+				],
+				"active": true
+			}
+		]
+	}
+}

@@ -1,0 +1,76 @@
+{
+  "change": "fix-builder-nav-route-and-identity",
+  "project": "buildiq",
+  "repo": "ConductionNL/buildiq",
+  "base_branch": "development",
+  "feature_branch": "feature/32/fix-builder-nav-route-and-identity",
+  "created": "2026-07-27",
+  "tracking_issue": 32,
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Replace hand-built nav href with IURLGenerator::linkToRoute",
+      "description": "In AppNavigationService::registerNavEntries (~line 185), replace $appUrl = '/apps/buildiq/builder/'.$slug; with $this->urlGenerator->linkToRoute('buildiq.dashboard.builder', ['slug' => $slug]); using the existing urlGenerator dependency (same pattern as the icon URL two lines above).",
+      "status": "done",
+      "spec_ref": "app-nav-entries#REQ-OBNAV-001",
+      "acceptance_criteria": [
+        "Nav entry href is produced by linkToRoute('buildiq.dashboard.builder', ...), not a hand-built string",
+        "Resolves correctly on both front-controller-required (/index.php) and rewrite-enabled instances"
+      ],
+      "files_likely_affected": [
+        "lib/Service/AppNavigationService.php"
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Test nav href comes from linkToRoute",
+      "description": "Extend tests/Unit/Service/AppNavigationServiceTest.php with a case that mocks IURLGenerator::linkToRoute to return a distinctive /index.php-including value for route buildiq.dashboard.builder and asserts the registered closure's href equals it, not a hand-built string.",
+      "status": "done",
+      "spec_ref": "app-nav-entries#REQ-OBNAV-001",
+      "acceptance_criteria": [
+        "Test asserts the closure's returned href equals the mocked linkToRoute value"
+      ],
+      "files_likely_affected": [
+        "tests/Unit/Service/AppNavigationServiceTest.php"
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Inject Application authoritative name into getManifest",
+      "description": "In ApplicationsController::getManifest (~line 250, alongside injectOwnerSignal), inject the Application's authoritative name field as the manifest's top-level name so the served manifest always carries the cased display name regardless of the stored manifest blob's own name value.",
+      "status": "done",
+      "spec_ref": "buildiq-runtime#REQ-OBR-001",
+      "acceptance_criteria": [
+        "getManifest response top-level name equals the Application's name field even when the stored blob's name is missing or stale"
+      ],
+      "files_likely_affected": [
+        "lib/Controller/ApplicationsController.php"
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Test getManifest name authority",
+      "description": "Create tests/Unit/Controller/ApplicationsControllerTest.php asserting getManifest returns name 'Pet Store' when the Application name is 'Pet Store' but the stored manifest blob name is missing or stale ('pet-store').",
+      "status": "done",
+      "spec_ref": "buildiq-runtime#REQ-OBR-001",
+      "acceptance_criteria": [
+        "New test asserts the response name reflects the Application name, not the stale blob name"
+      ],
+      "files_likely_affected": [
+        "tests/Unit/Controller/ApplicationsControllerTest.php"
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Verify via host phpunit",
+      "description": "Run BUILDIQ_SKIP_NC_BOOTSTRAP=1 ./vendor/bin/phpunit -c phpunit-unit.xml on the host (out of container, PHP 8.3) and confirm the new/extended cases and the full unit suite pass.",
+      "status": "done",
+      "spec_ref": null,
+      "acceptance_criteria": [
+        "New/extended test cases pass",
+        "Full unit suite passes with no regressions"
+      ],
+      "files_likely_affected": []
+    }
+  ]
+}

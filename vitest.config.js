@@ -1,0 +1,109 @@
+/**
+ * SPDX-FileCopyrightText: 2026 ConductionNL / Buildiq Contributors
+ * SPDX-License-Identifier: EUPL-1.2
+ *
+ * Vitest configuration for Buildiq Vue 3 unit tests.
+ *
+ * Tests live under `tests/components/**` and `tests/views/**` and run in
+ * a jsdom environment so DOM assertions (`wrapper.find`, `wrapper.text`,
+ * event firing) work without a real browser.
+ *
+ * Notes:
+ *  - `@vitejs/plugin-vue` compiles single-file components for Vite/Vitest
+ *    (separate from webpack's `vue-loader`).
+ *  - `*.css` side-effect imports from `@nextcloud/vue` and related
+ *    packages do not exist on disk in unit-test mode (they are produced
+ *    by a parallel vite build the published packages ship). The
+ *    `cssNoop` plugin intercepts those resolutions and feeds the
+ *    transformer an empty module so component mounts don't crash with
+ *    `ERR_UNKNOWN_FILE_EXTENSION`.
+ *  - `@conduction/nextcloud-vue` is aliased to a lightweight stub under
+ *    `tests/vitest/stubs/` because its CJS bundle uses `require('*.vue')`
+ *    which Vite's transform pipeline cannot consume.
+ */
+
+const path = require('path')
+const vue = require('@vitejs/plugin-vue')
+
+const cssNoop = {
+	name: 'openbuild-css-noop',
+	enforce: 'pre',
+	resolveId(id) {
+		if (typeof id === 'string' && /\.css(\?.*)?$/.test(id)) {
+			return '\0virtual:css-noop'
+		}
+		return null
+	},
+	load(id) {
+		if (id === '\0virtual:css-noop') {
+			return 'export default {}'
+		}
+		return null
+	},
+}
+
+module.exports = {
+	plugins: [cssNoop, vue.default ? vue.default() : vue()],
+	test: {
+		environment: 'jsdom',
+		globals: false,
+		include: ['tests/**/*.spec.{js,ts}'],
+		exclude: [
+			'tests/e2e/**',
+			'tests/integration/**',
+			'tests/Unit/**',
+			'tests/unit/**',
+			'node_modules/**',
+		],
+		setupFiles: [path.resolve(__dirname, 'tests/vitest/setup.js')],
+		server: {
+			deps: {
+				inline: [
+					/@nextcloud\/vue/,
+					/@nextcloud\/axios/,
+					/@nextcloud\/dialogs/,
+					/@nextcloud\/initial-state/,
+					/@conduction\/nextcloud-vue/,
+					/vue-material-design-icons/,
+					/vue-select/,
+					/vue-multiselect/,
+					/floating-vue/,
+					/vuedraggable/,
+				],
+			},
+		},
+	},
+	resolve: {
+		alias: [
+			{ find: '@', replacement: path.resolve(__dirname, 'src') },
+			// VTU v2 silently ignores v1's top-level stubs/provide/mocks. This
+			// adapter hoists them into `global` so the legacy specs keep the
+			// isolation they were written with. See the file's docblock.
+			{
+				find: /^@vue\/test-utils$/,
+				replacement: path.resolve(
+					__dirname,
+					'tests/vitest/vueTestUtilsCompat.js',
+				),
+			},
+			{
+				find: /^@conduction\/nextcloud-vue$/,
+				replacement: path.resolve(
+					__dirname,
+					'tests/vitest/stubs/conduction-nextcloud-vue.js',
+				),
+			},
+			// vuedraggable uses SortableJS + a live DOM that jsdom can't
+			// satisfy; the page-list / menu-tree specs mock it per-test
+			// where reorder semantics matter, so the default alias is a
+			// passthrough stub that just renders the default slot.
+			{
+				find: /^vuedraggable$/,
+				replacement: path.resolve(
+					__dirname,
+					'tests/vitest/stubs/vuedraggable.js',
+				),
+			},
+		],
+	},
+}

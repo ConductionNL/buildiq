@@ -1,0 +1,147 @@
+[
+  {
+    "slug": "buildiq-runtime",
+    "title": "Build apps without code",
+    "title_nl": "Bouw apps zonder code",
+    "summary": "You compose an app as a manifest and run it live, with no deployment step.",
+    "summary_nl": "Je stelt een app samen als een manifest en draait hem direct live, zonder uitrol.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/openbuild-runtime/spec.md"
+  },
+  {
+    "slug": "buildiq-schema-designer",
+    "title": "Design your data model visually",
+    "title_nl": "Ontwerp je datamodel visueel",
+    "summary": "You define entities, fields and relations without writing JSON Schema.",
+    "summary_nl": "Je legt entiteiten, velden en relaties vast zonder JSON Schema te schrijven.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/openbuild-schema-designer/spec.md"
+  },
+  {
+    "slug": "buildiq-page-designer",
+    "title": "Build pages and forms visually",
+    "title_nl": "Bouw pagina's en formulieren visueel",
+    "summary": "You create list, detail, form and dashboard screens yourself.",
+    "summary_nl": "Je maakt zelf lijst-, detail-, formulier- en dashboardschermen.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/openbuild-page-designer/spec.md"
+  },
+  {
+    "slug": "business-rules-engine",
+    "title": "Automate decisions with rules",
+    "title_nl": "Automatiseer beslissingen met regels",
+    "summary": "You set conditions and decision tables, with no scripting.",
+    "summary_nl": "Je stelt voorwaarden en beslistabellen in, zonder te scripten.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/business-rules-engine/spec.md"
+  },
+  {
+    "slug": "buildiq-exporter",
+    "title": "Export to a real Nextcloud app",
+    "title_nl": "Exporteer naar een echte Nextcloud-app",
+    "summary": "You take your app as a clean package, so there is no lock-in.",
+    "summary_nl": "Je neemt je app mee als schoon pakket, dus geen lock-in.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/openbuild-exporter/spec.md"
+  },
+  {
+    "slug": "buildiq-rbac",
+    "title": "Control who sees what",
+    "title_nl": "Bepaal wie wat ziet",
+    "summary": "You grant access per app, per group and per person.",
+    "summary_nl": "Je geeft toegang per app, per groep en per persoon.",
+    "status": "stable",
+    "providedBy": "openregister",
+    "docsUrl": "openspec/specs/openbuild-rbac/spec.md"
+  },
+  {
+    "slug": "application-versions",
+    "title": "Version, promote and roll back",
+    "title_nl": "Versioneer, promoot en draai terug",
+    "summary": "You move an app from dev to production and undo a change.",
+    "summary_nl": "Je tilt een app van dev naar productie en draait een wijziging terug.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/application-versions/spec.md"
+  },
+  {
+    "slug": "application-creation-wizard",
+    "title": "Set up an app in four steps",
+    "title_nl": "Zet een app in vier stappen op",
+    "summary": "The wizard provisions environments and data in one go.",
+    "summary_nl": "De wizard richt in een keer omgevingen en data in.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/application-creation-wizard/spec.md"
+  },
+  {
+    "slug": "application-insights",
+    "title": "See how each app is used",
+    "title_nl": "Zie hoe elke app gebruikt wordt",
+    "summary": "You track users, objects and activity per app over time.",
+    "summary_nl": "Je volgt gebruikers, objecten en activiteit per app door de tijd.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/application-insights/spec.md"
+  },
+  {
+    "slug": "unified-app-model",
+    "title": "Extend an installed app",
+    "title_nl": "Breid een geinstalleerde app uit",
+    "summary": "You layer your own changes over a fleet app without forking it.",
+    "summary_nl": "Je legt je eigen wijzigingen over een fleet-app zonder te forken.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/unified-app-model/spec.md"
+  },
+  {
+    "slug": "app-icon-management",
+    "title": "Brand each app",
+    "title_nl": "Geef elke app een eigen merk",
+    "summary": "You give every app its own icon, light and dark.",
+    "summary_nl": "Je geeft elke app een eigen icoon, licht en donker.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/app-icon-management/spec.md"
+  },
+  {
+    "slug": "buildiq-remote-template-store",
+    "title": "Install templates from a remote catalogue",
+    "title_nl": "Installeer sjablonen uit een externe catalogus",
+    "summary": "You pull curated apps from a shared store into your own instance.",
+    "summary_nl": "Je haalt samengestelde apps uit een gedeelde winkel binnen je eigen omgeving.",
+    "status": "beta",
+    "docsUrl": "openspec/specs/openbuild-remote-template-store/spec.md"
+  },
+  {
+    "slug": "nldesign-theme-selection",
+    "title": "Match your government theme",
+    "title_nl": "Sluit aan op je overheidshuisstijl",
+    "summary": "You apply NL Design styling per app for a consistent public look.",
+    "summary_nl": "Je past per app NL Design-styling toe voor een consistente publieke uitstraling.",
+    "status": "beta",
+    "docsUrl": "openspec/specs/nldesign-theme-selection/spec.md"
+  },
+  {
+    "slug": "docudesk-document-templates",
+    "title": "Generate documents and attach workflows",
+    "title_nl": "Genereer documenten en koppel workflows",
+    "summary": "You add DocuDesk templates and Procest steps to an app.",
+    "summary_nl": "Je voegt DocuDesk-sjablonen en Procest-stappen toe aan een app.",
+    "status": "beta",
+    "docsUrl": "openspec/specs/docudesk-document-templates/spec.md"
+  },
+  {
+    "slug": "openconnector-api-sources",
+    "title": "Connect external API data",
+    "title_nl": "Koppel externe API-data",
+    "summary": "You read and write line-of-business systems from your app.",
+    "summary_nl": "Je leest en schrijft vanuit je app in bedrijfssystemen.",
+    "status": "soon",
+    "docsUrl": "openspec/specs/openconnector-api-sources/spec.md"
+  },
+  {
+    "slug": "ai-agent-mcp-bridge",
+    "title": "Expose apps to AI agents",
+    "title_nl": "Open je apps voor AI-agents",
+    "summary": "You let assistants act on your apps over MCP.",
+    "summary_nl": "Je laat assistenten via MCP handelen op je apps.",
+    "status": "soon",
+    "providedBy": "openregister"
+  }
+]

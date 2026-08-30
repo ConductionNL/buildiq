@@ -1,16 +1,23 @@
 <?php
-// SPDX-License-Identifier: EUPL-1.2
 
 /**
- * OpenBuilt Settings Section
+ * Buildiq Settings Section
  *
- * Defines the OpenBuilt section in the Nextcloud admin settings.
+ * One-line AppHost stub. Nextcloud instantiates the admin settings section by
+ * the class name in info.xml `<settings><admin-section>`, so the class must
+ * physically exist in the Buildiq namespace. The section id ("buildiq"),
+ * display name ("Buildiq"), icon ("app-dark.svg") and priority (75) are
+ * supplied by Buildiq's Application::register() via Bootstrap::register();
+ * the engine base owns all IIconSection behaviour.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Sections
- * @package  OCA\OpenBuilt\Sections
+ * @package  OCA\Buildiq\Sections
  *
- * @author    Conduction Development Team <dev@conductio.nl>
- * @copyright 2024 Conduction B.V.
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @version GIT: <git-id>
@@ -20,68 +27,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Sections;
+namespace OCA\Buildiq\Sections;
 
-use OCP\IL10N;
-use OCP\IURLGenerator;
-use OCP\Settings\IIconSection;
+use OCA\OpenRegister\AppHost\Settings\GenericSettingsSection;
 
 /**
- * Defines the OpenBuilt section in the Nextcloud admin settings.
+ * AppHost-backed admin settings section for Buildiq (ADR-040).
+ *
+ * @spec openspec/changes/adopt-apphost/specs/apphost-adoption/spec.md — Requirement: Boilerplate Adoption
  */
-class SettingsSection implements IIconSection
-{
-    /**
-     * Constructor for SettingsSection.
-     *
-     * @param IL10N         $l            The localization service
-     * @param IURLGenerator $urlGenerator The URL generator service
-     *
-     * @return void
-     */
-    public function __construct(
-        private readonly IL10N $l,
-        private readonly IURLGenerator $urlGenerator,
-    ) {
-    }//end __construct()
-
-    /**
-     * Get the section identifier.
-     *
-     * @return string
-     */
-    public function getID(): string
-    {
-        return 'openbuilt';
-    }//end getID()
-
-    /**
-     * Get the display name of this section.
-     *
-     * @return string
-     */
-    public function getName(): string
-    {
-        return $this->l->t('OpenBuilt');
-    }//end getName()
-
-    /**
-     * Get the priority for ordering this section.
-     *
-     * @return int
-     */
-    public function getPriority(): int
-    {
-        return 75;
-    }//end getPriority()
-
-    /**
-     * Get the icon path for this section.
-     *
-     * @return string
-     */
-    public function getIcon(): string
-    {
-        return $this->urlGenerator->imagePath(appName: 'openbuilt', file: 'app-dark.svg');
-    }//end getIcon()
+class SettingsSection extends GenericSettingsSection {
 }//end class

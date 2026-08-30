@@ -1,0 +1,15 @@
+# PHPStan baseline — captures architectural debt that exists at the time of the
+# canonical-root-config sync (Phase 2 fleet rollout). Tracked in
+# Codeberg issue #126 (pre-migration, not migrated to GitHub) — fix and remove entries
+# as work lands.
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Constant OCA\\\\Buildiq\\\\Repair\\\\MigrateToVersionedModel\\:\\:VERSIONED_SCHEMA is unused\\.$#"
+			count: 1
+			path: lib/Repair/MigrateToVersionedModel.php
+
+		-
+			message: "#^Access to static property \\$SERVERROOT on an unknown class OC\\.$#"
+			count: 1
+			path: lib/Service/IconService.php

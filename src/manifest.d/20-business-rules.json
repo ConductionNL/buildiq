@@ -1,0 +1,14 @@
+{
+	"_comment": "ADR-037 manifest fragment — business-rules-engine. Registers the RuleSets page only; NO top-level menu entry. Business rules exist only as part of an app (reached from within the app builder, not a global menu item) — the standalone /business-rules page stays routable for deep-links but is intentionally off the main nav. src/main.js mergeManifestFragments() concatenates pages onto src/manifest.json.",
+	"menu": [],
+	"pages": [
+		{
+			"id": "BusinessRules",
+			"route": "/business-rules",
+			"type": "custom",
+			"title": "Business rules",
+			"component": "RuleSetsPageView",
+			"_note": "Custom page hosting the business-rules engine dashboard (RuleSetsPage.vue). Lists RuleSets and opens the decision-table / condition-action editors and test sandbox. type:custom because the grid editors and sandbox are bespoke and no built-in page type covers them."
+		}
+	]
+}

@@ -1,0 +1,38 @@
+{
+	"_comment": "ADR-037 register fragment — data-registers-runtime (kind: code follower of data-registers-schema-declaration). Adds the optional exportJob.dataRegisters array property, sibling to includeSeedData. SettingsService::deepMergeConfig recurses into components.schemas.exportJob.properties and adds only the new dataRegisters key — exportJob.required and every other exportJob property (incl. includeSeedData) are untouched, and no other schema (incl. Application) is touched. Each entry carries the per-export choice of whether to bundle a bound data register's row data alongside its schema definitions: ExportService::bundleDataRegisterSchemas() always bundles a bound register's schema definitions; it additionally bundles that binding's row data only when includeData is true here. This is export-flow state persisted on the async ExportJob record, not Application configuration — mirrors includeSeedData's role exactly (ExportJobService::queue() already has the `(bool) ($payload['includeSeedData'] ?? false)` pattern this property's read reuses). See design.md Decision 5 and specs/buildiq-exporter/spec.md.",
+	"components": {
+		"schemas": {
+			"exportJob": {
+				"properties": {
+					"dataRegisters": {
+						"title": "Data Registers",
+						"type": "array",
+						"default": [],
+						"items": {
+							"type": "object",
+							"title": "Export Data Register Choice",
+							"required": [
+								"register"
+							],
+							"additionalProperties": false,
+							"properties": {
+								"register": {
+									"title": "Register Slug",
+									"type": "string",
+									"description": "Slug of a register named in the source Application's `dataRegisters`, as declared at export-submission time."
+								},
+								"includeData": {
+									"title": "Include Row Data",
+									"type": "boolean",
+									"default": false,
+									"description": "When true, the export additionally bundles this register's current row data as a reference fixture alongside its schema definitions (which are always bundled). Defaults to false (schema definitions only)."
+								}
+							}
+						},
+						"description": "Per-export choice of which of the source Application's `dataRegisters` bindings to bundle, and whether to include each one's row data. Export-flow state persisted on the ExportJob record by ExportJobService::queue() — not Application configuration. Absent on every ExportJob created before this property existed; ExportJobService::queue() defaults it to []."
+					}
+				}
+			}
+		}
+	}
+}

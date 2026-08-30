@@ -1,0 +1,253 @@
+<!-- SPDX-License-Identifier: EUPL-1.2 -->
+<!--
+  - ColumnBuilder — authors the `column` $def, round-tripping both the
+  - typed-object shape AND the legacy string shorthand. Surfaces
+  - `@self.*` virtual columns when bound to a schema.
+  - Used by IndexPageEditor and LogsPageEditor (REQ-OBPD-004).
+  -->
+<template>
+	<div class="column-builder">
+		<div
+			v-for="(col, index) in localColumns"
+			:key="index"
+			class="column-builder__row">
+			<select
+				:value="rowKey(col)"
+				class="column-builder__key"
+				@change="onKeyChange(index, $event.target.value)">
+				<option value="">
+					{{ t('buildiq', '— select column —') }}
+				</option>
+				<optgroup :label="t('buildiq', 'Schema properties')">
+					<option
+						v-for="key in schemaPropertyKeys"
+						:key="key"
+						:value="key">
+						{{ key }}
+					</option>
+				</optgroup>
+				<optgroup :label="t('buildiq', 'Metadata (@self.*)')">
+					<option v-for="key in SELF_VIRTUAL_KEYS" :key="key" :value="key">
+						{{ key }}
+					</option>
+				</optgroup>
+			</select>
+			<input
+				:value="rowLabel(col)"
+				type="text"
+				class="column-builder__label"
+				:placeholder="t('buildiq', 'Label (i18n key)')"
+				:aria-label="t('buildiq', 'Label (i18n key)')"
+				@input="onLabelInput(index, $event.target.value)" />
+			<button
+				type="button"
+				class="column-builder__remove"
+				:title="t('buildiq', 'Remove column')"
+				@click="removeColumn(index)">
+				✕
+			</button>
+		</div>
+		<button type="button" class="column-builder__add" @click="addColumn">
+			+ {{ t('buildiq', 'Add column') }}
+		</button>
+	</div>
+</template>
+
+<script>
+const SELF_VIRTUAL_KEYS = [
+	'@self.uuid',
+	'@self.created',
+	'@self.updated',
+	'@self.owner',
+	'@self.organisation',
+	'@self.locked',
+]
+
+export default {
+	name: 'ColumnBuilder',
+	props: {
+		modelValue: {
+			type: Array,
+			default: () => [],
+		},
+
+		schemaProperties: {
+			type: Object,
+			default: () => ({}),
+		},
+	},
+
+	emits: ['update:modelValue'],
+	data() {
+		return {
+			SELF_VIRTUAL_KEYS,
+		}
+	},
+
+	computed: {
+		/**
+		 * Observed behaviour of `localColumns` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
+		localColumns() {
+			return Array.isArray(this.modelValue) ? this.modelValue : []
+		},
+
+		/**
+		 * Observed behaviour of `schemaPropertyKeys` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
+		schemaPropertyKeys() {
+			return Object.keys(this.schemaProperties || {})
+		},
+	},
+
+	methods: {
+		/**
+		 * Observed behaviour of `rowKey` (retrofit annotation).
+		 *
+		 * @param {string|{key?: string, property?: string, label?: string}} col - one entry of
+		 *   `config.columns`: either the legacy string shorthand (the property key itself) or
+		 *   the typed column object, which may name its key as `key` or as the alias `property`.
+		 * @return {string} the property key the row's `<select>` shows — a schema property
+		 *   name or an `@self.*` virtual key; `''` when the entry names neither.
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
+		rowKey(col) {
+			if (typeof col === 'string') {
+				return col
+			}
+			return (col && (col.key || col.property)) || ''
+		},
+
+		/**
+		 * Observed behaviour of `rowLabel` (retrofit annotation).
+		 *
+		 * @param {string|{key?: string, label?: string}} col - one entry of `config.columns`;
+		 *   the string shorthand carries no label by construction.
+		 * @return {string} the i18n label key shown in the row's label input, `''` when
+		 *   the column is unlabelled.
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
+		rowLabel(col) {
+			if (typeof col === 'string') {
+				return ''
+			}
+			return (col && col.label) || ''
+		},
+
+		/**
+		 * Observed behaviour of `onKeyChange` (retrofit annotation).
+		 *
+		 * @param {number} index - position of the column in the `columns` array.
+		 * @param {string} value - the newly selected property key: a schema property
+		 *   name, an `@self.*` virtual key, or `''` for the placeholder option. A
+		 *   labelled column keeps its object shape; an unlabelled one stays a string.
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
+		onKeyChange(index, value) {
+			const next = this.localColumns.slice()
+			const existing = next[index]
+			if (typeof existing === 'string' || !existing) {
+				// Stay in string shorthand when no label exists.
+				next[index] = value
+			} else {
+				next[index] = { ...existing, key: value }
+			}
+			this.$emit('update:modelValue', next)
+		},
+
+		/**
+		 * Observed behaviour of `onLabelInput` (retrofit annotation).
+		 *
+		 * @param {number} index - position of the column in the `columns` array.
+		 * @param {string} value - the new i18n label key. A non-empty label PROMOTES a
+		 *   string-shorthand column to `{ key, label }`; clearing it DEMOTES a
+		 *   key-only object back to the string shorthand.
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
+		onLabelInput(index, value) {
+			const next = this.localColumns.slice()
+			const existing = next[index]
+			// Promote string shorthand to typed object once a label is added.
+			const key = this.rowKey(existing)
+			if (value) {
+				next[index] = { key, label: value }
+			} else if (typeof existing === 'object' && existing) {
+				const { label, ...rest } = existing
+				next[index] =
+					Object.keys(rest).length === 1 && rest.key ? rest.key : rest
+			}
+			this.$emit('update:modelValue', next)
+		},
+
+		/**
+		 * Observed behaviour of `addColumn` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
+		addColumn() {
+			const next = this.localColumns.slice()
+			next.push('')
+			this.$emit('update:modelValue', next)
+		},
+
+		/**
+		 * Observed behaviour of `removeColumn` (retrofit annotation).
+		 *
+		 * @param {number} index - position of the column to drop from the `columns` array.
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 */
+		removeColumn(index) {
+			const next = this.localColumns.slice()
+			next.splice(index, 1)
+			this.$emit('update:modelValue', next)
+		},
+	},
+}
+</script>
+
+<style scoped>
+.column-builder {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.column-builder__row {
+	display: flex;
+	gap: 6px;
+	align-items: center;
+}
+
+.column-builder__key,
+.column-builder__label {
+	flex: 1 1 auto;
+	padding: 4px 6px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	background: var(--color-main-background);
+	color: var(--color-main-text);
+}
+
+.column-builder__remove {
+	background: transparent;
+	border: 1px solid var(--color-border);
+	color: var(--color-error, var(--color-main-text));
+	padding: 4px 8px;
+	border-radius: var(--border-radius);
+	cursor: pointer;
+}
+
+.column-builder__add {
+	align-self: flex-start;
+	background: var(--color-primary-element-light);
+	border: 1px solid var(--color-border);
+	color: var(--color-main-text);
+	padding: 4px 10px;
+	border-radius: var(--border-radius);
+	cursor: pointer;
+}
+</style>

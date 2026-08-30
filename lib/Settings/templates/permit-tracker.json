@@ -1,0 +1,93 @@
+{
+  "slug": "permit-tracker",
+  "title": "Permit Tracker",
+  "description": "Municipal building-permit workflow with index, detail, form, and kanban pages.",
+  "useCase": "Municipal building-permit workflow",
+  "category": "government-services",
+  "screenshotUrl": "img/templates/permit-tracker.svg",
+  "isSeeded": true,
+  "version": "1.0.0",
+  "manifest": {
+    "version": "1.0.0",
+    "dependencies": ["openregister"],
+    "menu": [
+      { "label": "Applications", "route": "/applications" },
+      { "label": "Kanban", "route": "/kanban" },
+      { "label": "Submit", "route": "/submit" }
+    ],
+    "pages": [
+      {
+        "id": "Applications",
+        "route": "/applications",
+        "type": "index",
+        "title": "Permit applications",
+        "config": { "schema": "permit-application" }
+      },
+      {
+        "id": "ApplicationDetail",
+        "route": "/applications/:id",
+        "type": "detail",
+        "title": "Application detail",
+        "config": {
+          "schema": "permit-application",
+          "register": "{{register}}",
+          "_note": "Single-record archetype: permit-application is the only companion schema in this template — no child schema references it (no FK), it declares no outbound x-openregister-relation, and no lifecycle block (status is a plain enum). Kept deliberately lean per starter-template scope: one full-width data widget with all 6 fields (applicant/address/buildingType/status/submittedAt/decision; gridHeight 4, ceil(6/2)=3 rows +1 header per ADR-062 sizing heuristic), no stats-block (no child schema exists to aggregate — fabricating a KPI would violate 'never fabricate'), no related panel, no object-list, no content leaves (no file/photo/calendar field on the schema). KNOWN GAP: `register` is an unresolved `{{register}}` placeholder — see task report (ApplicationsController::rewriteSchemaRefs() never injects a register at clone time; buildiq#113, placeholder deliberately left as-is here).",
+          "widgets": [
+            {
+              "id": "permit-data",
+              "type": "data",
+              "title": "Application details",
+              "icon": "FileSign",
+              "content": { "columns": 2 }
+            }
+          ],
+          "layout": [
+            { "id": "1", "widgetId": "permit-data", "gridX": 0, "gridY": 0, "gridWidth": 12, "gridHeight": 4 }
+          ],
+          "sidebar": {
+            "enabled": true,
+            "showMetadata": true,
+            "tabs": [
+              { "id": "audit", "label": "History", "icon": "History", "widgets": [ { "type": "audit" } ] }
+            ]
+          }
+        }
+      },
+      {
+        "id": "ApplicationForm",
+        "route": "/submit",
+        "type": "form",
+        "title": "Submit a permit application",
+        "config": { "schema": "permit-application" }
+      },
+      {
+        "id": "ApplicationKanban",
+        "route": "/kanban",
+        "type": "index",
+        "title": "Application pipeline",
+        "config": { "schema": "permit-application", "groupBy": "status" }
+      }
+    ]
+  },
+  "companionSchemas": [
+    {
+      "slug": "permit-application",
+      "title": "Permit Application",
+      "version": "0.1.0",
+      "type": "object",
+      "required": ["applicant", "status"],
+      "properties": {
+        "applicant": { "type": "string", "description": "Name of the applicant" },
+        "address": { "type": "string", "description": "Address the permit applies to" },
+        "buildingType": { "type": "string", "description": "Type of building/structure" },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "submitted", "under-review", "approved", "rejected"],
+          "default": "draft"
+        },
+        "submittedAt": { "type": "string", "format": "date-time" },
+        "decision": { "type": "string", "description": "Decision rationale" }
+      }
+    }
+  ]
+}

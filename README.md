@@ -1,24 +1,24 @@
 <p align="center">
-  <img src="img/app-store.svg" alt="OpenBuilt logo" width="80" height="80">
+  <img src="img/app-store.svg" alt="Buildiq logo" width="80" height="80">
 </p>
 
-<h1 align="center">OpenBuilt</h1>
+<h1 align="center">Buildiq</h1>
 
 <p align="center">
   <strong>Citizen-developer app builder for Nextcloud — compose apps from registers, connectors, workflows, and documents without code.</strong>
 </p>
 
 <p align="center">
-  <a href="https://github.com/ConductionNL/openbuilt/releases"><img src="https://img.shields.io/github/v/release/ConductionNL/openbuilt" alt="Latest release"></a>
-  <a href="https://github.com/ConductionNL/openbuilt/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-EUPL--1.2-blue" alt="License"></a>
-  <a href="https://github.com/ConductionNL/openbuilt/actions"><img src="https://img.shields.io/github/actions/workflow/status/ConductionNL/openbuilt/code-quality.yml?label=quality" alt="Code quality"></a>
+  <a href="https://github.com/ConductionNL/buildiq/releases"><img src="https://img.shields.io/github/v/release/ConductionNL/buildiq" alt="Latest release"></a>
+  <a href="https://github.com/ConductionNL/buildiq/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-EUPL--1.2-blue" alt="License"></a>
+  <a href="https://github.com/ConductionNL/buildiq/actions/workflows/code-quality.yml"><img src="https://github.com/ConductionNL/buildiq/actions/workflows/code-quality.yml/badge.svg" alt="Code quality"></a>
 </p>
 
 ---
 
-OpenBuilt is a citizen-developer app builder for Nextcloud. It lets non-technical users compose apps from the Conduction ecosystem (OpenRegister schemas, OpenConnector APIs, Procest workflows, Docudesk documents, NL Design themes, MyDash dashboards) through a visual interface, without scaffolding PHP for each new app.
+Buildiq is a citizen-developer app builder for Nextcloud. It lets non-technical users compose apps from the Conduction ecosystem (OpenRegister schemas, OpenConnector APIs, Procest workflows, Docudesk documents, NL Design themes, LaunchPad dashboards) through a visual interface, without scaffolding PHP for each new app.
 
-Per [ADR-024](../hydra/openspec/architecture/adr-024-app-manifest.md) each built app is rendered at runtime by mounting `CnAppRoot` with the app's manifest, which lives as a JSON blob in OpenBuilt's own OpenRegister namespace. Per [ADR-031](../hydra/openspec/architecture/adr-031-schema-declarative-business-logic.md) behaviour (state machines, aggregations, calculations, notifications) is declared as schema metadata in the register file instead of service code. Built apps are virtual at first (records in OpenBuilt's register, rendered inside the OpenBuilt shell at `/apps/openbuilt/builder/{slug}`); a Phase-2 export generates a real Nextcloud app from a virtual app.
+Per [ADR-024](../hydra/openspec/architecture/adr-024-app-manifest.md) each built app is rendered at runtime by mounting `CnAppRoot` with the app's manifest, which lives as a JSON blob in Buildiq's own OpenRegister namespace. Per [ADR-031](../hydra/openspec/architecture/adr-031-schema-declarative-business-logic.md) behaviour (state machines, aggregations, calculations, notifications) is declared as schema metadata in the register file instead of service code. Built apps are virtual at first (records in Buildiq's register, rendered inside the Buildiq shell at `/apps/buildiq/builder/{slug}`); a Phase-2 export generates a real Nextcloud app from a virtual app.
 
 > **Requires [OpenRegister](https://github.com/ConductionNL/openregister)** — all virtual-app data is stored as OpenRegister objects.
 
@@ -28,30 +28,57 @@ _Add screenshots here once the shell + textarea editor + seeded `hello-world` vi
 
 ## Features
 
-Features are defined in [`openspec/specs/`](openspec/specs/) and tracked via the 9-spec chain that starts with [`bootstrap-openbuilt`](openspec/changes/bootstrap-openbuilt/).
+Features are defined in [`openspec/specs/`](openspec/specs/) and tracked via the 9-spec chain that starts with [`bootstrap-buildiq`](openspec/changes/bootstrap-buildiq/).
 
-### Spec #1 — bootstrap-openbuilt (this release)
+### Spec #1 — bootstrap-buildiq (this release)
 - **`Application` + `BuiltAppRoute` OR schemas** with declarative `draft → published → archived` lifecycle (canonical ADR-031 example — no service class)
-- **Manifest endpoint** — `GET /index.php/apps/openbuilt/api/applications/{slug}/manifest` returns the stored manifest blob
-- **Nested-`CnAppRoot` runtime** — `/builder/{slug}/*` mounts a virtual app inside the OpenBuilt shell; path segments after the slug forward to the inner manifest's router
+- **Manifest endpoint** — `GET /index.php/apps/buildiq/api/applications/{slug}/manifest` returns the stored manifest blob
+- **Nested-`CnAppRoot` runtime** — `/builder/{slug}/*` mounts a virtual app inside the Buildiq shell; path segments after the slug forward to the inner manifest's router
 - **Textarea manifest editor** — JSON-only for v1 (visual editor lives in chain spec #5)
 - **Seeded `hello-world` Application** exercising `index`, `detail`, and `form` page types out of the box
+
+### Visual designer (Design tab + Raw JSON fallback)
+
+Each Application's editor exposes two tabs (`buildiq-page-editor` v1.1):
+
+- **Design** (default) — type-aware sub-editors for the six manifest page types
+  (`index`, `detail`, `form`, `dashboard`, `chat`, `logs`, `settings`, `files`,
+  `custom`). The Design tab carries an inline-mark validator that flags ADR-024
+  schema errors on the offending field instead of dumping a side-panel summary,
+  plus an undo/redo stack scoped to the in-flight manifest.
+- **Raw JSON** — the integrator fallback. Drops you into the manifest's bare
+  JSON when a manifest shape isn't yet supported by a Design-tab sub-editor, or
+  when you want to bulk-edit. Edits round-trip losslessly through `parse →
+  stringify → parse` (Vitest spec `tests/composables/manifestRoundTrip.spec.js`)
+  so external authoring tools — git diffs, IDE auto-format — stay coherent
+  with the Design tab.
+
+Run the canonical-shape validator locally:
+
+```bash
+npm run check:manifest
+```
+
+The script (`scripts/check-manifest.js`) validates the Buildiq shell
+manifest plus the wizard seed against
+`@conduction/nextcloud-vue/src/schemas/app-manifest.schema.json` (the
+ADR-024 canonical schema) and exits non-zero on any structural drift.
 
 ### Chained follow-on specs
 - `nextcloud-vue-in-memory-manifest` (in `nextcloud-vue/`) — `useAppManifest` overload accepting an in-memory manifest object
 - `openregister-runtime-schema-api` (in `openregister/`) — runtime schema-creation API
-- `openbuilt-schema-editor` — visual schema designer
-- `openbuilt-page-editor` — visual manifest/page designer
-- `openbuilt-versioning` — draft / publish / rollback
-- `openbuilt-rbac` — per-built-app permissions
-- `openbuilt-templates-marketplace` — starter templates
-- `openbuilt-export-to-real-app` — Phase-2 export to a real Nextcloud app
+- `buildiq-schema-editor` — visual schema designer
+- `buildiq-page-editor` — visual manifest/page designer
+- `buildiq-versioning` — draft / publish / rollback
+- `buildiq-rbac` — per-built-app permissions
+- `buildiq-templates-marketplace` — starter templates
+- `buildiq-export-to-real-app` — Phase-2 export to a real Nextcloud app
 
 ## Architecture
 
 ```mermaid
 graph TD
-    A[OpenBuilt shell - Vue 2 / Pinia] -->|nested mount| B[CnAppRoot per virtual app]
+    A[Buildiq shell - Vue 2 / Pinia] -->|nested mount| B[CnAppRoot per virtual app]
     A -->|CRUD via OR REST| C[OpenRegister API]
     B -->|GET manifest| D[ApplicationsController]
     D --> C
@@ -67,7 +94,7 @@ graph TD
 | `BuiltAppRoute` | Slug → applicationUuid index for fast runtime lookup; upkept by the Application lifecycle. |
 | `hello-message` | Seed schema for the canonical `hello-world` virtual app (three sample objects). |
 
-Data model is fully defined in [`lib/Settings/openbuilt_register.json`](lib/Settings/openbuilt_register.json). See [`openspec/changes/bootstrap-openbuilt/`](openspec/changes/bootstrap-openbuilt/) for the foundational spec.
+Data model is fully defined in [`lib/Settings/openbuild_register.json`](lib/Settings/openbuild_register.json). See [`openspec/changes/bootstrap-buildiq/`](openspec/changes/bootstrap-buildiq/) for the foundational spec.
 
 ## Requirements
 
@@ -84,7 +111,7 @@ Data model is fully defined in [`lib/Settings/openbuilt_register.json`](lib/Sett
 ### From the Nextcloud App Store
 
 1. Go to **Apps** in your Nextcloud instance
-2. Search for **OpenBuilt**
+2. Search for **Buildiq**
 3. Click **Download and enable**
 
 > OpenRegister must be installed first. [Install OpenRegister →](https://apps.nextcloud.com/apps/openregister)
@@ -93,10 +120,10 @@ Data model is fully defined in [`lib/Settings/openbuilt_register.json`](lib/Sett
 
 ```bash
 cd /var/www/html/custom_apps
-git clone https://github.com/ConductionNL/openbuilt.git openbuilt
-cd openbuilt
+git clone https://github.com/ConductionNL/buildiq.git buildiq
+cd buildiq
 npm install && npm run build
-php occ app:enable openbuilt
+php occ app:enable buildiq
 ```
 
 ## Development
@@ -147,7 +174,7 @@ npm run stylelint       # CSS linting
 | Resource | Description |
 |----------|-------------|
 | [`openspec/app-config.json`](openspec/app-config.json) | App identity, dependencies, CI configuration |
-| [`openspec/changes/bootstrap-openbuilt/`](openspec/changes/bootstrap-openbuilt/) | Foundational spec (proposal, specs, design, tasks) |
+| [`openspec/changes/bootstrap-buildiq/`](openspec/changes/bootstrap-buildiq/) | Foundational spec (proposal, specs, design, tasks) |
 | [`openspec/specs/`](openspec/specs/) | Feature specs |
 | [`openspec/architecture/`](openspec/architecture/) | App-specific Architectural Decision Records |
 
@@ -161,11 +188,11 @@ npm run stylelint       # CSS linting
 ## Related Apps
 
 - **[OpenRegister](https://github.com/ConductionNL/openregister)** — Object storage layer (required dependency)
-- **[OpenConnector](https://github.com/ConductionNL/openconnector)** — API / iPaaS integration (consumed by built apps via manifest)
-- **[Procest](https://github.com/ConductionNL/procest)** — Process / case management (consumed via workflow attachments)
-- **[Docudesk](https://github.com/ConductionNL/docudesk)** — Document generation (consumed via template attachments)
-- **[MyDash](https://github.com/ConductionNL/mydash)** — Dashboards (consumed via widget embeds)
-- **[NL Design](https://github.com/ConductionNL/nldesign)** — Government theming (CSS variable inheritance)
+- **[OpenConnector](https://github.com/ConductionNL/integriq)** — API / iPaaS integration (consumed by built apps via manifest)
+- **[Procest](https://github.com/ConductionNL/dossiq)** — Process / case management (consumed via workflow attachments)
+- **[Docudesk](https://github.com/ConductionNL/filinq)** — Document generation (consumed via template attachments)
+- **[LaunchPad](https://github.com/ConductionNL/launchpad)** — Dashboards (consumed via widget embeds)
+- **[NL Design](https://github.com/ConductionNL/thematiq)** — Government theming (CSS variable inheritance)
 
 ## Support
 

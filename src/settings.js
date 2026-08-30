@@ -1,16 +1,20 @@
+import {
+	loadTranslations,
+	translatePlural as n,
+	translate as t,
+} from '@nextcloud/l10n'
 // SPDX-License-Identifier: EUPL-1.2
-import Vue from 'vue'
-import { PiniaVuePlugin } from 'pinia'
-import { translate as t, translatePlural as n, loadTranslations } from '@nextcloud/l10n'
-import pinia from './pinia.js'
+import { createApp } from 'vue'
 import AdminRoot from './views/settings/AdminRoot.vue'
+import pinia from './pinia.js'
+import { registerDirectives } from './registerDirectives.js'
 
-Vue.mixin({ methods: { t, n } })
-Vue.use(PiniaVuePlugin)
-
-loadTranslations('openbuilt', () => {
-	new Vue({
-		pinia,
-		render: h => h(AdminRoot),
-	}).$mount('#openbuilt-settings')
+loadTranslations('buildiq', () => {
+	// Vue 3 has no global Vue constructor — t/n, pinia and the global
+	// directives are installed on this entry's own app instance.
+	const app = createApp(AdminRoot)
+	app.mixin({ methods: { t, n } })
+	app.use(pinia)
+	registerDirectives(app)
+	app.mount('#buildiq-settings')
 })

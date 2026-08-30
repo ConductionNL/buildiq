@@ -1,0 +1,298 @@
+<!--
+  - SPDX-License-Identifier: EUPL-1.2
+  -
+  - RelationEditor — authors `x-openregister-relations` declaratively
+  - (REQ-OBSD-005 relations slice — v1). Target is a picker over
+  - namespace schemas (no free-text slug); cardinality is a fixed enum.
+  -->
+<template>
+	<section class="buildiq-relation-editor">
+		<header class="buildiq-relation-editor__header">
+			<h3>{{ t('buildiq', 'Relations') }}</h3>
+			<NcButton @click="addRelation">
+				<template #icon>
+					<PlusIcon :size="20" />
+				</template>
+				{{ t('buildiq', 'Add relation') }}
+			</NcButton>
+		</header>
+
+		<p v-if="relations.length === 0" class="buildiq-relation-editor__empty">
+			{{ t('buildiq', 'No relations yet.') }}
+		</p>
+
+		<ul v-else class="buildiq-relation-editor__rows">
+			<li
+				v-for="(relation, index) in relations"
+				:key="relation._key"
+				class="buildiq-relation-editor__row">
+				<NcTextField
+					:modelValue="relation.name"
+					:label="t('buildiq', 'Relation name')"
+					@update:modelValue="updateRelation(index, 'name', $event)" />
+				<NcSelect
+					:inputLabel="t('buildiq', 'Target schema')"
+					:modelValue="schemaOption(relation.target)"
+					:options="schemaOptions"
+					:clearable="false"
+					label="label"
+					trackBy="value"
+					@update:modelValue="
+						updateRelation(index, 'target', $event ? $event.value : '')
+					" />
+				<NcSelect
+					:inputLabel="t('buildiq', 'Cardinality')"
+					:modelValue="cardinalityOption(relation.cardinality)"
+					:options="cardinalityOptions"
+					:clearable="false"
+					label="label"
+					trackBy="value"
+					@update:modelValue="
+						updateRelation(
+							index,
+							'cardinality',
+							$event ? $event.value : 'one',
+						)
+					" />
+				<NcTextField
+					:modelValue="relation.inverseOf || ''"
+					:label="t('buildiq', 'Inverse-of (optional)')"
+					@update:modelValue="
+						updateRelation(index, 'inverseOf', $event)
+					" />
+				<NcButton
+					variant="error"
+					:aria-label="t('buildiq', 'Remove relation')"
+					@click="removeRelation(index)">
+					<template #icon>
+						<DeleteIcon :size="20" />
+					</template>
+				</NcButton>
+			</li>
+		</ul>
+	</section>
+</template>
+
+<script>
+import { NcButton, NcSelect, NcTextField } from '@nextcloud/vue'
+import DeleteIcon from 'vue-material-design-icons/Delete.vue'
+import PlusIcon from 'vue-material-design-icons/Plus.vue'
+
+const CARDINALITIES = ['one', 'many']
+
+let keyCounter = 0
+/**
+ *
+ */
+function nextKey() {
+	keyCounter += 1
+	return `rel-${keyCounter}`
+}
+
+export default {
+	name: 'RelationEditor',
+	components: { DeleteIcon, NcButton, NcSelect, NcTextField, PlusIcon },
+	props: {
+		relations: { type: Array, default: () => [] },
+		schemaSlugs: { type: Array, default: () => [] },
+	},
+
+	emits: ['update:relations'],
+	computed: {
+		/**
+		 * Build target-schema picker options from the available slugs.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @return {Array} Option objects.
+		 */
+		schemaOptions() {
+			return this.schemaSlugs.map((slug) => ({ value: slug, label: slug }))
+		},
+
+		/**
+		 * Build cardinality picker options (one/many) with translated labels.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @return {Array} Option objects.
+		 */
+		cardinalityOptions() {
+			return CARDINALITIES.map((value) => ({
+				value,
+				label:
+					value === 'one'
+						? this.t('buildiq', 'One')
+						: this.t('buildiq', 'Many'),
+			}))
+		},
+	},
+
+	methods: {
+		/**
+		 * Resolve the selected target-schema option for a value.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @param {string} value Schema slug.
+		 * @return {object|null} The matching option.
+		 */
+		schemaOption(value) {
+			return this.schemaOptions.find((o) => o.value === value) || null
+		},
+
+		/**
+		 * Resolve the selected cardinality option for a value.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @param {string} value Cardinality.
+		 * @return {object} The matching option (defaults to first).
+		 */
+		cardinalityOption(value) {
+			return (
+				this.cardinalityOptions.find((o) => o.value === value)
+				|| this.cardinalityOptions[0]
+			)
+		},
+
+		/**
+		 * Emit the updated relations array to the parent.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @param {Array} next Next relations array.
+		 * @return {void}
+		 */
+		emitRelations(next) {
+			this.$emit('update:relations', next)
+		},
+
+		/**
+		 * Append a new blank relation row.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @return {void}
+		 */
+		addRelation() {
+			const next = this.relations.slice()
+			next.push({
+				_key: nextKey(),
+				name: '',
+				target: this.schemaSlugs[0] || '',
+				cardinality: 'one',
+				inverseOf: '',
+			})
+			this.emitRelations(next)
+		},
+
+		/**
+		 * Update a single field of a relation row.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @param {number} index Row index.
+		 * @param {string} key Field key.
+		 * @param {*} value New value.
+		 * @return {void}
+		 */
+		updateRelation(index, key, value) {
+			const next = this.relations.slice()
+			next[index] = { ...next[index], [key]: value }
+			this.emitRelations(next)
+		},
+
+		/**
+		 * Remove a relation row by index.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @param {number} index Row index.
+		 * @return {void}
+		 */
+		removeRelation(index) {
+			const next = this.relations.slice()
+			next.splice(index, 1)
+			this.emitRelations(next)
+		},
+	},
+}
+
+/**
+ * Convert an `x-openregister-relations` block into editor rows.
+ *
+ * @param {Array} block Existing relations block (array of typed records).
+ * @return {Array} Editor relation rows.
+ */
+export function relationsToEditor(block) {
+	if (!Array.isArray(block)) {
+		return []
+	}
+	return block.map((r) => ({
+		_key: nextKey(),
+		name: r.name || '',
+		target: r.target || '',
+		cardinality: r.cardinality || 'one',
+		inverseOf: r.inverseOf || r.inverse_of || '',
+	}))
+}
+
+/**
+ * Reduce editor relation rows back into an
+ * `x-openregister-relations` block.
+ *
+ * @param {Array} relations Editor relation rows.
+ * @return {Array|null} The serialised block, or null when empty.
+ */
+export function editorToRelations(relations) {
+	if (!relations || relations.length === 0) {
+		return null
+	}
+	return relations
+		.filter((r) => r.name && r.target)
+		.map((r) => ({
+			name: r.name,
+			target: r.target,
+			cardinality: r.cardinality,
+			...(r.inverseOf ? { inverseOf: r.inverseOf } : {}),
+		}))
+}
+</script>
+
+<style scoped>
+.buildiq-relation-editor {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.buildiq-relation-editor__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.buildiq-relation-editor__header h3 {
+	margin: 0;
+	font-size: 18px;
+	font-weight: 600;
+}
+
+.buildiq-relation-editor__empty {
+	margin: 0;
+	color: var(--color-text-maxcontrast);
+}
+
+.buildiq-relation-editor__rows {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.buildiq-relation-editor__row {
+	display: grid;
+	grid-template-columns: 1fr 1fr 1fr 1fr auto;
+	gap: 8px;
+	align-items: center;
+	padding: 8px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	background: var(--color-main-background);
+}
+</style>

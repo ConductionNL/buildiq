@@ -1,0 +1,29 @@
+{
+  "id": "tutorials/user/create-from-template",
+  "title": "Create an application from a template",
+  "description": "Clone a template from the gallery to bootstrap a new virtual app with sensible schemas and pages.",
+  "source": "@site/tutorials/user/02-create-from-template.md",
+  "sourceDirName": "tutorials/user",
+  "slug": "/tutorials/user/create-from-template",
+  "permalink": "/docs/tutorials/user/create-from-template",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://codeberg.org/Conduction/openbuild/src/branch/main/docs/tutorials/user/02-create-from-template.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "sidebar_position": 2,
+    "title": "Create an application from a template",
+    "description": "Clone a template from the gallery to bootstrap a new virtual app with sensible schemas and pages."
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Open OpenBuild for the first time",
+    "permalink": "/docs/tutorials/user/first-launch"
+  },
+  "next": {
+    "title": "Design a schema",
+    "permalink": "/docs/tutorials/user/design-schema"
+  }
+}

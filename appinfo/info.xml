@@ -1,73 +1,293 @@
 <?xml version="1.0"?>
 <info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
-    <id>openbuild</id>
-    <name lang="en">OpenBuild</name>
-    <name lang="nl">OpenBuild</name>
+    <id>buildiq</id>
+    <name lang="en">Buildiq</name>
+    <name lang="nl">Buildiq</name>
     <summary lang="en">Citizen-developer app builder for Nextcloud — compose apps from registers, connectors, workflows, and documents without code.</summary>
     <summary lang="nl">App builder voor Nextcloud — stel apps samen uit registers, connectors, processen en documenten zonder code.</summary>
-    <description lang="en"><![CDATA[> ⚠️ **Active development — not for production use yet.** This app is under active development. Although it may carry a stable release status, **please do not use it in production environments before 17 June 2026.** See the [app page on conduction.nl](https://conduction.nl/apps/openbuild) for release planning and what this app does.
+    <description lang="en"><![CDATA[Buildiq is a citizen-developer app builder for Nextcloud. It lets non-technical users compose apps from the Technical Core — OpenRegister schemas, OpenConnector APIs, Procest workflows, Docudesk documents, NL Design themes — through a visual interface, without scaffolding PHP for each new app.
 
-OpenBuilt is a citizen-developer app builder for Nextcloud. It lets non-technical users compose apps from the Conduction ecosystem — OpenRegister schemas, OpenConnector APIs, Procest workflows, Docudesk documents, NL Design themes, MyDash dashboards — through a visual interface, without scaffolding PHP for each new app.
-
-Per ADR-024 (app manifest), each built app is rendered at runtime by mounting CnAppRoot with the app's manifest, which lives as a JSON blob in OpenBuilt's own OpenRegister namespace. Per ADR-031 (schema-declarative business logic), behaviour like state machines, aggregations, calculations, and notifications is declared as schema metadata in the register file instead of service code. Built apps are virtual at first (records in OpenBuilt's register, rendered inside the OpenBuilt shell at `/apps/openbuilt/{slug}`); a Phase-2 export generates a real Nextcloud app from a virtual app.
+Per ADR-024 (app manifest), each built app is rendered at runtime by mounting CnAppRoot with the app's manifest, which lives as a JSON blob in Buildiq's own OpenRegister namespace. Per ADR-031 (schema-declarative business logic), behaviour like state machines, aggregations, calculations, and notifications is declared as schema metadata in the register file instead of service code. Built apps are virtual at first (records in Buildiq's register, rendered inside the Buildiq shell at `/apps/buildiq/{slug}`); a Phase-2 export generates a real Nextcloud app from a virtual app.
 
 Free and open source under the EUPL-1.2 license.
 
 **Support:** For support, contact support@conduction.nl.
     ]]></description>
-    <description lang="nl"><![CDATA[> ⚠️ **In actieve ontwikkeling — nog niet voor productiegebruik.** Deze app is volop in ontwikkeling. Hoewel de app een stabiele release-status kan hebben, **gebruik deze nog niet in productieomgevingen vóór 17 juni 2026.** Zie de [app-pagina op conduction.nl](https://conduction.nl/apps/openbuild) voor release-planning en het doel van deze app.
+    <description lang="nl"><![CDATA[Buildiq is een citizen-developer app builder voor Nextcloud. Niet-technische gebruikers stellen apps samen uit de Technical Core — OpenRegister-schema's, OpenConnector-API's, Procest-processen, Docudesk-documenten, NL Design-thema's — via een visuele interface, zonder voor elke nieuwe app PHP te hoeven schrijven.
 
-OpenBuilt is een citizen-developer app builder voor Nextcloud. Niet-technische gebruikers stellen apps samen uit het Conduction-ecosysteem — OpenRegister-schema's, OpenConnector-API's, Procest-processen, Docudesk-documenten, NL Design-thema's, MyDash-dashboards — via een visuele interface, zonder voor elke nieuwe app PHP te hoeven schrijven.
-
-Conform ADR-024 (app-manifest) wordt elke gebouwde app tijdens runtime gerenderd door CnAppRoot te monteren met het manifest, dat als JSON-blob in OpenBuilt's eigen OpenRegister-namespace staat. Conform ADR-031 (schema-declaratieve businesslogica) wordt gedrag zoals state machines, aggregaties, berekeningen en notificaties als schema-metadata in het registerbestand gedeclareerd in plaats van als servicecode. Gebouwde apps zijn in eerste instantie virtueel (records in OpenBuilt's register, gerenderd binnen de OpenBuilt-shell op `/apps/openbuilt/{slug}`); een Phase-2 export genereert een echte Nextcloud-app uit een virtuele app.
+Conform ADR-024 (app-manifest) wordt elke gebouwde app tijdens runtime gerenderd door CnAppRoot te monteren met het manifest, dat als JSON-blob in Buildiq's eigen OpenRegister-namespace staat. Conform ADR-031 (schema-declaratieve businesslogica) wordt gedrag zoals state machines, aggregaties, berekeningen en notificaties als schema-metadata in het registerbestand gedeclareerd in plaats van als servicecode. Gebouwde apps zijn in eerste instantie virtueel (records in Buildiq's register, gerenderd binnen de Buildiq-shell op `/apps/buildiq/{slug}`); een Phase-2 export genereert een echte Nextcloud-app uit een virtuele app.
 
 Vrij en open source onder de EUPL-1.2-licentie.
 
 **Ondersteuning:** Voor ondersteuning, neem contact op via support@conduction.nl.
     ]]></description>
-    <version>0.1.1</version>
-    <licence>agpl</licence>
+    <version>0.6.2-unstable.20260830073026</version>
+    <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
-    <namespace>OpenBuilt</namespace>
+    <namespace>Buildiq</namespace>
     <documentation>
-        <user>https://github.com/ConductionNL/openbuilt</user>
-        <admin>https://github.com/ConductionNL/openbuilt</admin>
-        <developer>https://github.com/ConductionNL/openbuilt</developer>
+        <user>https://github.com/ConductionNL/buildiq</user>
+        <admin>https://github.com/ConductionNL/buildiq</admin>
+        <developer>https://github.com/ConductionNL/buildiq</developer>
     </documentation>
     <category>tools</category>
-    <website>https://github.com/ConductionNL/openbuilt</website>
-    <discussion>https://github.com/ConductionNL/openbuilt/discussions</discussion>
-    <bugs>https://github.com/ConductionNL/openbuilt/issues</bugs>
-    <repository>https://github.com/ConductionNL/openbuilt</repository>
+    <website>https://github.com/ConductionNL/buildiq</website>
+    <discussion>https://github.com/ConductionNL/buildiq/discussions</discussion>
+    <bugs>https://github.com/ConductionNL/buildiq/issues</bugs>
+    <repository>https://github.com/ConductionNL/buildiq</repository>
 
-    <screenshot>https://raw.githubusercontent.com/ConductionNL/openbuilt/main/img/app-store.svg</screenshot>
+    <screenshot>https://raw.githubusercontent.com/ConductionNL/buildiq/development/img/app-store.svg</screenshot>
 
     <dependencies>
-        <nextcloud min-version="28" max-version="34"/>
-        <php min-version="8.1"/>
+        <!--
+        App dependency: openregister. Recorded as prose, not as an element. The
+        App Store schema (info.xsd) has no app child under dependencies, so
+        shipping one fails App Store validation; Nextcloud's DependencyAnalyzer
+        does not read it either (it handles only php, database, command, lib,
+        os, architecture and the server version), so the element never enforced
+        anything at install time. src/manifest.json is where the requirement is
+        declared machine-readably.
+        -->
+        <php min-version="8.3"/>
+        <!--
+        min-version is 32 by product decision: the fleet standardises on
+        Nextcloud 32 so it can require PHP 8.3, which `<php min-version>` above
+        already declares. opencatalogi, openconnector and docudesk are already
+        at 32; this brings Buildiq in line.
+
+        The openconnector#1172/#1173 dependency-floor rule ALSO requires 32 now.
+        That rule says an app's min-version must be >= the max of every app
+        dependency's floor, and the openregister dependency noted above is a
+        HARD dependency. openregister's floor has moved three times in two days:
+        raised to 32 in openregister#2378, reverted to 28 in #2380 (after #2372
+        removed every eager reference to its ContextChat provider), and raised
+        back to 32 in openregister#2384, merged 2026-08-08T10:45Z and deliberately
+        fleet-wide. Re-measured against the canonical repo immediately before this
+        merge, `ConductionNL/openregister@development` declares a nextcloud
+        min-version of 32 (max-version 34).
+
+        Deliberately spelled out in prose, with no angle brackets anywhere in
+        this comment: writing that dependency's declaration as a literal XML
+        element here would add a second match to the nextcloud-element COUNT
+        that check:nc-floor asserts, and the check reads raw file text, comments
+        included. To a regex a commented-out example is indistinguishable from a
+        real declaration — that is precisely how procest's and doriath's floors
+        were misread as 28 by a reviewer grepping this file.
+
+        So 32 here is not merely >= the dependency floor, it is EQUAL to it: 28
+        would now advertise an App Store range this app cannot deliver, because
+        below 32 openregister refuses to install and every Buildiq entity is
+        an OpenRegister object.
+
+        Note that `openregister@main` still declares 28 — the fleet is mid-rollout
+        and main trails development by ~1000 commits. Do not read that as a
+        contradiction, and do not lower this floor to match it.
+
+        The comment that stood here previously asserted "min-version is 32" while
+        the attribute said 28: #146 lowered the value and left the prose behind.
+        That is the failure this block is written to avoid — a floor comment is
+        only worth anything if it is true at MERGE time, so re-measure the
+        dependency's floor rather than repeating what this text says.
+        `check:nc-floor` (scripts/check-nc-floor.js, wired into the
+        frontend-checks matrix) enforces the value; only the prose can drift.
+
+        The floor is enforced at INSTALL time, so it must not exceed what this
+        repo's own CI installs on. `.github/workflows/code-quality.yml` runs
+        `nextcloud-test-refs: ["stable32", "stable33"]` — stable31 was already
+        removed — so no CI leg targets NC < 32.
+
+        max-version stays 34, which is the fleet value everywhere except
+        openconnector (35).
+        -->
+        <nextcloud min-version="32" max-version="34"/>
     </dependencies>
 
+    <background-jobs>
+        <job>OCA\Buildiq\BackgroundJob\CleanupExpiredExports</job>
+        <job>OCA\Buildiq\BackgroundJob\RuleExecutionLogCleanup</job>
+    </background-jobs>
+
+    <repair-steps>
+        <post-migration>
+            <!--
+                MUST run before InitializeSettings, which triggers the register
+                import. The register slug moves with the app id (`openbuild` ->
+                `buildiq`), together with `x-openregister.app` — for a
+                `type: application` configuration that field IS a register slug
+                (ImportHandler::autoCreateRegisterIfApplication reads
+                `$xOpenregister['app'] ?? $appId`). OpenRegister resolves a
+                register by slug and its not-found branch CREATES a second,
+                empty register rather than failing, so an import that ran first
+                would fork the register and leave every stored object behind on
+                the old row, silently.
+
+                It moves no data: an object is bound to its register by NUMERIC
+                id. Idempotent, non-destructive, refuses rather than merges when
+                both slugs already exist.
+
+                SCOPED TO THIS APP'S OWN REGISTER. The per-generated-app
+                registers `openbuild-{slug}[-{version}]` are deliberately NOT in
+                its map: those names are minted per generated app, stored on the
+                app, and resolved with `registerMapper->find('openbuild-' . $slug)`
+                — and the credential broker holds `allowedApps` entries against
+                the matching `openbuild-{slug}` virtual app ids. They move only
+                in a pass that moves the minted credentials with them.
+            -->
+            <step>OCA\Buildiq\Repair\MigrateRegisterSlug</step>
+            <!--
+                SIBLING OF MigrateRegisterSlug, AND NEITHER COVERS THE OTHER.
+                OpenRegister resolves the two halves of a configuration by
+                DIFFERENT keys: a REGISTER by slug alone (RegisterMapper::find),
+                a SCHEMA by the PAIR —
+                SchemaMapper::findByApplicationAndSlug(slug, application).
+
+                This app now passes `appId: Application::APP_ID` = `buildiq`,
+                while every schema it already owns still carries
+                `application = openbuild`, so the pair matches nothing — and
+                ImportHandler's not-found branch is not an error path, it is the
+                "create a new one" path. The import InitializeSettings triggers
+                would build a SECOND, EMPTY schema set under the new application
+                id while every stored object stayed bound to the old rows.
+                Nothing errors; the app renders empty collections.
+
+                MUST run before InitializeSettings, for the same reason
+                MigrateRegisterSlug does — the import is the thing that forks.
+
+                Measured on a live install: 17 schemas still under `openbuild`,
+                and zero of their slugs collide with a twin under `buildiq`, so
+                all 17 move.
+
+                Where a slug DOES already have a twin under the new application
+                id it refuses rather than merges: two rows sharing
+                (application, slug) means findByApplicationAndSlug(), which caps
+                at one row, silently picks one and the other's objects become
+                unreachable. That is a decision about data, not a migration.
+
+                Never deletes a schema, and never throws — it runs under
+                <install>, where an escaping exception aborts the install and
+                the app never enables.
+            -->
+            <step>OCA\Buildiq\Repair\MigrateSchemaApplicationId</step>
+            <step>OCA\Buildiq\Repair\InitializeSettings</step>
+            <step>OCA\Buildiq\Repair\MigrateToVersionedModel</step>
+            <step>OCA\Buildiq\Repair\MigrateAppOverridesToHybrid</step>
+            <step>OCA\Buildiq\Repair\PopulateApplicationPermissions</step>
+            <step>OCA\Buildiq\Repair\SeedApplicationTemplates</step>
+            <step>OCA\Buildiq\Repair\FlagRegistryTokenSensitive</step>
+            <!--
+                Must run AFTER the register sync that adds the English columns, so
+                it can detect the "mapper already added an empty column" case and
+                back-fill rather than rename. Idempotent; safe to re-run.
+            -->
+            <step>OCA\Buildiq\Repair\RenameDutchRuleColumns</step>
+        </post-migration>
+        <install>
+            <!--
+                MUST run before InitializeSettings, which triggers the register
+                import. The register slug moves with the app id (`openbuild` ->
+                `buildiq`), together with `x-openregister.app` — for a
+                `type: application` configuration that field IS a register slug
+                (ImportHandler::autoCreateRegisterIfApplication reads
+                `$xOpenregister['app'] ?? $appId`). OpenRegister resolves a
+                register by slug and its not-found branch CREATES a second,
+                empty register rather than failing, so an import that ran first
+                would fork the register and leave every stored object behind on
+                the old row, silently.
+
+                It moves no data: an object is bound to its register by NUMERIC
+                id. Idempotent, non-destructive, refuses rather than merges when
+                both slugs already exist.
+
+                SCOPED TO THIS APP'S OWN REGISTER. The per-generated-app
+                registers `openbuild-{slug}[-{version}]` are deliberately NOT in
+                its map: those names are minted per generated app, stored on the
+                app, and resolved with `registerMapper->find('openbuild-' . $slug)`
+                — and the credential broker holds `allowedApps` entries against
+                the matching `openbuild-{slug}` virtual app ids. They move only
+                in a pass that moves the minted credentials with them.
+            -->
+            <step>OCA\Buildiq\Repair\MigrateRegisterSlug</step>
+            <!--
+                SIBLING OF MigrateRegisterSlug, AND NEITHER COVERS THE OTHER.
+                OpenRegister resolves the two halves of a configuration by
+                DIFFERENT keys: a REGISTER by slug alone (RegisterMapper::find),
+                a SCHEMA by the PAIR —
+                SchemaMapper::findByApplicationAndSlug(slug, application).
+
+                This app now passes `appId: Application::APP_ID` = `buildiq`,
+                while every schema it already owns still carries
+                `application = openbuild`, so the pair matches nothing — and
+                ImportHandler's not-found branch is not an error path, it is the
+                "create a new one" path. The import InitializeSettings triggers
+                would build a SECOND, EMPTY schema set under the new application
+                id while every stored object stayed bound to the old rows.
+                Nothing errors; the app renders empty collections.
+
+                MUST run before InitializeSettings, for the same reason
+                MigrateRegisterSlug does — the import is the thing that forks.
+
+                Measured on a live install: 17 schemas still under `openbuild`,
+                and zero of their slugs collide with a twin under `buildiq`, so
+                all 17 move.
+
+                Where a slug DOES already have a twin under the new application
+                id it refuses rather than merges: two rows sharing
+                (application, slug) means findByApplicationAndSlug(), which caps
+                at one row, silently picks one and the other's objects become
+                unreachable. That is a decision about data, not a migration.
+
+                Never deletes a schema, and never throws — it runs under
+                <install>, where an escaping exception aborts the install and
+                the app never enables.
+            -->
+            <step>OCA\Buildiq\Repair\MigrateSchemaApplicationId</step>
+            <step>OCA\Buildiq\Repair\InitializeSettings</step>
+            <step>OCA\Buildiq\Repair\MigrateToVersionedModel</step>
+            <step>OCA\Buildiq\Repair\MigrateAppOverridesToHybrid</step>
+            <step>OCA\Buildiq\Repair\PopulateApplicationPermissions</step>
+            <step>OCA\Buildiq\Repair\SeedApplicationTemplates</step>
+        </install>
+    </repair-steps>
+
+    <commands>
+        <command>OCA\Buildiq\Command\SeedHelloWorldFixture</command>
+        <command>OCA\Buildiq\Command\PublishTemplates</command>
+    </commands>
+
+    <settings>
+        <admin>OCA\Buildiq\Settings\AdminSettings</admin>
+        <admin-section>OCA\Buildiq\Sections\SettingsSection</admin-section>
+    </settings>
+
+    <!--
+        buildiq.use navigation-entry gate (REQ-OBRBAC-006).
+
+        SPEC INTENT: REQ-OBRBAC-006 calls for a <permission>buildiq.use</permission>
+        child on the <navigation> element so admins can restrict the top-bar
+        entry to selected groups. We tried shipping that element and verified on
+        2026-05-11 (running "occ app:enable buildiq" with the force flag, on
+        Nextcloud 32) that the upstream apps/info.xsd schema rejects the
+        <permission> child ("appinfo file cannot be read"). The schema does not
+        yet expose this sub-element; an upstream issue is filed at:
+            https://github.com/nextcloud/server/issues/60310
+
+        FALLBACK: per design.md Decision 4 we rely on Nextcloud's standard
+        app-level group restriction ("occ app:enable buildiq" with the groups
+        flag, e.g. "groups team-alpha"), which configures group visibility
+        outside info.xml. Per-Application RBAC enforced server-side by
+        ApplicationsController::getManifest + ::listMine (REQ-OBRBAC-002 /
+        REQ-OBR-006) remains the load-bearing security boundary; this gate is
+        coarse top-bar visibility only.
+
+        See docs/buildiq-rbac.md for the operator guide.
+    -->
     <navigations>
         <navigation>
-            <id>openbuilt</id>
-            <name>OpenBuild</name>
-            <route>openbuilt.dashboard.page</route>
+            <id>buildiq</id>
+            <name>Buildiq</name>
+            <route>buildiq.dashboard.page</route>
             <icon>app.svg</icon>
         </navigation>
     </navigations>
-
-    <settings>
-        <admin>OCA\OpenBuilt\Settings\AdminSettings</admin>
-        <admin-section>OCA\OpenBuilt\Sections\SettingsSection</admin-section>
-    </settings>
-
-    <repair-steps>
-        <install>
-            <step>OCA\OpenBuilt\Repair\InitializeSettings</step>
-        </install>
-        <post-migration>
-            <step>OCA\OpenBuilt\Repair\InitializeSettings</step>
-        </post-migration>
-    </repair-steps>
 </info>

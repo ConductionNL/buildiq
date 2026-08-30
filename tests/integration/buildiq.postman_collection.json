@@ -1,0 +1,832 @@
+{
+	"info": {
+		"_postman_id": "buildiq-collection",
+		"name": "Buildiq Integration Tests",
+		"description": "Newman/Postman integration test collection for the Buildiq Nextcloud app.\n\nCovers:\n  - the public per-slug manifest endpoint (200 hello-world + 404 unknown);\n  - CRUD round-trip on Application objects via OpenRegister's REST API (POST/GET/PUT/DELETE);\n  - the manifest after a publish transition.\n\nAssumes the SeedHelloWorld repair step has run on a fresh install and the buildiq + openregister apps are enabled. Run via the runner pattern documented in tests/integration/README.md.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "username",
+				"value": "{{admin_user}}",
+				"type": "string"
+			},
+			{
+				"key": "password",
+				"value": "{{admin_password}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "route_uuid",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "admin_user",
+			"value": "admin",
+			"type": "string"
+		},
+		{
+			"key": "admin_password",
+			"value": "admin",
+			"type": "string"
+		},
+		{
+			"key": "created_uuid",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "sat_template_uuid",
+			"value": ""
+		},
+		{
+			"key": "sat_clone_uuid",
+			"value": ""
+		},
+		{
+			"key": "sat_clone_slug",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "Manifest endpoint",
+			"item": [
+				{
+					"name": "GET hello-world manifest returns 200 with version/menu/pages",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/hello-world/manifest",
+						"description": "Public manifest read for the seeded hello-world virtual app."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"const body = pm.response.json();",
+									"pm.test('manifest is returned unwrapped (no envelope)', function () {",
+									"    pm.expect(body).to.not.have.property('error');",
+									"    pm.expect(body).to.not.have.property('data');",
+									"});",
+									"pm.test('manifest has version', function () {",
+									"    pm.expect(body).to.have.property('version');",
+									"    pm.expect(body.version).to.be.a('string');",
+									"});",
+									"pm.test('manifest has menu array', function () {",
+									"    pm.expect(body).to.have.property('menu');",
+									"    pm.expect(body.menu).to.be.an('array');",
+									"});",
+									"pm.test('manifest has pages array', function () {",
+									"    pm.expect(body).to.have.property('pages');",
+									"    pm.expect(body.pages).to.be.an('array');",
+									"    pm.expect(body.pages.length).to.be.greaterThan(0);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET unknown-slug manifest returns 404",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/no-such-slug/manifest",
+						"description": "Manifest lookup for a slug with no BuiltAppRoute must 404 with the not_found error code."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 404', function () {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"const body = pm.response.json();",
+									"pm.test('error envelope is not_found', function () {",
+									"    pm.expect(body).to.have.property('error');",
+									"    pm.expect(body.error).to.eql('not_found');",
+									"});"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "OpenRegister-backed Application CRUD",
+			"item": [
+				{
+					"name": "GET /openregister/objects/buildiq/application lists hello-world",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application",
+						"description": "After SeedHelloWorld runs, the buildiq/application register lists at least one object with slug='hello-world'."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"const body = pm.response.json();",
+									"const results = (body && body.results) ? body.results : body;",
+									"pm.test('result set is a non-empty array', function () {",
+									"    pm.expect(results).to.be.an('array');",
+									"    pm.expect(results.length).to.be.greaterThan(0);",
+									"});",
+									"pm.test('at least one Application has slug=hello-world', function () {",
+									"    // OR REST returns the canonical slug at @self.slug; some fixtures",
+									"    // also surface a top-level .slug copy. Accept either so the suite",
+									"    // works regardless of which version of OR is under test.",
+									"    const hello = results.find(function (r) { return r && ((r['@self'] && r['@self'].slug === 'hello-world') || r.slug === 'hello-world'); });",
+									"    pm.expect(hello, 'no Application with slug=hello-world found').to.not.be.undefined;",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "POST creates a draft Application (newman-roundtrip)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"newman-roundtrip\",\n  \"name\": \"Newman Round-trip\",\n  \"description\": \"Synthetic Application created by the Newman CRUD round-trip\"\n}"
+						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application",
+						"description": "Create a synthetic Application object via OR REST. Per ADR-002 (versioned-app model) the `manifest`/`version`/`status` fields live on ApplicationVersion now, NOT the Application itself."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 200 or 201', function () {",
+									"    pm.expect([200, 201]).to.include(pm.response.code);",
+									"});",
+									"const body = pm.response.json();",
+									"pm.test('response carries a uuid we can round-trip', function () {",
+									"    const self = body['@self'] || {};",
+									"    const uuid = self.id || self.uuid || body.uuid || body.id;",
+									"    pm.expect(uuid, 'no uuid in POST response').to.be.a('string');",
+									"    pm.collectionVariables.set('created_uuid', uuid);",
+									"});",
+									"pm.test('slug echoes back from server', function () {",
+									"    pm.expect(body.slug || (body['@self'] && body['@self'].slug)).to.eql('newman-roundtrip');",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET the freshly-created Application by uuid",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application/{{created_uuid}}",
+						"description": "Read-back asserts the POST landed on disk and the uuid resolves. Versioned model: no manifest at this layer; verified separately on the version record below."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"const body = pm.response.json();",
+									"pm.test('slug round-trips', function () {",
+									"    pm.expect(body.slug || (body['@self'] && body['@self'].slug)).to.eql('newman-roundtrip');",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "POST creates an ApplicationVersion under the new Application",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Newman Round-trip v1\",\n  \"slug\": \"production\",\n  \"manifest\": {\n    \"version\": \"1.0.0\",\n    \"menu\": [],\n    \"pages\": [\n      {\n        \"id\": \"Home\",\n        \"route\": \"/\",\n        \"type\": \"index\",\n        \"title\": \"Home\",\n        \"config\": { \"register\": \"openbuild\", \"schema\": \"hello-message\", \"columns\": [\"title\"] }\n      }\n    ]\n  },\n  \"register\": \"openbuild-newman-roundtrip-production\",\n  \"semver\": \"1.0.0\",\n  \"status\": \"draft\",\n  \"application\": \"{{created_uuid}}\"\n}"
+						},
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/newman-roundtrip/versions",
+						"description": "Per ADR-002, the manifest + status + semver live on ApplicationVersion. POST against the version-aware Buildiq endpoint so the parent-relation guard runs."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 200 or 201', function () {",
+									"    pm.expect([200, 201]).to.include(pm.response.code);",
+									"});",
+									"const body = pm.response.json();",
+									"const versionUuid = (body['@self'] && (body['@self'].id || body['@self'].uuid)) || body.uuid || body.id;",
+									"pm.test('version uuid is captured', function () {",
+									"    pm.expect(versionUuid).to.be.a('string');",
+									"});",
+									"pm.collectionVariables.set('created_version_uuid', versionUuid);",
+									"pm.test('manifest persisted on the version (not the application)', function () {",
+									"    pm.expect(body.manifest).to.be.an('object');",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PATCH set the Application's productionVersion pointer",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"newman-roundtrip\",\n  \"name\": \"Newman Round-trip\",\n  \"description\": \"Synthetic Application created by the Newman CRUD round-trip\",\n  \"productionVersion\": \"{{created_version_uuid}}\"\n}"
+						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application/{{created_uuid}}",
+						"description": "ADR-002: the application's `productionVersion` field carries the UUID of the version that should be served as the live manifest."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"const body = pm.response.json();",
+									"const prod = body.productionVersion || (body['@self'] && body['@self'].relations && body['@self'].relations.productionVersion);",
+									"pm.test('productionVersion points at the new version', function () {",
+									"    pm.expect(prod).to.eql(pm.collectionVariables.get('created_version_uuid'));",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "POST publish lifecycle transition on the ApplicationVersion",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \"action\": \"publish\" }"
+						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{created_version_uuid}}/transition",
+						"description": "Publishing is a state machine on the VERSION now (ADR-002). The transition fires ObjectTransitionedEvent \u2192 ApplicationVersionSnapshotListener upserts the BuiltAppRoute."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('transition returns 200 or 204', function () {",
+									"    pm.expect([200, 204]).to.include(pm.response.code);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "POST register the BuiltAppRoute so the slug is resolvable",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"newman-roundtrip\",\n  \"applicationUuid\": \"{{created_uuid}}\"\n}"
+						},
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/built-app-route",
+						"description": "THE STEP THIS ROUND-TRIP WAS MISSING.\n\nApplicationsController::resolveApplicationBySlug() does not search Applications by slug — it resolves the slug through the `built-app-route` schema. A published Application with a productionVersion pointer is still unreachable by slug until a route exists, which is why `GET /api/applications/newman-roundtrip/manifest` returned 404 after every preceding step in this folder had succeeded (Application 201, version 201, pointer 200, transition 200). Three assertions failed on it and the cause was in none of them.\n\nThis folder deliberately drives the RAW OpenRegister object API (ADR-022) rather than POST /api/applications/wizard, and the wizard is what normally creates this route — so the round-trip has to create it itself. lib/Command/SeedHelloWorldFixture.php does exactly the same for hello-world, as its step 4."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('BuiltAppRoute created', function () {",
+									"    pm.expect([200, 201]).to.include(pm.response.code);",
+									"});",
+									"pm.test('the route points at the Application this folder created', function () {",
+									"    const body = pm.response.json();",
+									"    pm.expect(body.slug).to.eql('newman-roundtrip');",
+									"    pm.expect(body.applicationUuid, 'a route pointing at the wrong or an empty Application resolves nothing').to.eql(pm.collectionVariables.get('created_uuid'));",
+									"});",
+									"const routeUuid = (pm.response.json()['@self'] || {}).id || pm.response.json().uuid || pm.response.json().id;",
+									"pm.collectionVariables.set('route_uuid', String(routeUuid));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "GET the manifest endpoint after publish (newman-roundtrip)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/newman-roundtrip/manifest",
+						"description": "After the publish transition + productionVersion pointer set, ManifestResolverService should resolve the slug to the version's manifest."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"const body = pm.response.json();",
+									"pm.test('manifest has version 1.0.0', function () {",
+									"    pm.expect(body.version).to.eql('1.0.0');",
+									"});",
+									"pm.test('manifest has at least one page', function () {",
+									"    pm.expect(body.pages).to.be.an('array');",
+									"    pm.expect(body.pages.length).to.be.greaterThan(0);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "DELETE the PRODUCTION version is refused with 422 (REQ-OBV-108 guard)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/newman-roundtrip/versions/production?strategy=delete-now",
+						"description": "THIS STEP WAS A BROKEN TEARDOWN; IT IS NOW A REAL ASSERTION.\n\nIt used to send `strategy=hard` — not a strategy at all (the enum is delete-now | orphan-grace | keep-register) — and got a 400, so its 'returns 200 or 204' failed for a reason that had nothing to do with deletion.\n\nWith a valid strategy the answer is 422, and 422 is CORRECT: ApplicationVersionsController::destroy()'s own docblock says 'Attempts to delete the parent Application's production version yield 422', and this round-trip pointed the Application's productionVersion at exactly this row three steps earlier. Deleting it first was never going to work.\n\nSo the teardown is reordered — the Application goes first, then the version row via OR's object API — and the attempt itself is kept as the assertion it should always have been. That matters beyond tidiness: buildiq-application-versions carries a test named 'DESTROY — reject production version deletion (422)' which SKIPS ('production_version_slug not set — seed step not run'), so this guard had no executing coverage anywhere in the suite."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// 422, and 422 is the CORRECT answer — see the request description.",
+									"// A 400 here would mean the strategy is being rejected before the",
+									"// guard is ever reached, which is the bug this step used to have.",
+									"pm.test('deleting the production version is refused with 422', function () {",
+									"    pm.expect(pm.response.code, pm.response.code === 400",
+									"        ? 'got 400 — the strategy was rejected before the production guard ran; it must be one of delete-now | orphan-grace | keep-register'",
+									"        : 'a version an Application still points at as productionVersion must not be deletable').to.eql(422);",
+									"});",
+									"pm.test('the refusal is the production guard, not a generic failure', function () {",
+									"    // Assert on WHICH refusal. Without this, any 422 from any cause —",
+									"    // a broken strategy, a missing register — would satisfy the test",
+									"    // above and read as 'the guard works'.",
+									"    const body = pm.response.json();",
+									"    pm.expect(String(body.code || body.error || ''), 'expected the delete to be refused, not merely to fail').to.match(/delete_failed|production/i);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "DELETE cleans up the round-trip Application",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application/{{created_uuid}}",
+						"description": "Tear down the round-trip Application so re-runs stay idempotent. OR returns 200 or 204."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 200 or 204', function () {",
+									"    pm.expect([200, 204]).to.include(pm.response.code);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "DELETE cleans up the round-trip ApplicationVersion (after the Application)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/applicationVersion/{{created_version_uuid}}",
+						"description": "Now that the Application (and therefore its productionVersion pointer) is gone, the version row can be removed. Via OR's object API rather than buildiq's versions route, because that route resolves the version THROUGH its parent Application — which no longer exists — so it could only 404 here.\n\nOrdering, not preference: the buildiq route is the right surface while the app is alive, and it is exercised as such by the 422 guard assertion above."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 200 or 204', function () {",
+									"    pm.expect([200, 204]).to.include(pm.response.code);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "DELETE cleans up the round-trip BuiltAppRoute",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "OCS-APIRequest", "value": "true" }
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/built-app-route/{{route_uuid}}",
+						"description": "MUST be torn down, not merely tidy.\n\nA leftover route means the next run creates a SECOND built-app-route for `newman-roundtrip`, and resolveApplicationBySlug() resolves a single object per slug — so an ambiguous set makes the slug 404 on a run where everything else was correct. lib/Command/SeedHelloWorldFixture.php carries the same warning about duplicate hello-world rows making loadApplication() 404."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 200 or 204', function () {",
+									"    pm.expect([200, 204]).to.include(pm.response.code);",
+									"});"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Save-as-template ApplicationTemplate contracts",
+			"description": "REQ-SAT-004/005/006: org-local ApplicationTemplate create/update-in-place via OR REST (zero new PHP), clone of a user template through the existing from-template endpoint, and cleanup. Pins the OR-level contracts the SaveAsTemplateDialog + gallery management drive.",
+			"item": [
+				{
+					"name": "POST creates an org-local ApplicationTemplate (isSeeded:false) \u2014 REQ-SAT-004/006",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application-template",
+						"description": "Create a user template via OR REST. REQ-SAT-006: no buildiq PHP endpoint \u2014 plain OR object create. Org scoping is applied by OR's standard `organisation` field.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"newman-sat-pack\",\n  \"title\": \"Newman SAT pack\",\n  \"description\": \"Synthetic org-local template created by the save-as-template Newman contract test\",\n  \"useCase\": \"Save-as-template contract\",\n  \"category\": \"internal-operations\",\n  \"manifest\": {\n    \"pages\": [\n      {\n        \"id\": \"idx\",\n        \"type\": \"index\",\n        \"config\": {\n          \"schema\": \"permit-application\"\n        }\n      }\n    ]\n  },\n  \"companionSchemas\": [\n    {\n      \"slug\": \"permit-application\",\n      \"title\": \"Permit\",\n      \"properties\": {}\n    }\n  ],\n  \"isSeeded\": false,\n  \"version\": \"1.0.0\"\n}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 200 or 201', function () {",
+									"    pm.expect([200, 201]).to.include(pm.response.code);",
+									"});",
+									"const body = pm.response.json();",
+									"pm.test('template carries a uuid', function () {",
+									"    const self = body['@self'] || {};",
+									"    const uuid = self.id || self.uuid || body.uuid || body.id;",
+									"    pm.expect(uuid, 'no uuid in template POST response').to.be.a('string');",
+									"    pm.collectionVariables.set('sat_template_uuid', uuid);",
+									"});",
+									"pm.test('isSeeded is false (org-local)', function () {",
+									"    pm.expect(body.isSeeded === false || body.isSeeded === 'false').to.be.true;",
+									"});",
+									"pm.test('org scoping present via OR @self', function () {",
+									"    pm.expect(body).to.have.property('@self');",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "PUT update-in-place keeps the UUID and bumps version \u2014 REQ-SAT-004",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application-template/{{sat_template_uuid}}",
+						"description": "Update-in-place is a standard OR object update on the existing record \u2014 same UUID, no delete+recreate (REQ-SAT-004).",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"newman-sat-pack\",\n  \"title\": \"Newman SAT pack\",\n  \"description\": \"Updated in place\",\n  \"useCase\": \"Save-as-template contract\",\n  \"category\": \"internal-operations\",\n  \"manifest\": {\n    \"pages\": [\n      {\n        \"id\": \"idx\",\n        \"type\": \"index\",\n        \"config\": {\n          \"schema\": \"permit-application\"\n        }\n      }\n    ]\n  },\n  \"companionSchemas\": [\n    {\n      \"slug\": \"permit-application\",\n      \"title\": \"Permit\",\n      \"properties\": {}\n    }\n  ],\n  \"isSeeded\": false,\n  \"version\": \"1.1.0\"\n}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('returns 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+									"const body = pm.response.json();",
+									"pm.test('UUID is stable across update', function () {",
+									"    const self = body['@self'] || {};",
+									"    const uuid = self.id || self.uuid || body.uuid || body.id;",
+									"    pm.expect(uuid).to.eql(pm.collectionVariables.get('sat_template_uuid'));",
+									"});",
+									"pm.test('version bumped to 1.1.0', function () {",
+									"    pm.expect(String(body.version)).to.eql('1.1.0');",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "POST clone of the user template returns 201 with templateOrigin \u2014 REQ-SAT-004",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/buildiq/api/applications/from-template/newman-sat-pack",
+						"description": "The existing from-template clone endpoint reads a user template (isSeeded:false) by slug and namespaces companion schemas \u2014 REQ-SAT-005 'clones normally'. Records templateOrigin for traceability.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Newman SAT clone\",\n  \"slug\": \"newman-sat-clone\"\n}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('clone returns 201', function () { pm.expect([200,201]).to.include(pm.response.code); });",
+									"const body = pm.response.json();",
+									"pm.test('cloned app carries a uuid', function () {",
+									"    const uuid = body.uuid || body.slug;",
+									"    pm.expect(uuid).to.be.a('string');",
+									"    pm.collectionVariables.set('sat_clone_uuid', body.uuid || '');",
+									"    pm.collectionVariables.set('sat_clone_slug', body.slug || 'newman-sat-clone');",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "DELETE cleans up the cloned Application",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application?slug=newman-sat-clone",
+						"description": "Best-effort cleanup of the clone produced by the contract test."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('cleanup accepted (2xx/4xx tolerated)', function () { pm.expect(pm.response.code).to.be.below(500); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "DELETE cleans up the ApplicationTemplate \u2014 REQ-SAT-005",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application-template/{{sat_template_uuid}}",
+						"description": "Delete removes only the template record (REQ-SAT-005). Cloned apps are unaffected."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('template delete accepted', function () { pm.expect(pm.response.code).to.be.below(500); });"
+								]
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}

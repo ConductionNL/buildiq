@@ -1,0 +1,187 @@
+{
+  "_comment": "ADR-037 register fragment — agent-workspace. Adds the `Agent` and `AgentRun` schemas to the shared `buildiq` register. An Agent is a named, reusable, tool-scoped configuration layered on top of the existing ai-copilot plan/execute engine (design.md Context) — it never introduces a second execution engine (ADR-022/031): every agent-scoped plan/execute request still flows through CopilotService::plan()/execute() -> BuildiqToolProvider::invokeTool(). `enabledTools` is validated server-side at save time by restricting the array's `items.enum` to exactly the eight BuildiqToolProvider tool ids (REQ in specs/agent-workspace/spec.md 'Unknown tool name is rejected') — an unknown tool name fails OpenRegister's own JSON-Schema enum validation with no additional imperative code needed, matching ADR-031's declarative-first preference. The same eight-id enum is intersected server-side (never trusted from the client) with an agent's `enabledTools` on every plan/execute request (design.md Decision 1) — this schema-level enum only bounds what CAN be saved, not what is enforced at request time. AgentRun is the transparent run-log record (design.md Decision 2, Retool tool-chip transparency pattern) written by `AgentRunLogger`, a thin wrapper around CopilotService's existing plan/execute/discard paths — never embedded in CopilotService's core logic. `AgentRun` read access is RBAC-gated server-side (owners/editors only on the parent Application, design.md Open Questions) by the dedicated `AgentsController::runs()` endpoint, NOT by the generic OpenRegister object REST surface (that endpoint has no per-Application row-level filter, the same IDOR shape `routes.php`'s `applications#listMine` comment documents for the Application list).",
+  "components": {
+    "schemas": {
+      "Agent": {
+        "x-schema-org": "schema:SoftwareApplication",
+        "slug": "agent",
+        "icon": "Robot",
+        "version": "1.0.0",
+        "title": "Agent",
+        "description": "A named, reusable, tool-scoped AI configuration for one Application: free-text instructions prefixed onto the copilot system prompt, an explicit subset of the eight BuildiqToolProvider tools it may invoke, and a per-run action cap. Never a wider capability surface than the bare copilot (agent-workspace design.md Goals).",
+        "authorization": {
+          "read": [
+            "authenticated"
+          ],
+          "create": [
+            "admin"
+          ],
+          "update": [
+            "admin"
+          ],
+          "delete": [
+            "admin"
+          ]
+        },
+        "type": "object",
+        "required": [
+          "applicationSlug",
+          "name",
+          "enabledTools"
+        ],
+        "properties": {
+          "applicationSlug": {
+            "title": "Application Slug",
+            "type": "string",
+            "description": "Slug of the owning Application. An agent belongs to exactly one Application; plan/execute requests carrying this agent's id are always scoped to this Application server-side, never to a client-supplied appSlug."
+          },
+          "name": {
+            "title": "Name",
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 80,
+            "description": "Human-readable name shown in the Agents list and as the chat panel's \"acting as\" header."
+          },
+          "instructions": {
+            "title": "Instructions",
+            "type": "string",
+            "maxLength": 4000,
+            "description": "Free-text instructions prefixed onto the copilot system prompt (CopilotPromptBuilder) for every plan request issued with this agent's id. Cannot widen the tool allow-list by construction (design.md Risks) — the allow-list check is a server-side structural validation of the returned plan's tool names, not a trust boundary the prompt text can talk its way around."
+          },
+          "modelTaskType": {
+            "title": "Model Task Type",
+            "type": "string",
+            "enum": [
+              "TextToText"
+            ],
+            "default": "TextToText",
+            "description": "The `OCP\\TaskProcessing` task type this agent targets. v1 default-inherits the bare copilot path's TextToText task type (design.md Open Questions) — present on the schema now for a v1.1 follow-up once multiple task types are commonly configured."
+          },
+          "enabledTools": {
+            "title": "Enabled Tools",
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "enum": [
+                "buildiq.listApps",
+                "buildiq.getAppManifest",
+                "buildiq.createApp",
+                "buildiq.promoteVersion",
+                "buildiq.upsertSchema",
+                "buildiq.upsertPage",
+                "buildiq.addWidget",
+                "buildiq.upsertMenuItem"
+              ]
+            },
+            "description": "The subset of the eight BuildiqToolProvider tool ids this agent may propose in a plan. Validated at save time against exactly this enum (an unknown tool name is rejected); re-validated server-side (intersected with the live catalogue) on every plan/execute request — never a superset of what the bare copilot already exposes."
+          },
+          "maxActionsPerRun": {
+            "title": "Max Actions Per Run",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "default": 10,
+            "description": "Blast-radius cap independent of the global manifest caps (design.md Decision 4). A plan whose step count exceeds this value is rejected with 422 naming `max_actions_per_run`, the same rejection shape an over-cap manifest plan already uses."
+          }
+        }
+      },
+      "AgentRun": {
+        "x-schema-org": "schema:Action",
+        "slug": "agent-run",
+        "icon": "History",
+        "version": "1.0.0",
+        "title": "Agent Run",
+        "description": "One transparently-logged plan+execute (or plan+discard) interaction issued with an agentId (agent-workspace design.md Decision 2) — the prompt, the returned plan, every tool call's arguments and result, and the final outcome. Written by `AgentRunLogger`, a thin wrapper around CopilotService's plan/execute/discard paths. Never a summarised or redacted view of what actually ran.",
+        "authorization": {
+          "read": [
+            "authenticated"
+          ],
+          "create": [
+            "admin"
+          ],
+          "update": [
+            "admin"
+          ],
+          "delete": [
+            "admin"
+          ]
+        },
+        "type": "object",
+        "required": [
+          "agentId",
+          "applicationSlug",
+          "prompt",
+          "outcome",
+          "createdAt"
+        ],
+        "properties": {
+          "agentId": {
+            "title": "Agent UUID",
+            "type": "string",
+            "format": "uuid",
+            "$ref": "Agent",
+            "description": "UUID of the Agent this run belongs to."
+          },
+          "applicationSlug": {
+            "title": "Application Slug",
+            "type": "string",
+            "description": "Slug of the owning Application, copied from the Agent at write time so run-history RBAC never needs an extra lookup."
+          },
+          "prompt": {
+            "title": "Prompt",
+            "type": "string",
+            "description": "The user's natural-language brief for this turn."
+          },
+          "plan": {
+            "title": "Plan",
+            "type": "object",
+            "description": "The plan `{summary, steps[]}` returned by the plan step, echoed verbatim (empty/absent when the LLM output could not be parsed at all)."
+          },
+          "toolCalls": {
+            "title": "Tool Calls",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "tool": {
+                  "title": "Tool",
+                  "type": "string",
+                  "description": "The invoked tool id."
+                },
+                "arguments": {
+                  "title": "Arguments",
+                  "type": "object",
+                  "description": "The arguments this tool call was invoked with."
+                },
+                "result": {
+                  "title": "Result",
+                  "type": "object",
+                  "description": "The handler's raw result envelope (success payload or `{isError, error, message}`)."
+                }
+              }
+            },
+            "description": "Ordered list of every tool call this run dispatched through `BuildiqToolProvider::invokeTool()`, each with its arguments and raw result — the Retool tool-chip transparency pattern. Empty for a discarded or plan-rejected run."
+          },
+          "outcome": {
+            "title": "Outcome",
+            "type": "string",
+            "enum": [
+              "applied",
+              "rolled-back",
+              "discarded",
+              "plan-rejected"
+            ],
+            "description": "The final outcome of this turn: `applied` (every step succeeded), `rolled-back` (a mid-plan step failed and every snapshot was restored), `discarded` (the user reviewed the proposal and chose not to execute it), or `plan-rejected` (the plan failed allow-list/schema/maxActionsPerRun validation before any step ran)."
+          },
+          "createdAt": {
+            "title": "Created At",
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO-8601 timestamp this run record was written."
+          }
+        }
+      }
+    }
+  }
+}
