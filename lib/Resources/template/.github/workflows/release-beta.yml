@@ -3,6 +3,7 @@ name: Beta Release
 on:
   push:
     branches: [beta]
+  workflow_dispatch:
 
 jobs:
   release:
