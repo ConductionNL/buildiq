@@ -1,0 +1,19 @@
+[
+  {
+    "slug": "hello-message",
+    "title": "Hello Message",
+    "description": "Default message schema seeded into every wizard-provisioned per-version register.",
+    "type": "object",
+    "required": ["body"],
+    "properties": {
+      "id": {
+        "type": "string",
+        "description": "Unique identifier."
+      },
+      "body": {
+        "type": "string",
+        "description": "Message body content."
+      }
+    }
+  }
+]

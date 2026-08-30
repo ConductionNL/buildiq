@@ -1,0 +1,59 @@
+{
+    "_comment": "ADR-037 register fragment — app-repo-format-v2. Adds the optional `connectors` array property to the shared `buildiq` register's Application schema, sibling to `dataRegisters` (20-data-registers.json), which it deliberately mirrors in shape and style. SettingsService::deepMergeConfig recurses into components.schemas.Application.properties (both keyed objects already present in the base config) and adds only the new `connectors` key — Application.required and every other Application property are untouched, and no other schema is touched. Each entry names an OpenConnector configuration object the app EXPLICITLY declares as its own, so a published app repository carries the ingestion that feeds its pages. Declarative schema metadata only (ADR-031) — no service class, no route. NOTE on the alternative considered and rejected: connectors could have been INFERRED from synchronizations whose target resolves to one of the app's dataRegisters, needing no schema change at all. That was rejected because it makes an app's published surface depend on which OTHER objects happen to point at a shared register — so the same app would export differently on two instances, and adding an unrelated app's synchronization would silently change this app's export. An explicit list is reviewable, diffable and stable. OpenConnector is read as OpenRegister objects (register `openconnector`; it has no lib/Db and no openconnector_* tables — it was re-platformed onto OpenRegister), so this binding introduces NO cross-app PHP dependency, per ADR-022.",
+    "components": {
+        "schemas": {
+            "Application": {
+                "properties": {
+                    "connectors": {
+                        "title": "Connectors",
+                        "type": "array",
+                        "default": [],
+                        "description": "OpenConnector configuration objects this application explicitly declares as its own. Exported into `connectors/<kind>/<slug>.json` by app-repo-format-v2 so an installed app arrives with the ingestion that populates the registers its pages read. Declared entries are exported as declared; the exporter additionally resolves the objects a declared entry DIRECTLY references (one level only — a synchronization's source, mapping and target), because a synchronization without its source installs into something that cannot run. Credential VALUES are never exported: configs carry credential references only, and any inline secret-shaped value is stripped and the strip recorded.",
+                        "items": {
+                            "type": "object",
+                            "title": "Connector Binding",
+                            "required": [
+                                "kind",
+                                "uuid"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                                "kind": {
+                                    "title": "Connector Kind",
+                                    "type": "string",
+                                    "enum": [
+                                        "source",
+                                        "mapping",
+                                        "synchronization",
+                                        "job"
+                                    ],
+                                    "description": "Which OpenConnector schema the entry refers to. Constrained to the four configuration kinds that define ingestion; `endpoint` and `rule` are deliberately excluded — an endpoint is instance-facing surface and a rule belongs to the automations channel."
+                                },
+                                "uuid": {
+                                    "title": "Connector UUID",
+                                    "type": "string",
+                                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                                    "description": "UUID of the OpenConnector object in the shared `openconnector` register. The binding is UUID-keyed, NOT slug-keyed, because OpenConnector objects overwhelmingly have no slug: measured on a live instance, only 13 of 369 sources, 1 of 291 mappings, 7 of 206 synchronizations and 0 of 74 jobs carry one, while every object has a UUID. A slug-keyed binding could therefore reference almost none of a real app's ingestion — the export would silently collect nothing. Validated as a UUID BEFORE it is ever used as a path component, so a crafted value cannot escape the `connectors/<kind>/` prefix on export."
+                                },
+                                "slug": {
+                                    "title": "Connector Slug",
+                                    "type": "string",
+                                    "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+                                    "minLength": 2,
+                                    "maxLength": 64,
+                                    "description": "OPTIONAL human-readable slug. Used as the exported filename when present and safe (`connectors/<kind>/<slug>.json`), because a slug is far more reviewable in a diff than a UUID; the export falls back to the UUID when absent. Never used for resolution — the UUID is the identity."
+                                },
+                                "label": {
+                                    "title": "Label",
+                                    "type": "string",
+                                    "maxLength": 128,
+                                    "description": "Optional human-readable label for the binding, shown in the builder. Never used as a path component."
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

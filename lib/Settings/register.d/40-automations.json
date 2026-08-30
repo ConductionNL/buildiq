@@ -1,0 +1,374 @@
+{
+	"_comment": "ADR-037 register fragment — automation-designer, extended by automation-approval-steps. Adds the `Automation` schema to the shared `buildiq` register: a single declarative object composing TRIGGER + optional CONDITION + ACTIONS, source-of-truth for `AutomationCompilerService`. Per design.md Decision 1 the designer always renders FROM this object, never by parsing compiled artifacts — the object IS the decompiled form, which is what makes compilation reversible. Compilation targets ONLY existing declarative primitives (ADR-031): `x-openregister-notifications` entries (see 10-business-rules.json:153 for the live dialect shape this compiler writes to), `x-openregister-lifecycle` typed transition actions, manifest `schedules[]` entries (existing `openconnector:synchronization` action only), namespaced RuleSet/ConditionActionRule objects evaluated by the existing RuleEngineService, and — since automation-approval-steps — an OpenRegister `ApprovalChain` (one step, group-only `role`) upserted via OR's `ApprovalChainMapper`/`ApprovalService::initializeChain()`. No new imperative engine is introduced in buildiq. Every artifact id/key the compiler mints carries the `aut-` prefix (rule-set slugs use `aut-<uuid8>`, the approval chain name is `aut-<slug>`) so recompile/delete never touches hand-authored entries — see `provenance` below. Property names are English (new schema; unrelated to the pre-existing Dutch rules-engine schemas). `approval` is selectable in v1 ONLY on `object-created|object-updated|object-deleted|lifecycle-transition` triggers (design.md Decision 1 of automation-approval-steps); `schedule`/`manual` + `approval` remain blocked fail-closed. Assignee is group-only (OR's `ApprovalStep.role` has no per-user primitive — deferred, see automation-approval-steps design.md Open Questions); no escalation-timeout field is exposed (OR has no timeout primitive — omitted entirely from v1 rather than shipping an inert field).",
+	"components": {
+		"schemas": {
+			"Automation": {
+				"x-schema-org": "schema:Action",
+				"slug": "automation",
+				"icon": "Robot",
+				"version": "1.0.0",
+				"title": "Automation",
+				"description": "A single trigger→condition→actions declarative automation, compiled on demand to Buildiq's existing declarative primitives (notifications dialect, lifecycle actions, schedules, rules engine). One automation is managed as one unit: list/edit/enable/disable/dry-run/delete.",
+				"authorization": {
+					"read": [
+						"authenticated"
+					],
+					"create": [
+						"admin"
+					],
+					"update": [
+						"admin"
+					],
+					"delete": [
+						"admin"
+					]
+				},
+				"type": "object",
+				"required": [
+					"slug",
+					"name",
+					"applicationSlug",
+					"versionUuid",
+					"trigger"
+				],
+				"properties": {
+					"slug": {
+						"title": "Automation Slug",
+						"type": "string",
+						"pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+						"minLength": 2,
+						"maxLength": 64,
+						"description": "Kebab-case slug uniquely identifying the automation within its ApplicationVersion. Drives the `aut-<slug>` namespace of every compiled artifact id/key."
+					},
+					"name": {
+						"title": "Name",
+						"type": "string",
+						"description": "Human-readable name shown in the Automations list."
+					},
+					"description": {
+						"title": "Description",
+						"type": "string",
+						"description": "Optional long-form description of what this automation does."
+					},
+					"applicationSlug": {
+						"title": "Application Slug",
+						"type": "string",
+						"description": "Slug of the owning Application."
+					},
+					"versionUuid": {
+						"title": "Application Version UUID",
+						"type": "string",
+						"format": "uuid",
+						"$ref": "ApplicationVersion",
+						"description": "UUID of the owning ApplicationVersion. An automation belongs to exactly one version; branching a version clones its automations with new uuids (design.md Decision 6)."
+					},
+					"enabled": {
+						"title": "Enabled",
+						"type": "boolean",
+						"default": true,
+						"description": "Whether the automation is active. Disabling recompiles with every artifact's own enabled switch off; artifacts stay in place (design.md Decision 5)."
+					},
+					"trigger": {
+						"title": "Trigger",
+						"type": "object",
+						"description": "Exactly one trigger: object created/updated/deleted, a lifecycle transition, a cron/interval schedule, or manual (rules-backend) invocation.",
+						"required": [
+							"type"
+						],
+						"properties": {
+							"type": {
+								"title": "Trigger Type",
+								"type": "string",
+								"description": "Which event starts the automation. `object-created` / `object-updated` / `object-deleted` fire on writes to the schema named in `schema`; `lifecycle-transition` fires on the named transition; `schedule` fires on `interval` or `cron`; `manual` runs only when invoked through the rules backend.",
+								"enum": [
+									"object-created",
+									"object-updated",
+									"object-deleted",
+									"lifecycle-transition",
+									"schedule",
+									"manual"
+								]
+							},
+							"schema": {
+								"title": "Target Schema",
+								"type": "string",
+								"description": "Schema slug the trigger fires on (object-* and lifecycle-transition trigger types)."
+							},
+							"transition": {
+								"title": "Transition Action",
+								"type": "string",
+								"description": "The `x-openregister-lifecycle` transition action name (lifecycle-transition trigger type only)."
+							},
+							"interval": {
+								"title": "Interval (seconds)",
+								"type": "integer",
+								"description": "Cadence in seconds (schedule trigger type; mutually exclusive with `cron`, reusing the schedules-editor cadence presets)."
+							},
+							"cron": {
+								"title": "Cron Expression",
+								"type": "string",
+								"description": "5-field cron expression (schedule trigger type; mutually exclusive with `interval`)."
+							}
+						}
+					},
+					"condition": {
+						"title": "Condition",
+						"type": "object",
+						"description": "Optional condition, v1-supported only on the `manual` trigger (design.md Decision 2 — the rules backend is the only existing primitive that evaluates FEEL). Either a FEEL-subset expression or a reference to an existing rule set.",
+						"properties": {
+							"type": {
+								"title": "Condition Type",
+								"type": "string",
+								"description": "How the condition is expressed: `feel` for an inline FEEL-subset expression, or `rule-set` to delegate to an existing rule set by reference.",
+								"enum": [
+									"feel",
+									"rule-set"
+								]
+							},
+							"expression": {
+								"title": "FEEL Expression",
+								"type": "string",
+								"description": "FEEL-subset boolean expression evaluated against the payload (type: feel)."
+							},
+							"ruleSetSlug": {
+								"title": "Rule Set Slug",
+								"type": "string",
+								"description": "Slug of an existing RuleSet to defer condition evaluation to (type: rule-set)."
+							}
+						}
+					},
+					"actions": {
+						"title": "Actions",
+						"type": "array",
+						"description": "Ordered typed action records. Only combinations allowed by the v1 compilation matrix (design.md Decision 2) may be saved — unsupported combinations are blocked fail-closed in the editor and at compile time.",
+						"items": {
+							"type": "object",
+							"required": [
+								"type"
+							],
+							"properties": {
+								"type": {
+									"title": "Action Type",
+									"type": "string",
+									"enum": [
+										"send-notification",
+										"run-synchronization",
+										"object-op",
+										"webhook",
+										"approval",
+										"generateDocument"
+									],
+									"description": "`approval` (automation-approval-steps) is selectable only on object-created|object-updated|object-deleted|lifecycle-transition triggers — compiles to an OpenRegister ApprovalChain; blocked fail-closed on schedule/manual. `generateDocument` (automation-document-action) is selectable on the same four event/lifecycle-transition triggers — dispatches an owner-impersonated call to Docudesk's pinned `correspondence/generate` route; blocked fail-closed on schedule/manual."
+								},
+								"channels": {
+									"title": "Notification Channels",
+									"type": "array",
+									"items": {
+										"type": "string"
+									},
+									"description": "send-notification: notification channels (e.g. nc-notification)."
+								},
+								"recipients": {
+									"title": "Notification Recipients",
+									"type": "array",
+									"items": {
+										"type": "object",
+										"properties": {
+											"kind": {
+												"title": "Recipient Kind",
+												"type": "string",
+												"description": "How this recipient set is resolved — e.g. `object-acl` to derive recipients from the object's own access-control list, matching the x-openregister-notifications dialect."
+											},
+											"permission": {
+												"title": "Required Permission",
+												"type": "string",
+												"description": "The permission a user must hold on the object to be included in this recipient set — e.g. `manage`. Only meaningful for ACL-derived recipient kinds."
+											}
+										}
+									},
+									"description": "send-notification: recipient records, same shape as the x-openregister-notifications dialect (e.g. { kind: object-acl, permission: manage })."
+								},
+								"subject": {
+									"title": "Notification Subject",
+									"type": "object",
+									"properties": {
+										"nl": {
+											"title": "Subject (Dutch)",
+											"type": "string",
+											"description": "Dutch subject line for the notification. Supports `{{field}}` placeholders resolved against the triggering object."
+										},
+										"en": {
+											"title": "Subject (English)",
+											"type": "string",
+											"description": "English subject line for the notification. Supports `{{field}}` placeholders resolved against the triggering object."
+										}
+									},
+									"description": "send-notification: localized subject templates ({{field}} placeholders)."
+								},
+								"synchronizationId": {
+									"title": "Synchronization ID",
+									"type": "string",
+									"description": "run-synchronization: target OpenConnector synchronization id."
+								},
+								"operation": {
+									"title": "Object Operation",
+									"type": "string",
+									"enum": [
+										"create",
+										"update"
+									],
+									"description": "object-op: whether to create a new object or update an existing one."
+								},
+								"schema": {
+									"title": "Target Schema",
+									"type": "string",
+									"description": "object-op: schema slug to write to."
+								},
+								"fieldMapping": {
+									"title": "Field Mapping",
+									"type": "object",
+									"description": "object-op: map of target field name to a `{{payload}}` placeholder template."
+								},
+								"url": {
+									"title": "Webhook URL",
+									"type": "string",
+									"description": "webhook: POST target URL."
+								},
+								"payloadTemplate": {
+									"title": "Webhook Payload Template",
+									"type": "object",
+									"description": "webhook: payload body template with `{{payload}}` placeholders."
+								},
+								"assigneeGroup": {
+									"title": "Assignee Group",
+									"type": "string",
+									"description": "approval: Nextcloud group id the compiled ApprovalChain's single step is assigned to (group-only in v1 — OR's ApprovalStep.role has no per-user primitive)."
+								},
+								"onApprove": {
+									"title": "On Approve",
+									"type": "array",
+									"items": {
+										"type": "object"
+									},
+									"description": "approval: follow-up actions dispatched when the compiled ApprovalStep is approved, composed from the same typed-action vocabulary (send-notification/object-op/webhook) as the top-level actions[] array."
+								},
+								"onReject": {
+									"title": "On Reject",
+									"type": "array",
+									"items": {
+										"type": "object"
+									},
+									"description": "approval: follow-up actions dispatched when the compiled ApprovalStep is rejected, composed from the same typed-action vocabulary as onApprove."
+								},
+								"templateId": {
+									"title": "Document Template",
+									"type": "string",
+									"format": "uuid",
+									"x-external-register": "docudesk",
+									"description": "generateDocument: UUID of the Docudesk template to render, picked from the same `GET /apps/docudesk/api/templates` list the Documents-section builder UI uses. The template is an object in DOCUDESK's register, not Buildiq's, so this carries the bare identifier and no `$ref` — OpenRegister resolves `$ref` within one register set and cannot reach another app's schema."
+								},
+								"output": {
+									"title": "Output Mode(s)",
+									"type": "array",
+									"minItems": 1,
+									"items": {
+										"type": "string",
+										"enum": [
+											"attach",
+											"download-link",
+											"notify"
+										]
+									},
+									"description": "generateDocument: one or more of `attach` (writes the rendered document to Nextcloud Files and sets a `{ ref: <fileId> }` reference on the triggering object's `generatedDocument` field), `download-link` (generates a short-lived, ~24h, signed download URL without persisting a file) and `notify` (dispatches a notification referencing the generated document). `notify` MUST be combined with `attach` and/or `download-link` — `[\"notify\"]` alone is rejected as incomplete."
+								}
+							}
+						}
+					},
+					"provenance": {
+						"title": "Provenance",
+						"type": "object",
+						"description": "Every artifact the last compile produced, plus the compiled-plan hash used for idempotency and drift detection (design.md Decision 4).",
+						"properties": {
+							"notificationKeys": {
+								"title": "Notification Keys",
+								"type": "array",
+								"items": {
+									"type": "object",
+									"properties": {
+										"schema": {
+											"title": "Schema Slug",
+											"type": "string",
+											"description": "Slug of the schema whose x-openregister-notifications block carries this generated entry."
+										},
+										"key": {
+											"title": "Notification Key",
+											"type": "string",
+											"description": "The generated notification key, of the form `aut-<automation-slug>-<n>`. Recorded so recompiling can replace exactly the entries this automation owns and leave hand-written ones untouched."
+										}
+									}
+								},
+								"description": "x-openregister-notifications entries keyed `aut-<slug>-<n>` on the named schema."
+							},
+							"lifecycleActions": {
+								"title": "Lifecycle Actions",
+								"type": "array",
+								"items": {
+									"type": "object",
+									"properties": {
+										"schema": {
+											"title": "Schema Slug",
+											"type": "string",
+											"description": "Slug of the schema whose x-openregister-lifecycle block carries this generated transition."
+										},
+										"transition": {
+											"title": "Transition Action",
+											"type": "string",
+											"description": "Name of the lifecycle transition action this automation compiled onto the schema."
+										},
+										"marker": {
+											"title": "Ownership Marker",
+											"type": "string",
+											"description": "Marker stamped on the generated transition identifying this automation as its owner, so a recompile rewrites only what it created."
+										}
+									}
+								},
+								"description": "x-openregister-lifecycle transition actions tagged with an `aut-<slug>` marker field."
+							},
+							"scheduleIds": {
+								"title": "Schedule IDs",
+								"type": "array",
+								"items": {
+									"type": "string"
+								},
+								"description": "manifest.schedules[] entry ids compiled by this automation."
+							},
+							"ruleSetSlug": {
+								"title": "Rule Set Slug",
+								"type": "string",
+								"description": "The `aut-<uuid8>` RuleSet compiled for a manual-trigger automation, or null."
+							},
+							"approvalChainName": {
+								"title": "Approval Chain Name",
+								"type": "string",
+								"description": "The `aut-<slug>` OpenRegister ApprovalChain name compiled for an approval-action automation, or null. Enable/disable/delete removes exactly this provenance-listed chain (automation-approval-steps)."
+							},
+							"openconnectorObjects": {
+								"title": "OpenConnector Objects",
+								"type": "array",
+								"items": {
+									"type": "string"
+								},
+								"description": "Reserved for future OpenConnector-materialised artifacts (e.g. webhook call configs)."
+							},
+							"compiledHash": {
+								"title": "Compiled Hash",
+								"type": "string",
+								"description": "sha256:<hex> of the canonical-JSON compiled plan. Recomputed by the status endpoint to detect drift."
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

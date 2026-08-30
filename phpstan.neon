@@ -1,31 +1,33 @@
+# Buildiq — Conduction PHPStan config.
+#
+# The shared base is the single source of truth. Everything here is either the
+# app's own tracked debt or an ignore naming a symbol that exists in no other
+# fleet app. Anything you are tempted to add that another app would also need
+# belongs in the base, not here.
+includes:
+    - vendor/conduction/hydra-gates/quality-config/phpstan-base.neon
+    # Per-app tracked lint debt (auto-generated via `phpstan --generate-baseline`).
+    - phpstan-baseline.neon
+
 parameters:
-    level: 5
-    paths:
-        - lib
-    bootstrapFiles:
-        - phpstan-bootstrap.php
+    # `lib/Resources/template` USED to be excluded by the shared base. It left the
+    # base in conduction/hydra-gates v1.7.3, because a conditional path has no
+    # spelling that is safe on both PHPStan majors: plain aborts 2.x (it validates
+    # the entry), the `(?)` marker makes NEON parse it as an entity and aborts 2.x
+    # differently, and quoting stops 1.x stripping the marker so the exclusion
+    # silently matches nothing — which would have started analysing this snapshot
+    # with nobody told. Only the apps that actually ship the directory carry it.
     excludePaths:
-        - vendor
-    scanDirectories:
-        - vendor/nextcloud/ocp
-    reportUnmatchedIgnoredErrors: false
-    ignoreErrors:
-        # Nextcloud internal classes that PHPStan might not recognize
-        - '#Call to an undefined method OC::#'
-        - '#Class OC not found#'
-        - '#Access to static property \$server on an unknown class OC#'
-        # OCA classes from other apps (OpenRegister) not available during static analysis
-        - '#unknown class OCA\\OpenRegister\\#'
-        - '#OCA\\OpenRegister\\[a-zA-Z\\]+.*not found#'
-        - '#on an unknown class OCA\\OpenRegister\\#'
-        - '#has invalid return type OCA\\OpenRegister\\#'
-        # GuzzleHttp is available at runtime via Nextcloud but not in composer require
-        - '#unknown class GuzzleHttp\\#'
-        - '#GuzzleHttp\\[a-zA-Z\\]+.*not found#'
-        - '#on an unknown class GuzzleHttp\\#'
-        - '#invalid type GuzzleHttp\\#'
-        - '#Caught class GuzzleHttp\\#'
-        # Dynamic HTTP status codes from business rule validation results
-        - '#Parameter \$statusCode of class OCP\\AppFramework\\Http\\JSONResponse constructor expects#'
-        # registerRepairStep exists on server; not yet in nextcloud/ocp stub used for analysis
-        - '#Call to an undefined method OCP\\AppFramework\\Bootstrap\\IRegistrationContext::registerRepairStep#'
+        - lib/Resources/template
+
+    # App-specific only. The base already sets level, paths, bootstrapFiles,
+    # excludePaths, scanDirectories and every fleet-wide ignore.
+    scanFiles:
+        # OpenRegister lifecycle-guard contract (GuardResult + LifecycleGuardInterface)
+        # so the app-registered ApplicationVersionOwnerGuard resolves the OR
+        # interface it implements during static analysis (buildiq-rbac).
+        - tests/stubs/openregister-lifecycle.stub.php
+        # AppHost Settings engine stubs (GenericSettingsSection + GenericAdminSettings)
+        # so SettingsSection and AdminSettings resolve their parent constructors during
+        # static analysis when the openregister sibling app is absent (ADR-040).
+        - tests/stubs/openregister-apphost.stub.php

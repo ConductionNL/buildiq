@@ -1,12 +1,12 @@
 <?php
 
 /**
- * OpenBuilt Initialize Settings Repair Step
+ * Buildiq Initialize Settings Repair Step
  *
- * Repair step that initializes OpenBuilt register and schemas on install/upgrade.
+ * Repair step that initializes Buildiq register and schemas on install/upgrade.
  *
  * @category Repair
- * @package  OCA\OpenBuilt\Repair
+ * @package  OCA\Buildiq\Repair
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
@@ -19,84 +19,83 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Repair;
+namespace OCA\Buildiq\Repair;
 
-use OCA\OpenBuilt\Service\SettingsService;
+use OCA\Buildiq\Service\SettingsService;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Log\LoggerInterface;
 
 /**
- * Repair step that initializes OpenBuilt configuration via SettingsService.
+ * Repair step that initializes Buildiq configuration via SettingsService.
  */
-class InitializeSettings implements IRepairStep
-{
-    /**
-     * Constructor for InitializeSettings.
-     *
-     * @param SettingsService $settingsService The settings service
-     * @param LoggerInterface $logger          The logger interface
-     *
-     * @return void
-     */
-    public function __construct(
-        private SettingsService $settingsService,
-        private LoggerInterface $logger,
-    ) {
-    }//end __construct()
+class InitializeSettings implements IRepairStep {
+	/**
+	 * Constructor for InitializeSettings.
+	 *
+	 * @param SettingsService $settingsService The settings service
+	 * @param LoggerInterface $logger The logger interface
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private SettingsService $settingsService,
+		private LoggerInterface $logger,
+	) {
+	}//end __construct()
 
-    /**
-     * Get the name of this repair step.
-     *
-     * @return string
-     */
-    public function getName(): string
-    {
-        return 'Initialize OpenBuilt register and schemas via ConfigurationService';
-    }//end getName()
+	/**
+	 * Get the name of this repair step.
+	 *
+	 * @return string
+	 */
+	public function getName(): string {
+		return 'Initialize Buildiq register and schemas via ConfigurationService';
+	}//end getName()
 
-    /**
-     * Run the repair step to initialize OpenBuilt configuration.
-     *
-     * @param IOutput $output The output interface for progress reporting
-     *
-     * @return void
-     */
-    public function run(IOutput $output): void
-    {
-        $output->info('Initializing OpenBuilt configuration...');
+	/**
+	 * Run the repair step to initialize Buildiq configuration.
+	 *
+	 * @param IOutput $output The output interface for progress reporting
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-settings-and-observability/tasks.md#task-4
+	 */
+	public function run(IOutput $output): void {
+		$output->info('Initializing Buildiq configuration...');
 
-        if ($this->settingsService->isOpenRegisterAvailable() === false) {
-            $output->warning(
-                'OpenRegister is not installed or enabled. Skipping auto-configuration.'
-            );
-            $this->logger->warning(
-                'OpenBuilt: OpenRegister not available, skipping register initialization'
-            );
-            return;
-        }
+		if ($this->settingsService->isOpenRegisterAvailable() === false) {
+			$output->warning(
+				'OpenRegister is not installed or enabled. Skipping auto-configuration.'
+			);
+			$this->logger->warning(
+				'Buildiq: OpenRegister not available, skipping register initialization'
+			);
+			return;
+		}
 
-        try {
-            $result = $this->settingsService->loadConfiguration(force: true);
+		try {
+			$result = $this->settingsService->reloadConfiguration();
 
-            if ($result['success'] === true) {
-                $version = ($result['version'] ?? 'unknown');
-                $output->info(
-                    'OpenBuilt configuration imported successfully (version: '.$version.')'
-                );
-                return;
-            }
+			if ($result['success'] === true) {
+				$version = ($result['version'] ?? 'unknown');
+				$output->info(
+					'Buildiq configuration imported successfully (version: ' . $version . ')'
+				);
+				return;
+			}
 
-            $message = ($result['message'] ?? 'unknown error');
-            $output->warning(
-                'OpenBuilt configuration import issue: '.$message
-            );
-        } catch (\Throwable $e) {
-            $output->warning('Could not auto-configure OpenBuilt: '.$e->getMessage());
-            $this->logger->error(
-                'OpenBuilt initialization failed',
-                ['exception' => $e->getMessage()]
-            );
-        }//end try
-    }//end run()
+			$message = ($result['message'] ?? 'unknown error');
+			$output->warning(
+				'Buildiq configuration import issue: ' . $message
+			);
+		} catch (\Throwable $e) {
+			$output->warning('Could not auto-configure Buildiq: ' . $e->getMessage());
+			$this->logger->error(
+				'Buildiq initialization failed',
+				['exception' => $e->getMessage()]
+			);
+		}//end try
+	}//end run()
 }//end class

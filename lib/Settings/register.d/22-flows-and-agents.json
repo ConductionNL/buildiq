@@ -1,0 +1,46 @@
+{
+	"_comment": "OpenSpec register fragment — buildiq-app-binds-flows-and-agents (chain head, kind: config; ADR-032 chaining, ADR-031 declarative-only, ADR-065 one flow engine). Adds the optional `flows` array property to the shared `buildiq` register's Application schema, sibling to `dataRegisters` (20-) and `connectors` (21-). SettingsService::deepMergeConfig recurses into components.schemas.Application.properties — already present in the base config — and adds only this key; Application.required and every other Application property are untouched, and no other schema is touched. OPTIONAL: absent means 'binds no flows', which is what all 30 Application objects predating this fragment mean. Nothing reads it yet — the follower spec buildiq-exports-flows-and-agents (kind: code) adds the export bundler, the install/update-time seeding and the e2e coverage. ⚠️ NO `agents` BINDING: the `agent` schema already carries `applicationSlug` and AgentsController already resolves an app's agents through it, so a second link from the application would be a redundant edge that can disagree with the first. The exporter resolves agents by querying agents whose applicationSlug matches the app. See design.md Decisions 1-3 and specs/app-composition-bindings/spec.md. UPDATED by app-repo-format-flow-agent-export (kind: code): adds the OPTIONAL `sourceUuid` property to the Flow Binding item — declared here BEFORE `FlowChannelProvisioner` writes it, per the ADR-037 lesson that a property written by PHP but absent from the schema is silently rejected by OpenRegister's `additionalProperties: false` validation rather than persisted.",
+	"components": {
+		"schemas": {
+			"Application": {
+				"properties": {
+					"flows": {
+						"title": "Flows",
+						"type": "array",
+						"default": [],
+						"items": {
+							"type": "object",
+							"title": "Flow Binding",
+							"required": [
+								"flow"
+							],
+							"additionalProperties": false,
+							"properties": {
+								"flow": {
+									"title": "Flow UUID",
+									"type": "string",
+									"pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+									"description": "UUID of the OpenRegister flow this app is composed of, resolved against the OpenRegister `Flow` ENTITY (OCA\\OpenRegister\\Db\\FlowMapper::findByUuid) — the store the flow engine actually executes. ⚠️ UUID and NOT the numeric `id`: an id is an auto-increment column, per-instance, and would resolve to a different flow or to nothing after an export; a UUID is globally unique and survives the trip provided the importing side seeds the flow with the same one, which the follower spec requires. The `Flow` entity carries uuid/name/app and NO slug, so there is no slug to bind by. ⚠️ An `agentflow` OBJECT store in the hermiq register mirrors some definitions and drifts from the entity: a definition written to the object left the engine executing the previous graph, with the run log showing the old node set and no error surfaced anywhere. Consumers MUST resolve the entity. Per ADR-065 there is exactly ONE flow engine, in OpenRegister; a flow that calls an agent is an ORDINARY flow whose nodes are agentic node types contributed to the engine's registry by hermiq (`hermiq.workload-step`, `hermiq.workload-collect`), not a separate kind of object, and it binds through this property like any other flow.",
+									"example": "00000000-0000-0000-0000-000000000000"
+								},
+								"label": {
+									"title": "Display Label",
+									"type": "string",
+									"maxLength": 128,
+									"description": "Optional human-readable label shown instead of the raw UUID (e.g. `Hydra sequencer`). A UUID is unreadable in a picker, so this matters more here than it does for a slug-addressed binding; absent falls back to the flow's own name."
+								},
+								"sourceUuid": {
+									"title": "Source UUID",
+									"type": "string",
+									"pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+									"description": "OPTIONAL. Set only when this binding was created by applying a published `flows/` channel entry (app-repo-format-flow-agent-export). Carries the UUID the flow was PUBLISHED under on the source instance — never the same as `flow` on this instance, because a fresh install mints its OWN flow UUID through `FlowService::save()` rather than seeding the published one (that entry point stamps `owner`/`organisation` and rebuilds the trigger index; a raw insert at a caller-chosen UUID would have to reimplement both by hand). Re-applying the same published repository checks THIS property, not `flow`, so a repeat pull is idempotent rather than duplicating the flow on every run. Absent on every binding authored directly in the builder."
+								}
+							}
+						},
+						"description": "OpenRegister flows this Application is composed of. Read by the export so an exported app carries the flows that make it do anything; absent means the app binds none. A binding whose UUID resolves to nothing MUST NOT make the Application invalid — deleting a flow is ordinary — and is reported by the consumer rather than dropped at write time. There is deliberately no sibling `agents` binding: agents already point at their application via `agent.applicationSlug`."
+					}
+				}
+			}
+		}
+	}
+}

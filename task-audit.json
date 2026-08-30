@@ -1,0 +1,43 @@
+{
+  "spec": "openspec/changes/retrofit-2026-05-26-creation-wizard-ui",
+  "verified": [
+    {
+      "task": "1",
+      "file": "src/dialogs/CreateApplicationWizard.vue",
+      "ok": true,
+      "note": "displayStep, visibleStepCount, currentStepValid, allStepsValid, goNext, goBack, mergePayload, resetState, onModalShowUpdate, onClose, onSubmit annotated with @spec task-1"
+    },
+    {
+      "task": "2",
+      "file": "src/dialogs/CreateApplicationWizard/Step1Basics.vue",
+      "ok": true,
+      "note": "isValid, slugError, onNameInput, onSlugInput, onDescriptionInput, onIconChange annotated with @spec task-2"
+    },
+    {
+      "task": "2",
+      "file": "src/dialogs/CreateApplicationWizard/Step2Preset.vue",
+      "ok": true,
+      "note": "presetOptions, selectPreset annotated with @spec task-2"
+    },
+    {
+      "task": "3",
+      "file": "src/dialogs/CreateApplicationWizard/Step3Custom.vue",
+      "ok": true,
+      "note": "slugErrors, duplicateSlugs, isValid, emit, getSlugError, onNameInput, onSlugInput, toggleAdvanced, addRow, removeRow, moveUp, moveDown, onDragStart, onDragOver, onDrop, onDragEnd, handler, mounted annotated with @spec task-3"
+    },
+    {
+      "task": "4",
+      "file": "src/dialogs/CreateApplicationWizard/Step4Review.vue",
+      "ok": true,
+      "note": "versions, chainDisplay, productionSlug, iconLightUrl, iconDarkUrl annotated with @spec task-4"
+    },
+    {
+      "task": "4",
+      "file": "src/dialogs/IconUploadSection.vue",
+      "ok": true,
+      "note": "objectUuid, iconLightUrl, iconDarkUrl, handler, onLightPreviewError, onDarkPreviewError, validateSvgFile, onLightFileChange, onDarkFileChange, uploadIcon, removeLightIcon, removeDarkIcon, removeIcon annotated with @spec task-4"
+    }
+  ],
+  "stubs": [],
+  "missing_routes": []
+}

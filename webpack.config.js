@@ -7,14 +7,32 @@ const { VueLoaderPlugin } = require('vue-loader')
 
 const buildMode = process.env.NODE_ENV
 const isDev = buildMode === 'development'
-webpackConfig.devtool = isDev ? 'cheap-source-map' : 'source-map'
+// Production builds disable source maps entirely. The full `source-map` devtool
+// (and Terser's own source-map generation) added significant memory and time on
+// top of compilation, and emitted large .map files into js/ (buildiq has three
+// entries — main/settings/builder — each bundling the shared nextcloud-vue lib).
+// Dropping them keeps the output minified while lowering peak memory. Dev keeps
+// cheap, fast line-level maps. Mirrors pipelinq/openregister.
+webpackConfig.devtool = isDev ? 'cheap-source-map' : false
 
 webpackConfig.stats = {
 	colors: true,
 	modules: false,
 }
 
-const appId = 'openbuilt'
+// @nextcloud/webpack-vue-config hardcodes publicPath to `/apps/{appId}/js/`, but an
+// app installed under custom_apps is served from `/custom_apps/{appId}/js/`. Async
+// chunks — which @conduction/nextcloud-vue's chunked-ESM entry makes webpack emit —
+// were therefore requested from a path Nextcloud routes into the app, which answers
+// with HTML. The browser refused them on MIME grounds and the component silently
+// never mounted (blank page, no exception).
+// This stayed latent while only rarely-used components were code-split; it turns
+// fatal as soon as an always-rendered one (CnDashboardPage) lands in a chunk.
+// `'auto'` derives the path from the executing script's own URL, so it is correct
+// under both apps/ and custom_apps/.
+webpackConfig.output = { ...webpackConfig.output, publicPath: 'auto' }
+
+const appId = 'buildiq'
 webpackConfig.entry = {
 	main: {
 		import: path.join(__dirname, 'src', 'main.js'),
@@ -24,21 +42,70 @@ webpackConfig.entry = {
 		import: path.join(__dirname, 'src', 'settings.js'),
 		filename: appId + '-settings.js',
 	},
+	// Standalone runtime for a published virtual app (/apps/buildiq/builder/{slug}).
+	builder: {
+		import: path.join(__dirname, 'src', 'builder.js'),
+		filename: appId + '-builder.js',
+	},
 }
 
-// Use local source when available (monorepo dev), otherwise fall back to npm package
+// Use local source when available (monorepo dev), otherwise fall back to npm
+// package. A local checkout is only used when its version satisfies this app's
+// declared @conduction/nextcloud-vue range — otherwise a STALE local checkout
+// (e.g. beta.7 when the app needs ^beta.101) would be silently bundled instead
+// of the resolved node_modules package, producing wrong/broken builds.
 const localLib = path.resolve(__dirname, '../nextcloud-vue/src')
-const useLocalLib = fs.existsSync(localLib)
+const localLibPkg = path.resolve(__dirname, '../nextcloud-vue/package.json')
+// USE_LOCAL_LIB is opt-IN (ADR-090). Building against a developer's working
+// checkout is the wrong default for a build that can ship.
+let useLocalLib = process.env.USE_LOCAL_LIB === 'true' && fs.existsSync(localLib)
+if (useLocalLib) {
+	let localVersion = 'unreadable'
+	let satisfied = false
+	try {
+		// semver is an optional transitive dep, so the require can fail.
+		// eslint-disable-next-line n/no-extraneous-require
+		const semver = require('semver')
+		const required =
+			require('./package.json').dependencies['@conduction/nextcloud-vue']
+		localVersion = require(localLibPkg).version
+		satisfied = semver.satisfies(localVersion, required, {
+			includePrerelease: true,
+		})
+	} catch (e) {
+		// Fail CLOSED. This previously kept the existsSync default, so an absent
+		// semver silently left the sibling ENABLED — the one case the check exists
+		// for is the case it stopped covering. A guard that degrades to "allow" is
+		// not a guard.
+		satisfied = false
+	}
+
+	if (!satisfied) {
+		// eslint-disable-next-line no-console
+		console.warn(
+			`[webpack] Ignoring local ../nextcloud-vue (v${localVersion}); it does not `
+				+ "satisfy this app's declared @conduction/nextcloud-vue range. "
+				+ 'Building against node_modules instead.',
+		)
+		useLocalLib = false
+	}
+}
 
 webpackConfig.resolve = {
 	extensions: ['.vue', '.js'],
+	// @conduction/nextcloud-vue deliberately bundles @nextcloud/dialogs v6 into
+	// its dist (to pin `spawnDialog` across consumers that alias an older
+	// dialogs). That bundled FilePicker chunk imports node's `path`, and
+	// webpack 5 no longer polyfills node builtins automatically — without this
+	// fallback the build fails with "Can't resolve 'path'".
+	fallback: { path: require.resolve('path-browserify') },
 	alias: {
 		'@': path.resolve(__dirname, 'src'),
 		...(useLocalLib ? { '@conduction/nextcloud-vue': localLib } : {}),
 		// Deduplicate shared packages so the aliased library source uses
 		// the same instances as the app (prevents dual-Pinia / dual-Vue bugs).
-		'vue$': path.resolve(__dirname, 'node_modules/vue'),
-		'pinia$': path.resolve(__dirname, 'node_modules/pinia'),
+		vue$: path.resolve(__dirname, 'node_modules/vue'),
+		pinia$: path.resolve(__dirname, 'node_modules/pinia'),
 		'@nextcloud/vue$': path.resolve(__dirname, 'node_modules/@nextcloud/vue'),
 	},
 }
@@ -53,17 +120,60 @@ webpackConfig.module = {
 			test: /\.css$/,
 			use: ['style-loader', 'css-loader'],
 		},
+		{
+			test: /\.scss$/,
+			use: ['style-loader', 'css-loader', 'sass-loader'],
+		},
 	],
 }
 
 webpackConfig.plugins = [
 	new VueLoaderPlugin(),
 	new webpack.DefinePlugin({ appName: JSON.stringify(appId) }),
-	new webpack.DefinePlugin({ appVersion: JSON.stringify(process.env.npm_package_version) }),
+	new webpack.DefinePlugin({
+		appVersion: JSON.stringify(process.env.npm_package_version),
+	}),
 ]
 
 // Force @nextcloud/dialogs to resolve from this app's node_modules,
 // preventing the nextcloud-vue submodule's nested deps (Vue 3) from leaking in.
-webpackConfig.resolve.alias['@nextcloud/dialogs'] = path.resolve(__dirname, 'node_modules/@nextcloud/dialogs')
+// Register the exact-match style.css alias BEFORE the bare package alias below:
+// enhanced-resolve applies the first matching entry, and the bare alias maps the
+// package to its DIRECTORY, so '@nextcloud/dialogs/style.css' (imported by
+// nextcloud-vue's useAppInstaller) would resolve to a non-existent root style.css.
+// dialogs v6 ships the stylesheet at dist/style.css behind its "exports" map.
+webpackConfig.resolve.alias['@nextcloud/dialogs/style.css$'] = path.resolve(
+	__dirname,
+	'node_modules/@nextcloud/dialogs/dist/style.css',
+)
+
+// The Vue-3 lines of @nextcloud/vue (v9) and @nextcloud/dialogs (v7) are
+// ESM-only: neither package.json has `main`/`module`, only an `exports` map
+// exposing a single "import" condition. Two consequences:
+//
+//  1. The previous `@nextcloud/dialogs` -> package DIRECTORY alias no longer
+//     works. A directory alias bypasses `exports` entirely and looks for
+//     main/index.js, which these packages do not have.
+//  2. Setting `resolve.conditionNames` at the top level is not enough —
+//     webpack's `byDependency` defaults override it per dependency type.
+//
+// Aliasing both packages to their concrete ESM entry sidesteps both: the
+// specifier resolves to a real file, no condition matching involved. The
+// exact-match (`$`) form is used so deep imports (e.g.
+// `@nextcloud/vue/components/NcButton`) still go through the exports map.
+webpackConfig.resolve.alias['@nextcloud/dialogs$'] = path.resolve(
+	__dirname,
+	'node_modules/@nextcloud/dialogs/dist/index.mjs',
+)
+webpackConfig.resolve.alias['@nextcloud/vue$'] = path.resolve(
+	__dirname,
+	'node_modules/@nextcloud/vue/dist/index.mjs',
+)
+
+// NOTE: `resolve.fallback.path` is set to `path-browserify` above (see the
+// resolve block). The FilePicker DOES run in this app — nextcloud-vue's
+// CnFilesWidgetForm opens it via `pickNodes()`, which calls `path.join` — so
+// `path` must be a real polyfill, not `false`. An empty stub makes
+// `path.join` undefined and the picker throws at runtime.
 
 module.exports = webpackConfig

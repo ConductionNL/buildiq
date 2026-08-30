@@ -1,0 +1,143 @@
+{
+  "slug": "stakeholder-consultation",
+  "title": "Stakeholder Consultation",
+  "description": "Run a public consultation: publish a topic, collect citizen comments, close on a deadline.",
+  "useCase": "Citizen engagement on policy or planning topics",
+  "category": "citizen-engagement",
+  "screenshotUrl": "img/templates/stakeholder-consultation.svg",
+  "isSeeded": true,
+  "version": "1.0.0",
+  "manifest": {
+    "version": "1.0.0",
+    "dependencies": ["openregister"],
+    "menu": [
+      { "label": "Consultations", "route": "/consultations" },
+      { "label": "Submit", "route": "/submit" }
+    ],
+    "pages": [
+      {
+        "id": "Consultations",
+        "route": "/consultations",
+        "type": "index",
+        "title": "Open consultations",
+        "config": { "schema": "consultation" }
+      },
+      {
+        "id": "ConsultationDetail",
+        "route": "/consultations/:id",
+        "type": "detail",
+        "title": "Consultation detail",
+        "config": {
+          "schema": "consultation",
+          "register": "{{register}}",
+          "_note": "ADR-062 rev3 lead row: consultation-data (8w, Gavel icon, 5 fields) + consultation-stats (4w) stats-block replacing the deprecated summaryAggregates chip (rule 2), one entry counting comments. Publish-and-collect archetype: the data widget carries the topic's own fields (title/description/openFrom/closeAt/status); the legacy `relatedSchema: consultation-comment` hint is realized as a proper FK-scoped object-list (consultation-comment.consultationUuid = @objectId) below the lead row, since a comment belongs to exactly one consultation. No related-panel widget: consultation declares no outbound x-openregister-relation. No lifecycle widget: status is a plain enum with no x-openregister-lifecycle block. No content leaves (files/calendar/notes): the schema carries no linkedType hint. consultation-comments carries `allowCreate: false` — comments are citizen-submitted via the public CommentForm page (/comment), not authored inline by a case-worker viewing this admin detail page (rule 9's opt-out is for exactly this: a collection whose members must not be created by hand from this list). No viewAllRoute: this template has no index page for consultation-comment (only CommentForm, a create-only page), so there is no existing page id to link to. KNOWN GAP: `register` is an unresolved `{{register}}` placeholder — see task report (buildiq#113, placeholder deliberately left as-is here).",
+          "widgets": [
+            {
+              "id": "consultation-data",
+              "type": "data",
+              "title": "Consultation details",
+              "icon": "Gavel",
+              "content": { "columns": 2 }
+            },
+            {
+              "id": "consultation-stats",
+              "type": "stats-block",
+              "title": "Consultation stats",
+              "icon": "ChartBar",
+              "content": {
+                "entries": [
+                  {
+                    "title": "Comments",
+                    "register": "{{register}}",
+                    "schema": "consultation-comment",
+                    "metric": "count",
+                    "filter": { "consultationUuid": "@objectId" }
+                  }
+                ]
+              }
+            },
+            {
+              "id": "consultation-comments",
+              "type": "object-list",
+              "title": "Comments",
+              "icon": "MessageTextOutline",
+              "content": {
+                "register": "{{register}}",
+                "schema": "consultation-comment",
+                "filter": { "consultationUuid": "@objectId" },
+                "sort": { "field": "createdAt", "order": "desc" },
+                "limit": 25,
+                "allowCreate": false,
+                "emptyText": "No comments yet.",
+                "columns": [
+                  { "key": "authorName", "label": "Author" },
+                  { "key": "body", "label": "Comment" },
+                  { "key": "createdAt", "label": "Posted" }
+                ]
+              }
+            }
+          ],
+          "layout": [
+            { "id": "1", "widgetId": "consultation-data", "gridX": 0, "gridY": 0, "gridWidth": 8, "gridHeight": 4 },
+            { "id": "2", "widgetId": "consultation-stats", "gridX": 8, "gridY": 0, "gridWidth": 4, "gridHeight": 4 },
+            { "id": "3", "widgetId": "consultation-comments", "gridX": 0, "gridY": 4, "gridWidth": 12, "gridHeight": 5 }
+          ],
+          "sidebar": {
+            "enabled": true,
+            "showMetadata": true,
+            "tabs": [
+              { "id": "audit", "label": "History", "icon": "History", "widgets": [ { "type": "audit" } ] }
+            ]
+          }
+        }
+      },
+      {
+        "id": "ConsultationForm",
+        "route": "/submit",
+        "type": "form",
+        "title": "Start a new consultation",
+        "config": { "schema": "consultation" }
+      },
+      {
+        "id": "CommentForm",
+        "route": "/comment",
+        "type": "form",
+        "title": "Add your comment",
+        "config": { "schema": "consultation-comment" }
+      }
+    ]
+  },
+  "companionSchemas": [
+    {
+      "slug": "consultation",
+      "title": "Consultation",
+      "version": "0.1.0",
+      "type": "object",
+      "required": ["title", "status"],
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "openFrom": { "type": "string", "format": "date" },
+        "closeAt": { "type": "string", "format": "date" },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "open", "closed"],
+          "default": "draft"
+        }
+      }
+    },
+    {
+      "slug": "consultation-comment",
+      "title": "Consultation Comment",
+      "version": "0.1.0",
+      "type": "object",
+      "required": ["consultationUuid", "body"],
+      "properties": {
+        "consultationUuid": { "type": "string", "format": "uuid", "$ref": "consultation", "description": "Relation to the parent consultation topic (ADR-062 rule 7 canonical dialect)." },
+        "authorName": { "type": "string" },
+        "body": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  ]
+}

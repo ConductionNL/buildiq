@@ -1,0 +1,272 @@
+<!-- SPDX-License-Identifier: EUPL-1.2 -->
+<!--
+  - ChatPageEditor — structured editor for `type: "chat"` pages (task 4.6).
+  -
+  - Manifest contract: `{ conversationSource?, postUrl?, schema? }` where
+  - EXACTLY ONE of `conversationSource` (an SSE / message-list endpoint)
+  - OR `postUrl` (the endpoint new messages are POSTed to) MUST be set;
+  - `schema` is the optional message-record schema slug.
+  -
+  - The one-of is rendered as a radio pair; switching branches clears the
+  - inactive key. `update(key, value)` clones `config` and only mutates
+  - the one key so externally-authored extra keys round-trip losslessly.
+  -->
+<template>
+	<div class="chat-page-editor">
+		<h3 class="chat-page-editor__title">
+			{{ t('buildiq', 'Chat page') }}
+		</h3>
+
+		<fieldset class="chat-page-editor__fieldset">
+			<legend>{{ t('buildiq', 'Conversation transport') }}</legend>
+			<div class="chat-page-editor__shape">
+				<label class="chat-page-editor__inline">
+					<input
+						type="radio"
+						:checked="transportShape === 'conversationSource'"
+						value="conversationSource"
+						@change="setTransportShape('conversationSource')" />
+					{{ t('buildiq', 'conversationSource (message stream)') }}
+				</label>
+				<label class="chat-page-editor__inline">
+					<input
+						type="radio"
+						:checked="transportShape === 'postUrl'"
+						value="postUrl"
+						@change="setTransportShape('postUrl')" />
+					{{ t('buildiq', 'postUrl (send endpoint)') }}
+				</label>
+			</div>
+			<label
+				v-if="transportShape === 'conversationSource'"
+				class="chat-page-editor__group-row">
+				{{ t('buildiq', 'conversationSource') }}
+				<input
+					type="text"
+					:value="config.conversationSource || ''"
+					:placeholder="
+						t('buildiq', '/api/objects/:slug/messages or a stream URL')
+					"
+					:aria-invalid="isInvalid('conversationSource')"
+					@input="
+						setTransport('conversationSource', $event.target.value)
+					" />
+				<InlineFieldMark :error="markFor('conversationSource')" />
+			</label>
+			<label v-else class="chat-page-editor__group-row">
+				{{ t('buildiq', 'postUrl') }}
+				<input
+					type="text"
+					:value="config.postUrl || ''"
+					:placeholder="t('buildiq', '/api/objects/:slug/messages')"
+					:aria-invalid="isInvalid('postUrl')"
+					@input="setTransport('postUrl', $event.target.value)" />
+				<InlineFieldMark :error="markFor('postUrl')" />
+			</label>
+			<p class="chat-page-editor__hint">
+				{{
+					t(
+						'buildiq',
+						'Exactly one of conversationSource or postUrl must be set.',
+					)
+				}}
+			</p>
+		</fieldset>
+
+		<fieldset class="chat-page-editor__fieldset">
+			<legend>{{ t('buildiq', 'Message schema (optional)') }}</legend>
+			<label class="chat-page-editor__group-row">
+				{{ t('buildiq', 'Schema slug') }}
+				<input
+					type="text"
+					:value="config.schema || ''"
+					:placeholder="t('buildiq', 'e.g. message')"
+					:aria-invalid="isInvalid('schema')"
+					@input="update('schema', $event.target.value)" />
+				<InlineFieldMark :error="markFor('schema')" />
+			</label>
+		</fieldset>
+	</div>
+</template>
+
+<script>
+import InlineFieldMark from './fields/InlineFieldMark.vue'
+import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
+
+export default {
+	name: 'ChatPageEditor',
+	components: { InlineFieldMark },
+	mixins: [pageEditorValidationMixin],
+	props: {
+		config: {
+			type: Object,
+			default: () => ({}),
+		},
+
+		pageType: {
+			type: String,
+			default: 'chat',
+		},
+
+		appSlug: {
+			type: String,
+			default: '',
+		},
+
+		parentRoute: {
+			type: String,
+			default: '',
+		},
+	},
+
+	emits: ['update:config'],
+	computed: {
+		/**
+		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
+		validatedConfigKeys() {
+			return ['conversationSource', 'postUrl', 'schema']
+		},
+
+		/**
+		 * Observed behaviour of `transportShape` (retrofit annotation).
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
+		transportShape() {
+			if (this.config.postUrl && !this.config.conversationSource) {
+				return 'postUrl'
+			}
+			return 'conversationSource'
+		},
+	},
+
+	methods: {
+		/**
+		 * Write one key on the page's `config` block. Only the named key is
+		 * touched, so config keys this editor does not surface round-trip
+		 * losslessly. Transport keys go through `setTransport` instead, which
+		 * also enforces the one-of.
+		 *
+		 * @param {string} key - the config key being written; from the template only `schema`, the optional message-record schema slug.
+		 * @param {string} value - the new value from the bound input; `''` (or `null`) deletes the key.
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
+		update(key, value) {
+			const next = { ...this.config }
+			if (value === '' || value === null) {
+				delete next[key]
+			} else {
+				next[key] = value
+			}
+			this.$emit('update:config', next)
+		},
+
+		/**
+		 * Switch between the two mutually exclusive transports by deleting
+		 * the key of the branch being left, so the emitted config never
+		 * carries both halves of the one-of. The value of the abandoned key
+		 * is lost.
+		 *
+		 * @param {'conversationSource'|'postUrl'} shape - the radio's value: `postUrl` drops `conversationSource`, anything else drops `postUrl`.
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
+		setTransportShape(shape) {
+			const next = { ...this.config }
+			if (shape === 'postUrl') {
+				delete next.conversationSource
+			} else {
+				delete next.postUrl
+			}
+			this.$emit('update:config', next)
+		},
+
+		/**
+		 * Write the active transport endpoint and clear its partner in the
+		 * same emit, so typing in one branch can never leave a stale value in
+		 * the other half of the one-of.
+		 *
+		 * @param {'conversationSource'|'postUrl'} key - which transport is being typed into; the other of the two is deleted.
+		 * @param {string} value - the endpoint / stream URL from the bound input; `''` deletes the key too, leaving neither branch set.
+		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 */
+		setTransport(key, value) {
+			const partner = key === 'postUrl' ? 'conversationSource' : 'postUrl'
+			const next = { ...this.config }
+			delete next[partner]
+			if (value === '') {
+				delete next[key]
+			} else {
+				next[key] = value
+			}
+			this.$emit('update:config', next)
+		},
+	},
+}
+</script>
+
+<style scoped>
+.chat-page-editor {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 12px;
+}
+
+.chat-page-editor__title {
+	margin: 0;
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.chat-page-editor__fieldset {
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	padding: 8px;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.chat-page-editor__fieldset legend {
+	padding: 0 6px;
+	font-weight: 600;
+	font-size: 13px;
+}
+
+.chat-page-editor__shape {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.chat-page-editor__inline {
+	display: inline-flex;
+	gap: 6px;
+	align-items: center;
+}
+
+.chat-page-editor__group-row {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	font-size: 13px;
+}
+
+.chat-page-editor__group-row input {
+	padding: 4px 6px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	background: var(--color-main-background);
+	color: var(--color-main-text);
+}
+
+.chat-page-editor__hint {
+	margin: 0;
+	font-size: 12px;
+	color: var(--color-text-maxcontrast);
+	font-style: italic;
+}
+</style>

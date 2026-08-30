@@ -1,0 +1,29 @@
+{
+  "id": "tutorials/user/first-launch",
+  "title": "Open OpenBuild for the first time",
+  "description": "Open OpenBuild, walk the navigation, and confirm the seed Hello World virtual app loaded.",
+  "source": "@site/tutorials/user/01-first-launch.md",
+  "sourceDirName": "tutorials/user",
+  "slug": "/tutorials/user/first-launch",
+  "permalink": "/docs/tutorials/user/first-launch",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://codeberg.org/Conduction/openbuild/src/branch/main/docs/tutorials/user/01-first-launch.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "title": "Open OpenBuild for the first time",
+    "description": "Open OpenBuild, walk the navigation, and confirm the seed Hello World virtual app loaded."
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "User guide",
+    "permalink": "/docs/category/user-guide"
+  },
+  "next": {
+    "title": "Create an application from a template",
+    "permalink": "/docs/tutorials/user/create-from-template"
+  }
+}

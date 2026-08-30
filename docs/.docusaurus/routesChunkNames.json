@@ -1,0 +1,172 @@
+{
+  "/__docusaurus/debug/-546": {
+    "__comp": "__comp---theme-debug-config-23-a-2ff",
+    "__context": {
+      "plugin": "plugin---docusaurus-debug-b-38-895"
+    }
+  },
+  "/__docusaurus/debug/config/-8a8": {
+    "__comp": "__comp---theme-debug-config-23-a-2ff",
+    "__context": {
+      "plugin": "plugin---docusaurus-debug-b-38-895"
+    }
+  },
+  "/__docusaurus/debug/content/-2da": {
+    "__comp": "__comp---theme-debug-contentba-8-ce7",
+    "__context": {
+      "plugin": "plugin---docusaurus-debug-b-38-895"
+    },
+    "__props": "__props---docusaurus-debug-content-197-dc7"
+  },
+  "/__docusaurus/debug/globalData/-178": {
+    "__comp": "__comp---theme-debug-global-dataede-0fa",
+    "__context": {
+      "plugin": "plugin---docusaurus-debug-b-38-895"
+    }
+  },
+  "/__docusaurus/debug/metadata/-d6c": {
+    "__comp": "__comp---theme-debug-site-metadata-68-e-3d4",
+    "__context": {
+      "plugin": "plugin---docusaurus-debug-b-38-895"
+    }
+  },
+  "/__docusaurus/debug/registry/-6e3": {
+    "__comp": "__comp---theme-debug-registry-679-501",
+    "__context": {
+      "plugin": "plugin---docusaurus-debug-b-38-895"
+    }
+  },
+  "/__docusaurus/debug/routes/-cab": {
+    "__comp": "__comp---theme-debug-routes-946-699",
+    "__context": {
+      "plugin": "plugin---docusaurus-debug-b-38-895"
+    }
+  },
+  "/features/-cbb": {
+    "__comp": "__comp---home-rubenlinde-nextcloud-docker-dev-workspace-server-apps-extra-openbuild-docs-node-modules-conduction-docusaurus-preset-src-components-features-page-features-page-jsx-55-d-294",
+    "__context": {
+      "plugin": "plugin---features-f-62-912"
+    },
+    "data": "data---features-afa-6e1"
+  },
+  "/docs/-6be": {
+    "__comp": "__comp---theme-docs-root-5-e-9-0b6",
+    "__context": {
+      "plugin": "plugin---docs-aba-4f5"
+    }
+  },
+  "/docs/-6ca": {
+    "__comp": "__comp---theme-doc-version-roota-7-b-5de",
+    "__props": "__props---docs-11-b-f70"
+  },
+  "/docs/-1ec": {
+    "__comp": "__comp---theme-doc-roota-94-67a"
+  },
+  "/docs/business-rules-engine/-4aa": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-business-rules-engine-3-d-1-f1c"
+  },
+  "/docs/category/admin-guide/-bc9": {
+    "__comp": "__comp---theme-doc-category-generated-index-page-14-e-640",
+    "__props": "__props---docs-category-admin-guide-8-cb-f35"
+  },
+  "/docs/category/tutorials/-ae9": {
+    "__comp": "__comp---theme-doc-category-generated-index-page-14-e-640",
+    "__props": "__props---docs-category-tutorials-af-7-583"
+  },
+  "/docs/category/user-guide/-a58": {
+    "__comp": "__comp---theme-doc-category-generated-index-page-14-e-640",
+    "__props": "__props---docs-category-user-guide-b-1-a-8dc"
+  },
+  "/docs/export-pipeline/-053": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-export-pipeline-e-5-f-28b"
+  },
+  "/docs/integrator-guide/-355": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-integrator-guide-832-f69"
+  },
+  "/docs/intro/-224": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-intro-2-e-5-a59"
+  },
+  "/docs/openbuild-rbac/-d7b": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-openbuild-rbac-6-eb-5c9"
+  },
+  "/docs/openbuild-runtime/-f06": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-openbuild-runtime-536-e0e"
+  },
+  "/docs/releasing/-278": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-releasing-9-c-6-674"
+  },
+  "/docs/template-store/-f45": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-template-store-d-43-531"
+  },
+  "/docs/tutorials/admin/admin-settings/-d1f": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-tutorials-admin-admin-settings-36-f-d25"
+  },
+  "/docs/tutorials/admin/rbac/-378": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-tutorials-admin-rbac-08-d-8c3"
+  },
+  "/docs/tutorials/admin/template-catalogue/-f33": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-tutorials-admin-template-catalogue-7-ca-d8b"
+  },
+  "/docs/tutorials/create-a-virtual-app/-20f": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-tutorials-create-a-virtual-app-69-a-fd3"
+  },
+  "/docs/tutorials/update-a-virtual-app/-020": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-tutorials-update-a-virtual-app-0-ae-b8e"
+  },
+  "/docs/tutorials/user/connect-data/-dbd": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-tutorials-user-connect-data-ee-4-1fd"
+  },
+  "/docs/tutorials/user/create-from-template/-8d6": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-tutorials-user-create-from-template-724-81c"
+  },
+  "/docs/tutorials/user/design-page/-82d": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-tutorials-user-design-page-8-ae-e84"
+  },
+  "/docs/tutorials/user/design-schema/-1e0": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-tutorials-user-design-schema-cb-0-c7c"
+  },
+  "/docs/tutorials/user/export-app/-504": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-tutorials-user-export-app-fe-9-cc7"
+  },
+  "/docs/tutorials/user/first-launch/-391": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-tutorials-user-first-launch-ec-6-5a3"
+  },
+  "/docs/tutorials/user/preview-app/-356": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-tutorials-user-preview-app-eb-3-b5d"
+  },
+  "/docs/tutorials/user/version-snapshots/-9d8": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-tutorials-user-version-snapshots-d-39-7a2"
+  },
+  "/docs/widgets/-86a": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-widgets-7-ae-7ec"
+  },
+  "/-2e1": {
+    "__comp": "__comp---site-src-pages-index-jsc-4-f-f99",
+    "__context": {
+      "plugin": "plugin---a-74-9d6"
+    },
+    "config": "config---5-e-9-4f3"
+  }
+}

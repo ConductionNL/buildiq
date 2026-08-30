@@ -3,6 +3,11 @@ import { generateUrl } from '@nextcloud/router'
 import { useObjectStore } from './modules/object.js'
 import { useSettingsStore } from './modules/settings.js'
 
+/**
+ * Observed behaviour of `initializeStores` (retrofit annotation).
+ *
+ * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-3
+ */
 export async function initializeStores() {
 	const settingsStore = useSettingsStore()
 	const objectStore = useObjectStore()

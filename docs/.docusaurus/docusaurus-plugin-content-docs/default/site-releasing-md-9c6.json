@@ -1,0 +1,24 @@
+{
+  "id": "releasing",
+  "title": "Releasing OpenBuild",
+  "description": "Version + changelog",
+  "source": "@site/releasing.md",
+  "sourceDirName": ".",
+  "slug": "/releasing",
+  "permalink": "/docs/releasing",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://codeberg.org/Conduction/openbuild/src/branch/main/docs/releasing.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "OpenBuild Runtime",
+    "permalink": "/docs/openbuild-runtime"
+  },
+  "next": {
+    "title": "Remote template store",
+    "permalink": "/docs/template-store"
+  }
+}

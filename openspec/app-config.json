@@ -1,14 +1,14 @@
 {
-  "id": "openbuilt",
-  "name": "OpenBuilt",
-  "namespace": "OpenBuilt",
+  "id": "buildiq",
+  "name": "Buildiq",
+  "namespace": "Buildiq",
   "summary": "Citizen-developer app builder for Nextcloud — compose apps from registers, connectors, workflows, and documents without code.",
-  "goal": "OpenBuilt is a citizen-developer app builder for Nextcloud. It lets non-technical users compose apps from the Conduction ecosystem — OpenRegister schemas, OpenConnector APIs, Procest workflows, Docudesk documents, NL Design themes, MyDash dashboards — through a visual interface, without scaffolding PHP for each new app. Per ADR-024 (app manifest), each built app is rendered at runtime by mounting CnAppRoot with the app's manifest, which lives as a JSON blob in OpenBuilt's own OpenRegister namespace. Per ADR-031 (schema-declarative business logic), behaviour like state machines, aggregations, calculations, and notifications is declared as schema metadata in the register file instead of service code. Built apps are virtual at first (records in OpenBuilt's register, rendered inside the OpenBuilt shell at /apps/openbuilt/{slug}); a Phase-2 export generates a real Nextcloud app from a virtual app.",
+  "goal": "Buildiq is a citizen-developer app builder for Nextcloud. It lets non-technical users compose apps from the Conduction ecosystem — OpenRegister schemas, OpenConnector APIs, Procest workflows, Docudesk documents, NL Design themes, LaunchPad dashboards — through a visual interface, without scaffolding PHP for each new app. Per ADR-024 (app manifest), each built app is rendered at runtime by mounting CnAppRoot with the app's manifest, which lives as a JSON blob in Buildiq's own OpenRegister namespace. Per ADR-031 (schema-declarative business logic), behaviour like state machines, aggregations, calculations, and notifications is declared as schema metadata in the register file instead of service code. Built apps are virtual at first (records in Buildiq's register, rendered inside the Buildiq shell at /apps/buildiq/{slug}); a Phase-2 export generates a real Nextcloud app from a virtual app.",
   "category": "tools",
   "version": "0.1.0",
   "license": "EUPL-1.2",
   "author": "Conduction B.V.",
-  "repository": "https://github.com/ConductionNL/openbuilt",
+  "repository": "https://github.com/ConductionNL/buildiq",
   "dependencies": {
     "requiresOpenRegister": true,
     "additionalCiApps": [
@@ -20,6 +20,12 @@
     "nextcloudRefs": ["stable31", "stable32"],
     "enableNewman": false
   },
+  "capabilities": [
+    "buildiq-application-register",
+    "buildiq-runtime",
+    "buildiq-rbac",
+    "buildiq-exporter"
+  ],
   "createdAt": "2026-05-11",
-  "updatedAt": "2026-05-11"
+  "updatedAt": "2026-06-02"
 }

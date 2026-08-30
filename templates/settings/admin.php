@@ -1,9 +1,20 @@
 <?php
-// SPDX-License-Identifier: EUPL-1.2
+
+/**
+ * Buildiq admin settings template.
+ *
+ * Renders the mount point for the buildiq-settings.js Vue bundle. Server
+ * data (e.g. version) is delivered to the bundle via IInitialState +
+ * loadState — not via DOM data-* attributes, per ADR-004 hard rule and the
+ * hydra-gate-initial-state mechanical gate.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ */
 
 use OCP\Util;
 
-$appId = OCA\OpenBuilt\AppInfo\Application::APP_ID;
+$appId = OCA\Buildiq\AppInfo\Application::APP_ID;
 Util::addScript($appId, $appId . '-settings');
 ?>
-<div id="openbuilt-settings" data-version="<?php p($_['version'] ?? ''); ?>"></div>
+<div id="buildiq-settings"></div>

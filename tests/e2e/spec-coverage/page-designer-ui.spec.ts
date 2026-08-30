@@ -1,0 +1,259 @@
+// SPDX-License-Identifier: EUPL-1.2
+// SPDX-FileCopyrightText: 2026 Conduction B.V.
+
+/**
+ * E2E spec-coverage for retrofit-2026-05-26-page-designer-ui.
+ *
+ * REQ-OBPDUI-001: Controlled designer orchestrates pages, menu, undo/redo and save.
+ *   - page-designer-renders-three-pane-layout
+ *   - undo-button-disabled-on-fresh-load
+ *
+ * REQ-OBPDUI-002: Route hosts resolve slug + version and persist the manifest.
+ *   - page-designer-route-renders-for-valid-slug
+ *   - unknown-version-renders-not-found-state
+ *
+ * REQ-OBPDUI-003: Per-page-type sub-editors emit validated slices.
+ *   - sub-editor-is-rendered-when-page-selected
+ *
+ * REQ-OBPDUI-004: Reusable field builders edit list-shaped config.
+ *   - page-list-editor-renders-in-left-pane
+ *
+ * REQ-OBPDUI-005: Inline validation surface and config-field registration.
+ *   - validation-panel-renders-in-right-pane
+ *
+ * Routes (history-mode base /apps/buildiq):
+ *   PageDesigner  →  /apps/buildiq/builder/:slug/pages
+ *   BuilderHost   →  /apps/buildiq/builder/:slug/:pathMatch
+ */
+
+import { test, expect } from '@playwright/test'
+// nc-vue's first-visit CnSupportDialog renders a full-viewport backdrop that
+// swallows clicks. It appears only sometimes (its "have I been seen" check is an
+// async round-trip), which made REQ-OBPDUI-003 intermittent: it passed on one
+// full run and failed on the next with `cn-support-dialog` as the pointer-event
+// target. Dismissing it is a precondition, not a weakened assertion.
+import { dismissFirstVisitOverlays } from '../support/overlays'
+
+const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
+const LIVE = process.env.BUILDIQ_E2E_LIVE === '1'
+
+const PAGE_DESIGNER = (slug: string) => `${BASE}/apps/buildiq/builder/${slug}/pages`
+
+// ---------------------------------------------------------------------------
+// REQ-OBPDUI-001 — Controlled designer orchestrates pages, menu, undo/redo
+// ---------------------------------------------------------------------------
+
+// UN-QUARANTINED 2026-08-06. The recorded reason was that the virtual-app load
+// 500s so the designer panes never render. That is contradicted by this job's
+// own results: the NEXT test in this very file opens the same
+// `PAGE_DESIGNER('hello-world')` URL, waits for the same `.page-designer-host`
+// selector, and passes — as do every page-editor-coverage.spec.ts scenario and
+// the docudesk builder specs, all of which drive
+// `/apps/buildiq/builder/<slug>/pages`. The 500 was fixed weeks ago; this
+// file was last touched 2026-06-06 and simply never rechecked.
+// @e2e page-designer-ui::page-designer-renders-three-pane-layout
+test('REQ-OBPDUI-001 — page designer route renders the three-pane layout', async ({
+	page,
+}) => {
+	// @e2e page-designer-ui::page-designer-renders-three-pane-layout
+	await page.goto(PAGE_DESIGNER('hello-world'))
+	await expect(
+		page.locator('.page-designer-host'),
+		'designer must load',
+	).toBeVisible({ timeout: 15_000 })
+
+	// The outer shell must load without a white screen.
+	await expect(page).toHaveTitle(/buildiq/i)
+})
+
+// @e2e page-designer-ui::undo-button-disabled-on-fresh-load
+test('REQ-OBPDUI-001 — undo button is disabled when no edits have been made', async ({
+	page,
+}) => {
+	// @e2e page-designer-ui::undo-button-disabled-on-fresh-load
+	test.skip(
+		!LIVE,
+		'Requires live dev env with page designer JS built — set BUILDIQ_E2E_LIVE=1',
+	)
+
+	await page.goto(PAGE_DESIGNER('hello-world'))
+	await expect(page.locator('.page-designer-host')).toBeVisible({
+		timeout: 15_000,
+	})
+
+	// On first load there is no history, so undo must be disabled.
+	const undoBtn = page
+		.locator('button[title*="Undo"], button:has-text("Undo")')
+		.first()
+	await expect(undoBtn, 'undo button must be disabled on first load').toBeDisabled(
+		{ timeout: 5_000 },
+	)
+})
+
+// ---------------------------------------------------------------------------
+// REQ-OBPDUI-002 — Route hosts resolve slug + version and persist manifest
+// ---------------------------------------------------------------------------
+
+// UN-QUARANTINED 2026-08-06 — same stale reason as REQ-OBPDUI-001 above, same
+// contradicting evidence: the neighbouring `unknown ?_version` test drives this
+// exact route and passes.
+// @e2e page-designer-ui::page-designer-route-renders-for-valid-slug
+test('REQ-OBPDUI-002 — PageDesignerHost route renders for a known slug', async ({
+	page,
+}) => {
+	// @e2e page-designer-ui::page-designer-route-renders-for-valid-slug
+	await page.goto(PAGE_DESIGNER('hello-world'))
+	await expect(page.locator('main'), 'main content must load').toBeVisible({
+		timeout: 15_000,
+	})
+
+	// The route RESOLVED THE SLUG — that is the requirement, and it is asserted
+	// positively rather than by scanning the whole page for the word "404".
+	//
+	// The old body did the latter, and it was an assertion that could not
+	// distinguish success from failure: `page.textContent('body')` on this route
+	// includes the Nextcloud chrome and every string the designer renders, so
+	// any legitimate "not found" copy — the version-not-found empty state the
+	// very next test asserts EXISTS, for one — would have failed it, while a
+	// blank designer with no error text would have passed it. Asserting the
+	// host actually mounted for this slug is both stricter and honest.
+	await expect(
+		page.locator('.page-designer-host'),
+		'the designer host must mount for a known slug',
+	).toBeVisible({ timeout: 15_000 })
+	await expect(
+		page.getByText(/version not found/i),
+		'a known slug must NOT land on the version-not-found state',
+	).toHaveCount(0)
+})
+
+// @e2e page-designer-ui::unknown-version-renders-not-found-state
+test('REQ-OBPDUI-002 — unknown ?_version shows version-not-found state', async ({
+	page,
+}) => {
+	// @e2e page-designer-ui::unknown-version-renders-not-found-state
+	test.skip(
+		!LIVE,
+		'Requires live dev env with page designer JS built — set BUILDIQ_E2E_LIVE=1',
+	)
+
+	await page.goto(`${PAGE_DESIGNER('hello-world')}?_version=nonexistent-slug-xyz`)
+	await expect(page.locator('main'), 'main must still render').toBeVisible({
+		timeout: 15_000,
+	})
+
+	// The version-not-found state is rendered via NcEmptyContent or a div with "Version not found".
+	// NOT the comma-joined 'text=/regex/flags, [selector]' form — Playwright's
+	// text engine parses everything after `text=` up to the next top-level
+	// comma as ONE pattern, so the trailing CSS selector got swallowed into
+	// the regex flags and threw "Invalid flags supplied to RegExp
+	// constructor". Combine the two locators with .or() instead.
+	const notFound = page
+		.getByText(/Version not found/i)
+		.or(page.locator('[class*="version-not-found"]'))
+		.first()
+	await expect(notFound, 'version-not-found state must be displayed').toBeVisible({
+		timeout: 10_000,
+	})
+})
+
+// ---------------------------------------------------------------------------
+// REQ-OBPDUI-003 — Sub-editors emit validated slices
+// ---------------------------------------------------------------------------
+
+// @e2e page-designer-ui::sub-editor-is-rendered-when-page-selected
+test('REQ-OBPDUI-003 — centre pane renders a sub-editor when a page is selected', async ({
+	page,
+}) => {
+	// @e2e page-designer-ui::sub-editor-is-rendered-when-page-selected
+	test.skip(
+		!LIVE,
+		'Requires live dev env with page designer JS built and hello-world pages — set BUILDIQ_E2E_LIVE=1',
+	)
+
+	await page.goto(PAGE_DESIGNER('hello-world'))
+	await expect(page.locator('.page-designer-host')).toBeVisible({
+		timeout: 15_000,
+	})
+	// This test clicks, so the first-visit overlays have to be cleared first.
+	await dismissFirstVisitOverlays(page)
+
+	// Click the first page entry in the left pane. Rows are
+	// `.page-list-editor__row` divs, not `<li>` elements (PageListEditor.vue).
+	const firstPage = page.locator('.page-list-editor__row').first()
+	await expect(firstPage, 'at least one page must be listed').toBeVisible({
+		timeout: 5_000,
+	})
+	await firstPage.click()
+
+	// The centre pane must now render a sub-editor component.
+	const centrePane = page
+		.locator('.page-designer__centre, .page-designer__sub-editor')
+		.first()
+	await expect(
+		centrePane,
+		'centre pane must show a sub-editor after selecting a page',
+	).toBeVisible({ timeout: 5_000 })
+})
+
+// ---------------------------------------------------------------------------
+// REQ-OBPDUI-004 — Reusable field builders edit list-shaped config
+// ---------------------------------------------------------------------------
+
+// @e2e page-designer-ui::page-list-editor-renders-in-left-pane
+test('REQ-OBPDUI-004 — left pane renders the page list and menu tree', async ({
+	page,
+}) => {
+	// @e2e page-designer-ui::page-list-editor-renders-in-left-pane
+	test.skip(
+		!LIVE,
+		'Requires live dev env with page designer JS built — set BUILDIQ_E2E_LIVE=1',
+	)
+
+	await page.goto(PAGE_DESIGNER('hello-world'))
+	await expect(page.locator('.page-designer-host')).toBeVisible({
+		timeout: 15_000,
+	})
+
+	// The left pane contains the PageListEditor (page list) and MenuTreeEditor (menu tree).
+	const leftPane = page.locator('.page-designer__left').first()
+	await expect(leftPane, 'left pane must be present').toBeVisible({
+		timeout: 5_000,
+	})
+})
+
+// ---------------------------------------------------------------------------
+// REQ-OBPDUI-005 — Inline validation surface and config-field registration
+// ---------------------------------------------------------------------------
+
+// @e2e page-designer-ui::validation-panel-renders-in-right-pane
+test('REQ-OBPDUI-005 — right pane renders the validation surface', async ({
+	page,
+}) => {
+	// @e2e page-designer-ui::validation-panel-renders-in-right-pane
+	test.skip(
+		!LIVE,
+		'Requires live dev env with page designer JS built — set BUILDIQ_E2E_LIVE=1',
+	)
+
+	await page.goto(PAGE_DESIGNER('hello-world'))
+	await expect(page.locator('.page-designer-host')).toBeVisible({
+		timeout: 15_000,
+	})
+
+	// The right pane must contain the validation errors panel.
+	const rightPane = page.locator('.page-designer__right').first()
+	await expect(rightPane, 'right validation pane must be present').toBeVisible({
+		timeout: 5_000,
+	})
+
+	// When there are no validation errors the "No validation errors." message is shown.
+	const noErrors = page.locator('text=/No validation errors/i').first()
+	const errorList = page.locator('.page-designer__error-list').first()
+	const eitherVisible =
+		(await noErrors.count()) > 0 || (await errorList.count()) > 0
+	expect(
+		eitherVisible,
+		'validation panel must show either the no-errors message or an error list',
+	).toBe(true)
+})

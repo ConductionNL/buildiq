@@ -12,10 +12,27 @@
         <directory name="lib" />
         <ignoreFiles>
             <directory name="vendor" />
+            <!--
+                lib/Resources/template/ is a shipped scaffold — a copy of the
+                nextcloud-app-template skeleton that gets dropped into new apps.
+                It has its own composer vendor tree (not installed here), its own
+                tests/bootstrap.php that requires Nextcloud's lib/base.php (not
+                present in CI), and its own phpcs-custom-sniffs that depend on
+                PHP_CodeSniffer being installed in that subtree. None of those
+                files are part of the buildiq runtime; scanning them produces
+                MissingFile + UndefinedClass + UndefinedFunction noise against
+                missing neighbours, not real buildiq bugs.
+            -->
+            <directory name="lib/Resources/template" />
         </ignoreFiles>
     </projectFiles>
     <stubs>
         <file name="vendor/nextcloud/ocp/OCP/Capabilities/ICapability.php" preloadClasses="true" />
+        <!-- AppHost engine stubs (GenericSettingsSection + GenericAdminSettings)
+             so SettingsSection and AdminSettings resolve their parent constructor
+             during static analysis when the openregister sibling app is absent.
+             The real classes live in openregister/lib/AppHost/Settings/. -->
+        <file name="tests/stubs/openregister-apphost.stub.php" preloadClasses="true" />
     </stubs>
     <issueHandlers>
         <UndefinedDocblockClass errorLevel="suppress"/>
@@ -60,11 +77,102 @@
                 <referencedClass name="OCP\Notification\IManager"/>
                 <referencedClass name="OCP\Share\IManager"/>
                 <!-- OpenRegister cross-app classes (loaded dynamically) -->
+                <!--
+                    These classes live in the sibling `openregister` app and are
+                    only available at Nextcloud runtime. In CI the app is not on
+                    the autoload path, so Psalm reports UndefinedClass. Unit tests
+                    load stubs from tests/stubs/openregister-stubs.php; at
+                    runtime the real classes are present. Suppress here to keep
+                    CI green without masking real buildiq bugs.
+                -->
+                <referencedClass name="OCA\OpenRegister\Db\ObjectEntity"/>
+                <referencedClass name="OCA\OpenRegister\Db\Register"/>
+                <referencedClass name="OCA\OpenRegister\Db\AuditTrailMapper"/>
+                <referencedClass name="OCA\OpenRegister\Db\AuditTrail"/>
+                <referencedClass name="OCA\OpenRegister\Db\RegisterMapper"/>
+                <referencedClass name="OCA\OpenRegister\Db\SchemaMapper"/>
+                <!-- The flow ENTITY the engine executes, and its mapper. Read by
+                     FlowAndAgentExportBundler so an exported app carries the
+                     flows it is made of. -->
+                <referencedClass name="OCA\OpenRegister\Db\FlowMapper"/>
+                <referencedClass name="OCA\OpenRegister\Db\Flow"/>
+                <!-- Schema itself was missing while its Mapper was listed, so
+                     AutomationCompilerService's 7 uses of it were simply red. -->
+                <referencedClass name="OCA\OpenRegister\Db\Schema"/>
                 <referencedClass name="OCA\OpenRegister\Event\DeepLinkRegistrationEvent"/>
+                <referencedClass name="OCA\OpenRegister\Event\ObjectCreatingEvent"/>
+                <referencedClass name="OCA\OpenRegister\Event\ObjectCreatedEvent"/>
+                <referencedClass name="OCA\OpenRegister\Event\ObjectUpdatingEvent"/>
+                <referencedClass name="OCA\OpenRegister\Event\ObjectUpdatedEvent"/>
+                <referencedClass name="OCA\OpenRegister\Event\ObjectDeletedEvent"/>
+                <!-- automation-approval-steps: consumes OR's approval-chain
+                     engine directly (ApprovalChainMapper/ApprovalStepMapper/
+                     ApprovalService) per ADR-022 — never a new engine. -->
+                <referencedClass name="OCA\OpenRegister\Event\ObjectTransitionedEvent"/>
+                <referencedClass name="OCA\OpenRegister\Event\ApprovalStepApprovedEvent"/>
+                <referencedClass name="OCA\OpenRegister\Event\ApprovalStepRejectedEvent"/>
+                <referencedClass name="OCA\OpenRegister\Db\ApprovalChain"/>
+                <referencedClass name="OCA\OpenRegister\Db\ApprovalChainMapper"/>
+                <referencedClass name="OCA\OpenRegister\Db\ApprovalStep"/>
+                <referencedClass name="OCA\OpenRegister\Db\ApprovalStepMapper"/>
+                <referencedClass name="OCA\OpenRegister\Service\ApprovalService"/>
                 <referencedClass name="OCA\OpenRegister\Service\ObjectService"/>
+                <!-- The interface ObjectService implements — used wherever a
+                     class types its collaborator against the contract rather
+                     than the concrete class (ADR-022). Pre-existing across
+                     ~10 files (VersionPromotionService, RuleEngineService,
+                     GitHubAppSyncService, IconService, ManifestResolverService
+                     among them) that were already red before this entry;
+                     app-repo-format-flow-agent-export adds more of the same
+                     usage rather than a new class of error. -->
+                <referencedClass name="OCA\OpenRegister\Contract\ObjectServiceInterface"/>
+                <!-- The per-object counterpart of the above — ObjectEntity's
+                     own contract, e.g. ObjectService::find()'s return type.
+                     Pre-existing in SeedHelloWorldFixture.php, already red
+                     before this entry. -->
+                <referencedClass name="OCA\OpenRegister\Contract\ObjectEntityInterface"/>
+                <!-- The sanctioned single entry point for flows (ADR-022) —
+                     consumed by FlowChannelProvisioner so applying a published
+                     `flows/` channel creates a real OpenRegister Flow entity
+                     rather than a second, drift-prone flow store. -->
+                <referencedClass name="OCA\OpenRegister\Service\Flow\FlowService"/>
+                <!-- Thrown by ObjectService::saveObject(failIfExists: true) and
+                     caught BY TYPE in AppChannelApplier — matching the message
+                     text instead let an unrelated PHP error masquerade as a
+                     benign collision (apply-v2-channels). -->
+                <referencedClass name="OCA\OpenRegister\Exception\ObjectExistsException"/>
                 <referencedClass name="OCA\OpenRegister\Service\ConfigurationService"/>
+                <referencedClass name="OCA\OpenRegister\Service\RegisterService"/>
+                <referencedClass name="OCA\OpenRegister\Service\FileService"/>
+                <referencedClass name="OCA\OpenRegister\Service\CalendarEventService"/>
+                <referencedClass name="OCA\OpenRegister\Mcp\IMcpToolProvider"/>
+                <referencedClass name="OCA\OpenRegister\Lifecycle\LifecycleGuardInterface"/>
+                <referencedClass name="OCA\OpenRegister\Lifecycle\GuardResult"/>
+                <!-- AppHost engine (ADR-040) — lives in the sibling openregister app -->
+                <referencedClass name="OCA\OpenRegister\AppHost\Bootstrap"/>
+                <referencedClass name="OCA\OpenRegister\AppHost\Routes"/>
+                <referencedClass name="OCA\OpenRegister\AppHost\Settings\GenericAdminSettings"/>
+                <referencedClass name="OCA\OpenRegister\AppHost\Settings\GenericSettingsSection"/>
+                <!-- Bound by Application::register() as STRING class names inside
+                     lazy closures (so nothing touches the OCA\OpenRegister
+                     namespace at boot) and resolved by the DI container at
+                     request time, when OR's autoloader is registered. Same
+                     cross-app situation as the entries above — these two were
+                     simply omitted, which is why `composer psalm` reported two
+                     UndefinedClass errors. -->
+                <referencedClass name="OCA\OpenRegister\AppHost\Controller\GenericHealthController"/>
+                <referencedClass name="OCA\OpenRegister\AppHost\Controller\GenericMetricsController"/>
+                <!-- Additional OCP infrastructure types used across the fleet -->
+                <referencedClass name="OCP\AppFramework\Bootstrap\IBootContext"/>
+                <referencedClass name="OCP\AppFramework\Bootstrap\IRegistrationContext"/>
+                <referencedClass name="OCP\AppFramework\Db\DoesNotExistException"/>
+                <referencedClass name="OCP\DB\Exception"/>
+                <referencedClass name="OCP\IGroup"/>
+                <referencedClass name="OCP\IUser"/>
+                <referencedClass name="OCP\Migration\IRepairStep"/>
                 <!-- Nextcloud server internals -->
                 <referencedClass name="OC"/>
+                <referencedClass name="OC_App"/>
                 <!-- GuzzleHttp (loaded via composer at runtime) -->
                 <referencedClass name="GuzzleHttp\Client"/>
                 <referencedClass name="GuzzleHttp\Exception\GuzzleException"/>

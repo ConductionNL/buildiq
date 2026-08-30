@@ -1,16 +1,24 @@
 <?php
-// SPDX-License-Identifier: EUPL-1.2
 
 /**
- * OpenBuilt Admin Settings
+ * Buildiq Admin Settings
  *
- * Provides the admin settings form for the OpenBuilt application.
+ * One-line AppHost stub. Nextcloud instantiates the admin-settings panel by
+ * the class name in info.xml `<settings><admin>`, and the
+ * `#[AuthorizedAdminSetting(AdminSettings::class)]` attribute targets this
+ * FQCN, so the class must physically exist in the Buildiq namespace. All
+ * behaviour (form rendering, version initial-state, the IDelegatedSettings
+ * #299 fail-closed admin gating) lives in the engine base; Buildiq's
+ * Application::register() binds this class to it via Bootstrap::register().
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Settings
- * @package  OCA\OpenBuilt\Settings
+ * @package  OCA\Buildiq\Settings
  *
- * @author    Conduction Development Team <dev@conductio.nl>
- * @copyright 2024 Conduction B.V.
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @version GIT: <git-id>
@@ -20,61 +28,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenBuilt\Settings;
+namespace OCA\Buildiq\Settings;
 
-use OCA\OpenBuilt\AppInfo\Application;
-use OCP\App\IAppManager;
-use OCP\AppFramework\Http\TemplateResponse;
-use OCP\Settings\ISettings;
+use OCA\OpenRegister\AppHost\Settings\GenericAdminSettings;
 
 /**
- * Provides the admin settings form for the OpenBuilt application.
+ * AppHost-backed admin settings panel for Buildiq (ADR-040).
+ *
+ * @spec openspec/changes/adopt-apphost/specs/apphost-adoption/spec.md — Requirement: Boilerplate Adoption
  */
-class AdminSettings implements ISettings
-{
-    /**
-     * Constructor.
-     *
-     * @param IAppManager $appManager The app manager.
-     */
-    public function __construct(
-        private readonly IAppManager $appManager,
-    ) {
-    }//end __construct()
-
-    /**
-     * Get the settings form template.
-     *
-     * @return TemplateResponse
-     */
-    public function getForm(): TemplateResponse
-    {
-        $version = $this->appManager->getAppVersion(appId: Application::APP_ID);
-
-        return new TemplateResponse(
-            Application::APP_ID,
-            'settings/admin',
-            ['version' => $version]
-        );
-    }//end getForm()
-
-    /**
-     * Get the section ID this settings page belongs to.
-     *
-     * @return string
-     */
-    public function getSection(): string
-    {
-        return 'openbuilt';
-    }//end getSection()
-
-    /**
-     * Get the priority for ordering within the section.
-     *
-     * @return int
-     */
-    public function getPriority(): int
-    {
-        return 10;
-    }//end getPriority()
+class AdminSettings extends GenericAdminSettings {
 }//end class
