@@ -557,6 +557,34 @@ async function seedRoleUsersAndSessions(
 				(url) => !/\/login(\?|$|\/)/.test(url.toString()),
 				{ timeout: 60_000 },
 			)
+			/*
+			 * Suppress the product walkthrough (ADR-043) for automated runs.
+			 *
+			 * @conduction/nextcloud-vue 2.22.x made the tour actually open: a
+			 * `placement: "center"` welcome step used to be parked in
+			 * `_pendingAutoTour` and never shown, and the library now correctly
+			 * starts it on any route. Its `cn-walkthrough__dim--full` layer is a
+			 * `role="dialog" aria-modal="true"` overlay that intercepts every click
+			 * behind it, and makes `getByRole('dialog')` resolve to the dim layer
+			 * rather than the modal under test.
+			 *
+			 * Seeded into EVERY stored session, not just one: the marker is per USER,
+			 * so a role whose state was saved without it still wears the tour.
+			 */
+			try {
+				await page.evaluate(() => {
+					try {
+						window.localStorage.setItem(
+							'cn-walkthrough-seen:buildiq',
+							'999.0.0',
+						)
+					} catch (e) {
+						// localStorage unavailable — specs fall back to dismissing by hand.
+					}
+				})
+			} catch {
+				// Never fail setup over an optional convenience.
+			}
 			await context.storageState({ path: statePath })
 			// eslint-disable-next-line no-console
 			console.log(`[globalSetup] ${user.id} session stored at ${statePath}`)
@@ -690,6 +718,34 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 				throw new Error(
 					'session cookie not accepted by an authenticated endpoint (401)',
 				)
+			}
+			/*
+			 * Suppress the product walkthrough (ADR-043) for automated runs.
+			 *
+			 * @conduction/nextcloud-vue 2.22.x made the tour actually open: a
+			 * `placement: "center"` welcome step used to be parked in
+			 * `_pendingAutoTour` and never shown, and the library now correctly
+			 * starts it on any route. Its `cn-walkthrough__dim--full` layer is a
+			 * `role="dialog" aria-modal="true"` overlay that intercepts every click
+			 * behind it, and makes `getByRole('dialog')` resolve to the dim layer
+			 * rather than the modal under test.
+			 *
+			 * Seeded into EVERY stored session, not just one: the marker is per USER,
+			 * so a role whose state was saved without it still wears the tour.
+			 */
+			try {
+				await page.evaluate(() => {
+					try {
+						window.localStorage.setItem(
+							'cn-walkthrough-seen:buildiq',
+							'999.0.0',
+						)
+					} catch (e) {
+						// localStorage unavailable — specs fall back to dismissing by hand.
+					}
+				})
+			} catch {
+				// Never fail setup over an optional convenience.
 			}
 			await context.storageState({ path: storagePath })
 			adminAuthenticated = true

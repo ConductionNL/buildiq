@@ -1,6 +1,6 @@
 {
 	"$schema": "https://github.com/ConductionNL/nextcloud-vue/raw/main/src/schemas/app-manifest-v2.schema.json",
-	"version": "2.0.0",
+	"version": "2.1.0",
 	"openbuildEditable": false,
 	"dependencies": [
 		"openregister"
@@ -15,6 +15,14 @@
 				"type": "info",
 				"title": "Welcome to Buildiq",
 				"body": "Buildiq builds apps from templates. This quick setup makes sure the bundled starter templates are available and, optionally, connects a remote template store. It is safe to run more than once."
+			},
+			{
+				"id": "demo-data",
+				"type": "run-action",
+				"action": "install-demo-data",
+				"title": "Demo data (optional)",
+				"required": false,
+				"body": "Load example projects and components so lists, the Store and the detail pages show a working product right away. Optional, and safe to run more than once. Skip this on a production install."
 			},
 			{
 				"id": "seed",
@@ -162,6 +170,24 @@
 						},
 						"advanceOn": {
 							"type": "manual"
+						}
+					},
+					{
+						"id": "see-flows",
+						"sinceVersion": "2.1.0",
+						"placement": "right",
+						"optional": true,
+						"allowManualNext": true,
+						"title": "Where the automation lives",
+						"body": "Flows are what happens without anyone clicking: a record that gets stamped on save, a notice that goes out when something changes. This is where you read and edit them. Nothing to build now.",
+						"task": "Open Flows in the menu",
+						"target": {
+							"kind": "nav-item",
+							"ref": "Flows"
+						},
+						"advanceOn": {
+							"type": "route-match",
+							"route": "Flows"
 						}
 					},
 					{
@@ -494,15 +520,15 @@
 		{
 			"id": "Flows",
 			"route": "/flows",
-			"type": "flows",
+			"type": "index",
 			"title": "Flows",
-			"config": { "app": "buildiq" },
-			"_note": "A flow is app-specific - a buildiq flow operates on buildiq's objects - so the authoring surface lives here rather than behind a deep link to OpenRegister's list. Custom page rather than type:index because a flow lives in the shared native flow store, not a register/schema pair, so the object-backed index cannot address it. Same store OpenRegister, integriq and hermiq use, so list and status semantics stay identical fleet-wide."
+			"config": { "entitySource": "flows", "app": "buildiq" },
+			"_note": "A flow is app-specific - a buildiq flow operates on buildiq's objects - so the authoring surface lives here rather than behind a deep link to OpenRegister's list. An ordinary index over the named `flows` source: a flow lives in the shared native flow store, not a register/schema pair, so the object-backed index had nothing to address until config.entitySource named the collection. Same store OpenRegister, integriq and hermiq use, so list and status semantics stay identical fleet-wide."
 		},
 		{
 			"id": "FlowDetail",
 			"route": "/flows/:id",
-			"type": "flow-detail",
+			"type": "flow",
 			"title": "Flow",
 			"config": { "app": "buildiq" },
 			"_note": "The shared flow canvas over the same native flow store the rest of the fleet uses - not an app-owned editor."

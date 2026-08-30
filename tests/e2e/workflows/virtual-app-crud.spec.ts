@@ -246,10 +246,14 @@ test.describe('Virtual App — full CRUD with persistence', () => {
 	// The backend delete path itself is exercised (deleteVirtualApp + the
 	// CREATE/READ persistence round-trips). Un-fixme once the index Table view
 	// row binding (or a card/detail delete action) is restored in the lib.
-	test.fixme('DELETE via UI bulk action removes the row and the object (index Table view binds no rows; no UI delete affordance)', async ({
+	test('DELETE via UI bulk action removes the row and the object (index Table view binds no rows; no UI delete affordance)', async ({
 		page,
 		request,
 	}) => {
+		test.fixme(
+			true,
+			'index Table view binds no rows; no UI delete affordance The applications index (VirtualApps page, type:"index", cardComponent: ApplicationCard) currently has no working UI delete affordance: the default Cards view exposes no per-card select / bulk action; switching to the Table view renders no row data (the lib\'s CnDataTable binds zero rows for this index — empty cells / 0...',
+		)
 		const app = await seedVirtualApp(request, {
 			name: `E2E Delete ${E2E_PREFIX}`,
 		})
@@ -349,10 +353,14 @@ test.describe('Virtual App — full CRUD with persistence', () => {
 	})
 
 	// ---- #41: detail/editor sidebar does not populate ----------------------
-	test.fixme('EDIT via the row detail sidebar (Conduction/buildiq#41: editor does not render app fields)', async ({
+	test('EDIT via the row detail sidebar (Conduction/buildiq#41: editor does not render app fields)', async ({
 		page,
 		request,
 	}) => {
+		test.fixme(
+			true,
+			'Conduction/buildiq#41: editor does not render app fields #41: detail/editor sidebar does not populate ----------------------',
+		)
 		const app = await seedVirtualApp(request, { name: `E2E Edit ${E2E_PREFIX}` })
 		await gotoAppBrowser(page)
 		await page.getByText(app.name, { exact: false }).first().click()

@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\SetupController;
+use OCA\Buildiq\Service\DemoDataService;
 use OCA\Buildiq\Service\SettingsService;
 use OCA\Buildiq\Service\TemplateSeedService;
 use OCP\AppFramework\Http;
@@ -169,6 +170,11 @@ class SetupControllerAuthPostureTest extends TestCase {
 			$this->createMock(IAppConfig::class),
 			$userSession,
 			$groupManager,
+			// Positional: DemoDataService sits between $groupManager and
+			// $settings in the constructor (ADR-111 rule 4). Omitting it here
+			// silently shifted every later argument by one and PHPUnit reported
+			// it as a type error on $settings.
+			$this->createMock(DemoDataService::class),
 			$settings,
 			$seedService
 		);

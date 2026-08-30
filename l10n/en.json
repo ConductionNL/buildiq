@@ -1422,7 +1422,10 @@
         "This application has no flows yet.": "This application has no flows yet.",
         "No flows bound to this app yet.": "No flows bound to this app yet.",
         "Failed to load settings": "Failed to load settings",
-        "Support & donation": "Support & donation"
+        "Support & donation": "Support & donation",
+        "Where the automation lives": "Where the automation lives",
+        "Flows are what happens without anyone clicking: a record that gets stamped on save, a notice that goes out when something changes. This is where you read and edit them. Nothing to build now.": "Flows are what happens without anyone clicking: a record that gets stamped on save, a notice that goes out when something changes. This is where you read and edit them. Nothing to build now.",
+        "Open Flows in the menu": "Open Flows in the menu"
     },
     "plurals": "",
     "pluralForm": "nplurals=2; plural=(n != 1);"

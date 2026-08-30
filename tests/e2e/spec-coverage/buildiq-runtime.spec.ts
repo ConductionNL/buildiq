@@ -459,7 +459,11 @@ test('REQ-OBR-005 — a valid edit is PUT to OR and survives a reload', async ({
 })
 
 // @e2e buildiq-runtime::default-tab-is-design
-test.skip('REQ-OBR-005 — Design tab is the default sibling of Raw JSON', async () => {
+test('REQ-OBR-005 — Design tab is the default sibling of Raw JSON', async () => {
+	test.skip(
+		true,
+		'SPEC DRIFT, not an environment limitation. The requirement describes ONE tabbed editor with "Design" (default) and "Raw JSON" as sibling tabs. The shipped app has no such pair: the visual designer is a ROUTE (`/builder/:slug/pages`, PageDesignerHost) and the raw-JSON editor is a sidebar tab on the Application detail page (ApplicationManifestTab). There is no control anywhere in the UI that sele...',
+	)
 	// @e2e buildiq-runtime::default-tab-is-design
 	//
 	// SPEC DRIFT, not an environment limitation. The requirement describes ONE
@@ -556,7 +560,11 @@ test('REQ-OBR-006a — /builder/:slug/schemas renders the designer and does NOT 
 })
 
 // @e2e buildiq-runtime::virtual-app-preview-route-still-mounts-the-nested-cnapproot
-test.skip('REQ-OBR-006a — /builder/:slug still mounts the nested CnAppRoot', async () => {
+test('REQ-OBR-006a — /builder/:slug still mounts the nested CnAppRoot', async () => {
+	test.skip(
+		true,
+		'The nested-mount half of REQ-OBR-006a is superseded for the same reason as REQ-OBR-002 (see there). The half that still holds — that `/builder/:slug/schemas` renders the designer and NOT the virtual app — is asserted, and passing, in the test immediately above.',
+	)
 	// @e2e buildiq-runtime::virtual-app-preview-route-still-mounts-the-nested-cnapproot
 	//
 	// The nested-mount half of REQ-OBR-006a is superseded for the same reason as
@@ -570,7 +578,11 @@ test.skip('REQ-OBR-006a — /builder/:slug still mounts the nested CnAppRoot', a
 // ---------------------------------------------------------------------------
 
 // @e2e buildiq-runtime::schemas-entry-appears-in-the-builder-context
-test.skip('REQ-OBR-007a — the Schemas entry appears in the builder context', async () => {
+test('REQ-OBR-007a — the Schemas entry appears in the builder context', async () => {
+	test.skip(
+		true,
+		'NOT BUILDABLE AS SPECIFIED. I implemented this entry, then reverted it when driving it showed the requirement rests on the same superseded premise as REQ-OBR-002 (see the note there). The requirement says `src/views/BuilderHost.vue` SHALL surface the entry "while the user is in a virtual app\'s builder context". But the bare `/builder/{slug}` route is `dashboard#builder` — a STANDALONE page boo...',
+	)
 	// @e2e buildiq-runtime::schemas-entry-appears-in-the-builder-context
 	//
 	// NOT BUILDABLE AS SPECIFIED. I implemented this entry, then reverted it when
@@ -829,7 +841,11 @@ test('REQ-OBR-007b — the detail header carries the same status badge as the li
 // ---------------------------------------------------------------------------
 
 // @e2e buildiq-runtime::history-panel-renders-snapshots
-test.skip('REQ-OBR-008a — the version-history panel renders one row per stored version', async () => {
+test('REQ-OBR-008a — the version-history panel renders one row per stored version', async () => {
+	test.skip(
+		true,
+		'BLOCKED BY A PRODUCT DEFECT this test found, evidenced from the failure snapshot rather than inferred: the Version history panel renders its EMPTY state — "No versions yet — create a draft to start a new version." — for an application that demonstrably has a version. GET /apps/buildiq/api/applications/hello-world/versions → [{ name: "1.0.0", slug: "production", semver: "1.0.0", status: "publish...',
+	)
 	// @e2e buildiq-runtime::history-panel-renders-snapshots
 	//
 	// BLOCKED BY A PRODUCT DEFECT this test found, evidenced from the failure
@@ -854,7 +870,11 @@ test.skip('REQ-OBR-008a — the version-history panel renders one row per stored
 })
 
 // @e2e buildiq-runtime::history-panel-is-empty-for-a-never-published-application
-test.skip('REQ-OBR-008a — an application with no versions renders the empty state', async () => {
+test('REQ-OBR-008a — an application with no versions renders the empty state', async () => {
+	test.skip(
+		true,
+		'NEEDS A FIXTURE THIS INSTANCE DOES NOT HAVE. The scenario is about a `draft` Application with zero ApplicationVersion rows. I wrote this to hunt for one rather than assume it, and the hunt came back empty: every Application returned by `/api/applications` has at least one version, because the creation wizard provisions a `production` version in the same transaction as the app (`ApplicationCreat...',
+	)
 	// @e2e buildiq-runtime::history-panel-is-empty-for-a-never-published-application
 	//
 	// NEEDS A FIXTURE THIS INSTANCE DOES NOT HAVE. The scenario is about a
@@ -876,7 +896,11 @@ test.skip('REQ-OBR-008a — an application with no versions renders the empty st
 // ---------------------------------------------------------------------------
 
 // @e2e buildiq-runtime::rollback-restores-manifest-and-stays-in-draft
-test.skip('REQ-OBR-009a — rollback copies the snapshot manifest onto the draft and deletes no version', async () => {
+test('REQ-OBR-009a — rollback copies the snapshot manifest onto the draft and deletes no version', async () => {
+	test.skip(
+		true,
+		'Blocked by the SAME defect as REQ-OBR-008a above: rollback is a per-row action in the version-history panel, and the panel renders no rows, so there is nothing to click. Fix the panel and this runs as written.',
+	)
 	// @e2e buildiq-runtime::rollback-restores-manifest-and-stays-in-draft
 	//
 	// Blocked by the SAME defect as REQ-OBR-008a above: rollback is a per-row
@@ -885,7 +909,11 @@ test.skip('REQ-OBR-009a — rollback copies the snapshot manifest onto the draft
 })
 
 // @e2e buildiq-runtime::cancelling-the-confirmation-aborts-the-rollback
-test.skip('REQ-OBR-009a — cancelling the confirmation sends no write', async () => {
+test('REQ-OBR-009a — cancelling the confirmation sends no write', async () => {
+	test.skip(
+		true,
+		'Same blocker as the rollback test above — the confirmation modal is opened from a version-history row, and the panel renders none.',
+	)
 	// @e2e buildiq-runtime::cancelling-the-confirmation-aborts-the-rollback
 	//
 	// Same blocker as the rollback test above — the confirmation modal is opened
@@ -945,7 +973,11 @@ test('REQ-OBR-010 — the diff view preselects draft → current version and dif
 })
 
 // @e2e buildiq-runtime::arbitrary-snapshot-pair-can-be-diffed
-test.skip('REQ-OBR-010 — an arbitrary snapshot pair can be compared', async () => {
+test('REQ-OBR-010 — an arbitrary snapshot pair can be compared', async () => {
+	test.skip(
+		true,
+		'NOT IMPLEMENTED — verified in source, not inferred. The scenario needs a "Compare" action on two selected version-history rows. `VersionHistory.vue` offers Open / Edit / Release / Roll back per row and no selection model at all, and `ApplicationDiffTab.vue` hardcodes `from="draft"` with a comment saying finer-grained pairs are "reachable from the Version history tab\'s compare action in a futur...',
+	)
 	// @e2e buildiq-runtime::arbitrary-snapshot-pair-can-be-diffed
 	//
 	// NOT IMPLEMENTED — verified in source, not inferred. The scenario needs a
@@ -997,7 +1029,11 @@ test('REQ-OBR-006c — a caller holding a role gets 200 and the stored manifest'
 })
 
 // @e2e buildiq-runtime::caller-without-a-role-gets-403-not-200-not-404
-test.skip('REQ-OBR-006c — a caller with no role gets 403 and no metadata leak', async () => {
+test('REQ-OBR-006c — a caller with no role gets 403 and no metadata leak', async () => {
+	test.skip(
+		true,
+		'DELIBERATELY NOT DUPLICATED HERE. `openspec/specs/openbuild-runtime/spec.md` marks REQ-OBR-006c `@e2e exclude backend manifest-403 endpoint — already covered by rbac-403.spec.ts (the canonical Playwright test for this gate)`, and that spec drives the real non-member session end to end (login as an outsider, direct /builder/{slug} navigation, deny screen) rather than re-asserting the status code...',
+	)
 	// @e2e buildiq-runtime::caller-without-a-role-gets-403-not-200-not-404
 	//
 	// DELIBERATELY NOT DUPLICATED HERE. `openspec/specs/openbuild-runtime/spec.md`
@@ -1070,7 +1106,11 @@ test('REQ-OBR-007c — the list renders exactly the applications the API authori
 })
 
 // @e2e buildiq-runtime::empty-list-when-user-has-no-roles
-test.skip('REQ-OBR-007c — a caller with no roles sees an empty list and the ask-an-owner hint', async () => {
+test('REQ-OBR-007c — a caller with no roles sees an empty list and the ask-an-owner hint', async () => {
+	test.skip(
+		true,
+		'Needs a SECOND Nextcloud user holding no role on any Application in the organisation. This suite runs entirely on the shared admin `storageState` written by globalSetup, and admin is an owner on every seeded app — driven as admin the empty state is unreachable by construction. The non-member session (`rbac-outsider`, provisioned by the Newman RBAC setup collection) is what tests/e2e/rbac-403.sp...',
+	)
 	// @e2e buildiq-runtime::empty-list-when-user-has-no-roles
 	//
 	// Needs a SECOND Nextcloud user holding no role on any Application in the
@@ -1143,7 +1183,11 @@ test('REQ-OBR-008b — an owner sees the editable manifest, Save, and every owne
 })
 
 // @e2e buildiq-runtime::editor-sees-save-but-not-publish
-test.skip('REQ-OBR-008b — an editor sees Save but none of the owner-only controls', async () => {
+test('REQ-OBR-008b — an editor sees Save but none of the owner-only controls', async () => {
+	test.skip(
+		true,
+		"Needs a second Nextcloud user carrying the `editor` role (a group listed in the Application's `permissions.editors` and in neither `owners` nor `viewers`), driven in its own browser session. This suite runs on the shared admin storageState and admin resolves to `owner` on every seeded app, so the editor branch of `useRole()` cannot be reached from here — a test written against the admin sessio...",
+	)
 	// @e2e buildiq-runtime::editor-sees-save-but-not-publish
 	//
 	// Needs a second Nextcloud user carrying the `editor` role (a group listed in

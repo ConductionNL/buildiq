@@ -42,9 +42,13 @@ async function gotoHelloWorldDetail(page: import('@playwright/test').Page) {
 // true with all six rows deleted. The test title says so itself: "renders main
 // area without crashing". That is a smoke test, and a smoke test is a fine
 // thing to have; it is just not this requirement.
-test.skip('REQ-OBADO-001 — application detail page renders main area without crashing', async ({
+test('REQ-OBADO-001 — application detail page renders main area without crashing', async ({
 	page,
 }) => {
+	test.skip(
+		true,
+		'STUB/QUARANTINE NOTE CORRECTED 2026-08-25. The old text blamed buildiq#41 for the admin UI "not functional in this build". #41 is a PR that MERGED on 2026-07-27, and 47 spec files in this suite already pass against that UI — applicationDetailOverview.spec.ts alone has 9 passing tests. What actually blocks these is that their bodies are stubs (goto + main-visible), so enabling them would pass wh...',
+	)
 	await gotoHelloWorldDetail(page)
 
 	// Main content area must be visible
@@ -70,9 +74,13 @@ test.skip('REQ-OBADO-001 — application detail page renders main area without c
 // never asserted on — and finishes on the same two white-screen checks as the
 // test above. Its own comment concedes it: "the page still passes if main
 // rendered". A computed-but-unasserted value is the tell.
-test.skip('REQ-OBADO-001 — detail page renders the app icon from the Application record', async ({
+test('REQ-OBADO-001 — detail page renders the app icon from the Application record', async ({
 	page,
 }) => {
+	test.skip(
+		true,
+		'STUB/QUARANTINE NOTE CORRECTED 2026-08-25. The old text blamed buildiq#41 for the admin UI "not functional in this build". #41 is a PR that MERGED on 2026-07-27, and 47 spec files in this suite already pass against that UI — applicationDetailOverview.spec.ts alone has 9 passing tests. What actually blocks these is that their bodies are stubs (goto + main-visible), so enabling them would pass wh...',
+	)
 	await gotoHelloWorldDetail(page)
 
 	await expect(page.locator('main')).toBeVisible({ timeout: 10_000 })
