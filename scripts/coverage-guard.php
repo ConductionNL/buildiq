@@ -503,7 +503,7 @@ function cgHundredths(float $percentage): int
  *
  * Compared as exact integer cross-products, NOT as rounded percentages, and
  * that distinction is load-bearing. Rounding to two decimals hides roughly one
- * statement: measured on buildiq, dropping 8229/13987 to 8228/13987 leaves
+ * statement: measured on openbuild, dropping 8229/13987 to 8228/13987 leaves
  * both sides reading 58.83%, so the guard printed two different statement
  * counts next to the word "unchanged" and exited 0. One statement is a small
  * hole, but it is a hole that does not close by itself — a regression that

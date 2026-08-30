@@ -65,9 +65,13 @@ test.describe('bootstrap-buildiq hello-world', () => {
 	// API/contract is covered by tests/integration/*.postman_collection.json
 	// ("GET hello-world manifest returns 200 with version/menu/pages").
 	// Playwright is UI-only.
-	test.skip('returns the seeded manifest from the public endpoint', async ({
+	test('returns the seeded manifest from the public endpoint', async ({
 		request,
 	}) => {
+		test.skip(
+			true,
+			'MOVED TO NEWMAN: asserts on the manifest API response, not the UI. The API/contract is covered by tests/integration/*.postman_collection.json ("GET hello-world manifest returns 200 with version/menu/pages"). Playwright is UI-only.',
+		)
 		const response = await request.get(
 			'/index.php/apps/buildiq/api/applications/hello-world/manifest',
 		)

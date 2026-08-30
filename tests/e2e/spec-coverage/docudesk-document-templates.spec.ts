@@ -479,7 +479,11 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 
 // @e2e docudesk-document-templates::generate-downloads-the-document
 // STUB BODY (the id-vs-slug defect is fixed; this needs a real body + seeded runtime.documents[]). Logic + request shape covered by vitest (useDocudeskDocument.spec.js) and Newman.
-test.skip('REQ-DDT-003 — generate produces a download', async ({ page }) => {
+test('REQ-DDT-003 — generate produces a download', async ({ page }) => {
+	test.skip(
+		true,
+		'STUB BODY (the id-vs-slug defect is fixed; this needs a real body + seeded runtime.documents[]). Logic + request shape covered by vitest (useDocudeskDocument.spec.js) and Newman.',
+	)
 	// @e2e docudesk-document-templates::generate-downloads-the-document
 	await page.goto(`${BASE}/apps/buildiq/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 10_000 })
@@ -487,9 +491,13 @@ test.skip('REQ-DDT-003 — generate produces a download', async ({ page }) => {
 
 // @e2e docudesk-document-templates::filename-template-interpolates-object-properties
 // STUB BODY. Needs a PUBLISHED app carrying an attachment — real fixture work, not a skip to remove. Enabling it as-is would pass while asserting nothing. Logic covered by vitest (renderFilename + buildFilename).
-test.skip('REQ-DDT-003 — filename template interpolates object properties', async ({
+test('REQ-DDT-003 — filename template interpolates object properties', async ({
 	page,
 }) => {
+	test.skip(
+		true,
+		'STUB BODY. Needs a PUBLISHED app carrying an attachment — real fixture work, not a skip to remove. Enabling it as-is would pass while asserting nothing. Logic covered by vitest (renderFilename + buildFilename).',
+	)
 	// @e2e docudesk-document-templates::filename-template-interpolates-object-properties
 	await page.goto(`${BASE}/apps/buildiq/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 10_000 })
@@ -497,7 +505,11 @@ test.skip('REQ-DDT-003 — filename template interpolates object properties', as
 
 // @e2e docudesk-document-templates::403-renders-a-no-access-toast-not-an-error
 // STUB BODY. Needs a PUBLISHED app carrying an attachment — real fixture work, not a skip to remove. Enabling it as-is would pass while asserting nothing. Logic covered by vitest (403 → no-access error code).
-test.skip('REQ-DDT-003 — a 403 renders the no-access message', async ({ page }) => {
+test('REQ-DDT-003 — a 403 renders the no-access message', async ({ page }) => {
+	test.skip(
+		true,
+		'STUB BODY. Needs a PUBLISHED app carrying an attachment — real fixture work, not a skip to remove. Enabling it as-is would pass while asserting nothing. Logic covered by vitest (403 → no-access error code).',
+	)
 	// @e2e docudesk-document-templates::403-renders-a-no-access-toast-not-an-error
 	await page.goto(`${BASE}/apps/buildiq/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 10_000 })
@@ -505,9 +517,11 @@ test.skip('REQ-DDT-003 — a 403 renders the no-access message', async ({ page }
 
 // @e2e docudesk-document-templates::double-click-issues-one-request
 // STUB BODY. Needs a PUBLISHED app carrying an attachment — real fixture work, not a skip to remove. Enabling it as-is would pass while asserting nothing. Logic covered by vitest (in-flight guard test).
-test.skip('REQ-DDT-003 — double-click issues exactly one request', async ({
-	page,
-}) => {
+test('REQ-DDT-003 — double-click issues exactly one request', async ({ page }) => {
+	test.skip(
+		true,
+		'STUB BODY. Needs a PUBLISHED app carrying an attachment — real fixture work, not a skip to remove. Enabling it as-is would pass while asserting nothing. Logic covered by vitest (in-flight guard test).',
+	)
 	// @e2e docudesk-document-templates::double-click-issues-one-request
 	await page.goto(`${BASE}/apps/buildiq/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 10_000 })
@@ -515,9 +529,13 @@ test.skip('REQ-DDT-003 — double-click issues exactly one request', async ({
 
 // @e2e docudesk-document-templates::two-attachments-render-two-ordered-buttons
 // STUB BODY. Needs a PUBLISHED app carrying an attachment — real fixture work, not a skip to remove. Enabling it as-is would pass while asserting nothing. Logic covered by vitest (DocumentActions ordered-buttons test).
-test.skip('REQ-DDT-004 — two attachments render two ordered buttons', async ({
+test('REQ-DDT-004 — two attachments render two ordered buttons', async ({
 	page,
 }) => {
+	test.skip(
+		true,
+		'STUB BODY. Needs a PUBLISHED app carrying an attachment — real fixture work, not a skip to remove. Enabling it as-is would pass while asserting nothing. Logic covered by vitest (DocumentActions ordered-buttons test).',
+	)
 	// @e2e docudesk-document-templates::two-attachments-render-two-ordered-buttons
 	await page.goto(`${BASE}/apps/buildiq/applications`)
 	await expect(page.locator('main')).toBeVisible({ timeout: 10_000 })
