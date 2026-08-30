@@ -52,7 +52,7 @@
     "@nextcloud/l10n": "^3.4.1",
     "@nextcloud/password-confirmation": "^6.1.0",
     "@nextcloud/router": "^3.1.0",
-    "@nextcloud/vue": "^9.5.0",
+    "@nextcloud/vue": "^9.11.0",
     "@vueuse/core": "^14.3.0",
     "axe-core": "^4.10.0",
     "dexie": "^4.0.8",
