@@ -446,7 +446,7 @@ export default {
 		})
 		// REQ-DDT-005: soft-check Docudesk so the Documents section degrades
 		// gracefully when it is absent.
-		const docudeskStatus = useAppStatus('docudesk')
+		const docudeskStatus = useAppStatus('filinq')
 		docudeskStatus.check().then(() => {
 			this.docudeskAvailable = docudeskStatus.available.value
 		})

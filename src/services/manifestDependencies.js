@@ -145,9 +145,9 @@ export function reconcileWorkflowDependency(manifest) {
  */
 export function reconcileDocumentDependency(manifest) {
 	if (hasDocumentAttachment(manifest)) {
-		return ensureDependency(manifest, 'docudesk')
+		return ensureDependency(manifest, 'filinq')
 	}
-	return removeAutoDependency(manifest, 'docudesk')
+	return removeAutoDependency(manifest, 'filinq')
 }
 
 /**

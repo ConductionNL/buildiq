@@ -103,7 +103,7 @@ export default {
 	 */
 	setup() {
 		const docs = useDocudeskDocument()
-		const docudesk = useAppStatus('docudesk')
+		const docudesk = useAppStatus('filinq')
 		return { docs, docudesk }
 	},
 

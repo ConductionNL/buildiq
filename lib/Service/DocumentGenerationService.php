@@ -6,10 +6,10 @@
  * Imperative half of the `generateDocument` automation action (design.md
  * Decision 1/2/3 of automation-document-action). On trigger fire, calls
  * Docudesk's EXISTING, already-integration-tested public route
- * `POST /apps/docudesk/api/correspondence/generate` — the SAME pinned route
+ * `POST /apps/filinq/api/correspondence/generate` — the SAME pinned route
  * `docudesk-document-templates` REQ-DDT-006 already closes the integration
  * surface to for interactive, browser-driven generation — and nothing else.
- * This class never imports an `OCA\DocuDesk\*` class and never reads a
+ * This class never imports an `OCA\Filinq\*` class and never reads a
  * Docudesk table (REQ-DDT-006, modified by this change to name this second
  * caller shape).
  *
@@ -115,7 +115,7 @@ class DocumentGenerationService {
 
 	/**
 	 * NC route name for Docudesk's pinned generate route
-	 * (`OCA\DocuDesk\Controller\CorrespondenceController::generate()`,
+	 * (`OCA\Filinq\Controller\CorrespondenceController::generate()`,
 	 * `appinfo/routes.php` entry `correspondence#generate`).
 	 */
 	private const GENERATE_ROUTE = 'docudesk.correspondence.generate';
