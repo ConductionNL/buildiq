@@ -243,7 +243,7 @@ jobs:
       # install` but never builds an app's frontend, so Docudesk's own JS bundle
       # is absent here — which is fine, because no spec in this suite opens a
       # Docudesk page.
-      additional-apps: '[{"repo":"ConductionNL/openregister","app":"openregister","ref":"development"},{"repo":"ConductionNL/docudesk","app":"docudesk","ref":"main"}]'
+      additional-apps: '[{"repo":"ConductionNL/openregister","app":"openregister","ref":"development"},{"repo":"ConductionNL/filinq","app":"filinq","ref":"main"}]'
       enable-sbom: true
 
       # (Integration Tests (Newman) is enabled at `enable-newman` above; the
