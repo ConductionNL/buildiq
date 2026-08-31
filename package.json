@@ -85,7 +85,7 @@
     "@vitest/coverage-v8": "^4.1.11",
     "@vue/compiler-sfc": "^3.5.13",
     "@vue/test-utils": "^2.5.0",
-    "css-loader": "~7.1.1",
+    "css-loader": "~7.1.5",
     "eslint": "^10.9.1",
     "eslint-config-prettier": "^10.1.8",
     "jsdom": "^30.0.1",
