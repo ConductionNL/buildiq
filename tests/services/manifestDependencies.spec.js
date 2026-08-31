@@ -130,8 +130,8 @@ describe('manifestDependencies (document)', () => {
 	})
 	it('adds docudesk once when an attachment exists', () => {
 		const m = reconcileDocumentDependency(withDoc())
-		expect(m.dependencies).toEqual(['docudesk'])
-		expect(reconcileDocumentDependency(m).dependencies).toEqual(['docudesk'])
+		expect(m.dependencies).toEqual(['filinq'])
+		expect(reconcileDocumentDependency(m).dependencies).toEqual(['filinq'])
 	})
 	it('auto-removes docudesk when the last attachment is gone', () => {
 		let m = reconcileDocumentDependency(withDoc())
@@ -140,9 +140,9 @@ describe('manifestDependencies (document)', () => {
 	})
 	it('never removes a manually-added docudesk dependency', () => {
 		const m = reconcileDocumentDependency({
-			dependencies: ['docudesk'],
+			dependencies: ['filinq'],
 			runtime: { documents: [] },
 		})
-		expect(m.dependencies).toEqual(['docudesk'])
+		expect(m.dependencies).toEqual(['filinq'])
 	})
 })

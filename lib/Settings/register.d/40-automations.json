@@ -264,8 +264,8 @@
 									"title": "Document Template",
 									"type": "string",
 									"format": "uuid",
-									"x-external-register": "docudesk",
-									"description": "generateDocument: UUID of the Docudesk template to render, picked from the same `GET /apps/docudesk/api/templates` list the Documents-section builder UI uses. The template is an object in DOCUDESK's register, not Buildiq's, so this carries the bare identifier and no `$ref` — OpenRegister resolves `$ref` within one register set and cannot reach another app's schema."
+									"x-external-register": "filinq",
+									"description": "generateDocument: UUID of the Docudesk template to render, picked from the same `GET /apps/filinq/api/templates` list the Documents-section builder UI uses. The template is an object in DOCUDESK's register, not Buildiq's, so this carries the bare identifier and no `$ref` — OpenRegister resolves `$ref` within one register set and cannot reach another app's schema."
 								},
 								"output": {
 									"title": "Output Mode(s)",

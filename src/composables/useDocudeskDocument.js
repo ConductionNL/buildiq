@@ -19,7 +19,7 @@ import { generateUrl } from '@nextcloud/router'
  */
 import { ref } from 'vue'
 
-const GENERATE = '/apps/docudesk/api/correspondence/generate'
+const GENERATE = '/apps/filinq/api/correspondence/generate'
 
 /** Extension per Docudesk output format (pinned set, REQ-DDT-001). */
 const FORMAT_EXT = Object.freeze({

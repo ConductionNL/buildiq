@@ -169,7 +169,7 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 	async function openDialog(page, trigger: RegExp): Promise<void> {
 		const templates = page.waitForResponse(
 			(resp) =>
-				/\/apps\/docudesk\/api\/templates(\?.*)?$/.test(resp.url())
+				/\/apps\/filinq\/api\/templates(\?.*)?$/.test(resp.url())
 				&& resp.request().method() === 'GET',
 			{ timeout: 20_000 },
 		)
@@ -237,7 +237,7 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 		// then assert the result is presented without committing anything.
 		const previewRequest = page.waitForRequest(
 			(req) =>
-				/\/apps\/docudesk\/api\/templates\/[^/]+\/preview$/.test(req.url())
+				/\/apps\/filinq\/api\/templates\/[^/]+\/preview$/.test(req.url())
 				&& req.method() === 'POST',
 			{ timeout: 20_000 },
 		)
@@ -281,7 +281,7 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 		// distinguishable from a check that was never made.
 		const snapshotResponse = page.waitForResponse(
 			(resp) =>
-				/\/apps\/docudesk\/api\/templates\/00000000-0000-4000-8000-000000000000$/.test(
+				/\/apps\/filinq\/api\/templates\/00000000-0000-4000-8000-000000000000$/.test(
 					resp.url(),
 				),
 			{ timeout: 20_000 },
@@ -351,7 +351,7 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 		await expect
 			.poll(
 				async () =>
-					(await persistedDependencies()).filter((d) => d === 'docudesk')
+					(await persistedDependencies()).filter((d) => d === 'filinq')
 						.length,
 				{ timeout: 20_000 },
 			)
@@ -363,7 +363,7 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 			timeout: 20_000,
 		})
 		expect(
-			(await persistedDependencies()).filter((d) => d === 'docudesk'),
+			(await persistedDependencies()).filter((d) => d === 'filinq'),
 		).toHaveLength(1)
 	})
 
@@ -385,7 +385,7 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 		// signals and both must say absent: first the server-injected
 		// `OC.appswebroots` map (a synchronous positive — Docudesk IS installed
 		// here, so routing alone left the Add button enabled), then a probe of
-		// `/apps/docudesk/api` where only 404/501 counts as absent. Removing the
+		// `/apps/filinq/api` where only 404/501 counts as absent. Removing the
 		// webroots entry and 404-ing the probe is exactly the state an
 		// uninstalled Docudesk produces, rather than a bespoke test flag.
 		await page.addInitScript(() => {
@@ -396,13 +396,19 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 					}
 				).OC
 				if (oc && oc.appswebroots) {
+					// Keyed by the APP ID, which is `filinq`. Deleting a stale
+					// `docudesk` key removed nothing, `useAppStatus('filinq')`
+					// still reported the app installed, and the Add button
+					// stayed enabled — the assertion below then failed for a
+					// reason that had nothing to do with the degradation path.
+					delete oc.appswebroots.filinq
 					delete oc.appswebroots.docudesk
 				}
 			}
 			install()
 			document.addEventListener('DOMContentLoaded', install)
 		})
-		await page.route('**/apps/docudesk/api', (route) =>
+		await page.route('**/apps/filinq/api', (route) =>
 			route.fulfill({ status: 404, body: '' }),
 		)
 		await openDesigner(page)
@@ -609,7 +615,7 @@ test('REQ-DDT-005 — runtime surface degrades without requests', async ({ page 
 	// exists to catch, and it is invisible in the DOM.
 	const docudeskCalls: string[] = []
 	page.on('request', (req) => {
-		if (req.url().includes('/apps/docudesk/')) docudeskCalls.push(req.url())
+		if (req.url().includes('/apps/filinq/')) docudeskCalls.push(req.url())
 	})
 
 	await openSeededRuntimeDetail(page)

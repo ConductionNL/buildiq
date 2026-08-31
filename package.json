@@ -42,7 +42,7 @@
     "extends @nextcloud/browserslist-config"
   ],
   "dependencies": {
-    "@conduction/nextcloud-vue": "^2.24.2",
+    "@conduction/nextcloud-vue": "^2.25.1",
     "@mdi/js": "^7.4.47",
     "@nextcloud/auth": "^2.4.0",
     "@nextcloud/axios": "~2.6.0",
@@ -52,7 +52,7 @@
     "@nextcloud/l10n": "^3.4.1",
     "@nextcloud/password-confirmation": "^6.1.0",
     "@nextcloud/router": "^3.1.0",
-    "@nextcloud/vue": "^9.5.0",
+    "@nextcloud/vue": "^9.11.0",
     "@vueuse/core": "^14.3.0",
     "axe-core": "^4.10.0",
     "dexie": "^4.0.8",
@@ -60,10 +60,10 @@
     "dompurify": "^3.4.14",
     "floating-vue": "^5.2.2",
     "gridstack": "^13.2.0",
-    "marked": "^18.0.9",
+    "marked": "^18.0.11",
     "node-polyfill-webpack-plugin": "^4.0.0",
     "pinia": "^2.1.7",
-    "vue": "^3.5.13",
+    "vue": "^3.5.42",
     "vue-material-design-icons": "^5.3.0",
     "vue-router": "^4.5.0",
     "vuedraggable": "^4.1.0"
@@ -84,9 +84,9 @@
     "@vitejs/plugin-vue": "^6.0.8",
     "@vitest/coverage-v8": "^4.1.11",
     "@vue/compiler-sfc": "^3.5.13",
-    "@vue/test-utils": "^2.4.6",
-    "css-loader": "~7.1.1",
-    "eslint": "^10.8.1",
+    "@vue/test-utils": "^2.5.0",
+    "css-loader": "~7.1.5",
+    "eslint": "^10.9.1",
     "eslint-config-prettier": "^10.1.8",
     "jsdom": "^30.0.1",
     "newman": "^6.2.2",
@@ -107,7 +107,7 @@
     "vitest": "^4.1.11",
     "vue-eslint-parser": "^10.3.0",
     "vue-loader": "^17.4.2",
-    "webpack": "^5.94.0",
+    "webpack": "^5.110.1",
     "webpack-cli": "^6.0.1"
   },
   "prettier": "@nextcloud/prettier-config"

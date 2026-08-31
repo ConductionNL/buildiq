@@ -162,7 +162,7 @@ class AutomationCompilerService {
 	 * action, mirrors `docudesk-document-templates` REQ-DDT-005's
 	 * missing-dependency posture).
 	 */
-	private const DOCUDESK_APP_ID = 'docudesk';
+	private const DOCUDESK_APP_ID = 'filinq';
 
 	/**
 	 * Valid `generateDocument` `output` values (matches

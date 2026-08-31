@@ -153,7 +153,7 @@ async function automationSchemaIsUsable(
  * The `generateDocument` action is a Docudesk integration and CANNOT be
  * composed without it: `AutomationEditDialog.actionBlockedReason()` returns
  * "Docudesk is not installed — document-generation actions are unavailable."
- * whenever `useAppStatus('docudesk')` reports absent, and the template renders
+ * whenever `useAppStatus('filinq')` reports absent, and the template renders
  * that blocked NoteCard via `v-if` with the whole `generateDocument` config
  * sub-form behind the `v-else-if`. So on an instance without Docudesk the
  * template/output fields genuinely do not exist and the compose scenario has no
@@ -174,7 +174,7 @@ async function automationSchemaIsUsable(
  */
 async function docudeskIsAvailable(request: APIRequestContext): Promise<boolean> {
 	try {
-		const resp = await request.get('/index.php/apps/docudesk/api', {
+		const resp = await request.get('/index.php/apps/filinq/api', {
 			headers: { 'OCS-APIRequest': 'true' },
 		})
 		return resp.status() !== 404 && resp.status() !== 501
