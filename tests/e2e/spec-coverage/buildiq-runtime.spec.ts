@@ -649,8 +649,23 @@ test('REQ-OBR-006b — the owner-only publish control is reachable and reflects 
 
 	// The switch itself, and the fact that it mirrors the stored lifecycle state
 	// rather than being a decorative control.
+	// Accept BOTH languages, and both roles the switch may carry.
+	//
+	// `/published/i` is a locale assertion in disguise: the control renders
+	// `t('buildiq', 'Published')`, and l10n/nl.json translates that to
+	// "Gepubliceerd" — which the pattern cannot match. Against a Dutch instance
+	// the element is simply never found, and "the Settings modal must expose the
+	// Published switch" then accuses the feature rather than the locator. dossiq
+	// fixed the same defect in #1554: a test that depends on the session locale
+	// tells you about the locale, not the feature.
+	//
+	// The role is widened for a different reason. NcCheckboxRadioSwitch is used
+	// here with `type="switch"`, and which ARIA role that lands on is the
+	// library's choice, not this app's contract. Naming one role asserts a
+	// library detail this test has no stake in.
 	const publishedSwitch = page
-		.getByRole('checkbox', { name: /published/i })
+		.getByRole('checkbox', { name: /published|gepubliceerd/i })
+		.or(page.getByRole('switch', { name: /published|gepubliceerd/i }))
 		.first()
 	await expect(
 		publishedSwitch,
