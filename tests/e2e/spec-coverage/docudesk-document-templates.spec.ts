@@ -169,7 +169,7 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 	async function openDialog(page, trigger: RegExp): Promise<void> {
 		const templates = page.waitForResponse(
 			(resp) =>
-				/\/apps\/docudesk\/api\/templates(\?.*)?$/.test(resp.url())
+				/\/apps\/filinq\/api\/templates(\?.*)?$/.test(resp.url())
 				&& resp.request().method() === 'GET',
 			{ timeout: 20_000 },
 		)
@@ -237,7 +237,7 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 		// then assert the result is presented without committing anything.
 		const previewRequest = page.waitForRequest(
 			(req) =>
-				/\/apps\/docudesk\/api\/templates\/[^/]+\/preview$/.test(req.url())
+				/\/apps\/filinq\/api\/templates\/[^/]+\/preview$/.test(req.url())
 				&& req.method() === 'POST',
 			{ timeout: 20_000 },
 		)
@@ -281,7 +281,7 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 		// distinguishable from a check that was never made.
 		const snapshotResponse = page.waitForResponse(
 			(resp) =>
-				/\/apps\/docudesk\/api\/templates\/00000000-0000-4000-8000-000000000000$/.test(
+				/\/apps\/filinq\/api\/templates\/00000000-0000-4000-8000-000000000000$/.test(
 					resp.url(),
 				),
 			{ timeout: 20_000 },
@@ -396,6 +396,12 @@ test.describe('docudesk-document-templates — builder surfaces', () => {
 					}
 				).OC
 				if (oc && oc.appswebroots) {
+					// Keyed by the APP ID, which is `filinq`. Deleting a stale
+					// `docudesk` key removed nothing, `useAppStatus('filinq')`
+					// still reported the app installed, and the Add button
+					// stayed enabled — the assertion below then failed for a
+					// reason that had nothing to do with the degradation path.
+					delete oc.appswebroots.filinq
 					delete oc.appswebroots.docudesk
 				}
 			}
