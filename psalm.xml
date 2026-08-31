@@ -33,6 +33,10 @@
              during static analysis when the openregister sibling app is absent.
              The real classes live in openregister/lib/AppHost/Settings/. -->
         <file name="tests/stubs/openregister-apphost.stub.php" preloadClasses="true" />
+        <!-- OpenRegister's shared DMN evaluator (ADR-065). A stub rather than a
+             referencedClass suppression: the refusal is caught and rethrown, so
+             psalm has to know it is Throwable. -->
+        <file name="tests/stubs/openregister-dmn.stub.php" preloadClasses="true" />
     </stubs>
     <issueHandlers>
         <UndefinedDocblockClass errorLevel="suppress"/>
