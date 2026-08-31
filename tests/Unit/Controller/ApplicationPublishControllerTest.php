@@ -206,7 +206,7 @@ class ApplicationPublishControllerTest extends TestCase {
 		self::assertCount(2, $calls);
 
 		// 1) the status flip, on the Application itself.
-		self::assertSame('application', $calls[0]['schema']);
+		self::assertSame('built-app', $calls[0]['schema']);
 		self::assertSame('u-app', $calls[0]['uuid']);
 		self::assertSame('published', $calls[0]['object']['status']);
 		self::assertArrayNotHasKey('@self', $calls[0]['object'], '@self must be stripped before saving');

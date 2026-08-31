@@ -86,7 +86,7 @@ class AutomationWriteService {
 	/**
 	 * Schema slug of the parent Application object.
 	 */
-	private const APPLICATION_SCHEMA = 'application';
+	private const APPLICATION_SCHEMA = 'built-app';
 
 	/**
 	 * Constructor.

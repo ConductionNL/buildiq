@@ -58,7 +58,7 @@ class IconService {
 	/**
 	 * Schema slug for Application objects.
 	 */
-	private const APPLICATION_SCHEMA = 'application';
+	private const APPLICATION_SCHEMA = 'built-app';
 
 	/**
 	 * Built-in fallback icon filenames, resolved against the app's real `img/`

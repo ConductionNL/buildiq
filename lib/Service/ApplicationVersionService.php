@@ -95,7 +95,7 @@ class ApplicationVersionService {
 	/**
 	 * Schema slug of the parent Application object.
 	 */
-	public const APPLICATION_SCHEMA = 'application';
+	public const APPLICATION_SCHEMA = 'built-app';
 
 	/**
 	 * Schema slug of the versioned-model ApplicationVersion object.
