@@ -2271,3 +2271,84 @@ namespace OCA\OpenRegister\AppHost\Settings {
 		}
 	}
 }
+
+namespace OCA\OpenRegister\Service\Dmn {
+
+	if (class_exists(DecisionEvaluationException::class, autoload: false) === false) {
+		/**
+		 * Stub DecisionEvaluationException — buildiq catches this by type and
+		 * branches on getErrorCode(), so both accessors have to be real.
+		 */
+		class DecisionEvaluationException extends \RuntimeException {
+
+			/**
+			 * @param string               $errorCode Stable machine-readable code.
+			 * @param array<string, mixed> $details   Structured details.
+			 */
+			public function __construct(
+				private readonly string $errorCode,
+				private readonly array $details = [],
+			) {
+				parent::__construct($errorCode);
+			}
+
+			/**
+			 * @return string
+			 */
+			public function getErrorCode(): string {
+				return $this->errorCode;
+			}
+
+			/**
+			 * @return array<string, mixed>
+			 */
+			public function getDetails(): array {
+				return $this->details;
+			}
+		}
+	}
+
+	if (class_exists(UnaryTestEvaluator::class, autoload: false) === false) {
+		/**
+		 * Stub UnaryTestEvaluator — a constructor argument of the evaluator below.
+		 */
+		class UnaryTestEvaluator {
+
+			/**
+			 * @var array<int, string>
+			 */
+			public const VALID_TYPES = ['string', 'number', 'boolean', 'date'];
+		}
+	}
+
+	if (class_exists(DecisionTableEvaluator::class, autoload: false) === false) {
+		/**
+		 * Stub DecisionTableEvaluator — OpenRegister's shared rule matcher.
+		 *
+		 * The grammar and the hit policies are NOT reimplemented here. They are
+		 * proven in openregister against the real class. What buildiq's suite
+		 * proves is its own adapter: that the table it hands over is translated
+		 * correctly, and that the answer coming back is mapped onto buildiq's
+		 * result shape. Both are asserted against a mock of this type, so the
+		 * signature is the part that has to be right.
+		 */
+		class DecisionTableEvaluator {
+
+			/**
+			 * @param UnaryTestEvaluator|null $evaluator The cell evaluator.
+			 */
+			public function __construct(private readonly ?UnaryTestEvaluator $evaluator = null) {
+			}
+
+			/**
+			 * @param array<string, mixed> $decisionTable The table.
+			 * @param array<string, mixed> $inputs        Named input values.
+			 *
+			 * @return array{outputs: array<string, mixed>, matchedRuleIds: array<int, string>, hitPolicy: string}
+			 */
+			public function evaluate(array $decisionTable, array $inputs): array {
+				return ['outputs' => [], 'matchedRuleIds' => [], 'hitPolicy' => 'UNIQUE'];
+			}
+		}
+	}
+}
