@@ -868,7 +868,7 @@ final class AutomationCompilerServiceTest extends TestCase {
 			$compiler->compile($automation);
 			$this->fail('Expected UnsupportedAutomationCombinationException naming the missing docudesk dependency.');
 		} catch (UnsupportedAutomationCombinationException $e) {
-			$this->assertStringContainsString('docudesk', $e->getMessage());
+			$this->assertStringContainsString('filinq', $e->getMessage());
 		}
 
 	}//end testGenerateDocumentMissingDocudeskFailsCompile()

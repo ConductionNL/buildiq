@@ -390,7 +390,7 @@ export default {
 				return
 			}
 			try {
-				const url = generateUrl(`/apps/docudesk/api/templates/${id}`)
+				const url = generateUrl(`/apps/filinq/api/templates/${id}`)
 				const { data } = await axios.get(url)
 				const name = (data && (data.name || data.title)) || ''
 				if (name) {
@@ -420,7 +420,7 @@ export default {
 			this.previewContent = ''
 			try {
 				const url = generateUrl(
-					`/apps/docudesk/api/templates/${this.selectedTemplateId}/preview`,
+					`/apps/filinq/api/templates/${this.selectedTemplateId}/preview`,
 				)
 				const { data } = await axios.post(url, {})
 				const raw =
