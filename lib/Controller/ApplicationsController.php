@@ -449,7 +449,7 @@ class ApplicationsController extends Controller {
 				$this->objectService->saveObject(
 					object: $applicationArray,
 					register: 'buildiq',
-					schema: 'application'
+					schema: 'built-app'
 				);
 				return new JSONResponse(data: ['status' => 'ok', 'target' => 'embedded'], statusCode: Http::STATUS_OK);
 			}
@@ -459,7 +459,7 @@ class ApplicationsController extends Controller {
 			$this->objectService->saveObject(
 				object: $applicationArray,
 				register: 'buildiq',
-				schema: 'application'
+				schema: 'built-app'
 			);
 			return new JSONResponse(data: ['status' => 'ok', 'target' => 'application'], statusCode: Http::STATUS_OK);
 		} catch (Throwable $e) {
@@ -626,7 +626,7 @@ class ApplicationsController extends Controller {
 			$application = $this->objectService->find(
 				id: $applicationUuid,
 				register: 'buildiq',
-				schema: 'application'
+				schema: 'built-app'
 			);
 
 			if ($application === null) {
@@ -854,7 +854,7 @@ class ApplicationsController extends Controller {
 		$application = $this->objectService->find(
 			id: $applicationUuid,
 			register: 'buildiq',
-			schema: 'application'
+			schema: 'built-app'
 		);
 
 		if ($application === null) {
