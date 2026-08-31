@@ -197,7 +197,7 @@ function disableRateLimitProtection(container: string | null): void {
  *
  * WHY THIS IS HERE AND NOT A ONE-OFF API CALL
  *
- * `GET /apps/docudesk/api/templates` answers
+ * `GET /apps/filinq/api/templates` answers
  * `{ results: [], total: 0, notConfigured: true }` until Docudesk's
  * `template_register` / `template_schema` app-config keys point at its own
  * OpenRegister register. On this instance Docudesk's own initializer had set
@@ -248,7 +248,7 @@ async function seedDocudeskTemplateFixtures(
 		},
 	})
 	try {
-		const settingsResp = await api.get('/index.php/apps/docudesk/api/settings')
+		const settingsResp = await api.get('/index.php/apps/filinq/api/settings')
 		if (settingsResp.status() === 404 || settingsResp.status() === 501) {
 			// eslint-disable-next-line no-console
 			console.log(
@@ -273,7 +273,7 @@ async function seedDocudeskTemplateFixtures(
 		if (!configuration.template_register || !configuration.template_schema) {
 			const registers = settings.availableRegisters || []
 			const register = registers.find(
-				(r: Record<string, any>) => r.slug === 'docudesk',
+				(r: Record<string, any>) => r.slug === 'filinq',
 			)
 			const schema = (register?.schemas || []).find(
 				(s: Record<string, any>) => s.slug === 'template',
@@ -285,7 +285,7 @@ async function seedDocudeskTemplateFixtures(
 				)
 				return
 			}
-			const written = await api.post('/index.php/apps/docudesk/api/settings', {
+			const written = await api.post('/index.php/apps/filinq/api/settings', {
 				data: {
 					template_register: String(register.id),
 					template_schema: String(schema.id),
@@ -300,7 +300,7 @@ async function seedDocudeskTemplateFixtures(
 		}
 
 		// Seed the fixture templates, by name, only when missing.
-		const listResp = await api.get('/index.php/apps/docudesk/api/templates')
+		const listResp = await api.get('/index.php/apps/filinq/api/templates')
 		if (listResp.ok() === false) {
 			// eslint-disable-next-line no-console
 			console.warn(
@@ -317,7 +317,7 @@ async function seedDocudeskTemplateFixtures(
 			if (existing.includes(name)) {
 				continue
 			}
-			const resp = await api.post('/index.php/apps/docudesk/api/templates', {
+			const resp = await api.post('/index.php/apps/filinq/api/templates', {
 				data: {
 					name,
 					description: 'buildiq e2e fixture template',

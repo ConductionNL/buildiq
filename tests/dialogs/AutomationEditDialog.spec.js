@@ -351,7 +351,7 @@ describe('AutomationEditDialog', () => {
 
 	it('automation-document-action REQ-AUTD-002: generateDocument action is disabled without Docudesk', async () => {
 		axios.get.mockImplementation((url) => {
-			if (String(url).includes('/apps/docudesk/api')) {
+			if (String(url).includes('/apps/filinq/api')) {
 				const error = new Error('not found')
 				error.response = { status: 404 }
 				return Promise.reject(error)

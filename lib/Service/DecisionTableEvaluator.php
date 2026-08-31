@@ -38,6 +38,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\OpenRegister\Service\Dmn\DecisionEvaluationException;
+use OCA\OpenRegister\Service\Dmn\DecisionTableEvaluator as SharedEvaluator;
 use RuntimeException;
 
 /**
@@ -55,12 +57,14 @@ class DecisionTableEvaluator {
 	/**
 	 * Constructor.
 	 *
-	 * @param ExpressionEvaluator $expressionEvaluator Resolves field paths / FEEL fragments.
+	 * @param ExpressionEvaluator    $expressionEvaluator Resolves input-column field paths against the payload.
+	 * @param SharedEvaluator     $sharedEvaluator     OpenRegister's shared rule matcher and hit-policy engine.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly ExpressionEvaluator $expressionEvaluator,
+		private readonly SharedEvaluator $sharedEvaluator,
 	) {
 
 	}//end __construct()
@@ -68,118 +72,301 @@ class DecisionTableEvaluator {
 	/**
 	 * Evaluate a decision table against a payload.
 	 *
+	 * The division of labour: buildiq resolves each input column's value from
+	 * the payload (that is buildiq's `expressionPath` concept, which the shared
+	 * evaluator knows nothing about), then hands named values and a translated
+	 * table to OpenRegister, which decides which rules match and which one wins.
+	 * The winning rule's outputs are read back out of buildiq's OWN rule rows by
+	 * index, not rebuilt from the shared result, so the returned shape is
+	 * identical to what this method has always returned.
+	 *
 	 * @param array<string,mixed> $table The DecisionTable object data.
 	 * @param array<string,mixed> $payload The input payload.
 	 *
 	 * @return array{outputColumns:array<string,mixed>,triggeredRuleId:string|null,matches:array<int,int>,overlap_warnings:array<int,string>,unreachable_rules:array<int,int>}
 	 *
-	 * @throws RuntimeException When hit policy `unique` matches more than one rule.
+	 * @throws RuntimeException When hit policy `unique` matches more than one rule, or `any` matches rules that disagree.
 	 *
 	 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-002-decisiontable-schema-for-dmn-based-multi-condition-rules
 	 */
 	public function evaluate(array $table, array $payload): array {
-		$hitPolicy = (string)($table['hitPolicy'] ?? 'first');
 		$inputs = ($table['inputColumns'] ?? []);
 		$outputs = ($table['outputColumns'] ?? []);
-		$rules = ($table['rules'] ?? []);
+		$rules = array_values(($table['rules'] ?? []));
+		$hitPolicy = $this->sharedHitPolicy(hitPolicy: (string)($table['hitPolicy'] ?? 'first'));
 
 		// Resolve each input column's value from the payload once.
 		$columnValues = [];
 		foreach ($inputs as $col) {
 			$name = (string)($col['name'] ?? '');
+			if ($name === '') {
+				continue;
+			}
+
 			$path = (string)($col['expressionPath'] ?? $name);
 			$columnValues[$name] = $this->expressionEvaluator->evaluateExpression($path, $payload);
 		}
 
-		$matchedIndexes = [];
-		foreach ($rules as $index => $rule) {
-			if ($this->ruleMatches(conditions: ($rule['conditions'] ?? []), columnValues: $columnValues) === true) {
-				$matchedIndexes[] = $index;
+		// A path that does not resolve in the payload yields null, and the shared
+		// evaluator coerces every declared input up front, so a single null
+		// would refuse the whole table with `type_mismatch`. buildiq's contract
+		// is the opposite: an unresolved column simply fails the conditions that
+		// test it, and the table falls through to its defaults. Dropping the
+		// null columns and the rules that test them reproduces exactly that,
+		// without reimplementing any matching here.
+		$unresolved = array_keys(array_filter($columnValues, static fn (mixed $value): bool => $value === null));
+		$columnValues = array_diff_key($columnValues, array_flip($unresolved));
+
+		try {
+			$outcome = $this->sharedEvaluator->evaluate(
+				decisionTable: $this->toSharedTable(
+					inputs: $inputs,
+					outputs: $outputs,
+					rules: $rules,
+					hitPolicy: $hitPolicy,
+					unresolved: $unresolved,
+				),
+				inputs: $columnValues,
+			);
+		} catch (DecisionEvaluationException $e) {
+			if ($e->getErrorCode() === 'no_rule_matched') {
+				return $this->noMatchResult(outputs: $outputs);
 			}
+
+			if ($e->getErrorCode() === 'hit_policy_violation') {
+				$matched = implode(', ', ($e->getDetails()['matchedRuleIds'] ?? []));
+				throw new RuntimeException(
+					'Hit policy "' . strtolower($hitPolicy) . '" violated: rules ' . $matched . ' all matched.'
+				);
+			}
+
+			throw $e;
+		}//end try
+
+		$matched = array_map(static fn (string $id): int => (int)$id, $outcome['matchedRuleIds']);
+		if ($matched === []) {
+			return $this->noMatchResult(outputs: $outputs);
 		}
 
-		$result = $this->applyHitPolicy(hitPolicy: $hitPolicy, matched: $matchedIndexes, rules: $rules, outputs: $outputs);
+		if ($hitPolicy === 'COLLECT') {
+			$collected = [];
+			foreach ($matched as $index) {
+				$collected[] = ($rules[$index]['values'] ?? []);
+			}
 
-		return [
-			'outputColumns' => $result['output'],
-			'triggeredRuleId' => $result['ruleId'],
-			'matches' => $matchedIndexes,
-			'overlap_warnings' => [],
-			'unreachable_rules' => [],
-		];
+			return $this->result(output: ['collected' => $collected], ruleId: $this->ruleLabel(index: $matched[0], rules: $rules), matched: $matched);
+		}
+
+		return $this->result(
+			output: ($rules[$matched[0]]['values'] ?? []),
+			ruleId: $this->ruleLabel(index: $matched[0], rules: $rules),
+			matched: $matched,
+		);
 
 	}//end evaluate()
 
 	/**
-	 * Apply the configured hit policy to the matched rule set.
+	 * Translate buildiq's table shape into the shared evaluator's.
 	 *
-	 * @param string $hitPolicy The DMN hit policy.
-	 * @param array<int,int> $matched Indexes of matching rules (in table order).
-	 * @param array<int,mixed> $rules All rules.
-	 * @param array<int,mixed> $outputs Output column definitions.
+	 * Rule ids are set to the rule's own index as a string, so the shared
+	 * evaluator's `matchedRuleIds` come back as buildiq's rule indexes and the
+	 * winning row can be read straight out of buildiq's `rules` array.
 	 *
-	 * @return array{output:array<string,mixed>,ruleId:string|null}
+	 * @param array<int,mixed>  $inputs     buildiq's input columns.
+	 * @param array<int,mixed>  $outputs    buildiq's output columns.
+	 * @param array<int,mixed>  $rules      buildiq's rule rows.
+	 * @param string            $hitPolicy  The already-translated hit policy.
+	 * @param array<int,string> $unresolved Columns whose payload path yielded null.
 	 *
-	 * @throws RuntimeException On a `unique` policy violation.
+	 * @return array<string,mixed> The shared evaluator's table shape.
 	 */
-	private function applyHitPolicy(string $hitPolicy, array $matched, array $rules, array $outputs): array {
-		if ($matched === []) {
-			return ['output' => $this->defaultOutput(outputs: $outputs), 'ruleId' => null];
-		}
-
-		switch ($hitPolicy) {
-			case 'unique':
-				if (count($matched) > 1) {
-					throw new RuntimeException(
-						'Hit policy "unique" violated: rules ' . implode(', ', $matched) . ' all matched.'
-					);
+	private function toSharedTable(array $inputs, array $outputs, array $rules, string $hitPolicy, array $unresolved = []): array {
+		$sharedRules = [];
+		foreach ($rules as $index => $rule) {
+			$inputEntries = [];
+			$testsNullColumn = false;
+			foreach ($inputs as $col) {
+				$name = (string)($col['name'] ?? '');
+				if ($name === '') {
+					continue;
 				}
-				return $this->singleOutput(index: $matched[0], rules: $rules);
-			case 'priority':
-				$best = $matched[0];
-				$bestPrio = (int)($rules[$best]['priority'] ?? 0);
-				foreach ($matched as $idx) {
-					$prio = (int)($rules[$idx]['priority'] ?? 0);
-					if ($prio > $bestPrio) {
-						$best = $idx;
-						$bestPrio = $prio;
+
+				$cell = $this->sharedCell(cell: (string)($rule['conditions'][$name] ?? ''));
+				if (in_array($name, $unresolved, true) === true) {
+					// The column has no value, so a real test on it cannot pass.
+					// A wildcard still would, and dropping the column leaves the
+					// rest of the rule to decide, which is what used to happen.
+					if ($cell !== '-') {
+						$testsNullColumn = true;
 					}
+
+					continue;
 				}
-				return $this->singleOutput(index: $best, rules: $rules);
-			case 'any':
-			case 'collect':
-				$collected = [];
-				foreach ($matched as $idx) {
-					$collected[] = ($rules[$idx]['values'] ?? []);
+
+				$inputEntries[] = $cell;
+			}
+
+			if ($testsNullColumn === true) {
+				continue;
+			}
+
+			$outputEntries = [];
+			foreach ($outputs as $col) {
+				$name = (string)($col['name'] ?? '');
+				if ($name === '') {
+					continue;
 				}
-				return [
-					'output' => ['collected' => $collected],
-					'ruleId' => $this->ruleLabel(index: $matched[0], rules: $rules),
-				];
 
-			case 'first':
-			case 'rule-order':
-			default:
-				return $this->singleOutput(index: $matched[0], rules: $rules);
-		}//end switch
+				$outputEntries[] = ($rule['values'][$name] ?? null);
+			}
 
-	}//end applyHitPolicy()
+			$sharedRules[] = [
+				'id' => (string)$index,
+				'inputEntries' => $inputEntries,
+				'outputEntries' => $outputEntries,
+				'priority' => (int)($rule['priority'] ?? 0),
+			];
+		}//end foreach
 
-	/**
-	 * Build the single-rule output payload.
-	 *
-	 * @param int $index The winning rule index.
-	 * @param array<int,mixed> $rules All rules.
-	 *
-	 * @return array{output:array<string,mixed>,ruleId:string|null}
-	 */
-	private function singleOutput(int $index, array $rules): array {
 		return [
-			'output' => ($rules[$index]['values'] ?? []),
-			'ruleId' => $this->ruleLabel(index: $index, rules: $rules),
+			'hitPolicy' => $hitPolicy,
+			'inputs' => $this->sharedColumns(columns: $inputs, exclude: $unresolved),
+			'outputs' => $this->sharedColumns(columns: $outputs),
+			'rules' => $sharedRules,
 		];
 
-	}//end singleOutput()
+	}//end toSharedTable()
+
+	/**
+	 * Reduce buildiq's column definitions to the shared `{name, type}` shape.
+	 *
+	 * @param array<int,mixed>  $columns The column definitions.
+	 * @param array<int,string> $exclude Column names to leave out.
+	 *
+	 * @return array<int,array{name:string,type:string}> The shared columns.
+	 */
+	private function sharedColumns(array $columns, array $exclude = []): array {
+		$shared = [];
+		foreach ($columns as $col) {
+			$name = (string)($col['name'] ?? '');
+			if ($name === '' || in_array($name, $exclude, true) === true) {
+				continue;
+			}
+
+			$shared[] = ['name' => $name, 'type' => (string)($col['type'] ?? 'string')];
+		}
+
+		return $shared;
+
+	}//end sharedColumns()
+
+	/**
+	 * Translate one cell from buildiq's dialect into the shared unary-test grammar.
+	 *
+	 * The two grammars overlap but are not the same, and the differences are
+	 * silent in the dangerous direction: an untranslated `*` reads as a literal
+	 * and simply stops matching, with no error to notice. Measured against both
+	 * evaluators, three dialects need translating:
+	 *
+	 * - `*` and `any` are buildiq wildcards. The shared grammar knows only `-`
+	 *   and the empty cell.
+	 * - `==7` is buildiq's equality. The shared grammar spells it `=7`.
+	 * - `18..65` is a buildiq range. The shared grammar requires the brackets,
+	 *   `[18..65]`, and rejects the bare form.
+	 *
+	 * Everything else (`>=`, `<`, `!=`, `in (...)`, bare literals, `-`, empty)
+	 * is common to both and passes through untouched.
+	 *
+	 * @param string $cell The raw cell condition.
+	 *
+	 * @return string The cell in the shared grammar.
+	 */
+	private function sharedCell(string $cell): string {
+		$trimmed = trim($cell);
+
+		if (in_array(strtolower($trimmed), self::DONT_CARE, true) === true) {
+			return '-';
+		}
+
+		if (str_starts_with($trimmed, '==') === true) {
+			return '=' . substr($trimmed, 2);
+		}
+
+		if (str_contains($trimmed, '..') === true
+			&& str_starts_with($trimmed, '[') === false
+			&& str_starts_with($trimmed, '(') === false
+		) {
+			return '[' . $trimmed . ']';
+		}
+
+		return $trimmed;
+
+	}//end sharedCell()
+
+	/**
+	 * Translate buildiq's hit policy into the shared evaluator's vocabulary.
+	 *
+	 * Buildiq spells its policies in lower case and treats anything it does not
+	 * recognise as `first`. The shared evaluator spells them upper case and
+	 * refuses what it does not implement, so the fallback has to happen here or
+	 * a table with a typo'd policy would start erroring instead of deciding.
+	 *
+	 * @param string $hitPolicy buildiq's declared hit policy.
+	 *
+	 * @return string The shared evaluator's spelling.
+	 */
+	private function sharedHitPolicy(string $hitPolicy): string {
+		$upper = strtoupper(trim($hitPolicy));
+		if ($upper === 'RULE-ORDER') {
+			return 'FIRST';
+		}
+
+		if (in_array($upper, ['UNIQUE', 'FIRST', 'COLLECT', 'PRIORITY', 'ANY'], true) === false) {
+			return 'FIRST';
+		}
+
+		return $upper;
+
+	}//end sharedHitPolicy()
+
+	/**
+	 * The result when no rule matched: the declared defaults, and no rule id.
+	 *
+	 * @param array<int,mixed> $outputs Output column definitions.
+	 *
+	 * @return array{outputColumns:array<string,mixed>,triggeredRuleId:string|null,matches:array<int,int>,overlap_warnings:array<int,string>,unreachable_rules:array<int,int>}
+	 */
+	private function noMatchResult(array $outputs): array {
+		return $this->result(output: $this->defaultOutput(outputs: $outputs), ruleId: null, matched: []);
+
+	}//end noMatchResult()
+
+	/**
+	 * Assemble the public result shape.
+	 *
+	 * `matches` reports what the shared evaluator returned. Under `collect`
+	 * that is every matching rule, as before. Under the single-hit policies it
+	 * is the winning rule only, where this method used to report every rule
+	 * that matched. Nothing in buildiq reads the key, and neither does anything
+	 * in its test suite, so the narrowing is recorded here rather than worked
+	 * around.
+	 *
+	 * @param array<string,mixed> $output  The output column values.
+	 * @param string|null         $ruleId  The triggered rule's label.
+	 * @param array<int,int>      $matched The matching rule indexes.
+	 *
+	 * @return array{outputColumns:array<string,mixed>,triggeredRuleId:string|null,matches:array<int,int>,overlap_warnings:array<int,string>,unreachable_rules:array<int,int>}
+	 */
+	private function result(array $output, ?string $ruleId, array $matched): array {
+		return [
+			'outputColumns' => $output,
+			'triggeredRuleId' => $ruleId,
+			'matches' => $matched,
+			'overlap_warnings' => [],
+			'unreachable_rules' => [],
+		];
+
+	}//end result()
 
 	/**
 	 * Derive a stable rule identifier (label or positional).
@@ -218,82 +405,6 @@ class DecisionTableEvaluator {
 
 		return $out;
 	}//end defaultOutput()
-
-	/**
-	 * Test whether all of a rule's column conditions match the resolved values.
-	 *
-	 * @param array<string,mixed> $conditions The rule's per-column conditions.
-	 * @param array<string,mixed> $columnValues Resolved column values.
-	 *
-	 * @return bool
-	 */
-	private function ruleMatches(array $conditions, array $columnValues): bool {
-		foreach ($conditions as $column => $condition) {
-			$value = ($columnValues[$column] ?? null);
-			if ($this->cellMatches(condition: (string)$condition, value: $value) === false) {
-				return false;
-			}
-		}
-
-		return true;
-	}//end ruleMatches()
-
-	/**
-	 * Evaluate a single cell condition against a column value.
-	 *
-	 * @param string $condition The cell condition source.
-	 * @param mixed $value The resolved column value.
-	 *
-	 * @return bool
-	 */
-	private function cellMatches(string $condition, mixed $value): bool {
-		$trimmed = trim($condition);
-		if (in_array(strtolower($trimmed), self::DONT_CARE, true) === true) {
-			return true;
-		}
-
-		// Build a FEEL expression with `__v` bound to the column value, e.g.
-		// ">=18" → "__v >= 18", "18..65" → "__v in (18..65)", "in (1,2)" → "__v in (1,2)".
-		$context = ['__v' => $value];
-
-		$expr = $this->buildCellExpression(trimmed: $trimmed);
-
-		return (bool)$this->expressionEvaluator->evaluateExpression($expr, $context);
-	}//end cellMatches()
-
-	/**
-	 * Build the FEEL expression for one cell condition, with `__v` bound to the
-	 * column value.
-	 *
-	 * Extracted from {@see self::cellMatches()} so the condition dialects read
-	 * as an ordered sequence of guards rather than an if/else-if chain. The
-	 * order is significant and unchanged: comparison operator, range, explicit
-	 * `in (...)`, numeric equality, then bare string equality as the fallback.
-	 *
-	 * @param string $trimmed The trimmed cell condition.
-	 *
-	 * @return string The FEEL expression.
-	 */
-	private function buildCellExpression(string $trimmed): string {
-		if (preg_match('/^(==|!=|<=|>=|<|>)\s*(.+)$/', $trimmed, $matches) === 1) {
-			return '__v ' . $matches[1] . ' ' . $matches[2];
-		}
-
-		if (str_contains($trimmed, '..') === true) {
-			return '__v in (' . $trimmed . ')';
-		}
-
-		if (preg_match('/^in\s*\(/i', $trimmed) === 1) {
-			return '__v ' . $trimmed;
-		}
-
-		if (is_numeric($trimmed) === true) {
-			return '__v == ' . $trimmed;
-		}
-
-		// Bare string literal equality.
-		return "__v == '" . str_replace("'", '', $trimmed) . "'";
-	}//end buildCellExpression()
 
 	/**
 	 * Detect overlapping, unreachable and (for `unique`) gap issues.

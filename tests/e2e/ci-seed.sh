@@ -511,7 +511,7 @@ fi
 # `buildiq-docudesk-documents.postman_collection.json` items 4 and 6 got a
 # **500**, not the 4xx they assert:
 #
-#   OCA\DocuDesk\Exception\RegisterNotConfiguredException
+#   OCA\Filinq\Exception\RegisterNotConfiguredException
 #   "Template register/schema not configured"
 #   OpenRegisterResolver.php:68 → TemplateService.php:171
 #     → CorrespondenceService.php:200 → CorrespondenceController.php:107
@@ -529,7 +529,7 @@ fi
 # Docudesk is OPTIONAL. A 404/501 on the settings probe is a clean skip, not a
 # failure: buildiq's own specs must not require a sibling app to be present.
 DD_BODY="$(mktemp)"
-DD_CODE="$(api_get "$DD_BODY" "/index.php/apps/docudesk/api/settings")"
+DD_CODE="$(api_get "$DD_BODY" "/index.php/apps/filinq/api/settings")"
 if [ "$DD_CODE" = "404" ] || [ "$DD_CODE" = "501" ]; then
 	echo "[ci-seed] docudesk not installed (HTTP ${DD_CODE}) — template register not configured, skipping."
 elif [ "$DD_CODE" != "200" ]; then
@@ -551,7 +551,7 @@ if cfg.get('template_register') and cfg.get('template_schema'):
     sys.exit(0)
 register = next(
     (r for r in (body.get('availableRegisters') or [])
-     if isinstance(r, dict) and r.get('slug') == 'docudesk'),
+     if isinstance(r, dict) and r.get('slug') == 'filinq'),
     None,
 )
 if register is None:
@@ -577,12 +577,12 @@ PY
 			-u "${USER_NAME}:${USER_PASS}" -H 'OCS-APIRequest: true' \
 			-H 'Content-Type: application/json' \
 			-d "{\"template_register\":\"${DD_REG}\",\"template_schema\":\"${DD_SCH}\",\"template_source\":\"openregister\"}" \
-			"${BASE}/index.php/apps/docudesk/api/settings" || echo 000)"
+			"${BASE}/index.php/apps/filinq/api/settings" || echo 000)"
 		echo "[ci-seed] docudesk template register configured (register=${DD_REG}, schema=${DD_SCH}, HTTP ${DD_WRITE})."
 		# Read it BACK. A 200 on the write is not evidence the value stuck — this
 		# is the same class of mistake as trusting an import's success message.
 		DD_CHECK="$(mktemp)"
-		DD_CHECK_CODE="$(api_get "$DD_CHECK" "/index.php/apps/docudesk/api/settings")"
+		DD_CHECK_CODE="$(api_get "$DD_CHECK" "/index.php/apps/filinq/api/settings")"
 		python3 - "$DD_CHECK" "$DD_CHECK_CODE" <<'PY'
 import json, sys
 path, code = sys.argv[1], sys.argv[2]

@@ -29,6 +29,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\ConditionActionExecutor;
 use OCA\Buildiq\Service\DecisionTableEvaluator;
+use OCA\OpenRegister\Service\Dmn\DecisionTableEvaluator as SharedEvaluator;
 use OCA\Buildiq\Service\ExpressionEvaluator;
 use OCA\Buildiq\Service\RuleActionDispatcher;
 use OCA\Buildiq\Service\RuleEngineService;
@@ -101,7 +102,7 @@ final class RuleEngineServiceTest extends TestCase {
 		$this->actionDispatcher = $this->createMock(RuleActionDispatcher::class);
 		$this->service = new RuleEngineService(
 			$this->objectService,
-			new DecisionTableEvaluator($evaluator),
+			new DecisionTableEvaluator($evaluator, $this->sharedEvaluator()),
 			new ConditionActionExecutor($evaluator),
 			$this->cacheManager,
 			$this->userSession,
@@ -110,6 +111,34 @@ final class RuleEngineServiceTest extends TestCase {
 		);
 
 	}//end setUp()
+
+	/**
+	 * OpenRegister's shared evaluator, standing in for the real matcher.
+	 *
+	 * This suite is about RuleEngineService: resolution, scoping, caching, PII
+	 * masking, recursion limits and dispatch. It reaches a decision table on
+	 * the way, so it needs an evaluator that decides something, but WHICH rule
+	 * matches is OpenRegister's contract and is proven there. The double picks
+	 * the first rule, which is what the real evaluator does for the eligible
+	 * payload these tests use.
+	 *
+	 * @return SharedEvaluator The double.
+	 */
+	private function sharedEvaluator(): SharedEvaluator {
+		$shared = $this->createMock(SharedEvaluator::class);
+		$shared->method('evaluate')->willReturnCallback(
+			static function (array $decisionTable, array $inputs): array {
+				return [
+					'outputs' => [],
+					'matchedRuleIds' => ['0'],
+					'hitPolicy' => $decisionTable['hitPolicy'],
+				];
+			}
+		);
+
+		return $shared;
+
+	}//end sharedEvaluator()
 
 	/**
 	 * Build the loan RuleSet + DecisionTable rows returned by findAll.
