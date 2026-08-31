@@ -103,13 +103,62 @@ export async function ensureVersionChain(
 				}
 			}
 
-			return (await list()).map((v) => v?.slug).join(',')
+			// READ THE CHAIN BACK BEFORE CLAIMING IT EXISTS.
+			//
+			// Every POST above can answer 2xx and the list still come back short:
+			// the create and the subsequent read are separate requests, and a
+			// read-after-write lag returns a chain that is not there yet. Polling
+			// here costs at most a second and turns an intermittent failure in a
+			// spec into a deterministic one in the seed.
+			let slugs: string[] = []
+			for (let attempt = 0; attempt < 10; attempt++) {
+				slugs = (await list()).map((v) => String(v?.slug))
+				if (
+					['development', 'staging', 'production'].every((s) =>
+						slugs.includes(s),
+					)
+				) {
+					break
+				}
+				await new Promise((r) => setTimeout(r, 300))
+			}
+			return slugs.join(',')
 		},
 		{ slug, manifest: EMPTY_MANIFEST },
 	)
 
 	if (typeof result === 'string' && result.startsWith('error')) {
 		throw new Error(`ensureVersionChain(${slug}) failed — ${result}`)
+	}
+
+	// 🔴 A CREATE THAT RETURNED 2xx IS NOT A CHAIN THAT EXISTS.
+	//
+	// This used to check only that no POST reported an error, and returned the
+	// slug list without ever looking at it. So a run where the creates all
+	// succeeded but the chain read back short passed the seed and failed later
+	// in the spec, on
+	//
+	//   Error: the seeded development -> staging -> production chain must be
+	//   listed        Expected: 3   Received: <fewer>
+	//
+	// which reads as a broken version-history panel rather than as a seed that
+	// did not land. Measured on development 2026-08-31: buildiq E2E
+	// 1 failed / 200 passed, and the SAME commit re-run passed 201 — the
+	// signature of a race, not a regression.
+	//
+	// Asserting the state the spec depends on makes the failure name its own
+	// cause, and keeps this helper honest if the versions API changes shape.
+	const found = typeof result === 'string' ? result.split(',').filter(Boolean) : []
+	const missing = ['development', 'staging', 'production'].filter(
+		(s) => found.includes(s) === false,
+	)
+	if (missing.length > 0) {
+		throw new Error(
+			`ensureVersionChain(${slug}) did not produce the full chain — `
+				+ `missing [${missing.join(', ')}], found [${found.join(', ') || 'nothing'}]. `
+				+ `The version-history specs assert three rows, so they would fail on the `
+				+ `panel rather than on this seed.`,
+		)
 	}
 }
 
