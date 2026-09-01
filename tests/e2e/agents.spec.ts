@@ -183,7 +183,6 @@ test.describe('agent-workspace — Agents page', () => {
 	// @e2e agent-workspace::run-history-shows-every-tool-calls-arguments-and-result
 	test('chat with an agent, approve a proposal, confirm the run appears in run-history with tool-call detail', async ({
 		page,
-		_request,
 	}) => {
 		// This instance's `/api/copilot/health` reports {status:"ok"} (NC core
 		// registers the `core:text2text` task type even with no real backing
