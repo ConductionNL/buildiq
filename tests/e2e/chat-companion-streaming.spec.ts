@@ -187,14 +187,18 @@ test.describe('AI Chat Companion — FAB + thinking + response (spec: ai-chat-co
  * enabled by the ai-chat-companion-streaming change.
  */
 test.describe('AI Chat Companion — true streaming (gated on ai-chat-companion-streaming)', () => {
-	test.skip((_fixtures, _testInfo) => {
+	// eslint-disable-next-line no-empty-pattern -- Playwright requires the first
+	// argument to BE an object destructuring pattern ("First argument must use
+	// the object destructuring pattern"), so an empty one is how a callback
+	// says it needs no fixtures. A plain identifier fails to collect.
+	test.skip(({}, _testInfo) => {
 		// Toggle this off once the streaming change is applied + the
 		// configured provider exposes generateStreamOfText.
 		return true
 	}, 'the streaming surface is not built yet, and both tests below are EMPTY — enabling them would report coverage that does not exist. Tracked in openspec/changes/ai-chat-companion-streaming/, which now exists: that change carries the token-event and heartbeat requirements plus tasks 4.1/4.2 to write these two bodies. Remove this guard only once they assert something.')
 
 	test('partial response text appears before the call completes', async ({
-		_page,
+		page: _page,
 	}) => {
 		// Long-prompt test: ask for a multi-paragraph answer, assert the
 		// assistant bubble's text grows over time rather than appearing
@@ -202,7 +206,7 @@ test.describe('AI Chat Companion — true streaming (gated on ai-chat-companion-
 	})
 
 	test('long-running call surfaces at least one heartbeat to the frontend', async ({
-		_page,
+		page: _page,
 	}) => {
 		// 35s prompt + watch network panel for `event: heartbeat` frames.
 	})
