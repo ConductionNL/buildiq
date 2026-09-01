@@ -154,7 +154,7 @@
 			"name": "OpenRegister-backed Application CRUD",
 			"item": [
 				{
-					"name": "GET /openregister/objects/buildiq/application lists hello-world",
+					"name": "GET /openregister/objects/buildiq/built-app lists hello-world",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -167,7 +167,7 @@
 								"value": "true"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application",
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/built-app",
 						"description": "After SeedHelloWorld runs, the buildiq/application register lists at least one object with slug='hello-world'."
 					},
 					"event": [
@@ -219,7 +219,7 @@
 							"mode": "raw",
 							"raw": "{\n  \"slug\": \"newman-roundtrip\",\n  \"name\": \"Newman Round-trip\",\n  \"description\": \"Synthetic Application created by the Newman CRUD round-trip\"\n}"
 						},
-						"url": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application",
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/built-app",
 						"description": "Create a synthetic Application object via OR REST. Per ADR-002 (versioned-app model) the `manifest`/`version`/`status` fields live on ApplicationVersion now, NOT the Application itself."
 					},
 					"event": [
@@ -260,7 +260,7 @@
 								"value": "true"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application/{{created_uuid}}",
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/built-app/{{created_uuid}}",
 						"description": "Read-back asserts the POST landed on disk and the uuid resolves. Versioned model: no manifest at this layer; verified separately on the version record below."
 					},
 					"event": [
@@ -351,7 +351,7 @@
 							"mode": "raw",
 							"raw": "{\n  \"slug\": \"newman-roundtrip\",\n  \"name\": \"Newman Round-trip\",\n  \"description\": \"Synthetic Application created by the Newman CRUD round-trip\",\n  \"productionVersion\": \"{{created_version_uuid}}\"\n}"
 						},
-						"url": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application/{{created_uuid}}",
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/built-app/{{created_uuid}}",
 						"description": "ADR-002: the application's `productionVersion` field carries the UUID of the version that should be served as the live manifest."
 					},
 					"event": [
@@ -545,7 +545,7 @@
 								"value": "true"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application/{{created_uuid}}",
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/built-app/{{created_uuid}}",
 						"description": "Tear down the round-trip Application so re-runs stay idempotent. OR returns 200 or 204."
 					},
 					"event": [
@@ -778,7 +778,7 @@
 								"value": "true"
 							}
 						],
-						"url": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application?slug=newman-sat-clone",
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/built-app?slug=newman-sat-clone",
 						"description": "Best-effort cleanup of the clone produced by the contract test."
 					},
 					"event": [

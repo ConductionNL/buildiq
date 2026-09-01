@@ -190,7 +190,7 @@ class SeedHelloWorldFixtureTest extends TestCase {
 		$applicationWrites = array_values(
 			array_filter(
 				$this->saved,
-				static fn (array $call): bool => $call['schema'] === 'application'
+				static fn (array $call): bool => $call['schema'] === 'built-app'
 					&& ($call['data']['slug'] ?? null) === 'hello-world'
 			)
 		);
@@ -238,7 +238,7 @@ class SeedHelloWorldFixtureTest extends TestCase {
 		$applicationWrites = array_values(
 			array_filter(
 				$this->saved,
-				static fn (array $call): bool => $call['schema'] === 'application'
+				static fn (array $call): bool => $call['schema'] === 'built-app'
 			)
 		);
 		$versionWrites = array_values(
@@ -291,7 +291,7 @@ class SeedHelloWorldFixtureTest extends TestCase {
 		$applicationWrites = array_values(
 			array_filter(
 				$this->saved,
-				static fn (array $call): bool => $call['schema'] === 'application'
+				static fn (array $call): bool => $call['schema'] === 'built-app'
 			)
 		);
 		$versionWrites = array_values(
@@ -331,10 +331,10 @@ class SeedHelloWorldFixtureTest extends TestCase {
 		(new CommandTester($this->command))->execute([]);
 
 		$firstUuid = array_values(
-			array_filter($first, static fn (array $c): bool => $c['schema'] === 'application')
+			array_filter($first, static fn (array $c): bool => $c['schema'] === 'built-app')
 		)[0]['uuid'];
 		$secondUuid = array_values(
-			array_filter($this->saved, static fn (array $c): bool => $c['schema'] === 'application')
+			array_filter($this->saved, static fn (array $c): bool => $c['schema'] === 'built-app')
 		)[0]['uuid'];
 
 		$this->assertNotSame($firstUuid, $secondUuid);
