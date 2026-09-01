@@ -638,7 +638,7 @@ class Application extends App implements IBootstrap {
 			event: ObjectCreatingEvent::class,
 			listener: ProductionVersionGuardListener::class,
 			registers: null,
-			schemas: ['application']
+			schemas: ['built-app']
 		);
 
 		// Automation-designer artifact cleanup (spec REQ-AUTD-005). Automation
