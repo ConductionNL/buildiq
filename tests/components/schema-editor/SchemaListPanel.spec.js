@@ -18,9 +18,8 @@
  * stubbed to capture their props + emit synthetic confirm events.
  */
 
-import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-
+import { describe, expect, it, vi } from 'vitest'
 import SchemaListPanel, {
 	scopeSummary,
 } from '../../../src/components/schema-editor/SchemaListPanel.vue'

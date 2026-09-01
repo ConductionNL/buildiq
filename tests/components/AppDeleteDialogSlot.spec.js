@@ -18,8 +18,8 @@
  *   - an API failure surfaces an error and does NOT close the dialog
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const axiosDeleteMock = vi.fn()
 vi.mock('@nextcloud/axios', () => ({

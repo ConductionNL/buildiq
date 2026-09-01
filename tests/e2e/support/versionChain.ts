@@ -28,7 +28,8 @@
  */
 
 import type { Page } from '@playwright/test'
-import { ensureApp } from './appFixture'
+
+import { ensureApp } from './appFixture.ts'
 
 /** The upstream-to-downstream chain this fixture guarantees. */
 export const CHAIN = ['development', 'staging', 'production'] as const

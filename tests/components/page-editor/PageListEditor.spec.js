@@ -17,8 +17,8 @@
  *  - vuedraggable @input forwards a re-ordered array.
  */
 
-import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
 import PageListEditor, {
 	PAGE_TYPES,
 } from '../../../src/components/page-editor/PageListEditor.vue'

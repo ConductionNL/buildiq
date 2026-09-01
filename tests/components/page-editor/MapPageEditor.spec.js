@@ -15,8 +15,8 @@
  *  - validatedConfigKeys equals the five surfaced keys.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const fetchRegisters = vi.fn(async () => [
 	{ slug: 'openbuild-hello-world', title: 'Hello World' },

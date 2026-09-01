@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /*
  * SPDX-FileCopyrightText: 2026 Buildiq Contributors
  * SPDX-License-Identifier: EUPL-1.2
@@ -9,8 +10,7 @@
  * responsibility, covered in FormFieldBuilder.logic.spec.js), non-compiling
  * pattern marked invalid and never emitted.
  */
-import { describe, it, expect } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
 import FieldValidationBuilder from '../../../src/components/page-editor/fields/FieldValidationBuilder.vue'
 
 function mountBuilder(propsData = {}) {

@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -16,8 +17,7 @@
  *    applier, theme-picker-consumes-nldesign REQ-NTS-002/003) and
  *    livePreviewAvailable gates the toggle (design.md OQ-1, task 3.3).
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 const axiosGetMock = vi.fn()
@@ -137,7 +137,7 @@ vi.mock('../../src/components/DocumentAttachmentsSection.vue', () =>
 const PageDesignerHost = (await import('../../src/views/PageDesignerHost.vue'))
 	.default
 
-const flush = async (wrapper) => {
+async function flush(wrapper) {
 	await new Promise((r) => setTimeout(r, 0))
 	if (wrapper) await wrapper.vm.$nextTick()
 }

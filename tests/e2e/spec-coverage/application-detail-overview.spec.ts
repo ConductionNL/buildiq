@@ -19,13 +19,15 @@
  * The exact objectId is resolved by clicking on the card first.
  */
 
-import { test, expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 const LIVE = process.env.BUILDIQ_E2E_LIVE === '1'
 
 // Helper: navigate to the Hello World detail page
-async function gotoHelloWorldDetail(page: import('@playwright/test').Page) {
+async function gotoHelloWorldDetail(page: Page) {
 	await page.goto(`${BASE}/apps/buildiq/applications`)
 	const card = page.getByRole('link', { name: /Hello World/i }).first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
@@ -87,15 +89,11 @@ test('REQ-OBADO-001 — detail page renders the app icon from the Application re
 
 	// An icon element should be present in the hero/header area
 	// Icons are typically <img> or <svg> elements in the header region
-	const heroIcon = page
-		.locator(
-			'header img, [class*="hero"] img, [class*="header"] img, [class*="icon"] img',
-		)
-		.first()
-	const svgIcon = page
-		.locator('header svg, [class*="hero"] svg, [class*="header"] svg')
-		.first()
-	const iconCount = (await heroIcon.count()) + (await svgIcon.count())
+	// The icon count was computed into `iconCount` and never read, so the two
+	// locators and the count were dead. Removed rather than left as a bare
+	// expression: the preceding line ends in `.first()` and the next began with
+	// `(`, which ASI joins into a CALL on the locator — a runtime TypeError, not
+	// a no-op. The real assertion is the `main` visibility check below.
 
 	// If neither img nor svg is found, the page still passes if main rendered
 	// (icon may be a CSS background or not yet implemented for the dev fixture)

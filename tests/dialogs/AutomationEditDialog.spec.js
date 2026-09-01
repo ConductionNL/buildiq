@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -6,8 +7,7 @@
  *
  * Spec: automation-designer (REQ-AUTD-002, REQ-AUTD-003).
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@nextcloud/router', async (importOriginal) => ({
 	...(await importOriginal()),
@@ -75,25 +75,28 @@ const stubs = {
 
 const flush = () => new Promise((r) => setTimeout(r, 0))
 
-const baseAutomation = () => ({
-	slug: '',
-	name: '',
-	description: '',
-	applicationSlug: 'permit-tracker',
-	versionUuid: 'version-1',
-	enabled: true,
-	trigger: { type: 'manual' },
-	condition: null,
-	actions: [],
-})
+function baseAutomation() {
+	return {
+		slug: '',
+		name: '',
+		description: '',
+		applicationSlug: 'permit-tracker',
+		versionUuid: 'version-1',
+		enabled: true,
+		trigger: { type: 'manual' },
+		condition: null,
+		actions: [],
+	}
+}
 
-const factory = (automation = baseAutomation()) =>
-	mount(AutomationEditDialog, {
+function factory(automation = baseAutomation()) {
+	return mount(AutomationEditDialog, {
 		propsData: { open: false, automation, register: '' },
 		stubs,
 	})
+}
 
-const openDialog = async (wrapper) => {
+async function openDialog(wrapper) {
 	await wrapper.setProps({ open: true })
 	await flush()
 	await flush()

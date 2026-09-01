@@ -17,8 +17,8 @@
  * @nextcloud/vue.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Mock axios so the component never hits the network. The fn is allocated
 // inside vi.hoisted so it's available when vi.mock's factory runs (vi.mock

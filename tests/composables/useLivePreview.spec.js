@@ -19,7 +19,7 @@
  * against the current mock.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 describe('useLivePreview — graceful degradation (chain spec #2 NOT installed)', () => {
 	beforeEach(() => {

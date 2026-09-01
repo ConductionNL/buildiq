@@ -18,7 +18,7 @@
  * mocking `loadState` covers every code path without bringing up a DOM.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Mocks for @nextcloud/initial-state are hoisted by Vitest above the
 // imports below. We re-import a fresh module-scope mock between tests
@@ -29,9 +29,9 @@ vi.mock('@nextcloud/initial-state', () => ({
 
 import { loadState } from '@nextcloud/initial-state'
 import {
-	useRole,
-	hasAnyRole,
 	getCurrentUserGroups,
+	hasAnyRole,
+	useRole,
 } from '../../../src/composables/useRole.js'
 
 describe('useRole — REQ-OBR-008 / REQ-OBRBAC-004', () => {

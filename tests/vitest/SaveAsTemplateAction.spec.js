@@ -12,8 +12,8 @@
  *     visible templates and opens the dialog with the app context.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { axiosMock } = vi.hoisted(() => ({
 	axiosMock: { get: vi.fn(), post: vi.fn(), put: vi.fn() },
@@ -59,7 +59,7 @@ const application = {
 	],
 }
 
-const t = (app, key, vars) => {
+function t(app, key, vars) {
 	if (!vars) return key
 	let out = key
 	for (const k of Object.keys(vars)) {

@@ -7,7 +7,7 @@
 // route. (The component map moved from customComponents.js to the kind-tagged
 // registry.js per ADR-036; the keys are the same component names.)
 
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import baseManifest from '../../src/manifest.json'
 import registry from '../../src/registry.js'
 

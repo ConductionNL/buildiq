@@ -18,8 +18,8 @@
  * flow list.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { axiosMock } = vi.hoisted(() => ({
 	axiosMock: { get: vi.fn(), post: vi.fn(), put: vi.fn() },

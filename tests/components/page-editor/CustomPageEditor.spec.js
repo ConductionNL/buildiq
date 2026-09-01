@@ -11,8 +11,8 @@
  *  - Other config keys are listed as preserved and survive an update.
  */
 
-import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
 import CustomPageEditor from '../../../src/components/page-editor/CustomPageEditor.vue'
 
 function mountEditor(config = {}) {

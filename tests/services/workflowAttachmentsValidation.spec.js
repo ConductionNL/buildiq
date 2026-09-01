@@ -6,19 +6,24 @@
  *
  * Spec: procest-workflow-attachments (REQ-PWA-001).
  */
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { validateWorkflowAttachments } from '../../src/services/manifestValidation/workflowAttachments.js'
 
 const UUID = '11111111-2222-3333-4444-555555555555'
 
-const baseManifest = (workflows) => ({
-	schemas: {
-		kapaanvraag: {
-			properties: { zaakUrl: { type: 'string' }, count: { type: 'integer' } },
+function baseManifest(workflows) {
+	return {
+		schemas: {
+			kapaanvraag: {
+				properties: {
+					zaakUrl: { type: 'string' },
+					count: { type: 'integer' },
+				},
+			},
 		},
-	},
-	runtime: { workflows },
-})
+		runtime: { workflows },
+	}
+}
 
 const validEntry = {
 	id: 'kap-handling',

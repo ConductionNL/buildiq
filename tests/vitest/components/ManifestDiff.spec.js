@@ -19,8 +19,8 @@
  * before assertions, OR we resolve the mocked axios.get response.
  */
 
-import { describe, it, expect, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
+import { describe, expect, it, vi } from 'vitest'
 
 // Mock axios at module scope (hoisted above imports). The component calls
 // `axios.get(...)` returning a Promise<{ data: { from, to } }>.

@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -10,8 +11,7 @@
  * for its own local error state (the "button hidden + admin hint" scenario
  * lives on Step1Basics, covered separately).
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const axiosGet = vi.fn()
 const axiosPost = vi.fn()

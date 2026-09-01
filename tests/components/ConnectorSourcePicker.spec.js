@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -6,8 +7,7 @@
  *
  * Spec: openconnector-api-sources (REQ-OCAS-002, REQ-OCAS-004, REQ-OCAS-005).
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@nextcloud/router', async (importOriginal) => ({
 	...(await importOriginal()),
@@ -32,7 +32,7 @@ describe('ConnectorSourcePicker', () => {
 	beforeEach(() => {
 		clearAppStatusCache()
 		axios.get.mockReset()
-		// eslint-disable-next-line no-global-assign
+
 		global.OC = { appswebroots: { openconnector: '/apps/openconnector' } }
 	})
 
@@ -72,7 +72,6 @@ describe('ConnectorSourcePicker', () => {
 	})
 
 	it('degrades to a manual escape hatch when OpenConnector is absent', async () => {
-		// eslint-disable-next-line no-global-assign
 		global.OC = { appswebroots: {} }
 		axios.get.mockRejectedValueOnce({ response: { status: 404 } })
 		const wrapper = mount(ConnectorSourcePicker, {
@@ -90,7 +89,6 @@ describe('ConnectorSourcePicker', () => {
 	})
 
 	it('strips scheme/host from a manually entered path', async () => {
-		// eslint-disable-next-line no-global-assign
 		global.OC = { appswebroots: {} }
 		axios.get.mockRejectedValueOnce({ response: { status: 404 } })
 		const wrapper = mount(ConnectorSourcePicker, {

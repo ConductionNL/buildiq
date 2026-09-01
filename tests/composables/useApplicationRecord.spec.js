@@ -16,11 +16,11 @@
  * record.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import axios from '@nextcloud/axios'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-	fetchApplicationRecord,
 	__resetApplicationRecordCache,
+	fetchApplicationRecord,
 } from '../../src/composables/useApplicationRecord.js'
 
 vi.mock('@nextcloud/axios', () => ({

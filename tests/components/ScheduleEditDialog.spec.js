@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -7,8 +8,7 @@
  * Spec: schedules-editor / buildiq-schedules-authoring
  * (REQ-OBSA-002, REQ-OBSA-003, REQ-OBSA-004, REQ-OBSA-006).
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@nextcloud/router', async (importOriginal) => ({
 	...(await importOriginal()),
@@ -57,14 +57,15 @@ const stubs = {
 
 const flush = () => new Promise((r) => setTimeout(r, 0))
 
-const factory = (propsData = {}) =>
-	mount(ScheduleEditDialog, {
+function factory(propsData = {}) {
+	return mount(ScheduleEditDialog, {
 		propsData: { open: false, ...propsData },
 		stubs,
 	})
+}
 
 /** Open the dialog (fires the watcher → hydrate + fetch). */
-const openDialog = async (wrapper) => {
+async function openDialog(wrapper) {
 	await wrapper.setProps({ open: true })
 	await flush()
 	await flush()

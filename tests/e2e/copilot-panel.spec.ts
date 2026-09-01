@@ -32,16 +32,16 @@
  *
  * The result is a fully deterministic run with no AI provider installed.
  */
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
+// PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts.
+import { E2E_BASE_URL } from './support/baseUrl.ts'
 // nc-vue's first-visit overlays (CnWalkthrough tour + CnSupportDialog) each
 // render a full-viewport backdrop that intercepts pointer events — live-verified
 // as the actual cause of "Approving a proposal..."'s click on
 // `[data-testid="copilot-panel-toggle"]` retrying for the full 90s timeout.
 // Neither persists its "seen" state on this instance, so both can reopen on
 // every run. Helpers shared with the other specs that hit the same overlays.
-import { dismissWalkthrough, dismissSupportDialog } from './support/overlays'
-// PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts.
-import { E2E_BASE_URL } from './support/baseUrl'
+import { dismissSupportDialog, dismissWalkthrough } from './support/overlays.ts'
 
 const HEALTH_URL = '**/apps/buildiq/api/copilot/health'
 const PLAN_URL = '**/apps/buildiq/api/copilot/plan'

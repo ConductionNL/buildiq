@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /*
  * SPDX-FileCopyrightText: 2026 Buildiq Contributors
  * SPDX-License-Identifier: EUPL-1.2
@@ -10,8 +11,7 @@
  * warning appears when a referenced field is removed, and the
  * `show-logic=false` (SettingsSectionBuilder) path is unchanged.
  */
-import { describe, it, expect } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
 import FormFieldBuilder from '../../../src/components/page-editor/fields/FormFieldBuilder.vue'
 
 const FIELDS = [

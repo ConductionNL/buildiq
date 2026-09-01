@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -14,8 +15,7 @@
  *  - createDraft(): clone prod manifest, auto-name draft-N, POST, refresh.
  *  - Navigation: openInOpenRegister / goBack; formatDate / rowUuid helpers.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const axiosGetMock = vi.fn()
 const axiosPutMock = vi.fn()
@@ -91,7 +91,7 @@ const ManifestLayersDetail = (
 	await import('../../src/views/ManifestLayersDetail.vue')
 ).default
 
-const flush = async (wrapper) => {
+async function flush(wrapper) {
 	await new Promise((r) => setTimeout(r, 0))
 	await new Promise((r) => setTimeout(r, 0))
 	if (wrapper) await wrapper.vm.$nextTick()

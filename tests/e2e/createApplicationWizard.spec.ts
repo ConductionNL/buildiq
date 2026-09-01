@@ -32,15 +32,15 @@
  * for `playwright test --list`.
  */
 
-import { test, expect, type Page, type APIRequestContext } from '@playwright/test'
+import type { APIRequestContext, Page } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
 
 // ---------------------------------------------------------------------------
 // Configuration
 // ---------------------------------------------------------------------------
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
-const ADMIN_USER = process.env.NC_ADMIN_USER ?? 'admin'
-const ADMIN_PASS = process.env.NC_ADMIN_PASSWORD ?? 'admin'
 
 /**
  * Application slugs this spec creates through the wizard.

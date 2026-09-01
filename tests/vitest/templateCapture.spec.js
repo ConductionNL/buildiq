@@ -14,15 +14,15 @@
  *     slug-taken) reads OR's per-object writability — ownership guard.
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
+	bumpMinor,
 	captureTemplate,
 	deNamespaceSlug,
-	rewriteSchemaRefs,
-	suggestSlug,
-	bumpMinor,
 	resolveSaveTarget,
+	rewriteSchemaRefs,
 	SlugCollisionError,
+	suggestSlug,
 	TEMPLATE_CATEGORIES,
 } from '../../src/services/templateCapture.js'
 

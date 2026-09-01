@@ -17,8 +17,8 @@
  *  - `readOnly` disables every interactive control.
  */
 
-import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { describe, expect, it, vi } from 'vitest'
 
 const capabilityMocks = vi.hoisted(() => {
 	return { useOrAccessCapabilities: vi.fn(() => ({ scopes: ['group'] })) }
@@ -257,7 +257,6 @@ describe('AccessEditor.vue mount — capability gating and readOnly (REQ-OBDSA-0
 		for (let i = 0; i < selects.length; i++) {
 			expect(selects.at(i).attributes('data-disabled')).toBe('true')
 		}
-		const textInputs = wrapper.findAll('input[type=undefined], input')
 		// At least the condition value NcTextField stub input should be disabled.
 		const disabledInputs = wrapper.findAll('input:disabled')
 		expect(disabledInputs.length).toBeGreaterThan(0)

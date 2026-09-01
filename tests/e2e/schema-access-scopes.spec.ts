@@ -39,13 +39,15 @@
  * are checking the same persistence path the UI exercises.
  */
 
-import { test, expect } from '@playwright/test'
-import { ensureApp, dismissOverlays } from './support/appFixture'
+import type { Locator } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
+import { expect, test } from '@playwright/test'
+import { dismissOverlays, ensureApp } from './support/appFixture.ts'
 // PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts. This used to be
 // `NC_BASE_URL ?? 'http://localhost:8080'`, which pointed at the SHARED dev
 // instance while ensureApp() created the fixture on the e2e one.
-import { E2E_BASE_URL as BASE_URL } from './support/baseUrl'
+import { E2E_BASE_URL as BASE_URL } from './support/baseUrl.ts'
 const APP_SLUG = 'pw-access-scopes'
 const SCOPED_SCHEMA_SLUG = 'record'
 const UNSCOPED_SCHEMA_SLUG = 'plain-record'
@@ -74,10 +76,7 @@ function nsSlug(slug: string): string {
  * @param op   The operation: read | create | update | delete.
  * @return {import('@playwright/test').Locator} The matching row.
  */
-function accessRow(
-	page: import('@playwright/test').Page,
-	op: 'read' | 'create' | 'update' | 'delete',
-) {
+function accessRow(page: Page, op: 'read' | 'create' | 'update' | 'delete') {
 	return page
 		.locator('.buildiq-access-editor .buildiq-access-editor__row')
 		.filter({
@@ -98,11 +97,7 @@ function accessRow(
  * @param group The group id to tag.
  * @return {Promise<void>}
  */
-async function tagGroup(
-	page: import('@playwright/test').Page,
-	row: import('@playwright/test').Locator,
-	group: string,
-) {
+async function tagGroup(page: Page, row: Locator, group: string) {
 	const input = row.getByLabel(/groups/i)
 	await input.fill(group)
 	await expect(
@@ -131,7 +126,7 @@ async function tagGroup(
  * @return {Promise<void>}
  */
 async function saveAndAwait(
-	page: import('@playwright/test').Page,
+	page: Page,
 	slug: string,
 	pick: (schema: Record<string, unknown>) => unknown,
 	expected: unknown,
@@ -149,7 +144,7 @@ async function saveAndAwait(
  * @param page Playwright page (used for its `request` context).
  * @param slug Schema slug.
  */
-async function getSchema(page: import('@playwright/test').Page, slug: string) {
+async function getSchema(page: Page, slug: string) {
 	// Callers pass the user-facing slug; the stored schema carries the
 	// app+version namespace the designer applies on create.
 	const stored = slug.startsWith(`${APP_SLUG}-`) ? slug : nsSlug(slug)
@@ -170,11 +165,7 @@ async function getSchema(page: import('@playwright/test').Page, slug: string) {
  * @param slug Schema slug.
  * @param body Full schema body to PUT.
  */
-async function putSchema(
-	page: import('@playwright/test').Page,
-	slug: string,
-	body: Record<string, unknown>,
-) {
+async function putSchema(page: Page, slug: string, body: Record<string, unknown>) {
 	// OpenRegister's schema API is READ-BY-SLUG but WRITE-BY-ID: GET on a slug
 	// is 200, while PUT/DELETE on that same slug (or on the uuid) 404 "Schema
 	// not found". Resolve the numeric id first, or this seeding silently fails
@@ -265,11 +256,7 @@ test.describe('data-scopes-authoring — Access sub-editor (REQ-OBDSA-001/002/00
 	 * @param title      Title to use when creating it.
 	 * @return {Promise<void>}
 	 */
-	async function openSchemaDetail(
-		page: import('@playwright/test').Page,
-		slug: string,
-		title: string,
-	) {
+	async function openSchemaDetail(page: Page, slug: string, title: string) {
 		// `?_version=production` targets the app's per-version register that the
 		// wizard creates; without it the designer falls back to the legacy
 		// `buildiq-{slug}` register that wizard-made apps do not have.
@@ -363,7 +350,6 @@ test.describe('data-scopes-authoring — Access sub-editor (REQ-OBDSA-001/002/00
 			page.getByRole('button', { name: /back to schemas/i }),
 		).toBeVisible({ timeout: 45_000 })
 
-		const accessSection = page.locator('.buildiq-access-editor')
 		const deleteRow = accessRow(page, 'delete')
 		await deleteRow.getByLabel(/scope/i).click()
 		await page.getByRole('option', { name: /specific groups/i }).click()
@@ -446,7 +432,6 @@ test.describe('data-scopes-authoring — Access sub-editor (REQ-OBDSA-001/002/00
 		// The "update" row must render read-only — no editable scope-kind
 		// picker, just the "managed outside the designer" note (the
 		// deployed dev OR does not advertise the `creator` capability).
-		const accessSection = page.locator('.buildiq-access-editor')
 		const updateRow = accessRow(page, 'update')
 		await expect(
 			updateRow.getByText(/managed outside the designer/i),
@@ -479,7 +464,6 @@ test.describe('data-scopes-authoring — Access sub-editor (REQ-OBDSA-001/002/00
 			page.getByRole('button', { name: /back to schemas/i }),
 		).toBeVisible({ timeout: 45_000 })
 
-		const accessSection = page.locator('.buildiq-access-editor')
 		const createRow = accessRow(page, 'create')
 		await createRow.getByLabel(/scope/i).click()
 

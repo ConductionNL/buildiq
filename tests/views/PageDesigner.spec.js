@@ -20,9 +20,9 @@
  *    page-designer__centre + aside.page-designer__right all present.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { ref, computed } from 'vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, ref } from 'vue'
 
 // data-registers-runtime task 2.2: PageDesigner resolves the Application
 // record itself (a small, dedicated fetch — see design.md Decision 2), so

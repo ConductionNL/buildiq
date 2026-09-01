@@ -32,11 +32,12 @@
  *      sees it enabled.
  */
 
-import { test, expect, type Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
+import { expect, test } from '@playwright/test'
 // PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts.
-import { E2E_BASE_URL as BASE_URL } from './support/baseUrl'
-import { saveSchemaAndAwait } from './support/schemaSave'
+import { E2E_BASE_URL as BASE_URL } from './support/baseUrl.ts'
+import { saveSchemaAndAwait } from './support/schemaSave.ts'
 const APP_SLUG = process.env.NC_ACCESS_RBAC_SLUG ?? 'hello-world'
 const STAGING_VERSION = process.env.NC_STAGING_VERSION ?? 'staging'
 const PRODUCTION_VERSION = process.env.NC_PRODUCTION_VERSION ?? 'production'

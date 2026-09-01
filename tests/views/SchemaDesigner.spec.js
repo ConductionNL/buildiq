@@ -26,8 +26,8 @@
  *    `store.deleteObject` and refreshes the list.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // `vi.hoisted` lets us define shared mock spies that the
 // `vi.mock(...)` factories can reference before the SUT is imported.

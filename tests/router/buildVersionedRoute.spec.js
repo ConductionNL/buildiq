@@ -11,7 +11,7 @@
  *  - result shape always has name, params, query
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { buildVersionedRoute } from '../../src/router/helpers.js'
 
 describe('buildVersionedRoute (REQ-OBVR-006 — version forwarding)', () => {
