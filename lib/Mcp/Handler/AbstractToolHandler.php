@@ -168,7 +168,7 @@ abstract class AbstractToolHandler {
 		// organisation filter so MCP callers in any org can resolve apps.
 		$apps = $this->objectService->searchObjectsBySlug(
 			self::REGISTER_SLUG,
-			'application',
+			'built-app',
 			['slug' => $appSlug],
 			_rbac: true,
 			_multitenancy: false
