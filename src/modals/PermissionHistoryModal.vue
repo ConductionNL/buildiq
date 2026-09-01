@@ -170,7 +170,7 @@ export default {
 				// page (most recent ~50 events) — older history can be
 				// inspected via OR's admin UI.
 				const url = generateUrl(
-					`/apps/openregister/api/objects/buildiq/application/${this.applicationUuid}/audit`,
+					`/apps/openregister/api/objects/buildiq/built-app/${this.applicationUuid}/audit`,
 				)
 				const res = await axios.get(url, {
 					params: {

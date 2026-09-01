@@ -103,7 +103,7 @@ export default {
 				//
 				// This previously went through `obPatchApp({ manifest, version,
 				// status })`, which PUTs the whole Application object at
-				// `/api/objects/buildiq/application/{uuid}`. The `application`
+				// `/api/objects/buildiq/built-app/{uuid}`. The `application`
 				// schema declares 15 properties and NEITHER `manifest` NOR
 				// `version` is one of them, so OpenRegister dropped both and only
 				// `status` survived. Rolling back therefore restored NOTHING — it
