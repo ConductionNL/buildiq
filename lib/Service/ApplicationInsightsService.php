@@ -103,7 +103,7 @@ class ApplicationInsightsService {
 	 *
 	 * @var string
 	 */
-	private const APPLICATION_SCHEMA = 'application';
+	private const APPLICATION_SCHEMA = 'built-app';
 
 	/**
 	 * Schema slug for ApplicationVersion records.

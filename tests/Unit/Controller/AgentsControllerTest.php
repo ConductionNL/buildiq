@@ -168,7 +168,7 @@ class AgentsControllerTest extends TestCase {
 					return ((string)$id) === ($agent['id'] ?? '') ? $agentEntity : null;
 				}
 
-				if ($schema === 'application') {
+				if ($schema === 'built-app') {
 					return ((string)$id) === ($application['slug'] ?? '') ? $applicationEntity : null;
 				}
 

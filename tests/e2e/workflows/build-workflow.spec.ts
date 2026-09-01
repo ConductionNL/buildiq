@@ -70,7 +70,7 @@ async function appUuidBySlug(
 	slug: string,
 ): Promise<string> {
 	const res = await request.get(
-		`${BASE_URL}/index.php/apps/openregister/api/objects/buildiq/application?_limit=200`,
+		`${BASE_URL}/index.php/apps/openregister/api/objects/buildiq/built-app?_limit=200`,
 		{ headers: authHeaders },
 	)
 	const body = await res.json()
@@ -94,8 +94,7 @@ async function gotoAppBrowser(page: Page): Promise<void> {
 	await page
 		.waitForResponse(
 			(r) =>
-				r.url().includes('/objects/buildiq/application')
-				&& r.status() === 200,
+				r.url().includes('/objects/buildiq/built-app') && r.status() === 200,
 			{ timeout: 20_000 },
 		)
 		.catch(() => {
@@ -167,7 +166,7 @@ test.describe('Build workflow — compose a virtual app with a data model', () =
 			.poll(
 				async () => {
 					const res = await request.get(
-						`${BASE_URL}/index.php/apps/openregister/api/objects/buildiq/application?_limit=200`,
+						`${BASE_URL}/index.php/apps/openregister/api/objects/buildiq/built-app?_limit=200`,
 						{ headers: authHeaders },
 					)
 					const body = await res.json()

@@ -113,7 +113,7 @@ function installGet({ app, userDelta, overrides, versions } = {}) {
 				data: userDelta ?? { allowed: false, exists: false },
 			})
 		}
-		if (url.includes('/objects/buildiq/application/')) {
+		if (url.includes('/objects/buildiq/built-app/')) {
 			if (app === 'error') return Promise.reject(new Error('boom'))
 			return Promise.resolve({ data: app ?? null })
 		}

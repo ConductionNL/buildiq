@@ -280,7 +280,7 @@ class AgentsController extends Controller {
 		}
 
 		try {
-			$entity = $this->objectService->find(id: $slug, register: self::REGISTER_SLUG, schema: 'application');
+			$entity = $this->objectService->find(id: $slug, register: self::REGISTER_SLUG, schema: 'built-app');
 		} catch (Throwable $e) {
 			return null;
 		}

@@ -326,7 +326,7 @@
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
 						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Newman CRUD App\",\n  \"slug\": \"newman-crud-app\",\n  \"description\": \"OR-API CRUD probe\"\n}" },
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/buildiq/application", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "buildiq", "application" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/buildiq/built-app", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "buildiq", "built-app" ] }
 					}
 				},
 				{
@@ -348,7 +348,7 @@
 						"method": "GET",
 						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
 						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/buildiq/application/{{crudAppUuid}}", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "buildiq", "application", "{{crudAppUuid}}" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/buildiq/built-app/{{crudAppUuid}}", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "buildiq", "built-app", "{{crudAppUuid}}" ] }
 					}
 				},
 				{
@@ -375,7 +375,7 @@
 							{ "key": "OCS-APIRequest", "value": "true" }
 						],
 						"body": { "mode": "raw", "raw": "{\n  \"name\": \"Newman CRUD App\",\n  \"slug\": \"newman-crud-app\",\n  \"description\": \"updated by newman\"\n}" },
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/buildiq/application/{{crudAppUuid}}", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "buildiq", "application", "{{crudAppUuid}}" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/buildiq/built-app/{{crudAppUuid}}", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "buildiq", "built-app", "{{crudAppUuid}}" ] }
 					}
 				},
 				{
@@ -395,7 +395,7 @@
 						"method": "GET",
 						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
 						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/buildiq/application/00000000-0000-0000-0000-000000000000", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "buildiq", "application", "00000000-0000-0000-0000-000000000000" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/buildiq/built-app/00000000-0000-0000-0000-000000000000", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "buildiq", "built-app", "00000000-0000-0000-0000-000000000000" ] }
 					}
 				},
 				{
@@ -415,7 +415,7 @@
 						"method": "DELETE",
 						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
 						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/buildiq/application/{{crudAppUuid}}", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "buildiq", "application", "{{crudAppUuid}}" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/buildiq/built-app/{{crudAppUuid}}", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "buildiq", "built-app", "{{crudAppUuid}}" ] }
 					}
 				}
 			]
@@ -642,7 +642,7 @@
 						"method": "DELETE",
 						"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}", "type": "string" }, { "key": "password", "value": "{{adminPass}}", "type": "string" } ] },
 						"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
-						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/buildiq/application/{{appUuid}}", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "buildiq", "application", "{{appUuid}}" ] }
+						"url": { "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/buildiq/built-app/{{appUuid}}", "host": [ "{{baseUrl}}" ], "path": [ "index.php", "apps", "openregister", "api", "objects", "buildiq", "built-app", "{{appUuid}}" ] }
 					}
 				}
 			]

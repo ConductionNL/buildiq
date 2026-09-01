@@ -764,7 +764,7 @@ class AppChannelApplierTest extends TestCase {
 				),
 				self::anything(),
 				'buildiq',
-				'application',
+				'built-app',
 				$applicationUuid,
 				false,
 				false,

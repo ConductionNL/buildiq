@@ -449,7 +449,7 @@ class ApplicationsController extends Controller {
 				$this->objectService->saveObject(
 					object: $applicationArray,
 					register: 'buildiq',
-					schema: 'application'
+					schema: 'built-app'
 				);
 				return new JSONResponse(data: ['status' => 'ok', 'target' => 'embedded'], statusCode: Http::STATUS_OK);
 			}
@@ -459,7 +459,7 @@ class ApplicationsController extends Controller {
 			$this->objectService->saveObject(
 				object: $applicationArray,
 				register: 'buildiq',
-				schema: 'application'
+				schema: 'built-app'
 			);
 			return new JSONResponse(data: ['status' => 'ok', 'target' => 'application'], statusCode: Http::STATUS_OK);
 		} catch (Throwable $e) {
@@ -626,7 +626,7 @@ class ApplicationsController extends Controller {
 			$application = $this->objectService->find(
 				id: $applicationUuid,
 				register: 'buildiq',
-				schema: 'application'
+				schema: 'built-app'
 			);
 
 			if ($application === null) {
@@ -854,7 +854,7 @@ class ApplicationsController extends Controller {
 		$application = $this->objectService->find(
 			id: $applicationUuid,
 			register: 'buildiq',
-			schema: 'application'
+			schema: 'built-app'
 		);
 
 		if ($application === null) {
@@ -905,7 +905,7 @@ class ApplicationsController extends Controller {
 			}
 
 			$registerId = $this->registerMapper->find(ApplicationVersionService::REGISTER_SLUG, _multitenancy: false)->getId();
-			$appSchema = $this->schemaMapper->find('application', _multitenancy: false)->getId();
+			$appSchema = $this->schemaMapper->find('built-app', _multitenancy: false)->getId();
 
 			// Fetch all Applications scoped to the buildiq register +
 			// application schema. OR's multitenancy + RBAC still applies;
@@ -1700,7 +1700,7 @@ class ApplicationsController extends Controller {
 			return [
 				'register' => $this->registerMapper->find(ApplicationVersionService::REGISTER_SLUG, _multitenancy: false)->getId(),
 				'templateSchema' => $this->schemaMapper->find('application-template', _multitenancy: false)->getId(),
-				'applicationSchema' => $this->schemaMapper->find('application', _multitenancy: false)->getId(),
+				'applicationSchema' => $this->schemaMapper->find('built-app', _multitenancy: false)->getId(),
 			];
 		} catch (Throwable $e) {
 			$this->logger->error(
