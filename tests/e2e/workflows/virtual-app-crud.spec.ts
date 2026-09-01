@@ -68,8 +68,7 @@ async function gotoAppBrowser(page: Page): Promise<void> {
 	await page
 		.waitForResponse(
 			(r) =>
-				r.url().includes('/objects/buildiq/built-app')
-				&& r.status() === 200,
+				r.url().includes('/objects/buildiq/built-app') && r.status() === 200,
 			{ timeout: 20_000 },
 		)
 		.catch(() => {

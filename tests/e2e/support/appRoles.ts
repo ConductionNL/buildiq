@@ -49,8 +49,7 @@
 import type { Page } from '@playwright/test'
 
 /** OR object API for the buildiq Application schema. */
-const OR_APPLICATIONS =
-	'/index.php/apps/openregister/api/objects/buildiq/built-app'
+const OR_APPLICATIONS = '/index.php/apps/openregister/api/objects/buildiq/built-app'
 
 /**
  * Grant owner / editor / viewer roles on an application to the given principals.
