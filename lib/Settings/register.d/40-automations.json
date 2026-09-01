@@ -5,7 +5,7 @@
 			"Automation": {
 				"x-schema-org": "schema:Action",
 				"slug": "automation",
-				"icon": "Robot",
+				"icon": "VectorPolylinePlus",
 				"version": "1.0.0",
 				"title": "Automation",
 				"description": "A single trigger→condition→actions declarative automation, compiled on demand to Buildiq's existing declarative primitives (notifications dialect, lifecycle actions, schedules, rules engine). One automation is managed as one unit: list/edit/enable/disable/dry-run/delete.",

@@ -27,11 +27,13 @@ import PackageVariant from 'vue-material-design-icons/PackageVariant.vue'
 import PencilOutline from 'vue-material-design-icons/PencilOutline.vue'
 import PuzzleOutline from 'vue-material-design-icons/PuzzleOutline.vue'
 import Robot from 'vue-material-design-icons/Robot.vue'
+import RobotOutline from 'vue-material-design-icons/RobotOutline.vue'
 import RouterNetwork from 'vue-material-design-icons/RouterNetwork.vue'
 import Sitemap from 'vue-material-design-icons/Sitemap.vue'
 import SourceBranch from 'vue-material-design-icons/SourceBranch.vue'
 import StoreOutline from 'vue-material-design-icons/StoreOutline.vue'
 import Table from 'vue-material-design-icons/Table.vue'
+import VectorPolylinePlus from 'vue-material-design-icons/VectorPolylinePlus.vue'
 import ViewDashboardOutline from 'vue-material-design-icons/ViewDashboardOutline.vue'
 import ViewGridOutline from 'vue-material-design-icons/ViewGridOutline.vue'
 
@@ -51,11 +53,13 @@ export default {
 	PencilOutline,
 	PuzzleOutline,
 	Robot,
+	RobotOutline,
 	RouterNetwork,
 	Sitemap,
 	SourceBranch,
 	StoreOutline,
 	Table,
+	VectorPolylinePlus,
 	ViewDashboardOutline,
 	ViewGridOutline,
 }

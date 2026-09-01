@@ -5,7 +5,7 @@
       "Agent": {
         "x-schema-org": "schema:SoftwareApplication",
         "slug": "agent",
-        "icon": "Robot",
+        "icon": "RobotOutline",
         "version": "1.0.0",
         "title": "Agent",
         "description": "A named, reusable, tool-scoped AI configuration for one Application: free-text instructions prefixed onto the copilot system prompt, an explicit subset of the eight BuildiqToolProvider tools it may invoke, and a per-run action cap. Never a wider capability surface than the bare copilot (agent-workspace design.md Goals).",
