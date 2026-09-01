@@ -187,23 +187,19 @@ test.describe('AI Chat Companion — FAB + thinking + response (spec: ai-chat-co
  * enabled by the ai-chat-companion-streaming change.
  */
 test.describe('AI Chat Companion — true streaming (gated on ai-chat-companion-streaming)', () => {
-	test.skip((_fixtures, _testInfo) => {
+	test.skip(() => {
 		// Toggle this off once the streaming change is applied + the
 		// configured provider exposes generateStreamOfText.
 		return true
 	}, 'the streaming surface is not built yet, and both tests below are EMPTY — enabling them would report coverage that does not exist. Tracked in openspec/changes/ai-chat-companion-streaming/, which now exists: that change carries the token-event and heartbeat requirements plus tasks 4.1/4.2 to write these two bodies. Remove this guard only once they assert something.')
 
-	test('partial response text appears before the call completes', async ({
-		_page,
-	}) => {
+	test('partial response text appears before the call completes', async () => {
 		// Long-prompt test: ask for a multi-paragraph answer, assert the
 		// assistant bubble's text grows over time rather than appearing
 		// all at once.
 	})
 
-	test('long-running call surfaces at least one heartbeat to the frontend', async ({
-		_page,
-	}) => {
+	test('long-running call surfaces at least one heartbeat to the frontend', async () => {
 		// 35s prompt + watch network panel for `event: heartbeat` frames.
 	})
 })
