@@ -79,7 +79,7 @@ async function openManifestDetail(page: Page, objectId: string): Promise<void> {
  */
 async function appObjectId(page: Page): Promise<string> {
 	const res = await page.request.get(
-		`${BASE}/index.php/apps/openregister/api/objects/buildiq/application`
+		`${BASE}/index.php/apps/openregister/api/objects/buildiq/built-app`
 			+ `?slug=${encodeURIComponent(SLUG)}&_limit=1`,
 	)
 	expect(res.ok(), 'the Application lookup must succeed').toBeTruthy()

@@ -461,7 +461,7 @@ describe('PageDesignerHost', () => {
 		})
 		await wrapper.vm.save()
 		expect(axiosPutMock).toHaveBeenCalledWith(
-			'/apps/openregister/api/objects/buildiq/application/app-1',
+			'/apps/openregister/api/objects/buildiq/built-app/app-1',
 			expect.objectContaining({ manifest: expect.any(Object) }),
 		)
 		expect(wrapper.vm.toast).toBe('Pages saved.')

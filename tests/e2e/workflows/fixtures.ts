@@ -41,7 +41,7 @@ const ADMIN_PASS =
 /** OpenRegister register slug that owns Buildiq virtual apps. */
 export const BUILDIQ_REGISTER_SLUG = 'buildiq'
 /** OpenRegister schema slug for the Virtual App object. */
-export const APPLICATION_SCHEMA_SLUG = 'application'
+export const APPLICATION_SCHEMA_SLUG = 'built-app'
 
 /** A short, collision-proof run id shared by every fixture in one suite run. */
 export const RUN_ID = `${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)

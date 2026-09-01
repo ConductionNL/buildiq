@@ -295,7 +295,7 @@ required = {
     'registers': ['buildiq'],
     'schemas': [
         # lib/Settings/openbuild_register.json
-        'application', 'application-template', 'built-app-route',
+        'built-app', 'application-template', 'built-app-route',
         'hello-message', 'applicationVersion', 'export-job',
         # lib/Settings/register.d/10-business-rules.json
         'rule-set', 'decision-table', 'condition-action-rule',
@@ -343,10 +343,10 @@ verify "$SCH_BODY" schemas "$SCH_CODE"
 # failure mode has a name here rather than as a timeout on an empty table.
 OBJ_CODE="$(curl -sS -o /dev/null -w '%{http_code}' \
 	-u "${USER_NAME}:${USER_PASS}" -H 'OCS-APIRequest: true' \
-	"${BASE}/index.php/apps/openregister/api/objects/buildiq/application?_limit=1" || echo 000)"
-echo "[ci-seed] objects/buildiq/application probe -> ${OBJ_CODE}"
+	"${BASE}/index.php/apps/openregister/api/objects/buildiq/built-app?_limit=1" || echo 000)"
+echo "[ci-seed] objects/buildiq/built-app probe -> ${OBJ_CODE}"
 if [ "$OBJ_CODE" -ge 400 ] 2>/dev/null; then
-	echo "::error::The buildiq application collection is not readable (HTTP ${OBJ_CODE})."
+	echo "::error::The buildiq built-app collection is not readable (HTTP ${OBJ_CODE})."
 	exit 1
 fi
 
