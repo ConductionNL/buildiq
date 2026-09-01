@@ -3,7 +3,7 @@
   "info": {
     "title": "OpenBuild Register",
     "description": "Citizen-developer app builder for Nextcloud — compose apps from registers, connectors, workflows, and documents without code.",
-    "version": "0.9.0"
+    "version": "0.10.0"
   },
   "x-openregister": {
     "type": "application",
@@ -22,7 +22,7 @@
         "schemas": [
           "agent",
           "agent-run",
-          "application",
+          "built-app",
           "application-template",
           "applicationVersion",
           "automation",
@@ -41,7 +41,7 @@
     "schemas": {
       "Application": {
         "x-schema-org": "schema:SoftwareApplication",
-        "slug": "application",
+        "slug": "built-app",
         "icon": "AppsBox",
         "version": "0.6.0",
         "title": "Application",
