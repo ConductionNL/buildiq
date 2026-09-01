@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: EUPL-1.2
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
-import { describe, it, expect, vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
+import { describe, expect, it, vi } from 'vitest'
 
 // Stub axios + nextcloud helpers before importing the component. The header
 // fetches versions/insights on mount; the resolved promise keeps mounting
@@ -18,7 +18,7 @@ vi.mock('@nextcloud/router', () => ({
 
 import ApplicationDetailHeader from '../../../src/components/applicationDetail/ApplicationDetailHeader.vue'
 
-const t = (app, key, vars) => {
+function t(app, key, vars) {
 	if (!vars) return key
 	let out = key
 	for (const k of Object.keys(vars)) {

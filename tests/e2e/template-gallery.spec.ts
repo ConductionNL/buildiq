@@ -39,11 +39,10 @@
  *     unreachable or rate-limiting anonymous browsing from CI.
  */
 
-import { test, expect } from '@playwright/test'
-import { dismissOverlays, suppressSupportDialog } from './support/appFixture'
-
+import { expect, test } from '@playwright/test'
+import { dismissOverlays, suppressSupportDialog } from './support/appFixture.ts'
 // PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts.
-import { E2E_BASE_URL as NEXTCLOUD_URL } from './support/baseUrl'
+import { E2E_BASE_URL as NEXTCLOUD_URL } from './support/baseUrl.ts'
 
 test.describe('Buildiq template gallery', () => {
 	test.beforeEach(async ({ page }) => {

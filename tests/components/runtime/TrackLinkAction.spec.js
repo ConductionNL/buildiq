@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -5,8 +6,7 @@
  * Vitest spec for the TrackLinkAction runtime registry component
  * (external-form-provisioning REQ-EFP-006).
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mintTrackLink = vi.fn()
 vi.mock('../../../src/composables/useTrackLinkAction.js', () => ({

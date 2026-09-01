@@ -35,14 +35,12 @@
  * a known baseline per run so the suite is idempotent.
  */
 
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import {
-	ensureApp,
 	dismissOverlays,
+	ensureApp,
 	suppressSupportDialog,
-} from './support/appFixture'
-import { readStagedManifest } from './support/stagedManifest'
-
+} from './support/appFixture.ts'
 // Merge note (development -> feat/vue-3-migration, 2026-07-30): development's
 // un-quarantine reintroduced
 //   `process.env.NEXTCLOUD_URL || process.env.NC_BASE_URL || 'http://localhost:8080'`
@@ -54,7 +52,8 @@ import { readStagedManifest } from './support/stagedManifest'
 // would have created fixtures on somebody else's instance while asserting
 // against a different one. Keeping our side; see tests/e2e/support/baseUrl.ts
 // for the full writeup.
-import { E2E_BASE_URL as BASE_URL } from './support/baseUrl'
+import { E2E_BASE_URL as BASE_URL } from './support/baseUrl.ts'
+import { readStagedManifest } from './support/stagedManifest.ts'
 
 const SOURCE_APP = 'pw-cb-source'
 const TARGET_APP = 'pw-cb-target'
@@ -119,7 +118,7 @@ test.describe('Buildiq component blocks', () => {
 					...(body ? { body: JSON.stringify(body) } : {}),
 				})
 				const text = await resp.text()
-				let data = null
+				let data
 				try {
 					data = JSON.parse(text)
 				} catch {

@@ -16,10 +16,10 @@
  *      (so we never silently introduce shape drift through editor edits)
  */
 
-import { describe, it, expect } from 'vitest'
+import Ajv from 'ajv/dist/2020.js'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import Ajv from 'ajv/dist/2020.js'
+import { describe, expect, it } from 'vitest'
 
 const REPO_ROOT = resolve(__dirname, '../..')
 
@@ -79,8 +79,9 @@ function substituteRegisterTokens(manifest) {
 }
 
 const SCHEMA_DIR = 'node_modules/@conduction/nextcloud-vue/src/schemas'
-const loadSchema = (name) =>
-	JSON.parse(readFileSync(resolve(REPO_ROOT, SCHEMA_DIR, name), 'utf-8'))
+function loadSchema(name) {
+	return JSON.parse(readFileSync(resolve(REPO_ROOT, SCHEMA_DIR, name), 'utf-8'))
+}
 const ajv = new Ajv.default({ allErrors: true, strict: false })
 const validators = {
 	v1: ajv.compile(loadSchema('app-manifest.schema.json')),

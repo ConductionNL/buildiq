@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /*
  * SPDX-FileCopyrightText: 2026 Buildiq Contributors
  * SPDX-License-Identifier: EUPL-1.2
@@ -9,8 +10,7 @@
  * `markFor('steps')` renders an inline mark when the injected validator
  * reports a steps error.
  */
-import { describe, it, expect, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { describe, expect, it, vi } from 'vitest'
 
 // `vi.mock` factories are hoisted above the imports, so `h` is pulled in with
 // a lazy dynamic import inside the (async) factory. Vue 3 does not pass `h`
@@ -68,7 +68,7 @@ describe('FormPageEditor Steps fieldset', () => {
 		expect(wrapper.vm.validatedConfigKeys).toContain('steps')
 	})
 
-	it('update("steps", …) round-trip preserves unknown config keys', async () => {
+	it('update("steps", …) round-trip preserves unknown config keys', async () => {
 		const wrapper = mountEditor({ unknownKey: 'preserved', fields: [] })
 		const stepsManager = wrapper.findComponent({ name: 'FormStepsManager' })
 		const nextSteps = [{ id: 'contact', title: 'Contact', fields: [] }]

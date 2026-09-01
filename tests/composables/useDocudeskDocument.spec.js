@@ -6,11 +6,11 @@
  *
  * Spec: docudesk-document-templates (REQ-DDT-003).
  */
-import { describe, it, expect, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
-	useDocudeskDocument,
 	renderFilename,
 	resolveDataRef,
+	useDocudeskDocument,
 } from '../../src/composables/useDocudeskDocument.js'
 
 const UUID = '11111111-2222-3333-4444-555555555555'

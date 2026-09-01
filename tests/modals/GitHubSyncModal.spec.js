@@ -14,17 +14,17 @@
  *     strict-parse failure is surfaced as an error naming the offending file
  */
 
+import { mount } from '@vue/test-utils'
 import {
-	describe,
-	it,
-	expect,
-	beforeAll,
 	afterAll,
-	beforeEach,
 	afterEach,
+	beforeAll,
+	beforeEach,
+	describe,
+	expect,
+	it,
 	vi,
 } from 'vitest'
-import { mount } from '@vue/test-utils'
 
 // Give script-level t() real {placeholder} interpolation so the pull
 // parse-error assertion can see the offending file name in the message.
@@ -33,7 +33,7 @@ beforeAll(() => {
 	globalThis.t = (_app, key, vars) =>
 		vars
 			? String(key).replace(/\{(\w+)\}/g, (_, k) =>
-					vars[k] != null ? vars[k] : `{${k}}`,
+					vars[k] !== null && vars[k] !== undefined ? vars[k] : `{${k}}`,
 				)
 			: key
 })

@@ -33,9 +33,11 @@
  * Newman) and are not repeated here.
  */
 
-import { test, expect, type Page, type APIRequestContext } from '@playwright/test'
-import { E2E_BASE_URL as BASE } from '../support/baseUrl'
-import { suppressSupportDialog, suppressSetupWizard } from '../support/appFixture'
+import type { APIRequestContext, Page } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
+import { suppressSetupWizard, suppressSupportDialog } from '../support/appFixture.ts'
+import { E2E_BASE_URL as BASE } from '../support/baseUrl.ts'
 
 /** The seeded fixture app both icon suites drive. */
 const HELLO_WORLD_SLUG = 'hello-world'

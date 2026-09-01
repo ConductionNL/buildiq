@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: EUPL-1.2
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
-import { test, expect, request as playwrightRequest } from '@playwright/test'
-import { suppressSupportDialog, suppressSetupWizard } from './support/appFixture'
-import { ensureVersionChain } from './support/versionChain'
-import { grantAppRoles } from './support/appRoles'
+import { expect, request as playwrightRequest, test } from '@playwright/test'
+import { suppressSetupWizard, suppressSupportDialog } from './support/appFixture.ts'
+import { grantAppRoles } from './support/appRoles.ts'
+import { ensureVersionChain } from './support/versionChain.ts'
 
 /**
  * Playwright e2e — Version routing (spec E, buildiq-version-routing).

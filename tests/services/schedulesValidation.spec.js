@@ -6,12 +6,12 @@
  *
  * Spec: schedules-editor / buildiq-schedules-authoring (REQ-OBSA-006).
  */
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
-	validateSchedules,
-	validateScheduleEntry,
 	isValidCron,
 	SCHEDULE_ACTIONS,
+	validateScheduleEntry,
+	validateSchedules,
 } from '../../src/services/manifestValidation/schedules.js'
 
 const validEntry = {
@@ -74,7 +74,7 @@ describe('validateSchedules', () => {
 	})
 
 	it('rejects neither interval nor cron', () => {
-		const { interval, ...rest } = validEntry // eslint-disable-line no-unused-vars
+		const { interval, ...rest } = validEntry
 		const errs = validateSchedules(withSchedules([rest]))
 		expect(errs.some((e) => e.includes('cadence-required'))).toBe(true)
 	})
@@ -94,7 +94,7 @@ describe('validateSchedules', () => {
 	})
 
 	it('rejects a malformed cron', () => {
-		const { interval, ...rest } = validEntry // eslint-disable-line no-unused-vars
+		const { interval, ...rest } = validEntry
 		const errs = validateSchedules(withSchedules([{ ...rest, cron: '0 2 * *' }]))
 		expect(errs.some((e) => e.includes('cron-invalid'))).toBe(true)
 	})
@@ -123,7 +123,7 @@ describe('validateSchedules', () => {
 	})
 
 	it('rejects a missing id', () => {
-		const { id, ...rest } = validEntry // eslint-disable-line no-unused-vars
+		const { id, ...rest } = validEntry
 		const errs = validateSchedules(withSchedules([rest]))
 		expect(errs.some((e) => e.includes('id-required'))).toBe(true)
 	})

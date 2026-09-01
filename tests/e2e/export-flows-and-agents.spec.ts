@@ -33,8 +33,8 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
-import { dismissOverlays } from './support/appFixture'
-import { E2E_BASE_URL as BASE } from './support/baseUrl'
+import { dismissOverlays } from './support/appFixture.ts'
+import { E2E_BASE_URL as BASE } from './support/baseUrl.ts'
 
 const TEST_SLUG = 'hello-world'
 const POLL_TIMEOUT_MS = 90_000

@@ -16,12 +16,11 @@
  * specifier) does NOT shadow it.
  */
 
-import { describe, it, expect } from 'vitest'
-// eslint-disable-next-line n/no-extraneous-import
 import { buildManifest } from '@conduction/nextcloud-vue/src/utils/buildManifest.js'
-import baseManifest from '../../src/manifest.json'
+import { describe, expect, it } from 'vitest'
 import businessRulesFragment from '../../src/manifest.d/20-business-rules.json'
 import placeholderFragment from '../../src/manifest.d/_placeholder.json'
+import baseManifest from '../../src/manifest.json'
 import menuLayout from '../../src/menu-layout.json'
 
 // The exact fragment set webpack's require.context('./manifest.d/', ...)

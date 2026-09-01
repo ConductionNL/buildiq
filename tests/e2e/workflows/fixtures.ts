@@ -31,7 +31,9 @@
  * survives a clean-env reseed that renumbers ids.
  */
 
-import { type APIRequestContext, expect } from '@playwright/test'
+import type { APIRequestContext } from '@playwright/test'
+
+import { expect } from '@playwright/test'
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 const ADMIN_USER = process.env.NC_ADMIN_USER ?? 'admin'
@@ -322,7 +324,11 @@ export async function cleanupByPrefix(
 				: (body.results ?? [])
 			for (const row of rows) {
 				const slug = String(row.slug ?? '')
-				if (slug.startsWith(prefix) && row.id != null) {
+				if (
+					slug.startsWith(prefix)
+					&& row.id !== null
+					&& row.id !== undefined
+				) {
 					await deleteSchema(request, row.id as number)
 				}
 			}
@@ -366,4 +372,4 @@ export async function wizardCreate(
 	}
 }
 
-export { BASE_URL, authHeaders }
+export { authHeaders, BASE_URL }

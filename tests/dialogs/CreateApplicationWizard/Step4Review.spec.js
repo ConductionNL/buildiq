@@ -15,8 +15,8 @@
  *   - emits no events itself (the parent wizard Create button calls onSubmit)
  */
 
-import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
 import Step4Review from '../../../src/dialogs/CreateApplicationWizard/Step4Review.vue'
 
 // ---------------------------------------------------------------------------

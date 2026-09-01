@@ -8,16 +8,16 @@
  * by automation-approval-steps (REQ-AUTD-003 / design.md Decision 1) and
  * automation-document-action (REQ-AUTD-003 / design.md Decision 2).
  */
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
-	MATRIX,
-	TRIGGER_TYPES,
 	ACTION_TYPES,
+	blockedActionReason,
+	blockedConditionReason,
 	CONDITION_ALLOWED_TRIGGERS,
 	isActionAllowed,
 	isConditionAllowed,
-	blockedActionReason,
-	blockedConditionReason,
+	MATRIX,
+	TRIGGER_TYPES,
 } from '../../src/services/automationMatrix.js'
 
 describe('automationMatrix — MATRIX cell-for-cell', () => {

@@ -42,15 +42,19 @@
  *   Built page   →  /apps/buildiq/builder/:slug/:route
  */
 
-import { test, expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
+import type { Locator } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 const LIVE = process.env.BUILDIQ_E2E_LIVE === '1'
 
 const SLUG = 'hello-world'
 const PAGE_DESIGNER = (slug: string) => `${BASE}/apps/buildiq/builder/${slug}/pages`
-const BUILT_PAGE = (slug: string, route: string) =>
-	`${BASE}/apps/buildiq/builder/${slug}/${route}`
+function BUILT_PAGE(slug: string, route: string) {
+	return `${BASE}/apps/buildiq/builder/${slug}/${route}`
+}
 
 /**
  * Click "Save & open preview" and wait for the save to actually land.
@@ -76,7 +80,6 @@ const BUILT_PAGE = (slug: string, route: string) =>
  * The designer numbers a new page by its position, so every run appends another
  * one instead of reusing the last.
  */
-const GENERATED_PAGE_ID = /^(map|roadmap|search|wiki)-page-\d+$/
 
 /**
  * Remove the pages previous runs of this spec left behind.
@@ -97,9 +100,7 @@ const GENERATED_PAGE_ID = /^(map|roadmap|search|wiki)-page-\d+$/
  * @param page Playwright page (authenticated via the shared storageState).
  * @return {Promise<void>}
  */
-async function removeGeneratedPages(
-	page: import('@playwright/test').Page,
-): Promise<void> {
+async function removeGeneratedPages(page: Page): Promise<void> {
 	await page.goto(`${BASE}/apps/buildiq/`, { waitUntil: 'domcontentloaded' })
 	await page.waitForTimeout(500)
 	await page.evaluate(async (slug) => {
@@ -146,9 +147,7 @@ test.beforeAll(async ({ browser }) => {
 	}
 })
 
-async function saveAndAwaitPersist(
-	page: import('@playwright/test').Page,
-): Promise<void> {
+async function saveAndAwaitPersist(page: Page): Promise<void> {
 	const saved = page.waitForResponse(
 		(r) =>
 			/\/api\/objects\/buildiq\/(applicationVersion|application)\/[^/]+$/.test(
@@ -177,9 +176,7 @@ async function saveAndAwaitPersist(
  * @param page Playwright page.
  * @return {Promise<void>}
  */
-async function dismissSupportDialog(
-	page: import('@playwright/test').Page,
-): Promise<void> {
+async function dismissSupportDialog(page: Page): Promise<void> {
 	const closeBtn = page.getByRole('button', { name: /^close$/i })
 	// The dialog's own "have I been seen" check is an async round-trip, so it
 	// can pop up a beat AFTER this function's caller already moved on — an
@@ -195,7 +192,7 @@ async function dismissSupportDialog(
  * Shared by every test below — the add-page picker itself is asserted
  * once (REQ-PEC-002) and then reused as setup for the per-type flows.
  */
-async function addPage(page: import('@playwright/test').Page, type: string) {
+async function addPage(page: Page, type: string) {
 	await page.goto(PAGE_DESIGNER(SLUG))
 	await expect(page.locator('.page-designer-host')).toBeVisible({
 		timeout: 15_000,
@@ -239,10 +236,7 @@ async function addPage(page: import('@playwright/test').Page, type: string) {
  * @param type Page type whose row to select, e.g. `map`.
  * @return {Promise<void>}
  */
-async function selectPageRow(
-	page: import('@playwright/test').Page,
-	type: string,
-): Promise<void> {
+async function selectPageRow(page: Page, type: string): Promise<void> {
 	await expect(page.locator('.page-designer-host')).toBeVisible({
 		timeout: 15_000,
 	})
@@ -282,7 +276,7 @@ async function selectPageRow(
  * @param value The schema property to bind.
  * @return {Promise<void>}
  */
-async function selectOrFill(row: import('@playwright/test').Locator, value: string) {
+async function selectOrFill(row: Locator, value: string) {
 	const select = row.locator('select')
 	if (await select.count()) {
 		await expect

@@ -13,8 +13,8 @@
  *     and never hits the store install endpoint
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { axiosMock } = vi.hoisted(() => ({
 	axiosMock: { get: vi.fn(), post: vi.fn() },

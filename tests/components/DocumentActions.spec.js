@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -6,8 +7,7 @@
  *
  * Spec: docudesk-document-templates (REQ-DDT-004, REQ-DDT-005).
  */
-import { describe, it, expect, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { describe, expect, it, vi } from 'vitest'
 import DocumentActions from '../../src/components/runtime/DocumentActions.vue'
 
 // `emits: ['click']` is load-bearing under Vue 3: an undeclared emit leaves the
@@ -52,12 +52,13 @@ const attachments = [
 // jsdom that probe has no server to reach, so it resolves ABSENT and the widget
 // correctly refuses to generate. Every test whose subject is NOT the capability
 // check therefore states its precondition explicitly.
-const factory = (props = {}, mountOptions = {}) =>
-	mount(DocumentActions, {
+function factory(props = {}, mountOptions = {}) {
+	return mount(DocumentActions, {
 		propsData: { object, attachments, docudeskAvailable: true, ...props },
 		stubs: { NcButton: NcButtonStub },
 		...mountOptions,
 	})
+}
 
 describe('DocumentActions', () => {
 	it('renders one button per attachment for the object schema, in declared order', () => {

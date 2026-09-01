@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -9,8 +10,7 @@
  * Approve disabled while canApprove is false, Discard emits without any
  * network call (the component never talks to the network directly).
  */
-import { describe, it, expect, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@nextcloud/axios', () => ({
 	default: { get: vi.fn(() => Promise.resolve({ data: {} })) },

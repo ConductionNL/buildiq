@@ -37,15 +37,17 @@
  * globalSetup provides the authenticated storageState.
  */
 
-import { test, expect, type Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
 import {
-	seedVirtualApp,
-	findVirtualApp,
-	deleteVirtualApp,
 	cleanupByPrefix,
-	wizardCreate,
+	deleteVirtualApp,
 	E2E_PREFIX,
-} from './fixtures'
+	findVirtualApp,
+	seedVirtualApp,
+	wizardCreate,
+} from './fixtures.ts'
 
 /**
  * Open the functional Virtual-App object browser and wait for the

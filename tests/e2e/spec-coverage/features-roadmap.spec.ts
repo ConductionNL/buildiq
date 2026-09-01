@@ -20,7 +20,7 @@
  * container-scoped text lookups are unreliable.
  */
 
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 // The app router runs in path mode (not hash mode — that assumption was

@@ -15,7 +15,7 @@
  *    immediately; the timer fires async).
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // `vi.mock` must be hoisted; the inner factory has access to the spy
 // via a top-level `vi.fn()` reference.

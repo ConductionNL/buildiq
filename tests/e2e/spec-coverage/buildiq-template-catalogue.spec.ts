@@ -21,7 +21,7 @@
  * catalogue requires the seeded templates to be available.
  */
 
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 const LIVE = process.env.BUILDIQ_E2E_LIVE === '1'
@@ -45,14 +45,13 @@ test('REQ-OBTC-003 — template gallery route renders at /apps/buildiq/templates
 		page.locator('main'),
 		'templates route must render main content',
 	).toBeVisible({ timeout: 15_000 })
-	await expect(page).toHaveTitle(/buildiq/i)
+	await expect(page)
+		.toHaveTitle(/buildiq/i)
 
-	// If the gallery is built, a category filter and template cards should be visible
-	// If not yet built, the route at minimum loads the outer shell without crashing
-	const templateCards = page
+		// If the gallery is built, a category filter and template cards should be visible
+		// If not yet built, the route at minimum loads the outer shell without crashing
 		.locator('[class*="template"], [class*="gallery"], [class*="card"]')
 		.first()
-	const filterControl = page
 		.locator('select, [role="listbox"], [class*="filter"]')
 		.first()
 	// Confirm no JS error crashes the page

@@ -1,20 +1,22 @@
 // SPDX-License-Identifier: EUPL-1.2
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
-import { describe, it, expect } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
 import WalkthroughDesigner from '../../src/components/walkthrough-editor/WalkthroughDesigner.vue'
 
 /**
  * Spec: buildiq-walkthrough-editor (ADR-043). The controlled designer edits a
  * manifest `walkthrough` block and emits `update:manifest` on every mutation.
  */
-const baseManifest = (walkthrough) => ({
-	version: '1.0.0',
-	menu: [],
-	pages: [],
-	walkthrough,
-})
+function baseManifest(walkthrough) {
+	return {
+		version: '1.0.0',
+		menu: [],
+		pages: [],
+		walkthrough,
+	}
+}
 
 function factory(walkthrough = { enabled: true, tours: [] }) {
 	return shallowMount(WalkthroughDesigner, {

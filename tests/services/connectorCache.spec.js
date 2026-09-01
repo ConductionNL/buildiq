@@ -6,13 +6,13 @@
  *
  * Spec: openconnector-api-sources (REQ-OCAS-006).
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
 	cacheKey,
+	clearConnectorCache,
+	readThrough,
 	stableQueryHash,
 	ttlToMs,
-	readThrough,
-	clearConnectorCache,
 } from '../../src/services/connectorCache.js'
 
 describe('connectorCache helpers', () => {

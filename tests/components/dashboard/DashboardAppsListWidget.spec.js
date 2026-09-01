@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -11,8 +12,7 @@
  *  - Cell helpers: appId / appStatus / appStatusLabel / appVersion / appUpdated.
  *  - Icon fallback (onIconError) and navigation (openApp / goToApps).
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const axiosPostMock = vi.fn()
 vi.mock('@nextcloud/axios', () => ({
@@ -27,7 +27,7 @@ const DashboardAppsListWidget = (
 	await import('../../../src/components/dashboard/DashboardAppsListWidget.vue')
 ).default
 
-const flush = async (wrapper) => {
+async function flush(wrapper) {
 	await new Promise((r) => setTimeout(r, 0))
 	if (wrapper) await wrapper.vm.$nextTick()
 }

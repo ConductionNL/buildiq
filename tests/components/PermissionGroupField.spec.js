@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -7,9 +8,7 @@
  *
  * Spec: runtime-group-scoped-access (REQ-1 / REQ-2).
  */
-import { describe, it, expect } from 'vitest'
-import { mount } from '@vue/test-utils'
-
+import { describe, expect, it } from 'vitest'
 import PermissionGroupField from '../../src/components/page-editor/fields/PermissionGroupField.vue'
 
 // Vue 3 model API: NcSelect takes `modelValue` and emits `update:modelValue`.

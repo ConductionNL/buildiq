@@ -40,19 +40,22 @@
  * produced manifest shape (version + menu + pages), a live contract.
  */
 
-import { test, expect, type Page } from '@playwright/test'
+import type { APIRequestContext } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
 import {
-	seedVirtualApp,
-	seedSchema,
-	findVirtualApp,
-	findSchema,
-	deleteVirtualApp,
-	deleteSchema,
 	cleanupByPrefix,
-	fetchManifest,
-	wizardCreate,
+	deleteSchema,
+	deleteVirtualApp,
 	E2E_PREFIX,
-} from './fixtures'
+	fetchManifest,
+	findSchema,
+	findVirtualApp,
+	seedSchema,
+	seedVirtualApp,
+	wizardCreate,
+} from './fixtures.ts'
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 const authHeaders = {
@@ -66,7 +69,7 @@ const authHeaders = {
 
 /** Resolve a virtual-app uuid by its slug via the OR objects API. */
 async function appUuidBySlug(
-	request: import('@playwright/test').APIRequestContext,
+	request: APIRequestContext,
 	slug: string,
 ): Promise<string> {
 	const res = await request.get(
@@ -78,7 +81,7 @@ async function appUuidBySlug(
 		? body
 		: (body.results ?? [])
 	const match = rows.find((r) => r.slug === slug)
-	return String(match?.id ?? match?.['@self']?.['id'] ?? '')
+	return String(match?.id ?? match?.['@self']?.id ?? '')
 }
 
 async function gotoAppBrowser(page: Page): Promise<void> {

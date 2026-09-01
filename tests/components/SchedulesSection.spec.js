@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -7,8 +8,7 @@
  * Spec: schedules-editor / buildiq-schedules-authoring
  * (REQ-OBSA-001, REQ-OBSA-005, REQ-OBSA-007).
  */
-import { describe, it, expect, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
 import SchedulesSection from '../../src/components/SchedulesSection.vue'
 
 const NcButtonStub = {
@@ -34,11 +34,12 @@ const entry = {
 	arguments: { synchronizationId: '00000000-0000-0000-0000-000000000000' },
 }
 
-const factory = (manifest) =>
-	mount(SchedulesSection, {
+function factory(manifest) {
+	return mount(SchedulesSection, {
 		propsData: { manifest },
 		stubs,
 	})
+}
 
 describe('SchedulesSection', () => {
 	it('renders the empty state with no schedules', () => {

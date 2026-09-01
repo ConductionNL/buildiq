@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -6,8 +7,7 @@
  *
  * Spec: nldesign-theme-selection (REQ-NTS-001, REQ-NTS-002, REQ-NTS-005).
  */
-import { describe, it, expect, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
 import ThemeSection from '../../src/components/ThemeSection.vue'
 
 const NcButtonStub = {
@@ -33,11 +33,12 @@ const theme = {
 	preview: { primaryColor: '#004699', backgroundColor: '#FFFFFF' },
 }
 
-const factory = (manifest, props = {}) =>
-	mount(ThemeSection, {
+function factory(manifest, props = {}) {
+	return mount(ThemeSection, {
 		propsData: { manifest, ...props },
 		stubs,
 	})
+}
 
 describe('ThemeSection', () => {
 	it('renders the Default (Nextcloud) state when no theme is set', () => {

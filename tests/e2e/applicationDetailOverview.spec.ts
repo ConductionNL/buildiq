@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: EUPL-1.2
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
-import { test, expect } from '@playwright/test'
-import { suppressSupportDialog, suppressSetupWizard } from './support/appFixture'
-import { ensureVersionChain } from './support/versionChain'
+import type { Page } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
+import { suppressSetupWizard, suppressSupportDialog } from './support/appFixture.ts'
+import { ensureVersionChain } from './support/versionChain.ts'
 
 /**
  * Playwright e2e — Application detail / maintainer dashboard
@@ -210,9 +212,7 @@ test.describe('Application detail overview — content scenarios (14.4/14.5/14.7
 		await ensureVersionChain(page, TEST_SLUG, 'PW Version Chain')
 	})
 
-	async function loadFirstApp(
-		page: import('@playwright/test').Page,
-	): Promise<string | null> {
+	async function loadFirstApp(page: Page): Promise<string | null> {
 		const lookup = await page.request.get(
 			`${BASE}/index.php/apps/openregister/api/objects/buildiq/built-app?slug=${encodeURIComponent(TEST_SLUG)}&_limit=1`,
 			{ headers: { 'OCS-APIRequest': 'true' } },

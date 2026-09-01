@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -6,8 +7,7 @@
  *
  * Spec: agent-workspace ("Agents page provides CRUD and a per-agent chat panel").
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@nextcloud/router', async (importOriginal) => ({
 	...(await importOriginal()),
@@ -79,14 +79,16 @@ const flush = () => new Promise((r) => setTimeout(r, 0))
 
 const application = { slug: 'tool-library', name: 'Tool Library' }
 
-const agent = (overrides = {}) => ({
-	id: 'agent-1',
-	name: 'Page builder assistant',
-	applicationSlug: 'tool-library',
-	enabledTools: ['buildiq.upsertPage', 'buildiq.addWidget'],
-	maxActionsPerRun: 5,
-	...overrides,
-})
+function agent(overrides = {}) {
+	return {
+		id: 'agent-1',
+		name: 'Page builder assistant',
+		applicationSlug: 'tool-library',
+		enabledTools: ['buildiq.upsertPage', 'buildiq.addWidget'],
+		maxActionsPerRun: 5,
+		...overrides,
+	}
+}
 
 describe('AgentsPage', () => {
 	beforeEach(() => {

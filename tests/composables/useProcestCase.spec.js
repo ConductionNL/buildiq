@@ -6,13 +6,13 @@
  *
  * Spec: procest-workflow-attachments (REQ-PWA-003, REQ-PWA-004).
  */
-import { describe, it, expect, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => p }))
 
 import {
-	useProcestCase,
 	renderDescription,
+	useProcestCase,
 } from '../../src/composables/useProcestCase.js'
 
 const UUID = '11111111-2222-3333-4444-555555555555'

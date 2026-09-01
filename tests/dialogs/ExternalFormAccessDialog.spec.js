@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -6,8 +7,7 @@
  *
  * Spec: external-form-provisioning (REQ-EFP-002, REQ-EFP-003, REQ-EFP-004, REQ-EFP-005).
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const service = vi.hoisted(() => ({
 	enablePublicCreate: vi.fn(),
@@ -47,8 +47,8 @@ const stubs = {
 	},
 }
 
-const factory = (props = {}) =>
-	mount(ExternalFormAccessDialog, {
+function factory(props = {}) {
+	return mount(ExternalFormAccessDialog, {
 		propsData: {
 			open: false,
 			register: 'intake',
@@ -58,6 +58,7 @@ const factory = (props = {}) =>
 		},
 		stubs,
 	})
+}
 
 describe('ExternalFormAccessDialog', () => {
 	beforeEach(() => {

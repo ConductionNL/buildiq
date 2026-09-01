@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -6,8 +7,7 @@
  *
  * Spec: agent-workspace ("Agent entity declares a named, tool-scoped configuration").
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@nextcloud/router', async (importOriginal) => ({
 	...(await importOriginal()),
@@ -75,13 +75,14 @@ const stubs = {
 
 const flush = () => new Promise((r) => setTimeout(r, 0))
 
-const factory = (agent = null) =>
-	mount(AgentEditDialog, {
+function factory(agent = null) {
+	return mount(AgentEditDialog, {
 		propsData: { open: false, agent, applicationSlug: 'tool-library' },
 		stubs,
 	})
+}
 
-const openDialog = async (wrapper) => {
+async function openDialog(wrapper) {
 	await wrapper.setProps({ open: true })
 	await flush()
 	await flush()

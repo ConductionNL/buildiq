@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: EUPL-1.2
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
-import { test, expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
 
 /**
  * Playwright e2e — PromoteVersionDialog destructive-confirmation gate (spec D task 5.1 / 5.2).
@@ -35,11 +37,7 @@ import { test, expect } from '@playwright/test'
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 const TEST_SLUG = process.env.NC_TEST_SLUG ?? 'hello-world'
 
-async function loginAs(
-	page: import('@playwright/test').Page,
-	user: string,
-	pass: string,
-): Promise<void> {
+async function loginAs(page: Page, user: string, pass: string): Promise<void> {
 	await page.goto(`${BASE}/index.php/login`)
 	await page.locator('input[name="user"]').fill(user)
 	await page.locator('input[name="password"]').fill(pass)
@@ -229,7 +227,7 @@ test.describe('PromoteVersionDialog — e2e with live call site (pending spec B 
 // src/dialogs/PromoteVersionDialog.vue asserting the ADR-004 modal-isolation
 // placement. A broken admin UI could never have affected it.
 test.describe('PromoteVersionDialog — component available (static assertion)', () => {
-	test('PromoteVersionDialog.vue exists in src/dialogs/ (ADR-004 modal-isolation)', async ({}) => {
+	test('PromoteVersionDialog.vue exists in src/dialogs/ (ADR-004 modal-isolation)', async () => {
 		// This is a file-system assertion: confirm the dialog lives in the
 		// correct location per ADR-004. No browser needed.
 		const fs = await import('fs/promises')

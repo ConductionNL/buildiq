@@ -6,7 +6,7 @@
  * status badge and version chip (REQ-OBR-007b).
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const get = vi.fn()
 
