@@ -310,4 +310,122 @@ final class AutomationApprovalTriggerListenerTest extends TestCase {
 		$this->listener->handle($event);
 
 	}//end testLifecycleTransitionMatchesOnTransitionName()
+	/**
+	 * A chain the schema does not declare compiles to null, and nothing is opened.
+	 *
+	 * This is the path that used to be "the mapper found no row". It matters
+	 * because the listener must not treat an undeclared chain as a reason to
+	 * provision an empty sequence.
+	 *
+	 * @return void
+	 */
+	public function testUndeclaredChainOpensNoSequence(): void {
+		$automation = [
+			'enabled' => true,
+			'trigger' => ['type' => 'object-created', 'schema' => 'permit-application'],
+			'actions' => [['type' => 'approval', 'assigneeGroup' => 'permit-reviewers']],
+			'provenance' => ['approvalChainName' => 'aut-not-declared'],
+		];
+
+		$this->objectService->method('findAll')->willReturn([$automation]);
+		$this->schemaMapper->method('find')->willReturn($this->schemaWithId(42));
+		$this->annotationInstaller->method('compile')->willReturn(null);
+
+		$this->sequenceService->expects($this->never())->method('provision');
+
+		$this->listener->handle(
+			new ObjectCreatedEvent($this->objectEntity('permit-application', 'object-uuid-1'))
+		);
+
+	}//end testUndeclaredChainOpensNoSequence()
+
+	/**
+	 * A compiled template with no id opens nothing.
+	 *
+	 * The template id is the dedupe key. Provisioning against an empty one would
+	 * make findForAnchor() match nothing on every subsequent save, so an
+	 * object-updated automation would open a fresh sequence each time — the
+	 * exact duplicate-spawning this listener guards against.
+	 *
+	 * @return void
+	 */
+	public function testTemplateWithoutAnIdOpensNoSequence(): void {
+		$automation = [
+			'enabled' => true,
+			'trigger' => ['type' => 'object-created', 'schema' => 'permit-application'],
+			'actions' => [['type' => 'approval', 'assigneeGroup' => 'permit-reviewers']],
+			'provenance' => ['approvalChainName' => 'aut-route-permit-application-for-approval'],
+		];
+
+		$this->objectService->method('findAll')->willReturn([$automation]);
+		$this->schemaMapper->method('find')->willReturn($this->schemaWithId(42));
+		$this->annotationInstaller->method('compile')->willReturn(['positions' => []]);
+
+		$this->sequenceService->expects($this->never())->method('provision');
+
+		$this->listener->handle(
+			new ObjectCreatedEvent($this->objectEntity('permit-application', 'object-uuid-1'))
+		);
+
+	}//end testTemplateWithoutAnIdOpensNoSequence()
+
+	/**
+	 * A throwing compiler is logged, not propagated.
+	 *
+	 * An event listener that lets an exception escape breaks the WRITE that
+	 * fired it. That is precisely how the retired-class removal took out object
+	 * creation instance-wide, so the degradation is worth asserting rather than
+	 * assuming.
+	 *
+	 * @return void
+	 */
+	public function testCompilerFailureDoesNotBreakTheWrite(): void {
+		$automation = [
+			'enabled' => true,
+			'trigger' => ['type' => 'object-created', 'schema' => 'permit-application'],
+			'actions' => [['type' => 'approval', 'assigneeGroup' => 'permit-reviewers']],
+			'provenance' => ['approvalChainName' => 'aut-route-permit-application-for-approval'],
+		];
+
+		$this->objectService->method('findAll')->willReturn([$automation]);
+		$this->schemaMapper->method('find')->willReturn($this->schemaWithId(42));
+		$this->annotationInstaller->method('compile')
+			->willThrowException(new \RuntimeException('task engine unavailable'));
+
+		$this->sequenceService->expects($this->never())->method('provision');
+
+		$this->listener->handle(
+			new ObjectCreatedEvent($this->objectEntity('permit-application', 'object-uuid-1'))
+		);
+
+	}//end testCompilerFailureDoesNotBreakTheWrite()
+
+	/**
+	 * A throwing provisioner is logged, not propagated — same reasoning.
+	 *
+	 * @return void
+	 */
+	public function testProvisionFailureDoesNotBreakTheWrite(): void {
+		$automation = [
+			'enabled' => true,
+			'trigger' => ['type' => 'object-created', 'schema' => 'permit-application'],
+			'actions' => [['type' => 'approval', 'assigneeGroup' => 'permit-reviewers']],
+			'provenance' => ['approvalChainName' => 'aut-route-permit-application-for-approval'],
+		];
+
+		$this->objectService->method('findAll')->willReturn([$automation]);
+		$this->schemaMapper->method('find')->willReturn($this->schemaWithId(42));
+		$this->annotationInstaller->method('compile')->willReturn($this->templateFor('tpl-permit-7'));
+		$this->sequenceMapper->method('findForAnchor')->willReturn([]);
+		$this->sequenceService->method('provision')
+			->willThrowException(new \RuntimeException('sequence store down'));
+
+		$this->listener->handle(
+			new ObjectCreatedEvent($this->objectEntity('permit-application', 'object-uuid-1'))
+		);
+
+		$this->addToAssertionCount(1);
+
+	}//end testProvisionFailureDoesNotBreakTheWrite()
+
 }//end class

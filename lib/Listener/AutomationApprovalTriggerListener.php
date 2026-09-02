@@ -248,11 +248,17 @@ class AutomationApprovalTriggerListener implements IEventListener {
 	 * @throws RuntimeException When the class is not loadable on this instance.
 	 */
 	private function openRegisterService(string $fqcn): object {
+		// Untestable in a unit test, exactly as objectService() above documents:
+		// the stub set declares these classes unconditionally, so class_exists()
+		// is always true in this suite and the branch only ever fires on a real
+		// instance genuinely missing OpenRegister's task engine.
+		// @codeCoverageIgnoreStart
 		if (class_exists($fqcn) === false) {
 			throw new RuntimeException(
 				'buildiq automation approvals require OpenRegister\'s task engine; "' . $fqcn . '" is not available on this instance.'
 			);
 		}
+		// @codeCoverageIgnoreEnd
 
 		$service = $this->container->get($fqcn);
 		assert(is_object($service));
