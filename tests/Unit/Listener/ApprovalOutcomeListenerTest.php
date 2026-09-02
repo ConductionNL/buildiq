@@ -115,12 +115,17 @@ final class ApprovalOutcomeListenerTest extends TestCase {
 	 * @param string $chainKey   The sequence's chain key (`aut-<slug>` when automation-owned).
 	 * @param string $objectUuid The anchor object uuid.
 	 *
-	 * @return TaskSequence&MockObject
+	 * @return TaskSequence The sequence.
 	 */
-	private function sequenceFor(string $chainKey, string $objectUuid): TaskSequence&MockObject {
-		$sequence = $this->createMock(TaskSequence::class);
-		$sequence->method('getChainKey')->willReturn($chainKey);
-		$sequence->method('getAnchorObjectUuid')->willReturn($objectUuid);
+	private function sequenceFor(string $chainKey, string $objectUuid): TaskSequence {
+		// A REAL entity, not a mock. TaskSequence extends Nextcloud's Entity,
+		// whose getters are served by __call rather than declared, and PHPUnit
+		// refuses to configure a method that does not exist ("cannot be
+		// configured because it does not exist"). Out of container the stub set
+		// declares the same shape, so this works in both worlds.
+		$sequence = new TaskSequence();
+		$sequence->setChainKey($chainKey);
+		$sequence->setAnchorObjectUuid($objectUuid);
 
 		return $sequence;
 	}//end sequenceFor()
@@ -134,12 +139,13 @@ final class ApprovalOutcomeListenerTest extends TestCase {
 	 * @param string $objectUuid The object uuid the task is about.
 	 * @param string $chainKey   The chain key its sequence carries.
 	 *
-	 * @return Task&MockObject
+	 * @return Task The task.
 	 */
-	private function taskFor(string $objectUuid, string $chainKey = 'aut-route-permit-application-for-approval'): Task&MockObject {
-		$task = $this->createMock(Task::class);
-		$task->method('getObjectUuid')->willReturn($objectUuid);
-		$task->method('getSequenceUuid')->willReturn('sequence-uuid-1');
+	private function taskFor(string $objectUuid, string $chainKey = 'aut-route-permit-application-for-approval'): Task {
+		// Real entity, same reason as sequenceFor().
+		$task = new Task();
+		$task->setObjectUuid($objectUuid);
+		$task->setSequenceUuid('sequence-uuid-1');
 
 		$this->sequenceMapper->method('findByUuid')->willReturn($this->sequenceFor($chainKey, $objectUuid));
 
