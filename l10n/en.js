@@ -1426,7 +1426,8 @@ OC.L10N.register(
         "Support & donation": "Support & donation",
         "Where the automation lives": "Where the automation lives",
         "Flows are what happens without anyone clicking: a record that gets stamped on save, a notice that goes out when something changes. This is where you read and edit them. Nothing to build now.": "Flows are what happens without anyone clicking: a record that gets stamped on save, a notice that goes out when something changes. This is where you read and edit them. Nothing to build now.",
-        "Open Flows in the menu": "Open Flows in the menu"
+        "Open Flows in the menu": "Open Flows in the menu",
+        "Rejected from the My approvals widget.": "Rejected from the My approvals widget."
     },
     "nplurals=2; plural=(n != 1);"
 )
