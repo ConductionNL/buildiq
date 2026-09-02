@@ -878,6 +878,50 @@ namespace OCA\OpenRegister\Db {
 		}//end class
 	}//end if
 
+	if (class_exists(TaskSequence::class, autoload: false) === false) {
+		/**
+		 * Stub TaskSequence — the openregister #3302 replacement for ApprovalChain.
+		 */
+		class TaskSequence extends \OCP\AppFramework\Db\Entity {
+
+			/**
+			 * Stub chain-key column.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $chainKey = null;
+
+			/**
+			 * Stub anchor-object column.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $anchorObjectUuid = null;
+		}//end class
+	}//end if
+
+	if (class_exists(Task::class, autoload: false) === false) {
+		/**
+		 * Stub Task — the openregister #3302 replacement for ApprovalStep.
+		 */
+		class Task extends \OCP\AppFramework\Db\Entity {
+
+			/**
+			 * Stub object column.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $objectUuid = null;
+
+			/**
+			 * Stub sequence column.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $sequenceUuid = null;
+		}//end class
+	}//end if
+
 	if (class_exists(TaskSequenceMapper::class, autoload: false) === false) {
 		/**
 		 * Stub TaskSequenceMapper — the openregister #3302 replacement for the
@@ -1536,6 +1580,25 @@ namespace OCA\OpenRegister\Service {
 
 namespace OCA\OpenRegister\Service\Task {
 
+	if (class_exists(TaskState::class, autoload: false) === false) {
+		/**
+		 * Stub TaskState — owns which outcome values reject.
+		 */
+		class TaskState {
+
+			/**
+			 * Stub: is this outcome a rejecting one?
+			 *
+			 * @param string|null $outcome The outcome to classify.
+			 *
+			 * @return bool True when it rejects.
+			 */
+			public static function isRejectingOutcome(?string $outcome): bool {
+				return in_array(strtolower(trim((string)$outcome)), ['rejected', 'denied', 'refused'], true);
+			}//end isRejectingOutcome()
+		}//end class
+	}//end if
+
 	if (class_exists(TaskSequenceService::class, autoload: false) === false) {
 		/**
 		 * Stub TaskSequenceService — opens an ordered task sequence from a
@@ -1896,6 +1959,72 @@ namespace OCA\OpenRegister\Event {
 			public function getOldObject(): ?\OCA\OpenRegister\Db\ObjectEntity {
 				return $this->oldObject;
 			}//end getOldObject()
+		}//end class
+	}//end if
+
+	if (class_exists(TaskSequenceCompletedEvent::class, autoload: false) === false) {
+		/**
+		 * Stub TaskSequenceCompletedEvent — dispatched when an approval sequence
+		 * completes with an approving outcome.
+		 */
+		class TaskSequenceCompletedEvent extends \OCP\EventDispatcher\Event {
+
+			/**
+			 * Constructor.
+			 *
+			 * @param \OCA\OpenRegister\Db\TaskSequence $sequence The completed sequence.
+			 */
+			public function __construct(private readonly \OCA\OpenRegister\Db\TaskSequence $sequence) {
+				parent::__construct();
+			}//end __construct()
+
+			/**
+			 * The completed sequence.
+			 *
+			 * @return \OCA\OpenRegister\Db\TaskSequence The sequence.
+			 */
+			public function getSequence(): \OCA\OpenRegister\Db\TaskSequence {
+				return $this->sequence;
+			}//end getSequence()
+		}//end class
+	}//end if
+
+	if (class_exists(TaskTerminalEvent::class, autoload: false) === false) {
+		/**
+		 * Stub TaskTerminalEvent — dispatched when a task reaches a terminal state.
+		 */
+		class TaskTerminalEvent extends \OCP\EventDispatcher\Event {
+
+			/**
+			 * Constructor.
+			 *
+			 * @param \OCA\OpenRegister\Db\Task $task    The terminal task.
+			 * @param string|null                  $outcome The resolved outcome.
+			 */
+			public function __construct(
+				private readonly \OCA\OpenRegister\Db\Task $task,
+				private readonly ?string $outcome=null,
+			) {
+				parent::__construct();
+			}//end __construct()
+
+			/**
+			 * The terminal task.
+			 *
+			 * @return \OCA\OpenRegister\Db\Task The task.
+			 */
+			public function getTask(): \OCA\OpenRegister\Db\Task {
+				return $this->task;
+			}//end getTask()
+
+			/**
+			 * The resolved outcome.
+			 *
+			 * @return string|null The outcome.
+			 */
+			public function getOutcome(): ?string {
+				return $this->outcome;
+			}//end getOutcome()
 		}//end class
 	}//end if
 

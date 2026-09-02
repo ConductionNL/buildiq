@@ -31,10 +31,11 @@ use OCA\Buildiq\Listener\ApprovalOutcomeListener;
 use OCA\Buildiq\Service\AutomationCompilerService;
 use OCA\Buildiq\Service\RuleActionDispatcher;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Db\ApprovalChain;
-use OCA\OpenRegister\Db\ApprovalStep;
-use OCA\OpenRegister\Event\ApprovalStepApprovedEvent;
-use OCA\OpenRegister\Event\ApprovalStepRejectedEvent;
+use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Db\TaskSequenceMapper;
+use OCA\OpenRegister\Db\TaskSequence;
+use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
+use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -53,6 +54,11 @@ final class ApprovalOutcomeListenerTest extends TestCase {
 	/**
 	 * @var AutomationCompilerService&MockObject
 	 */
+	/**
+	 * @var TaskSequenceMapper&MockObject
+	 */
+	private TaskSequenceMapper&MockObject $sequenceMapper;
+
 	private AutomationCompilerService&MockObject $compiler;
 
 	/**
@@ -80,8 +86,19 @@ final class ApprovalOutcomeListenerTest extends TestCase {
 		// listeners from the SERVER container, which never carries an app's
 		// registerServiceAlias(), so a constructor-injected interface cannot be
 		// built. The mock is unchanged; only the delivery route is.
+		$this->sequenceMapper = $this->createMock(TaskSequenceMapper::class);
+		// The reject half resolves the chain key through the sequence mapper, so
+		// the container has to answer per class name rather than return one
+		// service for anything asked of it.
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->willReturn($this->objectService);
+		$container->method('get')->willReturnCallback(
+			function (string $id): object {
+				return match ($id) {
+					'OCA\\OpenRegister\\Db\\TaskSequenceMapper' => $this->sequenceMapper,
+					default => $this->objectService,
+				};
+			}
+		);
 
 		$this->listener = new ApprovalOutcomeListener(
 			$container,
@@ -93,32 +110,41 @@ final class ApprovalOutcomeListenerTest extends TestCase {
 	}//end setUp()
 
 	/**
-	 * Build a mock ApprovalChain with the given `name`.
+	 * Build a mock TaskSequence carrying a chain key and anchor object.
 	 *
-	 * @param string $name The chain name.
+	 * @param string $chainKey   The sequence's chain key (`aut-<slug>` when automation-owned).
+	 * @param string $objectUuid The anchor object uuid.
 	 *
-	 * @return ApprovalChain&MockObject
+	 * @return TaskSequence&MockObject
 	 */
-	private function chainNamed(string $name): ApprovalChain&MockObject {
-		$chain = $this->createMock(ApprovalChain::class);
-		$chain->method('getName')->willReturn($name);
+	private function sequenceFor(string $chainKey, string $objectUuid): TaskSequence&MockObject {
+		$sequence = $this->createMock(TaskSequence::class);
+		$sequence->method('getChainKey')->willReturn($chainKey);
+		$sequence->method('getAnchorObjectUuid')->willReturn($objectUuid);
 
-		return $chain;
-	}//end chainNamed()
+		return $sequence;
+	}//end sequenceFor()
 
 	/**
-	 * Build a mock ApprovalStep carrying the given object uuid.
+	 * Build a mock terminal Task, and the sequence lookup the listener does on it.
 	 *
-	 * @param string $objectUuid The object uuid.
+	 * The reject half only has the task, so it resolves the chain key by loading
+	 * the task's sequence — that container lookup is wired here.
 	 *
-	 * @return ApprovalStep&MockObject
+	 * @param string $objectUuid The object uuid the task is about.
+	 * @param string $chainKey   The chain key its sequence carries.
+	 *
+	 * @return Task&MockObject
 	 */
-	private function stepFor(string $objectUuid): ApprovalStep&MockObject {
-		$step = $this->createMock(ApprovalStep::class);
-		$step->method('getObjectUuid')->willReturn($objectUuid);
+	private function taskFor(string $objectUuid, string $chainKey = 'aut-route-permit-application-for-approval'): Task&MockObject {
+		$task = $this->createMock(Task::class);
+		$task->method('getObjectUuid')->willReturn($objectUuid);
+		$task->method('getSequenceUuid')->willReturn('sequence-uuid-1');
 
-		return $step;
-	}//end stepFor()
+		$this->sequenceMapper->method('findByUuid')->willReturn($this->sequenceFor($chainKey, $objectUuid));
+
+		return $task;
+	}//end taskFor()
 
 	/**
 	 * On approve: the automation's `onApprove` follow-up actions dispatch;
@@ -127,9 +153,9 @@ final class ApprovalOutcomeListenerTest extends TestCase {
 	 * @return void
 	 */
 	public function testApprovedDispatchesOnApproveFollowUps(): void {
-		$chain = $this->chainNamed('aut-route-permit-application-for-approval');
+		$chain = 'aut-route-permit-application-for-approval';
 		$step = $this->stepFor('object-uuid-1');
-		$event = new ApprovalStepApprovedEvent(chain: $chain, step: $step, userId: 'alice', statusOnApprove: 'approved', nextStep: null);
+		$event = new TaskSequenceCompletedEvent(sequence: $this->sequenceFor($chain, 'object-uuid-1'));
 
 		$automation = [
 			'slug' => 'route-permit-application-for-approval',
@@ -173,9 +199,9 @@ final class ApprovalOutcomeListenerTest extends TestCase {
 	 * @return void
 	 */
 	public function testRejectedDispatchesOnRejectFollowUps(): void {
-		$chain = $this->chainNamed('aut-route-permit-application-for-approval');
+		$chain = 'aut-route-permit-application-for-approval';
 		$step = $this->stepFor('object-uuid-2');
-		$event = new ApprovalStepRejectedEvent(chain: $chain, step: $step, userId: 'bob', statusOnReject: 'rejected');
+		$event = new TaskTerminalEvent(task: $this->taskFor('object-uuid-1', $chain), outcome: 'rejected');
 
 		$automation = [
 			'slug' => 'route-permit-application-for-approval',
@@ -215,9 +241,9 @@ final class ApprovalOutcomeListenerTest extends TestCase {
 	 * @return void
 	 */
 	public function testNonAutomationChainIsNoOp(): void {
-		$chain = $this->chainNamed('hand-authored-chain');
+		$chain = 'hand-authored-chain';
 		$step = $this->stepFor('object-uuid-3');
-		$event = new ApprovalStepApprovedEvent(chain: $chain, step: $step, userId: 'alice', statusOnApprove: 'approved', nextStep: null);
+		$event = new TaskSequenceCompletedEvent(sequence: $this->sequenceFor($chain, 'object-uuid-1'));
 
 		$this->objectService->expects($this->never())->method('findAll');
 		$this->dispatcher->expects($this->never())->method('__invoke');
@@ -233,9 +259,9 @@ final class ApprovalOutcomeListenerTest extends TestCase {
 	 * @return void
 	 */
 	public function testUnmatchedAutomationSlugIsNoOp(): void {
-		$chain = $this->chainNamed('aut-does-not-exist');
+		$chain = 'aut-does-not-exist';
 		$step = $this->stepFor('object-uuid-4');
-		$event = new ApprovalStepApprovedEvent(chain: $chain, step: $step, userId: 'alice', statusOnApprove: 'approved', nextStep: null);
+		$event = new TaskSequenceCompletedEvent(sequence: $this->sequenceFor($chain, 'object-uuid-1'));
 
 		$this->objectService->method('findAll')->willReturn([]);
 

@@ -44,8 +44,8 @@ use OCA\Buildiq\Service\SettingsService;
 use OCA\Buildiq\Settings\AdminSettings;
 use OCA\OpenRegister\AppHost\Bootstrap;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Event\ApprovalStepApprovedEvent;
-use OCA\OpenRegister\Event\ApprovalStepRejectedEvent;
+use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
+use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -460,17 +460,23 @@ class Application extends App implements IBootstrap {
 		);
 
 		// Automation-approval-steps: on-approve/on-reject follow-up dispatch
-		// (design.md Decision 3). OR's ApprovalService already dispatches
-		// these typed events for every approve/reject decision regardless of
-		// who started the chain; this listener resolves the originating
-		// automation by its `aut-<slug>` chain name and fires the configured
-		// follow-up actions through the shared RuleActionDispatcher.
+		// (design.md Decision 3). OpenRegister dispatches these typed events for
+		// every decision regardless of who started the sequence; this listener
+		// resolves the originating automation by its `aut-<slug>` chain key and
+		// fires the configured follow-up actions through the shared
+		// RuleActionDispatcher.
+		//
+		// ⚠️ The two halves subscribe to events at DIFFERENT levels, and that is
+		// the published mapping rather than an oversight (openregister #3302):
+		// approval concludes when the SEQUENCE completes, while a rejection is a
+		// TASK completing with a rejecting outcome — a rejecting task closes its
+		// whole sequence, so the reject half still fires exactly once.
 		$context->registerEventListener(
-			event: ApprovalStepApprovedEvent::class,
+			event: TaskSequenceCompletedEvent::class,
 			listener: ApprovalOutcomeListener::class
 		);
 		$context->registerEventListener(
-			event: ApprovalStepRejectedEvent::class,
+			event: TaskTerminalEvent::class,
 			listener: ApprovalOutcomeListener::class
 		);
 
