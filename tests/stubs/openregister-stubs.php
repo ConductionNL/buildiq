@@ -37,6 +37,72 @@
 
 declare(strict_types=1);
 
+namespace OCA\OpenRegister\Contract {
+
+	// autoload ALLOWED here, unlike the class stubs below. In-container the real
+	// OpenRegister interface is on the autoload path, and declaring a stub ahead
+	// of it makes the real ObjectService fail its own `implements` check —
+	// AppNavigationService then dies with a TypeError at app-load. Letting the
+	// autoloader answer first means the stub only ever fires out-of-container.
+	if (interface_exists(ObjectEntityInterface::class) === false) {
+		/**
+		 * Stub ObjectEntityInterface.
+		 *
+		 * The Db stub below declares `ObjectEntity implements
+		 * \OCA\OpenRegister\Contract\ObjectEntityInterface`, but the interface
+		 * itself was never stubbed — so loading this file outside the container
+		 * died at bootstrap with "Interface ... not found", before a single test
+		 * ran. Mirrors the real interface's surface so a MockBuilder over the
+		 * type still answers the methods callers use.
+		 */
+		interface ObjectEntityInterface extends \JsonSerializable {
+
+			/**
+			 * Stub uuid accessor.
+			 *
+			 * @return string|null The object uuid.
+			 */
+			public function getUuid(): ?string;
+
+			/**
+			 * Stub object-body accessor.
+			 *
+			 * @return array<string, mixed> The object body.
+			 */
+			public function getObject(): array;
+
+			/**
+			 * Stub register accessor.
+			 *
+			 * @return string|null The register slug.
+			 */
+			public function getRegister(): ?string;
+
+			/**
+			 * Stub schema accessor.
+			 *
+			 * @return string|null The schema slug.
+			 */
+			public function getSchema(): ?string;
+
+			/**
+			 * Stub organisation accessor.
+			 *
+			 * @return string|null The owning organisation.
+			 */
+			public function getOrganisation(): ?string;
+
+			/**
+			 * Stub owner accessor.
+			 *
+			 * @return string|null The owning user.
+			 */
+			public function getOwner(): ?string;
+		}//end interface
+	}
+
+}
+
 namespace OCA\OpenRegister\Db {
 
 	if (class_exists(ObjectEntity::class, autoload: false) === false) {

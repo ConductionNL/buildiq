@@ -5,31 +5,38 @@
  *
  * Trigger-fire half of the `approval` automation action (design.md Decision 1
  * / Decision 2 of automation-approval-steps). `AutomationCompilerService`
- * only compiles the DEFINITION (an OR `ApprovalChain` upsert, at compile
- * time); starting a chain instance against a concretely fired object is an
- * imperative, per-event side effect that has no declarative primitive of its
- * own to piggy-back on — OR's own `AnnotationNotificationListener` plays the
- * equivalent role for the notifications dialect, and `ApprovalChainGateListener`
- * exists only for the (semantically different) BLOCKING gate-a-transition use
- * case, not "start a chain after an object-created/updated/deleted event or a
- * non-blocking lifecycle-transition side effect". This listener is the
- * ADR-031 §Exceptions imperative companion the same way
- * `AutomationCleanupListener` is for provenance-listed artifact removal.
+ * only writes the DEFINITION; opening an approval against a concretely fired
+ * object is an imperative, per-event side effect that has no declarative
+ * primitive of its own to piggy-back on — OR's own
+ * `AnnotationNotificationListener` plays the equivalent role for the
+ * notifications dialect, and the approval GATE listener exists only for the
+ * (semantically different) BLOCKING gate-a-transition use case, not "start an
+ * approval after an object-created/updated/deleted event or a non-blocking
+ * lifecycle-transition side effect". This listener is the ADR-031 §Exceptions
+ * imperative companion the same way `AutomationCleanupListener` is for
+ * provenance-listed artifact removal.
  *
  * Subscribes to `ObjectCreatedEvent`, `ObjectUpdatedEvent`, `ObjectDeletedEvent`
  * and `ObjectTransitionedEvent`, scans the shared `buildiq` register's
  * `automation` objects for one whose `trigger` matches the fired event
  * (schema + trigger type, and — for a lifecycle transition — the transition
- * action name too), and calls `ApprovalService::initializeChain()` for the
- * fired object's uuid against the automation's compiled
- * `provenance.approvalChainName` chain. Idempotency guard: a chain instance
- * already exists for (chainId, objectUuid) is left alone — otherwise an
- * `object-updated`-triggered automation would spawn a fresh `ApprovalStep` on
- * every subsequent save of the same object.
+ * action name too), compiles the automation's `provenance.approvalChainName`
+ * declaration into a task template, and opens a task SEQUENCE for the fired
+ * object's uuid. Idempotency guard: a sequence already exists for
+ * (templateId, objectUuid) is left alone — otherwise an
+ * `object-updated`-triggered automation would open a fresh sequence on every
+ * subsequent save of the same object.
+ *
+ * ⚠️ MIGRATED off the retired approval surface (openregister #3302,
+ * flow-approval-consolidation). `ApprovalChain`, `ApprovalChainMapper`,
+ * `ApprovalStepMapper` and `ApprovalService` no longer exist; an approval is an
+ * ordered task sequence opened from a template compiled out of the schema's
+ * `x-openregister-approval-chains` annotation. See `retired-approval-surface.json`
+ * in OpenRegister for the full retired list.
  *
  * Never implements approval logic itself (ADR-022 consume-not-rebuild) — every
- * approval-domain decision (role/group check, separation of duties, chain
- * advancement) stays inside `ApprovalService`.
+ * approval-domain decision (role/group check, separation of duties, sequence
+ * advancement) stays inside OpenRegister's task engine.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -55,15 +62,11 @@ namespace OCA\Buildiq\Listener;
 
 use OCA\Buildiq\Service\AutomationCompilerService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Db\ApprovalChain;
-use OCA\OpenRegister\Db\ApprovalChainMapper;
-use OCA\OpenRegister\Db\ApprovalStepMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Service\ApprovalService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserSession;
@@ -90,10 +93,6 @@ class AutomationApprovalTriggerListener implements IEventListener {
 	 *                                      during event dispatch, before OpenRegister's DI registrations are
 	 *                                      guaranteed to be available.
 	 * @param SchemaMapper $schemaMapper Resolves a schema slug to its numeric id.
-	 * @param ApprovalChainMapper $chainMapper Resolves the compiled `ApprovalChain` by schema + name.
-	 * @param ApprovalStepMapper $stepMapper Idempotency guard — checks for an
-	 *                                       existing instance.
-	 * @param ApprovalService $approvalService Starts the chain instance (ADR-022 boundary).
 	 * @param IUserSession $userSession Current user session (requester identity).
 	 * @param LoggerInterface $logger PSR logger.
 	 *
@@ -102,9 +101,6 @@ class AutomationApprovalTriggerListener implements IEventListener {
 	public function __construct(
 		private readonly ContainerInterface $container,
 		private readonly SchemaMapper $schemaMapper,
-		private readonly ApprovalChainMapper $chainMapper,
-		private readonly ApprovalStepMapper $stepMapper,
-		private readonly ApprovalService $approvalService,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
@@ -189,6 +185,80 @@ class AutomationApprovalTriggerListener implements IEventListener {
 
 		return $service;
 	}//end objectService()
+
+	/**
+	 * Resolve OpenRegister's approval-chain compiler, lazily.
+	 *
+	 * Same reasoning as {@see objectService()}: a listener is built from the
+	 * SERVER container during event dispatch, so an OpenRegister collaborator
+	 * must be reached for at call time, never constructor-injected.
+	 *
+	 * That is not a style preference here — it is the fix for a real outage.
+	 * This listener used to constructor-inject `ApprovalChainMapper`,
+	 * `ApprovalStepMapper` and `ApprovalService`. OpenRegister retired all three
+	 * in #3302, and because the listener is registered on ObjectCreatedEvent with
+	 * NO register or schema filter, Nextcloud then failed to construct it on
+	 * every object write in every app on the instance — a 403 with
+	 * "Could not resolve ... ApprovalChainMapper", not merely a dead automation.
+	 * Reaching lazily turns the next such retirement into a logged degradation.
+	 *
+	 * @return object The ApprovalChainAnnotationInstaller.
+	 *
+	 * @throws RuntimeException When OpenRegister is absent or predates the task engine.
+	 */
+	private function annotationInstaller(): object {
+		return $this->openRegisterService(
+			fqcn: 'OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller'
+		);
+	}//end annotationInstaller()
+
+	/**
+	 * Resolve OpenRegister's task-sequence mapper, lazily.
+	 *
+	 * @return object The TaskSequenceMapper.
+	 *
+	 * @throws RuntimeException When OpenRegister is absent or predates the task engine.
+	 */
+	private function sequenceMapper(): object {
+		return $this->openRegisterService(fqcn: 'OCA\OpenRegister\Db\TaskSequenceMapper');
+	}//end sequenceMapper()
+
+	/**
+	 * Resolve OpenRegister's task-sequence service, lazily.
+	 *
+	 * @return object The TaskSequenceService.
+	 *
+	 * @throws RuntimeException When OpenRegister is absent or predates the task engine.
+	 */
+	private function sequenceService(): object {
+		return $this->openRegisterService(fqcn: 'OCA\OpenRegister\Service\Task\TaskSequenceService');
+	}//end sequenceService()
+
+	/**
+	 * Establish availability, then reach for one OpenRegister collaborator.
+	 *
+	 * ADR-083: ask class_exists() before reaching, so an instance without the
+	 * app — or on an OpenRegister that predates the task engine — degrades with
+	 * a logged message instead of a container fatal.
+	 *
+	 * @param string $fqcn The collaborator's fully-qualified class name.
+	 *
+	 * @return object The resolved collaborator.
+	 *
+	 * @throws RuntimeException When the class is not loadable on this instance.
+	 */
+	private function openRegisterService(string $fqcn): object {
+		if (class_exists($fqcn) === false) {
+			throw new RuntimeException(
+				'buildiq automation approvals require OpenRegister\'s task engine; "' . $fqcn . '" is not available on this instance.'
+			);
+		}
+
+		$service = $this->container->get($fqcn);
+		assert(is_object($service));
+
+		return $service;
+	}//end openRegisterService()
 
 	/**
 	 * Handle a dispatched object event, initialising every matching
@@ -428,7 +498,7 @@ class AutomationApprovalTriggerListener implements IEventListener {
 	 * Initialise the automation's compiled approval chain for the fired
 	 * object's uuid, unless a chain instance already exists for it
 	 * (idempotency guard — an `object-updated`-triggered automation must not
-	 * spawn a fresh `ApprovalStep` on every subsequent save).
+	 * open a fresh task sequence on every subsequent save).
 	 *
 	 * @param array<string,mixed> $automation The matching Automation object.
 	 * @param string $objectUuid The fired object's uuid.
@@ -449,20 +519,31 @@ class AutomationApprovalTriggerListener implements IEventListener {
 			return;
 		}
 
-		$chain = $this->resolveChain(schemaSlug: (string)($automation['trigger']['schema'] ?? ''), chainName: $chainName);
-		if ($chain === null) {
+		$template = $this->resolveTemplate(
+			schemaSlug: (string)($automation['trigger']['schema'] ?? ''),
+			chainName: $chainName
+		);
+		if ($template === null) {
+			return;
+		}
+
+		$templateId = (string)($template['templateId'] ?? '');
+		if ($templateId === '') {
+			$this->logger->warning(
+				'Buildiq: AutomationApprovalTriggerListener compiled a template with no id for chain "' . $chainName . '".'
+			);
 			return;
 		}
 
 		try {
-			$existingSteps = $this->stepMapper->findByChainAndObject($chain->getId(), $objectUuid);
+			$existing = $this->sequenceMapper()->findForAnchor($objectUuid, $templateId);
 		} catch (Throwable $e) {
-			$existingSteps = [];
+			$existing = [];
 		}
 
-		if ($existingSteps !== []) {
-			// Already initialised for this object — do not spawn a second
-			// instance (v1 has no resubmission-cycle handling; that is the
+		if ($existing !== []) {
+			// Already initialised for this object — do not open a second
+			// sequence (v1 has no resubmission-cycle handling; that is the
 			// gate-listener's job for the BLOCKING approval-chains flow,
 			// out of this change's scope).
 			return;
@@ -471,29 +552,35 @@ class AutomationApprovalTriggerListener implements IEventListener {
 		$requesterId = $this->userSession->getUser()?->getUID();
 
 		try {
-			$this->approvalService->initializeChain(
-				chain: $chain,
-				objectUuid: $objectUuid,
+			$this->sequenceService()->provision(
+				template: $template,
+				anchorObjectUuid: $objectUuid,
 				requesterId: $requesterId
 			);
 		} catch (Throwable $e) {
-			$message = 'Buildiq: AutomationApprovalTriggerListener failed to initialise chain "' . $chainName . '"'
-				. ' for object "' . $objectUuid . '": ' . $e->getMessage();
+			$message = 'Buildiq: AutomationApprovalTriggerListener failed to open a task sequence for chain "' . $chainName . '"'
+				. ' on object "' . $objectUuid . '": ' . $e->getMessage();
 			$this->logger->error($message, ['exception' => $e]);
 		}
 
 	}//end initializeFor()
 
 	/**
-	 * Resolve the compiled `ApprovalChain` entity for {@see initializeFor()},
-	 * logging (but never throwing) on any resolution failure.
+	 * Compile the approval template for {@see initializeFor()}, logging (but
+	 * never throwing) on any resolution failure.
+	 *
+	 * Since OpenRegister #3302 an approval chain is no longer a stored row. It is
+	 * a declaration on the schema (`x-openregister-approval-chains`) that
+	 * `ApprovalChainAnnotationInstaller::compile()` turns into a task template on
+	 * demand — a pure function of the schema, so the same declaration always
+	 * compiles to the same template id and provisioning stays idempotent.
 	 *
 	 * @param string $schemaSlug The automation's `trigger.schema`.
 	 * @param string $chainName The `provenance.approvalChainName`.
 	 *
-	 * @return ApprovalChain|null
+	 * @return array<string, mixed>|null The compiled template, or null.
 	 */
-	private function resolveChain(string $schemaSlug, string $chainName): ?ApprovalChain {
+	private function resolveTemplate(string $schemaSlug, string $chainName): ?array {
 		try {
 			$schema = $this->schemaMapper->find($schemaSlug, _multitenancy: false);
 		} catch (Throwable $e) {
@@ -501,28 +588,29 @@ class AutomationApprovalTriggerListener implements IEventListener {
 			return null;
 		}
 
-		$schemaId = $schema->getId();
-		if ($schemaId === null) {
+		if ($schema->getId() === null) {
 			return null;
 		}
 
 		try {
-			$chain = $this->chainMapper->findBySchemaAndName(schemaId: (int)$schemaId, name: $chainName);
+			$template = $this->annotationInstaller()->compile($schema, $chainName);
 		} catch (Throwable $e) {
 			$this->logger->warning(
-				'Buildiq: AutomationApprovalTriggerListener could not resolve ApprovalChain "' . $chainName . '": ' . $e->getMessage()
+				'Buildiq: AutomationApprovalTriggerListener could not compile approval chain "' . $chainName . '": ' . $e->getMessage()
 			);
 			return null;
 		}
 
-		if ($chain === null) {
+		if (is_array($template) === false) {
 			$this->logger->warning(
-				'Buildiq: AutomationApprovalTriggerListener found no compiled ApprovalChain "' . $chainName . '" — automation may need recompiling.'
+				'Buildiq: AutomationApprovalTriggerListener found no approval chain "' . $chainName . '" declared on schema "'
+				. $schemaSlug . '" — the automation may need recompiling.'
 			);
+			return null;
 		}
 
-		return $chain;
-	}//end resolveChain()
+		return $template;
+	}//end resolveTemplate()
 
 	/**
 	 * Coerce an OR result entry to a plain associative array.
