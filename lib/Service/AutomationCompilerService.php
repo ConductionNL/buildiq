@@ -29,10 +29,10 @@
  *
  *   - Approval backend — `object-created|object-updated|object-deleted|
  *     lifecycle-transition` + `approval` compiles to an OpenRegister
- *     `ApprovalChain` (one step, `role` = the assignee group), upserted via
- *     {@see \OCA\OpenRegister\Db\ApprovalChainMapper} under the `aut-<slug>`
- *     provenance name. Instantiating a step against a fired object's uuid
- *     (`ApprovalService::initializeChain()`) happens OUT of this pure
+ *     approval-chain DECLARATION on the schema (one approver, `role` = the
+ *     assignee group), written to `x-openregister-approval-chains` under the
+ *     `aut-<slug>` provenance name and compiled into a task template on demand.
+ *     Opening a task sequence against a fired object's uuid happens OUT of this pure
  *     compiler, in {@see \OCA\Buildiq\Listener\AutomationApprovalTriggerListener}
  *     — consume-not-rebuild (ADR-022): Buildiq never implements an approval
  *     engine, only a compiler that provisions OR's existing one. On-approve/
@@ -1447,12 +1447,12 @@ class AutomationCompilerService {
 	 * `approval`), or remove a prior one when the automation no longer
 	 * compiles an approval action.
 	 *
-	 * Mirrors {@see applyRuleSet()}'s find-then-create/update shape,
-	 * substituting OR's `ApprovalChainMapper` for `ObjectService` because
-	 * approval chains are NOT OpenRegister objects — they live in their own
-	 * `openregister_approval_chains` table, consumed the same way
-	 * {@see \OCA\OpenRegister\Controller\ApprovalController::create()} does
-	 * (direct mapper call, ADR-022 consume-not-rebuild).
+	 * Mirrors {@see applyRuleSet()}'s find-then-write shape, but the chain is
+	 * not an object OR a row: since openregister #3302 it is a DECLARATION in
+	 * the schema's `configuration`, the same place this service already writes
+	 * `x-openregister-notifications` and `x-openregister-lifecycle`. OR compiles
+	 * it into a task template on demand (ADR-022 consume-not-rebuild — buildiq
+	 * declares, it does not run an approval engine).
 	 *
 	 * @param array<string,mixed>|null $planned Planned `{name,schema,assigneeGroup,enabled}`, or null.
 	 * @param string|null $priorName Prior-provenance `ApprovalChain` name, if any.

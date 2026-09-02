@@ -181,7 +181,12 @@ export default {
 					// completeInternal), and this widget has no comment field, so
 					// send a truthful provenance line rather than an empty string.
 					...(action === 'reject'
-						? { comment: t('buildiq', 'Rejected from the My approvals widget.') }
+						? {
+								comment: t(
+									'buildiq',
+									'Rejected from the My approvals widget.',
+								),
+							}
 						: {}),
 				})
 				await this.load()
