@@ -1050,7 +1050,8 @@
         "Flow": "Flow",
         "Where the automation lives": "Waar de automatisering zit",
         "Flows are what happens without anyone clicking: a record that gets stamped on save, a notice that goes out when something changes. This is where you read and edit them. Nothing to build now.": "Flows zijn wat er gebeurt zonder dat iemand klikt: een record dat bij opslaan wordt gestempeld, een melding die uitgaat wanneer er iets verandert. Hier leest en bewerkt u ze. U hoeft nu niets te bouwen.",
-        "Open Flows in the menu": "Open Flows in het menu"
+        "Open Flows in the menu": "Open Flows in het menu",
+        "Rejected from the My approvals widget.": "Afgewezen vanuit de widget Mijn goedkeuringen."
     },
     "plurals": null,
     "pluralForm": "nplurals=2; plural=(n != 1);"

@@ -30,10 +30,6 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
 use OCA\Buildiq\Service\AutomationCompilerService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Db\ApprovalChain;
-use OCA\OpenRegister\Db\ApprovalChainMapper;
-use OCA\OpenRegister\Db\ApprovalStep;
-use OCA\OpenRegister\Db\ApprovalStepMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\App\IAppManager;
@@ -56,16 +52,6 @@ final class AutomationCompilerServiceTest extends TestCase {
 	private SchemaMapper&MockObject $schemaMapper;
 
 	/**
-	 * @var ApprovalChainMapper&MockObject
-	 */
-	private ApprovalChainMapper&MockObject $approvalChainMapper;
-
-	/**
-	 * @var ApprovalStepMapper&MockObject
-	 */
-	private ApprovalStepMapper&MockObject $approvalStepMapper;
-
-	/**
 	 * @var IAppManager&MockObject
 	 */
 	private IAppManager&MockObject $appManager;
@@ -85,15 +71,11 @@ final class AutomationCompilerServiceTest extends TestCase {
 	protected function setUp(): void {
 		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
-		$this->approvalChainMapper = $this->createMock(ApprovalChainMapper::class);
-		$this->approvalStepMapper = $this->createMock(ApprovalStepMapper::class);
 		$this->appManager = $this->createMock(IAppManager::class);
 		$this->appManager->method('isEnabledForUser')->willReturn(true);
 		$this->compiler = new AutomationCompilerService(
 			$this->objectService,
 			$this->schemaMapper,
-			$this->approvalChainMapper,
-			$this->approvalStepMapper,
 			$this->appManager,
 			new NullLogger(),
 		);
@@ -488,15 +470,17 @@ final class AutomationCompilerServiceTest extends TestCase {
 		$schema->method('getId')->willReturn(42);
 		$this->schemaMapper->method('find')->willReturn($schema);
 
-		$this->approvalChainMapper->method('findBySchemaAndName')->willReturn(null);
+		// The chain is no longer a row: compiling writes the declaration onto the
+		// schema's `x-openregister-approval-chains` configuration (openregister
+		// #3302), so idempotence is now "the same configuration is written twice".
+		$schema->method('getConfiguration')->willReturn([]);
 
 		$captured = [];
-		$this->approvalChainMapper->expects($this->exactly(2))
-			->method('createFromArray')
-			->willReturnCallback(function (array $payload) use (&$captured) {
-				$captured[] = $payload;
-				return $this->createMock(ApprovalChain::class);
+		$schema->method('setConfiguration')
+			->willReturnCallback(function (array $config) use (&$captured): void {
+				$captured[] = ($config['x-openregister-approval-chains'] ?? []);
 			});
+		$this->schemaMapper->expects($this->exactly(2))->method('update');
 
 		$automation = [
 			'id' => 'auto-5',
@@ -525,25 +509,37 @@ final class AutomationCompilerServiceTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	public function testApprovalStateReturnsLatestStepStatus(): void {
+	public function testApprovalStateDegradesToNoneForADeclaredChain(): void {
 		$schema = $this->createMock(Schema::class);
 		$schema->method('getId')->willReturn(42);
+		$schema->method('getConfiguration')->willReturn([
+			'x-openregister-approval-chains' => [
+				'aut-route-permit-application-for-approval' => [
+					'approvers' => [['role' => 'permit-reviewers']],
+				],
+			],
+		]);
 		$this->schemaMapper->method('find')->willReturn($schema);
-
-		$chain = $this->createMock(ApprovalChain::class);
-		$chain->method('getId')->willReturn(7);
-		$this->approvalChainMapper->method('findBySchemaAndName')->willReturn($chain);
-
-		$step = $this->createMock(ApprovalStep::class);
-		$step->method('getStatus')->willReturn('pending');
-		$this->approvalStepMapper->method('findAllFiltered')->willReturn([$step]);
 
 		$automation = ['trigger' => ['type' => 'object-created', 'schema' => 'permit-application']];
 		$provenance = ['approvalChainName' => 'aut-route-permit-application-for-approval'];
 
-		$this->assertSame('pending', $this->compiler->approvalState($automation, $provenance));
+		// ⚠️ This asserts a DELIBERATE degradation, not the desired behaviour.
+		//
+		// It used to assert 'pending', read from the newest ApprovalStep row.
+		// openregister #3302 retired ApprovalStep, and the task sequence that
+		// replaces it is queried per anchor object — there is no exposed "newest
+		// sequence across every anchor for this template" query, which is what
+		// this aggregate needs. Rather than mirror task state app-side (the very
+		// thing the consolidation removes), the dry-run panel reports 'none'.
+		//
+		// The chain IS declared here, so this is not the not-compiled path that
+		// testApprovalStateReturnsNoneWhenNeverCompiled covers — it is the
+		// compiled-but-unreadable one. Restore the real status in buildiq#651
+		// stage 2 and invert this back.
+		$this->assertSame('none', $this->compiler->approvalState($automation, $provenance));
 
-	}//end testApprovalStateReturnsLatestStepStatus()
+	}//end testApprovalStateDegradesToNoneForADeclaredChain()
 
 	/**
 	 * `approvalState()` returns `none` when no chain was ever compiled.
@@ -851,8 +847,6 @@ final class AutomationCompilerServiceTest extends TestCase {
 		$compiler = new AutomationCompilerService(
 			$this->objectService,
 			$this->schemaMapper,
-			$this->approvalChainMapper,
-			$this->approvalStepMapper,
 			$this->appManager,
 			new NullLogger(),
 		);

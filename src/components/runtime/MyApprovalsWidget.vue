@@ -10,11 +10,16 @@
   - groups (read via `loadState('buildiq', 'currentUserGroups')`, published
   - by DashboardController::builder() — never a DOM attribute read, ADR-004
   - hard rule). Approve/reject buttons call OpenRegister's
-  - `/api/approval-steps/{id}/approve|reject` DIRECTLY — no Buildiq
-  - pass-through controller exists for these calls (ADR-022 redundant-
-  - controller gate; design.md Decision 4 of automation-approval-steps).
+  - `/api/flow-tasks/{uuid}/complete` DIRECTLY — no Buildiq pass-through
+  - controller exists for these calls (ADR-022 redundant-controller gate;
+  - design.md Decision 4 of automation-approval-steps).
   -
-  - OpenRegister's `GET /api/approval-steps` has no "assigned to me" filter
+  - ⚠️ MIGRATED off the retired approval surface (openregister #3302). The
+  - `/api/approval-steps` list and its `approve` / `reject` verbs are gone; an
+  - approval is an ordered task sequence, and a decision is `complete` with an
+  - `outcome`. A rejecting outcome refuses an empty comment, so one is sent.
+  -
+  - OpenRegister's task list has no "assigned to me" filter
   - (only status/role/chainId/objectUuid) — client-side group filtering is
   - the only option without an OR-side API addition, and matches the SAME
   - group-based check OR itself enforces server-side (`verifyRole`), so the
@@ -134,11 +139,16 @@ export default {
 			this.loading = true
 			this.error = false
 			try {
-				const url = generateUrl('/apps/openregister/api/approval-steps')
+				// openregister #3302 retired /api/approval-steps; an approval is an
+				// ordered task sequence now, and its open positions are tasks.
+				const url = generateUrl('/apps/openregister/api/flow-tasks')
 				const { data } = await axios.get(url, {
 					params: { status: 'pending' },
 				})
-				this.steps = Array.isArray(data) ? data : []
+				// The task list answers either a bare array or a paginated
+				// envelope depending on the query, so accept both rather than
+				// silently rendering nothing.
+				this.steps = Array.isArray(data) ? data : (data?.results ?? [])
 			} catch (err) {
 				this.error = true
 				this.steps = []
@@ -160,10 +170,25 @@ export default {
 			this.decideError = ''
 			this.deciding = { ...this.deciding, [step.id]: true }
 			try {
+				// One endpoint with an outcome, not two verbs: #3302 replaced
+				// approve/reject with the task lifecycle's `complete`.
 				const url = generateUrl(
-					`/apps/openregister/api/approval-steps/${step.id}/${action}`,
+					`/apps/openregister/api/flow-tasks/${step.uuid ?? step.id}/complete`,
 				)
-				await axios.post(url, {})
+				await axios.post(url, {
+					outcome: action === 'approve' ? 'approved' : 'rejected',
+					// A rejecting outcome refuses an empty comment (TaskService::
+					// completeInternal), and this widget has no comment field, so
+					// send a truthful provenance line rather than an empty string.
+					...(action === 'reject'
+						? {
+								comment: t(
+									'buildiq',
+									'Rejected from the My approvals widget.',
+								),
+							}
+						: {}),
+				})
 				await this.load()
 			} catch (err) {
 				this.decideError =

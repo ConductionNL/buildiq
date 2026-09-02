@@ -37,6 +37,72 @@
 
 declare(strict_types=1);
 
+namespace OCA\OpenRegister\Contract {
+
+	// Autoload is ALLOWED here, unlike the class stubs below. In-container the real
+	// OpenRegister interface is on the autoload path, and declaring a stub ahead
+	// of it makes the real ObjectService fail its own `implements` check —
+	// AppNavigationService then dies with a TypeError at app-load. Letting the
+	// autoloader answer first means the stub only ever fires out-of-container.
+	if (interface_exists(ObjectEntityInterface::class) === false) {
+		/**
+		 * Stub ObjectEntityInterface.
+		 *
+		 * The Db stub below declares `ObjectEntity implements
+		 * \OCA\OpenRegister\Contract\ObjectEntityInterface`, but the interface
+		 * itself was never stubbed — so loading this file outside the container
+		 * died at bootstrap with "Interface ... not found", before a single test
+		 * ran. Mirrors the real interface's surface so a MockBuilder over the
+		 * type still answers the methods callers use.
+		 */
+		interface ObjectEntityInterface extends \JsonSerializable {
+
+			/**
+			 * Stub uuid accessor.
+			 *
+			 * @return string|null The object uuid.
+			 */
+			public function getUuid(): ?string;
+
+			/**
+			 * Stub object-body accessor.
+			 *
+			 * @return array<string, mixed> The object body.
+			 */
+			public function getObject(): array;
+
+			/**
+			 * Stub register accessor.
+			 *
+			 * @return string|null The register slug.
+			 */
+			public function getRegister(): ?string;
+
+			/**
+			 * Stub schema accessor.
+			 *
+			 * @return string|null The schema slug.
+			 */
+			public function getSchema(): ?string;
+
+			/**
+			 * Stub organisation accessor.
+			 *
+			 * @return string|null The owning organisation.
+			 */
+			public function getOrganisation(): ?string;
+
+			/**
+			 * Stub owner accessor.
+			 *
+			 * @return string|null The owning user.
+			 */
+			public function getOwner(): ?string;
+		}//end interface
+	}
+
+}
+
 namespace OCA\OpenRegister\Db {
 
 	if (class_exists(ObjectEntity::class, autoload: false) === false) {
@@ -812,6 +878,27 @@ namespace OCA\OpenRegister\Db {
 		}//end class
 	}//end if
 
+	if (class_exists(TaskSequenceMapper::class, autoload: false) === false) {
+		/**
+		 * Stub TaskSequenceMapper — the openregister #3302 replacement for the
+		 * retired ApprovalStepMapper's per-object lookup.
+		 */
+		class TaskSequenceMapper {
+
+			/**
+			 * Stub: sequences already opened for this anchor + template.
+			 *
+			 * @param string $anchorObjectUuid The object the approval is about.
+			 * @param string $templateId       The compiled template id.
+			 *
+			 * @return array<int, object> The matching sequences.
+			 */
+			public function findForAnchor(string $anchorObjectUuid, string $templateId): array {
+				return [];
+			}//end findForAnchor()
+		}//end class
+	}//end if
+
 	if (class_exists(ApprovalChainMapper::class, autoload: false) === false) {
 		/**
 		 * Stub ApprovalChainMapper — call surface only; tests mock the methods.
@@ -1388,6 +1475,28 @@ namespace OCA\OpenRegister\Service {
 		}//end class
 	}//end if
 
+	if (class_exists(ApprovalChainAnnotationInstaller::class, autoload: false) === false) {
+		/**
+		 * Stub ApprovalChainAnnotationInstaller — compiles a schema's
+		 * `x-openregister-approval-chains` declaration into a task template
+		 * (openregister #3302).
+		 */
+		class ApprovalChainAnnotationInstaller {
+
+			/**
+			 * Stub: compile one declared chain into a template.
+			 *
+			 * @param object $schema   The schema carrying the declaration.
+			 * @param string $chainKey The declared chain name.
+			 *
+			 * @return array<string, mixed>|null The compiled template, or null.
+			 */
+			public function compile(object $schema, string $chainKey): ?array {
+				return null;
+			}//end compile()
+		}//end class
+	}//end if
+
 	if (class_exists(ApprovalService::class, autoload: false) === false) {
 		/**
 		 * Stub ApprovalService (automation-approval-steps) — call surface
@@ -1423,6 +1532,41 @@ namespace OCA\OpenRegister\Service {
 			}//end rejectStep()
 		}//end class
 	}//end if
+}
+
+namespace OCA\OpenRegister\Service\Task {
+
+	if (class_exists(TaskSequenceService::class, autoload: false) === false) {
+		/**
+		 * Stub TaskSequenceService — opens an ordered task sequence from a
+		 * compiled template; the openregister #3302 replacement for the retired
+		 * ApprovalService::initializeChain().
+		 */
+		class TaskSequenceService {
+
+			/**
+			 * Stub: provision a sequence from a compiled template.
+			 *
+			 * @param array<string, mixed>                  $template         The compiled template.
+			 * @param string                                $anchorObjectUuid The object the approval is about.
+			 * @param string|null                           $requesterId      Who attempted the transition.
+			 * @param array<int, array<string, mixed>>|null $tierPositions    The resolved amount tier.
+			 * @param int|null                              $registerId       The anchor's register.
+			 *
+			 * @return object The provisioned sequence.
+			 */
+			public function provision(
+				array $template,
+				string $anchorObjectUuid,
+				?string $requesterId,
+				?array $tierPositions=null,
+				?int $registerId=null,
+			): object {
+				return new \stdClass();
+			}//end provision()
+		}//end class
+	}//end if
+
 }
 
 namespace OCA\OpenRegister\Service\Flow {
