@@ -154,7 +154,6 @@ final class ApprovalOutcomeListenerTest extends TestCase {
 	 */
 	public function testApprovedDispatchesOnApproveFollowUps(): void {
 		$chain = 'aut-route-permit-application-for-approval';
-		$step = $this->stepFor('object-uuid-1');
 		$event = new TaskSequenceCompletedEvent(sequence: $this->sequenceFor($chain, 'object-uuid-1'));
 
 		$automation = [
@@ -200,7 +199,6 @@ final class ApprovalOutcomeListenerTest extends TestCase {
 	 */
 	public function testRejectedDispatchesOnRejectFollowUps(): void {
 		$chain = 'aut-route-permit-application-for-approval';
-		$step = $this->stepFor('object-uuid-2');
 		$event = new TaskTerminalEvent(task: $this->taskFor('object-uuid-1', $chain), outcome: 'rejected');
 
 		$automation = [
@@ -242,7 +240,6 @@ final class ApprovalOutcomeListenerTest extends TestCase {
 	 */
 	public function testNonAutomationChainIsNoOp(): void {
 		$chain = 'hand-authored-chain';
-		$step = $this->stepFor('object-uuid-3');
 		$event = new TaskSequenceCompletedEvent(sequence: $this->sequenceFor($chain, 'object-uuid-1'));
 
 		$this->objectService->expects($this->never())->method('findAll');
@@ -260,7 +257,6 @@ final class ApprovalOutcomeListenerTest extends TestCase {
 	 */
 	public function testUnmatchedAutomationSlugIsNoOp(): void {
 		$chain = 'aut-does-not-exist';
-		$step = $this->stepFor('object-uuid-4');
 		$event = new TaskSequenceCompletedEvent(sequence: $this->sequenceFor($chain, 'object-uuid-1'));
 
 		$this->objectService->method('findAll')->willReturn([]);
