@@ -551,24 +551,7 @@ class AutomationCompilerService {
 		// branches above already return it), so the dry-run panel degrades to
 		// "no run recorded" instead of reporting a status it cannot read.
 		// Tracked as stage 2 of buildiq#651.
-		$steps = [];
-
-		if ($steps === []) {
-			return 'none';
-		}
-
-		// The mapper orders by `created` ASC — the last element is the
-		// most-recently-initialised step (most recently triggered object).
-		$latest = $steps[(count($steps) - 1)];
-		$status = (string)($latest->getStatus() ?? 'pending');
-		if (in_array($status, ['pending', 'approved', 'rejected'], true) === true) {
-			return $status;
-		}
-
-		// 'waiting' (a later step of a multi-step chain hand-edited outside
-		// the automation editor — v1 only ever compiles one step) reads as
-		// pending from the caller's perspective.
-		return 'pending';
+		return 'none';
 	}//end approvalState()
 
 	/**

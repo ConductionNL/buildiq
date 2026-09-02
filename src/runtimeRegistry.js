@@ -91,7 +91,7 @@ export const runtimeRegistry = {
 	// Sidebar-tab / detail action group for Docudesk document generation.
 	'docudesk-document-actions': tab(DocumentActions),
 	// @custom-widget-ratchet exclude automation-approval-steps: "My approvals"
-	// calls OR's dedicated /api/approval-steps{,/approve,/reject} endpoints
+	// calls OR's dedicated /api/flow-tasks{,/{uuid}/complete} endpoints
 	// directly with client-side group filtering + per-row approve/reject
 	// actions — no built-in object-table/stats-block widget can express a
 	// non-object-service REST action target, so no built-in fits (ADR-049
@@ -99,7 +99,7 @@ export const runtimeRegistry = {
 	'my-approvals': widget(
 		MyApprovalsWidget,
 		['body', 'sidebar'],
-		"Approve/reject calls target OpenRegister's dedicated approval-steps endpoints directly (not the generic object-service API a built-in object-table row action can express) — no built-in widget fits.",
+		"Approve/reject calls target OpenRegister's dedicated flow-task endpoints directly (not the generic object-service API a built-in object-table row action can express) — no built-in widget fits.",
 	),
 	// Detail-page `config.actionsComponent: "TrackLinkAction"` — mint a
 	// "track your case" link (external-form-provisioning REQ-EFP-006).
