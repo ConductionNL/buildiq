@@ -287,4 +287,87 @@ final class ApprovalOutcomeListenerTest extends TestCase {
 		$this->listener->handle($event);
 
 	}//end testIgnoresOtherEventTypes()
+	/**
+	 * A terminal task with an APPROVING outcome fires no onReject follow-up.
+	 *
+	 * The reject half subscribes to every terminal task, not only rejecting
+	 * ones, so this is the filter that stops an approval from also firing the
+	 * rejection actions. Without it every approved task would dispatch both.
+	 *
+	 * @return void
+	 */
+	public function testApprovingTerminalTaskFiresNoRejectFollowUp(): void {
+		$event = new TaskTerminalEvent(
+			task: $this->taskFor('object-uuid-5'),
+			outcome: 'approved'
+		);
+
+		$this->dispatcher->expects($this->never())->method('__invoke');
+
+		$this->listener->handle($event);
+
+	}//end testApprovingTerminalTaskFiresNoRejectFollowUp()
+
+	/**
+	 * A terminal task carrying no outcome fires nothing.
+	 *
+	 * `getOutcome()` is nullable — a task can reach a terminal state without a
+	 * decision (cancelled, expired, terminated as moot), and none of those are
+	 * a rejection.
+	 *
+	 * @return void
+	 */
+	public function testTerminalTaskWithoutAnOutcomeFiresNothing(): void {
+		$event = new TaskTerminalEvent(task: $this->taskFor('object-uuid-6'), outcome: null);
+
+		$this->dispatcher->expects($this->never())->method('__invoke');
+
+		$this->listener->handle($event);
+
+	}//end testTerminalTaskWithoutAnOutcomeFiresNothing()
+
+	/**
+	 * A sequence that cannot be loaded is logged, not propagated.
+	 *
+	 * The listener runs inside the write that completed the task. An exception
+	 * escaping here would fail that write — the exact failure mode the whole
+	 * task-engine migration exists to remove.
+	 *
+	 * @return void
+	 */
+	public function testUnloadableSequenceDoesNotBreakTheWrite(): void {
+		$task = new Task();
+		$task->setObjectUuid('object-uuid-7');
+		$task->setSequenceUuid('sequence-that-is-gone');
+
+		$this->sequenceMapper->method('findByUuid')
+			->willThrowException(new \RuntimeException('sequence not found'));
+
+		$this->dispatcher->expects($this->never())->method('__invoke');
+
+		$this->listener->handle(new TaskTerminalEvent(task: $task, outcome: 'rejected'));
+
+		$this->addToAssertionCount(1);
+
+	}//end testUnloadableSequenceDoesNotBreakTheWrite()
+
+	/**
+	 * A task with no sequence uuid resolves no chain and fires nothing.
+	 *
+	 * Standalone tasks exist — not every task belongs to an approval sequence.
+	 *
+	 * @return void
+	 */
+	public function testTaskWithoutASequenceFiresNothing(): void {
+		$task = new Task();
+		$task->setObjectUuid('object-uuid-8');
+
+		$this->dispatcher->expects($this->never())->method('__invoke');
+
+		$this->listener->handle(new TaskTerminalEvent(task: $task, outcome: 'rejected'));
+
+		$this->addToAssertionCount(1);
+
+	}//end testTaskWithoutASequenceFiresNothing()
+
 }//end class
