@@ -940,6 +940,17 @@ namespace OCA\OpenRegister\Db {
 			public function findForAnchor(string $anchorObjectUuid, string $templateId): array {
 				return [];
 			}//end findForAnchor()
+
+			/**
+			 * Stub: load one sequence by uuid.
+			 *
+			 * @param string $uuid The sequence uuid.
+			 *
+			 * @return TaskSequence The sequence.
+			 */
+			public function findByUuid(string $uuid): TaskSequence {
+				return new TaskSequence();
+			}//end findByUuid()
 		}//end class
 	}//end if
 
