@@ -113,6 +113,7 @@ namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\App\IAppManager;
@@ -195,6 +196,10 @@ class AutomationCompilerService {
 	/**
 	 * Constructor.
 	 *
+	 * @param ContainerInterface $container Resolves OpenRegister's task-engine
+	 *                                    collaborators at USE time — a hard
+	 *                                    constructor type on a cross-app class
+	 *                                    is what made buildiq#651 an outage.
 	 * @param ObjectServiceInterface $objectService OpenRegister object service (ADR-022 boundary).
 	 * @param SchemaMapper $schemaMapper OR schema mapper — mutates schema
 	 *                                   `configuration` (`x-openregister-notifications` /
@@ -206,6 +211,7 @@ class AutomationCompilerService {
 	 * @return void
 	 */
 	public function __construct(
+		private readonly ContainerInterface $container,
 		private readonly ObjectServiceInterface $objectService,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly IAppManager $appManager,
@@ -536,22 +542,24 @@ class AutomationCompilerService {
 			return 'none';
 		}
 
-		// ⚠️ DEGRADED, and deliberately so rather than guessed at.
-		//
-		// This used to read the chain's live ApprovalStep rows and report the
-		// newest one's status. openregister #3302 retired ApprovalStep, and its
-		// replacement — the task sequence — is queried per ANCHOR OBJECT
-		// (TaskSequenceMapper::findForAnchor / findNewestForAnchor). There is no
-		// exposed "newest sequence across every anchor for this template" query,
-		// which is what this aggregate needs, so reconstructing it here would
-		// mean either an unindexed scan or an app-side mirror of task state —
-		// the two things the consolidation exists to remove.
-		//
-		// `none` is an existing, valid value of this aggregate (four other
-		// branches above already return it), so the dry-run panel degrades to
-		// "no run recorded" instead of reporting a status it cannot read.
-		// Tracked as stage 2 of buildiq#651.
-		return 'none';
+		$sequence = $this->newestSequenceFor(
+			schemaId: (int)($chain['schemaId'] ?? 0),
+			chainName: $chainName
+		);
+		if ($sequence === null) {
+			return 'none';
+		}
+
+		// TaskSequence's four statuses collapse onto this aggregate's three
+		// decided values. `terminated` deliberately reads as `none`: the sequence
+		// was closed without anyone deciding, so reporting it as rejected would
+		// invent an outcome nobody chose.
+		return match ((string)($sequence->getStatus() ?? '')) {
+			'running' => 'pending',
+			'completed' => 'approved',
+			'rejected' => 'rejected',
+			default => 'none',
+		};
 	}//end approvalState()
 
 	/**
@@ -1845,6 +1853,62 @@ class AutomationCompilerService {
 		];
 
 	}//end fetchLiveApprovalChain()
+
+	/**
+	 * The newest approval sequence opened from a chain's compiled template.
+	 *
+	 * Resolved through the container behind class_exists rather than
+	 * constructor-injected: these are OpenRegister's classes, and a hard
+	 * constructor type on a cross-app class is what turned #3302's deletions
+	 * into an instance-wide outage (buildiq#651). Reached this way, an instance
+	 * without the task engine degrades to "no run recorded".
+	 *
+	 * The template id is a pure function of schema + chain key, so the same
+	 * declaration always resolves to the same template without storing anything.
+	 *
+	 * @param int    $schemaId  The schema the chain is declared on.
+	 * @param string $chainName The chain key.
+	 *
+	 * @return object|null The newest sequence, or null when none has run.
+	 */
+	private function newestSequenceFor(int $schemaId, string $chainName): ?object {
+		$installer = 'OCA\\OpenRegister\\Service\\ApprovalChainAnnotationInstaller';
+		$mapper = 'OCA\\OpenRegister\\Db\\TaskSequenceMapper';
+		if ($schemaId === 0 || class_exists($installer) === false || class_exists($mapper) === false) {
+			return null;
+		}
+
+		try {
+			// Narrowed through locals rather than chained off get(): the
+			// container returns `object`, so a chained call is unverifiable and
+			// phpstan says so. assert() rather than a docblock, matching
+			// AutomationApprovalTriggerListener — phpcs forbids an inline doc
+			// block in a method body, and assert costs nothing in production.
+			$compiler = $this->container->get($installer);
+			assert(is_object($compiler) && method_exists($compiler, 'templateIdFor'));
+			// Positional, not named: phpstan narrows a container `get()` result to
+			// stdClass, and named arguments on a method it cannot resolve are an
+			// error rather than a warning.
+			$templateId = (string)$compiler->templateIdFor($schemaId, $chainName);
+
+			$sequences = $this->container->get($mapper);
+			assert(is_object($sequences) && method_exists($sequences, 'findNewestForTemplate'));
+			$found = $sequences->findNewestForTemplate($templateId);
+
+			if (is_object($found) === false) {
+				return null;
+			}
+
+			return $found;
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'Buildiq: AutomationCompilerService could not read the approval state of "' . $chainName . '": ' . $e->getMessage()
+			);
+
+			return null;
+		}
+
+	}//end newestSequenceFor()
 
 	/**
 	 * Load a schema by its numeric id.

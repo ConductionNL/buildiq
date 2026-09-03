@@ -897,6 +897,13 @@ namespace OCA\OpenRegister\Db {
 			 * @var string|null
 			 */
 			protected ?string $anchorObjectUuid = null;
+
+			/**
+			 * Stub status column.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $status = null;
 		}//end class
 	}//end if
 
@@ -951,6 +958,17 @@ namespace OCA\OpenRegister\Db {
 			public function findByUuid(string $uuid): TaskSequence {
 				return new TaskSequence();
 			}//end findByUuid()
+
+			/**
+			 * Stub: the newest sequence for a template, across every anchor.
+			 *
+			 * @param string $templateId The compiled template id.
+			 *
+			 * @return TaskSequence|null The newest sequence, or null.
+			 */
+			public function findNewestForTemplate(string $templateId): ?TaskSequence {
+				return null;
+			}//end findNewestForTemplate()
 		}//end class
 	}//end if
 
@@ -1549,6 +1567,18 @@ namespace OCA\OpenRegister\Service {
 			public function compile(object $schema, string $chainKey): ?array {
 				return null;
 			}//end compile()
+
+			/**
+			 * Stub: the deterministic template id for a schema + chain key.
+			 *
+			 * @param int    $schemaId The schema id.
+			 * @param string $chainKey The declared chain name.
+			 *
+			 * @return string The template id.
+			 */
+			public function templateIdFor(int $schemaId, string $chainKey): string {
+				return '';
+			}//end templateIdFor()
 		}//end class
 	}//end if
 
