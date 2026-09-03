@@ -14,6 +14,7 @@
 
 import AppsBox from 'vue-material-design-icons/AppsBox.vue'
 import BookOpenVariantOutline from 'vue-material-design-icons/BookOpenVariantOutline.vue'
+import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import ClipboardText from 'vue-material-design-icons/ClipboardText.vue'
 import DatabaseExportOutline from 'vue-material-design-icons/DatabaseExportOutline.vue'
@@ -40,6 +41,7 @@ import ViewGridOutline from 'vue-material-design-icons/ViewGridOutline.vue'
 export default {
 	AppsBox,
 	BookOpenVariantOutline,
+	ChartBoxOutline,
 	CheckCircle,
 	ClipboardText,
 	DatabaseExportOutline,
