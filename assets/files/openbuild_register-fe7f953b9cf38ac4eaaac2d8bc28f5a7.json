@@ -159,7 +159,7 @@
           "icon": {
             "title": "Light Mode Icon",
             "type": "object",
-            "description": "Optional top-level light icon reference. Points to an SVG file attached to the Application record via OR files-attached-to-object (ADR-001). Sibling to manifest — not inside it. Drives the /icons/{slug}.svg endpoint (REQ-OBICON-002).",
+            "description": "Optional top-level light icon reference. Points to an SVG file attached to the Application record via OR files-attached-to-object (ADR-001). Sibling to manifest — not inside it. Drives the /icons/{slug}.svg endpoint.",
             "required": [
               "ref"
             ],
@@ -175,7 +175,7 @@
           "iconDark": {
             "title": "Dark Mode Icon",
             "type": "object",
-            "description": "Optional top-level dark icon reference. Points to an SVG file attached to the Application record via OR files-attached-to-object (ADR-001). Sibling to manifest — not inside it. Drives the /icons/{slug}-dark.svg endpoint (REQ-OBICON-003).",
+            "description": "Optional top-level dark icon reference. Points to an SVG file attached to the Application record via OR files-attached-to-object (ADR-001). Sibling to manifest — not inside it. Drives the /icons/{slug}-dark.svg endpoint.",
             "required": [
               "ref"
             ],
@@ -197,7 +197,7 @@
           "permissions": {
             "title": "Access Permissions",
             "type": "object",
-            "description": "Per-Application RBAC block per REQ-OBRBAC-001 (openbuild-rbac). Each entry is a principal — either a Nextcloud user UID (prefix `user:<uid>`) or a Nextcloud group GID (prefix `group:<gid>` OR bare value, kept for back-compat). The caller is granted access when their UID matches a `user:` entry in any role OR when their group memberships intersect a `group:`/bare entry in any role. Bare strings continue to mean GID for backwards compatibility with pre-#37 manifests. owners gate destructive actions (publish, archive, delete, transfer, permissions edit); editors gate save; viewers gate read.",
+            "description": "Per-Application RBAC block (openbuild-rbac). Each entry is a principal: either a Nextcloud user UID (prefix `user:<uid>`) or a Nextcloud group GID (prefix `group:<gid>`, or a bare value kept for back-compat). The caller is granted access when their UID matches a `user:` entry in any role OR when their group memberships intersect a `group:`/bare entry in any role. Bare strings continue to mean GID for backwards compatibility with pre-#37 manifests. owners gate destructive actions (publish, archive, delete, transfer, permissions edit); editors gate save; viewers gate read.",
             "properties": {
               "owners": {
                 "title": "Owners",
@@ -229,7 +229,7 @@
           "githubRepo": {
             "title": "GitHub Repository",
             "type": "object",
-            "description": "Optional linkage to the app's round-trip GitHub home (github-app-repo-format REQ-OBA-010). Set by the owner round-trip capability (github-app-sync) when the app is linked/pushed; omittable so every existing Application stays schema-valid. Purely declarative (stored data, no state machine, no calculation) per ADR-031 — read by the shop + sync surfaces, populated by no runtime that never touches GitHub.",
+            "description": "Optional linkage to the app's round-trip GitHub home (github-app-repo-format). Set by the owner round-trip capability (github-app-sync) when the app is linked/pushed; omittable so every existing Application stays schema-valid. Purely declarative: stored data, with no state machine and no calculation. The shop and sync surfaces read it, and a runtime that never touches GitHub does not populate it.",
             "required": [
               "owner",
               "name"
@@ -251,7 +251,7 @@
           "githubDefaultBranch": {
             "title": "GitHub Default Branch",
             "type": "string",
-            "description": "Optional branch that push/pull operations target, resolved from the linked repo's default branch at link time and admin-overridable (github-app-repo-format REQ-OBA-010). Omittable; purely declarative per ADR-031."
+            "description": "Optional branch that push/pull operations target, resolved from the linked repo's default branch at link time and admin-overridable (github-app-repo-format). Omittable, and purely declarative."
           }
         },
         "x-openregister-validation": {
@@ -644,12 +644,12 @@
           "commitSha": {
             "title": "GitHub Commit SHA",
             "type": "string",
-            "description": "Optional GitHub provenance (github-app-repo-format REQ-OBV-112). The exact Git commit this version was pushed to (on publish to GitHub) or pulled from (on import). Omittable; absent on versions with no GitHub provenance. Purely declarative per ADR-031 — a commitSha write is metadata and does NOT by itself bump `semver` (the manifest-content auto-bump, REQ-OBV-103, is unaffected)."
+            "description": "Optional GitHub provenance (github-app-repo-format). The exact Git commit this version was pushed to on publish, or pulled from on import. Omittable, and absent on versions with no GitHub provenance. Purely declarative: a commitSha write is metadata and does not by itself bump `semver`, and the manifest-content auto-bump is unaffected."
           },
           "sourceRef": {
             "title": "GitHub Source Ref",
             "type": "string",
-            "description": "Optional GitHub provenance (github-app-repo-format REQ-OBV-112). The branch/tag/ref a PULLED version was imported from (e.g. `refs/heads/main` or a tag name). Omittable; absent on versions with no GitHub provenance. Purely declarative per ADR-031 — no lifecycle or semver effect."
+            "description": "Optional GitHub provenance (github-app-repo-format). The branch, tag or ref a pulled version was imported from, such as `refs/heads/main` or a tag name. Omittable, and absent on versions with no GitHub provenance. Purely declarative, with no lifecycle or semver effect."
           }
         },
         "x-openregister-validation": {
@@ -690,7 +690,7 @@
                 "draft"
               ],
               "to": "published",
-              "description": "Mark this version as ready to be the parent Application's productionVersion. Relocated from Application schema per ADR-002 — published-ness is per-version now. Authorization (REQ-OBRBAC-004): owner of the parent Application (or a Nextcloud admin) only — enforced by the ApplicationVersionOwnerGuard `requires` tag below, which OR's LifecycleValidationListener runs on this transition.",
+              "description": "Mark this version as ready to be the parent Application's productionVersion. Relocated from Application schema per ADR-002 — published-ness is per-version now. Authorization: owner of the parent Application (or a Nextcloud admin) only — enforced by the ApplicationVersionOwnerGuard `requires` tag below, which OR's LifecycleValidationListener runs on this transition.",
               "requires": "OCA\\Buildiq\\Lifecycle\\ApplicationVersionOwnerGuard",
               "on_transition": {
                 "upsert_relation": {
@@ -710,7 +710,7 @@
                 "published"
               ],
               "to": "archived",
-              "description": "Retire a published version. Operators are responsible for swapping the parent Application's productionVersion off this row first. Authorization (REQ-OBRBAC-004): owner of the parent Application (or a Nextcloud admin) only — enforced by ApplicationVersionOwnerGuard.",
+              "description": "Retire a published version. Operators are responsible for swapping the parent Application's productionVersion off this row first. Authorization: owner of the parent Application (or a Nextcloud admin) only — enforced by ApplicationVersionOwnerGuard.",
               "requires": "OCA\\Buildiq\\Lifecycle\\ApplicationVersionOwnerGuard"
             },
             "reopen": {
@@ -718,7 +718,7 @@
                 "archived"
               ],
               "to": "draft",
-              "description": "Restore an archived ApplicationVersion to draft for further editing. Authorization (REQ-OBRBAC-004): owner of the parent Application (or a Nextcloud admin) only — enforced by ApplicationVersionOwnerGuard.",
+              "description": "Restore an archived ApplicationVersion to draft for further editing. Authorization: owner of the parent Application (or a Nextcloud admin) only — enforced by ApplicationVersionOwnerGuard.",
               "requires": "OCA\\Buildiq\\Lifecycle\\ApplicationVersionOwnerGuard"
             }
           }
