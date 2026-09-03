@@ -7,7 +7,7 @@
 					"applicationSlug": {
 						"title": "Application Slug",
 						"type": "string",
-						"description": "Slug of the source Application, captured at submission time by ExportJobService::queue() from the route parameter. RunExportJob reads it back to build the export context (appId, appNamespace, appName) and to resolve the agents that point at this application via `agent.applicationSlug`. Persisted on the job rather than re-derived from applicationUuid because the export runs as a background job, long after the request, and the slug is the identity the exported app is BUILT with — re-resolving it later would let a renamed Application change the appId of an export already in flight."
+						"description": "Slug of the source Application, captured at submission time by ExportJobService::queue() from the route parameter. RunExportJob reads it back to build the export context (appId, appNamespace, appName) and to resolve the agents that point at this application via `agent.applicationSlug`. Persisted on the job rather than re-derived from applicationUuid because the export runs as a background job, long after the request, and the slug is the identity the exported app is BUILT with: re-resolving it later would let a renamed Application change the appId of an export already in flight."
 					},
 					"flows": {
 						"title": "Flows",
@@ -24,11 +24,11 @@
 								"flow": {
 									"title": "Flow UUID",
 									"type": "string",
-									"description": "UUID of an OpenRegister flow named in the source Application's `flows` bindings, as chosen at export-submission time. Resolved by FlowAndAgentExportBundler against the OpenRegister `Flow` ENTITY (FlowMapper::findByUuid) — the store the engine executes — and NOT against the `agentflow` object mirror, which drifts from it. A UUID and not the numeric `id`: an id is a per-instance auto-increment column and would resolve to a different flow, or to nothing, on the importing instance."
+									"description": "UUID of an OpenRegister flow named in the source Application's `flows` bindings, as chosen at export-submission time. Resolved by FlowAndAgentExportBundler against the OpenRegister `Flow` ENTITY (FlowMapper::findByUuid). The store the engine executes. And NOT against the `agentflow` object mirror, which drifts from it. A UUID and not the numeric `id`: an id is a per-instance auto-increment column and would resolve to a different flow, or to nothing, on the importing instance."
 								}
 							}
 						},
-						"description": "Per-export choice of which of the source Application's `flows` bindings to bundle. Export-flow state persisted on the ExportJob record by ExportJobService::queue() (via sanitiseFlows(), which keeps only `flow` and drops the builder-UI `label`) — not Application configuration; the Application's own binding lives on Application.flows, declared in 22-flows-and-agents.json. Absent on every ExportJob created before this property existed; ExportJobService::queue() defaults it to []."
+						"description": "Per-export choice of which of the source Application's `flows` bindings to bundle. Export-flow state persisted on the ExportJob record by ExportJobService::queue() (via sanitiseFlows(), which keeps only `flow` and drops the builder-UI `label`). Not Application configuration; the Application's own binding lives on Application.flows, declared in 22-flows-and-agents.json. Absent on every ExportJob created before this property existed; ExportJobService::queue() defaults it to []."
 					}
 				}
 			}

@@ -114,7 +114,7 @@
 					"condition": {
 						"title": "Condition",
 						"type": "object",
-						"description": "Optional condition, v1-supported only on the `manual` trigger (design.md Decision 2 — the rules backend is the only existing primitive that evaluates FEEL). Either a FEEL-subset expression or a reference to an existing rule set.",
+						"description": "Optional condition, v1-supported only on the `manual` trigger (design.md Decision 2: the rules backend is the only existing primitive that evaluates FEEL). Either a FEEL-subset expression or a reference to an existing rule set.",
 						"properties": {
 							"type": {
 								"title": "Condition Type",
@@ -140,7 +140,7 @@
 					"actions": {
 						"title": "Actions",
 						"type": "array",
-						"description": "Ordered typed action records. Only combinations allowed by the v1 compilation matrix (design.md Decision 2) may be saved — unsupported combinations are blocked fail-closed in the editor and at compile time.",
+						"description": "Ordered typed action records. Only combinations allowed by the v1 compilation matrix (design.md Decision 2) may be saved: unsupported combinations are blocked fail-closed in the editor and at compile time.",
 						"items": {
 							"type": "object",
 							"required": [
@@ -158,7 +158,7 @@
 										"approval",
 										"generateDocument"
 									],
-									"description": "`approval` (automation-approval-steps) is selectable only on object-created|object-updated|object-deleted|lifecycle-transition triggers — compiles to an OpenRegister ApprovalChain; blocked fail-closed on schedule/manual. `generateDocument` (automation-document-action) is selectable on the same four event/lifecycle-transition triggers — dispatches an owner-impersonated call to Docudesk's pinned `correspondence/generate` route; blocked fail-closed on schedule/manual."
+									"description": "`approval` (automation-approval-steps) is selectable only on object-created|object-updated|object-deleted|lifecycle-transition triggers: compiles to an OpenRegister ApprovalChain; blocked fail-closed on schedule/manual. `generateDocument` (automation-document-action) is selectable on the same four event/lifecycle-transition triggers. Dispatches an owner-impersonated call to Docudesk's pinned `correspondence/generate` route; blocked fail-closed on schedule/manual."
 								},
 								"channels": {
 									"title": "Notification Channels",
@@ -177,12 +177,12 @@
 											"kind": {
 												"title": "Recipient Kind",
 												"type": "string",
-												"description": "How this recipient set is resolved — e.g. `object-acl` to derive recipients from the object's own access-control list, matching the x-openregister-notifications dialect."
+												"description": "How this recipient set is resolved: e.g. `object-acl` to derive recipients from the object's own access-control list, matching the x-openregister-notifications dialect."
 											},
 											"permission": {
 												"title": "Required Permission",
 												"type": "string",
-												"description": "The permission a user must hold on the object to be included in this recipient set — e.g. `manage`. Only meaningful for ACL-derived recipient kinds."
+												"description": "The permission a user must hold on the object to be included in this recipient set: e.g. `manage`. Only meaningful for ACL-derived recipient kinds."
 											}
 										}
 									},
@@ -242,7 +242,7 @@
 								"assigneeGroup": {
 									"title": "Assignee Group",
 									"type": "string",
-									"description": "approval: Nextcloud group id the compiled ApprovalChain's single step is assigned to (group-only in v1 — OR's ApprovalStep.role has no per-user primitive)."
+									"description": "approval: Nextcloud group id the compiled ApprovalChain's single step is assigned to (group-only in v1. OR's ApprovalStep.role has no per-user primitive)."
 								},
 								"onApprove": {
 									"title": "On Approve",
@@ -265,7 +265,7 @@
 									"type": "string",
 									"format": "uuid",
 									"x-external-register": "filinq",
-									"description": "generateDocument: UUID of the Docudesk template to render, picked from the same `GET /apps/filinq/api/templates` list the Documents-section builder UI uses. The template is an object in DOCUDESK's register, not Buildiq's, so this carries the bare identifier and no `$ref` — OpenRegister resolves `$ref` within one register set and cannot reach another app's schema."
+									"description": "generateDocument: UUID of the Docudesk template to render, picked from the same `GET /apps/filinq/api/templates` list the Documents-section builder UI uses. The template is an object in DOCUDESK's register, not Buildiq's, so this carries the bare identifier and no `$ref`: OpenRegister resolves `$ref` within one register set and cannot reach another app's schema."
 								},
 								"output": {
 									"title": "Output Mode(s)",
@@ -279,7 +279,7 @@
 											"notify"
 										]
 									},
-									"description": "generateDocument: one or more of `attach` (writes the rendered document to Nextcloud Files and sets a `{ ref: <fileId> }` reference on the triggering object's `generatedDocument` field), `download-link` (generates a short-lived, ~24h, signed download URL without persisting a file) and `notify` (dispatches a notification referencing the generated document). `notify` MUST be combined with `attach` and/or `download-link` — `[\"notify\"]` alone is rejected as incomplete."
+									"description": "generateDocument: one or more of `attach` (writes the rendered document to Nextcloud Files and sets a `{ ref: <fileId> }` reference on the triggering object's `generatedDocument` field), `download-link` (generates a short-lived, ~24h, signed download URL without persisting a file) and `notify` (dispatches a notification referencing the generated document). `notify` MUST be combined with `attach` and/or `download-link`: `[\"notify\"]` alone is rejected as incomplete."
 								}
 							}
 						}
