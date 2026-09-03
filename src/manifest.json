@@ -229,7 +229,8 @@
 			"label": "Store",
 			"icon": "StoreOutline",
 			"route": "Templates",
-			"order": 30
+			"order": 92,
+			"section": "footer"
 		},
 		{
 			"id": "FlowsMenu",
@@ -253,7 +254,7 @@
 			"icon": "MapMarkerPath",
 			"route": "FeaturesRoadmap",
 			"section": "footer",
-			"order": 95
+			"order": 100
 		}
 	],
 	"pages": [
