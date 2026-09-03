@@ -32,6 +32,10 @@ use OCA\Buildiq\Service\AutomationCompilerService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\TaskSequence;
+use OCA\OpenRegister\Db\TaskSequenceMapper;
+use OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller;
+use Psr\Container\ContainerInterface;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -50,6 +54,21 @@ final class AutomationCompilerServiceTest extends TestCase {
 	 * @var SchemaMapper&MockObject
 	 */
 	private SchemaMapper&MockObject $schemaMapper;
+
+	/**
+	 * @var ContainerInterface&MockObject
+	 */
+	private ContainerInterface&MockObject $container;
+
+	/**
+	 * @var ApprovalChainAnnotationInstaller&MockObject
+	 */
+	private ApprovalChainAnnotationInstaller&MockObject $annotationInstaller;
+
+	/**
+	 * @var TaskSequenceMapper&MockObject
+	 */
+	private TaskSequenceMapper&MockObject $sequenceMapper;
 
 	/**
 	 * @var IAppManager&MockObject
@@ -71,9 +90,25 @@ final class AutomationCompilerServiceTest extends TestCase {
 	protected function setUp(): void {
 		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->annotationInstaller = $this->createMock(ApprovalChainAnnotationInstaller::class);
+		$this->sequenceMapper = $this->createMock(TaskSequenceMapper::class);
 		$this->appManager = $this->createMock(IAppManager::class);
 		$this->appManager->method('isEnabledForUser')->willReturn(true);
+		// The task-engine collaborators arrive through the container at USE
+		// time, so the mock answers per class name.
+		$this->container = $this->createMock(ContainerInterface::class);
+		$this->container->method('get')->willReturnCallback(
+			function (string $id): object {
+				return match ($id) {
+					'OCA\\OpenRegister\\Service\\ApprovalChainAnnotationInstaller' => $this->annotationInstaller,
+					'OCA\\OpenRegister\\Db\\TaskSequenceMapper' => $this->sequenceMapper,
+					default => $this->objectService,
+				};
+			}
+		);
+
 		$this->compiler = new AutomationCompilerService(
+			$this->container,
 			$this->objectService,
 			$this->schemaMapper,
 			$this->appManager,
@@ -509,7 +544,7 @@ final class AutomationCompilerServiceTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	public function testApprovalStateDegradesToNoneForADeclaredChain(): void {
+	public function testApprovalStateReportsTheNewestSequenceStatus(): void {
 		$schema = $this->createMock(Schema::class);
 		$schema->method('getId')->willReturn(42);
 		$schema->method('getConfiguration')->willReturn([
@@ -521,25 +556,51 @@ final class AutomationCompilerServiceTest extends TestCase {
 		]);
 		$this->schemaMapper->method('find')->willReturn($schema);
 
+		// Restored by openregister#3360, which added the template-wide finder
+		// this aggregate needs — it reports a template's last run, so it has no
+		// anchor object to ask about and the per-anchor finders could not serve it.
+		$this->annotationInstaller->method('templateIdFor')->willReturn('tpl-permit-7');
+		$sequence = new TaskSequence();
+		$sequence->setStatus('running');
+		$this->sequenceMapper->method('findNewestForTemplate')->with('tpl-permit-7')->willReturn($sequence);
+
 		$automation = ['trigger' => ['type' => 'object-created', 'schema' => 'permit-application']];
 		$provenance = ['approvalChainName' => 'aut-route-permit-application-for-approval'];
 
-		// ⚠️ This asserts a DELIBERATE degradation, not the desired behaviour.
-		//
-		// It used to assert 'pending', read from the newest ApprovalStep row.
-		// openregister #3302 retired ApprovalStep, and the task sequence that
-		// replaces it is queried per anchor object — there is no exposed "newest
-		// sequence across every anchor for this template" query, which is what
-		// this aggregate needs. Rather than mirror task state app-side (the very
-		// thing the consolidation removes), the dry-run panel reports 'none'.
-		//
-		// The chain IS declared here, so this is not the not-compiled path that
-		// testApprovalStateReturnsNoneWhenNeverCompiled covers — it is the
-		// compiled-but-unreadable one. Restore the real status in buildiq#651
-		// stage 2 and invert this back.
-		$this->assertSame('none', $this->compiler->approvalState($automation, $provenance));
+		self::assertSame('pending', $this->compiler->approvalState($automation, $provenance));
 
-	}//end testApprovalStateDegradesToNoneForADeclaredChain()
+	}//end testApprovalStateReportsTheNewestSequenceStatus()
+
+	/**
+	 * A terminated sequence reads as `none`, not `rejected`.
+	 *
+	 * Terminated means the sequence was closed without anyone deciding. Folding
+	 * it onto `rejected` would report an outcome nobody chose, on a panel whose
+	 * whole job is to say what happened.
+	 *
+	 * @return void
+	 */
+	public function testApprovalStateReportsATerminatedSequenceAsNone(): void {
+		$schema = $this->createMock(Schema::class);
+		$schema->method('getId')->willReturn(42);
+		$schema->method('getConfiguration')->willReturn([
+			'x-openregister-approval-chains' => [
+				'aut-x' => ['approvers' => [['role' => 'reviewers']]],
+			],
+		]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->annotationInstaller->method('templateIdFor')->willReturn('tpl-x');
+
+		$sequence = new TaskSequence();
+		$sequence->setStatus('terminated');
+		$this->sequenceMapper->method('findNewestForTemplate')->willReturn($sequence);
+
+		self::assertSame('none', $this->compiler->approvalState(
+			['trigger' => ['type' => 'object-created', 'schema' => 'permit-application']],
+			['approvalChainName' => 'aut-x']
+		));
+
+	}//end testApprovalStateReportsATerminatedSequenceAsNone()
 
 	/**
 	 * `approvalState()` returns `none` when no chain was ever compiled.
@@ -845,6 +906,7 @@ final class AutomationCompilerServiceTest extends TestCase {
 		$this->appManager = $this->createMock(IAppManager::class);
 		$this->appManager->method('isEnabledForUser')->willReturn(false);
 		$compiler = new AutomationCompilerService(
+			$this->container,
 			$this->objectService,
 			$this->schemaMapper,
 			$this->appManager,
