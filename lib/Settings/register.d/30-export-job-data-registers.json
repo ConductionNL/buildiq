@@ -29,7 +29,7 @@
 								}
 							}
 						},
-						"description": "Per-export choice of which of the source Application's `dataRegisters` bindings to bundle, and whether to include each one's row data. Export-flow state persisted on the ExportJob record by ExportJobService::queue() — not Application configuration. Absent on every ExportJob created before this property existed; ExportJobService::queue() defaults it to []."
+						"description": "Per-export choice of which of the source Application's `dataRegisters` bindings to bundle, and whether to include each one's row data. Export-flow state persisted on the ExportJob record by ExportJobService::queue(). Not Application configuration. Absent on every ExportJob created before this property existed; ExportJobService::queue() defaults it to []."
 					}
 				}
 			}

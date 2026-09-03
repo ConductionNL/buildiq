@@ -116,7 +116,7 @@
 							"description": "Frozen for sandbox validation. TestCases run against this state before promotion."
 						},
 						"active": {
-							"description": "Live — the version consumer apps evaluate. Immutable; edits require reopening to draft."
+							"description": "Live: the version consumer apps evaluate. Immutable; edits require reopening to draft."
 						},
 						"archived": {
 							"description": "Retired. Preserved for audit and restore."
@@ -370,7 +370,7 @@
 						"title": "Priority",
 						"type": "integer",
 						"default": 0,
-						"description": "Primary ordering key (DESC) — higher fires first."
+						"description": "Primary ordering key (DESC): higher fires first."
 					},
 					"salience": {
 						"title": "Salience",
