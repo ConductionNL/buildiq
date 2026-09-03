@@ -249,6 +249,14 @@
 			"order": 90
 		},
 		{
+			"id": "ReportsMenu",
+			"label": "Reports",
+			"icon": "ChartBoxOutline",
+			"route": "Reports",
+			"section": "footer",
+			"order": 95
+		},
+		{
 			"id": "FeaturesRoadmapMenu",
 			"label": "Features & roadmap",
 			"icon": "MapMarkerPath",
@@ -508,6 +516,512 @@
 			"title": "App",
 			"component": "BuilderHostView",
 			"_note": "Virtual-app host that mounts a nested CnAppRoot rendering the virtual app's own manifest from GET /api/applications/{slug}/manifest. This is a meta-app-shell (app inside app) pattern that no standard page type supports. It is the core runtime surface of buildiq and will always require a custom host component."
+		},
+		{
+			"id": "Reports",
+			"_note": "ADR-112 / ADR-114 Decision 3. Both are declarative type:dashboard pages over buildiq's own register — no bespoke component and no per-app controller. Nothing moves here: buildiq had no report surface at all, so these are new readings rather than relocated menu entries. ⚠️ SLUGS ARE NOT THE SEED KEYS and are not even consistent with each other: Application is `built-app` and exportJob is `export-job`, but ApplicationVersion stays `applicationVersion` in camelCase. Copying the kebab pattern onto that one renders an empty card and says nothing.",
+			"route": "/reports",
+			"type": "reports",
+			"title": "Reports",
+			"config": {
+				"description": "Pick a report to open it.",
+				"categories": {
+					"apps": "Apps",
+					"delivery": "Versions and delivery"
+				},
+				"cards": [
+					{
+						"id": "ApplicationsReport",
+						"label": "Applications",
+						"description": "How many apps exist, and how far along each one is.",
+						"icon": "AppsBox",
+						"category": "apps",
+						"route": "ApplicationsReport"
+					},
+					{
+						"id": "DeliveryReport",
+						"label": "Versions and exports",
+						"description": "What has been versioned, and what got exported where.",
+						"icon": "DatabaseExportOutline",
+						"category": "delivery",
+						"route": "DeliveryReport"
+					}
+				]
+			}
+		},
+		{
+			"id": "ApplicationsReport",
+			"route": "/reports/applications",
+			"type": "dashboard",
+			"title": "Applications",
+			"_note": "Every filter is scalar equality, the only kind OpenRegister's aggregation endpoint can evaluate. A multi-value or relative-date filter is accepted and then silently not applied.",
+			"config": {
+				"widgets": [
+					{
+						"id": "apps-published",
+						"title": "Published",
+						"type": "stat",
+						"content": {
+							"label": "Published",
+							"icon": "CheckCircle",
+							"route": {
+								"name": "VirtualApps"
+							},
+							"format": {
+								"style": "decimal",
+								"decimals": 0
+							},
+							"source": {
+								"register": "buildiq",
+								"schema": "built-app",
+								"metric": "count",
+								"filter": {
+									"status": "published"
+								}
+							}
+						}
+					},
+					{
+						"id": "apps-draft",
+						"title": "Draft",
+						"type": "stat",
+						"content": {
+							"label": "Draft",
+							"icon": "PencilOutline",
+							"route": {
+								"name": "VirtualApps"
+							},
+							"format": {
+								"style": "decimal",
+								"decimals": 0
+							},
+							"source": {
+								"register": "buildiq",
+								"schema": "built-app",
+								"metric": "count",
+								"filter": {
+									"status": "draft"
+								}
+							}
+						}
+					},
+					{
+						"id": "apps-archived",
+						"title": "Archived",
+						"type": "stat",
+						"content": {
+							"label": "Archived",
+							"icon": "PackageVariant",
+							"route": {
+								"name": "VirtualApps"
+							},
+							"format": {
+								"style": "decimal",
+								"decimals": 0
+							},
+							"source": {
+								"register": "buildiq",
+								"schema": "built-app",
+								"metric": "count",
+								"filter": {
+									"status": "archived"
+								}
+							}
+						}
+					},
+					{
+						"id": "apps-by-status",
+						"title": "By status",
+						"type": "chart",
+						"content": {
+							"chartKind": "donut",
+							"legendPosition": "bottom",
+							"emptyLabel": "No apps yet",
+							"dataSource": {
+								"register": "buildiq",
+								"schema": "built-app",
+								"aggregate": {
+									"groupBy": "status",
+									"metric": "count"
+								}
+							}
+						}
+					},
+					{
+						"id": "apps-by-type",
+						"title": "Virtual or hybrid",
+						"type": "chart",
+						"content": {
+							"chartKind": "donut",
+							"legendPosition": "bottom",
+							"emptyLabel": "No apps yet",
+							"dataSource": {
+								"register": "buildiq",
+								"schema": "built-app",
+								"aggregate": {
+									"groupBy": "appType",
+									"metric": "count"
+								}
+							}
+						}
+					},
+					{
+						"id": "templates-by-category",
+						"title": "Templates by use case",
+						"type": "chart",
+						"content": {
+							"chartKind": "donut",
+							"legendPosition": "bottom",
+							"emptyLabel": "No templates yet",
+							"dataSource": {
+								"register": "buildiq",
+								"schema": "application-template",
+								"aggregate": {
+									"groupBy": "category",
+									"metric": "count"
+								}
+							}
+						}
+					},
+					{
+						"id": "apps-recent",
+						"title": "Most recent",
+						"type": "object-table",
+						"content": {
+							"register": "buildiq",
+							"schema": "built-app",
+							"filter": {},
+							"sort": {
+								"field": "created",
+								"dir": "desc"
+							},
+							"limit": 8,
+							"hideHeader": true,
+							"emptyText": "No apps yet",
+							"viewAllRoute": {
+								"name": "VirtualApps"
+							},
+							"viewAllLabel": "View all apps",
+							"columns": [
+								{
+									"key": "name",
+									"label": "App"
+								},
+								{
+									"key": "appType",
+									"label": "Type"
+								},
+								{
+									"key": "status",
+									"label": "Status"
+								}
+							]
+						}
+					}
+				],
+				"layout": [
+					{
+						"id": "1",
+						"widgetId": "apps-published",
+						"gridX": 0,
+						"gridY": 0,
+						"gridWidth": 4,
+						"gridHeight": 2,
+						"showTitle": false
+					},
+					{
+						"id": "2",
+						"widgetId": "apps-draft",
+						"gridX": 4,
+						"gridY": 0,
+						"gridWidth": 4,
+						"gridHeight": 2,
+						"showTitle": false
+					},
+					{
+						"id": "3",
+						"widgetId": "apps-archived",
+						"gridX": 8,
+						"gridY": 0,
+						"gridWidth": 4,
+						"gridHeight": 2,
+						"showTitle": false
+					},
+					{
+						"id": "4",
+						"widgetId": "apps-by-status",
+						"gridX": 0,
+						"gridY": 2,
+						"gridWidth": 4,
+						"gridHeight": 4,
+						"showTitle": true
+					},
+					{
+						"id": "5",
+						"widgetId": "apps-by-type",
+						"gridX": 4,
+						"gridY": 2,
+						"gridWidth": 4,
+						"gridHeight": 4,
+						"showTitle": true
+					},
+					{
+						"id": "6",
+						"widgetId": "templates-by-category",
+						"gridX": 8,
+						"gridY": 2,
+						"gridWidth": 4,
+						"gridHeight": 4,
+						"showTitle": true
+					},
+					{
+						"id": "7",
+						"widgetId": "apps-recent",
+						"gridX": 0,
+						"gridY": 6,
+						"gridWidth": 12,
+						"gridHeight": 4,
+						"showTitle": true
+					}
+				]
+			}
+		},
+		{
+			"id": "DeliveryReport",
+			"route": "/reports/delivery",
+			"type": "dashboard",
+			"title": "Versions and exports",
+			"_note": "applicationVersion keeps its camelCase slug while every other schema here is kebab-case. Two schemas on one page deliberately: a version is what was cut, an export is where it went, and the question a reader has spans both.",
+			"config": {
+				"widgets": [
+					{
+						"id": "versions-published",
+						"title": "Versions published",
+						"type": "stat",
+						"content": {
+							"label": "Versions published",
+							"icon": "SourceBranch",
+							"route": {
+								"name": "VirtualApps"
+							},
+							"format": {
+								"style": "decimal",
+								"decimals": 0
+							},
+							"source": {
+								"register": "buildiq",
+								"schema": "applicationVersion",
+								"metric": "count",
+								"filter": {
+									"status": "published"
+								}
+							}
+						}
+					},
+					{
+						"id": "exports-succeeded",
+						"title": "Exports succeeded",
+						"type": "stat",
+						"content": {
+							"label": "Exports succeeded",
+							"icon": "CheckCircle",
+							"route": {
+								"name": "VirtualApps"
+							},
+							"format": {
+								"style": "decimal",
+								"decimals": 0
+							},
+							"source": {
+								"register": "buildiq",
+								"schema": "export-job",
+								"metric": "count",
+								"filter": {
+									"status": "succeeded"
+								}
+							}
+						}
+					},
+					{
+						"id": "exports-failed",
+						"title": "Exports failed",
+						"type": "stat",
+						"content": {
+							"label": "Exports failed",
+							"icon": "History",
+							"route": {
+								"name": "VirtualApps"
+							},
+							"format": {
+								"style": "decimal",
+								"decimals": 0
+							},
+							"source": {
+								"register": "buildiq",
+								"schema": "export-job",
+								"metric": "count",
+								"filter": {
+									"status": "failed"
+								}
+							}
+						}
+					},
+					{
+						"id": "versions-by-status",
+						"title": "Versions by status",
+						"type": "chart",
+						"content": {
+							"chartKind": "donut",
+							"legendPosition": "bottom",
+							"emptyLabel": "Nothing has been versioned yet",
+							"dataSource": {
+								"register": "buildiq",
+								"schema": "applicationVersion",
+								"aggregate": {
+									"groupBy": "status",
+									"metric": "count"
+								}
+							}
+						}
+					},
+					{
+						"id": "versions-by-scope",
+						"title": "Admin or user scope",
+						"type": "chart",
+						"content": {
+							"chartKind": "donut",
+							"legendPosition": "bottom",
+							"emptyLabel": "Nothing has been versioned yet",
+							"dataSource": {
+								"register": "buildiq",
+								"schema": "applicationVersion",
+								"aggregate": {
+									"groupBy": "scope",
+									"metric": "count"
+								}
+							}
+						}
+					},
+					{
+						"id": "exports-by-target",
+						"title": "Exports by target",
+						"type": "chart",
+						"content": {
+							"chartKind": "donut",
+							"legendPosition": "bottom",
+							"emptyLabel": "Nothing has been exported yet",
+							"dataSource": {
+								"register": "buildiq",
+								"schema": "export-job",
+								"aggregate": {
+									"groupBy": "target",
+									"metric": "count"
+								}
+							}
+						}
+					},
+					{
+						"id": "exports-recent",
+						"title": "Most recent exports",
+						"type": "object-table",
+						"content": {
+							"register": "buildiq",
+							"schema": "export-job",
+							"filter": {},
+							"sort": {
+								"field": "created",
+								"dir": "desc"
+							},
+							"limit": 8,
+							"hideHeader": true,
+							"emptyText": "Nothing has been exported yet",
+							"viewAllRoute": {
+								"name": "VirtualApps"
+							},
+							"viewAllLabel": "View all apps",
+							"columns": [
+								{
+									"key": "created",
+									"label": "When"
+								},
+								{
+									"key": "target",
+									"label": "Target"
+								},
+								{
+									"key": "status",
+									"label": "Status"
+								}
+							]
+						}
+					}
+				],
+				"layout": [
+					{
+						"id": "1",
+						"widgetId": "versions-published",
+						"gridX": 0,
+						"gridY": 0,
+						"gridWidth": 4,
+						"gridHeight": 2,
+						"showTitle": false
+					},
+					{
+						"id": "2",
+						"widgetId": "exports-succeeded",
+						"gridX": 4,
+						"gridY": 0,
+						"gridWidth": 4,
+						"gridHeight": 2,
+						"showTitle": false
+					},
+					{
+						"id": "3",
+						"widgetId": "exports-failed",
+						"gridX": 8,
+						"gridY": 0,
+						"gridWidth": 4,
+						"gridHeight": 2,
+						"showTitle": false
+					},
+					{
+						"id": "4",
+						"widgetId": "versions-by-status",
+						"gridX": 0,
+						"gridY": 2,
+						"gridWidth": 4,
+						"gridHeight": 4,
+						"showTitle": true
+					},
+					{
+						"id": "5",
+						"widgetId": "versions-by-scope",
+						"gridX": 4,
+						"gridY": 2,
+						"gridWidth": 4,
+						"gridHeight": 4,
+						"showTitle": true
+					},
+					{
+						"id": "6",
+						"widgetId": "exports-by-target",
+						"gridX": 8,
+						"gridY": 2,
+						"gridWidth": 4,
+						"gridHeight": 4,
+						"showTitle": true
+					},
+					{
+						"id": "7",
+						"widgetId": "exports-recent",
+						"gridX": 0,
+						"gridY": 6,
+						"gridWidth": 12,
+						"gridHeight": 4,
+						"showTitle": true
+					}
+				]
+			}
 		},
 		{
 			"id": "FeaturesRoadmap",
