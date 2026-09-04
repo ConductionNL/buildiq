@@ -30,9 +30,31 @@
  * ⚠️ SETTINGS ENTRIES ARE ATTACHED, NOT VISIBLE, inside a collapsed foldout.
  */
 
+import type { Page } from '@playwright/test'
+
 import { expect, test } from '@playwright/test'
 
 const APP_BASE = '/apps/buildiq'
+
+/**
+ * Dismiss the first-run setup wizard if it is open.
+ *
+ * ⚠️ On a FRESH instance CnSetupWizard opens over the app and its modal
+ * intercepts pointer events, so every nav click resolves its locator and then
+ * times out after 30s — a failure that reads like the navigation is broken.
+ * Tests that navigate by URL pass, which is what makes this so easy to miss:
+ * only the click-through tests fail, and only on a clean install.
+ *
+ * @param page The page.
+ */
+async function dismissSetupWizard(page: Page): Promise<void> {
+	const modal = page.locator('[data-testid="cn-modal"]')
+	if ((await modal.count()) === 0) {
+		return
+	}
+	await modal.first().getByRole('button', { name: 'Close' }).click()
+	await expect(modal).toHaveCount(0, { timeout: 15_000 })
+}
 
 test.describe('app chrome (ADR-114)', () => {
 	test.beforeEach(async ({ page }) => {
@@ -40,6 +62,7 @@ test.describe('app chrome (ADR-114)', () => {
 		await expect(page.locator('[data-testid="cn-nav"]')).toBeVisible({
 			timeout: 30_000,
 		})
+		await dismissSetupWizard(page)
 	})
 
 	test('the footer reads Documentation, Store, Reports, Features & roadmap, each with a glyph', async ({
@@ -75,7 +98,10 @@ test.describe('app chrome (ADR-114)', () => {
 
 	test('Reports lists both reports', async ({ page }) => {
 		const nav = page.locator('[data-testid="cn-nav"]')
-		await nav.locator('[data-testid="cn-nav-entry-ReportsMenu"]').click()
+		await nav
+			.locator('[data-testid="cn-nav-entry-ReportsMenu"] a')
+			.first()
+			.click()
 		await expect(page).toHaveURL(/\/apps\/buildiq\/reports(\?|$)/, {
 			timeout: 15_000,
 		})
@@ -97,7 +123,11 @@ test.describe('app chrome (ADR-114)', () => {
 			timeout: 30_000,
 		})
 		await expect(
-			page.getByText('Published', { exact: false }).first(),
+			page
+				.locator('main, .app-content')
+				.first()
+				.getByText('Published', { exact: false })
+				.first(),
 		).toBeVisible({ timeout: 30_000 })
 		await expect(page.locator('main, .app-content').first()).toContainText(
 			/\d/,
@@ -141,6 +171,9 @@ test.describe('app chrome (ADR-114)', () => {
 
 		const admin = nav.locator('[data-testid="cn-nav-admin-settings"]')
 		await expect(admin).toBeAttached()
-		await expect(admin).toHaveAttribute('href', /\/settings\/admin\/buildiq$/)
+		await expect(admin.locator('a').first()).toHaveAttribute(
+			'href',
+			/\/settings\/admin\/buildiq$/,
+		)
 	})
 })
