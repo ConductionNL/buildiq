@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -6,8 +7,7 @@
  *
  * Spec: agent-workspace ("Agent entity declares a named, tool-scoped configuration").
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@nextcloud/router', async (importOriginal) => ({
 	...(await importOriginal()),
@@ -75,13 +75,14 @@ const stubs = {
 
 const flush = () => new Promise((r) => setTimeout(r, 0))
 
-const factory = (agent = null) =>
-	mount(AgentEditDialog, {
+function factory(agent = null) {
+	return mount(AgentEditDialog, {
 		propsData: { open: false, agent, applicationSlug: 'tool-library' },
 		stubs,
 	})
+}
 
-const openDialog = async (wrapper) => {
+async function openDialog(wrapper) {
 	await wrapper.setProps({ open: true })
 	await flush()
 	await flush()
@@ -151,7 +152,7 @@ describe('AgentEditDialog', () => {
 
 		expect(axios.post).toHaveBeenCalledTimes(1)
 		const [url, payload] = axios.post.mock.calls[0]
-		expect(url).toBe('/apps/openregister/api/objects/buildiq/agent')
+		expect(url).toBe('/apps/openregister/api/objects/buildiq/buildAgent')
 		expect(payload.enabledTools).toEqual(['buildiq.upsertPage'])
 		expect(payload.applicationSlug).toBe('tool-library')
 		expect(wrapper.emitted('saved')).toBeTruthy()
@@ -172,7 +173,7 @@ describe('AgentEditDialog', () => {
 
 		expect(axios.put).toHaveBeenCalledTimes(1)
 		expect(axios.put.mock.calls[0][0]).toBe(
-			'/apps/openregister/api/objects/buildiq/agent/agent-1',
+			'/apps/openregister/api/objects/buildiq/buildAgent/agent-1',
 		)
 	})
 

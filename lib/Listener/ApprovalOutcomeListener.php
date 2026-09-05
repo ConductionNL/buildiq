@@ -5,17 +5,22 @@
  *
  * On-approve / on-reject follow-up dispatch for the `approval` automation
  * action (design.md Decision 3 of automation-approval-steps). Subscribes to
- * OpenRegister's `ApprovalStepApprovedEvent` / `ApprovalStepRejectedEvent` —
- * already dispatched by `ApprovalService` for every approve/reject decision,
- * REGARDLESS of who initiated the chain (this listener, the declarative
- * approval-chains gate, or a hand-authored `POST /api/approval-chains` +
- * `initializeChain()` call) — resolves the ORIGINATING automation from the
- * chain's `aut-<slug>` provenance name, and dispatches its configured
+ * OpenRegister's `TaskSequenceCompletedEvent` / `TaskTerminalEvent` — already
+ * dispatched for every decision, REGARDLESS of who opened the sequence (this
+ * app, the declarative approval-chains annotation, or a hand-authored task) —
+ * resolves the ORIGINATING automation from the sequence's `aut-<slug>` chain
+ * key, and dispatches its configured
  * `onApprove`/`onReject` follow-up actions through the SAME
  * {@see \OCA\Buildiq\Service\RuleActionDispatcher} the rules backend
  * already uses for `manual`-trigger automations — never a new imperative
  * engine, never polling (ADR-031 §Exceptions(1), the identical justification
  * already accepted for `AutomationCompilerService`'s own compile branches).
+ *
+ * ⚠️ The two halves subscribe at DIFFERENT levels, which is the mapping
+ * openregister #3302 published rather than an inconsistency: approval concludes
+ * when the SEQUENCE completes, while a rejection is a TASK completing with a
+ * rejecting outcome. A rejecting task closes its whole sequence, so the reject
+ * half fires exactly once per approval, the same as the approve half.
  *
  * A chain not owned by any automation (name does not start with `aut-`, or no
  * automation matches the slug) is a single lookup, not a scan (task 2.2) —
@@ -47,8 +52,8 @@ namespace OCA\Buildiq\Listener;
 use OCA\Buildiq\Service\AutomationCompilerService;
 use OCA\Buildiq\Service\RuleActionDispatcher;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Event\ApprovalStepApprovedEvent;
-use OCA\OpenRegister\Event\ApprovalStepRejectedEvent;
+use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
+use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Container\ContainerExceptionInterface;
@@ -91,6 +96,60 @@ class ApprovalOutcomeListener implements IEventListener {
 	) {
 
 	}//end __construct()
+
+	/**
+	 * Is this outcome a rejecting one?
+	 *
+	 * Asks OpenRegister rather than hardcoding the vocabulary: `TaskState`
+	 * owns which outcome values reject, and a copy here would drift the moment
+	 * a value is added. Resolved through class_exists so an instance without
+	 * the task engine degrades to "not rejecting" instead of fataling inside an
+	 * event listener, which would break the write that fired it.
+	 *
+	 * @param string|null $outcome The terminal task's outcome.
+	 *
+	 * @return bool True when the outcome rejects.
+	 */
+	private function isRejectingOutcome(?string $outcome): bool {
+		$state = 'OCA\\OpenRegister\\Service\\Task\\TaskState';
+		if ($outcome === null || class_exists($state) === false) {
+			return false;
+		}
+
+		return (bool)$state::isRejectingOutcome($outcome);
+
+	}//end isRejectingOutcome()
+
+	/**
+	 * The chain key of the sequence a terminal task belongs to.
+	 *
+	 * The task carries its sequence's uuid but not the chain key, and
+	 * dispatchFollowUp() needs the key to tell an automation-owned chain from a
+	 * hand-authored one. Returns '' when it cannot be resolved, which the caller
+	 * treats as "not ours".
+	 *
+	 * @param string $sequenceUuid The sequence uuid from the task.
+	 *
+	 * @return string The chain key, or '' when unresolvable.
+	 */
+	private function chainKeyForSequence(string $sequenceUuid): string {
+		$mapper = 'OCA\\OpenRegister\\Db\\TaskSequenceMapper';
+		if ($sequenceUuid === '' || class_exists($mapper) === false) {
+			return '';
+		}
+
+		try {
+			$sequence = $this->container->get($mapper)->findByUuid($sequenceUuid);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'Buildiq: ApprovalOutcomeListener could not load sequence "' . $sequenceUuid . '": ' . $e->getMessage()
+			);
+			return '';
+		}
+
+		return (string)($sequence->getChainKey() ?? '');
+
+	}//end chainKeyForSequence()
 
 	/**
 	 * Resolve OpenRegister's object service, lazily.
@@ -157,19 +216,36 @@ class ApprovalOutcomeListener implements IEventListener {
 	 * @spec openspec/changes/automation-approval-steps/tasks.md#2.1
 	 */
 	public function handle(Event $event): void {
-		if ($event instanceof ApprovalStepApprovedEvent) {
+		// APPROVE: the sequence completing IS the approval concluding, so the
+		// chain key and anchor come straight off it.
+		if ($event instanceof TaskSequenceCompletedEvent) {
+			$sequence = $event->getSequence();
 			$this->dispatchFollowUp(
-				chainName: (string)($event->getChain()->getName() ?? ''),
-				objectUuid: $event->getObjectUuid(),
+				chainName: (string)($sequence->getChainKey() ?? ''),
+				objectUuid: (string)($sequence->getAnchorObjectUuid() ?? ''),
 				outcomeKey: 'onApprove'
 			);
 			return;
 		}
 
-		if ($event instanceof ApprovalStepRejectedEvent) {
+		// REJECT: there is no sequence-level rejection event, and there does not
+		// need to be — openregister #3302's published mapping puts it at the TASK
+		// level ("one completing with a rejecting outcome replaces Rejected").
+		// A rejecting task closes its whole sequence, so this fires once.
+		if ($event instanceof TaskTerminalEvent) {
+			if ($this->isRejectingOutcome(outcome: $event->getOutcome()) === false) {
+				return;
+			}
+
+			$task = $event->getTask();
+			$chainName = $this->chainKeyForSequence(sequenceUuid: (string)($task->getSequenceUuid() ?? ''));
+			if ($chainName === '') {
+				return;
+			}
+
 			$this->dispatchFollowUp(
-				chainName: (string)($event->getChain()->getName() ?? ''),
-				objectUuid: $event->getObjectUuid(),
+				chainName: $chainName,
+				objectUuid: (string)($task->getObjectUuid() ?? ''),
 				outcomeKey: 'onReject'
 			);
 		}

@@ -50,8 +50,7 @@
 
 import { defineConfig, devices } from '@playwright/test'
 import * as path from 'path'
-
-import { E2E_BASE_URL } from './support/baseUrl'
+import { E2E_BASE_URL } from './support/baseUrl.ts'
 
 // Roughly 26 specs self-skip behind `process.env.BUILDIQ_E2E_LIVE === '1'`.
 // Every spec in this suite already requires a live Nextcloud at `baseURL`, so

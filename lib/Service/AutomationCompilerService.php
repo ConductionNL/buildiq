@@ -29,10 +29,10 @@
  *
  *   - Approval backend — `object-created|object-updated|object-deleted|
  *     lifecycle-transition` + `approval` compiles to an OpenRegister
- *     `ApprovalChain` (one step, `role` = the assignee group), upserted via
- *     {@see \OCA\OpenRegister\Db\ApprovalChainMapper} under the `aut-<slug>`
- *     provenance name. Instantiating a step against a fired object's uuid
- *     (`ApprovalService::initializeChain()`) happens OUT of this pure
+ *     approval-chain DECLARATION on the schema (one approver, `role` = the
+ *     assignee group), written to `x-openregister-approval-chains` under the
+ *     `aut-<slug>` provenance name and compiled into a task template on demand.
+ *     Opening a task sequence against a fired object's uuid happens OUT of this pure
  *     compiler, in {@see \OCA\Buildiq\Listener\AutomationApprovalTriggerListener}
  *     — consume-not-rebuild (ADR-022): Buildiq never implements an approval
  *     engine, only a compiler that provisions OR's existing one. On-approve/
@@ -113,9 +113,7 @@ namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Db\ApprovalChain;
-use OCA\OpenRegister\Db\ApprovalChainMapper;
-use OCA\OpenRegister\Db\ApprovalStepMapper;
+use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\App\IAppManager;
@@ -162,6 +160,16 @@ class AutomationCompilerService {
 	 * action, mirrors `docudesk-document-templates` REQ-DDT-005's
 	 * missing-dependency posture).
 	 */
+	/**
+	 * The schema-annotation key an approval chain is declared under.
+	 *
+	 * OpenRegister #3302 retired the ApprovalChain row; the declaration now
+	 * lives on the schema and is compiled into a task template on demand.
+	 *
+	 * @var string
+	 */
+	private const APPROVAL_CHAINS_KEY = 'x-openregister-approval-chains';
+
 	private const DOCUDESK_APP_ID = 'filinq';
 
 	/**
@@ -188,26 +196,24 @@ class AutomationCompilerService {
 	/**
 	 * Constructor.
 	 *
+	 * @param ContainerInterface $container Resolves OpenRegister's task-engine
+	 *                                    collaborators at USE time — a hard
+	 *                                    constructor type on a cross-app class
+	 *                                    is what made buildiq#651 an outage.
 	 * @param ObjectServiceInterface $objectService OpenRegister object service (ADR-022 boundary).
 	 * @param SchemaMapper $schemaMapper OR schema mapper — mutates schema
 	 *                                   `configuration` (`x-openregister-notifications` /
 	 *                                   `x-openregister-lifecycle`).
-	 * @param ApprovalChainMapper $approvalChainMapper OR approval-chain mapper — upserts/removes the
-	 *                                                 `aut-<slug>` `ApprovalChain` compiled from an
-	 *                                                 `approval` action (ADR-022 boundary; automation-approval-steps).
-	 * @param ApprovalStepMapper $approvalStepMapper OR approval-step mapper — reads the live aggregate
-	 *                                               `approvalState()` for the status/dry-run surface.
-	 * @param IAppManager $appManager Presence-checks Docudesk at compile time for a
-	 *                                `generateDocument` action (automation-document-action).
+	 * @param IAppManager $appManager Nextcloud app manager — asks whether an
+	 *                                optional integration app is installed.
 	 * @param LoggerInterface $logger PSR logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
+		private readonly ContainerInterface $container,
 		private readonly ObjectServiceInterface $objectService,
 		private readonly SchemaMapper $schemaMapper,
-		private readonly ApprovalChainMapper $approvalChainMapper,
-		private readonly ApprovalStepMapper $approvalStepMapper,
 		private readonly IAppManager $appManager,
 		private readonly LoggerInterface $logger,
 	) {
@@ -536,28 +542,24 @@ class AutomationCompilerService {
 			return 'none';
 		}
 
-		try {
-			$steps = $this->approvalStepMapper->findAllFiltered(filters: ['chainId' => $chain->getId()]);
-		} catch (Throwable $e) {
+		$sequence = $this->newestSequenceFor(
+			schemaId: (int)($chain['schemaId'] ?? 0),
+			chainName: $chainName
+		);
+		if ($sequence === null) {
 			return 'none';
 		}
 
-		if ($steps === []) {
-			return 'none';
-		}
-
-		// The mapper orders by `created` ASC — the last element is the
-		// most-recently-initialised step (most recently triggered object).
-		$latest = $steps[(count($steps) - 1)];
-		$status = (string)($latest->getStatus() ?? 'pending');
-		if (in_array($status, ['pending', 'approved', 'rejected'], true) === true) {
-			return $status;
-		}
-
-		// 'waiting' (a later step of a multi-step chain hand-edited outside
-		// the automation editor — v1 only ever compiles one step) reads as
-		// pending from the caller's perspective.
-		return 'pending';
+		// TaskSequence's four statuses collapse onto this aggregate's three
+		// decided values. `terminated` deliberately reads as `none`: the sequence
+		// was closed without anyone deciding, so reporting it as rejected would
+		// invent an outcome nobody chose.
+		return match ((string)($sequence->getStatus() ?? '')) {
+			'running' => 'pending',
+			'completed' => 'approved',
+			'rejected' => 'rejected',
+			default => 'none',
+		};
 	}//end approvalState()
 
 	/**
@@ -567,9 +569,9 @@ class AutomationCompilerService {
 	 * @param string $schemaSlug The automation's `trigger.schema`.
 	 * @param string $chainName The `provenance.approvalChainName`.
 	 *
-	 * @return ApprovalChain|null
+	 * @return array<string, mixed>|null The declared chain, or null.
 	 */
-	private function resolveApprovalChainForState(string $schemaSlug, string $chainName): ?ApprovalChain {
+	private function resolveApprovalChainForState(string $schemaSlug, string $chainName): ?array {
 		$schema = $this->loadSchema(slug: $schemaSlug);
 		if ($schema === null) {
 			return null;
@@ -580,11 +582,13 @@ class AutomationCompilerService {
 			return null;
 		}
 
-		try {
-			return $this->approvalChainMapper->findBySchemaAndName(schemaId: (int)$schemaId, name: $chainName);
-		} catch (Throwable $e) {
+		$config = ($schema->getConfiguration() ?? []);
+		$chains = ($config[self::APPROVAL_CHAINS_KEY] ?? []);
+		if (is_array($chains) === false || is_array(($chains[$chainName] ?? null)) === false) {
 			return null;
 		}
+
+		return ['name' => $chainName, 'schemaId' => (int)$schemaId];
 
 	}//end resolveApprovalChainForState()
 
@@ -1451,12 +1455,12 @@ class AutomationCompilerService {
 	 * `approval`), or remove a prior one when the automation no longer
 	 * compiles an approval action.
 	 *
-	 * Mirrors {@see applyRuleSet()}'s find-then-create/update shape,
-	 * substituting OR's `ApprovalChainMapper` for `ObjectService` because
-	 * approval chains are NOT OpenRegister objects — they live in their own
-	 * `openregister_approval_chains` table, consumed the same way
-	 * {@see \OCA\OpenRegister\Controller\ApprovalController::create()} does
-	 * (direct mapper call, ADR-022 consume-not-rebuild).
+	 * Mirrors {@see applyRuleSet()}'s find-then-write shape, but the chain is
+	 * not an object OR a row: since openregister #3302 it is a DECLARATION in
+	 * the schema's `configuration`, the same place this service already writes
+	 * `x-openregister-notifications` and `x-openregister-lifecycle`. OR compiles
+	 * it into a task template on demand (ADR-022 consume-not-rebuild — buildiq
+	 * declares, it does not run an approval engine).
 	 *
 	 * @param array<string,mixed>|null $planned Planned `{name,schema,assigneeGroup,enabled}`, or null.
 	 * @param string|null $priorName Prior-provenance `ApprovalChain` name, if any.
@@ -1515,23 +1519,46 @@ class AutomationCompilerService {
 	 * @return void
 	 */
 	private function upsertApprovalChain(array $payload, int $schemaId): void {
-		try {
-			$existing = $this->approvalChainMapper->findBySchemaAndName(schemaId: $schemaId, name: $payload['name']);
-		} catch (Throwable $e) {
-			$this->logger->error('Buildiq: AutomationCompilerService failed to look up ApprovalChain "' . $payload['name'] . '": ' . $e->getMessage());
+		$schema = $this->loadSchemaById(schemaId: $schemaId);
+		if ($schema === null) {
 			return;
 		}
 
-		try {
-			if ($existing !== null) {
-				$this->approvalChainMapper->updateFromArray($existing->getId(), $payload);
-				return;
-			}
-
-			$this->approvalChainMapper->createFromArray($payload);
-		} catch (Throwable $e) {
-			$this->logger->error('Buildiq: AutomationCompilerService failed to save ApprovalChain "' . $payload['name'] . '": ' . $e->getMessage());
+		$config = ($schema->getConfiguration() ?? []);
+		$chains = ($config[self::APPROVAL_CHAINS_KEY] ?? []);
+		if (is_array($chains) === false) {
+			$chains = [];
 		}
+
+		// The declared shape ApprovalChainAnnotationInstaller::compile() reads:
+		// one `approvers` entry per ordered position, each carrying a role. The
+		// compiler assigns `order` itself, so it is not written here.
+		$approvers = [];
+		foreach ((array)($payload['steps'] ?? []) as $step) {
+			$role = trim((string)($step['role'] ?? ''));
+			if ($role !== '') {
+				$approvers[] = ['role' => $role];
+			}
+		}
+
+		if ($approvers === []) {
+			$this->logger->warning(
+				'Buildiq: AutomationCompilerService declared no approver role for approval chain "' . $payload['name'] . '".'
+			);
+			return;
+		}
+
+		$chains[(string)$payload['name']] = [
+			'approvers' => $approvers,
+			'enabled' => (bool)($payload['enabled'] ?? true),
+		];
+		$config[self::APPROVAL_CHAINS_KEY] = $chains;
+
+		$this->saveSchemaConfiguration(
+			schema: $schema,
+			config: $config,
+			what: 'approval chain "' . $payload['name'] . '"'
+		);
 
 	}//end upsertApprovalChain()
 
@@ -1575,14 +1602,24 @@ class AutomationCompilerService {
 			return;
 		}
 
-		try {
-			$chain = $this->approvalChainMapper->findBySchemaAndName(schemaId: (int)$schemaId, name: $name);
-			if ($chain !== null) {
-				$this->approvalChainMapper->delete($chain);
-			}
-		} catch (Throwable $e) {
-			$this->logger->warning('Buildiq: AutomationCompilerService failed to remove ApprovalChain "' . $name . '": ' . $e->getMessage());
+		$config = ($schema->getConfiguration() ?? []);
+		$chains = ($config[self::APPROVAL_CHAINS_KEY] ?? []);
+		if (is_array($chains) === false || array_key_exists($name, $chains) === false) {
+			return;
 		}
+
+		unset($chains[$name]);
+		if ($chains === []) {
+			unset($config[self::APPROVAL_CHAINS_KEY]);
+		} else {
+			$config[self::APPROVAL_CHAINS_KEY] = $chains;
+		}
+
+		$this->saveSchemaConfiguration(
+			schema: $schema,
+			config: $config,
+			what: 'the removal of approval chain "' . $name . '"'
+		);
 
 	}//end removeApprovalChain()
 
@@ -1785,23 +1822,136 @@ class AutomationCompilerService {
 			return null;
 		}
 
-		try {
-			$chain = $this->approvalChainMapper->findBySchemaAndName(schemaId: (int)$schemaId, name: $name);
-		} catch (Throwable $e) {
+		$config = ($schema->getConfiguration() ?? []);
+		$chains = ($config[self::APPROVAL_CHAINS_KEY] ?? []);
+		$spec = null;
+		if (is_array($chains) === true) {
+			$spec = ($chains[$name] ?? null);
+		}
+
+		if (is_array($spec) === false) {
 			return null;
 		}
 
-		if ($chain === null) {
-			return null;
+		// Reported in the retired row's shape, so every caller and every
+		// drift-comparison keeps working: `approvers` is the declared form of
+		// what used to be the chain's `steps` column.
+		$steps = [];
+		$order = 1;
+		foreach ((array)($spec['approvers'] ?? []) as $approver) {
+			$role = trim((string)($approver['role'] ?? ''));
+			if ($role !== '') {
+				$steps[] = ['order' => $order, 'role' => $role];
+				$order++;
+			}
 		}
 
 		return [
-			'name' => (string)$chain->getName(),
-			'steps' => $chain->getStepsArray(),
-			'enabled' => $chain->getEnabled(),
+			'name' => $name,
+			'steps' => $steps,
+			'enabled' => (bool)($spec['enabled'] ?? true),
 		];
 
 	}//end fetchLiveApprovalChain()
+
+	/**
+	 * The newest approval sequence opened from a chain's compiled template.
+	 *
+	 * Resolved through the container behind class_exists rather than
+	 * constructor-injected: these are OpenRegister's classes, and a hard
+	 * constructor type on a cross-app class is what turned #3302's deletions
+	 * into an instance-wide outage (buildiq#651). Reached this way, an instance
+	 * without the task engine degrades to "no run recorded".
+	 *
+	 * The template id is a pure function of schema + chain key, so the same
+	 * declaration always resolves to the same template without storing anything.
+	 *
+	 * @param int    $schemaId  The schema the chain is declared on.
+	 * @param string $chainName The chain key.
+	 *
+	 * @return object|null The newest sequence, or null when none has run.
+	 */
+	private function newestSequenceFor(int $schemaId, string $chainName): ?object {
+		$installer = 'OCA\\OpenRegister\\Service\\ApprovalChainAnnotationInstaller';
+		$mapper = 'OCA\\OpenRegister\\Db\\TaskSequenceMapper';
+		if ($schemaId === 0 || class_exists($installer) === false || class_exists($mapper) === false) {
+			return null;
+		}
+
+		try {
+			// Narrowed through locals rather than chained off get(): the
+			// container returns `object`, so a chained call is unverifiable and
+			// phpstan says so. assert() rather than a docblock, matching
+			// AutomationApprovalTriggerListener — phpcs forbids an inline doc
+			// block in a method body, and assert costs nothing in production.
+			$compiler = $this->container->get($installer);
+			assert(is_object($compiler) && method_exists($compiler, 'templateIdFor'));
+			// Positional, not named: phpstan narrows a container `get()` result to
+			// stdClass, and named arguments on a method it cannot resolve are an
+			// error rather than a warning.
+			$templateId = (string)$compiler->templateIdFor($schemaId, $chainName);
+
+			$sequences = $this->container->get($mapper);
+			assert(is_object($sequences) && method_exists($sequences, 'findNewestForTemplate'));
+			$found = $sequences->findNewestForTemplate($templateId);
+
+			if (is_object($found) === false) {
+				return null;
+			}
+
+			return $found;
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'Buildiq: AutomationCompilerService could not read the approval state of "' . $chainName . '": ' . $e->getMessage()
+			);
+
+			return null;
+		}
+
+	}//end newestSequenceFor()
+
+	/**
+	 * Load a schema by its numeric id.
+	 *
+	 * @param int $schemaId The schema id.
+	 *
+	 * @return Schema|null The schema, or null when it cannot be loaded.
+	 */
+	private function loadSchemaById(int $schemaId): ?Schema {
+		try {
+			return $this->schemaMapper->find($schemaId, _multitenancy: false);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'Buildiq: AutomationCompilerService could not load schema id ' . $schemaId . ': ' . $e->getMessage()
+			);
+			return null;
+		}
+
+	}//end loadSchemaById()
+
+	/**
+	 * Persist a schema's configuration, logging rather than throwing.
+	 *
+	 * A compile runs inside a write, so a failure here must not propagate: the
+	 * automation is then simply not armed, instead of the user's save failing.
+	 *
+	 * @param Schema               $schema The schema to save.
+	 * @param array<string, mixed> $config The configuration to write.
+	 * @param string               $what   What is being written, for the log line.
+	 *
+	 * @return void
+	 */
+	private function saveSchemaConfiguration(Schema $schema, array $config, string $what): void {
+		try {
+			$schema->setConfiguration($config);
+			$this->schemaMapper->update($schema);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'Buildiq: AutomationCompilerService failed to write ' . $what . ': ' . $e->getMessage()
+			);
+		}
+
+	}//end saveSchemaConfiguration()
 
 	/**
 	 * Load a schema entity by slug.

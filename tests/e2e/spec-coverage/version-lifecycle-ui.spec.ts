@@ -33,10 +33,12 @@
  * them. Nothing in this file is annotated for a scenario it does not exercise.
  */
 
-import { test, expect, type Page } from '@playwright/test'
-import { E2E_BASE_URL as BASE } from '../support/baseUrl'
-import { suppressSupportDialog, suppressSetupWizard } from '../support/appFixture'
-import { ensureVersionChain, listVersions } from '../support/versionChain'
+import type { Page } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
+import { suppressSetupWizard, suppressSupportDialog } from '../support/appFixture.ts'
+import { E2E_BASE_URL as BASE } from '../support/baseUrl.ts'
+import { ensureVersionChain, listVersions } from '../support/versionChain.ts'
 
 /**
  * A dedicated fixture app.
@@ -79,7 +81,7 @@ async function openManifestDetail(page: Page, objectId: string): Promise<void> {
  */
 async function appObjectId(page: Page): Promise<string> {
 	const res = await page.request.get(
-		`${BASE}/index.php/apps/openregister/api/objects/buildiq/application`
+		`${BASE}/index.php/apps/openregister/api/objects/buildiq/built-app`
 			+ `?slug=${encodeURIComponent(SLUG)}&_limit=1`,
 	)
 	expect(res.ok(), 'the Application lookup must succeed').toBeTruthy()
@@ -338,7 +340,7 @@ test.describe('version-lifecycle-ui — the version list on the Manifest detail 
 			'the draft manifest must be a clone of the production version manifest',
 		).toEqual(productionRow?.manifest ?? {})
 		expect(
-			Object.prototype.hasOwnProperty.call(sent, 'register'),
+			Object.hasOwn(sent, 'register'),
 			"the payload must OMIT register so the backend inherits production's — "
 				+ 'sending one is how a per-version register gets minted by accident',
 		).toBe(false)

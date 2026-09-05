@@ -7,7 +7,7 @@
  *
  * Spec: automation-document-action ("Template list is shared, not duplicated").
  */
-import { describe, it, expect, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
 	fetchDocudeskTemplates,
 	templateToOption,

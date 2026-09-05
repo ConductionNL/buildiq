@@ -96,7 +96,7 @@ class FlowChannelProvisioner {
 	 *
 	 * @var string
 	 */
-	private const APPLICATION_SCHEMA = 'application';
+	private const APPLICATION_SCHEMA = 'built-app';
 
 	/**
 	 * The Nextcloud app id newly created flows are attributed to.

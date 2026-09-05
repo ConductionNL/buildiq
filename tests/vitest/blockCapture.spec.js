@@ -13,12 +13,12 @@
  *     ever leak into a captured block.
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
 	BLOCK_CATEGORIES,
+	buildSectionFragment,
 	captureBlock,
 	collectSchemaRefs,
-	buildSectionFragment,
 	isSectionFragment,
 	SlugCollisionError,
 } from '../../src/services/blockCapture.js'

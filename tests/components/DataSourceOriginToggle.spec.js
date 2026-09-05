@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -6,8 +7,7 @@
  *
  * Spec: openconnector-api-sources (REQ-OCAS-002).
  */
-import { describe, it, expect, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@nextcloud/axios', () => ({
 	default: { get: vi.fn().mockResolvedValue({ data: {} }) },
@@ -30,8 +30,9 @@ const stubs = {
 	},
 }
 
-const factory = (dataSource) =>
-	mount(DataSourceOriginToggle, { propsData: { dataSource }, stubs })
+function factory(dataSource) {
+	return mount(DataSourceOriginToggle, { propsData: { dataSource }, stubs })
+}
 
 describe('DataSourceOriginToggle', () => {
 	it('derives OpenRegister origin for a register binding', () => {

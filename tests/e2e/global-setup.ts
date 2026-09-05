@@ -18,10 +18,12 @@
  * clear "still on /login" snapshot in the report.
  */
 
-import { chromium, request as playwrightRequest, FullConfig } from '@playwright/test'
+import type { FullConfig } from '@playwright/test'
+
+import { chromium, request as playwrightRequest } from '@playwright/test'
+import { execSync } from 'child_process'
 import { existsSync, mkdirSync } from 'fs'
 import { dirname } from 'path'
-import { execSync } from 'child_process'
 
 /**
  * Docudesk template fixtures the document-attachment specs attach to.
@@ -103,7 +105,6 @@ function seedHelloWorldFixture(container: string | null): void {
 			? `docker exec -u www-data ${container} php occ buildiq:seed-hello-world-fixture`
 			: null)
 	if (!cmd) {
-		// eslint-disable-next-line no-console
 		console.warn(
 			'[globalSetup] hello-world fixture NOT seeded: could not resolve the container '
 				+ 'serving the instance under test. Set BUILDIQ_E2E_CONTAINER or BUILDIQ_SEED_CMD. '
@@ -116,12 +117,11 @@ function seedHelloWorldFixture(container: string | null): void {
 			encoding: 'utf8',
 			stdio: ['ignore', 'pipe', 'pipe'],
 		})
-		// eslint-disable-next-line no-console
+
 		console.log(
 			`[globalSetup] hello-world fixture: ${out.trim().split('\n').pop()}`,
 		)
 	} catch (e) {
-		// eslint-disable-next-line no-console
 		console.warn(
 			`[globalSetup] hello-world fixture seed failed (specs needing it will fail): ${(e as Error).message}`,
 		)
@@ -170,7 +170,6 @@ function disableRateLimitProtection(container: string | null): void {
 				+ `&& docker exec ${container} apache2ctl graceful`
 			: null)
 	if (!cmd) {
-		// eslint-disable-next-line no-console
 		console.warn(
 			'[globalSetup] rate-limit protection left ALONE: could not resolve the container '
 				+ 'serving the instance under test. Set BUILDIQ_E2E_CONTAINER or BUILDIQ_RATELIMIT_CMD. '
@@ -180,10 +179,9 @@ function disableRateLimitProtection(container: string | null): void {
 	}
 	try {
 		execSync(cmd, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
-		// eslint-disable-next-line no-console
+
 		console.log('[globalSetup] rate-limit protection disabled for this run')
 	} catch (e) {
-		// eslint-disable-next-line no-console
 		console.warn(
 			'[globalSetup] could not disable rate-limit protection — expect 429s '
 				+ `from the app-creation wizard after 10 creates: ${(e as Error).message}`,
@@ -229,7 +227,6 @@ async function seedDocudeskTemplateFixtures(
 	password: string,
 ): Promise<void> {
 	if (process.env.BUILDIQ_DOCUDESK_SEED === '0') {
-		// eslint-disable-next-line no-console
 		console.log(
 			'[globalSetup] docudesk seeding skipped (BUILDIQ_DOCUDESK_SEED=0)',
 		)
@@ -250,14 +247,12 @@ async function seedDocudeskTemplateFixtures(
 	try {
 		const settingsResp = await api.get('/index.php/apps/filinq/api/settings')
 		if (settingsResp.status() === 404 || settingsResp.status() === 501) {
-			// eslint-disable-next-line no-console
 			console.log(
 				'[globalSetup] docudesk not installed — template fixtures skipped',
 			)
 			return
 		}
 		if (settingsResp.ok() === false) {
-			// eslint-disable-next-line no-console
 			console.warn(
 				`[globalSetup] docudesk settings probe returned ${settingsResp.status()} — template fixtures skipped`,
 			)
@@ -279,7 +274,6 @@ async function seedDocudeskTemplateFixtures(
 				(s: Record<string, any>) => s.slug === 'template',
 			)
 			if (!register || !schema) {
-				// eslint-disable-next-line no-console
 				console.warn(
 					'[globalSetup] docudesk register/`template` schema not found — template fixtures skipped',
 				)
@@ -292,7 +286,7 @@ async function seedDocudeskTemplateFixtures(
 					template_source: 'openregister',
 				},
 			})
-			// eslint-disable-next-line no-console
+
 			console.log(
 				`[globalSetup] docudesk template register configured (register=${register.id}, schema=${schema.id}, `
 					+ `status=${written.status()})`,
@@ -302,7 +296,6 @@ async function seedDocudeskTemplateFixtures(
 		// Seed the fixture templates, by name, only when missing.
 		const listResp = await api.get('/index.php/apps/filinq/api/templates')
 		if (listResp.ok() === false) {
-			// eslint-disable-next-line no-console
 			console.warn(
 				`[globalSetup] docudesk template list returned ${listResp.status()} — template fixtures skipped`,
 			)
@@ -333,7 +326,7 @@ async function seedDocudeskTemplateFixtures(
 				created.push(name)
 			} else {
 				failed.push(`${name} (HTTP ${resp.status()})`)
-				// eslint-disable-next-line no-console
+
 				console.warn(
 					`[globalSetup] docudesk template "${name}" create returned ${resp.status()}`,
 				)
@@ -353,14 +346,12 @@ async function seedDocudeskTemplateFixtures(
 		// whose list was empty. The seeding log had the answer and phrased it as
 		// success.
 		if (failed.length > 0) {
-			// eslint-disable-next-line no-console
 			console.error(
 				`[globalSetup] docudesk templates NOT ready — create failed for ${failed.join(', ')}. `
 					+ 'Specs that attach a template will fail with an empty picker rather than a server error, '
 					+ 'so read THIS line, not the timeout.',
 			)
 		} else {
-			// eslint-disable-next-line no-console
 			console.log(
 				`[globalSetup] docudesk templates ready: ${DOCUDESK_TEMPLATE_NAMES.join(', ')}`
 					+ (created.length
@@ -369,7 +360,6 @@ async function seedDocudeskTemplateFixtures(
 			)
 		}
 	} catch (e) {
-		// eslint-disable-next-line no-console
 		console.warn(
 			`[globalSetup] docudesk template seeding failed: ${(e as Error).message}`,
 		)
@@ -435,7 +425,6 @@ async function seedRoleUsersAndSessions(
 				body: new URLSearchParams({ groupid: group }).toString(),
 			})
 		} catch (e) {
-			// eslint-disable-next-line no-console
 			console.warn(
 				`[globalSetup] could not create group ${group}: ${(e as Error).message}`,
 			)
@@ -464,7 +453,6 @@ async function seedRoleUsersAndSessions(
 					text,
 				)
 			) {
-				// eslint-disable-next-line no-console
 				console.warn(
 					`[globalSetup] provisioning ${user.id} returned an unexpected status: ${text.slice(0, 160)}`,
 				)
@@ -517,13 +505,12 @@ async function seedRoleUsersAndSessions(
 						},
 					},
 				)
-				// eslint-disable-next-line no-console
+
 				console.warn(
 					`[globalSetup] ${user.id} existed with a different password — reset ${reset.status}, now ${ok.status === 200 ? 'usable' : `STILL UNUSABLE (${ok.status})`}`,
 				)
 			}
 		} catch (e) {
-			// eslint-disable-next-line no-console
 			console.warn(
 				`[globalSetup] could not provision ${user.id}: ${(e as Error).message}`,
 			)
@@ -578,7 +565,7 @@ async function seedRoleUsersAndSessions(
 							'cn-walkthrough-seen:buildiq',
 							'999.0.0',
 						)
-					} catch (e) {
+					} catch {
 						// localStorage unavailable — specs fall back to dismissing by hand.
 					}
 				})
@@ -586,11 +573,11 @@ async function seedRoleUsersAndSessions(
 				// Never fail setup over an optional convenience.
 			}
 			await context.storageState({ path: statePath })
-			// eslint-disable-next-line no-console
+
 			console.log(`[globalSetup] ${user.id} session stored at ${statePath}`)
 		} catch (e) {
 			failed.push(user.id)
-			// eslint-disable-next-line no-console
+
 			console.warn(
 				`[globalSetup] could not mint a session for ${user.id}: ${(e as Error).message}`,
 			)
@@ -645,7 +632,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	// Before anything else: the wizard endpoint's 10-per-hour user rate limit
 	// would otherwise 429 every app creation past the tenth, mid-run.
 	const container = resolveContainerFor(baseURL)
-	// eslint-disable-next-line no-console
+
 	console.log(
 		`[globalSetup] instance under test: ${baseURL} (container: ${container ?? 'unresolved'})`,
 	)
@@ -740,7 +727,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 							'cn-walkthrough-seen:buildiq',
 							'999.0.0',
 						)
-					} catch (e) {
+					} catch {
 						// localStorage unavailable — specs fall back to dismissing by hand.
 					}
 				})
@@ -749,20 +736,19 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 			}
 			await context.storageState({ path: storagePath })
 			adminAuthenticated = true
-			// eslint-disable-next-line no-console
+
 			console.log(
 				`[globalSetup] authenticated session stored at ${storagePath}`,
 			)
 			break
 		} catch (e) {
 			if (attempt < LOGIN_ATTEMPTS) {
-				// eslint-disable-next-line no-console
 				console.warn(
 					`[globalSetup] login attempt ${attempt}/${LOGIN_ATTEMPTS} failed (${(e as Error).message}) — retrying`,
 				)
 				continue
 			}
-			// eslint-disable-next-line no-console
+
 			console.warn(
 				`[globalSetup] login failed after ${LOGIN_ATTEMPTS} attempts — specs will run unauthenticated: ${(e as Error).message}`,
 			)

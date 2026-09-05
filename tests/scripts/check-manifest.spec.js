@@ -15,11 +15,11 @@
  * of its internals.
  */
 
-import { describe, it, expect } from 'vitest'
 import { execFileSync } from 'node:child_process'
-import { writeFileSync, mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
+import { describe, expect, it } from 'vitest'
 
 const REPO_ROOT = resolve(__dirname, '../..')
 const SCRIPT = resolve(REPO_ROOT, 'scripts/check-manifest.js')

@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: EUPL-1.2
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
-import { test, expect, Page, APIRequestContext } from '@playwright/test'
+import type { APIRequestContext, Page } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
 
 /**
  * E2E — the `hydra-console` Buildiq virtual app, live, against the

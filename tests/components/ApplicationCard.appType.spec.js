@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: EUPL-1.2
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
-import { describe, it, expect, vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
+import { describe, expect, it, vi } from 'vitest'
 import ApplicationCard from '../../src/components/ApplicationCard.vue'
 
 vi.mock('@nextcloud/initial-state', () => ({

@@ -5,16 +5,34 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:8080" },
-    { "key": "adminUser", "value": "admin" },
-    { "key": "adminPass", "value": "admin" },
-    { "key": "automationUuid", "value": "REPLACE-WITH-SEEDED-APPROVAL-AUTOMATION-UUID" }
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "adminUser",
+      "value": "admin"
+    },
+    {
+      "key": "adminPass",
+      "value": "admin"
+    },
+    {
+      "key": "automationUuid",
+      "value": "REPLACE-WITH-SEEDED-APPROVAL-AUTOMATION-UUID"
+    }
   ],
   "auth": {
     "type": "basic",
     "basic": [
-      { "key": "username", "value": "{{adminUser}}" },
-      { "key": "password", "value": "{{adminPass}}" }
+      {
+        "key": "username",
+        "value": "{{adminUser}}"
+      },
+      {
+        "key": "password",
+        "value": "{{adminPass}}"
+      }
     ]
   },
   "item": [
@@ -24,8 +42,17 @@
         "method": "GET",
         "url": {
           "raw": "{{baseUrl}}/apps/buildiq/api/automations/{{automationUuid}}/status",
-          "host": ["{{baseUrl}}"],
-          "path": ["apps", "buildiq", "api", "automations", "{{automationUuid}}", "status"]
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "apps",
+            "buildiq",
+            "api",
+            "automations",
+            "{{automationUuid}}",
+            "status"
+          ]
         }
       },
       "event": [
@@ -52,15 +79,29 @@
       "name": "2. dry-run surfaces approvalState and creates no real ApprovalStep",
       "request": {
         "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
         "body": {
           "mode": "raw",
           "raw": "{\"payload\":{}}"
         },
         "url": {
           "raw": "{{baseUrl}}/apps/buildiq/api/automations/{{automationUuid}}/dry-run",
-          "host": ["{{baseUrl}}"],
-          "path": ["apps", "buildiq", "api", "automations", "{{automationUuid}}", "dry-run"]
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "apps",
+            "buildiq",
+            "api",
+            "automations",
+            "{{automationUuid}}",
+            "dry-run"
+          ]
         }
       },
       "event": [
@@ -88,18 +129,36 @@
       ]
     },
     {
-      "name": "3. OpenRegister approval-steps list is reachable directly (My Approvals data source)",
+      "name": "3. OpenRegister flow-tasks list is reachable directly (My Approvals data source)",
       "request": {
         "method": "GET",
         "header": [
-          { "key": "Accept", "value": "application/json" },
-          { "key": "OCS-APIRequest", "value": "true" }
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          }
         ],
         "url": {
-          "raw": "{{baseUrl}}/apps/openregister/api/approval-steps?status=pending",
-          "host": ["{{baseUrl}}"],
-          "path": ["apps", "openregister", "api", "approval-steps"],
-          "query": [{ "key": "status", "value": "pending" }]
+          "raw": "{{baseUrl}}/apps/openregister/api/flow-tasks?status=pending",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "apps",
+            "openregister",
+            "api",
+            "flow-tasks"
+          ],
+          "query": [
+            {
+              "key": "status",
+              "value": "pending"
+            }
+          ]
         }
       },
       "event": [
@@ -107,8 +166,15 @@
           "listen": "test",
           "script": {
             "exec": [
-              "pm.test('approval-steps list 200', () => pm.response.to.have.status(200));",
-              "pm.test('response is an array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+              "// openregister #3302 retired /api/approval-steps; the My approvals",
+              "// widget reads the task list instead. The SHAPE is asserted too,",
+              "// because a 200 carrying an error envelope would otherwise read",
+              "// as 'reachable'.",
+              "pm.test('flow-tasks list 200', () => pm.response.to.have.status(200));",
+              "pm.test('response is a list', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(Array.isArray(body) || Array.isArray(body.results)).to.eql(true);",
+              "});"
             ],
             "type": "text/javascript"
           }
@@ -121,8 +187,17 @@
         "method": "POST",
         "url": {
           "raw": "{{baseUrl}}/apps/buildiq/api/approval-steps/1/approve",
-          "host": ["{{baseUrl}}"],
-          "path": ["apps", "buildiq", "api", "approval-steps", "1", "approve"]
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "apps",
+            "buildiq",
+            "api",
+            "approval-steps",
+            "1",
+            "approve"
+          ]
         }
       },
       "event": [

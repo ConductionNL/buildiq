@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -14,8 +15,7 @@
  * `listTokenSets`/`evaluateContrast` logic against a mocked `@nextcloud/axios`
  * HTTP boundary, not a hand-rolled fake.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { axiosMock } = vi.hoisted(() => ({
 	axiosMock: { get: vi.fn(), post: vi.fn() },
@@ -62,8 +62,9 @@ const catalogue = [
 	},
 ]
 
-const factory = (props = {}) =>
-	mount(ThemePickerDialog, { propsData: { open: false, ...props }, stubs })
+function factory(props = {}) {
+	return mount(ThemePickerDialog, { propsData: { open: false, ...props }, stubs })
+}
 
 describe('ThemePickerDialog', () => {
 	beforeEach(() => {

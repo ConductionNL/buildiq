@@ -164,11 +164,15 @@ class AgentsControllerTest extends TestCase {
 		// parameter names it declares.
 		$this->objectService->method('find')->willReturnCallback(
 			function (string|int $id, mixed $extend, mixed $files, mixed $register, mixed $schema, mixed ...$rest) use ($agent, $application, $agentEntity, $applicationEntity) {
-				if ($schema === 'agent') {
+				// `buildAgent`: #686 namespaced this app's agent slug so it stops
+				// colliding with hermiq's. AgentsController::AGENT_SCHEMA moved
+				// with it; this fake still answered to the old name, so every
+				// lookup fell through to null and three tests read 404.
+				if ($schema === 'buildAgent') {
 					return ((string)$id) === ($agent['id'] ?? '') ? $agentEntity : null;
 				}
 
-				if ($schema === 'application') {
+				if ($schema === 'built-app') {
 					return ((string)$id) === ($application['slug'] ?? '') ? $applicationEntity : null;
 				}
 

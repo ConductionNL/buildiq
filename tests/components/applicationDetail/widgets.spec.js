@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: EUPL-1.2
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
-import { describe, it, expect, vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
+import { describe, expect, it, vi } from 'vitest'
 
 const { axiosGetMock } = vi.hoisted(() => ({
 	axiosGetMock: vi.fn(async () => ({ data: { results: [] } })),
@@ -18,11 +18,11 @@ vi.mock('@nextcloud/router', () => ({
 	},
 }))
 
+import GroupsWidget from '../../../src/components/applicationDetail/widgets/GroupsWidget.vue'
+import MenuWidget from '../../../src/components/applicationDetail/widgets/MenuWidget.vue'
+import PagesWidget from '../../../src/components/applicationDetail/widgets/PagesWidget.vue'
 import RegisterWidget from '../../../src/components/applicationDetail/widgets/RegisterWidget.vue'
 import SchemasWidget from '../../../src/components/applicationDetail/widgets/SchemasWidget.vue'
-import GroupsWidget from '../../../src/components/applicationDetail/widgets/GroupsWidget.vue'
-import PagesWidget from '../../../src/components/applicationDetail/widgets/PagesWidget.vue'
-import MenuWidget from '../../../src/components/applicationDetail/widgets/MenuWidget.vue'
 
 const t = (app, key) => key
 const router = { push: vi.fn() }

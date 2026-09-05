@@ -8,7 +8,7 @@
 				"icon": "PuzzleOutline",
 				"version": "0.1.0",
 				"title": "Component Block",
-				"description": "A named, reusable manifest fragment captured from a configured widget or a multi-widget page section, insertable into any page/app the caller has editor rights on. Never contains object data (record rows) — only structure, matching the ApplicationTemplate 'never captures rows' guarantee. Insert always deep-copies the fragment and mints fresh widget ids; there is no live link back to the source block (explicit v1 non-goal — see proposal.md).",
+				"description": "A named, reusable manifest fragment captured from a configured widget or a multi-widget page section, insertable into any page/app the caller has editor rights on. Never contains object data (record rows): only structure, matching the ApplicationTemplate 'never captures rows' guarantee. Insert always deep-copies the fragment and mints fresh widget ids; there is no live link back to the source block (explicit v1 non-goal. See proposal.md).",
 				"authorization": {
 					"read": [
 						"authenticated"
@@ -62,7 +62,7 @@
 					"category": {
 						"title": "Category",
 						"type": "string",
-						"description": "Free-text category label used for filtering in the block-library panel and gallery (e.g. display, layout, form, navigation, data). Unlike ApplicationTemplate.category this is not a closed enum — a block's shape is more varied than a full-app template's.",
+						"description": "Free-text category label used for filtering in the block-library panel and gallery (e.g. Display, layout, form, navigation, data). Unlike ApplicationTemplate.category this is not a closed enum: a block's shape is more varied than a full-app template's.",
 						"maxLength": 48,
 						"example": "display"
 					},
@@ -78,13 +78,13 @@
 					"fragment": {
 						"title": "Fragment",
 						"type": "object",
-						"description": "The captured manifest subtree. A single-widget capture stores the widgetEntry object itself (carrying its original `id`, kept only for reference — insert always mints a fresh one). A page-section capture stores a wrapper `{ id, widgets: [...widgetEntry] }` preserving the widgets' relative layout (their `slot`/`gridX`/`gridY`/`gridWidth`/`gridHeight`). Never contains object data — structure only.",
+						"description": "The captured manifest subtree. A single-widget capture stores the widgetEntry object itself (carrying its original `id`, kept only for reference: insert always mints a fresh one). A page-section capture stores a wrapper `{ id, widgets: [...widgetEntry] }` preserving the widgets' relative layout (their `slot`/`gridX`/`gridY`/`gridWidth`/`gridHeight`). Never contains object data. Structure only.",
 						"additionalProperties": true
 					},
 					"sourceApplicationSlug": {
 						"title": "Source Application Slug",
 						"type": "string",
-						"description": "The slug of the Application this block was captured from. Provenance only — recorded for traceability, never a live reference; deleting or renaming the source app does not affect an already-saved block.",
+						"description": "The slug of the Application this block was captured from. Provenance only: recorded for traceability, never a live reference; deleting or renaming the source app does not affect an already-saved block.",
 						"example": "vergunning-app"
 					},
 					"createdBy": {

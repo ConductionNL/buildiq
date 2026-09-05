@@ -25,11 +25,11 @@
  * Requires @conduction/nextcloud-vue >= 2.1.0-vue3.15.
  */
 
-import { test, expect } from '@playwright/test'
-import { E2E_BASE_URL as BASE_URL } from './support/baseUrl'
-import { ensureVersionChain } from './support/versionChain'
-import { grantAppRoles } from './support/appRoles'
-import { suppressSupportDialog, suppressSetupWizard } from './support/appFixture'
+import { expect, test } from '@playwright/test'
+import { suppressSetupWizard, suppressSupportDialog } from './support/appFixture.ts'
+import { grantAppRoles } from './support/appRoles.ts'
+import { E2E_BASE_URL as BASE_URL } from './support/baseUrl.ts'
+import { ensureVersionChain } from './support/versionChain.ts'
 
 const TEST_SLUG = process.env.NC_TEST_SLUG ?? 'pw-verchain'
 const ADMIN_STATE = 'tests/e2e/.auth/admin.json'

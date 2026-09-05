@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -7,8 +8,7 @@
  * Spec: automation-approval-action ("My Approvals runtime widget lists
  * pending steps for the viewer's groups").
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => p }))
 vi.mock('@nextcloud/axios', () => ({ default: { get: vi.fn(), post: vi.fn() } }))
@@ -74,7 +74,7 @@ describe('MyApprovalsWidget', () => {
 		expect(wrapper.find('[data-testid="my-approvals-row"]').exists()).toBe(false)
 	})
 
-	it("approve calls OpenRegister's approval-steps endpoint directly", async () => {
+	it('approve completes the task with an approving outcome', async () => {
 		loadState.mockReturnValue(['permit-reviewers'])
 		axios.get.mockResolvedValue({ data: stepsFixture })
 		axios.post.mockResolvedValue({ data: {} })
@@ -86,13 +86,15 @@ describe('MyApprovalsWidget', () => {
 		await wrapper.find('[data-testid="approve-button"]').trigger('click')
 		await flush()
 
+		// openregister #3302 replaced the approve/reject verbs with one
+		// `complete` call carrying an outcome.
 		expect(axios.post).toHaveBeenCalledWith(
-			'/apps/openregister/api/approval-steps/1/approve',
-			{},
+			'/apps/openregister/api/flow-tasks/1/complete',
+			{ outcome: 'approved' },
 		)
 	})
 
-	it("reject calls OpenRegister's approval-steps endpoint directly", async () => {
+	it('reject completes the task with a rejecting outcome and a comment', async () => {
 		loadState.mockReturnValue(['permit-reviewers'])
 		axios.get.mockResolvedValue({ data: stepsFixture })
 		axios.post.mockResolvedValue({ data: {} })
@@ -104,9 +106,14 @@ describe('MyApprovalsWidget', () => {
 		await wrapper.find('[data-testid="reject-button"]').trigger('click')
 		await flush()
 
+		// A rejecting outcome REFUSES an empty comment server-side
+		// (TaskService::completeInternal), so one must always be sent.
 		expect(axios.post).toHaveBeenCalledWith(
-			'/apps/openregister/api/approval-steps/1/reject',
-			{},
+			'/apps/openregister/api/flow-tasks/1/complete',
+			{
+				outcome: 'rejected',
+				comment: 'Rejected from the My approvals widget.',
+			},
 		)
 	})
 

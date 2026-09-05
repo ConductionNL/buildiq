@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -6,8 +7,7 @@
  *
  * Spec: agent-workspace ("Agents page provides CRUD and a per-agent chat panel").
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@nextcloud/router', async (importOriginal) => ({
 	...(await importOriginal()),
@@ -79,14 +79,16 @@ const flush = () => new Promise((r) => setTimeout(r, 0))
 
 const application = { slug: 'tool-library', name: 'Tool Library' }
 
-const agent = (overrides = {}) => ({
-	id: 'agent-1',
-	name: 'Page builder assistant',
-	applicationSlug: 'tool-library',
-	enabledTools: ['buildiq.upsertPage', 'buildiq.addWidget'],
-	maxActionsPerRun: 5,
-	...overrides,
-})
+function agent(overrides = {}) {
+	return {
+		id: 'agent-1',
+		name: 'Page builder assistant',
+		applicationSlug: 'tool-library',
+		enabledTools: ['buildiq.upsertPage', 'buildiq.addWidget'],
+		maxActionsPerRun: 5,
+		...overrides,
+	}
+}
 
 describe('AgentsPage', () => {
 	beforeEach(() => {
@@ -97,7 +99,12 @@ describe('AgentsPage', () => {
 			if (url.includes('/api/applications')) {
 				return Promise.resolve({ data: { results: [application] } })
 			}
-			if (url.includes('/agent')) {
+			// The SLUG, not a substring of it. This read `/agent`, which stopped
+			// matching when #686 namespaced the schema to `buildAgent` — and a
+			// mock that stops matching does not fail, it silently answers the
+			// default empty page, so the page rendered "no agents yet" and the
+			// assertions failed somewhere else entirely.
+			if (url.includes('/buildAgent')) {
 				return Promise.resolve({ data: { results: [agent()] } })
 			}
 			return Promise.resolve({ data: { results: [] } })
@@ -182,7 +189,7 @@ describe('AgentsPage', () => {
 		await flush()
 
 		expect(axios.delete).toHaveBeenCalledWith(
-			'/apps/openregister/api/objects/buildiq/agent/agent-1',
+			'/apps/openregister/api/objects/buildiq/buildAgent/agent-1',
 		)
 	})
 

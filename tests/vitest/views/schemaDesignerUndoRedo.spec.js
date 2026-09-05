@@ -20,8 +20,8 @@
  *    (REQ-BUR-005).
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const storeMocks = vi.hoisted(() => {
 	return {
@@ -151,7 +151,7 @@ const persistedSchema = {
 	'x-property-order': ['subject'],
 }
 
-const flush = async (wrapper) => {
+async function flush(wrapper) {
 	await new Promise((resolve) => setTimeout(resolve, 0))
 	await wrapper.vm.$nextTick()
 }

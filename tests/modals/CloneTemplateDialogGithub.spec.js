@@ -13,17 +13,17 @@
  *   - submission stays gated on a valid target (canSubmit)
  */
 
+import { mount } from '@vue/test-utils'
 import {
-	describe,
-	it,
-	expect,
-	beforeAll,
 	afterAll,
-	beforeEach,
 	afterEach,
+	beforeAll,
+	beforeEach,
+	describe,
+	expect,
+	it,
 	vi,
 } from 'vitest'
-import { mount } from '@vue/test-utils'
 
 // The global setup stub returns the bare key; give script-level t() real
 // {placeholder} interpolation so the "naming the offending file" assertion
@@ -33,7 +33,7 @@ beforeAll(() => {
 	globalThis.t = (_app, key, vars) =>
 		vars
 			? String(key).replace(/\{(\w+)\}/g, (_, k) =>
-					vars[k] != null ? vars[k] : `{${k}}`,
+					vars[k] !== null && vars[k] !== undefined ? vars[k] : `{${k}}`,
 				)
 			: key
 })

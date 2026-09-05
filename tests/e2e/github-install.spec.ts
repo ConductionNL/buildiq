@@ -202,7 +202,7 @@ test.describe('Buildiq GitHub shop — fresh install (write path)', () => {
 			// Confirm the application is real and queryable — not just an
 			// optimistic 200 with nothing actually persisted.
 			const verify = await api.get(
-				'/index.php/apps/openregister/api/objects/buildiq/application',
+				'/index.php/apps/openregister/api/objects/buildiq/built-app',
 				{ params: { _search: slug } },
 			)
 			expect(

@@ -2,14 +2,14 @@
   "openapi": "3.0.0",
   "info": {
     "title": "OpenBuild Register",
-    "description": "Citizen-developer app builder for Nextcloud — compose apps from registers, connectors, workflows, and documents without code.",
-    "version": "0.9.0"
+    "description": "Citizen-developer app builder for Nextcloud: compose apps from registers, connectors, workflows, and documents without code.",
+    "version": "0.10.0"
   },
   "x-openregister": {
     "type": "application",
     "app": "buildiq",
     "openregister": "^v0.2.10",
-    "description": "OpenBuild register namespace. Hosts the Application + ApplicationVersion + BuiltAppRoute control schemas, the ApplicationTemplate catalogue (spec #8), and the seed `hello-message` schema for the canonical hello-world app. Per ADR-002 the Application schema is the logical app (slug/name/appType/baseRef/permissions + productionVersion relation); ApplicationVersion carries the manifest, register reference, semver, and lifecycle. Per unify-apps-with-app-type the unified `appType` discriminator (virtual|hybrid) replaces the retired standalone AppOverride schema — a hybrid app is an Application(appType:hybrid) plus a delta-only ApplicationVersion."
+    "description": "OpenBuild register namespace. Hosts the Application + ApplicationVersion + BuiltAppRoute control schemas, the ApplicationTemplate catalogue (spec #8), and the seed `hello-message` schema for the canonical hello-world app. Per ADR-002 the Application schema is the logical app (slug/name/appType/baseRef/permissions + productionVersion relation); ApplicationVersion carries the manifest, register reference, semver, and lifecycle. Per unify-apps-with-app-type the unified `appType` discriminator (virtual|hybrid) replaces the retired standalone AppOverride schema: a hybrid app is an Application(appType:hybrid) plus a delta-only ApplicationVersion."
   },
   "paths": {},
   "components": {
@@ -17,12 +17,12 @@
       "buildiq": {
         "slug": "buildiq",
         "title": "OpenBuild Register",
-        "description": "OpenBuild register namespace — holds the Application + ApplicationVersion + BuiltAppRoute control schemas, the ApplicationTemplate catalogue, the automation/rule-engine schemas and the seed hello-message schema for the canonical hello-world app.",
+        "description": "OpenBuild register namespace: holds the Application + ApplicationVersion + BuiltAppRoute control schemas, the ApplicationTemplate catalogue, the automation/rule-engine schemas and the seed hello-message schema for the canonical hello-world app.",
         "version": "0.9.0",
         "schemas": [
-          "agent",
+          "buildAgent",
           "agent-run",
-          "application",
+          "built-app",
           "application-template",
           "applicationVersion",
           "automation",
@@ -41,7 +41,7 @@
     "schemas": {
       "Application": {
         "x-schema-org": "schema:SoftwareApplication",
-        "slug": "application",
+        "slug": "built-app",
         "icon": "AppsBox",
         "version": "0.6.0",
         "title": "Application",
@@ -76,7 +76,7 @@
               "field": "appType",
               "equals": "hybrid"
             },
-            "description": "Kebab-case slug; uniquely identifies the virtual app within its organisation. Drives the runtime path /builder/{slug}/*. Max 48 chars so the synthetic appId `openbuild-{slug}` fits NC appId caps (per design.md OQ-4). READ-ONLY on a hybrid app (it mirrors the installed Nextcloud app it customizes) — enforced by HybridMetadataLockListener + the abstract data widget's x-openregister-readonly-when honouring. A `-dark` suffix is RESERVED and rejected by the pattern: it would collide with the dark-variant icon route /icons/{slug}-dark.svg (a `foo-dark` app's light-icon request matches the dark route first), silently breaking that app's icon resolution (see appinfo/routes.php icon#iconDark/iconLight ordering; SlugValidator::RESERVED_APP_SLUG_SUFFIX)."
+            "description": "Kebab-case slug; uniquely identifies the virtual app within its organisation. Drives the runtime path /builder/{slug}/*. Max 48 chars so the synthetic appId `openbuild-{slug}` fits NC appId caps (per design.md OQ-4). READ-ONLY on a hybrid app (it mirrors the installed Nextcloud app it customizes): enforced by HybridMetadataLockListener + the abstract data widget's x-openregister-readonly-when honouring. A `-dark` suffix is RESERVED and rejected by the pattern: it would collide with the dark-variant icon route /icons/{slug}-dark.svg (a `foo-dark` app's light-icon request matches the dark route first), silently breaking that app's icon resolution (see appinfo/routes.php icon#iconDark/iconLight ordering; SlugValidator::RESERVED_APP_SLUG_SUFFIX)."
           },
           "name": {
             "title": "Application Name",
@@ -85,7 +85,7 @@
               "field": "appType",
               "equals": "hybrid"
             },
-            "description": "Human-readable name displayed in the OpenBuild shell. READ-ONLY on a hybrid app (mirrors the installed app) — enforced server-side + reflected by the data widget."
+            "description": "Human-readable name displayed in the OpenBuild shell. READ-ONLY on a hybrid app (mirrors the installed app): enforced server-side + reflected by the data widget."
           },
           "description": {
             "title": "Application Description",
@@ -94,7 +94,7 @@
               "field": "appType",
               "equals": "hybrid"
             },
-            "description": "Optional long-form description of the app. READ-ONLY on a hybrid app (mirrors the installed app) — enforced server-side + reflected by the data widget."
+            "description": "Optional long-form description of the app. READ-ONLY on a hybrid app (mirrors the installed app): enforced server-side + reflected by the data widget."
           },
           "appType": {
             "title": "Application Type",
@@ -105,7 +105,7 @@
             ],
             "default": "virtual",
             "readOnly": true,
-            "description": "IMMUTABLE once created (layered-versioned-app-deltas) — enforced server-side by HybridMetadataLockListener and rendered read-only by the abstract object data widget (CnObjectDataWidget honours `readOnly`). The unified-app discriminator (unify-apps-with-app-type). `virtual` = an app fully delivered by OpenBuild (its ApplicationVersion manifest is built from scratch or from a template). `hybrid` = an app that customizes an already-installed Nextcloud fleet app (opencatalogi, pipelinq, …) — its ApplicationVersion carries a delta-only manifest layered over that fleet app's bundled manifest, served raw via GET /api/app-overrides/{appId} and merged client-side. An Application with no `appType` is treated as `virtual` on read (legacy default). Purely declarative — the Apps-list filter and the Virtual/Hybrid badge read this field directly (no Service)."
+            "description": "IMMUTABLE once created (layered-versioned-app-deltas): enforced server-side by HybridMetadataLockListener and rendered read-only by the abstract object data widget (CnObjectDataWidget honours `readOnly`). The unified-app discriminator (unify-apps-with-app-type). `virtual` = an app fully delivered by OpenBuild (its ApplicationVersion manifest is built from scratch or from a template). `hybrid` = an app that customizes an already-installed Nextcloud fleet app (opencatalogi, pipelinq, …). Its ApplicationVersion carries a delta-only manifest layered over that fleet app's bundled manifest, served raw via GET /api/app-overrides/{appId} and merged client-side. An Application with no `appType` is treated as `virtual` on read (legacy default). Purely declarative. The Apps-list filter and the Virtual/Hybrid badge read this field directly (no Service)."
           },
           "status": {
             "title": "Publication Status",
@@ -116,7 +116,7 @@
               "archived"
             ],
             "default": "draft",
-            "description": "Publish status that gates the per-app Nextcloud top-bar navigation entry. `draft` (default) = work-in-progress, hidden from the app menu. `published` = live, listed in the menu by AppNavigationService (which filters Applications on `status == published`). `archived` = retired. Flipped via the explicit Publish / Unpublish owner action (POST /api/applications/{appUuid}/publish|unpublish). MUST be a declared property so OpenRegister persists it — an undeclared status is stripped on save."
+            "description": "Publish status that gates the per-app Nextcloud top-bar navigation entry. `draft` (default) = work-in-progress, hidden from the app menu. `published` = live, listed in the menu by AppNavigationService (which filters Applications on `status == published`). `archived` = retired. Flipped via the explicit Publish / Unpublish owner action (POST /api/applications/{appUuid}/publish|unpublish). MUST be a declared property so OpenRegister persists it: an undeclared status is stripped on save."
           },
           "baseRef": {
             "title": "Base Reference",
@@ -126,12 +126,12 @@
               "kind": {
                 "title": "Base Kind",
                 "type": "string",
-                "description": "What kind of base the app extends — `fleet-app` for a hybrid app customizing an installed Nextcloud app."
+                "description": "What kind of base the app extends: `fleet-app` for a hybrid app customizing an installed Nextcloud app."
               },
               "id": {
                 "title": "Base Identifier",
                 "type": "string",
-                "description": "Identifier of the base — for a hybrid app, the installed Nextcloud app id (e.g. `opencatalogi`)."
+                "description": "Identifier of the base: for a hybrid app, the installed Nextcloud app id (e.g. `opencatalogi`)."
               },
               "manifestVersion": {
                 "title": "Base Manifest Version",
@@ -149,7 +149,7 @@
               "field": "appType",
               "equals": "hybrid"
             },
-            "description": "Relation → ApplicationVersion currently exposed at the canonical /apps/openbuild/{slug} URL. READ-ONLY on a hybrid app (its production version is the admin-managed shared delta) — enforced server-side + reflected by the data widget. Set explicitly by the admin (creation wizard, detail-page version switcher), not derived from chain terminality. The referenced ApplicationVersion's `application` relation MUST point back at this Application — enforced server-side by ApplicationVersionService::guardProductionVersionOwnership() (ADR-031 §Exceptions(1) cross-row guard).",
+            "description": "Relation → ApplicationVersion currently exposed at the canonical /apps/openbuild/{slug} URL. READ-ONLY on a hybrid app (its production version is the admin-managed shared delta): enforced server-side + reflected by the data widget. Set explicitly by the admin (creation wizard, detail-page version switcher), not derived from chain terminality. The referenced ApplicationVersion's `application` relation MUST point back at this Application. Enforced server-side by ApplicationVersionService::guardProductionVersionOwnership() (ADR-031 §Exceptions(1) cross-row guard).",
             "x-relation-filter": { "application": "@objectId" },
             "x-openregister-relation": {
               "target": "openbuild/applicationVersion",
@@ -159,7 +159,7 @@
           "icon": {
             "title": "Light Mode Icon",
             "type": "object",
-            "description": "Optional top-level light icon reference. Points to an SVG file attached to the Application record via OR files-attached-to-object (ADR-001). Sibling to manifest — not inside it. Drives the /icons/{slug}.svg endpoint (REQ-OBICON-002).",
+            "description": "Optional top-level light icon reference. Points to an SVG file attached to the Application record via OR files-attached-to-object (ADR-001). Sibling to manifest: not inside it. Drives the /icons/{slug}.svg endpoint.",
             "required": [
               "ref"
             ],
@@ -175,7 +175,7 @@
           "iconDark": {
             "title": "Dark Mode Icon",
             "type": "object",
-            "description": "Optional top-level dark icon reference. Points to an SVG file attached to the Application record via OR files-attached-to-object (ADR-001). Sibling to manifest — not inside it. Drives the /icons/{slug}-dark.svg endpoint (REQ-OBICON-003).",
+            "description": "Optional top-level dark icon reference. Points to an SVG file attached to the Application record via OR files-attached-to-object (ADR-001). Sibling to manifest: not inside it. Drives the /icons/{slug}-dark.svg endpoint.",
             "required": [
               "ref"
             ],
@@ -192,12 +192,12 @@
             "title": "Allow User Overrides",
             "type": "boolean",
             "default": false,
-            "description": "Per-app permission flag (layered-versioned-app-deltas). When true, users of this app MAY create/edit their own user-scoped manifest delta layered over the admin delta (base ⊕ admin ⊕ user). Default false (default-secure) — an Application with no allowUserOverrides reads as false. Read directly by the override resolver, ApplicationVersionOwnerGuard, and the dashboard 'create override' affordance; purely declarative (no Service)."
+            "description": "Per-app permission flag (layered-versioned-app-deltas). When true, users of this app MAY create/edit their own user-scoped manifest delta layered over the admin delta (base ⊕ admin ⊕ user). Default false (default-secure): an Application with no allowUserOverrides reads as false. Read directly by the override resolver, ApplicationVersionOwnerGuard, and the dashboard 'create override' affordance; purely declarative (no Service)."
           },
           "permissions": {
             "title": "Access Permissions",
             "type": "object",
-            "description": "Per-Application RBAC block per REQ-OBRBAC-001 (openbuild-rbac). Each entry is a principal — either a Nextcloud user UID (prefix `user:<uid>`) or a Nextcloud group GID (prefix `group:<gid>` OR bare value, kept for back-compat). The caller is granted access when their UID matches a `user:` entry in any role OR when their group memberships intersect a `group:`/bare entry in any role. Bare strings continue to mean GID for backwards compatibility with pre-#37 manifests. owners gate destructive actions (publish, archive, delete, transfer, permissions edit); editors gate save; viewers gate read.",
+            "description": "Per-Application RBAC block (openbuild-rbac). Each entry is a principal: either a Nextcloud user UID (prefix `user:<uid>`) or a Nextcloud group GID (prefix `group:<gid>`, or a bare value kept for back-compat). The caller is granted access when their UID matches a `user:` entry in any role OR when their group memberships intersect a `group:`/bare entry in any role. Bare strings continue to mean GID for backwards compatibility with pre-#37 manifests. owners gate destructive actions (publish, archive, delete, transfer, permissions edit); editors gate save; viewers gate read.",
             "properties": {
               "owners": {
                 "title": "Owners",
@@ -229,7 +229,7 @@
           "githubRepo": {
             "title": "GitHub Repository",
             "type": "object",
-            "description": "Optional linkage to the app's round-trip GitHub home (github-app-repo-format REQ-OBA-010). Set by the owner round-trip capability (github-app-sync) when the app is linked/pushed; omittable so every existing Application stays schema-valid. Purely declarative (stored data, no state machine, no calculation) per ADR-031 — read by the shop + sync surfaces, populated by no runtime that never touches GitHub.",
+            "description": "Optional linkage to the app's round-trip GitHub home (github-app-repo-format). Set by the owner round-trip capability (github-app-sync) when the app is linked/pushed; omittable so every existing Application stays schema-valid. Purely declarative: stored data, with no state machine and no calculation. The shop and sync surfaces read it, and a runtime that never touches GitHub does not populate it.",
             "required": [
               "owner",
               "name"
@@ -251,7 +251,7 @@
           "githubDefaultBranch": {
             "title": "GitHub Default Branch",
             "type": "string",
-            "description": "Optional branch that push/pull operations target, resolved from the linked repo's default branch at link time and admin-overridable (github-app-repo-format REQ-OBA-010). Omittable; purely declarative per ADR-031."
+            "description": "Optional branch that push/pull operations target, resolved from the linked repo's default branch at link time and admin-overridable (github-app-repo-format). Omittable, and purely declarative."
           }
         },
         "x-openregister-validation": {
@@ -272,7 +272,7 @@
         "icon": "ViewGridOutline",
         "version": "0.1.0",
         "title": "Application Template",
-        "description": "A pre-baked starter pack for building an Application from a recognisable use case — manifest plus companion schemas. Seeded Conduction-curated templates carry isSeeded: true. Per the hybrid register model this schema is shared across the `openbuild` register; cloned user schemas land in a per-app `openbuild-{slug}` register.",
+        "description": "A pre-baked starter pack for building an Application from a recognisable use case: manifest plus companion schemas. Seeded Conduction-curated templates carry isSeeded: true. Per the hybrid register model this schema is shared across the `openbuild` register; cloned user schemas land in a per-app `openbuild-{slug}` register.",
         "authorization": {
           "read": [
             "authenticated"
@@ -372,7 +372,7 @@
           "version": {
             "title": "Template Version",
             "type": "string",
-            "description": "Semver version of the template — recorded on clone for one-shot snapshot semantics.",
+            "description": "Semver version of the template: recorded on clone for one-shot snapshot semantics.",
             "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
             "example": "1.0.0"
           }
@@ -549,7 +549,7 @@
           "manifest": {
             "title": "App Manifest",
             "type": "object",
-            "description": "JSON manifest blob conforming to @conduction/nextcloud-vue/src/schemas/app-manifest.schema.json (v1.4.0+). Per ADR-024, this is consumed by useAppManifest + CnAppRoot at runtime. Per ADR-002 the manifest now lives on ApplicationVersion (was on Application). For a HYBRID app's version this is an empty object `{}` — the customization lives in `manifestDelta` and is merged client-side over the installed fleet app's bundled manifest (unify-apps-with-app-type).",
+            "description": "JSON manifest blob conforming to @conduction/nextcloud-vue/src/schemas/app-manifest.schema.json (v1.4.0+). Per ADR-024, this is consumed by useAppManifest + CnAppRoot at runtime. Per ADR-002 the manifest now lives on ApplicationVersion (was on Application). For a HYBRID app's version this is an empty object `{}`: the customization lives in `manifestDelta` and is merged client-side over the installed fleet app's bundled manifest (unify-apps-with-app-type).",
             "additionalProperties": true
           },
           "manifestDelta": {
@@ -566,12 +566,12 @@
               "kind": {
                 "title": "Base Kind",
                 "type": "string",
-                "description": "What kind of base the delta extends — `fleet-app` for a hybrid app's version."
+                "description": "What kind of base the delta extends: `fleet-app` for a hybrid app's version."
               },
               "id": {
                 "title": "Base Identifier",
                 "type": "string",
-                "description": "Identifier of the base — the installed Nextcloud app id for a hybrid app's version."
+                "description": "Identifier of the base: the installed Nextcloud app id for a hybrid app's version."
               },
               "manifestVersion": {
                 "title": "Base Manifest Version",
@@ -634,22 +634,22 @@
               "user"
             ],
             "default": "admin",
-            "description": "Delta scope discriminator (layered-versioned-app-deltas). `admin` (default) = the instance-wide shared delta managed by admins (today's behaviour — the only existing scope). `user` = a per-user delta owned by a single user, layered over the admin delta and resolved as `base ⊕ admin ⊕ user` only when the parent Application's allowUserOverrides is true. An ApplicationVersion with no scope reads as `admin` (legacy default). Read by ApplicationVersionOwnerGuard + PermissionResolver + the override resolver; admin/user rows share this one schema (no new schema). On a `user` row the per-version promotion/publish fields (semver/status/promotesTo/register) are inert — the user delta is just manifestDelta + owner + baseRef."
+            "description": "Delta scope discriminator (layered-versioned-app-deltas). `admin` (default) = the instance-wide shared delta managed by admins (today's behaviour: the only existing scope). `user` = a per-user delta owned by a single user, layered over the admin delta and resolved as `base ⊕ admin ⊕ user` only when the parent Application's allowUserOverrides is true. An ApplicationVersion with no scope reads as `admin` (legacy default). Read by ApplicationVersionOwnerGuard + PermissionResolver + the override resolver; admin/user rows share this one schema (no new schema). On a `user` row the per-version promotion/publish fields (semver/status/promotesTo/register) are inert. The user delta is just manifestDelta + owner + baseRef."
           },
           "owner": {
             "title": "Owner",
             "type": "string",
-            "description": "Owning Nextcloud user UID. Set ONLY on a `scope: user` row; identifies the single user who may read/edit/rollback this user-scoped delta. Empty/absent on `scope: admin` rows. Read by ApplicationVersionOwnerGuard + PermissionResolver for the user-scope ownership check (a user can never read/write another user's delta — fail-closed)."
+            "description": "Owning Nextcloud user UID. Set ONLY on a `scope: user` row; identifies the single user who may read/edit/rollback this user-scoped delta. Empty/absent on `scope: admin` rows. Read by ApplicationVersionOwnerGuard + PermissionResolver for the user-scope ownership check (a user can never read/write another user's delta: fail-closed)."
           },
           "commitSha": {
             "title": "GitHub Commit SHA",
             "type": "string",
-            "description": "Optional GitHub provenance (github-app-repo-format REQ-OBV-112). The exact Git commit this version was pushed to (on publish to GitHub) or pulled from (on import). Omittable; absent on versions with no GitHub provenance. Purely declarative per ADR-031 — a commitSha write is metadata and does NOT by itself bump `semver` (the manifest-content auto-bump, REQ-OBV-103, is unaffected)."
+            "description": "Optional GitHub provenance (github-app-repo-format). The exact Git commit this version was pushed to on publish, or pulled from on import. Omittable, and absent on versions with no GitHub provenance. Purely declarative: a commitSha write is metadata and does not by itself bump `semver`, and the manifest-content auto-bump is unaffected."
           },
           "sourceRef": {
             "title": "GitHub Source Ref",
             "type": "string",
-            "description": "Optional GitHub provenance (github-app-repo-format REQ-OBV-112). The branch/tag/ref a PULLED version was imported from (e.g. `refs/heads/main` or a tag name). Omittable; absent on versions with no GitHub provenance. Purely declarative per ADR-031 — no lifecycle or semver effect."
+            "description": "Optional GitHub provenance (github-app-repo-format). The branch, tag or ref a pulled version was imported from, such as `refs/heads/main` or a tag name. Omittable, and absent on versions with no GitHub provenance. Purely declarative, with no lifecycle or semver effect."
           }
         },
         "x-openregister-validation": {
@@ -678,7 +678,7 @@
               "description": "Editable working version, not exposed at the canonical `/apps/openbuild/{slug}` URL unless this version is the parent Application's productionVersion."
             },
             "published": {
-              "description": "Reachable through routing — eligible to be the parent Application's productionVersion. The on_transition action upserts the corresponding BuiltAppRoute keyed by the parent Application's slug."
+              "description": "Reachable through routing: eligible to be the parent Application's productionVersion. The on_transition action upserts the corresponding BuiltAppRoute keyed by the parent Application's slug."
             },
             "archived": {
               "description": "No longer reachable. Preserved for restore via the `reopen` transition."
@@ -690,7 +690,7 @@
                 "draft"
               ],
               "to": "published",
-              "description": "Mark this version as ready to be the parent Application's productionVersion. Relocated from Application schema per ADR-002 — published-ness is per-version now. Authorization (REQ-OBRBAC-004): owner of the parent Application (or a Nextcloud admin) only — enforced by the ApplicationVersionOwnerGuard `requires` tag below, which OR's LifecycleValidationListener runs on this transition.",
+              "description": "Mark this version as ready to be the parent Application's productionVersion. Relocated from Application schema per ADR-002: published-ness is per-version now. Authorization: owner of the parent Application (or a Nextcloud admin) only. Enforced by the ApplicationVersionOwnerGuard `requires` tag below, which OR's LifecycleValidationListener runs on this transition.",
               "requires": "OCA\\Buildiq\\Lifecycle\\ApplicationVersionOwnerGuard",
               "on_transition": {
                 "upsert_relation": {
@@ -710,7 +710,7 @@
                 "published"
               ],
               "to": "archived",
-              "description": "Retire a published version. Operators are responsible for swapping the parent Application's productionVersion off this row first. Authorization (REQ-OBRBAC-004): owner of the parent Application (or a Nextcloud admin) only — enforced by ApplicationVersionOwnerGuard.",
+              "description": "Retire a published version. Operators are responsible for swapping the parent Application's productionVersion off this row first. Authorization: owner of the parent Application (or a Nextcloud admin) only. Enforced by ApplicationVersionOwnerGuard.",
               "requires": "OCA\\Buildiq\\Lifecycle\\ApplicationVersionOwnerGuard"
             },
             "reopen": {
@@ -718,7 +718,7 @@
                 "archived"
               ],
               "to": "draft",
-              "description": "Restore an archived ApplicationVersion to draft for further editing. Authorization (REQ-OBRBAC-004): owner of the parent Application (or a Nextcloud admin) only — enforced by ApplicationVersionOwnerGuard.",
+              "description": "Restore an archived ApplicationVersion to draft for further editing. Authorization: owner of the parent Application (or a Nextcloud admin) only. Enforced by ApplicationVersionOwnerGuard.",
               "requires": "OCA\\Buildiq\\Lifecycle\\ApplicationVersionOwnerGuard"
             }
           }
@@ -772,7 +772,7 @@
         "icon": "PackageVariant",
         "version": "1.1.0",
         "title": "Export Job",
-        "description": "Asynchronous pipeline that turns a published Application into a standalone Nextcloud app — delivered as a ZIP download or pushed to GitHub. Lifecycle is declarative per ADR-031; the file-generation surface is an ADR-031 §Exceptions(3) imperative path.",
+        "description": "Asynchronous pipeline that turns a published Application into a standalone Nextcloud app: delivered as a ZIP download or pushed to GitHub. Lifecycle is declarative per ADR-031; the file-generation surface is an ADR-031 §Exceptions(3) imperative path.",
         "authorization": {
           "read": [
             "authenticated"
@@ -815,7 +815,7 @@
               "zip",
               "github"
             ],
-            "description": "Delivery target — ZIP download or push to a new GitHub repository."
+            "description": "Delivery target: ZIP download or push to a new GitHub repository."
           },
           "status": {
             "title": "Job Status",

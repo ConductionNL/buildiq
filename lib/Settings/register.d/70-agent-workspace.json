@@ -4,8 +4,8 @@
     "schemas": {
       "Agent": {
         "x-schema-org": "schema:SoftwareApplication",
-        "slug": "agent",
-        "icon": "Robot",
+        "slug": "buildAgent",
+        "icon": "RobotOutline",
         "version": "1.0.0",
         "title": "Agent",
         "description": "A named, reusable, tool-scoped AI configuration for one Application: free-text instructions prefixed onto the copilot system prompt, an explicit subset of the eight BuildiqToolProvider tools it may invoke, and a per-run action cap. Never a wider capability surface than the bare copilot (agent-workspace design.md Goals).",
@@ -46,7 +46,7 @@
             "title": "Instructions",
             "type": "string",
             "maxLength": 4000,
-            "description": "Free-text instructions prefixed onto the copilot system prompt (CopilotPromptBuilder) for every plan request issued with this agent's id. Cannot widen the tool allow-list by construction (design.md Risks) — the allow-list check is a server-side structural validation of the returned plan's tool names, not a trust boundary the prompt text can talk its way around."
+            "description": "Free-text instructions prefixed onto the copilot system prompt (CopilotPromptBuilder) for every plan request issued with this agent's id. Cannot widen the tool allow-list by construction (design.md Risks): the allow-list check is a server-side structural validation of the returned plan's tool names, not a trust boundary the prompt text can talk its way around."
           },
           "modelTaskType": {
             "title": "Model Task Type",
@@ -55,7 +55,7 @@
               "TextToText"
             ],
             "default": "TextToText",
-            "description": "The `OCP\\TaskProcessing` task type this agent targets. v1 default-inherits the bare copilot path's TextToText task type (design.md Open Questions) — present on the schema now for a v1.1 follow-up once multiple task types are commonly configured."
+            "description": "The `OCP\\TaskProcessing` task type this agent targets. V1 default-inherits the bare copilot path's TextToText task type (design.md Open Questions): present on the schema now for a v1.1 follow-up once multiple task types are commonly configured."
           },
           "enabledTools": {
             "title": "Enabled Tools",
@@ -74,7 +74,7 @@
                 "buildiq.upsertMenuItem"
               ]
             },
-            "description": "The subset of the eight BuildiqToolProvider tool ids this agent may propose in a plan. Validated at save time against exactly this enum (an unknown tool name is rejected); re-validated server-side (intersected with the live catalogue) on every plan/execute request — never a superset of what the bare copilot already exposes."
+            "description": "The subset of the eight BuildiqToolProvider tool ids this agent may propose in a plan. Validated at save time against exactly this enum (an unknown tool name is rejected); re-validated server-side (intersected with the live catalogue) on every plan/execute request: never a superset of what the bare copilot already exposes."
           },
           "maxActionsPerRun": {
             "title": "Max Actions Per Run",
@@ -92,7 +92,7 @@
         "icon": "History",
         "version": "1.0.0",
         "title": "Agent Run",
-        "description": "One transparently-logged plan+execute (or plan+discard) interaction issued with an agentId (agent-workspace design.md Decision 2) — the prompt, the returned plan, every tool call's arguments and result, and the final outcome. Written by `AgentRunLogger`, a thin wrapper around CopilotService's plan/execute/discard paths. Never a summarised or redacted view of what actually ran.",
+        "description": "One transparently-logged plan+execute (or plan+discard) interaction issued with an agentId (agent-workspace design.md Decision 2): the prompt, the returned plan, every tool call's arguments and result, and the final outcome. Written by `AgentRunLogger`, a thin wrapper around CopilotService's plan/execute/discard paths. Never a summarised or redacted view of what actually ran.",
         "authorization": {
           "read": [
             "authenticated"
@@ -161,7 +161,7 @@
                 }
               }
             },
-            "description": "Ordered list of every tool call this run dispatched through `BuildiqToolProvider::invokeTool()`, each with its arguments and raw result — the Retool tool-chip transparency pattern. Empty for a discarded or plan-rejected run."
+            "description": "Ordered list of every tool call this run dispatched through `BuildiqToolProvider::invokeTool()`, each with its arguments and raw result. The Retool tool-chip transparency pattern. Empty for a discarded or plan-rejected run."
           },
           "outcome": {
             "title": "Outcome",

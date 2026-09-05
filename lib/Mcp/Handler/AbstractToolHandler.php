@@ -168,7 +168,7 @@ abstract class AbstractToolHandler {
 		// organisation filter so MCP callers in any org can resolve apps.
 		$apps = $this->objectService->searchObjectsBySlug(
 			self::REGISTER_SLUG,
-			'application',
+			'built-app',
 			['slug' => $appSlug],
 			_rbac: true,
 			_multitenancy: false
@@ -565,7 +565,7 @@ abstract class AbstractToolHandler {
 	 * @return array{version?: array, appUuid?: string, appName?: string, error?: string, message?: string}
 	 */
 	protected function loadVersion(object $objectService, string $appSlug, string $versionSlug): array {
-		$apps = $objectService->searchObjectsBySlug(self::REGISTER_SLUG, 'application', ['slug' => $appSlug], _rbac: true, _multitenancy: false);
+		$apps = $objectService->searchObjectsBySlug(self::REGISTER_SLUG, 'built-app', ['slug' => $appSlug], _rbac: true, _multitenancy: false);
 		if (is_array($apps) === false || $apps === []) {
 			return ['error' => 'not_found', 'message' => "No virtual app found for slug '{$appSlug}'."];
 		}

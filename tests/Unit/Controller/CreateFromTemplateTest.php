@@ -216,7 +216,7 @@ class CreateFromTemplateTest extends TestCase {
 				if ($slug === 'application-template') {
 					return $applicationTemplateSchema;
 				}
-				if ($slug === 'application') {
+				if ($slug === 'built-app') {
 					return $applicationSchema;
 				}
 				throw new \RuntimeException('schema not found: ' . $slug);
@@ -509,7 +509,7 @@ class CreateFromTemplateTest extends TestCase {
 		self::assertArrayHasKey('manifest', $calls[1]['object']);
 
 		// 3) the Application again, now pointing at that version.
-		self::assertSame('application', $calls[2]['schema']);
+		self::assertSame('built-app', $calls[2]['schema']);
 		self::assertSame('new-uuid-1', $calls[2]['uuid']);
 		self::assertSame('new-version-1', $calls[2]['object']['productionVersion']);
 	}//end testSuccessCreatesApplicationAndPerAppArtifacts()

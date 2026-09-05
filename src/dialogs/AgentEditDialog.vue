@@ -332,7 +332,7 @@ export default {
 			}
 			try {
 				const base = generateUrl(
-					'/apps/openregister/api/objects/buildiq/agent',
+					'/apps/openregister/api/objects/buildiq/buildAgent',
 				)
 				if (this.editing && this.id) {
 					await axios.put(`${base}/${this.id}`, payload)

@@ -81,7 +81,7 @@ class AgentChannelProvisioner {
 	 *
 	 * @var string
 	 */
-	private const AGENT_SCHEMA = 'agent';
+	private const AGENT_SCHEMA = 'buildAgent';
 
 	/**
 	 * Maximum agents applied from one repo.

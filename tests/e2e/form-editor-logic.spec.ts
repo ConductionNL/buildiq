@@ -25,14 +25,12 @@
  * panel open on a different field and swallowed its dangling-reference warning.
  */
 
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import {
-	ensureApp,
 	dismissOverlays,
+	ensureApp,
 	suppressSupportDialog,
-} from './support/appFixture'
-import { readStagedManifest } from './support/stagedManifest'
-
+} from './support/appFixture.ts'
 // Merge note (development -> feat/vue-3-migration, 2026-07-30): arrived as
 // `process.env.NC_BASE_URL ?? 'http://localhost:8080'`, which ignores
 // PLAYWRIGHT_BASE_URL. With NC_BASE_URL unset — how this suite is driven — that
@@ -40,7 +38,8 @@ import { readStagedManifest } from './support/stagedManifest'
 // manifest, so it would have written fixtures to somebody else's instance while
 // `ensureApp()` (relative URL, config baseURL) created the app on :8099.
 // See tests/e2e/support/baseUrl.ts.
-import { E2E_BASE_URL as BASE_URL } from './support/baseUrl'
+import { E2E_BASE_URL as BASE_URL } from './support/baseUrl.ts'
+import { readStagedManifest } from './support/stagedManifest.ts'
 
 // Harness rewritten 2026-07-28. The original seeded through a "Raw JSON" tab on
 // `/apps/buildiq/applications/{slug}/design` — neither the route nor the

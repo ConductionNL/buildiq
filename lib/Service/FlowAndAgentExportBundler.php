@@ -119,7 +119,7 @@ class FlowAndAgentExportBundler {
 	 *
 	 * @var string
 	 */
-	private const AGENT_SCHEMA = 'agent';
+	private const AGENT_SCHEMA = 'buildAgent';
 
 	/**
 	 * App id of hermiq, hermiq's own register slug, and hermiq's own `agent`

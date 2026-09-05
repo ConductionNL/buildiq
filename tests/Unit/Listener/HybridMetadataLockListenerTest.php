@@ -252,7 +252,7 @@ class HybridMetadataLockListenerTest extends TestCase {
 	 * @return void
 	 */
 	public function testIgnoresWhenNoOldObject(): void {
-		$new = $this->mockEntity(schema: 'application', data: ['appType' => 'hybrid', 'slug' => 'opencatalogi']);
+		$new = $this->mockEntity(schema: 'built-app', data: ['appType' => 'hybrid', 'slug' => 'opencatalogi']);
 		$event = new ObjectUpdatingEvent($new, null);
 
 		$this->listener->handle($event);

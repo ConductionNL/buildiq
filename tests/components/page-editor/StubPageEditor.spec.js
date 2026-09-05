@@ -16,8 +16,8 @@
  *  - external config updates re-seed the textarea without bouncing edits
  */
 
-import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
 import StubPageEditor from '../../../src/components/page-editor/StubPageEditor.vue'
 
 function mountEditor(config = {}, propsOverrides = {}) {

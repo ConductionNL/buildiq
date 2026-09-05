@@ -295,13 +295,20 @@ required = {
     'registers': ['buildiq'],
     'schemas': [
         # lib/Settings/openbuild_register.json
-        'application', 'application-template', 'built-app-route',
+        'built-app', 'application-template', 'built-app-route',
         'hello-message', 'applicationVersion', 'export-job',
         # lib/Settings/register.d/10-business-rules.json
         'rule-set', 'decision-table', 'condition-action-rule',
         'rule-execution-log', 'rule-test-case',
         # lib/Settings/register.d/40|60|70-*.json
-        'automation', 'component-block', 'agent', 'agent-run',
+        #
+        # `buildAgent`, not `agent`: #686 namespaced the slug because it
+        # collided with hermiq's, and a schema slug is global per organisation.
+        # This list is the hiding place a slug rename has that costs the most —
+        # the seed exits BEFORE Playwright starts, so every spec reports as NOT
+        # RUN rather than as failing, and the leg reads as one broken seed
+        # instead of a suite that never executed. `agent-run` did NOT move.
+        'automation', 'component-block', 'buildAgent', 'agent-run',
     ],
 }[kind]
 with open(path) as fh:
@@ -343,10 +350,10 @@ verify "$SCH_BODY" schemas "$SCH_CODE"
 # failure mode has a name here rather than as a timeout on an empty table.
 OBJ_CODE="$(curl -sS -o /dev/null -w '%{http_code}' \
 	-u "${USER_NAME}:${USER_PASS}" -H 'OCS-APIRequest: true' \
-	"${BASE}/index.php/apps/openregister/api/objects/buildiq/application?_limit=1" || echo 000)"
-echo "[ci-seed] objects/buildiq/application probe -> ${OBJ_CODE}"
+	"${BASE}/index.php/apps/openregister/api/objects/buildiq/built-app?_limit=1" || echo 000)"
+echo "[ci-seed] objects/buildiq/built-app probe -> ${OBJ_CODE}"
 if [ "$OBJ_CODE" -ge 400 ] 2>/dev/null; then
-	echo "::error::The buildiq application collection is not readable (HTTP ${OBJ_CODE})."
+	echo "::error::The buildiq built-app collection is not readable (HTTP ${OBJ_CODE})."
 	exit 1
 fi
 
@@ -478,7 +485,10 @@ if [ -f "${SERVER_DIR}/occ" ]; then
 	#
 	#   seed      done <- seedService->countSeeded() > 0   (occ seed, above)
 	#   store     done <- appconfig registry_url is set
-	#   demo-data done <- appconfig demo_data_decided is set
+	#   demo-data done <- appconfig demo_dataset is set   (the CHOICE step)
+	#   load-demo-data
+	#             done <- appconfig demo_data_decided is set, or the chosen
+	#                     dataset is "none", because declining IS an answer
 	#
 	# Since nextcloud-vue 2.21 an OUTSTANDING OPTIONAL step is enough to open
 	# the wizard (nextcloud-vue#806 fixed it short-circuiting on `completed`),
@@ -489,8 +499,17 @@ if [ -f "${SERVER_DIR}/occ" ]; then
 	# exist": its comment says re-offering the import every visit would make
 	# "no thanks" impossible to express. Writing it is exactly what an operator
 	# who declined would leave behind.
+	#
+	# 🔴 BOTH DEMO KEYS. The demo-data step became a CHOICE followed by a load
+	# step, and the choice is done when `demo_dataset` is set. Writing only
+	# `demo_data_decided` left the choice outstanding, which reopened the wizard
+	# over every page — 36 specs failed on `locator.click: Test timeout`, with
+	# the log naming `data-testid-modal="cn-wizard-dialog"` as the subtree
+	# intercepting the pointer events. That is the very overlay this block
+	# exists to remove. The apps whose seed POSTS `skip-demo-data` were never
+	# affected: that action writes both keys itself.
 	ok=1
-	for kv in "registry_url=https://example.invalid/e2e-registry" "demo_data_decided=skipped" "setup_completed_version=1"; do
+	for kv in "registry_url=https://example.invalid/e2e-registry" "demo_dataset=none" "demo_data_decided=skipped" "setup_completed_version=1"; do
 		if ! (cd "${SERVER_DIR}" && php occ config:app:set buildiq "${kv%%=*}" --value="${kv#*=}"); then
 			ok=0
 		fi

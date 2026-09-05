@@ -304,9 +304,9 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application?slug={{test_slug}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/built-app?slug={{test_slug}}",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "application"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "built-app"],
 							"query": [
 								{ "key": "slug", "value": "{{test_slug}}" }
 							]
@@ -358,9 +358,9 @@
 							"raw": "{{merged_body}}"
 						},
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application/{{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/built-app/{{application_uuid}}",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "application", "{{application_uuid}}"]
+							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "built-app", "{{application_uuid}}"]
 						}
 					},
 					"event": [
@@ -715,9 +715,9 @@
 							{ "key": "Accept", "value": "application/json" }
 						],
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application/{{application_uuid}}/audit-trails",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/built-app/{{application_uuid}}/audit-trails",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "application", "{{application_uuid}}", "audit-trails"]
+							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "built-app", "{{application_uuid}}", "audit-trails"]
 						}
 					},
 					"event": [
@@ -761,9 +761,9 @@
 							"raw": "{{merged_body}}"
 						},
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application/{{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/built-app/{{application_uuid}}",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "application", "{{application_uuid}}"]
+							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "built-app", "{{application_uuid}}"]
 						}
 					},
 					"event": [
@@ -846,9 +846,9 @@
 							"raw": "{{merged_body}}"
 						},
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application/{{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/built-app/{{application_uuid}}",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "application", "{{application_uuid}}"]
+							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "built-app", "{{application_uuid}}"]
 						}
 					},
 					"event": [

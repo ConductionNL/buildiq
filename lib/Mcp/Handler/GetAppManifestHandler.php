@@ -122,7 +122,7 @@ class GetAppManifestHandler extends AbstractToolHandler {
 			return ['error' => 'inconsistent_state', 'message' => 'Route exists but has no applicationUuid.'];
 		}
 
-		$application = $objectService->find(id: (string)$applicationUuid, register: self::REGISTER_SLUG, schema: 'application');
+		$application = $objectService->find(id: (string)$applicationUuid, register: self::REGISTER_SLUG, schema: 'built-app');
 		if ($application === null) {
 			return ['error' => 'inconsistent_state', 'message' => 'Route points to an Application that does not exist.'];
 		}

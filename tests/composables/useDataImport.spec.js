@@ -9,14 +9,14 @@
  *
  * Spec: buildiq-data-import-wizard (tasks 1.1).
  */
-import { describe, it, expect, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => `/index.php${p}` }))
 vi.mock('@nextcloud/axios', () => ({ default: { post: vi.fn(), get: vi.fn() } }))
 
 import {
-	useDataImport,
 	summarizeImport,
+	useDataImport,
 } from '../../src/composables/useDataImport.js'
 
 describe('summarizeImport', () => {

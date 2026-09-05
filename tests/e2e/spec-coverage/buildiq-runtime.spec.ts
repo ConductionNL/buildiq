@@ -43,10 +43,12 @@
  * IInitialState, ApplicationCard icon duplicate) are not repeated here.
  */
 
-import { test, expect, type Page, type APIRequestContext } from '@playwright/test'
-import { E2E_BASE_URL as BASE } from '../support/baseUrl'
-import { dismissFirstVisitOverlays } from '../support/overlays'
-import { findMounted, mountedComponentNames } from '../support/componentTree'
+import type { APIRequestContext, Page } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
+import { E2E_BASE_URL as BASE } from '../support/baseUrl.ts'
+import { findMounted, mountedComponentNames } from '../support/componentTree.ts'
+import { dismissFirstVisitOverlays } from '../support/overlays.ts'
 
 const SLUG = 'hello-world'
 

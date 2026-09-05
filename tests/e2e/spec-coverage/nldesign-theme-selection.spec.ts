@@ -25,8 +25,8 @@
  * (REQ-NTS-006) are excluded from e2e enforcement in the spec.
  */
 
-import { test, expect } from '@playwright/test'
-import { dismissOverlays } from '../support/appFixture'
+import { expect, test } from '@playwright/test'
+import { dismissOverlays } from '../support/appFixture.ts'
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 

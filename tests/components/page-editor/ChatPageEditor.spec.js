@@ -12,8 +12,8 @@
  *  - Lossless round-trip of an unsurfaced config key.
  */
 
-import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
 import ChatPageEditor from '../../../src/components/page-editor/ChatPageEditor.vue'
 
 function mountEditor(config = {}) {

@@ -5,7 +5,7 @@
  *
  * REST surface for the agent-workspace change (spec `agent-workspace`).
  * Agent CRUD itself goes through OpenRegister's generic REST surface
- * (`/apps/openregister/api/objects/buildiq/agent`, ADR-022 — mirrors
+ * (`/apps/openregister/api/objects/buildiq/buildAgent`, ADR-022 — mirrors
  * `AutomationsController`'s posture for the `automation` object), because
  * Agent create/edit/delete carries no Buildiq-specific side effect. This
  * controller owns exactly the one row-level-RBAC-sensitive read the generic
@@ -73,7 +73,7 @@ class AgentsController extends Controller {
 	/**
 	 * Schema slug of the Agent object.
 	 */
-	private const AGENT_SCHEMA = 'agent';
+	private const AGENT_SCHEMA = 'buildAgent';
 
 	/**
 	 * Schema slug of the AgentRun object.
@@ -280,7 +280,7 @@ class AgentsController extends Controller {
 		}
 
 		try {
-			$entity = $this->objectService->find(id: $slug, register: self::REGISTER_SLUG, schema: 'application');
+			$entity = $this->objectService->find(id: $slug, register: self::REGISTER_SLUG, schema: 'built-app');
 		} catch (Throwable $e) {
 			return null;
 		}

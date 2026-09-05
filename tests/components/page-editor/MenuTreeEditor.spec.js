@@ -16,8 +16,8 @@
  *    (canonical mutex documented in the template comment).
  */
 
-import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
 import MenuTreeEditor from '../../../src/components/page-editor/MenuTreeEditor.vue'
 // The shared stub mirrors vuedraggable v4 (`modelValue` + `#item` scoped
 // slot), which is what MenuTreeEditor is written against. The v2-shaped local
