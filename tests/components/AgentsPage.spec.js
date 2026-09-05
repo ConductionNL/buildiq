@@ -99,7 +99,12 @@ describe('AgentsPage', () => {
 			if (url.includes('/api/applications')) {
 				return Promise.resolve({ data: { results: [application] } })
 			}
-			if (url.includes('/agent')) {
+			// The SLUG, not a substring of it. This read `/agent`, which stopped
+			// matching when #686 namespaced the schema to `buildAgent` — and a
+			// mock that stops matching does not fail, it silently answers the
+			// default empty page, so the page rendered "no agents yet" and the
+			// assertions failed somewhere else entirely.
+			if (url.includes('/buildAgent')) {
 				return Promise.resolve({ data: { results: [agent()] } })
 			}
 			return Promise.resolve({ data: { results: [] } })
@@ -184,7 +189,7 @@ describe('AgentsPage', () => {
 		await flush()
 
 		expect(axios.delete).toHaveBeenCalledWith(
-			'/apps/openregister/api/objects/buildiq/agent/agent-1',
+			'/apps/openregister/api/objects/buildiq/buildAgent/agent-1',
 		)
 	})
 

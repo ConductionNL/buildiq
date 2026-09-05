@@ -92,7 +92,7 @@ test.describe('agent-workspace — Agents page', () => {
 	// each run starts from a clean slate.
 	test.beforeAll(async ({ request }) => {
 		const resp = await request.get(
-			'/index.php/apps/openregister/api/objects/buildiq/agent',
+			'/index.php/apps/openregister/api/objects/buildiq/buildAgent',
 			{
 				headers: { 'OCS-APIRequest': 'true' },
 			},
@@ -106,7 +106,7 @@ test.describe('agent-workspace — Agents page', () => {
 			if (agent?.name === 'E2E page builder assistant' && agent?.id) {
 				await request
 					.delete(
-						`/index.php/apps/openregister/api/objects/buildiq/agent/${agent.id}`,
+						`/index.php/apps/openregister/api/objects/buildiq/buildAgent/${agent.id}`,
 						{
 							headers: { 'OCS-APIRequest': 'true' },
 						},
