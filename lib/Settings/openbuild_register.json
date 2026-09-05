@@ -20,7 +20,7 @@
         "description": "OpenBuild register namespace: holds the Application + ApplicationVersion + BuiltAppRoute control schemas, the ApplicationTemplate catalogue, the automation/rule-engine schemas and the seed hello-message schema for the canonical hello-world app.",
         "version": "0.9.0",
         "schemas": [
-          "agent",
+          "buildAgent",
           "agent-run",
           "built-app",
           "application-template",
