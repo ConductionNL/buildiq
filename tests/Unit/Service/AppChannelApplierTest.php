@@ -839,7 +839,7 @@ class AppChannelApplierTest extends TestCase {
 				self::callback(static fn (array $object): bool => ($object['applicationSlug'] ?? null) === 'local-app'),
 				self::anything(),
 				'buildiq',
-				'agent',
+				'buildAgent',
 				$uuid,
 				false,
 				false,
