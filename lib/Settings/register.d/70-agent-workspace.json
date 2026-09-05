@@ -4,7 +4,7 @@
     "schemas": {
       "Agent": {
         "x-schema-org": "schema:SoftwareApplication",
-        "slug": "agent",
+        "slug": "buildAgent",
         "icon": "RobotOutline",
         "version": "1.0.0",
         "title": "Agent",

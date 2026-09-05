@@ -169,6 +169,15 @@ Vrij en open source onder de EUPL-1.2-licentie.
                 the app never enables.
             -->
             <step>OCA\Buildiq\Repair\MigrateSchemaApplicationId</step>
+            <!--
+                AFTER MigrateSchemaApplicationId and BEFORE InitializeSettings.
+                A schema slug is global per organisation, so this app's 6-field
+                `agent` workspace pointer and hermiq's 41-field AI agent both
+                answered to a bare `agent`. Renaming the row first means the
+                import updates it in place instead of creating a second schema
+                and orphaning every object on the first.
+            -->
+            <step>OCA\Buildiq\Repair\RenameAgentSchemaSlug</step>
             <step>OCA\Buildiq\Repair\InitializeSettings</step>
             <step>OCA\Buildiq\Repair\MigrateToVersionedModel</step>
             <step>OCA\Buildiq\Repair\MigrateAppOverridesToHybrid</step>
@@ -242,6 +251,15 @@ Vrij en open source onder de EUPL-1.2-licentie.
                 the app never enables.
             -->
             <step>OCA\Buildiq\Repair\MigrateSchemaApplicationId</step>
+            <!--
+                AFTER MigrateSchemaApplicationId and BEFORE InitializeSettings.
+                A schema slug is global per organisation, so this app's 6-field
+                `agent` workspace pointer and hermiq's 41-field AI agent both
+                answered to a bare `agent`. Renaming the row first means the
+                import updates it in place instead of creating a second schema
+                and orphaning every object on the first.
+            -->
+            <step>OCA\Buildiq\Repair\RenameAgentSchemaSlug</step>
             <step>OCA\Buildiq\Repair\InitializeSettings</step>
             <step>OCA\Buildiq\Repair\MigrateToVersionedModel</step>
             <step>OCA\Buildiq\Repair\MigrateAppOverridesToHybrid</step>

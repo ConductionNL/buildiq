@@ -73,7 +73,7 @@ class AgentsController extends Controller {
 	/**
 	 * Schema slug of the Agent object.
 	 */
-	private const AGENT_SCHEMA = 'agent';
+	private const AGENT_SCHEMA = 'buildAgent';
 
 	/**
 	 * Schema slug of the AgentRun object.

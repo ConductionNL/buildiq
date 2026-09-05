@@ -74,7 +74,7 @@ class CopilotService {
 
 	private const APPLICATION_VERSION_SCHEMA = 'applicationVersion';
 
-	private const AGENT_SCHEMA = 'agent';
+	private const AGENT_SCHEMA = 'buildAgent';
 
 	/**
 	 * Task type id for `OCP\TaskProcessing\TaskTypes\TextToText::ID`.
