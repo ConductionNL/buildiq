@@ -326,6 +326,24 @@ except json.JSONDecodeError:
     sys.exit(1)
 items = body if isinstance(body, list) else body.get('results', [])
 slugs = {i.get('slug') for i in items if isinstance(i, dict)}
+
+# A PAGE IS NOT THE POPULATION. `total` is what the instance holds; `items` is
+# what this request returned. On a shared instance carrying several apps those
+# differ wildly, and a slug that simply fell off the page reads exactly like a
+# slug the import never created — with an error message that blames the import.
+# Refuse to judge rather than report a false absence.
+total = None
+if isinstance(body, dict):
+    for _k in ('total', 'count'):
+        if isinstance(body.get(_k), int):
+            total = body[_k]
+            break
+if total is not None and total > len(items):
+    print(f'::error::{kind} listing is TRUNCATED: {len(items)} of {total} returned.')
+    print('::error::Raise the _limit on this request. A missing slug cannot be '
+          'distinguished from one that fell off the page, so this check is '
+          'refusing to report either.')
+    sys.exit(1)
 missing = [s for s in required if s not in slugs]
 print(f'[ci-seed] {kind} present: {sorted(s for s in slugs if s)}')
 if missing:
@@ -338,11 +356,11 @@ PY
 }
 
 REG_BODY="$(mktemp)"
-REG_CODE="$(api_get "$REG_BODY" "/index.php/apps/openregister/api/registers?_limit=300")"
+REG_CODE="$(api_get "$REG_BODY" "/index.php/apps/openregister/api/registers?_limit=2000")"
 verify "$REG_BODY" registers "$REG_CODE"
 
 SCH_BODY="$(mktemp)"
-SCH_CODE="$(api_get "$SCH_BODY" "/index.php/apps/openregister/api/schemas?_limit=1000")"
+SCH_CODE="$(api_get "$SCH_BODY" "/index.php/apps/openregister/api/schemas?_limit=10000")"
 verify "$SCH_BODY" schemas "$SCH_CODE"
 
 # The register existing is still not the same as it being READABLE by the admin
@@ -659,7 +677,7 @@ for path in \
 	"/index.php/apps/buildiq/" \
 	"/index.php/settings/admin/buildiq" \
 	"/index.php/apps/buildiq/api/applications" \
-	"/index.php/apps/openregister/api/registers?_limit=1"
+	"/index.php/apps/openregister/api/registers?_limit=2000"
 do
 	code="$(curl -sS -o /dev/null -w '%{http_code}' -u "${USER_NAME}:${USER_PASS}" \
 		-H 'OCS-APIRequest: true' "${BASE}${path}" || echo 000)"
