@@ -301,7 +301,14 @@ required = {
         'rule-set', 'decision-table', 'condition-action-rule',
         'rule-execution-log', 'rule-test-case',
         # lib/Settings/register.d/40|60|70-*.json
-        'automation', 'component-block', 'agent', 'agent-run',
+        #
+        # `buildAgent`, not `agent`: #686 namespaced the slug because it
+        # collided with hermiq's, and a schema slug is global per organisation.
+        # This list is the hiding place a slug rename has that costs the most —
+        # the seed exits BEFORE Playwright starts, so every spec reports as NOT
+        # RUN rather than as failing, and the leg reads as one broken seed
+        # instead of a suite that never executed. `agent-run` did NOT move.
+        'automation', 'component-block', 'buildAgent', 'agent-run',
     ],
 }[kind]
 with open(path) as fh:
