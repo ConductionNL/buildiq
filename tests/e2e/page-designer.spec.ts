@@ -33,15 +33,14 @@
  * covers the real manifest round-trip.
  */
 
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import {
-	ensureApp,
 	dismissOverlays,
+	ensureApp,
 	suppressSupportDialog,
-} from './support/appFixture'
-
+} from './support/appFixture.ts'
 // PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts.
-import { E2E_BASE_URL as BASE_URL } from './support/baseUrl'
+import { E2E_BASE_URL as BASE_URL } from './support/baseUrl.ts'
 
 const APP_SLUG = 'pw-page-designer'
 const NEW_ROUTE = '/added-by-e2e'

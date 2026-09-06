@@ -6,12 +6,12 @@
  *
  * Spec: openconnector-api-sources (REQ-OCAS-003, REQ-OCAS-006).
  */
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
-	resolveSelector,
-	projectFields,
 	extractItems,
 	flattenSample,
+	projectFields,
+	resolveSelector,
 } from '../../src/services/selectors.js'
 
 describe('resolveSelector', () => {

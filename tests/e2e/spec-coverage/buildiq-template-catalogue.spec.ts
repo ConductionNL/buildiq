@@ -21,7 +21,7 @@
  * catalogue requires the seeded templates to be available.
  */
 
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 const LIVE = process.env.BUILDIQ_E2E_LIVE === '1'
@@ -47,14 +47,17 @@ test('REQ-OBTC-003 — template gallery route renders at /apps/buildiq/templates
 	).toBeVisible({ timeout: 15_000 })
 	await expect(page).toHaveTitle(/buildiq/i)
 
-	// If the gallery is built, a category filter and template cards should be visible
-	// If not yet built, the route at minimum loads the outer shell without crashing
-	const templateCards = page
-		.locator('[class*="template"], [class*="gallery"], [class*="card"]')
-		.first()
-	const filterControl = page
-		.locator('select, [role="listbox"], [class*="filter"]')
-		.first()
+	// The gallery's own cards and category filter are NOT asserted here. They
+	// used to be chained onto the expect() above, which threw
+	// "expect(...).toHaveTitle(...).locator is not a function": toHaveTitle()
+	// resolves a Promise, not a locator. Both locators were also built and then
+	// DISCARDED, so even without the TypeError they asserted nothing.
+	//
+	// The comment they carried said the route "at minimum loads the outer shell
+	// without crashing" when the gallery is not built, which is exactly what the
+	// three assertions in this test do check. Asserting the cards would be a
+	// different test, and one this file cannot make unconditional.
+
 	// Confirm no JS error crashes the page
 	await expect(page.locator('main'), 'main must remain visible').toBeVisible()
 })

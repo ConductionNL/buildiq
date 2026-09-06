@@ -71,7 +71,7 @@ class AppNavigationService {
 	/**
 	 * Schema slug for Application objects.
 	 */
-	private const APPLICATION_SCHEMA = 'application';
+	private const APPLICATION_SCHEMA = 'built-app';
 
 	/**
 	 * Status value that indicates a published Application.

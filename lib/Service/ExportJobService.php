@@ -248,7 +248,7 @@ class ExportJobService {
 	 * `register`/`schema` (so `ObjectService::saveObject()` relied on
 	 * whatever register/schema context an EARLIER call in the same request
 	 * left behind — e.g. `ExportsController::isAuthorisedForApplication()`'s
-	 * `searchObjectsBySlug('buildiq', 'application', ...)` call re-anchors
+	 * `searchObjectsBySlug('buildiq', 'built-app', ...)` call re-anchors
 	 * that ambient state to schema=`application`, which does not accept an
 	 * ExportJob payload's shape) AND `uuid` (so `extractUuidAndNormalizeObject()`
 	 * — which only recognises `@self.id`/`id`, not our own `uuid` data field —

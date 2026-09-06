@@ -4,7 +4,7 @@
  * by BOTH `DocumentTemplateAttachmentDialog`'s builder-UI template picker
  * (docudesk-document-templates REQ-DDT-002) and `AutomationEditDialog`'s
  * `generateDocument` action template picker (automation-document-action) —
- * a single implementation, not a second `GET /apps/docudesk/api/templates`
+ * a single implementation, not a second `GET /apps/filinq/api/templates`
  * fetch/render (spec "Template picker reuses the existing Docudesk-
  * template-list component" / "Template list is shared, not duplicated").
  *
@@ -14,7 +14,7 @@
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 
-const TEMPLATES_URL = '/apps/docudesk/api/templates'
+const TEMPLATES_URL = '/apps/filinq/api/templates'
 
 /**
  * Fetch Docudesk's template list. Never throws — resolves to `[]` on any

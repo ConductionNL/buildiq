@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -6,8 +7,7 @@
  *
  * Spec: docudesk-document-templates (REQ-DDT-001, REQ-DDT-002).
  */
-import { describe, it, expect, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
 import DocumentAttachmentsSection from '../../src/components/DocumentAttachmentsSection.vue'
 
 const NcButtonStub = {
@@ -33,11 +33,12 @@ const entry = {
 	label: 'Generate confirmation letter',
 }
 
-const factory = (manifest, props = {}) =>
-	mount(DocumentAttachmentsSection, {
+function factory(manifest, props = {}) {
+	return mount(DocumentAttachmentsSection, {
 		propsData: { manifest, schemas: [], ...props },
 		stubs,
 	})
+}
 
 describe('DocumentAttachmentsSection', () => {
 	it('renders the empty state with no attachments', () => {

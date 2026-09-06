@@ -446,7 +446,7 @@ export default {
 		})
 		// REQ-DDT-005: soft-check Docudesk so the Documents section degrades
 		// gracefully when it is absent.
-		const docudeskStatus = useAppStatus('docudesk')
+		const docudeskStatus = useAppStatus('filinq')
 		docudeskStatus.check().then(() => {
 			this.docudeskAvailable = docudeskStatus.available.value
 		})
@@ -605,7 +605,7 @@ export default {
 			this.toast = ''
 			try {
 				const url = generateUrl(
-					'/apps/openregister/api/objects/buildiq/application',
+					'/apps/openregister/api/objects/buildiq/built-app',
 				)
 				const { data } = await axios.get(url, { params: { _limit: 100 } })
 				const apps =
@@ -722,7 +722,7 @@ export default {
 					return
 				}
 				const url = generateUrl(
-					`/apps/openregister/api/objects/buildiq/application/${this.applicationUuid}`,
+					`/apps/openregister/api/objects/buildiq/built-app/${this.applicationUuid}`,
 				)
 				const { data } = await axios.put(url, {
 					...this.application,

@@ -12,7 +12,7 @@
  *    Schema Designer).
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const capabilitiesMocks = vi.hoisted(() => {
 	return { getCapabilities: vi.fn() }

@@ -16,10 +16,9 @@
  *   - onClose emits update:show and resets state
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
-
 import axios from '@nextcloud/axios'
+import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import CreateApplicationWizard from '../../src/dialogs/CreateApplicationWizard.vue'
 
 vi.mock('@nextcloud/axios', () => ({ default: { post: vi.fn() } }))

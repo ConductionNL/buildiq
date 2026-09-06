@@ -20,7 +20,7 @@
  * Tests requiring a created non-admin user guard on BUILDIQ_E2E_LIVE.
  */
 
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 const LIVE = process.env.BUILDIQ_E2E_LIVE === '1'

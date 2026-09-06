@@ -36,8 +36,10 @@
  * here previously encoded a menu that the manifest does not describe.
  */
 
-import { test, expect } from '@playwright/test'
-import { dismissWalkthrough } from '../support/overlays'
+import type { Page } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
+import { dismissWalkthrough } from '../support/overlays.ts'
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 
@@ -70,7 +72,7 @@ const DashboardIndex = `${BASE}/apps/buildiq/`
 // and the snapshot shows all four in-app entries inside that one <nav>. This
 // is a NARROWER locator, not a weaker assertion: the label check below is
 // unchanged, and it now runs against the element it was written for.
-const navLink = (page: import('@playwright/test').Page, path: string) => {
+function navLink(page: Page, path: string) {
 	const suffix = path === '/' ? '/apps/buildiq/' : `/apps/buildiq${path}`
 	return page
 		.locator('#app-navigation-vue')

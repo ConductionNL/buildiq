@@ -18,9 +18,9 @@
  *    is emitted by merely rendering the preview).
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { ref, computed } from 'vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, ref } from 'vue'
 
 const axiosGetMock = vi.fn()
 vi.mock('@nextcloud/axios', () => ({

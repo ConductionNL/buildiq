@@ -15,8 +15,8 @@
  * The composable useRegisterPicker is stubbed so the test never hits OR.
  */
 
-import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('../../../src/composables/useRegisterPicker.js', () => ({
 	useRegisterPicker: () => ({

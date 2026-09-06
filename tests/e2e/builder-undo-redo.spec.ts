@@ -29,17 +29,18 @@
  *       save resets the schema session history
  */
 
-import { test, expect, type Page } from '@playwright/test'
-import {
-	ensureApp as ensureAppFixture,
-	dismissOverlays,
-	suppressSupportDialog,
-} from './support/appFixture'
-import { ensureVersionChain } from './support/versionChain'
-import { saveSchemaAndAwait } from './support/schemaSave'
+import type { Page } from '@playwright/test'
 
+import { expect, test } from '@playwright/test'
+import {
+	dismissOverlays,
+	ensureApp as ensureAppFixture,
+	suppressSupportDialog,
+} from './support/appFixture.ts'
 // PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts.
-import { E2E_BASE_URL as BASE_URL } from './support/baseUrl'
+import { E2E_BASE_URL as BASE_URL } from './support/baseUrl.ts'
+import { saveSchemaAndAwait } from './support/schemaSave.ts'
+import { ensureVersionChain } from './support/versionChain.ts'
 const APP_SLUG = 'pw-undo-redo'
 const SCHEMA_SLUG = 'undo-redo-record'
 

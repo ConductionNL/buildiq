@@ -3,7 +3,7 @@
 /**
  * Source-tree scan assertion (automation-document-action task 5.2 /
  * `docudesk-document-templates` REQ-DDT-006 "Contract surface is closed"):
- * no `OCA\DocuDesk\*` class is imported or referenced anywhere in
+ * no `OCA\Filinq\*` class is imported or referenced anywhere in
  * `DocumentGenerationService` or `DocumentGenerationListener` — the
  * document-generation call path is an HTTP call to the pinned
  * `correspondence/generate` route, never a PHP class import.
@@ -31,7 +31,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Static source-tree assertion — no `OCA\DocuDesk\*` reference in the
+ * Static source-tree assertion — no `OCA\Filinq\*` reference in the
  * automation-triggered document-generation call path.
  */
 final class DocumentGenerationNoDocudeskImportTest extends TestCase {
@@ -53,7 +53,7 @@ final class DocumentGenerationNoDocudeskImportTest extends TestCase {
 	 * comment prose that merely NAMES the forbidden namespace while
 	 * explaining why it is not imported (this class's own docblock does
 	 * exactly that) is intentionally tolerated — only PHP/PHPDoc comments
-	 * are stripped before scanning, so a real `use OCA\DocuDesk\...;`
+	 * are stripped before scanning, so a real `use OCA\Filinq\...;`
 	 * import would still fail this assertion.
 	 *
 	 * @return void

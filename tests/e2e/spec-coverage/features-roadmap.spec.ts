@@ -20,7 +20,7 @@
  * container-scoped text lookups are unreliable.
  */
 
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 // The app router runs in path mode (not hash mode — that assumption was
@@ -47,7 +47,11 @@ test.describe('Buildiq Features & roadmap', () => {
 			page.getByRole('button', { name: /show roadmap/i }),
 		).toBeVisible()
 		await expect(
-			page.getByRole('button', { name: /suggest feature/i }),
+			// A LINK, not a button. nextcloud-vue 2.36.4 removed the in-product
+			// suggestion modal (team decision 2026-09-04: the forge is where the
+			// conversation happens), and the CTA is an anchor to the forge's
+			// feature-request issue form now. An `<a href>` has role `link`.
+			page.getByRole('link', { name: /suggest feature/i }),
 		).toBeVisible()
 	})
 

@@ -11,7 +11,7 @@
  *  - canApprove false on a v2-invalid predicted manifest, true on a valid one
  *  - discard() resets to idle without sending any request
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const axiosGet = vi.fn()
 const axiosPost = vi.fn()
@@ -25,12 +25,12 @@ vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => p }))
 // so this per-test mock lets us exercise the invalid branch too.
 let validatorResult = { valid: true, errors: [] }
 vi.mock('@conduction/nextcloud-vue', () => ({
-	validateManifest: (manifest) => validatorResult,
+	validateManifest: (_manifest) => validatorResult,
 }))
 
 import {
-	useCopilot,
 	clearCopilotHealthCache,
+	useCopilot,
 } from '../../src/composables/useCopilot.js'
 
 describe('useCopilot — spec ai-copilot REQ-OBAIC-001/002/003', () => {

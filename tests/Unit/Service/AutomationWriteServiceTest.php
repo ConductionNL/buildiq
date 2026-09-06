@@ -467,4 +467,43 @@ final class AutomationWriteServiceTest extends TestCase {
 		);
 
 	}//end testRequestBodyStripsRoutePlaceholders()
+
+	/**
+	 * 🔴 requestBody() also strips the keys that ADDRESS an object.
+	 *
+	 * `saveObject()` resolves its target from the payload —
+	 * `extractUuidAndNormalizeObject()` reads `@self.id` first, then `id` — and
+	 * the write is PUT-semantic, so every omitted field is NULLED.
+	 * `saveAuthorised()` passes `_rbac: false`, so nothing downstream refuses
+	 * it, and the create route is `#[NoAdminRequired]`.
+	 *
+	 * The authorization guard does not cover this: `withApplication()`
+	 * authorises the `applicationSlug` the CALLER CLAIMS, while the object
+	 * written is whatever the payload's identity points at. Stripping `uuid`
+	 * alone left the two keys that actually do the addressing.
+	 *
+	 * @return void
+	 */
+	public function testRequestBodyStripsCallerSuppliedIdentity(): void {
+		$request = $this->createMock(IRequest::class);
+		$request->method('getParams')->willReturn(
+			[
+				'_route' => 'buildiq.automations.create',
+				'uuid' => 'a-1',
+				'id' => 'someone-elses-automation',
+				'@self' => ['id' => 'someone-elses-automation'],
+				'applicationSlug' => 'permit-tracker',
+				'slug' => 'nag',
+			]
+		);
+
+		$body = $this->service->requestBody(request: $request);
+
+		$this->assertArrayNotHasKey('id', $body);
+		$this->assertArrayNotHasKey('uuid', $body);
+		$this->assertArrayNotHasKey('@self', $body, '@self.id is the key saveObject reads FIRST');
+		$this->assertSame('permit-tracker', $body['applicationSlug'], 'the real payload survives');
+		$this->assertSame('nag', $body['slug']);
+
+	}//end testRequestBodyStripsCallerSuppliedIdentity()
 }//end class

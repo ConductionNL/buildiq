@@ -9,15 +9,15 @@
  * both READ-MERGE-WRITE — a PATCH/PUT NEVER carries a partial fragment that
  * could silently clobber sibling fields another app/admin set.
  */
-import { describe, it, expect, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => p }))
 
 import {
-	enablePublicCreate,
-	revokePublicCreate,
-	provisionPortalPage,
 	draftPortalPage,
+	enablePublicCreate,
+	provisionPortalPage,
+	revokePublicCreate,
 } from '../../src/services/externalFormProvisioningService.js'
 
 describe('enablePublicCreate', () => {

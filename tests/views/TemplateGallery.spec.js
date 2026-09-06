@@ -15,8 +15,8 @@
  *     for the newly created application (REQ-OBTC-008)
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { axiosMock } = vi.hoisted(() => ({
 	axiosMock: { get: vi.fn(), post: vi.fn() },

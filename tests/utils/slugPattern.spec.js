@@ -10,7 +10,7 @@
  *   - validateSlug: happy path, leading underscore, invalid chars, too short
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
 	SLUG_PATTERN,
 	toKebabCase,

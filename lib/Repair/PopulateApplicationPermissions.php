@@ -151,7 +151,7 @@ class PopulateApplicationPermissions implements IRepairStep {
 			config: [
 				'filters' => [
 					'register' => 'buildiq',
-					'schema' => 'application',
+					'schema' => 'built-app',
 				],
 				'limit' => 1000,
 			]
@@ -186,7 +186,7 @@ class PopulateApplicationPermissions implements IRepairStep {
 			$this->objectService->saveObject(
 				object: $applicationArray,
 				register: 'buildiq',
-				schema: 'application',
+				schema: 'built-app',
 				_rbac: false,
 				_multitenancy: false
 			);

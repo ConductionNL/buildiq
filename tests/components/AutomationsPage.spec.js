@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -6,8 +7,7 @@
  *
  * Spec: automation-designer (REQ-AUTD-001, REQ-AUTD-006).
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@nextcloud/router', async (importOriginal) => ({
 	...(await importOriginal()),
@@ -78,17 +78,19 @@ const version = {
 	register: 'openbuild-permit-tracker-development',
 }
 
-const automation = (overrides = {}) => ({
-	id: 'aut-1',
-	slug: 'notify-caseworkers',
-	name: 'Notify case workers',
-	applicationSlug: 'permit-tracker',
-	versionUuid: 'version-1',
-	enabled: true,
-	trigger: { type: 'object-created', schema: 'permit' },
-	actions: [{ type: 'send-notification' }],
-	...overrides,
-})
+function automation(overrides = {}) {
+	return {
+		id: 'aut-1',
+		slug: 'notify-caseworkers',
+		name: 'Notify case workers',
+		applicationSlug: 'permit-tracker',
+		versionUuid: 'version-1',
+		enabled: true,
+		trigger: { type: 'object-created', schema: 'permit' },
+		actions: [{ type: 'send-notification' }],
+		...overrides,
+	}
+}
 
 describe('AutomationsPage', () => {
 	beforeEach(() => {

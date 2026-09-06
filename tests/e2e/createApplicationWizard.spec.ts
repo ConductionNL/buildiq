@@ -32,15 +32,15 @@
  * for `playwright test --list`.
  */
 
-import { test, expect, type Page, type APIRequestContext } from '@playwright/test'
+import type { APIRequestContext, Page } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
 
 // ---------------------------------------------------------------------------
 // Configuration
 // ---------------------------------------------------------------------------
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
-const ADMIN_USER = process.env.NC_ADMIN_USER ?? 'admin'
-const ADMIN_PASS = process.env.NC_ADMIN_PASSWORD ?? 'admin'
 
 /**
  * Application slugs this spec creates through the wizard.
@@ -75,7 +75,7 @@ const WIZARD_FIXTURE_SLUGS = [
  */
 async function deleteWizardFixtureApps(request: APIRequestContext): Promise<void> {
 	const resp = await request.get(
-		'/index.php/apps/openregister/api/objects/buildiq/application?_limit=100',
+		'/index.php/apps/openregister/api/objects/buildiq/built-app?_limit=100',
 		{
 			headers: { 'OCS-APIRequest': 'true' },
 		},
@@ -91,7 +91,7 @@ async function deleteWizardFixtureApps(request: APIRequestContext): Promise<void
 		if (WIZARD_FIXTURE_SLUGS.includes(slug) && id) {
 			await request
 				.delete(
-					`/index.php/apps/openregister/api/objects/buildiq/application/${id}`,
+					`/index.php/apps/openregister/api/objects/buildiq/built-app/${id}`,
 					{
 						headers: { 'OCS-APIRequest': 'true' },
 					},

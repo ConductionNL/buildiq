@@ -16,8 +16,8 @@
  *   - _step2Valid is emitted via watcher when isValid transitions
  */
 
-import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
 import Step2Preset from '../../../src/dialogs/CreateApplicationWizard/Step2Preset.vue'
 
 /**

@@ -12,8 +12,8 @@
  *    that `pageEditorValidationMixin` reads for inline-mark routing).
  */
 
-import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { describe, expect, it, vi } from 'vitest'
 import DashboardPageEditor from '../../../src/components/page-editor/DashboardPageEditor.vue'
 
 function mountEditor(config = {}) {

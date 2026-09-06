@@ -17,8 +17,8 @@
  *   - description input emits update:payload
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Step1Basics probes AI-copilot health on created() (spec ai-copilot
 // REQ-OBAIC-001/006) via useCopilot -> services/copilot.js -> axios. Mock

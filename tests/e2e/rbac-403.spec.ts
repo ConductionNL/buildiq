@@ -28,10 +28,9 @@
  * login redirect path and the OR shared state are not safe to parallelise.
  */
 
-import { test, expect } from '@playwright/test'
-
+import { expect, test } from '@playwright/test'
 // PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts.
-import { E2E_BASE_URL as NEXTCLOUD_URL } from './support/baseUrl'
+import { E2E_BASE_URL as NEXTCLOUD_URL } from './support/baseUrl.ts'
 const TEST_SLUG = process.env.NC_RBAC_TEST_SLUG ?? 'hello-world'
 
 // STILL SKIPPED, with the true reason replacing the #41 one.

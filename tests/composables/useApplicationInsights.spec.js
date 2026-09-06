@@ -8,8 +8,8 @@
  * (REQ-OBAI-001, REQ-OBAI-002 — surface behaviour from the frontend).
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { ref, nextTick } from 'vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, ref } from 'vue'
 
 vi.mock('@nextcloud/axios', () => ({
 	default: {

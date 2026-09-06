@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /*
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -5,8 +6,7 @@
  * Vitest spec for FormPageEditor's "External access" section
  * (external-form-provisioning REQ-EFP-002).
  */
-import { describe, it, expect, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { describe, expect, it, vi } from 'vitest'
 
 // `vi.mock` factories are hoisted above the imports, so `h` is pulled in with
 // a lazy dynamic import inside the (async) factory. Vue 3 does not pass `h`

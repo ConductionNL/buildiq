@@ -4,7 +4,7 @@
  *
  * Vitest spec for useTrackLinkAction (REQ-EFP-006).
  */
-import { describe, it, expect, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => p }))
 

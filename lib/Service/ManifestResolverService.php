@@ -238,7 +238,7 @@ class ManifestResolverService {
 			// lookup in this service.  Changing it to true would silo Applications
 			// per org and break the shared-registry model.
 			$registerId = $this->registerMapper->find(ApplicationVersionService::REGISTER_SLUG, _multitenancy: false)->getId();
-			$schemaId = $this->schemaMapper->find('application', _multitenancy: false)->getId();
+			$schemaId = $this->schemaMapper->find('built-app', _multitenancy: false)->getId();
 
 			$results = $this->objectService->searchObjects(
 				query: [

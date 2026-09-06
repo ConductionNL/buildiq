@@ -23,7 +23,9 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  */
 
-import { expect, type Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+import { expect } from '@playwright/test'
 
 /**
  * The write `SchemaDesigner.save()` issues.

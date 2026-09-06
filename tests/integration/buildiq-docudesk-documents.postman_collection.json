@@ -1,7 +1,7 @@
 {
 	"info": {
 		"name": "Buildiq ⇄ Docudesk Document Templates Contract",
-		"description": "Newman/Postman contract suite for the docudesk-document-templates feature (REQ-DDT-006). Buildiq is a pure API consumer (ADR-022) of Docudesk's EXISTING public correspondence/template surface — it adds NO PHP. This collection pins exactly the Docudesk endpoints buildiq calls so Docudesk-side drift fails CI:\n\n  1. GET  /apps/docudesk/api/templates           — attach-picker list (200, array shape).\n  2. GET  /apps/docudesk/api/templates/{id}      — name-snapshot refresh on edit (200 or 404 for a deleted template).\n  3. POST /apps/docudesk/api/templates/{id}/preview — builder preview affordance.\n  4. POST /apps/docudesk/api/correspondence/generate — runtime generation. The request body asserted here is EXACTLY what useDocudeskDocument sends: { templateId, dataRefs: [{ register, schema, id }], options: { format }, filename } — kept in lockstep with the composable. An unknown templateId yields a 4xx (not a 500).\n\nFormat value set pinned against Docudesk CorrespondenceService::VALID_FORMATS = ['pdf','docx','html','email'] (verified 2026-06-15). Binary (pdf/docx) → DataDownloadResponse; html/email → JSON content.\n\nAUTH MODEL mirrors the other buildiq collections: noauth collection auth + explicit basic-auth per request (admin:admin) + OCS-APIRequest on writes. Docudesk's template + correspondence endpoints are all @NoAdminRequired, so a normal authed session suffices — no buildiq-side IDOR gap.\n\nThe suite is tolerant of a Docudesk instance with no seeded templates: list-shape and generate-with-unknown-id (4xx) always assert; the show/preview happy-path requests assert their shape ONLY when a template id is discovered, otherwise they skip with a pm.test note (so CI stays honest on an empty Docudesk without faking a pass). Run via run-newman.sh.",
+		"description": "Newman/Postman contract suite for the docudesk-document-templates feature (REQ-DDT-006). Buildiq is a pure API consumer (ADR-022) of Docudesk's EXISTING public correspondence/template surface — it adds NO PHP. This collection pins exactly the Docudesk endpoints buildiq calls so Docudesk-side drift fails CI:\n\n  1. GET  /apps/filinq/api/templates           — attach-picker list (200, array shape).\n  2. GET  /apps/filinq/api/templates/{id}      — name-snapshot refresh on edit (200 or 404 for a deleted template).\n  3. POST /apps/filinq/api/templates/{id}/preview — builder preview affordance.\n  4. POST /apps/filinq/api/correspondence/generate — runtime generation. The request body asserted here is EXACTLY what useDocudeskDocument sends: { templateId, dataRefs: [{ register, schema, id }], options: { format }, filename } — kept in lockstep with the composable. An unknown templateId yields a 4xx (not a 500).\n\nFormat value set pinned against Docudesk CorrespondenceService::VALID_FORMATS = ['pdf','docx','html','email'] (verified 2026-06-15). Binary (pdf/docx) → DataDownloadResponse; html/email → JSON content.\n\nAUTH MODEL mirrors the other buildiq collections: noauth collection auth + explicit basic-auth per request (admin:admin) + OCS-APIRequest on writes. Docudesk's template + correspondence endpoints are all @NoAdminRequired, so a normal authed session suffices — no buildiq-side IDOR gap.\n\nThe suite is tolerant of a Docudesk instance with no seeded templates: list-shape and generate-with-unknown-id (4xx) always assert; the show/preview happy-path requests assert their shape ONLY when a template id is discovered, otherwise they skip with a pm.test note (so CI stays honest on an empty Docudesk without faking a pass). Run via run-newman.sh.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -18,7 +18,7 @@
 				"method": "GET",
 				"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}" }, { "key": "password", "value": "{{adminPass}}" } ] },
 				"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
-				"url": { "raw": "{{baseUrl}}/apps/docudesk/api/templates", "host": [ "{{baseUrl}}" ], "path": [ "apps", "docudesk", "api", "templates" ] }
+				"url": { "raw": "{{baseUrl}}/apps/filinq/api/templates", "host": [ "{{baseUrl}}" ], "path": [ "apps", "filinq", "api", "templates" ] }
 			},
 			"event": [
 				{ "listen": "test", "script": { "type": "text/javascript", "exec": [
@@ -43,7 +43,7 @@
 				"method": "GET",
 				"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}" }, { "key": "password", "value": "{{adminPass}}" } ] },
 				"header": [ { "key": "Accept", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
-				"url": { "raw": "{{baseUrl}}/apps/docudesk/api/templates/{{templateId}}", "host": [ "{{baseUrl}}" ], "path": [ "apps", "docudesk", "api", "templates", "{{templateId}}" ] }
+				"url": { "raw": "{{baseUrl}}/apps/filinq/api/templates/{{templateId}}", "host": [ "{{baseUrl}}" ], "path": [ "apps", "filinq", "api", "templates", "{{templateId}}" ] }
 			},
 			"event": [
 				{ "listen": "test", "script": { "type": "text/javascript", "exec": [
@@ -62,7 +62,7 @@
 				"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}" }, { "key": "password", "value": "{{adminPass}}" } ] },
 				"header": [ { "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
 				"body": { "mode": "raw", "raw": "{}" },
-				"url": { "raw": "{{baseUrl}}/apps/docudesk/api/templates/{{templateId}}/preview", "host": [ "{{baseUrl}}" ], "path": [ "apps", "docudesk", "api", "templates", "{{templateId}}", "preview" ] }
+				"url": { "raw": "{{baseUrl}}/apps/filinq/api/templates/{{templateId}}/preview", "host": [ "{{baseUrl}}" ], "path": [ "apps", "filinq", "api", "templates", "{{templateId}}", "preview" ] }
 			},
 			"event": [
 				{ "listen": "test", "script": { "type": "text/javascript", "exec": [
@@ -79,7 +79,7 @@
 				"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}" }, { "key": "password", "value": "{{adminPass}}" } ] },
 				"header": [ { "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
 				"body": { "mode": "raw", "raw": "{\n  \"templateId\": \"00000000-0000-0000-0000-000000000000\",\n  \"dataRefs\": [ { \"register\": \"openbuild\", \"schema\": \"application\", \"id\": \"does-not-exist\" } ],\n  \"options\": { \"format\": \"pdf\" },\n  \"filename\": \"contract-probe.pdf\"\n}" },
-				"url": { "raw": "{{baseUrl}}/apps/docudesk/api/correspondence/generate", "host": [ "{{baseUrl}}" ], "path": [ "apps", "docudesk", "api", "correspondence", "generate" ] }
+				"url": { "raw": "{{baseUrl}}/apps/filinq/api/correspondence/generate", "host": [ "{{baseUrl}}" ], "path": [ "apps", "filinq", "api", "correspondence", "generate" ] }
 			},
 			"event": [
 				{ "listen": "test", "script": { "type": "text/javascript", "exec": [
@@ -98,7 +98,7 @@
 				"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}" }, { "key": "password", "value": "{{adminPass}}" } ] },
 				"header": [ { "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
 				"body": { "mode": "raw", "raw": "{\n  \"templateId\": \"00000000-0000-0000-0000-000000000000\",\n  \"options\": { \"format\": \"pdf\" },\n  \"filename\": \"no-datarefs.pdf\"\n}" },
-				"url": { "raw": "{{baseUrl}}/apps/docudesk/api/correspondence/generate", "host": [ "{{baseUrl}}" ], "path": [ "apps", "docudesk", "api", "correspondence", "generate" ] }
+				"url": { "raw": "{{baseUrl}}/apps/filinq/api/correspondence/generate", "host": [ "{{baseUrl}}" ], "path": [ "apps", "filinq", "api", "correspondence", "generate" ] }
 			},
 			"event": [
 				{ "listen": "test", "script": { "type": "text/javascript", "exec": [
@@ -113,7 +113,7 @@
 				"auth": { "type": "basic", "basic": [ { "key": "username", "value": "{{adminUser}}" }, { "key": "password", "value": "{{adminPass}}" } ] },
 				"header": [ { "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }, { "key": "OCS-APIRequest", "value": "true" } ],
 				"body": { "mode": "raw", "raw": "{\n  \"templateId\": \"00000000-0000-0000-0000-000000000000\",\n  \"dataRefs\": [ { \"register\": \"openbuild\", \"schema\": \"permit-application\", \"id\": \"00000000-0000-0000-0000-000000000000\" } ],\n  \"options\": { \"format\": \"pdf\" },\n  \"filename\": \"document-00000000-0000-0000-0000-000000000000.pdf\"\n}" },
-				"url": { "raw": "{{baseUrl}}/apps/docudesk/api/correspondence/generate", "host": [ "{{baseUrl}}" ], "path": [ "apps", "docudesk", "api", "correspondence", "generate" ] },
+				"url": { "raw": "{{baseUrl}}/apps/filinq/api/correspondence/generate", "host": [ "{{baseUrl}}" ], "path": [ "apps", "filinq", "api", "correspondence", "generate" ] },
 				"description": "DocumentGenerationService issues this EXACT request shape (single dataRefs entry naming {register, schema, id}; options.format; a `document-<uuid>.pdf` filename) against the SAME pinned route item #4 already asserts — the only difference at runtime is the caller's auth (owner-impersonated via a short-lived internal login token, instead of the interactive browser session Basic-Auth'd here). This item pins that shared contract stays intact; it does NOT exercise the full trigger-fire path (Application + Automation + object transition setup is out of this lightweight contract collection's scope — covered by DocumentGenerationServiceTest/DocumentGenerationListenerTest instead)."
 			},
 			"event": [

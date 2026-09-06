@@ -37,15 +37,17 @@
  * globalSetup provides the authenticated storageState.
  */
 
-import { test, expect, type Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
 import {
-	seedVirtualApp,
-	findVirtualApp,
-	deleteVirtualApp,
 	cleanupByPrefix,
-	wizardCreate,
+	deleteVirtualApp,
 	E2E_PREFIX,
-} from './fixtures'
+	findVirtualApp,
+	seedVirtualApp,
+	wizardCreate,
+} from './fixtures.ts'
 
 /**
  * Open the functional Virtual-App object browser and wait for the
@@ -68,8 +70,7 @@ async function gotoAppBrowser(page: Page): Promise<void> {
 	await page
 		.waitForResponse(
 			(r) =>
-				r.url().includes('/objects/buildiq/application')
-				&& r.status() === 200,
+				r.url().includes('/objects/buildiq/built-app') && r.status() === 200,
 			{ timeout: 20_000 },
 		)
 		.catch(() => {
@@ -189,7 +190,7 @@ test.describe('Virtual App — full CRUD with persistence', () => {
 			.poll(
 				async () => {
 					const res = await request.get(
-						`${process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'}/index.php/apps/openregister/api/objects/buildiq/application?_limit=200`,
+						`${process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'}/index.php/apps/openregister/api/objects/buildiq/built-app?_limit=200`,
 						{
 							headers: {
 								'OCS-APIRequest': 'true',
@@ -315,7 +316,7 @@ test.describe('Virtual App — full CRUD with persistence', () => {
 
 		const deletePromise = page.waitForResponse(
 			(r) =>
-				r.url().includes('/objects/buildiq/application')
+				r.url().includes('/objects/buildiq/built-app')
 				&& r.request().method() === 'DELETE',
 			{ timeout: 15_000 },
 		)

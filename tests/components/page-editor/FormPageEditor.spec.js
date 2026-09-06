@@ -15,8 +15,8 @@
  *  - FormFieldBuilder add forwards through update:config.
  */
 
-import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { describe, expect, it, vi } from 'vitest'
 
 // `vi.mock` factories are hoisted above the imports, so `h` is pulled in with
 // a lazy dynamic import inside the (async) factory. Vue 3 does not pass `h`

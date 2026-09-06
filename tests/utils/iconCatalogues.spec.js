@@ -7,7 +7,7 @@
  * it is previewed or persisted, so an embedded <script> / event handler cannot
  * execute.
  */
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { resolveAppIcon } from '../../src/utils/iconCatalogues.js'
 
 describe('resolveAppIcon — author SVG sanitization', () => {

@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -6,8 +7,7 @@
  *
  * Spec: procest-workflow-attachments (REQ-PWA-001, REQ-PWA-002).
  */
-import { describe, it, expect, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
 import WorkflowAttachmentsSection from '../../src/components/WorkflowAttachmentsSection.vue'
 
 const NcButtonStub = {
@@ -34,11 +34,12 @@ const entry = {
 	linkProperty: 'zaakUrl',
 }
 
-const factory = (manifest) =>
-	mount(WorkflowAttachmentsSection, {
+function factory(manifest) {
+	return mount(WorkflowAttachmentsSection, {
 		propsData: { manifest, schemas: [] },
 		stubs,
 	})
+}
 
 describe('WorkflowAttachmentsSection', () => {
 	it('renders empty state with no attachments', () => {

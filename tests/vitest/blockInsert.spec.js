@@ -13,17 +13,17 @@
  *     (insert reads the fragment once; deep-clone breaks any live link).
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
+import { buildSectionFragment } from '../../src/services/blockCapture.js'
 import {
 	computeSchemaMismatches,
 	fragmentWidgets,
 	insertBlock,
-	mintWidgetId,
 	markUnresolvedRefs,
+	mintWidgetId,
 	remapBlockRecord,
 	UNRESOLVED_SCHEMA_PLACEHOLDER,
 } from '../../src/services/blockInsert.js'
-import { buildSectionFragment } from '../../src/services/blockCapture.js'
 
 const singleWidgetBlock = {
 	schemaDependencies: ['permit-application'],

@@ -18,7 +18,7 @@
  * part of this change (per task instructions — no deploy to the shared dev
  * instance). Run `npm run test:e2e:install` once, then `npm run test:e2e`.
  */
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 const APP_SLUG = process.env.NC_BUILDIQ_TEST_SLUG ?? 'hello-world'
 // The app-picker option's accessible name is the Application TITLE
@@ -92,7 +92,7 @@ test.describe('agent-workspace — Agents page', () => {
 	// each run starts from a clean slate.
 	test.beforeAll(async ({ request }) => {
 		const resp = await request.get(
-			'/index.php/apps/openregister/api/objects/buildiq/agent',
+			'/index.php/apps/openregister/api/objects/buildiq/buildAgent',
 			{
 				headers: { 'OCS-APIRequest': 'true' },
 			},
@@ -106,7 +106,7 @@ test.describe('agent-workspace — Agents page', () => {
 			if (agent?.name === 'E2E page builder assistant' && agent?.id) {
 				await request
 					.delete(
-						`/index.php/apps/openregister/api/objects/buildiq/agent/${agent.id}`,
+						`/index.php/apps/openregister/api/objects/buildiq/buildAgent/${agent.id}`,
 						{
 							headers: { 'OCS-APIRequest': 'true' },
 						},
@@ -183,7 +183,6 @@ test.describe('agent-workspace — Agents page', () => {
 	// @e2e agent-workspace::run-history-shows-every-tool-calls-arguments-and-result
 	test('chat with an agent, approve a proposal, confirm the run appears in run-history with tool-call detail', async ({
 		page,
-		request,
 	}) => {
 		// This instance's `/api/copilot/health` reports {status:"ok"} (NC core
 		// registers the `core:text2text` task type even with no real backing

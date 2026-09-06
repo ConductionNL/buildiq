@@ -66,7 +66,7 @@ class AppOverrideService {
 	/**
 	 * OpenRegister schema slug for the logical app record.
 	 */
-	public const APPLICATION_SCHEMA = 'application';
+	public const APPLICATION_SCHEMA = 'built-app';
 
 	/**
 	 * OpenRegister schema slug for the deployable version record.

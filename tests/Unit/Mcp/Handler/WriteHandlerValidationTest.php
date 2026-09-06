@@ -706,7 +706,7 @@ class WriteHandlerValidationTest extends TestCase {
 		$objectService = $this->objectService;
 		$objectService->method('searchObjectsBySlug')
 			->willReturnCallback(function (string $register, string $schema, array $filters) use ($uid, $appSlug) {
-				if ($schema === 'application' && ($filters['slug'] ?? '') === $appSlug) {
+				if ($schema === 'built-app' && ($filters['slug'] ?? '') === $appSlug) {
 					return [['uuid' => 'app-uuid-1', 'slug' => $appSlug, 'permissions' => ['owners' => ['user:' . $uid]]]];
 				}
 

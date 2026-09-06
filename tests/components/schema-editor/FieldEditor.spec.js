@@ -22,12 +22,11 @@
  *  - `schemaToFields` / `fieldsToSchema` round-trip preserves shape.
  */
 
-import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-
+import { describe, expect, it } from 'vitest'
 import FieldEditor, {
-	schemaToFields,
 	fieldsToSchema,
+	schemaToFields,
 } from '../../../src/components/schema-editor/FieldEditor.vue'
 
 const stubs = {

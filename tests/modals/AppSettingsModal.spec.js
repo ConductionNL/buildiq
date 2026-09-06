@@ -17,9 +17,8 @@
  *     re-syncs the displayed rows
  */
 
-import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-
+import { describe, expect, it } from 'vitest'
 import AppSettingsModal from '../../src/modals/AppSettingsModal.vue'
 
 const baseStubs = {

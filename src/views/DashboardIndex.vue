@@ -271,10 +271,10 @@ export default {
 			this.loading = true
 			try {
 				const [apps, hybrid, versions, recent] = await Promise.all([
-					this.fetchTotal('application'),
-					this.fetchTotal('application', { appType: 'hybrid' }),
+					this.fetchTotal('built-app'),
+					this.fetchTotal('built-app', { appType: 'hybrid' }),
 					this.fetchTotal('applicationVersion'),
-					this.fetchObjects('application', 8),
+					this.fetchObjects('built-app', 8),
 				])
 				this.counts = { apps, hybrid, versions }
 				this.recentApps = recent.map((a) => ({

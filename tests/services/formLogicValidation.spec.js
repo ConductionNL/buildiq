@@ -6,10 +6,10 @@
  * plus the save-time `assignUnassignedFieldsToFinalStep` normalisation
  * helper (REQ-OBFEL-001).
  */
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
-	validateFormLogic,
 	assignUnassignedFieldsToFinalStep,
+	validateFormLogic,
 	VISIBLE_WHEN_OPS,
 } from '../../src/services/manifestValidation/formLogic.js'
 

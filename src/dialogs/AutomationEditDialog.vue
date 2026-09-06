@@ -421,7 +421,7 @@ export default {
 	 * @spec openspec/changes/automation-document-action/tasks.md#4.2
 	 */
 	setup() {
-		const docudeskStatus = useAppStatus('docudesk')
+		const docudeskStatus = useAppStatus('filinq')
 		return { docudeskStatus }
 	},
 

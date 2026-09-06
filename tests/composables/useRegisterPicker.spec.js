@@ -14,7 +14,7 @@
  *  - fetchSchemaProperties: returns {} when params empty / request fails.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Stub @nextcloud/router and @nextcloud/auth before importing the composable.
 vi.mock('@nextcloud/router', () => ({

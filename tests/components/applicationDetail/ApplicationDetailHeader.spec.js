@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: EUPL-1.2
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { flushPromises, shallowMount } from '@vue/test-utils'
-
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useInsightsWindow } from '../../../src/composables/useInsightsWindow.js'
 
 // Stub axios + nextcloud helpers before importing the component.
@@ -18,7 +17,7 @@ vi.mock('@nextcloud/router', () => ({
 
 import ApplicationDetailHeader from '../../../src/components/applicationDetail/ApplicationDetailHeader.vue'
 
-const t = (app, key, vars) => {
+function t(app, key, vars) {
 	if (!vars) return key
 	let out = key
 	for (const k of Object.keys(vars)) {

@@ -16,10 +16,9 @@
  *   - only `github`-provider credentials are offered
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
-
 import axios from '@nextcloud/axios'
+import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ExportDialog from '../../../src/dialogs/ExportDialog.vue'
 
 vi.mock('@nextcloud/axios', () => ({

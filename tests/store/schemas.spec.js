@@ -10,7 +10,7 @@
  *  - `useSchemasStore` registers to the correct per-version register namespace
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 describe('registerSlugForApp — register slug construction (REQ-OBVR-007)', () => {
 	let registerSlugForApp
