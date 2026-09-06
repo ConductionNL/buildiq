@@ -565,6 +565,25 @@ async function seedRoleUsersAndSessions(
 							'cn-walkthrough-seen:buildiq',
 							'999.0.0',
 						)
+						// The walkthrough is not the only overlay. CnAppRoot also
+						// auto-opens the NON-GATING first-time-setup wizard
+						// (ADR-042), and its `modal-mask` subtree intercepts every
+						// click on the app behind it.
+						//
+						// It splits a suite rather than failing it: specs that
+						// navigate by URL pass, specs that click do not. Three
+						// agent specs failed here on `Set up this app` while the
+						// page underneath rendered correctly.
+						//
+						// The dismissal key is per manifest `setup.version`, so seed
+						// a generous range rather than one value; a version bump
+						// would otherwise silently re-arm it.
+						for (let v = 0; v <= 20; v++) {
+							window.localStorage.setItem(
+								`cn-setup-wizard-dismissed:buildiq:${v}`,
+								'1',
+							)
+						}
 					} catch {
 						// localStorage unavailable — specs fall back to dismissing by hand.
 					}
@@ -727,6 +746,25 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 							'cn-walkthrough-seen:buildiq',
 							'999.0.0',
 						)
+						// The walkthrough is not the only overlay. CnAppRoot also
+						// auto-opens the NON-GATING first-time-setup wizard
+						// (ADR-042), and its `modal-mask` subtree intercepts every
+						// click on the app behind it.
+						//
+						// It splits a suite rather than failing it: specs that
+						// navigate by URL pass, specs that click do not. Three
+						// agent specs failed here on `Set up this app` while the
+						// page underneath rendered correctly.
+						//
+						// The dismissal key is per manifest `setup.version`, so seed
+						// a generous range rather than one value; a version bump
+						// would otherwise silently re-arm it.
+						for (let v = 0; v <= 20; v++) {
+							window.localStorage.setItem(
+								`cn-setup-wizard-dismissed:buildiq:${v}`,
+								'1',
+							)
+						}
 					} catch {
 						// localStorage unavailable — specs fall back to dismissing by hand.
 					}
