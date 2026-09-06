@@ -6,7 +6,7 @@
  * Covers automation-approval-steps task 1.3 / spec REQ-AUTD-004 scenario
  * "Trigger firing initialises an approval step": an object-created event
  * matching an enabled automation's `approval` action calls
- * `ApprovalService::initializeChain()`; a non-matching event, a disabled
+ * `TaskSequenceService::provision()`; a non-matching event, a disabled
  * automation, and an already-initialised object are all no-ops.
  *
  * SPDX-License-Identifier: EUPL-1.2
@@ -30,14 +30,13 @@ namespace OCA\Buildiq\Tests\Unit\Listener;
 
 use OCA\Buildiq\Listener\AutomationApprovalTriggerListener;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Db\ApprovalChain;
-use OCA\OpenRegister\Db\ApprovalChainMapper;
-use OCA\OpenRegister\Db\ApprovalStepMapper;
+use OCA\OpenRegister\Db\TaskSequenceMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
-use OCA\OpenRegister\Service\ApprovalService;
+use OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller;
+use OCA\OpenRegister\Service\Task\TaskSequenceService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -58,19 +57,19 @@ final class AutomationApprovalTriggerListenerTest extends TestCase {
 	private SchemaMapper&MockObject $schemaMapper;
 
 	/**
-	 * @var ApprovalChainMapper&MockObject
+	 * @var ApprovalChainAnnotationInstaller&MockObject
 	 */
-	private ApprovalChainMapper&MockObject $chainMapper;
+	private ApprovalChainAnnotationInstaller&MockObject $annotationInstaller;
 
 	/**
-	 * @var ApprovalStepMapper&MockObject
+	 * @var TaskSequenceMapper&MockObject
 	 */
-	private ApprovalStepMapper&MockObject $stepMapper;
+	private TaskSequenceMapper&MockObject $sequenceMapper;
 
 	/**
-	 * @var ApprovalService&MockObject
+	 * @var TaskSequenceService&MockObject
 	 */
-	private ApprovalService&MockObject $approvalService;
+	private TaskSequenceService&MockObject $sequenceService;
 
 	/**
 	 * Listener under test.
@@ -87,9 +86,9 @@ final class AutomationApprovalTriggerListenerTest extends TestCase {
 	protected function setUp(): void {
 		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
-		$this->chainMapper = $this->createMock(ApprovalChainMapper::class);
-		$this->stepMapper = $this->createMock(ApprovalStepMapper::class);
-		$this->approvalService = $this->createMock(ApprovalService::class);
+		$this->annotationInstaller = $this->createMock(ApprovalChainAnnotationInstaller::class);
+		$this->sequenceMapper = $this->createMock(TaskSequenceMapper::class);
+		$this->sequenceService = $this->createMock(TaskSequenceService::class);
 
 		$userSession = $this->createMock(\OCP\IUserSession::class);
 		$userSession->method('getUser')->willReturn(null);
@@ -100,15 +99,24 @@ final class AutomationApprovalTriggerListenerTest extends TestCase {
 		// registerServiceAlias(), so a constructor-injected interface cannot be
 		// built at all. The mock is still an ObjectServiceInterface: only the
 		// delivery route changed, not the contract under test.
+		// Every OpenRegister collaborator now arrives through the container, so
+		// the mock has to answer per class name rather than return one service
+		// for anything asked of it.
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->willReturn($this->objectService);
+		$container->method('get')->willReturnCallback(
+			function (string $id): object {
+				return match ($id) {
+					'OCA\\OpenRegister\\Service\\ApprovalChainAnnotationInstaller' => $this->annotationInstaller,
+					'OCA\\OpenRegister\\Db\\TaskSequenceMapper' => $this->sequenceMapper,
+					'OCA\\OpenRegister\\Service\\Task\\TaskSequenceService' => $this->sequenceService,
+					default => $this->objectService,
+				};
+			}
+		);
 
 		$this->listener = new AutomationApprovalTriggerListener(
 			$container,
 			$this->schemaMapper,
-			$this->chainMapper,
-			$this->stepMapper,
-			$this->approvalService,
 			$userSession,
 			new NullLogger(),
 		);
@@ -146,18 +154,22 @@ final class AutomationApprovalTriggerListenerTest extends TestCase {
 	}//end schemaWithId()
 
 	/**
-	 * Build a mock ApprovalChain with a fixed `getId()`.
+	 * Build a compiled task template, as ApprovalChainAnnotationInstaller
+	 * returns one.
 	 *
-	 * @param int $id The fixed id.
+	 * @param string $templateId The deterministic template id.
 	 *
-	 * @return ApprovalChain&MockObject
+	 * @return array<string, mixed> The compiled template.
 	 */
-	private function chainWithId(int $id): ApprovalChain&MockObject {
-		$chain = $this->createMock(ApprovalChain::class);
-		$chain->method('getId')->willReturn($id);
-
-		return $chain;
-	}//end chainWithId()
+	private function templateFor(string $templateId): array {
+		return [
+			'templateId' => $templateId,
+			'templateVersion' => 1,
+			'name' => 'aut-route-permit-application-for-approval',
+			'schemaId' => 42,
+			'positions' => [['order' => 1, 'role' => 'permit-reviewers']],
+		];
+	}//end templateFor()
 
 	/**
 	 * A matching, enabled automation's compiled chain is initialised for
@@ -177,14 +189,14 @@ final class AutomationApprovalTriggerListenerTest extends TestCase {
 
 		$this->schemaMapper->method('find')->willReturn($this->schemaWithId(42));
 
-		$chain = $this->chainWithId(7);
-		$this->chainMapper->method('findBySchemaAndName')->with(42, 'aut-route-permit-application-for-approval')->willReturn($chain);
+		$template = $this->templateFor('tpl-permit-7');
+		$this->annotationInstaller->method('compile')->willReturn($template);
 
-		$this->stepMapper->method('findByChainAndObject')->willReturn([]);
+		$this->sequenceMapper->method('findForAnchor')->willReturn([]);
 
-		$this->approvalService->expects($this->once())
-			->method('initializeChain')
-			->with($chain, 'object-uuid-1', null);
+		$this->sequenceService->expects($this->once())
+			->method('provision')
+			->with($template, 'object-uuid-1', null);
 
 		$event = new ObjectCreatedEvent($this->objectEntity('permit-application', 'object-uuid-1'));
 		$this->listener->handle($event);
@@ -205,7 +217,7 @@ final class AutomationApprovalTriggerListenerTest extends TestCase {
 		];
 
 		$this->objectService->method('findAll')->willReturn([$automation]);
-		$this->approvalService->expects($this->never())->method('initializeChain');
+		$this->sequenceService->expects($this->never())->method('provision');
 
 		$event = new ObjectCreatedEvent($this->objectEntity('permit-application', 'object-uuid-1'));
 		$this->listener->handle($event);
@@ -226,7 +238,7 @@ final class AutomationApprovalTriggerListenerTest extends TestCase {
 		];
 
 		$this->objectService->method('findAll')->willReturn([$automation]);
-		$this->approvalService->expects($this->never())->method('initializeChain');
+		$this->sequenceService->expects($this->never())->method('provision');
 
 		$event = new ObjectCreatedEvent($this->objectEntity('permit-application', 'object-uuid-1'));
 		$this->listener->handle($event);
@@ -250,12 +262,13 @@ final class AutomationApprovalTriggerListenerTest extends TestCase {
 		$this->objectService->method('findAll')->willReturn([$automation]);
 
 		$this->schemaMapper->method('find')->willReturn($this->schemaWithId(42));
-		$this->chainMapper->method('findBySchemaAndName')->willReturn($this->chainWithId(7));
+		$this->annotationInstaller->method('compile')->willReturn($this->templateFor('tpl-permit-7'));
 
-		$existingStep = $this->createMock(\OCA\OpenRegister\Db\ApprovalStep::class);
-		$this->stepMapper->method('findByChainAndObject')->willReturn([$existingStep]);
+		// A sequence already exists for (templateId, objectUuid) — the dedupe key
+		// the retired (chainId, objectUuid) pair became.
+		$this->sequenceMapper->method('findForAnchor')->willReturn([new \stdClass()]);
 
-		$this->approvalService->expects($this->never())->method('initializeChain');
+		$this->sequenceService->expects($this->never())->method('provision');
 
 		$event = new \OCA\OpenRegister\Event\ObjectUpdatedEvent($this->objectEntity('permit-application', 'object-uuid-1'));
 		$this->listener->handle($event);
@@ -279,10 +292,10 @@ final class AutomationApprovalTriggerListenerTest extends TestCase {
 		$this->objectService->method('findAll')->willReturn([$automation]);
 
 		$this->schemaMapper->method('find')->willReturn($this->schemaWithId(9));
-		$this->chainMapper->method('findBySchemaAndName')->willReturn($this->chainWithId(1));
-		$this->stepMapper->method('findByChainAndObject')->willReturn([]);
+		$this->annotationInstaller->method('compile')->willReturn($this->templateFor('tpl-transition-1'));
+		$this->sequenceMapper->method('findForAnchor')->willReturn([]);
 
-		$this->approvalService->expects($this->once())->method('initializeChain');
+		$this->sequenceService->expects($this->once())->method('provision');
 
 		$entity = $this->objectEntity('permit', 'object-uuid-9');
 		$event = new \OCA\OpenRegister\Event\ObjectTransitionedEvent(
@@ -297,4 +310,122 @@ final class AutomationApprovalTriggerListenerTest extends TestCase {
 		$this->listener->handle($event);
 
 	}//end testLifecycleTransitionMatchesOnTransitionName()
+	/**
+	 * A chain the schema does not declare compiles to null, and nothing is opened.
+	 *
+	 * This is the path that used to be "the mapper found no row". It matters
+	 * because the listener must not treat an undeclared chain as a reason to
+	 * provision an empty sequence.
+	 *
+	 * @return void
+	 */
+	public function testUndeclaredChainOpensNoSequence(): void {
+		$automation = [
+			'enabled' => true,
+			'trigger' => ['type' => 'object-created', 'schema' => 'permit-application'],
+			'actions' => [['type' => 'approval', 'assigneeGroup' => 'permit-reviewers']],
+			'provenance' => ['approvalChainName' => 'aut-not-declared'],
+		];
+
+		$this->objectService->method('findAll')->willReturn([$automation]);
+		$this->schemaMapper->method('find')->willReturn($this->schemaWithId(42));
+		$this->annotationInstaller->method('compile')->willReturn(null);
+
+		$this->sequenceService->expects($this->never())->method('provision');
+
+		$this->listener->handle(
+			new ObjectCreatedEvent($this->objectEntity('permit-application', 'object-uuid-1'))
+		);
+
+	}//end testUndeclaredChainOpensNoSequence()
+
+	/**
+	 * A compiled template with no id opens nothing.
+	 *
+	 * The template id is the dedupe key. Provisioning against an empty one would
+	 * make findForAnchor() match nothing on every subsequent save, so an
+	 * object-updated automation would open a fresh sequence each time — the
+	 * exact duplicate-spawning this listener guards against.
+	 *
+	 * @return void
+	 */
+	public function testTemplateWithoutAnIdOpensNoSequence(): void {
+		$automation = [
+			'enabled' => true,
+			'trigger' => ['type' => 'object-created', 'schema' => 'permit-application'],
+			'actions' => [['type' => 'approval', 'assigneeGroup' => 'permit-reviewers']],
+			'provenance' => ['approvalChainName' => 'aut-route-permit-application-for-approval'],
+		];
+
+		$this->objectService->method('findAll')->willReturn([$automation]);
+		$this->schemaMapper->method('find')->willReturn($this->schemaWithId(42));
+		$this->annotationInstaller->method('compile')->willReturn(['positions' => []]);
+
+		$this->sequenceService->expects($this->never())->method('provision');
+
+		$this->listener->handle(
+			new ObjectCreatedEvent($this->objectEntity('permit-application', 'object-uuid-1'))
+		);
+
+	}//end testTemplateWithoutAnIdOpensNoSequence()
+
+	/**
+	 * A throwing compiler is logged, not propagated.
+	 *
+	 * An event listener that lets an exception escape breaks the WRITE that
+	 * fired it. That is precisely how the retired-class removal took out object
+	 * creation instance-wide, so the degradation is worth asserting rather than
+	 * assuming.
+	 *
+	 * @return void
+	 */
+	public function testCompilerFailureDoesNotBreakTheWrite(): void {
+		$automation = [
+			'enabled' => true,
+			'trigger' => ['type' => 'object-created', 'schema' => 'permit-application'],
+			'actions' => [['type' => 'approval', 'assigneeGroup' => 'permit-reviewers']],
+			'provenance' => ['approvalChainName' => 'aut-route-permit-application-for-approval'],
+		];
+
+		$this->objectService->method('findAll')->willReturn([$automation]);
+		$this->schemaMapper->method('find')->willReturn($this->schemaWithId(42));
+		$this->annotationInstaller->method('compile')
+			->willThrowException(new \RuntimeException('task engine unavailable'));
+
+		$this->sequenceService->expects($this->never())->method('provision');
+
+		$this->listener->handle(
+			new ObjectCreatedEvent($this->objectEntity('permit-application', 'object-uuid-1'))
+		);
+
+	}//end testCompilerFailureDoesNotBreakTheWrite()
+
+	/**
+	 * A throwing provisioner is logged, not propagated — same reasoning.
+	 *
+	 * @return void
+	 */
+	public function testProvisionFailureDoesNotBreakTheWrite(): void {
+		$automation = [
+			'enabled' => true,
+			'trigger' => ['type' => 'object-created', 'schema' => 'permit-application'],
+			'actions' => [['type' => 'approval', 'assigneeGroup' => 'permit-reviewers']],
+			'provenance' => ['approvalChainName' => 'aut-route-permit-application-for-approval'],
+		];
+
+		$this->objectService->method('findAll')->willReturn([$automation]);
+		$this->schemaMapper->method('find')->willReturn($this->schemaWithId(42));
+		$this->annotationInstaller->method('compile')->willReturn($this->templateFor('tpl-permit-7'));
+		$this->sequenceMapper->method('findForAnchor')->willReturn([]);
+		$this->sequenceService->method('provision')
+			->willThrowException(new \RuntimeException('sequence store down'));
+
+		$this->listener->handle(
+			new ObjectCreatedEvent($this->objectEntity('permit-application', 'object-uuid-1'))
+		);
+
+		$this->addToAssertionCount(1);
+
+	}//end testProvisionFailureDoesNotBreakTheWrite()
+
 }//end class

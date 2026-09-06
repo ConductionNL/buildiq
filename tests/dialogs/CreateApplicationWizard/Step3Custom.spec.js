@@ -18,8 +18,8 @@
  *   - _step3Valid + versions emitted on every change
  */
 
-import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
 import Step3Custom from '../../../src/dialogs/CreateApplicationWizard/Step3Custom.vue'
 
 /**

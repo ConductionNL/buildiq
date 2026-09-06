@@ -10,7 +10,7 @@
  * bounded `scope` argument and the `registerScope()` helper that builds it.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@nextcloud/router', () => ({
 	generateUrl: (path) => `/index.php${path}`,
@@ -21,8 +21,8 @@ vi.mock('@nextcloud/auth', () => ({
 }))
 
 import {
-	useRegisterPicker,
 	registerScope,
+	useRegisterPicker,
 } from '../../src/composables/useRegisterPicker.js'
 
 const REGISTERS = [

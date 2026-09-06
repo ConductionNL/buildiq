@@ -6,9 +6,9 @@
  * wiring (task 5.5 / REQ-OBPD-011).
  */
 
-import { describe, it, expect, vi } from 'vitest'
-import { h } from 'vue'
 import { mount } from '@vue/test-utils'
+import { describe, expect, it, vi } from 'vitest'
+import { h } from 'vue'
 import InlineFieldMark from '../../../src/components/page-editor/fields/InlineFieldMark.vue'
 import { pageEditorValidationMixin } from '../../../src/mixins/pageEditorValidation.js'
 

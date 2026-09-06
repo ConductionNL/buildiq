@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -14,8 +15,7 @@
  *    (openregister objects PUT), the "no app to save to" guard, the
  *    re-entrancy guard, and the failure path.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 const axiosGetMock = vi.fn()
@@ -62,7 +62,7 @@ const WalkthroughDesignerHost = (
 	await import('../../src/views/WalkthroughDesignerHost.vue')
 ).default
 
-const flush = async (wrapper) => {
+async function flush(wrapper) {
 	await new Promise((r) => setTimeout(r, 0))
 	if (wrapper) await wrapper.vm.$nextTick()
 }
@@ -199,7 +199,7 @@ describe('WalkthroughDesignerHost', () => {
 		})
 		await wrapper.vm.save()
 		expect(axiosPutMock).toHaveBeenCalledWith(
-			'/apps/openregister/api/objects/buildiq/application/app-uuid',
+			'/apps/openregister/api/objects/buildiq/built-app/app-uuid',
 			expect.objectContaining({ manifest: wrapper.vm.manifest }),
 		)
 		expect(wrapper.vm.toast).toBe('Walkthrough saved.')

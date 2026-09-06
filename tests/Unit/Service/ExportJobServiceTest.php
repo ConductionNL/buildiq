@@ -394,7 +394,7 @@ final class ExportJobServiceTest extends TestCase {
 	 * ObjectService::saveObject() (#104). Omitting them let saveObject()
 	 * fall back to whatever register/schema an EARLIER call in the same
 	 * request left as ambient state (e.g. ExportsController's
-	 * searchObjectsBySlug('buildiq', 'application', ...) re-anchors it to
+	 * searchObjectsBySlug('buildiq', 'built-app', ...) re-anchors it to
 	 * schema=application) and let OR auto-generate its own identity instead
 	 * of the job's own UUID — so a later loadJob($jobUuid) could never find
 	 * the record it just "persisted".

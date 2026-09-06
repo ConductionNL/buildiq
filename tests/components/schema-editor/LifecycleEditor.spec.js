@@ -22,12 +22,11 @@
  *    the parent SchemaDesigner's Save gate works.
  */
 
-import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-
+import { describe, expect, it } from 'vitest'
 import LifecycleEditor, {
-	lifecycleToEditor,
 	editorToLifecycle,
+	lifecycleToEditor,
 } from '../../../src/components/schema-editor/LifecycleEditor.vue'
 
 const stubs = {

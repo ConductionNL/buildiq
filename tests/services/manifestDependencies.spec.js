@@ -8,21 +8,23 @@
  * Spec: procest-workflow-attachments (REQ-PWA-006), openconnector-api-sources (REQ-OCAS-005),
  * docudesk-document-templates (REQ-DDT-005).
  */
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
-	hasWorkflowAttachment,
-	reconcileWorkflowDependency,
 	hasConnectorBinding,
-	reconcileConnectorDependency,
 	hasDocumentAttachment,
+	hasWorkflowAttachment,
+	reconcileConnectorDependency,
 	reconcileDocumentDependency,
+	reconcileWorkflowDependency,
 	stripDependencyMarker,
 } from '../../src/services/manifestDependencies.js'
 
-const withWf = () => ({
-	dependencies: [],
-	runtime: { workflows: [{ id: 'a', schema: 's' }] },
-})
+function withWf() {
+	return {
+		dependencies: [],
+		runtime: { workflows: [{ id: 'a', schema: 's' }] },
+	}
+}
 
 describe('manifestDependencies (workflow)', () => {
 	it('detects a workflow attachment', () => {
@@ -114,14 +116,22 @@ describe('manifestDependencies (connector)', () => {
 	})
 })
 
-const withDoc = () => ({
-	dependencies: [],
-	runtime: {
-		documents: [
-			{ id: 'd', schema: 's', templateId: 'u', templateName: 'T', label: 'L' },
-		],
-	},
-})
+function withDoc() {
+	return {
+		dependencies: [],
+		runtime: {
+			documents: [
+				{
+					id: 'd',
+					schema: 's',
+					templateId: 'u',
+					templateName: 'T',
+					label: 'L',
+				},
+			],
+		},
+	}
+}
 
 describe('manifestDependencies (document)', () => {
 	it('detects a document attachment', () => {

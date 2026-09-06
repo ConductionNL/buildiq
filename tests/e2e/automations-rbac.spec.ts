@@ -29,20 +29,20 @@
  * `npm run test:e2e:install` once before invoking `npm run test:e2e`.
  */
 
-import { test, expect, type Page, type APIRequestContext } from '@playwright/test'
+import type { APIRequestContext, Page } from '@playwright/test'
 
+import { expect, test } from '@playwright/test'
+import { ensureApp, suppressSupportDialog } from './support/appFixture.ts'
+import { grantAppRoles } from './support/appRoles.ts'
 // PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts.
-import { E2E_BASE_URL as NEXTCLOUD_URL } from './support/baseUrl'
-import { ensureApp, suppressSupportDialog } from './support/appFixture'
-import { grantAppRoles } from './support/appRoles'
-import { dismissWalkthrough } from './support/overlays'
+import { E2E_BASE_URL as NEXTCLOUD_URL } from './support/baseUrl.ts'
+import { dismissWalkthrough } from './support/overlays.ts'
 
 /** Admin session minted by globalSetup; used only to BUILD the fixture. */
 const ADMIN_STORAGE_STATE = 'tests/e2e/.auth/admin.json'
 const EDITOR_USER = process.env.NC_RBAC_EDITOR_USER ?? 'rbac-editor'
 const EDITOR_PASS = process.env.NC_RBAC_EDITOR_PASS ?? 'RbacEditor-1!'
 const OWNER_USER = process.env.NC_RBAC_OWNER_USER ?? 'rbac-owner'
-const OWNER_PASS = process.env.NC_RBAC_OWNER_PASS ?? 'RbacOwner-1!'
 // Admin credentials for the capability probe below ONLY. Same resolution the
 // config uses for `use.httpCredentials`; the tests themselves deliberately run
 // as non-admins.

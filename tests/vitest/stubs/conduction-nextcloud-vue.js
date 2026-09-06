@@ -28,16 +28,18 @@ import { h } from 'vue'
 // The stub also renders its default slot: a stub that swallowed its
 // children made every assertion about content *inside* an NcModal /
 // NcDialog / NcNoteCard read as empty.
-const stub = (name) => ({
-	name,
-	render() {
-		return h(
-			'div',
-			{ class: `${name.toLowerCase()}-stub` },
-			this.$slots?.default?.(),
-		)
-	},
-})
+function stub(name) {
+	return {
+		name,
+		render() {
+			return h(
+				'div',
+				{ class: `${name.toLowerCase()}-stub` },
+				this.$slots?.default?.(),
+			)
+		},
+	}
+}
 
 export const NcModal = stub('NcModal')
 export const NcDialog = stub('NcDialog')
@@ -130,7 +132,13 @@ export function fromFontAwesome(packs = {}) {
 export function dedupeCatalogue(entries) {
 	const seen = new Set()
 	return (entries || []).filter((entry) => {
-		if (!entry || entry.value == null || entry.value === '') return false
+		if (
+			!entry
+			|| entry.value === null
+			|| entry.value === undefined
+			|| entry.value === ''
+		)
+			return false
 		if (seen.has(entry.value)) return false
 		seen.add(entry.value)
 		return true
@@ -161,6 +169,8 @@ export function useAppManifest(_appId) {
 	return { manifest: null, loading: false }
 }
 
+import { useManifestEditHistory as _useManifestEditHistory } from '@conduction/nextcloud-vue/dist/esm/composables/useManifestEditHistory.js'
+import { diffManifest as _diffManifest } from '@conduction/nextcloud-vue/dist/esm/utils/diffManifest.js'
 /**
  * `manifestEditHistory` (builder-undo-redo, nc-vue change
  * `manifest-edit-history`) is a plain-JS undo/redo engine plus a thin
@@ -185,9 +195,7 @@ export function useAppManifest(_appId) {
  * here, not the leaf's behaviour, which the wrappers forward unchanged.
  */
 import { createManifestEditHistory as _createManifestEditHistory } from '@conduction/nextcloud-vue/dist/esm/utils/manifestEditHistory.js'
-import { useManifestEditHistory as _useManifestEditHistory } from '@conduction/nextcloud-vue/dist/esm/composables/useManifestEditHistory.js'
 import { mergeManifestDelta as _mergeManifestDelta } from '@conduction/nextcloud-vue/dist/esm/utils/mergeManifestDelta.js'
-import { diffManifest as _diffManifest } from '@conduction/nextcloud-vue/dist/esm/utils/diffManifest.js'
 
 /**
  * @param {object} [options] Forwarded verbatim to the leaf.

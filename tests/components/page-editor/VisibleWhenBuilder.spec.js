@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /*
  * SPDX-FileCopyrightText: 2026 Buildiq Contributors
  * SPDX-License-Identifier: EUPL-1.2
@@ -9,8 +10,7 @@
  * coercion, clear emits null, advanced endpoint/source passthrough never
  * rewrites.
  */
-import { describe, it, expect } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
 import VisibleWhenBuilder from '../../../src/components/page-editor/fields/VisibleWhenBuilder.vue'
 
 function mountBuilder(modelValue = null, fieldOptions = ['wantsContact', 'phone']) {

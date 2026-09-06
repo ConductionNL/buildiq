@@ -113,13 +113,14 @@
                      engine directly (ApprovalChainMapper/ApprovalStepMapper/
                      ApprovalService) per ADR-022 — never a new engine. -->
                 <referencedClass name="OCA\OpenRegister\Event\ObjectTransitionedEvent"/>
-                <referencedClass name="OCA\OpenRegister\Event\ApprovalStepApprovedEvent"/>
-                <referencedClass name="OCA\OpenRegister\Event\ApprovalStepRejectedEvent"/>
-                <referencedClass name="OCA\OpenRegister\Db\ApprovalChain"/>
-                <referencedClass name="OCA\OpenRegister\Db\ApprovalChainMapper"/>
-                <referencedClass name="OCA\OpenRegister\Db\ApprovalStep"/>
-                <referencedClass name="OCA\OpenRegister\Db\ApprovalStepMapper"/>
-                <referencedClass name="OCA\OpenRegister\Service\ApprovalService"/>
+                    <referencedClass name="OCA\OpenRegister\Event\TaskSequenceCompletedEvent"/>
+                    <referencedClass name="OCA\OpenRegister\Event\TaskTerminalEvent"/>
+                    <referencedClass name="OCA\OpenRegister\Db\Task"/>
+                    <referencedClass name="OCA\OpenRegister\Db\TaskSequence"/>
+                    <referencedClass name="OCA\OpenRegister\Db\TaskSequenceMapper"/>
+                    <referencedClass name="OCA\OpenRegister\Service\Task\TaskSequenceService"/>
+                    <referencedClass name="OCA\OpenRegister\Service\Task\TaskState"/>
+                    <referencedClass name="OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller"/>
                 <referencedClass name="OCA\OpenRegister\Service\ObjectService"/>
                 <!-- The interface ObjectService implements — used wherever a
                      class types its collaborator against the contract rather

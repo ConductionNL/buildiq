@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -11,8 +12,7 @@
  * — `data-nldesign-theme-scope` is CnAppRoot's own self-applied attribute
  * (scoped-theme-applier REQ-STA-1/3), never something BuilderHost sets.
  */
-import { describe, it, expect, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { describe, expect, it, vi } from 'vitest'
 import { h, ref } from 'vue'
 
 vi.mock('@nextcloud/router', async (importOriginal) => ({

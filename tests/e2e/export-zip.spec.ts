@@ -24,10 +24,11 @@
  * already locked at the unit level.
  */
 
-import { test, expect, type Download } from '@playwright/test'
+import type { Download } from '@playwright/test'
 
+import { expect, test } from '@playwright/test'
 // PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts.
-import { E2E_BASE_URL as NEXTCLOUD_URL } from './support/baseUrl'
+import { E2E_BASE_URL as NEXTCLOUD_URL } from './support/baseUrl.ts'
 const ADMIN_USER = process.env.NC_ADMIN_USER || 'admin'
 const ADMIN_PASSWORD = process.env.NC_ADMIN_PASSWORD || 'admin'
 const APPLICATION_SLUG = 'hello-world'

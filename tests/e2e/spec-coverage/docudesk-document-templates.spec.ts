@@ -42,16 +42,16 @@
  * and tests/composables/useDocudeskDocument.spec.js meanwhile.
  */
 
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import {
-	ensureApp,
 	dismissOverlays,
+	ensureApp,
 	suppressSupportDialog,
-} from '../support/appFixture'
-import { dismissFirstVisitOverlays } from '../support/overlays'
-import { readStagedManifest } from '../support/stagedManifest'
-import { E2E_BASE_URL as BASE } from '../support/baseUrl'
-import { confirmAction } from '../support/confirmDialog'
+} from '../support/appFixture.ts'
+import { E2E_BASE_URL as BASE } from '../support/baseUrl.ts'
+import { confirmAction } from '../support/confirmDialog.ts'
+import { dismissFirstVisitOverlays } from '../support/overlays.ts'
+import { readStagedManifest } from '../support/stagedManifest.ts'
 
 const APP_SLUG = 'pw-docudesk'
 const SCHEMA_SLUG = 'hello-message'

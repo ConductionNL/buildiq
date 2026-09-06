@@ -36,7 +36,7 @@
  * reason rather than failing or quietly asserting something weaker.
  */
 
-import { test, expect, request as playwrightRequest } from '@playwright/test'
+import { expect, request as playwrightRequest, test } from '@playwright/test'
 
 /**
  * The instance that holds the GitHub credential. Overridable so CI can point at

@@ -74,7 +74,7 @@ class GitHubAppSyncService {
 	/**
 	 * The Application schema slug.
 	 */
-	private const APPLICATION_SCHEMA = 'application';
+	private const APPLICATION_SCHEMA = 'built-app';
 
 	/**
 	 * The ApplicationVersion schema slug.

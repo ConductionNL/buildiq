@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -6,8 +7,7 @@
  *
  * Spec: agent-workspace ("Every agent run is transparently logged and reviewable").
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@nextcloud/router', async (importOriginal) => ({
 	...(await importOriginal()),
@@ -41,21 +41,23 @@ const stubs = {
 
 const flush = () => new Promise((r) => setTimeout(r, 0))
 
-const run = (overrides = {}) => ({
-	id: 'run-1',
-	agentId: 'agent-1',
-	prompt: 'Add a contact-details step',
-	outcome: 'applied',
-	createdAt: '2026-07-23T10:00:00+00:00',
-	toolCalls: [
-		{
-			tool: 'buildiq.upsertPage',
-			arguments: { pageId: 'contact' },
-			result: { isError: false },
-		},
-	],
-	...overrides,
-})
+function run(overrides = {}) {
+	return {
+		id: 'run-1',
+		agentId: 'agent-1',
+		prompt: 'Add a contact-details step',
+		outcome: 'applied',
+		createdAt: '2026-07-23T10:00:00+00:00',
+		toolCalls: [
+			{
+				tool: 'buildiq.upsertPage',
+				arguments: { pageId: 'contact' },
+				result: { isError: false },
+			},
+		],
+		...overrides,
+	}
+}
 
 describe('AgentRunHistory', () => {
 	beforeEach(() => {

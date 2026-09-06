@@ -6,7 +6,7 @@
  * REQ-BRE-002 / REQ-BRE-012 — decision-table cell validation in the editor).
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { isCellConditionValid } from '../../src/utils/feelCell.js'
 
 describe('isCellConditionValid', () => {

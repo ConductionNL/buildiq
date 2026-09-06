@@ -19,8 +19,10 @@
  * instance per project policy).
  */
 
-import { test, expect, type APIRequestContext, type Page } from '@playwright/test'
-import { confirmAction } from './support/confirmDialog'
+import type { APIRequestContext, Page } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
+import { confirmAction } from './support/confirmDialog.ts'
 
 const APP_SLUG = process.env.NC_BUILDIQ_TEST_SLUG ?? 'hello-world'
 // The app-picker option's accessible name is the Application TITLE

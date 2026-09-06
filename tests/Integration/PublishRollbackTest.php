@@ -169,7 +169,7 @@ class PublishRollbackTest extends TestCase {
 			->disableOriginalConstructor()
 			->onlyMethods(['getSchema', 'getFrom', 'getTo', 'getObject', 'getUserId'])
 			->getMock();
-		$event->method('getSchema')->willReturn('application');
+		$event->method('getSchema')->willReturn('built-app');
 		$event->method('getFrom')->willReturn($from);
 		$event->method('getTo')->willReturn($to);
 		$event->method('getObject')->willReturn($entity);
@@ -225,7 +225,7 @@ class PublishRollbackTest extends TestCase {
 				'currentVersion' => 'snap-bootstrap',
 			],
 			register: 'buildiq',
-			schema: 'application'
+			schema: 'built-app'
 		);
 		$appUuid = $appEntity->jsonSerialize()['@self']['id'];
 
@@ -277,7 +277,7 @@ class PublishRollbackTest extends TestCase {
 		self::assertSame($manifestV11, $publishedSnapshot['manifest']);
 
 		// Assert: Application.currentVersion got patched.
-		$appWrites = $this->savedFor('application');
+		$appWrites = $this->savedFor('built-app');
 		$lastApp = end($appWrites);
 		self::assertNotFalse($lastApp);
 		self::assertArrayHasKey('currentVersion', $lastApp);

@@ -26,15 +26,14 @@
  * tests/e2e/template-gallery.spec.ts).
  */
 
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import {
-	ensureApp,
 	dismissOverlays,
+	ensureApp,
 	suppressSupportDialog,
-} from './support/appFixture'
-
+} from './support/appFixture.ts'
 // PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts.
-import { E2E_BASE_URL as NEXTCLOUD_URL } from './support/baseUrl'
+import { E2E_BASE_URL as NEXTCLOUD_URL } from './support/baseUrl.ts'
 
 const SOURCE_APP = 'pw-sat-source'
 const TEMPLATE_SLUG = 'pw-sat-template'

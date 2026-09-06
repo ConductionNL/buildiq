@@ -931,7 +931,7 @@ class CopilotServiceTest extends TestCase {
 
 		$this->objectService->method('searchObjectsBySlug')->willReturnCallback(
 			function (string $register, string $schema, array $filters) use ($existingPages): array {
-				if ($schema === 'application') {
+				if ($schema === 'built-app') {
 					return [['id' => 'app-1', 'slug' => 'tool-library', 'permissions' => []]];
 				}
 

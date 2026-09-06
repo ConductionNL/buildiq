@@ -291,7 +291,7 @@ final class FlowAndAgentExportBundlerTest extends TestCase {
 			message: 'register must be filtered by SLUG — a numeric id is not stable across instances'
 		);
 		$this->assertSame(
-			expected: 'agent',
+			expected: 'buildAgent',
 			actual: ($captured['filters']['schema'] ?? null),
 			message: 'schema must be filtered by SLUG — a numeric id is not stable across instances'
 		);
@@ -387,6 +387,12 @@ final class FlowAndAgentExportBundlerTest extends TestCase {
 				}
 
 				// Hermiq's own register DOES have this application's agent.
+				//
+				// 🔴 `agent`, NOT `buildAgent`. #686 renamed THIS app's slug to
+				// stop it colliding with hermiq's; hermiq still owns `agent`,
+				// and this branch is the fallback that reads hermiq's register.
+				// Renaming it here would make the fallback look for a schema
+				// hermiq does not have.
 				$this->assertSame(expected: 'hermiq', actual: $config['filters']['register'] ?? null);
 				$this->assertSame(expected: 'agent', actual: $config['filters']['schema'] ?? null);
 				$this->assertSame(expected: 'hydra-console', actual: $config['filters']['applicationSlug'] ?? null);

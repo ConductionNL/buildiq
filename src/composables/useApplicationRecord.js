@@ -7,7 +7,7 @@
  * props, not the resolved record — and each is driven by three independent
  * triggers (`mounted()`, the `objectId` watcher, the `object` watcher). None of
  * them knew about the others, so one load of `/applications/hydra-console`
- * issued TEN identical `GET .../objects/buildiq/application/hydra-console`
+ * issued TEN identical `GET .../objects/buildiq/built-app/hydra-console`
  * requests, all 200.
  *
  * That is not just waste: it is most of the reason the page takes so long to
@@ -50,7 +50,7 @@ export function fetchApplicationRecord(uuid) {
 
 	const request = (async () => {
 		const url = generateUrl(
-			`/apps/openregister/api/objects/buildiq/application/${encodeURIComponent(uuid)}`,
+			`/apps/openregister/api/objects/buildiq/built-app/${encodeURIComponent(uuid)}`,
 		)
 		const { data } = await axios.get(url)
 		// Keep user-visible fields from `data` and stash OR's internal metadata

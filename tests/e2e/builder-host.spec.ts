@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: EUPL-1.2
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
-import { test, expect } from '@playwright/test'
-import { dismissFirstVisitOverlays } from './support/overlays'
+import { expect, test } from '@playwright/test'
+import { dismissFirstVisitOverlays } from './support/overlays.ts'
 
 /**
  * E2E — BuilderHost mounts the seeded hello-world virtual app and the

@@ -26,9 +26,9 @@
  *    fields (the Vitest side of the Cmd scenario's `@e2e exclude`).
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { ref, computed } from 'vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, ref } from 'vue'
 
 const validatorErrorsRef = ref([])
 const validatorStub = {

@@ -28,17 +28,17 @@
  * Pre-conditions: Docker stack up; OpenRegister enabled; admin/admin.
  */
 
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import {
-	seedSchema,
-	findSchema,
-	deleteSchema,
-	cleanupByPrefix,
-	resolveSchemaId,
-	BASE_URL,
 	authHeaders,
+	BASE_URL,
+	cleanupByPrefix,
+	deleteSchema,
 	E2E_PREFIX,
-} from './fixtures'
+	findSchema,
+	resolveSchemaId,
+	seedSchema,
+} from './fixtures.ts'
 
 test.describe('Schema — full CRUD with persistence (OR runtime schema API)', () => {
 	test.afterAll(async ({ request }) => {

@@ -111,7 +111,7 @@ class DocumentGenerationService {
 	/**
 	 * Schema slug of the `application` object.
 	 */
-	private const APPLICATION_SCHEMA = 'application';
+	private const APPLICATION_SCHEMA = 'built-app';
 
 	/**
 	 * NC route name for Docudesk's pinned generate route

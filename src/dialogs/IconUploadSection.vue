@@ -113,7 +113,7 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 
 const REGISTER = 'buildiq'
-const SCHEMA = 'application'
+const SCHEMA = 'built-app'
 
 export default {
 	name: 'IconUploadSection',

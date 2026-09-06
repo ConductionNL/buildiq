@@ -13,9 +13,8 @@
  *     after a clone POST fails)
  */
 
-import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-
+import { describe, expect, it } from 'vitest'
 import CloneTemplateDialog from '../../src/modals/CloneTemplateDialog.vue'
 
 const baseStubs = {

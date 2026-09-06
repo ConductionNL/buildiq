@@ -12,7 +12,7 @@
  *  - `defaultEditableVersion` pure-function behaviour.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defaultEditableVersion } from '../../src/composables/useApplicationVersion.js'
 
 // ---------------------------------------------------------------------------

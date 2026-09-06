@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /**
  * SPDX-FileCopyrightText: 2026 ConductionNL / Buildiq Contributors
  * SPDX-License-Identifier: EUPL-1.2
@@ -7,8 +8,7 @@
  * in a (possibly shared) Docudesk template and rendered via v-html in this
  * user's session, so it MUST be DOMPurify-sanitized before binding.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const axiosPostMock = vi.fn()
 const axiosGetMock = vi.fn().mockResolvedValue({ data: {} })

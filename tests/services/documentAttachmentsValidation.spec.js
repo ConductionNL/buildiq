@@ -6,18 +6,22 @@
  *
  * Spec: docudesk-document-templates (REQ-DDT-001).
  */
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
-	validateDocumentAttachments,
 	DOCUMENT_FORMATS,
+	validateDocumentAttachments,
 } from '../../src/services/manifestValidation/documentAttachments.js'
 
 const UUID = '11111111-2222-3333-4444-555555555555'
 
-const baseManifest = (documents) => ({
-	schemas: { kapaanvraag: { properties: { dossiernummer: { type: 'string' } } } },
-	runtime: { documents },
-})
+function baseManifest(documents) {
+	return {
+		schemas: {
+			kapaanvraag: { properties: { dossiernummer: { type: 'string' } } },
+		},
+		runtime: { documents },
+	}
+}
 
 const validEntry = {
 	id: 'kap-confirm',

@@ -38,13 +38,12 @@
  * shared global-setup file (chain #3 + this spec land together).
  */
 
-import { test, expect } from '@playwright/test'
-import { ensureApp, dismissOverlays } from './support/appFixture'
-import { saveSchemaAndAwait } from './support/schemaSave'
-
+import { expect, test } from '@playwright/test'
+import { dismissOverlays, ensureApp } from './support/appFixture.ts'
 // PLAYWRIGHT_BASE_URL wins — see tests/e2e/support/baseUrl.ts. This used to be
 // `NC_BASE_URL ?? 'http://localhost:8080'`, i.e. the SHARED dev instance.
-import { E2E_BASE_URL as BASE_URL } from './support/baseUrl'
+import { E2E_BASE_URL as BASE_URL } from './support/baseUrl.ts'
+import { saveSchemaAndAwait } from './support/schemaSave.ts'
 const ADMIN_USER = process.env.NC_ADMIN_USER ?? 'admin'
 const ADMIN_PASS = process.env.NC_ADMIN_PASS ?? 'admin'
 

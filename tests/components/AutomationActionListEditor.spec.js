@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -7,8 +8,7 @@
  * Spec: automation-approval-steps task 3.1 (on-approve/on-reject nested
  * action-list editors reusing the existing typed-action components).
  */
-import { describe, it, expect } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
 import AutomationActionListEditor from '../../src/components/AutomationActionListEditor.vue'
 
 // Vue 3 model API throughout: the editor binds `:model-value` and listens for

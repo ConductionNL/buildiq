@@ -42,7 +42,7 @@ const SCHEMA_V2_PATH = path.join(SCHEMA_DIR, 'app-manifest-v2.schema.json')
  * against the contract they actually target.
  *
  * @param {object} manifest The parsed manifest payload.
- * @returns {'v1'|'v2'} The schema version to validate against.
+ * @return {'v1'|'v2'} The schema version to validate against.
  */
 function schemaVersionFor(manifest) {
 	const ref =
@@ -55,6 +55,10 @@ const DEFAULT_TARGETS = [
 	'lib/Resources/wizard/default-manifest.json',
 ]
 
+/**
+ *
+ * @param filePath
+ */
 function loadJson(filePath) {
 	const raw = fs.readFileSync(filePath, 'utf-8')
 	return JSON.parse(raw)
@@ -79,7 +83,7 @@ const ENGINE_OWNED_KEYS = ['observability', 'deepLinks']
  * run against the renderer-shape contract.
  *
  * @param {object} manifest The manifest payload.
- * @returns {object} The manifest with tokens substituted + engine blocks removed.
+ * @return {object} The manifest with tokens substituted + engine blocks removed.
  */
 function substituteTokens(manifest) {
 	if (!manifest || typeof manifest !== 'object') return manifest
@@ -103,6 +107,9 @@ function substituteTokens(manifest) {
 	}
 }
 
+/**
+ *
+ */
 function main() {
 	const args = process.argv.slice(2)
 	const targets = args.length > 0 ? args : DEFAULT_TARGETS

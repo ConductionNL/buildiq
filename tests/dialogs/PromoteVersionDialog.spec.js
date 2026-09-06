@@ -15,8 +15,8 @@
  *   - changing targetVersion prop resets selectedStrategy
  */
 
-import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
 import PromoteVersionDialog from '../../src/dialogs/PromoteVersionDialog.vue'
 
 // Minimal stubs for @nextcloud/vue components used by the dialog.

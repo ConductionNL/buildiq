@@ -415,7 +415,7 @@ export default {
 			if (!this.appUuid) return
 			try {
 				const url = generateUrl(
-					'/apps/openregister/api/objects/buildiq/application/{uuid}',
+					'/apps/openregister/api/objects/buildiq/built-app/{uuid}',
 					{ uuid: this.appUuid },
 				)
 				const { data } = await axios.get(url)

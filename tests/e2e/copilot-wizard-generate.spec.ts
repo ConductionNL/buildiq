@@ -29,7 +29,7 @@
  *   - buildiq enabled, openregister enabled.
  *   - Authenticated browser context from global-setup.
  */
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 // nc-vue's first-visit overlays (CnWalkthrough tour + CnSupportDialog) each
 // render a full-viewport backdrop that intercepts pointer events — live-verified
 // as the cause behind every failure in this file: `getByRole('button', { name:
@@ -37,7 +37,7 @@ import { test, expect } from '@playwright/test'
 // for the full 90s describe timeout. Neither persists its "seen" state on this
 // instance, so both can reopen on every run. Helpers shared with the other specs
 // that hit the same overlays.
-import { dismissWalkthrough, dismissSupportDialog } from './support/overlays'
+import { dismissSupportDialog, dismissWalkthrough } from './support/overlays.ts'
 
 const HEALTH_URL = '**/apps/buildiq/api/copilot/health'
 const PLAN_URL = '**/apps/buildiq/api/copilot/plan'
@@ -49,47 +49,49 @@ const PLAN_URL = '**/apps/buildiq/api/copilot/plan'
  */
 const APP_SLUG = `e2e-copilot-lib-${Date.now().toString(36)}`
 
-const stubbedPlan = (slug: string) => ({
-	summary: 'A tool library where members can borrow and return tools.',
-	steps: [
-		{
-			tool: 'buildiq.createApp',
-			arguments: {
-				slug,
-				name: 'E2E Copilot Tool Library',
-				preset: 'dev-prod',
+function stubbedPlan(slug: string) {
+	return {
+		summary: 'A tool library where members can borrow and return tools.',
+		steps: [
+			{
+				tool: 'buildiq.createApp',
+				arguments: {
+					slug,
+					name: 'E2E Copilot Tool Library',
+					preset: 'dev-prod',
+				},
+			},
+			{
+				tool: 'buildiq.upsertPage',
+				arguments: {
+					appSlug: slug,
+					pageId: 'home',
+					title: 'Home',
+					type: 'index',
+					route: '/',
+				},
+			},
+		],
+		manifests: {
+			[`${slug}@development`]: {
+				current: { version: '1.0.0', menu: [], pages: [] },
+				predicted: {
+					version: '1.0.0',
+					menu: [],
+					pages: [
+						{
+							id: 'home',
+							route: '/',
+							type: 'index',
+							title: 'Home',
+							config: {},
+						},
+					],
+				},
 			},
 		},
-		{
-			tool: 'buildiq.upsertPage',
-			arguments: {
-				appSlug: slug,
-				pageId: 'home',
-				title: 'Home',
-				type: 'index',
-				route: '/',
-			},
-		},
-	],
-	manifests: {
-		[`${slug}@development`]: {
-			current: { version: '1.0.0', menu: [], pages: [] },
-			predicted: {
-				version: '1.0.0',
-				menu: [],
-				pages: [
-					{
-						id: 'home',
-						route: '/',
-						type: 'index',
-						title: 'Home',
-						config: {},
-					},
-				],
-			},
-		},
-	},
-})
+	}
+}
 
 test.describe('Wizard "Generate with AI" (spec: ai-copilot)', () => {
 	// The confirm path runs a REAL createApp + upsertPage through the MCP

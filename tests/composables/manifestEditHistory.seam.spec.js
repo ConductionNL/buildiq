@@ -22,9 +22,9 @@
  *    state (REQ-BUR-006).
  */
 
-import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { describe, expect, it } from 'vitest'
 import { useSessionHistory } from '../../src/composables/useSessionHistory.js'
 
 describe('useSessionHistory (manifestEditHistory integration seam)', () => {

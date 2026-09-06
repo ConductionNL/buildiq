@@ -13,8 +13,8 @@
  * axios + router are mocked so the component never hits the network.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { axiosGetMock, axiosPutMock, axiosDeleteMock } = vi.hoisted(() => ({
 	axiosGetMock: vi.fn(),
@@ -57,7 +57,7 @@ const stubs = {
  * A macrotask boundary drains the whole microtask queue regardless of how
  * many hops the scheduler takes, so this is stable rather than tick-counted.
  */
-const flush = async (wrapper) => {
+async function flush(wrapper) {
 	await new Promise((resolve) => setTimeout(resolve, 0))
 	await wrapper.vm.$nextTick()
 }

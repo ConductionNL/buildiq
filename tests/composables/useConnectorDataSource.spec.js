@@ -6,7 +6,7 @@
  *
  * Spec: openconnector-api-sources (REQ-OCAS-006, REQ-OCAS-004).
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@nextcloud/router', () => ({ generateUrl: (p) => p }))
 

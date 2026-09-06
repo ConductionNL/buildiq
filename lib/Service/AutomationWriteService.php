@@ -86,7 +86,7 @@ class AutomationWriteService {
 	/**
 	 * Schema slug of the parent Application object.
 	 */
-	private const APPLICATION_SCHEMA = 'application';
+	private const APPLICATION_SCHEMA = 'built-app';
 
 	/**
 	 * Constructor.
@@ -126,7 +126,27 @@ class AutomationWriteService {
 	public function requestBody(IRequest $request): array {
 		$params = $request->getParams();
 
-		unset($params['_route'], $params['uuid']);
+		// 🔴 STRIP EVERY IDENTITY THE CALLER SUPPLIED.
+		//
+		// `saveObject()` resolves its target FROM the payload:
+		// `extractUuidAndNormalizeObject()` reads `@self.id` first, then `id`,
+		// and treats a match as the uuid to UPDATE — PUT-semantically, so every
+		// field the payload omits is NULLED.
+		//
+		// `uuid` was already stripped; `id` and `@self` were not, and they are
+		// the two keys that actually address an object. `saveAuthorised()`
+		// passes `_rbac: false`, so nothing downstream would refuse the write.
+		//
+		// THE AUTHORIZATION GUARD DOES NOT COVER THIS. `withApplication()`
+		// authorises the `applicationSlug` + `versionUuid` the CALLER CLAIMS —
+		// its own message calls them "the authorization scope" — while the
+		// object written is whatever the payload's identity points at. A user
+		// entitled to one application could therefore address an automation
+		// belonging to another, and the create route is `#[NoAdminRequired]`.
+		//
+		// Identity is minted by OpenRegister on create, and taken from the
+		// ROUTE on update. It is never the request body's to supply.
+		unset($params['_route'], $params['uuid'], $params['id'], $params['@self']);
 
 		return $params;
 	}//end requestBody()

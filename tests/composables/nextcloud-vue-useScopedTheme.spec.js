@@ -16,7 +16,7 @@
  * a crash anywhere in the published beta.221 bundle (not just at import
  * time) fails CI here rather than surfacing later inside ThemePickerDialog.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { axiosMock } = vi.hoisted(() => ({
 	axiosMock: { get: vi.fn(), post: vi.fn() },
@@ -28,9 +28,9 @@ vi.mock('@nextcloud/router', () => ({
 }))
 
 import {
-	useScopedTheme,
-	SCOPE_ATTR,
 	rewriteRootScope,
+	SCOPE_ATTR,
+	useScopedTheme,
 } from '@conduction/nextcloud-vue/dist/esm/composables/useScopedTheme.js'
 import pkg from '@conduction/nextcloud-vue/package.json' with { type: 'json' }
 

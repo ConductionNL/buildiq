@@ -54,9 +54,9 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application?_limit=100",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/built-app?_limit=100",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "application"],
+							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "built-app"],
 							"query": [{ "key": "_limit", "value": "100" }]
 						}
 					},
@@ -181,9 +181,9 @@
 							"raw": "{{merged_body}}"
 						},
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application/{{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/built-app/{{application_uuid}}",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "application", "{{application_uuid}}"]
+							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "built-app", "{{application_uuid}}"]
 						}
 					},
 					"event": [
@@ -320,9 +320,9 @@
 							"raw": "{{merged_body}}"
 						},
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application/{{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/built-app/{{application_uuid}}",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "application", "{{application_uuid}}"]
+							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "built-app", "{{application_uuid}}"]
 						}
 					},
 					"event": [
@@ -423,9 +423,9 @@
 							"raw": "{{merged_body}}"
 						},
 						"url": {
-							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/application/{{application_uuid}}",
+							"raw": "{{base_url}}/index.php/apps/openregister/api/objects/buildiq/built-app/{{application_uuid}}",
 							"host": ["{{base_url}}"],
-							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "application", "{{application_uuid}}"]
+							"path": ["index.php", "apps", "openregister", "api", "objects", "buildiq", "built-app", "{{application_uuid}}"]
 						}
 					},
 					"event": [

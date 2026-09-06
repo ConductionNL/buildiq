@@ -1,3 +1,4 @@
+import { mount } from '@vue/test-utils'
 /**
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  * SPDX-License-Identifier: EUPL-1.2
@@ -6,8 +7,7 @@
  *
  * Spec: openconnector-api-sources (REQ-OCAS-003).
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
 import ConnectorFieldMapper from '../../src/components/page-editor/ConnectorFieldMapper.vue'
 
 // `emits: ['click']` keeps the parent's `@click` out of `$attrs` so it does not
@@ -20,11 +20,12 @@ const NcButtonStub = {
 		'<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
 }
 
-const factory = (props) =>
-	mount(ConnectorFieldMapper, {
+function factory(props) {
+	return mount(ConnectorFieldMapper, {
 		propsData: props,
 		stubs: { NcButton: NcButtonStub },
 	})
+}
 
 describe('ConnectorFieldMapper', () => {
 	// window.prompt is no longer used — the field name is collected by

@@ -30,10 +30,12 @@
  * `status: 'draft'` — so a rollback never silently republishes.
  */
 
-import { test, expect } from '@playwright/test'
-import { E2E_BASE_URL as BASE_URL } from './support/baseUrl'
-import { ensureVersionChain } from './support/versionChain'
-import { suppressSupportDialog, suppressSetupWizard } from './support/appFixture'
+import type { Page } from '@playwright/test'
+
+import { expect, test } from '@playwright/test'
+import { suppressSetupWizard, suppressSupportDialog } from './support/appFixture.ts'
+import { E2E_BASE_URL as BASE_URL } from './support/baseUrl.ts'
+import { ensureVersionChain } from './support/versionChain.ts'
 
 // A DEDICATED fixture. This spec plants a manifest and then rolls it back, i.e.
 // it mutates the app's active manifest twice per run. versionRouting.spec.ts
@@ -49,7 +51,7 @@ const TEST_SLUG = process.env.NC_TEST_SLUG ?? 'pw-rollback'
  * @param page Playwright page.
  * @return {Promise<string>} The application uuid.
  */
-async function appUuid(page: import('@playwright/test').Page): Promise<string> {
+async function appUuid(page: Page): Promise<string> {
 	return page.evaluate(async (slug) => {
 		const r = await fetch('/index.php/apps/buildiq/api/applications', {
 			headers: { 'OCS-APIRequest': 'true' },
@@ -67,9 +69,7 @@ async function appUuid(page: import('@playwright/test').Page): Promise<string> {
  * @param page Playwright page.
  * @return {Promise<Record<string, unknown>>} The application object.
  */
-async function appRecord(
-	page: import('@playwright/test').Page,
-): Promise<Record<string, unknown>> {
+async function appRecord(page: Page): Promise<Record<string, unknown>> {
 	return page.evaluate(async (slug) => {
 		const r = await fetch('/index.php/apps/buildiq/api/applications', {
 			headers: { 'OCS-APIRequest': 'true' },
@@ -89,9 +89,7 @@ async function appRecord(
  * @param page Playwright page.
  * @return {Promise<unknown>} The active manifest.
  */
-async function activeManifest(
-	page: import('@playwright/test').Page,
-): Promise<Record<string, unknown> | null> {
+async function activeManifest(page: Page): Promise<Record<string, unknown> | null> {
 	return page.evaluate(async (slug) => {
 		const r = await fetch(
 			`/index.php/apps/buildiq/api/applications/${slug}/manifest`,
@@ -116,7 +114,7 @@ async function activeManifest(
  * @return {Promise<{version: string, manifest: unknown}>} The snapshot.
  */
 async function snapshotBySemver(
-	page: import('@playwright/test').Page,
+	page: Page,
 	semver: string,
 ): Promise<{ version: string; manifest: unknown }> {
 	return page.evaluate(
@@ -147,10 +145,7 @@ async function snapshotBySemver(
  * @param manifest The manifest to store.
  * @return {Promise<void>}
  */
-async function putActiveManifest(
-	page: import('@playwright/test').Page,
-	manifest: unknown,
-): Promise<void> {
+async function putActiveManifest(page: Page, manifest: unknown): Promise<void> {
 	await page.evaluate(
 		async ([slug, m]) => {
 			await fetch(
@@ -210,7 +205,7 @@ async function putActiveManifest(
  * @return {Promise<void>}
  */
 async function openVersionHistory(
-	page: import('@playwright/test').Page,
+	page: Page,
 	uuid: string,
 	options: { requireRows?: boolean } = {},
 ): Promise<void> {

@@ -6,10 +6,10 @@
  *
  * Spec: external-form-provisioning (REQ-EFP-001).
  */
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
-	validateExternalForms,
 	EXTERNAL_FORM_STATUSES,
+	validateExternalForms,
 } from '../../src/services/manifestValidation/externalForms.js'
 
 const validEntry = {

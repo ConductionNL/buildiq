@@ -20,8 +20,8 @@
  * gates rendering and we can't probe the inner DOM).
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Inline mocks for NcDialog + NcButton + NcSelect — vi.mock is hoisted above
 // the imports below. We deliberately stub NcDialog as a transparent slot
