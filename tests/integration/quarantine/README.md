@@ -5,10 +5,26 @@ SPDX-FileCopyrightText: 2026 Conduction B.V.
 
 # Quarantined Newman collections
 
-CI runs `*.postman_collection.json` in `tests/integration/` **non-recursively**
-(`for collection in *.postman_collection.json` in ConductionNL/.github's
-`quality.yml`), so nothing in this directory is executed by the
-`Integration Tests (Newman)` job.
+Nothing here is executed by the `Integration Tests (Newman)` job, because each
+collection **declares its own exclusion**: `@newman exclude <reason>` in the
+collection's `info.description`. The runner in ConductionNL/.github's
+`quality.yml` reads that marker and skips the file, and gate-112
+(`newman-reach`) reads the same marker and does not report the file as an unrun
+collection. One declaration, honoured in both places.
+
+⚠️ **It did not always work that way, and the old way was luck.** The runner
+used to glob one flat directory (`for collection in *.postman_collection.json`),
+so this directory was skipped by an accident of depth rather than by
+declaration. When ConductionNL/.github#702 made the runner recurse, to close a
+real gap where the validate step counted collections the runner never ran,
+everything here started executing and the job went red on the divergences this
+file documents on purpose. ConductionNL/.github#714 is the fix, and the marker
+is why it cannot happen again: a file here says why it is excluded, in the file
+itself, where anything reading the collection can see it.
+
+**A bare `@newman exclude` with no reason does not skip.** Gate-112 fails a bare
+marker as finding V5, and a marker that could delete a test by saying nothing
+would be worse than the accident it replaced.
 
 A collection lives here for exactly one reason: **it asserts a contract the
 product does not implement, and rewriting it to match today's behaviour would
