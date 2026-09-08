@@ -8,6 +8,70 @@ define('PHPUNIT_RUN', 1);
 // Include Composer's autoloader.
 require_once __DIR__ . '/../vendor/autoload.php';
 
+/**
+ * Tell whether a Nextcloud root is an INSTALLED instance, not just a source tree.
+ *
+ * `lib/base.php` from a source tree that was never installed still declares
+ * `OC` and builds `\OC::$server` before it throws "Not installed". That server
+ * cannot be undone (`OC::$server` is a typed static), so from then on every
+ * `\OC::$server->get()` in the code under test hits a container that knows
+ * none of this app's registrations and autowires from scratch; constructor
+ * cycles then recurse until memory runs out (19 GB on one openregister test,
+ * 2026-09-08). So the decision has to be made BEFORE base.php is loaded, and
+ * the only cheap signal is the `installed` flag in config/config.php.
+ *
+ * @param string $ncRoot Candidate Nextcloud root.
+ *
+ * @return bool True when config/config.php declares `installed => true`.
+ */
+function buildiq_nc_root_is_installed(string $ncRoot): bool
+{
+	$configFile = $ncRoot . '/config/config.php';
+	if (is_file($configFile) === false || filesize($configFile) === 0) {
+		return false;
+	}
+
+	// The config file is a plain `$CONFIG = [...]` script; including it in a
+	// closure keeps `$CONFIG` out of the global scope.
+	$config = (static function () use ($configFile): array {
+		$CONFIG = [];
+		try {
+			include $configFile;
+		} catch (\Throwable) {
+			return [];
+		}
+
+		if (is_array($CONFIG) === false) {
+			return [];
+		}
+
+		return $CONFIG;
+	})();
+
+	return ($config['installed'] ?? false) === true;
+}
+
+// The Nextcloud root this checkout sits under (apps-extra/buildiq/), or null
+// when there is none or it is only a bare source tree. Decided ONCE, up here,
+// because two later blocks depend on the same answer: whether the Doctrine
+// placeholders are needed, and whether lib/base.php gets loaded at all.
+$buildiqNcRoot = null;
+$buildiqNcCandidate = dirname(__DIR__, 3);
+if (is_file($buildiqNcCandidate . '/lib/base.php') === true) {
+	if (buildiq_nc_root_is_installed($buildiqNcCandidate) === true) {
+		$buildiqNcRoot = $buildiqNcCandidate;
+	} else {
+		fwrite(
+			STDERR,
+			sprintf(
+				"[buildiq/tests/bootstrap] Nextcloud tree at %s is not installed (config/config.php lacks installed => true); "
+				. "skipping lib/base.php and running in pure-unit mode.\n",
+				$buildiqNcCandidate
+			)
+		);
+	}
+}
+
 // `OCP\Files\IRootFolder` extends BOTH `OCP\Files\Folder` and Nextcloud CORE's
 // `OC\Hooks\Emitter`, which is not part of the `nextcloud/ocp` package. Loading
 // IRootFolder without it fatals mid-autoload, so the interface never becomes
@@ -39,9 +103,11 @@ require_once __DIR__ . '/../vendor/autoload.php';
 //
 // Completing the constant list would fix that one symbol and leave the next one
 // waiting. The real fix is not to shadow a class that is genuinely present: when
-// lib/base.php exists, the server ships doctrine/dbal in 3rdparty and the stub
-// has nothing to add.
-if (file_exists(__DIR__ . '/../../../lib/base.php') === false) {
+// an installed Nextcloud is about to be booted below, the server ships
+// doctrine/dbal in 3rdparty and the stub has nothing to add. A bare source tree
+// does NOT count: its base.php is never loaded (see $buildiqNcRoot), so the
+// placeholders are needed there exactly as they are in CI.
+if ($buildiqNcRoot === null) {
 	require_once __DIR__ . '/stubs/DoctrineStubs.php';
 }
 require_once __DIR__ . '/stubs/nc-hooks-emitter.stub.php';
@@ -104,15 +170,15 @@ require_once __DIR__ . '/stubs/openregister-stubs.php';
 // not be present until OR#1466 merges.
 require_once __DIR__ . '/Stubs/Mcp/IMcpToolProvider.php';
 
-// Bootstrap Nextcloud if available. Inside the docker container we'll get
-// the full NC runtime; outside (CI / local dev) we fall back to the
-// vendor/nextcloud/ocp stubs and run only the pure-unit subset.
-if (!defined('OC_CONSOLE')) {
-	$ncBase = __DIR__ . '/../../../lib/base.php';
-	if (file_exists($ncBase)) {
-		require_once $ncBase;
+// Bootstrap Nextcloud if an INSTALLED one is available. Inside the docker
+// container we'll get the full NC runtime; outside (CI / local dev / a bare
+// source tree) we fall back to the vendor/nextcloud/ocp stubs and run only the
+// pure-unit subset.
+if (!defined('OC_CONSOLE') && $buildiqNcRoot !== null) {
+	try {
+		require_once $buildiqNcRoot . '/lib/base.php';
 
-		$ncAutoload = __DIR__ . '/../../../tests/autoload.php';
+		$ncAutoload = $buildiqNcRoot . '/tests/autoload.php';
 		if (file_exists($ncAutoload)) {
 			require_once $ncAutoload;
 		}
@@ -125,5 +191,23 @@ if (!defined('OC_CONSOLE')) {
 		if (class_exists(\OC_Hook::class)) {
 			\OC_Hook::clear();
 		}
+	} catch (\Throwable $e) {
+		// The root passed the installed check but base.php still failed
+		// (unreachable database, broken app, ...). There is no way back to
+		// pure-unit mode from here: `OC::$server` is a typed static that
+		// already holds a half-built container, and every `\OC::$server->get()`
+		// in the code under test would autowire from scratch until memory
+		// runs out. Stop the run and say what to do instead.
+		fwrite(
+			STDERR,
+			sprintf(
+				"[buildiq/tests/bootstrap] Nextcloud root at %s could not be initialised (%s).\n"
+				. "  A half-booted server cannot be undone, so the run stops here rather than pretending to be pure-unit.\n"
+				. "  Fix the instance, or run the suite from a checkout that is not under a Nextcloud root.\n",
+				$buildiqNcRoot,
+				$e->getMessage()
+			)
+		);
+		exit(1);
 	}
 }
