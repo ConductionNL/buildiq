@@ -44,7 +44,11 @@ scope. The endpoint SHALL be registered via `appinfo/routes.php`
 (ADR-016) with `#[NoAdminRequired]` and a route-auth posture that
 treats it as authenticated-user-readable.
 
-@e2e exclude pure-backend REST endpoint — manifest fetch, 404 for unknown slug, and auth posture verified by Newman/manifest-endpoint.spec.ts; no separate UI surface
+@e2e exclude pure-backend REST endpoint, covered by tests/integration/buildiq-api-contract.postman_collection.json.
+That collection asserts 200 on a wizard-built app's manifest, 404 rather than
+500 on an unknown slug, and 401 unauthenticated, which is the whole of this
+requirement. There is no separate UI surface. The Playwright spec this reason
+used to name has never existed.
 
 **ID:** REQ-OBR-001
 

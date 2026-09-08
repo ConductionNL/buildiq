@@ -18,7 +18,11 @@ Buildiq's manifest validation layer SHALL reject: an unknown `source`, a missing
 
 #### Scenario: Valid theme declaration passes validation
 
-<!-- @e2e exclude pure app-side manifest validation, covered by vitest tests/services/themeValidation.spec.js. -->
+<!-- @e2e exclude pure manifest validation, covered by tests/composables/useManifestValidator.spec.js.
+The rule set itself lives in nextcloud-vue's runtimeTheme schema, not in this
+app. What that vitest spec asserts is the half this app owns: an unknown
+source, a non-kebab tokenSet and an unknown key all reach the error list
+through the composable. The file this reason used to name has never existed. -->
 
 - **GIVEN** a virtual app manifest
 - **WHEN** it declares `runtime.theme: { source: "nldesign", tokenSet: "amsterdam", tokenSetName: "Gemeente Amsterdam", preview: { primaryColor: "#004699", backgroundColor: "#FFFFFF" } }`
@@ -27,7 +31,11 @@ Buildiq's manifest validation layer SHALL reject: an unknown `source`, a missing
 
 #### Scenario: Unknown source is rejected
 
-<!-- @e2e exclude pure app-side manifest validation, covered by vitest tests/services/themeValidation.spec.js. -->
+<!-- @e2e exclude pure manifest validation, covered by tests/composables/useManifestValidator.spec.js,
+which drives source "material" through the composable and asserts
+buildiq.theme.error.unknown-source reaches the error list. The rule itself is
+nextcloud-vue's runtimeTheme schema. The file this reason used to name has
+never existed. -->
 
 - **WHEN** the manifest declares `runtime.theme.source: "material"`
 - **THEN** the validator reports `buildiq.theme.error.unknown-source` against the theme block
