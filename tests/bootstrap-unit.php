@@ -64,17 +64,91 @@ require_once __DIR__ . '/stubs/nc-hooks-emitter.stub.php';
 // IMcpToolProvider` doesn't blow up at class-load time.
 require_once __DIR__ . '/Stubs/Mcp/IMcpToolProvider.php';
 
-// If the surrounding Nextcloud server is present (we're running inside
-// the docker container), boot it so functional tests can talk to OC.
-// In a stripped CI environment we skip — unit tests don't need it.
-if (file_exists(__DIR__ . '/../../../lib/base.php') === true
+/**
+ * Tell whether a Nextcloud root is an INSTALLED instance, not just a source tree.
+ *
+ * `lib/base.php` from a source tree that was never installed still declares
+ * `OC` and builds `\OC::$server` before it throws "Not installed". That server
+ * cannot be undone (`OC::$server` is a typed static), so from then on every
+ * `\OC::$server->get()` in the code under test hits a container that knows
+ * none of this app's registrations and autowires from scratch; constructor
+ * cycles then recurse until memory runs out (19 GB on one openregister test,
+ * 2026-09-08). So the decision has to be made BEFORE base.php is loaded, and
+ * the only cheap signal is the `installed` flag in config/config.php.
+ *
+ * @param string $ncRoot Candidate Nextcloud root.
+ *
+ * @return bool True when config/config.php declares `installed => true`.
+ */
+function buildiq_nc_root_is_installed(string $ncRoot): bool
+{
+	$configFile = $ncRoot . '/config/config.php';
+	if (is_file($configFile) === false || filesize($configFile) === 0) {
+		return false;
+	}
+
+	// The config file is a plain `$CONFIG = [...]` script; including it in a
+	// closure keeps `$CONFIG` out of the global scope.
+	$config = (static function () use ($configFile): array {
+		$CONFIG = [];
+		try {
+			include $configFile;
+		} catch (\Throwable) {
+			return [];
+		}
+
+		if (is_array($CONFIG) === false) {
+			return [];
+		}
+
+		return $CONFIG;
+	})();
+
+	return ($config['installed'] ?? false) === true;
+}
+
+// If the surrounding Nextcloud server is present AND installed (we're running
+// inside the docker container), boot it so functional tests can talk to OC.
+// In a stripped CI environment, or under a bare source tree whose
+// config/config.php is empty, we skip: unit tests don't need it, and a bare
+// tree's base.php would leave a half-built `OC::$server` behind (see
+// buildiq_nc_root_is_installed).
+$buildiqNcRoot = dirname(__DIR__, 3);
+if (is_file($buildiqNcRoot . '/lib/base.php') === true
 	&& getenv('BUILDIQ_SKIP_NC_BOOTSTRAP') === false
 ) {
-	require_once __DIR__ . '/../../../lib/base.php';
+	if (buildiq_nc_root_is_installed($buildiqNcRoot) === false) {
+		fwrite(
+			STDERR,
+			sprintf(
+				"[buildiq/tests/bootstrap-unit] Nextcloud tree at %s is not installed (config/config.php lacks installed => true); "
+				. "skipping lib/base.php and running in pure-unit mode.\n",
+				$buildiqNcRoot
+			)
+		);
+	} else {
+		try {
+			require_once $buildiqNcRoot . '/lib/base.php';
+		} catch (\Throwable $e) {
+			// No way back to pure-unit mode from here: `OC::$server` is a
+			// typed static that already holds a half-built container.
+			fwrite(
+				STDERR,
+				sprintf(
+					"[buildiq/tests/bootstrap-unit] Nextcloud root at %s could not be initialised (%s).\n"
+					. "  A half-booted server cannot be undone, so the run stops here rather than pretending to be pure-unit.\n"
+					. "  Fix the instance, or set BUILDIQ_SKIP_NC_BOOTSTRAP=1 for pure-unit mode.\n",
+					$buildiqNcRoot,
+					$e->getMessage()
+				)
+			);
+			exit(1);
+		}
 
-	// Register Test\ namespace for NC test classes.
-	$serverTestsLib = __DIR__ . '/../../../tests/lib/';
-	if (is_dir($serverTestsLib) === true) {
-		$autoloader->addPsr4('Test\\', $serverTestsLib);
+		// Register Test\ namespace for NC test classes.
+		$serverTestsLib = $buildiqNcRoot . '/tests/lib/';
+		if (is_dir($serverTestsLib) === true) {
+			$autoloader->addPsr4('Test\\', $serverTestsLib);
+		}
 	}
 }
