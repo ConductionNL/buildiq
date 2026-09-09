@@ -33,14 +33,6 @@
 	z-index: 2;
 }
 
-/* NO `filter` ON `.app-navigation-entry-icon` HERE. There used to be a
-   `brightness(0) !important` pinning every left-nav icon to solid black — a
-   workaround from when the entries carried legacy `icon-*` background-images
-   against a light nav. Every entry now names a PascalCase MDI icon registered
-   in src/icons.js, which CnAppNav renders as an inline SVG filled with
-   `currentColor`, so the icons already follow the theme's text colour in light
-   mode, in dark mode and against the active entry's primary-element
-   background. The filter only crushed them back to black, which is invisible
-   on a dark nav — and it could not be seen as theme-related, because the
-   Settings foldout's own icon sits outside `.app-navigation-entry-icon` and
-   kept theming correctly. */
+/* Don't filter `.app-navigation-entry-icon`. A `brightness(0)` used to pin the
+   left-nav icons black for the legacy `icon-*` background-images; every entry
+   now renders an MDI SVG on `currentColor`, which themes itself. */
