@@ -54,6 +54,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Support\FleetAppId;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCP\App\IAppManager;
@@ -432,6 +433,11 @@ class AppChannelApplier {
 	 * @return void
 	 *
 	 * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md#requirement-an-existing-connector-is-skipped-and-never-overwritten
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) FleetAppId is a stateless
+	 *  resolver over a constant map, with no state to inject and nothing to
+	 *  substitute in a test. Injecting it would add a constructor argument
+	 *  to every consumer to no end.
 	 */
 	private function applyConnectors(array $connectors, ChannelApplyReport $report): void {
 		$declared = 0;
@@ -445,9 +451,9 @@ class AppChannelApplier {
 			return;
 		}
 
-		if ($this->appManager->isEnabledForUser('openconnector') === false) {
+		if (FleetAppId::isEnabledForUser(appManager: $this->appManager, canonical: 'integriq') === false) {
 			$this->logger->info(
-				'Buildiq channel apply: openconnector is not enabled — skipping ' . $declared . ' declared connectors.'
+				'Buildiq channel apply: integriq (formerly openconnector) is not enabled — skipping ' . $declared . ' declared connectors.'
 			);
 			$report->skipChannel(channel: 'connectors', reason: self::REASON_NO_OPENCONNECTOR);
 			return;
@@ -631,6 +637,11 @@ class AppChannelApplier {
 	 * @param ChannelApplyReport $report The report to write into.
 	 *
 	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) FleetAppId is a stateless
+	 *  resolver over a constant map, with no state to inject and nothing to
+	 *  substitute in a test. Injecting it would add a constructor argument
+	 *  to every consumer to no end.
 	 */
 	private function applyAutomations(array $automations, ChannelApplyReport $report): void {
 		$report->declareChannel(channel: 'automations', declared: count($automations));
@@ -639,7 +650,7 @@ class AppChannelApplier {
 			return;
 		}
 
-		if ($this->appManager->isEnabledForUser('openconnector') === false) {
+		if (FleetAppId::isEnabledForUser(appManager: $this->appManager, canonical: 'integriq') === false) {
 			$report->skipChannel(channel: 'automations', reason: self::REASON_NO_OPENCONNECTOR);
 			return;
 		}
