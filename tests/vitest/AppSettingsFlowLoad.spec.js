@@ -64,7 +64,7 @@ const t = (app, key) => key
  *
  * @return {import('@vue/test-utils').Wrapper} the mounted wrapper.
  */
-function mountActions() {
+function mountActions(extraProps = {}) {
 	roleMock.mockReturnValue('owner')
 	axiosMock.get.mockImplementation((url) => {
 		if (url.includes('/apps/openregister/api/flows')) {
@@ -80,7 +80,7 @@ function mountActions() {
 		return Promise.resolve({ data: application })
 	})
 	return shallowMount(ApplicationDetailActions, {
-		propsData: { object: application, objectId: 'app-uuid' },
+		propsData: { object: application, objectId: 'app-uuid', ...extraProps },
 		mocks: { t, $router: { push: vi.fn() } },
 		stubs: {
 			NcButton: true,
@@ -106,21 +106,79 @@ describe('ApplicationDetailActions — App settings loads the flow list', () => 
 	})
 
 	it('the Settings action goes through onSettingsOpen, not a bare assignment', async () => {
+		// Asserted on the descriptor rather than on rendered markup: the bar is
+		// one CnActionButtons fed by `actionDescriptors`, so the descriptor's
+		// `onSelect` IS the click wiring. (It used to be an NcActionButton
+		// carrying data-test="app-settings-action".)
 		const wrapper = mountActions()
 		await wrapper.vm.$nextTick()
 
-		const action = wrapper.findComponent('[data-test="app-settings-action"]')
-		expect(
-			action.exists(),
-			'the owner-only Settings action must be rendered',
-		).toBe(true)
+		const action = wrapper.vm.actionDescriptors
+			.find((a) => a.id === 'app-settings-action')
+		expect(action, 'the owner-only Settings action must be declared').toBeTruthy()
 
-		action.vm.$emit('click')
+		action.onSelect()
 		await wrapper.vm.$nextTick()
 		await new Promise((resolve) => setTimeout(resolve, 0))
 
 		expect(wrapper.vm.settingsOpen).toBe(true)
 		expect(axiosMock.get).toHaveBeenCalledWith('/apps/openregister/api/flows')
+	})
+
+	it('declares one cluster: Open app primary with version children, Edit last', async () => {
+		const wrapper = mountActions()
+		await wrapper.vm.$nextTick()
+		const ids = wrapper.vm.actionDescriptors.map((a) => a.id)
+
+		// Open app leads and stays primary — CnActionButtons never collapses a
+		// primary action and it costs none of the six inline slots.
+		expect(ids[0]).toBe('open-app')
+		expect(wrapper.vm.actionDescriptors[0].variant).toBe('primary')
+
+		// Settings sits ahead of the chrome editors ("actions before edit").
+		expect(ids.indexOf('app-settings-action')).toBeLessThan(ids.indexOf('app-edit-setup'))
+
+		// Every entry carries a click, so none of them renders inert.
+		for (const action of wrapper.vm.actionDescriptors) {
+			expect(typeof action.onSelect).toBe('function')
+		}
+	})
+
+	it('offers the record Edit only when CnDetailPage hands down openEditForm', async () => {
+		const withoutEdit = mountActions()
+		await withoutEdit.vm.$nextTick()
+		expect(withoutEdit.vm.actionDescriptors.map((a) => a.id))
+			.not.toContain('app-edit-record')
+	})
+
+	it('inlines exactly the intended six, Edit last', async () => {
+		// CnActionButtons promotes the first N collapsible entries in
+		// declaration order, so the first six ARE the header's buttons and the
+		// rest are the menu. Pinned because the split is invisible in the
+		// descriptor list itself — reordering the computed silently moves a
+		// control between the bar and the menu.
+		const wrapper = mountActions({ openEditForm: () => {} })
+		await wrapper.vm.$nextTick()
+		const collapsible = wrapper.vm.actionDescriptors
+			.filter((a) => a.variant !== 'primary' && !a.children)
+			.map((a) => a.id)
+
+		// Declaration order is left-to-right; the owner specifies the header
+		// counting OUTWARDS from the `···`, so this list read backwards is
+		// Edit, Save as template, Manage permissions, Walkthrough, Setup
+		// wizard, Settings.
+		expect(collapsible.slice(0, 6)).toEqual([
+			'app-settings-action',
+			'app-edit-setup',
+			'app-edit-walkthrough',
+			'app-permissions',
+			'app-save-as-template',
+			'app-edit-record',
+		])
+		// GitHub and Permission history belong in the menu, not the bar.
+		expect(collapsible.slice(6)).toEqual(
+			expect.arrayContaining(['app-github', 'app-permission-history']),
+		)
 	})
 
 	it('the fetched flows become picker options labelled by name, valued by uuid', async () => {

@@ -4,9 +4,15 @@
   -
   - ApplicationDetailActions — the actions bar on the VirtualAppDetail
   - (`type: detail`) page (`config.actionsComponent: "ApplicationDetailActions"`).
-  - Surfaces a primary "Open app" button (the app's own manifest runtime), an
-  - Export button, and a "··· Actions" overflow menu (Settings — incl.
-  - publish/unpublish — GitHub, permissions, Save as template, Delete).
+  - The whole cluster is ONE CnActionButtons, fed by the `actionDescriptors`
+  - computed: "Open app" primary (carrying the version list as its chevron
+  - `children`), then the app-level actions (Settings — incl. publish/unpublish
+  - — GitHub, permissions, permission history, Save as template, Documentation,
+  - Delete), then the chrome editors (Setup wizard, Walkthrough, Support &
+  - donation, Export), then the page's own Edit last. `inline` decides how many
+  - stay buttons; the rest collapse into a single "··· Actions".
+  - Descriptors are composed in JS, not declared in the manifest, because each
+  - drives this component's own modals and the applicationContext gating.
   - Page/walkthrough design happens inside the running app via the in-app
   - Buildiq edit menu (CnBuildiqEditButton, ADR-041), not from here.
   - Reads/writes the Application via OR's REST API (ADR-022) + the dedicated
@@ -15,167 +21,19 @@
   -->
 <template>
 	<div class="ob-detail-actions">
-		<!-- Split button: primary opens PRODUCTION; chevron lists versions to
-		     view/use (and edit, editor+). Production is always the canonical URL. -->
-		<div v-if="builderUrl" class="ob-detail-actions__open">
-			<NcButton
-				variant="primary"
-				:href="builderUrl"
-				target="_blank"
-				class="ob-detail-actions__open-primary">
-				<template #icon>
-					<OpenInNew :size="20" />
-				</template>
-				{{ t('buildiq', 'Open app') }}
-			</NcButton>
-			<NcActions
-				v-if="openableVersions.length"
-				:menuName="t('buildiq', 'Open a version')"
-				:forceMenu="true"
-				class="ob-detail-actions__open-chevron">
-				<!-- Vue 3 requires the v-for key on the <template> itself, not on
-				     its children (Vue 2 allowed the per-child form used before). -->
-				<template v-for="v in openableVersions" :key="v.slug">
-					<NcActionButton @click="openVersion(v)">
-						<template #icon>
-							<OpenInNew :size="20" />
-						</template>
-						{{ versionLabel(v) }}
-					</NcActionButton>
-					<NcActionButton
-						v-if="canEditVersions"
-						class="ob-detail-actions__open-edit"
-						@click="editVersion(v)">
-						<template #icon>
-							<PencilRulerOutline :size="20" />
-						</template>
-						{{ t('buildiq', 'Edit {name}', { name: versionLabel(v) }) }}
-					</NcActionButton>
-				</template>
-			</NcActions>
-		</div>
-		<!-- App-level editors. These edit the app's chrome (its settings, its
-		     first-run wizard, its guided tour, its support note) rather than any
-		     one page, so they belong on the app page rather than in the in-page
-		     orange edit menu, which is being narrowed to page-local actions.
-		     Setup wizard opens the Walkthrough Designer on its own tab rather
-		     than a separate modal, because that designer already hosts one. -->
-		<NcButton
-			v-if="obAppRole === 'owner'"
-			data-test="app-edit-settings"
-			:disabled="!obApp"
-			@click="onSettingsOpen(true)">
-			<template #icon>
-				<CogOutline :size="20" />
-			</template>
-			{{ t('buildiq', 'Settings') }}
-		</NcButton>
-		<NcButton
-			v-if="canEditVersions"
-			data-test="app-edit-setup"
-			:disabled="!obApp"
-			@click="openWalkthroughDesigner('setup')">
-			<template #icon>
-				<MapMarkerPath :size="20" />
-			</template>
-			{{ t('buildiq', 'Setup wizard') }}
-		</NcButton>
-		<NcButton
-			v-if="canEditVersions"
-			data-test="app-edit-walkthrough"
-			:disabled="!obApp"
-			@click="openWalkthroughDesigner('walkthrough')">
-			<template #icon>
-				<MapMarkerPath :size="20" />
-			</template>
-			{{ t('buildiq', 'Walkthrough') }}
-		</NcButton>
-		<NcButton
-			v-if="canEditVersions"
-			data-test="app-edit-support"
-			:disabled="!obApp"
-			@click="openSupportEditor">
-			<template #icon>
-				<HeartOutline :size="20" />
-			</template>
-			{{ t('buildiq', 'Support & donation') }}
-		</NcButton>
-
-		<NcButton :disabled="!obApp" @click="exportOpen = true">
-			{{ t('buildiq', 'Export') }}
-		</NcButton>
-
-		<NcActions :menuName="t('buildiq', 'Actions')" :forceMenu="true">
-			<NcActionButton
-				v-if="obAppRole === 'owner'"
-				data-test="app-settings-action"
-				:disabled="!obApp"
-				@click="onSettingsOpen(true)">
-				<template #icon>
-					<CogOutline :size="20" />
-				</template>
-				{{ t('buildiq', 'Settings') }}
-			</NcActionButton>
-			<NcActionButton
-				v-if="obApp && obApp.slug"
-				:disabled="!obApp"
-				@click="githubOpen = true">
-				<template #icon>
-					<Github :size="20" />
-				</template>
-				{{ t('buildiq', 'GitHub') }}
-			</NcActionButton>
-			<NcActionButton
-				v-if="obAppRole === 'owner'"
-				:disabled="!obApp"
-				@click="permissionsOpen = true">
-				<template #icon>
-					<AccountMultipleOutline :size="20" />
-				</template>
-				{{ t('buildiq', 'Manage permissions') }}
-			</NcActionButton>
-			<NcActionButton
-				v-if="obAppRole === 'owner'"
-				:disabled="!obApp"
-				@click="historyOpen = true">
-				<template #icon>
-					<History :size="20" />
-				</template>
-				{{ t('buildiq', 'Permission history') }}
-			</NcActionButton>
-			<NcActionButton
-				v-if="canSaveAsTemplate"
-				:disabled="!obApp || saveTemplateLoading"
-				@click="openSaveAsTemplate">
-				<template #icon>
-					<ContentSaveOutline :size="20" />
-				</template>
-				{{
-					saveTemplateLoading
-						? t('buildiq', 'Preparing…')
-						: t('buildiq', 'Save as template')
-				}}
-			</NcActionButton>
-			<NcActionLink
-				href="https://openbuild.conduction.nl"
-				target="_blank"
-				rel="noopener noreferrer">
-				<template #icon>
-					<HelpCircleOutline :size="20" />
-				</template>
-				{{ t('buildiq', 'Documentation') }}
-			</NcActionLink>
-			<NcActionButton
-				v-if="obAppRole === 'owner'"
-				:disabled="!obApp"
-				@click="deleteOpen = true">
-				<template #icon>
-					<DeleteOutline :size="20" />
-				</template>
-				{{ t('buildiq', 'Delete') }}
-			</NcActionButton>
-		</NcActions>
-
+		<!-- The whole cluster is ONE CnActionButtons: `inline` decides how many
+		     stay buttons and the rest collapse into a single `···`, so there is
+		     one overflow menu on the page rather than this component's and the
+		     page's side by side. Descriptors are built in JS rather than
+		     declared in the manifest because every one of them drives this
+		     component's own modals and mixin gating — `onSelect` exists for
+		     exactly that. Open app keeps `variant: 'primary'` (never collapsed,
+		     costs no inline slot) and carries the version list as `children`, so
+		     it renders as the same split button it always was. -->
+		<CnActionButtons
+			:actions="actionDescriptors"
+			:inline="6"
+			:overflowLabel="t('buildiq', 'Actions')" />
 		<span v-if="toast" class="ob-detail-actions__toast">{{ toast }}</span>
 		<span v-if="error" class="ob-detail-actions__error">{{ error }}</span>
 
@@ -240,22 +98,13 @@
 </template>
 
 <script>
-import { CnEditSupportModal } from '@conduction/nextcloud-vue'
+// The action cluster names its icons as STRINGS in the CnActionButtons
+// descriptors, resolved by CnIcon through the registry src/icons.js fills — so
+// this file imports no icon components of its own any more.
+import { CnActionButtons, CnEditSupportModal } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcActionButton, NcActionLink, NcActions, NcButton } from '@nextcloud/vue'
 import { defineAsyncComponent } from 'vue'
-import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOutline.vue'
-import CogOutline from 'vue-material-design-icons/CogOutline.vue'
-import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
-import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
-import Github from 'vue-material-design-icons/Github.vue'
-import HeartOutline from 'vue-material-design-icons/HeartOutline.vue'
-import HelpCircleOutline from 'vue-material-design-icons/HelpCircleOutline.vue'
-import History from 'vue-material-design-icons/History.vue'
-import MapMarkerPath from 'vue-material-design-icons/MapMarkerPath.vue'
-import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
-import PencilRulerOutline from 'vue-material-design-icons/PencilRulerOutline.vue'
 import DeleteAppDialog from '../dialogs/DeleteAppDialog.vue'
 import SaveAsTemplateDialog from '../dialogs/SaveAsTemplateDialog.vue'
 import AppSettingsModal from '../modals/AppSettingsModal.vue'
@@ -283,25 +132,11 @@ const OR_TEMPLATES = '/apps/openregister/api/objects/buildiq/application-templat
 export default {
 	name: 'ApplicationDetailActions',
 	components: {
-		NcButton,
-		NcActions,
-		NcActionButton,
-		NcActionLink,
-		OpenInNew,
-		CogOutline,
-		MapMarkerPath,
-		DeleteOutline,
-		PencilRulerOutline,
-		AccountMultipleOutline,
-		History,
-		ContentSaveOutline,
-		HelpCircleOutline,
-		Github,
+		CnActionButtons,
 		PermissionsModal,
 		PermissionHistoryModal,
 		AppSettingsModal,
 		CnEditSupportModal,
-		HeartOutline,
 		GitHubSyncModal,
 		DeleteAppDialog,
 		SaveAsTemplateDialog,
@@ -309,6 +144,20 @@ export default {
 	},
 
 	mixins: [applicationContext],
+
+	props: {
+		/**
+		 * CnDetailPage's own record-edit opener, handed down through its
+		 * `#actions` slot scope. Lets Edit live inside this component's action
+		 * cluster instead of as a separate button beside it; the manifest sets
+		 * `showEditAction: false` so the page renders none of its own.
+		 */
+		openEditForm: {
+			type: Function,
+			default: null,
+		},
+	},
+
 	data() {
 		return {
 			versions: [],
@@ -341,6 +190,157 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The whole action cluster as CnActionButtons descriptors, in the order
+		 * they should appear: Open app (primary, with the version list as its
+		 * chevron), then the app-level actions, then the chrome editors, then
+		 * Edit last so it collapses before anything the app owns.
+		 *
+		 * Built here rather than declared in the manifest because each one
+		 * drives this component's own modals and the applicationContext mixin's
+		 * gating — `onSelect` is the hook for exactly that. The `v-if`s the old
+		 * markup carried become plain filters, so a non-owner still simply sees
+		 * fewer entries.
+		 *
+		 * @return {Array<object>} Descriptors for CnActionButtons.
+		 */
+		actionDescriptors() {
+			const isOwner = this.obAppRole === 'owner'
+			const out = []
+
+			if (this.builderUrl) {
+				out.push({
+					id: 'open-app',
+					label: t('buildiq', 'Open app'),
+					icon: 'OpenInNew',
+					variant: 'primary',
+					onSelect: () => window.open(this.builderUrl, '_blank', 'noopener'),
+					childrenLabel: t('buildiq', 'Open a version'),
+					children: this.openableVersions.flatMap((v) => [
+						{
+							id: `open-${v.slug}`,
+							label: this.versionLabel(v),
+							icon: 'OpenInNew',
+							onSelect: () => this.openVersion(v),
+						},
+						...(this.canEditVersions
+							? [{
+								id: `edit-${v.slug}`,
+								label: t('buildiq', 'Edit {name}', { name: this.versionLabel(v) }),
+								icon: 'PencilRulerOutline',
+								onSelect: () => this.editVersion(v),
+							}]
+							: []),
+					]),
+				})
+			}
+
+			// ── The six meant to stay BUTTONS, in order, Edit last ──
+			// CnActionButtons promotes the first N collapsible entries in
+			// declaration order, so this block IS the inline set: whatever sits
+			// here is what the header shows beside `···`. Keep it six long
+			// while `inline` is 6, and keep Edit at the end of it — that is what
+			// puts Edit immediately left of the trigger.
+			// Read this list BACKWARDS to get the owner's ordering: they count
+			// outwards from the `···`, so the last entry here is the nearest to
+			// it and the first is furthest left.
+			if (isOwner) {
+				out.push({
+					id: 'app-settings-action',
+					label: t('buildiq', 'Settings'),
+					icon: 'CogOutline',
+					onSelect: () => this.onSettingsOpen(true),
+				})
+			}
+			if (this.canEditVersions) {
+				out.push({
+					id: 'app-edit-setup',
+					label: t('buildiq', 'Setup wizard'),
+					icon: 'MapMarkerPath',
+					onSelect: () => this.openWalkthroughDesigner('setup'),
+				}, {
+					id: 'app-edit-walkthrough',
+					label: t('buildiq', 'Walkthrough'),
+					icon: 'MapMarkerPath',
+					onSelect: () => this.openWalkthroughDesigner('walkthrough'),
+				})
+			}
+			if (isOwner) {
+				out.push({
+					id: 'app-permissions',
+					label: t('buildiq', 'Manage permissions'),
+					icon: 'AccountMultipleOutline',
+					onSelect: () => { this.permissionsOpen = true },
+				})
+			}
+			if (this.canSaveAsTemplate) {
+				out.push({
+					id: 'app-save-as-template',
+					label: this.saveTemplateLoading
+						? t('buildiq', 'Preparing…')
+						: t('buildiq', 'Save as template'),
+					icon: 'ContentSaveOutline',
+					onSelect: () => this.openSaveAsTemplate(),
+				})
+			}
+			if (typeof this.openEditForm === 'function') {
+				out.push({
+					id: 'app-edit-record',
+					label: t('buildiq', 'Edit'),
+					icon: 'PencilOutline',
+					onSelect: () => this.openEditForm(),
+				})
+			}
+
+			// ── Everything below collapses into the `···` menu ──
+			if (this.obApp && this.obApp.slug) {
+				out.push({
+					id: 'app-github',
+					label: t('buildiq', 'GitHub'),
+					icon: 'Github',
+					onSelect: () => { this.githubOpen = true },
+				})
+			}
+			if (isOwner) {
+				out.push({
+					id: 'app-permission-history',
+					label: t('buildiq', 'Permission history'),
+					icon: 'History',
+					onSelect: () => { this.historyOpen = true },
+				})
+			}
+			if (this.canEditVersions) {
+				out.push({
+					id: 'app-edit-support',
+					label: t('buildiq', 'Support & donation'),
+					icon: 'HeartOutline',
+					onSelect: () => this.openSupportEditor(),
+				})
+			}
+			out.push({
+				id: 'app-export',
+				label: t('buildiq', 'Export'),
+				icon: 'TrayArrowDown',
+				onSelect: () => { this.exportOpen = true },
+			}, {
+				id: 'app-documentation',
+				label: t('buildiq', 'Documentation'),
+				icon: 'HelpCircleOutline',
+				onSelect: () => window.open('https://openbuild.conduction.nl', '_blank', 'noopener'),
+			})
+			if (isOwner) {
+				out.push({
+					id: 'app-delete',
+					label: t('buildiq', 'Delete'),
+					icon: 'DeleteOutline',
+					variant: 'error',
+					onSelect: () => { this.deleteOpen = true },
+				})
+			}
+
+			return out
+		},
+
 		/**
 		 * URL of the app's own manifest runtime (the nested CnAppRoot host at
 		 * /builder/{slug}). Shown as the primary "Open app" action whenever the
@@ -781,6 +781,10 @@ export default {
 		},
 
 		/**
+		 * Persist the app's data-register selection (owner only).
+		 *
+		 * @param {Array<string>} dataRegisters The selected register slugs.
+		 * @return {Promise<void>}
 		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		async setDataRegisters(dataRegisters) {
