@@ -58,6 +58,10 @@ export const FLEET_APP_CANDIDATES = Object.freeze({
  *
  * @param {string} canonical - canonical (new) app name, e.g. `integriq`.
  * @return {string[]} - candidate ids, newest first.
+ * @spec exclude Rename-map lookup with no requirement of its own: no feature
+ *  asks for it, and its only callers are resolvers. Covered by
+ *  tests/services/fleetAppId.spec.js, which pins that an app with no rename
+ *  on record yields only itself.
  */
 export function fleetAppCandidates(canonical) {
 	return FLEET_APP_CANDIDATES[canonical] || [canonical]
@@ -74,6 +78,12 @@ export function fleetAppCandidates(canonical) {
  * @return {string} - the installed id, or the canonical name when neither
  *  candidate is present. A request that 404s is a better signal than one that
  *  is never sent.
+ * @spec exclude The browser half of the fleet-rename resolver, implementing no
+ *  requirement of its own. It exists so REQ-OCAS-005, REQ-PWA-002/003/005 and
+ *  REQ-NTS-005 keep holding on both sides of the rename, and it is exercised
+ *  through them. Directly covered by tests/services/fleetAppId.spec.js, which
+ *  pins BOTH directions: a test that only pinned one could not tell this
+ *  apart from a hardcoded literal.
  */
 export function resolveFleetAppId(canonical) {
 	const candidates = fleetAppCandidates(canonical)
@@ -101,6 +111,11 @@ export function resolveFleetAppId(canonical) {
  * @return {string} - e.g. `/apps/integriq/api/endpoint/kvk/companies`. Not run
  *  through `generateUrl` — callers do that, because some of them build the
  *  suffix from already-encoded input.
+ * @spec exclude String assembly over resolveFleetAppId's answer, with no
+ *  requirement of its own; the requirements belong to the callers that build
+ *  a URL with it. Covered by tests/services/fleetAppId.spec.js, and end to
+ *  end by tests/services/procestLinks.spec.js and
+ *  tests/composables/useConnectorDataSource.spec.js.
  */
 export function fleetAppPath(canonical, suffix = '') {
 	const base = `/apps/${resolveFleetAppId(canonical)}`
