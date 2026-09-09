@@ -118,6 +118,10 @@ class AppChannelApplierTest extends TestCase {
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->appManager = $this->createMock(IAppManager::class);
+		// FleetAppId::resolve() asks isInstalled() before isEnabledForUser(),
+		// so the id resolves to 'integriq' and the per-test isEnabledForUser
+		// stub stays the thing under test.
+		$this->appManager->method('isInstalled')->willReturn(true);
 		$this->locator = $this->createMock(ContainerLocator::class);
 		$this->flowService = $this->createMock(FlowService::class);
 
@@ -395,6 +399,91 @@ class AppChannelApplierTest extends TestCase {
 		self::assertSame('openconnector-unavailable', $report['channels']['connectors']['reason']);
 
 	}//end testConnectorsDegradeWhenOpenConnectorIsAbsent()
+
+	/**
+	 * The connectors channel applies on an instance that runs integriq.
+	 *
+	 * THE DEFECT THIS PINS. The guard used to read
+	 * `isEnabledForUser('openconnector')`. Integriq is that app renamed, and
+	 * an instance on any current release registers only `integriq`, so the
+	 * guard answered false and every declared connector was skipped. Nothing
+	 * errored: the report said `openconnector-unavailable`, which reads as
+	 * "the admin has not installed it" rather than "we asked for a name
+	 * nothing answers to".
+	 *
+	 * @return void
+	 */
+	public function testConnectorsApplyOnAnInstanceRunningIntegriq(): void {
+		$this->appManager = $this->appManagerWithOnly(installed: 'integriq');
+		$this->objectService->expects(self::once())->method('saveObject');
+
+		$report = $this->applier()->apply(
+			template: $this->templateWithConnector(kind: 'source', uuid: self::NIL_UUID)
+		);
+
+		self::assertSame(1, $report['channels']['connectors']['declared']);
+		self::assertSame(0, $report['channels']['connectors']['skipped']);
+		// `reason` is always present and null by default, so the discriminating
+		// assertion is that it is NOT the degradation code.
+		self::assertNotSame(
+			'openconnector-unavailable',
+			$report['channels']['connectors']['reason']
+		);
+
+	}//end testConnectorsApplyOnAnInstanceRunningIntegriq()
+
+	/**
+	 * The connectors channel still applies on a pre-rename instance.
+	 *
+	 * The mirror of the case above, and the reason the fix is a resolver
+	 * rather than a swapped literal: an instance pinned to the published
+	 * `openconnector` release registers only that id, so hardcoding `integriq`
+	 * would move the identical silent skip onto it.
+	 *
+	 * @return void
+	 */
+	public function testConnectorsApplyOnAPreRenameInstance(): void {
+		$this->appManager = $this->appManagerWithOnly(installed: 'openconnector');
+		$this->objectService->expects(self::once())->method('saveObject');
+
+		$report = $this->applier()->apply(
+			template: $this->templateWithConnector(kind: 'source', uuid: self::NIL_UUID)
+		);
+
+		self::assertSame(1, $report['channels']['connectors']['declared']);
+		self::assertSame(0, $report['channels']['connectors']['skipped']);
+		// `reason` is always present and null by default, so the discriminating
+		// assertion is that it is NOT the degradation code.
+		self::assertNotSame(
+			'openconnector-unavailable',
+			$report['channels']['connectors']['reason']
+		);
+
+	}//end testConnectorsApplyOnAPreRenameInstance()
+
+	/**
+	 * An app manager that knows exactly one installed app id.
+	 *
+	 * A fresh mock rather than a reconfiguration of `$this->appManager`:
+	 * `setUp()` already answers `isInstalled` unconditionally, and PHPUnit
+	 * keeps the first stub for a method.
+	 *
+	 * @param string $installed The one app id this fake instance registered.
+	 *
+	 * @return IAppManager&MockObject The stubbed app manager.
+	 */
+	private function appManagerWithOnly(string $installed): IAppManager {
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('isInstalled')->willReturnCallback(
+			static fn (string $id): bool => $id === $installed
+		);
+		$appManager->method('isEnabledForUser')->willReturnCallback(
+			static fn (string $id): bool => $id === $installed
+		);
+
+		return $appManager;
+
+	}//end appManagerWithOnly()
 
 	/**
 	 * Skills degrade when hermiq is absent, keeping the declared count so the

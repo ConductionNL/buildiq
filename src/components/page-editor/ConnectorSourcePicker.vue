@@ -84,7 +84,7 @@ export default {
 	 * @spec openspec/changes/openconnector-api-sources/tasks.md#task-2.2
 	 */
 	setup() {
-		const status = useAppStatus('openconnector')
+		const status = useAppStatus('integriq')
 		return { status }
 	},
 
@@ -158,6 +158,19 @@ export default {
 			this.loading = true
 			this.error = false
 			try {
+				// NOT REPOINTED, ON PURPOSE. Integriq no longer serves
+				// `GET /api/endpoints`: its `resources` block was deleted with
+				// the chain-C OpenRegister cutover and `EndpointsController`
+				// now publishes only `handlePath`, `preflightedCors` and
+				// `logs` (read at integriq@development, appinfo/routes.php).
+				// Integriq's own UI lists endpoints from OpenRegister instead,
+				// at `/apps/openregister/api/objects/integriq/endpoint`, which
+				// returns a different payload shape AND depends on the
+				// register-slug rename this change deliberately does not
+				// touch. Correcting the app segment alone would leave the
+				// picker just as empty while the diff read as a fix, so the
+				// stale path stays until the move to the OpenRegister object
+				// API is made and tested as its own change.
 				const url = generateUrl('/apps/openconnector/api/endpoints')
 				const { data } = await axios.get(url)
 				const list = (data && (data.results || data)) || []
