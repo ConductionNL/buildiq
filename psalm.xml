@@ -137,14 +137,21 @@
                      before this entry. -->
                 <referencedClass name="OCA\OpenRegister\Contract\ObjectEntityInterface"/>
                 <!-- The register-slug resolver contract and its return type.
-                     Same situation as the two above, with one extra wrinkle
-                     worth writing down: these were published to the hydra-gates
-                     package by ConductionNL/.github#739, which merged AFTER
-                     v1.17.0 was cut, so no tagged release ships them yet. Even
-                     an app that vendors the contracts therefore cannot resolve
-                     these two from vendor/ today. Once a tag carries them this
-                     pair can go, and `findUnusedBaselineEntry` is not what
-                     enforces that — someone re-reading this comment is. -->
+                     Same situation as the two above, and for the same reason,
+                     which is not the reason the first version of this comment
+                     gave. That version said the pair could go once a tagged
+                     hydra-gates release carried the files. v1.18.0 carries
+                     them, and psalm still cannot resolve them, so the claim was
+                     wrong. The cause is structural: conduction/hydra-gates
+                     declares no autoload section at all, so nothing under
+                     vendor/conduction/hydra-gates/hydra-gates/contracts/ is
+                     autoloadable, and this config ignores vendor outright.
+                     Measured on this checkout at v1.18.0 by deleting the
+                     ObjectEntityInterface entry above, which the package has
+                     shipped far longer: psalm exits 2 on that one too. What
+                     would make all four removable is an autoload entry on the
+                     package, or listing the contract files as psalm stubs
+                     here. A tag is not it. -->
                 <referencedClass name="OCA\OpenRegister\Contract\RegisterSlugResolverInterface"/>
                 <referencedClass name="OCA\OpenRegister\Contract\RegisterSlugResolution"/>
                 <!-- The sanctioned single entry point for flows (ADR-022) —
