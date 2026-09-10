@@ -33,6 +33,7 @@ namespace OCA\Buildiq\Service;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\RegisterService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -62,6 +63,7 @@ class ApplicationDeletionService {
 	 * @param ObjectServiceInterface $objectService OR object surface (find + delete)
 	 * @param RegisterService $registerService OR register-level service (delete)
 	 * @param RegisterMapper $registerMapper OR register lookup (by slug)
+	 * @param SchemaMapper $schemaMapper OR schema lookup + delete
 	 * @param LoggerInterface $logger PSR logger
 	 *
 	 * @return void
@@ -70,13 +72,15 @@ class ApplicationDeletionService {
 		private readonly ObjectServiceInterface $objectService,
 		private readonly RegisterService $registerService,
 		private readonly RegisterMapper $registerMapper,
+		private readonly SchemaMapper $schemaMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
 	/**
 	 * Delete an Application plus its versions and routes, and — only when
-	 * $deleteData is true — its per-version registers and all their objects.
+	 * $deleteData is true — its per-version registers, every object stored in
+	 * them, and the schema definitions those registers owned.
 	 *
 	 * By default ($deleteData false) the underlying registers and the data
 	 * inside them are PRESERVED: the app wrapper is removed but the user's data
@@ -84,8 +88,8 @@ class ApplicationDeletionService {
 	 *
 	 * @param string $appUuid The Application UUID.
 	 * @param string $appSlug The Application slug (for log context).
-	 * @param bool $deleteData When true, also delete the per-version registers
-	 *                         and every object stored in them.
+	 * @param bool $deleteData When true, also delete the per-version registers,
+	 *                         every object stored in them, and their schemas.
 	 *
 	 * @return array<int,string> Resources that could not be removed (orphaned).
 	 *
@@ -201,6 +205,10 @@ class ApplicationDeletionService {
 			return;
 		}
 
+		// Read the schema set BEFORE the register goes: it is the only record of
+		// which schemas this app owned.
+		$schemaIds = ($register->getSchemas() ?? []);
+
 		// RegisterMapper::delete() refuses to remove a register that still has
 		// objects attached. Drain it first: otherwise the register — and its
 		// unique organisation+slug row — survives the teardown, and a later
@@ -216,8 +224,95 @@ class ApplicationDeletionService {
 				['slug' => $registerSlug, 'message' => $e->getMessage()]
 			);
 			$orphaned[] = 'register:' . $registerSlug;
+			return;
 		}
+
+		$this->deleteUnreferencedSchemas(schemaIds: $schemaIds, registerSlug: $registerSlug, orphaned: $orphaned);
 	}//end deleteRegister()
+
+	/**
+	 * Delete the schema DEFINITIONS the just-removed register owned.
+	 *
+	 * Draining a register removes the rows stored under each of its schemas, and
+	 * deleting the register removes the namespace — but the schemas the wizard
+	 * cloned into that namespace (`{app}-{version}-{name}`) outlive both. They
+	 * are invisible to every list scoped by register, yet a schema search still
+	 * finds them, so "Also permanently delete all data" left a growing pile of
+	 * unowned definitions behind on every delete.
+	 *
+	 * A schema is only removed when no OTHER register still lists it: OR models
+	 * `register.schemas` as a reference list, so the same definition can legally
+	 * be shared, and deleting a shared one would break the register that kept it.
+	 *
+	 * @param array<int,mixed> $schemaIds Schema ids the register owned.
+	 * @param string $registerSlug The register slug (for log context).
+	 * @param array<int,string> $orphaned Collector for failures.
+	 *
+	 * @return void
+	 */
+	private function deleteUnreferencedSchemas(array $schemaIds, string $registerSlug, array &$orphaned): void {
+		if ($schemaIds === []) {
+			return;
+		}
+
+		try {
+			$referenced = $this->schemaIdsHeldByRegisters();
+		} catch (Throwable $e) {
+			// A scan we cannot trust must not authorise a delete: skip the
+			// cleanup and orphan the schemas rather than risk removing one
+			// another register still holds.
+			$this->logger->error(
+				'Buildiq: deleteApplication could not scan registers for schema references: {message}',
+				['message' => $e->getMessage()]
+			);
+			foreach ($schemaIds as $schemaId) {
+				$orphaned[] = 'schema:' . (string)$schemaId;
+			}
+
+			return;
+		}
+
+		foreach ($schemaIds as $schemaId) {
+			if (in_array((int)$schemaId, $referenced, true) === true) {
+				continue;
+			}
+
+			try {
+				$schema = $this->schemaMapper->find(id: $schemaId, _rbac: false, _multitenancy: false);
+				$this->schemaMapper->delete(entity: $schema);
+			} catch (Throwable $e) {
+				$this->logger->error(
+					'Buildiq: deleteApplication failed to delete schema {schema} of register {slug}: {message}',
+					['schema' => (string)$schemaId, 'slug' => $registerSlug, 'message' => $e->getMessage()]
+				);
+				$orphaned[] = 'schema:' . (string)$schemaId;
+			}
+		}
+	}//end deleteUnreferencedSchemas()
+
+	/**
+	 * Collect every schema id still claimed by a register.
+	 *
+	 * Unfiltered on purpose (`_rbac`/`_multitenancy` off): a schema shared with a
+	 * register the caller cannot see is still shared, and a filtered scan would
+	 * report it as unreferenced and delete it out from under that register.
+	 *
+	 * @throws Throwable When the register scan fails; the caller skips the cleanup.
+	 *
+	 * @return array<int,int> Schema ids, deduplicated.
+	 */
+	private function schemaIdsHeldByRegisters(): array {
+		$registers = $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
+
+		$ids = [];
+		foreach ($registers as $register) {
+			foreach (($register->getSchemas() ?? []) as $schemaId) {
+				$ids[] = (int)$schemaId;
+			}
+		}
+
+		return array_values(array_unique($ids));
+	}//end schemaIdsHeldByRegisters()
 
 	/**
 	 * Delete every object stored in a register, across all its schemas.
