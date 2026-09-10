@@ -216,6 +216,24 @@ describe('PageDesigner live-preview pane (REQ-OBPD-008)', () => {
 		expect(wrapper.findComponent({ name: 'CnAppRoot' }).exists()).toBe(false)
 	})
 
+	// Its menu entries are router-links on the DESIGNER's router, and the pages
+	// it renders carry real write buttons.
+	it('renders the preview inert, so it cannot navigate or act', async () => {
+		previewAvailableRef.value = true
+		previewPropsMock.mockImplementation((slug, manifest) => ({
+			appId: `openbuild-preview-${slug}`,
+			manifest,
+			key: 'k',
+		}))
+		const wrapper = mountDesigner({ pages: [], menu: [] }, 'hello-world')
+		await wrapper.vm.$nextTick()
+
+		const viewport = wrapper.find('.page-designer__preview-viewport')
+		expect(viewport.exists()).toBe(true)
+		// The attribute, not CSS: that is what removes the tab stops.
+		expect(viewport.attributes('inert')).toBeDefined()
+	})
+
 	it('rendering the preview never emits a manifest write (no PUT/save path)', async () => {
 		previewAvailableRef.value = true
 		previewPropsMock.mockImplementation((slug, manifest) => ({

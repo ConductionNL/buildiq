@@ -33,7 +33,15 @@
 		     `:value`/`@input`, sortable options are plain props instead of an
 		     `:options` object, and rows MUST come from the `#item` scoped slot —
 		     a v-for in the default slot throws "draggable element must have an
-		     item slot" at render. -->
+		     item slot" at render.
+
+		     Keep comments OUT of the `#item` slot: dev builds keep comment nodes
+		     (production strips them), so one beside the row makes the slot yield
+		     two children and vuedraggable rejects it.
+
+		     The row uses `role="group"`, not `role="button"`, because it contains
+		     interactive controls a button role would hide; `@focusin` selects it
+		     so keyboard users get what the mouse always had. -->
 		<Draggable
 			:modelValue="pages"
 			handle=".page-list-editor__drag-handle"
@@ -42,20 +50,6 @@
 			class="page-list-editor__list"
 			@update:modelValue="onReorder">
 			<template #item="{ element: page, index }">
-				<!--
-					The row is selected by CLICK, and until now by click only:
-					every field inside carries `@click.stop`, so a keyboard user
-					tabbing into a row's inputs was editing a page that was never
-					selected. `@focusin` is the substantive repair — it gives the
-					keyboard the same selection the mouse always had.
-
-					`role="group"` + `aria-label` (not `role="button"`) because the
-					row CONTAINS interactive controls; a button's children are
-					presentational, so `role="button"` here would hide the inputs
-					from assistive technology. `tabindex="-1"` makes the row
-					programmatically focusable without adding a second tab stop in
-					front of the fields it wraps.
-				-->
 				<div
 					class="page-list-editor__row"
 					:class="{
