@@ -37,10 +37,12 @@ use OCA\Buildiq\Service\AgentChannelProvisioner;
 use OCA\Buildiq\Service\AppChannelApplier;
 use OCA\Buildiq\Service\AppRepoParser;
 use OCA\Buildiq\Service\ChannelApplyReport;
+use OCA\Buildiq\Service\ConnectorRegisterAvailability;
 use OCA\Buildiq\Service\ContainerLocator;
 use OCA\Buildiq\Service\DataRegisterProvisioner;
 use OCA\Buildiq\Service\FlowChannelProvisioner;
 use OCA\Buildiq\Service\SkillChannelDelegate;
+use OCA\Buildiq\Tests\Unit\Support\FakeSlugResolver;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Flow;
@@ -135,6 +137,14 @@ class AppChannelApplierTest extends TestCase {
 	private function applier(): AppChannelApplier {
 		return new AppChannelApplier(
 			$this->objectService,
+			// A MIGRATED instance, which is what every existing test in this file
+			// assumes without ever having said so. `ConnectorRegisterResolutionTest`
+			// is where the migrated and unmigrated cases are told apart.
+			new ConnectorRegisterAvailability(
+				new FakeSlugResolver(['integriq']),
+				$this->appManager,
+				$this->createMock(LoggerInterface::class)
+			),
 			// A REAL provisioner over mocked mappers: its declareChannel call is
 			// what keeps the dataRegisters channel present in every report, so a
 			// mock here would quietly remove an assertion this file depends on.
@@ -167,7 +177,6 @@ class AppChannelApplierTest extends TestCase {
 				$this->objectService,
 				$this->createMock(LoggerInterface::class)
 			),
-			$this->appManager,
 			$this->createMock(LoggerInterface::class),
 		);
 
@@ -315,7 +324,13 @@ class AppChannelApplierTest extends TestCase {
 			->with(
 				self::anything(), // object
 				self::anything(), // extend
-				'openconnector',  // register
+				// The RESOLVED slug, not a literal. This assertion used to read
+				// 'openconnector' and passed for as long as the code pinned the
+				// same word, which is what an assertion that copies the
+				// implementation buys you. The applier is now built with a
+				// migrated instance, so this is the one that reddens if the
+				// resolution is dropped.
+				'integriq',       // register
 				'source',         // schema
 				self::NIL_UUID,   // uuid
 				false,            // _rbac
