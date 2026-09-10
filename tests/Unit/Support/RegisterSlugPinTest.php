@@ -126,6 +126,20 @@ class RegisterSlugPinTest extends TestCase {
 	 * is the likeliest place for a pin to survive a rename, because it is the
 	 * branch nobody exercises on a healthy instance.
 	 *
+	 * BEFORE WIDENING THIS LIST AGAIN, read
+	 * {@see testNoFileTypesAPerVersionRegisterPrefix()}. Two things it knows
+	 * that this list cannot learn.
+	 *
+	 * Every pattern here captures a WHOLE slug, and whole-slug matching is not
+	 * sufficient. A register name assembled from a prefix carries the stale half
+	 * as `openbuild-`, which is not a key in SUPERSEDED and never will be, so no
+	 * amount of widening here reaches it.
+	 *
+	 * And that guard runs in the opposite direction to this one. This list
+	 * forbids the OLD name. That one forbids the NEW name where the old is
+	 * frozen, which is the shape that was live in this repository while this
+	 * guard read green.
+	 *
 	 * @var list<string>
 	 */
 	private const REGISTER_POSITION = [
