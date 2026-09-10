@@ -151,33 +151,34 @@ describe('ApplicationDetailActions — App settings loads the flow list', () => 
 			.not.toContain('app-edit-record')
 	})
 
-	it('inlines exactly the intended six, Edit last', async () => {
+	it('inlines exactly the intended two, Edit last', async () => {
 		// CnActionButtons promotes the first N collapsible entries in
-		// declaration order, so the first six ARE the header's buttons and the
-		// rest are the menu. Pinned because the split is invisible in the
-		// descriptor list itself — reordering the computed silently moves a
-		// control between the bar and the menu.
+		// declaration order, so the first two ARE the header's buttons (beside
+		// the never-collapsed "Open app") and the rest are the menu. Pinned
+		// because the split is invisible in the descriptor list itself —
+		// reordering the computed silently moves a control between the bar and
+		// the menu.
 		const wrapper = mountActions({ openEditForm: () => {} })
 		await wrapper.vm.$nextTick()
 		const collapsible = wrapper.vm.actionDescriptors
 			.filter((a) => a.variant !== 'primary' && !a.children)
 			.map((a) => a.id)
 
-		// Declaration order is left-to-right; the owner specifies the header
-		// counting OUTWARDS from the `···`, so this list read backwards is
-		// Edit, Save as template, Manage permissions, Walkthrough, Setup
-		// wizard, Settings.
-		expect(collapsible.slice(0, 6)).toEqual([
+		// Declaration order is left-to-right, so Edit sits nearest the `···`.
+		expect(collapsible.slice(0, 2)).toEqual([
 			'app-settings-action',
-			'app-edit-setup',
-			'app-edit-walkthrough',
-			'app-permissions',
-			'app-save-as-template',
 			'app-edit-record',
 		])
-		// GitHub and Permission history belong in the menu, not the bar.
-		expect(collapsible.slice(6)).toEqual(
-			expect.arrayContaining(['app-github', 'app-permission-history']),
+		// Everything else belongs in the menu, not the bar.
+		expect(collapsible.slice(2)).toEqual(
+			expect.arrayContaining([
+				'app-edit-setup',
+				'app-edit-walkthrough',
+				'app-permissions',
+				'app-save-as-template',
+				'app-github',
+				'app-permission-history',
+			]),
 		)
 	})
 

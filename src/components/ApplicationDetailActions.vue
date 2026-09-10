@@ -6,11 +6,10 @@
   - (`type: detail`) page (`config.actionsComponent: "ApplicationDetailActions"`).
   - The whole cluster is ONE CnActionButtons, fed by the `actionDescriptors`
   - computed: "Open app" primary (carrying the version list as its chevron
-  - `children`), then the app-level actions (Settings — incl. publish/unpublish
-  - — GitHub, permissions, permission history, Save as template, Documentation,
-  - Delete), then the chrome editors (Setup wizard, Walkthrough, Support &
-  - donation, Export), then the page's own Edit last. `inline` decides how many
-  - stay buttons; the rest collapse into a single "··· Actions".
+  - `children`), then Settings and the page's own Edit, then everything else
+  - (chrome editors, permissions, Save as template, GitHub, Documentation,
+  - Export, Delete). `inline` is 2, so those two stay buttons beside the primary
+  - and the rest collapse into a single "··· Actions".
   - Descriptors are composed in JS, not declared in the manifest, because each
   - drives this component's own modals and the applicationContext gating.
   - Page/walkthrough design happens inside the running app via the in-app
@@ -32,7 +31,7 @@
 		     it renders as the same split button it always was. -->
 		<CnActionButtons
 			:actions="actionDescriptors"
-			:inline="6"
+			:inline="2"
 			:overflowLabel="t('buildiq', 'Actions')" />
 		<span v-if="toast" class="ob-detail-actions__toast">{{ toast }}</span>
 		<span v-if="error" class="ob-detail-actions__error">{{ error }}</span>
@@ -236,15 +235,13 @@ export default {
 				})
 			}
 
-			// ── The six meant to stay BUTTONS, in order, Edit last ──
+			// ── The two meant to stay BUTTONS, Edit last ──
 			// CnActionButtons promotes the first N collapsible entries in
 			// declaration order, so this block IS the inline set: whatever sits
-			// here is what the header shows beside `···`. Keep it six long
-			// while `inline` is 6, and keep Edit at the end of it — that is what
-			// puts Edit immediately left of the trigger.
-			// Read this list BACKWARDS to get the owner's ordering: they count
-			// outwards from the `···`, so the last entry here is the nearest to
-			// it and the first is furthest left.
+			// here is what the header shows beside `···`. Keep it two long while
+			// `inline` is 2, and keep Edit at the end of it — that is what puts
+			// Edit immediately left of the trigger. With the never-collapsed
+			// "Open app" that makes three buttons in the header.
 			if (isOwner) {
 				out.push({
 					id: 'app-settings-action',
@@ -253,6 +250,16 @@ export default {
 					onSelect: () => this.onSettingsOpen(true),
 				})
 			}
+			if (typeof this.openEditForm === 'function') {
+				out.push({
+					id: 'app-edit-record',
+					label: t('buildiq', 'Edit'),
+					icon: 'PencilOutline',
+					onSelect: () => this.openEditForm(),
+				})
+			}
+
+			// ── Everything below collapses into the `···` menu ──
 			if (this.canEditVersions) {
 				out.push({
 					id: 'app-edit-setup',
@@ -284,16 +291,6 @@ export default {
 					onSelect: () => this.openSaveAsTemplate(),
 				})
 			}
-			if (typeof this.openEditForm === 'function') {
-				out.push({
-					id: 'app-edit-record',
-					label: t('buildiq', 'Edit'),
-					icon: 'PencilOutline',
-					onSelect: () => this.openEditForm(),
-				})
-			}
-
-			// ── Everything below collapses into the `···` menu ──
 			if (this.obApp && this.obApp.slug) {
 				out.push({
 					id: 'app-github',
