@@ -62,11 +62,16 @@
 					:class="{
 						'ob-detail-dashboard__kpi-link--clickable': !!registerSlug,
 					}"
-					role="button"
-					tabindex="0"
-					:title="t('buildiq', 'Open in OpenRegister')"
+					:role="registerSlug ? 'link' : null"
+					:tabindex="registerSlug ? 0 : null"
+					:title="registerSlug ? t('buildiq', 'Open in OpenRegister') : null"
 					@click="openInRegister('audit')"
 					@keyup.enter="openInRegister('audit')">
+					<ArrowTopRight
+						v-if="registerSlug"
+						class="ob-detail-dashboard__kpi-go"
+						:size="16"
+						aria-hidden="true" />
 					<CnStatsBlock
 						class="ob-detail-dashboard__kpi"
 						horizontal
@@ -85,11 +90,16 @@
 					:class="{
 						'ob-detail-dashboard__kpi-link--clickable': !!registerSlug,
 					}"
-					role="button"
-					tabindex="0"
-					:title="t('buildiq', 'Open in OpenRegister')"
+					:role="registerSlug ? 'link' : null"
+					:tabindex="registerSlug ? 0 : null"
+					:title="registerSlug ? t('buildiq', 'Open in OpenRegister') : null"
 					@click="openInRegister('objects')"
 					@keyup.enter="openInRegister('objects')">
+					<ArrowTopRight
+						v-if="registerSlug"
+						class="ob-detail-dashboard__kpi-go"
+						:size="16"
+						aria-hidden="true" />
 					<CnStatsBlock
 						class="ob-detail-dashboard__kpi"
 						horizontal
@@ -113,11 +123,16 @@
 					:class="{
 						'ob-detail-dashboard__kpi-link--clickable': !!registerSlug,
 					}"
-					role="button"
-					tabindex="0"
-					:title="t('buildiq', 'Open in OpenRegister')"
+					:role="registerSlug ? 'link' : null"
+					:tabindex="registerSlug ? 0 : null"
+					:title="registerSlug ? t('buildiq', 'Open in OpenRegister') : null"
 					@click="openInRegister('files')"
 					@keyup.enter="openInRegister('files')">
+					<ArrowTopRight
+						v-if="registerSlug"
+						class="ob-detail-dashboard__kpi-go"
+						:size="16"
+						aria-hidden="true" />
 					<CnStatsBlock
 						v-if="loaded"
 						class="ob-detail-dashboard__kpi"
@@ -148,11 +163,16 @@
 					:class="{
 						'ob-detail-dashboard__kpi-link--clickable': !!registerSlug,
 					}"
-					role="button"
-					tabindex="0"
-					:title="t('buildiq', 'Open in OpenRegister')"
+					:role="registerSlug ? 'link' : null"
+					:tabindex="registerSlug ? 0 : null"
+					:title="registerSlug ? t('buildiq', 'Open in OpenRegister') : null"
 					@click="openInRegister('audit')"
 					@keyup.enter="openInRegister('audit')">
+					<ArrowTopRight
+						v-if="registerSlug"
+						class="ob-detail-dashboard__kpi-go"
+						:size="16"
+						aria-hidden="true" />
 					<CnStatsBlock
 						class="ob-detail-dashboard__kpi"
 						horizontal
@@ -281,6 +301,7 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import NcButton from '@nextcloud/vue/components/NcButton'
 import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOutline.vue'
+import ArrowTopRight from 'vue-material-design-icons/ArrowTopRight.vue'
 import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
 import Harddisk from 'vue-material-design-icons/Harddisk.vue'
 import History from 'vue-material-design-icons/History.vue'
@@ -302,6 +323,7 @@ import { buildVersionedRoute } from '../../router/helpers.js'
 export default {
 	name: 'ApplicationDetailDashboard',
 	components: {
+		ArrowTopRight,
 		CnStatsBlock,
 		NcButton,
 		FlowsWidget,
@@ -1165,15 +1187,45 @@ export default {
 
 /* Each KPI card is a clickable deep-link into OpenRegister. */
 .ob-detail-dashboard__kpi-link {
+	position: relative;
 	border-radius: var(--border-radius-large, 8px);
 }
 
-.ob-detail-dashboard__kpi-link--clickable {
+/* On the card itself, not just this wrapper: CnStatsBlock's root fills the
+   wrapper, so the pointer is always over ITS subtree, and the wrapper's own
+   cursor never showed. */
+.ob-detail-dashboard__kpi-link--clickable,
+.ob-detail-dashboard__kpi-link--clickable :deep(.cn-kpi-card),
+.ob-detail-dashboard__kpi-link--clickable :deep(.cn-kpi-card *) {
 	cursor: pointer;
 }
 
 .ob-detail-dashboard__kpi-link--clickable:hover {
 	background: var(--color-background-hover, rgba(127, 127, 127, 0.08));
+}
+
+/* The border/shadow the library gives its own `.cn-kpi-card--clickable`, so
+   these read like every other clickable KPI card in the fleet. */
+.ob-detail-dashboard__kpi-link--clickable:hover :deep(.cn-kpi-card) {
+	border-color: var(--color-primary-element);
+	box-shadow: 0 2px 8px var(--color-box-shadow);
+}
+
+/* The only affordance these cards had was the pointer cursor and a hover
+   tint — both of which require already suspecting they are clickable. This
+   marker is visible at rest, and says "leaves this page" rather than just
+   "interactive", since the target is OpenRegister. */
+.ob-detail-dashboard__kpi-go {
+	position: absolute;
+	inset-block-start: 6px;
+	inset-inline-end: 8px;
+	color: var(--color-text-maxcontrast);
+	pointer-events: none;
+}
+
+.ob-detail-dashboard__kpi-link--clickable:hover .ob-detail-dashboard__kpi-go,
+.ob-detail-dashboard__kpi-link--clickable:focus-visible .ob-detail-dashboard__kpi-go {
+	color: var(--color-primary-element);
 }
 
 .ob-detail-dashboard__kpi-link--clickable:focus-visible {
