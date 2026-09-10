@@ -246,7 +246,8 @@
 			<PagesWidget
 				:appSlug="appSlug"
 				:versionSlug="activeVersionSlug"
-				:pages="activePages" />
+				:pages="activePages"
+				@addPage="onAddPage" />
 			<MenuWidget
 				:appSlug="appSlug"
 				:versionSlug="activeVersionSlug"
@@ -838,6 +839,29 @@ export default {
 
 			this.$router
 				.push({ name: 'SchemaDesignerList', params: { slug: this.appSlug } })
+				.catch(() => {})
+		},
+
+		/**
+		 * Open the page designer for this app, forwarding the active version the
+		 * same way the widget's row deep-links do. The counterpart to
+		 * `onAddSchema`, for an app whose `pages` are still empty.
+		 *
+		 * @return {void}
+		 */
+		onAddPage() {
+			if (!this.appSlug) {
+				return
+			}
+
+			this.$router
+				.push(
+					buildVersionedRoute(
+						'PageDesigner',
+						{ slug: this.appSlug },
+						this.activeVersionSlug || undefined,
+					),
+				)
 				.catch(() => {})
 		},
 

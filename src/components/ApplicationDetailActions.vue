@@ -114,6 +114,7 @@ import PermissionsModal from '../modals/PermissionsModal.vue'
 import { useRegisterPicker } from '../composables/useRegisterPicker.js'
 import { getCurrentUserGroups } from '../composables/useRole.js'
 import applicationContext from '../mixins/applicationContext.js'
+import { buildVersionedRoute } from '../router/helpers.js'
 
 // Vue 3 requires `defineAsyncComponent()` around a lazy import. The bare
 // `() => import(…)` form is Vue 2 syntax: Vue 3 accepts a plain function as a
@@ -539,6 +540,10 @@ export default {
 		 * Edit a version in the page designer, scoped via `?_version=` for
 		 * non-production versions.
 		 *
+		 * Routed, not `window.location.href`: `/builder/{slug}/pages` is the SPA's
+		 * own PageDesigner route, so the hard navigation only bought a full
+		 * reload — which also silently ended any in-progress walkthrough.
+		 *
 		 * @param {object} v The version row.
 		 * @return {void}
 		 *
@@ -548,12 +553,15 @@ export default {
 			if (!this.obApp || !this.obApp.slug) {
 				return
 			}
-			const base = generateUrl(
-				`/apps/buildiq/builder/${this.obApp.slug}/pages`,
-			)
-			window.location.href = this.isProductionVersion(v)
-				? base
-				: `${base}?_version=${encodeURIComponent(v.slug)}`
+			this.$router
+				.push(
+					buildVersionedRoute(
+						'PageDesigner',
+						{ slug: this.obApp.slug },
+						this.isProductionVersion(v) ? undefined : v.slug,
+					),
+				)
+				.catch(() => {})
 		},
 
 		/**

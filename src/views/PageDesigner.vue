@@ -10,7 +10,9 @@
   - Implements REQ-OBPD-003.
   -->
 <template>
-	<div class="page-designer">
+	<!-- data-walkthrough-id: the tour's `add-page` step spotlights the whole
+	     designer — anything outside its cutout is dimmed and unclickable. -->
+	<div class="page-designer" data-walkthrough-id="page-designer">
 		<header class="page-designer__toolbar">
 			<div class="page-designer__toolbar-group">
 				<button
@@ -37,9 +39,11 @@
 					@click="blocksSidebarOpen = true">
 					{{ t('buildiq', 'Blocks') }}
 				</button>
+				<!-- data-walkthrough-id: spotlighted by the tour's `preview` step. -->
 				<button
 					type="button"
 					class="page-designer__tool-btn page-designer__tool-btn--primary"
+					data-walkthrough-id="page-save-preview"
 					:disabled="!canSaveAndPreview"
 					@click="saveAndPreview">
 					{{ t('buildiq', 'Save & open preview') }}

@@ -20,7 +20,9 @@
   - live in shared `buildiq`, user-authored schemas live per-app.
   -->
 <template>
-	<div class="buildiq-schema-designer">
+	<!-- data-walkthrough-id: the tour's `define-schema` step spotlights the whole
+	     designer — anything outside its cutout is dimmed and unclickable. -->
+	<div class="buildiq-schema-designer" data-walkthrough-id="schema-designer">
 		<!-- List mode -->
 		<template v-if="!schemaId">
 			<div v-if="canImport" class="buildiq-schema-designer__toolbar">
@@ -1251,14 +1253,18 @@ export default {
 			const newSlug =
 				(data && (data.slug || (data['@self'] && data['@self'].slug)))
 				|| body.slug
-			await this.attachSchemaToRegister(data)
-			await this.refreshList()
-			// Stage what the create call just returned, so the detail view we are
-			// about to navigate to renders immediately from it instead of issuing
-			// a redundant fetch for an object we already hold (see loadDetail()).
-			// Best-effort: if the returned body cannot be staged, fall through to
-			// the normal fetch-on-navigate path rather than blocking navigation.
+			// The schema exists from here on, so the rest is best-effort: a throw
+			// in attachSchemaToRegister() or refreshList() used to skip the
+			// navigation silently — SchemaListPanel.onAddConfirm cannot report it
+			// either, since Vue 3's $emit returns the instance, not the handler's
+			// promise.
 			try {
+				await this.attachSchemaToRegister(data)
+				await this.refreshList()
+				// Stage what the create call just returned, so the detail view we
+				// are about to navigate to renders immediately from it instead of
+				// issuing a redundant fetch for an object we already hold (see
+				// loadDetail()).
 				const stagedFromCreate = this.bodyToStaged(data)
 				this.persisted = data
 				this.staged = stagedFromCreate
@@ -1267,6 +1273,7 @@ export default {
 					this.history.reset(this.staged)
 				}
 			} catch (e) {
+				// Fall through to the normal fetch-on-navigate path.
 				this.persisted = null
 				this.staged = null
 			}
@@ -1275,13 +1282,15 @@ export default {
 			// that dialog.
 			await this.$nextTick()
 			// REQ-OBVR-006: use buildVersionedRoute to forward ?_version= on navigation.
-			this.$router.push(
-				buildVersionedRoute(
-					'SchemaDesigner',
-					{ slug: this.appSlug, schemaId: newSlug },
-					this.versionSlug,
-				),
-			)
+			this.$router
+				.push(
+					buildVersionedRoute(
+						'SchemaDesigner',
+						{ slug: this.appSlug, schemaId: newSlug },
+						this.versionSlug,
+					),
+				)
+				.catch(() => {})
 			showSuccess(
 				this.t('buildiq', 'Schema {slug} created.', { slug: newSlug }),
 			)

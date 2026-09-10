@@ -1,6 +1,6 @@
 {
 	"$schema": "https://github.com/ConductionNL/nextcloud-vue/raw/main/src/schemas/app-manifest-v2.schema.json",
-	"version": "2.1.0",
+	"version": "2.2.0",
 	"openbuildEditable": false,
 	"dependencies": [
 		"openregister"
@@ -116,35 +116,80 @@
 						}
 					},
 					{
+						"id": "add-app",
+						"sinceVersion": "2.2.0",
+						"placement": "bottom",
+						"body": "Every app is created from this button. The wizard asks for a name and how many versions you want to run — nothing else.",
+						"task": "Click Add app",
+						"allowManualNext": true,
+						"target": {
+							"kind": "element",
+							"ref": "add-app"
+						},
+						"advanceOn": {
+							"type": "click-target"
+						}
+					},
+					{
 						"id": "create-app",
 						"sinceVersion": "0.5.9",
-						"placement": "bottom",
-						"body": "Name it Pet Store. A blank app gives you an empty register to shape yourself.",
+						"placement": "left",
+						"body": "Name it Pet Store — the slug fills itself in. Pick Single on the preset step (one version is plenty here), then Create on the review step.",
 						"task": "Create an app called Pet Store",
 						"allowManualNext": true,
 						"target": {
-							"kind": "page",
-							"ref": "VirtualApps"
+							"kind": "selector",
+							"selector": ".modal-container"
 						},
 						"advanceOn": {
-							"type": "object-created",
-							"register": "buildiq",
-							"schema": "built-app",
+							"type": "route-match",
+							"route": "VirtualAppDetail",
 							"capture": {
-								"applicationId": ":id"
+								"applicationId": ":objectId"
 							}
+						}
+					},
+					{
+						"id": "open-schemas",
+						"sinceVersion": "2.2.0",
+						"placement": "top",
+						"body": "This page is the app itself: its versions, schemas, pages and flows all hang off it. A fresh app holds no data shapes yet.",
+						"task": "Click + Add schema in the Schemas widget",
+						"allowManualNext": true,
+						"target": {
+							"kind": "element",
+							"ref": "app-add-schema"
+						},
+						"advanceOn": {
+							"type": "route-match",
+							"route": "SchemaDesignerList"
 						}
 					},
 					{
 						"id": "add-schema",
 						"sinceVersion": "0.5.9",
 						"placement": "bottom",
-						"body": "A schema is the shape of one record. Yours is a Pet: it needs a name, a species and a status.",
-						"task": "Add a schema called Pet",
+						"body": "A schema is the shape of one record. Yours is a Pet.",
+						"task": "Click Add schema",
 						"allowManualNext": true,
 						"target": {
-							"kind": "page",
-							"ref": "SchemaDesignerList"
+							"kind": "element",
+							"ref": "schema-add"
+						},
+						"advanceOn": {
+							"type": "click-target"
+						}
+					},
+					{
+						"id": "name-schema",
+						"sinceVersion": "2.2.0",
+						"placement": "left",
+						"body": "Title it Pet — the slug follows from it. The version can stay at 0.1.0.",
+						"task": "Name it Pet and confirm with Add schema",
+						"allowManualNext": true,
+						"target": {
+							"kind": "selector",
+							"selector": ".modal-container"
 						},
 						"advanceOn": {
 							"type": "route-match",
@@ -152,15 +197,61 @@
 						}
 					},
 					{
-						"id": "add-page",
-						"sinceVersion": "0.5.9",
-						"placement": "bottom",
-						"body": "An index page lists every record of one schema. Point it at Pet and the store has a shop floor.",
-						"task": "Add an index page over Pet",
+						"id": "define-schema",
+						"sinceVersion": "2.2.0",
+						"placement": "left",
+						"body": "Give the Pet its properties: a name, a species and a status. Each one becomes a field on every pet record you store.",
+						"task": "Add the three properties, then Save",
+						"target": {
+							"kind": "element",
+							"ref": "schema-designer"
+						},
+						"advanceOn": {
+							"type": "manual"
+						}
+					},
+					{
+						"id": "back-to-app",
+						"sinceVersion": "2.2.0",
+						"placement": "right",
+						"body": "The schema is stored in this app's manifest. The screens that show it are laid out from the app page.",
+						"task": "Click Apps in the menu",
 						"allowManualNext": true,
 						"target": {
-							"kind": "page",
-							"ref": "PageDesigner"
+							"kind": "nav-item",
+							"ref": "VirtualApps"
+						},
+						"advanceOn": {
+							"type": "route-match",
+							"route": "VirtualApps"
+						}
+					},
+					{
+						"id": "open-app",
+						"sinceVersion": "2.2.0",
+						"placement": "top",
+						"body": "Every app you build is listed here.",
+						"task": "Open Pet Store",
+						"allowManualNext": true,
+						"target": {
+							"kind": "element",
+							"ref": "cn-index-page"
+						},
+						"advanceOn": {
+							"type": "route-match",
+							"route": "VirtualAppDetail"
+						}
+					},
+					{
+						"id": "open-page-designer",
+						"sinceVersion": "2.2.0",
+						"placement": "top",
+						"body": "Pages are designed per version, so a live version is never edited by accident. This opens the designer on the one you are looking at.",
+						"task": "Click + Add page in the Pages widget",
+						"allowManualNext": true,
+						"target": {
+							"kind": "element",
+							"ref": "app-add-page"
 						},
 						"advanceOn": {
 							"type": "route-match",
@@ -168,15 +259,28 @@
 						}
 					},
 					{
+						"id": "add-page",
+						"sinceVersion": "0.5.9",
+						"placement": "left",
+						"body": "An index page lists every record of one schema. Add one on the left, pick the index type, then point it at Pet in the middle pane — that is the shop floor.",
+						"task": "Add an index page over Pet",
+						"target": {
+							"kind": "element",
+							"ref": "page-designer"
+						},
+						"advanceOn": {
+							"type": "manual"
+						}
+					},
+					{
 						"id": "preview",
 						"sinceVersion": "0.5.9",
-						"placement": "center",
-						"body": "Open the app to see the page you just laid out, running on real data.",
-						"task": "Open the app and add your first pet",
-						"allowManualNext": true,
+						"placement": "bottom",
+						"body": "Saving renders the page in the live preview on the right, running on this version's real data.",
+						"task": "Save & open preview",
 						"target": {
-							"kind": "page",
-							"ref": "BuilderHost"
+							"kind": "element",
+							"ref": "page-save-preview"
 						},
 						"advanceOn": {
 							"type": "manual"

@@ -49,6 +49,7 @@ OC.L10N.register(
         "%n rows could not be imported.": "%n rows could not be imported.",
         "%n user override": "%n user override",
         "%n user overrides": "%n user overrides",
+        "+ Add page": "+ Add page",
         "+ Add schema": "+ Add schema",
         "+%n more schema": "+%n more schema",
         "+%n more schemas": "+%n more schemas",
