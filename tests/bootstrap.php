@@ -150,30 +150,22 @@ if (is_dir($ocpStubs)) {
 // so the interface must exist by then or PHP fatals in the bootstrap itself.
 // Same shape as the OCP stub guards already used across the fleet.
 //
-// TWO SOURCES, ONE DEFINITION. Gate 67 (`openregister-contract-parity`) requires
-// openregister's `lib/Contract/` and the hydra-gates package's
-// `hydra-gates/contracts/` to be byte identical, so loading from either yields
-// the same type. Both are listed because they become available at different
-// times: the package copy ships on a TAG, while openregister's own tree is what
-// a CI leg has — this repo's `additional-apps` checks out openregister at
-// `development` — and what a dev checkout has beside it.
+// ONE SOURCE. The hydra-gates package ships these contracts in
+// `hydra-gates/contracts/`, and gate 67 (`openregister-contract-parity`)
+// requires that copy and openregister's own `lib/Contract/` to be byte
+// identical, so the vendored file is the definition openregister declares.
 //
-// That difference is not hypothetical. `RegisterSlugResolverInterface` was
-// published to the package by ConductionNL/.github#739, which merged AFTER
-// v1.17.0 was cut. At `^1.17.0` the vendored contracts directory holds
-// ObjectEntityInterface, ObjectServiceInterface and fleet-schema-slugs.json and
-// nothing else, so bumping the constraint does not by itself make the resolver
-// contract loadable. Measured here rather than assumed: with v1.17.0 installed,
-// ObjectServiceInterface resolves and RegisterSlugResolverInterface does not.
+// This used to list openregister's own tree beside the package as a fallback.
+// `RegisterSlugResolverInterface` and `RegisterSlugResolution` were published to
+// the package by ConductionNL/.github#739, which merged after v1.17.0 was cut,
+// so for a while they were on main and in no release and the constraint bump
+// alone did not make them loadable. v1.18.0 carries all four, measured on this
+// checkout, so the fallback covers nothing and is gone.
 //
 // `RegisterSlugResolution` is a CLASS, not an interface, so the guard has to ask
 // both questions. Asking only interface_exists() would re-require a file that is
 // already loaded, and a duplicate declaration is a fatal, not a no-op.
-$buildiqContractSources = [
-	__DIR__ . '/../vendor/conduction/hydra-gates/hydra-gates/contracts',
-	__DIR__ . '/../../openregister/lib/Contract',
-	__DIR__ . '/../../../apps-extra/openregister/lib/Contract',
-];
+$buildiqContractDir = __DIR__ . '/../vendor/conduction/hydra-gates/hydra-gates/contracts';
 
 foreach ([
 	'ObjectEntityInterface',
@@ -186,12 +178,9 @@ foreach ([
 		continue;
 	}
 
-	foreach ($buildiqContractSources as $contractDir) {
-		$shipped = $contractDir . '/' . $contract . '.php';
-		if (file_exists($shipped) === true) {
-			require_once $shipped;
-			break;
-		}
+	$shipped = $buildiqContractDir . '/' . $contract . '.php';
+	if (file_exists($shipped) === true) {
+		require_once $shipped;
 	}
 }
 
