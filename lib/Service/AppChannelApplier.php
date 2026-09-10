@@ -54,10 +54,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
-use OCA\Buildiq\Support\FleetAppId;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Exception\ObjectExistsException;
-use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -70,14 +68,6 @@ use Throwable;
  * @spec openspec/changes/app-repo-format-flow-agent-export/specs/app-channel-application/spec.md
  */
 class AppChannelApplier {
-
-	/**
-	 * The OpenRegister register that holds OpenConnector objects. OpenConnector is
-	 * re-platformed onto OpenRegister — there are no `openconnector_*` tables.
-	 *
-	 * @var string
-	 */
-	private const CONNECTOR_REGISTER = 'openconnector';
 
 	/**
 	 * Connector schemas, matching AppRepoSerializer::CONNECTOR_KINDS.
@@ -115,13 +105,6 @@ class AppChannelApplier {
 	private const MAX_AUTOMATIONS = 512;
 
 	/**
-	 * Reason recorded when OpenConnector is not available.
-	 *
-	 * @var string
-	 */
-	private const REASON_NO_OPENCONNECTOR = 'openconnector-unavailable';
-
-	/**
 	 * Reason recorded when the skills channel is skipped because the supplied
 	 * credential's own `allowedApps` does not include hermiq — hermiq fetches
 	 * the skill bundle itself, under ITS OWN app identity, so a credential
@@ -143,22 +126,25 @@ class AppChannelApplier {
 	 * Constructor.
 	 *
 	 * @param ObjectServiceInterface $objectService OpenRegister object read/write.
+	 * @param ConnectorRegisterAvailability $connectorRegister Whether Integriq's register can be written to
+	 *                                                         here, and with which slug. Not nullable: the
+	 *                                                         only fallback a null would leave is the
+	 *                                                         literal it replaces.
 	 * @param DataRegisterProvisioner $registerProvisioner The data-registers channel.
 	 * @param SkillChannelDelegate $skillDelegate The skills channel (delegated to hermiq).
 	 * @param FlowChannelProvisioner $flowProvisioner The flows channel (app-repo-format-flow-agent-export).
 	 * @param AgentChannelProvisioner $agentProvisioner The agents channel (app-repo-format-flow-agent-export).
-	 * @param IAppManager $appManager Optional-dependency detection.
 	 * @param LoggerInterface $logger PSR logger (secret-free diagnostics).
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly ObjectServiceInterface $objectService,
+		private readonly ConnectorRegisterAvailability $connectorRegister,
 		private readonly DataRegisterProvisioner $registerProvisioner,
 		private readonly SkillChannelDelegate $skillDelegate,
 		private readonly FlowChannelProvisioner $flowProvisioner,
 		private readonly AgentChannelProvisioner $agentProvisioner,
-		private readonly IAppManager $appManager,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -433,11 +419,6 @@ class AppChannelApplier {
 	 * @return void
 	 *
 	 * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md#requirement-an-existing-connector-is-skipped-and-never-overwritten
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) FleetAppId is a stateless
-	 *  resolver over a constant map, with no state to inject and nothing to
-	 *  substitute in a test. Injecting it would add a constructor argument
-	 *  to every consumer to no end.
 	 */
 	private function applyConnectors(array $connectors, ChannelApplyReport $report): void {
 		$declared = 0;
@@ -451,11 +432,17 @@ class AppChannelApplier {
 			return;
 		}
 
-		if (FleetAppId::isEnabledForUser(appManager: $this->appManager, canonical: 'integriq') === false) {
-			$this->logger->info(
-				'Buildiq channel apply: integriq (formerly openconnector) is not enabled — skipping ' . $declared . ' declared connectors.'
-			);
-			$report->skipChannel(channel: 'connectors', reason: self::REASON_NO_OPENCONNECTOR);
+		// One question, asked once: is the connector register usable here, and
+		// with which slug. It used to be two — an app-id check here and a
+		// hardcoded register slug at the write — and only the first was ever
+		// answered. `ConnectorRegisterAvailability` records the skip itself, so
+		// a null cannot be carried past this line.
+		$registerSlug = $this->connectorRegister->slugOrSkip(
+			channel: 'connectors',
+			declared: $declared,
+			report: $report
+		);
+		if ($registerSlug === null) {
 			return;
 		}
 
@@ -475,7 +462,13 @@ class AppChannelApplier {
 				}
 
 				$applied++;
-				$this->applyOneConnector(kind: $kind, item: $item, blob: (array)$blob, report: $report);
+				$this->applyOneConnector(
+					kind: $kind,
+					item: $item,
+					blob: (array)$blob,
+					report: $report,
+					registerSlug: $registerSlug
+				);
 			}
 		}//end foreach
 
@@ -488,10 +481,21 @@ class AppChannelApplier {
 	 * @param string $item The report item identity.
 	 * @param array<string,mixed> $blob The published connector body.
 	 * @param ChannelApplyReport $report The report to write into.
+	 * @param string $registerSlug The slug the connector register answers to on this
+	 *                             instance, already resolved by the calling channel.
+	 *                             Passed in rather than resolved here so one absent
+	 *                             register skips a channel once instead of failing
+	 *                             every item in it separately.
 	 *
 	 * @return void
 	 */
-	private function applyOneConnector(string $kind, string $item, array $blob, ChannelApplyReport $report): void {
+	private function applyOneConnector(
+		string $kind,
+		string $item,
+		array $blob,
+		ChannelApplyReport $report,
+		string $registerSlug,
+	): void {
 		// The published body carries its identity in `id` — verified across all 42
 		// connectors of a real published artefact. `uuid` is present but null,
 		// because the serializer emits ObjectEntity::getObject(), the body only.
@@ -506,7 +510,7 @@ class AppChannelApplier {
 			// check-then-write would both race and drift.
 			$this->objectService->saveObject(
 				object: $blob,
-				register: self::CONNECTOR_REGISTER,
+				register: $registerSlug,
 				schema: $kind,
 				uuid: $uuid,
 				_rbac: false,
@@ -637,11 +641,6 @@ class AppChannelApplier {
 	 * @param ChannelApplyReport $report The report to write into.
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) FleetAppId is a stateless
-	 *  resolver over a constant map, with no state to inject and nothing to
-	 *  substitute in a test. Injecting it would add a constructor argument
-	 *  to every consumer to no end.
 	 */
 	private function applyAutomations(array $automations, ChannelApplyReport $report): void {
 		$report->declareChannel(channel: 'automations', declared: count($automations));
@@ -650,8 +649,14 @@ class AppChannelApplier {
 			return;
 		}
 
-		if (FleetAppId::isEnabledForUser(appManager: $this->appManager, canonical: 'integriq') === false) {
-			$report->skipChannel(channel: 'automations', reason: self::REASON_NO_OPENCONNECTOR);
+		// Same question, same answer: automations are written into the same
+		// register, so the same absence has to stop them too.
+		$registerSlug = $this->connectorRegister->slugOrSkip(
+			channel: 'automations',
+			declared: count($automations),
+			report: $report
+		);
+		if ($registerSlug === null) {
 			return;
 		}
 
@@ -669,7 +674,13 @@ class AppChannelApplier {
 			}
 
 			$applied++;
-			$this->applyOneConnector(kind: 'job', item: 'automations/' . $slug, blob: (array)$blob, report: $report);
+			$this->applyOneConnector(
+				kind: 'job',
+				item: 'automations/' . $slug,
+				blob: (array)$blob,
+				report: $report,
+				registerSlug: $registerSlug
+			);
 		}
 
 	}//end applyAutomations()

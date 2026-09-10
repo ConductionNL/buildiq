@@ -136,6 +136,17 @@
                      Pre-existing in SeedHelloWorldFixture.php, already red
                      before this entry. -->
                 <referencedClass name="OCA\OpenRegister\Contract\ObjectEntityInterface"/>
+                <!-- The register-slug resolver contract and its return type.
+                     Same situation as the two above, with one extra wrinkle
+                     worth writing down: these were published to the hydra-gates
+                     package by ConductionNL/.github#739, which merged AFTER
+                     v1.17.0 was cut, so no tagged release ships them yet. Even
+                     an app that vendors the contracts therefore cannot resolve
+                     these two from vendor/ today. Once a tag carries them this
+                     pair can go, and `findUnusedBaselineEntry` is not what
+                     enforces that — someone re-reading this comment is. -->
+                <referencedClass name="OCA\OpenRegister\Contract\RegisterSlugResolverInterface"/>
+                <referencedClass name="OCA\OpenRegister\Contract\RegisterSlugResolution"/>
                 <!-- The sanctioned single entry point for flows (ADR-022) —
                      consumed by FlowChannelProvisioner so applying a published
                      `flows/` channel creates a real OpenRegister Flow entity

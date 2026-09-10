@@ -149,11 +149,48 @@ if (is_dir($ocpStubs)) {
 // `class ObjectEntity ... implements \OCA\OpenRegister\Contract\ObjectEntityInterface`,
 // so the interface must exist by then or PHP fatals in the bootstrap itself.
 // Same shape as the OCP stub guards already used across the fleet.
-foreach (['ObjectEntityInterface', 'ObjectServiceInterface'] as $contract) {
-	if (interface_exists('\\OCA\\OpenRegister\\Contract\\' . $contract) === false) {
-		$shipped = __DIR__ . '/../vendor/conduction/hydra-gates/hydra-gates/contracts/' . $contract . '.php';
-		if (file_exists($shipped)) {
+//
+// TWO SOURCES, ONE DEFINITION. Gate 67 (`openregister-contract-parity`) requires
+// openregister's `lib/Contract/` and the hydra-gates package's
+// `hydra-gates/contracts/` to be byte identical, so loading from either yields
+// the same type. Both are listed because they become available at different
+// times: the package copy ships on a TAG, while openregister's own tree is what
+// a CI leg has — this repo's `additional-apps` checks out openregister at
+// `development` — and what a dev checkout has beside it.
+//
+// That difference is not hypothetical. `RegisterSlugResolverInterface` was
+// published to the package by ConductionNL/.github#739, which merged AFTER
+// v1.17.0 was cut. At `^1.17.0` the vendored contracts directory holds
+// ObjectEntityInterface, ObjectServiceInterface and fleet-schema-slugs.json and
+// nothing else, so bumping the constraint does not by itself make the resolver
+// contract loadable. Measured here rather than assumed: with v1.17.0 installed,
+// ObjectServiceInterface resolves and RegisterSlugResolverInterface does not.
+//
+// `RegisterSlugResolution` is a CLASS, not an interface, so the guard has to ask
+// both questions. Asking only interface_exists() would re-require a file that is
+// already loaded, and a duplicate declaration is a fatal, not a no-op.
+$buildiqContractSources = [
+	__DIR__ . '/../vendor/conduction/hydra-gates/hydra-gates/contracts',
+	__DIR__ . '/../../openregister/lib/Contract',
+	__DIR__ . '/../../../apps-extra/openregister/lib/Contract',
+];
+
+foreach ([
+	'ObjectEntityInterface',
+	'ObjectServiceInterface',
+	'RegisterSlugResolution',
+	'RegisterSlugResolverInterface',
+] as $contract) {
+	$fqcn = '\\OCA\\OpenRegister\\Contract\\' . $contract;
+	if (interface_exists($fqcn) === true || class_exists($fqcn) === true) {
+		continue;
+	}
+
+	foreach ($buildiqContractSources as $contractDir) {
+		$shipped = $contractDir . '/' . $contract . '.php';
+		if (file_exists($shipped) === true) {
 			require_once $shipped;
+			break;
 		}
 	}
 }
