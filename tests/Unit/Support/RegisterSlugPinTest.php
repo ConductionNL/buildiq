@@ -61,15 +61,35 @@ class RegisterSlugPinTest extends TestCase {
 	/**
 	 * Superseded register slug => the canonical slug replacing it.
 	 *
-	 * Only the registers this app actually reads. openregister owns the full
-	 * fleet map in `lib/Support/RegisterSlugAliases.php`, which is not published
-	 * to consumers, and copying all ten here would put a second copy of that
-	 * truth in a repository that does not own it. What this guard needs is
-	 * narrower anyway: the slugs THIS app could plausibly type.
+	 * All ten, and this list used to hold one. The narrow version said it
+	 * covered "the slugs THIS app could plausibly type", and that premise is
+	 * measurably wrong about this repository: a sweep of register position under
+	 * `lib/` finds `hermiq` and `integriq` already there, beside the 33 sites
+	 * naming `buildiq` itself. An app that types two other apps' register slugs
+	 * today can type a third tomorrow, and a guard scoped to `openconnector`
+	 * alone would watch the one slug this repository has already been cleaned of
+	 * while missing the nine it is actually exposed to.
+	 *
+	 * Transcribed from openregister's `lib/Support/RegisterSlugAliases.php`,
+	 * which is the authority and is NOT published to consumers. Note that the
+	 * list is not derivable from the app-rename map: `stackiq` renamed the
+	 * register `voorzieningen`, while its former app id `softwarecatalog` was
+	 * never a register slug on any instance.
 	 *
 	 * @var array<string, string>
 	 */
-	private const SUPERSEDED = ['openconnector' => 'integriq'];
+	private const SUPERSEDED = [
+		'openconnector'   => 'integriq',
+		'openbuild'       => 'buildiq',
+		'decidesk'        => 'decidiq',
+		'hrmq'            => 'humaniq',
+		'larpingapp'      => 'larpinq',
+		'planix'          => 'planninq',
+		'voorzieningen'   => 'stackiq',
+		'procest'         => 'dossiq',
+		'procest-default' => 'dossiq-default',
+		'scholiq'         => 'learniq',
+	];
 
 	/**
 	 * Files allowed to name a superseded slug, and why.
@@ -97,6 +117,15 @@ class RegisterSlugPinTest extends TestCase {
 	 * register; the same word in a log message, a skip reason or an app id is not
 	 * this defect, and a guard that flagged those would be turned off.
 	 *
+	 * The last three cover the NULL-COALESCING DEFAULT, and they are the reason
+	 * this list is eight long rather than five. integriq shipped
+	 * `register: ($data['register'] ?? 'openconnector')` in MappingsController
+	 * and this guard, copied from here, did not see it: all five of the original
+	 * patterns require the quote to follow `register:` directly, and the
+	 * coalesce operator sits in between. It was found by a hand grep. A default
+	 * is the likeliest place for a pin to survive a rename, because it is the
+	 * branch nobody exercises on a healthy instance.
+	 *
 	 * @var list<string>
 	 */
 	private const REGISTER_POSITION = [
@@ -105,6 +134,31 @@ class RegisterSlugPinTest extends TestCase {
 		'/\'register\'\s*=>\s*\'([a-zA-Z0-9_-]+)\'/',
 		'/\bconst\s+[A-Z0-9_]*REGISTER[A-Z0-9_]*\s*=\s*\'([a-zA-Z0-9_-]+)\'/',
 		'/\$[a-zA-Z0-9_]*(?:[Rr]egister|[Ss]lug)[a-zA-Z0-9_]*\s*=\s*\'([a-zA-Z0-9_-]+)\'/',
+		'/\bregister:\s*\(?[^,()]*\?\?\s*\'([a-zA-Z0-9_-]+)\'/',
+		'/\'register\'\s*=>\s*\(?[^,()]*\?\?\s*\'([a-zA-Z0-9_-]+)\'/',
+		'/\$[a-zA-Z0-9_]*(?:[Rr]egister|[Ss]lug)[a-zA-Z0-9_]*\s*=\s*[^;]*\?\?\s*\'([a-zA-Z0-9_-]+)\'/',
+	];
+
+	/**
+	 * Source patterns that BUILD a register slug from a typed prefix.
+	 *
+	 * Separate from REGISTER_POSITION because they capture a prefix rather than
+	 * a slug, and are checked against the constant rather than against
+	 * SUPERSEDED. See {@see testNoFileTypesAPerVersionRegisterPrefix()}.
+	 *
+	 * The `slug:` named-argument form is deliberately absent. `slug:` also names
+	 * schema slugs, template slugs and app slugs in this repository, so a
+	 * pattern on it would report findings that are not this defect, and a guard
+	 * that cries wolf is a guard someone turns off. The one register call that
+	 * used that form now takes the constant, so it is held by the code rather
+	 * than by a pattern.
+	 *
+	 * @var list<string>
+	 */
+	private const BUILT_REGISTER_PREFIX = [
+		'/\$[a-zA-Z0-9_]*[Rr]egister[a-zA-Z0-9_]*\s*=\s*\'([a-zA-Z0-9_-]*-)\'\s*\./',
+		'/\$[a-zA-Z0-9_]*[Rr]egister[a-zA-Z0-9_]*\s*=\s*sprintf\(\s*\'([a-zA-Z0-9_-]*-)%s/',
+		'/\'register\'\s*=>\s*\'([a-zA-Z0-9_-]*-)\'\s*\./',
 	];
 
 	/**
@@ -192,6 +246,11 @@ class RegisterSlugPinTest extends TestCase {
 	 * register-position form a known-bad line and requires a match, so a regex
 	 * that stops matching reddens immediately instead of going quiet.
 	 *
+	 * The sixth sample is not invented. It is integriq's MappingsController line
+	 * as it stood on `development`, copied verbatim, and it is here because the
+	 * five patterns above let it through when this file was the source they were
+	 * copied from.
+	 *
 	 * @return void
 	 */
 	public function testEachRegisterPositionPatternStillMatches(): void {
@@ -201,6 +260,9 @@ class RegisterSlugPinTest extends TestCase {
 			'/\'register\'\s*=>\s*\'([a-zA-Z0-9_-]+)\'/'              => "'filters' => ['register' => 'openconnector', 'schema' => 'job'],",
 			'/\bconst\s+[A-Z0-9_]*REGISTER[A-Z0-9_]*\s*=\s*\'([a-zA-Z0-9_-]+)\'/' => "\tprivate const CONNECTOR_REGISTER = 'openconnector';",
 			'/\$[a-zA-Z0-9_]*(?:[Rr]egister|[Ss]lug)[a-zA-Z0-9_]*\s*=\s*\'([a-zA-Z0-9_-]+)\'/' => "\t\t\$registerSlug = 'openconnector';",
+			'/\bregister:\s*\(?[^,()]*\?\?\s*\'([a-zA-Z0-9_-]+)\'/'   => "\t\t\tregister: (\$data['register'] ?? 'openconnector'),",
+			'/\'register\'\s*=>\s*\(?[^,()]*\?\?\s*\'([a-zA-Z0-9_-]+)\'/' => "'register' => (\$data['register'] ?? 'openbuild'),",
+			'/\$[a-zA-Z0-9_]*(?:[Rr]egister|[Ss]lug)[a-zA-Z0-9_]*\s*=\s*[^;]*\?\?\s*\'([a-zA-Z0-9_-]+)\'/' => "\t\t\$register = \$resolution?->slug ?? 'openbuild';",
 		];
 
 		foreach (self::REGISTER_POSITION as $pattern) {
@@ -217,6 +279,96 @@ class RegisterSlugPinTest extends TestCase {
 			);
 		}
 	}//end testEachRegisterPositionPatternStillMatches()
+
+	/**
+	 * A per-version register prefix is never typed, it comes from the constant.
+	 *
+	 * This is the shape the patterns above cannot see, and it was live in this
+	 * repository while the guard read green. A per-version register slug is
+	 * BUILT rather than typed, so the superseded half of it is a prefix
+	 * (`openbuild-`) and never a whole captured slug, and every pattern above
+	 * captures whole slugs.
+	 *
+	 * `ApplicationInsightsService` fell into the gap. It built its fallback as
+	 * `sprintf('buildiq-%s-%s', ...)` while every writer of a per-version
+	 * register uses {@see ApplicationVersionService::VERSION_REGISTER_PREFIX},
+	 * which is `openbuild-` and is frozen there on purpose: the
+	 * applicationVersion schema pins `"pattern": "^openbuild-..."`, so a
+	 * `buildiq-` register cannot be stored and the fallback named one that could
+	 * never exist. The KPI panel then read zero objects, zero files and zero
+	 * audit events, which is exactly what a real but empty version looks like.
+	 *
+	 * Note which direction this runs in. Everything above forbids the OLD name;
+	 * this forbids the NEW one where the old is frozen. A guard that only knew
+	 * how to say "openbuild is stale" would have called the defect correct.
+	 *
+	 * @return void
+	 */
+	public function testNoFileTypesAPerVersionRegisterPrefix(): void {
+		$findings = [];
+		foreach ($this->sourceFiles() as $relative => $absolute) {
+			$lines = file($absolute, FILE_IGNORE_NEW_LINES);
+			if ($lines === false) {
+				continue;
+			}
+
+			foreach ($lines as $index => $line) {
+				if (preg_match('/^\s*(\*|\/\/)/', $line) === 1) {
+					continue;
+				}
+
+				foreach (self::BUILT_REGISTER_PREFIX as $pattern) {
+					if (preg_match($pattern, $line, $matches) !== 1) {
+						continue;
+					}
+
+					$findings[] = sprintf(
+						'%s:%d builds a per-version register slug from the typed prefix \'%s\'. Use '
+						. 'ApplicationVersionService::VERSION_REGISTER_PREFIX, because a typed prefix is '
+						. 'the half of a register slug no rename touches and a wrong one reads zero rows '
+						. 'rather than raising.',
+						$relative,
+						($index + 1),
+						$matches[1]
+					);
+				}
+			}
+		}//end foreach
+
+		$this->assertSame(
+			[],
+			$findings,
+			"Per-version register prefixes are typed rather than taken from the constant:\n" . implode("\n", $findings)
+		);
+	}//end testNoFileTypesAPerVersionRegisterPrefix()
+
+	/**
+	 * The built-prefix patterns match a typed prefix when one is present.
+	 *
+	 * Same reasoning as the register-position samples: once the tree is clean
+	 * these regexes are only as trustworthy as the last time something proved
+	 * they still match. The second sample is the defect line copied verbatim
+	 * from `ApplicationInsightsService` as it stood on `development`.
+	 *
+	 * @return void
+	 */
+	public function testEachBuiltPrefixPatternStillMatches(): void {
+		$samples = [
+			'/\$[a-zA-Z0-9_]*[Rr]egister[a-zA-Z0-9_]*\s*=\s*\'([a-zA-Z0-9_-]*-)\'\s*\./' => "\t\t\$registerSlug = 'openbuild-' . \$appSlug . '-' . \$versionSlug;",
+			'/\$[a-zA-Z0-9_]*[Rr]egister[a-zA-Z0-9_]*\s*=\s*sprintf\(\s*\'([a-zA-Z0-9_-]*-)%s/' => "\t\t\t\t\$registerSlug = sprintf('buildiq-%s-%s', \$appSlug, \$versionSlug);",
+			'/\'register\'\s*=>\s*\'([a-zA-Z0-9_-]*-)\'\s*\./' => "\t\t\t\t\t'register' => 'openbuild-' . \$appId,",
+		];
+
+		foreach (self::BUILT_REGISTER_PREFIX as $pattern) {
+			$this->assertArrayHasKey($pattern, $samples, 'Every built-prefix pattern needs a known-bad sample.');
+			$this->assertSame(
+				1,
+				preg_match($pattern, $samples[$pattern], $matches),
+				'Pattern must match its known-bad sample: ' . $pattern
+			);
+			$this->assertStringEndsWith('-', $matches[1], 'The sample must capture a prefix: ' . $pattern);
+		}
+	}//end testEachBuiltPrefixPatternStillMatches()
 
 	/**
 	 * Every PHP file under lib/, keyed by repository-relative path.
