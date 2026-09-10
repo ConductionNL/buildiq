@@ -51,9 +51,13 @@
 					:inputLabel="t('buildiq', 'Link property')"
 					:options="linkPropertyOptions"
 					label="label" />
+				<!-- A link, not a handler: this goes to the schema designer.
+				     NcButton renders a RouterLink when given `to`, so it stays
+				     inside the SPA and keeps the button styling. -->
 				<NcButton
+					v-if="createLinkPropertyRoute"
 					variant="tertiary"
-					@click="$emit('create-link-property', selectedSchemaSlug)">
+					:to="createLinkPropertyRoute">
 					{{ t('buildiq', 'Create zaakUrl property') }}
 				</NcButton>
 			</div>
@@ -128,7 +132,7 @@ export default {
 		},
 	},
 
-	emits: ['update:open', 'save', 'create-link-property'],
+	emits: ['update:open', 'save'],
 	data() {
 		return {
 			caseTypes: [],
@@ -170,6 +174,37 @@ export default {
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		selectedSchemaSlug() {
 			return this.schemaOption ? this.schemaOption.slug : ''
+		},
+
+		/**
+		 * The schema-designer route that adds the `zaakUrl` link property, with
+		 * the target schema and the property to add pre-seeded; the designer
+		 * creates it with its own field validation (REQ-PWA-002).
+		 *
+		 * Null until a schema is picked, so the control does not render as a
+		 * link to nowhere.
+		 *
+		 * @return {object|null} A vue-router location, or null.
+		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002
+		 */
+		createLinkPropertyRoute() {
+			const appSlug = this.$route && this.$route.params
+				? this.$route.params.slug
+				: ''
+			if (!appSlug || !this.selectedSchemaSlug) {
+				return null
+			}
+			return {
+				name: 'SchemaDesignerList',
+				params: { slug: appSlug },
+				query: {
+					schema: this.selectedSchemaSlug,
+					addProperty: 'zaakUrl',
+					...(this.$route.query && this.$route.query._version
+						? { _version: this.$route.query._version }
+						: {}),
+				},
+			}
 		},
 
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */

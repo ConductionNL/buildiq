@@ -20,20 +20,18 @@
 			</h3>
 		</header>
 		<ul v-if="flows && flows.length > 0" class="ob-flows-widget__list">
-			<li
-				v-for="flow in flows"
-				:key="flowKey(flow)"
-				class="ob-flows-widget__row"
-				role="button"
-				tabindex="0"
-				@click="openFlow(flow)"
-				@keyup.enter="openFlow(flow)"
-				@keyup.space="openFlow(flow)">
-				<span class="ob-flows-widget__row-name">{{ flowName(flow) }}</span>
-				<span class="ob-flows-widget__row-trigger">{{
-					flow.trigger || '—'
-				}}</span>
-				<span class="ob-flows-widget__row-state">{{ flowState(flow) }}</span>
+			<li v-for="flow in flows" :key="flowKey(flow)">
+				<a
+					class="ob-flows-widget__row"
+					:href="flowUrl(flow)"
+					target="_blank"
+					rel="noopener noreferrer">
+					<span class="ob-flows-widget__row-name">{{ flowName(flow) }}</span>
+					<span class="ob-flows-widget__row-trigger">{{
+						flow.trigger || '—'
+					}}</span>
+					<span class="ob-flows-widget__row-state">{{ flowState(flow) }}</span>
+				</a>
 			</li>
 		</ul>
 		<p v-else class="ob-flows-widget__empty">
@@ -108,31 +106,28 @@ export default {
 		},
 
 		/**
-		 * Open a flow in OpenRegister.
+		 * A flow's URL in OpenRegister.
 		 *
 		 * Flows are OpenRegister objects, so editing them belongs there. This
 		 * widget lists them and hands off; it does not wrap OpenRegister's own
-		 * editor (ADR-022).
+		 * editor (ADR-022). Returns null for a flow with no id, so the row
+		 * renders an anchor without an href: inert, not a broken link.
 		 *
 		 * @param {object} flow The flow record.
 		 *
-		 * @return {void}
+		 * @return {string|null} The URL, or null when the flow has no id.
 		 *
 		 * @spec exclude deep-link hand-off to OpenRegister, no app-local behaviour
 		 */
-		openFlow(flow) {
+		flowUrl(flow) {
 			const uuid = flow && (flow.uuid || flow.id)
 			if (!uuid) {
-				return
+				return null
 			}
 
-			window.open(
-				generateUrl('/apps/openregister/flows/{uuid}', {
-					uuid: String(uuid),
-				}),
-				'_blank',
-				'noopener,noreferrer',
-			)
+			return generateUrl('/apps/openregister/flows/{uuid}', {
+				uuid: String(uuid),
+			})
 		},
 	},
 }
@@ -175,7 +170,8 @@ export default {
 	align-items: center;
 	padding: 6px 4px;
 	border-radius: var(--border-radius);
-	cursor: pointer;
+	color: inherit;
+	text-decoration: none;
 }
 
 .ob-flows-widget__row:hover,

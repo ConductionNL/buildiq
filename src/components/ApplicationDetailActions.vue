@@ -214,14 +214,16 @@ export default {
 					label: t('buildiq', 'Open app'),
 					icon: 'OpenInNew',
 					variant: 'primary',
-					onSelect: () => window.open(this.builderUrl, '_blank', 'noopener'),
+					href: this.builderUrl,
+					target: '_blank',
 					childrenLabel: t('buildiq', 'Open a version'),
 					children: this.openableVersions.flatMap((v) => [
 						{
 							id: `open-${v.slug}`,
 							label: this.versionLabel(v),
 							icon: 'OpenInNew',
-							onSelect: () => this.openVersion(v),
+							href: this.versionUrl(v),
+							target: '_blank',
 						},
 						...(this.canEditVersions
 							? [{
@@ -324,7 +326,8 @@ export default {
 				id: 'app-documentation',
 				label: t('buildiq', 'Documentation'),
 				icon: 'HelpCircleOutline',
-				onSelect: () => window.open('https://openbuild.conduction.nl', '_blank', 'noopener'),
+				href: 'https://openbuild.conduction.nl',
+				target: '_blank',
 			})
 			if (isOwner) {
 				out.push({
@@ -513,24 +516,23 @@ export default {
 		},
 
 		/**
-		 * Open a version in the live shell — production at the canonical URL,
-		 * any other via `?_version=` (RBAC-gated server-side).
+		 * A version's URL in the live shell — production at the canonical URL,
+		 * any other via `?_version=` (RBAC-gated server-side). Fed to the action
+		 * descriptor's `href`, so the entry is a real link.
 		 *
 		 * @param {object} v The version row.
-		 * @return {void}
+		 * @return {string|null} The URL, or null when there is no app slug.
 		 *
 		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
-		openVersion(v) {
+		versionUrl(v) {
 			if (!this.obApp || !this.obApp.slug) {
-				return
+				return null
 			}
 			const base = generateUrl(`/apps/buildiq/builder/${this.obApp.slug}`)
-			const url = this.isProductionVersion(v)
+			return this.isProductionVersion(v)
 				? base
 				: `${base}?_version=${encodeURIComponent(v.slug)}`
-			// Open in a new tab to match the open-in-new affordance (OpenInNew icon).
-			window.open(url, '_blank', 'noopener,noreferrer')
 		},
 
 		/**

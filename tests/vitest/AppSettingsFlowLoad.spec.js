@@ -131,17 +131,36 @@ describe('ApplicationDetailActions — App settings loads the flow list', () => 
 		const ids = wrapper.vm.actionDescriptors.map((a) => a.id)
 
 		// Open app leads and stays primary — CnActionButtons never collapses a
-		// primary action and it costs none of the six inline slots.
+		// primary action and it costs none of the inline slots.
 		expect(ids[0]).toBe('open-app')
 		expect(wrapper.vm.actionDescriptors[0].variant).toBe('primary')
 
 		// Settings sits ahead of the chrome editors ("actions before edit").
 		expect(ids.indexOf('app-settings-action')).toBeLessThan(ids.indexOf('app-edit-setup'))
 
-		// Every entry carries a click, so none of them renders inert.
+		// Every entry either does something or goes somewhere, so none of them
+		// renders inert. An entry that ends in a URL declares `href` and is
+		// rendered as a real link instead of a dispatched button.
 		for (const action of wrapper.vm.actionDescriptors) {
-			expect(typeof action.onSelect).toBe('function')
+			expect(
+				typeof action.onSelect === 'function' || typeof action.href === 'string',
+				`action "${action.id}" has neither onSelect nor href`,
+			).toBe(true)
 		}
+	})
+
+	it('declares the URL-bound actions as links, not click handlers', async () => {
+		const wrapper = mountActions()
+		await wrapper.vm.$nextTick()
+		const byId = (id) =>
+			wrapper.vm.actionDescriptors.find((a) => a.id === id)
+
+		// Open app and Documentation leave the SPA, so they must be anchors:
+		// a click handler cannot offer middle-click or "open in new tab".
+		expect(byId('open-app').href).toContain('/apps/buildiq/builder/my-permits')
+		expect(byId('open-app').target).toBe('_blank')
+		expect(byId('open-app').onSelect).toBeUndefined()
+		expect(byId('app-documentation').href).toBe('https://openbuild.conduction.nl')
 	})
 
 	it('offers the record Edit only when CnDetailPage hands down openEditForm', async () => {
