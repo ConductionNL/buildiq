@@ -107,6 +107,12 @@ export default {
 	background: var(--color-main-background, #fff);
 }
 
+.ob-pages-widget__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
 .ob-pages-widget__title {
 	margin: 0;
 	font-size: 16px;
