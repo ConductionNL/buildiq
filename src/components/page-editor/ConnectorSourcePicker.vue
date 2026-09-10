@@ -171,6 +171,16 @@ export default {
 				// picker just as empty while the diff read as a fix, so the
 				// stale path stays until the move to the OpenRegister object
 				// API is made and tested as its own change.
+				//
+				// @stale-fleet-app-id exclude the route was RETIRED, not renamed.
+				// Re-verified 2026-09-10 against integriq `development`: commit
+				// 496f2025 (2026-05-20) deleted the `resources` block that
+				// auto-generated `GET /api/endpoints`, and its own message says
+				// re-adding one without restoring the controller methods produces
+				// auto-routes that 500 on hit. EndpointsController now publishes
+				// only handlePath, preflightedCors and logs, so no integriq path
+				// answers this call. Correcting the app segment leaves the picker
+				// just as empty while the diff reads as a fix.
 				const url = generateUrl('/apps/openconnector/api/endpoints')
 				const { data } = await axios.get(url)
 				const list = (data && (data.results || data)) || []
