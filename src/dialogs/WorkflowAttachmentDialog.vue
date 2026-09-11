@@ -97,6 +97,7 @@
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcDialog, NcSelect, NcTextField } from '@nextcloud/vue'
+import { fleetAppPath } from '../services/fleetAppId.js'
 
 export default {
 	name: 'WorkflowAttachmentDialog',
@@ -294,7 +295,7 @@ export default {
 			this.loadingCaseTypes = true
 			try {
 				const url = generateUrl(
-					'/apps/procest/api/zgw/catalogi/v1/zaaktypen',
+					fleetAppPath('dossiq', 'api/zgw/catalogi/v1/zaaktypen'),
 				)
 				const { data } = await axios.get(url)
 				const list = (data && (data.results || data)) || []

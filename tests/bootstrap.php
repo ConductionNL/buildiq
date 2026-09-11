@@ -149,12 +149,38 @@ if (is_dir($ocpStubs)) {
 // `class ObjectEntity ... implements \OCA\OpenRegister\Contract\ObjectEntityInterface`,
 // so the interface must exist by then or PHP fatals in the bootstrap itself.
 // Same shape as the OCP stub guards already used across the fleet.
-foreach (['ObjectEntityInterface', 'ObjectServiceInterface'] as $contract) {
-	if (interface_exists('\\OCA\\OpenRegister\\Contract\\' . $contract) === false) {
-		$shipped = __DIR__ . '/../vendor/conduction/hydra-gates/hydra-gates/contracts/' . $contract . '.php';
-		if (file_exists($shipped)) {
-			require_once $shipped;
-		}
+//
+// ONE SOURCE. The hydra-gates package ships these contracts in
+// `hydra-gates/contracts/`, and gate 67 (`openregister-contract-parity`)
+// requires that copy and openregister's own `lib/Contract/` to be byte
+// identical, so the vendored file is the definition openregister declares.
+//
+// This used to list openregister's own tree beside the package as a fallback.
+// `RegisterSlugResolverInterface` and `RegisterSlugResolution` were published to
+// the package by ConductionNL/.github#739, which merged after v1.17.0 was cut,
+// so for a while they were on main and in no release and the constraint bump
+// alone did not make them loadable. v1.18.0 carries all four, measured on this
+// checkout, so the fallback covers nothing and is gone.
+//
+// `RegisterSlugResolution` is a CLASS, not an interface, so the guard has to ask
+// both questions. Asking only interface_exists() would re-require a file that is
+// already loaded, and a duplicate declaration is a fatal, not a no-op.
+$buildiqContractDir = __DIR__ . '/../vendor/conduction/hydra-gates/hydra-gates/contracts';
+
+foreach ([
+	'ObjectEntityInterface',
+	'ObjectServiceInterface',
+	'RegisterSlugResolution',
+	'RegisterSlugResolverInterface',
+] as $contract) {
+	$fqcn = '\\OCA\\OpenRegister\\Contract\\' . $contract;
+	if (interface_exists($fqcn) === true || class_exists($fqcn) === true) {
+		continue;
+	}
+
+	$shipped = $buildiqContractDir . '/' . $contract . '.php';
+	if (file_exists($shipped) === true) {
+		require_once $shipped;
 	}
 }
 

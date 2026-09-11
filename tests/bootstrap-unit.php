@@ -58,6 +58,25 @@ require_once __DIR__ . '/stubs/openregister-stubs.php';
 // this is needed to mock IRootFolder in this out-of-container run.
 require_once __DIR__ . '/stubs/nc-hooks-emitter.stub.php';
 
+// Doctrine constant holders. `IQueryBuilder` evaluates class constants
+// referencing `Doctrine\DBAL\ParameterType` at parse time, and
+// `IDBConnection::getQueryBuilder()` returns `IQueryBuilder` — so without these,
+// `createMock(IDBConnection::class)` dies with `Class "Doctrine\DBAL\ParameterType"
+// not found`, raised from INSIDE createMock(), which reads as a broken test
+// rather than a missing dependency.
+//
+// Pre-existing, and it cost 23 errors on this config before this line: every
+// test that mocks a query builder. It went unnoticed because CI runs
+// `phpunit.xml`, whose bootstrap already loads these, and only `phpunit-unit.xml`
+// was missing them — so the local convenience config was the broken one and the
+// measured one was fine.
+//
+// Unconditional here, unlike in `bootstrap.php`, which guards on there being no
+// installed Nextcloud. This file is the out-of-container config by construction:
+// it never loads `lib/base.php`, so a real doctrine is never coming and the stub
+// can never shadow one.
+require_once __DIR__ . '/stubs/DoctrineStubs.php';
+
 // OpenRegister's IMcpToolProvider interface ships in PR #1466 (ai-chat
 // companion orchestrator). Until that merges, the interface may not be
 // loadable in unit-test isolation — load the stub so `implements
