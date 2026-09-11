@@ -175,13 +175,11 @@
 							'--preview-scale': previewScale,
 							'--preview-width': previewViewportWidth + 'px',
 						}">
-						<!-- `inert`, not just pointer-events: the menu entries are
-						     router-links on the DESIGNER's router and the pages
-						     carry real write buttons, and inert covers the
-						     keyboard path too. -->
-						<div class="page-designer__preview-viewport" inert>
-							<CnAppRoot
-								:key="livePreviewProps.key"
+						<!-- The shell runs as its own app with its own router
+						     (see PreviewSandbox), so clicking through the
+						     preview navigates the preview, not the designer. -->
+						<div class="page-designer__preview-viewport">
+							<PreviewSandbox
 								:appId="livePreviewProps.appId"
 								:manifest="livePreviewProps.manifest"
 								:registry="previewRegistry"
@@ -217,7 +215,6 @@
 
 <script>
 import {
-	CnAppRoot,
 	defaultPageTypes,
 	mergeManifestDelta,
 } from '@conduction/nextcloud-vue'
@@ -237,6 +234,7 @@ import LogsPageEditor from '../components/page-editor/LogsPageEditor.vue'
 import MapPageEditor from '../components/page-editor/MapPageEditor.vue'
 import MenuTreeEditor from '../components/page-editor/MenuTreeEditor.vue'
 import PageListEditor from '../components/page-editor/PageListEditor.vue'
+import PreviewSandbox from '../components/page-editor/PreviewSandbox.vue'
 import RoadmapPageEditor from '../components/page-editor/RoadmapPageEditor.vue'
 import SearchPageEditor from '../components/page-editor/SearchPageEditor.vue'
 import SettingsPageEditor from '../components/page-editor/SettingsPageEditor.vue'
@@ -280,7 +278,7 @@ const SUB_EDITOR_MAP = {
 export default {
 	name: 'PageDesigner',
 	components: {
-		CnAppRoot,
+		PreviewSandbox,
 		NcAppSidebar,
 		BlockLibraryPanel,
 		WidgetSelectionPanel,
@@ -1284,8 +1282,6 @@ export default {
 /* Lays out at PREVIEW_VIEWPORT_WIDTH, then shrinks to the pane. Dividing the
    height back out makes the scaled result fill the pane exactly. */
 .page-designer__preview-viewport {
-	/* Fallback for browsers without `inert` (see the template). */
-	pointer-events: none;
 	width: var(--preview-width);
 	height: calc(100% / var(--preview-scale, 1));
 	transform: scale(var(--preview-scale, 1));
