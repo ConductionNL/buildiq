@@ -12,20 +12,29 @@
 // Generated from the app's own manifests; every name is verified to exist in
 // vue-material-design-icons.
 
+import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOutline.vue'
 import AppsBox from 'vue-material-design-icons/AppsBox.vue'
 import BookOpenVariantOutline from 'vue-material-design-icons/BookOpenVariantOutline.vue'
 import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import ClipboardText from 'vue-material-design-icons/ClipboardText.vue'
+import CogOutline from 'vue-material-design-icons/CogOutline.vue'
+import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import DatabaseExportOutline from 'vue-material-design-icons/DatabaseExportOutline.vue'
+import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
 import FileDocumentMultipleOutline from 'vue-material-design-icons/FileDocumentMultipleOutline.vue'
 import Flash from 'vue-material-design-icons/Flash.vue'
+import Github from 'vue-material-design-icons/Github.vue'
+import HeartOutline from 'vue-material-design-icons/HeartOutline.vue'
+import HelpCircleOutline from 'vue-material-design-icons/HelpCircleOutline.vue'
 import History from 'vue-material-design-icons/History.vue'
 import ImageOutline from 'vue-material-design-icons/ImageOutline.vue'
 import MapMarkerPath from 'vue-material-design-icons/MapMarkerPath.vue'
 import MessageTextOutline from 'vue-material-design-icons/MessageTextOutline.vue'
+import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
 import PackageVariant from 'vue-material-design-icons/PackageVariant.vue'
 import PencilOutline from 'vue-material-design-icons/PencilOutline.vue'
+import PencilRulerOutline from 'vue-material-design-icons/PencilRulerOutline.vue'
 import PuzzleOutline from 'vue-material-design-icons/PuzzleOutline.vue'
 import Robot from 'vue-material-design-icons/Robot.vue'
 import RobotOutline from 'vue-material-design-icons/RobotOutline.vue'
@@ -34,11 +43,26 @@ import Sitemap from 'vue-material-design-icons/Sitemap.vue'
 import SourceBranch from 'vue-material-design-icons/SourceBranch.vue'
 import StoreOutline from 'vue-material-design-icons/StoreOutline.vue'
 import Table from 'vue-material-design-icons/Table.vue'
+import TrayArrowDown from 'vue-material-design-icons/TrayArrowDown.vue'
 import VectorPolylinePlus from 'vue-material-design-icons/VectorPolylinePlus.vue'
 import ViewDashboardOutline from 'vue-material-design-icons/ViewDashboardOutline.vue'
 import ViewGridOutline from 'vue-material-design-icons/ViewGridOutline.vue'
 
 export default {
+	// ApplicationDetailActions declares its whole action cluster as
+	// CnActionButtons descriptors, which name icons as STRINGS resolved by
+	// CnIcon — so every icon it names has to be registered here or it renders
+	// the help-circle fallback.
+	AccountMultipleOutline,
+	CogOutline,
+	ContentSaveOutline,
+	DeleteOutline,
+	Github,
+	HeartOutline,
+	HelpCircleOutline,
+	OpenInNew,
+	PencilRulerOutline,
+	TrayArrowDown,
 	AppsBox,
 	BookOpenVariantOutline,
 	ChartBoxOutline,

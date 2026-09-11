@@ -6,10 +6,12 @@
  * REQ-OBSD-008 integration).
  *
  * The view is the top-level surface that owns the staged schema copy
- * and proxies all CRUD via `useSchemasStore`. These tests:
+ * and proxies schema CRUD via `useSchemasStore`. These tests:
  *  - mock the schemas store factory (`useSchemasStore`) so the test
- *    drives `saveObject` / `deleteObject` / `fetchCollection` /
- *    `fetchObject` deterministically;
+ *    drives `saveObject` / `deleteObject` / `fetchObject`
+ *    deterministically;
+ *  - route `axios.get` by URL so the view can resolve its
+ *    ApplicationVersion and list that version's register;
  *  - mock `@nextcloud/dialogs` so `showError` / `showSuccess` are
  *    spies the test can assert against;
  *  - stub every sub-editor (FieldEditor / LifecycleEditor / etc.) so
@@ -17,7 +19,7 @@
  *    itself, not on the children we already cover individually.
  *
  * Covers:
- *  - List mount loads schemas via the store (`fetchCollection`).
+ *  - List mount reads the resolved version's register schema set.
  *  - Field edits flow through `onFieldsChange` and update `staged`.
  *  - Save calls `store.saveObject('schema', body)` with the composed
  *    JSON schema body (slug, title, properties, lifecycle, etc.).
@@ -61,6 +63,45 @@ vi.mock('../../src/store/schemas.js', () => {
 vi.mock('@nextcloud/dialogs', () => {
 	return dialogMocks
 })
+
+// Spy on the real axios module rather than `vi.mock`ing it: a blanket module
+// mock breaks @nextcloud/vue's own internal axios usage (see
+// SchemaDesigner.access.spec.js).
+const { default: axios } = await import('@nextcloud/axios')
+
+// The register the resolved ApplicationVersion points at. The list is scoped to
+// it, so the test drives what the list contains through `registerSchemas`.
+const REGISTER = 'openbuild-hello-world-production'
+let registerSchemas = []
+let registerSchemasError = null
+
+vi.spyOn(axios, 'get').mockImplementation((url) => {
+	const target = String(url)
+	if (target.includes(`/registers/${REGISTER}/schemas`)) {
+		return registerSchemasError
+			? Promise.reject(registerSchemasError)
+			: Promise.resolve({ data: { results: registerSchemas } })
+	}
+	if (target.includes('/versions')) {
+		return Promise.resolve({
+			data: [{ id: 'v1', slug: 'production', register: REGISTER }],
+		})
+	}
+	// Everything else the view probes on mount (the app record, the
+	// productionVersion lookup) may answer empty.
+	return Promise.resolve({ data: { results: [] } })
+})
+
+/**
+ * Count the register-scoped schema list requests made so far.
+ *
+ * @return {number} How many times the list was fetched.
+ */
+function listFetchCount() {
+	return axios.get.mock.calls.filter((call) =>
+		String(call[0]).includes(`/registers/${REGISTER}/schemas`),
+	).length
+}
 
 // Import the view AFTER mocks are registered.
 const { default: SchemaDesigner } =
@@ -159,11 +200,10 @@ function makeRouter({
 // equivalent but key-ordered-different JSON string and the
 // `JSON.stringify` diff in the SUT (correctly) reports a change.
 const persistedSchema = {
-	// Schema slugs are namespaced `{appSlug}-{versionSlug}-{slug}` since
-	// PR #74 — the SchemaDesigner filters the org-wide schema collection
-	// down to ones owned by the active app+version. The default route is
-	// `hello-world` with no `_version`, so the fixture must carry the
-	// `hello-world-` prefix to survive the client-side filter.
+	// Schema slugs are namespaced `{appSlug}-{versionSlug}-{slug}` since PR #74
+	// so they stay unique across the organisation. Ownership is NOT read off
+	// that prefix — it is the register's own schema set — but the fixture keeps
+	// the convention because `addSchema` still writes it.
 	slug: 'hello-world-hello',
 	title: 'Hello',
 	description: '',
@@ -174,6 +214,9 @@ const persistedSchema = {
 }
 
 beforeEach(() => {
+	registerSchemas = []
+	registerSchemasError = null
+	axios.get.mockClear()
 	storeMocks.fetchCollection.mockReset()
 	storeMocks.fetchObject.mockReset()
 	storeMocks.saveObject.mockReset()
@@ -184,31 +227,57 @@ beforeEach(() => {
 })
 
 describe('SchemaDesigner', () => {
-	it('REQ-OBSD-001: list-mount fetches the schema collection via the store', async () => {
-		storeMocks.fetchCollection.mockResolvedValue([persistedSchema])
+	// The list asks the resolved version's REGISTER for its schemas. It used to
+	// pull the whole organisation's collection and keep the slugs starting with
+	// `{appSlug}-`, which is not an ownership test: a deleted app's schemas keep
+	// their slug, so the list showed the same schema once per app generation.
+	it('REQ-OBSD-001: list-mount reads the version register schema set', async () => {
+		registerSchemas = [persistedSchema]
 		const wrapper = mount(SchemaDesigner, {
 			stubs: editorStubs,
 			mocks: {
 				$route: makeRouter(),
-				$router: { push: vi.fn() },
+				$router: { push: vi.fn().mockResolvedValue() },
 			},
 		})
 		// Wait for mounted() to settle.
 		await new Promise((resolve) => setTimeout(resolve, 0))
 		await wrapper.vm.$nextTick()
-		expect(storeMocks.fetchCollection).toHaveBeenCalledWith('schema')
+		expect(listFetchCount()).toBe(1)
+		expect(storeMocks.fetchCollection).not.toHaveBeenCalled()
 		expect(wrapper.vm.schemas).toHaveLength(1)
 		expect(wrapper.vm.schemas[0].slug).toBe('hello-world-hello')
 	})
 
-	it('REQ-OBSD-001: surfaces a showError toast when the store reports a list error', async () => {
-		storeMocks.fetchCollection.mockResolvedValue([])
-		storeMocks.errors = { schema: 'boom' }
+	// With no `?_version=` in the route there is no version slug to build a
+	// register name from, so the scope has to come off the resolved version
+	// record. `registerSlugForApp`'s versionless fallback (`buildiq-hello-world`
+	// here) names a register the wizard never creates.
+	it('REQ-OBSD-001: scopes the list to the resolved version register, not the route', async () => {
+		const wrapper = mount(SchemaDesigner, {
+			stubs: editorStubs,
+			mocks: {
+				$route: makeRouter(),
+				$router: { push: vi.fn().mockResolvedValue() },
+			},
+		})
+		await new Promise((resolve) => setTimeout(resolve, 0))
+		await wrapper.vm.$nextTick()
+		expect(wrapper.vm.registerSlug).toBe(REGISTER)
+		const listUrls = axios.get.mock.calls
+			.map((call) => String(call[0]))
+			.filter((url) => url.includes('/schemas'))
+		expect(listUrls).toHaveLength(1)
+		expect(listUrls[0]).toContain(`/registers/${REGISTER}/schemas`)
+	})
+
+	it('REQ-OBSD-001: surfaces a showError toast when the list request fails', async () => {
+		registerSchemasError = new Error('boom')
 		mount(SchemaDesigner, {
 			stubs: editorStubs,
 			mocks: {
 				$route: makeRouter(),
-				$router: { push: vi.fn() },
+				$router: { push: vi.fn().mockResolvedValue() },
 			},
 		})
 		await new Promise((resolve) => setTimeout(resolve, 0))
@@ -224,7 +293,7 @@ describe('SchemaDesigner', () => {
 			title: 'New',
 			version: '0.1.0',
 		})
-		const push = vi.fn()
+		const push = vi.fn().mockResolvedValue()
 		const wrapper = mount(SchemaDesigner, {
 			stubs: editorStubs,
 			mocks: {
@@ -271,7 +340,7 @@ describe('SchemaDesigner', () => {
 			stubs: editorStubs,
 			mocks: {
 				$route: makeRouter(),
-				$router: { push: vi.fn() },
+				$router: { push: vi.fn().mockResolvedValue() },
 			},
 		})
 		await new Promise((resolve) => setTimeout(resolve, 0))
@@ -287,7 +356,7 @@ describe('SchemaDesigner', () => {
 			stubs: editorStubs,
 			mocks: {
 				$route: makeRouter({ schemaId: 'hello' }),
-				$router: { push: vi.fn() },
+				$router: { push: vi.fn().mockResolvedValue() },
 			},
 		})
 		await new Promise((resolve) => setTimeout(resolve, 0))
@@ -306,7 +375,7 @@ describe('SchemaDesigner', () => {
 			stubs: editorStubs,
 			mocks: {
 				$route: makeRouter({ schemaId: 'hello' }),
-				$router: { push: vi.fn() },
+				$router: { push: vi.fn().mockResolvedValue() },
 			},
 		})
 		await new Promise((resolve) => setTimeout(resolve, 0))
@@ -340,7 +409,7 @@ describe('SchemaDesigner', () => {
 			stubs: editorStubs,
 			mocks: {
 				$route: makeRouter({ schemaId: 'hello' }),
-				$router: { push: vi.fn() },
+				$router: { push: vi.fn().mockResolvedValue() },
 			},
 		})
 		await new Promise((resolve) => setTimeout(resolve, 0))
@@ -375,7 +444,7 @@ describe('SchemaDesigner', () => {
 			stubs: editorStubs,
 			mocks: {
 				$route: makeRouter(),
-				$router: { push: vi.fn() },
+				$router: { push: vi.fn().mockResolvedValue() },
 			},
 		})
 		await new Promise((resolve) => setTimeout(resolve, 0))
@@ -385,7 +454,7 @@ describe('SchemaDesigner', () => {
 		expect(storeMocks.deleteObject).toHaveBeenCalledWith('schema', 'hello')
 		expect(dialogMocks.showSuccess).toHaveBeenCalled()
 		// Refresh was triggered after the delete settled.
-		expect(storeMocks.fetchCollection).toHaveBeenCalledTimes(2)
+		expect(listFetchCount()).toBe(2)
 	})
 
 	it('REQ-OBSD-008: failed delete surfaces showError and does NOT refresh', async () => {
@@ -396,7 +465,7 @@ describe('SchemaDesigner', () => {
 			stubs: editorStubs,
 			mocks: {
 				$route: makeRouter(),
-				$router: { push: vi.fn() },
+				$router: { push: vi.fn().mockResolvedValue() },
 			},
 		})
 		await new Promise((resolve) => setTimeout(resolve, 0))
@@ -407,7 +476,7 @@ describe('SchemaDesigner', () => {
 
 	it('REQ-OBSD-001: open event routes to the detail view via $router.push', async () => {
 		storeMocks.fetchCollection.mockResolvedValue([persistedSchema])
-		const push = vi.fn()
+		const push = vi.fn().mockResolvedValue()
 		const wrapper = mount(SchemaDesigner, {
 			stubs: editorStubs,
 			mocks: {
@@ -431,7 +500,7 @@ describe('SchemaDesigner', () => {
 			stubs: editorStubs,
 			mocks: {
 				$route: makeRouter({ schemaId: 'hello' }),
-				$router: { push: vi.fn() },
+				$router: { push: vi.fn().mockResolvedValue() },
 			},
 		})
 		await new Promise((resolve) => setTimeout(resolve, 0))
@@ -446,7 +515,7 @@ describe('SchemaDesigner', () => {
 			stubs: editorStubs,
 			mocks: {
 				$route: makeRouter({ schemaId: 'hello' }),
-				$router: { push: vi.fn() },
+				$router: { push: vi.fn().mockResolvedValue() },
 			},
 		})
 		await new Promise((resolve) => setTimeout(resolve, 0))

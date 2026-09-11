@@ -39,6 +39,8 @@ use OCA\Buildiq\Service\ApplicationVersionService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\RegisterService;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -65,6 +67,11 @@ class ApplicationDeletionServiceTest extends TestCase {
 	 * @var RegisterMapper&MockObject
 	 */
 	private RegisterMapper&MockObject $registerMapper;
+
+	/**
+	 * @var SchemaMapper&MockObject
+	 */
+	private SchemaMapper&MockObject $schemaMapper;
 
 	/**
 	 * @var LoggerInterface&MockObject
@@ -94,6 +101,7 @@ class ApplicationDeletionServiceTest extends TestCase {
 		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->registerService = $this->createMock(RegisterService::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		// Capture warnings so the cap-exhaustion assertions don't depend on
@@ -109,6 +117,7 @@ class ApplicationDeletionServiceTest extends TestCase {
 			objectService: $this->objectService,
 			registerService: $this->registerService,
 			registerMapper: $this->registerMapper,
+			schemaMapper: $this->schemaMapper,
 			logger: $this->logger,
 		);
 	}//end setUp()
@@ -230,6 +239,122 @@ class ApplicationDeletionServiceTest extends TestCase {
 		self::assertNotFalse($registerIdx, 'the register must be deleted');
 		self::assertLessThan($registerIdx, $dataIdx, 'objects must be purged before the register is deleted');
 	}//end testDeleteDataTruePurgesObjectsBeforeDeletingRegister()
+
+	/**
+	 * Draining a register removes the rows; deleting it removes the namespace.
+	 * The schema DEFINITIONS the wizard cloned into that namespace used to
+	 * survive both, so every "Also permanently delete all data" left a set of
+	 * unowned schemas behind — and the schema designer, which lists by slug
+	 * prefix, kept showing them alongside the live app's.
+	 *
+	 * @return void
+	 */
+	public function testDeleteDataTrueDeletesTheRegistersSchemaDefinitions(): void {
+		$this->registerMapper->method('find')->willReturn($this->registerWithSchemas([10, 11]));
+		$this->registerMapper->method('findAll')->willReturn([]);
+		$this->routeFindAll(
+			versions: [['id' => 'v1', 'register' => 'reg-demo']],
+			purge: fn (int $round): array => [],
+		);
+		$this->objectService->method('deleteObject')->willReturn(true);
+		$this->registerService->method('delete')->willReturnArgument(0);
+
+		$deleted = [];
+		$this->captureSchemaDeletes($deleted);
+
+		$orphaned = $this->service->deleteApplication(appUuid: 'u-app', appSlug: 'demo', deleteData: true);
+
+		self::assertSame([], $orphaned);
+		self::assertSame([10, 11], $deleted, 'every schema the register owned must be deleted with it');
+	}//end testDeleteDataTrueDeletesTheRegistersSchemaDefinitions()
+
+	/**
+	 * `register.schemas` is a REFERENCE list — the same definition may be held
+	 * by more than one register. Deleting one that another register still holds
+	 * would break that register, so a shared schema is left alone.
+	 *
+	 * @return void
+	 */
+	public function testSchemaHeldByAnotherRegisterSurvives(): void {
+		$this->registerMapper->method('find')->willReturn($this->registerWithSchemas([10, 11]));
+		// A surviving register elsewhere still holds schema 10.
+		$this->registerMapper->method('findAll')->willReturn([$this->registerWithSchemas([10])]);
+		$this->routeFindAll(
+			versions: [['id' => 'v1', 'register' => 'reg-demo']],
+			purge: fn (int $round): array => [],
+		);
+		$this->objectService->method('deleteObject')->willReturn(true);
+		$this->registerService->method('delete')->willReturnArgument(0);
+
+		$deleted = [];
+		$this->captureSchemaDeletes($deleted);
+
+		$this->service->deleteApplication(appUuid: 'u-app', appSlug: 'demo', deleteData: true);
+
+		self::assertSame([11], $deleted, 'only the schema no other register holds is deleted');
+	}//end testSchemaHeldByAnotherRegisterSurvives()
+
+	/**
+	 * Without the data opt-in the register is preserved, so its schemas are
+	 * preserved with it — they still describe live data.
+	 *
+	 * @return void
+	 */
+	public function testDeleteDataFalseKeepsSchemaDefinitions(): void {
+		$this->routeFindAll(
+			versions: [['id' => 'v1', 'register' => 'reg-demo']],
+			purge: fn (int $round): array => [],
+		);
+		$this->objectService->method('deleteObject')->willReturn(true);
+		$this->schemaMapper->expects($this->never())->method('delete');
+
+		$this->service->deleteApplication(appUuid: 'u-app', appSlug: 'demo', deleteData: false);
+	}//end testDeleteDataFalseKeepsSchemaDefinitions()
+
+	/**
+	 * A register scan we cannot trust must not authorise a delete: the schemas
+	 * are reported as orphaned instead of being removed on a guess.
+	 *
+	 * @return void
+	 */
+	public function testUnreadableRegisterScanOrphansSchemasRatherThanDeleting(): void {
+		$this->registerMapper->method('find')->willReturn($this->registerWithSchemas([10]));
+		$this->registerMapper->method('findAll')->willThrowException(new RuntimeException('db down'));
+		$this->routeFindAll(
+			versions: [['id' => 'v1', 'register' => 'reg-demo']],
+			purge: fn (int $round): array => [],
+		);
+		$this->objectService->method('deleteObject')->willReturn(true);
+		$this->registerService->method('delete')->willReturnArgument(0);
+		$this->schemaMapper->expects($this->never())->method('delete');
+
+		$orphaned = $this->service->deleteApplication(appUuid: 'u-app', appSlug: 'demo', deleteData: true);
+
+		self::assertSame(['schema:10'], $orphaned);
+	}//end testUnreadableRegisterScanOrphansSchemasRatherThanDeleting()
+
+	/**
+	 * Wire the schema mapper so every delete appends its schema id to $deleted.
+	 *
+	 * @param array<int,int> $deleted Collector for the deleted schema ids.
+	 *
+	 * @return void
+	 */
+	private function captureSchemaDeletes(array &$deleted): void {
+		$this->schemaMapper->method('find')->willReturnCallback(
+			function (string|int $id): Schema {
+				$schema = new Schema();
+				$schema->setId((int)$id);
+				return $schema;
+			}
+		);
+		$this->schemaMapper->method('delete')->willReturnCallback(
+			function (Schema $schema) use (&$deleted): Schema {
+				$deleted[] = $schema->getId();
+				return $schema;
+			}
+		);
+	}//end captureSchemaDeletes()
 
 	/**
 	 * An empty first batch exits the drain loop after exactly one findAll —

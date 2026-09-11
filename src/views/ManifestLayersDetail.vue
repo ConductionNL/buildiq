@@ -62,7 +62,7 @@
 				<NcButton
 					v-if="adminVersionUuid"
 					variant="tertiary"
-					@click="openInOpenRegister(adminVersionUuid)">
+					:href="openRegisterUrl(adminVersionUuid)">
 					{{ t('buildiq', 'Open version history in OpenRegister') }}
 				</NcButton>
 			</article>
@@ -87,7 +87,7 @@
 						<NcButton
 							v-if="userDelta.versionUuid"
 							variant="tertiary"
-							@click="openInOpenRegister(userDelta.versionUuid)">
+							:href="openRegisterUrl(userDelta.versionUuid)">
 							{{
 								t('buildiq', 'Open version history in OpenRegister')
 							}}
@@ -137,7 +137,7 @@
 					<NcButton
 						v-if="ovr.versionUuid"
 						variant="tertiary"
-						@click="openInOpenRegister(ovr.versionUuid)">
+						:href="openRegisterUrl(ovr.versionUuid)">
 						{{ t('buildiq', 'Open in OpenRegister') }}
 					</NcButton>
 				</li>
@@ -625,21 +625,20 @@ export default {
 		},
 
 		/**
-		 * Deep-link to an ApplicationVersion row's OpenRegister object page
-		 * (which carries OR's native version history / time-travel / rollback).
+		 * An ApplicationVersion row's OpenRegister object page (which carries OR's
+		 * native version history / time-travel / rollback), as an href.
 		 *
 		 * @param {string} versionUuid The ApplicationVersion UUID.
-		 * @return {void}
+		 * @return {string|null} The URL, or null without a UUID.
 		 *
 		 * @spec openspec/specs/application-detail-overview/spec.md
 		 */
-		openInOpenRegister(versionUuid) {
-			if (!versionUuid) return
-			const url = generateUrl(
+		openRegisterUrl(versionUuid) {
+			if (!versionUuid) return null
+			return generateUrl(
 				'/apps/openregister/objects/buildiq/applicationVersion/{uuid}',
 				{ uuid: versionUuid },
 			)
-			window.location.href = url
 		},
 
 		/**

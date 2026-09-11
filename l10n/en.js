@@ -49,6 +49,7 @@ OC.L10N.register(
         "%n rows could not be imported.": "%n rows could not be imported.",
         "%n user override": "%n user override",
         "%n user overrides": "%n user overrides",
+        "+ Add page": "+ Add page",
         "+ Add schema": "+ Add schema",
         "+%n more schema": "+%n more schema",
         "+%n more schemas": "+%n more schemas",
@@ -1435,7 +1436,12 @@ OC.L10N.register(
         "Where the automation lives": "Where the automation lives",
         "Flows are what happens without anyone clicking: a record that gets stamped on save, a notice that goes out when something changes. This is where you read and edit them. Nothing to build now.": "Flows are what happens without anyone clicking: a record that gets stamped on save, a notice that goes out when something changes. This is where you read and edit them. Nothing to build now.",
         "Open Flows in the menu": "Open Flows in the menu",
-        "Rejected from the My approvals widget.": "Rejected from the My approvals widget."
+        "Rejected from the My approvals widget.": "Rejected from the My approvals widget.",
+        "Designer sections": "Designer sections",
+        "Open Active users in OpenRegister": "Open Active users in OpenRegister",
+        "Open Audit events in OpenRegister": "Open Audit events in OpenRegister",
+        "Open Object count in OpenRegister": "Open Object count in OpenRegister",
+        "Open Storage in OpenRegister": "Open Storage in OpenRegister"
     },
     "nplurals=2; plural=(n != 1);"
 )
