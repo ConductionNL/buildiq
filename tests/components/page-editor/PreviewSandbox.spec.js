@@ -101,9 +101,7 @@ describe('PreviewSandbox', () => {
 		})
 		// A keystroke in an editor must not tear the preview down and back up.
 		expect(wrapper.vm._sandboxApp).toBe(app)
-		expect(wrapper.vm._sandboxState.manifest.pages[1].config.title).toBe(
-			'Pets!',
-		)
+		expect(wrapper.vm._sandboxState.manifest.pages[1].config.title).toBe('Pets!')
 		wrapper.unmount()
 	})
 
@@ -137,7 +135,9 @@ describe('PreviewSandbox', () => {
 		host.appendChild(button)
 		const clicked = vi.fn()
 		button.addEventListener('click', clicked)
-		button.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }))
+		button.dispatchEvent(
+			new window.MouseEvent('click', { bubbles: true, cancelable: true }),
+		)
 		expect(clicked).not.toHaveBeenCalled()
 
 		const link = document.createElement('a')
@@ -147,7 +147,9 @@ describe('PreviewSandbox', () => {
 		// jsdom tries to follow the href.
 		const followed = vi.fn((e) => e.preventDefault())
 		link.addEventListener('click', followed)
-		link.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }))
+		link.dispatchEvent(
+			new window.MouseEvent('click', { bubbles: true, cancelable: true }),
+		)
 		expect(followed).toHaveBeenCalled()
 
 		wrapper.unmount()
@@ -246,7 +248,11 @@ describe('PreviewSandbox', () => {
 		const pressed = vi.fn()
 		button.addEventListener('keydown', pressed)
 		button.dispatchEvent(
-			new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }),
+			new window.KeyboardEvent('keydown', {
+				key: 'Enter',
+				bubbles: true,
+				cancelable: true,
+			}),
 		)
 		expect(pressed).not.toHaveBeenCalled()
 
@@ -255,7 +261,11 @@ describe('PreviewSandbox', () => {
 		const typed = vi.fn()
 		input.addEventListener('keydown', typed)
 		input.dispatchEvent(
-			new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }),
+			new window.KeyboardEvent('keydown', {
+				key: 'Enter',
+				bubbles: true,
+				cancelable: true,
+			}),
 		)
 		expect(typed).toHaveBeenCalled()
 

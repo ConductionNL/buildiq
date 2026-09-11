@@ -214,10 +214,7 @@
 </template>
 
 <script>
-import {
-	defaultPageTypes,
-	mergeManifestDelta,
-} from '@conduction/nextcloud-vue'
+import { defaultPageTypes, mergeManifestDelta } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { translate as ncT } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
@@ -399,6 +396,7 @@ export default {
 		 * read the same constant.
 		 *
 		 * @return {number} Width in CSS pixels.
+		 * @spec exclude preview layout constant; covered by tests/views/PageDesigner.preview.spec.js
 		 */
 		previewViewportWidth() {
 			return PREVIEW_VIEWPORT_WIDTH
@@ -572,7 +570,6 @@ export default {
 		previewPermissions() {
 			return window.OC?.currentUser?.permissions ?? []
 		},
-
 	},
 
 	watch: {
@@ -678,6 +675,14 @@ export default {
 		this.observePreviewSurface()
 	},
 
+	/**
+	 * Release the shortcut listener and the preview's ResizeObserver. Both
+	 * outlive the component otherwise: one sits on the document, the other
+	 * holds the observed element.
+	 *
+	 * @return {void}
+	 * @spec exclude teardown of the listener and observer armed in `mounted`
+	 */
 	beforeUnmount() {
 		document.removeEventListener('keydown', this.onKeydown)
 		if (this._previewResizeObs) {
@@ -696,6 +701,7 @@ export default {
 		 * `v-if`, and `$refs` is not reactive, so there is nothing to watch.
 		 *
 		 * @return {void}
+		 * @spec exclude preview layout only; covered by tests/views/PageDesigner.preview.spec.js
 		 */
 		observePreviewSurface() {
 			if (typeof ResizeObserver !== 'function') {

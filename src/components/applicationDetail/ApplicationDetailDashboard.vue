@@ -63,7 +63,14 @@
 						'ob-detail-dashboard__kpi-link--clickable': !!registerSlug,
 					}"
 					:href="registerUrl('audit')"
-					:title="registerSlug ? t('buildiq', 'Open in OpenRegister') : null">
+					:title="
+						registerSlug ? t('buildiq', 'Open in OpenRegister') : null
+					"
+					:aria-label="
+						registerSlug
+							? t('buildiq', 'Open Active users in OpenRegister')
+							: null
+					">
 					<ArrowTopRight
 						v-if="registerSlug"
 						class="ob-detail-dashboard__kpi-go"
@@ -88,7 +95,14 @@
 						'ob-detail-dashboard__kpi-link--clickable': !!registerSlug,
 					}"
 					:href="registerUrl('objects')"
-					:title="registerSlug ? t('buildiq', 'Open in OpenRegister') : null">
+					:title="
+						registerSlug ? t('buildiq', 'Open in OpenRegister') : null
+					"
+					:aria-label="
+						registerSlug
+							? t('buildiq', 'Open Object count in OpenRegister')
+							: null
+					">
 					<ArrowTopRight
 						v-if="registerSlug"
 						class="ob-detail-dashboard__kpi-go"
@@ -118,7 +132,14 @@
 						'ob-detail-dashboard__kpi-link--clickable': !!registerSlug,
 					}"
 					:href="registerUrl('files')"
-					:title="registerSlug ? t('buildiq', 'Open in OpenRegister') : null">
+					:title="
+						registerSlug ? t('buildiq', 'Open in OpenRegister') : null
+					"
+					:aria-label="
+						registerSlug
+							? t('buildiq', 'Open Storage in OpenRegister')
+							: null
+					">
 					<ArrowTopRight
 						v-if="registerSlug"
 						class="ob-detail-dashboard__kpi-go"
@@ -155,7 +176,14 @@
 						'ob-detail-dashboard__kpi-link--clickable': !!registerSlug,
 					}"
 					:href="registerUrl('audit')"
-					:title="registerSlug ? t('buildiq', 'Open in OpenRegister') : null">
+					:title="
+						registerSlug ? t('buildiq', 'Open in OpenRegister') : null
+					"
+					:aria-label="
+						registerSlug
+							? t('buildiq', 'Open Audit events in OpenRegister')
+							: null
+					">
 					<ArrowTopRight
 						v-if="registerSlug"
 						class="ob-detail-dashboard__kpi-go"
@@ -788,6 +816,9 @@ export default {
 		 *
 		 * @param {string} [tab] Optional tab hint: 'objects' | 'files' | 'audit'.
 		 * @return {string|null} The href, or null when there is no register.
+		 *
+		 * @spec exclude deep-link hand-off to OpenRegister; REQ-OBADO-004 specifies
+		 * the KPI cards as presentational and says nothing about linking
 		 */
 		registerUrl(tab) {
 			if (!this.registerSlug) return null
@@ -858,6 +889,8 @@ export default {
 		 * `onAddSchema`, for an app whose `pages` are still empty.
 		 *
 		 * @return {void}
+		 *
+		 * @spec exclude routes to an existing page, no new behaviour
 		 */
 		onAddPage() {
 			if (!this.appSlug) {
@@ -1206,7 +1239,8 @@ export default {
 }
 
 .ob-detail-dashboard__kpi-link--clickable:hover .ob-detail-dashboard__kpi-go,
-.ob-detail-dashboard__kpi-link--clickable:focus-visible .ob-detail-dashboard__kpi-go {
+.ob-detail-dashboard__kpi-link--clickable:focus-visible
+	.ob-detail-dashboard__kpi-go {
 	color: var(--color-primary-element);
 }
 

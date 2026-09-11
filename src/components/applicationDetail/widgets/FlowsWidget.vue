@@ -26,11 +26,15 @@
 					:href="flowUrl(flow)"
 					target="_blank"
 					rel="noopener noreferrer">
-					<span class="ob-flows-widget__row-name">{{ flowName(flow) }}</span>
+					<span class="ob-flows-widget__row-name">{{
+						flowName(flow)
+					}}</span>
 					<span class="ob-flows-widget__row-trigger">{{
 						flow.trigger || '—'
 					}}</span>
-					<span class="ob-flows-widget__row-state">{{ flowState(flow) }}</span>
+					<span class="ob-flows-widget__row-state">{{
+						flowState(flow)
+					}}</span>
 				</a>
 			</li>
 		</ul>

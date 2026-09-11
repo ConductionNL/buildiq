@@ -113,9 +113,13 @@ describe('ApplicationDetailActions — App settings loads the flow list', () => 
 		const wrapper = mountActions()
 		await wrapper.vm.$nextTick()
 
-		const action = wrapper.vm.actionDescriptors
-			.find((a) => a.id === 'app-settings-action')
-		expect(action, 'the owner-only Settings action must be declared').toBeTruthy()
+		const action = wrapper.vm.actionDescriptors.find(
+			(a) => a.id === 'app-settings-action',
+		)
+		expect(
+			action,
+			'the owner-only Settings action must be declared',
+		).toBeTruthy()
 
 		action.onSelect()
 		await wrapper.vm.$nextTick()
@@ -136,14 +140,17 @@ describe('ApplicationDetailActions — App settings loads the flow list', () => 
 		expect(wrapper.vm.actionDescriptors[0].variant).toBe('primary')
 
 		// Settings sits ahead of the chrome editors ("actions before edit").
-		expect(ids.indexOf('app-settings-action')).toBeLessThan(ids.indexOf('app-edit-setup'))
+		expect(ids.indexOf('app-settings-action')).toBeLessThan(
+			ids.indexOf('app-edit-setup'),
+		)
 
 		// Every entry either does something or goes somewhere, so none of them
 		// renders inert. An entry that ends in a URL declares `href` and is
 		// rendered as a real link instead of a dispatched button.
 		for (const action of wrapper.vm.actionDescriptors) {
 			expect(
-				typeof action.onSelect === 'function' || typeof action.href === 'string',
+				typeof action.onSelect === 'function'
+					|| typeof action.href === 'string',
 				`action "${action.id}" has neither onSelect nor href`,
 			).toBe(true)
 		}
@@ -152,22 +159,24 @@ describe('ApplicationDetailActions — App settings loads the flow list', () => 
 	it('declares the URL-bound actions as links, not click handlers', async () => {
 		const wrapper = mountActions()
 		await wrapper.vm.$nextTick()
-		const byId = (id) =>
-			wrapper.vm.actionDescriptors.find((a) => a.id === id)
+		const byId = (id) => wrapper.vm.actionDescriptors.find((a) => a.id === id)
 
 		// Open app and Documentation leave the SPA, so they must be anchors:
 		// a click handler cannot offer middle-click or "open in new tab".
 		expect(byId('open-app').href).toContain('/apps/buildiq/builder/my-permits')
 		expect(byId('open-app').target).toBe('_blank')
 		expect(byId('open-app').onSelect).toBeUndefined()
-		expect(byId('app-documentation').href).toBe('https://openbuild.conduction.nl')
+		expect(byId('app-documentation').href).toBe(
+			'https://openbuild.conduction.nl',
+		)
 	})
 
 	it('offers the record Edit only when CnDetailPage hands down openEditForm', async () => {
 		const withoutEdit = mountActions()
 		await withoutEdit.vm.$nextTick()
-		expect(withoutEdit.vm.actionDescriptors.map((a) => a.id))
-			.not.toContain('app-edit-record')
+		expect(withoutEdit.vm.actionDescriptors.map((a) => a.id)).not.toContain(
+			'app-edit-record',
+		)
 	})
 
 	it('inlines exactly the intended two, Edit last', async () => {

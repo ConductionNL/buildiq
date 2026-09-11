@@ -355,6 +355,7 @@ export default {
 		 * — a register that does not exist for any app the wizard created.
 		 *
 		 * @return {string} Register slug, or '' until the version resolves.
+		 * @spec openspec/specs/openbuild-schema-designer/spec.md#requirement-schema-list-panel-scoped-to-the-virtual-app-s-register-namespace
 		 */
 		registerSlug() {
 			const fromVersion =

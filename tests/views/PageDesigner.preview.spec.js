@@ -252,9 +252,9 @@ describe('PageDesigner live-preview pane (REQ-OBPD-008)', () => {
 
 		const viewport = wrapper.find('.page-designer__preview-viewport')
 		expect(viewport.exists()).toBe(true)
-		expect(
-			viewport.findComponent({ name: 'PreviewSandbox' }).exists(),
-		).toBe(true)
+		expect(viewport.findComponent({ name: 'PreviewSandbox' }).exists()).toBe(
+			true,
+		)
 	})
 
 	it('rendering the preview never emits a manifest write (no PUT/save path)', async () => {

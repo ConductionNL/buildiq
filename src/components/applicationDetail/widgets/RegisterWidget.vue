@@ -151,6 +151,7 @@ export default {
 		 * Vue Router route, so it is an href rather than a router push.
 		 *
 		 * @return {string}
+		 * @spec openspec/specs/application-detail-overview/spec.md#requirement-register-widget-renders-read-only-with-an-open-in-openregister-deep-link
 		 */
 		openRegisterUrl() {
 			return generateUrl(
@@ -249,7 +250,6 @@ export default {
 			this.schemas = result
 			this.loading = false
 		},
-
 	},
 }
 </script>

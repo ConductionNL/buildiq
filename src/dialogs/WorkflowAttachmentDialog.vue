@@ -189,9 +189,8 @@ export default {
 		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002
 		 */
 		createLinkPropertyRoute() {
-			const appSlug = this.$route && this.$route.params
-				? this.$route.params.slug
-				: ''
+			const appSlug =
+				this.$route && this.$route.params ? this.$route.params.slug : ''
 			if (!appSlug || !this.selectedSchemaSlug) {
 				return null
 			}

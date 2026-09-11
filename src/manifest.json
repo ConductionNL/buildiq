@@ -119,7 +119,7 @@
 						"id": "add-app",
 						"sinceVersion": "2.2.0",
 						"placement": "bottom",
-						"body": "Every app is created from this button. The wizard asks for a name and how many versions you want to run — nothing else.",
+						"body": "Every app is created from this button. The wizard asks for a name and how many versions you want to run. Nothing else.",
 						"task": "Click Add app",
 						"allowManualNext": true,
 						"target": {
@@ -134,7 +134,7 @@
 						"id": "create-app",
 						"sinceVersion": "0.5.9",
 						"placement": "left",
-						"body": "Name it Pet Store — the slug fills itself in. Pick Single on the preset step (one version is plenty here), then Create on the review step.",
+						"body": "Name it Pet Store and the slug fills itself in. Pick Single on the preset step (one version is plenty here), then Create on the review step.",
 						"task": "Create an app called Pet Store",
 						"allowManualNext": true,
 						"target": {
@@ -184,7 +184,7 @@
 						"id": "name-schema",
 						"sinceVersion": "2.2.0",
 						"placement": "left",
-						"body": "Title it Pet — the slug follows from it. The version can stay at 0.1.0.",
+						"body": "Title it Pet, and the slug follows from it. The version can stay at 0.1.0.",
 						"task": "Name it Pet and confirm with Add schema",
 						"allowManualNext": true,
 						"target": {
@@ -262,7 +262,7 @@
 						"id": "add-page",
 						"sinceVersion": "0.5.9",
 						"placement": "left",
-						"body": "An index page lists every record of one schema. Add one on the left, pick the index type, then point it at Pet in the middle pane — that is the shop floor.",
+						"body": "An index page lists every record of one schema. Add one on the left, pick the index type, then point it at Pet in the middle pane. That is the shop floor.",
 						"task": "Add an index page over Pet",
 						"target": {
 							"kind": "element",

@@ -79,16 +79,21 @@
 								:key="tour.id || ti"
 								class="wt-designer__tour"
 								:class="{
-									'wt-designer__tour--active': ti === activeTourIndex,
+									'wt-designer__tour--active':
+										ti === activeTourIndex,
 								}"
 								role="button"
 								tabindex="0"
-								:aria-current="ti === activeTourIndex ? 'true' : undefined"
+								:aria-current="
+									ti === activeTourIndex ? 'true' : undefined
+								"
 								@click="activeTourIndex = ti"
 								@keydown.enter.prevent="activeTourIndex = ti"
 								@keydown.space.prevent="activeTourIndex = ti">
 								<span class="wt-designer__tour-name">{{
-									tour.title || tour.id || t('buildiq', '(untitled)')
+									tour.title
+									|| tour.id
+									|| t('buildiq', '(untitled)')
 								}}</span>
 								<span class="wt-designer__tour-count">{{
 									(tour.steps || []).length
@@ -119,7 +124,9 @@
 							<NcTextField
 								:label="t('buildiq', 'Min app version')"
 								:modelValue="activeTour.minAppVersion || ''"
-								@update:modelValue="(v) => setTour('minAppVersion', v)" />
+								@update:modelValue="
+									(v) => setTour('minAppVersion', v)
+								" />
 							<NcButton variant="error" @click="deleteTour">
 								{{ t('buildiq', 'Delete tour') }}
 							</NcButton>
@@ -151,11 +158,15 @@
 								:key="step.id || si"
 								class="wt-designer__step">
 								<div class="wt-designer__step-head">
-									<span class="wt-designer__step-num">{{ si + 1 }}</span>
+									<span class="wt-designer__step-num">{{
+										si + 1
+									}}</span>
 									<NcTextField
 										:label="t('buildiq', 'Step id')"
 										:modelValue="step.id || ''"
-										@update:modelValue="(v) => setStep(si, 'id', v)" />
+										@update:modelValue="
+											(v) => setStep(si, 'id', v)
+										" />
 									<NcButton
 										variant="tertiary"
 										:disabled="si === 0"
@@ -167,7 +178,9 @@
 									</NcButton>
 									<NcButton
 										variant="tertiary"
-										:disabled="si === activeTour.steps.length - 1"
+										:disabled="
+											si === activeTour.steps.length - 1
+										"
 										:aria-label="t('buildiq', 'Move down')"
 										@click="moveStep(si, 1)">
 										<template #icon>
@@ -193,11 +206,15 @@
 									<NcTextField
 										:label="t('buildiq', 'Body')"
 										:modelValue="step.body || ''"
-										@update:modelValue="(v) => setStep(si, 'body', v)" />
+										@update:modelValue="
+											(v) => setStep(si, 'body', v)
+										" />
 									<NcTextField
 										:label="t('buildiq', 'Task (optional)')"
 										:modelValue="step.task || ''"
-										@update:modelValue="(v) => setStep(si, 'task', v)" />
+										@update:modelValue="
+											(v) => setStep(si, 'task', v)
+										" />
 									<NcTextField
 										:label="t('buildiq', 'Since version')"
 										:modelValue="step.sinceVersion || ''"
@@ -215,7 +232,8 @@
 										:inputLabel="t('buildiq', 'Target kind')"
 										:options="TARGET_KINDS"
 										:modelValue="
-											(step.target && step.target.kind) || 'nav-item'
+											(step.target && step.target.kind)
+											|| 'nav-item'
 										"
 										@update:modelValue="
 											(v) => setTarget(si, 'kind', v)
@@ -227,7 +245,9 @@
 												'Target ref (route / widgetKey / id)',
 											)
 										"
-										:modelValue="(step.target && step.target.ref) || ''"
+										:modelValue="
+											(step.target && step.target.ref) || ''
+										"
 										@update:modelValue="
 											(v) => setTarget(si, 'ref', v)
 										" />
@@ -242,22 +262,28 @@
 											(v) => setAdvance(si, 'type', v)
 										" />
 									<NcTextField
-										v-if="(step.advanceOn || {}).type === 'route-match'"
+										v-if="
+											(step.advanceOn || {}).type
+											=== 'route-match'
+										"
 										:label="t('buildiq', 'Route')"
 										:modelValue="
-											(step.advanceOn && step.advanceOn.route) || ''
+											(step.advanceOn && step.advanceOn.route)
+											|| ''
 										"
 										@update:modelValue="
 											(v) => setAdvance(si, 'route', v)
 										" />
 									<template
 										v-if="
-											(step.advanceOn || {}).type === 'object-created'
+											(step.advanceOn || {}).type
+											=== 'object-created'
 										">
 										<NcTextField
 											:label="t('buildiq', 'Register')"
 											:modelValue="
-												(step.advanceOn && step.advanceOn.register)
+												(step.advanceOn
+													&& step.advanceOn.register)
 												|| ''
 											"
 											@update:modelValue="
@@ -266,7 +292,8 @@
 										<NcTextField
 											:label="t('buildiq', 'Schema')"
 											:modelValue="
-												(step.advanceOn && step.advanceOn.schema)
+												(step.advanceOn
+													&& step.advanceOn.schema)
 												|| ''
 											"
 											@update:modelValue="
@@ -281,7 +308,9 @@
 										@update:modelValue="
 											(v) => setStep(si, 'optional', v)
 										">
-										{{ t('buildiq', 'Optional (skip if absent)') }}
+										{{
+											t('buildiq', 'Optional (skip if absent)')
+										}}
 									</NcCheckboxRadioSwitch>
 									<NcCheckboxRadioSwitch
 										type="switch"
@@ -300,7 +329,9 @@
 							</li>
 						</ol>
 					</section>
-					<section v-else class="wt-designer__main wt-designer__main--empty">
+					<section
+						v-else
+						class="wt-designer__main wt-designer__main--empty">
 						{{ t('buildiq', 'Select or add a tour to begin.') }}
 					</section>
 				</div>
@@ -327,11 +358,15 @@
 							:key="step.id || si"
 							class="wt-designer__step">
 							<div class="wt-designer__step-head">
-								<span class="wt-designer__step-num">{{ si + 1 }}</span>
+								<span class="wt-designer__step-num">{{
+									si + 1
+								}}</span>
 								<NcTextField
 									:label="t('buildiq', 'Step id')"
 									:modelValue="step.id || ''"
-									@update:modelValue="(v) => setSetupStep(si, 'id', v)" />
+									@update:modelValue="
+										(v) => setSetupStep(si, 'id', v)
+									" />
 								<NcButton
 									variant="tertiary"
 									:disabled="si === 0"
@@ -404,7 +439,9 @@
 										(v) => setSetupStep(si, 'component', v)
 									" />
 							</div>
-							<div v-if="step.type === 'choice'" class="wt-designer__options">
+							<div
+								v-if="step.type === 'choice'"
+								class="wt-designer__options">
 								<div class="wt-designer__options-head">
 									<span>{{ t('buildiq', 'Options') }}</span>
 									<NcButton
@@ -423,7 +460,9 @@
 									<NcTextField
 										:label="t('buildiq', 'Value')"
 										:modelValue="
-											opt.value != null ? String(opt.value) : ''
+											opt.value != null
+												? String(opt.value)
+												: ''
 										"
 										@update:modelValue="
 											(v) => setSetupOption(si, oi, 'value', v)
@@ -473,7 +512,9 @@
 								</NcCheckboxRadioSwitch>
 							</div>
 						</li>
-						<li v-if="setupSteps.length === 0" class="wt-designer__empty">
+						<li
+							v-if="setupSteps.length === 0"
+							class="wt-designer__empty">
 							{{ t('buildiq', 'No setup steps yet — add one.') }}
 						</li>
 					</ol>

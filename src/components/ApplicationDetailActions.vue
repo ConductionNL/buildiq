@@ -203,6 +203,9 @@ export default {
 		 * fewer entries.
 		 *
 		 * @return {Array<object>} Descriptors for CnActionButtons.
+		 *
+		 * @spec exclude assembles the already-specified actions (`canPublish`,
+		 * `publish`, `builderUrl`, `onPermissionsSave`) into descriptors
 		 */
 		actionDescriptors() {
 			const isOwner = this.obAppRole === 'owner'
@@ -226,12 +229,16 @@ export default {
 							target: '_blank',
 						},
 						...(this.canEditVersions
-							? [{
-								id: `edit-${v.slug}`,
-								label: t('buildiq', 'Edit {name}', { name: this.versionLabel(v) }),
-								icon: 'PencilRulerOutline',
-								onSelect: () => this.editVersion(v),
-							}]
+							? [
+									{
+										id: `edit-${v.slug}`,
+										label: t('buildiq', 'Edit {name}', {
+											name: this.versionLabel(v),
+										}),
+										icon: 'PencilRulerOutline',
+										onSelect: () => this.editVersion(v),
+									},
+								]
 							: []),
 					]),
 				})
@@ -263,24 +270,29 @@ export default {
 
 			// ── Everything below collapses into the `···` menu ──
 			if (this.canEditVersions) {
-				out.push({
-					id: 'app-edit-setup',
-					label: t('buildiq', 'Setup wizard'),
-					icon: 'MapMarkerPath',
-					onSelect: () => this.openWalkthroughDesigner('setup'),
-				}, {
-					id: 'app-edit-walkthrough',
-					label: t('buildiq', 'Walkthrough'),
-					icon: 'MapMarkerPath',
-					onSelect: () => this.openWalkthroughDesigner('walkthrough'),
-				})
+				out.push(
+					{
+						id: 'app-edit-setup',
+						label: t('buildiq', 'Setup wizard'),
+						icon: 'MapMarkerPath',
+						onSelect: () => this.openWalkthroughDesigner('setup'),
+					},
+					{
+						id: 'app-edit-walkthrough',
+						label: t('buildiq', 'Walkthrough'),
+						icon: 'MapMarkerPath',
+						onSelect: () => this.openWalkthroughDesigner('walkthrough'),
+					},
+				)
 			}
 			if (isOwner) {
 				out.push({
 					id: 'app-permissions',
 					label: t('buildiq', 'Manage permissions'),
 					icon: 'AccountMultipleOutline',
-					onSelect: () => { this.permissionsOpen = true },
+					onSelect: () => {
+						this.permissionsOpen = true
+					},
 				})
 			}
 			if (this.canSaveAsTemplate) {
@@ -298,7 +310,9 @@ export default {
 					id: 'app-github',
 					label: t('buildiq', 'GitHub'),
 					icon: 'Github',
-					onSelect: () => { this.githubOpen = true },
+					onSelect: () => {
+						this.githubOpen = true
+					},
 				})
 			}
 			if (isOwner) {
@@ -306,7 +320,9 @@ export default {
 					id: 'app-permission-history',
 					label: t('buildiq', 'Permission history'),
 					icon: 'History',
-					onSelect: () => { this.historyOpen = true },
+					onSelect: () => {
+						this.historyOpen = true
+					},
 				})
 			}
 			if (this.canEditVersions) {
@@ -317,25 +333,32 @@ export default {
 					onSelect: () => this.openSupportEditor(),
 				})
 			}
-			out.push({
-				id: 'app-export',
-				label: t('buildiq', 'Export'),
-				icon: 'TrayArrowDown',
-				onSelect: () => { this.exportOpen = true },
-			}, {
-				id: 'app-documentation',
-				label: t('buildiq', 'Documentation'),
-				icon: 'HelpCircleOutline',
-				href: 'https://openbuild.conduction.nl',
-				target: '_blank',
-			})
+			out.push(
+				{
+					id: 'app-export',
+					label: t('buildiq', 'Export'),
+					icon: 'TrayArrowDown',
+					onSelect: () => {
+						this.exportOpen = true
+					},
+				},
+				{
+					id: 'app-documentation',
+					label: t('buildiq', 'Documentation'),
+					icon: 'HelpCircleOutline',
+					href: 'https://openbuild.conduction.nl',
+					target: '_blank',
+				},
+			)
 			if (isOwner) {
 				out.push({
 					id: 'app-delete',
 					label: t('buildiq', 'Delete'),
 					icon: 'DeleteOutline',
 					variant: 'error',
-					onSelect: () => { this.deleteOpen = true },
+					onSelect: () => {
+						this.deleteOpen = true
+					},
 				})
 			}
 

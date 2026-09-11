@@ -67,6 +67,8 @@ export default {
 		 * Ask the dashboard to open the page designer, mirroring `addSchema`.
 		 *
 		 * @return {void}
+		 *
+		 * @spec exclude emit-only affordance; REQ-OBADO-009 covers the rows, not Add
 		 */
 		addPage() {
 			this.$emit('addPage')

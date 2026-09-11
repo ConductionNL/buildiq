@@ -20,10 +20,7 @@
 
 <script>
 import { CnAppRoot, CnPageRenderer } from '@conduction/nextcloud-vue'
-import {
-	translatePlural as n,
-	translate as t,
-} from '@nextcloud/l10n'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { createPinia, setActivePinia } from 'pinia'
 import { createApp, h, shallowReactive } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
@@ -97,6 +94,7 @@ export default {
 		 * The prop bag handed to the sandboxed CnAppRoot.
 		 *
 		 * @return {object} CnAppRoot props.
+		 * @spec exclude preview-only; covered by tests/components/page-editor/PreviewSandbox.spec.js
 		 */
 		rootProps() {
 			return {
@@ -118,6 +116,7 @@ export default {
 		 * prop update, so typing in an editor does not re-mount the preview.
 		 *
 		 * @return {string} signature over every page id and route.
+		 * @spec exclude preview-only; covered by tests/components/page-editor/PreviewSandbox.spec.js
 		 */
 		routeSignature() {
 			return this.previewPages()
@@ -127,10 +126,24 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * A new route table needs a new router, so the sandbox is rebuilt.
+		 *
+		 * @return {void}
+		 * @spec exclude preview-only; covered by tests/components/page-editor/PreviewSandbox.spec.js
+		 */
 		routeSignature() {
 			this.createSandbox()
 		},
 
+		/**
+		 * Every other edit flows into the running sandbox as a prop, so typing
+		 * in an editor does not tear the preview down and back up.
+		 *
+		 * @param {object} props The new CnAppRoot prop bag.
+		 * @return {void}
+		 * @spec exclude preview-only; covered by tests/components/page-editor/PreviewSandbox.spec.js
+		 */
 		rootProps(props) {
 			if (this._sandboxState) {
 				Object.assign(this._sandboxState, props)
@@ -138,6 +151,12 @@ export default {
 		},
 	},
 
+	/**
+	 * Arm the activation guard and build the preview application.
+	 *
+	 * @return {void}
+	 * @spec exclude preview-only; covered by tests/components/page-editor/PreviewSandbox.spec.js
+	 */
 	mounted() {
 		// On the document, not the host: an open action menu is teleported to
 		// <body> and would never be seen from inside the preview's own subtree.
@@ -146,6 +165,13 @@ export default {
 		this.createSandbox()
 	},
 
+	/**
+	 * Release the guard and the preview application. Both listeners sit on the
+	 * document, so leaving either behind would outlive the designer.
+	 *
+	 * @return {void}
+	 * @spec exclude preview-only; covered by tests/components/page-editor/PreviewSandbox.spec.js
+	 */
 	beforeUnmount() {
 		document.removeEventListener('click', this.blockActivation, true)
 		document.removeEventListener('keydown', this.blockActivation, true)
@@ -163,6 +189,7 @@ export default {
 		 *
 		 * @param {EventTarget} target The event's target.
 		 * @return {boolean} true when the preview owns it.
+		 * @spec exclude preview-only; covered by tests/components/page-editor/PreviewSandbox.spec.js
 		 */
 		ownsTarget(target) {
 			const host = this.$refs.host
@@ -178,7 +205,9 @@ export default {
 				}
 				const id = window.CSS?.escape ? window.CSS.escape(el.id) : el.id
 				if (
-					host.querySelector(`[aria-controls="${id}"], [aria-owns="${id}"]`)
+					host.querySelector(
+						`[aria-controls="${id}"], [aria-owns="${id}"]`,
+					)
 				) {
 					return true
 				}
@@ -198,6 +227,7 @@ export default {
 		 *
 		 * @param {MouseEvent|KeyboardEvent} event The activation to judge.
 		 * @return {void}
+		 * @spec exclude preview-only; covered by tests/components/page-editor/PreviewSandbox.spec.js
 		 */
 		blockActivation(event) {
 			// Only the two keys that activate a control; Escape, arrows and
@@ -224,6 +254,7 @@ export default {
 		 * Manifest pages that can become a route.
 		 *
 		 * @return {object[]} pages carrying both an id and a route.
+		 * @spec exclude preview-only; covered by tests/components/page-editor/PreviewSandbox.spec.js
 		 */
 		previewPages() {
 			const pages = Array.isArray(this.manifest?.pages)
@@ -238,6 +269,7 @@ export default {
 		 * CnPageRenderer.
 		 *
 		 * @return {object[]} vue-router 4 route records.
+		 * @spec exclude preview-only; covered by tests/components/page-editor/PreviewSandbox.spec.js
 		 */
 		buildRoutes() {
 			const seen = new Set()
@@ -267,6 +299,7 @@ export default {
 		 * (Re)create the preview application.
 		 *
 		 * @return {void}
+		 * @spec exclude preview-only; covered by tests/components/page-editor/PreviewSandbox.spec.js
 		 */
 		createSandbox() {
 			const previousPath = this._sandboxRouter?.currentRoute?.value?.fullPath
@@ -307,6 +340,7 @@ export default {
 		 * Tear the preview application down.
 		 *
 		 * @return {void}
+		 * @spec exclude preview-only; covered by tests/components/page-editor/PreviewSandbox.spec.js
 		 */
 		destroySandbox() {
 			if (this._sandboxApp) {
