@@ -44,6 +44,11 @@ import type { APIRequestContext } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
 import { expect, test } from '@playwright/test'
+// The one place a target enters this suite, and the place the shared-instance
+// guard sits. This was a private `process.env.PLAYWRIGHT_BASE_URL ??
+// 'http://localhost:8080'` constant, so a run with nothing set wrote to the
+// shared dev instance. See tests/e2e/shared-instance.ts.
+import { E2E_BASE_URL as BASE_URL } from '../support/baseUrl.ts'
 import {
 	cleanupByPrefix,
 	deleteSchema,
@@ -57,7 +62,6 @@ import {
 	wizardCreate,
 } from './fixtures.ts'
 
-const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 const authHeaders = {
 	'OCS-APIRequest': 'true',
 	Authorization:
