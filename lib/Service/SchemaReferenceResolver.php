@@ -64,6 +64,8 @@ class SchemaReferenceResolver {
 	 * @param array<int,string> $referenced Ids other registers still hold.
 	 *
 	 * @return bool
+	 *
+	 * @spec openspec/specs/application-detail-ui/spec.md
 	 */
 	public function isReferenced(mixed $schemaId, array $referenced): bool {
 		if (in_array((string)$schemaId, $referenced, true) === true) {
@@ -98,6 +100,8 @@ class SchemaReferenceResolver {
 	 *                    a failed scan as an empty (nothing-referenced) result.
 	 *
 	 * @return array<int,string> Schema ids, deduplicated.
+	 *
+	 * @spec openspec/specs/application-detail-ui/spec.md
 	 */
 	public function heldByOtherRegisters(): array {
 		$registers = $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
