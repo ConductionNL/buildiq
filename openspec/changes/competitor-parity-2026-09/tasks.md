@@ -9,3 +9,7 @@
 - [ ] 3.1 Tell the dossiq lane that its task list and its upload dialog may read `buildiq-page-layout`, and that both keep their manifest shape when nothing answers.
 - [ ] 3.2 Record that the consolidated candidates C-tasks-and-phases-33 and C-access-and-privacy-37 are split: buildiq stores and serves, clusters 53 and 58 render.
 - [ ] 4.1 Add any later buildiq change that cites the gap register or the discovery sweep to the index above, in the same PR that opens it.
+- [ ] 5.1 Build `screen-overrides-as-a-patch-with-fall-through` (gap-register rows 11.43 and 11.51), after `case-page-layout-per-case-type`. Archive it on merge and tick it here.
+- [ ] 5.2 Tell the dossiq lane which audience to ask the `buildiq-page-layout` leaf with on the desk channel.
+- [ ] 5.3 Tell the portaliq lane to ask that leaf with the `portal` audience for a public visitor.
+- [ ] 5.4 Ask the `app-delta-override` lane whether its fail-soft orphaned-delta skip should become loud, the way a drifted screen override now is.
