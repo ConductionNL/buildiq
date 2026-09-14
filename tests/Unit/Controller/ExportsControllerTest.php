@@ -29,6 +29,8 @@ namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\ExportsController;
 use OCA\Buildiq\Service\ExportJobService;
+use OCA\Buildiq\Tests\Unit\Support\FakeSlugResolver;
+use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
@@ -189,7 +191,20 @@ final class ExportsControllerTest extends TestCase {
 				return $class === 'OCA\\OpenRegister\\Service\\ObjectService';
 			}
 		);
-		$this->container->method('get')->willReturn($objectService);
+		// The controller now asks the container for TWO things: the object
+		// service, and the register-slug resolver it uses to name this app's own
+		// register. Returning the object service for every `get()` made the
+		// resolver call throw, the authorization try/catch swallow it, and every
+		// authorised case 403. An instance carrying `buildiq` is the migrated one.
+		$this->container->method('get')->willReturnCallback(
+			static function (string $class) use ($objectService): object {
+				if ($class === RegisterSlugResolverInterface::class) {
+					return new FakeSlugResolver(['buildiq']);
+				}
+
+				return $objectService;
+			}
+		);
 	}//end stubAuthorisedFallback()
 
 	/**
@@ -482,7 +497,20 @@ final class ExportsControllerTest extends TestCase {
 				return $class === 'OCA\\OpenRegister\\Service\\ObjectService';
 			}
 		);
-		$this->container->method('get')->willReturn($objectService);
+		// The controller now asks the container for TWO things: the object
+		// service, and the register-slug resolver it uses to name this app's own
+		// register. Returning the object service for every `get()` made the
+		// resolver call throw, the authorization try/catch swallow it, and every
+		// authorised case 403. An instance carrying `buildiq` is the migrated one.
+		$this->container->method('get')->willReturnCallback(
+			static function (string $class) use ($objectService): object {
+				if ($class === RegisterSlugResolverInterface::class) {
+					return new FakeSlugResolver(['buildiq']);
+				}
+
+				return $objectService;
+			}
+		);
 
 		$tmpZip = sys_get_temp_dir() . '/buildiq-controller-test-' . uniqid() . '.zip';
 		file_put_contents($tmpZip, 'PK fake zip bytes');

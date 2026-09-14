@@ -79,6 +79,26 @@ class AppRepoSerializer {
 	private const CONNECTOR_REGISTER = 'integriq';
 
 	/**
+	 * The OpenRegister register Buildiq's own configuration objects live in.
+	 *
+	 * The CANONICAL slug, on the same terms as {@see CONNECTOR_REGISTER}: this
+	 * app's own repair step renames the register from `openbuild`, so both names
+	 * are live across the estate and neither is safe to read with directly.
+	 *
+	 * This constant existed nowhere until now, and that absence is the defect.
+	 * `collectAutomations()` read `'register' => 'buildiq'` as a literal in a
+	 * class that already injects {@see RegisterSlugResolverInterface} and already
+	 * resolves the connector register sixty lines above it. On an instance that
+	 * has not run the rename the literal matches no register row, `findAll()`
+	 * returns zero rows, and the published repository ships with an EMPTY
+	 * automations section that is byte-for-byte what an application with no
+	 * automations produces.
+	 *
+	 * @var string
+	 */
+	private const SELF_REGISTER = 'buildiq';
+
+	/**
 	 * The connector kinds an application may declare. `endpoint` and `rule` are
 	 * deliberately excluded: an endpoint is instance-facing surface, and a rule
 	 * belongs to the automations channel.
@@ -686,11 +706,28 @@ class AppRepoSerializer {
 			return [];
 		}
 
+		// Which slug Buildiq's own register carries HERE. The branch is the whole
+		// point: this method's failure return and its success-with-nothing return
+		// are the same empty array, so without it an unmigrated instance publishes
+		// a repository whose automations section is silently absent rather than
+		// reported missing. Logged at warning, not debug, because the caller
+		// cannot tell the two apart and neither can the operator reading the
+		// published bundle.
+		$registerSlug = $this->slugResolver->resolve(canonical: self::SELF_REGISTER);
+		if ($registerSlug->isResolved() === false) {
+			$this->logger->warning(
+				'Buildiq AppRepoSerializer: this app\'s own register is not on this instance under any of its '
+				. 'known slugs (' . implode(', ', $registerSlug->candidates) . '), so the automations for "'
+				. $slug . '" could not be collected and the published repository will carry none.'
+			);
+			return [];
+		}
+
 		try {
 			$results = $this->objectService->findAll(
 				config: [
 					'filters' => [
-						'register' => 'buildiq',
+						'register' => $registerSlug->slug,
 						'schema' => 'automation',
 						'applicationSlug' => $slug,
 					],

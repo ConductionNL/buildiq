@@ -42,11 +42,21 @@ use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 final class FakeSlugResolver implements RegisterSlugResolverInterface {
 
 	/**
-	 * The slug history of the one register Buildiq reads.
+	 * The slug history of the registers Buildiq reads.
+	 *
+	 * Two now, not one. `buildiq` joined `integriq` when `AppRepoSerializer`
+	 * and `ExportsController` stopped naming this app's OWN register as a
+	 * literal: its repair step renames it from `openbuild` per instance, on
+	 * exactly the same terms as Integriq's, so the unmigrated case is a real
+	 * instance state and a double that could not express it would let a test
+	 * pass whether or not the code resolved.
 	 *
 	 * @var array<string, list<string>>
 	 */
-	private const CANDIDATES = ['integriq' => ['integriq', 'openconnector']];
+	private const CANDIDATES = [
+		'integriq' => ['integriq', 'openconnector'],
+		'buildiq'  => ['buildiq', 'openbuild'],
+	];
 
 	/**
 	 * Constructor.

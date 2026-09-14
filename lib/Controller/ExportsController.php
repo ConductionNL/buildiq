@@ -34,6 +34,7 @@ namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Service\ExportJobService;
+use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -46,6 +47,7 @@ use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * Controller for the Buildiq export pipeline.
@@ -54,6 +56,19 @@ use Psr\Log\LoggerInterface;
  * @spec openspec/changes/openbuild-exporter/tasks.md#task-5.2
  */
 class ExportsController extends Controller {
+
+	/**
+	 * The canonical slug of Buildiq's own register, which is not what a read uses.
+	 *
+	 * This app's repair step renames the register from `openbuild` per instance,
+	 * so both names are live across the estate on any given day. This is the name
+	 * asked ABOUT; the name to read with comes back from
+	 * {@see \OCA\OpenRegister\Contract\RegisterSlugResolverInterface}.
+	 *
+	 * @var string
+	 */
+	private const CANONICAL_REGISTER = 'buildiq';
+
 	/**
 	 * Constructor.
 	 *
@@ -74,6 +89,50 @@ class ExportsController extends Controller {
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
+
+	/**
+	 * Which slug Buildiq's own register answers to on THIS instance.
+	 *
+	 * Both reads below used to name `buildiq` as the FIRST POSITIONAL argument
+	 * to `searchObjectsBySlug()`, which is register position with no
+	 * `register:` label anywhere on the line, so
+	 * {@see \OCA\Buildiq\Tests\Unit\Support\RegisterSlugPinTest} could not see
+	 * them. The guard's patterns are widened in the same change that fixes them.
+	 *
+	 * Resolved through the container rather than the constructor for the same
+	 * reason `ObjectService` is: OpenRegister is an optional dependency, and a
+	 * constructor argument would make this controller unconstructable on an
+	 * instance without it.
+	 *
+	 * @return string|null The slug to read with, or null when this app's register
+	 *                     is not on this instance under any slug it has answered to.
+	 */
+	private function ownRegisterSlug(): ?string {
+		try {
+			if (class_exists('\OCA\OpenRegister\Contract\RegisterSlugResolverInterface') === false) {
+				return null;
+			}
+
+			$resolver = $this->container->get(RegisterSlugResolverInterface::class);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'Buildiq ExportsController: could not obtain the register-slug resolver, so this app\'s own '
+				. 'register cannot be named here: ' . $e->getMessage()
+			);
+			return null;
+		}
+
+		$resolution = $resolver->resolve(canonical: self::CANONICAL_REGISTER);
+		if ($resolution->isResolved() === false) {
+			$this->logger->warning(
+				'Buildiq ExportsController: this app\'s own register is not on this instance under any of its '
+				. 'known slugs (' . implode(', ', $resolution->candidates) . ').'
+			);
+			return null;
+		}
+
+		return $resolution->slug;
+	}//end ownRegisterSlug()
 
 	/**
 	 * Authorize the caller for an action on a given source Application slug.
@@ -132,7 +191,20 @@ class ExportsController extends Controller {
 				return false;
 			}
 
-			$apps = $service->searchObjectsBySlug('buildiq', 'built-app', ['slug' => $applicationSlug]);
+			// FAILS CLOSED, deliberately, and the direction is worth stating
+			// because it is not the harmless one. This method is the IDOR guard
+			// for `#[NoAdminRequired]` routes, so an unresolvable register must
+			// deny rather than admit. It was ALREADY failing closed before this
+			// change, and silently: `searchObjectsBySlug('buildiq', …)` on an
+			// instance that has not run the rename matched no register row,
+			// returned zero apps, and denied the owning non-admin with no log
+			// line to say why. The admin bypass above kept that invisible.
+			$registerSlug = $this->ownRegisterSlug();
+			if ($registerSlug === null) {
+				return false;
+			}
+
+			$apps = $service->searchObjectsBySlug($registerSlug, 'built-app', ['slug' => $applicationSlug]);
 			if (is_array($apps) === false || $apps === []) {
 				return false;
 			}
@@ -286,7 +358,17 @@ class ExportsController extends Controller {
 				return '';
 			}
 
-			$apps = $service->searchObjectsBySlug('buildiq', 'built-app', ['slug' => $applicationSlug]);
+			// Returns '' — "the slug does not resolve" — which is this method's
+			// existing not-found answer, and the caller already refuses to queue
+			// an export on it. `ownRegisterSlug()` logs the reason at warning, so
+			// the two ways of arriving at '' are distinguishable in the log even
+			// though they are not in the return value.
+			$registerSlug = $this->ownRegisterSlug();
+			if ($registerSlug === null) {
+				return '';
+			}
+
+			$apps = $service->searchObjectsBySlug($registerSlug, 'built-app', ['slug' => $applicationSlug]);
 			if (is_array($apps) === false || $apps === []) {
 				return '';
 			}
