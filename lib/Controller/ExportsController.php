@@ -191,14 +191,7 @@ class ExportsController extends Controller {
 				return false;
 			}
 
-			// FAILS CLOSED, deliberately, and the direction is worth stating
-			// because it is not the harmless one. This method is the IDOR guard
-			// for `#[NoAdminRequired]` routes, so an unresolvable register must
-			// deny rather than admit. It was ALREADY failing closed before this
-			// change, and silently: `searchObjectsBySlug('buildiq', …)` on an
-			// instance that has not run the rename matched no register row,
-			// returned zero apps, and denied the owning non-admin with no log
-			// line to say why. The admin bypass above kept that invisible.
+			// Fails closed: this is the IDOR guard, so an unresolvable register denies.
 			$registerSlug = $this->ownRegisterSlug();
 			if ($registerSlug === null) {
 				return false;
