@@ -98,7 +98,7 @@ final class OwnRegisterResolutionTest extends TestCase {
 		$this->askedRegister = null;
 		$this->reads = 0;
 
-		$objectService = $this->createMock(ObjectServiceInterface::class);
+		$objectService = $this->createMock(originalClassName: ObjectServiceInterface::class);
 		$objectService->method('findAll')->willReturnCallback(
 			function (array $config = [], bool $_rbac = true, bool $_multitenancy = true) use ($present): array {
 				$this->reads++;
@@ -127,14 +127,17 @@ final class OwnRegisterResolutionTest extends TestCase {
 			}
 		);
 
-		$logger = $this->createMock(LoggerInterface::class);
+		$logger = $this->createMock(originalClassName: LoggerInterface::class);
 		$serializer = new AppRepoSerializer(
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(SchemaMapper::class),
-			$logger,
-			new TemplateRepoSerializer($this->createMock(SchemaMapper::class), $logger),
-			new FakeSlugResolver($present),
-			$objectService
+			registerMapper: $this->createMock(originalClassName: RegisterMapper::class),
+			schemaMapper: $this->createMock(originalClassName: SchemaMapper::class),
+			logger: $logger,
+			templateSerializer: new TemplateRepoSerializer(
+				schemaMapper: $this->createMock(originalClassName: SchemaMapper::class),
+				logger: $logger
+			),
+			slugResolver: new FakeSlugResolver(present: $present),
+			objectService: $objectService
 		);
 
 		$files = $serializer->serialize(
@@ -156,12 +159,12 @@ final class OwnRegisterResolutionTest extends TestCase {
 	 * @return void
 	 */
 	public function testAMigratedInstanceIsReadWithItsNewSlug(): void {
-		$this->serializeAgainst(['buildiq']);
+		$this->serializeAgainst(present: ['buildiq']);
 
 		$this->assertSame(
-			'buildiq',
-			$this->askedRegister,
-			'On an instance that has run the rename, the automations read must name buildiq.'
+			expected: 'buildiq',
+			actual: $this->askedRegister,
+			message: 'On an instance that has run the rename, the automations read must name buildiq.'
 		);
 	}//end testAMigratedInstanceIsReadWithItsNewSlug()
 
@@ -174,12 +177,12 @@ final class OwnRegisterResolutionTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnmigratedInstanceIsReadWithItsOldSlug(): void {
-		$this->serializeAgainst(['openbuild']);
+		$this->serializeAgainst(present: ['openbuild']);
 
 		$this->assertSame(
-			'openbuild',
-			$this->askedRegister,
-			'On an instance that has NOT run the rename, the automations read must name openbuild.'
+			expected: 'openbuild',
+			actual: $this->askedRegister,
+			message: 'On an instance that has NOT run the rename, the automations read must name openbuild.'
 		);
 	}//end testAnUnmigratedInstanceIsReadWithItsOldSlug()
 
@@ -192,12 +195,12 @@ final class OwnRegisterResolutionTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheAutomationSurvivesOnAnUnmigratedInstance(): void {
-		$files = $this->serializeAgainst(['openbuild']);
+		$files = $this->serializeAgainst(present: ['openbuild']);
 
 		$this->assertArrayHasKey(
-			'automations/nightly-refresh.json',
-			$files,
-			'The automation must be published on an unmigrated instance, not silently dropped.'
+			key: 'automations/nightly-refresh.json',
+			array: $files,
+			message: 'The automation must be published on an unmigrated instance, not silently dropped.'
 		);
 	}//end testTheAutomationSurvivesOnAnUnmigratedInstance()
 
@@ -211,12 +214,12 @@ final class OwnRegisterResolutionTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnAbsentRegisterIsNotReadAndPublishesNoAutomations(): void {
-		$files = $this->serializeAgainst([]);
+		$files = $this->serializeAgainst(present: []);
 
 		$this->assertNull(
-			$this->askedRegister,
-			'With the register absent, no automations read may be attempted at all.'
+			actual: $this->askedRegister,
+			message: 'With the register absent, no automations read may be attempted at all.'
 		);
-		$this->assertArrayNotHasKey('automations/nightly-refresh.json', $files);
+		$this->assertArrayNotHasKey(key: 'automations/nightly-refresh.json', array: $files);
 	}//end testAnAbsentRegisterIsNotReadAndPublishesNoAutomations()
 }//end class

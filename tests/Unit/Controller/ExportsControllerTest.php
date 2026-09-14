@@ -199,7 +199,7 @@ final class ExportsControllerTest extends TestCase {
 		$this->container->method('get')->willReturnCallback(
 			static function (string $class) use ($objectService): object {
 				if ($class === RegisterSlugResolverInterface::class) {
-					return new FakeSlugResolver(['buildiq']);
+					return new FakeSlugResolver(present: ['buildiq']);
 				}
 
 				return $objectService;
@@ -505,7 +505,7 @@ final class ExportsControllerTest extends TestCase {
 		$this->container->method('get')->willReturnCallback(
 			static function (string $class) use ($objectService): object {
 				if ($class === RegisterSlugResolverInterface::class) {
-					return new FakeSlugResolver(['buildiq']);
+					return new FakeSlugResolver(present: ['buildiq']);
 				}
 
 				return $objectService;

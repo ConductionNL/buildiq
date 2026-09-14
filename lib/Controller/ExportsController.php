@@ -109,7 +109,7 @@ class ExportsController extends Controller {
 	 */
 	private function ownRegisterSlug(): ?string {
 		try {
-			if (class_exists('\OCA\OpenRegister\Contract\RegisterSlugResolverInterface') === false) {
+			if (interface_exists('\OCA\OpenRegister\Contract\RegisterSlugResolverInterface') === false) {
 				return null;
 			}
 
