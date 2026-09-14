@@ -37,10 +37,10 @@ const PreviewPageRenderer = { ...CnPageRenderer }
 // stays behavioural rather than a list of Nextcloud class names. Everything
 // else acts on real data.
 //
-// A real `a[href]` is handled separately in blockActivation(), not listed
-// here: the sandbox's router is a memory router, so only RouterLink clicks
-// are intercepted — a plain anchor performs a genuine same-tab navigation
-// that would take the whole designer with it.
+// A real `a[href]` is handled separately in blockAnchorNavigation(), not
+// listed here: the sandbox's router is a memory router, so only RouterLink
+// clicks are intercepted — a plain anchor performs a genuine same-tab
+// navigation that would take the whole designer with it.
 const HARMLESS_TARGETS = [
 	'[aria-expanded]',
 	// Not `dialog`: a modal is where the real actions live.
@@ -161,6 +161,7 @@ export default {
 	 * warning for `_`-prefixed fields), matching CnWalkthrough's convention.
 	 *
 	 * @return {void}
+	 * @spec exclude preview-only; covered by tests/components/page-editor/PreviewSandbox.spec.js
 	 */
 	created() {
 		this._sandboxApp = null
@@ -179,6 +180,10 @@ export default {
 		// <body> and would never be seen from inside the preview's own subtree.
 		document.addEventListener('click', this.blockActivation, true)
 		document.addEventListener('keydown', this.blockActivation, true)
+		// Bubble phase, so it runs after a RouterLink's own click handler
+		// (attached to the anchor itself, which fires during the target phase,
+		// ahead of bubbling to document).
+		document.addEventListener('click', this.blockAnchorNavigation, false)
 		this.createSandbox()
 	},
 
@@ -192,6 +197,7 @@ export default {
 	beforeUnmount() {
 		document.removeEventListener('click', this.blockActivation, true)
 		document.removeEventListener('keydown', this.blockActivation, true)
+		document.removeEventListener('click', this.blockAnchorNavigation, false)
 		this.destroySandbox()
 	},
 
@@ -261,18 +267,11 @@ export default {
 				return
 			}
 
-			const anchor = event.target?.closest?.('a[href]')
-			if (anchor) {
-				// A RouterLink click still navigates correctly: preventDefault()
-				// only cancels the browser's own navigation, it does not stop the
-				// click from reaching RouterLink's handler, which drives the
-				// sandbox's memory router with router.push() regardless. A plain
-				// anchor has nothing else to catch it, so its default is the only
-				// thing to stop — unless target="_blank" already keeps the
-				// designer's tab in place.
-				if ((anchor.getAttribute('target') || '').toLowerCase() !== '_blank') {
-					event.preventDefault()
-				}
+			// Anchors are decided in the bubble phase by blockAnchorNavigation(),
+			// once it's known whether a RouterLink already claimed the click:
+			// preventDefault() here would reach the anchor before RouterLink's
+			// own handler runs and be indistinguishable from one it fired itself.
+			if (event.target?.closest?.('a[href]')) {
 				return
 			}
 
@@ -281,6 +280,34 @@ export default {
 			}
 			event.preventDefault()
 			event.stopPropagation()
+		},
+
+		/**
+		 * Stop a plain anchor's real navigation without touching a RouterLink's.
+		 *
+		 * RouterLink's own click handler sits on the anchor itself and fires
+		 * during the target phase, ahead of this document listener's bubble
+		 * phase. It calls preventDefault() itself before driving the sandbox's
+		 * memory router, so by the time a RouterLink click gets here
+		 * `defaultPrevented` is already true — a plain anchor's is not. That
+		 * tells the two apart with no RouterLink detection needed.
+		 *
+		 * @param {MouseEvent} event The click to judge.
+		 * @return {void}
+		 * @spec exclude preview-only; covered by tests/components/page-editor/PreviewSandbox.spec.js
+		 */
+		blockAnchorNavigation(event) {
+			if (event.defaultPrevented || !this.ownsTarget(event.target)) {
+				return
+			}
+			const anchor = event.target?.closest?.('a[href]')
+			if (!anchor) {
+				return
+			}
+			if ((anchor.getAttribute('target') || '').toLowerCase() === '_blank') {
+				return
+			}
+			event.preventDefault()
 		},
 
 		/**

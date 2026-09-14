@@ -36,6 +36,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\ApplicationDeletionService;
 use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Service\SchemaReferenceResolver;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -118,6 +119,13 @@ class ApplicationDeletionServiceTest extends TestCase {
 			registerService: $this->registerService,
 			registerMapper: $this->registerMapper,
 			schemaMapper: $this->schemaMapper,
+			// Real, not mocked: it is a thin resolver over the same two mapper
+			// mocks, so every existing findAll()/findIdsBySlugs() stub below
+			// still exercises the reference-matching logic it holds.
+			schemaReferences: new SchemaReferenceResolver(
+				registerMapper: $this->registerMapper,
+				schemaMapper: $this->schemaMapper,
+			),
 			logger: $this->logger,
 		);
 	}//end setUp()

@@ -244,13 +244,15 @@ export default {
 				})
 			}
 
-			// ── The two meant to stay BUTTONS, Edit last ──
+			// ── Meant to stay BUTTONS, Edit last ──
 			// CnActionButtons promotes the first N collapsible entries in
 			// declaration order, so this block IS the inline set: whatever sits
-			// here is what the header shows beside `···`. Keep it two long while
-			// `inline` is 2, and keep Edit at the end of it — that is what puts
-			// Edit immediately left of the trigger. With the never-collapsed
-			// "Open app" that makes three buttons in the header.
+			// here is what the header shows beside `···`. Both entries are
+			// conditional (isOwner, openEditForm), so a non-owner promotes
+			// whatever comes next instead — keep Edit at the end of the block
+			// regardless, since that is what puts it immediately left of the
+			// trigger whenever it is present. With the never-collapsed "Open
+			// app" the owner case makes three buttons in the header.
 			if (isOwner) {
 				out.push({
 					id: 'app-settings-action',

@@ -10,8 +10,9 @@
  * cannot navigate the designer.
  */
 
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
+import { RouterLink } from 'vue-router'
 
 vi.mock('@nextcloud/l10n', async (importOriginal) => ({
 	...(await importOriginal()),
@@ -168,7 +169,10 @@ describe('PreviewSandbox', () => {
 
 		const clicked = vi.fn()
 		link.addEventListener('click', clicked)
-		const event = new window.MouseEvent('click', { bubbles: true, cancelable: true })
+		const event = new window.MouseEvent('click', {
+			bubbles: true,
+			cancelable: true,
+		})
 		link.dispatchEvent(event)
 
 		// preventDefault(), not stopPropagation(): a RouterLink's own click
@@ -189,11 +193,38 @@ describe('PreviewSandbox', () => {
 		link.setAttribute('target', '_blank')
 		host.appendChild(link)
 
-		const event = new window.MouseEvent('click', { bubbles: true, cancelable: true })
+		const event = new window.MouseEvent('click', {
+			bubbles: true,
+			cancelable: true,
+		})
 		link.dispatchEvent(event)
 
 		expect(event.defaultPrevented).toBe(false)
 
+		wrapper.unmount()
+	})
+
+	it('lets a RouterLink navigate the sandbox router instead of blocking it', async () => {
+		const wrapper = mountSandbox()
+		const router = wrapper.vm._sandboxRouter
+		await router.isReady()
+
+		const linkWrapper = mount(RouterLink, {
+			props: { to: '/pets' },
+			global: { plugins: [router] },
+			attachTo: wrapper.element,
+		})
+
+		linkWrapper
+			.find('a')
+			.element.dispatchEvent(
+				new window.MouseEvent('click', { bubbles: true, cancelable: true }),
+			)
+		await flushPromises()
+
+		expect(router.currentRoute.value.path).toBe('/pets')
+
+		linkWrapper.unmount()
 		wrapper.unmount()
 	})
 

@@ -64,6 +64,7 @@ class ApplicationDeletionService {
 	 * @param RegisterService $registerService OR register-level service (delete)
 	 * @param RegisterMapper $registerMapper OR register lookup (by slug)
 	 * @param SchemaMapper $schemaMapper OR schema lookup + delete
+	 * @param SchemaReferenceResolver $schemaReferences Whether a schema is still claimed elsewhere
 	 * @param LoggerInterface $logger PSR logger
 	 *
 	 * @return void
@@ -73,6 +74,7 @@ class ApplicationDeletionService {
 		private readonly RegisterService $registerService,
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaReferenceResolver $schemaReferences,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -283,7 +285,7 @@ class ApplicationDeletionService {
 		}
 
 		try {
-			$referenced = $this->schemaIdsHeldByRegisters();
+			$referenced = $this->schemaReferences->heldByOtherRegisters();
 		} catch (Throwable $e) {
 			// A scan we cannot trust must not authorise a delete: skip the
 			// cleanup and orphan the schemas rather than risk removing one
@@ -300,7 +302,7 @@ class ApplicationDeletionService {
 		}
 
 		foreach ($schemaIds as $schemaId) {
-			if ($this->isSchemaReferenced(schemaId: $schemaId, referenced: $referenced) === true) {
+			if ($this->schemaReferences->isReferenced(schemaId: $schemaId, referenced: $referenced) === true) {
 				continue;
 			}
 
@@ -316,82 +318,6 @@ class ApplicationDeletionService {
 			}
 		}
 	}//end deleteUnreferencedSchemas()
-
-	/**
-	 * Whether a schema id/slug is still claimed by another register.
-	 *
-	 * Matches by string against $referenced (already-resolved ids). A
-	 * non-numeric $schemaId is additionally resolved to its real id(s) via
-	 * {@see SchemaMapper::findIdsBySlugs()}, so a schema this register held by
-	 * slug still matches a register that claims the same schema by numeric id.
-	 * A slug is not unique across apps, so any resolved id counting as
-	 * referenced is deliberately conservative — the same as elsewhere in this
-	 * class, an ambiguous case is left alone rather than deleted on a guess.
-	 *
-	 * @param mixed $schemaId The schema id or slug to check.
-	 * @param array<int,string> $referenced Ids other registers still hold.
-	 *
-	 * @return bool
-	 */
-	private function isSchemaReferenced(mixed $schemaId, array $referenced): bool {
-		if (in_array((string)$schemaId, $referenced, true) === true) {
-			return true;
-		}
-
-		if (is_numeric($schemaId) === true) {
-			return false;
-		}
-
-		foreach ($this->schemaMapper->findIdsBySlugs([(string)$schemaId]) as $ids) {
-			if (array_intersect($ids, $referenced) !== []) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end isSchemaReferenced()
-
-	/**
-	 * Collect every schema id still claimed by a register, as strings.
-	 *
-	 * Unfiltered on purpose (`_rbac`/`_multitenancy` off): a schema shared with a
-	 * register the caller cannot see is still shared, and a filtered scan would
-	 * report it as unreferenced and delete it out from under that register.
-	 *
-	 * A slug entry in `register.schemas` is resolved to its real id(s) via
-	 * {@see SchemaMapper::findIdsBySlugs()} so it is comparable to a numeric id
-	 * another register recorded for the same schema.
-	 *
-	 * @throws Throwable When the register scan fails; the caller skips the cleanup.
-	 *
-	 * @return array<int,string> Schema ids, deduplicated.
-	 */
-	private function schemaIdsHeldByRegisters(): array {
-		$registers = $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
-
-		$ids = [];
-		$slugs = [];
-		foreach ($registers as $register) {
-			foreach (($register->getSchemas() ?? []) as $schemaId) {
-				if (is_numeric($schemaId) === true) {
-					$ids[] = (string)$schemaId;
-					continue;
-				}
-
-				$slugs[] = (string)$schemaId;
-			}
-		}
-
-		if ($slugs !== []) {
-			foreach ($this->schemaMapper->findIdsBySlugs($slugs) as $matchingIds) {
-				foreach ($matchingIds as $id) {
-					$ids[] = $id;
-				}
-			}
-		}
-
-		return array_values(array_unique($ids));
-	}//end schemaIdsHeldByRegisters()
 
 	/**
 	 * Delete every object stored in a register, across all its schemas.
