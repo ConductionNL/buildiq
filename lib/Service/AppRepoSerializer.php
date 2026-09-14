@@ -682,7 +682,9 @@ class AppRepoSerializer {
 	 * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
 	 */
 	private function collectAutomations(string $slug): array {
-		if ($slug === '' || $this->objectService === null) {
+		// Buildiq's own register is renamed from `openbuild` per instance, so resolve it like the connector register.
+		$registerSlug = $this->slugResolver->resolve(canonical: 'buildiq');
+		if ($slug === '' || $this->objectService === null || $registerSlug->isResolved() === false) {
 			return [];
 		}
 
@@ -690,7 +692,7 @@ class AppRepoSerializer {
 			$results = $this->objectService->findAll(
 				config: [
 					'filters' => [
-						'register' => 'buildiq',
+						'register' => $registerSlug->slug,
 						'schema' => 'automation',
 						'applicationSlug' => $slug,
 					],

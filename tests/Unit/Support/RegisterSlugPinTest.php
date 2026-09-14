@@ -140,6 +140,26 @@ class RegisterSlugPinTest extends TestCase {
 	 * frozen, which is the shape that was live in this repository while this
 	 * guard read green.
 	 *
+	 * ## The last two: register position with no `register` label on the line
+	 *
+	 * `searchObjectsBySlug()` takes the register slug as its FIRST POSITIONAL
+	 * argument, so a call written the ordinary way puts a slug in register
+	 * position and nothing on the line says the word `register`. Two such calls
+	 * were live in `ExportsController` while every pattern above read green, and
+	 * one of them is the IDOR guard for the export routes: on an instance that
+	 * had not run the rename it matched no register row, returned zero apps, and
+	 * denied the owning non-admin with no log line to say why.
+	 *
+	 * The named-argument pattern requires at least one character before
+	 * `[Rr]egister:`, so it does not merely repeat the second pattern. It exists
+	 * for `defaultRegister:` in `StoreController::descriptor()`. That site is
+	 * NOT a defect and is not fixed: it names a register on the REMOTE catalogue
+	 * instance, which the local resolver cannot answer for, and the same is true
+	 * of `SettingsService::CONFIG_DEFAULTS['registry_register']`. Both are
+	 * canonical today, so neither is flagged; the pattern is here so that a
+	 * superseded slug arriving in that position later is seen rather than
+	 * discovered by hand a second time.
+	 *
 	 * @var list<string>
 	 */
 	private const REGISTER_POSITION = [
@@ -151,6 +171,8 @@ class RegisterSlugPinTest extends TestCase {
 		'/\bregister:\s*\(?[^,()]*\?\?\s*\'([a-zA-Z0-9_-]+)\'/',
 		'/\'register\'\s*=>\s*\(?[^,()]*\?\?\s*\'([a-zA-Z0-9_-]+)\'/',
 		'/\$[a-zA-Z0-9_]*(?:[Rr]egister|[Ss]lug)[a-zA-Z0-9_]*\s*=\s*[^;]*\?\?\s*\'([a-zA-Z0-9_-]+)\'/',
+		'/searchObjectsBySlug\(\s*\'([a-zA-Z0-9_-]+)\'/',
+		'/\b[a-zA-Z0-9_]+[Rr]egister:\s*\'([a-zA-Z0-9_-]+)\'/',
 	];
 
 	/**
@@ -277,6 +299,8 @@ class RegisterSlugPinTest extends TestCase {
 			'/\bregister:\s*\(?[^,()]*\?\?\s*\'([a-zA-Z0-9_-]+)\'/'   => "\t\t\tregister: (\$data['register'] ?? 'openconnector'),",
 			'/\'register\'\s*=>\s*\(?[^,()]*\?\?\s*\'([a-zA-Z0-9_-]+)\'/' => "'register' => (\$data['register'] ?? 'openbuild'),",
 			'/\$[a-zA-Z0-9_]*(?:[Rr]egister|[Ss]lug)[a-zA-Z0-9_]*\s*=\s*[^;]*\?\?\s*\'([a-zA-Z0-9_-]+)\'/' => "\t\t\$register = \$resolution?->slug ?? 'openbuild';",
+			'/searchObjectsBySlug\(\s*\'([a-zA-Z0-9_-]+)\'/' => "\t\t\t\$apps = \$service->searchObjectsBySlug('openbuild', 'built-app', ['slug' => \$slug]);",
+			'/\b[a-zA-Z0-9_]+[Rr]egister:\s*\'([a-zA-Z0-9_-]+)\'/' => "\t\t\t\tdefaultRegister: 'openbuild',",
 		];
 
 		foreach (self::REGISTER_POSITION as $pattern) {
