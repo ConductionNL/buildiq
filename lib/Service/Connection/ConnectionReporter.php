@@ -250,6 +250,21 @@ class ConnectionReporter {
 	}//end reportWebhookCall()
 
 	/**
+	 * The HTTP status a failed call still carries, for {@see reportDocumentCall()} and {@see reportWebhookCall()}.
+	 *
+	 * Pure: reads, stores and sends nothing.
+	 *
+	 * @param Throwable $exception What the call threw.
+	 *
+	 * @return int|null The answer's HTTP status, or null when nothing answered.
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
+	 */
+	public function httpStatusOf(Throwable $exception): ?int {
+		return $this->observations->httpStatusOf(exception: $exception);
+	}//end httpStatusOf()
+
+	/**
 	 * Ask integriq to resolve every connection whose config keys a save wrote.
 	 *
 	 * Clears that connection's report memory too, so the next call reports at
@@ -332,13 +347,6 @@ class ConnectionReporter {
 			}
 
 			[$status, $message] = $observed;
-			if (in_array($key, self::KEYS, true) === false || in_array($status, self::STATUSES, true) === false) {
-				$this->logger->warning(
-					'Buildiq: refusing to report an undeclared connection key or an unknown status',
-					['key' => $key, 'status' => $status]
-				);
-				return false;
-			}
 
 			$now = $this->timeFactory->getTime();
 			if ($this->isDue(key: $key, status: $status, now: $now) === false) {

@@ -28,6 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service\Connection;
 
+use Throwable;
+
 /**
  * Maps call outcomes to connection statuses and messages.
  *
@@ -167,6 +169,31 @@ class ConnectionObservations {
 
 		return null;
 	}//end httpCall()
+
+	/**
+	 * The HTTP status a failed call still carries, or null when nothing answered.
+	 *
+	 * Nextcloud's HTTP client throws on a 4xx or 5xx answer. Guzzle's request
+	 * exceptions keep that answer, and a connection failure has none.
+	 *
+	 * @param Throwable $exception What the call threw.
+	 *
+	 * @return int|null The answer's HTTP status, or null.
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
+	 */
+	public function httpStatusOf(Throwable $exception): ?int {
+		if (method_exists($exception, 'getResponse') === false) {
+			return null;
+		}
+
+		$response = $exception->getResponse();
+		if (is_object($response) === false || method_exists($response, 'getStatusCode') === false) {
+			return null;
+		}
+
+		return (int) $response->getStatusCode();
+	}//end httpStatusOf()
 
 	/**
 	 * How a message names a webhook receiver: its host, and nothing else from the URL.

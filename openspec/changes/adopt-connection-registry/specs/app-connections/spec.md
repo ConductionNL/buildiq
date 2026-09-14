@@ -63,7 +63,7 @@ Buildiq SHALL report with `ConnectionStatusReportedEvent` what a store search, a
 - **AND** the search SHALL answer with the same outcome as before this change
 
 #### Scenario: A GitHub search without the credential broker reads limited
-@e2e exclude The CI instance cannot remove OpenRegister's broker class; tests/Unit/Service/Connection/ConnectionObservationsTest.php and tests/Unit/Controller/ShopControllerConnectionReportTest.php assert the mapping and the report.
+@e2e exclude The CI instance cannot remove OpenRegister's broker class; tests/Unit/Service/Connection/ConnectionObservationsTest.php and tests/Unit/Controller/ConnectionReportCallersTest.php assert the mapping and the report.
 
 - **GIVEN** OpenRegister's credential broker is not installed
 - **WHEN** a catalogue search reaches GitHub

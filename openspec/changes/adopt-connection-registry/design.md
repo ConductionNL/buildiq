@@ -15,7 +15,7 @@ Each candidate was checked against the code on `development`, not against its na
 
 **Why `llm` is not declared.** `CopilotService::health()` asks `OCP\TaskProcessing\IManager` for the `core:text2text` task type. Buildiq stores no provider name, no key and no URL. The provider is whatever Nextcloud's AI admin settings route that task type to: a local model through an ExApp, or an outside API through an integration app. Buildiq cannot tell which, and declaring it would put a Nextcloud-wide setting on Buildiq's page.
 
-**Why `documents` is declared although Filinq runs on the same instance.** Dossiq's `templates` row is the precedent. The call is a real HTTP request back into the instance, with a minted login token. It fails on a loopback that does not resolve, on a refused login, and on a route that is not registered. Today every one of those is a log line an admin never reads. Measured on 2026-09-14: the route is named `docudesk.correspondence.generate`, and Filinq's `<id>` on `main` and `development` is `filinq`. The URL generator then answers an empty URL, so no document is generated. The row now says so. Renaming the route is left to the coordinated rename pass (CLAUDE.md).
+**Why `documents` is declared although Filinq runs on the same instance.** Dossiq's `templates` row is the precedent. The call is a real HTTP request back into the instance, with a minted login token. It fails on a loopback that does not resolve, on a refused login, and on a route that is not registered. Today every one of those is a log line an admin never reads. Measured on 2026-09-14: the route is named `docudesk.correspondence.generate`, and Filinq's `<id>` on `main` and `development` is `filinq`. The URL generator then answers the bare instance URL, so no document is generated. The row now says so. Renaming the route is left to the coordinated rename pass (CLAUDE.md).
 
 **Why only the store links to settings.** The admin page has one section, Configuration. Its Template registry block writes the store keys, and now carries `id="section-store"`. Nothing on the admin page configures GitHub, Filinq or a webhook.
 
@@ -39,10 +39,10 @@ Each candidate was checked against the code on `development`, not against its na
 | | `github_unreachable` | `error` | "The last push or pull could not reach GitHub." |
 | Document generation | no route | `error` | "No route answers to {route}, so no document was generated. Is Filinq installed and enabled?" |
 | | no answer | `error` | "The last call to Filinq got no answer." |
-| | HTTP 401 or 403 | `error` | "Filinq refused the internal login (HTTP 401)." |
+| | HTTP 401 or 403 | `error` | "Filinq refused the login (HTTP 401)." |
 | | HTTP 502, 503 or 504 | `error` | "Filinq answered HTTP 503 on the last call." |
-| | HTTP 2xx | `configured` | "Filinq answered the last call." |
-| Rule webhook | same HTTP mapping | | "The last rule webhook to {host} ...", with the host only. |
+| | HTTP 2xx or 3xx | `configured` | "Filinq answered the last call." |
+| Rule webhook | same HTTP mapping | | "The rule webhook at {host} answered HTTP 503 on the last call.", with the host only. |
 
 Anything else sends nothing. `broker_denied`, `github_forbidden`, `push_conflict`, `not_linked` and `version_not_found` are about one credential or one app. A 404, a 400 or a 500 from Filinq or a webhook receiver is about one request. Those would make a working connection read Error.
 

@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Service\Connection;
 
 use OCA\Buildiq\Service\Connection\ConnectionObservations;
+use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCA\Buildiq\Service\GitHubAppSyncService;
 use OCA\Buildiq\Service\GitHubCatalogService;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
@@ -183,4 +184,38 @@ class ConnectionObservationsTest extends TestCase {
 			$this->assertStringNotContainsString(needle: $leak, haystack: $observed[1]);
 		}
 	}//end testAWebhookMessageCarriesOnlyTheHost()
+
+	/**
+	 * Every status the mapper can produce is one integriq accepts (design D6).
+	 *
+	 * Integriq refuses a report with an unknown status and logs a warning, so a
+	 * typo here would silently stop a connection from ever reporting.
+	 *
+	 * @return void
+	 */
+	public function testEveryProducedStatusIsOneIntegriqAccepts(): void {
+		$observed = [];
+		foreach (['ok', 'not_configured', 'store_unreachable', 'store_invalid_response', 'rate_limited'] as $outcome) {
+			$observed[] = $this->observations->storeSearch(outcome: $outcome, registryUrl: 'https://store.example.nl');
+		}
+
+		foreach (['ok', 'github_rate_limited', 'github_unreachable'] as $outcome) {
+			$observed[] = $this->observations->gitHubSearch(outcome: $outcome, brokerAvailable: true);
+			$observed[] = $this->observations->gitHubSearch(outcome: $outcome, brokerAvailable: false);
+		}
+
+		foreach (['ok', 'broker_unavailable', 'github_unreachable'] as $outcome) {
+			$observed[] = $this->observations->gitHubSync(outcome: $outcome);
+		}
+
+		foreach ([null, 200, 401, 503] as $httpStatus) {
+			$observed[] = $this->observations->httpCall(name: 'Filinq', httpStatus: $httpStatus);
+		}
+
+		foreach ($observed as $pair) {
+			$this->assertNotNull(actual: $pair);
+			$this->assertContains(needle: $pair[0], haystack: ConnectionReporter::STATUSES);
+			$this->assertStringNotContainsString(needle: "\u{2014}", haystack: $pair[1]);
+		}
+	}//end testEveryProducedStatusIsOneIntegriqAccepts()
 }//end class
