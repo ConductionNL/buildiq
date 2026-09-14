@@ -167,7 +167,7 @@ describe('ApplicationDetailActions — App settings loads the flow list', () => 
 		expect(byId('open-app').target).toBe('_blank')
 		expect(byId('open-app').onSelect).toBeUndefined()
 		expect(byId('app-documentation').href).toBe(
-			'https://openbuild.conduction.nl',
+			'https://buildiq.conduction.nl',
 		)
 	})
 
