@@ -139,7 +139,7 @@ export default {
 		 * `actionsComponent`, `headerComponent`, `sidebarComponent` and
 		 * `type:"custom"` page components against `effectiveCustomComponents`
 		 * (= the `customComponents` prop, falling back to the injected
-		 * `cnCustomComponents`). In @conduction/nextcloud-vue 1.0.0-beta.107
+		 * `cnCustomComponents`). In `@conduction/nextcloud-vue` 1.0.0-beta.107
 		 * that resolver does NOT consult the v2 `cnRegistry` inject, so when an
 		 * app passes only `:registry` (and no `customComponents`), every
 		 * slot-override / custom-page name fails to resolve — the page renders
