@@ -1109,7 +1109,20 @@ OC.L10N.register(
         "Nothing has been exported yet": "Er is nog niets geëxporteerd",
         "Nothing has been versioned yet": "Er is nog niets van een versie voorzien",
         "How many apps exist, and how far along each one is.": "Hoeveel apps er zijn, en hoe ver elke app is.",
-        "What has been versioned, and what got exported where.": "Wat er van een versie is voorzien, en wat waarheen is geëxporteerd."
+        "What has been versioned, and what got exported where.": "Wat er van een versie is voorzien, en wat waarheen is geëxporteerd.",
+        "Integrations": "Koppelingen",
+        "Connection": "Verbinding",
+        "Status message": "Statusbericht",
+        "Last checked": "Laatst gecontroleerd",
+        "All connections": "Alle verbindingen",
+        "Add integration": "Integratie toevoegen",
+        "Open settings": "Instellingen openen",
+        "Configured": "Ingericht",
+        "Limited": "Beperkt",
+        "Not configured": "Niet geconfigureerd",
+        "Simulated": "Gesimuleerd",
+        "Not available": "Niet beschikbaar",
+        "Error": "Fout"
     },
     "nplurals=2; plural=(n != 1);"
 )

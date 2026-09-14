@@ -83,6 +83,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -185,8 +186,11 @@ class DocumentGenerationService {
 	 *                                      optional NC-core token provider (see {@see
 	 *                                      self::TOKEN_PROVIDER_CLASS}).
 	 * @param LoggerInterface $logger PSR logger.
+	 * @param ConnectionReporter|null $connectionReporter Tells integriq what the Filinq call met, or nothing when absent.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
 	 */
 	public function __construct(
 		private readonly ObjectServiceInterface $objectService,
@@ -201,6 +205,7 @@ class DocumentGenerationService {
 		private readonly IAppDataFactory $appDataFactory,
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
+		private readonly ?ConnectionReporter $connectionReporter = null,
 	) {
 
 	}//end __construct()
@@ -396,6 +401,10 @@ class DocumentGenerationService {
 	 * Basic-authenticated with a single-use token minted for the currently
 	 * impersonated user (see class docblock "Transport detail").
 	 *
+	 * What the call met is reported to integriq's connection registry, at most
+	 * once an hour while it stays the same (adopt-connection-registry). The
+	 * report never changes the result.
+	 *
 	 * @param string $templateId Docudesk template UUID.
 	 * @param array<int,array<string,string>> $dataRefs Exactly one `{register,schema,id}` entry
 	 *                                                  (REQ: "Object data maps to template variables
@@ -403,6 +412,8 @@ class DocumentGenerationService {
 	 * @param string $filename Requested download filename.
 	 *
 	 * @return array{status:int,body:string,contentType:?string}|null Null on any failure.
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
 	 */
 	private function callGenerate(string $templateId, array $dataRefs, string $filename): ?array {
 		$user = $this->userSession->getUser();
@@ -422,6 +433,15 @@ class DocumentGenerationService {
 
 		[$token, $provider] = $minted;
 		$url = $this->urlGenerator->linkToRouteAbsolute(self::GENERATE_ROUTE);
+		if ($url === '' || $url === $this->urlGenerator->getAbsoluteURL('')) {
+			// Nextcloud's router answers '' for a route no enabled app registers,
+			// and linkToRouteAbsolute() turns that into the bare instance URL.
+			// Posting there reaches no generator, so the call is not made.
+			$this->invalidateToken(provider: $provider, token: $token);
+			$this->logger->error('Buildiq: DocumentGenerationService found no route "' . self::GENERATE_ROUTE . '", so the Docudesk call is skipped.');
+			$this->connectionReporter?->reportDocumentRouteMissing(route: self::GENERATE_ROUTE);
+			return null;
+		}
 
 		try {
 			try {
@@ -441,6 +461,7 @@ class DocumentGenerationService {
 				);
 			} catch (Throwable $e) {
 				$this->logger->error('Buildiq: DocumentGenerationService Docudesk call failed: ' . $e->getMessage(), ['exception' => $e]);
+				$this->connectionReporter?->reportDocumentCall(httpStatus: $this->connectionReporter->httpStatusOf(exception: $e));
 				return null;
 			}
 		} finally {
@@ -453,6 +474,7 @@ class DocumentGenerationService {
 		}//end try
 
 		$status = $response->getStatusCode();
+		$this->connectionReporter?->reportDocumentCall(httpStatus: $status);
 		if ($status < 200 || $status >= 300) {
 			$this->logger->warning('Buildiq: DocumentGenerationService Docudesk call returned status ' . $status . '.');
 			return null;

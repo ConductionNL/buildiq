@@ -41,6 +41,7 @@ namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Exception\AppRepoParseException;
+use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCA\Buildiq\Service\GitHubAppSyncService;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCP\AppFramework\Controller;
@@ -78,14 +79,18 @@ class GitHubSyncController extends Controller {
 	 * @param IUserSession $userSession Current NC user session.
 	 * @param GitHubAppSyncService $syncService The link/push/pull service.
 	 * @param PermissionResolver $permissionResolver Shared RBAC grammar resolver.
+	 * @param ConnectionReporter|null $connectionReporter Tells integriq what a push or pull met, or nothing when absent.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
 	 */
 	public function __construct(
 		IRequest $request,
 		private readonly IUserSession $userSession,
 		private readonly GitHubAppSyncService $syncService,
 		private readonly PermissionResolver $permissionResolver,
+		private readonly ?ConnectionReporter $connectionReporter = null,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
@@ -136,6 +141,7 @@ class GitHubSyncController extends Controller {
 	 * @return JSONResponse 200 with the commit sha; 401/403/404/422 or a generic outcome on failure.
 	 *
 	 * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
 	 */
 	#[NoAdminRequired]
 	public function push(string $slug): JSONResponse {
@@ -166,6 +172,8 @@ class GitHubSyncController extends Controller {
 			visibility: $this->visibilityParam()
 		);
 
+		$this->connectionReporter?->reportGitHubSync(outcome: (string)($result['outcome'] ?? GitHubAppSyncService::OUTCOME_UNREACHABLE));
+
 		return $this->outcomeResponse(result: $result, okStatus: Http::STATUS_OK);
 	}//end push()
 
@@ -177,6 +185,7 @@ class GitHubSyncController extends Controller {
 	 * @return JSONResponse 200 with the draft version; 401/403/404/422 or a generic outcome on failure.
 	 *
 	 * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
 	 */
 	#[NoAdminRequired]
 	public function pull(string $slug): JSONResponse {
@@ -205,6 +214,8 @@ class GitHubSyncController extends Controller {
 		} catch (AppRepoParseException $e) {
 			return new JSONResponse(data: $e->toArray(), statusCode: Http::STATUS_UNPROCESSABLE_ENTITY);
 		}
+
+		$this->connectionReporter?->reportGitHubSync(outcome: (string)($result['outcome'] ?? GitHubAppSyncService::OUTCOME_UNREACHABLE));
 
 		return $this->outcomeResponse(result: $result, okStatus: Http::STATUS_OK);
 	}//end pull()

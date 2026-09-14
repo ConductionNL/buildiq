@@ -244,7 +244,14 @@ jobs:
       # install` but never builds an app's frontend, so Docudesk's own JS bundle
       # is absent here — which is fine, because no spec in this suite opens a
       # Docudesk page.
-      additional-apps: '[{"repo":"ConductionNL/openregister","app":"openregister","ref":"development"},{"repo":"ConductionNL/filinq","app":"filinq","ref":"main"}]'
+      #
+      # integriq is here because the Integrations page reads integriq's
+      # `app_connection` rows (adopt-connection-registry). Without it the page
+      # shows the missing-dependency screen and `tests/e2e/integrations-page.spec.ts`
+      # fails on every run. `app` is `integriq`, verified in its appinfo/info.xml
+      # on `development` on 2026-09-14. Its frontend is not built here either, so
+      # the spec only asserts that Add integration lands on integriq's URL.
+      additional-apps: '[{"repo":"ConductionNL/openregister","app":"openregister","ref":"development"},{"repo":"ConductionNL/filinq","app":"filinq","ref":"main"},{"repo":"ConductionNL/integriq","app":"integriq","ref":"development"}]'
       enable-sbom: true
 
       # (Integration Tests (Newman) is enabled at `enable-newman` above; the

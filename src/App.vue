@@ -18,6 +18,7 @@
 		:manifest="manifest"
 		:registry="registry"
 		:customComponents="flatRegistry"
+		:formatters="formatters"
 		:pageTypes="pageTypes"
 		:translate="translateForApp"
 		:permissions="permissions">
@@ -53,6 +54,10 @@ import { CnAppRoot } from '@conduction/nextcloud-vue'
 import { translate as ncT } from '@nextcloud/l10n'
 import { generateUrl, imagePath } from '@nextcloud/router'
 import { NcAppContent, NcButton, NcEmptyContent } from '@nextcloud/vue'
+import {
+	createConnectionFormatters,
+	createConnectionHandlers,
+} from './services/connectionRegistry.js'
 import { useSettingsStore } from './store/modules/settings.js'
 import { initializeStores } from './store/store.js'
 
@@ -106,6 +111,24 @@ export default {
 		},
 	},
 
+	/**
+	 * Static component state: the Integrations page's cell formatters.
+	 *
+	 * @return {{formatters: object}} The formatter map CnAppRoot merges over its built-ins.
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-004-an-admin-reads-the-connections-on-an-integrations-page
+	 */
+	data() {
+		return {
+			/**
+			 * Named cell formatters merged over CnAppRoot's built-ins.
+			 * `connectionStatus` and `connectionSettingsLabel` render the
+			 * Integrations page (adopt-connection-registry); nextcloud-vue
+			 * 3.0.0 ships neither as a built-in. Static, so not reactive.
+			 */
+			formatters: createConnectionFormatters((source) => ncT('buildiq', source)),
+		}
+	},
+
 	computed: {
 		/**
 		 * Flattened `{ name: component }` map derived from the v2 kind-tagged
@@ -116,7 +139,7 @@ export default {
 		 * `actionsComponent`, `headerComponent`, `sidebarComponent` and
 		 * `type:"custom"` page components against `effectiveCustomComponents`
 		 * (= the `customComponents` prop, falling back to the injected
-		 * `cnCustomComponents`). In @conduction/nextcloud-vue 1.0.0-beta.107
+		 * `cnCustomComponents`). In `@conduction/nextcloud-vue` 1.0.0-beta.107
 		 * that resolver does NOT consult the v2 `cnRegistry` inject, so when an
 		 * app passes only `:registry` (and no `customComponents`), every
 		 * slot-override / custom-page name fails to resolve — the page renders
@@ -129,7 +152,9 @@ export default {
 		 * restores resolution for every slot/custom dispatch while keeping the
 		 * single v2 `registry` as the source of truth.
 		 *
-		 * @return {object} Map of registry key → Vue component.
+		 * @return {object} Map of registry key → Vue component, plus the
+		 *   `openIntegriqConnections` header-action handler.
+		 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-004-an-admin-reads-the-connections-on-an-integrations-page
 		 */
 		flatRegistry() {
 			const out = {}
@@ -142,7 +167,18 @@ export default {
 					out[name] = component
 				}
 			}
-			return out
+			// The Integrations page's Add integration header action
+			// (adopt-connection-registry). A FUNCTION, because it leaves the app
+			// for integriq's Connections overview and a header action's
+			// `navigate` only pushes a route inside this app. CnIndexPage
+			// resolves a handler name against this map, not `registry`.
+			return {
+				...out,
+				...createConnectionHandlers({
+					generateUrl,
+					assign: (url) => window.location.assign(url),
+				}),
+			}
 		},
 
 		/**

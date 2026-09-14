@@ -1441,7 +1441,20 @@ OC.L10N.register(
         "Open Active users in OpenRegister": "Open Active users in OpenRegister",
         "Open Audit events in OpenRegister": "Open Audit events in OpenRegister",
         "Open Object count in OpenRegister": "Open Object count in OpenRegister",
-        "Open Storage in OpenRegister": "Open Storage in OpenRegister"
+        "Open Storage in OpenRegister": "Open Storage in OpenRegister",
+        "Integrations": "Integrations",
+        "Connection": "Connection",
+        "Status message": "Status message",
+        "Last checked": "Last checked",
+        "All connections": "All connections",
+        "Add integration": "Add integration",
+        "Open settings": "Open settings",
+        "Configured": "Configured",
+        "Limited": "Limited",
+        "Not configured": "Not configured",
+        "Simulated": "Simulated",
+        "Not available": "Not available",
+        "Error": "Error"
     },
     "nplurals=2; plural=(n != 1);"
 )

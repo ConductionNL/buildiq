@@ -35,6 +35,7 @@ import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
 import PackageVariant from 'vue-material-design-icons/PackageVariant.vue'
 import PencilOutline from 'vue-material-design-icons/PencilOutline.vue'
 import PencilRulerOutline from 'vue-material-design-icons/PencilRulerOutline.vue'
+import PowerPlugOutline from 'vue-material-design-icons/PowerPlugOutline.vue'
 import PuzzleOutline from 'vue-material-design-icons/PuzzleOutline.vue'
 import Robot from 'vue-material-design-icons/Robot.vue'
 import RobotOutline from 'vue-material-design-icons/RobotOutline.vue'
@@ -77,6 +78,7 @@ export default {
 	MessageTextOutline,
 	PackageVariant,
 	PencilOutline,
+	PowerPlugOutline,
 	PuzzleOutline,
 	Robot,
 	RobotOutline,

@@ -196,6 +196,17 @@ require_once __DIR__ . '/stubs/openregister-stubs.php';
 // not be present until OR#1466 merges.
 require_once __DIR__ . '/Stubs/Mcp/IMcpToolProvider.php';
 
+// Integriq's connection-registry events (adopt-connection-registry).
+// ConnectionReporter sends them by string class name behind class_exists
+// (ADR-041), so Buildiq stays installable without integriq. The stubs mirror
+// hydra connection-registry design D6 and integriq's own classes on
+// `development`, and load only when the real classes are absent.
+foreach (['ConnectionStatusReportedEvent', 'ConnectionRefreshRequestedEvent'] as $integriqStubEvent) {
+	if (class_exists('\\OCA\\Integriq\\Event\\' . $integriqStubEvent) === false) {
+		require_once __DIR__ . '/Stubs/Integriq/Event/' . $integriqStubEvent . '.php';
+	}
+}
+
 // Bootstrap Nextcloud if an INSTALLED one is available. Inside the docker
 // container we'll get the full NC runtime; outside (CI / local dev / a bare
 // source tree) we fall back to the vendor/nextcloud/ocp stubs and run only the

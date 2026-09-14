@@ -1,0 +1,38 @@
+{
+    "app": "buildiq",
+    "connections": [
+        {
+            "key": "store",
+            "title": "Template store",
+            "description": "A remote registry you browse and install shared app templates from.",
+            "order": 10,
+            "settingsUrl": "/settings/admin/buildiq#section-store",
+            "requiredConfig": ["registry_url"],
+            "unconfiguredMessage": "No store address is set. Set the registry URL under Template registry in the Buildiq admin settings."
+        },
+        {
+            "key": "github",
+            "title": "GitHub",
+            "description": "Finds app templates on GitHub, and pushes and pulls apps through the OpenRegister credential broker.",
+            "order": 20,
+            "reportedOnly": true,
+            "unconfiguredMessage": "Not checked yet. Buildiq reports here after a catalogue search, a push or a pull."
+        },
+        {
+            "key": "documents",
+            "title": "Document generation",
+            "description": "Automations that generate a document call Filinq on this instance over HTTP.",
+            "order": 30,
+            "reportedOnly": true,
+            "unconfiguredMessage": "Not checked yet. Buildiq reports here after an automation generates a document."
+        },
+        {
+            "key": "rule-webhooks",
+            "title": "Rule webhooks",
+            "description": "Webhook actions in business rules. Each rule names its own address, so this row shows the last call to any of them.",
+            "order": 40,
+            "reportedOnly": true,
+            "unconfiguredMessage": "Not checked yet. Buildiq reports here after a rule sends a webhook."
+        }
+    ]
+}
