@@ -17,11 +17,6 @@
       "count": 2
     }
   },
-  "src/components/WorkflowAttachmentsSection.vue": {
-    "vue/custom-event-name-casing": {
-      "count": 1
-    }
-  },
   "src/components/agents/AgentRunHistory.vue": {
     "@typescript-eslint/no-unused-vars": {
       "count": 2
@@ -191,11 +186,6 @@
   },
   "src/dialogs/SaveBlockDialog.vue": {
     "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "src/dialogs/WorkflowAttachmentDialog.vue": {
-    "vue/custom-event-name-casing": {
       "count": 1
     }
   },

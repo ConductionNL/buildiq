@@ -11,7 +11,7 @@ import { mount } from '@vue/test-utils'
  *  - Soft capability checks (procest / nldesign / docudesk) flip the flags.
  *  - Computeds: routeSlug, versionSlug, appSchemas (array + map + none),
  *    versionNotFound, applicationUuid, builderUrl.
- *  - onManifestUpdate / onThemePreview / onCreateLinkProperty.
+ *  - onManifestUpdate / onThemePreview.
  *  - save(): guard, version PUT, application PUT, and the failure path.
  *  - onThemePreview retargets the in-flight manifest (no Buildiq-owned
  *    applier, theme-picker-consumes-nldesign REQ-NTS-002/003) and
@@ -390,35 +390,6 @@ describe('PageDesignerHost', () => {
 		const wrapper = mountHost({ appList: [{ slug: 'petstore' }] })
 		await flush(wrapper)
 		expect(wrapper.vm.livePreviewAvailable).toBe(false)
-	})
-
-	it('onCreateLinkProperty deep-links to the schema designer (and no-ops on empty)', async () => {
-		const wrapper = mountHost({
-			slug: 'petstore',
-			appList: [{ slug: 'petstore' }],
-		})
-		await flush(wrapper)
-		// jsdom blocks real navigation, so swap window.location for a writable stub.
-		const original = window.location
-		Object.defineProperty(window, 'location', {
-			configurable: true,
-			writable: true,
-			value: { href: 'about:blank' },
-		})
-		try {
-			wrapper.vm.onCreateLinkProperty('')
-			expect(window.location.href).toBe('about:blank')
-			wrapper.vm.onCreateLinkProperty('pet')
-			expect(window.location.href).toBe(
-				'/apps/buildiq/builder/petstore/schemas?schema=pet&addProperty=zaakUrl',
-			)
-		} finally {
-			Object.defineProperty(window, 'location', {
-				configurable: true,
-				writable: true,
-				value: original,
-			})
-		}
 	})
 
 	it('save() is a no-op without an application or uuid', async () => {

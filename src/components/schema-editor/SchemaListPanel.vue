@@ -16,7 +16,13 @@
 	<div class="buildiq-schema-list">
 		<header class="buildiq-schema-list__header">
 			<h2>{{ t('buildiq', 'Schemas') }}</h2>
-			<NcButton variant="primary" @click="addOpen = true">
+			<!-- data-walkthrough-id: spotlighted by the tour's `add-schema` step.
+			     On the header button, which always renders, not the empty-state
+			     one. -->
+			<NcButton
+				variant="primary"
+				data-walkthrough-id="schema-add"
+				@click="addOpen = true">
 				<template #icon>
 					<PlusIcon :size="20" />
 				</template>

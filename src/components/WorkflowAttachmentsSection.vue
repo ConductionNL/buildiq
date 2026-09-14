@@ -61,8 +61,7 @@
 			:attachedSchemas="attachedSchemas"
 			:attachment="editingAttachment"
 			:procestAvailable="procestAvailable"
-			@save="onDialogSave"
-			@createLinkProperty="$emit('create-link-property', $event)" />
+			@save="onDialogSave" />
 
 		<ConfirmActionDialog
 			v-model:open="confirmDetachOpen"
@@ -105,7 +104,7 @@ export default {
 		},
 	},
 
-	emits: ['update:manifest', 'create-link-property'],
+	emits: ['update:manifest'],
 	data() {
 		return {
 			dialogOpen: false,

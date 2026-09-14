@@ -389,22 +389,14 @@ test.describe('Exporting the flows an app is made of', () => {
 
 		// 1. BIND, through App settings.
 		//
-		// ⚠️ Settings lives in the detail page's OVERFLOW menu — the NcActions
-		// is `forceMenu`, so the button does not exist in the DOM until the
-		// menu is opened, and it is rendered only for an app OWNER. Reaching
-		// straight for a button named /settings/i found nothing and failed on
-		// the picker instead of on the menu. Same pattern as
-		// save-as-template.spec.ts.
-		await page
-			.getByRole('button', { name: /^Actions$/i })
-			.first()
-			.click()
-
-		// ⚠️ SCOPED TO THE OPENED MENU. An unscoped /^Settings$/i matches
-		// NEXTCLOUD'S OWN Settings button in the header user menu — the trace
-		// from the previous run shows it sitting there `[expanded]`, because
-		// that is what the click hit. The app's settings modal never opened and
-		// the failure surfaced 20 s later on the picker.
+		// ⚠️ Settings is one of the two collapsible actions CnActionButtons
+		// PROMOTES to an inline button (`inline: 2` in
+		// ApplicationDetailActions.vue, Settings + Edit) rather than folding
+		// into the "···" overflow menu — it renders directly in the header, only
+		// for an app OWNER. Targeted by its `data-testid` rather than an
+		// unscoped `/^Settings$/i` role query: that pattern previously matched
+		// NEXTCLOUD'S OWN Settings entry in the header user menu once an earlier
+		// version of this test opened the wrong menu first.
 		// Arm the wait BEFORE the click that triggers the fetch, or the
 		// response can land first and this waits forever.
 		//
@@ -424,10 +416,8 @@ test.describe('Exporting the flows an app is made of', () => {
 			{ timeout: 60_000 },
 		)
 
-		const actionsMenu = page.getByRole('menu').first()
-		await actionsMenu
-			.getByRole('menuitem', { name: /^Settings$/i })
-			.or(actionsMenu.getByRole('button', { name: /^Settings$/i }))
+		await page
+			.locator('[data-testid="cn-action-app-settings-action"]')
 			.first()
 			.click()
 

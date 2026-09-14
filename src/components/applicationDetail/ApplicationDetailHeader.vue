@@ -772,6 +772,31 @@ export default {
 	overflow: hidden;
 }
 
+/*
+ * Nextcloud's core stylesheet styles EVERY plain <button> — see
+ * `button:not(.button-vue, [class^="vs__"])` in core/css/inputs.scss, which
+ * sets `border-radius: var(--border-radius)` and, one nesting level deeper,
+ * `margin: 3px; margin-inline-start: 0`. Both land on these segments, and
+ * inside a pill-shaped `overflow: hidden` group that reads as exactly the
+ * reported damage: the parent's 999px curve shaves the corners off a child
+ * rounded to a different radius, while the 3px margin leaves a gap down each
+ * side.
+ *
+ * So the group's rounding is the ONLY rounding: square children, clipped by
+ * the parent. The active segment then fills its end of the pill cleanly.
+ *
+ * Specificity is load-bearing. NC's margin rule scores (0,2,1); a scoped
+ * `.ob-detail-header__pill` is only (0,2,0) and loses, which is why setting
+ * `margin: 0` on the segment classes alone did nothing. Adding the parent
+ * takes this to (0,3,0) and it wins on specificity rather than on
+ * `!important`.
+ */
+.ob-detail-header__pill-group > .ob-detail-header__pill,
+.ob-detail-header__pill-group > .ob-detail-header__pill-promote {
+	border-radius: 0;
+	margin: 0;
+}
+
 .ob-detail-header__pill {
 	padding: 6px 12px;
 	background: transparent;
@@ -797,25 +822,5 @@ export default {
 .ob-detail-header__pill-star {
 	font-weight: 700;
 	margin-right: 2px;
-}
-
-.ob-detail-header__window-toggle {
-	display: inline-flex;
-	border: 1px solid var(--color-border, #ddd);
-	border-radius: 999px;
-	overflow: hidden;
-}
-
-.ob-detail-header__window-btn {
-	padding: 6px 12px;
-	background: transparent;
-	border: 0;
-	cursor: pointer;
-	font-size: 13px;
-}
-
-.ob-detail-header__window-btn--active {
-	background: var(--color-primary-element, #4376fc);
-	color: var(--color-primary-element-text, #fff);
 }
 </style>

@@ -148,7 +148,10 @@ test('REQ-OBADO-006 — Register widget shows an "Open in OpenRegister" link on 
 		'the Register widget must render on the detail page',
 	).toBeVisible({ timeout: 15_000 })
 
-	const openRegister = widget.getByRole('button', {
+	// NcButton renders an anchor (role "link", not "button") once given an
+	// `href` — which RegisterWidget now passes so the browser keeps
+	// middle-click / "open in new tab" / link semantics.
+	const openRegister = widget.getByRole('link', {
 		name: /open in openregister/i,
 	})
 	await expect(
@@ -156,11 +159,10 @@ test('REQ-OBADO-006 — Register widget shows an "Open in OpenRegister" link on 
 		'Register widget must expose the "Open in OpenRegister" affordance',
 	).toBeVisible({ timeout: 10_000 })
 
-	// The affordance navigates by assigning `window.location.href` (see
-	// RegisterWidget.openInOpenRegister) rather than by rendering an anchor, so
-	// the target is asserted on the NAVIGATION REQUEST the click issues. An
-	// `getAttribute('href')` here would be null and — as the old body did —
-	// skipped by an `if (href)`, i.e. asserted nothing about where it goes.
+	// The affordance is a real anchor now, but the target is still asserted on
+	// the NAVIGATION REQUEST the click issues rather than `getAttribute('href')`
+	// — that also covers the browser actually following the link, not just the
+	// attribute being set correctly.
 	const navigation = page.waitForRequest(
 		(req) =>
 			req.isNavigationRequest() && /\/apps\/openregister\//.test(req.url()),

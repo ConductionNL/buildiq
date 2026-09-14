@@ -13,14 +13,17 @@
   - record drawn from OR's declarative vocabulary; the editor itself
   - is code, but its output is declarative JSON.
   -
-  - All OR CRUD goes through the `useSchemasStore` Pinia store (which
-  - wraps `createObjectStore` from `@conduction/nextcloud-vue`) — never
-  - via direct axios calls. The store hits the per-virtual-app register
-  - `buildiq-{slug}` per the hybrid register model: system schemas
-  - live in shared `buildiq`, user-authored schemas live per-app.
+  - Schema CRUD goes through the `useSchemasStore` Pinia store (which
+  - wraps `createObjectStore` from `@conduction/nextcloud-vue`). The list
+  - is the exception: it reads the per-version register's own schema set
+  - (`GET /api/registers/{register}/schemas`), which is what makes a
+  - schema "belong" to an app under the hybrid register model — system
+  - schemas live in shared `buildiq`, user-authored schemas per-app.
   -->
 <template>
-	<div class="buildiq-schema-designer">
+	<!-- data-walkthrough-id: the tour's `define-schema` step spotlights the whole
+	     designer — anything outside its cutout is dimmed and unclickable. -->
+	<div class="buildiq-schema-designer" data-walkthrough-id="schema-designer">
 		<!-- List mode -->
 		<template v-if="!schemaId">
 			<div v-if="canImport" class="buildiq-schema-designer__toolbar">
@@ -30,7 +33,7 @@
 			</div>
 			<SchemaListPanel
 				:schemas="schemas"
-				:loading="loadingList"
+				:loading="loadingList || versionLoading"
 				@add="addSchema"
 				@open="openSchema"
 				@delete="deleteSchema" />
@@ -343,14 +346,34 @@ export default {
 		},
 
 		/**
-		 * The active version's own per-version register — the ONLY import
-		 * target the wizard writes into (ADR-002).
+		 * The resolved version's own per-version register: the schema list's
+		 * scope, and the ONLY import target the wizard writes into (ADR-002).
 		 *
+		 * Read off the version record rather than rebuilt from the route,
+		 * because `registerSlugForApp` has no version to work with when the URL
+		 * carries no `?_version=` and falls back to the legacy per-app register
+		 * — a register that does not exist for any app the wizard created.
+		 *
+		 * @return {string} Register slug, or '' until the version resolves.
+		 * @spec openspec/specs/openbuild-schema-designer/spec.md#requirement-schema-list-panel-scoped-to-the-virtual-app-s-register-namespace
+		 */
+		registerSlug() {
+			const fromVersion =
+				this.applicationVersion && this.applicationVersion.register
+			if (fromVersion) {
+				return fromVersion
+			}
+			return this.versionSlug
+				? registerSlugForApp(this.appSlug, this.versionSlug)
+				: ''
+		},
+
+		/**
 		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.2
 		 * @return {string} Register slug.
 		 */
 		importRegisterId() {
-			return registerSlugForApp(this.appSlug, this.versionSlug)
+			return this.registerSlug
 		},
 
 		/**
@@ -645,9 +668,9 @@ export default {
 			 * @spec openspec/specs/builder-undo-redo/spec.md#req-bur-005
 			 * @return {void}
 			 */
-			handler() {
-				this.resolveVersion()
-				this.refreshList()
+			async handler() {
+				await this.resolveVersion()
+				await this.refreshList()
 				if (this.history) {
 					this.history.reset(this.staged)
 				}
@@ -664,9 +687,9 @@ export default {
 			 * @spec openspec/specs/builder-undo-redo/spec.md#req-bur-005
 			 * @return {void}
 			 */
-			handler() {
-				this.resolveVersion()
-				this.refreshList()
+			async handler() {
+				await this.resolveVersion()
+				await this.refreshList()
 				if (this.history) {
 					this.history.reset(this.staged)
 				}
@@ -683,19 +706,16 @@ export default {
 	 */
 	async mounted() {
 		// REQ-OBVR-004: resolve the active ApplicationVersion via useApplicationVersion.
-		this.resolveVersion()
+		const versionReady = this.resolveVersion()
 		this.loadApplicationRecord()
-		// Load the SELECTED SCHEMA FIRST, then the list. refreshList() pulls the
-		// whole organisation's schema collection (~1900 rows on the shared dev
-		// instance) and filters it down to this app; awaiting that before the
-		// detail delayed the detail's own single-row request by ~13s, so opening
-		// a schema — including the one you just created — sat on a spinner for
-		// well over ten seconds. The two cannot be run concurrently: they share
-		// one object-store entry for the `schema` type, and an in-flight
-		// collection fetch leaves the concurrent object fetch unresolved.
+		// Load the SELECTED SCHEMA FIRST, then the list: the detail is what the
+		// user is looking at, and it needs no version to resolve.
 		if (this.schemaId) {
 			await this.loadDetail()
 		}
+		// The list is scoped by the version's register, so it can only run once
+		// the version has settled.
+		await versionReady
 		await this.refreshList()
 		// REQ-BUR-003/-005: document-level undo/redo shortcuts. `onKeydown`
 		// itself no-ops outside detail mode (no staged model to act on), so
@@ -753,14 +773,15 @@ export default {
 		 * NOTE: we do NOT call $router.replace() here — that would strip ?_version=
 		 * and break bookmarkability (REQ-OBVR-008). We just read what the URL contains.
 		 *
+		 * Returns the composable's `ready` promise: `refreshList()` needs the
+		 * resolved version's register, not merely a reactive render of it.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
-		 * @return {void}
+		 * @return {Promise<void>}
 		 */
 		resolveVersion() {
-			const { applicationVersion, loading, error } = useApplicationVersion(
-				this.appSlug,
-				this.versionSlug,
-			)
+			const { applicationVersion, loading, error, ready } =
+				useApplicationVersion(this.appSlug, this.versionSlug)
 			// Watch the reactive refs and mirror them into component data.
 			this.applicationVersion = applicationVersion.value
 			this.versionLoading = loading.value
@@ -784,39 +805,40 @@ export default {
 					}
 				},
 			)
+
+			return ready
 		},
 
 		/**
-		 * Fetch the schema collection and filter to this app/version register.
+		 * List the schemas that belong to this app/version's register.
+		 *
+		 * Asks the register for its schema set rather than pulling the whole
+		 * organisation's collection and keeping the slugs that start with
+		 * `{appSlug}-`. That prefix is not an ownership test: schemas cloned for
+		 * an app that was later deleted keep their slug forever, and every
+		 * version of a live app carries the same one, so the list showed the
+		 * same schema once per generation (issue: "shows the same schema 4
+		 * times"). `register.schemas` is the authoritative set — and it costs one
+		 * scoped request instead of ~1900 rows.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {Promise<void>}
 		 */
 		async refreshList() {
+			if (!this.registerSlug) {
+				// No resolved version means no register to ask. `versionLoading`
+				// still holds the list spinner while that resolves.
+				this.schemas = []
+				return
+			}
 			this.loadingList = true
 			try {
-				const results = await this.store.fetchCollection(SCHEMA_TYPE)
-				const all = Array.isArray(results) ? results : []
-				// OR's schemas endpoint returns every schema in the
-				// organisation. Filter to the namespaced subset that
-				// belongs to this app+version register so the designer
-				// only shows the user's relevant schemas. Per the wizard
-				// (issue #71) seed slugs are `{appSlug}-{versionSlug}-X`.
-				const prefix = this.versionSlug
-					? `${this.appSlug}-${this.versionSlug}-`
-					: `${this.appSlug}-`
-				this.schemas = all.filter((s) => {
-					const slug = s.slug || (s['@self'] && s['@self'].slug) || ''
-					return typeof slug === 'string' && slug.startsWith(prefix)
-				})
-				const err = this.store.errors[SCHEMA_TYPE]
-				if (err) {
-					showError(
-						this.t('buildiq', 'Failed to load schemas: {error}', {
-							error: err,
-						}),
-					)
-				}
+				const url = generateUrl(
+					`/apps/openregister/api/registers/${encodeURIComponent(this.registerSlug)}/schemas`,
+				)
+				const { data } = await axios.get(url)
+				const results = (data && data.results) || data
+				this.schemas = Array.isArray(results) ? results : []
 			} catch (e) {
 				this.schemas = []
 				showError(
@@ -1209,15 +1231,14 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async addSchema(payload) {
-			// The designer's list is the global schema collection filtered to the
-			// slugs owned by this app+version (see refreshList()'s `prefix`), and
-			// OpenRegister only exposes the register-scoped schema route for
-			// reading (GET /api/registers/{register}/schemas — POST there is 405).
-			// So a schema created with the raw user-typed slug was invisible in
-			// the list it was created from AND unattached to the app's register,
-			// leaving the follow-on detail navigation on "Schema not found"
-			// (buildiq#41). Namespace the slug to the same convention the
-			// wizard uses, then attach the new schema to the app's register.
+			// OpenRegister exposes the register-scoped schema route read-only
+			// (POST there is 405), so a schema is created globally and then
+			// attached to the register. Namespace the slug to the wizard's
+			// convention so it stays unique across the organisation, and keep the
+			// attach BEFORE refreshList() — the list reads the register's schema
+			// set, so an unattached schema is invisible in the list it was created
+			// from and the follow-on detail navigation lands on "Schema not found"
+			// (buildiq#41).
 			const body = {
 				slug: this.namespacedSlug(payload.slug),
 				title: payload.title,
@@ -1251,14 +1272,18 @@ export default {
 			const newSlug =
 				(data && (data.slug || (data['@self'] && data['@self'].slug)))
 				|| body.slug
-			await this.attachSchemaToRegister(data)
-			await this.refreshList()
-			// Stage what the create call just returned, so the detail view we are
-			// about to navigate to renders immediately from it instead of issuing
-			// a redundant fetch for an object we already hold (see loadDetail()).
-			// Best-effort: if the returned body cannot be staged, fall through to
-			// the normal fetch-on-navigate path rather than blocking navigation.
+			// The schema exists from here on, so the rest is best-effort: a throw
+			// in attachSchemaToRegister() or refreshList() used to skip the
+			// navigation silently — SchemaListPanel.onAddConfirm cannot report it
+			// either, since Vue 3's $emit returns the instance, not the handler's
+			// promise.
 			try {
+				await this.attachSchemaToRegister(data)
+				await this.refreshList()
+				// Stage what the create call just returned, so the detail view we
+				// are about to navigate to renders immediately from it instead of
+				// issuing a redundant fetch for an object we already hold (see
+				// loadDetail()).
 				const stagedFromCreate = this.bodyToStaged(data)
 				this.persisted = data
 				this.staged = stagedFromCreate
@@ -1267,6 +1292,7 @@ export default {
 					this.history.reset(this.staged)
 				}
 			} catch (e) {
+				// Fall through to the normal fetch-on-navigate path.
 				this.persisted = null
 				this.staged = null
 			}
@@ -1275,13 +1301,15 @@ export default {
 			// that dialog.
 			await this.$nextTick()
 			// REQ-OBVR-006: use buildVersionedRoute to forward ?_version= on navigation.
-			this.$router.push(
-				buildVersionedRoute(
-					'SchemaDesigner',
-					{ slug: this.appSlug, schemaId: newSlug },
-					this.versionSlug,
-				),
-			)
+			this.$router
+				.push(
+					buildVersionedRoute(
+						'SchemaDesigner',
+						{ slug: this.appSlug, schemaId: newSlug },
+						this.versionSlug,
+					),
+				)
+				.catch(() => {})
 			showSuccess(
 				this.t('buildiq', 'Schema {slug} created.', { slug: newSlug }),
 			)
