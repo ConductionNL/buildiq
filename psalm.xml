@@ -60,6 +60,14 @@
         <file name="vendor/conduction/hydra-gates/hydra-gates/contracts/ObjectEntityInterface.php" />
         <file name="vendor/conduction/hydra-gates/hydra-gates/contracts/RegisterSlugResolution.php" />
         <file name="vendor/conduction/hydra-gates/hydra-gates/contracts/RegisterSlugResolverInterface.php" />
+        <!--
+            Integriq's connection-registry events (adopt-connection-registry).
+            ConnectionReporter names them by string behind class_exists
+            (ADR-041). Declaration-only stubs, so psalm sees the constructor the
+            reporter builds instead of reading the guarded branch as dead.
+        -->
+        <file name="tests/Stubs/Integriq/Event/ConnectionStatusReportedEvent.php" />
+        <file name="tests/Stubs/Integriq/Event/ConnectionRefreshRequestedEvent.php" />
     </stubs>
     <issueHandlers>
         <UndefinedDocblockClass errorLevel="suppress"/>
