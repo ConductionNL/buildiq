@@ -39,6 +39,7 @@ use OCA\Buildiq\Mcp\BuildiqToolProvider;
 use OCA\Buildiq\Repair\InitializeSettings;
 use OCA\Buildiq\Sections\SettingsSection;
 use OCA\Buildiq\Service\AppNavigationService;
+use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Service\SettingsService;
 use OCA\Buildiq\Settings\AdminSettings;
@@ -299,7 +300,11 @@ class Application extends App implements IBootstrap {
 				container: $c,
 				groupManager: $c->get('OCP\\IGroupManager'),
 				userSession: $c->get('OCP\\IUserSession'),
-				logger: $c->get('Psr\\Log\\LoggerInterface')
+				logger: $c->get('Psr\\Log\\LoggerInterface'),
+				// adopt-connection-registry: without it a store save would never
+				// ask integriq to look again, and nothing would say so. The
+				// argument is optional, so leaving it out here is a silent no-op.
+				connectionReporter: $c->get(ConnectionReporter::class)
 			)
 		);
 		// InitializeSettings repair step — bind Buildiq's own class so it wins

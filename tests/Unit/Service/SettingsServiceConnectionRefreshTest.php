@@ -137,4 +137,20 @@ class SettingsServiceConnectionRefreshTest extends TestCase {
 			actual: $this->service()->updateSettings($data)
 		);
 	}//end testTheResultIsTheSameWithAndWithoutTheReporter()
+
+	/**
+	 * The container factory hands the reporter in.
+	 *
+	 * `Application::register()` builds SettingsService by hand, and the
+	 * reporter argument is optional. A factory that leaves it out makes every
+	 * save a silent no-op in production while every test above stays green.
+	 *
+	 * @return void
+	 */
+	public function testTheContainerFactoryHandsTheReporterIn(): void {
+		$application = (string) file_get_contents(dirname(__DIR__, 3) . '/lib/AppInfo/Application.php');
+
+		$factory = substr($application, (int) strpos($application, 'static fn ($c): SettingsService => new SettingsService('), 900);
+		$this->assertStringContainsString(needle: 'connectionReporter: $c->get(ConnectionReporter::class)', haystack: $factory);
+	}//end testTheContainerFactoryHandsTheReporterIn()
 }//end class
