@@ -299,7 +299,11 @@ class ConnectionsDeclarationTest extends TestCase {
 
 		$copilot = (string) file_get_contents($this->root() . '/lib/Service/CopilotService.php');
 		$this->assertStringContainsString(needle: 'OCP\\\\TaskProcessing\\\\IManager', haystack: $copilot);
-		$this->assertDoesNotMatchRegularExpression(pattern: '/getValueString\(/', string: $copilot, message: 'CopilotService reads app config now: check whether it picks a provider');
+		$this->assertDoesNotMatchRegularExpression(
+			pattern: '/getValueString\(/',
+			string: $copilot,
+			message: 'CopilotService reads app config now: check whether it picks a provider'
+		);
 	}//end testNoLlmConnectionIsDeclared()
 
 	/**

@@ -301,7 +301,7 @@ class Application extends App implements IBootstrap {
 				groupManager: $c->get('OCP\\IGroupManager'),
 				userSession: $c->get('OCP\\IUserSession'),
 				logger: $c->get('Psr\\Log\\LoggerInterface'),
-				// adopt-connection-registry: without it a store save would never
+				// Adopt-connection-registry: without it a store save would never
 				// ask integriq to look again, and nothing would say so. The
 				// argument is optional, so leaving it out here is a silent no-op.
 				connectionReporter: $c->get(ConnectionReporter::class)

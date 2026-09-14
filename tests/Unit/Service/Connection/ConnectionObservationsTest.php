@@ -70,7 +70,10 @@ class ConnectionObservationsTest extends TestCase {
 			expected: ['configured', 'The template store at store.gemeente.example answered the last search.'],
 			actual: $this->observations->storeSearch(outcome: GenericStoreService::OUTCOME_OK, registryUrl: $url)
 		);
-		$this->assertSame(expected: 'unconfigured', actual: $this->observations->storeSearch(outcome: GenericStoreService::OUTCOME_NOT_CONFIGURED, registryUrl: '')[0]);
+		$this->assertSame(
+			expected: 'unconfigured',
+			actual: $this->observations->storeSearch(outcome: GenericStoreService::OUTCOME_NOT_CONFIGURED, registryUrl: '')[0]
+		);
 		$this->assertSame(
 			expected: ['error', 'The last search could not reach the template store at store.gemeente.example.'],
 			actual: $this->observations->storeSearch(outcome: GenericStoreService::OUTCOME_UNREACHABLE, registryUrl: $url)
@@ -113,8 +116,10 @@ class ConnectionObservationsTest extends TestCase {
 	 */
 	public function testGitHubSearchFailuresMapIndependentOfTheBroker(): void {
 		foreach ([true, false] as $broker) {
-			$this->assertSame(expected: 'limited', actual: $this->observations->gitHubSearch(outcome: GitHubCatalogService::OUTCOME_RATE_LIMITED, brokerAvailable: $broker)[0]);
-			$this->assertSame(expected: 'error', actual: $this->observations->gitHubSearch(outcome: GitHubCatalogService::OUTCOME_UNREACHABLE, brokerAvailable: $broker)[0]);
+			$limited = $this->observations->gitHubSearch(outcome: GitHubCatalogService::OUTCOME_RATE_LIMITED, brokerAvailable: $broker);
+			$error   = $this->observations->gitHubSearch(outcome: GitHubCatalogService::OUTCOME_UNREACHABLE, brokerAvailable: $broker);
+			$this->assertSame(expected: 'limited', actual: $limited[0]);
+			$this->assertSame(expected: 'error', actual: $error[0]);
 		}
 	}//end testGitHubSearchFailuresMapIndependentOfTheBroker()
 
@@ -166,8 +171,14 @@ class ConnectionObservationsTest extends TestCase {
 			$this->assertSame(expected: $status, actual: $observed[0] ?? null, message: 'HTTP ' . $httpStatus);
 		}
 
-		$this->assertSame(expected: ['error', 'The last call to Filinq got no answer.'], actual: $this->observations->httpCall(name: 'Filinq', httpStatus: null));
-		$this->assertSame(expected: ['error', 'Filinq refused the login (HTTP 401).'], actual: $this->observations->httpCall(name: 'Filinq', httpStatus: 401));
+		$this->assertSame(
+			expected: ['error', 'The last call to Filinq got no answer.'],
+			actual: $this->observations->httpCall(name: 'Filinq', httpStatus: null)
+		);
+		$this->assertSame(
+			expected: ['error', 'Filinq refused the login (HTTP 401).'],
+			actual: $this->observations->httpCall(name: 'Filinq', httpStatus: 401)
+		);
 	}//end testAnHttpAnswerMapsAsDesigned()
 
 	/**

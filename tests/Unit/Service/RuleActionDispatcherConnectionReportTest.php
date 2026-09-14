@@ -142,7 +142,7 @@ class RuleActionDispatcherConnectionReportTest extends TestCase {
 			 * @param object $response The answer.
 			 */
 			public function __construct(string $message, private readonly object $response) {
-				parent::__construct($message);
+				parent::__construct(message: $message);
 			}//end __construct()
 
 			/**

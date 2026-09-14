@@ -62,7 +62,6 @@ class SettingsServiceConnectionRefreshTest extends TestCase {
 	private function service(bool $withReporter = true): SettingsService {
 		$reporter = null;
 		if ($withReporter === true) {
-			/** @var ConnectionReporter&MockObject $reporter */
 			$reporter = $this->getMockBuilder(className: ConnectionReporter::class)
 				->disableOriginalConstructor()
 				->onlyMethods(['refreshFromSave'])

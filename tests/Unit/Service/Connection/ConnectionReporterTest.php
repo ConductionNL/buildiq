@@ -156,7 +156,9 @@ class ConnectionReporterTest extends TestCase {
 	 * @return ConnectionReporter
 	 */
 	private function reporterWithoutIntegriq(): ConnectionReporter {
-		return new class($this->dispatcher, $this->appConfig, $this->createMock(originalClassName: ITimeFactory::class), $this->logger) extends ConnectionReporter {
+		$time = $this->createMock(originalClassName: ITimeFactory::class);
+
+		return new class($this->dispatcher, $this->appConfig, $time, $this->logger) extends ConnectionReporter {
 
 			/**
 			 * Integriq is not installed, so no class resolves.

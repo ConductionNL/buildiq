@@ -191,7 +191,10 @@ class ConnectionReportCallersTest extends TestCase {
 			request: $request,
 			userSession: $this->userSession,
 			syncService: $sync,
-			permissionResolver: new PermissionResolver($groups, $this->createMock(originalClassName: LoggerInterface::class)),
+			permissionResolver: new PermissionResolver(
+				groupManager: $groups,
+				logger: $this->createMock(originalClassName: LoggerInterface::class)
+			),
 			connectionReporter: $this->reporter
 		);
 	}//end syncController()
