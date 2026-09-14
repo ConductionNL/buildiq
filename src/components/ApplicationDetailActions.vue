@@ -348,7 +348,7 @@ export default {
 					id: 'app-documentation',
 					label: t('buildiq', 'Documentation'),
 					icon: 'HelpCircleOutline',
-					href: 'https://openbuild.conduction.nl',
+					href: 'https://buildiq.conduction.nl',
 					target: '_blank',
 				},
 			)

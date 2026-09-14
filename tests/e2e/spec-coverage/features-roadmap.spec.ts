@@ -9,7 +9,7 @@
  * Observed live behaviour (dev container, admin session):
  *   - Heading "Features" with two header actions: "Show roadmap",
  *     "Suggest feature".
- *   - A documentation link to openbuild.conduction.nl.
+ *   - A documentation link to buildiq.conduction.nl.
  *   - Empty state "No features documented yet" (auto-generated from
  *     openspec/specs once a status is set to implemented/reviewed).
  *   - Clicking "Show roadmap" toggles the view: heading becomes "Roadmap"
@@ -59,7 +59,7 @@ test.describe('Buildiq Features & roadmap', () => {
 		).toBeVisible()
 	})
 
-	test('surfaces the documentation link to openbuild.conduction.nl', async ({
+	test('surfaces the documentation link to buildiq.conduction.nl', async ({
 		page,
 	}) => {
 		await page.goto(FeaturesRoadmap)
@@ -68,7 +68,7 @@ test.describe('Buildiq Features & roadmap', () => {
 		).toBeVisible({ timeout: 15_000 })
 
 		await expect(
-			page.getByRole('link', { name: /openbuild\.conduction\.nl/i }),
+			page.getByRole('link', { name: /buildiq\.conduction\.nl/i }),
 		).toBeVisible({ timeout: 15_000 })
 	})
 
