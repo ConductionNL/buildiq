@@ -5,6 +5,11 @@ import type { Page } from '@playwright/test'
 
 import { expect, test } from '@playwright/test'
 import { suppressSetupWizard, suppressSupportDialog } from './support/appFixture.ts'
+// The one place a target enters this suite, and the place the shared-instance
+// guard sits. This was a private `process.env.PLAYWRIGHT_BASE_URL ??
+// 'http://localhost:8080'` constant, so a run with nothing set wrote to the
+// shared dev instance. See tests/e2e/shared-instance.ts.
+import { E2E_BASE_URL as BASE } from './support/baseUrl.ts'
 import { ensureVersionChain } from './support/versionChain.ts'
 
 /**
@@ -28,7 +33,6 @@ import { ensureVersionChain } from './support/versionChain.ts'
  *     cleanly without a live container.
  */
 
-const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 // A DEDICATED fixture app carrying development -> staging -> production.
 // This suite is about the version pill strip, the Promote affordance and
 // version-scoped deep links; hello-world has exactly ONE version, so those
