@@ -295,6 +295,41 @@ class ApplicationDeletionServiceTest extends TestCase {
 	}//end testSchemaHeldByAnotherRegisterSurvives()
 
 	/**
+	 * A schema referenced by a numeric id in one register and by its slug in
+	 * another must still be recognised as shared. Casting a slug to (int)
+	 * collapses it to 0, which would make `deleteUnreferencedSchemas()` treat
+	 * schema 10 as unclaimed and delete it out from under the surviving
+	 * register.
+	 *
+	 * @return void
+	 */
+	public function testSchemaHeldByAnotherRegisterViaSlugSurvives(): void {
+		$this->registerMapper->method('find')->willReturn($this->registerWithSchemas([10, 11]));
+		// A surviving register elsewhere holds schema 10 by slug, not by id.
+		$this->registerMapper->method('findAll')->willReturn([$this->registerWithSchemas(['invoice-schema'])]);
+		$this->schemaMapper->method('findIdsBySlugs')->willReturnCallback(
+			function (array $slugs): array {
+				return in_array('invoice-schema', $slugs, true) === true
+					? ['invoice-schema' => ['10']]
+					: [];
+			}
+		);
+		$this->routeFindAll(
+			versions: [['id' => 'v1', 'register' => 'reg-demo']],
+			purge: fn (int $round): array => [],
+		);
+		$this->objectService->method('deleteObject')->willReturn(true);
+		$this->registerService->method('delete')->willReturnArgument(0);
+
+		$deleted = [];
+		$this->captureSchemaDeletes($deleted);
+
+		$this->service->deleteApplication(appUuid: 'u-app', appSlug: 'demo', deleteData: true);
+
+		self::assertSame([11], $deleted, 'the schema shared by slug must survive, matching the by-id case');
+	}//end testSchemaHeldByAnotherRegisterViaSlugSurvives()
+
+	/**
 	 * Without the data opt-in the register is preserved, so its schemas are
 	 * preserved with it — they still describe live data.
 	 *

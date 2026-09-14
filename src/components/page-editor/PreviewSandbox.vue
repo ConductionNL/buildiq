@@ -31,13 +31,17 @@ import { registerDirectives } from '../../registerDirectives.js'
 // module record and the router keeps bookkeeping on the object it is handed.
 const PreviewPageRenderer = { ...CnPageRenderer }
 
-// What a preview may still do: navigate inside itself, work the affordances
-// that only reveal UI, and take input. `aria-expanded` / `aria-haspopup` are
-// what a disclosure widget IS — action menus, nav groups, comboboxes all
-// carry one — so the allow-list stays behavioural rather than a list of
-// Nextcloud class names. Everything else acts on real data.
+// What a preview may still do: work the affordances that only reveal UI, and
+// take input. `aria-expanded` / `aria-haspopup` are what a disclosure widget
+// IS — action menus, nav groups, comboboxes all carry one — so the allow-list
+// stays behavioural rather than a list of Nextcloud class names. Everything
+// else acts on real data.
+//
+// A real `a[href]` is handled separately in blockActivation(), not listed
+// here: the sandbox's router is a memory router, so only RouterLink clicks
+// are intercepted — a plain anchor performs a genuine same-tab navigation
+// that would take the whole designer with it.
 const HARMLESS_TARGETS = [
-	'a[href]',
 	'[aria-expanded]',
 	// Not `dialog`: a modal is where the real actions live.
 	'[aria-haspopup]:not([aria-haspopup="dialog"])',
@@ -152,6 +156,19 @@ export default {
 	},
 
 	/**
+	 * Initialise non-reactive instance state (the preview's own app/router/
+	 * state, set here rather than in `data()` to avoid Vue's reserved-key
+	 * warning for `_`-prefixed fields), matching CnWalkthrough's convention.
+	 *
+	 * @return {void}
+	 */
+	created() {
+		this._sandboxApp = null
+		this._sandboxRouter = null
+		this._sandboxState = null
+	},
+
+	/**
 	 * Arm the activation guard and build the preview application.
 	 *
 	 * @return {void}
@@ -243,6 +260,22 @@ export default {
 			if (!this.ownsTarget(event.target)) {
 				return
 			}
+
+			const anchor = event.target?.closest?.('a[href]')
+			if (anchor) {
+				// A RouterLink click still navigates correctly: preventDefault()
+				// only cancels the browser's own navigation, it does not stop the
+				// click from reaching RouterLink's handler, which drives the
+				// sandbox's memory router with router.push() regardless. A plain
+				// anchor has nothing else to catch it, so its default is the only
+				// thing to stop — unless target="_blank" already keeps the
+				// designer's tab in place.
+				if ((anchor.getAttribute('target') || '').toLowerCase() !== '_blank') {
+					event.preventDefault()
+				}
+				return
+			}
+
 			if (event.target?.closest?.(HARMLESS_TARGETS)) {
 				return
 			}

@@ -707,6 +707,20 @@ namespace OCA\OpenRegister\Db {
 			public function update(\OCP\AppFramework\Db\Entity $entity): \OCP\AppFramework\Db\Entity {
 				return $entity;
 			}//end update()
+
+			/**
+			 * Resolve schema slugs to ids (mirrors the real
+			 * SchemaMapper::findIdsBySlugs signature — used by
+			 * ApplicationDeletionService to compare a slug-referenced schema
+			 * against ids other registers hold).
+			 *
+			 * @param array<int, string> $slugs Schema slugs to resolve.
+			 *
+			 * @return array<string, array<int, string>> Lower-cased slug => matching ids.
+			 */
+			public function findIdsBySlugs(array $slugs): array {
+				return [];
+			}//end findIdsBySlugs()
 		}//end class
 	}//end if
 

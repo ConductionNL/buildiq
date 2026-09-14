@@ -155,6 +155,48 @@ describe('PreviewSandbox', () => {
 		wrapper.unmount()
 	})
 
+	// The sandbox's router is a memory router: only a RouterLink click is
+	// intercepted by vue-router, so a plain `<a href>` would otherwise perform
+	// a genuine same-tab navigation and take the whole designer with it.
+	it('prevents a bare anchor from navigating the designer away, while the click still reaches app handlers', () => {
+		const wrapper = mountSandbox()
+		const host = wrapper.element
+
+		const link = document.createElement('a')
+		link.setAttribute('href', 'https://example.com/docs')
+		host.appendChild(link)
+
+		const clicked = vi.fn()
+		link.addEventListener('click', clicked)
+		const event = new window.MouseEvent('click', { bubbles: true, cancelable: true })
+		link.dispatchEvent(event)
+
+		// preventDefault(), not stopPropagation(): a RouterLink's own click
+		// handler drives the memory router with router.push() regardless of
+		// the browser's default action, so it must still see the click.
+		expect(event.defaultPrevented).toBe(true)
+		expect(clicked).toHaveBeenCalled()
+
+		wrapper.unmount()
+	})
+
+	it('leaves a target="_blank" anchor alone, since it opens a new tab rather than navigating the designer away', () => {
+		const wrapper = mountSandbox()
+		const host = wrapper.element
+
+		const link = document.createElement('a')
+		link.setAttribute('href', 'https://example.com/docs')
+		link.setAttribute('target', '_blank')
+		host.appendChild(link)
+
+		const event = new window.MouseEvent('click', { bubbles: true, cancelable: true })
+		link.dispatchEvent(event)
+
+		expect(event.defaultPrevented).toBe(false)
+
+		wrapper.unmount()
+	})
+
 	it('lets a disclosure widget open — a menu is not an action', () => {
 		const wrapper = mountSandbox()
 		const host = wrapper.element

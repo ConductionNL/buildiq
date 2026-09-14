@@ -104,16 +104,29 @@ class ApplicationDeletionService {
 			field: 'application',
 			value: $appUuid
 		);
+		$ownedSchemaIds = [];
 		foreach ($versions as $version) {
 			$versionUuid = (string)($version['id'] ?? ($version['@self']['id'] ?? ''));
 			$registerSlug = (string)($version['register'] ?? '');
 			if ($deleteData === true && $registerSlug !== '') {
-				$this->deleteRegister(registerSlug: $registerSlug, orphaned: $orphaned);
+				$this->deleteRegister(registerSlug: $registerSlug, orphaned: $orphaned, ownedSchemaIds: $ownedSchemaIds);
 			}
 
 			if ($versionUuid !== '') {
 				$this->deleteObject(uuid: $versionUuid, label: 'version', orphaned: $orphaned);
 			}
+		}
+
+		// Schema cleanup runs once, after every register this app owned is
+		// already gone: scanning per-version would repeat the same full-table
+		// register scan, and would still see this app's own not-yet-deleted
+		// registers as claiming their own schemas.
+		if ($ownedSchemaIds !== []) {
+			$this->deleteUnreferencedSchemas(
+				schemaIds: array_values(array_unique($ownedSchemaIds)),
+				appSlug: $appSlug,
+				orphaned: $orphaned
+			);
 		}
 
 		// 2. BuiltAppRoute slug-index entries pointing at this app.
@@ -189,10 +202,14 @@ class ApplicationDeletionService {
 	 *
 	 * @param string $registerSlug The register slug.
 	 * @param array<int,string> $orphaned Collector for failures.
+	 * @param array<int,mixed> $ownedSchemaIds Collector for schema ids/slugs the
+	 *                                         deleted register owned; the caller
+	 *                                         cleans these up once every register
+	 *                                         has been deleted.
 	 *
 	 * @return void
 	 */
-	private function deleteRegister(string $registerSlug, array &$orphaned): void {
+	private function deleteRegister(string $registerSlug, array &$orphaned, array &$ownedSchemaIds): void {
 		try {
 			$register = $this->registerMapper->find($registerSlug, _multitenancy: false);
 		} catch (Throwable $e) {
@@ -227,7 +244,9 @@ class ApplicationDeletionService {
 			return;
 		}
 
-		$this->deleteUnreferencedSchemas(schemaIds: $schemaIds, registerSlug: $registerSlug, orphaned: $orphaned);
+		foreach ($schemaIds as $schemaId) {
+			$ownedSchemaIds[] = $schemaId;
+		}
 	}//end deleteRegister()
 
 	/**
@@ -243,14 +262,22 @@ class ApplicationDeletionService {
 	 * A schema is only removed when no OTHER register still lists it: OR models
 	 * `register.schemas` as a reference list, so the same definition can legally
 	 * be shared, and deleting a shared one would break the register that kept it.
+	 * Comparison is by string, never by (int) cast — `register.schemas` may
+	 * legally hold a non-numeric slug (see {@see Register::addSchema()}), and
+	 * casting one to int collapses it to 0, making it look unclaimed.
 	 *
-	 * @param array<int,mixed> $schemaIds Schema ids the register owned.
-	 * @param string $registerSlug The register slug (for log context).
+	 * The delete itself still goes through {@see SchemaMapper::delete()}, which
+	 * runs its own RBAC + organisation checks regardless of the widened find()
+	 * below — a schema visible only because of that widened lookup simply fails
+	 * to delete here and is reported as orphaned rather than removed.
+	 *
+	 * @param array<int,mixed> $schemaIds Schema ids/slugs the deleted registers owned.
+	 * @param string $appSlug The application slug (for log context).
 	 * @param array<int,string> $orphaned Collector for failures.
 	 *
 	 * @return void
 	 */
-	private function deleteUnreferencedSchemas(array $schemaIds, string $registerSlug, array &$orphaned): void {
+	private function deleteUnreferencedSchemas(array $schemaIds, string $appSlug, array &$orphaned): void {
 		if ($schemaIds === []) {
 			return;
 		}
@@ -262,8 +289,8 @@ class ApplicationDeletionService {
 			// cleanup and orphan the schemas rather than risk removing one
 			// another register still holds.
 			$this->logger->error(
-				'Buildiq: deleteApplication could not scan registers for schema references: {message}',
-				['message' => $e->getMessage()]
+				'Buildiq: deleteApplication({slug}) could not scan registers for schema references: {message}',
+				['slug' => $appSlug, 'message' => $e->getMessage()]
 			);
 			foreach ($schemaIds as $schemaId) {
 				$orphaned[] = 'schema:' . (string)$schemaId;
@@ -273,7 +300,7 @@ class ApplicationDeletionService {
 		}
 
 		foreach ($schemaIds as $schemaId) {
-			if (in_array((int)$schemaId, $referenced, true) === true) {
+			if ($this->isSchemaReferenced(schemaId: $schemaId, referenced: $referenced) === true) {
 				continue;
 			}
 
@@ -282,8 +309,8 @@ class ApplicationDeletionService {
 				$this->schemaMapper->delete(entity: $schema);
 			} catch (Throwable $e) {
 				$this->logger->error(
-					'Buildiq: deleteApplication failed to delete schema {schema} of register {slug}: {message}',
-					['schema' => (string)$schemaId, 'slug' => $registerSlug, 'message' => $e->getMessage()]
+					'Buildiq: deleteApplication({slug}) failed to delete schema {schema}: {message}',
+					['slug' => $appSlug, 'schema' => (string)$schemaId, 'message' => $e->getMessage()]
 				);
 				$orphaned[] = 'schema:' . (string)$schemaId;
 			}
@@ -291,23 +318,75 @@ class ApplicationDeletionService {
 	}//end deleteUnreferencedSchemas()
 
 	/**
-	 * Collect every schema id still claimed by a register.
+	 * Whether a schema id/slug is still claimed by another register.
+	 *
+	 * Matches by string against $referenced (already-resolved ids). A
+	 * non-numeric $schemaId is additionally resolved to its real id(s) via
+	 * {@see SchemaMapper::findIdsBySlugs()}, so a schema this register held by
+	 * slug still matches a register that claims the same schema by numeric id.
+	 * A slug is not unique across apps, so any resolved id counting as
+	 * referenced is deliberately conservative — the same as elsewhere in this
+	 * class, an ambiguous case is left alone rather than deleted on a guess.
+	 *
+	 * @param mixed $schemaId The schema id or slug to check.
+	 * @param array<int,string> $referenced Ids other registers still hold.
+	 *
+	 * @return bool
+	 */
+	private function isSchemaReferenced(mixed $schemaId, array $referenced): bool {
+		if (in_array((string)$schemaId, $referenced, true) === true) {
+			return true;
+		}
+
+		if (is_numeric($schemaId) === true) {
+			return false;
+		}
+
+		foreach ($this->schemaMapper->findIdsBySlugs([(string)$schemaId]) as $ids) {
+			if (array_intersect($ids, $referenced) !== []) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end isSchemaReferenced()
+
+	/**
+	 * Collect every schema id still claimed by a register, as strings.
 	 *
 	 * Unfiltered on purpose (`_rbac`/`_multitenancy` off): a schema shared with a
 	 * register the caller cannot see is still shared, and a filtered scan would
 	 * report it as unreferenced and delete it out from under that register.
 	 *
+	 * A slug entry in `register.schemas` is resolved to its real id(s) via
+	 * {@see SchemaMapper::findIdsBySlugs()} so it is comparable to a numeric id
+	 * another register recorded for the same schema.
+	 *
 	 * @throws Throwable When the register scan fails; the caller skips the cleanup.
 	 *
-	 * @return array<int,int> Schema ids, deduplicated.
+	 * @return array<int,string> Schema ids, deduplicated.
 	 */
 	private function schemaIdsHeldByRegisters(): array {
 		$registers = $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
 
 		$ids = [];
+		$slugs = [];
 		foreach ($registers as $register) {
 			foreach (($register->getSchemas() ?? []) as $schemaId) {
-				$ids[] = (int)$schemaId;
+				if (is_numeric($schemaId) === true) {
+					$ids[] = (string)$schemaId;
+					continue;
+				}
+
+				$slugs[] = (string)$schemaId;
+			}
+		}
+
+		if ($slugs !== []) {
+			foreach ($this->schemaMapper->findIdsBySlugs($slugs) as $matchingIds) {
+				foreach ($matchingIds as $id) {
+					$ids[] = $id;
+				}
 			}
 		}
 
