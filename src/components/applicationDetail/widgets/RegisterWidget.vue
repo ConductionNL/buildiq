@@ -72,7 +72,9 @@
 				@click="$emit('import-data', { registerSlug, schemas })">
 				{{ t('buildiq', 'Import data') }}
 			</NcButton>
-			<NcButton variant="primary" @click="openInOpenRegister">
+			<!-- NcButton renders an anchor when given an href, so this keeps the
+			     button styling and gains the browser's link behaviour. -->
+			<NcButton variant="primary" :href="openRegisterUrl">
 				{{ t('buildiq', 'Open in OpenRegister') }}
 			</NcButton>
 		</footer>
@@ -142,6 +144,26 @@ export default {
 			return this.isHybrid
 				? this.appSlug
 				: `openbuild-${this.appSlug}-${this.versionSlug}`
+		},
+
+		/**
+		 * OpenRegister's register detail page — a top-level Nextcloud URL, not a
+		 * Vue Router route, so it is an href rather than a router push. Carries
+		 * `?_version=` (same convention as the Schemas/Pages/Menu widgets'
+		 * `buildVersionedRoute` links) so a non-production version stays
+		 * identifiable even when it SHARES production's register and the slug
+		 * itself carries no version marker.
+		 *
+		 * @return {string}
+		 * @spec openspec/specs/application-detail-overview/spec.md#requirement-register-widget-renders-read-only-with-an-open-in-openregister-deep-link
+		 */
+		openRegisterUrl() {
+			const base = generateUrl(
+				`/apps/openregister/registers/${encodeURIComponent(this.registerSlug)}`,
+			)
+			return this.versionSlug
+				? `${base}?_version=${encodeURIComponent(this.versionSlug)}`
+				: base
 		},
 
 		/**
@@ -234,19 +256,6 @@ export default {
 
 			this.schemas = result
 			this.loading = false
-		},
-
-		/**
-		 * Deep-link to OpenRegister's register detail page (top-level Nextcloud
-		 * URL, not a Vue Router internal route).
-		 *
-		 * @return {void}
-		 */
-		openInOpenRegister() {
-			const url = generateUrl(
-				`/apps/openregister/registers/${encodeURIComponent(this.registerSlug)}`,
-			)
-			window.location.href = url
 		},
 	},
 }

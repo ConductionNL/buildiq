@@ -113,8 +113,7 @@
 			:manifest="manifest"
 			:schemas="appSchemas"
 			:procestAvailable="procestAvailable"
-			@update:manifest="onManifestUpdate"
-			@createLinkProperty="onCreateLinkProperty" />
+			@update:manifest="onManifestUpdate" />
 
 		<!-- REQ-NTS-002: Theme section — pick an NL Design token set for this
 		     app. Soft-checks nldesign availability for graceful absence.
@@ -434,13 +433,13 @@ export default {
 		await this.load()
 		// REQ-PWA-006: soft-check Procest so the Workflows section degrades
 		// gracefully when it is absent.
-		const status = useAppStatus('procest')
+		const status = useAppStatus('dossiq')
 		status.check().then(() => {
 			this.procestAvailable = status.available.value
 		})
 		// REQ-NTS-005: soft-check nldesign so the Theme section degrades
 		// gracefully when it is absent.
-		const nldesignStatus = useAppStatus('nldesign')
+		const nldesignStatus = useAppStatus('thematiq')
 		nldesignStatus.check().then(() => {
 			this.nldesignAvailable = nldesignStatus.available.value
 		})
@@ -525,30 +524,6 @@ export default {
 				next.runtime = runtime
 			}
 			return next
-		},
-
-		/**
-		 * Delegate one-click link-property creation to the schema designer.
-		 * Emitted up from the Workflows dialog; opens the schema designer for
-		 * the chosen schema so the builder adds the `zaakUrl` string property
-		 * with the designer's own field validation (REQ-PWA-002).
-		 *
-		 * @param {string} schemaSlug - the schema to add the property to.
-		 * @return {void}
-		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002
-		 */
-		onCreateLinkProperty(schemaSlug) {
-			if (!schemaSlug) {
-				return
-			}
-			// Navigate to the app's schema designer (manifest-driven route at
-			// /builder/:slug/schemas) with the target schema + the property to
-			// add pre-seeded; the designer adds the string property with its own
-			// field validation.
-			const base = generateUrl(
-				`/apps/buildiq/builder/${this.routeSlug}/schemas`,
-			)
-			window.location.href = `${base}?schema=${encodeURIComponent(schemaSlug)}&addProperty=zaakUrl`
 		},
 
 		/**

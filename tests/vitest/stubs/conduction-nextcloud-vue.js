@@ -76,6 +76,29 @@ export function createObjectStore() {
 // these; they only need the symbols to exist.
 export const CnAppRoot = stub('CnAppRoot')
 export const CnAppNav = stub('CnAppNav')
+// Renders `#nav-end` as well as the default slot: the real strip carries page
+// controls there, and a stub that dropped it made every assertion about them
+// read as absent.
+export const CnTabs = {
+	name: 'CnTabs',
+	render() {
+		return h('div', { class: 'cntabs-stub' }, [
+			this.$slots?.['nav-end']?.(),
+			this.$slots?.default?.(),
+		])
+	},
+}
+// Props declared so a spec can read the title/active a consumer binds.
+export const CnTab = {
+	name: 'CnTab',
+	props: {
+		title: { type: String, default: '' },
+		active: { type: Boolean, default: false },
+	},
+	render() {
+		return h('div', { class: 'cntab-stub' }, this.$slots?.default?.())
+	},
+}
 export const CnPageRenderer = { name: 'CnPageRenderer', render: () => h('div') }
 export const CnCard = {
 	name: 'CnCard',
@@ -273,6 +296,8 @@ export default {
 	createObjectStore,
 	CnAppRoot,
 	CnAppNav,
+	CnTabs,
+	CnTab,
 	CnPageRenderer,
 	defaultPageTypes,
 	registerIcons,

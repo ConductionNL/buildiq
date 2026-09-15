@@ -76,11 +76,15 @@
 						"
 						label="label"
 						:disabled="!schemaOptions.length" />
+					<!-- A download is a link with `download`, not a click that
+					     assigns location: this way the browser handles it without
+					     navigating the wizard away. -->
 					<NcButton
-						v-if="selectedSchema"
+						v-if="templateUrl"
 						variant="tertiary"
 						class="ob-import-wizard__template-btn"
-						@click="downloadTemplate">
+						:href="templateUrl"
+						download>
 						<template #icon>
 							<DownloadIcon :size="20" />
 						</template>
@@ -399,6 +403,26 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The offline import template for the selected schema, as a download
+		 * href. Null until a schema is chosen, so the control does not render.
+		 *
+		 * @return {string|null} The template URL, or null.
+		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.1
+		 */
+		templateUrl() {
+			if (!this.selectedSchema) {
+				return null
+			}
+			return (
+				this.importer.templateUrl({
+					registerId: this.registerId,
+					schema: this.selectedSchema.id,
+					format: 'xlsx',
+				}) || null
+			)
+		},
+
 		/**
 		 * The sample table's header cells — the CSV's own header line.
 		 *
@@ -784,27 +808,6 @@ export default {
 				this.error = this.readError(e)
 			} finally {
 				this.undoing = false
-			}
-		},
-
-		/**
-		 * Download the offline import template for the selected schema.
-		 *
-		 * @param {string} [format] `xlsx` (default) or `csv`.
-		 * @return {void}
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.1
-		 */
-		downloadTemplate(format = 'xlsx') {
-			if (!this.selectedSchema) {
-				return
-			}
-			const url = this.importer.templateUrl({
-				registerId: this.registerId,
-				schema: this.selectedSchema.id,
-				format,
-			})
-			if (url && typeof window !== 'undefined') {
-				window.location.href = url
 			}
 		},
 

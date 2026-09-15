@@ -31,12 +31,8 @@
 				v-for="row in versions"
 				:key="rowKey(row)"
 				class="version-history__row"
-				:class="{ 'version-history__row--current': isProduction(row) }"
-				tabindex="0"
-				role="button"
-				@click="openVersion(row)"
-				@keydown.enter="openVersion(row)">
-				<div class="version-history__row-main">
+				:class="{ 'version-history__row--current': isProduction(row) }">
+				<a class="version-history__row-main" :href="versionUrl(row)">
 					<div class="version-history__row-title">
 						<strong>{{ rowName(row) }}</strong>
 						<small class="version-history__semver">{{
@@ -53,18 +49,21 @@
 							{{ t('buildiq', 'Production') }}
 						</span>
 					</div>
-				</div>
-				<!-- Actions stop row-click propagation so a button never doubles as "open". -->
-				<div class="version-history__actions" @click.stop>
-					<button class="version-history__btn" @click="openVersion(row)">
+				</a>
+				<div class="version-history__actions">
+					<!-- Open leaves the SPA for the live shell, so it is an href;
+					     Edit is the in-app page designer, so it is a router link.
+					     Both are anchors: no click handler can give back
+					     middle-click or "open in new tab". -->
+					<a class="version-history__btn" :href="versionUrl(row)">
 						{{ t('buildiq', 'Open') }}
-					</button>
-					<button
+					</a>
+					<router-link
 						v-if="canEdit"
 						class="version-history__btn"
-						@click="editVersion(row)">
+						:to="editRoute(row)">
 						{{ t('buildiq', 'Edit') }}
-					</button>
+					</router-link>
 					<button
 						v-if="canRelease && rowStatus(row) === 'draft'"
 						class="version-history__btn version-history__btn--primary"
@@ -96,6 +95,7 @@ import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
 import RollbackConfirmModal from '../modals/RollbackConfirmModal.vue'
+import { buildVersionedRoute } from '../router/helpers.js'
 
 export default {
 	name: 'VersionHistory',
@@ -363,45 +363,42 @@ export default {
 		},
 
 		/**
-		 * Open a version in the live shell — production at the canonical URL,
+		 * A version's URL in the live shell — production at the canonical URL,
 		 * any other version via `?_version=` (RBAC-gated server-side).
 		 *
 		 * @param {object} row The version row.
-		 * @return {void}
+		 * @return {string|null} The URL, or null without an app slug.
 		 *
 		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-lifecycle-ui/spec.md
 		 */
-		openVersion(row) {
+		versionUrl(row) {
 			if (!this.appSlug) {
-				return
+				return null
 			}
 			const base = generateUrl('/apps/buildiq/builder/{slug}', {
 				slug: this.appSlug,
 			})
-			window.location.href = this.isProduction(row)
+			return this.isProduction(row)
 				? base
 				: base + '?_version=' + encodeURIComponent(this.rowSlug(row))
 		},
 
 		/**
-		 * Edit a version in the page designer, scoped via `?_version=` for
-		 * non-production versions (editor+ only — gated by `canEdit`).
+		 * The page-designer route for a version, scoped via `?_version=` for
+		 * non-production versions (editor+ only — gated by `canEdit`). A router
+		 * location, so the Edit link stays inside the SPA.
 		 *
 		 * @param {object} row The version row.
-		 * @return {void}
+		 * @return {object} A vue-router location.
 		 *
 		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-lifecycle-ui/spec.md
 		 */
-		editVersion(row) {
-			if (!this.appSlug) {
-				return
-			}
-			const base = generateUrl('/apps/buildiq/builder/{slug}/pages', {
-				slug: this.appSlug,
-			})
-			window.location.href = this.isProduction(row)
-				? base
-				: base + '?_version=' + encodeURIComponent(this.rowSlug(row))
+		editRoute(row) {
+			return buildVersionedRoute(
+				'PageDesigner',
+				{ slug: this.appSlug },
+				this.isProduction(row) ? undefined : this.rowSlug(row),
+			)
 		},
 
 		/**
@@ -541,6 +538,14 @@ export default {
 	background: var(--color-primary-light, #e6f0fa);
 }
 
+/* The row body is the link to the version in the live shell. */
+.version-history__row-main {
+	flex: 1;
+	min-width: 0;
+	color: inherit;
+	text-decoration: none;
+}
+
 .version-history__row-title {
 	display: flex;
 	align-items: center;
@@ -576,7 +581,11 @@ export default {
 	gap: 8px;
 }
 
+/* Open and Edit are anchors, the rest are buttons — this keeps them one row of
+   identical controls. */
 .version-history__btn {
+	display: inline-flex;
+	align-items: center;
 	font-size: 13px;
 	padding: 4px 8px;
 	border-radius: var(--border-radius, 4px);
@@ -584,6 +593,7 @@ export default {
 	border: 1px solid var(--color-border, #ddd);
 	background: var(--color-main-background, #fff);
 	color: var(--color-main-text, #222);
+	text-decoration: none;
 }
 
 .version-history__btn--primary {

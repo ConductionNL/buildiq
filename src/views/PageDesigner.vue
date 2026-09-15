@@ -5,12 +5,14 @@
   - Left: page list + menu tree. Centre: per-page-type sub-editor
   - dispatched by `page.type` (the sub-editors paint inline validator
   - marks via the `pageEditorValidator` this view provides — task 5.5).
-  - Right: validator error-list side panel (REQ-OBPD-011); the live
-  - preview pane is deferred to chain spec #2 (see useLivePreview.js).
+  - Right: validator error-list side panel (REQ-OBPD-011); below both,
+  - the live preview pane.
   - Implements REQ-OBPD-003.
   -->
 <template>
-	<div class="page-designer">
+	<!-- data-walkthrough-id: the tour's `add-page` step spotlights the whole
+	     designer — anything outside its cutout is dimmed and unclickable. -->
+	<div class="page-designer" data-walkthrough-id="page-designer">
 		<header class="page-designer__toolbar">
 			<div class="page-designer__toolbar-group">
 				<button
@@ -37,9 +39,11 @@
 					@click="blocksSidebarOpen = true">
 					{{ t('buildiq', 'Blocks') }}
 				</button>
+				<!-- data-walkthrough-id: spotlighted by the tour's `preview` step. -->
 				<button
 					type="button"
 					class="page-designer__tool-btn page-designer__tool-btn--primary"
+					data-walkthrough-id="page-save-preview"
 					:disabled="!canSaveAndPreview"
 					@click="saveAndPreview">
 					{{ t('buildiq', 'Save & open preview') }}
@@ -123,47 +127,6 @@
 			</section>
 
 			<aside class="page-designer__right">
-				<!-- REQ-OBPD-008: sandboxed live-preview pane. The "available"
-				     branch mounts a CnAppRoot rendered from the in-flight
-				     (unsaved) manifest via the in-memory useAppManifest overload
-				     (chain spec #2). It is a READ-ONLY render — no PUT/save is
-				     ever issued to OpenRegister from this instance. The v-else
-				     branch is the degraded fallback for environments whose
-				     @conduction/nextcloud-vue predates the overload. -->
-				<div
-					v-if="previewAvailable && livePreviewProps"
-					class="page-designer__preview">
-					<h4>{{ t('buildiq', 'Live preview') }}</h4>
-					<div class="page-designer__preview-surface">
-						<CnAppRoot
-							:key="livePreviewProps.key"
-							:appId="livePreviewProps.appId"
-							:manifest="livePreviewProps.manifest"
-							:registry="previewRegistry"
-							:customComponents="previewFlatRegistry"
-							:pageTypes="previewPageTypes"
-							:translate="translateForPreview"
-							:permissions="previewPermissions" />
-					</div>
-				</div>
-				<div v-else class="page-designer__preview-fallback">
-					<h4>{{ t('buildiq', 'Live preview') }}</h4>
-					<p class="page-designer__preview-message">
-						{{
-							t(
-								'buildiq',
-								'Live preview is not yet installed. Save and open the built app to preview your changes.',
-							)
-						}}
-					</p>
-					<button
-						type="button"
-						class="page-designer__preview-btn"
-						:disabled="!canSaveAndPreview"
-						@click="saveAndPreview">
-						{{ t('buildiq', 'Save & open preview') }}
-					</button>
-				</div>
 				<div class="page-designer__errors">
 					<h4>{{ t('buildiq', 'Validation') }}</h4>
 					<p
@@ -187,16 +150,71 @@
 					</p>
 				</div>
 			</aside>
+
+			<!-- REQ-OBPD-008: sandboxed live-preview pane. The "available"
+			     branch mounts a CnAppRoot rendered from the in-flight (unsaved)
+			     manifest via the in-memory useAppManifest overload (chain spec
+			     #2). It is a READ-ONLY render — no PUT/save is ever issued to
+			     OpenRegister from this instance. The v-else branch is the
+			     degraded fallback for environments whose
+			     @conduction/nextcloud-vue predates the overload.
+
+			     It spans the editor + validation columns on its own row: the
+			     shell's navigation alone is a rigid 300px and its content pane
+			     another 300px, so in a single ~280px column it could only be
+			     shown at a scale too small to read. -->
+			<section class="page-designer__preview-pane">
+				<div
+					v-if="previewAvailable && livePreviewProps"
+					class="page-designer__preview">
+					<h4>{{ t('buildiq', 'Live preview') }}</h4>
+					<div
+						ref="previewSurface"
+						class="page-designer__preview-surface"
+						:style="{
+							'--preview-scale': previewScale,
+							'--preview-width': previewViewportWidth + 'px',
+						}">
+						<!-- The shell runs as its own app with its own router
+						     (see PreviewSandbox), so clicking through the
+						     preview navigates the preview, not the designer. -->
+						<div class="page-designer__preview-viewport">
+							<PreviewSandbox
+								:appId="livePreviewProps.appId"
+								:manifest="livePreviewProps.manifest"
+								:registry="previewRegistry"
+								:customComponents="previewFlatRegistry"
+								:pageTypes="previewPageTypes"
+								:translate="translateForPreview"
+								:permissions="previewPermissions" />
+						</div>
+					</div>
+				</div>
+				<div v-else class="page-designer__preview-fallback">
+					<h4>{{ t('buildiq', 'Live preview') }}</h4>
+					<p class="page-designer__preview-message">
+						{{
+							t(
+								'buildiq',
+								'Live preview is not yet installed. Save and open the built app to preview your changes.',
+							)
+						}}
+					</p>
+					<button
+						type="button"
+						class="page-designer__preview-btn"
+						:disabled="!canSaveAndPreview"
+						@click="saveAndPreview">
+						{{ t('buildiq', 'Save & open preview') }}
+					</button>
+				</div>
+			</section>
 		</div>
 	</div>
 </template>
 
 <script>
-import {
-	CnAppRoot,
-	defaultPageTypes,
-	mergeManifestDelta,
-} from '@conduction/nextcloud-vue'
+import { defaultPageTypes, mergeManifestDelta } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { translate as ncT } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
@@ -213,6 +231,7 @@ import LogsPageEditor from '../components/page-editor/LogsPageEditor.vue'
 import MapPageEditor from '../components/page-editor/MapPageEditor.vue'
 import MenuTreeEditor from '../components/page-editor/MenuTreeEditor.vue'
 import PageListEditor from '../components/page-editor/PageListEditor.vue'
+import PreviewSandbox from '../components/page-editor/PreviewSandbox.vue'
 import RoadmapPageEditor from '../components/page-editor/RoadmapPageEditor.vue'
 import SearchPageEditor from '../components/page-editor/SearchPageEditor.vue'
 import SettingsPageEditor from '../components/page-editor/SettingsPageEditor.vue'
@@ -226,6 +245,10 @@ import { useRegisterPicker } from '../composables/useRegisterPicker.js'
 import { useSessionHistory } from '../composables/useSessionHistory.js'
 import registry from '../registry.js'
 import { isEditableTarget } from '../utils/isEditableTarget.js'
+
+// Width the preview lays out at before scaling. The shell's nav is a rigid
+// 300px and NcAppContent's list pane another 300px, so narrower breaks it.
+const PREVIEW_VIEWPORT_WIDTH = 1024
 
 // Mapping of page.type → sub-editor component, covering every canonical v2
 // page type that ships a renderer component (REQ-PEC-001). Adding a new
@@ -252,7 +275,7 @@ const SUB_EDITOR_MAP = {
 export default {
 	name: 'PageDesigner',
 	components: {
-		CnAppRoot,
+		PreviewSandbox,
 		NcAppSidebar,
 		BlockLibraryPanel,
 		WidgetSelectionPanel,
@@ -332,11 +355,11 @@ export default {
 	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 	 */
 	setup(props) {
-		const { available: previewAvailable, previewProps } = useLivePreview()
 		const validator = useManifestValidator()
 		// REQ-BUR-001 / REQ-BUR-007: shared nc-vue history engine (depth
 		// 100), seeded with the incoming manifest as the session baseline.
 		const history = useSessionHistory(props.manifest, { limit: 100 })
+		const { available: previewAvailable, previewProps } = useLivePreview()
 		return { previewAvailable, previewProps, validator, history }
 	},
 
@@ -360,10 +383,25 @@ export default {
 			blocksSidebarOpen: false,
 			targetSchemaSlugs: [],
 			existingBlocks: [],
+			// Ratio the preview viewport is scaled by to fit the pane. Kept in
+			// sync with the pane's width by a ResizeObserver (see
+			// observePreviewSurface).
+			previewScale: 1,
 		}
 	},
 
 	computed: {
+		/**
+		 * Width the preview lays out at, so the template and the scale maths
+		 * read the same constant.
+		 *
+		 * @return {number} Width in CSS pixels.
+		 * @spec exclude preview layout constant; covered by tests/views/PageDesigner.preview.spec.js
+		 */
+		previewViewportWidth() {
+			return PREVIEW_VIEWPORT_WIDTH
+		},
+
 		/**
 		 * Observed behaviour of `pages` (retrofit annotation).
 		 *
@@ -597,6 +635,7 @@ export default {
 	 */
 	mounted() {
 		document.addEventListener('keydown', this.onKeydown)
+		this.observePreviewSurface()
 		// REQ-OBVR-004: resolve the active ApplicationVersion on mount.
 		// `this.slug` comes from the parent prop; `$route.query._version` reads
 		// the query param from the URL (preserved by Vue Router across reloads,
@@ -632,11 +671,62 @@ export default {
 		}
 	},
 
+	updated() {
+		this.observePreviewSurface()
+	},
+
+	/**
+	 * Release the shortcut listener and the preview's ResizeObserver. Both
+	 * outlive the component otherwise: one sits on the document, the other
+	 * holds the observed element.
+	 *
+	 * @return {void}
+	 * @spec exclude teardown of the listener and observer armed in `mounted`
+	 */
 	beforeUnmount() {
 		document.removeEventListener('keydown', this.onKeydown)
+		if (this._previewResizeObs) {
+			this._previewResizeObs.disconnect()
+			this._previewResizeObs = null
+		}
 	},
 
 	methods: {
+		/**
+		 * Track how far the preview viewport must shrink to fit the pane, so it
+		 * follows the window instead of its mount-time width. Leaves the scale
+		 * at 1 (pane clips) without ResizeObserver.
+		 *
+		 * Called from `updated()` as well as `mounted()`: the pane is behind a
+		 * `v-if`, and `$refs` is not reactive, so there is nothing to watch.
+		 *
+		 * @return {void}
+		 * @spec exclude preview layout only; covered by tests/views/PageDesigner.preview.spec.js
+		 */
+		observePreviewSurface() {
+			if (typeof ResizeObserver !== 'function') {
+				return
+			}
+			const el = this.$refs.previewSurface || null
+			if (el === this._previewSurfaceEl) {
+				return
+			}
+			this._previewSurfaceEl = el
+			if (!this._previewResizeObs) {
+				this._previewResizeObs = new ResizeObserver(([entry]) => {
+					const width = entry?.contentRect?.width
+					if (!width) {
+						return
+					}
+					this.previewScale = Math.min(1, width / PREVIEW_VIEWPORT_WIDTH)
+				})
+			}
+			this._previewResizeObs.disconnect()
+			if (el) {
+				this._previewResizeObs.observe(el)
+			}
+		},
+
 		/**
 		 * Fetch the Application record for `this.slug` and store its
 		 * `dataRegisters` (default `[]`). Same call shape
@@ -1106,8 +1196,32 @@ export default {
 .page-designer__panes {
 	display: grid;
 	grid-template-columns: minmax(280px, 320px) 1fr minmax(260px, 320px);
+	/* Row 1 edits, row 2 previews; the page list spans both. */
+	grid-template-rows: auto auto;
 	gap: 12px;
 	min-height: 60vh;
+}
+
+.page-designer__left {
+	grid-column: 1;
+	grid-row: 1 / span 2;
+}
+
+.page-designer__centre {
+	grid-column: 2;
+	grid-row: 1;
+}
+
+.page-designer__right {
+	grid-column: 3;
+	grid-row: 1;
+}
+
+/* Spans the editor + validation columns so the shell gets ~1000px. */
+.page-designer__preview-pane {
+	grid-column: 2 / span 2;
+	grid-row: 2;
+	min-width: 0;
 }
 
 .page-designer__left,
@@ -1158,12 +1272,26 @@ export default {
 }
 
 .page-designer__preview-surface {
-	flex: 1;
-	min-height: 240px;
-	overflow: auto;
+	/* Definite, not `flex: 1` + `min-height`: the viewport sizes itself as a
+	   percentage of this box, and a percentage of `auto` collapses to zero. */
+	height: 480px;
+	overflow: hidden;
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius);
 	background: var(--color-main-background);
+	/* CnAppRoot's NcContent root is `position: fixed`; this makes the pane its
+	   containing block. Overriding that rule instead would tie on specificity
+	   and be settled by stylesheet order. */
+	contain: layout;
+}
+
+/* Lays out at PREVIEW_VIEWPORT_WIDTH, then shrinks to the pane. Dividing the
+   height back out makes the scaled result fill the pane exactly. */
+.page-designer__preview-viewport {
+	width: var(--preview-width);
+	height: calc(100% / var(--preview-scale, 1));
+	transform: scale(var(--preview-scale, 1));
+	transform-origin: top left;
 }
 
 .page-designer__preview-fallback {
@@ -1240,6 +1368,16 @@ export default {
 @media (max-width: 1100px) {
 	.page-designer__panes {
 		grid-template-columns: 1fr;
+	}
+
+	/* Drop the explicit placements, or grid creates implicit columns for
+	   tracks 2 and 3 that no longer exist. */
+	.page-designer__left,
+	.page-designer__centre,
+	.page-designer__right,
+	.page-designer__preview-pane {
+		grid-column: 1;
+		grid-row: auto;
 	}
 }
 </style>

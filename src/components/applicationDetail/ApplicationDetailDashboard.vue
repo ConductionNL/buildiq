@@ -57,16 +57,25 @@
 				     built-in spinner (loading + !showZeroCount) instead of a stale 0;
 				     once loaded, showZeroCount renders a real 0 where applicable.
 				     The wrapper makes the whole card a clickable OpenRegister link. -->
-				<div
+				<a
 					class="ob-detail-dashboard__kpi-link"
 					:class="{
 						'ob-detail-dashboard__kpi-link--clickable': !!registerSlug,
 					}"
-					role="button"
-					tabindex="0"
-					:title="t('buildiq', 'Open in OpenRegister')"
-					@click="openInRegister('audit')"
-					@keyup.enter="openInRegister('audit')">
+					:href="registerUrl('audit')"
+					:title="
+						registerSlug ? t('buildiq', 'Open in OpenRegister') : null
+					"
+					:aria-label="
+						registerSlug
+							? t('buildiq', 'Open Active users in OpenRegister')
+							: null
+					">
+					<ArrowTopRight
+						v-if="registerSlug"
+						class="ob-detail-dashboard__kpi-go"
+						:size="16"
+						aria-hidden="true" />
 					<CnStatsBlock
 						class="ob-detail-dashboard__kpi"
 						horizontal
@@ -79,17 +88,26 @@
 						:error="error"
 						:loadingLabel="t('buildiq', 'Loading…')"
 						:showZeroCount="loaded" />
-				</div>
-				<div
+				</a>
+				<a
 					class="ob-detail-dashboard__kpi-link"
 					:class="{
 						'ob-detail-dashboard__kpi-link--clickable': !!registerSlug,
 					}"
-					role="button"
-					tabindex="0"
-					:title="t('buildiq', 'Open in OpenRegister')"
-					@click="openInRegister('objects')"
-					@keyup.enter="openInRegister('objects')">
+					:href="registerUrl('objects')"
+					:title="
+						registerSlug ? t('buildiq', 'Open in OpenRegister') : null
+					"
+					:aria-label="
+						registerSlug
+							? t('buildiq', 'Open Object count in OpenRegister')
+							: null
+					">
+					<ArrowTopRight
+						v-if="registerSlug"
+						class="ob-detail-dashboard__kpi-go"
+						:size="16"
+						aria-hidden="true" />
 					<CnStatsBlock
 						class="ob-detail-dashboard__kpi"
 						horizontal
@@ -102,22 +120,31 @@
 						:error="error"
 						:loadingLabel="t('buildiq', 'Loading…')"
 						:showZeroCount="loaded" />
-				</div>
+				</a>
 				<!-- Storage: the KPI value is the SUM of attached-file sizes (bytes)
 				     from the audit trail, NOT a file count — so we label it Storage and
 				     format it human-readable. Two variants: the loaded one uses the
 				     #value slot (which would otherwise bypass the spinner), the loading
 				     one keeps CnStatsBlock's built-in spinner. -->
-				<div
+				<a
 					class="ob-detail-dashboard__kpi-link"
 					:class="{
 						'ob-detail-dashboard__kpi-link--clickable': !!registerSlug,
 					}"
-					role="button"
-					tabindex="0"
-					:title="t('buildiq', 'Open in OpenRegister')"
-					@click="openInRegister('files')"
-					@keyup.enter="openInRegister('files')">
+					:href="registerUrl('files')"
+					:title="
+						registerSlug ? t('buildiq', 'Open in OpenRegister') : null
+					"
+					:aria-label="
+						registerSlug
+							? t('buildiq', 'Open Storage in OpenRegister')
+							: null
+					">
+					<ArrowTopRight
+						v-if="registerSlug"
+						class="ob-detail-dashboard__kpi-go"
+						:size="16"
+						aria-hidden="true" />
 					<CnStatsBlock
 						v-if="loaded"
 						class="ob-detail-dashboard__kpi"
@@ -142,17 +169,26 @@
 						variant="success"
 						loading
 						:loadingLabel="t('buildiq', 'Loading…')" />
-				</div>
-				<div
+				</a>
+				<a
 					class="ob-detail-dashboard__kpi-link"
 					:class="{
 						'ob-detail-dashboard__kpi-link--clickable': !!registerSlug,
 					}"
-					role="button"
-					tabindex="0"
-					:title="t('buildiq', 'Open in OpenRegister')"
-					@click="openInRegister('audit')"
-					@keyup.enter="openInRegister('audit')">
+					:href="registerUrl('audit')"
+					:title="
+						registerSlug ? t('buildiq', 'Open in OpenRegister') : null
+					"
+					:aria-label="
+						registerSlug
+							? t('buildiq', 'Open Audit events in OpenRegister')
+							: null
+					">
+					<ArrowTopRight
+						v-if="registerSlug"
+						class="ob-detail-dashboard__kpi-go"
+						:size="16"
+						aria-hidden="true" />
 					<CnStatsBlock
 						class="ob-detail-dashboard__kpi"
 						horizontal
@@ -165,7 +201,7 @@
 						:error="error"
 						:loadingLabel="t('buildiq', 'Loading…')"
 						:showZeroCount="loaded" />
-				</div>
+				</a>
 			</div>
 		</section>
 
@@ -246,7 +282,8 @@
 			<PagesWidget
 				:appSlug="appSlug"
 				:versionSlug="activeVersionSlug"
-				:pages="activePages" />
+				:pages="activePages"
+				@addPage="onAddPage" />
 			<MenuWidget
 				:appSlug="appSlug"
 				:versionSlug="activeVersionSlug"
@@ -280,6 +317,7 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import NcButton from '@nextcloud/vue/components/NcButton'
 import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOutline.vue'
+import ArrowTopRight from 'vue-material-design-icons/ArrowTopRight.vue'
 import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
 import Harddisk from 'vue-material-design-icons/Harddisk.vue'
 import History from 'vue-material-design-icons/History.vue'
@@ -301,6 +339,7 @@ import { buildVersionedRoute } from '../../router/helpers.js'
 export default {
 	name: 'ApplicationDetailDashboard',
 	components: {
+		ArrowTopRight,
 		CnStatsBlock,
 		NcButton,
 		FlowsWidget,
@@ -767,25 +806,28 @@ export default {
 
 	methods: {
 		/**
-		 * Deep-link a KPI into OpenRegister — the system of record behind the
+		 * The OpenRegister deep-link behind a KPI — the system of record for the
 		 * numbers — at the app's register detail page. The optional `tab` hint
-		 * (objects / files / audit) is passed as a query param; OpenRegister lands
-		 * on the right tab when it honours it and on the register otherwise. A
-		 * no-op until the register is resolved. OpenRegister is a sibling app, so
-		 * this is a top-level navigation.
+		 * (objects / files / audit) rides as a query param; OpenRegister lands on
+		 * that tab when it honours it and on the register otherwise.
+		 *
+		 * Returns null until the register is resolved, so the anchor renders
+		 * without an href: not focusable, not a link, nothing to activate.
 		 *
 		 * @param {string} [tab] Optional tab hint: 'objects' | 'files' | 'audit'.
-		 * @return {void}
+		 * @return {string|null} The href, or null when there is no register.
+		 *
+		 * @spec exclude deep-link hand-off to OpenRegister; REQ-OBADO-004 specifies
+		 * the KPI cards as presentational and says nothing about linking
 		 */
-		openInRegister(tab) {
-			if (!this.registerSlug) return
-			let url = generateUrl(
+		registerUrl(tab) {
+			if (!this.registerSlug) return null
+			const url = generateUrl(
 				`/apps/openregister/registers/${encodeURIComponent(this.registerSlug)}`,
 			)
-			if (typeof tab === 'string' && tab !== '') {
-				url += `?tab=${encodeURIComponent(tab)}`
-			}
-			window.location.href = url
+			return typeof tab === 'string' && tab !== ''
+				? `${url}?tab=${encodeURIComponent(tab)}`
+				: url
 		},
 
 		/**
@@ -838,6 +880,31 @@ export default {
 
 			this.$router
 				.push({ name: 'SchemaDesignerList', params: { slug: this.appSlug } })
+				.catch(() => {})
+		},
+
+		/**
+		 * Open the page designer for this app, forwarding the active version the
+		 * same way the widget's row deep-links do. The counterpart to
+		 * `onAddSchema`, for an app whose `pages` are still empty.
+		 *
+		 * @return {void}
+		 *
+		 * @spec exclude routes to an existing page, no new behaviour
+		 */
+		onAddPage() {
+			if (!this.appSlug) {
+				return
+			}
+
+			this.$router
+				.push(
+					buildVersionedRoute(
+						'PageDesigner',
+						{ slug: this.appSlug },
+						this.activeVersionSlug || undefined,
+					),
+				)
 				.catch(() => {})
 		},
 
@@ -1139,17 +1206,42 @@ export default {
 	gap: 12px;
 }
 
-/* Each KPI card is a clickable deep-link into OpenRegister. */
+/* Each KPI card is a real anchor deep-linking into OpenRegister, so the
+   pointer cursor, focus ring, middle-click and "open in new tab" all come from
+   the browser. `color: inherit` keeps the card off NC's link palette. */
 .ob-detail-dashboard__kpi-link {
+	position: relative;
+	display: block;
 	border-radius: var(--border-radius-large, 8px);
-}
-
-.ob-detail-dashboard__kpi-link--clickable {
-	cursor: pointer;
+	color: inherit;
+	text-decoration: none;
 }
 
 .ob-detail-dashboard__kpi-link--clickable:hover {
 	background: var(--color-background-hover, rgba(127, 127, 127, 0.08));
+}
+
+/* The border/shadow the library gives its own `.cn-kpi-card--clickable`, so
+   these read like every other clickable KPI card in the fleet. */
+.ob-detail-dashboard__kpi-link--clickable:hover :deep(.cn-kpi-card) {
+	border-color: var(--color-primary-element);
+	box-shadow: 0 2px 8px var(--color-box-shadow);
+}
+
+/* Visible at rest, so the card reads as a link before you hover it. An arrow
+   rather than a generic marker: the target is OpenRegister, another app. */
+.ob-detail-dashboard__kpi-go {
+	position: absolute;
+	inset-block-start: 6px;
+	inset-inline-end: 8px;
+	color: var(--color-text-maxcontrast);
+	pointer-events: none;
+}
+
+.ob-detail-dashboard__kpi-link--clickable:hover .ob-detail-dashboard__kpi-go,
+.ob-detail-dashboard__kpi-link--clickable:focus-visible
+	.ob-detail-dashboard__kpi-go {
+	color: var(--color-primary-element);
 }
 
 .ob-detail-dashboard__kpi-link--clickable:focus-visible {
