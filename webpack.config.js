@@ -4,6 +4,7 @@ const fs = require('fs')
 const webpack = require('webpack')
 const webpackConfig = require('@nextcloud/webpack-vue-config')
 const { VueLoaderPlugin } = require('vue-loader')
+const { readAppVersion } = require('./scripts/app-version.js')
 
 const buildMode = process.env.NODE_ENV
 const isDev = buildMode === 'development'
@@ -130,8 +131,11 @@ webpackConfig.module = {
 webpackConfig.plugins = [
 	new VueLoaderPlugin(),
 	new webpack.DefinePlugin({ appName: JSON.stringify(appId) }),
+	// The version comes from appinfo/info.xml, which every release bump
+	// writes. package.json's version is never moved, so reading it showed
+	// "buildiq 0.2.0" on a 0.7.x install. See scripts/app-version.js.
 	new webpack.DefinePlugin({
-		appVersion: JSON.stringify(process.env.npm_package_version),
+		appVersion: JSON.stringify(readAppVersion()),
 	}),
 ]
 
