@@ -125,7 +125,9 @@ export default {
 			 * Integrations page (adopt-connection-registry); nextcloud-vue
 			 * 3.0.0 ships neither as a built-in. Static, so not reactive.
 			 */
-			formatters: createConnectionFormatters((source) => ncT('buildiq', source)),
+			formatters: createConnectionFormatters((source) =>
+				ncT('buildiq', source),
+			),
 		}
 	},
 
