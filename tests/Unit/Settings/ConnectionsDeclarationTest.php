@@ -157,7 +157,14 @@ class ConnectionsDeclarationTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheFileNamesThisApp(): void {
-		$infoXml = simplexml_load_file($this->root() . '/appinfo/info.xml');
+		// Deliberately file_get_contents() + simplexml_load_string() rather than
+		// simplexml_load_file(). Under the Nextcloud bootstrap lib/base.php calls
+		// libxml_set_external_entity_loader() with a loader returning null, and
+		// that resolver also handles the primary document, so load_file() returns
+		// false for a well-formed info.xml. Parsing a string never touches it.
+		$infoXml = simplexml_load_string(
+			(string)file_get_contents($this->root() . '/appinfo/info.xml')
+		);
 
 		$this->assertNotFalse(condition: $infoXml);
 		$this->assertSame(expected: (string) $infoXml->id, actual: $this->declaration()['app']);

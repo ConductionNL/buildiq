@@ -20,7 +20,8 @@
  * Where Add integration lands: integriq's Connections overview, preset to this
  * app and opening the link-a-source dialog (hydra connection-registry D9).
  */
-export const INTEGRIQ_CONNECTIONS_PATH = '/apps/integriq/connections?app=buildiq&link=1'
+export const INTEGRIQ_CONNECTIONS_PATH =
+	'/apps/integriq/connections?app=buildiq&link=1'
 
 /**
  * The English label for each of the six registry statuses (design D3).
@@ -54,9 +55,11 @@ export function createConnectionFormatters(translate) {
 		 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-004-an-admin-reads-the-connections-on-an-integrations-page
 		 */
 		connectionStatus(value) {
-			const source = typeof value === 'string' && Object.hasOwn(CONNECTION_STATUS_LABELS, value)
-				? CONNECTION_STATUS_LABELS[value]
-				: null
+			const source =
+				typeof value === 'string'
+				&& Object.hasOwn(CONNECTION_STATUS_LABELS, value)
+					? CONNECTION_STATUS_LABELS[value]
+					: null
 			return source ? translate(source) : String(value ?? '')
 		},
 
@@ -69,7 +72,9 @@ export function createConnectionFormatters(translate) {
 		 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-004-an-admin-reads-the-connections-on-an-integrations-page
 		 */
 		connectionSettingsLabel(value) {
-			return typeof value === 'string' && value.length > 0 ? translate('Open settings') : ''
+			return typeof value === 'string' && value.length > 0
+				? translate('Open settings')
+				: ''
 		},
 	}
 }

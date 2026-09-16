@@ -166,9 +166,7 @@ describe('ApplicationDetailActions — App settings loads the flow list', () => 
 		expect(byId('open-app').href).toContain('/apps/buildiq/builder/my-permits')
 		expect(byId('open-app').target).toBe('_blank')
 		expect(byId('open-app').onSelect).toBeUndefined()
-		expect(byId('app-documentation').href).toBe(
-			'https://buildiq.conduction.nl',
-		)
+		expect(byId('app-documentation').href).toBe('https://buildiq.conduction.nl')
 	})
 
 	it('offers the record Edit only when CnDetailPage hands down openEditForm', async () => {
