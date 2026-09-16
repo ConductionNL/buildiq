@@ -46,6 +46,7 @@ use RuntimeException;
  * Unit tests for ConnectionReporter.
  *
  * @covers \OCA\Buildiq\Service\Connection\ConnectionReporter
+ * @uses \OCA\Buildiq\Service\Connection\ConnectionObservations
  */
 class ConnectionReporterTest extends TestCase {
 
