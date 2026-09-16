@@ -1453,7 +1453,12 @@
         "Not configured": "Not configured",
         "Simulated": "Simulated",
         "Not available": "Not available",
-        "Error": "Error"
+        "Error": "Error",
+        "Custom submit handler": "Custom submit handler",
+        "Save to a register": "Save to a register",
+        "Select a register": "Select a register",
+        "Select a schema": "Select a schema",
+        "Submit URL": "Submit URL"
     },
     "plurals": "",
     "pluralForm": "nplurals=2; plural=(n != 1);"
