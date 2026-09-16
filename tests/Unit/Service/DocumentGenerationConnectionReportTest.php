@@ -241,7 +241,7 @@ class DocumentGenerationConnectionReportTest extends TestCase {
 		$this->assertNull(actual: $result);
 		$this->assertSame(expected: 0, actual: $this->posts);
 		$this->assertSame(expected: 1, actual: $this->invalidated);
-		$this->assertSame(expected: [['reportDocumentRouteMissing', 'docudesk.correspondence.generate']], actual: $this->reports);
+		$this->assertSame(expected: [['reportDocumentRouteMissing', 'filinq.correspondence.generate']], actual: $this->reports);
 	}//end testAMissingRouteIsReportedAndNotCalled()
 
 	/**
