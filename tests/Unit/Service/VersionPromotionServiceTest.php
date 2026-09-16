@@ -38,6 +38,8 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -63,6 +65,11 @@ class VersionPromotionServiceTest extends TestCase {
 	private RegisterMapper&MockObject $registerMapper;
 
 	/**
+	 * @var SchemaMapper&MockObject
+	 */
+	private SchemaMapper&MockObject $schemaMapper;
+
+	/**
 	 * Service under test.
 	 */
 	private VersionPromotionService $service;
@@ -78,11 +85,13 @@ class VersionPromotionServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
+		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 
 		$this->service = new VersionPromotionService(
 			logger: $this->logger,
 			objectService: $this->objectService,
 			registerMapper: $this->registerMapper,
+			schemaMapper: $this->schemaMapper,
 		);
 	}//end setUp()
 
@@ -998,6 +1007,311 @@ class VersionPromotionServiceTest extends TestCase {
 
 		return $entity;
 	}//end buildObjectEntity()
+
+	/**
+	 * Promoting development to production must leave production wired to its
+	 * OWN register and schemas, and carry a field added in development onto the
+	 * production schema.
+	 *
+	 * Before the fix the production manifest kept pointing at the development
+	 * register, the production register was handed development's schema ids,
+	 * and the production schema was never touched.
+	 *
+	 * @return void
+	 */
+	public function testMigrateRewiresManifestAndCarriesSchemaChangesToTargetSchemas(): void {
+		$source = [
+			'id' => 'u-dev',
+			'register' => 'openbuild-shop-development',
+			'semver' => '0.2.0',
+			'promotesTo' => 'u-prod',
+			'manifest' => [
+				'pages' => [
+					[
+						'id' => 'Orders',
+						'config' => [
+							'register' => 'openbuild-shop-development',
+							'schema' => 'shop-development-order',
+						],
+					],
+					[
+						'id' => 'Dash',
+						'config' => [
+							'widgets' => [
+								['source' => ['register' => 'openbuild-shop-development', 'schema' => 11]],
+								['source' => ['register' => 'contacts', 'schema' => 'person']],
+							],
+						],
+					],
+				],
+			],
+		];
+		$target = [
+			'id' => 'u-prod',
+			'register' => 'openbuild-shop-production',
+			'semver' => '0.1.0',
+			'manifest' => ['pages' => []],
+		];
+
+		$this->objectService->method('find')->willReturn($this->buildObjectEntity(uuid: 'u-prod', payload: $target));
+
+		$devRegister = $this->buildRegister(id: 1, slug: 'openbuild-shop-development', schemas: [11]);
+		$prodRegister = $this->buildRegister(id: 2, slug: 'openbuild-shop-production', schemas: [21]);
+		$this->registerMapper->method('find')->willReturnCallback(
+			static fn (string $slug): mixed => $slug === 'openbuild-shop-development' ? $devRegister : $prodRegister
+		);
+
+		$devSchema = $this->buildSchema(
+			id: 11,
+			slug: 'shop-development-order',
+			fields: ['title' => 'Order', 'properties' => ['body' => ['type' => 'string'], 'priority' => ['type' => 'string']], 'required' => ['body']]
+		);
+		$prodSchema = $this->buildSchema(
+			id: 21,
+			slug: 'shop-production-order',
+			fields: ['title' => 'Order', 'properties' => ['body' => ['type' => 'string']], 'required' => []]
+		);
+		$this->schemaMapper->method('find')->willReturnCallback(
+			static function (string|int $id) use ($devSchema, $prodSchema): Schema {
+				if ((string)$id === '11') {
+					return $devSchema;
+				}
+
+				if ($id === 'shop-production-order') {
+					return $prodSchema;
+				}
+
+				throw new RuntimeException('not found: ' . $id);
+			}
+		);
+		$this->schemaMapper->expects(self::never())->method('createFromArray');
+		$this->schemaMapper->expects(self::once())->method('update')->willReturnArgument(0);
+
+		$savedRegisterSchemas = null;
+		$this->registerMapper->method('update')->willReturnCallback(
+			static function ($register) use (&$savedRegisterSchemas) {
+				$savedRegisterSchemas = $register->getSchemas();
+				return $register;
+			}
+		);
+
+		$savedManifest = null;
+		$this->objectService->method('saveObject')->willReturnCallback(
+			function (array $object) use (&$savedManifest): ObjectEntity {
+				$savedManifest = $object['manifest'];
+				return $this->buildObjectEntity(uuid: 'u-prod', payload: $object);
+			}
+		);
+
+		$this->service->promote(source: $source, strategy: VersionPromotionService::STRATEGY_MIGRATE_EXISTING_DATA);
+
+		self::assertSame([21], $savedRegisterSchemas, 'production keeps its own schema, not development\'s');
+		self::assertArrayHasKey('priority', $prodSchema->fields['properties'], 'the development field reaches the production schema');
+		self::assertSame(['body'], $prodSchema->fields['required']);
+		self::assertSame('shop-production-order', $prodSchema->getSlug(), 'the production schema keeps its own slug');
+
+		self::assertSame('openbuild-shop-production', $savedManifest['pages'][0]['config']['register']);
+		self::assertSame('shop-production-order', $savedManifest['pages'][0]['config']['schema']);
+		self::assertSame('openbuild-shop-production', $savedManifest['pages'][1]['config']['widgets'][0]['source']['register']);
+		self::assertSame(21, $savedManifest['pages'][1]['config']['widgets'][0]['source']['schema']);
+		self::assertSame(
+			['register' => 'contacts', 'schema' => 'person'],
+			$savedManifest['pages'][1]['config']['widgets'][1]['source'],
+			'a bound data register is not rewired'
+		);
+		self::assertSame('openbuild-shop-development', $source['manifest']['pages'][0]['config']['register'], 'the source stays as it was');
+	}//end testMigrateRewiresManifestAndCarriesSchemaChangesToTargetSchemas()
+
+	/**
+	 * A schema that exists only in the source version is created in the target
+	 * version under the target's namespace, and copied rows land in it.
+	 *
+	 * @return void
+	 */
+	public function testStartWithSourceDataCreatesMissingTargetSchemaAndCopiesRowsIntoIt(): void {
+		$source = [
+			'id' => 'u-dev',
+			'register' => 'openbuild-shop-development',
+			'semver' => '0.2.0',
+			'promotesTo' => 'u-prod',
+			'manifest' => ['pages' => [['id' => 'Notes', 'config' => ['register' => 'openbuild-shop-development', 'schema' => 'shop-development-note']]]],
+		];
+		$target = ['id' => 'u-prod', 'register' => 'openbuild-shop-production', 'semver' => '0.1.0'];
+
+		$this->objectService->method('find')->willReturn($this->buildObjectEntity(uuid: 'u-prod', payload: $target));
+
+		$devRegister = $this->buildRegister(id: 1, slug: 'openbuild-shop-development', schemas: [12, 99]);
+		$prodRegister = $this->buildRegister(id: 2, slug: 'openbuild-shop-production', schemas: []);
+		$this->registerMapper->method('find')->willReturnCallback(
+			static fn (string $slug): mixed => $slug === 'openbuild-shop-development' ? $devRegister : $prodRegister
+		);
+
+		$noteSchema = $this->buildSchema(id: 12, slug: 'shop-development-note', fields: ['title' => 'Note', 'properties' => ['text' => ['type' => 'string']]]);
+		$sharedSchema = $this->buildSchema(id: 99, slug: 'person', fields: []);
+		$this->schemaMapper->method('find')->willReturnCallback(
+			static function (string|int $id) use ($noteSchema, $sharedSchema): Schema {
+				return match ((string)$id) {
+					'12' => $noteSchema,
+					'99' => $sharedSchema,
+					default => throw new RuntimeException('not found: ' . $id),
+				};
+			}
+		);
+
+		$created = null;
+		$this->schemaMapper->expects(self::once())->method('createFromArray')->willReturnCallback(
+			function (array $definition) use (&$created): Schema {
+				$created = $definition;
+				return $this->buildSchema(id: 32, slug: (string)$definition['slug'], fields: $definition);
+			}
+		);
+
+		$savedRegisterSchemas = null;
+		$this->registerMapper->method('update')->willReturnCallback(
+			static function ($register) use (&$savedRegisterSchemas) {
+				$savedRegisterSchemas = $register->getSchemas();
+				return $register;
+			}
+		);
+
+		$sourceRow = $this->buildObjectEntity(uuid: 'r1', payload: ['id' => 'r1', 'text' => 'hi', '@self' => ['schema' => '12']]);
+		$searchCall = 0;
+		$this->objectService->method('searchObjects')->willReturnCallback(
+			static function () use (&$searchCall, $sourceRow): array {
+				$searchCall++;
+				return $searchCall === 1 ? [] : [$sourceRow];
+			}
+		);
+
+		$rowSchemas = [];
+		$savedManifest = null;
+		$this->objectService->method('saveObject')->willReturnCallback(
+			function (array $object, mixed $extend = [], mixed $register = null, mixed $schema = null) use (&$rowSchemas, &$savedManifest): ObjectEntity {
+				if ($register === 'openbuild-shop-production') {
+					$rowSchemas[] = $schema;
+				} else {
+					$savedManifest = $object['manifest'];
+				}
+
+				return $this->buildObjectEntity(uuid: 'x', payload: $object);
+			}
+		);
+
+		$this->service->promote(source: $source, strategy: VersionPromotionService::STRATEGY_START_WITH_SOURCE_DATA);
+
+		self::assertSame('shop-production-note', $created['slug']);
+		self::assertSame(['text' => ['type' => 'string']], $created['properties']);
+		self::assertSame([32, 99], $savedRegisterSchemas, 'the new target schema plus the shared one');
+		self::assertSame(['32'], $rowSchemas, 'the copied row lands in the target version\'s schema');
+		self::assertSame('shop-production-note', $savedManifest['pages'][0]['config']['schema']);
+	}//end testStartWithSourceDataCreatesMissingTargetSchemaAndCopiesRowsIntoIt()
+
+	/**
+	 * Helper: a Schema whose definition fields live in a plain array.
+	 *
+	 * @param int $id Schema id
+	 * @param string $slug Schema slug
+	 * @param array<string,mixed> $fields Definition fields
+	 *
+	 * @return Schema
+	 */
+	private function buildSchema(int $id, string $slug, array $fields): Schema {
+		$schema = new class() extends Schema {
+			/**
+			 * @var array<string,mixed>
+			 */
+			public array $fields = [];
+
+			/**
+			 * @var int
+			 */
+			public int $schemaId = 0;
+
+			/**
+			 * @var string
+			 */
+			public string $schemaSlug = '';
+
+			/**
+			 * @return int
+			 */
+			public function getId(): int {
+				return $this->schemaId;
+			}
+
+			/**
+			 * @return string
+			 */
+			public function getSlug(): string {
+				return $this->schemaSlug;
+			}
+
+			/**
+			 * @param array<string,mixed> $object Fields to apply
+			 * @param mixed $validator Unused
+			 *
+			 * @return static
+			 */
+			public function hydrate(array $object, $validator = null): static {
+				foreach ($object as $key => $value) {
+					if ($key === 'slug') {
+						$this->schemaSlug = (string)$value;
+						continue;
+					}
+
+					$this->fields[$key] = $value;
+				}
+
+				return $this;
+			}
+
+			/**
+			 * The real Schema declares these getters, so the magic one below never sees them.
+			 *
+			 * @return mixed
+			 */
+			public function getProperties(): array {
+				return $this->fields['properties'] ?? [];
+			}
+
+			/**
+			 * @return array<int,string>
+			 */
+			public function getRequired(): array {
+				return $this->fields['required'] ?? [];
+			}
+
+			/**
+			 * @return string|null
+			 */
+			public function getIcon(): ?string {
+				return $this->fields['icon'] ?? null;
+			}
+
+			/**
+			 * @return mixed
+			 */
+			public function getConfiguration(): ?array {
+				return $this->fields['configuration'] ?? null;
+			}
+
+			/**
+			 * @param string $methodName Getter name
+			 * @param array<int,mixed> $args Unused
+			 *
+			 * @return mixed
+			 */
+			public function __call(string $methodName, array $args): mixed {
+				return $this->fields[lcfirst(substr($methodName, 3))] ?? null;
+			}
+		};
+
+		$schema->schemaId = $id;
+		$schema->schemaSlug = $slug;
+		$schema->fields = $fields;
+
+		return $schema;
+	}//end buildSchema()
 
 	/**
 	 * Helper — build a Register entity with a fixed id / slug / schemas list.
