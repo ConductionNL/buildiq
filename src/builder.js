@@ -37,6 +37,7 @@ import { registerScope, useRegisterPicker } from './composables/useRegisterPicke
 import pinia from './pinia.js'
 import { registerDirectives } from './registerDirectives.js'
 import { runtimeRegistry } from './runtimeRegistry.js'
+import { keepVersionQuery } from './services/versionQuery.js'
 import { registerSlugForApp } from './store/schemas.js'
 
 import '@conduction/nextcloud-vue/css/index.css'
@@ -347,6 +348,8 @@ async function boot() {
 		history: createWebHistory(generateUrl(`/apps/buildiq/builder/${slug}`)),
 		routes: routesFromManifest(manifest),
 	})
+	// A development preview stays on its version while you click through it.
+	keepVersionQuery(router, versionSlug)
 
 	// Bumped AFTER a router rebuild that changed the PAGE SET, to remount the
 	// shell's <router-view> (via CnAppRoot's `routerViewKey`). Swapping route

@@ -120,11 +120,21 @@ class ApplicationsControllerTest extends TestCase {
 	 * @param string $uid Caller UID
 	 * @param array<int, string> $callerGroups Group IDs the caller belongs to
 	 * @param bool $isAdmin Whether the caller is in the `admin` group
+	 * @param string|null $versionParam The `?_version=` query value, if any
 	 *
 	 * @return ApplicationsController
 	 */
-	private function buildController(string $uid = 'bob', array $callerGroups = [], bool $isAdmin = false): ApplicationsController {
+	private function buildController(string $uid = 'bob', array $callerGroups = [], bool $isAdmin = false, ?string $versionParam = null): ApplicationsController {
 		$request = $this->createMock(IRequest::class);
+		$request->method('getParam')->willReturnCallback(
+			static function (string $key, mixed $default = null) use ($versionParam): mixed {
+				if ($key === '_version') {
+					return $versionParam;
+				}
+
+				return $default;
+			}
+		);
 
 		$registerEntity = $this->getMockBuilder(Register::class)
 			->disableOriginalConstructor()
@@ -634,4 +644,22 @@ class ApplicationsControllerTest extends TestCase {
 		self::assertSame(Http::STATUS_OK, $result->getStatus());
 		self::assertSame('Pet Store', $result->getData()['name']);
 	}//end testGetManifestKeepsConsistentName()
+	/**
+	 * A `?_version=` preview also carries the Application's display name, so
+	 * the running app's browser tab reads "Pet Store", not the slug.
+	 *
+	 * @return void
+	 */
+	public function testVersionedManifestSuppliesApplicationName(): void {
+		$controller = $this->buildController(uid: 'bob', versionParam: 'development');
+		$this->wireApplicationWithName(appName: 'Pet Store', manifestName: null);
+		$this->manifestResolver->method('resolve')->willReturn(
+			['version' => '1.0.0', 'menu' => [], 'pages' => []]
+		);
+
+		$result = $controller->getManifest(slug: 'pet-store');
+
+		self::assertSame(Http::STATUS_OK, $result->getStatus());
+		self::assertSame('Pet Store', $result->getData()['name']);
+	}//end testVersionedManifestSuppliesApplicationName()
 }//end class
