@@ -16,7 +16,7 @@
  * the spec doesn't hit fetch().
  */
 
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const fetchRegisters = vi.fn(async () => [
@@ -242,5 +242,34 @@ describe('IndexPageEditor', () => {
 			appSlug: 'hello-world',
 			dataRegisters: [],
 		})
+	})
+
+	it('fills the column picker from the loaded schema list at once on a schema switch', async () => {
+		// Regression: every schema switch refetched the register's schemas,
+		// so the column picker lagged 2 to 4 seconds behind the selection.
+		fetchSchemas.mockResolvedValueOnce([
+			{ slug: 'term', properties: { name: { type: 'string' } } },
+			{ slug: 'concept', properties: { notation: { type: 'string' } } },
+		])
+		const wrapper = mountEditor({ register: 'vocab', schema: 'term' })
+		await flushPromises()
+		fetchSchemaProperties.mockClear()
+		await wrapper.setProps({ config: { register: 'vocab', schema: 'concept' } })
+		expect(fetchSchemaProperties).not.toHaveBeenCalled()
+		expect(wrapper.vm.schemaProperties).toEqual({ notation: { type: 'string' } })
+	})
+
+	it('drops a late answer for a schema that is no longer selected', async () => {
+		let answerTerm
+		fetchSchemaProperties.mockImplementationOnce(
+			() => new Promise((resolve) => { answerTerm = resolve }),
+		)
+		const wrapper = mountEditor({ register: 'vocab', schema: 'term' })
+		await wrapper.setProps({ config: { register: 'vocab', schema: 'concept' } })
+		await flushPromises()
+		const current = wrapper.vm.schemaProperties
+		answerTerm({ name: { type: 'string' } })
+		await flushPromises()
+		expect(wrapper.vm.schemaProperties).toBe(current)
 	})
 })

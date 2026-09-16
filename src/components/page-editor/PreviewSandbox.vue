@@ -24,8 +24,31 @@ import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { createPinia, setActivePinia } from 'pinia'
 import { createApp, h, shallowReactive } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
+import { ROUTE_PATTERN } from './PageListEditor.vue'
 import designerPinia from '../../pinia.js'
 import { registerDirectives } from '../../registerDirectives.js'
+
+/**
+ * What a page reads its data from. A change here remounts the preview: the
+ * page renderer keeps what it loaded for the old schema, so without a remount
+ * the preview showed stale columns until the next reload.
+ *
+ * @param {object} page - a manifest page.
+ * @return {string} a signature of the page's register, schema and columns.
+ */
+function dataBinding(page) {
+	const config = (page && page.config) || {}
+	try {
+		return JSON.stringify([
+			config.register || '',
+			config.schema || '',
+			config.columns || [],
+			config.dataSource || null,
+		])
+	} catch {
+		return ''
+	}
+}
 
 // Own component identity per route record: the barrel export is a frozen
 // module record and the router keeps bookkeeping on the object it is handed.
@@ -124,7 +147,7 @@ export default {
 		 */
 		routeSignature() {
 			return this.previewPages()
-				.map((page) => `${page.id}@${page.route}`)
+				.map((page) => `${page.id}@${page.route}@${dataBinding(page)}`)
 				.join('|')
 		},
 	},
@@ -320,7 +343,15 @@ export default {
 			const pages = Array.isArray(this.manifest?.pages)
 				? this.manifest.pages
 				: []
-			return pages.filter((page) => page && page.id && page.route)
+			// A route being typed ("x/", "") is not a route yet; the router
+			// throws on it and the preview would go blank until the next edit.
+			return pages.filter(
+				(page) =>
+					page
+					&& page.id
+					&& typeof page.route === 'string'
+					&& ROUTE_PATTERN.test(page.route),
+			)
 		},
 
 		/**
@@ -370,10 +401,18 @@ export default {
 			}
 
 			const state = shallowReactive({ ...this.rootProps })
-			const router = createRouter({
-				history: createMemoryHistory(),
-				routes: this.buildRoutes(),
-			})
+			let router
+			try {
+				router = createRouter({
+					history: createMemoryHistory(),
+					routes: this.buildRoutes(),
+				})
+			} catch {
+				// A route table the router rejects (two pages on one path with
+				// conflicting params, say) leaves the preview empty rather than
+				// breaking the designer around it.
+				return
+			}
 			const app = createApp({ render: () => h(CnAppRoot, state) })
 			app.mixin({ methods: { t, n } })
 			// Its own store instances, so a preview never writes over the

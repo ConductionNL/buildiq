@@ -1453,7 +1453,10 @@
         "Not configured": "Not configured",
         "Simulated": "Simulated",
         "Not available": "Not available",
-        "Error": "Error"
+        "Error": "Error",
+        "More than one page uses the route:": "More than one page uses the route:",
+        "Page type": "Page type",
+        "Select a page type": "Select a page type"
     },
     "plurals": "",
     "pluralForm": "nplurals=2; plural=(n != 1);"

@@ -21,6 +21,8 @@
  */
 
 import { mount } from '@vue/test-utils'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
@@ -601,5 +603,33 @@ describe('PageDesigner', () => {
 			await wrapper.vm.$nextTick()
 			expect(wrapper.vm.applicationDataRegisters).toEqual([])
 		})
+	})
+
+	it('gives a supported editor no "Unsupported page type" label', async () => {
+		// Regression: the fallback editor's title was bound on every editor
+		// and fell through as an HTML title, so screen readers announced
+		// "Unsupported page type: index" for a supported page.
+		const wrapper = mountDesigner({
+			pages: [{ id: 'home', type: 'index', config: {} }],
+			menu: [],
+		})
+		wrapper.vm.selectPage(0)
+		await wrapper.vm.$nextTick()
+		const editor = wrapper.findComponent({ name: 'IndexPageEditor' })
+		expect(editor.attributes('title')).toBeUndefined()
+		expect(wrapper.html()).not.toContain('Unsupported page type')
+	})
+
+	it('lays the panes out by the width the designer gets, not the window', () => {
+		// At 1280x720 with the app navigation open the designer is about
+		// 920px wide; a window media query kept three columns there and the
+		// validation column covered the editor's "Remove column" buttons.
+		const source = readFileSync(
+			resolve(__dirname, '../../src/views/PageDesigner.vue'),
+			'utf8',
+		)
+		expect(source).toMatch(/container-type:\s*inline-size/)
+		expect(source).toMatch(/@container \(max-width: 1100px\)/)
+		expect(source).not.toMatch(/@media \(max-width: 1100px\)/)
 	})
 })

@@ -344,7 +344,12 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		async fetchSchemas(register) {
-			this.schemas = await this.picker.fetchSchemas(register)
+			const schemas = await this.picker.fetchSchemas(register)
+			// A slower answer for a register that is no longer selected must
+			// not overwrite the current one.
+			if (register === this.config.register) {
+				this.schemas = schemas
+			}
 		},
 
 		/**
@@ -357,10 +362,27 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		async fetchSchemaProperties(register, schema) {
-			this.schemaProperties = await this.picker.fetchSchemaProperties(
+			// The schema list already carries every schema's properties, so a
+			// schema switch within the loaded register needs no request: the
+			// column picker follows the selection at once.
+			const loaded = (this.schemas || []).find(
+				(entry) =>
+					entry
+					&& (String(entry.slug) === String(schema)
+						|| String(entry.id) === String(schema)),
+			)
+			if (loaded && loaded.properties) {
+				this.schemaProperties = loaded.properties
+				return
+			}
+			const properties = await this.picker.fetchSchemaProperties(
 				register,
 				schema,
 			)
+			// Keep only the answer for the schema still selected.
+			if (register === this.config.register && schema === this.config.schema) {
+				this.schemaProperties = properties
+			}
 		},
 
 		/**
