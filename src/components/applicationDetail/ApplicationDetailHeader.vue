@@ -23,8 +23,26 @@
 -->
 <template>
 	<div class="ob-detail-header">
+		<!-- Until the record arrives there is nothing true to show: no name,
+		     no status, no versions. A loading line instead of "Untitled
+		     application" and an empty pill row (the instance can take ten
+		     seconds to answer). -->
+		<section
+			v-if="!application"
+			class="ob-detail-header__loading"
+			role="status"
+			aria-live="polite">
+			<template v-if="error">
+				{{ t('buildiq', 'Could not load this app. Reload the page to try again.') }}
+			</template>
+			<template v-else>
+				<NcLoadingIcon :size="20" />
+				{{ t('buildiq', 'Loading app…') }}
+			</template>
+		</section>
+
 		<!-- 1. Hero strip -->
-		<section class="ob-detail-header__hero">
+		<section v-else class="ob-detail-header__hero">
 			<img
 				v-if="iconUrl"
 				:src="iconUrl"
@@ -88,7 +106,7 @@
 		</section>
 
 		<!-- 2 + 3. Version pills and window toggle row -->
-		<section class="ob-detail-header__controls">
+		<section v-if="application" class="ob-detail-header__controls">
 			<div
 				class="ob-detail-header__pills"
 				role="tablist"
@@ -129,20 +147,44 @@
 					</button>
 				</div>
 			</div>
+			<p
+				v-if="promoteNotice"
+				class="ob-detail-header__promote-notice"
+				:class="{ 'ob-detail-header__promote-notice--error': promoteFailed }"
+				role="status">
+				{{ promoteNotice }}
+			</p>
 		</section>
+
+		<PromoteVersionDialog
+			v-if="promoteDialog.open && promoteDialog.sourceVersion && application"
+			:sourceVersion="promoteDialog.sourceVersion"
+			:targetVersion="promoteTarget"
+			:application="application"
+			@confirm="onPromoteConfirm"
+			@cancel="onPromoteCancel" />
 	</div>
 </template>
 
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
+import PromoteVersionDialog from '../../dialogs/PromoteVersionDialog.vue'
 import { fetchApplicationRecord } from '../../composables/useApplicationRecord.js'
+import {
+	closePromoteDialog,
+	markPromoted,
+	openPromoteDialog,
+	promoteDialog,
+	versionUuidOf,
+} from '../../composables/usePromoteDialog.js'
 import { buildVersionedRoute } from '../../router/helpers.js'
 
 export default {
 	name: 'ApplicationDetailHeader',
-	components: { OpenInNew },
+	components: { NcLoadingIcon, OpenInNew, PromoteVersionDialog },
 	props: {
 		// CnDetailPage passes the resolved record as `object` per the
 		// manifest contract. We accept both `object` and a route-param
@@ -167,6 +209,13 @@ export default {
 			callerUid:
 				(typeof window !== 'undefined' && window.OC && window.OC.currentUser)
 				|| '',
+
+			// Shared with the Actions menu and the Version history tab, which
+			// open the same dialog (the header is the one that mounts it).
+			promoteDialog,
+			promoting: false,
+			promoteNotice: '',
+			promoteFailed: false,
 		}
 	},
 
@@ -179,6 +228,22 @@ export default {
 		 */
 		appSlug() {
 			return (this.application && this.application.slug) || ''
+		},
+
+		/**
+		 * The version the open promotion dialog promotes into.
+		 *
+		 * @return {object|null}
+		 * @spec openspec/specs/version-promotion/spec.md
+		 */
+		promoteTarget() {
+			const source = this.promoteDialog.sourceVersion
+			if (!source || !source.promotesTo) {
+				return null
+			}
+			return (
+				this.versions.find((v) => v.uuid === source.promotesTo) || null
+			)
 		},
 
 		/**
@@ -456,6 +521,16 @@ export default {
 			this.refreshApplication()
 		},
 
+		/**
+		 * Reload the versions after a promotion started anywhere on the page.
+		 *
+		 * @return {void}
+		 * @spec openspec/specs/version-promotion/spec.md
+		 */
+		'promoteDialog.promotedAt': function () {
+			this.loadVersions()
+		},
+
 		'$route.query._version': function (newSlug) {
 			if (!newSlug) {
 				if (this.productionVersionUuid)
@@ -540,34 +615,77 @@ export default {
 		},
 
 		/**
-		 * Trigger a Promote affordance click — opens the registered
-		 * promotion dialog if available (REQ-OBADO-012).
+		 * Open the promotion dialog for a pill's version (REQ-OBADO-012).
+		 *
+		 * This used to look for a `window.buildiq.openPromoteDialog` that
+		 * nothing registered, so the button did nothing and logged nothing
+		 * a user could see.
 		 *
 		 * @param {object} version The version row.
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/specs/version-promotion/spec.md
 		 */
 		onPromoteClick(version) {
-			const opener =
-				typeof window !== 'undefined'
-				&& window.buildiq
-				&& typeof window.buildiq.openPromoteDialog === 'function'
-					? window.buildiq.openPromoteDialog
-					: null
-			if (opener) {
-				opener({ sourceVersion: version, application: this.application })
-				return
-			}
-			if (
-				typeof console !== 'undefined'
-				&& typeof console.debug === 'function'
-			) {
-				console.debug('buildiq: promote dialog not registered — deferred')
-			}
-			this.$emit('promote', {
+			this.promoteNotice = ''
+			openPromoteDialog({
 				sourceVersion: version,
 				application: this.application,
 			})
+		},
+
+		/**
+		 * Close the promotion dialog without promoting.
+		 *
+		 * @return {void}
+		 * @spec openspec/specs/version-promotion/spec.md
+		 */
+		onPromoteCancel() {
+			closePromoteDialog()
+		},
+
+		/**
+		 * Promote the dialog's version with the chosen data strategy.
+		 *
+		 * @param {{strategy: string}} payload The dialog's choice.
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/version-promotion/spec.md
+		 */
+		async onPromoteConfirm({ strategy }) {
+			const source = this.promoteDialog.sourceVersion
+			const target = this.promoteTarget
+			const appUuid = versionUuidOf(this.application)
+			const sourceUuid = versionUuidOf(source)
+			if (this.promoting || !source || !appUuid || !sourceUuid) {
+				return
+			}
+			const names = {
+				source: source.name || source.slug,
+				target: (target && (target.name || target.slug)) || '',
+			}
+			this.promoting = true
+			this.promoteFailed = false
+			this.promoteNotice = t('buildiq', 'Promoting {source} to {target}…', names)
+			closePromoteDialog()
+			try {
+				await axios.post(
+					generateUrl(
+						'/apps/buildiq/api/applications/{appUuid}/versions/{versionUuid}/promote',
+						{ appUuid, versionUuid: sourceUuid },
+					),
+					{ strategy },
+				)
+				this.promoteNotice = t('buildiq', '{source} is promoted to {target}.', names)
+				markPromoted()
+			} catch (e) {
+				const data = (e && e.response && e.response.data) || {}
+				this.promoteFailed = true
+				this.promoteNotice = t('buildiq', 'Could not promote {source}: {reason}', {
+					...names,
+					reason: data.message || data.detail || (e && e.message) || '',
+				})
+			} finally {
+				this.promoting = false
+			}
 		},
 
 		/**
@@ -817,6 +935,24 @@ export default {
 	border: 0;
 	border-left: 1px solid var(--color-border, #ddd);
 	cursor: pointer;
+}
+
+.ob-detail-header__loading {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 64px;
+	color: var(--color-text-maxcontrast);
+}
+
+.ob-detail-header__promote-notice {
+	margin: 0;
+	font-size: 13px;
+	color: var(--color-text-maxcontrast);
+}
+
+.ob-detail-header__promote-notice--error {
+	color: var(--color-error-text, var(--color-error));
 }
 
 .ob-detail-header__pill-star {

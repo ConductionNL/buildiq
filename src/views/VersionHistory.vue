@@ -72,6 +72,12 @@
 						{{ t('buildiq', 'Release') }}
 					</button>
 					<button
+						v-if="canEdit && row.promotesTo"
+						class="version-history__btn"
+						@click="promote(row)">
+						{{ t('buildiq', 'Promote') }}
+					</button>
+					<button
 						v-if="!isProduction(row)"
 						class="version-history__btn version-history__btn--danger"
 						@click="askRollback(row)">
@@ -95,6 +101,10 @@ import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
 import RollbackConfirmModal from '../modals/RollbackConfirmModal.vue'
+import {
+	openPromoteDialog,
+	promoteDialog,
+} from '../composables/usePromoteDialog.js'
 import { buildVersionedRoute } from '../router/helpers.js'
 
 export default {
@@ -143,10 +153,20 @@ export default {
 			releasing: '',
 			rollbackOpen: false,
 			rollbackTarget: null,
+			promoteDialog,
 		}
 	},
 
 	watch: {
+		/**
+		 * Reload the list after a promotion, so status and semver are current.
+		 *
+		 * @return {void}
+		 */
+		'promoteDialog.promotedAt': function () {
+			this.refresh()
+		},
+
 		appSlug: {
 			immediate: true,
 			/**
@@ -399,6 +419,18 @@ export default {
 				{ slug: this.appSlug },
 				this.isProduction(row) ? undefined : this.rowSlug(row),
 			)
+		},
+
+		/**
+		 * Open the promotion dialog for a row (the page header mounts it).
+		 *
+		 * @param {object} row The version row.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/version-promotion/spec.md
+		 */
+		promote(row) {
+			openPromoteDialog({ sourceVersion: row })
 		},
 
 		/**

@@ -1454,7 +1454,12 @@ OC.L10N.register(
         "Not configured": "Not configured",
         "Simulated": "Simulated",
         "Not available": "Not available",
-        "Error": "Error"
+        "Error": "Error",
+        "{source} is promoted to {target}.": "{source} is promoted to {target}.",
+        "Could not load this app. Reload the page to try again.": "Could not load this app. Reload the page to try again.",
+        "Could not promote {source}: {reason}": "Could not promote {source}: {reason}",
+        "Loading app…": "Loading app…",
+        "Promoting {source} to {target}…": "Promoting {source} to {target}…"
     },
     "nplurals=2; plural=(n != 1);"
 )

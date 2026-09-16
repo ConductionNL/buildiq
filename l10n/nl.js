@@ -1122,7 +1122,12 @@ OC.L10N.register(
         "Not configured": "Niet geconfigureerd",
         "Simulated": "Gesimuleerd",
         "Not available": "Niet beschikbaar",
-        "Error": "Fout"
+        "Error": "Fout",
+        "{source} is promoted to {target}.": "{source} is gepromoveerd naar {target}.",
+        "Could not load this app. Reload the page to try again.": "Deze app kon niet worden geladen. Laad de pagina opnieuw om het nog eens te proberen.",
+        "Could not promote {source}: {reason}": "{source} kon niet worden gepromoveerd: {reason}",
+        "Loading app…": "App laden…",
+        "Promoting {source} to {target}…": "{source} wordt gepromoveerd naar {target}…"
     },
     "nplurals=2; plural=(n != 1);"
 )
