@@ -326,6 +326,12 @@ export default {
 			default: '',
 		},
 
+		// The app's own register, read off the version being edited.
+		appRegister: {
+			type: String,
+			default: '',
+		},
+
 		dataRegisters: {
 			type: Array,
 			default: () => [],
@@ -341,6 +347,7 @@ export default {
 	setup(props) {
 		const picker = useRegisterPicker({
 			appSlug: props.appSlug,
+			appRegister: () => props.appRegister,
 			dataRegisters: props.dataRegisters,
 		})
 		return { picker }

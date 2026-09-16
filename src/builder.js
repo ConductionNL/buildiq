@@ -37,7 +37,7 @@ import { registerScope, useRegisterPicker } from './composables/useRegisterPicke
 import pinia from './pinia.js'
 import { registerDirectives } from './registerDirectives.js'
 import { runtimeRegistry } from './runtimeRegistry.js'
-import { registerSlugForApp } from './store/schemas.js'
+import { fetchAppRegister } from './services/appRegister.js'
 
 import '@conduction/nextcloud-vue/css/index.css'
 // nc-vue's CnDashboardGrid/CnWidgetGrid no longer bundle gridstack's JS or
@@ -338,9 +338,9 @@ async function boot() {
 	//
 	// It also stops the fetch happening at boot at all: this list is only ever read
 	// inside an editor modal, which most users never open.
-	const dataSourcesLoader = () =>
+	const dataSourcesLoader = async () =>
 		useRegisterPicker({ appSlug: slug }).fetchDataSources(
-			registerScope(registerSlugForApp(slug, versionSlug), manifest),
+			registerScope(await fetchAppRegister(slug, versionSlug), manifest),
 		)
 
 	const router = createRouter({

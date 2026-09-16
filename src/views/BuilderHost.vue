@@ -53,7 +53,7 @@ import {
 } from '../composables/useRegisterPicker.js'
 import placeholderManifest from '../manifests/placeholder.json'
 import { runtimeRegistry } from '../runtimeRegistry.js'
-import { registerSlugForApp } from '../store/schemas.js'
+import { fetchAppRegister } from '../services/appRegister.js'
 
 export default {
 	name: 'BuilderHost',
@@ -253,7 +253,7 @@ export default {
 					? version.manifest
 					: null
 			const scope = registerScope(
-				registerSlugForApp(this.slug, this.versionSlug),
+				await fetchAppRegister(this.slug, this.versionSlug),
 				manifest,
 			)
 			return useRegisterPicker({ appSlug: this.slug }).fetchDataSources(scope)

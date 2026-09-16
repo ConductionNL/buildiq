@@ -114,6 +114,7 @@ import { useRegisterPicker } from '../composables/useRegisterPicker.js'
 import { getCurrentUserGroups } from '../composables/useRole.js'
 import applicationContext from '../mixins/applicationContext.js'
 import { buildVersionedRoute } from '../router/helpers.js'
+import { fetchProductionRegister } from '../services/appRegister.js'
 
 // Vue 3 requires `defineAsyncComponent()` around a lazy import. The bare
 // `() => import(…)` form is Vue 2 syntax: Vue 3 accepts a plain function as a
@@ -931,13 +932,20 @@ export default {
 					|| (this.obApp.currentVersion
 						&& this.obApp.currentVersion.manifest)
 					|| {}
+				// The manifest above is the production version's, so its
+				// companion schemas live in the production version's register.
+				const register = await fetchProductionRegister(
+					this.obApp.slug,
+					this.obApp.productionVersion,
+				)
 				const picker = useRegisterPicker({
 					appSlug: this.obApp.slug,
+					appRegister: register,
 					dataRegisters: this.obApp.dataRegisters || [],
 				})
-				this.saveTemplateSchemas = await picker.fetchSchemas(
-					picker.resolveAppRegister(),
-				)
+				this.saveTemplateSchemas = register
+					? await picker.fetchSchemas(register)
+					: []
 				this.existingTemplates = await this.loadExistingTemplates()
 				this.saveTemplateOpen = true
 			} catch (e) {
