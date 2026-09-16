@@ -1,0 +1,93 @@
+{
+	"_comment": "ADR-037 register fragment for the version-snapshots change. Adds the disjoint schema key `versionSnapshot`: a named, frozen copy of one ApplicationVersion's manifest. It is NOT an ApplicationVersion row, so ADR-002 (no sibling version rows) holds. Written and read only through VersionSnapshotService, which checks the parent Application's roles; direct REST writes are admin-only.",
+	"components": {
+		"schemas": {
+			"versionSnapshot": {
+				"x-schema-org": "schema:CreativeWork",
+				"slug": "version-snapshot",
+				"icon": "History",
+				"version": "0.1.0",
+				"title": "Version Snapshot",
+				"description": "A named copy of one ApplicationVersion's manifest at the moment it was taken. Taken by hand (`manual`) or kept automatically when a rollback replaces the manifest (`previous-draft`). Covers the manifest only, never records.",
+				"authorization": {
+					"read": [
+						"admin"
+					],
+					"create": [
+						"admin"
+					],
+					"update": [
+						"admin"
+					],
+					"delete": [
+						"admin"
+					]
+				},
+				"type": "object",
+				"required": [
+					"application",
+					"version",
+					"label",
+					"manifest",
+					"kind"
+				],
+				"properties": {
+					"application": {
+						"title": "Application",
+						"type": "string",
+						"format": "uuid",
+						"$ref": "Application",
+						"description": "The Application the snapshot belongs to."
+					},
+					"version": {
+						"title": "Version",
+						"type": "string",
+						"format": "uuid",
+						"$ref": "ApplicationVersion",
+						"description": "The ApplicationVersion whose manifest was copied."
+					},
+					"label": {
+						"title": "Label",
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 120,
+						"description": "Short name the user gave the snapshot.",
+						"example": "before adding tasks page"
+					},
+					"manifest": {
+						"title": "Manifest",
+						"type": "object",
+						"additionalProperties": true,
+						"description": "The version's manifest as it was when the snapshot was taken."
+					},
+					"checksum": {
+						"title": "Checksum",
+						"type": "string",
+						"description": "SHA-256 of the canonical manifest, so identical snapshots are easy to spot."
+					},
+					"takenBy": {
+						"title": "Taken by",
+						"type": "string",
+						"description": "Nextcloud user id of who took the snapshot."
+					},
+					"takenAt": {
+						"title": "Taken at",
+						"type": "string",
+						"format": "date-time",
+						"description": "When the snapshot was taken."
+					},
+					"kind": {
+						"title": "Kind",
+						"type": "string",
+						"enum": [
+							"manual",
+							"previous-draft"
+						],
+						"default": "manual",
+						"description": "`manual` when a user took it, `previous-draft` when a rollback kept the state it replaced."
+					}
+				}
+			}
+		}
+	}
+}

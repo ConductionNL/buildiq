@@ -88,6 +88,12 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         ['name' => 'applicationVersions#destroy', 'url' => '/api/applications/{appSlug}/versions/{versionSlug}',  'verb' => 'DELETE', 'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         // Owner-only release: set-as-production + publish + demote previous production
         // (`application-versions` REQ-OBV-110). Single-production invariant; NO admin bypass.
+        // Named version snapshots (version-snapshots change). Listed before the
+        // SPA catch-all like every route here; `snapshots` is a literal segment,
+        // so it cannot collide with the `{versionSlug}` routes above.
+        ['name' => 'versionSnapshots#index',   'url' => '/api/applications/{appSlug}/snapshots',                         'verb' => 'GET',  'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'versionSnapshots#create',  'url' => '/api/applications/{appSlug}/snapshots',                         'verb' => 'POST', 'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'versionSnapshots#restore', 'url' => '/api/applications/{appSlug}/snapshots/{snapshotUuid}/restore', 'verb' => 'POST', 'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'snapshotUuid' => '[a-f0-9-]{8,}']],
         ['name' => 'applicationVersions#release',  'url' => '/api/applications/{appSlug}/versions/{versionSlug}/release', 'verb' => 'POST', 'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Insights endpoint (buildiq-app-detail-overview REQ-OBAI-001 / REQ-OBAI-007).

@@ -34,7 +34,8 @@
           "hello-message",
           "rule-execution-log",
           "rule-set",
-          "rule-test-case"
+          "rule-test-case",
+          "version-snapshot"
         ]
       }
     },
