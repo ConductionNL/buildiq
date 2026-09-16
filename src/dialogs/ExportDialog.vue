@@ -299,6 +299,12 @@ export default {
 		},
 	},
 
+	/**
+	 * Load the GitHub credentials and the application's versions.
+	 *
+	 * @spec openspec/specs/exporter-ui/spec.md
+	 * @return {void}
+	 */
 	mounted() {
 		this.fetchGithubCredentials()
 		this.fetchVersions()
