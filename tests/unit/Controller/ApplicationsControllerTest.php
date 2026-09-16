@@ -360,6 +360,65 @@ class ApplicationsControllerTest extends TestCase {
 	}//end testGetManifestReturns404WhenSlugUnknown()
 
 	/**
+	 * An app without a BuiltAppRoute entry still serves its manifest.
+	 *
+	 * Apps installed by the seed, a template or GitHub have no route index
+	 * entry, and the Manifest tab answered 404 for all of them. The lookup now
+	 * falls back to the Application's own slug.
+	 *
+	 * @return void
+	 */
+	public function testGetManifestFindsAnAppWithoutARouteEntry(): void {
+		$controller = $this->buildController(uid: 'bob');
+
+		$searches = 0;
+		$this->objectService->method('searchObjects')->willReturnCallback(
+			static function () use (&$searches): array {
+				$searches++;
+				if ($searches === 1) {
+					return [];
+				}
+
+				return [['id' => 'abc-123', 'slug' => 'hello-world']];
+			}
+		);
+		$applicationEntity = $this->createMock(ObjectEntity::class);
+		$applicationEntity->method('jsonSerialize')->willReturn([
+			'slug' => 'hello-world',
+			'permissions' => ['owners' => ['user:bob'], 'editors' => [], 'viewers' => []],
+		]);
+		$this->objectService->method('find')->with('abc-123')->willReturn($applicationEntity);
+		$this->manifestResolver->method('resolve')->willReturn(['version' => '1.0.0', 'menu' => [], 'pages' => []]);
+
+		$result = $controller->getManifest(slug: 'hello-world');
+
+		self::assertSame(Http::STATUS_OK, $result->getStatus());
+		self::assertSame('1.0.0', $result->getData()['version']);
+	}//end testGetManifestFindsAnAppWithoutARouteEntry()
+
+	/**
+	 * A search hit whose slug differs is not the app (no fuzzy matches).
+	 *
+	 * @return void
+	 */
+	public function testGetManifestFallbackIgnoresAHitWithAnotherSlug(): void {
+		$controller = $this->buildController(uid: 'bob');
+
+		$searches = 0;
+		$this->objectService->method('searchObjects')->willReturnCallback(
+			static function () use (&$searches): array {
+				$searches++;
+				return $searches === 1 ? [] : [['id' => 'abc-123', 'slug' => 'hello-world-2']];
+			}
+		);
+		$this->objectService->expects(self::never())->method('find');
+
+		$result = $controller->getManifest(slug: 'hello-world');
+
+		self::assertSame(Http::STATUS_NOT_FOUND, $result->getStatus());
+	}//end testGetManifestFallbackIgnoresAHitWithAnotherSlug()
+
+	/**
 	 * Inconsistent state — route exists but no applicationUuid → 500.
 	 *
 	 * @return void
