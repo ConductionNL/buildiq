@@ -130,6 +130,8 @@ class ExportJobService {
 			'applicationSlug' => $applicationSlug,
 			'applicationUuid' => (string)($payload['applicationUuid'] ?? ''),
 			'applicationVersion' => (string)($payload['applicationVersion'] ?? ''),
+			// Which version row to export; the semver alone is shared by a draft and its production.
+			'applicationVersionSlug' => $this->sanitiseSlug(raw: $payload['applicationVersionSlug'] ?? ''),
 			'target' => $target,
 			'status' => 'queued',
 			'githubOrg' => $githubOrg,
@@ -193,6 +195,23 @@ class ExportJobService {
 
 		return $out;
 	}//end sanitiseDataRegisters()
+
+	/**
+	 * Keep a slug-shaped string, drop anything else.
+	 *
+	 * @param mixed $raw The request value.
+	 *
+	 * @return string The slug, '' when the value is not one.
+	 *
+	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-export-targets-a-specific-application-version
+	 */
+	private function sanitiseSlug(mixed $raw): string {
+		if (is_string($raw) === false || preg_match('/^[a-z0-9][a-z0-9-]{0,99}$/', $raw) !== 1) {
+			return '';
+		}
+
+		return $raw;
+	}//end sanitiseSlug()
 
 	/**
 	 * Normalise the submit request's `flows` choice.

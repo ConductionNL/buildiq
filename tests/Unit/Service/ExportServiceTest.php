@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\DataRegisterExportBundler;
+use OCA\Buildiq\Service\ExportAppContentBundler;
 use OCA\Buildiq\Service\ExportService;
 use OCA\Buildiq\Service\PlaceholderResolver;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -88,6 +89,51 @@ final class ExportServiceTest extends TestCase {
 		self::assertSame($sorted, $names, 'ZIP entries must be in stable ASCII order');
 		self::assertNotEmpty($names);
 	}//end testGenerateAppZipOrdersArchiveEntriesLexicographically()
+
+	/**
+	 * The register file is renamed with the app, because the resolved
+	 * SettingsService reads `<app_id>_register.json`.
+	 */
+	public function testGenerateAppZipRenamesTheRegisterFileTheAppReads(): void {
+		$entries = $this->export();
+
+		self::assertArrayHasKey('lib/Settings/demo_app_register.json', $entries);
+		self::assertArrayNotHasKey('lib/Settings/app_template_register.json', $entries);
+		self::assertStringContainsString("Settings/demo_app_register.json'", $entries['lib/Service/SettingsService.php']);
+	}//end testGenerateAppZipRenamesTheRegisterFileTheAppReads()
+
+	/**
+	 * With a source application, the archive carries its pages and schemas,
+	 * not the template's empty manifest and example schema.
+	 */
+	public function testGenerateAppZipCarriesTheApplicationContent(): void {
+		$bundler = $this->createMock(ExportAppContentBundler::class);
+		$bundler->expects(self::once())
+			->method('bundle')
+			->with(
+				self::anything(),
+				['application' => ['slug' => 'demo-app'], 'version' => ['slug' => 'development']],
+				'demo-app',
+				'1.2.3',
+				true
+			)
+			->willReturnCallback(
+				static function (string $rootDir): array {
+					file_put_contents($rootDir . '/manifest.json', '{"pages":[{"id":"Home"}]}');
+					return ['pages' => 1, 'menu' => 0, 'schemas' => 0, 'records' => 0];
+				}
+			);
+
+		$service = $this->buildService(contentBundler: $bundler);
+		$entries = $this->export(
+			service: $service,
+			source: ['application' => ['slug' => 'demo-app'], 'version' => ['slug' => 'development']],
+			includeSeedData: true
+		);
+
+		self::assertSame('{"pages":[{"id":"Home"}]}', $entries['manifest.json']);
+		self::assertSame(['pages' => 1, 'menu' => 0, 'schemas' => 0, 'records' => 0], $service->lastContent());
+	}//end testGenerateAppZipCarriesTheApplicationContent()
 
 	/**
 	 * The snapshot bookkeeping files are artefacts of Buildiq, not of the
@@ -330,7 +376,12 @@ final class ExportServiceTest extends TestCase {
 	 *
 	 * @return array<string,string> Archive entries, in archive order.
 	 */
-	private function export(array $dataRegisters = [], ?ExportService $service = null): array {
+	private function export(
+		array $dataRegisters = [],
+		?ExportService $service = null,
+		?array $source = null,
+		bool $includeSeedData = false,
+	): array {
 		$jobUuid = 'unit-' . bin2hex(random_bytes(6));
 
 		$zipPath = ($service ?? $this->buildService())->generateAppZip(
@@ -338,7 +389,9 @@ final class ExportServiceTest extends TestCase {
 			versionSlug: '1.2.3',
 			context: $this->context(),
 			jobUuid: $jobUuid,
-			dataRegisters: $dataRegisters
+			dataRegisters: $dataRegisters,
+			source: $source,
+			includeSeedData: $includeSeedData
 		);
 
 		$this->litter[] = $zipPath;
@@ -395,6 +448,7 @@ final class ExportServiceTest extends TestCase {
 		?RegisterMapper $registerMapper = null,
 		?SchemaMapper $schemaMapper = null,
 		?ObjectServiceInterface $objectService = null,
+		?ExportAppContentBundler $contentBundler = null,
 	): ExportService {
 		$appData = $this->createStub(IAppData::class);
 		$bundler = new DataRegisterExportBundler(
@@ -417,7 +471,8 @@ final class ExportServiceTest extends TestCase {
 				$this->createMock(\OCA\OpenRegister\Service\ObjectService::class),
 				appManager: $this->createMock(originalClassName: \OCP\App\IAppManager::class),
 				logger: new NullLogger()
-			)
+			),
+			$contentBundler
 		);
 	}//end buildService()
 

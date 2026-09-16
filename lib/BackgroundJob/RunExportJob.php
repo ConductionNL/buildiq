@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\BackgroundJob;
 
+use OCA\Buildiq\Service\ExportAppContentBundler;
 use OCA\Buildiq\Service\ExportJobService;
 use OCA\Buildiq\Service\ExportService;
 use OCA\Buildiq\Service\GitHubPushService;
@@ -51,6 +52,8 @@ class RunExportJob extends QueuedJob {
 	 * @param ExportJobService $exportJobService Job orchestration helper.
 	 * @param GitHubPushService $githubPushService GitHub delivery target.
 	 * @param LoggerInterface $logger Logger.
+	 * @param ExportAppContentBundler|null $contentBundler Finds the application and version the job names.
+	 *                                                     Null exports the bare scaffold.
 	 */
 	public function __construct(
 		ITimeFactory $time,
@@ -58,6 +61,7 @@ class RunExportJob extends QueuedJob {
 		private ExportJobService $exportJobService,
 		private GitHubPushService $githubPushService,
 		private LoggerInterface $logger,
+		private ?ExportAppContentBundler $contentBundler = null,
 	) {
 		parent::__construct(time: $time);
 	}//end __construct()
@@ -166,6 +170,8 @@ class RunExportJob extends QueuedJob {
 			);
 		}
 
+		$source = $this->resolveSource(job: $job, applicationUuid: $applicationUuid, applicationVersion: $applicationVersion);
+
 		$context = [
 			'appId' => $applicationSlug,
 			'appNamespace' => $this->slugToNamespace(slug: $applicationSlug),
@@ -176,6 +182,18 @@ class RunExportJob extends QueuedJob {
 			'license' => $license,
 		];
 
+		if ($source !== null) {
+			$name = trim((string)($source['application']['name'] ?? ''));
+			if ($name !== '') {
+				$context['appName'] = $name;
+			}
+
+			$description = trim((string)($source['application']['description'] ?? ''));
+			if ($description !== '') {
+				$context['appDescription'] = $description;
+			}
+		}
+
 		$this->exportService->generateAppZip(
 			applicationUuid: $applicationUuid,
 			versionSlug: $applicationVersion,
@@ -185,7 +203,9 @@ class RunExportJob extends QueuedJob {
 			flows: $flows,
 			// The application's own slug IS the agent lookup: agents carry
 			// `applicationSlug`, so there is no agent binding to pass.
-			applicationSlug: $applicationSlug
+			applicationSlug: $applicationSlug,
+			source: $source,
+			includeSeedData: (bool)($job['includeSeedData'] ?? false)
 		);
 
 		// Name what could not be resolved on the job itself. A skip that only
@@ -199,9 +219,60 @@ class RunExportJob extends QueuedJob {
 			$extra['skipped'] = $skipped;
 		}
 
+		$content = $this->exportService->lastContent();
+		if ($content !== null) {
+			$extra['log'] = [
+				sprintf(
+					'Exported %d pages, %d menu items, %d schemas and %d records.',
+					$content['pages'],
+					$content['menu'],
+					$content['schemas'],
+					$content['records']
+				),
+			];
+		}
+
 		$this->exportJobService->transitionJob(jobUuid: $jobUuid, action: 'succeed', extraFields: $extra);
 		$this->logger->info('Buildiq export succeeded', ['jobUuid' => $jobUuid]);
 	}//end executePipeline()
+
+	/**
+	 * Find the application and version the job names.
+	 *
+	 * An export that cannot read its application would produce the empty
+	 * template and call it a success, so that fails the job instead.
+	 *
+	 * @param array<string,mixed> $job The loaded ExportJob record.
+	 * @param string $applicationUuid The application UUID.
+	 * @param string $applicationVersion The semver on the job.
+	 *
+	 * @return array{application: array<string,mixed>, version: array<string,mixed>}|null Null without a bundler.
+	 *
+	 * @throws RuntimeException When the application or its version cannot be found.
+	 *
+	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-export-targets-a-specific-application-version
+	 */
+	private function resolveSource(array $job, string $applicationUuid, string $applicationVersion): ?array {
+		if ($this->contentBundler === null) {
+			return null;
+		}
+
+		$source = $this->contentBundler->resolveSource(
+			applicationUuid: $applicationUuid,
+			semver: $applicationVersion,
+			versionSlug: (string)($job['applicationVersionSlug'] ?? '')
+		);
+
+		if ($source === null) {
+			throw new RuntimeException('The application to export could not be read.');
+		}
+
+		if ($source['version'] === []) {
+			throw new RuntimeException('The application has no version to export.');
+		}
+
+		return $source;
+	}//end resolveSource()
 
 	/**
 	 * Convert a kebab-case app slug to a PascalCase PHP namespace segment.
