@@ -54,6 +54,7 @@ use RuntimeException;
  * @covers \OCA\Buildiq\Controller\StoreController
  * @covers \OCA\Buildiq\Controller\ShopController
  * @covers \OCA\Buildiq\Controller\GitHubSyncController
+ * @uses \OCA\Buildiq\Service\PermissionResolver
  */
 class ConnectionReportCallersTest extends TestCase {
 
