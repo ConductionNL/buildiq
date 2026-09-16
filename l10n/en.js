@@ -1454,7 +1454,10 @@ OC.L10N.register(
         "Not configured": "Not configured",
         "Simulated": "Simulated",
         "Not available": "Not available",
-        "Error": "Error"
+        "Error": "Error",
+        "Builder groups": "Builder groups",
+        "Members of these groups can open the builder and edit every app. With no group picked, only admins and people with access to a specific app can build.": "Members of these groups can open the builder and edit every app. With no group picked, only admins and people with access to a specific app can build.",
+        "Only admins can build apps": "Only admins can build apps"
     },
     "nplurals=2; plural=(n != 1);"
 )

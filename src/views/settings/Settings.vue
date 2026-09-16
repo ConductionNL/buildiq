@@ -13,6 +13,28 @@
 					:placeholder="t('buildiq', 'OpenRegister register ID')" />
 			</div>
 
+			<div class="form-group">
+				<!-- Visible twin of the picker's own (visually hidden) label,
+				     so it reads like the fields around it. aria-hidden keeps
+				     screen readers from announcing the name twice. -->
+				<span class="form-label" aria-hidden="true">{{
+					t('buildiq', 'Builder groups')
+				}}</span>
+				<NcSettingsSelectGroup
+					id="builder_groups"
+					v-model="form.builder_groups"
+					:label="t('buildiq', 'Builder groups')"
+					:placeholder="t('buildiq', 'Only admins can build apps')" />
+				<p class="settings-help">
+					{{
+						t(
+							'buildiq',
+							'Members of these groups can open the builder and edit every app. With no group picked, only admins and people with access to a specific app can build.',
+						)
+					}}
+				</p>
+			</div>
+
 			<!-- `section-store` is the anchor lib/Settings/connections.json links the
 				Template store row to (adopt-connection-registry). Keep the id stable. -->
 			<h3 id="section-store" class="settings-subheading">
@@ -80,13 +102,14 @@
 
 <script>
 import { CnSettingsSection } from '@conduction/nextcloud-vue'
-import { NcButton } from '@nextcloud/vue'
+import { NcButton, NcSettingsSelectGroup } from '@nextcloud/vue'
 import { useSettingsStore } from '../../store/modules/settings.js'
 
 export default {
 	name: 'Settings',
 	components: {
 		NcButton,
+		NcSettingsSelectGroup,
 		CnSettingsSection,
 	},
 
@@ -97,6 +120,7 @@ export default {
 				registry_url: '',
 				registry_register: 'buildiq',
 				registry_token: '',
+				builder_groups: [],
 			},
 
 			tokenIsSet: false,
@@ -132,6 +156,9 @@ export default {
 		this.form.registry_url = settings.registry_url || ''
 		this.form.registry_register = settings.registry_register || 'buildiq'
 		this.tokenIsSet = !!settings.registry_token_set
+		this.form.builder_groups = Array.isArray(settings.builder_groups)
+			? [...settings.builder_groups]
+			: []
 	},
 
 	methods: {
@@ -149,6 +176,7 @@ export default {
 				register: this.form.register,
 				registry_url: this.form.registry_url,
 				registry_register: this.form.registry_register,
+				builder_groups: this.form.builder_groups,
 			}
 			if (this.form.registry_token.trim().length > 0) {
 				payload.registry_token = this.form.registry_token
@@ -173,7 +201,8 @@ export default {
 	margin-bottom: 12px;
 }
 
-.form-group label {
+.form-group label,
+.form-group .form-label {
 	display: block;
 	margin-bottom: 4px;
 	font-weight: 600;

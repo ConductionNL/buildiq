@@ -31,6 +31,7 @@ namespace OCA\Buildiq\Tests\Unit\Controller;
 use OCA\Buildiq\Controller\DashboardController;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Services\IInitialState;
+use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\INavigationManager;
 use OCP\IRequest;
@@ -242,4 +243,47 @@ class DashboardControllerTest extends TestCase {
 		$this->assertInstanceOf(TemplateResponse::class, $response);
 		$this->assertSame('index', $response->getTemplateName());
 	}//end testBuilderDesignerServesSpaIndexTemplateForSchemaDetail()
+	// -------------------------------------------------------------------------
+	// builderGroups initial state (REQ-OBRBAC-008)
+	// -------------------------------------------------------------------------
+
+	/**
+	 * The page publishes the configured builder groups, so the frontend's
+	 * useRole() can treat their members as editors.
+	 *
+	 * @return void
+	 */
+	public function testPagePublishesTheConfiguredBuilderGroups(): void {
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')->willReturnCallback(
+			static fn (string $app, string $key, string $default = ''): string => ($key === 'builder_groups') ? '["buildiq-builders",""]' : $default
+		);
+		$controller = new DashboardController(
+			$this->request,
+			$this->initialState,
+			$this->userSession,
+			$this->groupManager,
+			$this->navigationManager,
+			$appConfig
+		);
+		$published = $this->captureInitialState();
+
+		$controller->page();
+
+		$this->assertSame(['buildiq-builders'], $published['builderGroups'] ?? null);
+	}//end testPagePublishesTheConfiguredBuilderGroups()
+
+	/**
+	 * Without app config the page still publishes an empty list, so the
+	 * frontend reads "no builder groups" rather than failing.
+	 *
+	 * @return void
+	 */
+	public function testPagePublishesNoBuilderGroupsWithoutConfig(): void {
+		$published = $this->captureInitialState();
+
+		$this->controller->page();
+
+		$this->assertSame([], $published['builderGroups'] ?? null);
+	}//end testPagePublishesNoBuilderGroupsWithoutConfig()
 }//end class

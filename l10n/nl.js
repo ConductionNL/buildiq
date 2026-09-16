@@ -1122,7 +1122,10 @@ OC.L10N.register(
         "Not configured": "Niet geconfigureerd",
         "Simulated": "Gesimuleerd",
         "Not available": "Niet beschikbaar",
-        "Error": "Fout"
+        "Error": "Fout",
+        "Builder groups": "Bouwgroepen",
+        "Only admins can build apps": "Alleen beheerders kunnen apps bouwen",
+        "Members of these groups can open the builder and edit every app. With no group picked, only admins and people with access to a specific app can build.": "Leden van deze groepen kunnen de bouwomgeving openen en elke app bewerken. Kies je geen groep, dan kunnen alleen beheerders en mensen met toegang tot een specifieke app bouwen."
     },
     "nplurals=2; plural=(n != 1);"
 )

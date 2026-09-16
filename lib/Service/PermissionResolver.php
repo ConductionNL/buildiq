@@ -40,6 +40,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\AppInfo\Application;
+use OCP\IAppConfig;
 use OCP\IGroup;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -60,12 +62,16 @@ class PermissionResolver {
 	 *
 	 * @param IGroupManager $groupManager Group membership resolver.
 	 * @param LoggerInterface $logger PSR logger for bare-principal warnings.
+	 * @param IAppConfig|null $appConfig Reads the builder groups (REQ-OBRBAC-008).
+	 *                                   Optional so a resolver built without it
+	 *                                   simply grants nothing through them.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,
+		private readonly ?IAppConfig $appConfig = null,
 	) {
 	}//end __construct()
 
@@ -146,8 +152,36 @@ class PermissionResolver {
 			}
 		}
 
+		// Builder groups (REQ-OBRBAC-008): a member of any admin-nominated
+		// builder group is an editor of every app. Only checks that accept
+		// editors are widened; an owner-only check is not.
+		if (in_array('editors', $roles, true) === true) {
+			return $this->isBuilder(userGroups: $userGroups);
+		}
+
 		return false;
 	}//end matchesCaller()
+
+	/**
+	 * Whether any of the caller's groups is a configured builder group.
+	 *
+	 * @param array<string> $userGroups The caller's group ids.
+	 *
+	 * @return bool True when the caller is in at least one builder group.
+	 *
+	 * @spec openspec/changes/builder-groups/specs/openbuild-rbac/spec.md
+	 */
+	public function isBuilder(array $userGroups): bool {
+		if ($this->appConfig === null || $userGroups === []) {
+			return false;
+		}
+
+		$builderGroups = SettingsService::decodeGroupList(
+			raw: $this->appConfig->getValueString(Application::APP_ID, SettingsService::BUILDER_GROUPS_KEY, '[]')
+		);
+
+		return array_intersect($builderGroups, $userGroups) !== [];
+	}//end isBuilder()
 
 	/**
 	 * Resolve the caller's group GID list from the current session user.

@@ -50,6 +50,22 @@ export function getCurrentUserGroups() {
 }
 
 /**
+ * Resolve the admin-nominated builder groups from Nextcloud initial state
+ * (REQ-OBRBAC-008). Missing state means no builder groups.
+ *
+ * @return {string[]} The builder group ids
+ * @spec openspec/changes/builder-groups/specs/openbuild-rbac/spec.md
+ */
+export function getBuilderGroups() {
+	try {
+		const groups = loadState('buildiq', 'builderGroups')
+		return Array.isArray(groups) ? groups : []
+	} catch {
+		return []
+	}
+}
+
+/**
  * Resolve the current Nextcloud user id from the global OC object.
  *
  * @return {string} The caller's uid, or '' when not signed in / unavailable.
@@ -108,6 +124,13 @@ export function useRole(application, userGroups) {
 		return 'owner'
 	}
 	if (intersects(permissions.editors)) {
+		return 'editor'
+	}
+	// A member of a builder group edits every app, as the server's
+	// PermissionResolver allows. An app with no permission block at all stays
+	// closed, matching the server, which refuses everyone on an empty block.
+	const hasBlock = Object.keys(permissions).length > 0
+	if (hasBlock && getBuilderGroups().some((gid) => groups.includes(gid))) {
 		return 'editor'
 	}
 	if (intersects(permissions.viewers)) {

@@ -64,6 +64,14 @@ class SettingsService {
 	];
 
 	/**
+	 * App config key holding the builder groups: a JSON list of Nextcloud
+	 * group ids whose members may build every app (REQ-OBRBAC-008).
+	 *
+	 * @var string
+	 */
+	public const BUILDER_GROUPS_KEY = 'builder_groups';
+
+	/**
 	 * Write-only config keys — accepted on update but NEVER returned by
 	 * getSettings(). The remote registry read token lives here.
 	 *
@@ -143,9 +151,68 @@ class SettingsService {
 				// `registry_url` is one of self::CONFIG_KEYS, so the loop above
 				// always set it — the `?? ''` this replaces was unreachable.
 				'storeConfigured' => (trim($settings['registry_url']) !== ''),
+				self::BUILDER_GROUPS_KEY => $this->getBuilderGroups(),
 			]
 		);
 	}//end getSettings()
+
+	/**
+	 * The configured builder groups (REQ-OBRBAC-008).
+	 *
+	 * @return array<int, string> Group ids; empty when none are configured.
+	 *
+	 * @spec openspec/changes/builder-groups/specs/openbuild-rbac/spec.md
+	 */
+	public function getBuilderGroups(): array {
+		return self::decodeGroupList(
+			raw: $this->appConfig->getValueString(Application::APP_ID, self::BUILDER_GROUPS_KEY, '[]')
+		);
+	}//end getBuilderGroups()
+
+	/**
+	 * Decode a stored group list, keeping only non-empty strings.
+	 *
+	 * Shared with PermissionResolver so both read the value the same way. A
+	 * value that is not a JSON list reads as no groups: a corrupt setting
+	 * must never widen access.
+	 *
+	 * @param string $raw The stored JSON.
+	 *
+	 * @return array<int, string> Unique group ids, in stored order.
+	 *
+	 * @spec openspec/changes/builder-groups/specs/openbuild-rbac/spec.md
+	 */
+	public static function decodeGroupList(string $raw): array {
+		$decoded = json_decode($raw, true);
+		if (is_array($decoded) === false) {
+			return [];
+		}
+
+		return self::normaliseGroupList(groups: $decoded);
+	}//end decodeGroupList()
+
+	/**
+	 * Keep only non-empty, unique string group ids.
+	 *
+	 * @param array<mixed> $groups The candidate list.
+	 *
+	 * @return array<int, string> The cleaned list.
+	 */
+	private static function normaliseGroupList(array $groups): array {
+		$clean = [];
+		foreach ($groups as $gid) {
+			if (is_string($gid) === false) {
+				continue;
+			}
+
+			$gid = trim($gid);
+			if ($gid !== '' && in_array($gid, $clean, true) === false) {
+				$clean[] = $gid;
+			}
+		}
+
+		return $clean;
+	}//end normaliseGroupList()
 
 	/**
 	 * Update settings with the provided data.
@@ -168,6 +235,17 @@ class SettingsService {
 				$this->appConfig->setValueString(Application::APP_ID, $key, (string)$data[$key]);
 				$written[] = $key;
 			}
+		}
+
+		// Builder groups arrive as a list; anything else is ignored rather than
+		// stored, so a malformed request cannot clear or corrupt the setting.
+		if (isset($data[self::BUILDER_GROUPS_KEY]) === true && is_array($data[self::BUILDER_GROUPS_KEY]) === true) {
+			$this->appConfig->setValueString(
+				Application::APP_ID,
+				self::BUILDER_GROUPS_KEY,
+				(string)json_encode(self::normaliseGroupList(groups: $data[self::BUILDER_GROUPS_KEY]))
+			);
+			$written[] = self::BUILDER_GROUPS_KEY;
 		}
 
 		// Write-only secrets (registry_token): an empty submitted value means

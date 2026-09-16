@@ -32,11 +32,13 @@ namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Service\AppNavigationService;
+use OCA\Buildiq\Service\SettingsService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Services\IInitialState;
+use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\INavigationManager;
 use OCP\IRequest;
@@ -56,6 +58,7 @@ class DashboardController extends Controller {
 	 * @param IUserSession $userSession Current Nextcloud user session
 	 * @param IGroupManager $groupManager Group membership resolver
 	 * @param INavigationManager $navigationManager Top-bar navigation manager
+	 * @param IAppConfig|null $appConfig Reads the builder groups (REQ-OBRBAC-008)
 	 *
 	 * @return void
 	 */
@@ -65,6 +68,7 @@ class DashboardController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly INavigationManager $navigationManager,
+		private readonly ?IAppConfig $appConfig = null,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
@@ -252,5 +256,24 @@ class DashboardController extends Controller {
 		}
 
 		$this->initialState->provideInitialState('currentUserGroups', $gids);
+		$this->publishBuilderGroups();
 	}//end publishCurrentUserGroups()
+
+	/**
+	 * Publish the admin-nominated builder groups via IInitialState, so
+	 * `useRole()` treats their members as editors of every app, as the
+	 * server does (REQ-OBRBAC-008).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/builder-groups/specs/openbuild-rbac/spec.md
+	 */
+	private function publishBuilderGroups(): void {
+		$raw = '[]';
+		if ($this->appConfig !== null) {
+			$raw = $this->appConfig->getValueString(Application::APP_ID, SettingsService::BUILDER_GROUPS_KEY, '[]');
+		}
+
+		$this->initialState->provideInitialState('builderGroups', SettingsService::decodeGroupList(raw: $raw));
+	}//end publishBuilderGroups()
 }//end class

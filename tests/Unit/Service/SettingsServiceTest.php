@@ -117,6 +117,66 @@ final class SettingsServiceTest extends TestCase {
 	}//end testGetSettingsReturnsConfigKeysAndMetadata()
 
 	/**
+	 * Builder groups are returned as a clean list (REQ-OBRBAC-008).
+	 *
+	 * @return void
+	 */
+	public function testGetSettingsReturnsTheBuilderGroupsAsAList(): void {
+		$this->appConfig->method('getValueString')->willReturnCallback(
+			static fn (string $app, string $key, string $default = ''): string => ($key === 'builder_groups') ? '["buildiq-builders"," ","buildiq-builders",7,"team-alpha"]' : $default
+		);
+		$this->appManager->method('isInstalled')->willReturn(true);
+		$this->userSession->method('getUser')->willReturn(null);
+
+		$settings = $this->sut()->getSettings();
+
+		self::assertSame(['buildiq-builders', 'team-alpha'], $settings['builder_groups']);
+	}//end testGetSettingsReturnsTheBuilderGroupsAsAList()
+
+	/**
+	 * A stored value that is not a JSON list reads as no groups: a corrupt
+	 * setting never widens access.
+	 *
+	 * @return void
+	 */
+	public function testACorruptBuilderGroupsValueReadsAsNoGroups(): void {
+		self::assertSame([], SettingsService::decodeGroupList(raw: 'not json'));
+		self::assertSame([], SettingsService::decodeGroupList(raw: '"buildiq-builders"'));
+		self::assertSame([], SettingsService::decodeGroupList(raw: ''));
+	}//end testACorruptBuilderGroupsValueReadsAsNoGroups()
+
+	/**
+	 * Saving builder groups stores a cleaned JSON list; a value that is not a
+	 * list is ignored rather than stored.
+	 *
+	 * @return void
+	 */
+	public function testUpdateSettingsStoresTheBuilderGroupsAsJson(): void {
+		$writes = [];
+		$this->appConfig->method('setValueString')->willReturnCallback(
+			static function (string $app, string $key, string $value) use (&$writes): bool {
+				$writes[$key] = $value;
+				return true;
+			}
+		);
+		$this->appConfig->method('getValueString')->willReturnCallback(
+			static fn (string $app, string $key, string $default = ''): string => $default
+		);
+		$this->appManager->method('isInstalled')->willReturn(true);
+		$this->userSession->method('getUser')->willReturn(null);
+
+		$this->sut()->updateSettings(['builder_groups' => ['team-alpha', '', 'team-alpha', 'buildiq-builders']]);
+		self::assertSame('["team-alpha","buildiq-builders"]', $writes['builder_groups'] ?? null);
+
+		$writes = [];
+		$this->sut()->updateSettings(['builder_groups' => 'team-alpha']);
+		self::assertArrayNotHasKey('builder_groups', $writes);
+
+		$this->sut()->updateSettings(['builder_groups' => []]);
+		self::assertSame('[]', $writes['builder_groups'] ?? null, 'an empty pick clears the setting');
+	}//end testUpdateSettingsStoresTheBuilderGroupsAsJson()
+
+	/**
 	 * REQ-OBS-001 — isAdmin is false when no user is signed in.
 	 *
 	 * @return void

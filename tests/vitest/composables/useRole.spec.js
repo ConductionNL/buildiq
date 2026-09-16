@@ -29,10 +29,24 @@ vi.mock('@nextcloud/initial-state', () => ({
 
 import { loadState } from '@nextcloud/initial-state'
 import {
+	getBuilderGroups,
 	getCurrentUserGroups,
 	hasAnyRole,
 	useRole,
 } from '../../../src/composables/useRole.js'
+
+/**
+ * Answer loadState per key: the caller's groups for `currentUserGroups`, and
+ * the builder groups (none unless given) for `builderGroups`.
+ *
+ * @param {unknown} groups The caller's groups.
+ * @param {string[]} [builderGroups] The configured builder groups.
+ */
+function givenGroups(groups, builderGroups = []) {
+	loadState.mockImplementation((_app, key) =>
+		key === 'builderGroups' ? builderGroups : groups,
+	)
+}
 
 describe('useRole — REQ-OBR-008 / REQ-OBRBAC-004', () => {
 	beforeEach(() => {
@@ -41,13 +55,13 @@ describe('useRole — REQ-OBR-008 / REQ-OBRBAC-004', () => {
 
 	describe('getCurrentUserGroups', () => {
 		it('returns the loadState array when set', () => {
-			loadState.mockReturnValue(['team-alpha', 'team-beta'])
+			givenGroups(['team-alpha', 'team-beta'])
 			expect(getCurrentUserGroups()).toEqual(['team-alpha', 'team-beta'])
 			expect(loadState).toHaveBeenCalledWith('buildiq', 'currentUserGroups')
 		})
 
 		it('returns [] when loadState returns a non-array', () => {
-			loadState.mockReturnValue(null)
+			givenGroups(null)
 			expect(getCurrentUserGroups()).toEqual([])
 		})
 
@@ -61,7 +75,7 @@ describe('useRole — REQ-OBR-008 / REQ-OBRBAC-004', () => {
 
 	describe('useRole — happy paths (REQ-OBR-008)', () => {
 		it("returns 'owner' when user is in the owners array", () => {
-			loadState.mockReturnValue(['team-alpha'])
+			givenGroups(['team-alpha'])
 			const app = {
 				permissions: { owners: ['team-alpha'], editors: [], viewers: [] },
 			}
@@ -69,7 +83,7 @@ describe('useRole — REQ-OBR-008 / REQ-OBRBAC-004', () => {
 		})
 
 		it("returns 'editor' when user is in the editors array only", () => {
-			loadState.mockReturnValue(['team-beta'])
+			givenGroups(['team-beta'])
 			const app = {
 				permissions: {
 					owners: ['team-alpha'],
@@ -81,7 +95,7 @@ describe('useRole — REQ-OBR-008 / REQ-OBRBAC-004', () => {
 		})
 
 		it("returns 'viewer' when user is in the viewers array only", () => {
-			loadState.mockReturnValue(['team-gamma'])
+			givenGroups(['team-gamma'])
 			const app = {
 				permissions: {
 					owners: ['team-alpha'],
@@ -95,7 +109,7 @@ describe('useRole — REQ-OBR-008 / REQ-OBRBAC-004', () => {
 
 	describe('useRole — precedence (owner > editor > viewer)', () => {
 		it("returns 'owner' when the user is in BOTH owners and editors", () => {
-			loadState.mockReturnValue(['team-alpha'])
+			givenGroups(['team-alpha'])
 			const app = {
 				permissions: {
 					owners: ['team-alpha'],
@@ -107,7 +121,7 @@ describe('useRole — REQ-OBR-008 / REQ-OBRBAC-004', () => {
 		})
 
 		it("returns 'editor' when the user is in editors AND viewers (but not owners)", () => {
-			loadState.mockReturnValue(['team-beta'])
+			givenGroups(['team-beta'])
 			const app = {
 				permissions: {
 					owners: ['team-alpha'],
@@ -121,7 +135,7 @@ describe('useRole — REQ-OBR-008 / REQ-OBRBAC-004', () => {
 
 	describe('useRole — denial paths', () => {
 		it("returns 'none' when the user has no intersecting group", () => {
-			loadState.mockReturnValue(['team-outsider'])
+			givenGroups(['team-outsider'])
 			const app = {
 				permissions: {
 					owners: ['team-alpha'],
@@ -133,28 +147,28 @@ describe('useRole — REQ-OBR-008 / REQ-OBRBAC-004', () => {
 		})
 
 		it("returns 'none' when the user has zero groups", () => {
-			loadState.mockReturnValue([])
+			givenGroups([])
 			const app = { permissions: { owners: ['team-alpha'] } }
 			expect(useRole(app)).toBe('none')
 		})
 
 		it("returns 'none' on null application", () => {
-			loadState.mockReturnValue(['team-alpha'])
+			givenGroups(['team-alpha'])
 			expect(useRole(null)).toBe('none')
 		})
 
 		it("returns 'none' on undefined application", () => {
-			loadState.mockReturnValue(['team-alpha'])
+			givenGroups(['team-alpha'])
 			expect(useRole(undefined)).toBe('none')
 		})
 
 		it("returns 'none' when the application has no permissions block", () => {
-			loadState.mockReturnValue(['team-alpha'])
+			givenGroups(['team-alpha'])
 			expect(useRole({ name: 'no-perms-app' })).toBe('none')
 		})
 
 		it("returns 'none' when all permission buckets are empty arrays", () => {
-			loadState.mockReturnValue(['team-alpha'])
+			givenGroups(['team-alpha'])
 			const app = { permissions: { owners: [], editors: [], viewers: [] } }
 			expect(useRole(app)).toBe('none')
 		})
@@ -162,7 +176,7 @@ describe('useRole — REQ-OBR-008 / REQ-OBRBAC-004', () => {
 
 	describe('useRole — explicit userGroups argument', () => {
 		it('honours the explicit argument and ignores loadState', () => {
-			loadState.mockReturnValue(['team-outsider'])
+			givenGroups(['team-outsider'])
 			const app = { permissions: { owners: ['team-alpha'] } }
 			expect(useRole(app, ['team-alpha'])).toBe('owner')
 			// loadState should NOT have been consulted when an explicit
@@ -173,7 +187,7 @@ describe('useRole — REQ-OBR-008 / REQ-OBRBAC-004', () => {
 		})
 
 		it('falls back to loadState when explicit arg is not an array', () => {
-			loadState.mockReturnValue(['team-alpha'])
+			givenGroups(['team-alpha'])
 			const app = { permissions: { owners: ['team-alpha'] } }
 			// Pass a non-array — composable should ignore it and consult
 			// loadState instead.
@@ -184,20 +198,61 @@ describe('useRole — REQ-OBR-008 / REQ-OBRBAC-004', () => {
 
 	describe('hasAnyRole — REQ-OBRBAC-003 list filter helper', () => {
 		it('returns true when the user has ANY of the three roles', () => {
-			loadState.mockReturnValue(['team-gamma'])
+			givenGroups(['team-gamma'])
 			const app = { permissions: { viewers: ['team-gamma'] } }
 			expect(hasAnyRole(app)).toBe(true)
 		})
 
 		it('returns false when the user has none', () => {
-			loadState.mockReturnValue(['team-outsider'])
+			givenGroups(['team-outsider'])
 			const app = { permissions: { owners: ['team-alpha'] } }
 			expect(hasAnyRole(app)).toBe(false)
 		})
 
 		it('returns false on null application (defensive)', () => {
-			loadState.mockReturnValue(['team-alpha'])
+			givenGroups(['team-alpha'])
 			expect(hasAnyRole(null)).toBe(false)
+		})
+	})
+
+	describe('builder groups — REQ-OBRBAC-008', () => {
+		const app = {
+			permissions: {
+				owners: ['user:alice'],
+				editors: [],
+				viewers: ['team-readers'],
+			},
+		}
+
+		it('makes a builder-group member an editor of an app where they hold no role', () => {
+			givenGroups(['buildiq-builders'], ['buildiq-builders'])
+			expect(useRole(app)).toBe('editor')
+		})
+
+		it('lifts a viewer who is also a builder to editor', () => {
+			givenGroups(['team-readers', 'buildiq-builders'], ['buildiq-builders'])
+			expect(useRole(app)).toBe('editor')
+		})
+
+		it('grants nothing when the caller is in no builder group', () => {
+			givenGroups(['team-outsider'], ['buildiq-builders'])
+			expect(useRole(app)).toBe('none')
+		})
+
+		it('grants nothing when no builder groups are configured', () => {
+			givenGroups(['buildiq-builders'], [])
+			expect(useRole(app)).toBe('none')
+		})
+
+		it('keeps an app with no permission block closed, as the server does', () => {
+			givenGroups(['buildiq-builders'], ['buildiq-builders'])
+			expect(useRole({})).toBe('none')
+		})
+
+		it('reads the builder groups from the builderGroups initial state', () => {
+			givenGroups(['x'], ['buildiq-builders'])
+			expect(getBuilderGroups()).toEqual(['buildiq-builders'])
+			expect(loadState).toHaveBeenCalledWith('buildiq', 'builderGroups')
 		})
 	})
 })
