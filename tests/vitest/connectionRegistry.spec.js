@@ -9,19 +9,29 @@
  * one icon by NAME. A misspelled name renders a raw enum, no glyph, or an Add
  * integration that does nothing, and none of them logs a thing. So this spec
  * reads the real fragment and checks every name against what has to answer it.
+ * The two formatters are nextcloud-vue built-ins since 3.2.0.
  *
  * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-004-an-admin-reads-the-connections-on-an-integrations-page
  */
 
+import { BUILT_IN_FORMATTERS } from '@conduction/nextcloud-vue/src/utils/builtInFormatters.js'
+import { shallowMount } from '@vue/test-utils'
 import * as fs from 'fs'
 import * as path from 'path'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
-	CONNECTION_STATUS_LABELS,
-	createConnectionFormatters,
 	createConnectionHandlers,
 	INTEGRIQ_CONNECTIONS_PATH,
 } from '../../src/services/connectionRegistry.js'
+
+vi.mock('../../src/store/store.js', () => ({
+	initializeStores: async () => {},
+}))
+vi.mock('../../src/store/modules/settings.js', () => ({
+	useSettingsStore: () => ({ getIsAdmin: false }),
+}))
+
+import App from '../../src/App.vue'
 
 const ROOT = path.resolve(__dirname, '../..')
 const read = (...parts) => fs.readFileSync(path.join(ROOT, ...parts), 'utf8')
@@ -29,60 +39,35 @@ const fragment = JSON.parse(read('src', 'manifest.d', '80-connection-registry.js
 const page = fragment.pages.find((p) => p.id === 'Integrations')
 const menu = fragment.menu.find((m) => m.id === 'IntegrationsMenu')
 
-/** A translator that marks what it translated, so a missing call shows. */
-const translate = (source) => `t:${source}`
+/**
+ * The formatter registry the Integrations page renders with, built the way
+ * CnAppRoot builds it: the app's own `formatters` prop spread OVER the
+ * built-ins. A same-named local formatter shadows the built-in in silence.
+ *
+ * @return {object} The merged registry.
+ */
+function effectiveFormatters() {
+	const wrapper = shallowMount(App, { props: { manifest: {} } })
+	const root = wrapper.findComponent({ name: 'CnAppRoot' })
+	const own = root.vm.$attrs.formatters ?? {}
+	wrapper.unmount()
+	return { ...BUILT_IN_FORMATTERS, ...own }
+}
 
 describe('connection formatters', () => {
-	const formatters = createConnectionFormatters(translate)
+	// A copy that predates `disabled` renders the raw word on a connection an
+	// admin switched off. The built-in names it.
+	it('come from the library, so a switched-off connection reads Switched off', () => {
+		const formatters = effectiveFormatters()
 
-	it('labels all six statuses, limited included', () => {
-		expect(Object.keys(CONNECTION_STATUS_LABELS).sort()).toEqual([
-			'configured',
-			'error',
-			'limited',
-			'simulated',
-			'unavailable',
-			'unconfigured',
-		])
-		expect(formatters.connectionStatus('configured')).toBe('t:Configured')
-		expect(formatters.connectionStatus('limited')).toBe('t:Limited')
-		expect(formatters.connectionStatus('unconfigured')).toBe('t:Not configured')
-		expect(formatters.connectionStatus('simulated')).toBe('t:Simulated')
-		expect(formatters.connectionStatus('unavailable')).toBe('t:Not available')
-		expect(formatters.connectionStatus('error')).toBe('t:Error')
-	})
-
-	// A connection that works in part is neither working nor broken, so it must
-	// not borrow either label.
-	it('keeps limited apart from configured, not available and error', () => {
-		const limited = formatters.connectionStatus('limited')
-		expect(limited).not.toBe(formatters.connectionStatus('configured'))
-		expect(limited).not.toBe(formatters.connectionStatus('unavailable'))
-		expect(limited).not.toBe(formatters.connectionStatus('error'))
-	})
-
-	it('renders an unknown status as itself and a missing one as empty', () => {
-		expect(formatters.connectionStatus('degraded')).toBe('degraded')
-		expect(formatters.connectionStatus('toString')).toBe('toString')
-		expect(formatters.connectionStatus(null)).toBe('')
-		expect(formatters.connectionStatus(undefined)).toBe('')
-	})
-
-	it('offers Open settings only when the row has a settings link', () => {
-		expect(formatters.connectionSettingsLabel('/settings/admin/buildiq')).toBe(
-			't:Open settings',
-		)
+		expect(formatters.connectionStatus('disabled')).toBe('Switched off')
 		expect(formatters.connectionSettingsLabel('')).toBe('')
-		expect(formatters.connectionSettingsLabel(undefined)).toBe('')
-		expect(formatters.connectionSettingsLabel(null)).toBe('')
 	})
 
 	it('ships an English and a Dutch catalogue entry for every label the page shows', () => {
 		const en = JSON.parse(read('l10n', 'en.json')).translations
 		const nl = JSON.parse(read('l10n', 'nl.json')).translations
 		const labels = [
-			...Object.values(CONNECTION_STATUS_LABELS),
-			'Open settings',
 			page.title,
 			menu.label,
 			page.config.folderSidebar.allLabel,
@@ -93,9 +78,6 @@ describe('connection formatters', () => {
 			expect(en[label], `en: ${label}`).toBe(label)
 			expect(nl[label], `nl: ${label}`).toBeTruthy()
 		}
-		expect(nl.Limited).toBe('Beperkt')
-		// The browser reads the .js catalogue, never the .json one.
-		expect(read('l10n', 'nl.js')).toContain('"Limited": "Beperkt"')
 	})
 })
 
@@ -145,7 +127,7 @@ describe('the Integrations page declaration', () => {
 	})
 
 	it('names only formatters and handlers that exist, and wires both into the app', () => {
-		const formatters = createConnectionFormatters(translate)
+		const formatters = effectiveFormatters()
 		const handlers = createConnectionHandlers({
 			generateUrl: (p) => p,
 			assign: () => {},
@@ -161,8 +143,6 @@ describe('the Integrations page declaration', () => {
 		}
 
 		const app = read('src', 'App.vue')
-		expect(app).toContain(':formatters="formatters"')
-		expect(app).toContain('formatters: createConnectionFormatters(')
 		// Buildiq has no customComponents.js: App.vue's flatRegistry IS the
 		// customComponents map CnIndexPage resolves a handler name against.
 		expect(app).toContain(':customComponents="flatRegistry"')
