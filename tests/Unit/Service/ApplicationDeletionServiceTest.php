@@ -37,6 +37,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 use OCA\Buildiq\Service\ApplicationDeletionService;
 use OCA\Buildiq\Service\ApplicationVersionService;
 use OCA\Buildiq\Service\SchemaReferenceResolver;
+use OCA\Buildiq\Service\VersionSchemaLocator;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -125,6 +126,11 @@ class ApplicationDeletionServiceTest extends TestCase {
 			schemaReferences: new SchemaReferenceResolver(
 				registerMapper: $this->registerMapper,
 				schemaMapper: $this->schemaMapper,
+			),
+			schemaLocator: new VersionSchemaLocator(
+				registerMapper: $this->registerMapper,
+				schemaMapper: $this->schemaMapper,
+				logger: $this->logger,
 			),
 			logger: $this->logger,
 		);

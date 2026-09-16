@@ -34,6 +34,7 @@ use OCA\Buildiq\Exception\NoPromoteTargetException;
 use OCA\Buildiq\Exception\PromotionFailedException;
 use OCA\Buildiq\Exception\VersionLockedException;
 use OCA\Buildiq\Service\VersionPromotionService;
+use OCA\Buildiq\Service\VersionSchemaCarrier;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -91,7 +92,11 @@ class VersionPromotionServiceTest extends TestCase {
 			logger: $this->logger,
 			objectService: $this->objectService,
 			registerMapper: $this->registerMapper,
-			schemaMapper: $this->schemaMapper,
+			schemaCarrier: new VersionSchemaCarrier(
+				logger: $this->logger,
+				registerMapper: $this->registerMapper,
+				schemaMapper: $this->schemaMapper,
+			),
 		);
 	}//end setUp()
 

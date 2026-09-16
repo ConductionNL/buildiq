@@ -60,8 +60,6 @@ use OCA\Buildiq\Exception\PromotionFailedException;
 use OCA\Buildiq\Exception\VersionLockedException;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -124,37 +122,12 @@ class VersionPromotionService {
 	private const LOCK_DURATION_SECONDS = 60;
 
 	/**
-	 * Schema fields a promotion carries from the source schema to the target.
-	 *
-	 * Identity (id, uuid, slug, owner, organisation) and timestamps stay with
-	 * the target schema.
-	 *
-	 * @var array<int,string>
-	 */
-	private const CARRIED_SCHEMA_FIELDS = [
-		'title',
-		'description',
-		'summary',
-		'icon',
-		'required',
-		'properties',
-		'hardValidation',
-		'immutable',
-		'appendOnly',
-		'searchable',
-		'maxDepth',
-		'authorization',
-		'configuration',
-		'hooks',
-	];
-
-	/**
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger PSR logger
 	 * @param ObjectServiceInterface $objectService OR object surface (lock, save, search, delete)
 	 * @param RegisterMapper $registerMapper Resolves register slugs to entities
-	 * @param SchemaMapper $schemaMapper Reads, updates and creates the per-version schemas
+	 * @param VersionSchemaCarrier $schemaCarrier Carries schemas and manifest wiring to the target version
 	 *
 	 * @return void
 	 */
@@ -162,7 +135,7 @@ class VersionPromotionService {
 		private readonly LoggerInterface $logger,
 		private readonly ObjectServiceInterface $objectService,
 		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly VersionSchemaCarrier $schemaCarrier,
 	) {
 	}//end __construct()
 
@@ -288,7 +261,7 @@ class VersionPromotionService {
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-60
 	 */
 	private function runStartWithSourceData(array $source, array $target): array {
-		$maps = $this->forwardSchemaSetToOR(source: $source, target: $target);
+		$maps = $this->schemaCarrier->carrySchemas(source: $source, target: $target);
 		$this->wipeTargetRegister(target: $target);
 		$this->copyRowsFromSource(source: $source, target: $target, schemaIds: $maps['schemaIds']);
 		return $this->applyManifestAndSemver(source: $source, target: $target, maps: $maps);
@@ -308,7 +281,7 @@ class VersionPromotionService {
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-61
 	 */
 	private function runMigrateExistingData(array $source, array $target): array {
-		$maps = $this->forwardSchemaSetToOR(source: $source, target: $target);
+		$maps = $this->schemaCarrier->carrySchemas(source: $source, target: $target);
 		return $this->applyManifestAndSemver(source: $source, target: $target, maps: $maps);
 	}//end runMigrateExistingData()
 
@@ -326,193 +299,9 @@ class VersionPromotionService {
 	 */
 	private function runEmptyStart(array $source, array $target): array {
 		$this->wipeTargetRegister(target: $target);
-		$maps = $this->forwardSchemaSetToOR(source: $source, target: $target);
+		$maps = $this->schemaCarrier->carrySchemas(source: $source, target: $target);
 		return $this->applyManifestAndSemver(source: $source, target: $target, maps: $maps);
 	}//end runEmptyStart()
-
-	/**
-	 * Carry the source's schema set over to the target version (spec REQ-OBVP-005).
-	 *
-	 * Every version owns its own copies of the app's schemas, namespaced by the
-	 * register stem (`{app}-{version}-{name}`, see ApplicationCreationService).
-	 * This used to hand the target register the SOURCE's schema ids verbatim.
-	 * That made production's register point at development's schema objects,
-	 * left production's own schemas detached from any register (so deleting the
-	 * app later could not find them), and never touched the production schema
-	 * definitions, so a field added in development did not appear on them.
-	 *
-	 * Now each namespaced source schema is matched to its target counterpart by
-	 * slug. An existing counterpart takes the source's definition; a missing one
-	 * is created from it. A schema that is not namespaced to the source version
-	 * is shared and is kept as is. The target register then lists the target's
-	 * own schemas.
-	 *
-	 * @param array<string,mixed> $source Source ApplicationVersion
-	 * @param array<string,mixed> $target Target ApplicationVersion
-	 *
-	 * @return array{schemaSlugs: array<string,string>, schemaIds: array<string,string>} Source to target maps
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-63
-	 */
-	private function forwardSchemaSetToOR(array $source, array $target): array {
-		$maps = ['schemaSlugs' => [], 'schemaIds' => []];
-		$sourceRegisterSlug = (string)($source['register'] ?? '');
-		$targetRegisterSlug = (string)($target['register'] ?? '');
-
-		if ($sourceRegisterSlug === '' || $targetRegisterSlug === '' || $sourceRegisterSlug === $targetRegisterSlug) {
-			$this->logger->info(
-				'Buildiq: forwardSchemaSetToOR skipped, source and target do not have two distinct registers'
-				. ' (source=' . $sourceRegisterSlug . ', target=' . $targetRegisterSlug . ').'
-			);
-			return $maps;
-		}
-
-		$sourceRegister = $this->registerMapper->find($sourceRegisterSlug, _multitenancy: false);
-		$targetRegister = $this->registerMapper->find($targetRegisterSlug, _multitenancy: false);
-
-		$sourceStem = $this->schemaStem(registerSlug: $sourceRegisterSlug);
-		$targetStem = $this->schemaStem(registerSlug: $targetRegisterSlug);
-		$targetSchemaIds = [];
-
-		foreach ((array)($sourceRegister->getSchemas() ?? []) as $sourceSchemaId) {
-			$sourceSchema = $this->schemaMapper->find($sourceSchemaId, _rbac: false, _multitenancy: false);
-			$sourceSlug = (string)$sourceSchema->getSlug();
-
-			if ($sourceStem === '' || str_starts_with($sourceSlug, $sourceStem) === false) {
-				// Not namespaced to the source version: a shared schema.
-				$targetSchemaIds[] = $sourceSchemaId;
-				continue;
-			}
-
-			$targetSlug = $targetStem . substr($sourceSlug, strlen($sourceStem));
-			$targetSchema = $this->syncTargetSchema(sourceSchema: $sourceSchema, targetSlug: $targetSlug);
-
-			$targetSchemaIds[] = $targetSchema->getId();
-			$maps['schemaSlugs'][$sourceSlug] = $targetSlug;
-			$maps['schemaIds'][(string)$sourceSchema->getId()] = (string)$targetSchema->getId();
-		}//end foreach
-
-		$targetRegister->setSchemas(array_values(array_unique($targetSchemaIds)));
-		$this->registerMapper->update($targetRegister);
-
-		$this->logger->info(
-			'Buildiq: forwardSchemaSetToOR: target register ' . $targetRegisterSlug
-			. ' now holds ' . count($targetSchemaIds) . ' schemas carried over from ' . $sourceRegisterSlug . '.'
-		);
-
-		return $maps;
-	}//end forwardSchemaSetToOR()
-
-	/**
-	 * Give the target version's schema the source schema's definition.
-	 *
-	 * Updates the existing target schema when one with `$targetSlug` exists,
-	 * otherwise creates it.
-	 *
-	 * @param Schema $sourceSchema The source version's schema
-	 * @param string $targetSlug Slug of the target version's counterpart
-	 *
-	 * @return Schema The target schema
-	 */
-	private function syncTargetSchema(Schema $sourceSchema, string $targetSlug): Schema {
-		$definition = [];
-		foreach (self::CARRIED_SCHEMA_FIELDS as $field) {
-			$definition[$field] = $sourceSchema->{'get' . ucfirst($field)}();
-		}
-
-		try {
-			$existing = $this->schemaMapper->find($targetSlug, _rbac: false, _multitenancy: false);
-		} catch (Throwable $e) {
-			$existing = null;
-		}
-
-		if ($existing instanceof Schema && (string)$existing->getSlug() === $targetSlug) {
-			$existing->hydrate($definition);
-			$updated = $this->schemaMapper->update($existing);
-			if ($updated instanceof Schema) {
-				return $updated;
-			}
-
-			return $existing;
-		}
-
-		$definition['slug'] = $targetSlug;
-		return $this->schemaMapper->createFromArray($definition);
-	}//end syncTargetSchema()
-
-	/**
-	 * The schema slug prefix a per-version register namespaces its schemas with.
-	 *
-	 * `openbuild-{app}-{version}` owns schemas named `{app}-{version}-{name}`.
-	 *
-	 * @param string $registerSlug The per-version register slug
-	 *
-	 * @return string The prefix, or '' when the register does not follow the convention
-	 */
-	private function schemaStem(string $registerSlug): string {
-		if (str_starts_with($registerSlug, ApplicationVersionService::VERSION_REGISTER_PREFIX) === false) {
-			return '';
-		}
-
-		return substr($registerSlug, strlen(ApplicationVersionService::VERSION_REGISTER_PREFIX)) . '-';
-	}//end schemaStem()
-
-	/**
-	 * Point the target's manifest at the target version's own data.
-	 *
-	 * The source manifest names the source register and the source schemas in
-	 * every `register` / `schema` key (page configs, widget sources, and so on).
-	 * Copied verbatim, production's pages listed development's records. This
-	 * walks the whole manifest and swaps each such value for its target
-	 * counterpart. Values that name anything else (a shared register, a bound
-	 * data register) are left alone.
-	 *
-	 * @param mixed $node The manifest (or a part of it)
-	 * @param string $sourceRegister Source register slug
-	 * @param string $targetRegister Target register slug
-	 * @param array{schemaSlugs: array<string,string>, schemaIds: array<string,string>} $maps Source to target schema maps
-	 *
-	 * @return mixed The rewritten node
-	 *
-	 * @spec openspec/changes/fix-promote-rewires-target-version/specs/version-promotion/spec.md
-	 */
-	public function rewriteManifestWiring(mixed $node, string $sourceRegister, string $targetRegister, array $maps): mixed {
-		if (is_array($node) === false) {
-			return $node;
-		}
-
-		foreach ($node as $key => $value) {
-			if ($key === 'register' && is_string($value) === true && $value === $sourceRegister && $sourceRegister !== '') {
-				$node[$key] = $targetRegister;
-				continue;
-			}
-
-			if ($key === 'schema' && (is_string($value) === true || is_int($value) === true)) {
-				$asString = (string)$value;
-				if (isset($maps['schemaSlugs'][$asString]) === true) {
-					$node[$key] = $maps['schemaSlugs'][$asString];
-				} elseif (isset($maps['schemaIds'][$asString]) === true) {
-					$mapped = $maps['schemaIds'][$asString];
-					if (is_int($value) === true) {
-						$mapped = (int)$mapped;
-					}
-
-					$node[$key] = $mapped;
-				}
-
-				continue;
-			}
-
-			$node[$key] = $this->rewriteManifestWiring(
-				node: $value,
-				sourceRegister: $sourceRegister,
-				targetRegister: $targetRegister,
-				maps: $maps
-			);
-		}//end foreach
-
-		return $node;
-	}//end rewriteManifestWiring()
 
 	/**
 	 * Delete every row in the target version's register (used by REQ-OBVP-002 / -004).
@@ -618,7 +407,7 @@ class VersionPromotionService {
 	 * target recovers (idempotent re-promotion, REQ-OBVP-009 scenario 2).
 	 *
 	 * The manifest is rewired to the target's own register and schemas on the
-	 * way over, see {@see rewriteManifestWiring()}.
+	 * way over, see {@see VersionSchemaCarrier::rewriteManifestWiring()}.
 	 *
 	 * @param array<string,mixed> $source Source ApplicationVersion
 	 * @param array<string,mixed> $target Target ApplicationVersion
@@ -632,7 +421,7 @@ class VersionPromotionService {
 		$targetUuid = (string)($target['id'] ?? ($target['uuid'] ?? ''));
 		$manifest = $source['manifest'] ?? ($target['manifest'] ?? []);
 		if (isset($source['manifest']) === true) {
-			$manifest = $this->rewriteManifestWiring(
+			$manifest = $this->schemaCarrier->rewriteManifestWiring(
 				node: $manifest,
 				sourceRegister: (string)($source['register'] ?? ''),
 				targetRegister: (string)($target['register'] ?? ''),

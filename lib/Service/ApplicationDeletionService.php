@@ -65,6 +65,7 @@ class ApplicationDeletionService {
 	 * @param RegisterMapper $registerMapper OR register lookup (by slug)
 	 * @param SchemaMapper $schemaMapper OR schema lookup + delete
 	 * @param SchemaReferenceResolver $schemaReferences Whether a schema is still claimed elsewhere
+	 * @param VersionSchemaLocator $schemaLocator Finds version schemas no register lists
 	 * @param LoggerInterface $logger PSR logger
 	 *
 	 * @return void
@@ -75,6 +76,7 @@ class ApplicationDeletionService {
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly SchemaReferenceResolver $schemaReferences,
+		private readonly VersionSchemaLocator $schemaLocator,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -107,15 +109,13 @@ class ApplicationDeletionService {
 			value: $appUuid
 		);
 		$ownedSchemaIds = [];
-		$straySchemaIds = [];
-		if ($deleteData === true) {
-			$straySchemaIds = $this->findStraySchemaIds(appSlug: $appSlug, versions: $versions);
-		}
-
+		$straySchemaIds = null;
 		foreach ($versions as $version) {
 			$versionUuid = (string)($version['id'] ?? ($version['@self']['id'] ?? ''));
 			$registerSlug = (string)($version['register'] ?? '');
 			if ($deleteData === true && $registerSlug !== '') {
+				// Looked up once, before the first register goes.
+				$straySchemaIds ??= $this->schemaLocator->findDetachedSchemaIds(appSlug: $appSlug, versions: $versions);
 				$this->deleteRegister(
 					registerSlug: $registerSlug,
 					orphaned: $orphaned,
@@ -220,7 +220,7 @@ class ApplicationDeletionService {
 	 *                                         has been deleted.
 	 * @param array<int,mixed> $extraSchemaIds Schemas of this version that the
 	 *                                         register no longer lists (see
-	 *                                         {@see findStraySchemaIds()}).
+	 *                                         {@see VersionSchemaLocator::findDetachedSchemaIds()}).
 	 *
 	 * @return void
 	 */
@@ -268,102 +268,6 @@ class ApplicationDeletionService {
 			$ownedSchemaIds[] = $schemaId;
 		}
 	}//end deleteRegister()
-
-	/**
-	 * Find this app's version schemas that no register lists any more.
-	 *
-	 * Each version owns schemas named `{app}-{version}-{name}`. An earlier
-	 * promotion bug handed the target register the source's schema ids, which
-	 * left the target's own schemas attached to no register at all. Walking the
-	 * registers' schema lists cannot see those, so "delete all data" left them
-	 * behind. This derives every `{name}` the app's registers hold, and looks up
-	 * `{app}-{version}-{name}` for every version, so a detached schema is still
-	 * found and cleaned up with its version.
-	 *
-	 * @param string $appSlug The application slug.
-	 * @param array<int,array<string,mixed>> $versions The app's version rows.
-	 *
-	 * @return array<string,array<int,string>> Version slug => schema ids its register does not list.
-	 */
-	private function findStraySchemaIds(string $appSlug, array $versions): array {
-		$versionSlugs = [];
-		$listed = [];
-		foreach ($versions as $version) {
-			$versionSlug = (string)($version['slug'] ?? '');
-			$registerSlug = (string)($version['register'] ?? '');
-			if ($versionSlug === '' || $registerSlug === '') {
-				continue;
-			}
-
-			$versionSlugs[] = $versionSlug;
-			try {
-				$register = $this->registerMapper->find($registerSlug, _multitenancy: false);
-			} catch (Throwable $e) {
-				continue;
-			}
-
-			foreach (($register->getSchemas() ?? []) as $schemaId) {
-				$listed[(string)$schemaId] = true;
-			}
-		}//end foreach
-
-		if ($appSlug === '' || $versionSlugs === [] || $listed === []) {
-			return [];
-		}
-
-		$names = [];
-		foreach (array_keys($listed) as $schemaId) {
-			try {
-				$slug = (string)$this->schemaMapper->find(id: $schemaId, _rbac: false, _multitenancy: false)->getSlug();
-			} catch (Throwable $e) {
-				continue;
-			}
-
-			foreach ($versionSlugs as $versionSlug) {
-				$prefix = $appSlug . '-' . $versionSlug . '-';
-				if (str_starts_with($slug, $prefix) === true && strlen($slug) > strlen($prefix)) {
-					$names[substr($slug, strlen($prefix))] = true;
-				}
-			}
-		}
-
-		$candidates = [];
-		foreach ($versionSlugs as $versionSlug) {
-			foreach (array_keys($names) as $name) {
-				$candidates[strtolower($appSlug . '-' . $versionSlug . '-' . $name)] = $versionSlug;
-			}
-		}
-
-		if ($candidates === []) {
-			return [];
-		}
-
-		try {
-			$found = $this->schemaMapper->findIdsBySlugs(array_keys($candidates));
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				'Buildiq: deleteApplication({slug}) could not look up detached version schemas: {message}',
-				['slug' => $appSlug, 'message' => $e->getMessage()]
-			);
-			return [];
-		}
-
-		$stray = [];
-		foreach ($found as $slug => $ids) {
-			$versionSlug = ($candidates[strtolower((string)$slug)] ?? null);
-			if ($versionSlug === null) {
-				continue;
-			}
-
-			foreach ((array)$ids as $id) {
-				if (isset($listed[(string)$id]) === false) {
-					$stray[$versionSlug][] = (string)$id;
-				}
-			}
-		}
-
-		return $stray;
-	}//end findStraySchemaIds()
 
 	/**
 	 * Delete the schema DEFINITIONS the just-removed register owned.
