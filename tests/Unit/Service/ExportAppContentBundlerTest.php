@@ -21,6 +21,8 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\ExportAppContentBundler;
+use OCA\Buildiq\Service\ExportAppSchemaReader;
+use OCA\Buildiq\Service\ExportAppSourceResolver;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolution;
@@ -110,7 +112,7 @@ final class ExportAppContentBundlerTest extends TestCase {
 	public function testBundleWritesThePagesAndMenuIntoTheAppManifest(): void {
 		$bundler = $this->bundler();
 		$source = $bundler->resolveSource(applicationUuid: self::APP_UUID, semver: '0.1.0', versionSlug: 'development');
-		$summary = $bundler->bundle(rootDir: $this->root, source: $source, appId: 'demo-app', semver: '0.1.0', includeSeedData: false);
+		$summary = $bundler->bundle(rootDir: $this->root, source: $source, appId: 'demo-app', semver: '0.1.0');
 
 		$manifest = $this->json('src/manifest.json');
 		self::assertSame('demo-app', $manifest['id'], 'the identity comes from the template');
@@ -180,7 +182,8 @@ final class ExportAppContentBundlerTest extends TestCase {
 		$bundler = $this->bundler();
 		$source = $bundler->resolveSource(applicationUuid: self::APP_UUID, semver: '0.1.0', versionSlug: 'development');
 		self::assertNotNull($source);
-		$bundler->bundle(rootDir: $this->root, source: $source, appId: 'demo-app', semver: '0.1.0', includeSeedData: $includeSeedData);
+		$source['includeSeedData'] = $includeSeedData;
+		$bundler->bundle(rootDir: $this->root, source: $source, appId: 'demo-app', semver: '0.1.0');
 	}//end bundleDevelopment()
 
 	/**
@@ -257,7 +260,11 @@ final class ExportAppContentBundlerTest extends TestCase {
 			new RegisterSlugResolution('buildiq', 'buildiq', RegisterSlugResolution::RESOLVED, ['buildiq'], ['buildiq'])
 		);
 
-		return new ExportAppContentBundler($objectService, $registerMapper, $schemaMapper, $resolver, new NullLogger());
+		return new ExportAppContentBundler(
+			new ExportAppSourceResolver($objectService, $resolver, new NullLogger()),
+			new ExportAppSchemaReader($objectService, $registerMapper, $schemaMapper, new NullLogger()),
+			new NullLogger()
+		);
 	}//end bundler()
 
 	/**

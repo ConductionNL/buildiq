@@ -172,7 +172,7 @@ class RunExportJob extends QueuedJob {
 
 		$source = $this->resolveSource(job: $job, applicationUuid: $applicationUuid, applicationVersion: $applicationVersion);
 
-		$context = [
+		$context = $this->nameFromSource(source: $source, context: [
 			'appId' => $applicationSlug,
 			'appNamespace' => $this->slugToNamespace(slug: $applicationSlug),
 			'appName' => $this->slugToLabel(slug: $applicationSlug),
@@ -180,19 +180,7 @@ class RunExportJob extends QueuedJob {
 			'authorName' => 'Buildiq Citizen Developer',
 			'authorEmail' => 'dev@conduction.nl',
 			'license' => $license,
-		];
-
-		if ($source !== null) {
-			$name = trim((string)($source['application']['name'] ?? ''));
-			if ($name !== '') {
-				$context['appName'] = $name;
-			}
-
-			$description = trim((string)($source['application']['description'] ?? ''));
-			if ($description !== '') {
-				$context['appDescription'] = $description;
-			}
-		}
+		]);
 
 		$this->exportService->generateAppZip(
 			applicationUuid: $applicationUuid,
@@ -204,8 +192,7 @@ class RunExportJob extends QueuedJob {
 			// The application's own slug IS the agent lookup: agents carry
 			// `applicationSlug`, so there is no agent binding to pass.
 			applicationSlug: $applicationSlug,
-			source: $source,
-			includeSeedData: (bool)($job['includeSeedData'] ?? false)
+			source: $source
 		);
 
 		// Name what could not be resolved on the job itself. A skip that only
@@ -219,18 +206,7 @@ class RunExportJob extends QueuedJob {
 			$extra['skipped'] = $skipped;
 		}
 
-		$content = $this->exportService->lastContent();
-		if ($content !== null) {
-			$extra['log'] = [
-				sprintf(
-					'Exported %d pages, %d menu items, %d schemas and %d records.',
-					$content['pages'],
-					$content['menu'],
-					$content['schemas'],
-					$content['records']
-				),
-			];
-		}
+		$extra = array_merge($extra, $this->contentLog());
 
 		$this->exportJobService->transitionJob(jobUuid: $jobUuid, action: 'succeed', extraFields: $extra);
 		$this->logger->info('Buildiq export succeeded', ['jobUuid' => $jobUuid]);
@@ -271,8 +247,62 @@ class RunExportJob extends QueuedJob {
 			throw new RuntimeException('The application has no version to export.');
 		}
 
+		$source['includeSeedData'] = (($job['includeSeedData'] ?? false) === true);
+
 		return $source;
 	}//end resolveSource()
+
+	/**
+	 * Name the exported app after the application rather than its slug.
+	 *
+	 * @param array<string,mixed>|null $source From resolveSource().
+	 * @param array<string,string> $context The placeholder context so far.
+	 *
+	 * @return array<string,string> The context with the application's name and description.
+	 *
+	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-exported-tree-shape-conforms-to-the-nextcloud-app-template-baseline
+	 */
+	private function nameFromSource(?array $source, array $context): array {
+		$application = (array)($source['application'] ?? []);
+
+		$name = trim((string)($application['name'] ?? ''));
+		if ($name !== '') {
+			$context['appName'] = $name;
+		}
+
+		$description = trim((string)($application['description'] ?? ''));
+		if ($description !== '') {
+			$context['appDescription'] = $description;
+		}
+
+		return $context;
+	}//end nameFromSource()
+
+	/**
+	 * The job log line saying what went into the archive.
+	 *
+	 * @return array<string,array<int,string>> `['log' => [line]]`, or [] when nothing was bundled.
+	 *
+	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-export-is-asynchronous-via-nextcloud-s-ijob
+	 */
+	private function contentLog(): array {
+		$content = $this->exportService->lastContent();
+		if ($content === null) {
+			return [];
+		}
+
+		return [
+			'log' => [
+				sprintf(
+					'Exported %d pages, %d menu items, %d schemas and %d records.',
+					$content['pages'],
+					$content['menu'],
+					$content['schemas'],
+					$content['records']
+				),
+			],
+		];
+	}//end contentLog()
 
 	/**
 	 * Convert a kebab-case app slug to a PascalCase PHP namespace segment.

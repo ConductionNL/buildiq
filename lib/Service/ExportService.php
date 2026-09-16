@@ -168,9 +168,8 @@ class ExportService {
 	 * @param string $applicationSlug Slug of the application whose agents to collect.
 	 *                                Default `''`.
 	 * @param array<string,mixed>|null $source The application and version to put in the tree, from
-	 *                                         ExportAppContentBundler::resolveSource(). Null exports
-	 *                                         the bare scaffold.
-	 * @param bool $includeSeedData Whether the application's records go in too.
+	 *                                         ExportAppContentBundler::resolveSource(), plus
+	 *                                         `includeSeedData`. Null exports the bare scaffold.
 	 *
 	 * @return string Absolute (local) path to the produced ZIP.
 	 *
@@ -188,7 +187,6 @@ class ExportService {
 		array $flows = [],
 		string $applicationSlug = '',
 		?array $source = null,
-		bool $includeSeedData = false,
 	): string {
 		$scratchDir = $this->prepareScratchDir(jobUuid: $jobUuid);
 		$this->copyTemplate(source: $this->templateRoot, dest: $scratchDir);
@@ -202,8 +200,7 @@ class ExportService {
 				rootDir: $scratchDir,
 				source: $source,
 				appId: $this->placeholderResolver->slug(value: (string)($context['appId'] ?? '')),
-				semver: $versionSlug,
-				includeSeedData: $includeSeedData
+				semver: $versionSlug
 			);
 		}
 

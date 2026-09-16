@@ -112,10 +112,9 @@ final class ExportServiceTest extends TestCase {
 			->method('bundle')
 			->with(
 				self::anything(),
-				['application' => ['slug' => 'demo-app'], 'version' => ['slug' => 'development']],
+				['application' => ['slug' => 'demo-app'], 'version' => ['slug' => 'development'], 'includeSeedData' => true],
 				'demo-app',
-				'1.2.3',
-				true
+				'1.2.3'
 			)
 			->willReturnCallback(
 				static function (string $rootDir): array {
@@ -127,8 +126,7 @@ final class ExportServiceTest extends TestCase {
 		$service = $this->buildService(contentBundler: $bundler);
 		$entries = $this->export(
 			service: $service,
-			source: ['application' => ['slug' => 'demo-app'], 'version' => ['slug' => 'development']],
-			includeSeedData: true
+			source: ['application' => ['slug' => 'demo-app'], 'version' => ['slug' => 'development'], 'includeSeedData' => true]
 		);
 
 		self::assertSame('{"pages":[{"id":"Home"}]}', $entries['manifest.json']);
@@ -380,7 +378,6 @@ final class ExportServiceTest extends TestCase {
 		array $dataRegisters = [],
 		?ExportService $service = null,
 		?array $source = null,
-		bool $includeSeedData = false,
 	): array {
 		$jobUuid = 'unit-' . bin2hex(random_bytes(6));
 
@@ -390,8 +387,7 @@ final class ExportServiceTest extends TestCase {
 			context: $this->context(),
 			jobUuid: $jobUuid,
 			dataRegisters: $dataRegisters,
-			source: $source,
-			includeSeedData: $includeSeedData
+			source: $source
 		);
 
 		$this->litter[] = $zipPath;

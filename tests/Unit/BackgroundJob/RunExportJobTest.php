@@ -206,11 +206,10 @@ final class RunExportJobTest extends TestCase {
 			->method('generateAppZip')
 			->willReturnCallback(
 				function (...$args) use ($source): string {
-					// Positional: uuid, version, context, jobUuid, dataRegisters, flows, slug, source, includeSeedData.
+					// Positional: uuid, version, context, jobUuid, dataRegisters, flows, slug, source.
 					self::assertSame('Test things', $args[2]['appName']);
 					self::assertSame('Tracks things.', $args[2]['appDescription']);
-					self::assertSame($source, $args[7]);
-					self::assertTrue($args[8]);
+					self::assertSame($source + ['includeSeedData' => true], $args[7]);
 					return '/tmp/x.zip';
 				}
 			);
