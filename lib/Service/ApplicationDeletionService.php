@@ -109,21 +109,12 @@ class ApplicationDeletionService {
 			value: $appUuid
 		);
 		$ownedSchemaIds = [];
-		$straySchemaIds = null;
+		if ($deleteData === true) {
+			$ownedSchemaIds = $this->deleteVersionRegisters(appSlug: $appSlug, versions: $versions, orphaned: $orphaned);
+		}
+
 		foreach ($versions as $version) {
 			$versionUuid = (string)($version['id'] ?? ($version['@self']['id'] ?? ''));
-			$registerSlug = (string)($version['register'] ?? '');
-			if ($deleteData === true && $registerSlug !== '') {
-				// Looked up once, before the first register goes.
-				$straySchemaIds ??= $this->schemaLocator->findDetachedSchemaIds(appSlug: $appSlug, versions: $versions);
-				$this->deleteRegister(
-					registerSlug: $registerSlug,
-					orphaned: $orphaned,
-					ownedSchemaIds: $ownedSchemaIds,
-					extraSchemaIds: ($straySchemaIds[(string)($version['slug'] ?? '')] ?? [])
-				);
-			}
-
 			if ($versionUuid !== '') {
 				$this->deleteObject(uuid: $versionUuid, label: 'version', orphaned: $orphaned);
 			}
@@ -161,6 +152,36 @@ class ApplicationDeletionService {
 
 		return $orphaned;
 	}//end deleteApplication()
+
+	/**
+	 * Delete every version's register, with its data.
+	 *
+	 * @param string $appSlug The application slug.
+	 * @param array<int,array<string,mixed>> $versions The app's version rows.
+	 * @param array<int,string> $orphaned Collector for failures.
+	 *
+	 * @return array<int,mixed> Schema ids/slugs the deleted registers owned.
+	 */
+	private function deleteVersionRegisters(string $appSlug, array $versions, array &$orphaned): array {
+		// Looked up before the first register goes.
+		$detached = $this->schemaLocator->findDetachedSchemaIds(appSlug: $appSlug, versions: $versions);
+		$ownedSchemaIds = [];
+		foreach ($versions as $version) {
+			$registerSlug = (string)($version['register'] ?? '');
+			if ($registerSlug === '') {
+				continue;
+			}
+
+			$this->deleteRegister(
+				registerSlug: $registerSlug,
+				orphaned: $orphaned,
+				ownedSchemaIds: $ownedSchemaIds,
+				extraSchemaIds: ($detached[(string)($version['slug'] ?? '')] ?? [])
+			);
+		}
+
+		return $ownedSchemaIds;
+	}//end deleteVersionRegisters()
 
 	/**
 	 * Find child objects of the application by a filter field.
