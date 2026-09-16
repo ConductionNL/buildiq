@@ -25,7 +25,9 @@ describe('virtualAppSupportDialog', () => {
 	})
 
 	it('is off for a support block that does not say enabled', () => {
-		expect(virtualAppSupportDialog({ support: { title: 'Help us' } })).toBe(false)
+		expect(virtualAppSupportDialog({ support: { title: 'Help us' } })).toBe(
+			false,
+		)
 		expect(virtualAppSupportDialog({ support: true })).toBe(false)
 	})
 
