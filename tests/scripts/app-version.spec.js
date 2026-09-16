@@ -27,8 +27,8 @@ describe('readAppVersion', () => {
 			writeFileSync(
 				file,
 				'<?xml version="1.0"?>\n<info>\n  <id>buildiq</id>\n'
-				+ '  <version>0.7.10-unstable.20260914204410</version>\n'
-				+ '  <dependencies><nextcloud min-version="32" max-version="34"/></dependencies>\n</info>\n',
+					+ '  <version>0.7.10-unstable.20260914204410</version>\n'
+					+ '  <dependencies><nextcloud min-version="32" max-version="34"/></dependencies>\n</info>\n',
 			)
 			expect(readAppVersion(file)).toBe('0.7.10-unstable.20260914204410')
 		} finally {
@@ -48,13 +48,18 @@ describe('webpack.config.js', () => {
 		// Load the real config the way `npm run build` does: npm exports the
 		// package name and version into the environment. The stale version is
 		// passed on purpose, it is exactly what the bundle used to print.
-		const script = 'const c = require("./webpack.config.js");'
+		const script =
+			'const c = require("./webpack.config.js");'
 			+ 'const d = Object.assign({}, ...c.plugins.filter((p) => p.definitions).map((p) => p.definitions));'
 			+ 'process.stdout.write("\\nDEFS=" + JSON.stringify(d))'
 		const out = execFileSync('node', ['-e', script], {
 			cwd: REPO_ROOT,
 			encoding: 'utf8',
-			env: { ...process.env, npm_package_name: 'buildiq', npm_package_version: '0.2.0' },
+			env: {
+				...process.env,
+				npm_package_name: 'buildiq',
+				npm_package_version: '0.2.0',
+			},
 		})
 		const defs = JSON.parse(out.slice(out.indexOf('DEFS=') + 5))
 		expect(JSON.parse(defs.appVersion)).toBe(readAppVersion())

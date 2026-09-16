@@ -16,10 +16,14 @@ import manifest from '../../src/manifest.json'
 
 describe('src/manifest.json credentials', () => {
 	it('declares the GitHub credential with the permissions publishing needs', () => {
-		const github = (manifest.credentials || []).find((c) => c.provider === 'github')
+		const github = (manifest.credentials || []).find(
+			(c) => c.provider === 'github',
+		)
 
 		expect(github).toBeDefined()
-		expect(github.reason).toMatch(/Administration and Contents set to read and write/)
+		expect(github.reason).toMatch(
+			/Administration and Contents set to read and write/,
+		)
 		expect(github.reason).toMatch(/Metadata set to read-only/)
 		expect(github.reason).not.toMatch(/—/)
 		expect(github.scopes).toEqual([
