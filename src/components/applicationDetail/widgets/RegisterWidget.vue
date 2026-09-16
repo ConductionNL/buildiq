@@ -18,7 +18,7 @@
 			<h3 class="ob-register-widget__title">
 				{{ t('buildiq', 'Register') }}
 			</h3>
-			<p class="ob-register-widget__slug">
+			<p v-if="registerSlug" class="ob-register-widget__slug">
 				<code>{{ registerSlug }}</code>
 			</p>
 		</header>
@@ -74,7 +74,10 @@
 			</NcButton>
 			<!-- NcButton renders an anchor when given an href, so this keeps the
 			     button styling and gains the browser's link behaviour. -->
-			<NcButton variant="primary" :href="openRegisterUrl">
+			<NcButton
+				variant="primary"
+				:href="openRegisterUrl"
+				:disabled="!registerSlug">
 				{{ t('buildiq', 'Open in OpenRegister') }}
 			</NcButton>
 		</footer>
@@ -141,9 +144,12 @@ export default {
 		 */
 		registerSlug() {
 			if (this.registerSlugOverride) return this.registerSlugOverride
-			return this.isHybrid
-				? this.appSlug
-				: `openbuild-${this.appSlug}-${this.versionSlug}`
+			if (this.isHybrid) return this.appSlug
+			// Until the app and its version are known there is no register to
+			// name. Building the slug anyway showed "openbuild-{slug}-" while
+			// the page loaded.
+			if (!this.appSlug || !this.versionSlug) return ''
+			return `openbuild-${this.appSlug}-${this.versionSlug}`
 		},
 
 		/**
@@ -158,6 +164,9 @@ export default {
 		 * @spec openspec/specs/application-detail-overview/spec.md#requirement-register-widget-renders-read-only-with-an-open-in-openregister-deep-link
 		 */
 		openRegisterUrl() {
+			if (!this.registerSlug) {
+				return undefined
+			}
 			const base = generateUrl(
 				`/apps/openregister/registers/${encodeURIComponent(this.registerSlug)}`,
 			)

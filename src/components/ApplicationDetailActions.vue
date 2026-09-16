@@ -380,7 +380,29 @@ export default {
 			if (!this.obApp || !this.obApp.slug) {
 				return ''
 			}
+			// Open the version selected in the header pills (`?_version=`),
+			// not always production.
+			const selected = this.selectedVersion
+			if (selected) {
+				return this.versionUrl(selected)
+			}
 			return generateUrl(`/apps/buildiq/builder/${this.obApp.slug}`)
+		},
+
+		/**
+		 * The version the header pills selected, from `?_version=`, once the
+		 * version list knows it.
+		 *
+		 * @return {object|null}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
+		 */
+		selectedVersion() {
+			const slug = (this.$route && this.$route.query && this.$route.query._version) || ''
+			if (!slug) {
+				return null
+			}
+			return this.versions.find((v) => v.slug === slug) || null
 		},
 
 		/**

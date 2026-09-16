@@ -7,7 +7,7 @@
 				{{
 					t(
 						'buildiq',
-						'Install an app published to GitHub. The store lists every repository tagged with the openbuild-app topic; installing clones it into an editable draft application.',
+						'Install an app published to GitHub. The store lists every repository tagged with the openbuild-app topic. Installing adds a copy to your apps that you can change.',
 					)
 				}}
 			</p>

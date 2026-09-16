@@ -165,24 +165,6 @@ export default {
 				}
 			},
 		},
-
-		applicationUuid: {
-			immediate: true,
-			/**
-			 * Fallback: reload via OR objects endpoint when only applicationUuid
-			 * is supplied (no appSlug available yet).
-			 *
-			 * @param {string} uuid The parent Application UUID.
-			 * @return {void}
-			 *
-			 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-routing-ui/spec.md
-			 */
-			handler(uuid) {
-				if (uuid && !this.appSlug) {
-					this.refresh()
-				}
-			},
-		},
 	},
 
 	methods: {
@@ -199,52 +181,37 @@ export default {
 		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-routing-ui/spec.md
 		 */
 		async refresh() {
-			if (!this.appSlug && !this.applicationUuid) {
+			// Only the slug endpoint exists. The uuid fallback asked for
+			// `/api/applicationversions?applicationUuid=`, a route this app
+			// never had, so every detail page logged a 404 before the slug
+			// arrived. Without a slug there is nothing to load yet.
+			if (!this.appSlug) {
 				this.versions = []
 				return
 			}
 			this.loading = true
 			try {
-				let url
-				if (this.appSlug) {
-					url = generateUrl(
-						'/apps/buildiq/api/applications/{slug}/versions',
-						{ slug: this.appSlug },
-					)
-				} else {
-					url = generateUrl(
-						'/apps/buildiq/api/applicationversions?applicationUuid={uuid}',
-						{ uuid: this.applicationUuid },
-					)
-				}
+				const url = generateUrl(
+					'/apps/buildiq/api/applications/{slug}/versions',
+					{ slug: this.appSlug },
+				)
 				const { data } = await axios.get(url)
 				const raw = Array.isArray(data)
 					? data
 					: data && data.results
 						? data.results
 						: []
-				// The IDOR filter applies ONLY to the unscoped endpoint. The
-				// by-slug URL above is already app-scoped server-side, and its
-				// rows do not carry `applicationUuid` at all — measured, every
-				// row comes back without the key:
-				//
-				//   GET /api/applications/pw-verchain/versions
-				//   -> 3 rows, each { name, slug, manifest, ..., status } and no
-				//      applicationUuid
-				//
-				// ApplicationVersionsTab passes BOTH app-slug and
-				// application-uuid, so this filter removed every row and the
-				// "Version history" tab rendered `.version-history__empty` for
-				// every app, always. Filtering a server-scoped response against
-				// a field that response does not contain is not defence in
-				// depth — it is an unconditional deny.
-				const filtered =
-					this.applicationUuid && !this.appSlug
-						? raw.filter(
-								(r) =>
-									r && r.applicationUuid === this.applicationUuid,
-							)
-						: raw
+				// The endpoint is already scoped to the app. A row that names
+				// another parent through its `application` relation is still
+				// dropped, as defence in depth.
+				const filtered = this.applicationUuid
+					? raw.filter(
+							(r) =>
+								r
+								&& (!r.application
+									|| r.application === this.applicationUuid),
+						)
+					: raw
 				this.versions = filtered
 					.filter((r) => this.rowStatus(r) !== 'archived')
 					.sort((a, b) => {

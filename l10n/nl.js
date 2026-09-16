@@ -1122,7 +1122,14 @@ OC.L10N.register(
         "Not configured": "Niet geconfigureerd",
         "Simulated": "Gesimuleerd",
         "Not available": "Niet beschikbaar",
-        "Error": "Fout"
+        "Error": "Fout",
+        "Compare": "Vergelijk",
+        "With": "Met",
+        "Install an app published to GitHub. The store lists every repository tagged with the openbuild-app topic. Installing adds a copy to your apps that you can change.": "Installeer een app die op GitHub is gepubliceerd. De winkel toont elke repository met het onderwerp openbuild-app. Installeren voegt een kopie toe aan je apps die je kunt aanpassen.",
+        "Loading versions…": "Versies laden…",
+        "No differences. Both versions have the same manifest.": "Geen verschillen. Beide versies hebben hetzelfde manifest.",
+        "Nothing to diff. Neither version has a manifest yet.": "Niets te vergelijken. Geen van beide versies heeft al een manifest.",
+        "This app has one version, so there is nothing to compare yet.": "Deze app heeft één versie, dus er valt nog niets te vergelijken."
     },
     "nplurals=2; plural=(n != 1);"
 )
