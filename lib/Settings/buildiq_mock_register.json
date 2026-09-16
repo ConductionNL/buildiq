@@ -164,13 +164,17 @@
         "description": "Voorbeeld Description 1",
         "useCase": "Voorbeeld Usecase 1",
         "category": "government-services",
-        "manifest": {},
+        "manifest": {
+          "version": "1.0.0",
+          "name": "Voorbeeld Title 1",
+          "slug": "aaba",
+          "pages": [],
+          "menu": []
+        },
         "isSeeded": false,
         "version": "012.012.012",
         "screenshotUrl": "Voorbeeld Screenshoturl 1",
-        "companionSchemas": [
-          {}
-        ],
+        "companionSchemas": [],
         "sourceUrl": "Voorbeeld Sourceurl 1"
       },
       {
@@ -184,13 +188,17 @@
         "description": "Voorbeeld Description 2",
         "useCase": "Voorbeeld Usecase 2",
         "category": "internal-operations",
-        "manifest": {},
+        "manifest": {
+          "version": "1.0.0",
+          "name": "Voorbeeld Title 2",
+          "slug": "bbcb",
+          "pages": [],
+          "menu": []
+        },
         "isSeeded": false,
         "version": "123.123.123",
         "screenshotUrl": "Voorbeeld Screenshoturl 2",
-        "companionSchemas": [
-          {}
-        ],
+        "companionSchemas": [],
         "sourceUrl": "Voorbeeld Sourceurl 2"
       },
       {
@@ -204,13 +212,17 @@
         "description": "Voorbeeld Description 3",
         "useCase": "Voorbeeld Usecase 3",
         "category": "citizen-engagement",
-        "manifest": {},
+        "manifest": {
+          "version": "1.0.0",
+          "name": "Voorbeeld Title 3",
+          "slug": "ccdc",
+          "pages": [],
+          "menu": []
+        },
         "isSeeded": false,
         "version": "234.234.234",
         "screenshotUrl": "Voorbeeld Screenshoturl 3",
-        "companionSchemas": [
-          {}
-        ],
+        "companionSchemas": [],
         "sourceUrl": "Voorbeeld Sourceurl 3"
       },
       {
@@ -232,7 +244,6 @@
         "semver": "0.1.0",
         "status": "draft",
         "application": "00000000-0000-4000-8000-000000000000",
-        "manifestDelta": {},
         "baseRef": {
           "kind": "Voorbeeld Kind 1",
           "id": "Voorbeeld Id 1",
@@ -263,7 +274,6 @@
         "semver": "0.1.0",
         "status": "published",
         "application": "00000000-0000-4000-8000-000000000001",
-        "manifestDelta": {},
         "baseRef": {
           "kind": "Voorbeeld Kind 2",
           "id": "Voorbeeld Id 2",
@@ -294,7 +304,6 @@
         "semver": "0.1.0",
         "status": "archived",
         "application": "00000000-0000-4000-8000-000000000002",
-        "manifestDelta": {},
         "baseRef": {
           "kind": "Voorbeeld Kind 3",
           "id": "Voorbeeld Id 3",
