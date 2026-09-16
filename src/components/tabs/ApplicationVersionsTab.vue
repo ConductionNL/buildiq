@@ -24,6 +24,10 @@
 			:canRelease="canRelease"
 			@rollback="onRollback"
 			@released="onReleased" />
+		<VersionSnapshotsPanel
+			v-if="obApp && obApp.slug"
+			:appSlug="obApp.slug"
+			:canEdit="canEdit" />
 		<p v-if="rollbackError" class="ob-versions-tab__error">
 			{{ rollbackError }}
 		</p>
@@ -34,11 +38,12 @@
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import VersionHistory from '../../views/VersionHistory.vue'
+import VersionSnapshotsPanel from '../VersionSnapshotsPanel.vue'
 import applicationContext from '../../mixins/applicationContext.js'
 
 export default {
 	name: 'ApplicationVersionsTab',
-	components: { VersionHistory },
+	components: { VersionHistory, VersionSnapshotsPanel },
 	mixins: [applicationContext],
 	data() {
 		return { rollbackError: '' }

@@ -1121,7 +1121,18 @@
         "Not configured": "Niet geconfigureerd",
         "Simulated": "Gesimuleerd",
         "Not available": "Niet beschikbaar",
-        "Error": "Fout"
+        "Error": "Fout",
+        "{user}, {date}": "{user}, {date}",
+        "Could not load the snapshots.": "De momentopnamen konden niet worden geladen.",
+        "Could not roll back.": "Terugzetten is mislukt.",
+        "Could not take the snapshot.": "De momentopname kon niet worden gemaakt.",
+        "For example: before adding the tasks page": "Bijvoorbeeld: voor het toevoegen van de takenpagina",
+        "No snapshots yet. Take one before you make a change you may want to undo.": "Nog geen momentopnamen. Maak er een voordat je iets wijzigt dat je misschien terug wilt draaien.",
+        "Previous draft": "Vorig concept",
+        "Replace the current manifest with snapshot \"{label}\"?": "Het huidige manifest vervangen door momentopname \"{label}\"?",
+        "Snapshots": "Momentopnamen",
+        "Take snapshot": "Momentopname maken",
+        "The current state is kept as a Previous draft snapshot, so you can roll forward again.": "De huidige staat blijft bewaard als momentopname Vorig concept, zodat je weer vooruit kunt."
     },
     "plurals": null,
     "pluralForm": "nplurals=2; plural=(n != 1);"

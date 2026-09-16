@@ -25,7 +25,7 @@ version's manifest over the current one with nothing kept.
   - `POST /api/applications/{appSlug}/snapshots/{snapshotUuid}/restore`
 - Restoring first saves the version's current manifest as a `previous-draft` snapshot labelled
   "Previous draft", then writes the snapshot's manifest onto the version.
-- The Version history tab gets a **Take snapshot** button (label dialog) and a snapshot list with
+- The Version history tab gets a **Take snapshot** button (label prompt) and a snapshot list with
   label, who took it, when, the checksum, and **Roll back to this version**.
 
 Out of scope: picking a snapshot in the Diff tab (tutorial step 4) and snapshotting records.

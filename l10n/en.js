@@ -1454,7 +1454,18 @@ OC.L10N.register(
         "Not configured": "Not configured",
         "Simulated": "Simulated",
         "Not available": "Not available",
-        "Error": "Error"
+        "Error": "Error",
+        "{user}, {date}": "{user}, {date}",
+        "Could not load the snapshots.": "Could not load the snapshots.",
+        "Could not roll back.": "Could not roll back.",
+        "Could not take the snapshot.": "Could not take the snapshot.",
+        "For example: before adding the tasks page": "For example: before adding the tasks page",
+        "No snapshots yet. Take one before you make a change you may want to undo.": "No snapshots yet. Take one before you make a change you may want to undo.",
+        "Previous draft": "Previous draft",
+        "Replace the current manifest with snapshot \"{label}\"?": "Replace the current manifest with snapshot \"{label}\"?",
+        "Snapshots": "Snapshots",
+        "Take snapshot": "Take snapshot",
+        "The current state is kept as a Previous draft snapshot, so you can roll forward again.": "The current state is kept as a Previous draft snapshot, so you can roll forward again."
     },
     "nplurals=2; plural=(n != 1);"
 )
