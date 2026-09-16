@@ -1453,7 +1453,8 @@
         "Not configured": "Not configured",
         "Simulated": "Simulated",
         "Not available": "Not available",
-        "Error": "Error"
+        "Error": "Error",
+        "Back to virtual apps": "Back to virtual apps"
     },
     "plurals": "",
     "pluralForm": "nplurals=2; plural=(n != 1);"

@@ -15,6 +15,7 @@
 // only the bare /builder/{slug} runtime is served by this entry.
 
 import {
+	CnAppNav,
 	CnAppRoot,
 	CnPageRenderer,
 	defaultPageTypes,
@@ -33,6 +34,10 @@ import { generateUrl } from '@nextcloud/router'
 import { NcEmptyContent } from '@nextcloud/vue'
 import { createApp, h, reactive } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
+import BackToVirtualApps, {
+	declaresPrimaryAction,
+	showBackToVirtualApps,
+} from './components/runtime/BackToVirtualApps.vue'
 import { registerScope, useRegisterPicker } from './composables/useRegisterPicker.js'
 import pinia from './pinia.js'
 import { registerDirectives } from './registerDirectives.js'
@@ -440,10 +445,32 @@ async function boot() {
 
 	// A thin root whose render re-runs on `routerEpoch`, so bumping it remounts
 	// the routed view (CnAppRoot keys its <router-view> on `routerViewKey`).
+	// The way back to Buildiq's app list, for the people building the app, at
+	// the top of the app's navigation. A slot, not a menu entry: the manifest
+	// never carries it, so an in-app save cannot store it. The navigation's
+	// top region belongs to the app's own primary action when the page on
+	// screen declares one, so the link steps aside there.
+	const slots = showBackToVirtualApps({ versionSlug, manifest })
+		? {
+				menu: (navProps) =>
+					h(
+						CnAppNav,
+						navProps,
+						declaresPrimaryAction(manifest, router.currentRoute.value.name)
+							? {}
+							: { 'primary-action': () => h(BackToVirtualApps) },
+					),
+			}
+		: {}
+
 	const app = createApp({
 		name: 'BuildiqBuilderRoot',
 		render: () =>
-			h(CnAppRoot, { ...shellProps, routerViewKey: shellState.routerEpoch }),
+			h(
+				CnAppRoot,
+				{ ...shellProps, routerViewKey: shellState.routerEpoch },
+				slots,
+			),
 	})
 
 	app.mixin({ methods: { t, n } })
