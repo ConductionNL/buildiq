@@ -607,4 +607,47 @@ final class ExportsControllerTest extends TestCase {
 			message: 'download() must remain reachable by non-admin users (guarded by isAuthorisedForJob).'
 		);
 	}//end testSubmitDoesNotCarryNoCsrfRequiredWhileDownloadDoes()
+
+	/**
+	 * run() starts the owner's queued export right away.
+	 *
+	 * @return void
+	 */
+	public function testRunStartsTheQueuedExportForItsOwner(): void {
+		$this->stubAuthorisedFallback();
+		$this->exportJobService->expects(self::once())->method('runNow')->with('owned-uuid')->willReturn(true);
+
+		$response = $this->buildController()->run('owned-uuid');
+
+		self::assertSame(Http::STATUS_OK, $response->getStatus());
+		self::assertSame(['started' => true], $response->getData());
+	}//end testRunStartsTheQueuedExportForItsOwner()
+
+	/**
+	 * run() answers 409 when cron already took the job.
+	 *
+	 * @return void
+	 */
+	public function testRunReportsAJobThatWasAlreadyPickedUp(): void {
+		$this->stubAuthorisedFallback();
+		$this->exportJobService->method('runNow')->willReturn(false);
+
+		$response = $this->buildController()->run('owned-uuid');
+
+		self::assertSame(Http::STATUS_CONFLICT, $response->getStatus());
+	}//end testRunReportsAJobThatWasAlreadyPickedUp()
+
+	/**
+	 * run() never starts somebody else's job, and hides that it exists.
+	 *
+	 * @return void
+	 */
+	public function testRunRefusesAForeignJob(): void {
+		$this->container->method('has')->willReturn(false);
+		$this->exportJobService->expects(self::never())->method('runNow');
+
+		$response = $this->buildController()->run('foreign-uuid');
+
+		self::assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+	}//end testRunRefusesAForeignJob()
 }//end class

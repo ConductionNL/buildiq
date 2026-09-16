@@ -455,4 +455,34 @@ final class RunExportJobTest extends TestCase {
 			);
 		}
 	}//end testNoTokenShapedStringIsEverLogged()
+
+	/**
+	 * A job that already left the queued state is not run a second time:
+	 * the dialog starts it right away and cron may try it again later.
+	 *
+	 * @return void
+	 */
+	public function testRunSkipsAJobThatIsNoLongerQueued(): void {
+		$job = $this->jobFixture();
+		$job['status'] = 'running';
+		$this->exportJobService->method('loadJob')->willReturn($job);
+
+		$this->exportJobService->expects(self::never())->method('transitionJob');
+		$this->exportService->expects(self::never())->method('generateAppZip');
+
+		$this->invokeRun($this->buildJob(), ['jobUuid' => 'job-running']);
+	}//end testRunSkipsAJobThatIsNoLongerQueued()
+
+	/**
+	 * runFor() runs the same pipeline cron would, for the named job.
+	 *
+	 * @return void
+	 */
+	public function testRunForRunsTheExportOutsideCron(): void {
+		$this->exportJobService->method('loadJob')->willReturn($this->jobFixture());
+		$this->exportJobService->method('transitionJob')->willReturn(true);
+		$this->exportService->expects(self::once())->method('generateAppZip')->willReturn('/tmp/x.zip');
+
+		$this->buildJob()->runFor(jobUuid: 'job-now');
+	}//end testRunForRunsTheExportOutsideCron()
 }//end class
