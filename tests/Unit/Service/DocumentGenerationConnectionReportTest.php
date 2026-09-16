@@ -56,6 +56,7 @@ use Throwable;
  * Unit tests for the report DocumentGenerationService sends after the Filinq call.
  *
  * @covers \OCA\Buildiq\Service\DocumentGenerationService
+ * @uses \OCA\Buildiq\Service\Connection\ConnectionObservations
  */
 class DocumentGenerationConnectionReportTest extends TestCase {
 

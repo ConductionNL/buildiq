@@ -49,6 +49,7 @@ use Throwable;
  * Unit tests for the report the dispatcher sends after each webhook.
  *
  * @covers \OCA\Buildiq\Service\RuleActionDispatcher
+ * @uses \OCA\Buildiq\Service\Connection\ConnectionObservations
  */
 class RuleActionDispatcherConnectionReportTest extends TestCase {
 
