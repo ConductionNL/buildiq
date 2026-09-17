@@ -185,6 +185,25 @@ class SetupControllerDemoDataTest extends TestCase {
 		$this->assertStringContainsString('5', $data['message']);
 	}
 
+	/**
+	 * 🔴 THE OPERATOR SEES THE GAP. A message that names only the count it was
+	 * handed cannot be told apart from a run that seeded everything, which is
+	 * how "Demo data installed: 18 objects" hid 18 skipped objects on
+	 * 2026-09-15.
+	 */
+	public function testAPartialImportNamesWhatLandedAndWhatWasSkipped(): void {
+		$this->config['demo_dataset'] = 'demo';
+		$this->demoData->method('install')->willReturn(
+			['objects' => 3, 'declared' => 18, 'skipped' => 15, 'registers' => 1, 'schemas' => 0]
+		);
+
+		$data = $this->controller()->runAction('load-demo-data')->getData();
+
+		$this->assertTrue($data['success']);
+		$this->assertStringContainsString('Imported 3 of 18', $data['message']);
+		$this->assertStringContainsString('15 skipped', $data['message']);
+	}
+
 	public function testAFailedLoadIsReportedAndLeavesTheStepUNDECIDED(): void {
 		// Recording the decision here would close the step for an operator who
 		// asked for example data and received none.

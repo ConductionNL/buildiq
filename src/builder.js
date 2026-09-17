@@ -15,6 +15,7 @@
 // only the bare /builder/{slug} runtime is served by this entry.
 
 import {
+	CnAppNav,
 	CnAppRoot,
 	CnPageRenderer,
 	defaultPageTypes,
@@ -33,13 +34,21 @@ import { generateUrl } from '@nextcloud/router'
 import { NcEmptyContent } from '@nextcloud/vue'
 import { createApp, h, reactive } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
+import BackToVirtualApps, {
+	declaresPrimaryAction,
+	showBackToVirtualApps,
+} from './components/runtime/BackToVirtualApps.vue'
 import { registerScope, useRegisterPicker } from './composables/useRegisterPicker.js'
 import pinia from './pinia.js'
 import { registerDirectives } from './registerDirectives.js'
 import { runtimeRegistry } from './runtimeRegistry.js'
+import { keepVersionQuery } from './services/versionQuery.js'
 import { registerSlugForApp } from './store/schemas.js'
+import { virtualAppSupportDialog } from './utils/virtualAppSupportDialog.js'
 
 import '@conduction/nextcloud-vue/css/index.css'
+// Toast styles: without them every toast renders as bare text in a corner.
+import '@nextcloud/dialogs/style.css'
 // nc-vue's CnDashboardGrid/CnWidgetGrid no longer bundle gridstack's JS or
 // CSS (nc-vue#557) — it is a peerDependency now. A virtual app's manifest
 // can declare a type:"dashboard" page (this entry calls
@@ -347,6 +356,8 @@ async function boot() {
 		history: createWebHistory(generateUrl(`/apps/buildiq/builder/${slug}`)),
 		routes: routesFromManifest(manifest),
 	})
+	// A development preview stays on its version while you click through it.
+	keepVersionQuery(router, versionSlug)
 
 	// Bumped AFTER a router rebuild that changed the PAGE SET, to remount the
 	// shell's <router-view> (via CnAppRoot's `routerViewKey`). Swapping route
@@ -373,6 +384,9 @@ async function boot() {
 		// The app's display name — drives the support dialog title etc.
 		// Without it CnAppRoot falls back to the appId ("buildiq-{slug}").
 		appName: manifest.name || manifest.title || slug,
+		// Buildiq's own support note does not belong on an app a user built.
+		// Off unless the app's author switched it on; see the helper.
+		supportDialog: virtualAppSupportDialog(manifest),
 		manifest,
 		// runtime-group-scoped-access REQ-1: forwarded to CnAppNav /
 		// CnPageRenderer's permission filter — client-side mirror of the
@@ -440,10 +454,32 @@ async function boot() {
 
 	// A thin root whose render re-runs on `routerEpoch`, so bumping it remounts
 	// the routed view (CnAppRoot keys its <router-view> on `routerViewKey`).
+	// The way back to Buildiq's app list, for the people building the app, at
+	// the top of the app's navigation. A slot, not a menu entry: the manifest
+	// never carries it, so an in-app save cannot store it. The navigation's
+	// top region belongs to the app's own primary action when the page on
+	// screen declares one, so the link steps aside there.
+	const slots = showBackToVirtualApps({ versionSlug, manifest })
+		? {
+				menu: (navProps) =>
+					h(
+						CnAppNav,
+						navProps,
+						declaresPrimaryAction(manifest, router.currentRoute.value.name)
+							? {}
+							: { 'primary-action': () => h(BackToVirtualApps) },
+					),
+			}
+		: {}
+
 	const app = createApp({
 		name: 'BuildiqBuilderRoot',
 		render: () =>
-			h(CnAppRoot, { ...shellProps, routerViewKey: shellState.routerEpoch }),
+			h(
+				CnAppRoot,
+				{ ...shellProps, routerViewKey: shellState.routerEpoch },
+				slots,
+			),
 	})
 
 	app.mixin({ methods: { t, n } })

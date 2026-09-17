@@ -53,6 +53,8 @@ class SettingsService {
 
 	/**
 	 * Per-key default values. Keys absent here default to ''.
+	 * `register` defaults to the app's own register, the one the repair step
+	 * imports, so a fresh install shows it instead of an empty field.
 	 * `registry_register` defaults to `buildiq` (the catalogue's register
 	 * segment); `registry_url` defaults to '' so the store stays hidden until an
 	 * admin configures it (the placeholder URL is only a UI hint, never stored).
@@ -60,7 +62,21 @@ class SettingsService {
 	 * @var array<string, string>
 	 */
 	private const CONFIG_DEFAULTS = [
+		'register' => ApplicationVersionService::REGISTER_SLUG,
 		'registry_register' => 'buildiq',
+	];
+
+	/**
+	 * Keys whose stored empty value also falls back to the default.
+	 *
+	 * Saving the admin form with the field cleared writes '', and an empty
+	 * register points Buildiq nowhere. Reading that back as the app's own
+	 * register keeps the field and the app in agreement.
+	 *
+	 * @var array<string>
+	 */
+	private const EMPTY_MEANS_DEFAULT = [
+		'register',
 	];
 
 	/**
@@ -124,7 +140,12 @@ class SettingsService {
 		$settings = [];
 		foreach (self::CONFIG_KEYS as $key) {
 			$default = (self::CONFIG_DEFAULTS[$key] ?? '');
-			$settings[$key] = $this->appConfig->getValueString(Application::APP_ID, $key, $default);
+			$value = $this->appConfig->getValueString(Application::APP_ID, $key, $default);
+			if ($value === '' && in_array($key, self::EMPTY_MEANS_DEFAULT, true) === true) {
+				$value = $default;
+			}
+
+			$settings[$key] = $value;
 		}
 
 		$user = $this->userSession->getUser();

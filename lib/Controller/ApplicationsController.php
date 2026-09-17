@@ -545,6 +545,13 @@ class ApplicationsController extends Controller {
 		$resolved = $this->resolveApplicationBySlug(slug: $slug);
 		if (is_array($resolved) === true) {
 			[, $applicationArray] = $resolved;
+			// Same name projection as the production path: without it a
+			// `?_version=` preview titled its browser tab with the raw slug.
+			$authoritativeName = (string)($applicationArray['name'] ?? '');
+			if ($authoritativeName !== '') {
+				$manifest['name'] = $authoritativeName;
+			}
+
 			$manifest = $this->manifestResolver->filterManifestForCaller(
 				manifest: $manifest,
 				application: $applicationArray,
@@ -593,50 +600,15 @@ class ApplicationsController extends Controller {
 		}
 
 		try {
-			$registerId = $this->registerMapper->find(ApplicationVersionService::REGISTER_SLUG, _multitenancy: false)->getId();
-			$routeSchema = $this->schemaMapper->find('built-app-route', _multitenancy: false)->getId();
-
-			$routeResults = $this->objectService->searchObjects(
-				query: [
-					'@self' => [
-						'register' => $registerId,
-						'schema' => $routeSchema,
-					],
-					'slug' => $slug,
-				]
-			);
-
-			if (empty($routeResults) === true) {
-				return new JSONResponse(
-					data: ['error' => 'not_found', 'message' => 'No published virtual app found for slug ' . $slug],
-					statusCode: Http::STATUS_NOT_FOUND
-				);
+			// Same lookup as getManifest(), including the fallback for apps
+			// without a route index entry. This used to repeat the route-only
+			// lookup, so the Diff tab 404'd for every app without one.
+			$resolved = $this->resolveApplicationBySlug(slug: $slug);
+			if ($resolved instanceof JSONResponse) {
+				return $resolved;
 			}
 
-			$route = $this->normaliseObject(object: $routeResults[0]);
-			$applicationUuid = ($route['applicationUuid'] ?? null);
-
-			if ($applicationUuid === null) {
-				return new JSONResponse(
-					data: ['error' => 'inconsistent_state', 'message' => 'Route exists but has no applicationUuid'],
-					statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-				);
-			}
-
-			$application = $this->objectService->find(
-				id: $applicationUuid,
-				register: 'buildiq',
-				schema: 'built-app'
-			);
-
-			if ($application === null) {
-				return new JSONResponse(
-					data: ['error' => 'not_found', 'message' => 'Application not found'],
-					statusCode: Http::STATUS_NOT_FOUND
-				);
-			}
-
-			$applicationArray = $this->normaliseObject(object: $application);
+			[$application, $applicationArray, $applicationUuid] = $resolved;
 
 			// RBAC enforcement (C5 / REQ-OBRBAC-002): deny-by-default before
 			// returning any manifest data. Mirrors the identical gate in getManifest().
@@ -703,11 +675,7 @@ class ApplicationsController extends Controller {
 	 */
 	private function resolveVersionBlob(string $token, array $application, string $applicationUuid): ?array {
 		if ($token === 'draft') {
-			return [
-				'manifest' => ($application['manifest'] ?? null),
-				'version' => ($application['version'] ?? null),
-				'publishedAt' => null,
-			];
+			return $this->draftBlob(application: $application, applicationUuid: $applicationUuid);
 		}
 
 		// AN EMPTY TOKEN IS A MISS, NOT A LOOKUP.
@@ -739,11 +707,7 @@ class ApplicationsController extends Controller {
 		// Translated at the lookup, with the cause logged, so the null the
 		// signature has always promised is actually reachable.
 		try {
-			$version = $this->objectService->find(
-				id: $token,
-				register: 'buildiq',
-				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
-			);
+			$version = $this->lookupVersionForDiff(token: $token, applicationUuid: $applicationUuid);
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				'Buildiq: diff token {token} did not resolve to an ApplicationVersion: {message}',
@@ -758,17 +722,133 @@ class ApplicationsController extends Controller {
 
 		$versionArray = $this->normaliseObject(object: $version);
 
-		// Organisation-scope enforcement: a snapshot from another Application is a miss.
-		if (($versionArray['applicationUuid'] ?? null) !== $applicationUuid) {
+		// Scope enforcement: a version of another Application is a miss. The
+		// old check read `applicationUuid`, a field no ApplicationVersion has,
+		// so every real version was a miss.
+		if ($this->versionParentUuid(version: $versionArray) !== $applicationUuid) {
 			return null;
 		}
 
+		$semver = ($versionArray['semver'] ?? ($versionArray['version'] ?? null));
 		return [
 			'manifest' => ($versionArray['manifest'] ?? null),
-			'version' => ($versionArray['version'] ?? null),
+			'version' => $semver,
+			'semver' => $semver,
+			'name' => ($versionArray['name'] ?? ($versionArray['slug'] ?? null)),
 			'publishedAt' => ($versionArray['publishedAt'] ?? null),
 		];
 	}//end resolveVersionBlob()
+
+	/**
+	 * The `draft` diff side: the legacy application-level manifest, or else
+	 * the production version's manifest (the manifest lives on the version).
+	 *
+	 * @param array<string, mixed> $application Normalised Application data.
+	 * @param string $applicationUuid Parent Application UUID for scoping.
+	 *
+	 * @return array<string, mixed> The blob.
+	 *
+	 * @spec openspec/specs/openbuild-version-snapshots/spec.md
+	 */
+	private function draftBlob(array $application, string $applicationUuid): array {
+		$manifest = ($application['manifest'] ?? null);
+		$productionUuid = ($application['productionVersion'] ?? '');
+		if ($manifest === null && is_string($productionUuid) === true && $productionUuid !== '' && $productionUuid !== 'draft') {
+			$production = $this->resolveVersionBlob(token: $productionUuid, application: $application, applicationUuid: $applicationUuid);
+			$manifest = ($production['manifest'] ?? null);
+		}
+
+		return [
+			'manifest' => $manifest,
+			'version' => ($application['version'] ?? null),
+			'publishedAt' => null,
+		];
+	}//end draftBlob()
+
+	/**
+	 * Look a diff ref up: by object id first, then as a version slug.
+	 *
+	 * @param string $token The ref.
+	 * @param string $applicationUuid Parent Application UUID.
+	 *
+	 * @return mixed The version object, or null.
+	 *
+	 * @throws \OCP\DB\Exception When the slug search itself fails.
+	 *
+	 * @spec openspec/specs/openbuild-version-snapshots/spec.md
+	 */
+	private function lookupVersionForDiff(string $token, string $applicationUuid): mixed {
+		try {
+			$version = $this->objectService->find(
+				id: $token,
+				register: 'buildiq',
+				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+			);
+		} catch (Throwable $e) {
+			$version = null;
+		}
+
+		if ($version !== null) {
+			return $version;
+		}
+
+		// The spec's canonical ref is the version slug (`development`).
+		return $this->findVersionBySlugForDiff(slug: $token, applicationUuid: $applicationUuid);
+	}//end lookupVersionForDiff()
+
+	/**
+	 * The parent Application UUID of a version (its `application` relation).
+	 *
+	 * @param array<string, mixed> $version Normalised version data.
+	 *
+	 * @return mixed The UUID, or null.
+	 *
+	 * @spec openspec/specs/openbuild-version-snapshots/spec.md
+	 */
+	private function versionParentUuid(array $version): mixed {
+		$parent = ($version['application'] ?? ($version['applicationUuid'] ?? null));
+		if (is_array($parent) === true) {
+			return ($parent['id'] ?? ($parent['uuid'] ?? null));
+		}
+
+		return $parent;
+	}//end versionParentUuid()
+
+	/**
+	 * Find one of this Application's versions by its slug.
+	 *
+	 * @param string $slug The version slug (for example `development`)
+	 * @param string $applicationUuid The parent Application UUID
+	 *
+	 * @return mixed The version object, or null when the app has no such version
+	 *
+	 * @throws \OCP\DB\Exception When the register, schema or object search fails.
+	 *
+	 * @spec openspec/specs/openbuild-version-snapshots/spec.md
+	 */
+	private function findVersionBySlugForDiff(string $slug, string $applicationUuid): mixed {
+		$registerId = $this->registerMapper->find(ApplicationVersionService::REGISTER_SLUG, _multitenancy: false)->getId();
+		$schemaId = $this->schemaMapper->find(ApplicationVersionService::APPLICATION_VERSION_SCHEMA, _multitenancy: false)->getId();
+
+		$results = $this->objectService->searchObjects(
+			query: [
+				'@self' => [
+					'register' => $registerId,
+					'schema' => $schemaId,
+				],
+				'application' => $applicationUuid,
+				'slug' => $slug,
+			]
+		);
+
+		foreach ((array)$results as $result) {
+			if (($this->normaliseObject(object: $result)['slug'] ?? null) === $slug) {
+				return $result;
+			}
+		}
+
+		return null;
+	}//end findVersionBySlugForDiff()
 
 	/**
 	 * Resolve a virtual-app slug to the Application object + array form + uuid.
@@ -819,27 +899,13 @@ class ApplicationsController extends Controller {
 			);
 		}//end try
 
-		// Step 1 — resolve slug → applicationUuid via the BuiltAppRoute index.
-		$routeResults = $this->objectService->searchObjects(
-			query: [
-				'@self' => [
-					'register' => $registerId,
-					'schema' => $routeSchema,
-				],
-				'slug' => $slug,
-			]
-		);
-
-		if (empty($routeResults) === true) {
-			$this->logger->debug('Buildiq: no BuiltAppRoute found for slug=' . $slug);
-			return new JSONResponse(
-				data: ['error' => 'not_found', 'message' => 'No published virtual app found for slug ' . $slug],
-				statusCode: Http::STATUS_NOT_FOUND
-			);
+		// Step 1 — resolve slug → applicationUuid via the BuiltAppRoute index,
+		// or the Application itself when the app has no index entry.
+		$route = $this->findRouteForSlug(slug: $slug, registerId: $registerId, routeSchema: $routeSchema);
+		if ($route instanceof JSONResponse) {
+			return $route;
 		}
 
-		// FindAll renders entities; result entries may be ObjectEntity or arrays.
-		$route = $this->normaliseObject(object: $routeResults[0]);
 		$applicationUuid = ($route['applicationUuid'] ?? null);
 
 		if ($applicationUuid === null) {
@@ -867,6 +933,92 @@ class ApplicationsController extends Controller {
 
 		return [$application, $this->normaliseObject(object: $application), (string)$applicationUuid];
 	}//end resolveApplicationBySlug()
+
+	/**
+	 * The BuiltAppRoute entry for a slug, or a stand-in built from the Application.
+	 *
+	 * Apps installed by the seed, a template or GitHub do not always get a
+	 * route index entry, and the Manifest and Diff tabs 404'd for every such
+	 * app (Hello World included). The Application itself carries the slug, so
+	 * it is looked up there. RBAC still applies in the callers.
+	 *
+	 * @param string $slug The virtual-app slug
+	 * @param mixed $registerId The buildiq register id
+	 * @param mixed $routeSchema The built-app-route schema id
+	 *
+	 * @return array<string, mixed>|JSONResponse The route data, or a 404
+	 *
+	 * @spec openspec/specs/openbuild-runtime/spec.md
+	 */
+	private function findRouteForSlug(string $slug, mixed $registerId, mixed $routeSchema): array|JSONResponse {
+		$routeResults = $this->objectService->searchObjects(
+			query: [
+				'@self' => [
+					'register' => $registerId,
+					'schema' => $routeSchema,
+				],
+				'slug' => $slug,
+			]
+		);
+
+		if (empty($routeResults) === false) {
+			// FindAll renders entities; result entries may be ObjectEntity or arrays.
+			return $this->normaliseObject(object: $routeResults[0]);
+		}
+
+		$applicationUuid = $this->findApplicationUuidBySlug(slug: $slug, registerId: $registerId);
+		if ($applicationUuid === null) {
+			$this->logger->debug('Buildiq: no BuiltAppRoute or Application found for slug=' . $slug);
+			return new JSONResponse(
+				data: ['error' => 'not_found', 'message' => 'No virtual app found for slug ' . $slug],
+				statusCode: Http::STATUS_NOT_FOUND
+			);
+		}
+
+		return ['applicationUuid' => $applicationUuid];
+	}//end findRouteForSlug()
+
+	/**
+	 * Find an Application's UUID by its slug, without the route index.
+	 *
+	 * @param string $slug The virtual-app slug
+	 * @param mixed $registerId The buildiq register id
+	 *
+	 * @return string|null The Application UUID, or null when no Application has this slug
+	 *
+	 * @spec openspec/specs/openbuild-runtime/spec.md
+	 */
+	private function findApplicationUuidBySlug(string $slug, mixed $registerId): ?string {
+		try {
+			$appSchema = $this->schemaMapper->find(ApplicationVersionService::APPLICATION_SCHEMA, _multitenancy: false)->getId();
+		} catch (Throwable $e) {
+			return null;
+		}
+
+		$results = $this->objectService->searchObjects(
+			query: [
+				'@self' => [
+					'register' => $registerId,
+					'schema' => $appSchema,
+				],
+				'slug' => $slug,
+			]
+		);
+
+		foreach ((array)$results as $result) {
+			$application = $this->normaliseObject(object: $result);
+			if (($application['slug'] ?? null) !== $slug) {
+				continue;
+			}
+
+			$uuid = ($application['id'] ?? $application['uuid'] ?? $application['@self']['id'] ?? null);
+			if (is_string($uuid) === true && $uuid !== '') {
+				return $uuid;
+			}
+		}
+
+		return null;
+	}//end findApplicationUuidBySlug()
 
 	/**
 	 * Return the list of Applications the caller has any role on.
@@ -1407,6 +1559,7 @@ class ApplicationsController extends Controller {
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-55
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
+	 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 10, period: 3600)]
@@ -1463,6 +1616,14 @@ class ApplicationsController extends Controller {
 				detail: $templateSlug,
 				status: Http::STATUS_NOT_FOUND
 			);
+		}
+
+		// An optional description typed in the Use this template dialog
+		// replaces the template's own; left empty, the new app keeps the
+		// template's description (see persistApplication()).
+		$description = trim((string)($this->request->getParams()['description'] ?? ''));
+		if ($description !== '') {
+			$template['description'] = $description;
 		}
 
 		$result = $this->installFromTemplateArray(
@@ -1800,6 +1961,7 @@ class ApplicationsController extends Controller {
 	 *                   caller nothing was created when something was.
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-55
+	 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
 	 */
 	private function persistApplication(
 		string $name,
@@ -1815,6 +1977,9 @@ class ApplicationsController extends Controller {
 				object: [
 					'name' => $name,
 					'slug' => $newSlug,
+					// The template's description, or the one the user typed
+					// (createFromTemplate() puts that on the template array).
+					'description' => (string)($template['description'] ?? ''),
 					'status' => 'draft',
 					'version' => '0.1.0',
 					'owner' => $ownerUid,
