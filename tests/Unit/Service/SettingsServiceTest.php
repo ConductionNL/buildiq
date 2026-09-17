@@ -117,6 +117,45 @@ final class SettingsServiceTest extends TestCase {
 	}//end testGetSettingsReturnsConfigKeysAndMetadata()
 
 	/**
+	 * A fresh install has no stored register: the setting reads as the app's
+	 * own `buildiq` register, as the admin tutorial promises, not as ''.
+	 *
+	 * @return void
+	 */
+	public function testGetSettingsDefaultsRegisterToTheAppRegisterWhenUnset(): void {
+		// Behave like IAppConfig on an absent key: hand back the default.
+		$this->appConfig->method('getValueString')->willReturnCallback(
+			static fn (string $app, string $key, string $default = ''): string => $default
+		);
+		$this->appManager->method('isInstalled')->willReturn(true);
+		$this->userSession->method('getUser')->willReturn(null);
+
+		$settings = $this->sut()->getSettings();
+
+		self::assertSame('buildiq', $settings['register']);
+	}//end testGetSettingsDefaultsRegisterToTheAppRegisterWhenUnset()
+
+	/**
+	 * A register saved as '' (the form submitted with the field cleared) also
+	 * reads back as the app's own register.
+	 *
+	 * @return void
+	 */
+	public function testGetSettingsTreatsAStoredEmptyRegisterAsTheDefault(): void {
+		$this->appConfig->method('getValueString')->willReturnCallback(
+			static fn (string $app, string $key, string $default = ''): string => ($key === 'register') ? '' : $default
+		);
+		$this->appManager->method('isInstalled')->willReturn(true);
+		$this->userSession->method('getUser')->willReturn(null);
+
+		$settings = $this->sut()->getSettings();
+
+		self::assertSame('buildiq', $settings['register']);
+		// Other keys keep their plain semantics: an empty registry_url stays empty.
+		self::assertSame('', $settings['registry_url']);
+	}//end testGetSettingsTreatsAStoredEmptyRegisterAsTheDefault()
+
+	/**
 	 * REQ-OBS-001 — isAdmin is false when no user is signed in.
 	 *
 	 * @return void

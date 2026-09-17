@@ -1458,7 +1458,11 @@
         "Save to a register": "Save to a register",
         "Select a register": "Select a register",
         "Select a schema": "Select a schema",
-        "Submit URL": "Submit URL"
+        "Submit URL": "Submit URL",
+        "Could not load the connector sources and endpoints.": "Could not load the connector sources and endpoints.",
+        "Endpoint": "Endpoint",
+        "Select a source": "Select a source",
+        "This source has no endpoints yet.": "This source has no endpoints yet."
     },
     "plurals": "",
     "pluralForm": "nplurals=2; plural=(n != 1);"
