@@ -121,6 +121,7 @@ export default {
 			 *
 			 * @param {string} slug The app slug.
 			 * @return {void}
+			 * @spec openspec/specs/openbuild-version-snapshots/spec.md
 			 */
 			handler(slug) {
 				if (slug) {

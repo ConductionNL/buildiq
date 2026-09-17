@@ -141,6 +141,7 @@ export function ensureProductionVersionsLoaded(uuid = '') {
  * Reset the cache — test seam, and the hook a future refresh action would use.
  *
  * @return {void}
+ * @spec openspec/specs/application-versions/spec.md
  */
 export function resetProductionVersions() {
 	inflight = null

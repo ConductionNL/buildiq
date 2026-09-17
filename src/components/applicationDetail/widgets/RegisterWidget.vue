@@ -141,6 +141,7 @@ export default {
 		 * `buildiq-{appSlug}-{versionSlug}` (ADR-002 / buildiq-versioning-model).
 		 *
 		 * @return {string}
+		 * @spec openspec/specs/application-detail-overview/spec.md
 		 */
 		registerSlug() {
 			if (this.registerSlugOverride) return this.registerSlugOverride
