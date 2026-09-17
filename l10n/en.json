@@ -1462,7 +1462,16 @@
         "Start from a template that ships with Buildiq, or install an app published to GitHub. Either way you get an editable draft app.": "Start from a template that ships with Buildiq, or install an app published to GitHub. Either way you get an editable draft app.",
         "The app could not be created.": "The app could not be created.",
         "The built-in templates could not be loaded. Reload the page to try again.": "The built-in templates could not be loaded. Reload the page to try again.",
-        "What the app is for": "What the app is for"
+        "What the app is for": "What the app is for",
+        "Custom submit handler": "Custom submit handler",
+        "Save to a register": "Save to a register",
+        "Select a register": "Select a register",
+        "Select a schema": "Select a schema",
+        "Submit URL": "Submit URL",
+        "Could not load the connector sources and endpoints.": "Could not load the connector sources and endpoints.",
+        "Endpoint": "Endpoint",
+        "Select a source": "Select a source",
+        "This source has no endpoints yet.": "This source has no endpoints yet."
     },
     "plurals": "",
     "pluralForm": "nplurals=2; plural=(n != 1);"
