@@ -7,7 +7,8 @@
  *
  * Covers four scenarios called out in REQ-OBR-008 (version-history panel)
  * and REQ-OBR-009 (rollback action):
- *   - lists rows fetched from OR REST (newest first, applicationUuid filter)
+ *   - lists rows fetched from the app's versions endpoint (newest first,
+ *     rows whose `application` relation names another app dropped)
  *   - clicking "Roll back" opens the RollbackConfirmModal seeded with the row
  *   - Cancel inside the modal closes it and emits nothing
  *   - Confirm emits `rollback` with the chosen version blob
@@ -111,7 +112,7 @@ describe('VersionHistory — REQ-OBR-008 / REQ-OBR-009', () => {
 				results: [
 					{
 						'@self': { id: 'snap-old' },
-						applicationUuid: APP_UUID,
+						application: APP_UUID,
 						version: '1.0.0',
 						publishedAt: '2026-05-01T10:00:00Z',
 						publishedBy: 'alice',
@@ -119,7 +120,7 @@ describe('VersionHistory — REQ-OBR-008 / REQ-OBR-009', () => {
 					},
 					{
 						'@self': { id: 'snap-new' },
-						applicationUuid: APP_UUID,
+						application: APP_UUID,
 						version: '1.1.0',
 						publishedAt: '2026-05-05T10:00:00Z',
 						publishedBy: 'bob',
@@ -129,7 +130,7 @@ describe('VersionHistory — REQ-OBR-008 / REQ-OBR-009', () => {
 					// out client-side per the IDOR defence-in-depth.
 					{
 						'@self': { id: 'snap-foreign' },
-						applicationUuid: 'app-uuid-2',
+						application: 'app-uuid-2',
 						version: '9.9.9',
 						publishedAt: '2026-06-01T10:00:00Z',
 						manifest: { leaked: true },
@@ -139,7 +140,7 @@ describe('VersionHistory — REQ-OBR-008 / REQ-OBR-009', () => {
 		})
 
 		const wrapper = mount(VersionHistory, {
-			propsData: { applicationUuid: APP_UUID, currentVersionUuid: 'snap-new' },
+			propsData: { appSlug: 'hello-world', applicationUuid: APP_UUID, currentVersionUuid: 'snap-new' },
 		})
 		await flushFetch(wrapper)
 
@@ -159,7 +160,7 @@ describe('VersionHistory — REQ-OBR-008 / REQ-OBR-009', () => {
 				results: [
 					{
 						'@self': { id: 'snap-1' },
-						applicationUuid: APP_UUID,
+						application: APP_UUID,
 						version: '1.0.0',
 						publishedAt: '2026-05-01T10:00:00Z',
 						publishedBy: 'alice',
@@ -170,7 +171,7 @@ describe('VersionHistory — REQ-OBR-008 / REQ-OBR-009', () => {
 		})
 
 		const wrapper = mount(VersionHistory, {
-			propsData: { applicationUuid: APP_UUID },
+			propsData: { appSlug: 'hello-world', applicationUuid: APP_UUID },
 		})
 		await flushFetch(wrapper)
 
@@ -202,7 +203,7 @@ describe('VersionHistory — REQ-OBR-008 / REQ-OBR-009', () => {
 				results: [
 					{
 						'@self': { id: 'snap-1' },
-						applicationUuid: APP_UUID,
+						application: APP_UUID,
 						version: '1.0.0',
 						publishedAt: '2026-05-01T10:00:00Z',
 						manifest: { v: 1 },
@@ -212,7 +213,7 @@ describe('VersionHistory — REQ-OBR-008 / REQ-OBR-009', () => {
 		})
 
 		const wrapper = mount(VersionHistory, {
-			propsData: { applicationUuid: APP_UUID },
+			propsData: { appSlug: 'hello-world', applicationUuid: APP_UUID },
 		})
 		await flushFetch(wrapper)
 
@@ -239,7 +240,7 @@ describe('VersionHistory — REQ-OBR-008 / REQ-OBR-009', () => {
 				results: [
 					{
 						'@self': { id: 'snap-1' },
-						applicationUuid: APP_UUID,
+						application: APP_UUID,
 						version: '1.0.0',
 						publishedAt: '2026-05-01T10:00:00Z',
 						manifest: { v: 1, pages: [] },
@@ -249,7 +250,7 @@ describe('VersionHistory — REQ-OBR-008 / REQ-OBR-009', () => {
 		})
 
 		const wrapper = mount(VersionHistory, {
-			propsData: { applicationUuid: APP_UUID },
+			propsData: { appSlug: 'hello-world', applicationUuid: APP_UUID },
 		})
 		await flushFetch(wrapper)
 
