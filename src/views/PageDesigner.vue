@@ -91,17 +91,7 @@
 						:appRegister="appRegister"
 						:data-registers="applicationDataRegisters"
 						:parentRoute="selectedPage.route || ''"
-						:title="
-							t('buildiq', 'Unsupported page type: {type}', {
-								type: selectedPage.type,
-							})
-						"
-						:message="
-							t(
-								'buildiq',
-								'No visual editor exists for this page type yet. Edit the raw config below; unknown keys are preserved.',
-							)
-						"
+						v-bind="stubEditorProps(selectedPage.type)"
 						:pageId="selectedPage.id || ''"
 						:runtimeExternalForms="externalForms"
 						@update:config="onConfigUpdate"
@@ -888,6 +878,28 @@ export default {
 		},
 
 		/**
+		 * The title and message only the fallback editor takes. Bound on every
+		 * editor, they fell through as an HTML `title` attribute, so screen
+		 * readers announced "Unsupported page type: index" for a supported type.
+		 *
+		 * @param {string} type - the selected page's type.
+		 * @return {object} `{ title, message }` for the fallback editor, else `{}`.
+		 * @spec openspec/specs/page-designer-ui/spec.md#requirement-per-page-type-config-sub-editors-emit-validated-slices
+		 */
+		stubEditorProps(type) {
+			if (this.subEditorFor(type) !== 'StubPageEditor') {
+				return {}
+			}
+			return {
+				title: t('buildiq', 'Unsupported page type: {type}', { type }),
+				message: t(
+					'buildiq',
+					'No visual editor exists for this page type yet. Edit the raw config below; unknown keys are preserved.',
+				),
+			}
+		},
+
+		/**
 		 * Observed behaviour of `selectPage` (retrofit annotation).
 		 *
 		 * @param {number} index - Position in `pages` of the page to open in the centre
@@ -1188,6 +1200,11 @@ export default {
 	gap: 8px;
 	padding: 8px;
 	min-height: 60vh;
+	/* The panes follow the width the designer actually gets, not the window:
+	   with the app navigation open, a 1280px window leaves the designer about
+	   920px, and three columns left the editor 240px wide. Its rows then ran
+	   under the validation column, which swallowed clicks on "Remove column". */
+	container-type: inline-size;
 }
 
 .page-designer__toolbar {
@@ -1394,13 +1411,42 @@ export default {
 	color: var(--color-success, var(--color-text-maxcontrast));
 }
 
-@media (max-width: 1100px) {
+/* Too narrow for three columns: keep the page list beside the editor and
+   move validation and the preview under the editor. */
+@container (max-width: 1100px) {
 	.page-designer__panes {
-		grid-template-columns: 1fr;
+		grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
+		grid-template-rows: auto auto auto;
+	}
+
+	.page-designer__left {
+		grid-column: 1;
+		grid-row: 1 / span 3;
+	}
+
+	.page-designer__centre {
+		grid-column: 2;
+		grid-row: 1;
+	}
+
+	.page-designer__right {
+		grid-column: 2;
+		grid-row: 2;
+	}
+
+	.page-designer__preview-pane {
+		grid-column: 2;
+		grid-row: 3;
+	}
+}
+
+@container (max-width: 700px) {
+	.page-designer__panes {
+		grid-template-columns: minmax(0, 1fr);
 	}
 
 	/* Drop the explicit placements, or grid creates implicit columns for
-	   tracks 2 and 3 that no longer exist. */
+	   tracks that no longer exist. */
 	.page-designer__left,
 	.page-designer__centre,
 	.page-designer__right,

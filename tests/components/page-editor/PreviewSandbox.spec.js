@@ -122,6 +122,40 @@ describe('PreviewSandbox', () => {
 		wrapper.unmount()
 	})
 
+	it('rebuilds when a page switches schema, so no stale columns stay on screen', async () => {
+		const wrapper = mountSandbox()
+		const app = wrapper.vm._sandboxApp
+		await wrapper.setProps({
+			manifest: {
+				...MANIFEST,
+				pages: MANIFEST.pages.map((p) =>
+					p.id === 'pets'
+						? { ...p, config: { register: 'shop', schema: 'concept' } }
+						: p,
+				),
+			},
+		})
+		expect(wrapper.vm._sandboxApp).not.toBe(app)
+		wrapper.unmount()
+	})
+
+	it('leaves out a route that is still being typed instead of going blank', async () => {
+		const wrapper = mountSandbox()
+		await wrapper.setProps({
+			manifest: {
+				...MANIFEST,
+				pages: [...MANIFEST.pages, { id: 'draft', route: 'x/' }],
+			},
+		})
+		// Regression: vue-router threw "Invalid path" on the half-typed
+		// route, and the preview stayed empty.
+		expect(wrapper.vm._sandboxApp).not.toBe(null)
+		const names = wrapper.vm._sandboxRouter.getRoutes().map((r) => r.name)
+		expect(names).toContain('pets')
+		expect(names).not.toContain('draft')
+		wrapper.unmount()
+	})
+
 	it('tells CnAppRoot the preview is not editable, so no Buildiq edit button', () => {
 		const wrapper = mountSandbox()
 		expect(wrapper.vm._sandboxState.manifest.openbuildEditable).toBe(false)

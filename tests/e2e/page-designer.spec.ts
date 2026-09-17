@@ -105,8 +105,8 @@ test.describe('buildiq page designer', () => {
 		const initialPageCount = await rows.count()
 
 		// REQ-OBPD-002 — adding a page prompts for the `type` from the canonical
-		// closed enum before any other field is shown: the add row exposes only
-		// the type picker, and Confirm stays disabled until a type is chosen.
+		// closed enum: the add row offers the type picker (plus optional title
+		// and slug), and Confirm stays disabled until a type is chosen.
 		await page.locator('.page-list-editor__add').click()
 		const confirm = page.getByRole('button', { name: /^confirm$/i })
 		await expect(
