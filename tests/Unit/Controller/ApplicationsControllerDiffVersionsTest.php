@@ -419,9 +419,18 @@ class ApplicationsControllerDiffVersionsTest extends TestCase {
 
 		// resolvableApplication() already stubbed searchObjects; a fresh mock
 		// lets this test answer the version searches too.
-		$find = $this->objectService;
+		$application = $this->objectService->find('app-uuid-1');
 		$this->objectService = $this->createMock(ObjectServiceInterface::class);
-		$this->objectService->method('find')->willReturnCallback(static fn (...$args) => $find->find(...$args));
+		// Like OpenRegister: a slug is not an object id, so that lookup throws.
+		$this->objectService->method('find')->willReturnCallback(
+			static function (string $id) use ($application) {
+				if ($id === 'app-uuid-1') {
+					return $application;
+				}
+
+				throw new \OCP\AppFramework\Db\DoesNotExistException('Object not found');
+			}
+		);
 		$this->objectService->method('searchObjects')->willReturnCallback(
 			static function (array $query) use ($development, $production, $route): array {
 				if (isset($query['application']) === false) {

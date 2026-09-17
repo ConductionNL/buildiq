@@ -759,26 +759,34 @@ class ApplicationsController extends Controller {
 	}//end draftBlob()
 
 	/**
-	 * Look a diff ref up: a UUID by id, anything else as a version slug.
+	 * Look a diff ref up: by object id first, then as a version slug.
 	 *
 	 * @param string $token The ref.
 	 * @param string $applicationUuid Parent Application UUID.
 	 *
 	 * @return mixed The version object, or null.
 	 *
+	 * @throws \OCP\DB\Exception When the slug search itself fails.
+	 *
 	 * @spec openspec/specs/openbuild-version-snapshots/spec.md
 	 */
 	private function lookupVersionForDiff(string $token, string $applicationUuid): mixed {
-		if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $token) !== 1) {
-			// The spec's canonical ref is the version slug.
-			return $this->findVersionBySlugForDiff(slug: $token, applicationUuid: $applicationUuid);
+		try {
+			$version = $this->objectService->find(
+				id: $token,
+				register: 'buildiq',
+				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+			);
+		} catch (Throwable $e) {
+			$version = null;
 		}
 
-		return $this->objectService->find(
-			id: $token,
-			register: 'buildiq',
-			schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
-		);
+		if ($version !== null) {
+			return $version;
+		}
+
+		// The spec's canonical ref is the version slug (`development`).
+		return $this->findVersionBySlugForDiff(slug: $token, applicationUuid: $applicationUuid);
 	}//end lookupVersionForDiff()
 
 	/**
@@ -806,6 +814,8 @@ class ApplicationsController extends Controller {
 	 * @param string $applicationUuid The parent Application UUID
 	 *
 	 * @return mixed The version object, or null when the app has no such version
+	 *
+	 * @throws \OCP\DB\Exception When the register, schema or object search fails.
 	 *
 	 * @spec openspec/specs/openbuild-version-snapshots/spec.md
 	 */
