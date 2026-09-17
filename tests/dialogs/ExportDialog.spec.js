@@ -123,7 +123,8 @@ describe('ExportDialog — Data registers includeData toggle (data-registers-run
 
 		await wrapper.vm.submit()
 
-		expect(axiosPostMock).toHaveBeenCalledTimes(1)
+		// The submit, then the call that starts the export right away.
+		expect(axiosPostMock).toHaveBeenCalledTimes(2)
 		const [, payload] = axiosPostMock.mock.calls[0]
 		expect(payload.dataRegisters).toEqual([
 			{ register: 'spectr', includeData: true },

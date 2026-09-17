@@ -157,6 +157,34 @@ class ExportJobService {
 	}//end queue()
 
 	/**
+	 * Run a queued export now, in this request, instead of waiting for cron.
+	 *
+	 * The job is only run when it is still in the job list: that is the
+	 * claim. It is removed from the list before it runs, so cron cannot pick
+	 * it up a second time, and a job cron already took is not in the list.
+	 *
+	 * @param string $jobUuid ExportJob UUID.
+	 *
+	 * @return bool True when this call ran the job, false when it was no longer queued.
+	 *
+	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-export-is-asynchronous-via-nextcloud-s-ijob
+	 */
+	public function runNow(string $jobUuid): bool {
+		$argument = ['jobUuid' => $jobUuid];
+		if ($this->jobList->has(\OCA\Buildiq\BackgroundJob\RunExportJob::class, $argument) === false) {
+			return false;
+		}
+
+		// Take it off the list first, so cron cannot start it while it runs here.
+		$this->jobList->remove(\OCA\Buildiq\BackgroundJob\RunExportJob::class, $argument);
+
+		$job = $this->container->get(\OCA\Buildiq\BackgroundJob\RunExportJob::class);
+		$job->runFor(jobUuid: $jobUuid);
+
+		return true;
+	}//end runNow()
+
+	/**
 	 * Normalise the submit request's `dataRegisters` choice onto the shape
 	 * `{register: string, includeData: bool}` — mirrors the existing
 	 * `includeSeedData` boolean-cast pattern above. Malformed entries (not

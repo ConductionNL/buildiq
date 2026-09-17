@@ -178,6 +178,8 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // Export pipeline (Phase-2 graduation).
         ['name' => 'exports#submit',   'url' => '/api/applications/{slug}/exports', 'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'exports#download', 'url' => '/api/exports/{uuid}/download',     'verb' => 'GET'],
+        // Runs a queued export in the request instead of waiting for cron (the dialog fires it and moves on).
+        ['name' => 'exports#run',      'url' => '/api/exports/{uuid}/run',          'verb' => 'POST'],
 
         // Business-rules engine (spec business-rules-engine REQ-BRE-006 / REQ-BRE-004).
         // All three carry #[NoAdminRequired] on the controller; resolution goes

@@ -88,6 +88,14 @@ class RunExportJob extends QueuedJob {
 			return;
 		}
 
+		// The job can be started twice: by the export dialog right away and by
+		// cron. Only a job that is still queued runs; a record without a status
+		// predates the field and counts as queued.
+		if ($this->isStillQueued(jobUuid: $jobUuid) === false) {
+			$this->logger->info('Buildiq RunExportJob: job already picked up, skipping', ['jobUuid' => $jobUuid]);
+			return;
+		}
+
 		// Lifecycle transition: queued → running (declarative, via OR
 		// TransitionEngine). The schema's `x-openregister-lifecycle.transitions`
 		// entry named "start" drives this; we never write `status` directly.
@@ -110,6 +118,39 @@ class RunExportJob extends QueuedJob {
 			);
 		}//end try
 	}//end run()
+
+	/**
+	 * Run the export for one job now, outside cron.
+	 *
+	 * Used when the export dialog starts a job right away. The caller removes
+	 * the job from the job list first; run() still skips a job that is no
+	 * longer queued.
+	 *
+	 * @param string $jobUuid Job UUID.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-export-is-asynchronous-via-nextcloud-s-ijob
+	 */
+	public function runFor(string $jobUuid): void {
+		$this->run(argument: ['jobUuid' => $jobUuid]);
+	}//end runFor()
+
+	/**
+	 * Whether the job is still waiting to run.
+	 *
+	 * @param string $jobUuid Job UUID.
+	 *
+	 * @return bool False only when the record says it left the queued state.
+	 *
+	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-export-is-asynchronous-via-nextcloud-s-ijob
+	 */
+	private function isStillQueued(string $jobUuid): bool {
+		$job = $this->exportJobService->loadJob(jobUuid: $jobUuid);
+		$status = (string)($job['status'] ?? 'queued');
+
+		return $status === 'queued';
+	}//end isStillQueued()
 
 	/**
 	 * Pull the job UUID from the Nextcloud job argument.
