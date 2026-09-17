@@ -42,9 +42,13 @@ import { registerScope, useRegisterPicker } from './composables/useRegisterPicke
 import pinia from './pinia.js'
 import { registerDirectives } from './registerDirectives.js'
 import { runtimeRegistry } from './runtimeRegistry.js'
+import { keepVersionQuery } from './services/versionQuery.js'
 import { registerSlugForApp } from './store/schemas.js'
+import { virtualAppSupportDialog } from './utils/virtualAppSupportDialog.js'
 
 import '@conduction/nextcloud-vue/css/index.css'
+// Toast styles: without them every toast renders as bare text in a corner.
+import '@nextcloud/dialogs/style.css'
 // nc-vue's CnDashboardGrid/CnWidgetGrid no longer bundle gridstack's JS or
 // CSS (nc-vue#557) — it is a peerDependency now. A virtual app's manifest
 // can declare a type:"dashboard" page (this entry calls
@@ -352,6 +356,8 @@ async function boot() {
 		history: createWebHistory(generateUrl(`/apps/buildiq/builder/${slug}`)),
 		routes: routesFromManifest(manifest),
 	})
+	// A development preview stays on its version while you click through it.
+	keepVersionQuery(router, versionSlug)
 
 	// Bumped AFTER a router rebuild that changed the PAGE SET, to remount the
 	// shell's <router-view> (via CnAppRoot's `routerViewKey`). Swapping route
@@ -378,6 +384,9 @@ async function boot() {
 		// The app's display name — drives the support dialog title etc.
 		// Without it CnAppRoot falls back to the appId ("buildiq-{slug}").
 		appName: manifest.name || manifest.title || slug,
+		// Buildiq's own support note does not belong on an app a user built.
+		// Off unless the app's author switched it on; see the helper.
+		supportDialog: virtualAppSupportDialog(manifest),
 		manifest,
 		// runtime-group-scoped-access REQ-1: forwarded to CnAppNav /
 		// CnPageRenderer's permission filter — client-side mirror of the

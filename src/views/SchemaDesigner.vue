@@ -9,9 +9,9 @@
   - events that mutate the staged copy; Save composes the JSON Schema
   - body and PUTs via the schemas store.
   -
-  - Per ADR-031 every behaviour-shaping field is a typed declarative
-  - record drawn from OR's declarative vocabulary; the editor itself
-  - is code, but its output is declarative JSON.
+  - Every behaviour-shaping field is a typed declarative record drawn
+  - from OR's declarative vocabulary; the editor itself is code, but its
+  - output is declarative JSON.
   -
   - Schema CRUD goes through the `useSchemasStore` Pinia store (which
   - wraps `createObjectStore` from `@conduction/nextcloud-vue`). The list
@@ -142,7 +142,7 @@
 					{{
 						t(
 							'buildiq',
-							"Saving this read scope will make this schema's records invisible to you. Save remains available — this may be an intentional admin-assisted handover.",
+							"After you save this read scope, you can no longer see this schema's records. You can still save, for example to hand the schema to another team.",
 						)
 					}}
 				</NcNoteCard>
@@ -180,6 +180,13 @@
 			</NcEmptyContent>
 		</div>
 
+		<BreakingSchemaChangeDialog
+			:open="breakingChanges !== null"
+			:changes="breakingChanges || []"
+			:busy="saving"
+			@confirm="save({ acknowledgeBreaking: true })"
+			@cancel="breakingChanges = null" />
+
 		<ImportDataWizard
 			v-if="showImportWizard"
 			:registerId="importRegisterId"
@@ -193,7 +200,7 @@
 <script>
 import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
-import { generateUrl } from '@nextcloud/router'
+import { generateOcsUrl, generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 import ArrowLeftIcon from 'vue-material-design-icons/ArrowLeft.vue'
 import RedoIcon from 'vue-material-design-icons/Redo.vue'
@@ -223,11 +230,13 @@ import WidgetEditor, {
 	editorToWidgets,
 	widgetsToEditor,
 } from '../components/schema-editor/WidgetEditor.vue'
+import BreakingSchemaChangeDialog from '../dialogs/BreakingSchemaChangeDialog.vue'
 import ImportDataWizard from '../dialogs/ImportDataWizard.vue'
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 import { getCurrentUserGroups, useRole } from '../composables/useRole.js'
 import { useSessionHistory } from '../composables/useSessionHistory.js'
 import { buildVersionedRoute } from '../router/helpers.js'
+import { describeBreakingChanges } from '../services/schemaChanges.js'
 import { registerSlugForApp, useSchemasStore } from '../store/schemas.js'
 import { isEditableTarget } from '../utils/isEditableTarget.js'
 
@@ -257,6 +266,7 @@ export default {
 		SchemaHeaderForm,
 		SchemaListPanel,
 		WidgetEditor,
+		BreakingSchemaChangeDialog,
 		ImportDataWizard,
 	},
 
@@ -293,6 +303,11 @@ export default {
 			// Import-data wizard state (buildiq-data-import-wizard).
 			applicationRecord: null,
 			showImportWizard: false,
+			// The instance's groups, offered in the Access group picker.
+			instanceGroups: [],
+			// Plain-language breaking changes awaiting confirmation; null when
+			// no confirmation is pending.
+			breakingChanges: null,
 		}
 	},
 
@@ -467,7 +482,15 @@ export default {
 				.filter((p) => typeof p === 'string' && !p.startsWith('user:'))
 				.map((p) => (p.startsWith('group:') ? p.slice('group:'.length) : p))
 				.filter((gid) => gid !== '')
-			return [...new Set(groups)]
+			// The instance's groups (admins can list them) and the author's own
+			// groups (always known), so a group does not have to be typed in.
+			return [
+				...new Set([
+					...groups,
+					...this.instanceGroups,
+					...getCurrentUserGroups(),
+				]),
+			]
 		},
 
 		/**
@@ -708,6 +731,7 @@ export default {
 		// REQ-OBVR-004: resolve the active ApplicationVersion via useApplicationVersion.
 		const versionReady = this.resolveVersion()
 		this.loadApplicationRecord()
+		this.loadInstanceGroups()
 		// Load the SELECTED SCHEMA FIRST, then the list: the detail is what the
 		// user is looking at, and it needs no version to resolve.
 		if (this.schemaId) {
@@ -729,6 +753,29 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Load the instance's groups for the Access group picker.
+		 *
+		 * Listing groups needs admin or group-admin rights. Anyone else keeps
+		 * the app's own groups and their own groups, plus free entry.
+		 *
+		 * @spec openspec/specs/data-scopes-authoring/spec.md
+		 * @return {Promise<void>}
+		 */
+		async loadInstanceGroups() {
+			try {
+				const response = await axios.get(generateOcsUrl('cloud/groups'), {
+					params: { format: 'json' },
+				})
+				const groups = response?.data?.ocs?.data?.groups
+				this.instanceGroups = Array.isArray(groups)
+					? groups.filter((gid) => typeof gid === 'string' && gid !== '')
+					: []
+			} catch {
+				this.instanceGroups = []
+			}
+		},
+
 		/**
 		 * Resolve the caller's Application record (from the "my applications"
 		 * list) so the "Import data" affordance can be gated by the caller's
@@ -1391,17 +1438,23 @@ export default {
 		/**
 		 * Persist the composed schema body via the store (PUT on existing).
 		 *
+		 * When OpenRegister refuses a breaking change, the designer asks the
+		 * author to confirm and calls this again with `acknowledgeBreaking`.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @param {object} [options] Save options.
+		 * @param {boolean} [options.acknowledgeBreaking] Whether the author confirmed a breaking change.
 		 * @return {Promise<void>}
 		 */
-		async save() {
+		async save(options = {}) {
+			const acknowledgeBreaking = options.acknowledgeBreaking === true
 			if (!this.staged || this.saving) {
 				return
 			}
 			this.saving = true
 			this.saveError = ''
 			try {
-				const body = this.composeSchemaBody(this.staged)
+				const body = this.writeBody(this.staged, acknowledgeBreaking)
 				// `saveObject` switches to PUT when `id` is present, and the
 				// store's `_buildUrl` puts that `id` on the URL tail.
 				//
@@ -1419,12 +1472,20 @@ export default {
 				})
 				if (!data) {
 					const err = this.store.errors[SCHEMA_TYPE]
-					this.saveError =
-						typeof err === 'string'
-							? err
-							: this.t('buildiq', 'Failed to save schema')
+					if (!acknowledgeBreaking && this.isBreakingRefusal(err)) {
+						// OpenRegister wants the author to confirm. Say what they
+						// are confirming, then save again with the confirmation.
+						this.breakingChanges = describeBreakingChanges(
+							this.persisted,
+							body,
+						)
+						return
+					}
+					this.breakingChanges = null
+					this.saveError = this.saveErrorText(err)
 					return
 				}
+				this.breakingChanges = null
 				this.persisted = data
 				this.staged = this.bodyToStaged(data)
 				// REQ-BUR-005: a successful save is a session boundary —
@@ -1433,12 +1494,76 @@ export default {
 				if (this.history) {
 					this.history.reset(this.staged)
 				}
-				showSuccess(this.t('buildiq', 'Schema saved.'))
+				showSuccess(
+					this.t('buildiq', 'Schema saved as version {version}.', {
+						version: data.version || this.staged.version,
+					}),
+				)
 			} catch (e) {
 				this.saveError = this.errorMessage(e)
 			} finally {
 				this.saving = false
 			}
+		},
+
+		/**
+		 * The body a save sends.
+		 *
+		 * Two differences from composeSchemaBody(). `required` is always sent,
+		 * because OpenRegister keeps the stored list when the key is missing, so
+		 * clearing the last required field never stuck. `version` is left out
+		 * while the author has not changed it, so OpenRegister moves the version
+		 * to match the change instead of keeping the old number.
+		 *
+		 * @spec openspec/specs/schema-designer-ui/spec.md
+		 * @param {object} staged Staged editor model.
+		 * @param {boolean} acknowledgeBreaking Whether the author confirmed a breaking change.
+		 * @return {object} Request body.
+		 */
+		writeBody(staged, acknowledgeBreaking) {
+			const body = this.composeSchemaBody(staged)
+			body.required = body.required || []
+			const savedVersion = this.persisted && this.persisted.version
+			if (savedVersion && body.version === savedVersion) {
+				delete body.version
+			}
+			if (acknowledgeBreaking) {
+				body.acknowledgeBreaking = true
+			}
+			return body
+		},
+
+		/**
+		 * Whether a failed save is OpenRegister asking to confirm a breaking change.
+		 *
+		 * @spec openspec/specs/schema-designer-ui/spec.md
+		 * @param {object|string|null} err The store's error for the save.
+		 * @return {boolean} True for the 409 breaking-change refusal.
+		 */
+		isBreakingRefusal(err) {
+			if (!err || typeof err !== 'object' || err.status !== 409) {
+				return false
+			}
+			return /breaking/i.test(String(err.details || ''))
+		},
+
+		/**
+		 * The message shown for a failed save.
+		 *
+		 * @spec openspec/specs/schema-designer-ui/spec.md
+		 * @param {object|string|null} err The store's error for the save.
+		 * @return {string} The message.
+		 */
+		saveErrorText(err) {
+			if (typeof err === 'string' && err !== '') {
+				return err
+			}
+			const detail = err && typeof err === 'object'
+				? (typeof err.details === 'string' ? err.details : err.message)
+				: ''
+			return detail
+				? this.t('buildiq', 'Could not save the schema: {error}', { error: detail })
+				: this.t('buildiq', 'Could not save the schema.')
 		},
 
 		/**

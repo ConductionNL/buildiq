@@ -71,9 +71,11 @@ describe('CloneTemplateDialog.vue', () => {
 		const submitEvents = wrapper.emitted('submit')
 		expect(submitEvents).toBeTruthy()
 		expect(submitEvents.length).toBe(1)
+		// A built-in template clone also carries the (optional) description.
 		expect(submitEvents[0][0]).toEqual({
 			name: 'My permits',
 			slug: 'my-permits',
+			description: '',
 		})
 	})
 
