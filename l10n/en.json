@@ -1453,7 +1453,11 @@
         "Not configured": "Not configured",
         "Simulated": "Simulated",
         "Not available": "Not available",
-        "Error": "Error"
+        "Error": "Error",
+        "Could not load the connector sources and endpoints.": "Could not load the connector sources and endpoints.",
+        "Endpoint": "Endpoint",
+        "Select a source": "Select a source",
+        "This source has no endpoints yet.": "This source has no endpoints yet."
     },
     "plurals": "",
     "pluralForm": "nplurals=2; plural=(n != 1);"
