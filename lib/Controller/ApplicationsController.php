@@ -545,6 +545,13 @@ class ApplicationsController extends Controller {
 		$resolved = $this->resolveApplicationBySlug(slug: $slug);
 		if (is_array($resolved) === true) {
 			[, $applicationArray] = $resolved;
+			// Same name projection as the production path: without it a
+			// `?_version=` preview titled its browser tab with the raw slug.
+			$authoritativeName = (string)($applicationArray['name'] ?? '');
+			if ($authoritativeName !== '') {
+				$manifest['name'] = $authoritativeName;
+			}
+
 			$manifest = $this->manifestResolver->filterManifestForCaller(
 				manifest: $manifest,
 				application: $applicationArray,
