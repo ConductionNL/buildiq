@@ -78,6 +78,7 @@ async function stub(name) {
 				'config',
 				'pageType',
 				'appSlug',
+				'appRegister',
 				'dataRegisters',
 				'parentRoute',
 				'pageId',
@@ -631,5 +632,59 @@ describe('PageDesigner', () => {
 		expect(source).toMatch(/container-type:\s*inline-size/)
 		expect(source).toMatch(/@container \(max-width: 1100px\)/)
 		expect(source).not.toMatch(/@media \(max-width: 1100px\)/)
+	})
+
+	describe("the app's register comes from its version", () => {
+		it('asks for schemas in the version register, never in openbuild-{slug}', async () => {
+			// Regression: the designer requested
+			// /registers/openbuild-hello-world/schemas, a register that does
+			// not exist for wizard-made apps (theirs carry the version suffix).
+			const fetchSpy = vi.fn(async () => ({
+				ok: true,
+				json: async () => ({ results: [{ slug: 'message' }] }),
+			}))
+			const originalFetch = global.fetch
+			global.fetch = fetchSpy
+			axiosGetMock.mockImplementation((url, config) => {
+				if (typeof url === 'string' && url.endsWith('/versions')) {
+					return Promise.resolve({
+						data: [
+							{
+								slug: 'development',
+								register: 'openbuild-hello-world-development',
+								'@self': { id: 'v-dev' },
+							},
+						],
+					})
+				}
+				const slug =
+					(config && config.params && config.params.slug) || 'hello-world'
+				return Promise.resolve({ data: { results: [{ slug }] } })
+			})
+			try {
+				const wrapper = mountDesigner({
+					pages: [{ id: 'home', type: 'index', config: {} }],
+					menu: [],
+				})
+				await new Promise((resolve) => setTimeout(resolve, 20))
+				await wrapper.vm.$nextTick()
+				const urls = fetchSpy.mock.calls.map((call) => String(call[0]))
+				expect(urls).toContain(
+					'/apps/openregister/api/registers/openbuild-hello-world-development/schemas',
+				)
+				expect(
+					urls.some((url) => url.includes('/registers/openbuild-hello-world/')),
+				).toBe(false)
+				expect(wrapper.vm.targetSchemaSlugs).toEqual(['message'])
+
+				wrapper.vm.selectPage(0)
+				await wrapper.vm.$nextTick()
+				expect(
+					wrapper.findComponent({ name: 'IndexPageEditor' }).props('appRegister'),
+				).toBe('openbuild-hello-world-development')
+			} finally {
+				global.fetch = originalFetch
+			}
+		})
 	})
 })

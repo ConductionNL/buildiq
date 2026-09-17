@@ -37,6 +37,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 use OCA\Buildiq\Service\ApplicationDeletionService;
 use OCA\Buildiq\Service\ApplicationVersionService;
 use OCA\Buildiq\Service\SchemaReferenceResolver;
+use OCA\Buildiq\Service\VersionSchemaLocator;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -125,6 +126,11 @@ class ApplicationDeletionServiceTest extends TestCase {
 			schemaReferences: new SchemaReferenceResolver(
 				registerMapper: $this->registerMapper,
 				schemaMapper: $this->schemaMapper,
+			),
+			schemaLocator: new VersionSchemaLocator(
+				registerMapper: $this->registerMapper,
+				schemaMapper: $this->schemaMapper,
+				logger: $this->logger,
 			),
 			logger: $this->logger,
 		);
@@ -336,6 +342,74 @@ class ApplicationDeletionServiceTest extends TestCase {
 
 		self::assertSame([11], $deleted, 'the schema shared by slug must survive, matching the by-id case');
 	}//end testSchemaHeldByAnotherRegisterViaSlugSurvives()
+
+	/**
+	 * A promotion bug handed production's register development's schema ids,
+	 * which left production's own schema attached to no register. "Delete all
+	 * data" walked the register lists only, so that schema survived. It is now
+	 * found by its version-namespaced slug, drained and deleted with the rest.
+	 *
+	 * @return void
+	 */
+	public function testDeleteDataTrueDeletesAVersionSchemaNoRegisterLists(): void {
+		// Both registers list only the development schema (11).
+		$this->registerMapper->method('find')->willReturnCallback(
+			fn (): Register => $this->registerWithSchemas([11])
+		);
+		$this->registerMapper->method('findAll')->willReturn([]);
+		$this->schemaMapper->method('findIdsBySlugs')->willReturnCallback(
+			static function (array $slugs): array {
+				sort($slugs);
+				self::assertSame(['demo-development-msg', 'demo-production-msg'], $slugs);
+				return ['demo-development-msg' => ['11'], 'demo-production-msg' => ['21']];
+			}
+		);
+
+		$purged = [];
+		$this->objectService->method('findAll')->willReturnCallback(
+			static function (array $config) use (&$purged): array {
+				$schema = $config['filters']['schema'] ?? null;
+				if ($schema === ApplicationVersionService::APPLICATION_VERSION_SCHEMA) {
+					return [
+						['id' => 'v-dev', 'slug' => 'development', 'register' => 'openbuild-demo-development'],
+						['id' => 'v-prod', 'slug' => 'production', 'register' => 'openbuild-demo-production'],
+					];
+				}
+
+				if ($schema === 'built-app-route') {
+					return [];
+				}
+
+				$purged[] = $config['filters']['register'] . '#' . (string)$schema;
+				return [];
+			}
+		);
+		$this->objectService->method('deleteObject')->willReturn(true);
+		$this->registerService->method('delete')->willReturnArgument(0);
+
+		$this->schemaMapper->method('find')->willReturnCallback(
+			function (string|int $id): Schema {
+				$schema = new Schema();
+				$schema->setId((int)$id);
+				$schema->setSlug((string)$id === '11' ? 'demo-development-msg' : 'demo-production-msg');
+				return $schema;
+			}
+		);
+		$deleted = [];
+		$this->schemaMapper->method('delete')->willReturnCallback(
+			function (Schema $schema) use (&$deleted): Schema {
+				$deleted[] = $schema->getId();
+				return $schema;
+			}
+		);
+
+		$orphaned = $this->service->deleteApplication(appUuid: 'u-app', appSlug: 'demo', deleteData: true);
+
+		self::assertSame([], $orphaned);
+		self::assertContains('openbuild-demo-production#21', $purged, 'the detached schema is drained from its version register');
+		sort($deleted);
+		self::assertSame([11, 21], $deleted, 'the detached production schema is deleted too');
+	}//end testDeleteDataTrueDeletesAVersionSchemaNoRegisterLists()
 
 	/**
 	 * Without the data opt-in the register is preserved, so its schemas are

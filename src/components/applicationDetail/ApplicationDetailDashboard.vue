@@ -396,6 +396,8 @@ export default {
 			},
 
 			activity: [],
+			// Object count per schema (id and slug), from the insights payload.
+			schemaCounts: {},
 			versionNoLongerAccessible: false,
 			loading: false,
 			// Becomes true after the first insights fetch settles; gates the KPI
@@ -547,7 +549,12 @@ export default {
 				const id = page.config.schema
 				if (!id || seen.has(id)) return
 				seen.add(id)
-				out.push({ id, name: id, objectCount: 0, status: 'active' })
+				out.push({
+					id,
+					name: id,
+					objectCount: Number(this.schemaCounts[id] || 0),
+					status: 'active',
+				})
 			})
 			return out
 		},
@@ -1145,6 +1152,10 @@ export default {
 						...(data.kpis || {}),
 					}
 					this.activity = Array.isArray(data.activity) ? data.activity : []
+					this.schemaCounts =
+						data.schemaCounts && typeof data.schemaCounts === 'object'
+							? data.schemaCounts
+							: {}
 				}
 			} catch (e) {
 				const status = (e && e.response && e.response.status) || 0
@@ -1157,6 +1168,7 @@ export default {
 						auditEventCount: 0,
 					}
 					this.activity = []
+					this.schemaCounts = {}
 				} else {
 					this.error = e instanceof Error ? e : new Error(String(e))
 				}

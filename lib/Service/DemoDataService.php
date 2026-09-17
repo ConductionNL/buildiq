@@ -207,9 +207,23 @@ class DemoDataService {
 	 * outcome to an operator who just asked for this, so "nothing happened"
 	 * must not be presentable as success.
 	 *
-	 * @return array{objects: integer, registers: integer, schemas: integer} What was imported.
+	 * 🔴 COUNTS WHAT LANDED, NOT WHAT WAS ASKED FOR. OpenRegister SKIPS an object
+	 * whose schema it cannot resolve instead of failing the import, so a count
+	 * taken from the file reports success for a run that seeded nothing — on
+	 * 2026-09-15 the wizard said "Demo data installed: 18 objects" while all 18
+	 * had been skipped, because the descriptor addressed schemas by NAME
+	 * (`Application`) and OpenRegister resolves them by SLUG (`built-app`).
+	 * `objects` is therefore the importer's own tally of what it wrote or found
+	 * already present; the file's count travels as `declared` and the gap as
+	 * `skipped`, so an operator sees the discrepancy rather than a number that
+	 * merely repeats the request. Same rule as portaliq#499.
 	 *
-	 * @throws RuntimeException When the descriptor is missing, unreadable, or OpenRegister is absent.
+	 * @return array{objects: integer, declared: integer, skipped: integer, registers: integer, schemas: integer}
+	 *   `objects` = what landed, `declared` = what the file holds, `skipped` =
+	 *   what the importer refused, plus the register and schema tallies.
+	 *
+	 * @throws RuntimeException When the descriptor is missing, unreadable, or
+	 *   OpenRegister is absent — or when it declares objects and none landed.
 	 *
 	 * @spec openspec/changes/openbuild-first-time-setup/specs/openbuild-first-time-setup/spec.md
 	 */
@@ -229,13 +243,14 @@ class DemoDataService {
 			throw new RuntimeException('The demo dataset is not valid JSON: ' . $path);
 		}
 
-		// Counted from the file rather than from the importer's reply, so the
-		// number reported is the number ASKED FOR. A discrepancy between this
-		// and what lands is a real condition an operator should be able to see.
-		$objects = 0;
+		// The number ASKED FOR comes from the file; the number that LANDED comes
+		// from the importer. They differ whenever OpenRegister skips an object
+		// whose schema it cannot resolve, and that gap is exactly the condition
+		// an operator must be able to see.
+		$declared = 0;
 		$components = ($data['components'] ?? []);
 		if (is_array($components) === true && is_array(($components['objects'] ?? null)) === true) {
-			$objects = count($components['objects']);
+			$declared = count($components['objects']);
 		}
 
 		$result = $this->configurationService()->importFromApp(
@@ -245,15 +260,32 @@ class DemoDataService {
 			force: true
 		);
 
+		// `objects` lists what the importer wrote; newer OpenRegister versions
+		// also count what they deliberately left alone (`unchanged`, an object
+		// already present and identical), which is landed data too — a re-run
+		// of the demo import must not read as a failure.
+		$landed  = count((array)($result['objects'] ?? []));
+		$landed += (int)($result['unchanged']['objects'] ?? 0);
+		$skipped = (int)($result['skipped']['objects'] ?? 0);
+		if ($declared > 0 && $landed === 0) {
+			throw new RuntimeException(
+				'The demo dataset declares ' . $declared . ' object(s) but OpenRegister imported none of them'
+				. ' (' . $skipped . ' skipped — their schema could not be resolved; see the Nextcloud log).'
+			);
+		}
+
 		$imported = [
-			'objects'   => $objects,
+			'objects'   => $landed,
+			'declared'  => $declared,
+			'skipped'   => $skipped,
 			'registers' => count((array)($result['registers'] ?? [])),
 			'schemas'   => count((array)($result['schemas'] ?? [])),
 		];
 
 		$this->logger->info(
 			'[DemoDataService] imported demo data: '
-			. $imported['objects'] . ' object(s), '
+			. $imported['objects'] . ' of ' . $imported['declared'] . ' object(s) landed ('
+			. $imported['skipped'] . ' skipped), '
 			. $imported['registers'] . ' register(s), '
 			. $imported['schemas'] . ' schema(s).',
 			['app' => Application::APP_ID]

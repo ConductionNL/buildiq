@@ -40,7 +40,6 @@ vi.mock('../../src/composables/useRegisterPicker.js', () => ({
 		useRegisterPickerSpy(opts)
 		return {
 			fetchSchemas: fetchSchemasMock,
-			resolveAppRegister: () => 'openbuild-my-permits',
 		}
 	},
 }))
@@ -52,6 +51,7 @@ const application = {
 	slug: 'my-permits',
 	name: 'My permits',
 	status: 'draft',
+	productionVersion: 'ver-prod',
 	manifest: { pages: [] },
 	permissions: { owners: ['group1'], editors: [], viewers: [] },
 	dataRegisters: [
@@ -143,6 +143,22 @@ describe('ApplicationDetailActions — Save as template action (REQ-SAT-001)', (
 			if (url.includes('/manifest')) {
 				return Promise.resolve({ data: { pages: [] } })
 			}
+			if (url.endsWith('/applications/my-permits/versions')) {
+				return Promise.resolve({
+					data: [
+						{
+							slug: 'development',
+							register: 'openbuild-my-permits-development',
+							'@self': { id: 'ver-dev' },
+						},
+						{
+							slug: 'production',
+							register: 'openbuild-my-permits-production',
+							'@self': { id: 'ver-prod' },
+						},
+					],
+				})
+			}
 			if (url.includes('application-template')) {
 				return Promise.resolve({
 					data: { results: [{ slug: 'permit-pack', isSeeded: false }] },
@@ -158,7 +174,13 @@ describe('ApplicationDetailActions — Save as template action (REQ-SAT-001)', (
 		expect(axiosMock.get).toHaveBeenCalledWith(
 			'/apps/buildiq/api/applications/my-permits/manifest',
 		)
-		expect(fetchSchemasMock).toHaveBeenCalled()
+		// The companion schemas come from the production version's own
+		// register. Regression: the register used to be rebuilt as
+		// `openbuild-{slug}`, which does not exist, so the dialog reported
+		// "0 companion schema(s)" for an app that has schemas.
+		expect(fetchSchemasMock).toHaveBeenCalledWith(
+			'openbuild-my-permits-production',
+		)
 		expect(wrapper.vm.saveTemplateSchemas).toEqual([
 			{ slug: 'my-permits-permit-application' },
 		])
@@ -172,6 +194,7 @@ describe('ApplicationDetailActions — Save as template action (REQ-SAT-001)', (
 		// saveTemplateSchemas.
 		expect(useRegisterPickerSpy).toHaveBeenCalledWith({
 			appSlug: 'my-permits',
+			appRegister: 'openbuild-my-permits-production',
 			dataRegisters: application.dataRegisters,
 		})
 	})

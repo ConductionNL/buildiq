@@ -130,6 +130,8 @@ class ExportJobService {
 			'applicationSlug' => $applicationSlug,
 			'applicationUuid' => (string)($payload['applicationUuid'] ?? ''),
 			'applicationVersion' => (string)($payload['applicationVersion'] ?? ''),
+			// Which version row to export; the semver alone is shared by a draft and its production.
+			'applicationVersionSlug' => $this->sanitiseSlug(raw: $payload['applicationVersionSlug'] ?? ''),
 			'target' => $target,
 			'status' => 'queued',
 			'githubOrg' => $githubOrg,
@@ -153,6 +155,34 @@ class ExportJobService {
 
 		return $jobUuid;
 	}//end queue()
+
+	/**
+	 * Run a queued export now, in this request, instead of waiting for cron.
+	 *
+	 * The job is only run when it is still in the job list: that is the
+	 * claim. It is removed from the list before it runs, so cron cannot pick
+	 * it up a second time, and a job cron already took is not in the list.
+	 *
+	 * @param string $jobUuid ExportJob UUID.
+	 *
+	 * @return bool True when this call ran the job, false when it was no longer queued.
+	 *
+	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-export-is-asynchronous-via-nextcloud-s-ijob
+	 */
+	public function runNow(string $jobUuid): bool {
+		$argument = ['jobUuid' => $jobUuid];
+		if ($this->jobList->has(\OCA\Buildiq\BackgroundJob\RunExportJob::class, $argument) === false) {
+			return false;
+		}
+
+		// Take it off the list first, so cron cannot start it while it runs here.
+		$this->jobList->remove(\OCA\Buildiq\BackgroundJob\RunExportJob::class, $argument);
+
+		$job = $this->container->get(\OCA\Buildiq\BackgroundJob\RunExportJob::class);
+		$job->runFor(jobUuid: $jobUuid);
+
+		return true;
+	}//end runNow()
 
 	/**
 	 * Normalise the submit request's `dataRegisters` choice onto the shape
@@ -193,6 +223,23 @@ class ExportJobService {
 
 		return $out;
 	}//end sanitiseDataRegisters()
+
+	/**
+	 * Keep a slug-shaped string, drop anything else.
+	 *
+	 * @param mixed $raw The request value.
+	 *
+	 * @return string The slug, '' when the value is not one.
+	 *
+	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-export-targets-a-specific-application-version
+	 */
+	private function sanitiseSlug(mixed $raw): string {
+		if (is_string($raw) === false || preg_match('/^[a-z0-9][a-z0-9-]{0,99}$/', $raw) !== 1) {
+			return '';
+		}
+
+		return $raw;
+	}//end sanitiseSlug()
 
 	/**
 	 * Normalise the submit request's `flows` choice.

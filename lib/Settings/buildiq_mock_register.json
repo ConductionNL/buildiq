@@ -8,7 +8,7 @@
   "x-openregister": {
     "type": "mock",
     "app": "buildiq",
-    "description": "Demo data for buildiq. NOT installed automatically: a mock register is imported on demand, from the setup walkthrough or `occ openregister:descriptors:list --app=buildiq --import=<slug>`."
+    "description": "Demo data for buildiq. NOT installed automatically — a mock register is imported on demand, from the setup walkthrough or `occ openregister:descriptors:list --app=buildiq --import=<slug>`."
   },
   "paths": {},
   "components": {
@@ -17,15 +17,15 @@
         "slug": "buildiq",
         "title": "OpenBuild Register (demo)",
         "version": "0.9.0",
-        "description": "Demo data for OpenBuild Register. Generated from the register's own schemas: see hydra-gates/scripts/lib/generate_mock_register.py."
+        "description": "Demo data for OpenBuild Register. Generated from the register's own schemas — see hydra-gates/scripts/lib/generate_mock_register.py."
       }
     },
     "objects": [
       {
         "@self": {
           "register": "buildiq",
-          "schema": "Application",
-          "slug": "application-voorbeeld-name-1-1"
+          "schema": "built-app",
+          "slug": "built-app-voorbeeld-name-1-1"
         },
         "slug": "aaba",
         "name": "Voorbeeld Name 1",
@@ -68,8 +68,8 @@
       {
         "@self": {
           "register": "buildiq",
-          "schema": "Application",
-          "slug": "application-voorbeeld-name-2-2"
+          "schema": "built-app",
+          "slug": "built-app-voorbeeld-name-2-2"
         },
         "slug": "bbcb",
         "name": "Voorbeeld Name 2",
@@ -112,8 +112,8 @@
       {
         "@self": {
           "register": "buildiq",
-          "schema": "Application",
-          "slug": "application-voorbeeld-name-3-3"
+          "schema": "built-app",
+          "slug": "built-app-voorbeeld-name-3-3"
         },
         "slug": "ccdc",
         "name": "Voorbeeld Name 3",
@@ -156,77 +156,94 @@
       {
         "@self": {
           "register": "buildiq",
-          "schema": "ApplicationTemplate",
-          "slug": "applicationtemplate-voorbeeld-title-1-1"
+          "schema": "application-template",
+          "slug": "application-template-voorbeeld-title-1-1"
         },
         "slug": "aaba",
         "title": "Voorbeeld Title 1",
         "description": "Voorbeeld Description 1",
         "useCase": "Voorbeeld Usecase 1",
         "category": "government-services",
-        "manifest": {},
+        "manifest": {
+          "version": "1.0.0",
+          "name": "Voorbeeld Title 1",
+          "slug": "aaba",
+          "pages": [],
+          "menu": []
+        },
         "isSeeded": false,
         "version": "012.012.012",
         "screenshotUrl": "Voorbeeld Screenshoturl 1",
-        "companionSchemas": [
-          {}
-        ],
+        "companionSchemas": [],
         "sourceUrl": "Voorbeeld Sourceurl 1"
       },
       {
         "@self": {
           "register": "buildiq",
-          "schema": "ApplicationTemplate",
-          "slug": "applicationtemplate-voorbeeld-title-2-2"
+          "schema": "application-template",
+          "slug": "application-template-voorbeeld-title-2-2"
         },
         "slug": "bbcb",
         "title": "Voorbeeld Title 2",
         "description": "Voorbeeld Description 2",
         "useCase": "Voorbeeld Usecase 2",
         "category": "internal-operations",
-        "manifest": {},
+        "manifest": {
+          "version": "1.0.0",
+          "name": "Voorbeeld Title 2",
+          "slug": "bbcb",
+          "pages": [],
+          "menu": []
+        },
         "isSeeded": false,
         "version": "123.123.123",
         "screenshotUrl": "Voorbeeld Screenshoturl 2",
-        "companionSchemas": [
-          {}
-        ],
+        "companionSchemas": [],
         "sourceUrl": "Voorbeeld Sourceurl 2"
       },
       {
         "@self": {
           "register": "buildiq",
-          "schema": "ApplicationTemplate",
-          "slug": "applicationtemplate-voorbeeld-title-3-3"
+          "schema": "application-template",
+          "slug": "application-template-voorbeeld-title-3-3"
         },
         "slug": "ccdc",
         "title": "Voorbeeld Title 3",
         "description": "Voorbeeld Description 3",
         "useCase": "Voorbeeld Usecase 3",
         "category": "citizen-engagement",
-        "manifest": {},
+        "manifest": {
+          "version": "1.0.0",
+          "name": "Voorbeeld Title 3",
+          "slug": "ccdc",
+          "pages": [],
+          "menu": []
+        },
         "isSeeded": false,
         "version": "234.234.234",
         "screenshotUrl": "Voorbeeld Screenshoturl 3",
-        "companionSchemas": [
-          {}
-        ],
+        "companionSchemas": [],
         "sourceUrl": "Voorbeeld Sourceurl 3"
       },
       {
         "@self": {
           "register": "buildiq",
-          "schema": "ApplicationVersion",
+          "schema": "applicationVersion",
           "slug": "applicationversion-voorbeeld-name-1-1"
         },
         "name": "Voorbeeld Name 1",
         "slug": "aaba",
-        "manifest": {},
+        "manifest": {
+          "version": "1.0.0",
+          "name": "Voorbeeld Name 1",
+          "slug": "aaba",
+          "pages": [],
+          "menu": []
+        },
         "register": "openbuild-aa",
         "semver": "0.1.0",
         "status": "draft",
         "application": "00000000-0000-4000-8000-000000000000",
-        "manifestDelta": {},
         "baseRef": {
           "kind": "Voorbeeld Kind 1",
           "id": "Voorbeeld Id 1",
@@ -241,17 +258,22 @@
       {
         "@self": {
           "register": "buildiq",
-          "schema": "ApplicationVersion",
+          "schema": "applicationVersion",
           "slug": "applicationversion-voorbeeld-name-2-2"
         },
         "name": "Voorbeeld Name 2",
         "slug": "bbcb",
-        "manifest": {},
+        "manifest": {
+          "version": "1.0.0",
+          "name": "Voorbeeld Name 2",
+          "slug": "bbcb",
+          "pages": [],
+          "menu": []
+        },
         "register": "openbuild-bb",
         "semver": "0.1.0",
         "status": "published",
         "application": "00000000-0000-4000-8000-000000000001",
-        "manifestDelta": {},
         "baseRef": {
           "kind": "Voorbeeld Kind 2",
           "id": "Voorbeeld Id 2",
@@ -266,17 +288,22 @@
       {
         "@self": {
           "register": "buildiq",
-          "schema": "ApplicationVersion",
+          "schema": "applicationVersion",
           "slug": "applicationversion-voorbeeld-name-3-3"
         },
         "name": "Voorbeeld Name 3",
         "slug": "ccdc",
-        "manifest": {},
+        "manifest": {
+          "version": "1.0.0",
+          "name": "Voorbeeld Name 3",
+          "slug": "ccdc",
+          "pages": [],
+          "menu": []
+        },
         "register": "openbuild-cc",
         "semver": "0.1.0",
         "status": "archived",
         "application": "00000000-0000-4000-8000-000000000002",
-        "manifestDelta": {},
         "baseRef": {
           "kind": "Voorbeeld Kind 3",
           "id": "Voorbeeld Id 3",
@@ -291,8 +318,8 @@
       {
         "@self": {
           "register": "buildiq",
-          "schema": "BuiltAppRoute",
-          "slug": "builtapproute-builtapproute-1-1"
+          "schema": "built-app-route",
+          "slug": "built-app-route-builtapproute-1-1"
         },
         "slug": "aaba",
         "applicationUuid": "00000000-0000-4000-8000-000000000000"
@@ -300,8 +327,8 @@
       {
         "@self": {
           "register": "buildiq",
-          "schema": "BuiltAppRoute",
-          "slug": "builtapproute-builtapproute-2-2"
+          "schema": "built-app-route",
+          "slug": "built-app-route-builtapproute-2-2"
         },
         "slug": "bbcb",
         "applicationUuid": "00000000-0000-4000-8000-000000000001"
@@ -309,8 +336,8 @@
       {
         "@self": {
           "register": "buildiq",
-          "schema": "BuiltAppRoute",
-          "slug": "builtapproute-builtapproute-3-3"
+          "schema": "built-app-route",
+          "slug": "built-app-route-builtapproute-3-3"
         },
         "slug": "ccdc",
         "applicationUuid": "00000000-0000-4000-8000-000000000002"
@@ -318,8 +345,8 @@
       {
         "@self": {
           "register": "buildiq",
-          "schema": "HelloMessage",
-          "slug": "hellomessage-voorbeeld-title-1-1"
+          "schema": "hello-message",
+          "slug": "hello-message-voorbeeld-title-1-1"
         },
         "title": "Voorbeeld Title 1",
         "body": "Voorbeeld Body 1"
@@ -327,8 +354,8 @@
       {
         "@self": {
           "register": "buildiq",
-          "schema": "HelloMessage",
-          "slug": "hellomessage-voorbeeld-title-2-2"
+          "schema": "hello-message",
+          "slug": "hello-message-voorbeeld-title-2-2"
         },
         "title": "Voorbeeld Title 2",
         "body": "Voorbeeld Body 2"
@@ -336,8 +363,8 @@
       {
         "@self": {
           "register": "buildiq",
-          "schema": "HelloMessage",
-          "slug": "hellomessage-voorbeeld-title-3-3"
+          "schema": "hello-message",
+          "slug": "hello-message-voorbeeld-title-3-3"
         },
         "title": "Voorbeeld Title 3",
         "body": "Voorbeeld Body 3"
@@ -345,8 +372,8 @@
       {
         "@self": {
           "register": "buildiq",
-          "schema": "exportJob",
-          "slug": "exportjob-exportjob-1-1"
+          "schema": "export-job",
+          "slug": "export-job-exportjob-1-1"
         },
         "applicationUuid": "00000000-0000-4000-8000-000000000000",
         "applicationVersion": "012.012.012",
@@ -374,8 +401,8 @@
       {
         "@self": {
           "register": "buildiq",
-          "schema": "exportJob",
-          "slug": "exportjob-exportjob-2-2"
+          "schema": "export-job",
+          "slug": "export-job-exportjob-2-2"
         },
         "applicationUuid": "00000000-0000-4000-8000-000000000001",
         "applicationVersion": "123.123.123",
@@ -403,8 +430,8 @@
       {
         "@self": {
           "register": "buildiq",
-          "schema": "exportJob",
-          "slug": "exportjob-exportjob-3-3"
+          "schema": "export-job",
+          "slug": "export-job-exportjob-3-3"
         },
         "applicationUuid": "00000000-0000-4000-8000-000000000002",
         "applicationVersion": "234.234.234",

@@ -127,6 +127,7 @@ class VersionPromotionService {
 	 * @param LoggerInterface $logger PSR logger
 	 * @param ObjectServiceInterface $objectService OR object surface (lock, save, search, delete)
 	 * @param RegisterMapper $registerMapper Resolves register slugs to entities
+	 * @param VersionSchemaCarrier $schemaCarrier Carries schemas and manifest wiring to the target version
 	 *
 	 * @return void
 	 */
@@ -134,6 +135,7 @@ class VersionPromotionService {
 		private readonly LoggerInterface $logger,
 		private readonly ObjectServiceInterface $objectService,
 		private readonly RegisterMapper $registerMapper,
+		private readonly VersionSchemaCarrier $schemaCarrier,
 	) {
 	}//end __construct()
 
@@ -259,10 +261,10 @@ class VersionPromotionService {
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-60
 	 */
 	private function runStartWithSourceData(array $source, array $target): array {
-		$this->forwardSchemaSetToOR(source: $source, target: $target);
+		$maps = $this->schemaCarrier->carrySchemas(source: $source, target: $target);
 		$this->wipeTargetRegister(target: $target);
-		$this->copyRowsFromSource(source: $source, target: $target);
-		return $this->applyManifestAndSemver(source: $source, target: $target);
+		$this->copyRowsFromSource(source: $source, target: $target, schemaIds: $maps['schemaIds']);
+		return $this->applyManifestAndSemver(source: $source, target: $target, maps: $maps);
 	}//end runStartWithSourceData()
 
 	/**
@@ -279,8 +281,8 @@ class VersionPromotionService {
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-61
 	 */
 	private function runMigrateExistingData(array $source, array $target): array {
-		$this->forwardSchemaSetToOR(source: $source, target: $target);
-		return $this->applyManifestAndSemver(source: $source, target: $target);
+		$maps = $this->schemaCarrier->carrySchemas(source: $source, target: $target);
+		return $this->applyManifestAndSemver(source: $source, target: $target, maps: $maps);
 	}//end runMigrateExistingData()
 
 	/**
@@ -297,58 +299,9 @@ class VersionPromotionService {
 	 */
 	private function runEmptyStart(array $source, array $target): array {
 		$this->wipeTargetRegister(target: $target);
-		$this->forwardSchemaSetToOR(source: $source, target: $target);
-		return $this->applyManifestAndSemver(source: $source, target: $target);
+		$maps = $this->schemaCarrier->carrySchemas(source: $source, target: $target);
+		return $this->applyManifestAndSemver(source: $source, target: $target, maps: $maps);
 	}//end runEmptyStart()
-
-	/**
-	 * Forward the source's schema set to OR's register-merge surface (spec REQ-OBVP-005).
-	 *
-	 * Read the source register's schema set and ensure the target register's
-	 * schema set contains the union. OR's own breaking-change handling
-	 * applies at write time inside RegisterMapper::update().
-	 *
-	 * Per Decision 4: no buildiq-side diff or dry-run; OR drives the
-	 * outcome.
-	 *
-	 * @param array<string,mixed> $source Source ApplicationVersion
-	 * @param array<string,mixed> $target Target ApplicationVersion
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-63
-	 */
-	private function forwardSchemaSetToOR(array $source, array $target): void {
-		$sourceRegisterSlug = (string)($source['register'] ?? '');
-		$targetRegisterSlug = (string)($target['register'] ?? '');
-
-		if ($sourceRegisterSlug === '' || $targetRegisterSlug === '') {
-			$this->logger->info(
-				'Buildiq: forwardSchemaSetToOR skipped — source or target register slug missing'
-				. ' (source=' . $sourceRegisterSlug . ', target=' . $targetRegisterSlug . ').'
-			);
-			return;
-		}
-
-		$sourceRegister = $this->registerMapper->find($sourceRegisterSlug, _multitenancy: false);
-		$targetRegister = $this->registerMapper->find($targetRegisterSlug, _multitenancy: false);
-
-		$sourceSchemas = $sourceRegister->getSchemas();
-		if (is_array($sourceSchemas) === false) {
-			$sourceSchemas = [];
-		}
-
-		// Spec Decision 4: trust OR's setSchemas + update to handle the
-		// migration outcome. The schema set is the source's verbatim;
-		// buildiq does not pre-flight column-level diffs.
-		$targetRegister->setSchemas($sourceSchemas);
-		$this->registerMapper->update($targetRegister);
-
-		$this->logger->info(
-			'Buildiq: forwardSchemaSetToOR: target register ' . $targetRegisterSlug
-			. ' aligned with source register ' . $sourceRegisterSlug . ' (' . count($sourceSchemas) . ' schemas).'
-		);
-	}//end forwardSchemaSetToOR()
 
 	/**
 	 * Delete every row in the target version's register (used by REQ-OBVP-002 / -004).
@@ -401,12 +354,13 @@ class VersionPromotionService {
 	 *
 	 * @param array<string,mixed> $source Source ApplicationVersion
 	 * @param array<string,mixed> $target Target ApplicationVersion
+	 * @param array<string,string> $schemaIds Source schema id to target schema id
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-60
 	 */
-	private function copyRowsFromSource(array $source, array $target): void {
+	private function copyRowsFromSource(array $source, array $target, array $schemaIds = []): void {
 		$sourceRegisterSlug = (string)($source['register'] ?? '');
 		$targetRegisterSlug = (string)($target['register'] ?? '');
 
@@ -429,6 +383,10 @@ class VersionPromotionService {
 		foreach ($rows as $row) {
 			$payload = $this->normaliseObjectArray(object: $row);
 			$schemaIdHint = $this->extractSchemaSlug(row: $row, payload: $payload);
+			// A copied row belongs to the target version's own schema.
+			if ($schemaIdHint !== null && isset($schemaIds[$schemaIdHint]) === true) {
+				$schemaIdHint = $schemaIds[$schemaIdHint];
+			}
 
 			unset($payload['id'], $payload['uuid'], $payload['@self']);
 
@@ -448,16 +406,30 @@ class VersionPromotionService {
 	 * Marks the target's `status` as `published` so a previously-archived
 	 * target recovers (idempotent re-promotion, REQ-OBVP-009 scenario 2).
 	 *
+	 * The manifest is rewired to the target's own register and schemas on the
+	 * way over, see {@see VersionSchemaCarrier::rewriteManifestWiring()}.
+	 *
 	 * @param array<string,mixed> $source Source ApplicationVersion
 	 * @param array<string,mixed> $target Target ApplicationVersion
+	 * @param array{schemaSlugs: array<string,string>, schemaIds: array<string,string>} $maps Source to target schema maps
 	 *
 	 * @return array<string,mixed> The persisted target row
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-66
 	 */
-	private function applyManifestAndSemver(array $source, array $target): array {
+	private function applyManifestAndSemver(array $source, array $target, array $maps): array {
 		$targetUuid = (string)($target['id'] ?? ($target['uuid'] ?? ''));
-		$target['manifest'] = $source['manifest'] ?? ($target['manifest'] ?? []);
+		$manifest = $source['manifest'] ?? ($target['manifest'] ?? []);
+		if (isset($source['manifest']) === true) {
+			$manifest = $this->schemaCarrier->rewriteManifestWiring(
+				node: $manifest,
+				sourceRegister: (string)($source['register'] ?? ''),
+				targetRegister: (string)($target['register'] ?? ''),
+				maps: $maps
+			);
+		}
+
+		$target['manifest'] = $manifest;
 		$target['semver'] = (string)($source['semver'] ?? ($target['semver'] ?? '0.1.0'));
 		$target['status'] = 'published';
 

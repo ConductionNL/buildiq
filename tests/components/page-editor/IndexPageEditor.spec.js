@@ -232,6 +232,7 @@ describe('IndexPageEditor', () => {
 		mountEditor({}, 'hello-world', dataRegisters)
 		expect(useRegisterPickerSpy).toHaveBeenCalledWith({
 			appSlug: 'hello-world',
+			appRegister: expect.any(Function),
 			dataRegisters,
 		})
 	})
@@ -240,6 +241,7 @@ describe('IndexPageEditor', () => {
 		mountEditor({}, 'hello-world')
 		expect(useRegisterPickerSpy).toHaveBeenCalledWith({
 			appSlug: 'hello-world',
+			appRegister: expect.any(Function),
 			dataRegisters: [],
 		})
 	})
@@ -271,5 +273,15 @@ describe('IndexPageEditor', () => {
 		answerTerm({ name: { type: 'string' } })
 		await flushPromises()
 		expect(wrapper.vm.schemaProperties).toBe(current)
+	})
+
+	it('hands the picker the app register it was given', async () => {
+		const wrapper = mount(IndexPageEditor, {
+			propsData: { config: {}, appSlug: 'hello-world' },
+		})
+		const getter = useRegisterPickerSpy.mock.calls.at(-1)[0].appRegister
+		expect(getter()).toBe('')
+		await wrapper.setProps({ appRegister: 'openbuild-hello-world-development' })
+		expect(getter()).toBe('openbuild-hello-world-development')
 	})
 })

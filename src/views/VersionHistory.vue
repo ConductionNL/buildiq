@@ -72,6 +72,12 @@
 						{{ t('buildiq', 'Release') }}
 					</button>
 					<button
+						v-if="canEdit && row.promotesTo"
+						class="version-history__btn"
+						@click="promote(row)">
+						{{ t('buildiq', 'Promote') }}
+					</button>
+					<button
 						v-if="!isProduction(row)"
 						class="version-history__btn version-history__btn--danger"
 						@click="askRollback(row)">
@@ -95,6 +101,10 @@ import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
 import RollbackConfirmModal from '../modals/RollbackConfirmModal.vue'
+import {
+	openPromoteDialog,
+	promoteDialog,
+} from '../composables/usePromoteDialog.js'
 import { buildVersionedRoute } from '../router/helpers.js'
 
 export default {
@@ -143,10 +153,20 @@ export default {
 			releasing: '',
 			rollbackOpen: false,
 			rollbackTarget: null,
+			promoteDialog,
 		}
 	},
 
 	watch: {
+		/**
+		 * Reload the list after a promotion, so status and semver are current.
+		 *
+		 * @return {void}
+		 */
+		'promoteDialog.promotedAt': function () {
+			this.refresh()
+		},
+
 		appSlug: {
 			immediate: true,
 			/**
@@ -162,24 +182,6 @@ export default {
 					this.refresh()
 				} else if (!this.applicationUuid) {
 					this.versions = []
-				}
-			},
-		},
-
-		applicationUuid: {
-			immediate: true,
-			/**
-			 * Fallback: reload via OR objects endpoint when only applicationUuid
-			 * is supplied (no appSlug available yet).
-			 *
-			 * @param {string} uuid The parent Application UUID.
-			 * @return {void}
-			 *
-			 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-routing-ui/spec.md
-			 */
-			handler(uuid) {
-				if (uuid && !this.appSlug) {
-					this.refresh()
 				}
 			},
 		},
@@ -199,52 +201,37 @@ export default {
 		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-routing-ui/spec.md
 		 */
 		async refresh() {
-			if (!this.appSlug && !this.applicationUuid) {
+			// Only the slug endpoint exists. The uuid fallback asked for
+			// `/api/applicationversions?applicationUuid=`, a route this app
+			// never had, so every detail page logged a 404 before the slug
+			// arrived. Without a slug there is nothing to load yet.
+			if (!this.appSlug) {
 				this.versions = []
 				return
 			}
 			this.loading = true
 			try {
-				let url
-				if (this.appSlug) {
-					url = generateUrl(
-						'/apps/buildiq/api/applications/{slug}/versions',
-						{ slug: this.appSlug },
-					)
-				} else {
-					url = generateUrl(
-						'/apps/buildiq/api/applicationversions?applicationUuid={uuid}',
-						{ uuid: this.applicationUuid },
-					)
-				}
+				const url = generateUrl(
+					'/apps/buildiq/api/applications/{slug}/versions',
+					{ slug: this.appSlug },
+				)
 				const { data } = await axios.get(url)
 				const raw = Array.isArray(data)
 					? data
 					: data && data.results
 						? data.results
 						: []
-				// The IDOR filter applies ONLY to the unscoped endpoint. The
-				// by-slug URL above is already app-scoped server-side, and its
-				// rows do not carry `applicationUuid` at all — measured, every
-				// row comes back without the key:
-				//
-				//   GET /api/applications/pw-verchain/versions
-				//   -> 3 rows, each { name, slug, manifest, ..., status } and no
-				//      applicationUuid
-				//
-				// ApplicationVersionsTab passes BOTH app-slug and
-				// application-uuid, so this filter removed every row and the
-				// "Version history" tab rendered `.version-history__empty` for
-				// every app, always. Filtering a server-scoped response against
-				// a field that response does not contain is not defence in
-				// depth — it is an unconditional deny.
-				const filtered =
-					this.applicationUuid && !this.appSlug
-						? raw.filter(
-								(r) =>
-									r && r.applicationUuid === this.applicationUuid,
-							)
-						: raw
+				// The endpoint is already scoped to the app. A row that names
+				// another parent through its `application` relation is still
+				// dropped, as defence in depth.
+				const filtered = this.applicationUuid
+					? raw.filter(
+							(r) =>
+								r
+								&& (!r.application
+									|| r.application === this.applicationUuid),
+						)
+					: raw
 				this.versions = filtered
 					.filter((r) => this.rowStatus(r) !== 'archived')
 					.sort((a, b) => {
@@ -399,6 +386,18 @@ export default {
 				{ slug: this.appSlug },
 				this.isProduction(row) ? undefined : this.rowSlug(row),
 			)
+		},
+
+		/**
+		 * Open the promotion dialog for a row (the page header mounts it).
+		 *
+		 * @param {object} row The version row.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/version-promotion/spec.md
+		 */
+		promote(row) {
+			openPromoteDialog({ sourceVersion: row })
 		},
 
 		/**
