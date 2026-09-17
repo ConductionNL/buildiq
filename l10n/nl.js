@@ -1136,7 +1136,16 @@ OC.L10N.register(
         "This save changes the shape of records that already exist.": "Deze wijziging verandert de opbouw van records die al bestaan.",
         "You cannot edit aggregations here yet. Aggregations already on this schema are listed below.": "Aggregaties bewerken kan hier nog niet. Aggregaties die al op dit schema staan, zie je hieronder.",
         "You cannot edit calculations here yet. Calculations already on this schema are listed below.": "Berekeningen bewerken kan hier nog niet. Berekeningen die al op dit schema staan, zie je hieronder.",
-        "You cannot edit notifications here yet. Notifications already on this schema are listed below.": "Meldingen bewerken kan hier nog niet. Meldingen die al op dit schema staan, zie je hieronder."
+        "You cannot edit notifications here yet. Notifications already on this schema are listed below.": "Meldingen bewerken kan hier nog niet. Meldingen die al op dit schema staan, zie je hieronder.",
+        "An admin can install the starter templates from the Buildiq setup wizard.": "Een beheerder kan de startsjablonen installeren via de installatiewizard van Buildiq.",
+        "An app with the slug {slug} already exists. Choose another slug.": "Er bestaat al een app met de slug {slug}. Kies een andere slug.",
+        "Apps on GitHub": "Apps op GitHub",
+        "No built-in templates yet": "Nog geen ingebouwde sjablonen",
+        "Only administrators can create an app from a template.": "Alleen beheerders kunnen een app maken vanuit een sjabloon.",
+        "Start from a template that ships with Buildiq, or install an app published to GitHub. Either way you get an editable draft app.": "Begin met een sjabloon dat met Buildiq wordt meegeleverd, of installeer een app die op GitHub staat. In beide gevallen krijg je een bewerkbare concept-app.",
+        "The app could not be created.": "De app kon niet worden gemaakt.",
+        "The built-in templates could not be loaded. Reload the page to try again.": "De ingebouwde sjablonen konden niet worden geladen. Laad de pagina opnieuw om het nog eens te proberen.",
+        "What the app is for": "Waar de app voor is"
     },
     "nplurals=2; plural=(n != 1);"
 )

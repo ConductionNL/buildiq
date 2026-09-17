@@ -1446,7 +1446,16 @@ OC.L10N.register(
         "Not configured": "Not configured",
         "Simulated": "Simulated",
         "Not available": "Not available",
-        "Error": "Error"
+        "Error": "Error",
+        "An admin can install the starter templates from the Buildiq setup wizard.": "An admin can install the starter templates from the Buildiq setup wizard.",
+        "An app with the slug {slug} already exists. Choose another slug.": "An app with the slug {slug} already exists. Choose another slug.",
+        "Apps on GitHub": "Apps on GitHub",
+        "No built-in templates yet": "No built-in templates yet",
+        "Only administrators can create an app from a template.": "Only administrators can create an app from a template.",
+        "Start from a template that ships with Buildiq, or install an app published to GitHub. Either way you get an editable draft app.": "Start from a template that ships with Buildiq, or install an app published to GitHub. Either way you get an editable draft app.",
+        "The app could not be created.": "The app could not be created.",
+        "The built-in templates could not be loaded. Reload the page to try again.": "The built-in templates could not be loaded. Reload the page to try again.",
+        "What the app is for": "What the app is for"
     },
     "nplurals=2; plural=(n != 1);"
 )

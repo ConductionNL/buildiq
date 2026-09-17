@@ -38,6 +38,7 @@ import pinia from './pinia.js'
 import { registerDirectives } from './registerDirectives.js'
 import { runtimeRegistry } from './runtimeRegistry.js'
 import { registerSlugForApp } from './store/schemas.js'
+import { virtualAppSupportDialog } from './utils/virtualAppSupportDialog.js'
 
 import '@conduction/nextcloud-vue/css/index.css'
 // Toast styles: without them every toast renders as bare text in a corner.
@@ -375,6 +376,9 @@ async function boot() {
 		// The app's display name — drives the support dialog title etc.
 		// Without it CnAppRoot falls back to the appId ("buildiq-{slug}").
 		appName: manifest.name || manifest.title || slug,
+		// Buildiq's own support note does not belong on an app a user built.
+		// Off unless the app's author switched it on; see the helper.
+		supportDialog: virtualAppSupportDialog(manifest),
 		manifest,
 		// runtime-group-scoped-access REQ-1: forwarded to CnAppNav /
 		// CnPageRenderer's permission filter — client-side mirror of the
