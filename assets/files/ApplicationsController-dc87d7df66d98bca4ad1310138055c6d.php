@@ -1407,6 +1407,7 @@ class ApplicationsController extends Controller {
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-55
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
+	 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 10, period: 3600)]
@@ -1463,6 +1464,14 @@ class ApplicationsController extends Controller {
 				detail: $templateSlug,
 				status: Http::STATUS_NOT_FOUND
 			);
+		}
+
+		// An optional description typed in the Use this template dialog
+		// replaces the template's own; left empty, the new app keeps the
+		// template's description (see persistApplication()).
+		$description = trim((string)($this->request->getParams()['description'] ?? ''));
+		if ($description !== '') {
+			$template['description'] = $description;
 		}
 
 		$result = $this->installFromTemplateArray(
@@ -1800,6 +1809,7 @@ class ApplicationsController extends Controller {
 	 *                   caller nothing was created when something was.
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-55
+	 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
 	 */
 	private function persistApplication(
 		string $name,
@@ -1815,6 +1825,9 @@ class ApplicationsController extends Controller {
 				object: [
 					'name' => $name,
 					'slug' => $newSlug,
+					// The template's description, or the one the user typed
+					// (createFromTemplate() puts that on the template array).
+					'description' => (string)($template['description'] ?? ''),
 					'status' => 'draft',
 					'version' => '0.1.0',
 					'owner' => $ownerUid,
