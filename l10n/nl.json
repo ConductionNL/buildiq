@@ -1119,7 +1119,6 @@
         "Error": "Fout",
         "Compare": "Vergelijk",
         "With": "Met",
-        "Install an app published to GitHub. The store lists every repository tagged with the openbuild-app topic. Installing adds a copy to your apps that you can change.": "Installeer een app die op GitHub is gepubliceerd. De winkel toont elke repository met het onderwerp openbuild-app. Installeren voegt een kopie toe aan je apps die je kunt aanpassen.",
         "Loading versions…": "Versies laden…",
         "No differences. Both versions have the same manifest.": "Geen verschillen. Beide versies hebben hetzelfde manifest.",
         "Nothing to diff. Neither version has a manifest yet.": "Niets te vergelijken. Geen van beide versies heeft al een manifest.",
@@ -1153,10 +1152,11 @@
         "Apps on GitHub": "Apps op GitHub",
         "No built-in templates yet": "Nog geen ingebouwde sjablonen",
         "Only administrators can create an app from a template.": "Alleen beheerders kunnen een app maken vanuit een sjabloon.",
-        "Start from a template that ships with Buildiq, or install an app published to GitHub. Either way you get an editable draft app.": "Begin met een sjabloon dat met Buildiq wordt meegeleverd, of installeer een app die op GitHub staat. In beide gevallen krijg je een bewerkbare concept-app.",
+        "Start from a template that ships with Buildiq, or install an app published to GitHub. Either way you get your own copy of the app to change.": "Begin met een sjabloon dat met Buildiq wordt meegeleverd, of installeer een app die op GitHub staat. In beide gevallen krijg je een eigen kopie van de app die je kunt aanpassen.",
         "The app could not be created.": "De app kon niet worden gemaakt.",
         "The built-in templates could not be loaded. Reload the page to try again.": "De ingebouwde sjablonen konden niet worden geladen. Laad de pagina opnieuw om het nog eens te proberen.",
-        "What the app is for": "Waar de app voor is"
+        "What the app is for": "Waar de app voor is",
+        "{name} ({semver})": "{name} ({semver})"
     },
     "plurals": null,
     "pluralForm": "nplurals=2; plural=(n != 1);"
