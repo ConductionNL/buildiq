@@ -104,7 +104,7 @@
 			:slug="routeSlug"
 			:sessionKey="sessionKey"
 			@update:manifest="onManifestUpdate"
-			@saveAndPreview="save" />
+			@saveAndPreview="saveAndPreview" />
 
 		<!-- REQ-PWA-002: Workflows section — attach Procest case types to the
 		     app's schemas. Soft-checks Procest availability for graceful absence. -->
@@ -177,6 +177,7 @@ import {
 	stripDependencyMarker,
 } from '../services/manifestDependencies.js'
 import { assignUnassignedFieldsToFinalStep } from '../services/manifestValidation/formLogic.js'
+import { navigateTo } from '../utils/navigate.js'
 
 const EMPTY_MANIFEST = { version: '1.0.0', menu: [], pages: [] }
 
@@ -631,14 +632,61 @@ export default {
 		},
 
 		/**
-		 * Persist the edited manifest onto the Application object.
+		 * The running app's URL for the version being edited. Carries
+		 * `?_version=` so the preview shows the version on screen, not
+		 * whichever version the plain URL resolves to. Unlike `builderUrl`
+		 * this does not wait for a publish: previewing is how you check a
+		 * version before publishing it.
+		 *
+		 * @return {string} URL, or '' when there is no app.
+		 * @spec openspec/specs/page-designer-ui/spec.md#requirement-route-hosts-resolve-slug-plus-version-and-persist-the-manifest
+		 */
+		previewUrl() {
+			if (!this.application || !this.application.slug) {
+				return ''
+			}
+			const base = generateUrl(
+				`/apps/buildiq/builder/${this.application.slug}`,
+			)
+			const version = this.applicationVersion
+			const versionSlug =
+				(version
+					&& ((version['@self'] && version['@self'].slug) || version.slug))
+				|| this.versionSlug
+				|| ''
+			return versionSlug
+				? `${base}?_version=${encodeURIComponent(versionSlug)}`
+				: base
+		},
+
+		/**
+		 * "Save & open preview": save, then open the running app on the
+		 * version that was just saved. A failed save stays on the designer so
+		 * the error is visible and nothing unsaved is lost.
 		 *
 		 * @return {Promise<void>}
+		 * @spec openspec/specs/page-designer-ui/spec.md#requirement-route-hosts-resolve-slug-plus-version-and-persist-the-manifest
+		 */
+		async saveAndPreview() {
+			const saved = await this.save()
+			if (!saved) {
+				return
+			}
+			const url = this.previewUrl()
+			if (url) {
+				navigateTo(url)
+			}
+		},
+
+		/**
+		 * Persist the edited manifest onto the Application object.
+		 *
+		 * @return {Promise<boolean>} true when the manifest was saved.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		async save() {
 			if (!this.application || !this.applicationUuid || this.saving) {
-				return
+				return false
 			}
 			this.saving = true
 			this.error = ''
@@ -694,7 +742,7 @@ export default {
 					// the counter so `sessionKey` changes and the designer resets
 					// its undo/redo history to the just-saved manifest.
 					this.saveCounter += 1
-					return
+					return true
 				}
 				const url = generateUrl(
 					`/apps/openregister/api/objects/buildiq/built-app/${this.applicationUuid}`,
@@ -709,10 +757,12 @@ export default {
 				this.toast = t('buildiq', 'Pages saved.')
 				// REQ-BUR-004: see the PATCH branch above — same session-boundary bump.
 				this.saveCounter += 1
+				return true
 			} catch (e) {
 				this.error = t('buildiq', 'Failed to save: {error}', {
 					error: (e && e.message) || String(e),
 				})
+				return false
 			} finally {
 				this.saving = false
 			}
