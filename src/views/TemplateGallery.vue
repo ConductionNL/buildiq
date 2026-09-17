@@ -438,6 +438,12 @@ export default {
 		},
 	},
 
+	/**
+	 * Load the built-in templates, run the initial GitHub search and detect a
+	 * GitHub credential.
+	 *
+	 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
+	 */
 	mounted() {
 		// The store is GitHub-only: run the initial (empty-query) search so the
 		// topic:openbuild-app repositories appear, and feature-detect a github
