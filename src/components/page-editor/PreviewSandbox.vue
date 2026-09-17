@@ -106,6 +106,9 @@ export default {
 				// The flag CnAppRoot reads to decide whether to publish the
 				// Buildiq edit button. There is no editing a preview.
 				manifest: { ...this.manifest, openbuildEditable: false },
+				// No first-open support note in a preview: it is a modal, and
+				// it would cover the designer the preview sits in.
+				supportDialog: false,
 				registry: this.registry,
 				customComponents: this.customComponents,
 				pageTypes: this.pageTypes,
