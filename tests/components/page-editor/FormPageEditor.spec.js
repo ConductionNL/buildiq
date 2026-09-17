@@ -15,7 +15,7 @@
  *  - FormFieldBuilder add forwards through update:config.
  */
 
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 
 // `vi.mock` factories are hoisted above the imports, so `h` is pulled in with
@@ -53,6 +53,17 @@ vi.mock('../../../src/dialogs/ExternalFormAccessDialog.vue', async () => {
 	}
 })
 
+const fetchRegistersMock = vi.fn(async () => [
+	{ slug: 'openbuild-shop-development', title: 'Shop (development)' },
+])
+const fetchSchemasMock = vi.fn(async () => [{ slug: 'order', title: 'Order' }])
+vi.mock('../../../src/composables/useRegisterPicker.js', () => ({
+	useRegisterPicker: () => ({
+		fetchRegisters: fetchRegistersMock,
+		fetchSchemas: fetchSchemasMock,
+	}),
+}))
+
 const FormPageEditor = (
 	await import('../../../src/components/page-editor/FormPageEditor.vue')
 ).default
@@ -73,9 +84,9 @@ describe('FormPageEditor', () => {
 		expect(radios).toHaveLength(2)
 	})
 
-	it('submitHandler is the default shape', () => {
+	it('a new form saves to a register by default', () => {
 		const wrapper = mountEditor()
-		expect(wrapper.vm.submitShape).toBe('handler')
+		expect(wrapper.vm.submitShape).toBe('endpoint')
 	})
 
 	it('config with submitEndpoint reports endpoint shape', () => {
@@ -177,5 +188,60 @@ describe('FormPageEditor', () => {
 		const next = wrapper.emitted('update:config')[0][0]
 		expect(next.fields).toHaveLength(1)
 		expect(next.fields[0].key).toBe('name')
+	})
+
+	describe('saving into a register', () => {
+		it('keeps the register choice after switching away from a handler', async () => {
+			// Regression: switching clears submitHandler, which left neither key
+			// set, and the editor fell back to handler mode. The URL field never
+			// appeared, so a form could not be pointed at a register.
+			const wrapper = mountEditor({ submitHandler: 'createOrder' })
+			await wrapper.findAll('input[type="radio"]')[0].setValue(true)
+			const emitted = wrapper.emitted('update:config').at(-1)[0]
+			expect(emitted).not.toHaveProperty('submitHandler')
+			await wrapper.setProps({ config: emitted })
+			expect(wrapper.vm.submitShape).toBe('endpoint')
+			expect(wrapper.find('select.form-page-editor__register').exists()).toBe(
+				true,
+			)
+		})
+
+		it('keeps the handler choice when a new form switches to it', async () => {
+			const wrapper = mountEditor({})
+			await wrapper.findAll('input[type="radio"]')[1].setValue(true)
+			await wrapper.setProps({
+				config: wrapper.emitted('update:config').at(-1)[0],
+			})
+			expect(wrapper.vm.submitShape).toBe('handler')
+		})
+
+		it('writes the objects URL once a register and schema are picked', async () => {
+			const wrapper = mountEditor({})
+			await flushPromises()
+			const register = wrapper.find('select.form-page-editor__register')
+			expect(register.findAll('option')).toHaveLength(2)
+			await register.setValue('openbuild-shop-development')
+			await flushPromises()
+			expect(fetchSchemasMock).toHaveBeenCalledWith('openbuild-shop-development')
+			await wrapper.find('select.form-page-editor__schema').setValue('order')
+			expect(wrapper.emitted('update:config').at(-1)[0]).toEqual({
+				submitEndpoint:
+					'/apps/openregister/api/objects/openbuild-shop-development/order',
+			})
+		})
+
+		it('reads the register and schema back from a stored URL', async () => {
+			const wrapper = mountEditor({
+				submitEndpoint:
+					'/apps/openregister/api/objects/openbuild-shop-development/order',
+			})
+			await flushPromises()
+			expect(wrapper.vm.targetRegister).toBe('openbuild-shop-development')
+			expect(wrapper.vm.targetSchema).toBe('order')
+			expect(wrapper.vm.externalTarget).toEqual({
+				register: 'openbuild-shop-development',
+				schema: 'order',
+			})
+		})
 	})
 })
