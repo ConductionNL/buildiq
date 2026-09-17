@@ -597,6 +597,57 @@ class CreateFromTemplateTest extends TestCase {
 	}//end testManifestSchemaRefsRewrittenWithNewSlugPrefix()
 
 	/**
+	 * The description typed in the Use this template dialog lands on the new
+	 * Application, trimmed (store-shows-built-in-templates).
+	 *
+	 * @return void
+	 */
+	public function testTheGivenDescriptionLandsOnTheApplication(): void {
+		$this->authenticateAs('bob');
+		$this->withRequestParams(['name' => 'Bob app', 'slug' => 'bob-app', 'description' => '  Permits for the north  ']);
+
+		$template = $this->templateRecord(self::TEMPLATE_SLUG);
+		$template['description'] = 'Template text';
+		$this->objectService->method('searchObjects')->willReturnOnConsecutiveCalls([$template], []);
+		$this->schemaMapper->method('createFromArray')->willReturn($this->schemaWithId(8888));
+
+		$calls = [];
+		$this->recordSaves($calls);
+
+		$result = $this->controller->createFromTemplate(templateSlug: self::TEMPLATE_SLUG);
+		self::assertSame(Http::STATUS_CREATED, $result->getStatus());
+
+		self::assertSame('Permits for the north', $calls[0]['object']['description'] ?? null);
+		self::assertSame('draft', $calls[0]['object']['status'] ?? null);
+		// The production-pointer re-save is a full replace: it must keep it.
+		self::assertSame('Permits for the north', $calls[count($calls) - 1]['object']['description'] ?? null);
+	}//end testTheGivenDescriptionLandsOnTheApplication()
+
+	/**
+	 * Without a description, the new Application takes the template's, so a
+	 * clone never starts with an empty card.
+	 *
+	 * @return void
+	 */
+	public function testWithoutADescriptionTheTemplateDescriptionIsUsed(): void {
+		$this->authenticateAs('bob');
+		$this->withRequestParams(['name' => 'Bob app', 'slug' => 'bob-app', 'description' => '   ']);
+
+		$template = $this->templateRecord(self::TEMPLATE_SLUG);
+		$template['description'] = 'Municipal building-permit workflow.';
+		$this->objectService->method('searchObjects')->willReturnOnConsecutiveCalls([$template], []);
+		$this->schemaMapper->method('createFromArray')->willReturn($this->schemaWithId(8888));
+
+		$calls = [];
+		$this->recordSaves($calls);
+
+		$result = $this->controller->createFromTemplate(templateSlug: self::TEMPLATE_SLUG);
+		self::assertSame(Http::STATUS_CREATED, $result->getStatus());
+
+		self::assertSame('Municipal building-permit workflow.', $calls[0]['object']['description'] ?? null);
+	}//end testWithoutADescriptionTheTemplateDescriptionIsUsed()
+
+	/**
 	 * Test 5 — Owner field on the persisted Application matches the authenticated UID.
 	 *
 	 * @return void

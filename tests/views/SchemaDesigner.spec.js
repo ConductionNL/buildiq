@@ -82,6 +82,11 @@ vi.spyOn(axios, 'get').mockImplementation((url) => {
 			? Promise.reject(registerSchemasError)
 			: Promise.resolve({ data: { results: registerSchemas } })
 	}
+	if (target.includes('cloud/groups')) {
+		return Promise.resolve({
+			data: { ocs: { data: { groups: ['vets', 'admin'] } } },
+		})
+	}
 	if (target.includes('/versions')) {
 		return Promise.resolve({
 			data: [{ id: 'v1', slug: 'production', register: REGISTER }],
@@ -159,6 +164,12 @@ const editorStubs = {
 		name: 'NotificationEditor',
 		props: ['notifications'],
 		template: '<div class="notif-stub" />',
+	},
+	BreakingSchemaChangeDialog: {
+		name: 'BreakingSchemaChangeDialog',
+		props: ['open', 'changes', 'busy'],
+		template:
+			'<div v-if="open" class="breaking-stub"><span v-for="line in changes" class="breaking-line">{{ line }}</span><button class="breaking-confirm" @click="$emit(\'confirm\')" /></div>',
 	},
 	NcButton: {
 		name: 'NcButton',
@@ -529,5 +540,123 @@ describe('SchemaDesigner', () => {
 		expect(wrapper.vm.staged.title).toBe('changed')
 		wrapper.vm.discardChanges()
 		expect(wrapper.vm.staged.title).toBe(persistedSchema.title)
+	})
+
+	/**
+	 * Mount the designer on the persisted `hello` schema and wait for the load.
+	 *
+	 * @return {Promise<object>} The wrapper.
+	 */
+	async function mountDetail() {
+		storeMocks.fetchCollection.mockResolvedValue([persistedSchema])
+		storeMocks.fetchObject.mockResolvedValue(persistedSchema)
+		const wrapper = mount(SchemaDesigner, {
+			stubs: editorStubs,
+			mocks: {
+				$route: makeRouter({ schemaId: 'hello' }),
+				$router: { push: vi.fn().mockResolvedValue() },
+			},
+		})
+		await new Promise((resolve) => setTimeout(resolve, 0))
+		await wrapper.vm.$nextTick()
+		return wrapper
+	}
+
+	/**
+	 * Stage a required field `title` next to the persisted `subject`.
+	 *
+	 * @param {object} wrapper The mounted designer.
+	 * @return {void}
+	 */
+	function stageRequiredTitle(wrapper) {
+		wrapper.vm.onFieldsChange([
+			...wrapper.vm.staged.fields,
+			{ ...wrapper.vm.staged.fields[0], name: 'title', required: true },
+		])
+	}
+
+	it('a breaking save asks for confirmation, says why, and resends with the acknowledgement', async () => {
+		const wrapper = await mountDetail()
+		stageRequiredTitle(wrapper)
+		storeMocks.saveObject.mockImplementationOnce(async () => {
+			storeMocks.errors = {
+				schema: {
+					status: 409,
+					message: 'This schema was modified by another user. Please reload.',
+					details: 'Schema change classified breaking; acknowledgeBreaking required.',
+				},
+			}
+			return null
+		})
+
+		await wrapper.vm.save()
+		await wrapper.vm.$nextTick()
+
+		expect(wrapper.vm.saveError).toBe('')
+		expect(wrapper.find('.breaking-stub').exists()).toBe(true)
+		expect(wrapper.find('.breaking-line').text()).toContain('"title" becomes required')
+		expect(storeMocks.saveObject.mock.calls[0][1].acknowledgeBreaking).toBeUndefined()
+
+		storeMocks.saveObject.mockImplementationOnce(async (_type, body) => ({ ...body, version: '1.0.0' }))
+		await wrapper.find('.breaking-confirm').trigger('click')
+		await new Promise((resolve) => setTimeout(resolve, 0))
+		await wrapper.vm.$nextTick()
+
+		expect(storeMocks.saveObject).toHaveBeenCalledTimes(2)
+		expect(storeMocks.saveObject.mock.calls[1][1]).toMatchObject({
+			acknowledgeBreaking: true,
+			required: ['title'],
+		})
+		expect(wrapper.find('.breaking-stub').exists()).toBe(false)
+		// The global t() stub returns the key; the version itself lands on the staged model.
+		expect(dialogMocks.showSuccess).toHaveBeenCalledWith('Schema saved as version {version}.')
+		expect(wrapper.vm.staged.version).toBe('1.0.0')
+	})
+
+	it('a refused save that is not a breaking change shows the reason, not a generic line', async () => {
+		const wrapper = await mountDetail()
+		stageRequiredTitle(wrapper)
+		storeMocks.saveObject.mockImplementationOnce(async () => {
+			storeMocks.errors = {
+				schema: { status: 500, message: 'An unexpected server error occurred. Please try again.', details: null },
+			}
+			return null
+		})
+
+		await wrapper.vm.save()
+
+		expect(wrapper.find('.breaking-stub').exists()).toBe(false)
+		// The global t() stub returns the key unsubstituted; the point is it is not the generic line.
+		expect(wrapper.vm.saveError).toBe('Could not save the schema: {error}')
+		expect(wrapper.vm.saveErrorText(storeMocks.errors.schema)).not.toBe('Could not save the schema.')
+	})
+
+	it('an unchanged version is left out so OpenRegister moves it, and required is always sent', async () => {
+		const wrapper = await mountDetail()
+		wrapper.vm.onHeaderChange({
+			slug: wrapper.vm.staged.slug,
+			title: 'Hello renamed',
+			description: '',
+			version: '0.1.0',
+		})
+		storeMocks.saveObject.mockImplementationOnce(async (_type, body) => ({ ...body, version: '0.1.1' }))
+
+		await wrapper.vm.save()
+
+		const body = storeMocks.saveObject.mock.calls[0][1]
+		expect(body).not.toHaveProperty('version')
+		expect(body.required).toEqual([])
+		expect(wrapper.vm.staged.version).toBe('0.1.1')
+		expect(dialogMocks.showSuccess).toHaveBeenCalledWith('Schema saved as version {version}.')
+	})
+
+	it('the Access group picker offers the instance groups', async () => {
+		const wrapper = await mountDetail()
+		await new Promise((resolve) => setTimeout(resolve, 0))
+
+		expect(wrapper.vm.availableGroups).toEqual(expect.arrayContaining(['vets', 'admin']))
+		expect(wrapper.findComponent({ name: 'AccessEditor' }).props('availableGroups')).toEqual(
+			expect.arrayContaining(['vets', 'admin']),
+		)
 	})
 })

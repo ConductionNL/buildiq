@@ -17,7 +17,7 @@
 			{{
 				t(
 					'buildiq',
-					'The calculation editor ships in v1.1 (see design Decision 7). Existing calculations declared on this schema are shown read-only below.',
+					'You cannot edit calculations here yet. Calculations already on this schema are listed below.',
 				)
 			}}
 		</NcNoteCard>

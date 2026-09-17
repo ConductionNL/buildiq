@@ -128,6 +128,12 @@ describe('PreviewSandbox', () => {
 		wrapper.unmount()
 	})
 
+	it('never mounts the first-open support note, so nothing covers the designer', () => {
+		const wrapper = mountSandbox()
+		expect(wrapper.vm._sandboxState.supportDialog).toBe(false)
+		wrapper.unmount()
+	})
+
 	it('swallows button clicks but lets links navigate', () => {
 		const wrapper = mountSandbox()
 		const host = wrapper.element

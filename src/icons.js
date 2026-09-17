@@ -14,6 +14,7 @@
 
 import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOutline.vue'
 import AppsBox from 'vue-material-design-icons/AppsBox.vue'
+import ArrowUpBoldCircleOutline from 'vue-material-design-icons/ArrowUpBoldCircleOutline.vue'
 import BookOpenVariantOutline from 'vue-material-design-icons/BookOpenVariantOutline.vue'
 import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
@@ -64,6 +65,7 @@ export default {
 	OpenInNew,
 	PencilRulerOutline,
 	TrayArrowDown,
+	ArrowUpBoldCircleOutline,
 	AppsBox,
 	BookOpenVariantOutline,
 	ChartBoxOutline,

@@ -614,6 +614,46 @@ class ExportsController extends Controller {
 	}//end submit()
 
 	/**
+	 * Run a queued export now instead of waiting for the next cron run.
+	 *
+	 * The export dialog calls this right after submit() and does not wait for
+	 * the answer; it follows the job's status as before. The request itself
+	 * runs the export, so it keeps going when the browser moves on.
+	 *
+	 * @param string $uuid ExportJob UUID.
+	 *
+	 * @return JSONResponse 200 `{started: true}` when this call ran it, 409 when it
+	 *                      had already been picked up, 404 for an unknown or foreign job.
+	 *
+	 * State-changing POST, so CSRF stays on (the SPA sends the request token).
+	 *
+	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-export-is-asynchronous-via-nextcloud-s-ijob
+	 */
+	#[NoAdminRequired]
+	public function run(string $uuid): JSONResponse {
+		if ($this->isAuthorisedForJob(jobUuid: $uuid) === false) {
+			return new JSONResponse(['error' => 'Unknown export job.'], Http::STATUS_NOT_FOUND);
+		}
+
+		// A long export must not stop because the dialog closed or the tab moved on.
+		ignore_user_abort(true);
+		set_time_limit(0);
+
+		try {
+			$started = $this->exportJobService->runNow(jobUuid: $uuid);
+		} catch (Throwable $e) {
+			$this->logger->error('Buildiq export run failed: ' . $e->getMessage());
+			return new JSONResponse(['error' => 'The export could not be started.'], Http::STATUS_INTERNAL_SERVER_ERROR);
+		}
+
+		if ($started === false) {
+			return new JSONResponse(['started' => false], Http::STATUS_CONFLICT);
+		}
+
+		return new JSONResponse(['started' => true]);
+	}//end run()
+
+	/**
 	 * Stream the ZIP for a completed ExportJob.
 	 *
 	 * @param string $uuid ExportJob UUID.
