@@ -130,6 +130,12 @@ export default {
 			default: '',
 		},
 
+		// The app's own register, read off the version being edited.
+		appRegister: {
+			type: String,
+			default: '',
+		},
+
 		// The Application's declared `dataRegisters` bindings, forwarded into
 		// useRegisterPicker so the register picker labels/hoists them.
 		dataRegisters: {
@@ -162,6 +168,7 @@ export default {
 	setup(props) {
 		const picker = useRegisterPicker({
 			appSlug: props.appSlug,
+			appRegister: () => props.appRegister,
 			dataRegisters: props.dataRegisters,
 		})
 		return { picker }

@@ -75,8 +75,12 @@ function PICKER_HEADERS() {
  * a pure data-flow helper with no Vue state-binding magic.
  *
  * @param {object} [opts] - Options.
- * @param {string} [opts.appSlug] - Current Application slug. When set, the
- *   picker filters to the per-app register `buildiq-{slug}` first.
+ * @param {string} [opts.appSlug] - Current Application slug.
+ * @param {string|(function(): string)} [opts.appRegister] - The app's own register, as
+ *   read off its ApplicationVersion (`services/appRegister.js`), or a getter
+ *   returning it (it usually resolves after the picker is built). Hoisted to
+ *   the top of the register list. Never rebuilt from the slug: the bare
+ *   `openbuild-{slug}` register does not exist for wizard-made apps.
  * @param {Array<{register: string, label?: string}>} [opts.dataRegisters] -
  *   The Application's declared shared data-register bindings
  *   (`Application.dataRegisters`, data-registers-schema-declaration). When
@@ -90,17 +94,18 @@ function PICKER_HEADERS() {
  * @spec openspec/changes/data-registers-runtime/tasks.md#task-1.1
  */
 export function useRegisterPicker(opts = {}) {
-	const appSlug = opts.appSlug || ''
+	const appRegister = opts.appRegister || ''
 	const dataRegisters = Array.isArray(opts.dataRegisters) ? opts.dataRegisters : []
 
 	/**
-	 * Resolve the per-app register slug for the current Application.
-	 * Returns `buildiq-{slug}` when slug is set, falls back to ''.
+	 * The app's own register, as handed in by the caller.
 	 *
-	 * @return {string} - the per-app register slug or empty string.
+	 * @return {string} - the register slug, or '' while it is unknown.
 	 */
 	function resolveAppRegister() {
-		return appSlug ? `openbuild-${appSlug}` : ''
+		const value =
+			typeof appRegister === 'function' ? appRegister() : appRegister
+		return typeof value === 'string' ? value : ''
 	}
 
 	/**

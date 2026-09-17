@@ -54,7 +54,7 @@ import {
 } from '../composables/useRegisterPicker.js'
 import placeholderManifest from '../manifests/placeholder.json'
 import { runtimeRegistry } from '../runtimeRegistry.js'
-import { registerSlugForApp } from '../store/schemas.js'
+import { fetchAppRegister } from '../services/appRegister.js'
 
 export default {
 	name: 'BuilderHost',
@@ -246,6 +246,7 @@ export default {
 		 * `useRegisterPicker` with builder.js so the two hosts cannot drift apart.
 		 *
 		 * @return {Promise<object>} - the `{ registers: [...] }` data-sources map.
+		 * @spec openspec/specs/version-routing-ui/spec.md#requirement-version-composables-resolve-active-version-and-manifest-history
 		 */
 		async dataSourcesLoader() {
 			const version = this.applicationVersion
@@ -254,7 +255,7 @@ export default {
 					? version.manifest
 					: null
 			const scope = registerScope(
-				registerSlugForApp(this.slug, this.versionSlug),
+				await fetchAppRegister(this.slug, this.versionSlug),
 				manifest,
 			)
 			return useRegisterPicker({ appSlug: this.slug }).fetchDataSources(scope)
