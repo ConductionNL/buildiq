@@ -41,6 +41,8 @@ import { registerSlugForApp } from './store/schemas.js'
 import { virtualAppSupportDialog } from './utils/virtualAppSupportDialog.js'
 
 import '@conduction/nextcloud-vue/css/index.css'
+// Toast styles: without them every toast renders as bare text in a corner.
+import '@nextcloud/dialogs/style.css'
 // nc-vue's CnDashboardGrid/CnWidgetGrid no longer bundle gridstack's JS or
 // CSS (nc-vue#557) — it is a peerDependency now. A virtual app's manifest
 // can declare a type:"dashboard" page (this entry calls
