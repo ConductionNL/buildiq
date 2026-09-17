@@ -344,6 +344,14 @@ export default {
 	},
 
 	emits: ['update:config'],
+	/**
+	 * Build the register/schema picker, handing it the app's own register
+	 * as a getter so it follows the prop.
+	 *
+	 * @param {object} props - the resolved component props.
+	 * @return {{picker: object}} the picker, exposed as `this.picker`.
+	 * @spec openspec/specs/version-routing-ui/spec.md#requirement-version-composables-resolve-active-version-and-manifest-history
+	 */
 	setup(props) {
 		const picker = useRegisterPicker({
 			appSlug: props.appSlug,

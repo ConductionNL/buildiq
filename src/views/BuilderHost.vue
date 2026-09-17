@@ -245,6 +245,7 @@ export default {
 		 * `useRegisterPicker` with builder.js so the two hosts cannot drift apart.
 		 *
 		 * @return {Promise<object>} - the `{ registers: [...] }` data-sources map.
+		 * @spec openspec/specs/version-routing-ui/spec.md#requirement-version-composables-resolve-active-version-and-manifest-history
 		 */
 		async dataSourcesLoader() {
 			const version = this.applicationVersion
