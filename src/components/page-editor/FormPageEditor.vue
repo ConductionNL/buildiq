@@ -17,18 +17,18 @@
 				<label class="form-page-editor__inline">
 					<input
 						type="radio"
-						:checked="submitShape === 'handler'"
-						value="handler"
-						@change="setSubmitShape('handler')" />
-					{{ t('buildiq', 'submitHandler (registry key)') }}
+						:checked="submitShape === 'endpoint'"
+						value="endpoint"
+						@change="setSubmitShape('endpoint')" />
+					{{ t('buildiq', 'Save to a register') }}
 				</label>
 				<label class="form-page-editor__inline">
 					<input
 						type="radio"
-						:checked="submitShape === 'endpoint'"
-						value="endpoint"
-						@change="setSubmitShape('endpoint')" />
-					{{ t('buildiq', 'submitEndpoint (URL)') }}
+						:checked="submitShape === 'handler'"
+						value="handler"
+						@change="setSubmitShape('handler')" />
+					{{ t('buildiq', 'Custom submit handler') }}
 				</label>
 			</div>
 			<input
@@ -40,15 +40,53 @@
 				:aria-label="t('buildiq', 'customComponents registry key')"
 				:aria-invalid="isInvalid('submitHandler')"
 				@input="setSubmitHandler($event.target.value)" />
-			<input
-				v-else-if="submitShape === 'endpoint'"
-				type="text"
-				class="form-page-editor__input"
-				:value="config.submitEndpoint || ''"
-				:placeholder="t('buildiq', '/api/objects/:slug/…')"
-				:aria-label="t('buildiq', '/api/objects/:slug/…')"
-				:aria-invalid="isInvalid('submitEndpoint')"
-				@input="setSubmitEndpoint($event.target.value)" />
+			<template v-else>
+				<label class="form-page-editor__group-row">
+					{{ t('buildiq', 'Register') }}
+					<select
+						class="form-page-editor__register"
+						:value="targetRegister"
+						@change="onTargetRegister($event.target.value)">
+						<option value="">
+							{{ t('buildiq', 'Select a register') }}
+						</option>
+						<option
+							v-for="r in registers"
+							:key="r.slug || r.id"
+							:value="r.slug || String(r.id)">
+							{{ r.label || r.title || r.slug }}
+						</option>
+					</select>
+				</label>
+				<label class="form-page-editor__group-row">
+					{{ t('buildiq', 'Schema') }}
+					<select
+						class="form-page-editor__schema"
+						:value="targetSchema"
+						:disabled="!targetRegister"
+						@change="onTargetSchema($event.target.value)">
+						<option value="">
+							{{ t('buildiq', 'Select a schema') }}
+						</option>
+						<option
+							v-for="sc in schemas"
+							:key="sc.slug || sc.id"
+							:value="sc.slug || String(sc.id)">
+							{{ sc.title || sc.slug }}
+						</option>
+					</select>
+				</label>
+				<label class="form-page-editor__group-row">
+					{{ t('buildiq', 'Submit URL') }}
+					<input
+						type="text"
+						class="form-page-editor__input"
+						:value="config.submitEndpoint || ''"
+						:placeholder="t('buildiq', '/api/objects/:slug/…')"
+						:aria-invalid="isInvalid('submitEndpoint')"
+						@input="setSubmitEndpoint($event.target.value)" />
+				</label>
+			</template>
 			<InlineFieldMark
 				:error="
 					markFor(
@@ -167,7 +205,13 @@ import ExternalFormAccessDialog from '../../dialogs/ExternalFormAccessDialog.vue
 import FormFieldBuilder from './fields/FormFieldBuilder.vue'
 import FormStepsManager from './fields/FormStepsManager.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
+import { useRegisterPicker } from '../../composables/useRegisterPicker.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
+
+// OpenRegister's object collection URL: POSTing the form's values here
+// creates an object in that register and schema.
+const OR_OBJECTS_ENDPOINT =
+	/^\/(?:index\.php\/)?(?:apps\/openregister\/)?api\/objects\/([^/]+)\/([^/]+)\/?$/
 
 export default {
 	name: 'FormPageEditor',
@@ -195,6 +239,11 @@ export default {
 			default: '',
 		},
 
+		dataRegisters: {
+			type: Array,
+			default: () => [],
+		},
+
 		parentRoute: {
 			type: String,
 			default: '',
@@ -217,9 +266,33 @@ export default {
 	},
 
 	emits: ['update:config', 'update:runtimeExternalForms'],
+
+	/**
+	 * Build the register/schema picker the "Save to a register" choice uses.
+	 *
+	 * @param {{appSlug: string, dataRegisters: Array<object>}} props - the resolved props.
+	 * @return {{picker: object}} the picker, exposed as `this.picker`.
+	 * @spec openspec/specs/openbuild-page-designer/spec.md#requirement-form-page-sub-editor-with-exactly-one-of-submit-handling
+	 */
+	setup(props) {
+		const picker = useRegisterPicker({
+			appSlug: props.appSlug,
+			dataRegisters: props.dataRegisters,
+		})
+		return { picker }
+	},
+
 	data() {
 		return {
 			externalDialogOpen: false,
+			// The submit choice the user clicked. Switching choices clears the
+			// other key, so with both keys empty the config alone cannot say
+			// which choice is active; this remembers it.
+			chosenShape: null,
+			// A register picked before its schema: no URL can be built yet.
+			pendingRegister: '',
+			registers: [],
+			schemas: [],
 		}
 	},
 
@@ -237,12 +310,31 @@ export default {
 			if (this.submitShape !== 'endpoint') {
 				return null
 			}
-			const endpoint = this.config.submitEndpoint || ''
-			const match =
-				/^\/(?:apps\/openregister\/)?api\/objects\/([^/]+)\/([^/]+)\/?$/.exec(
-					endpoint,
-				)
+			const match = OR_OBJECTS_ENDPOINT.exec(this.config.submitEndpoint || '')
 			return match ? { register: match[1], schema: match[2] } : null
+		},
+
+		/**
+		 * The register the form saves into: read from the submit URL, or the
+		 * one picked before a schema was chosen.
+		 *
+		 * @return {string} register slug, or ''.
+		 * @spec openspec/specs/openbuild-page-designer/spec.md#requirement-form-page-sub-editor-with-exactly-one-of-submit-handling
+		 */
+		targetRegister() {
+			return this.externalTarget
+				? this.externalTarget.register
+				: this.pendingRegister
+		},
+
+		/**
+		 * The schema the form saves into, read from the submit URL.
+		 *
+		 * @return {string} schema slug, or ''.
+		 * @spec openspec/specs/openbuild-page-designer/spec.md#requirement-form-page-sub-editor-with-exactly-one-of-submit-handling
+		 */
+		targetSchema() {
+			return this.externalTarget ? this.externalTarget.schema : ''
 		},
 
 		/**
@@ -296,8 +388,47 @@ export default {
 			if (this.config.submitEndpoint) {
 				return 'endpoint'
 			}
-			return 'handler'
+			// Neither key is set: a new form, or one whose submit choice was
+			// just switched (switching clears the other key). Follow the choice
+			// the user made; a new form saves to a register.
+			return this.chosenShape || 'endpoint'
 		},
+	},
+
+	watch: {
+		/**
+		 * The designer reuses this editor when another form page is selected;
+		 * the remembered choices belong to the previous page.
+		 *
+		 * @spec openspec/specs/openbuild-page-designer/spec.md#requirement-form-page-sub-editor-with-exactly-one-of-submit-handling
+		 */
+		pageId() {
+			this.chosenShape = null
+			this.pendingRegister = ''
+		},
+
+		targetRegister: {
+			immediate: true,
+			/**
+			 * Load the schema list of the register the form saves into.
+			 *
+			 * @param {string} register - the register slug, or ''.
+			 * @spec openspec/specs/openbuild-page-designer/spec.md#requirement-form-page-sub-editor-with-exactly-one-of-submit-handling
+			 */
+			async handler(register) {
+				this.schemas = register ? await this.picker.fetchSchemas(register) : []
+			},
+		},
+	},
+
+	/**
+	 * Load the registers for the "Save to a register" picker.
+	 *
+	 * @spec openspec/specs/openbuild-page-designer/spec.md#requirement-form-page-sub-editor-with-exactly-one-of-submit-handling
+	 */
+	async mounted() {
+		const list = await this.picker.fetchRegisters()
+		this.registers = Array.isArray(list) ? list : []
 	},
 
 	methods: {
@@ -330,6 +461,7 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setSubmitShape(shape) {
+			this.chosenShape = shape === 'handler' ? 'handler' : 'endpoint'
 			const next = { ...this.config }
 			if (shape === 'handler') {
 				delete next.submitEndpoint
@@ -356,6 +488,42 @@ export default {
 				next.submitHandler = value
 			}
 			this.$emit('update:config', next)
+		},
+
+		/**
+		 * Pick the register the form saves into. The URL is written once a
+		 * schema is picked too.
+		 *
+		 * @param {string} register - the register slug, or ''.
+		 * @return {void}
+		 * @spec openspec/specs/openbuild-page-designer/spec.md#requirement-form-page-sub-editor-with-exactly-one-of-submit-handling
+		 */
+		onTargetRegister(register) {
+			this.pendingRegister = register
+			if (this.config.submitEndpoint) {
+				// The old URL points at another register; drop it until a schema
+				// in the new register is picked.
+				this.setSubmitEndpoint('')
+			}
+		},
+
+		/**
+		 * Pick the schema the form saves into, which writes the submit URL.
+		 *
+		 * @param {string} schema - the schema slug, or '' to clear the URL.
+		 * @return {void}
+		 * @spec openspec/specs/openbuild-page-designer/spec.md#requirement-form-page-sub-editor-with-exactly-one-of-submit-handling
+		 */
+		onTargetSchema(schema) {
+			const register = this.targetRegister
+			if (!register || !schema) {
+				this.setSubmitEndpoint('')
+				return
+			}
+			this.pendingRegister = register
+			this.setSubmitEndpoint(
+				`/apps/openregister/api/objects/${register}/${schema}`,
+			)
 		},
 
 		/**

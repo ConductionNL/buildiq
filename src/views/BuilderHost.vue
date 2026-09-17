@@ -36,6 +36,7 @@
 			:key="cacheKey"
 			:appId="appId"
 			:aiCompanion="true"
+			:supportDialog="false"
 			:bundledManifest="placeholderManifest"
 			:registry="runtimeRegistry"
 			:data-sources-loader="dataSourcesLoader"

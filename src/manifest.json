@@ -5,6 +5,17 @@
 	"dependencies": [
 		"openregister"
 	],
+	"credentials": [
+		{
+			"provider": "github",
+			"reason": "Publish apps to GitHub and install apps from private repositories. Use a fine-grained token with Administration and Contents set to read and write, and Metadata set to read-only.",
+			"scopes": [
+				"administration:write",
+				"contents:write",
+				"metadata:read"
+			]
+		}
+	],
 	"setup": {
 		"enabled": true,
 		"version": 1,

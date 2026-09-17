@@ -84,6 +84,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Service\Connection\ConnectionReporter;
+use OCA\Buildiq\Support\FleetAppId;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -115,11 +116,12 @@ class DocumentGenerationService {
 	private const APPLICATION_SCHEMA = 'built-app';
 
 	/**
-	 * NC route name for Docudesk's pinned generate route
+	 * Route name of the generate route, without its app id
 	 * (`OCA\Filinq\Controller\CorrespondenceController::generate()`,
-	 * `appinfo/routes.php` entry `correspondence#generate`).
+	 * `appinfo/routes.php` entry `correspondence#generate`). The app id in
+	 * front is resolved per instance, see {@see self::generateRoute()}.
 	 */
-	private const GENERATE_ROUTE = 'docudesk.correspondence.generate';
+	private const GENERATE_ROUTE_SUFFIX = 'correspondence.generate';
 
 	/**
 	 * Field the `attach` output mode writes `{ "ref": "<fileId>" }" to on
@@ -397,6 +399,37 @@ class DocumentGenerationService {
 	}//end resolveApplicationUuid()
 
 	/**
+	 * Resolve the generate route on this instance.
+	 *
+	 * The document app was renamed from docudesk to filinq, and its routes
+	 * are registered under whichever id the instance runs. Each candidate id
+	 * is tried newest first. Nextcloud's router answers '' for a route no
+	 * enabled app registers, and linkToRouteAbsolute() turns that into the
+	 * bare instance URL, so both mean "not this one".
+	 *
+	 * @return array{0: string, 1: string|null} The route name, and its URL or
+	 *                                          null when no candidate answers
+	 *                                          (the name is then the newest
+	 *                                          candidate, for the report).
+	 *
+	 * @spec openspec/changes/automation-document-action/tasks.md#2.1
+	 */
+	private function generateRoute(): array {
+		$candidates = FleetAppId::CANDIDATES['filinq'];
+		$root       = $this->urlGenerator->getAbsoluteURL('');
+		foreach ($candidates as $appId) {
+			$route = $appId . '.' . self::GENERATE_ROUTE_SUFFIX;
+			$url   = $this->urlGenerator->linkToRouteAbsolute($route);
+			if ($url !== '' && $url !== $root) {
+				return [$route, $url];
+			}
+		}
+
+		return [$candidates[0] . '.' . self::GENERATE_ROUTE_SUFFIX, null];
+
+	}//end generateRoute()
+
+	/**
 	 * The one internal HTTP call to Docudesk's pinned generate route, HTTP
 	 * Basic-authenticated with a single-use token minted for the currently
 	 * impersonated user (see class docblock "Transport detail").
@@ -432,14 +465,11 @@ class DocumentGenerationService {
 		}
 
 		[$token, $provider] = $minted;
-		$url = $this->urlGenerator->linkToRouteAbsolute(self::GENERATE_ROUTE);
-		if ($url === '' || $url === $this->urlGenerator->getAbsoluteURL('')) {
-			// Nextcloud's router answers '' for a route no enabled app registers,
-			// and linkToRouteAbsolute() turns that into the bare instance URL.
-			// Posting there reaches no generator, so the call is not made.
+		[$route, $url] = $this->generateRoute();
+		if ($url === null) {
 			$this->invalidateToken(provider: $provider, token: $token);
-			$this->logger->error('Buildiq: DocumentGenerationService found no route "' . self::GENERATE_ROUTE . '", so the Docudesk call is skipped.');
-			$this->connectionReporter?->reportDocumentRouteMissing(route: self::GENERATE_ROUTE);
+			$this->logger->error('Buildiq: DocumentGenerationService found no route "' . $route . '", so the Filinq call is skipped.');
+			$this->connectionReporter?->reportDocumentRouteMissing(route: $route);
 			return null;
 		}
 

@@ -35,9 +35,9 @@ By the end you will have opened your virtual app in the builder host, clicked th
 
    ![Builder host — form submission](/screenshots/tutorials/user/06-preview-app-04.png)
 
-5. Spot a bug? Click **Back to Virtual apps** at the top, jump into the page designer, fix the page, hit **Save & open preview** again. The cycle is short on purpose — the builder host re-reads the manifest on every load.
+5. Spot a bug? Click **Back to virtual apps** at the top, jump into the page designer, fix the page, hit **Save & open preview** again. The cycle is short on purpose — the builder host re-reads the manifest on every load.
 
-   ![Back to Virtual apps](/screenshots/tutorials/user/06-preview-app-05.png)
+   ![Back to virtual apps](/screenshots/tutorials/user/06-preview-app-05.png)
 
 ## Verification
 

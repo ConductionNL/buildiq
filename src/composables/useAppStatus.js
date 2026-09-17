@@ -60,11 +60,15 @@ export function useAppStatus(appId, opts = {}) {
 			checked.value = true
 			return available.value
 		}
-		// 1. Synchronous positive signal from the server-injected app webroots
-		// map (present when the app is installed + enabled). Every id the app
-		// answers to counts: an instance still on the pre-rename release
-		// registers only the old one, and reading just the new name there
-		// reports a perfectly healthy app as absent.
+		// 1. The server-injected app webroots map lists every ENABLED app.
+		// Every id the app answers to counts: an instance still on the
+		// pre-rename release registers only the old one, and reading just the
+		// new name there reports a perfectly healthy app as absent.
+		//
+		// A populated map that lists none of the ids is a definitive "absent",
+		// not a reason to probe. Probing anyway sent a request to a route that
+		// cannot exist (`/apps/thematiq/api` with the theme app disabled), and
+		// that 404 landed in the console of every page designer load.
 		try {
 			const roots = (typeof OC !== 'undefined' && OC.appswebroots) || {}
 			if (fleetAppCandidates(appId).some((id) => roots[id] !== undefined)) {
@@ -73,10 +77,17 @@ export function useAppStatus(appId, opts = {}) {
 				statusCache.set(appId, true)
 				return true
 			}
+			if (typeof roots === 'object' && Object.keys(roots).length > 0) {
+				available.value = false
+				checked.value = true
+				statusCache.set(appId, false)
+				return false
+			}
 		} catch {
 			// fall through to probe
 		}
-		// 2. Cheap authenticated probe.
+		// 2. No usable webroots map (unit tests, early boot): a cheap
+		// authenticated probe.
 		const path = opts.probePath || `/apps/${resolveFleetAppId(appId)}/api`
 		try {
 			await client.get(generateUrl(path))

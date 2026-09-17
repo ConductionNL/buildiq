@@ -110,6 +110,10 @@ import AppSettingsModal from '../modals/AppSettingsModal.vue'
 import GitHubSyncModal from '../modals/GitHubSyncModal.vue'
 import PermissionHistoryModal from '../modals/PermissionHistoryModal.vue'
 import PermissionsModal from '../modals/PermissionsModal.vue'
+import {
+	openPromoteDialog,
+	promoteDialog,
+} from '../composables/usePromoteDialog.js'
 import { useRegisterPicker } from '../composables/useRegisterPicker.js'
 import { getCurrentUserGroups } from '../composables/useRole.js'
 import applicationContext from '../mixins/applicationContext.js'
@@ -187,6 +191,7 @@ export default {
 			existingTemplates: [],
 			toast: '',
 			error: '',
+			promoteDialog,
 		}
 	},
 
@@ -273,6 +278,17 @@ export default {
 
 			// ── Everything below collapses into the `···` menu ──
 			if (this.canEditVersions) {
+				// One Promote entry per version that has a next version.
+				this.promotableVersions.forEach((v) => {
+					out.push({
+						id: `app-promote-${v.slug}`,
+						label: t('buildiq', 'Promote {name}', {
+							name: this.versionLabel(v),
+						}),
+						icon: 'ArrowUpBoldCircleOutline',
+						onSelect: () => this.promoteVersion(v),
+					})
+				})
 				out.push(
 					{
 						id: 'app-edit-setup',
@@ -381,7 +397,29 @@ export default {
 			if (!this.obApp || !this.obApp.slug) {
 				return ''
 			}
+			// Open the version selected in the header pills (`?_version=`),
+			// not always production.
+			const selected = this.selectedVersion
+			if (selected) {
+				return this.versionUrl(selected)
+			}
 			return generateUrl(`/apps/buildiq/builder/${this.obApp.slug}`)
+		},
+
+		/**
+		 * The version the header pills selected, from `?_version=`, once the
+		 * version list knows it.
+		 *
+		 * @return {object|null}
+		 *
+		 * @spec openspec/specs/application-detail-ui/spec.md
+		 */
+		selectedVersion() {
+			const slug = (this.$route && this.$route.query && this.$route.query._version) || ''
+			if (!slug) {
+				return null
+			}
+			return this.versions.find((v) => v.slug === slug) || null
 		},
 
 		/**
@@ -436,6 +474,17 @@ export default {
 		},
 
 		/**
+		 * Non-archived versions that have a next version to promote into.
+		 *
+		 * @return {Array<object>}
+		 *
+		 * @spec openspec/specs/version-promotion/spec.md
+		 */
+		promotableVersions() {
+			return this.openableVersions.filter((v) => Boolean(v.promotesTo))
+		},
+
+		/**
 		 * Group ids selectable in the permissions modal (current user's groups
 		 * unioned with any already-referenced principals).
 		 *
@@ -454,6 +503,15 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * Reload the version list after a promotion.
+		 *
+		 * @return {void}
+		 */
+		'promoteDialog.promotedAt': function () {
+			this.loadVersions()
+		},
+
 		'obApp.slug': {
 			immediate: true,
 			/**
@@ -587,6 +645,18 @@ export default {
 					),
 				)
 				.catch(() => {})
+		},
+
+		/**
+		 * Open the promotion dialog for a version (the page header mounts it).
+		 *
+		 * @param {object} v The version row.
+		 * @return {void}
+		 *
+		 * @spec openspec/specs/version-promotion/spec.md
+		 */
+		promoteVersion(v) {
+			openPromoteDialog({ sourceVersion: v, application: this.obApp })
 		},
 
 		/**

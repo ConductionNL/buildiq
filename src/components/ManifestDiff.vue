@@ -24,7 +24,10 @@
 			{{ error }}
 		</p>
 		<p v-else-if="!hasAnyContent" class="manifest-diff__empty">
-			{{ t('buildiq', 'Nothing to diff — publish the app first.') }}
+			{{ t('buildiq', 'Nothing to diff. Neither version has a manifest yet.') }}
+		</p>
+		<p v-else-if="isIdentical" class="manifest-diff__empty">
+			{{ t('buildiq', 'No differences. Both versions have the same manifest.') }}
 		</p>
 		<pre v-else class="manifest-diff__pane"><span
 			v-for="(part, idx) in diffParts"
@@ -73,13 +76,13 @@ export default {
 			default: null,
 		},
 
-		/** Label shown for `from` in static mode (ignored otherwise). */
+		/** Label shown for `from` (defaults: "Current" in static mode, the ref otherwise). */
 		fromLabelText: {
 			type: String,
 			default: '',
 		},
 
-		/** Label shown for `to` in static mode (ignored otherwise). */
+		/** Label shown for `to` (defaults: "Predicted" in static mode, the ref otherwise). */
 		toLabelText: {
 			type: String,
 			default: '',
@@ -113,8 +116,11 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		fromLabel() {
+			if (this.fromLabelText) {
+				return this.fromLabelText
+			}
 			if (this.isStaticMode) {
-				return this.fromLabelText || t('buildiq', 'Current')
+				return t('buildiq', 'Current')
 			}
 			return this.from === 'draft'
 				? t('buildiq', 'Current draft')
@@ -127,8 +133,11 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		toLabel() {
+			if (this.toLabelText) {
+				return this.toLabelText
+			}
 			if (this.isStaticMode) {
-				return this.toLabelText || t('buildiq', 'Predicted')
+				return t('buildiq', 'Predicted')
 			}
 			return this.to === 'draft'
 				? t('buildiq', 'Current draft')
@@ -142,6 +151,19 @@ export default {
 				return this.fromManifest !== null || this.toManifest !== null
 			}
 			return this.fromBlob !== null || this.toBlob !== null
+		},
+
+		/**
+		 * Whether both sides have content and the diff found no change.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/specs/openbuild-version-snapshots/spec.md
+		 */
+		isIdentical() {
+			return (
+				this.diffParts.length > 0
+				&& this.diffParts.every((part) => !part.added && !part.removed)
+			)
 		},
 
 		/**
