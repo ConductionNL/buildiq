@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\BackgroundJob;
 
 use OCA\Buildiq\BackgroundJob\RunExportJob;
+use OCA\Buildiq\Service\ExportAppContentBundler;
 use OCA\Buildiq\Service\ExportJobService;
 use OCA\Buildiq\Service\ExportService;
 use OCA\Buildiq\Service\GitHubPushService;
@@ -105,13 +106,17 @@ final class RunExportJobTest extends TestCase {
 	 *
 	 * @return RunExportJob
 	 */
-	private function buildJob(?\Psr\Log\LoggerInterface $logger = null): RunExportJob {
+	private function buildJob(
+		?\Psr\Log\LoggerInterface $logger = null,
+		?ExportAppContentBundler $contentBundler = null,
+	): RunExportJob {
 		return new RunExportJob(
 			$this->time,
 			$this->exportService,
 			$this->exportJobService,
 			$this->githubPushService,
-			$logger ?? new NullLogger()
+			$logger ?? new NullLogger(),
+			$contentBundler
 		);
 	}//end buildJob()
 
@@ -173,6 +178,87 @@ final class RunExportJobTest extends TestCase {
 
 		$this->invokeRun($this->buildJob(), ['jobUuid' => $jobUuid]);
 	}//end testRunTransitionsThroughRunningToSucceeded()
+
+	/**
+	 * The job hands the application, its chosen version and the seed-data
+	 * choice to the exporter, names the app after the application, and
+	 * records what went into the archive.
+	 *
+	 * @return void
+	 */
+	public function testRunExportsTheApplicationTheJobNames(): void {
+		$job = $this->jobFixture();
+		$job['applicationVersionSlug'] = 'development';
+		$job['includeSeedData'] = true;
+		$this->exportJobService->method('loadJob')->willReturn($job);
+
+		$source = [
+			'application' => ['slug' => 'test-app', 'name' => 'Test things', 'description' => 'Tracks things.'],
+			'version' => ['slug' => 'development'],
+		];
+		$bundler = $this->createMock(ExportAppContentBundler::class);
+		$bundler->expects(self::once())
+			->method('resolveSource')
+			->with('app-uuid-test', '1.0.0', 'development')
+			->willReturn($source);
+
+		$this->exportService->expects(self::once())
+			->method('generateAppZip')
+			->willReturnCallback(
+				function (...$args) use ($source): string {
+					// Positional: uuid, version, context, jobUuid, dataRegisters, flows, slug, source.
+					self::assertSame('Test things', $args[2]['appName']);
+					self::assertSame('Tracks things.', $args[2]['appDescription']);
+					self::assertSame($source + ['includeSeedData' => true], $args[7]);
+					return '/tmp/x.zip';
+				}
+			);
+		$this->exportService->method('lastContent')->willReturn(['pages' => 3, 'menu' => 2, 'schemas' => 1, 'records' => 4]);
+
+		$succeeded = [];
+		$this->exportJobService->method('transitionJob')->willReturnCallback(
+			function (string $uuid, string $action, array $extra = []) use (&$succeeded): bool {
+				if ($action === 'succeed') {
+					$succeeded = $extra;
+				}
+
+				return true;
+			}
+		);
+
+		$this->invokeRun($this->buildJob(contentBundler: $bundler), ['jobUuid' => 'job-content']);
+
+		self::assertSame(['Exported 3 pages, 2 menu items, 1 schemas and 4 records.'], $succeeded['log'] ?? null);
+	}//end testRunExportsTheApplicationTheJobNames()
+
+	/**
+	 * An application that cannot be read fails the job instead of exporting
+	 * the empty template as a success.
+	 *
+	 * @return void
+	 */
+	public function testRunFailsWhenTheApplicationCannotBeRead(): void {
+		$this->exportJobService->method('loadJob')->willReturn($this->jobFixture());
+		$bundler = $this->createMock(ExportAppContentBundler::class);
+		$bundler->method('resolveSource')->willReturn(null);
+
+		$this->exportService->expects(self::never())->method('generateAppZip');
+
+		$failure = null;
+		$this->exportJobService->method('transitionJob')->willReturnCallback(
+			function (string $uuid, string $action, array $extra = []) use (&$failure): bool {
+				if ($action === 'fail') {
+					$failure = $extra['errorMessage'] ?? '';
+				}
+
+				return true;
+			}
+		);
+
+		$this->invokeRun($this->buildJob(contentBundler: $bundler), ['jobUuid' => 'job-missing-app']);
+
+		self::assertSame('The application to export could not be read.', $failure);
+	}//end testRunFailsWhenTheApplicationCannotBeRead()
 
 	/**
 	 * Failure path: when ExportService::generateAppZip throws, the job
