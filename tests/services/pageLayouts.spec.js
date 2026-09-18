@@ -75,7 +75,8 @@ describe('pageLayouts', () => {
 				status: 422,
 				data: {
 					error: 'refused',
-					message: 'There is no published layout for this schema to patch.',
+					message:
+						'There is no published layout for this schema to patch.',
 				},
 			},
 		})

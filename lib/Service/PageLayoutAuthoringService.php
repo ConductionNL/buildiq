@@ -105,27 +105,29 @@ class PageLayoutAuthoringService {
 		$delta = ($layout['layoutDelta'] ?? null);
 		$isOverride = (is_array($delta) === true && $delta !== []);
 
+		if ($isOverride === false) {
+			// A whole layout is not pinned to anything, and a fingerprint left
+			// on it from an earlier save would make it read as a patch.
+			unset($layout['baseFingerprint'], $layout['baseCutAt']);
+		}
+
 		if ($isOverride === true) {
-			$layout = $this->pin($layout);
+			$layout = $this->pin(override: $layout);
 			if ((string)($layout['maintainer'] ?? '') === '') {
 				// Who to tell when this override drifts. Without it the
 				// notification has no addressee and the override is one nobody
 				// will ever re-cut.
 				$layout['maintainer'] = $author;
 			}
-		} else {
-			// A whole layout is not pinned to anything, and a fingerprint left
-			// on it from an earlier save would make it read as a patch.
-			unset($layout['baseFingerprint'], $layout['baseCutAt']);
 		}
 
 		$warnings = $this->validator->validate(
 			$layout,
-			$this->storedFor($register, $schema, (string)($layout['id'] ?? '')),
+			$this->storedFor(register: $register, schema: $schema, exceptId: (string)($layout['id'] ?? '')),
 			null
 		);
 
-		return ['layout' => $this->store($layout), 'warnings' => $warnings];
+		return ['layout' => $this->store(layout: $layout), 'warnings' => $warnings];
 	}//end save()
 
 	/**
@@ -151,7 +153,7 @@ class PageLayoutAuthoringService {
 	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-003)
 	 */
 	public function recut(string $layoutId): array {
-		$override = $this->byId($layoutId);
+		$override = $this->byId(layoutId: $layoutId);
 		if ($override === null) {
 			throw new RuntimeException('No layout with that id.');
 		}
@@ -161,10 +163,10 @@ class PageLayoutAuthoringService {
 			throw new InvalidArgumentException('That layout is not an override, so there is nothing to re-cut.');
 		}
 
-		$base = $this->baseOrRefuse($override);
+		$base = $this->baseOrRefuse(override: $override);
 		$dropped = $this->deltas->orphanedPaths($base, $delta);
 
-		$override['layoutDelta'] = $this->withoutPaths($delta, $dropped);
+		$override['layoutDelta'] = $this->withoutPaths(delta: $delta, paths: $dropped);
 		$override['baseFingerprint'] = $this->deltas->fingerprint($base);
 		$override['baseCutAt'] = gmdate('Y-m-d\TH:i:s\Z');
 		$override['status'] = 'published';
@@ -172,14 +174,14 @@ class PageLayoutAuthoringService {
 		$this->validator->validate(
 			$override,
 			$this->storedFor(
-				(string)($override['register'] ?? ''),
-				(string)($override['schema'] ?? ''),
-				$layoutId
+				register: (string)($override['register'] ?? ''),
+				schema: (string)($override['schema'] ?? ''),
+				exceptId: $layoutId
 			),
 			null
 		);
 
-		return ['layout' => $this->store($override), 'dropped' => $dropped];
+		return ['layout' => $this->store(layout: $override), 'dropped' => $dropped];
 	}//end recut()
 
 	/**
@@ -195,7 +197,7 @@ class PageLayoutAuthoringService {
 	 */
 	public function listFor(string $register, string $schema): array {
 		$out = [];
-		foreach ($this->storedFor($register, $schema, '') as $layout) {
+		foreach ($this->storedFor(register: $register, schema: $schema, exceptId: '') as $layout) {
 			$delta = ($layout['layoutDelta'] ?? null);
 			if (is_array($delta) === false || $delta === []) {
 				$layout['drifted'] = false;
@@ -223,7 +225,7 @@ class PageLayoutAuthoringService {
 	 * @throws InvalidArgumentException When there is no base to pin to.
 	 */
 	private function pin(array $override): array {
-		$base = $this->baseOrRefuse($override);
+		$base = $this->baseOrRefuse(override: $override);
 
 		$override['baseFingerprint'] = $this->deltas->fingerprint($base);
 		$override['baseCutAt'] = gmdate('Y-m-d\TH:i:s\Z');
@@ -382,6 +384,14 @@ class PageLayoutAuthoringService {
 	 * @return string The slug.
 	 */
 	private function registerSlug(): string {
-		return $this->appConfig->getValueString('buildiq', 'register', 'buildiq');
+		$slug = $this->appConfig->getValueString('buildiq', 'register', 'buildiq');
+		if ($slug === '') {
+			// A setting emptied by hand is a misconfiguration, and reading on
+			// with no register names every register at once. Buildiq's own
+			// register is where these objects live, so that is what is used.
+			return 'buildiq';
+		}
+
+		return $slug;
 	}//end registerSlug()
 }//end class

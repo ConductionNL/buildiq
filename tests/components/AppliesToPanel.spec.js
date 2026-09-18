@@ -57,7 +57,9 @@ describe('AppliesToPanel', () => {
 			modelValue: { audience: { kind: 'group', ref: '' } },
 		})
 
-		expect(wrapper.find('.applies-to__save').attributes('disabled')).toBeDefined()
+		expect(
+			wrapper.find('.applies-to__save').attributes('disabled'),
+		).toBeDefined()
 		expect(wrapper.text()).toContain('matches nobody')
 
 		await wrapper.find('.applies-to__save').trigger('click')

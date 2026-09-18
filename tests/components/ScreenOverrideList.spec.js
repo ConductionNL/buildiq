@@ -15,10 +15,7 @@ vi.mock('../../src/services/pageLayouts.js', () => ({
 }))
 
 import ScreenOverrideList from '../../src/components/page-editor/fields/ScreenOverrideList.vue'
-import {
-	fetchPageLayouts,
-	recutOverride,
-} from '../../src/services/pageLayouts.js'
+import { fetchPageLayouts, recutOverride } from '../../src/services/pageLayouts.js'
 
 const flush = () => new Promise((r) => setTimeout(r, 0))
 

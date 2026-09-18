@@ -85,10 +85,7 @@
 				<select
 					:value="audienceKind"
 					@change="writeAudienceKind($event.target.value)">
-					<option
-						v-for="kind in audienceKinds"
-						:key="kind"
-						:value="kind">
+					<option v-for="kind in audienceKinds" :key="kind" :value="kind">
 						{{ audienceLabel(kind) }}
 					</option>
 				</select>
@@ -102,10 +99,7 @@
 					:aria-invalid="audienceRefMissing"
 					@input="writeAudienceRef($event.target.value)" />
 			</label>
-			<p
-				v-if="audienceRefMissing"
-				class="applies-to__warn"
-				role="alert">
+			<p v-if="audienceRefMissing" class="applies-to__warn" role="alert">
 				{{
 					t(
 						'buildiq',
@@ -212,6 +206,7 @@ export default {
 		 * The binding, defaulted so an unset block still renders.
 		 *
 		 * @return {object} The pageLayout block.
+		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-002)
 		 */
 		binding() {
 			return this.modelValue || {}
@@ -222,6 +217,7 @@ export default {
 		 * save, so offering it here would be offering a screen nobody sees.
 		 *
 		 * @return {Array<string>} The kinds.
+		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-002)
 		 */
 		audienceKinds() {
 			return ['everyone', 'group', 'team', 'portal', 'user']
@@ -232,15 +228,19 @@ export default {
 		 * every layout stored before overrides existed means.
 		 *
 		 * @return {string} The kind.
+		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-002)
 		 */
 		audienceKind() {
-			return (this.binding.audience && this.binding.audience.kind) || 'everyone'
+			return (
+				(this.binding.audience && this.binding.audience.kind) || 'everyone'
+			)
 		},
 
 		/**
 		 * Which group, team or user the audience names.
 		 *
 		 * @return {string} The ref.
+		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-002)
 		 */
 		audienceRef() {
 			return (this.binding.audience && this.binding.audience.ref) || ''
@@ -250,6 +250,7 @@ export default {
 		 * Whether this kind has to name one.
 		 *
 		 * @return {boolean} True for group, team and user.
+		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-002)
 		 */
 		audienceNeedsRef() {
 			return ['group', 'team', 'user'].includes(this.audienceKind)
@@ -260,6 +261,7 @@ export default {
 		 * here saves a round trip.
 		 *
 		 * @return {boolean} True when the ref is missing.
+		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-002)
 		 */
 		audienceRefMissing() {
 			return this.audienceNeedsRef && this.audienceRef === ''
@@ -269,6 +271,7 @@ export default {
 		 * The label on the ref field, named after what it holds.
 		 *
 		 * @return {string} The label.
+		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-002)
 		 */
 		audienceRefLabel() {
 			if (this.audienceKind === 'group') {
@@ -284,6 +287,7 @@ export default {
 		 * A layout is published for one schema, so both have to be picked.
 		 *
 		 * @return {boolean} True when the page names a register and a schema.
+		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-002)
 		 */
 		canPublish() {
 			return this.register !== '' && this.schema !== ''
@@ -296,6 +300,7 @@ export default {
 		 *
 		 * @param {string} kind - the audience kind.
 		 * @return {string} The label.
+		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-002)
 		 */
 		audienceLabel(kind) {
 			const labels = {
@@ -315,6 +320,7 @@ export default {
 		 * @param {string} key - the key to write.
 		 * @param {string} value - the new value; an empty string deletes it.
 		 * @return {void}
+		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-002)
 		 */
 		write(key, value) {
 			const next = { ...this.binding }
@@ -332,6 +338,7 @@ export default {
 		 *
 		 * @param {string} kind - the new kind.
 		 * @return {void}
+		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-002)
 		 */
 		writeAudienceKind(kind) {
 			const next = { ...this.binding }
@@ -350,6 +357,7 @@ export default {
 		 *
 		 * @param {string} ref - the name.
 		 * @return {void}
+		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-002)
 		 */
 		writeAudienceRef(ref) {
 			const next = { ...this.binding }
@@ -365,6 +373,7 @@ export default {
 		 * uniqueness rule.
 		 *
 		 * @return {string} The id.
+		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-002)
 		 */
 		derivedId() {
 			const parts = [
@@ -389,6 +398,7 @@ export default {
 		 * endpoint refuses for a reason an administrator can act on.
 		 *
 		 * @return {Promise<void>}
+		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-002)
 		 */
 		async publish() {
 			this.saving = true

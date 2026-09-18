@@ -100,7 +100,7 @@ class RegistrationFormAuthoringService {
 		// place deciding what counts as a collision, not two.
 		$warnings = $this->validator->validate(
 			$form,
-			$this->storedFor($register, $schema),
+			$this->storedFor(register: $register, schema: $schema),
 			null,
 			null
 		);
@@ -126,7 +126,7 @@ class RegistrationFormAuthoringService {
 	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
 	 */
 	public function listFor(string $register, string $schema): array {
-		return $this->storedFor($register, $schema);
+		return $this->storedFor(register: $register, schema: $schema);
 	}//end listFor()
 
 	/**
@@ -168,6 +168,14 @@ class RegistrationFormAuthoringService {
 	 * @return string The slug.
 	 */
 	private function registerSlug(): string {
-		return $this->appConfig->getValueString('buildiq', 'register', 'buildiq');
+		$slug = $this->appConfig->getValueString('buildiq', 'register', 'buildiq');
+		if ($slug === '') {
+			// A setting emptied by hand is a misconfiguration, and reading on
+			// with no register names every register at once. Buildiq's own
+			// register is where these objects live, so that is what is used.
+			return 'buildiq';
+		}
+
+		return $slug;
 	}//end registerSlug()
 }//end class

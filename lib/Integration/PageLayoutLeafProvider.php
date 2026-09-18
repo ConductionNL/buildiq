@@ -48,6 +48,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Integration;
 
 use OCA\Buildiq\Service\LayoutDeltaService;
+use OCA\Buildiq\Service\PageLayoutFrozenBase;
 use OCA\Buildiq\Service\PageLayoutLayerStack;
 use OCA\Buildiq\Service\PageLayoutPresenter;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -83,6 +84,7 @@ final class PageLayoutLeafProvider implements IntegrationProvider {
 	 * @param IAppConfig $appConfig App config, for the register slug.
 	 * @param LayoutDeltaService $deltas The keyed-delta merge and the base fingerprint.
 	 * @param PageLayoutLayerStack $layers Which layers apply to this caller and this object, and in which order.
+	 * @param PageLayoutFrozenBase $frozenBase Which layers an override's base is frozen from.
 	 * @param PageLayoutPresenter $presenter The shape a resolved layout takes on its way out.
 	 * @param LoggerInterface $logger Logger.
 	 *
@@ -93,6 +95,7 @@ final class PageLayoutLeafProvider implements IntegrationProvider {
 		private readonly IAppConfig $appConfig,
 		private readonly LayoutDeltaService $deltas,
 		private readonly PageLayoutLayerStack $layers,
+		private readonly PageLayoutFrozenBase $frozenBase,
 		private readonly PageLayoutPresenter $presenter,
 		private readonly LoggerInterface $logger,
 	) {
@@ -236,14 +239,7 @@ final class PageLayoutLeafProvider implements IntegrationProvider {
 			if (is_array($delta) === false || $delta === []) {
 				// A whole layout, not a patch: this is the pre-override shape and
 				// it keeps working exactly as it did.
-				// The first whole layout IS the composition; a later one merges
-				// its patchable parts over what is already there.
-				$stacked = $layer;
-				if ($composed !== []) {
-					$stacked = $this->deltas->merge($composed, $this->layers->patchableOf(layout: $layer));
-				}
-
-				$composed = $stacked;
+				$composed = $this->composeWhole(composed: $composed, layer: $layer);
 
 				// Only a layout for EVERYONE redefines the base an override is
 				// pinned to. A whole layout bound to one group still composes
@@ -320,63 +316,44 @@ final class PageLayoutLeafProvider implements IntegrationProvider {
 	 */
 	public function baseForOverride(array $override): array {
 		$published = $this->publishedLayoutsFor(
-			(string)($override['register'] ?? ''),
-			(string)($override['schema'] ?? '')
+			register: (string)($override['register'] ?? ''),
+			schema: (string)($override['schema'] ?? '')
 		);
 
-		$byId = [];
-		$schemaWide = null;
-		$typed = null;
-		$typeProperty = (string)($override['typeProperty'] ?? '');
-		$typeValue = (string)($override['typeValue'] ?? '');
-
-		foreach ($published as $layout) {
-			$delta = ($layout['layoutDelta'] ?? null);
-			if (is_array($delta) === true && $delta !== []) {
-				continue;
-			}
-
-			if ((string)($this->layers->audienceOf(layout: $layout)['kind'] ?? 'everyone') !== 'everyone') {
-				continue;
-			}
-
-			$id = (string)($layout['id'] ?? '');
-			if ($id !== '') {
-				$byId[$id] = $layout;
-			}
-
-			if ((string)($layout['typeProperty'] ?? '') === '' || (string)($layout['typeValue'] ?? '') === '') {
-				$schemaWide = ($schemaWide ?? $layout);
-				continue;
-			}
-
-			if ($typeProperty !== ''
-				&& (string)$layout['typeProperty'] === $typeProperty
-				&& (string)$layout['typeValue'] === $typeValue
-			) {
-				$typed = ($typed ?? $layout);
-			}
-		}
-
-		$layers = [];
-		$baseRef = (string)($override['baseRef'] ?? '');
-		if ($baseRef !== '' && array_key_exists($baseRef, $byId) === true) {
-			$layers[] = $byId[$baseRef];
-		}
-
-		foreach ([$schemaWide, $typed] as $layout) {
-			if ($layout !== null && in_array($layout, $layers, true) === false) {
-				$layers[] = $layout;
-			}
-		}
+		// Which layers are frozen, and in which order, is the collaborator's
+		// question: it is the same ranking resolution uses, asked of the
+		// published set rather than of this caller.
+		$layers = $this->frozenBase->layersFor(published: $published, override: $override);
 
 		$composed = [];
 		foreach ($layers as $layer) {
-			$composed = ($composed === [] ? $layer : $this->deltas->merge($composed, $this->layers->patchableOf(layout: $layer)));
+			$composed = $this->composeWhole(composed: $composed, layer: $layer);
 		}
 
 		return $composed;
 	}//end baseForOverride()
+
+	/**
+	 * One whole layout composed onto what is already there.
+	 *
+	 * The first whole layout IS the composition; a later one merges its
+	 * patchable parts over what is already there, so a type-specific header
+	 * replaces the schema-wide one whole rather than field by field.
+	 *
+	 * @param array<string, mixed> $composed What is composed so far.
+	 * @param array<string, mixed> $layer The whole layout to compose on.
+	 *
+	 * @return array<string, mixed> The new composition.
+	 *
+	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-007)
+	 */
+	private function composeWhole(array $composed, array $layer): array {
+		if ($composed === []) {
+			return $layer;
+		}
+
+		return $this->deltas->merge($composed, $this->layers->patchableOf(layout: $layer));
+	}//end composeWhole()
 
 	/**
 	 * Move a drifted override to `needs-review`, which is what fires the

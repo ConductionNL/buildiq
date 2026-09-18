@@ -59,7 +59,10 @@ export async function fetchRegistrationForms({ register, schema }) {
 export async function saveRegistrationForm(form) {
 	try {
 		const { data } = await axios.put(generateUrl(BASE), form)
-		return { form: (data && data.form) || form, warnings: (data && data.warnings) || [] }
+		return {
+			form: (data && data.form) || form,
+			warnings: (data && data.warnings) || [],
+		}
 	} catch (err) {
 		throw normaliseError(err)
 	}

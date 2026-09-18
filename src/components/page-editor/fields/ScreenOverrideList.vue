@@ -114,6 +114,7 @@ export default {
 			 * Re-read whenever the page binds to another schema.
 			 *
 			 * @return {void}
+			 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-003)
 			 */
 			handler() {
 				this.reload()
@@ -125,6 +126,7 @@ export default {
 			 * The same for the schema, which is the other half of the scope.
 			 *
 			 * @return {void}
+			 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-003)
 			 */
 			handler() {
 				this.reload()
@@ -137,6 +139,7 @@ export default {
 		 * Read the layouts published for this scope.
 		 *
 		 * @return {Promise<void>}
+		 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-003)
 		 */
 		async reload() {
 			if (this.register === '' || this.schema === '') {
@@ -164,6 +167,7 @@ export default {
 		 *
 		 * @param {object} layout - the layout.
 		 * @return {string} The label.
+		 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-003)
 		 */
 		audienceLabel(layout) {
 			const audience = layout.audience || {}
@@ -186,6 +190,7 @@ export default {
 		 *
 		 * @param {object} layout - the layout.
 		 * @return {string} The label.
+		 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-003)
 		 */
 		stateLabel(layout) {
 			if (layout.drifted) {
@@ -202,6 +207,7 @@ export default {
 		 *
 		 * @param {string} layoutId - the layout's id.
 		 * @return {string} The paths, or an empty string.
+		 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-003)
 		 */
 		droppedFor(layoutId) {
 			const paths = this.dropped[layoutId]
@@ -216,6 +222,7 @@ export default {
 		 *
 		 * @param {object} layout - the drifted override.
 		 * @return {Promise<void>}
+		 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-003)
 		 */
 		async recut(layout) {
 			this.recutting = layout.id

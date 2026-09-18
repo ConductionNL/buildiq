@@ -83,7 +83,10 @@ export async function savePageLayout(layout) {
 
 	try {
 		const { data } = await axios.put(generateUrl(BASE), rest)
-		return { layout: (data && data.layout) || rest, warnings: (data && data.warnings) || [] }
+		return {
+			layout: (data && data.layout) || rest,
+			warnings: (data && data.warnings) || [],
+		}
 	} catch (err) {
 		throw normaliseError(err)
 	}
@@ -103,7 +106,10 @@ export async function recutOverride(layoutId) {
 		const { data } = await axios.post(
 			generateUrl(`${BASE}/${encodeURIComponent(layoutId)}/recut`),
 		)
-		return { layout: (data && data.layout) || {}, dropped: (data && data.dropped) || [] }
+		return {
+			layout: (data && data.layout) || {},
+			dropped: (data && data.dropped) || [],
+		}
 	} catch (err) {
 		throw normaliseError(err)
 	}

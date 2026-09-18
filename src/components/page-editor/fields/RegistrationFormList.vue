@@ -53,7 +53,9 @@
 					<input
 						type="text"
 						:value="draftName"
-						:placeholder="t('buildiq', 'Application for a building permit')"
+						:placeholder="
+							t('buildiq', 'Application for a building permit')
+						"
 						@input="draftName = $event.target.value" />
 				</label>
 
@@ -156,6 +158,7 @@ export default {
 		 * Whether this list knows which type it is for.
 		 *
 		 * @return {boolean} True when the scope is complete.
+		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
 		 */
 		scoped() {
 			return (
@@ -174,6 +177,7 @@ export default {
 			 * Re-read whenever the panel moves to another case type.
 			 *
 			 * @return {void}
+			 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
 			 */
 			handler() {
 				this.reload()
@@ -185,6 +189,7 @@ export default {
 			 * The same for the schema.
 			 *
 			 * @return {void}
+			 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
 			 */
 			handler() {
 				this.reload()
@@ -201,6 +206,7 @@ export default {
 		 * would quietly list every type's forms under one heading.
 		 *
 		 * @return {Promise<void>}
+		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
 		 */
 		async reload() {
 			if (!this.scoped) {
@@ -233,6 +239,7 @@ export default {
 		 *
 		 * @param {object} form - the form.
 		 * @return {string} The label.
+		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
 		 */
 		audienceLabel(form) {
 			const labels = {
@@ -250,6 +257,7 @@ export default {
 		 * refusal is shown with the sentence it wrote.
 		 *
 		 * @return {Promise<void>}
+		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
 		 */
 		async addForm() {
 			this.adding = true

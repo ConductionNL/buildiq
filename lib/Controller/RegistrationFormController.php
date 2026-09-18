@@ -71,7 +71,7 @@ class RegistrationFormController extends Controller {
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct('buildiq', $request);
+		parent::__construct(appName: 'buildiq', request: $request);
 	}//end __construct()
 
 	/**
@@ -91,13 +91,13 @@ class RegistrationFormController extends Controller {
 		$register = (string)$this->request->getParam('register', '');
 		$schema = (string)$this->request->getParam('schema', '');
 		if ($register === '' || $schema === '') {
-			return $this->error('missing_scope', Http::STATUS_BAD_REQUEST, 'Name the register and the schema.');
+			return $this->error(code: 'missing_scope', status: Http::STATUS_BAD_REQUEST, detail: 'Name the register and the schema.');
 		}
 
 		try {
 			$items = $this->authoring->listFor($register, $schema);
 		} catch (Throwable $e) {
-			return $this->unexpected('listing registration forms', $e);
+			return $this->unexpected(what: 'listing registration forms', e: $e);
 		}
 
 		return new JSONResponse(['items' => $items, 'total' => count($items)], Http::STATUS_OK);
@@ -119,15 +119,15 @@ class RegistrationFormController extends Controller {
 
 		$form = $this->body();
 		if ($form === null) {
-			return $this->error('invalid_form', Http::STATUS_UNPROCESSABLE_ENTITY, 'The body has to be one form object.');
+			return $this->error(code: 'invalid_form', status: Http::STATUS_UNPROCESSABLE_ENTITY, detail: 'The body has to be one form object.');
 		}
 
 		try {
 			$result = $this->authoring->save($form);
 		} catch (InvalidArgumentException $e) {
-			return $this->error('refused', Http::STATUS_UNPROCESSABLE_ENTITY, $e->getMessage());
+			return $this->error(code: 'refused', status: Http::STATUS_UNPROCESSABLE_ENTITY, detail: $e->getMessage());
 		} catch (Throwable $e) {
-			return $this->unexpected('saving a registration form', $e);
+			return $this->unexpected(what: 'saving a registration form', e: $e);
 		}
 
 		return new JSONResponse($result, Http::STATUS_OK);
@@ -141,14 +141,14 @@ class RegistrationFormController extends Controller {
 	private function requireAdmin(): ?JSONResponse {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
-			return $this->error('unauthenticated', Http::STATUS_UNAUTHORIZED, 'Sign in first.');
+			return $this->error(code: 'unauthenticated', status: Http::STATUS_UNAUTHORIZED, detail: 'Sign in first.');
 		}
 
 		if ($this->groupManager->isAdmin($user->getUID()) === false) {
 			return $this->error(
-				'forbidden',
-				Http::STATUS_FORBIDDEN,
-				'A registration form is what a citizen fills in, so authoring one takes an administrator.'
+				code: 'forbidden',
+				status: Http::STATUS_FORBIDDEN,
+				detail: 'A registration form is what a citizen fills in, so authoring one takes an administrator.'
 			);
 		}
 
@@ -196,6 +196,6 @@ class RegistrationFormController extends Controller {
 	private function unexpected(string $what, Throwable $e): JSONResponse {
 		$this->logger->error('Buildiq: ' . $what . ' failed: ' . $e->getMessage(), ['exception' => $e]);
 
-		return $this->error('internal_error', Http::STATUS_INTERNAL_SERVER_ERROR, 'That did not work. The log says why.');
+		return $this->error(code: 'internal_error', status: Http::STATUS_INTERNAL_SERVER_ERROR, detail: 'That did not work. The log says why.');
 	}//end unexpected()
 }//end class

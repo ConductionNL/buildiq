@@ -39,6 +39,7 @@ use OCA\Buildiq\Listener\BuildiqLeafRegistrationListener;
 use OCA\Buildiq\Integration\PageLayoutLeafProvider;
 use OCA\Buildiq\Integration\RegistrationFormLeafProvider;
 use OCA\Buildiq\Service\LayoutDeltaService;
+use OCA\Buildiq\Service\PageLayoutFrozenBase;
 use OCA\Buildiq\Service\PageLayoutLayerStack;
 use OCA\Buildiq\Service\PageLayoutPresenter;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -69,6 +70,11 @@ class BuildiqLeafRegistrationListenerTest extends TestCase {
 		// constructed rather than mocked.
 		// The listener only passes them through to `registerLeaf()`, so real
 		// instances over doubled collaborators are the honest cheap option.
+		$layers = new PageLayoutLayerStack(
+			$this->createMock(IUserSession::class),
+			$this->createMock(IGroupManager::class)
+		);
+
 		$listener = new BuildiqLeafRegistrationListener(
 			new RegistrationFormLeafProvider(
 				$this->createMock(ObjectServiceInterface::class),
@@ -79,10 +85,8 @@ class BuildiqLeafRegistrationListenerTest extends TestCase {
 				$this->createMock(ObjectServiceInterface::class),
 				$this->createMock(IAppConfig::class),
 				new LayoutDeltaService(),
-				new PageLayoutLayerStack(
-					$this->createMock(IUserSession::class),
-					$this->createMock(IGroupManager::class)
-				),
+				$layers,
+				new PageLayoutFrozenBase($layers),
 				new PageLayoutPresenter(),
 				new NullLogger()
 			)

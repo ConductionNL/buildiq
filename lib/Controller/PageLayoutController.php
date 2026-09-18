@@ -79,7 +79,7 @@ class PageLayoutController extends Controller {
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct('buildiq', $request);
+		parent::__construct(appName: 'buildiq', request: $request);
 	}//end __construct()
 
 	/**
@@ -99,13 +99,13 @@ class PageLayoutController extends Controller {
 		$register = (string)$this->request->getParam('register', '');
 		$schema = (string)$this->request->getParam('schema', '');
 		if ($register === '' || $schema === '') {
-			return $this->error('missing_scope', Http::STATUS_BAD_REQUEST, 'Name the register and the schema.');
+			return $this->error(code: 'missing_scope', status: Http::STATUS_BAD_REQUEST, detail: 'Name the register and the schema.');
 		}
 
 		try {
 			$items = $this->authoring->listFor($register, $schema);
 		} catch (Throwable $e) {
-			return $this->unexpected('listing page layouts', $e);
+			return $this->unexpected(what: 'listing page layouts', e: $e);
 		}
 
 		return new JSONResponse(['items' => $items, 'total' => count($items)], Http::STATUS_OK);
@@ -128,7 +128,7 @@ class PageLayoutController extends Controller {
 
 		$layout = $this->body();
 		if ($layout === null) {
-			return $this->error('invalid_layout', Http::STATUS_UNPROCESSABLE_ENTITY, 'The body has to be one layout object.');
+			return $this->error(code: 'invalid_layout', status: Http::STATUS_UNPROCESSABLE_ENTITY, detail: 'The body has to be one layout object.');
 		}
 
 		try {
@@ -136,9 +136,9 @@ class PageLayoutController extends Controller {
 		} catch (InvalidArgumentException $e) {
 			// A refusal is the point of this endpoint, so it is answered with
 			// the sentence the rule wrote rather than a generic 422.
-			return $this->error('refused', Http::STATUS_UNPROCESSABLE_ENTITY, $e->getMessage());
+			return $this->error(code: 'refused', status: Http::STATUS_UNPROCESSABLE_ENTITY, detail: $e->getMessage());
 		} catch (Throwable $e) {
-			return $this->unexpected('saving a page layout', $e);
+			return $this->unexpected(what: 'saving a page layout', e: $e);
 		}
 
 		return new JSONResponse($result, Http::STATUS_OK);
@@ -163,11 +163,11 @@ class PageLayoutController extends Controller {
 		try {
 			$result = $this->authoring->recut($layoutId);
 		} catch (RuntimeException $e) {
-			return $this->error('not_found', Http::STATUS_NOT_FOUND, $e->getMessage());
+			return $this->error(code: 'not_found', status: Http::STATUS_NOT_FOUND, detail: $e->getMessage());
 		} catch (InvalidArgumentException $e) {
-			return $this->error('refused', Http::STATUS_UNPROCESSABLE_ENTITY, $e->getMessage());
+			return $this->error(code: 'refused', status: Http::STATUS_UNPROCESSABLE_ENTITY, detail: $e->getMessage());
 		} catch (Throwable $e) {
-			return $this->unexpected('re-cutting a screen override', $e);
+			return $this->unexpected(what: 're-cutting a screen override', e: $e);
 		}
 
 		return new JSONResponse($result, Http::STATUS_OK);
@@ -181,14 +181,14 @@ class PageLayoutController extends Controller {
 	private function requireAdmin(): ?JSONResponse {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
-			return $this->error('unauthenticated', Http::STATUS_UNAUTHORIZED, 'Sign in first.');
+			return $this->error(code: 'unauthenticated', status: Http::STATUS_UNAUTHORIZED, detail: 'Sign in first.');
 		}
 
 		if ($this->groupManager->isAdmin($user->getUID()) === false) {
 			return $this->error(
-				'forbidden',
-				Http::STATUS_FORBIDDEN,
-				'Authoring a page layout changes what everyone using that case type sees, so it takes an administrator.'
+				code: 'forbidden',
+				status: Http::STATUS_FORBIDDEN,
+				detail: 'Authoring a page layout changes what everyone using that case type sees, so it takes an administrator.'
 			);
 		}
 
@@ -240,6 +240,6 @@ class PageLayoutController extends Controller {
 	private function unexpected(string $what, Throwable $e): JSONResponse {
 		$this->logger->error('Buildiq: ' . $what . ' failed: ' . $e->getMessage(), ['exception' => $e]);
 
-		return $this->error('internal_error', Http::STATUS_INTERNAL_SERVER_ERROR, 'That did not work. The log says why.');
+		return $this->error(code: 'internal_error', status: Http::STATUS_INTERNAL_SERVER_ERROR, detail: 'That did not work. The log says why.');
 	}//end unexpected()
 }//end class

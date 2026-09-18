@@ -51,7 +51,10 @@ describe('RegistrationFormList', () => {
 	beforeEach(() => {
 		fetchRegistrationForms.mockReset()
 		saveRegistrationForm.mockReset()
-		saveRegistrationForm.mockResolvedValue({ form: { id: 'rf-1' }, warnings: [] })
+		saveRegistrationForm.mockResolvedValue({
+			form: { id: 'rf-1' },
+			warnings: [],
+		})
 	})
 
 	it('asks for a case type before listing anything', () => {
