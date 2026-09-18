@@ -940,6 +940,7 @@ export default {
 		 * URL named the `openconnector` register and paged with `limit`.
 		 *
 		 * @return {Promise<void>}
+		 * @spec openspec/specs/automation-designer/spec.md#requirement-automation-editor-composes-trigger-condition-and-actions-req-autd-002
 		 */
 		async fetchSynchronizations() {
 			this.syncLoading = true

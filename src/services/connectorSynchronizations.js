@@ -32,6 +32,9 @@ import { resolveFleetAppId } from './fleetAppId.js'
  * The objects URL for the connector app's synchronizations on this instance.
  *
  * @return {string} the generated URL.
+ *
+ * @spec exclude URL assembly for the run-synchronization pickers; the
+ *  requirement belongs to the dialogs that call it.
  */
 export function connectorSynchronizationsUrl() {
 	const register = resolveFleetAppId('integriq')
@@ -43,6 +46,10 @@ export function connectorSynchronizationsUrl() {
  *
  * @return {Promise<Array<{id: string, label: string}>>} the options, newest
  *  page first; an empty array when the connector app answers nothing.
+ *
+ * @spec exclude Shared list loader behind the run-synchronization pickers;
+ *  covered through AutomationEditDialog and ScheduleEditDialog, which carry
+ *  the requirements.
  */
 export async function fetchConnectorSynchronizations() {
 	const { data } = await axios.get(connectorSynchronizationsUrl(), {
