@@ -454,6 +454,8 @@ class CopilotService {
 	 */
 	private function normalisePlan(array $plan): array {
 		$steps = (array)($plan['steps'] ?? []);
+		$authoredSchemas = $this->authoredSchemaSlugs(steps: $steps);
+
 		foreach ($steps as $index => $step) {
 			if (is_array($step) === false) {
 				continue;
@@ -466,7 +468,8 @@ class CopilotService {
 
 			$steps[$index]['arguments'] = $this->normaliseStepArguments(
 				tool: (string)($step['tool'] ?? ''),
-				args: $args
+				args: $args,
+				authoredSchemas: $authoredSchemas
 			);
 		}
 
@@ -476,18 +479,105 @@ class CopilotService {
 	}//end normalisePlan()
 
 	/**
+	 * The short schema slugs this plan authors, keyed by `appSlug@versionSlug`.
+	 *
+	 * Only what the plan itself says, so nothing here is a guess about what
+	 * already exists on the instance.
+	 *
+	 * @param array<int, mixed> $steps The plan's steps.
+	 *
+	 * @return array<string, array<string, bool>>
+	 */
+	private function authoredSchemaSlugs(array $steps): array {
+		$slugs = [];
+		foreach ($steps as $step) {
+			if (is_array($step) === false || (string)($step['tool'] ?? '') !== 'buildiq.upsertSchema') {
+				continue;
+			}
+
+			$args = (array)($step['arguments'] ?? []);
+			$slug = strtolower(trim((string)($args['slug'] ?? '')));
+			$appSlug = (string)($args['appSlug'] ?? '');
+			$versionSlug = (string)($args['versionSlug'] ?? 'development');
+			if ($slug === '' || $appSlug === '') {
+				continue;
+			}
+
+			if ($versionSlug === '') {
+				$versionSlug = 'development';
+			}
+
+			$slugs[$appSlug . '@' . $versionSlug][$slug] = true;
+		}
+
+		return $slugs;
+	}//end authoredSchemaSlugs()
+
+	/**
+	 * Turn a `submitHandler` that names one of the plan's own schemas into the
+	 * page's data binding.
+	 *
+	 * A form page must name exactly one place to post to. The model wrote
+	 * `"submitHandler": "loan"` on the live plan of 2026-09-18, and `loan` is
+	 * the schema it had just asked `upsertSchema` for, not a handler anyone
+	 * registered. The rendered page said so and posted nothing:
+	 * `CnFormPage: handler "loan" not registered`.
+	 *
+	 * Naming the schema on the page instead lets
+	 * {@see ManifestPageShape::withSubmitDestination()} point the form at the
+	 * collection it belongs to, which is what it already does for a form that
+	 * named no destination at all. Proven on the deployed instance: the same
+	 * page with its schema named posted 201 Created and the record appeared on
+	 * the app's own Loans page.
+	 *
+	 * Nothing happens unless the value matches a schema THIS PLAN creates, so
+	 * a genuine registered handler is never touched.
+	 *
+	 * @param array<string, mixed> $config The form page's config block.
+	 * @param array<string, bool> $authored Short schema slugs this plan authors for this version.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function resolveSubmitHandler(array $config, array $authored): array {
+		$handler = $config['submitHandler'] ?? null;
+		if (is_string($handler) === false || trim($handler) === '') {
+			return $config;
+		}
+
+		if (isset($authored[strtolower(trim($handler))]) === false) {
+			return $config;
+		}
+
+		$schema = ($config['schema'] ?? null);
+		if (is_string($schema) === true && trim($schema) !== '') {
+			// The page already says which collection it belongs to, so the
+			// handler name adds nothing but the error the reader saw.
+			unset($config['submitHandler']);
+			return $config;
+		}
+
+		$config['schema'] = trim($handler);
+		unset($config['submitHandler']);
+
+		return $config;
+	}//end resolveSubmitHandler()
+
+	/**
 	 * Normalise one step's arguments. Split out of {@see normalisePlan()} to
 	 * keep both within the project's PHPMD complexity thresholds.
 	 *
 	 * @param string $tool The step's tool id.
 	 * @param array<string, mixed> $args The step's arguments.
+	 * @param array<string, array<string, bool>> $authoredSchemas Short schema slugs this
+	 *                                                            plan authors, keyed by
+	 *                                                            `appSlug@versionSlug`.
 	 *
 	 * @return array<string, mixed>
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) ManifestRoute and
 	 * ManifestDataBinding are pure rules with no collaborators and no state.
 	 */
-	private function normaliseStepArguments(string $tool, array $args): array {
+	private function normaliseStepArguments(string $tool, array $args, array $authoredSchemas = []): array {
 		// Only a PAGE's route is a path. A menu item's route names a route, and
 		// the runtime names routes after page ids, so rooting one would break
 		// exactly the entries that were right: `borrow-tool` is a page id and
@@ -512,6 +602,13 @@ class CopilotService {
 
 		if ($bindKey === '' || isset($args[$bindKey]) === false || is_array($args[$bindKey]) === false) {
 			return $args;
+		}
+
+		if ($tool === 'buildiq.upsertPage' && (string)($args['type'] ?? '') === 'form') {
+			$args[$bindKey] = $this->resolveSubmitHandler(
+				config: $args[$bindKey],
+				authored: (array)($authoredSchemas[$appSlug . '@' . $versionSlug] ?? [])
+			);
 		}
 
 		$args[$bindKey] = ManifestDataBinding::bindBlock(

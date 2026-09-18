@@ -331,6 +331,19 @@ class CopilotServiceTest extends TestCase {
 					'required' => ['appSlug', 'pageId', 'widgetType'],
 				],
 			],
+			[
+				'id' => 'buildiq.upsertSchema',
+				'inputSchema' => [
+					'type' => 'object',
+					'properties' => [
+						'appSlug' => ['type' => 'string'],
+						'slug' => ['type' => 'string'],
+						'title' => ['type' => 'string'],
+						'properties' => ['type' => 'object'],
+					],
+					'required' => ['appSlug', 'slug', 'title', 'properties'],
+				],
+			],
 		];
 	}//end descriptors()
 
@@ -1487,6 +1500,81 @@ class CopilotServiceTest extends TestCase {
 		self::assertSame('overview', $seen['buildiq.upsertMenuItem']['route'], 'a menu target names a page id');
 		self::assertSame('/tools', $seen['buildiq.upsertPage']['route'], 'a page route is a path');
 	}//end testAPageRouteIsRootedAndAMenuTargetIsNot()
+
+	/**
+	 * A form whose `submitHandler` names one of the plan's own schemas is
+	 * pointed at that collection instead, so the form posts somewhere.
+	 *
+	 * Measured on the live instance on 2026-09-18: the plan's "Borrow a tool"
+	 * page carried `"submitHandler": "loan"`, which is the schema it had just
+	 * asked upsertSchema for and not a handler anyone registered. The page
+	 * rendered `CnFormPage: handler "loan" not registered` and Submit posted
+	 * nothing. The same page with its schema named posted 201 Created.
+	 *
+	 * @return void
+	 */
+	public function testAFormHandlerNamingThePlansOwnSchemaBecomesItsBinding(): void {
+		$plan = [
+			'summary' => 'x',
+			'steps' => [
+				['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
+				['tool' => 'buildiq.upsertSchema', 'arguments' => ['appSlug' => 'tool-library', 'versionSlug' => 'development', 'slug' => 'loan', 'title' => 'Loan', 'properties' => ['member' => ['type' => 'string']]]],
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'versionSlug' => 'development', 'pageId' => 'borrow-tool', 'title' => 'Borrow a tool', 'type' => 'form', 'route' => '/loans/new', 'config' => ['fields' => [['key' => 'member', 'label' => 'Member', 'type' => 'string']], 'submitHandler' => 'loan']]],
+			],
+		];
+
+		$seen = [];
+		$this->toolProvider->method('invokeTool')->willReturnCallback(
+			function (string $tool, array $args) use (&$seen): array {
+				$seen[$tool] = $args;
+				if ($tool === 'buildiq.createApp') {
+					return ['success' => true, 'created' => true, 'app' => ['uuid' => 'app-uuid-1', 'slug' => 'tool-library', 'name' => 'Tool Library']];
+				}
+
+				return ['success' => true, 'action' => 'created'];
+			}
+		);
+
+		$this->makeService()->execute(plan: $plan, userId: 'alice');
+
+		$config = $seen['buildiq.upsertPage']['config'];
+		self::assertArrayNotHasKey('submitHandler', $config, 'a schema name is not a handler');
+		self::assertSame('tool-library-development-loan', $config['schema']);
+		self::assertSame('openbuild-tool-library-development', $config['register']);
+	}//end testAFormHandlerNamingThePlansOwnSchemaBecomesItsBinding()
+
+	/**
+	 * A submitHandler naming something this plan did not create is left
+	 * exactly as it is: a registered handler is none of this code's business.
+	 *
+	 * @return void
+	 */
+	public function testAHandlerThePlanDidNotAuthorIsLeftAlone(): void {
+		$plan = [
+			'summary' => 'x',
+			'steps' => [
+				['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'versionSlug' => 'development', 'pageId' => 'contact', 'title' => 'Contact', 'type' => 'form', 'route' => '/contact', 'config' => ['fields' => [['key' => 'body', 'label' => 'Body', 'type' => 'string']], 'submitHandler' => 'sendSupportMail']]],
+			],
+		];
+
+		$seen = [];
+		$this->toolProvider->method('invokeTool')->willReturnCallback(
+			function (string $tool, array $args) use (&$seen): array {
+				$seen[$tool] = $args;
+				if ($tool === 'buildiq.createApp') {
+					return ['success' => true, 'created' => true, 'app' => ['uuid' => 'app-uuid-1', 'slug' => 'tool-library', 'name' => 'Tool Library']];
+				}
+
+				return ['success' => true, 'action' => 'created'];
+			}
+		);
+
+		$this->makeService()->execute(plan: $plan, userId: 'alice');
+
+		self::assertSame('sendSupportMail', $seen['buildiq.upsertPage']['config']['submitHandler']);
+		self::assertArrayNotHasKey('schema', $seen['buildiq.upsertPage']['config']);
+	}//end testAHandlerThePlanDidNotAuthorIsLeftAlone()
 
 	/**
 	 * A page config naming the short schema slug the model asked upsertSchema
