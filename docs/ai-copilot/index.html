@@ -5,7 +5,7 @@
 <meta name="generator" content="Docusaurus v3.9.2">
 <title data-rh="true">AI Copilot | Buildiq</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" property="og:image" content="https://buildiq.conduction.nl/img/og-buildiq.png"><meta data-rh="true" name="twitter:image" content="https://buildiq.conduction.nl/img/og-buildiq.png"><meta data-rh="true" property="og:url" content="https://buildiq.conduction.nl/docs/ai-copilot/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="twitter:site" content="@ConductionNL"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:type" content="website"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="AI Copilot | Buildiq"><meta data-rh="true" name="description" content="The AI copilot turns a natural-language brief into a reviewable, approvable builder plan — the prompt-to-app path in Buildiq."><meta data-rh="true" property="og:description" content="The AI copilot turns a natural-language brief into a reviewable, approvable builder plan — the prompt-to-app path in Buildiq."><link data-rh="true" rel="icon" href="/img/favicon.svg"><link data-rh="true" rel="canonical" href="https://buildiq.conduction.nl/docs/ai-copilot/"><link data-rh="true" rel="alternate" href="https://buildiq.conduction.nl/docs/ai-copilot/" hreflang="en"><link data-rh="true" rel="alternate" href="https://buildiq.conduction.nl/docs/ai-copilot/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"AI Copilot","item":"https://buildiq.conduction.nl/docs/ai-copilot"}]}</script><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","@id":"https://buildiq.conduction.nl/docs/ai-copilot#article","mainEntityOfPage":"https://buildiq.conduction.nl/docs/ai-copilot","headline":"AI Copilot","inLanguage":"en","publisher":{"@id":"https://www.conduction.nl/#org"},"description":"The AI copilot turns a natural-language brief into a reviewable, approvable builder plan — the prompt-to-app path in Buildiq.","author":{"@type":"Organization","name":"Conduction","@id":"https://www.conduction.nl/#org"}}</script><script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","@id":"https://www.conduction.nl/#org","name":"Conduction B.V.","alternateName":"Conduction","url":"https://www.conduction.nl/","logo":"https://www.conduction.nl/img/brand/avatar-conduction-gold-on-white.svg","foundingDate":"2019","description":"Dutch open-source software company building EUPL-1.2 apps for the Nextcloud workspace.","address":{"@type":"PostalAddress","streetAddress":"Lauriergracht 14h","postalCode":"1016 RR","addressLocality":"Amsterdam","addressCountry":"NL"},"email":"info@conduction.nl","telephone":"+31-85-303-6840","taxID":"NL860784241B01","vatID":"NL860784241B01","identifier":{"@type":"PropertyValue","propertyID":"KvK","value":"76741850"},"sameAs":["https://codeberg.org/Conduction","https://www.linkedin.com/company/conduction/"]}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","@id":"https://buildiq.conduction.nl/#website","url":"https://buildiq.conduction.nl/","name":"Buildiq","publisher":{"@id":"https://www.conduction.nl/#org"},"inLanguage":["en"]}</script><link rel="stylesheet" href="/assets/css/styles.740d720e.css">
-<script src="/assets/js/runtime~main.6eb5a5b5.js" defer="defer"></script>
+<script src="/assets/js/runtime~main.024bbc30.js" defer="defer"></script>
 <script src="/assets/js/main.0042ffec.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
@@ -47,16 +47,16 @@ MCP tools use — the same permission checks, the same locking, the same
 caps. There is no separate, less-checked path for AI-driven changes.</li>
 </ol>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="atomicity-guarantee">Atomicity guarantee<a href="#atomicity-guarantee" class="hash-link" aria-label="Direct link to Atomicity guarantee" title="Direct link to Atomicity guarantee" translate="no">​</a></h2>
-<p>An approved plan is applied step by step. If any step fails partway
-through, Buildiq restores every manifest it had touched to its
-pre-plan snapshot, and deletes an application the plan itself created (so
-you&#x27;re never left with a half-built app you didn&#x27;t ask for). This is
-compensation-based, not a database transaction — OpenRegister has no
-cross-object transactions — so the guarantee is precisely scoped: <strong>a
-failed plan leaves no plan-created state behind.</strong> Every write still goes
-through the same locked, validated handler path, so nothing is ever
-silently corrupted; worst case is a visible, deletable draft you can
-remove by hand.</p>
+<p>An approved plan is applied step by step. If a step fails partway
+through, Buildiq restores every manifest it had touched, and deletes the
+application the plan created. <strong>A failed plan leaves nothing behind.</strong>
+That includes the registers the app created and the schemas inside them:
+the plan made those seconds earlier, so there is no data of yours to
+lose. You do not have to go looking for leftovers.</p>
+<p>This is compensation, not a database transaction. OpenRegister has no
+transaction across objects, so Buildiq undoes its own writes instead. If
+something resists deletion, the error response names it, and you can
+remove that one thing yourself.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="provider-setup-admins">Provider setup (admins)<a href="#provider-setup-admins" class="hash-link" aria-label="Direct link to Provider setup (admins)" title="Direct link to Provider setup (admins)" translate="no">​</a></h2>
 <p>The copilot rides Nextcloud&#x27;s built-in <strong>Task Processing</strong> API, so it
 works with whatever text-generation provider you&#x27;ve configured for your
