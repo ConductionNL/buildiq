@@ -258,6 +258,20 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         ['name' => 'appOverride#save',  'url' => '/api/app-overrides/{appId}', 'verb' => 'PUT',    'requirements' => ['appId' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'appOverride#clear', 'url' => '/api/app-overrides/{appId}', 'verb' => 'DELETE', 'requirements' => ['appId' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
+        // Detail-page layouts and the screen overrides that patch them
+        // (case-page-layout-per-case-type, screen-overrides-as-a-patch-with-fall-through).
+        // The leaf provider reads and refuses every write, because the rules
+        // that validate a layout live here: the uniqueness of a published
+        // tuple, the audience a resolver knows, and the base fingerprint an
+        // override is pinned to, which is stamped server-side and never taken
+        // from the payload. Admin-only via #[AuthorizedAdminSetting] plus an
+        // isAdmin() check in the body. Specific-first: the `/recut` segment is
+        // declared before nothing else claims it, and both precede the SPA
+        // catch-all the engine appends.
+        ['name' => 'pageLayout#recut', 'url' => '/api/page-layouts/{layoutId}/recut', 'verb' => 'POST'],
+        ['name' => 'pageLayout#index', 'url' => '/api/page-layouts', 'verb' => 'GET'],
+        ['name' => 'pageLayout#save',  'url' => '/api/page-layouts', 'verb' => 'PUT'],
+
         // Remote template store (buildiq-remote-template-store). Consume-only:
         // search proxies the configured remote OpenRegister catalogue server-side;
         // install resolves a remote template by slug and clones it locally via the

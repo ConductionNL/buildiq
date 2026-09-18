@@ -228,7 +228,17 @@ final class PageLayoutLeafProvider implements IntegrationProvider {
 				// A whole layout, not a patch: this is the pre-override shape and
 				// it keeps working exactly as it did.
 				$composed = ($composed === [] ? $layer : $this->deltas->merge($composed, $this->patchableOf($layer)));
-				$overrideBase = $composed;
+
+				// Only a layout for EVERYONE redefines the base an override is
+				// pinned to. A whole layout bound to one group still composes
+				// into what that group is served, but letting it move the frozen
+				// base would make the same override read as current for one
+				// colleague and drifted for the next, which is the caller
+				// dependence this design exists to remove.
+				if ((string)($this->audienceOf($layer)['kind'] ?? 'everyone') === 'everyone') {
+					$overrideBase = $composed;
+				}
+
 				$applied[] = $this->describeLayer($layer);
 				continue;
 			}
@@ -493,6 +503,86 @@ final class PageLayoutLeafProvider implements IntegrationProvider {
 			'typeValue' => (string)($layer['typeValue'] ?? ''),
 		];
 	}//end describeLayer()
+
+	/**
+	 * The base an override is cut against, composed the way resolution composes
+	 * it.
+	 *
+	 * The save path has to stamp the fingerprint of exactly the stack the
+	 * resolver will later check against, and the honest way to guarantee that is
+	 * to compose it here, in the class that resolves. A second composition in
+	 * the authoring service would be a second notion of the base, and the first
+	 * override to disagree with it would be withheld from every caller for a
+	 * reason nobody could see.
+	 *
+	 * Whole layouts only, and only those for everyone: those are the layers that
+	 * are frozen before the first patch lands.
+	 *
+	 * @param array<string, mixed> $override The override about to be saved, for its register, schema, type scope and baseRef.
+	 *
+	 * @return array<string, mixed> The composed base, empty when nothing published applies.
+	 *
+	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-002)
+	 */
+	public function baseForOverride(array $override): array {
+		$published = $this->publishedLayoutsFor(
+			(string)($override['register'] ?? ''),
+			(string)($override['schema'] ?? '')
+		);
+
+		$byId = [];
+		$schemaWide = null;
+		$typed = null;
+		$typeProperty = (string)($override['typeProperty'] ?? '');
+		$typeValue = (string)($override['typeValue'] ?? '');
+
+		foreach ($published as $layout) {
+			$delta = ($layout['layoutDelta'] ?? null);
+			if (is_array($delta) === true && $delta !== []) {
+				continue;
+			}
+
+			if ((string)($this->audienceOf($layout)['kind'] ?? 'everyone') !== 'everyone') {
+				continue;
+			}
+
+			$id = (string)($layout['id'] ?? '');
+			if ($id !== '') {
+				$byId[$id] = $layout;
+			}
+
+			if ((string)($layout['typeProperty'] ?? '') === '' || (string)($layout['typeValue'] ?? '') === '') {
+				$schemaWide = ($schemaWide ?? $layout);
+				continue;
+			}
+
+			if ($typeProperty !== ''
+				&& (string)$layout['typeProperty'] === $typeProperty
+				&& (string)$layout['typeValue'] === $typeValue
+			) {
+				$typed = ($typed ?? $layout);
+			}
+		}
+
+		$layers = [];
+		$baseRef = (string)($override['baseRef'] ?? '');
+		if ($baseRef !== '' && array_key_exists($baseRef, $byId) === true) {
+			$layers[] = $byId[$baseRef];
+		}
+
+		foreach ([$schemaWide, $typed] as $layout) {
+			if ($layout !== null && in_array($layout, $layers, true) === false) {
+				$layers[] = $layout;
+			}
+		}
+
+		$composed = [];
+		foreach ($layers as $layer) {
+			$composed = ($composed === [] ? $layer : $this->deltas->merge($composed, $this->patchableOf($layer)));
+		}
+
+		return $composed;
+	}//end baseForOverride()
 
 	/**
 	 * The parts of a whole layout that can be patched, so a later layer merges
