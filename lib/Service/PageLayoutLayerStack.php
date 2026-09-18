@@ -223,6 +223,8 @@ final class PageLayoutLayerStack {
 	 * @param array<string, mixed> $object The host object.
 	 *
 	 * @return array<int, array<string, mixed>> The ones that apply.
+	 *
+	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-005)
 	 */
 	public function keepThoseForThisObject(array $overrides, array $object): array {
 		$kept = [];
@@ -251,6 +253,8 @@ final class PageLayoutLayerStack {
 	 * @param array<string, mixed> $layout The layout.
 	 *
 	 * @return array<string, string> The audience.
+	 *
+	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-004)
 	 */
 	public function audienceOf(array $layout): array {
 		$audience = ($layout['audience'] ?? null);
@@ -339,6 +343,8 @@ final class PageLayoutLayerStack {
 	 * @param array<string, mixed> $layout The layout.
 	 *
 	 * @return array<string, mixed> The patchable parts plus the identity.
+	 *
+	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-001)
 	 */
 	public function patchableOf(array $layout): array {
 		$out = [];
@@ -358,6 +364,8 @@ final class PageLayoutLayerStack {
 	 * @param array<int, array<string, mixed>> $layers The ordered layers.
 	 *
 	 * @return array<string, mixed>|null The schema-wide layer.
+	 *
+	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-007)
 	 */
 	public function schemaWideOf(array $layers): ?array {
 		foreach ($layers as $layer) {

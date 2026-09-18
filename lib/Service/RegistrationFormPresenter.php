@@ -170,6 +170,8 @@ final class RegistrationFormPresenter {
 	 * @param array<string, mixed> $form The stored form.
 	 *
 	 * @return array<int, array<string, mixed>> The sections.
+	 *
+	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-008)
 	 */
 	public function orderedSections(array $form): array {
 		$sections = [];
@@ -228,6 +230,8 @@ final class RegistrationFormPresenter {
 	 * @param array<int, array<string, mixed>> $forms The forms.
 	 *
 	 * @return array<int, array<string, mixed>> The forms, defaults first.
+	 *
+	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
 	 */
 	public function defaultsFirst(array $forms): array {
 		$defaults = [];

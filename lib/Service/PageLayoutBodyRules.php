@@ -164,6 +164,8 @@ final class PageLayoutBodyRules {
 	 * @return void
 	 *
 	 * @throws InvalidArgumentException When a widget is not renderable.
+	 *
+	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-005)
 	 */
 	public function assertWidgets(array $layout): void {
 		$this->assertWidgetList(widgets: ($layout['widgets'] ?? []), where: 'the page');
@@ -179,6 +181,8 @@ final class PageLayoutBodyRules {
 	 * @return void
 	 *
 	 * @throws InvalidArgumentException When a widget is not renderable.
+	 *
+	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-005, REQ-OBPL-006)
 	 */
 	public function assertWidgetList(mixed $widgets, string $where): void {
 		if (is_array($widgets) === false) {
@@ -233,6 +237,8 @@ final class PageLayoutBodyRules {
 	 * @return void
 	 *
 	 * @throws InvalidArgumentException When such a field exists.
+	 *
+	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-009)
 	 */
 	public function assertUploadFields(array $layout): void {
 		foreach (($layout['uploadFields'] ?? []) as $field) {
