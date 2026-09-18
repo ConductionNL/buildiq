@@ -558,6 +558,45 @@ class CreateFromTemplateTest extends TestCase {
 	}//end testProductionVersionLinkPreservesTheStoredApplication()
 
 	/**
+	 * The production version an install creates is a draft.
+	 *
+	 * The store promises "an editable draft app" and the Application record is
+	 * written with `status: draft`, but the version its manifest lives on was
+	 * created `published`. The detail page reads the version, so a freshly
+	 * installed app reported a state nobody had reached, next to a list card
+	 * reading draft. Only VersionPromotionService moves a version to published.
+	 *
+	 * Watched failing: with `'status' => 'published'` restored, this reports
+	 * "Failed asserting that two strings are identical. -'draft' +'published'".
+	 *
+	 * @return void
+	 */
+	public function testTheInstalledProductionVersionIsADraft(): void {
+		$this->authenticateAs('alice');
+		$this->withRequestParams(['name' => 'My permits', 'slug' => 'my-permits']);
+
+		$this->objectService->method('searchObjects')->willReturnOnConsecutiveCalls(
+			[$this->templateRecord(self::TEMPLATE_SLUG)],
+			[]
+		);
+		$this->schemaMapper->method('createFromArray')->willReturn($this->schemaWithId(7777));
+
+		$calls = [];
+		$this->recordSaves($calls);
+
+		$result = $this->controller->createFromTemplate(templateSlug: self::TEMPLATE_SLUG);
+		self::assertSame(Http::STATUS_CREATED, $result->getStatus());
+
+		$version = $calls[1]['object'];
+		self::assertSame('production', $version['slug'], 'expected the second write to be the version');
+		self::assertSame(
+			'draft',
+			$version['status'],
+			'an installed app has published nothing yet, so its version is a draft'
+		);
+	}//end testTheInstalledProductionVersionIsADraft()
+
+	/**
 	 * Test 4 — Manifest schema-refs are rewritten with the new-slug prefix.
 	 *
 	 * @return void

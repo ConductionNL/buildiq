@@ -510,6 +510,87 @@ class CopilotServiceTest extends TestCase {
 	}//end testPlanReportsAProviderFailureOnceAndKeepsItsMessage()
 
 	/**
+	 * An asynchronous provider that nothing picks up: the request gives up,
+	 * cancels the task it abandoned, and says a worker is missing rather than
+	 * blaming the brief.
+	 *
+	 * The wait budget is passed in so the give-up path runs in milliseconds.
+	 *
+	 * @return void
+	 */
+	public function testAnUnpickedTaskIsGivenUpOnAndCancelled(): void {
+		$scheduled = new Task(TextToText::ID, ['input' => 'x'], 'buildiq', 'alice');
+		$scheduled->setId(42);
+		$scheduled->setStatus(Task::STATUS_SCHEDULED);
+
+		$this->taskManager->method('scheduleTask')->willReturnCallback(
+			function (Task $task): void {
+				$task->setId(42);
+			}
+		);
+		$this->taskManager->method('getTask')->willReturn($scheduled);
+		$this->taskManager->expects(self::once())->method('cancelTask')->with(42);
+
+		$method = new \ReflectionMethod(CopilotService::class, 'runTextToTextTask');
+		$method->setAccessible(true);
+
+		$this->expectException(CopilotException::class);
+		try {
+			$method->invoke($this->makeService(), $this->taskManager, 'a prompt', 'alice', null, 0.05);
+		} catch (CopilotException $e) {
+			self::assertSame('provider_error', $e->getErrorCode());
+			self::assertStringContainsString('still waiting', (string)($e->getContext()['providerMessage'] ?? ''));
+			throw $e;
+		}
+	}//end testAnUnpickedTaskIsGivenUpOnAndCancelled()
+
+	/**
+	 * A scheduled task with no id is a provider error, not a null dereference.
+	 *
+	 * @return void
+	 */
+	public function testATaskWithoutAnIdIsAProviderError(): void {
+		$this->taskManager->method('scheduleTask');
+
+		$method = new \ReflectionMethod(CopilotService::class, 'runTextToTextTask');
+		$method->setAccessible(true);
+
+		$this->expectException(CopilotException::class);
+		try {
+			$method->invoke($this->makeService(), $this->taskManager, 'a prompt', 'alice', null, 0.05);
+		} catch (CopilotException $e) {
+			self::assertSame('provider_error', $e->getErrorCode());
+			throw $e;
+		}
+	}//end testATaskWithoutAnIdIsAProviderError()
+
+	/**
+	 * A provider catalogue that cannot be read falls back to the scheduled
+	 * path rather than failing the plan.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadableProviderCatalogueFallsBackToScheduling(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->taskManager->method('getPreferredProvider')->willThrowException(new \RuntimeException('catalogue unavailable'));
+		$this->wireSuccessfulLlmReply(
+			json_encode(
+				[
+					'summary' => 'A tool library',
+					'steps' => [['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']]],
+				]
+			)
+		);
+
+		$this->taskManager->expects(self::never())->method('runTask');
+
+		$result = $this->makeService()->plan(brief: 'A tool library', appSlug: null, userId: 'alice');
+
+		self::assertSame('A tool library', $result['summary']);
+	}//end testAnUnreadableProviderCatalogueFallsBackToScheduling()
+
+	/**
 	 * A plan for the version the user is editing lands on that version, even
 	 * when the model leaves `versionSlug` out (the tools would otherwise
 	 * default it to `development`, and the designer would show no change).
@@ -606,87 +687,6 @@ class CopilotServiceTest extends TestCase {
 
 		self::assertSame('development', $result['steps'][0]['arguments']['versionSlug']);
 	}//end testPlanKeepsAVersionTheModelChose()
-
-	/**
-	 * An asynchronous provider that nothing picks up: the request gives up,
-	 * cancels the task it abandoned, and says a worker is missing rather than
-	 * blaming the brief.
-	 *
-	 * The wait budget is passed in so the give-up path runs in milliseconds.
-	 *
-	 * @return void
-	 */
-	public function testAnUnpickedTaskIsGivenUpOnAndCancelled(): void {
-		$scheduled = new Task(TextToText::ID, ['input' => 'x'], 'buildiq', 'alice');
-		$scheduled->setId(42);
-		$scheduled->setStatus(Task::STATUS_SCHEDULED);
-
-		$this->taskManager->method('scheduleTask')->willReturnCallback(
-			function (Task $task): void {
-				$task->setId(42);
-			}
-		);
-		$this->taskManager->method('getTask')->willReturn($scheduled);
-		$this->taskManager->expects(self::once())->method('cancelTask')->with(42);
-
-		$method = new \ReflectionMethod(CopilotService::class, 'runTextToTextTask');
-		$method->setAccessible(true);
-
-		$this->expectException(CopilotException::class);
-		try {
-			$method->invoke($this->makeService(), $this->taskManager, 'a prompt', 'alice', null, 0.05);
-		} catch (CopilotException $e) {
-			self::assertSame('provider_error', $e->getErrorCode());
-			self::assertStringContainsString('still waiting', (string)($e->getContext()['providerMessage'] ?? ''));
-			throw $e;
-		}
-	}//end testAnUnpickedTaskIsGivenUpOnAndCancelled()
-
-	/**
-	 * A scheduled task with no id is a provider error, not a null dereference.
-	 *
-	 * @return void
-	 */
-	public function testATaskWithoutAnIdIsAProviderError(): void {
-		$this->taskManager->method('scheduleTask');
-
-		$method = new \ReflectionMethod(CopilotService::class, 'runTextToTextTask');
-		$method->setAccessible(true);
-
-		$this->expectException(CopilotException::class);
-		try {
-			$method->invoke($this->makeService(), $this->taskManager, 'a prompt', 'alice', null, 0.05);
-		} catch (CopilotException $e) {
-			self::assertSame('provider_error', $e->getErrorCode());
-			throw $e;
-		}
-	}//end testATaskWithoutAnIdIsAProviderError()
-
-	/**
-	 * A provider catalogue that cannot be read falls back to the scheduled
-	 * path rather than failing the plan.
-	 *
-	 * @return void
-	 */
-	public function testAnUnreadableProviderCatalogueFallsBackToScheduling(): void {
-		$this->wireTaskProcessingManager();
-		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
-		$this->taskManager->method('getPreferredProvider')->willThrowException(new \RuntimeException('catalogue unavailable'));
-		$this->wireSuccessfulLlmReply(
-			json_encode(
-				[
-					'summary' => 'A tool library',
-					'steps' => [['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']]],
-				]
-			)
-		);
-
-		$this->taskManager->expects(self::never())->method('runTask');
-
-		$result = $this->makeService()->plan(brief: 'A tool library', appSlug: null, userId: 'alice');
-
-		self::assertSame('A tool library', $result['summary']);
-	}//end testAnUnreadableProviderCatalogueFallsBackToScheduling()
 
 	/**
 	 * A step outside the allow-list is rejected with 422 plan_invalid.

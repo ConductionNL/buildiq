@@ -121,6 +121,23 @@ class DocumentGenerationRouteTest extends TestCase {
 	}//end testDocudeskRouteIsTheFallback()
 
 	/**
+	 * With both apps enabled, filinq wins.
+	 *
+	 * The other two cases each know one route, so they pass under any
+	 * candidate order. Only this one pins that the order is newest first.
+	 *
+	 * @return void
+	 */
+	public function testFilinqWinsWhenBothAnswer(): void {
+		$this->assertSame(
+			expected: ['filinq.correspondence.generate', self::ROOT_URL . 'route/filinq.correspondence.generate'],
+			actual: $this->resolve(
+				known: ['filinq.correspondence.generate', 'docudesk.correspondence.generate']
+			)
+		);
+	}//end testFilinqWinsWhenBothAnswer()
+
+	/**
 	 * With neither app, no URL comes back and the newest route is named.
 	 *
 	 * @return void
