@@ -872,10 +872,7 @@ OC.L10N.register(
         "Could not load the GitHub status.": "Kon de GitHub-status niet laden.",
         "Pull failed.": "Ophalen mislukt.",
         "AI copilot": "AI-copiloot",
-        "_%n tool enabled_::_%n tools enabled_": [
-            "%n tool ingeschakeld",
-            "%n tools ingeschakeld"
-        ],
+        "_%n tool enabled_::_%n tools enabled_": ["%n tool ingeschakeld","%n tools ingeschakeld"],
         "Changes go to the {version} version.": "Wijzigingen gaan naar de versie {version}.",
         "Asking the AI provider. This usually takes a few seconds.": "De AI-provider is aan het werk. Dit duurt meestal een paar seconden.",
         "Ask for a page, a widget or a menu item. You review every change before it is applied.": "Vraag om een pagina, een widget of een menu-item. Je beoordeelt elke wijziging voordat die wordt toegepast.",

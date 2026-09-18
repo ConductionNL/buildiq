@@ -151,7 +151,12 @@ export function useCopilot() {
 		manifestErrors.value = new Map()
 		lastPrompt.value = brief
 		try {
-			const result = await requestPlan({ brief, appSlug, agentId, versionSlug })
+			const result = await requestPlan({
+				brief,
+				appSlug,
+				agentId,
+				versionSlug,
+			})
 			if (thisTurn !== turn) {
 				return
 			}

@@ -71,7 +71,12 @@ export async function fetchCopilotHealth() {
 export async function requestPlan({ brief, appSlug, agentId, versionSlug } = {}) {
 	try {
 		const url = generateUrl('/apps/buildiq/api/copilot/plan')
-		const { data } = await axios.post(url, { brief, appSlug, agentId, versionSlug })
+		const { data } = await axios.post(url, {
+			brief,
+			appSlug,
+			agentId,
+			versionSlug,
+		})
 		return data
 	} catch (err) {
 		throw normaliseError(err)

@@ -1502,7 +1502,10 @@
         "{name} ({semver})": "{name} ({semver})",
         "Ask for a page, a widget or a menu item. You review every change before it is applied.": "Ask for a page, a widget or a menu item. You review every change before it is applied.",
         "Asking the AI provider. This usually takes a few seconds.": "Asking the AI provider. This usually takes a few seconds.",
-        "Close the copilot": "Close the copilot"
+        "Close the copilot": "Close the copilot",
+        "%n tool enabled": "%n tool enabled",
+        "%n tools enabled": "%n tools enabled",
+        "Changes go to the {version} version.": "Changes go to the {version} version."
     },
     "plurals": "",
     "pluralForm": "nplurals=2; plural=(n != 1);"
