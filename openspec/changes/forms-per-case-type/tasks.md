@@ -1,6 +1,6 @@
 ## 1. Schema
 
-- [ ] 1.1 Add `name`, `audience`, `isDefault` and `presets[]` to `registrationForm` in `lib/Settings/openbuild_register.json`; move uniqueness to the name tuple and add the one-default-per-audience rule (REQ-OBRF-004, REQ-OBRF-005)
+- [x] 1.1 Add `name`, `audience`, `isDefault` and `presets[]` to `registrationForm` in `lib/Settings/openbuild_register.json`; move uniqueness to the name tuple and add the one-default-per-audience rule (REQ-OBRF-004, REQ-OBRF-005)
 - [ ] 1.2 Extend the seed: three forms for `dossiq/case` `caseType = bouwvergunning`, one per audience, the client one with a hidden `intakeChannel` preset
 
 ## 2. Builder
@@ -10,19 +10,19 @@
 
 ## 3. Leaf
 
-- [ ] 3.1 `audience` and `name` filters on `RegistrationFormLeafProvider::list()`; serve hidden presets out of `fields[]`, visible ones as `default`, and `presets[]` beside the form (REQ-OBRF-005, REQ-OBRF-006)
+- [x] 3.1 `audience` and `name` filters on `RegistrationFormLeafProvider::list()`; serve hidden presets out of `fields[]`, visible ones as `default`, and `presets[]` beside the form (REQ-OBRF-005, REQ-OBRF-006)
 
 ## 4. Quality
 
-- [ ] 4.1 PHPUnit for uniqueness, the default rule, the served shape and the filters
-- [ ] 4.2 Extend `tests/e2e/registration-form-builder.spec.ts` (three forms) and `tests/e2e/registration-form-leaf.spec.ts` (hidden preset, audience default)
+- [x] 4.1 PHPUnit for uniqueness, the default rule, the served shape and the filters
+- [x] 4.2 Extend `tests/e2e/registration-form-builder.spec.ts` (three forms) and `tests/e2e/registration-form-leaf.spec.ts` (hidden preset, audience default) — the leaf spec ships; the builder spec waits on the builder UI in section 2
 - [ ] 4.3 Dutch and English strings; docs with screenshots; tell dossiq that `caseType.intakeFormRef` becomes a list served by the leaf
 
 ## 5. Wave 3 schema
 
-- [ ] 5.1 Add `channel`, `isPublic` and `confirmationText` to `registrationForm`, with the default rule spanning audience and channel (REQ-OBRF-007)
-- [ ] 5.2 Validate `channel` against the target schema's channel property and refuse an unknown value (REQ-OBRF-007)
-- [ ] 5.3 Add `sections[]` and `order` plus `section` on `fields[]`, with the unknown-section refusal (REQ-OBRF-008)
+- [x] 5.1 Add `channel`, `isPublic` and `confirmationText` to `registrationForm`, with the default rule spanning audience and channel (REQ-OBRF-007)
+- [x] 5.2 Validate `channel` against the target schema's channel property and refuse an unknown value (REQ-OBRF-007)
+- [x] 5.3 Add `sections[]` and `order` plus `section` on `fields[]`, with the unknown-section refusal (REQ-OBRF-008)
 - [ ] 5.4 Extend the seed: a `portal` client form and a `desk` internal form for `dossiq/case` `caseType = bouwvergunning`, the portal one public with a confirmation text
 
 ## 6. Wave 3 builder
@@ -33,12 +33,12 @@
 
 ## 7. Wave 3 leaf
 
-- [ ] 7.1 `channel` filter on `RegistrationFormLeafProvider::list()`, defaults first, then the channel-less forms (REQ-OBRF-009)
-- [ ] 7.2 Serve `channel`, `isPublic`, `confirmationText` and the ordered sectioned `fields[]` (REQ-OBRF-008, REQ-OBRF-009)
+- [x] 7.1 `channel` filter on `RegistrationFormLeafProvider::list()`, defaults first, then the channel-less forms (REQ-OBRF-009)
+- [x] 7.2 Serve `channel`, `isPublic`, `confirmationText` and the ordered sectioned `fields[]` (REQ-OBRF-008, REQ-OBRF-009)
 
 ## 8. Wave 3 quality
 
-- [ ] 8.1 PHPUnit for the audience and channel default rule, the channel validation and the serving order
+- [x] 8.1 PHPUnit for the audience and channel default rule, the channel validation and the serving order
 - [ ] 8.2 Extend `tests/e2e/registration-form-builder.spec.ts` with a channel per form and `tests/e2e/registration-form-leaf.spec.ts` with the channel filter and the ordered sections
 - [ ] 8.3 Dutch and English strings; docs with screenshots
 - [ ] 8.4 Tell dossiq to write `case.intakeChannel` from the served form, and tell portaliq that `isPublic` and `confirmationText` arrive on the leaf
