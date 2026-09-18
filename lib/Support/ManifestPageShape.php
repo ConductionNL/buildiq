@@ -113,17 +113,29 @@ final class ManifestPageShape {
 			$config['fields'] = $fields;
 		}
 
-		$hasHandler = (is_string(($config['submitHandler'] ?? null)) === true && $config['submitHandler'] !== '');
-		$hasEndpoint = (is_string(($config['submitEndpoint'] ?? null)) === true && $config['submitEndpoint'] !== '');
-		if ($hasHandler === true || $hasEndpoint === true) {
-			return $config;
+		return self::withSubmitDestination(config: $config);
+	}//end normaliseForm()
+
+	/**
+	 * Make sure a form names exactly one place to post to.
+	 *
+	 * A destination the caller named is left alone. With none, the page already
+	 * says which register and schema it belongs to in every plan seen so far,
+	 * and the OpenRegister objects endpoint is where an index page on the same
+	 * pair reads from, so the form posts to the collection it lists. Nothing is
+	 * invented when that pair is absent: the page stays invalid and says so.
+	 *
+	 * @param array<string, mixed> $config The page's config block.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function withSubmitDestination(array $config): array {
+		foreach (['submitHandler', 'submitEndpoint'] as $key) {
+			if (self::stringValue(value: ($config[$key] ?? null)) !== '') {
+				return $config;
+			}
 		}
 
-		// No destination named. The page already says which register and schema
-		// it belongs to in every plan seen so far, and the OpenRegister objects
-		// endpoint is where an index page on the same pair reads from, so the
-		// form posts to the collection it lists. Nothing is invented when that
-		// pair is absent: the page stays invalid and says so.
 		$register = self::stringValue(value: ($config['register'] ?? null));
 		$schema = self::stringValue(value: ($config['schema'] ?? null));
 		if ($register !== '' && $schema !== '') {
@@ -131,7 +143,7 @@ final class ManifestPageShape {
 		}
 
 		return $config;
-	}//end normaliseForm()
+	}//end withSubmitDestination()
 
 	/**
 	 * Turn one `fields[]` entry into the `{key, label, type}` object the

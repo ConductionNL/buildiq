@@ -41,6 +41,9 @@ class UpsertPageHandler extends AbstractToolHandler {
 	 * @param array<string, mixed> $args Tool arguments (appSlug, versionSlug, pageId, title, type, route, config).
 	 *
 	 * @return array<string, mixed>
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ManifestPageShape is a pure shape
+	 * builder with no collaborators and no state.
 	 */
 	public function handle(array $args): array {
 		$validation = $this->validateArgs(args: $args);

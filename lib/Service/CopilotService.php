@@ -1322,6 +1322,9 @@ class CopilotService {
 	 * @param array<string, mixed> $manifest Manifest to mutate (copy).
 	 *
 	 * @return array<string, mixed>
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ManifestPageShape is a pure shape
+	 * builder with no collaborators and no state.
 	 */
 	private function applyUpsertPage(array $args, array $manifest): array {
 		$pageId = (string)($args['pageId'] ?? '');
@@ -1361,6 +1364,9 @@ class CopilotService {
 	 * @param array<string, mixed> $manifest Manifest to mutate (copy).
 	 *
 	 * @return array<string, mixed>
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ManifestWidgetShape is a pure shape
+	 * builder with no collaborators and no state.
 	 */
 	private function applyAddWidget(array $args, array $manifest): array {
 		$pageId = (string)($args['pageId'] ?? '');

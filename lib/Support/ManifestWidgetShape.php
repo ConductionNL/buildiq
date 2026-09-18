@@ -254,26 +254,35 @@ final class ManifestWidgetShape {
 	 */
 	private static function takenIds(array $widgets, array $layout): array {
 		$taken = [];
-		foreach ($widgets as $existing) {
-			if (is_array($existing) === true && is_string(($existing['id'] ?? null)) === true && $existing['id'] !== '') {
-				$taken[$existing['id']] = true;
-			}
-		}
+		self::collectIds(rows: $widgets, keys: ['id'], taken: $taken);
+		self::collectIds(rows: $layout, keys: ['id', 'widgetId'], taken: $taken);
 
-		foreach ($layout as $row) {
+		return $taken;
+	}//end takenIds()
+
+	/**
+	 * Add every non-empty string found under $keys in $rows to $taken.
+	 *
+	 * @param array<int, mixed> $rows Entries to read.
+	 * @param array<int, string> $keys Keys on each entry that hold an id.
+	 * @param array<string, bool> $taken Accumulator, keyed by id.
+	 *
+	 * @return void
+	 */
+	private static function collectIds(array $rows, array $keys, array &$taken): void {
+		foreach ($rows as $row) {
 			if (is_array($row) === false) {
 				continue;
 			}
 
-			foreach (['id', 'widgetId'] as $key) {
-				if (is_string(($row[$key] ?? null)) === true && $row[$key] !== '') {
-					$taken[$row[$key]] = true;
+			foreach ($keys as $key) {
+				$id = ($row[$key] ?? null);
+				if (is_string($id) === true && $id !== '') {
+					$taken[$id] = true;
 				}
 			}
 		}
-
-		return $taken;
-	}//end takenIds()
+	}//end collectIds()
 
 	/**
 	 * Reduce a string to a kebab-case identifier.

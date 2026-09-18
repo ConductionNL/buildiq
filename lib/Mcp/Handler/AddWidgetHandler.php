@@ -202,16 +202,9 @@ class AddWidgetHandler extends AbstractToolHandler {
 			$widgetConfig = [];
 		}
 
-		// Both are optional. They are rejected rather than silently cleaned up
-		// when they are present but malformed: an id the caller meant to
-		// address later, quietly replaced by a derived one, is the kind of
-		// mismatch nobody finds until a delta fails to land.
-		if ($widgetId !== '' && preg_match('/^[a-z0-9][a-z0-9-]*[a-z0-9]$/', $widgetId) !== 1) {
-			return ['error' => "Invalid widgetId '{$widgetId}'. Use lowercase letters, digits and hyphens."];
-		}
-
-		if (mb_strlen($title) > 80) {
-			return ['error' => 'title must be 80 characters or fewer.'];
+		$identityError = $this->validateIdentity(widgetId: $widgetId, title: $title);
+		if ($identityError !== null) {
+			return ['error' => $identityError];
 		}
 
 		return [
@@ -225,6 +218,31 @@ class AddWidgetHandler extends AbstractToolHandler {
 		];
 
 	}//end validateArgs()
+
+	/**
+	 * Check the optional `widgetId` and `title` arguments.
+	 *
+	 * Both are optional. They are rejected rather than silently cleaned up when
+	 * they are present but malformed: an id the caller meant to address later,
+	 * quietly replaced by a derived one, is the kind of mismatch nobody finds
+	 * until a delta fails to land.
+	 *
+	 * @param string $widgetId Caller-supplied widget id, already trimmed.
+	 * @param string $title Caller-supplied widget title, already trimmed.
+	 *
+	 * @return string|null The rejection message, or null when both are usable.
+	 */
+	private function validateIdentity(string $widgetId, string $title): ?string {
+		if ($widgetId !== '' && preg_match('/^[a-z0-9][a-z0-9-]*[a-z0-9]$/', $widgetId) !== 1) {
+			return "Invalid widgetId '{$widgetId}'. Use lowercase letters, digits and hyphens.";
+		}
+
+		if (mb_strlen($title) > 80) {
+			return 'title must be 80 characters or fewer.';
+		}
+
+		return null;
+	}//end validateIdentity()
 
 	/**
 	 * Find the array index of a page by case-insensitive id matching.
@@ -256,6 +274,11 @@ class AddWidgetHandler extends AbstractToolHandler {
 	 * @param string $title Caller-supplied widget title, or '' to derive one.
 	 *
 	 * @return array{0: array, 1: array{id: string, title: string, type: string}}
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ManifestWidgetShape is a pure shape
+	 * builder with no collaborators and no state. Injecting it would put the
+	 * same object on four constructors to satisfy a rule aimed at hidden
+	 * service coupling, and this class has none to hide.
 	 */
 	private function appendWidget(
 		array $pages,
