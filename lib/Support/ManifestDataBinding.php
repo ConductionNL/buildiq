@@ -124,14 +124,28 @@ final class ManifestDataBinding {
 			return $config;
 		}
 
-		$namesSchema = (isset($bound['schema']) === true && is_string($bound['schema']) === true && trim($bound['schema']) !== '');
-		$hasRegister = (isset($bound['register']) === true && is_string($bound['register']) === true && trim($bound['register']) !== '');
-		if ($namesSchema === true && $hasRegister === false) {
+		if (self::namesValue(block: $bound, key: 'schema') === true
+			&& self::namesValue(block: $bound, key: 'register') === false
+		) {
 			$bound['register'] = self::registerSlug(appSlug: $appSlug, versionSlug: $versionSlug);
 		}
 
 		return $bound;
 	}//end bindBlock()
+
+	/**
+	 * Whether a config block names a non-empty string under one key.
+	 *
+	 * @param array<string, mixed> $block The config block.
+	 * @param string $key The key to read.
+	 *
+	 * @return bool
+	 */
+	private static function namesValue(array $block, string $key): bool {
+		$value = ($block[$key] ?? null);
+
+		return (is_string($value) === true && trim($value) !== '');
+	}//end namesValue()
 
 	/**
 	 * Rewrite every `register` / `schema` binding in a config block.

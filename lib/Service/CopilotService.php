@@ -514,6 +514,24 @@ class CopilotService {
 	}//end authoredSchemaSlugs()
 
 	/**
+	 * The version a step's write will land on.
+	 *
+	 * @param array<string, mixed> $args The step's arguments.
+	 *
+	 * @return string
+	 */
+	private static function targetVersionSlug(array $args): string {
+		// An absent versionSlug lands on `development` in every handler, so the
+		// binding has to name the same version the write will land on.
+		$versionSlug = (string)($args['versionSlug'] ?? 'development');
+		if ($versionSlug === '') {
+			return 'development';
+		}
+
+		return $versionSlug;
+	}//end targetVersionSlug()
+
+	/**
 	 * Turn a `submitHandler` that names one of the plan's own schemas into the
 	 * page's data binding.
 	 *
@@ -578,21 +596,7 @@ class CopilotService {
 	 * ManifestDataBinding are pure rules with no collaborators and no state.
 	 */
 	private function normaliseStepArguments(string $tool, array $args, array $authoredSchemas = []): array {
-		// Only a PAGE's route is a path. A menu item's route names a route, and
-		// the runtime names routes after page ids, so rooting one would break
-		// exactly the entries that were right: `borrow-tool` is a page id and
-		// resolves, `/borrow-tool` is a path that page does not have.
-		if ($tool === 'buildiq.upsertPage' && isset($args['route']) === true && is_string($args['route']) === true) {
-			$args['route'] = ManifestRoute::normalise(route: $args['route']);
-		}
-
-		$appSlug = (string)($args['appSlug'] ?? '');
-		// An absent versionSlug lands on `development` in every handler, so
-		// the binding has to name the same version the write will land on.
-		$versionSlug = (string)($args['versionSlug'] ?? 'development');
-		if ($versionSlug === '') {
-			$versionSlug = 'development';
-		}
+		$args = self::withRootedPageRoute(tool: $tool, args: $args);
 
 		$bindKey = match ($tool) {
 			'buildiq.upsertPage' => 'config',
@@ -600,25 +604,55 @@ class CopilotService {
 			default => '',
 		};
 
-		if ($bindKey === '' || isset($args[$bindKey]) === false || is_array($args[$bindKey]) === false) {
+		$config = ($args[$bindKey] ?? null);
+		if ($bindKey === '' || is_array($config) === false) {
 			return $args;
 		}
 
-		if ($tool === 'buildiq.upsertPage' && (string)($args['type'] ?? '') === 'form') {
-			$args[$bindKey] = $this->resolveSubmitHandler(
-				config: $args[$bindKey],
+		$appSlug = (string)($args['appSlug'] ?? '');
+		$versionSlug = self::targetVersionSlug(args: $args);
+
+		if ((string)($args['type'] ?? '') === 'form') {
+			$config = $this->resolveSubmitHandler(
+				config: $config,
 				authored: (array)($authoredSchemas[$appSlug . '@' . $versionSlug] ?? [])
 			);
 		}
 
 		$args[$bindKey] = ManifestDataBinding::bindBlock(
-			config: $args[$bindKey],
+			config: $config,
 			appSlug: $appSlug,
 			versionSlug: $versionSlug
 		);
 
 		return $args;
 	}//end normaliseStepArguments()
+
+	/**
+	 * Root a PAGE step's route, and leave every other step's alone.
+	 *
+	 * Only a page's route is a path. A menu item's route names a route, and the
+	 * runtime names routes after page ids, so rooting one would break exactly
+	 * the entries that were right: `borrow-tool` is a page id and resolves,
+	 * `/borrow-tool` is a path that page does not have.
+	 *
+	 * @param string $tool The step's tool id.
+	 * @param array<string, mixed> $args The step's arguments.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ManifestRoute is a pure rule with
+	 * no collaborators and no state.
+	 */
+	private static function withRootedPageRoute(string $tool, array $args): array {
+		if ($tool !== 'buildiq.upsertPage' || is_string(($args['route'] ?? null)) === false) {
+			return $args;
+		}
+
+		$args['route'] = ManifestRoute::normalise(route: $args['route']);
+
+		return $args;
+	}//end withRootedPageRoute()
 
 	/**
 	 * Predict the manifest impact of a plan without writing anything.
@@ -1859,8 +1893,8 @@ class CopilotService {
 		}
 
 		try {
-			// deleteData: TRUE. Everything under a plan-created app was made by
-			// this same plan seconds ago — its per-version registers by
+			// Note deleteData: TRUE. Everything under a plan-created app was
+			// made by this same plan seconds ago: its per-version registers by
 			// `createApp`, the schemas inside them by `upsertSchema` — so there
 			// is no user data here to preserve, which is the only reason the
 			// flag defaults to false for the delete button in the UI. With it
