@@ -185,6 +185,14 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * Seed the form each time the dialog opens, so a second publish never
+		 * shows the first one's answers.
+		 *
+		 * @param {boolean} value Whether the dialog is now open.
+		 * @return {void}
+		 * @spec openspec/changes/github-app-sync/specs/application-detail-ui/spec.md
+		 */
 		open(value) {
 			if (value) {
 				this.selectedVersion = null
