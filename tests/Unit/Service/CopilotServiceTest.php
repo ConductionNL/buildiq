@@ -1239,6 +1239,27 @@ class CopilotServiceTest extends TestCase {
 	}//end testPredictedWidgetIdsAreStableAcrossRuns()
 
 	/**
+	 * The plan the live copilot actually returned on 2026-09-18 predicts the
+	 * manifest in `tests/Fixtures/copilot-real-plan-manifest.json`, which
+	 * `tests/vitest/copilotRealPlan.spec.js` runs through the canonical
+	 * validator. Against development that same plan predicted a manifest with
+	 * 15 errors, so Confirm and create stayed disabled.
+	 *
+	 * @return void
+	 */
+	public function testARealPlanPredictsAManifestTheValidatorAccepts(): void {
+		$plan = json_decode((string)file_get_contents(__DIR__ . '/../../Fixtures/copilot-real-plan.json'), true);
+		$expected = json_decode(
+			(string)file_get_contents(__DIR__ . '/../../Fixtures/copilot-real-plan-manifest.json'),
+			true
+		);
+
+		$manifests = $this->makeService()->predictManifests(plan: ['summary' => 'x', 'steps' => $plan['steps']], appSlug: null);
+
+		self::assertSame($expected, $manifests['tool-library@development']['predicted']);
+	}//end testARealPlanPredictsAManifestTheValidatorAccepts()
+
+	/**
 	 * predictManifests() throws when the predicted manifest exceeds the pages cap.
 	 *
 	 * @return void

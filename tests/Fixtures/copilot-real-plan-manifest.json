@@ -1,0 +1,182 @@
+{
+	"version": "1.0.0",
+	"menu": [
+		{
+			"id": "dashboard",
+			"label": "Dashboard",
+			"icon": "view-dashboard",
+			"route": "dashboard",
+			"order": 10
+		}
+	],
+	"pages": [
+		{
+			"id": "dashboard",
+			"route": "/",
+			"type": "dashboard",
+			"title": "Dashboard",
+			"config": {
+				"widgets": [
+					{
+						"id": "tools-out-on-loan",
+						"title": "Tools Out on Loan",
+						"type": "stat",
+						"content": {
+							"title": "Tools Out on Loan",
+							"register": "loan",
+							"schema": "loan",
+							"aggregate": "count",
+							"filter": {
+								"status": "out"
+							},
+							"icon": "hammer-wrench",
+							"color": "primary"
+						}
+					},
+					{
+						"id": "overdue-loans",
+						"title": "Overdue Loans",
+						"type": "stat",
+						"content": {
+							"title": "Overdue Loans",
+							"register": "loan",
+							"schema": "loan",
+							"aggregate": "count",
+							"filter": {
+								"status": "overdue"
+							},
+							"icon": "alert-circle-outline",
+							"color": "error"
+						}
+					},
+					{
+						"id": "active-loans",
+						"title": "Active Loans",
+						"type": "table",
+						"content": {
+							"title": "Active Loans",
+							"register": "loan",
+							"schema": "loan",
+							"filter": {
+								"status": "out"
+							},
+							"columns": [
+								"tool",
+								"member",
+								"borrowedOn",
+								"dueOn",
+								"status"
+							],
+							"limit": 10,
+							"sort": [
+								{
+									"field": "dueOn",
+									"direction": "asc"
+								}
+							]
+						}
+					}
+				],
+				"layout": [
+					{
+						"id": "tools-out-on-loan",
+						"widgetId": "tools-out-on-loan",
+						"gridX": 0,
+						"gridY": 0,
+						"gridWidth": 6,
+						"gridHeight": 2
+					},
+					{
+						"id": "overdue-loans",
+						"widgetId": "overdue-loans",
+						"gridX": 6,
+						"gridY": 0,
+						"gridWidth": 6,
+						"gridHeight": 2
+					},
+					{
+						"id": "active-loans",
+						"widgetId": "active-loans",
+						"gridX": 0,
+						"gridY": 2,
+						"gridWidth": 6,
+						"gridHeight": 2
+					}
+				]
+			}
+		},
+		{
+			"id": "tools",
+			"route": "/tools",
+			"type": "index",
+			"title": "Tools",
+			"config": {
+				"register": "tool",
+				"schema": "tool",
+				"columns": [
+					"name",
+					"category",
+					"assetTag",
+					"status",
+					"condition",
+					"location"
+				],
+				"searchFields": [
+					"name",
+					"assetTag",
+					"category"
+				]
+			}
+		},
+		{
+			"id": "loan-form",
+			"route": "/loans/new",
+			"type": "form",
+			"title": "Borrow / Return Tool",
+			"config": {
+				"register": "loan",
+				"schema": "loan",
+				"fields": [
+					{
+						"key": "tool",
+						"label": "Tool",
+						"type": "string"
+					},
+					{
+						"key": "member",
+						"label": "Member",
+						"type": "string"
+					},
+					{
+						"key": "borrowedOn",
+						"label": "Borrowed on",
+						"type": "string"
+					},
+					{
+						"key": "dueOn",
+						"label": "Due on",
+						"type": "string"
+					},
+					{
+						"key": "returnedOn",
+						"label": "Returned on",
+						"type": "string"
+					},
+					{
+						"key": "status",
+						"label": "Status",
+						"type": "string"
+					},
+					{
+						"key": "notes",
+						"label": "Notes",
+						"type": "string"
+					}
+				],
+				"submitLabel": "Save Loan",
+				"successRoute": "loans",
+				"submitEndpoint": "/apps/openregister/api/objects/loan/loan"
+			}
+		}
+	]
+}

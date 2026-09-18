@@ -41,6 +41,7 @@ use OCA\Buildiq\Exception\CopilotException;
 use OCA\Buildiq\Mcp\BuildiqToolProvider;
 use OCA\Buildiq\Service\Copilot\CopilotPlanValidator;
 use OCA\Buildiq\Service\Copilot\CopilotPromptBuilder;
+use OCA\Buildiq\Support\ManifestPageShape;
 use OCA\Buildiq\Support\ManifestWidgetShape;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -1324,13 +1325,15 @@ class CopilotService {
 	 */
 	private function applyUpsertPage(array $args, array $manifest): array {
 		$pageId = (string)($args['pageId'] ?? '');
-		$newPage = [
+		// Shared with UpsertPageHandler so the page reviewed and the page
+		// stored are the same one.
+		$newPage = ManifestPageShape::normalise(page: [
 			'id' => $pageId,
 			'route' => (string)($args['route'] ?? ''),
 			'type' => (string)($args['type'] ?? ''),
 			'title' => (string)($args['title'] ?? ''),
 			'config' => (array)($args['config'] ?? []),
-		];
+		]);
 
 		$pages = (array)($manifest['pages'] ?? []);
 		$replaced = false;
