@@ -111,7 +111,9 @@
 							}}
 						</p>
 						<ul class="copilot-generate__error-list">
-							<li v-for="(line, idx) in validationErrors" :key="'ve-' + idx">
+							<li
+								v-for="(line, idx) in validationErrors"
+								:key="'ve-' + idx">
 								{{ line }}
 							</li>
 						</ul>

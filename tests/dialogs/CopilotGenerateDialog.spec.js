@@ -192,7 +192,9 @@ describe('CopilotGenerateDialog.vue — spec ai-copilot REQ-OBAIC-001/006', () =
 									route: '/',
 									type: 'dashboard',
 									title: 'Overview',
-									config: { widgets: [{ type: 'stat', config: {} }] },
+									config: {
+										widgets: [{ type: 'stat', config: {} }],
+									},
 								},
 							],
 						},
