@@ -222,9 +222,9 @@ class BuildiqToolProvider implements IMcpToolProvider {
 					'title' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 80],
 					'widgetConfig' => ['type' => 'object'],
 				],
-				// widgetId and title stay OUT of `required` on purpose. The
-				// description asks for both, and the handler derives them when
-				// they are missing. Making them required would turn a model
+				// Note that widgetId and title stay OUT of `required` on purpose.
+				// The description asks for both, and the handler derives them
+				// when they are missing. Making them required would turn a model
 				// that forgot one into a rejected plan, which is the failure
 				// this change exists to remove.
 				'required' => ['appSlug', 'pageId', 'widgetType'],

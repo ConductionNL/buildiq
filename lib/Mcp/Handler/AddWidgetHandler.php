@@ -168,7 +168,8 @@ class AddWidgetHandler extends AbstractToolHandler {
 	 *
 	 * @param array<string, mixed> $args Raw tool arguments.
 	 *
-	 * @return array{appSlug?: string, versionSlug?: string, pageId?: string, widgetType?: string, widgetConfig?: array, widgetId?: string, title?: string, error?: string}
+	 * @return array{appSlug?: string, versionSlug?: string, pageId?: string, widgetType?: string,
+	 *               widgetConfig?: array, widgetId?: string, title?: string, error?: string}
 	 */
 	private function validateArgs(array $args): array {
 		$appSlug = (string)($args['appSlug'] ?? '');
