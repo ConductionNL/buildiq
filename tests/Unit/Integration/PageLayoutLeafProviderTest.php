@@ -23,9 +23,15 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Integration;
 
 use OCA\Buildiq\Integration\PageLayoutLeafProvider;
+use OCA\Buildiq\Service\LayoutDeltaService;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IAppConfig;
+use OCP\IGroupManager;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
@@ -37,25 +43,69 @@ final class PageLayoutLeafProviderTest extends TestCase {
 	 * Build the provider over the stored layouts.
 	 *
 	 * @param array<int, array<string, mixed>> $layouts The stored layouts.
+	 * @param string|null $uid The signed-in user, or null for a visitor with no account.
+	 * @param array<int, string> $groups The groups that user is in.
 	 *
 	 * @return PageLayoutLeafProvider The provider.
 	 */
-	private function makeProvider(array $layouts): PageLayoutLeafProvider {
+	private function makeProvider(array $layouts, ?string $uid = 'handler', array $groups = []): PageLayoutLeafProvider {
 		// onlyMethods: the double may not invent a method the real contract lacks.
+		$saved = &$this->saved;
+
 		$objectService = $this->getMockBuilder(ObjectServiceInterface::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['setRegister', 'setSchema', 'findAll'])
+			->onlyMethods(['setRegister', 'setSchema', 'findAll', 'saveObject'])
 			->getMockForAbstractClass();
 
 		$objectService->method('setRegister')->willReturnSelf();
 		$objectService->method('setSchema')->willReturnSelf();
 		$objectService->method('findAll')->willReturn($layouts);
+		$objectService->method('saveObject')->willReturnCallback(
+			function (array $object) use (&$saved) {
+				$saved[] = $object;
+
+				$entity = $this->createMock(ObjectEntityInterface::class);
+				$entity->method('getObject')->willReturn($object);
+				$entity->method('getUuid')->willReturn((string)($object['id'] ?? ''));
+
+				return $entity;
+			}
+		);
 
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueString')->willReturn('buildiq');
 
-		return new PageLayoutLeafProvider(objectService: $objectService, appConfig: $appConfig);
+		$session = $this->createMock(IUserSession::class);
+		if ($uid === null) {
+			$session->method('getUser')->willReturn(null);
+		} else {
+			$user = $this->createMock(IUser::class);
+			$user->method('getUID')->willReturn($uid);
+			$session->method('getUser')->willReturn($user);
+		}
+
+		$groupManager = $this->createMock(IGroupManager::class);
+		$groupManager->method('isInGroup')->willReturnCallback(
+			static fn (string $who, string $group): bool => in_array($group, $groups, true)
+		);
+
+		return new PageLayoutLeafProvider(
+			objectService: $objectService,
+			appConfig: $appConfig,
+			deltas: new LayoutDeltaService(),
+			userSession: $session,
+			groupManager: $groupManager,
+			logger: $this->createMock(LoggerInterface::class),
+		);
 	}//end makeProvider()
+
+	/**
+	 * Layouts written back during the test, which is how a drifted override
+	 * reaching `needs-review` is observed.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private array $saved = [];
 
 	/**
 	 * A published layout.

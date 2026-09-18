@@ -55,6 +55,13 @@ final class PageLayoutValidator {
 	public const TUPLE_PARTS = ['targetApp', 'register', 'schema', 'typeProperty', 'typeValue'];
 
 	/**
+	 * The kinds of audience an override may be bound to.
+	 *
+	 * @var array<int, string>
+	 */
+	public const AUDIENCE_KINDS = ['everyone', 'group', 'team', 'portal', 'user'];
+
+	/**
 	 * The kinds a tab may be.
 	 *
 	 * @var array<int, string>
@@ -96,6 +103,8 @@ final class PageLayoutValidator {
 	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-001, REQ-OBPL-004, REQ-OBPL-005, REQ-OBPL-009)
 	 */
 	public function validate(array $layout, array $existing = [], ?array $knownLeafIds = null): array {
+		$this->assertAudience($layout);
+		$this->assertOverride($layout);
 		$this->assertUnique($layout, $existing);
 		$this->assertTabs($layout);
 		$this->assertWidgets($layout);
@@ -117,8 +126,74 @@ final class PageLayoutValidator {
 			$parts[] = (string)($layout[$part] ?? '');
 		}
 
+		// The audience is part of the identity since screen overrides: three
+		// screens for one case type is the point, and only two for the SAME
+		// audience is the collision (REQ-OBSO-005).
+		$audience = ($layout['audience'] ?? null);
+		$parts[] = (is_array($audience) === true ? (string)($audience['kind'] ?? 'everyone') : 'everyone');
+		$parts[] = (is_array($audience) === true ? (string)($audience['ref'] ?? '') : '');
+
 		return implode('|', $parts);
 	}//end tupleKey()
+
+	/**
+	 * Refuse an audience the resolver does not know (REQ-OBSO-004).
+	 *
+	 * @param array<string, mixed> $layout The layout.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the kind is unknown, or a ref is missing.
+	 */
+	private function assertAudience(array $layout): void {
+		$audience = ($layout['audience'] ?? null);
+		if (is_array($audience) === false || (string)($audience['kind'] ?? '') === '') {
+			// Unset reads as `everyone`, so every layout stored before overrides
+			// existed keeps exactly the reach it had.
+			return;
+		}
+
+		$kind = (string)$audience['kind'];
+		if (in_array($kind, self::AUDIENCE_KINDS, true) === false) {
+			throw new InvalidArgumentException(
+				sprintf('Unknown audience kind "%s"; expected one of %s.', $kind, implode(', ', self::AUDIENCE_KINDS))
+			);
+		}
+
+		if (in_array($kind, ['group', 'team', 'user'], true) === true && (string)($audience['ref'] ?? '') === '') {
+			// Without a ref this override would match nobody and be published,
+			// correct-looking, and never applied.
+			throw new InvalidArgumentException(
+				sprintf('An audience of kind "%s" has to say which one; without a ref it matches nobody.', $kind)
+			);
+		}
+	}//end assertAudience()
+
+	/**
+	 * Refuse an override that cannot say what it was cut against (REQ-OBSO-002).
+	 *
+	 * The fingerprint is not optional, because the alternative is an override
+	 * whose base may have moved and nothing able to tell. It is written by the
+	 * editor on save and never by hand.
+	 *
+	 * @param array<string, mixed> $layout The layout.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When a delta carries no fingerprint.
+	 */
+	private function assertOverride(array $layout): void {
+		$delta = ($layout['layoutDelta'] ?? null);
+		if (is_array($delta) === false || $delta === []) {
+			return;
+		}
+
+		if ((string)($layout['baseFingerprint'] ?? '') === '') {
+			throw new InvalidArgumentException(
+				'An override has to record the base it was cut against; without a baseFingerprint nothing can tell whether that base has since moved.'
+			);
+		}
+	}//end assertOverride()
 
 	/**
 	 * Refuse a second published layout for the same tuple (REQ-OBPL-001).
@@ -153,7 +228,8 @@ final class PageLayoutValidator {
 
 			throw new InvalidArgumentException(
 				sprintf(
-					'A published layout already covers this%s (%s); retire it before publishing another.',
+					'"%s" already covers this%s for the same audience (%s); retire it before publishing another.',
+					(string)($candidate['name'] ?? 'A published layout'),
 					((string)($layout['typeValue'] ?? '') === '' ? ' schema' : ' type'),
 					(string)($candidate['id'] ?? '?')
 				)

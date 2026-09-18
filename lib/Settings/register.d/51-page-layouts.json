@@ -5,9 +5,9 @@
 			"pageLayout": {
 				"slug": "pageLayout",
 				"icon": "ViewDashboardOutline",
-				"version": "0.2.0",
+				"version": "0.3.0",
 				"title": "Page Layout",
-				"description": "What a detail page shows for one schema, and optionally for one type value of it: the header, the tabs, the widget grids inside them, the task-list columns and the upload dialog's fields. An administrator arranges it; the owning app renders it through the buildiq-page-layout leaf and falls back to its own manifest when nothing answers, so an instance without buildiq is unchanged. At most one published layout per (targetApp, register, schema, typeProperty, typeValue): two would mean the consumer rendered whichever came back first.",
+				"description": "What a detail page shows for one schema, and optionally for one type value of it: the header, the tabs, the widget grids inside them, the task-list columns and the upload dialog's fields. An administrator arranges it; the owning app renders it through the buildiq-page-layout leaf and falls back to its own manifest when nothing answers, so an instance without buildiq is unchanged. At most one published layout per (targetApp, register, schema, typeProperty, typeValue): two would mean the consumer rendered whichever came back first. V0.3.0 (screen-overrides-as-a-patch-with-fall-through) makes an override a PATCH over the layout it extends, bound to a named audience, pinned to the base it was cut against. A base that moves puts the override in needs-review, tells its maintainer, and serves the base with the override withheld: the page always renders.",
 				"x-openregister-audit-trail": {
 					"enabled": true,
 					"description": "A layout decides what a handler sees on a case. Every edit and publication is recorded."
@@ -121,6 +121,12 @@
 						"items": {
 							"type": "object",
 							"properties": {
+								"id": {
+									"type": "string",
+									"description": "The tab's stable id. This is the key an override patches by, so renaming a tab's label leaves its patches attached and changing its id detaches them on purpose (REQ-OBSO-001).",
+									"example": "documenten",
+									"title": "Id"
+								},
 								"kind": {
 									"type": "string",
 									"enum": [
@@ -262,6 +268,7 @@
 								}
 							},
 							"required": [
+								"id",
 								"kind",
 								"label"
 							]
@@ -475,17 +482,118 @@
 						},
 						"title": "Upload Fields"
 					},
+					"name": {
+						"type": "string",
+						"example": "Front office",
+						"title": "Name",
+						"description": "What this layout or override is called, shown wherever one is listed. An administrator asked why a colleague sees different tabs needs a name to point at."
+					},
+					"audience": {
+						"type": "object",
+						"description": "Who this layout is for. `everyone` is the plain layout; `group`, `team` and `user` are internal and are never resolvable for a visitor with no account, whatever the consumer asks for; `portal` is the one a visitor may get. An unset audience reads as `everyone`, so every layout stored before this keeps exactly the reach it had (REQ-OBSO-004).",
+						"properties": {
+							"kind": {
+								"type": "string",
+								"enum": [
+									"everyone",
+									"group",
+									"team",
+									"portal",
+									"user"
+								],
+								"default": "everyone",
+								"example": "team",
+								"title": "Kind",
+								"description": "The kind of audience."
+							},
+							"ref": {
+								"type": "string",
+								"example": "behandelaars-bouw",
+								"title": "Ref",
+								"description": "Which group, team, portal or user. Absent for `everyone`."
+							}
+						},
+						"title": "Audience"
+					},
+					"baseRef": {
+						"type": "string",
+						"example": "pl-schema-wide",
+						"title": "Base Ref",
+						"description": "The layout this one extends. Empty means it extends the consuming app's own manifest layout, which is the bottom of the fall-through (REQ-OBSO-001)."
+					},
+					"layoutDelta": {
+						"type": "object",
+						"description": "The patch this override applies, in the keyed-delta shape `diffManifest` produces and `mergeManifestDelta` applies: tabs and widgets keyed by id, `{\"$op\": \"remove\"}` for a deletion, `__order` for a reorder. A patch and never a copy: an override that copied its base would be correct the day it was saved and wrong every day after, because a tab added to the base would never reach it (REQ-OBSO-001).",
+						"title": "Layout Delta"
+					},
+					"baseFingerprint": {
+						"type": "string",
+						"example": "8f1c…",
+						"title": "Base Fingerprint",
+						"description": "A hash of the base as it stood when the delta was cut. Written by the editor on every save and never by hand. Resolution compares it against the base in hand, because checking that every patch still finds its key is not enough: a base can move in ways a key match cannot see, such as a tab that kept its id and changed its kind (REQ-OBSO-002)."
+					},
+					"baseCutAt": {
+						"type": "string",
+						"format": "date-time",
+						"example": "2026-09-18T11:04:00Z",
+						"title": "Base Cut At",
+						"description": "When the delta was cut against that base."
+					},
+					"maintainer": {
+						"type": "string",
+						"example": "j.jansen",
+						"title": "Maintainer",
+						"description": "Who is told when this override drifts. An override whose base moved and whose maintainer nobody can name is an override nobody re-cuts."
+					},
 					"status": {
 						"type": "string",
 						"enum": [
 							"draft",
 							"published",
+							"needs-review",
 							"retired"
 						],
 						"default": "draft",
 						"example": "published",
 						"title": "Status",
-						"description": "Lifecycle. Only a published layout is ever served; a draft is the administrator's working copy and resolves to nothing, which is what lets the next version be built in the open."
+						"description": "Lifecycle. Only a published layout is ever served; a draft is the administrator's working copy and resolves to nothing. `needs-review` is where a drifted override lands: its patch is kept untouched so a maintainer can re-cut it, and it is not applied in the meantime (REQ-OBSO-003)."
+					}
+				},
+				"x-openregister-lifecycle": {
+					"field": "status",
+					"initialState": "draft",
+					"states": {
+						"draft": {
+							"label": "Draft",
+							"description": "The administrator's working copy. It resolves to nothing, which is what lets the next version be built where everyone can see it."
+						},
+						"published": {
+							"label": "Published",
+							"description": "Served to consumers."
+						},
+						"needs-review": {
+							"label": "Needs review",
+							"description": "The base this override was cut against has moved. The patch is kept exactly as it was and is NOT applied; the base is served instead and the answer says an override was withheld. A maintainer re-cuts it against the new base in one action."
+						},
+						"retired": {
+							"label": "Retired",
+							"description": "No longer served, kept for the record."
+						}
+					}
+				},
+				"x-openregister-notifications": {
+					"driftDetected": {
+						"event": "update",
+						"condition": {
+							"field": "status",
+							"operator": "equals",
+							"value": "needs-review"
+						},
+						"recipients": {
+							"field": "maintainer"
+						},
+						"subject": "A screen override needs reviewing",
+						"message": "The layout \"{{name}}\" was cut against a base that has since changed, so it is not being applied. The page still renders on the base. Open the override to re-cut it."
 					}
 				}
 			}
