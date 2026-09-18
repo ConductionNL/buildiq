@@ -37,6 +37,15 @@
              referencedClass suppression: the refusal is caught and rethrown, so
              psalm has to know it is Throwable. -->
         <file name="tests/stubs/openregister-dmn.stub.php" preloadClasses="true" />
+        <!-- OpenRegister's leaf-provider contract (IntegrationProvider,
+             LeafDescriptor, RegisterLeafProvidersEvent). The stub already
+             existed for the unit tests, which load it from tests/bootstrap.php,
+             but psalm was never told about it, so every leaf provider in
+             lib/Integration/ read as implementing an unknown interface. That is
+             not cosmetic: with the interface unknown psalm cannot see that the
+             CRUD signatures are mandated from outside, so it reported each of
+             their parameters as unused. -->
+        <file name="tests/stubs/openregister-leaf.stub.php" preloadClasses="true" />
         <!--
             OpenRegister's data-access contract, which this app's lib/ typehints
             but does not own. OpenRegister supplies it at RUNTIME; these are

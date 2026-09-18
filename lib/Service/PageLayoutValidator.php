@@ -48,6 +48,18 @@ use InvalidArgumentException;
  */
 final class PageLayoutValidator {
 	/**
+	 * Constructor.
+	 *
+	 * @param PageLayoutBodyRules $body The rules a layout's tabs, widgets and upload fields must satisfy.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly PageLayoutBodyRules $body = new PageLayoutBodyRules(),
+	) {
+	}//end __construct()
+
+	/**
 	 * The parts that make a layout unique.
 	 *
 	 * @var array<int, string>
@@ -60,34 +72,6 @@ final class PageLayoutValidator {
 	 * @var array<int, string>
 	 */
 	public const AUDIENCE_KINDS = ['everyone', 'group', 'team', 'portal', 'user'];
-
-	/**
-	 * The kinds a tab may be.
-	 *
-	 * @var array<int, string>
-	 */
-	public const TAB_KINDS = ['leaf', 'widgets', 'fieldGroup', 'relatedList'];
-
-	/**
-	 * The widths the grid knows.
-	 *
-	 * @var array<int, string>
-	 */
-	public const WIDGET_WIDTHS = ['small', 'medium', 'large', 'extraLarge'];
-
-	/**
-	 * How visible an upload field is.
-	 *
-	 * @var array<int, string>
-	 */
-	public const VISIBILITIES = ['editable', 'readOnly', 'hidden'];
-
-	/**
-	 * The operators a display condition may use.
-	 *
-	 * @var array<int, string>
-	 */
-	public const CONDITION_OPERATORS = ['equals', 'notEquals', 'isEmpty', 'isNotEmpty', 'contains'];
 
 	/**
 	 * Validate a layout against the layouts already stored.
@@ -103,14 +87,14 @@ final class PageLayoutValidator {
 	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-001, REQ-OBPL-004, REQ-OBPL-005, REQ-OBPL-009)
 	 */
 	public function validate(array $layout, array $existing = [], ?array $knownLeafIds = null): array {
-		$this->assertAudience($layout);
-		$this->assertOverride($layout);
-		$this->assertUnique($layout, $existing);
-		$this->assertTabs($layout);
-		$this->assertWidgets($layout);
-		$this->assertUploadFields($layout);
+		$this->assertAudience(layout: $layout);
+		$this->assertOverride(layout: $layout);
+		$this->assertUnique(layout: $layout, existing: $existing);
+		$this->body->assertTabs(layout: $layout);
+		$this->body->assertWidgets(layout: $layout);
+		$this->body->assertUploadFields(layout: $layout);
 
-		return $this->unknownLeafWarnings($layout, $knownLeafIds);
+		return $this->unknownLeafWarnings(layout: $layout, knownLeafIds: $knownLeafIds);
 	}//end validate()
 
 	/**
@@ -119,6 +103,8 @@ final class PageLayoutValidator {
 	 * @param array<string, mixed> $layout The layout or a lookup.
 	 *
 	 * @return string The key.
+	 *
+	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-005)
 	 */
 	public function tupleKey(array $layout): string {
 		$parts = [];
@@ -130,8 +116,15 @@ final class PageLayoutValidator {
 		// screens for one case type is the point, and only two for the SAME
 		// audience is the collision (REQ-OBSO-005).
 		$audience = ($layout['audience'] ?? null);
-		$parts[] = (is_array($audience) === true ? (string)($audience['kind'] ?? 'everyone') : 'everyone');
-		$parts[] = (is_array($audience) === true ? (string)($audience['ref'] ?? '') : '');
+		$kind = 'everyone';
+		$ref = '';
+		if (is_array($audience) === true) {
+			$kind = (string)($audience['kind'] ?? 'everyone');
+			$ref = (string)($audience['ref'] ?? '');
+		}
+
+		$parts[] = $kind;
+		$parts[] = $ref;
 
 		return implode('|', $parts);
 	}//end tupleKey()
@@ -211,13 +204,13 @@ final class PageLayoutValidator {
 			return;
 		}
 
-		$key = $this->tupleKey($layout);
+		$key = $this->tupleKey(layout: $layout);
 		$selfId = (string)($layout['id'] ?? '');
 
 		foreach ($existing as $candidate) {
 			if (is_array($candidate) === false
 				|| (string)($candidate['status'] ?? '') !== 'published'
-				|| $this->tupleKey($candidate) !== $key
+				|| $this->tupleKey(layout: $candidate) !== $key
 			) {
 				continue;
 			}
@@ -226,164 +219,25 @@ final class PageLayoutValidator {
 				continue;
 			}
 
+			$scope = ' type';
+			if ((string)($layout['typeValue'] ?? '') === '') {
+				$scope = ' schema';
+			}
+
 			throw new InvalidArgumentException(
 				sprintf(
 					'"%s" already covers this%s for the same audience (%s); retire it before publishing another.',
 					(string)($candidate['name'] ?? 'A published layout'),
-					((string)($layout['typeValue'] ?? '') === '' ? ' schema' : ' type'),
+					$scope,
 					(string)($candidate['id'] ?? '?')
 				)
 			);
 		}
 	}//end assertUnique()
 
-	/**
-	 * Refuse a tab whose kind is unknown, or that is missing the reference its
-	 * kind needs (REQ-OBPL-004).
-	 *
-	 * @param array<string, mixed> $layout The layout.
-	 *
-	 * @return void
-	 *
-	 * @throws InvalidArgumentException When a tab is not renderable.
-	 */
-	private function assertTabs(array $layout): void {
-		foreach (($layout['tabs'] ?? []) as $tab) {
-			if (is_array($tab) === false) {
-				continue;
-			}
 
-			$kind = (string)($tab['kind'] ?? '');
-			$label = (string)($tab['label'] ?? 'a tab');
 
-			if (in_array($kind, self::TAB_KINDS, true) === false) {
-				throw new InvalidArgumentException(
-					sprintf('%s has an unknown kind "%s"; expected one of %s.', $label, $kind, implode(', ', self::TAB_KINDS))
-				);
-			}
 
-			if ($kind === 'leaf' && (string)($tab['ref'] ?? '') === '') {
-				throw new InvalidArgumentException(
-					sprintf('%s is a leaf tab with no leaf id, so it would render an empty panel and no error.', $label)
-				);
-			}
-
-			if ($kind === 'fieldGroup' && (is_array($tab['fields'] ?? null) === false || $tab['fields'] === [])) {
-				throw new InvalidArgumentException(sprintf('%s is a field group with no fields in it.', $label));
-			}
-
-			if ($kind === 'relatedList'
-				&& ((string)($tab['relatedRegister'] ?? '') === '' || (string)($tab['relatedSchema'] ?? '') === '')
-			) {
-				throw new InvalidArgumentException(
-					sprintf('%s is a related list that does not say which register and schema to list.', $label)
-				);
-			}
-
-			$this->assertWidgetList(($tab['widgets'] ?? []), $label);
-		}
-	}//end assertTabs()
-
-	/**
-	 * Validate the page-level widget grid.
-	 *
-	 * @param array<string, mixed> $layout The layout.
-	 *
-	 * @return void
-	 *
-	 * @throws InvalidArgumentException When a widget is not renderable.
-	 */
-	private function assertWidgets(array $layout): void {
-		$this->assertWidgetList(($layout['widgets'] ?? []), 'the page');
-	}//end assertWidgets()
-
-	/**
-	 * Refuse a widget with a width the grid does not know, or a condition with an
-	 * operator nothing evaluates (REQ-OBPL-005, REQ-OBPL-006).
-	 *
-	 * @param mixed $widgets The widget list.
-	 * @param string $where Where the widgets sit, for the message.
-	 *
-	 * @return void
-	 *
-	 * @throws InvalidArgumentException When a widget is not renderable.
-	 */
-	private function assertWidgetList(mixed $widgets, string $where): void {
-		if (is_array($widgets) === false) {
-			return;
-		}
-
-		foreach ($widgets as $widget) {
-			if (is_array($widget) === false) {
-				continue;
-			}
-
-			$id = (string)($widget['id'] ?? '');
-			if ($id === '') {
-				throw new InvalidArgumentException(sprintf('A widget on %s does not say which widget it is.', $where));
-			}
-
-			$width = (string)($widget['width'] ?? 'medium');
-			if (in_array($width, self::WIDGET_WIDTHS, true) === false) {
-				// A width the grid does not know renders at zero, which looks
-				// exactly like a widget that failed to load.
-				throw new InvalidArgumentException(
-					sprintf('"%s" has width "%s"; the grid knows %s.', $id, $width, implode(', ', self::WIDGET_WIDTHS))
-				);
-			}
-
-			foreach (($widget['conditions'] ?? []) as $condition) {
-				if (is_array($condition) === false) {
-					continue;
-				}
-
-				$operator = (string)($condition['operator'] ?? '');
-				if (in_array($operator, self::CONDITION_OPERATORS, true) === false) {
-					throw new InvalidArgumentException(
-						sprintf(
-							'"%s" has a condition with operator "%s", which nothing evaluates; expected one of %s.',
-							$id,
-							$operator,
-							implode(', ', self::CONDITION_OPERATORS)
-						)
-					);
-				}
-			}
-		}
-	}//end assertWidgetList()
-
-	/**
-	 * Refuse a hidden upload field with no default: it can never be filled, so
-	 * every document on this type is stored missing it (REQ-OBPL-009).
-	 *
-	 * @param array<string, mixed> $layout The layout.
-	 *
-	 * @return void
-	 *
-	 * @throws InvalidArgumentException When such a field exists.
-	 */
-	private function assertUploadFields(array $layout): void {
-		foreach (($layout['uploadFields'] ?? []) as $field) {
-			if (is_array($field) === false) {
-				continue;
-			}
-
-			$name = (string)($field['field'] ?? '');
-			$visibility = (string)($field['visibility'] ?? 'editable');
-
-			if (in_array($visibility, self::VISIBILITIES, true) === false) {
-				throw new InvalidArgumentException(
-					sprintf('"%s" has visibility "%s"; expected one of %s.', $name, $visibility, implode(', ', self::VISIBILITIES))
-				);
-			}
-
-			if ($visibility === 'hidden' && (string)($field['default'] ?? '') === '') {
-				throw new InvalidArgumentException(
-					sprintf('"%s" is hidden with no default, so nothing can ever fill it. Give it a default or make it read-only.', $name)
-				);
-			}
-		}
-	}//end assertUploadFields()
 
 	/**
 	 * Warn, do not refuse, on a leaf tab pointing at a leaf the registry does not
