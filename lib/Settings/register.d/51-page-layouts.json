@@ -1,0 +1,494 @@
+{
+	"_comment": "ADR-037 register fragment — page layouts. Adds the disjoint schema key `pageLayout` to the shared `buildiq` register's components.schemas map (key-union merge, no existing schema is touched). A page layout is what a consuming app's detail page shows for one schema, and optionally for one type value of it. Buildiq stores it and serves it through the `buildiq-page-layout` data-provider leaf (ADR-066); the consuming app merges the answer over its own manifest config and renders its manifest unchanged when nothing answers, so an instance without buildiq behaves exactly as before. Resolution is type value first, then schema-wide, then nothing, and a draft never resolves. See openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md, REQ-OBPL-001 through REQ-OBPL-009.",
+	"components": {
+		"schemas": {
+			"pageLayout": {
+				"slug": "pageLayout",
+				"icon": "ViewDashboardOutline",
+				"version": "0.2.0",
+				"title": "Page Layout",
+				"description": "What a detail page shows for one schema, and optionally for one type value of it: the header, the tabs, the widget grids inside them, the task-list columns and the upload dialog's fields. An administrator arranges it; the owning app renders it through the buildiq-page-layout leaf and falls back to its own manifest when nothing answers, so an instance without buildiq is unchanged. At most one published layout per (targetApp, register, schema, typeProperty, typeValue): two would mean the consumer rendered whichever came back first.",
+				"x-openregister-audit-trail": {
+					"enabled": true,
+					"description": "A layout decides what a handler sees on a case. Every edit and publication is recorded."
+				},
+				"x-spec": "openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md",
+				"type": "object",
+				"required": [
+					"targetApp",
+					"register",
+					"schema",
+					"status"
+				],
+				"properties": {
+					"targetApp": {
+						"type": "string",
+						"example": "dossiq",
+						"title": "Target App",
+						"description": "The app whose detail page this lays out."
+					},
+					"register": {
+						"type": "string",
+						"example": "dossiq",
+						"title": "Register",
+						"description": "The register slug of the object."
+					},
+					"schema": {
+						"type": "string",
+						"example": "Zaak",
+						"title": "Schema",
+						"description": "The schema slug of the object."
+					},
+					"typeProperty": {
+						"type": "string",
+						"example": "caseType",
+						"title": "Type Property",
+						"description": "The property carrying the type value, when this layout is for one type rather than the whole schema."
+					},
+					"typeValue": {
+						"type": "string",
+						"example": "bouwvergunning",
+						"title": "Type Value",
+						"description": "The type value this layout is for. Empty means the layout is the schema-wide one, which is what a type with no layout of its own falls back to."
+					},
+					"header": {
+						"type": "object",
+						"description": "The top of the detail page. A type-specific header REPLACES the schema-wide one whole and never merges field by field: merging would leave a page showing four fields an administrator thought they had removed, and nothing would say where they came from (REQ-OBPL-007).",
+						"properties": {
+							"titleField": {
+								"type": "string",
+								"example": "omschrijving",
+								"title": "Title Field",
+								"description": "The property shown as the page title."
+							},
+							"subtitleField": {
+								"type": "string",
+								"example": "zaaknummer",
+								"title": "Subtitle Field",
+								"description": "The property shown under it."
+							},
+							"chips": {
+								"type": "array",
+								"description": "Small status markers beside the title.",
+								"items": {
+									"type": "string"
+								},
+								"title": "Chips"
+							},
+							"fields": {
+								"type": "array",
+								"description": "The fields shown in the header, in the order an administrator set.",
+								"items": {
+									"type": "object",
+									"properties": {
+										"field": {
+											"type": "string",
+											"example": "location",
+											"title": "Field",
+											"description": "The property."
+										},
+										"label": {
+											"type": "string",
+											"example": "Adres",
+											"title": "Label",
+											"description": "What to call it here."
+										},
+										"order": {
+											"type": "integer",
+											"example": 1,
+											"title": "Order",
+											"description": "Where it sits."
+										}
+									},
+									"required": [
+										"field"
+									]
+								},
+								"title": "Fields"
+							},
+							"widgetId": {
+								"type": "string",
+								"example": "cn-stat",
+								"title": "Widget Id",
+								"description": "A widget rendered in the header instead of, or beside, the fields."
+							}
+						},
+						"title": "Header"
+					},
+					"tabs": {
+						"type": "array",
+						"description": "The tabs, in the order an administrator set.",
+						"items": {
+							"type": "object",
+							"properties": {
+								"kind": {
+									"type": "string",
+									"enum": [
+										"leaf",
+										"widgets",
+										"fieldGroup",
+										"relatedList"
+									],
+									"example": "widgets",
+									"title": "Kind",
+									"description": "What the tab shows: another app's leaf, a grid of widgets, a group of the object's own fields, or a list of related objects."
+								},
+								"label": {
+									"type": "string",
+									"example": "Documenten",
+									"title": "Label",
+									"description": "The tab's heading."
+								},
+								"order": {
+									"type": "integer",
+									"example": 1,
+									"title": "Order",
+									"description": "Where the tab sits."
+								},
+								"ref": {
+									"type": "string",
+									"example": "filinq-documents",
+									"title": "Ref",
+									"description": "The leaf id, for a `leaf` tab. A tab of that kind with no ref is refused: it would render an empty panel with no error."
+								},
+								"widgets": {
+									"type": "array",
+									"description": "The grid, for a `widgets` tab.",
+									"items": {
+										"type": "object",
+										"properties": {
+											"id": {
+												"type": "string",
+												"example": "cn-object-timeline",
+												"title": "Id",
+												"description": "The widget to render, as the manifest names it."
+											},
+											"config": {
+												"type": "object",
+												"description": "The widget's own configuration, passed through untouched.",
+												"title": "Config"
+											},
+											"order": {
+												"type": "integer",
+												"example": 10,
+												"title": "Order",
+												"description": "Where the widget sits in the grid."
+											},
+											"width": {
+												"type": "string",
+												"enum": [
+													"small",
+													"medium",
+													"large",
+													"extraLarge"
+												],
+												"default": "medium",
+												"example": "medium",
+												"title": "Width",
+												"description": "How wide the widget is. The four values are the grid; anything else is refused, because a width the grid does not know renders at zero and looks like a widget that failed to load."
+											},
+											"conditions": {
+												"type": "array",
+												"description": "When this widget is shown. Evaluated by the leaf against the host object, so a widget whose conditions do not hold is never sent rather than sent and hidden. An empty list always holds.",
+												"items": {
+													"type": "object",
+													"properties": {
+														"field": {
+															"type": "string",
+															"example": "resultType",
+															"title": "Field",
+															"description": "The property on the host object the condition reads."
+														},
+														"operator": {
+															"type": "string",
+															"enum": [
+																"equals",
+																"notEquals",
+																"isEmpty",
+																"isNotEmpty",
+																"contains"
+															],
+															"example": "isNotEmpty",
+															"title": "Operator",
+															"description": "How it is compared."
+														},
+														"value": {
+															"type": "string",
+															"example": "vergund",
+															"title": "Value",
+															"description": "What it is compared against, for the operators that take one."
+														}
+													},
+													"required": [
+														"field",
+														"operator"
+													]
+												},
+												"title": "Conditions"
+											},
+											"highContrast": {
+												"type": "boolean",
+												"default": false,
+												"example": true,
+												"title": "High Contrast",
+												"description": "Whether the consumer renders the marked variant. Served as declared; it never changes WHICH widgets come back, so a contrast preference cannot silently remove a widget."
+											}
+										},
+										"required": [
+											"id"
+										]
+									},
+									"title": "Widgets"
+								},
+								"fields": {
+									"type": "array",
+									"description": "The field names, for a `fieldGroup` tab.",
+									"items": {
+										"type": "string"
+									},
+									"title": "Fields"
+								},
+								"relatedRegister": {
+									"type": "string",
+									"example": "dossiq",
+									"title": "Related Register",
+									"description": "The register of the related objects, for a `relatedList` tab."
+								},
+								"relatedSchema": {
+									"type": "string",
+									"example": "Taak",
+									"title": "Related Schema",
+									"description": "The schema of the related objects, for a `relatedList` tab."
+								}
+							},
+							"required": [
+								"kind",
+								"label"
+							]
+						},
+						"title": "Tabs"
+					},
+					"widgets": {
+						"type": "array",
+						"description": "Widgets shown on the page outside any tab.",
+						"items": {
+							"type": "object",
+							"properties": {
+								"id": {
+									"type": "string",
+									"example": "cn-object-timeline",
+									"title": "Id",
+									"description": "The widget to render, as the manifest names it."
+								},
+								"config": {
+									"type": "object",
+									"description": "The widget's own configuration, passed through untouched.",
+									"title": "Config"
+								},
+								"order": {
+									"type": "integer",
+									"example": 10,
+									"title": "Order",
+									"description": "Where the widget sits in the grid."
+								},
+								"width": {
+									"type": "string",
+									"enum": [
+										"small",
+										"medium",
+										"large",
+										"extraLarge"
+									],
+									"default": "medium",
+									"example": "medium",
+									"title": "Width",
+									"description": "How wide the widget is. The four values are the grid; anything else is refused, because a width the grid does not know renders at zero and looks like a widget that failed to load."
+								},
+								"conditions": {
+									"type": "array",
+									"description": "When this widget is shown. Evaluated by the leaf against the host object, so a widget whose conditions do not hold is never sent rather than sent and hidden. An empty list always holds.",
+									"items": {
+										"type": "object",
+										"properties": {
+											"field": {
+												"type": "string",
+												"example": "resultType",
+												"title": "Field",
+												"description": "The property on the host object the condition reads."
+											},
+											"operator": {
+												"type": "string",
+												"enum": [
+													"equals",
+													"notEquals",
+													"isEmpty",
+													"isNotEmpty",
+													"contains"
+												],
+												"example": "isNotEmpty",
+												"title": "Operator",
+												"description": "How it is compared."
+											},
+											"value": {
+												"type": "string",
+												"example": "vergund",
+												"title": "Value",
+												"description": "What it is compared against, for the operators that take one."
+											}
+										},
+										"required": [
+											"field",
+											"operator"
+										]
+									},
+									"title": "Conditions"
+								},
+								"highContrast": {
+									"type": "boolean",
+									"default": false,
+									"example": true,
+									"title": "High Contrast",
+									"description": "Whether the consumer renders the marked variant. Served as declared; it never changes WHICH widgets come back, so a contrast preference cannot silently remove a widget."
+								}
+							},
+							"required": [
+								"id"
+							]
+						},
+						"title": "Widgets"
+					},
+					"taskList": {
+						"type": "object",
+						"description": "What a case type's task list shows and searches on. Buildiq serves this and NEVER reads or writes a task object: the list is the consuming app's, only its shape is administered here (REQ-OBPL-008).",
+						"properties": {
+							"columns": {
+								"type": "array",
+								"description": "The columns, in order.",
+								"items": {
+									"type": "object",
+									"properties": {
+										"field": {
+											"type": "string",
+											"example": "location",
+											"title": "Field",
+											"description": "The property shown."
+										},
+										"label": {
+											"type": "string",
+											"example": "Adres",
+											"title": "Label",
+											"description": "The column heading."
+										},
+										"order": {
+											"type": "integer",
+											"example": 3,
+											"title": "Order",
+											"description": "Where the column sits."
+										},
+										"width": {
+											"type": "string",
+											"example": "medium",
+											"title": "Width",
+											"description": "How wide it is."
+										}
+									},
+									"required": [
+										"field"
+									]
+								},
+								"title": "Columns"
+							},
+							"searchFields": {
+								"type": "array",
+								"description": "The fields the list can be searched on, and how.",
+								"items": {
+									"type": "object",
+									"properties": {
+										"field": {
+											"type": "string",
+											"example": "location",
+											"title": "Field",
+											"description": "The property searched."
+										},
+										"operator": {
+											"type": "string",
+											"example": "contains",
+											"title": "Operator",
+											"description": "How it is matched."
+										}
+									},
+									"required": [
+										"field"
+									]
+								},
+								"title": "Search Fields"
+							}
+						},
+						"title": "Task List"
+					},
+					"uploadFields": {
+						"type": "array",
+						"description": "What the document upload dialog asks for on this type.",
+						"items": {
+							"type": "object",
+							"properties": {
+								"field": {
+									"type": "string",
+									"example": "confidentiality",
+									"title": "Field",
+									"description": "The property the upload dialog asks for."
+								},
+								"label": {
+									"type": "string",
+									"example": "Vertrouwelijkheid",
+									"title": "Label",
+									"description": "What to call it."
+								},
+								"order": {
+									"type": "integer",
+									"example": 2,
+									"title": "Order",
+									"description": "Where it sits in the dialog."
+								},
+								"visibility": {
+									"type": "string",
+									"enum": [
+										"editable",
+										"readOnly",
+										"hidden"
+									],
+									"default": "editable",
+									"example": "readOnly",
+									"title": "Visibility",
+									"description": "Whether the person uploading may set it, only read it, or never sees it. A hidden field with no default is refused on save, because it can never be filled and the document would be stored missing it (REQ-OBPL-009)."
+								},
+								"default": {
+									"type": "string",
+									"example": "intern",
+									"title": "Default",
+									"description": "What it is set to when the person does not choose."
+								}
+							},
+							"required": [
+								"field"
+							]
+						},
+						"title": "Upload Fields"
+					},
+					"status": {
+						"type": "string",
+						"enum": [
+							"draft",
+							"published",
+							"retired"
+						],
+						"default": "draft",
+						"example": "published",
+						"title": "Status",
+						"description": "Lifecycle. Only a published layout is ever served; a draft is the administrator's working copy and resolves to nothing, which is what lets the next version be built in the open."
+					}
+				}
+			}
+		}
+	}
+}

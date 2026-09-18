@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Listener;
 
+use OCA\Buildiq\Integration\PageLayoutLeafProvider;
 use OCA\Buildiq\Integration\RegistrationFormLeafProvider;
 use OCA\OpenRegister\Event\RegisterLeafProvidersEvent;
 use OCA\OpenRegister\Service\Integration\LeafDescriptor;
@@ -55,11 +56,13 @@ final class BuildiqLeafRegistrationListener implements IEventListener {
 	 * Constructor.
 	 *
 	 * @param RegistrationFormLeafProvider $forms The registration-form data provider.
+	 * @param PageLayoutLeafProvider $layouts The page-layout data provider.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly RegistrationFormLeafProvider $forms,
+		private readonly PageLayoutLeafProvider $layouts,
 	) {
 	}//end __construct()
 
@@ -100,6 +103,22 @@ final class BuildiqLeafRegistrationListener implements IEventListener {
 				surfaces: ['widget', 'tab'],
 			),
 			null,
+		);
+
+		// case-page-layout-per-case-type REQ-OBPL-003 — the owning app asks what
+		// its detail page should show for this object, and renders its own
+		// manifest unchanged when nothing answers. No render surface: buildiq
+		// serves the layout, the owning app draws it.
+		$event->registerLeaf(
+			new LeafDescriptor(
+				id: PageLayoutLeafProvider::LEAF_ID,
+				label: 'Page layout',
+				icon: 'ViewDashboardOutline',
+				kinds: [LeafDescriptor::KIND_DATA_PROVIDER],
+				requiredApp: 'buildiq',
+				group: 'Design',
+			),
+			$this->layouts,
 		);
 	}//end handle()
 }//end class
