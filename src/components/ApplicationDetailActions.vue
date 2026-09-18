@@ -110,10 +110,7 @@ import AppSettingsModal from '../modals/AppSettingsModal.vue'
 import GitHubSyncModal from '../modals/GitHubSyncModal.vue'
 import PermissionHistoryModal from '../modals/PermissionHistoryModal.vue'
 import PermissionsModal from '../modals/PermissionsModal.vue'
-import {
-	openPromoteDialog,
-	promoteDialog,
-} from '../composables/usePromoteDialog.js'
+import { openPromoteDialog, promoteDialog } from '../composables/usePromoteDialog.js'
 import { useRegisterPicker } from '../composables/useRegisterPicker.js'
 import { getCurrentUserGroups } from '../composables/useRole.js'
 import applicationContext from '../mixins/applicationContext.js'
@@ -302,6 +299,12 @@ export default {
 						icon: 'MapMarkerPath',
 						onSelect: () => this.openWalkthroughDesigner('walkthrough'),
 					},
+					{
+						id: 'app-automations',
+						label: t('buildiq', 'Automations'),
+						icon: 'Sitemap',
+						onSelect: () => this.openAutomations(),
+					},
 				)
 			}
 			if (isOwner) {
@@ -415,7 +418,9 @@ export default {
 		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		selectedVersion() {
-			const slug = (this.$route && this.$route.query && this.$route.query._version) || ''
+			const slug =
+				(this.$route && this.$route.query && this.$route.query._version)
+				|| ''
 			if (!slug) {
 				return null
 			}
@@ -819,6 +824,34 @@ export default {
 					query: mode === 'setup' ? { mode: 'setup' } : {},
 				})
 				.catch(() => {})
+		},
+
+		/**
+		 * Open the automations page for this app, on the version the header
+		 * pills have selected.
+		 *
+		 * The page has no menu entry of its own: automations belong to an app,
+		 * so they are reached from the app. Until this action existed the page
+		 * could only be reached by typing its URL, which is why an app's
+		 * automations were invisible from the app itself.
+		 *
+		 * @return {void}
+		 *
+		 * @spec exclude routes to an existing page, no new behaviour
+		 */
+		openAutomations() {
+			const slug = this.obApp && this.obApp.slug
+			if (!slug) {
+				return
+			}
+
+			const query = { app: slug }
+			const selected = this.selectedVersion
+			if (selected) {
+				query.version = selected.slug || selected.id
+			}
+
+			this.$router.push({ name: 'Automations', query }).catch(() => {})
 		},
 
 		/**

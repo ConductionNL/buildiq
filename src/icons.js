@@ -20,11 +20,13 @@ import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import ClipboardText from 'vue-material-design-icons/ClipboardText.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
+import ContentSaveEditOutline from 'vue-material-design-icons/ContentSaveEditOutline.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import DatabaseExportOutline from 'vue-material-design-icons/DatabaseExportOutline.vue'
 import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
 import FileDocumentMultipleOutline from 'vue-material-design-icons/FileDocumentMultipleOutline.vue'
 import Flash from 'vue-material-design-icons/Flash.vue'
+import FormSelect from 'vue-material-design-icons/FormSelect.vue'
 import Github from 'vue-material-design-icons/Github.vue'
 import HeartOutline from 'vue-material-design-icons/HeartOutline.vue'
 import HelpCircleOutline from 'vue-material-design-icons/HelpCircleOutline.vue'
@@ -71,9 +73,11 @@ export default {
 	ChartBoxOutline,
 	CheckCircle,
 	ClipboardText,
+	ContentSaveEditOutline,
 	DatabaseExportOutline,
 	FileDocumentMultipleOutline,
 	Flash,
+	FormSelect,
 	History,
 	ImageOutline,
 	MapMarkerPath,

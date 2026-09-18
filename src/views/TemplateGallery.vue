@@ -7,8 +7,7 @@
 				{{
 					t(
 						'buildiq',
-						'Install an app published to GitHub. The store lists every repository tagged with the openbuild-app topic. Installing adds a copy to your apps that you can change.',
-						'Start from a template that ships with Buildiq, or install an app published to GitHub. Either way you get an editable draft app.',
+						'Start from a template that ships with Buildiq, or install an app published to GitHub. Either way you get your own copy of the app to change.',
 					)
 				}}
 			</p>
@@ -784,6 +783,15 @@ export default {
 	flex-direction: column;
 	gap: 20px;
 	color: var(--color-main-text);
+}
+
+.template-gallery__header {
+	/* Clear the Nextcloud navigation toggle, which is absolutely positioned at
+	   the left edge of .app-content and sat on top of the first letter of the
+	   title. Same 56px the library's page headers reserve
+	   (.cn-dashboard-page__header). Only the HEADER shifts: the cards below
+	   keep the full width. */
+	padding-inline-start: 56px;
 }
 
 .template-gallery__header h1 {

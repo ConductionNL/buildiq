@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Mcp;
 
+use OCA\Buildiq\Mcp\Handler\AddWidgetHandler;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -178,8 +179,15 @@ class BuildiqToolProvider implements IMcpToolProvider {
 			'description' => 'Create or update a page in the draft manifest.'
 				. ' pageId is the unique key; if it exists it is replaced.'
 				. ' Type is one of dashboard, index, detail, form.'
-				. ' config is page-type-specific (e.g. {register, schema, columns} for index pages,'
-				. ' {widgets, layout} for dashboards). Defaults versionSlug to "development".',
+				. ' config is page-type-specific, and each type has fields the manifest is invalid without:'
+				. ' index and detail take {register, schema} plus optional columns, where schema is the'
+				. ' short slug you gave upsertSchema (e.g. "loan") — Buildiq namespaces it onto this'
+				. " version's own register for you;"
+				. ' dashboard takes {widgets, layout}, or leave both out and use addWidget;'
+				. ' form MUST take a non-empty fields array, each entry {key, label, type} with type one of'
+				. ' boolean, number, string, enum, password, json, file, and exactly one of'
+				. ' submitHandler or submitEndpoint saying where the form posts.'
+				. ' Defaults versionSlug to "development".',
 			'inputSchema' => [
 				'type' => 'object',
 				'properties' => [
@@ -188,7 +196,12 @@ class BuildiqToolProvider implements IMcpToolProvider {
 					'pageId' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 64],
 					'title' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 80],
 					'type' => ['type' => 'string', 'enum' => ['dashboard', 'index', 'detail', 'form']],
-					'route' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 200],
+					'route' => [
+						'type' => 'string',
+						'minLength' => 1,
+						'maxLength' => 200,
+						'description' => 'A path starting with "/", e.g. "/tools" or "/tools/:id".',
+					],
 					'config' => ['type' => 'object'],
 				],
 				'required' => ['appSlug', 'pageId', 'title', 'type', 'route'],
@@ -199,8 +212,14 @@ class BuildiqToolProvider implements IMcpToolProvider {
 			'subject' => 'widget',
 			'action' => 'create',
 			'name' => 'Add a widget to a page',
-			'description' => 'Append a widget to a page\'s config.widgets array in the draft manifest.'
-				. ' widgetType is e.g. "stat", "chart", "table". widgetConfig is widget-type-specific.'
+			'description' => 'Append a widget to a page\'s config.widgets array in the draft manifest,'
+				. ' and place it on the page\'s grid. The target page must be type "dashboard".'
+				. ' widgetType MUST be one of the values in its enum below. widgetConfig is'
+				. ' widget-type-specific: a stat, gauge or delta tile takes {register, schema}'
+				. ' plus an aggregate; an object-list takes {register, schema} plus columns.'
+				. ' Give every widget a widgetId (kebab-case, unique within the page) and a title:'
+				. ' both are stored on the widget and the manifest is invalid without them.'
+				. ' Omit them only if you have nothing better, and one will be derived.'
 				. ' Defaults versionSlug to "development".',
 			'inputSchema' => [
 				'type' => 'object',
@@ -208,9 +227,27 @@ class BuildiqToolProvider implements IMcpToolProvider {
 					'appSlug' => ['type' => 'string', 'pattern' => '^[a-z0-9][a-z0-9-]*[a-z0-9]$', 'minLength' => 2, 'maxLength' => 48],
 					'versionSlug' => ['type' => 'string', 'pattern' => '^[a-z0-9][a-z0-9-]*[a-z0-9]$', 'default' => 'development'],
 					'pageId' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 64],
-					'widgetType' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 48],
+					// The enum is the handler's own allow-list, spelt out so the
+					// plan validator can refuse an unknown type at plan time
+					// instead of the executor refusing it after the reader has
+					// already clicked Confirm. Keep it in step with
+					// AddWidgetHandler::ALLOWED_WIDGET_TYPES; WidgetTypeParityTest
+					// fails when the two drift.
+					'widgetType' => [
+						'type' => 'string',
+						'enum' => AddWidgetHandler::ALLOWED_WIDGET_TYPES,
+						'minLength' => 1,
+						'maxLength' => 48,
+					],
+					'widgetId' => ['type' => 'string', 'pattern' => '^[a-z0-9][a-z0-9-]*[a-z0-9]$', 'minLength' => 2, 'maxLength' => 48],
+					'title' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 80],
 					'widgetConfig' => ['type' => 'object'],
 				],
+				// Note that widgetId and title stay OUT of `required` on purpose.
+				// The description asks for both, and the handler derives them
+				// when they are missing. Making them required would turn a model
+				// that forgot one into a rejected plan, which is the failure
+				// this change exists to remove.
 				'required' => ['appSlug', 'pageId', 'widgetType'],
 			],
 		],
@@ -220,7 +257,9 @@ class BuildiqToolProvider implements IMcpToolProvider {
 			'action' => 'upsert',
 			'name' => 'Create or update a menu item',
 			'description' => 'Create or update a top-level menu item in the draft manifest.'
-				. ' id is the unique key; if it exists it is replaced. route should match a page id.'
+				. ' id is the unique key; if it exists it is replaced.'
+				. ' route names the page this item opens: give that page\'s pageId (the page\'s own'
+				. ' route path works too). Never invent a route no page has.'
 				. ' order controls sort. icon is an MDI/standard icon name. Defaults versionSlug to "development".',
 			'inputSchema' => [
 				'type' => 'object',
@@ -230,7 +269,12 @@ class BuildiqToolProvider implements IMcpToolProvider {
 					'id' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 64],
 					'label' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 80],
 					'icon' => ['type' => 'string', 'maxLength' => 80],
-					'route' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 200],
+					'route' => [
+						'type' => 'string',
+						'minLength' => 1,
+						'maxLength' => 200,
+						'description' => 'The pageId of the page this item opens, e.g. "tools". A path works too.',
+					],
 					'order' => ['type' => 'integer', 'minimum' => 0, 'maximum' => 999],
 				],
 				'required' => ['appSlug', 'id', 'label', 'route'],

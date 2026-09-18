@@ -32,7 +32,7 @@ const LEAF_ID = 'buildiq-registration-form'
 const HEADERS = { 'OCS-APIRequest': 'true' }
 
 test.describe('registration-form leaf', () => {
-	test('the leaf is on OpenRegister\'s catalogue under its own id', async ({
+	test("the leaf is on OpenRegister's catalogue under its own id", async ({
 		request,
 	}) => {
 		const response = await request.get(CATALOGUE, { headers: HEADERS })
@@ -45,7 +45,7 @@ test.describe('registration-form leaf', () => {
 			Record<string, unknown>
 		>
 
-		expect(entries.map(entry => String(entry.id ?? ''))).toContain(LEAF_ID)
+		expect(entries.map((entry) => String(entry.id ?? ''))).toContain(LEAF_ID)
 	})
 
 	test('an unauthenticated caller cannot save somebody a draft', async ({

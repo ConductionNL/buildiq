@@ -58,8 +58,7 @@ class DemoDataServiceTest extends TestCase {
 	}
 
 	protected function tearDown(): void {
-		$file = $this->appDir . '/lib/Settings/buildiq_mock_register.json';
-		if (is_file($file) === true) {
+		foreach ((glob($this->appDir . '/lib/Settings/*.json') ?: []) as $file) {
 			unlink($file);
 		}
 		@rmdir($this->appDir . '/lib/Settings');
@@ -269,5 +268,117 @@ class DemoDataServiceTest extends TestCase {
 		$this->assertFalse($this->service->isAvailable(), 'no descriptor on disk');
 		$this->shipDescriptor();
 		$this->assertTrue($this->service->isAvailable());
+	}
+
+	/**
+	 * Lay down a register declaring `built-app` as carrying no demo data.
+	 *
+	 * @return void
+	 */
+	private function shipRegisterExcludingBuiltApp(): void {
+		file_put_contents(
+			$this->appDir . '/lib/Settings/buildiq_register.json',
+			json_encode(
+				[
+					'x-openregister' => ['type' => 'application', 'app' => 'buildiq'],
+					'components' => [
+						'registers' => ['buildiq' => ['schemas' => ['Application']]],
+						'schemas' => [
+							'Application' => [
+								'slug' => 'built-app',
+								'type' => 'object',
+								'x-openregister-demo-data' => 'buildiq writes these itself',
+							],
+							'Thing' => ['slug' => 'thing', 'type' => 'object'],
+						],
+					],
+				]
+			)
+		);
+	}
+
+	/**
+	 * Ship a dataset addressing one named schema.
+	 *
+	 * @param string $schema The schema slug the objects address.
+	 *
+	 * @return void
+	 */
+	private function shipDescriptorFor(string $schema): void {
+		file_put_contents(
+			$this->appDir . '/lib/Settings/buildiq_mock_register.json',
+			json_encode(
+				[
+					'x-openregister' => ['type' => 'mock', 'app' => 'buildiq'],
+					'components' => [
+						'registers' => ['buildiq' => []],
+						'objects' => array_fill(
+							0,
+							3,
+							['@self' => ['register' => 'buildiq', 'schema' => $schema]]
+						),
+					],
+				]
+			)
+		);
+	}
+
+	/**
+	 * 🔴 THE DATASET IS GENERATED, SO IT CAN REGRESS WITHOUT ANYBODY EDITING IT.
+	 * A generator run against a schema that has lost its declaration writes the
+	 * control-plane objects straight back, and they import silently: they
+	 * satisfy their schemas, OpenRegister has no opinion about what they mean,
+	 * and the wizard reports a cheerful count. On 2026-09-18 that produced
+	 * three apps on the dashboard that could not be opened.
+	 *
+	 * @return void
+	 */
+	public function testItRefusesADatasetCarryingObjectsForASchemaTheAppWritesItself(): void {
+		$this->shipRegisterExcludingBuiltApp();
+		$this->shipDescriptorFor('built-app');
+		$this->container->expects($this->never())->method('get');
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('built-app');
+
+		$this->service->install();
+	}
+
+	/**
+	 * Refused BEFORE anything is written, so a bad dataset cannot half-land.
+	 *
+	 * @return void
+	 */
+	public function testNothingIsImportedWhenTheDatasetIsRefused(): void {
+		$this->shipRegisterExcludingBuiltApp();
+		$this->shipDescriptorFor('built-app');
+		$spy = $this->importerSpy();
+		$this->container->method('get')->willReturn($spy);
+
+		try {
+			$this->service->install();
+			$this->fail('a dataset carrying control-plane objects must not import');
+		} catch (RuntimeException) {
+			$this->assertSame([], $spy->seen, 'the importer must never have been called');
+		}
+	}
+
+	/**
+	 * The control: an ordinary content schema still imports.
+	 *
+	 * Without this arm the guard could refuse everything and both assertions
+	 * above would still pass.
+	 *
+	 * @return void
+	 */
+	public function testADatasetCarryingOnlyContentSchemasStillImports(): void {
+		$this->shipRegisterExcludingBuiltApp();
+		$this->shipDescriptorFor('thing');
+		$spy = $this->importerSpy(wrote: 3);
+		$this->container->method('get')->willReturn($spy);
+
+		$result = $this->service->install();
+
+		$this->assertSame(3, $result['objects']);
 	}
 }

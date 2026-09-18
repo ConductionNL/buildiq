@@ -39,6 +39,8 @@ use OCA\Buildiq\Listener\BuildiqLeafRegistrationListener;
 use OCA\Buildiq\Integration\PageLayoutLeafProvider;
 use OCA\Buildiq\Integration\RegistrationFormLeafProvider;
 use OCA\Buildiq\Service\LayoutDeltaService;
+use OCA\Buildiq\Service\PageLayoutLayerStack;
+use OCA\Buildiq\Service\PageLayoutPresenter;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -77,8 +79,11 @@ class BuildiqLeafRegistrationListenerTest extends TestCase {
 				$this->createMock(ObjectServiceInterface::class),
 				$this->createMock(IAppConfig::class),
 				new LayoutDeltaService(),
-				$this->createMock(IUserSession::class),
-				$this->createMock(IGroupManager::class),
+				new PageLayoutLayerStack(
+					$this->createMock(IUserSession::class),
+					$this->createMock(IGroupManager::class)
+				),
+				new PageLayoutPresenter(),
 				new NullLogger()
 			)
 		);

@@ -34,7 +34,12 @@
 				label="label"
 				@update:modelValue="onSelect" />
 			<p v-if="error" class="connector-source-picker__error">
-				{{ t('buildiq', 'Could not load the connector sources and endpoints.') }}
+				{{
+					t(
+						'buildiq',
+						'Could not load the connector sources and endpoints.',
+					)
+				}}
 			</p>
 			<p
 				v-else-if="!loading && endpoints.length === 0"
@@ -42,7 +47,9 @@
 				{{ t('buildiq', 'No OpenConnector endpoints are configured yet.') }}
 			</p>
 			<p
-				v-else-if="!loading && selectedSourceId && endpointOptions.length === 0"
+				v-else-if="
+					!loading && selectedSourceId && endpointOptions.length === 0
+				"
 				class="connector-source-picker__hint">
 				{{ t('buildiq', 'This source has no endpoints yet.') }}
 			</p>
@@ -274,7 +281,9 @@ export default {
 					.map((row) => {
 						const sourceId = String(row.targetId || '')
 						return {
-							path: trimPath(row.endpoint || row.path || row.slug || ''),
+							path: trimPath(
+								row.endpoint || row.path || row.slug || '',
+							),
 							sourceId,
 							sourceName: nameById.get(sourceId) || '',
 						}

@@ -101,10 +101,7 @@ import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
 import RollbackConfirmModal from '../modals/RollbackConfirmModal.vue'
-import {
-	openPromoteDialog,
-	promoteDialog,
-} from '../composables/usePromoteDialog.js'
+import { openPromoteDialog, promoteDialog } from '../composables/usePromoteDialog.js'
 import { buildVersionedRoute } from '../router/helpers.js'
 
 export default {

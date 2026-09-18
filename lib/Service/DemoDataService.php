@@ -253,6 +253,17 @@ class DemoDataService {
 			$declared = count($components['objects']);
 		}
 
+		// 🔴 REFUSED BEFORE ANYTHING IS WRITTEN, NOT FILTERED. See
+		// `schemasThatCarryNoDemoData()`.
+		$forbidden = $this->forbiddenSchemas(data: $data);
+		if ($forbidden !== []) {
+			throw new RuntimeException(
+				'The demo dataset carries objects for schema(s) this app writes itself: '
+				. implode(', ', $forbidden) . '. Importing them would create records nobody made,'
+				. ' so nothing was imported. Regenerate lib/Settings/buildiq_mock_register.json.'
+			);
+		}
+
 		$result = $this->configurationService()->importFromApp(
 			appId: self::CONFIG_APP_ID,
 			data: $data,
@@ -293,6 +304,155 @@ class DemoDataService {
 
 		return $imported;
 	}//end install()
+
+	/**
+	 * The schemas this app writes about itself, by slug and by definition key.
+	 *
+	 * 🔴 A DEMO OBJECT FOR ONE OF THESE IS RUBBLE, NOT SAMPLE DATA. buildiq's
+	 * register holds the apps it has built, their versions, the slug route
+	 * index, the template store and the export jobs it has run. Three
+	 * generated objects per schema put three apps in the Apps list and on the
+	 * dashboard that cannot be opened: the matching `applicationVersion` rows
+	 * carry the placeholder a `format: uuid` property gets and a manifest with
+	 * no pages, so the detail page renders empty and
+	 * `/apps/buildiq/builder/<slug>/` never resolves. Three more stood in the
+	 * template store beside the real built-ins and would clone into an equally
+	 * empty app. Found on 2026-09-18 while recording a demo.
+	 *
+	 * 🔴 AND EVERY ONE OF THEM SATISFIED ITS SCHEMA, which is why the generator
+	 * and its `--check` were both green on the dataset that broke the demo.
+	 * Conformance is about an object's shape; nothing in a schema says whether
+	 * its rows are content somebody authors or bookkeeping the app writes. So
+	 * the schema definition says it, with `x-openregister-demo-data`, and this
+	 * method reads the app's own descriptors rather than keeping a second list
+	 * that can disagree with them.
+	 *
+	 * Both the definition KEY (`Application`) and the `slug` (`built-app`) are
+	 * collected, because the descriptor keys schemas by name and the dataset
+	 * addresses them by slug.
+	 *
+	 * @return array<int, string> Schema keys and slugs, in declaration order.
+	 *
+	 * @spec exclude Demo-import guard; ADR-111 has no per-app behavioural spec.
+	 */
+	private function schemasThatCarryNoDemoData(): array {
+		$names = [];
+		foreach ($this->descriptorPaths() as $path) {
+			$data = json_decode((string)file_get_contents($path), true);
+			if (is_array($data) === false) {
+				continue;
+			}
+
+			// The generated dataset itself is not a source of declarations.
+			if ((($data['x-openregister']['type'] ?? '') === 'mock') === true) {
+				continue;
+			}
+
+			$schemas = ($data['components']['schemas'] ?? []);
+			if (is_array($schemas) === false) {
+				continue;
+			}
+
+			$names = array_merge($names, $this->excludedSchemasIn(schemas: $schemas));
+		}
+
+		return array_values(array_unique($names));
+
+	}//end schemasThatCarryNoDemoData()
+
+	/**
+	 * The app's own register descriptors, base file and fragments.
+	 *
+	 * @return array<int, string> Absolute paths, base files before fragments.
+	 *
+	 * @spec exclude Demo-import guard; ADR-111 has no per-app behavioural spec.
+	 */
+	private function descriptorPaths(): array {
+		$settings = $this->appManager->getAppPath(Application::APP_ID) . '/lib/Settings';
+
+		$base = glob($settings . '/*.json');
+		if ($base === false) {
+			$base = [];
+		}
+
+		$fragments = glob($settings . '/register.d/*.json');
+		if ($fragments === false) {
+			$fragments = [];
+		}
+
+		return array_merge($base, $fragments);
+
+	}//end descriptorPaths()
+
+	/**
+	 * The excluded schemas in one `components.schemas` block, by key and slug.
+	 *
+	 * `false` and a non-empty string both exclude; a string is the reason. `true`
+	 * and absence both mean the schema takes demo data like any other.
+	 *
+	 * @param array<string, mixed> $schemas The block.
+	 *
+	 * @return array<int, string> Keys and slugs, in declaration order.
+	 *
+	 * @spec exclude Demo-import guard; ADR-111 has no per-app behavioural spec.
+	 */
+	private function excludedSchemasIn(array $schemas): array {
+		$names = [];
+		foreach ($schemas as $key => $schema) {
+			if (is_array($schema) === false) {
+				continue;
+			}
+
+			$declared = ($schema['x-openregister-demo-data'] ?? true);
+			if ($declared !== false && (is_string($declared) === false || trim($declared) === '')) {
+				continue;
+			}
+
+			$names[] = (string)$key;
+			$slug    = ($schema['slug'] ?? null);
+			if (is_string($slug) === true && $slug !== '') {
+				$names[] = $slug;
+			}
+		}
+
+		return $names;
+
+	}//end excludedSchemasIn()
+
+	/**
+	 * The schemas a dataset declares objects for although this app forbids them.
+	 *
+	 * @param array<string, mixed> $data The decoded dataset.
+	 *
+	 * @return array<int, string> The offending schema names, sorted, or [].
+	 *
+	 * @spec exclude Demo-import guard; ADR-111 has no per-app behavioural spec.
+	 */
+	private function forbiddenSchemas(array $data): array {
+		$objects = ($data['components']['objects'] ?? []);
+		if (is_array($objects) === false || $objects === []) {
+			return [];
+		}
+
+		$forbidden = $this->schemasThatCarryNoDemoData();
+		if ($forbidden === []) {
+			return [];
+		}
+
+		$found = [];
+		foreach ($objects as $object) {
+			$schema = ($object['@self']['schema'] ?? null);
+			if (is_string($schema) === true && in_array($schema, $forbidden, true) === true) {
+				$found[$schema] = true;
+			}
+		}
+
+		$names = array_keys($found);
+		sort($names);
+
+		return $names;
+
+	}//end forbiddenSchemas()
 
 	/**
 	 * Absolute path to the shipped descriptor.

@@ -151,7 +151,12 @@
 		<aside
 			v-if="copilotToggleVisible && showCopilotPanel"
 			class="page-designer-host__copilot">
-			<CopilotPanel :appSlug="routeSlug" @executed="load" />
+			<CopilotPanel
+				:appSlug="routeSlug"
+				:versionSlug="versionSlug || ''"
+				closable
+				@close="showCopilotPanel = false"
+				@executed="load" />
 		</aside>
 	</div>
 </template>
@@ -826,14 +831,20 @@ export default {
 
 .page-designer-host__copilot {
 	position: fixed;
-	top: 0;
+	top: var(--header-height, 50px);
 	right: 0;
 	bottom: 0;
 	width: 360px;
 	max-width: 100%;
 	background: var(--color-main-background);
 	border-left: 1px solid var(--color-border);
-	padding: 12px;
+	/*
+	 * The bottom padding keeps the send row clear of the AI chat companion's
+	 * hex, which is position:fixed in this same corner. Without it the hex sits
+	 * on top of the Send button, and the one thing the panel needs is the one
+	 * thing you cannot click.
+	 */
+	padding: 12px 12px 72px;
 	z-index: 50;
 	box-sizing: border-box;
 }

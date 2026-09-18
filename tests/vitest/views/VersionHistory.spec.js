@@ -140,7 +140,11 @@ describe('VersionHistory — REQ-OBR-008 / REQ-OBR-009', () => {
 		})
 
 		const wrapper = mount(VersionHistory, {
-			propsData: { appSlug: 'hello-world', applicationUuid: APP_UUID, currentVersionUuid: 'snap-new' },
+			propsData: {
+				appSlug: 'hello-world',
+				applicationUuid: APP_UUID,
+				currentVersionUuid: 'snap-new',
+			},
 		})
 		await flushFetch(wrapper)
 

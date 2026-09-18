@@ -24,6 +24,8 @@ namespace OCA\Buildiq\Tests\Unit\Integration;
 
 use OCA\Buildiq\Integration\PageLayoutLeafProvider;
 use OCA\Buildiq\Service\LayoutDeltaService;
+use OCA\Buildiq\Service\PageLayoutLayerStack;
+use OCA\Buildiq\Service\PageLayoutPresenter;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IAppConfig;
@@ -118,8 +120,8 @@ final class ScreenOverrideResolutionTest extends TestCase {
 			objectService: $objectService,
 			appConfig: $appConfig,
 			deltas: $this->deltas,
-			userSession: $session,
-			groupManager: $groupManager,
+			layers: new PageLayoutLayerStack(userSession: $session, groupManager: $groupManager),
+			presenter: new PageLayoutPresenter(),
 			logger: $this->createMock(LoggerInterface::class),
 		);
 	}//end makeProvider()
@@ -300,6 +302,43 @@ final class ScreenOverrideResolutionTest extends TestCase {
 		self::assertContains('documenten', $this->tabIds($answer));
 		self::assertSame('Uw aanvraag', $answer['items'][0]['tabs'][0]['label']);
 	}//end testAPortalVisitorNeverGetsAnInternalOverride()
+
+	/**
+	 * A signed-in caller who matches three audiences at once gets them in the
+	 * declared order: the narrower `team` before the wider `group`, and
+	 * `portal` after both (REQ-OBSO-005).
+	 *
+	 * This pins the ranking itself rather than the filtering. Drop the ranking
+	 * and every one of these overrides still applies, so nothing else in this
+	 * suite notices; only the order changes, and the order is what decides
+	 * which of two colleagues' screens wins.
+	 *
+	 * @return void
+	 */
+	public function testTheAudiencesStackInTheDeclaredOrderForASignedInCaller(): void {
+		$provider = $this->makeProvider(
+			[
+				$this->schemaWide(),
+				$this->typeLayout(),
+				$this->override(
+					'portal',
+					'',
+					['layoutDelta' => ['tabs' => ['gegevens' => ['label' => 'Uw aanvraag']]]]
+				),
+				$this->override('group', 'frontoffice'),
+				$this->override('team', 'behandelaars'),
+			],
+			'handler',
+			['behandelaars', 'frontoffice']
+		);
+
+		$answer = $provider->list('dossiq', 'Zaak', 'zaak-7', $this->host());
+
+		self::assertSame(
+			['pl-schema', 'pl-bouw', 'pl-team', 'pl-group', 'pl-portal'],
+			array_column($answer['appliedLayers'], 'id')
+		);
+	}//end testTheAudiencesStackInTheDeclaredOrderForASignedInCaller()
 
 	/**
 	 * A draft override changes nothing at all.

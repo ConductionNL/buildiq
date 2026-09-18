@@ -29,6 +29,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Integration;
 
 if (interface_exists(IntegrationProvider::class) === false) {
+	/*
+	 * The array parameters below carry no key type on purpose. Psalm reads a
+	 * stub's docblock types as SIGNATURE types, so `array<string, mixed>` here
+	 * would be held against the native `array` that is the only thing an
+	 * implementation can write, and every faithful provider would read as a
+	 * MethodSignatureMismatch. These arrays are string-keyed, and each
+	 * implementation says so in its own docblock, where it is a docblock type
+	 * again.
+	 */
 	interface IntegrationProvider {
 		public function getId(): string;
 
@@ -54,7 +63,7 @@ if (interface_exists(IntegrationProvider::class) === false) {
 		public function authRequirements(): array;
 
 		/**
-		 * @param array<string, mixed> $filters Filters.
+		 * @param array $filters Filters.
 		 *
 		 * @return array<int|string, mixed>
 		 */
@@ -66,14 +75,14 @@ if (interface_exists(IntegrationProvider::class) === false) {
 		public function get(string $register, string $schema, string $objectId, string $entityId): array;
 
 		/**
-		 * @param array<string, mixed> $payload Payload.
+		 * @param array $payload Payload.
 		 *
 		 * @return array<string, mixed>
 		 */
 		public function create(string $register, string $schema, string $objectId, array $payload): array;
 
 		/**
-		 * @param array<string, mixed> $payload Payload.
+		 * @param array $payload Payload.
 		 *
 		 * @return array<string, mixed>
 		 */

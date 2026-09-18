@@ -32,6 +32,8 @@ use InvalidArgumentException;
 use OCA\Buildiq\Integration\PageLayoutLeafProvider;
 use OCA\Buildiq\Service\LayoutDeltaService;
 use OCA\Buildiq\Service\PageLayoutAuthoringService;
+use OCA\Buildiq\Service\PageLayoutLayerStack;
+use OCA\Buildiq\Service\PageLayoutPresenter;
 use OCA\Buildiq\Service\PageLayoutValidator;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -104,8 +106,8 @@ final class PageLayoutAuthoringServiceTest extends TestCase {
 			objectService: $objectService,
 			appConfig: $appConfig,
 			deltas: $this->deltas,
-			userSession: $session,
-			groupManager: $groupManager,
+			layers: new PageLayoutLayerStack(userSession: $session, groupManager: $groupManager),
+			presenter: new PageLayoutPresenter(),
 			logger: $this->createMock(LoggerInterface::class),
 		);
 
