@@ -871,6 +871,8 @@ OC.L10N.register(
         "Could not load the GitHub status.": "Kon de GitHub-status niet laden.",
         "Pull failed.": "Ophalen mislukt.",
         "AI copilot": "AI-copiloot",
+        "_%n tool enabled_::_%n tools enabled_": ["%n tool ingeschakeld","%n tools ingeschakeld"],
+        "Changes go to the {version} version.": "Wijzigingen gaan naar de versie {version}.",
         "Asking the AI provider. This usually takes a few seconds.": "De AI-provider is aan het werk. Dit duurt meestal een paar seconden.",
         "Ask for a page, a widget or a menu item. You review every change before it is applied.": "Vraag om een pagina, een widget of een menu-item. Je beoordeelt elke wijziging voordat die wordt toegepast.",
         "Close the copilot": "Sluit de copiloot",
@@ -1159,10 +1161,10 @@ OC.L10N.register(
         "The app could not be created.": "De app kon niet worden gemaakt.",
         "The built-in templates could not be loaded. Reload the page to try again.": "De ingebouwde sjablonen konden niet worden geladen. Laad de pagina opnieuw om het nog eens te proberen.",
         "What the app is for": "Waar de app voor is",
-    "This app has no repository yet. Name one. Publishing creates it as a public repository, tagged so the store can find it." : "Deze app heeft nog geen repository. Geef er een naam. Publiceren maakt een openbare repository aan, met het label waarmee de store hem vindt.",
-    "Give the repository a name of letters, numbers and dashes." : "Geef de repository een naam met letters, cijfers en streepjes.",
-    "GitHub is rate-limiting this credential right now. Try again shortly." : "GitHub beperkt het aantal aanvragen voor deze inloggegeven. Probeer het zo meteen opnieuw.",
-    "Point this app at a repository that already exists, so you can publish and pull versions. To make a new one, publish instead: it creates the repository for you." : "Koppel deze app aan een repository die al bestaat, zodat je versies kunt publiceren en ophalen. Wil je een nieuwe? Publiceer dan: dat maakt de repository voor je aan.",
+        "This app has no repository yet. Name one. Publishing creates it as a public repository, tagged so the store can find it.": "Deze app heeft nog geen repository. Geef er een naam. Publiceren maakt een openbare repository aan, met het label waarmee de store hem vindt.",
+        "Give the repository a name of letters, numbers and dashes.": "Geef de repository een naam met letters, cijfers en streepjes.",
+        "GitHub is rate-limiting this credential right now. Try again shortly.": "GitHub beperkt het aantal aanvragen voor deze inloggegeven. Probeer het zo meteen opnieuw.",
+        "Point this app at a repository that already exists, so you can publish and pull versions. To make a new one, publish instead: it creates the repository for you.": "Koppel deze app aan een repository die al bestaat, zodat je versies kunt publiceren en ophalen. Wil je een nieuwe? Publiceer dan: dat maakt de repository voor je aan.",
         "{name} ({semver})": "{name} ({semver})"
     },
     "nplurals=2; plural=(n != 1);"

@@ -43,6 +43,32 @@ describe('CopilotPanel.vue — spec ai-copilot REQ-OBAIC-007', () => {
 		expect(wrapper.text()).toContain('You review every change')
 	})
 
+	it('sends the version being edited with the plan request', async () => {
+		axiosPost.mockResolvedValueOnce({
+			data: { summary: 'x', steps: [], manifests: {} },
+		})
+		const wrapper = mount(CopilotPanel, {
+			propsData: { appSlug: 'tool-library', versionSlug: 'production' },
+		})
+
+		// The test env's `t()` stub does not interpolate placeholders, so assert
+		// the line is rendered rather than its interpolated text.
+		expect(wrapper.find('.copilot-panel__scope').exists()).toBe(true)
+
+		await wrapper
+			.find('[data-testid="copilot-message-input"]')
+			.setValue('Add a suppliers page')
+		await wrapper
+			.find('[data-testid="copilot-message-input"]')
+			.trigger('keydown.enter')
+		await flush()
+
+		expect(axiosPost).toHaveBeenCalledWith(
+			'/apps/buildiq/api/copilot/plan',
+			expect.objectContaining({ versionSlug: 'production' }),
+		)
+	})
+
 	it('emits close from the header button when closable', async () => {
 		const wrapper = mount(CopilotPanel, {
 			propsData: { appSlug: 'tool-library', closable: true },

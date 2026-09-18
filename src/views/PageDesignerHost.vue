@@ -153,6 +153,7 @@
 			class="page-designer-host__copilot">
 			<CopilotPanel
 				:appSlug="routeSlug"
+				:versionSlug="versionSlug || ''"
 				closable
 				@close="showCopilotPanel = false"
 				@executed="load" />

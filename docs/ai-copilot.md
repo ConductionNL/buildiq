@@ -68,6 +68,13 @@ names a model.
   independent surface — the copilot's deterministic plan/approve flow is
   specific to Buildiq.
 
+### Where the model call runs
+
+A provider that runs inside Nextcloud answers in the same request, so a plan
+comes back as fast as the model does. A provider that runs outside Nextcloud
+(an ExApp) cannot, so the request waits for a task processing worker. Keep one
+running, or the copilot gives up after two minutes and cancels its task.
+
 ### Degradation without a provider
 
 When no provider is configured (or the server predates NC 30), the copilot
@@ -75,6 +82,18 @@ is simply absent: the wizard's "Generate with AI" button and the builder's
 panel toggle are both hidden. Nextcloud administrators additionally see a
 small hint in the wizard pointing at the AI provider settings; everyone
 else sees no trace of the feature at all.
+
+A provider that is registered but cannot answer, for instance one with no
+model configured behind it, is a different case: the copilot is offered, the
+call fails, and the panel says so and repeats what the provider said. It does
+not ask you to rephrase a brief the model never saw.
+
+### Which version a proposal writes to
+
+The builder tools default to the `development` version. The page designer
+tells the copilot which version you have open, so a proposal lands on the
+version you are editing. The panel says which one that is, above the
+conversation.
 
 ## Permissions
 

@@ -1502,11 +1502,13 @@ OC.L10N.register(
         "Ask for a page, a widget or a menu item. You review every change before it is applied.": "Ask for a page, a widget or a menu item. You review every change before it is applied.",
         "Asking the AI provider. This usually takes a few seconds.": "Asking the AI provider. This usually takes a few seconds.",
         "Close the copilot": "Close the copilot",
-    "This app has no repository yet. Name one. Publishing creates it as a public repository, tagged so the store can find it." : "This app has no repository yet. Name one. Publishing creates it as a public repository, tagged so the store can find it.",
-    "Give the repository a name of letters, numbers and dashes." : "Give the repository a name of letters, numbers and dashes.",
-    "GitHub is rate-limiting this credential right now. Try again shortly." : "GitHub is rate-limiting this credential right now. Try again shortly.",
-    "Point this app at a repository that already exists, so you can publish and pull versions. To make a new one, publish instead: it creates the repository for you." : "Point this app at a repository that already exists, so you can publish and pull versions. To make a new one, publish instead: it creates the repository for you.",
-        "{name} ({semver})": "{name} ({semver})"
+        "This app has no repository yet. Name one. Publishing creates it as a public repository, tagged so the store can find it.": "This app has no repository yet. Name one. Publishing creates it as a public repository, tagged so the store can find it.",
+        "Give the repository a name of letters, numbers and dashes.": "Give the repository a name of letters, numbers and dashes.",
+        "GitHub is rate-limiting this credential right now. Try again shortly.": "GitHub is rate-limiting this credential right now. Try again shortly.",
+        "Point this app at a repository that already exists, so you can publish and pull versions. To make a new one, publish instead: it creates the repository for you.": "Point this app at a repository that already exists, so you can publish and pull versions. To make a new one, publish instead: it creates the repository for you.",
+        "%n tool enabled": "%n tool enabled",
+        "%n tools enabled": "%n tools enabled",
+        "Changes go to the {version} version.": "Changes go to the {version} version."
     },
     "nplurals=2; plural=(n != 1);"
 )

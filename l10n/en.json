@@ -1505,7 +1505,9 @@
         "Give the repository a name of letters, numbers and dashes.": "Give the repository a name of letters, numbers and dashes.",
         "GitHub is rate-limiting this credential right now. Try again shortly.": "GitHub is rate-limiting this credential right now. Try again shortly.",
         "Point this app at a repository that already exists, so you can publish and pull versions. To make a new one, publish instead: it creates the repository for you.": "Point this app at a repository that already exists, so you can publish and pull versions. To make a new one, publish instead: it creates the repository for you.",
-        "{name} ({semver})": "{name} ({semver})"
+        "%n tool enabled": "%n tool enabled",
+        "%n tools enabled": "%n tools enabled",
+        "Changes go to the {version} version.": "Changes go to the {version} version."
     },
     "plurals": "",
     "pluralForm": "nplurals=2; plural=(n != 1);"

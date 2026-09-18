@@ -45,6 +45,14 @@
 			>
 		</div>
 
+		<p v-if="versionSlug" class="copilot-panel__scope">
+			{{
+				t('buildiq', 'Changes go to the {version} version.', {
+					version: versionSlug,
+				})
+			}}
+		</p>
+
 		<div class="copilot-panel__messages">
 			<p v-if="messages.length === 0" class="copilot-panel__empty">
 				{{
@@ -183,6 +191,17 @@ export default {
 			type: Boolean,
 			default: false,
 		},
+
+		/**
+		 * The version of the app this panel writes to. Shown under the heading
+		 * and sent with every plan request, so a proposal lands on the version
+		 * the user is editing rather than on the builder tools' `development`
+		 * default.
+		 */
+		versionSlug: {
+			type: String,
+			default: '',
+		},
 	},
 
 	emits: ['executed', 'close'],
@@ -272,6 +291,7 @@ export default {
 				text,
 				this.appSlug,
 				this.agentId || undefined,
+				this.versionSlug || undefined,
 			)
 
 			const assistantId = this.nextMessageId++
@@ -347,6 +367,12 @@ export default {
 .copilot-panel__heading {
 	margin: 0;
 	font-size: 1.1em;
+}
+
+.copilot-panel__scope {
+	color: var(--color-text-maxcontrast);
+	margin: 0;
+	font-size: 0.9em;
 }
 
 .copilot-panel__empty {
