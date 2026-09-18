@@ -1508,7 +1508,11 @@ OC.L10N.register(
         "Point this app at a repository that already exists, so you can publish and pull versions. To make a new one, publish instead: it creates the repository for you.": "Point this app at a repository that already exists, so you can publish and pull versions. To make a new one, publish instead: it creates the repository for you.",
         "%n tool enabled": "%n tool enabled",
         "%n tools enabled": "%n tools enabled",
-        "Changes go to the {version} version.": "Changes go to the {version} version."
+        "Changes go to the {version} version.": "Changes go to the {version} version.",
+        "And %n more check.": "And %n more check.",
+        "And %n more checks.": "And %n more checks.",
+        "Generate again, or pass these lines to your administrator if they keep coming back.": "Generate again, or pass these lines to your administrator if they keep coming back.",
+        "This app cannot be created yet. These checks on the proposed app failed:": "This app cannot be created yet. These checks on the proposed app failed:"
     },
     "nplurals=2; plural=(n != 1);"
 )

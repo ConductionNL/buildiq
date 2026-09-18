@@ -41,6 +41,7 @@ use OCA\Buildiq\Exception\CopilotException;
 use OCA\Buildiq\Mcp\BuildiqToolProvider;
 use OCA\Buildiq\Service\Copilot\CopilotPlanValidator;
 use OCA\Buildiq\Service\Copilot\CopilotPromptBuilder;
+use OCA\Buildiq\Support\ManifestWidgetShape;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -1368,11 +1369,16 @@ class CopilotService {
 				continue;
 			}
 
-			$pageConfig = (array)($page['config'] ?? []);
-			$widgets = (array)($pageConfig['widgets'] ?? []);
-			$widgets[] = ['type' => (string)($args['widgetType'] ?? ''), 'config' => (array)($args['widgetConfig'] ?? [])];
-			$pageConfig['widgets'] = $widgets;
-			$page['config'] = $pageConfig;
+			// Shared with AddWidgetHandler so the manifest shown on the review
+			// screen and the manifest that gets stored cannot disagree about
+			// the widget's id, title or placement.
+			[$page] = ManifestWidgetShape::appendTo(
+				page: $page,
+				widgetType: (string)($args['widgetType'] ?? ''),
+				widgetConfig: (array)($args['widgetConfig'] ?? []),
+				widgetId: (string)($args['widgetId'] ?? ''),
+				title: (string)($args['title'] ?? '')
+			);
 			$pages[$i] = $page;
 			break;
 		}

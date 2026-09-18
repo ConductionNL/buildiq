@@ -4,8 +4,14 @@
  * Handler for the buildiq.addWidget MCP tool.
  *
  * Appends a widget to a page's config.widgets array in the draft manifest of
- * an ApplicationVersion. Uses case-insensitive page-id matching (same rationale
- * as UpsertPageHandler).
+ * an ApplicationVersion, together with the config.layout row that places it on
+ * the grid. Uses case-insensitive page-id matching (same rationale as
+ * UpsertPageHandler).
+ *
+ * The entry itself is built by {@see \OCA\Buildiq\Support\ManifestWidgetShape},
+ * shared with the copilot's manifest predictor. This handler used to write
+ * `{type, config}`, which the canonical validator rejects for want of an `id`
+ * and a `title`, so every widget it stored made the whole manifest invalid.
  *
  * @category Service
  * @package  OCA\Buildiq\Mcp\Handler
@@ -25,6 +31,8 @@
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Mcp\Handler;
+
+use OCA\Buildiq\Support\ManifestWidgetShape;
 
 /**
  * Handles the buildiq.addWidget tool invocation.
@@ -70,9 +78,11 @@ class AddWidgetHandler extends AbstractToolHandler {
 	/**
 	 * Execute the addWidget tool.
 	 *
-	 * @param array<string, mixed> $args Tool arguments (appSlug, versionSlug, pageId, widgetType, widgetConfig).
+	 * @param array<string, mixed> $args Tool arguments (appSlug, versionSlug, pageId, widgetType, widgetConfig, widgetId, title).
 	 *
 	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/ai-copilot/spec.md
 	 */
 	public function handle(array $args): array {
 		$validation = $this->validateArgs(args: $args);
@@ -114,7 +124,9 @@ class AddWidgetHandler extends AbstractToolHandler {
 				pages: $pages,
 				pageIdx: $foundIdx,
 				widgetType: $widgetType,
-				widgetConfig: $widgetConfig
+				widgetConfig: $widgetConfig,
+				widgetId: $validation['widgetId'],
+				title: $validation['title']
 			);
 
 			$manifest['pages'] = array_values($pages);
@@ -156,7 +168,7 @@ class AddWidgetHandler extends AbstractToolHandler {
 	 *
 	 * @param array<string, mixed> $args Raw tool arguments.
 	 *
-	 * @return array{appSlug?: string, versionSlug?: string, pageId?: string, widgetType?: string, widgetConfig?: array, error?: string}
+	 * @return array{appSlug?: string, versionSlug?: string, pageId?: string, widgetType?: string, widgetConfig?: array, widgetId?: string, title?: string, error?: string}
 	 */
 	private function validateArgs(array $args): array {
 		$appSlug = (string)($args['appSlug'] ?? '');
@@ -164,6 +176,8 @@ class AddWidgetHandler extends AbstractToolHandler {
 		$pageId = (string)($args['pageId'] ?? '');
 		$widgetType = (string)($args['widgetType'] ?? '');
 		$widgetConfig = $args['widgetConfig'] ?? [];
+		$widgetId = trim((string)($args['widgetId'] ?? ''));
+		$title = trim((string)($args['title'] ?? ''));
 
 		if ($appSlug === '' || $this->isValidSlug(candidate: $appSlug) === false) {
 			return ['error' => "Invalid appSlug '{$appSlug}'."];
@@ -187,12 +201,26 @@ class AddWidgetHandler extends AbstractToolHandler {
 			$widgetConfig = [];
 		}
 
+		// Both are optional. They are rejected rather than silently cleaned up
+		// when they are present but malformed: an id the caller meant to
+		// address later, quietly replaced by a derived one, is the kind of
+		// mismatch nobody finds until a delta fails to land.
+		if ($widgetId !== '' && preg_match('/^[a-z0-9][a-z0-9-]*[a-z0-9]$/', $widgetId) !== 1) {
+			return ['error' => "Invalid widgetId '{$widgetId}'. Use lowercase letters, digits and hyphens."];
+		}
+
+		if (mb_strlen($title) > 80) {
+			return ['error' => 'title must be 80 characters or fewer.'];
+		}
+
 		return [
 			'appSlug' => $appSlug,
 			'versionSlug' => $versionSlug,
 			'pageId' => $pageId,
 			'widgetType' => $widgetType,
 			'widgetConfig' => $widgetConfig,
+			'widgetId' => $widgetId,
+			'title' => $title,
 		];
 
 	}//end validateArgs()
@@ -223,17 +251,28 @@ class AddWidgetHandler extends AbstractToolHandler {
 	 * @param int $pageIdx Index of the target page.
 	 * @param string $widgetType Widget type identifier.
 	 * @param array $widgetConfig Widget-type-specific configuration blob.
+	 * @param string $widgetId Caller-supplied widget id, or '' to derive one.
+	 * @param string $title Caller-supplied widget title, or '' to derive one.
 	 *
-	 * @return array{0: array, 1: array{type: string, config: array}}
+	 * @return array{0: array, 1: array{id: string, title: string, type: string}}
 	 */
-	private function appendWidget(array $pages, int $pageIdx, string $widgetType, array $widgetConfig): array {
-		$page = $pages[$pageIdx];
-		$pageConfig = (array)($page['config'] ?? []);
-		$widgets = (array)($pageConfig['widgets'] ?? []);
-		$widget = ['type' => $widgetType, 'config' => $widgetConfig];
-		$widgets[] = $widget;
-		$pageConfig['widgets'] = $widgets;
-		$page['config'] = $pageConfig;
+	private function appendWidget(
+		array $pages,
+		int $pageIdx,
+		string $widgetType,
+		array $widgetConfig,
+		string $widgetId = '',
+		string $title = '',
+	): array {
+		// Shared with CopilotService::applyAddWidget() — see ManifestWidgetShape
+		// for why id, title and a layout row all come from one place.
+		[$page, $widget] = ManifestWidgetShape::appendTo(
+			page: (array)$pages[$pageIdx],
+			widgetType: $widgetType,
+			widgetConfig: $widgetConfig,
+			widgetId: $widgetId,
+			title: $title
+		);
 		$pages[$pageIdx] = $page;
 
 		return [$pages, $widget];

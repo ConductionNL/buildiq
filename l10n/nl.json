@@ -1167,7 +1167,13 @@
         "Give the repository a name of letters, numbers and dashes.": "Geef de repository een naam met letters, cijfers en streepjes.",
         "GitHub is rate-limiting this credential right now. Try again shortly.": "GitHub beperkt het aantal aanvragen voor deze inloggegeven. Probeer het zo meteen opnieuw.",
         "Point this app at a repository that already exists, so you can publish and pull versions. To make a new one, publish instead: it creates the repository for you.": "Koppel deze app aan een repository die al bestaat, zodat je versies kunt publiceren en ophalen. Wil je een nieuwe? Publiceer dan: dat maakt de repository voor je aan.",
-        "{name} ({semver})": "{name} ({semver})"
+        "{name} ({semver})": "{name} ({semver})",
+        "This app cannot be created yet. These checks on the proposed app failed:": "Deze app kan nog niet worden aangemaakt. Deze controles op de voorgestelde app zijn mislukt:",
+        "_And %n more check._::_And %n more checks._": [
+            "En nog %n controle.",
+            "En nog %n controles."
+        ],
+        "Generate again, or pass these lines to your administrator if they keep coming back.": "Genereer opnieuw, of geef deze regels door aan je beheerder als ze blijven terugkomen."
     },
     "plurals": null,
     "pluralForm": "nplurals=2; plural=(n != 1);"

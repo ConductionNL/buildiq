@@ -1166,6 +1166,79 @@ class CopilotServiceTest extends TestCase {
 	}//end testPredictManifestsComputesPredictedManifest()
 
 	/**
+	 * A predicted addWidget step produces a widget the canonical validator
+	 * accepts: non-empty id, title and type, plus the layout row that places
+	 * it. Before this, the predictor appended `{type, config}`, so the review
+	 * screen refused every plan that added a widget and told the user to
+	 * rephrase their brief.
+	 *
+	 * @return void
+	 */
+	public function testPredictManifestsGivesEveryWidgetAnIdTitleAndPlacement(): void {
+		$plan = [
+			'summary' => 'x',
+			'steps' => [
+				['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'overview', 'title' => 'Overview', 'type' => 'dashboard', 'route' => '/']],
+				['tool' => 'buildiq.addWidget', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'overview', 'widgetType' => 'stat', 'widgetConfig' => ['register' => 'tool-library', 'schema' => 'loan']]],
+				['tool' => 'buildiq.addWidget', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'overview', 'widgetType' => 'stat', 'widgetId' => 'overdue-tools', 'title' => 'Overdue tools']],
+			],
+		];
+
+		$manifests = $this->makeService()->predictManifests(plan: $plan, appSlug: null);
+		$page = $manifests['tool-library@development']['predicted']['pages'][0];
+		$widgets = $page['config']['widgets'];
+
+		self::assertCount(2, $widgets);
+		foreach ($widgets as $widget) {
+			self::assertIsString($widget['id']);
+			self::assertNotSame('', $widget['id'], 'every widget needs an id the validator accepts');
+			self::assertIsString($widget['title']);
+			self::assertNotSame('', $widget['title'], 'every widget needs a title the validator accepts');
+			self::assertIsString($widget['type']);
+			self::assertNotSame('', $widget['type']);
+		}
+
+		self::assertSame('overdue-tools', $widgets[1]['id'], 'an explicit widgetId is honoured');
+		self::assertSame('Overdue tools', $widgets[1]['title']);
+		self::assertSame(
+			array_column($widgets, 'id'),
+			array_column($page['config']['layout'], 'widgetId'),
+			'each widget is placed on the grid, not merely stored'
+		);
+	}//end testPredictManifestsGivesEveryWidgetAnIdTitleAndPlacement()
+
+	/**
+	 * Predicting the same plan twice yields the same widget ids, so the
+	 * manifest a user approves names the same widgets the executor writes.
+	 *
+	 * @return void
+	 */
+	public function testPredictedWidgetIdsAreStableAcrossRuns(): void {
+		$plan = [
+			'summary' => 'x',
+			'steps' => [
+				['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'overview', 'title' => 'Overview', 'type' => 'dashboard', 'route' => '/']],
+				['tool' => 'buildiq.addWidget', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'overview', 'widgetType' => 'stat', 'title' => 'Loans']],
+				['tool' => 'buildiq.addWidget', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'overview', 'widgetType' => 'stat', 'title' => 'Loans']],
+			],
+		];
+
+		$first = $this->makeService()->predictManifests(plan: $plan, appSlug: null);
+		$second = $this->makeService()->predictManifests(plan: $plan, appSlug: null);
+
+		self::assertSame(
+			array_column($first['tool-library@development']['predicted']['pages'][0]['config']['widgets'], 'id'),
+			array_column($second['tool-library@development']['predicted']['pages'][0]['config']['widgets'], 'id')
+		);
+		self::assertSame(
+			['loans', 'loans-2'],
+			array_column($first['tool-library@development']['predicted']['pages'][0]['config']['widgets'], 'id')
+		);
+	}//end testPredictedWidgetIdsAreStableAcrossRuns()
+
+	/**
 	 * predictManifests() throws when the predicted manifest exceeds the pages cap.
 	 *
 	 * @return void

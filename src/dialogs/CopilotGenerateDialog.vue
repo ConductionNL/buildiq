@@ -97,17 +97,43 @@
 						</ul>
 					</div>
 
-					<p
+					<div
 						v-if="!canApprove"
 						class="copilot-generate__error"
+						data-testid="copilot-validation-errors"
 						role="alert">
-						{{
-							t(
-								'buildiq',
-								'The proposed manifest did not pass validation, so it cannot be created. Try rephrasing your brief.',
-							)
-						}}
-					</p>
+						<p>
+							{{
+								t(
+									'buildiq',
+									'This app cannot be created yet. These checks on the proposed app failed:',
+								)
+							}}
+						</p>
+						<ul class="copilot-generate__error-list">
+							<li v-for="(line, idx) in validationErrors" :key="'ve-' + idx">
+								{{ line }}
+							</li>
+						</ul>
+						<p v-if="hiddenValidationErrorCount">
+							{{
+								n(
+									'buildiq',
+									'And %n more check.',
+									'And %n more checks.',
+									hiddenValidationErrorCount,
+								)
+							}}
+						</p>
+						<p>
+							{{
+								t(
+									'buildiq',
+									'Generate again, or pass these lines to your administrator if they keep coming back.',
+								)
+							}}
+						</p>
+					</div>
 				</div>
 			</template>
 
@@ -155,6 +181,14 @@
 <script>
 import { NcButton, NcModal, NcTextArea } from '@nextcloud/vue'
 import { useCopilot } from '../composables/useCopilot.js'
+
+/**
+ * How many validator messages the review screen lists before it stops and
+ * counts the rest. One broken widget can produce a message per field per
+ * widget, and a wall of them buries the first one, which is usually the one
+ * worth reading.
+ */
+const VALIDATION_ERRORS_SHOWN = 6
 
 export default {
 	name: 'CopilotGenerateDialog',
@@ -231,6 +265,56 @@ export default {
 		 */
 		errorDetail() {
 			return this.copilot.errorDetail.value
+		},
+
+		/**
+		 * Every canonical-validator message across the plan's predicted
+		 * manifests, flattened and capped for display.
+		 *
+		 * The dialog used to say only that validation had failed and suggest
+		 * rephrasing the brief. Most of these failures are the builder's own
+		 * fault, not the reader's wording, and a reader who cannot see which
+		 * field failed can only guess. The version key each list is filed
+		 * under is dropped: it names an internal record, and the field paths
+		 * below it are what a reader can act on.
+		 *
+		 * @return {Array<string>}
+		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 */
+		validationErrors() {
+			return this.allValidationErrors.slice(0, VALIDATION_ERRORS_SHOWN)
+		},
+
+		/**
+		 * How many validator messages the cap left out, so a long list still
+		 * says how long it really is.
+		 *
+		 * @return {number}
+		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 */
+		hiddenValidationErrorCount() {
+			return Math.max(
+				0,
+				this.allValidationErrors.length - VALIDATION_ERRORS_SHOWN,
+			)
+		},
+
+		/**
+		 * The uncapped, de-duplicated validator message list.
+		 *
+		 * @return {Array<string>}
+		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 */
+		allValidationErrors() {
+			const seen = new Set()
+			for (const errors of this.copilot.manifestErrors.value.values()) {
+				for (const line of errors || []) {
+					if (typeof line === 'string' && line.length > 0) {
+						seen.add(line)
+					}
+				}
+			}
+			return [...seen]
 		},
 
 		/**
@@ -379,6 +463,13 @@ export default {
 	color: var(--color-text-maxcontrast);
 	font-size: 0.9em;
 	margin: 0;
+}
+
+.copilot-generate__error-list {
+	margin: 0.5em 0;
+	padding-inline-start: 1.5em;
+	font-size: 0.9em;
+	overflow-wrap: anywhere;
 }
 
 .copilot-generate__actions {

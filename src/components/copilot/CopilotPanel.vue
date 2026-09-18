@@ -76,6 +76,9 @@
 					v-else-if="message.role === 'assistant' && message.plan"
 					:plan="message.plan"
 					:canApprove="isPendingProposal(message) ? canApprove : false"
+					:validationErrors="
+						isPendingProposal(message) ? validationErrors : []
+					"
 					:busy="isPendingProposal(message) && state === 'executing'"
 					@approve="onApprove(message)"
 					@discard="onDiscard(message)" />
@@ -239,6 +242,27 @@ export default {
 		 */
 		canApprove() {
 			return this.copilot.canApprove.value
+		},
+
+		/**
+		 * The pending proposal's canonical-validator messages, flattened and
+		 * de-duplicated across the plan's predicted manifests. Passed to the
+		 * proposal card so a refusal names the field that failed rather than
+		 * leaving the reader to guess at their own wording.
+		 *
+		 * @return {Array<string>}
+		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 */
+		validationErrors() {
+			const seen = new Set()
+			for (const errors of this.copilot.manifestErrors.value.values()) {
+				for (const line of errors || []) {
+					if (typeof line === 'string' && line.length > 0) {
+						seen.add(line)
+					}
+				}
+			}
+			return [...seen]
 		},
 
 		/**
