@@ -33,7 +33,7 @@ const LEAF_ID = 'buildiq-page-layout'
 const HEADERS = { 'OCS-APIRequest': 'true' }
 
 test.describe('page-layout leaf', () => {
-	test('the leaf is on OpenRegister\'s catalogue under its own id', async ({
+	test("the leaf is on OpenRegister's catalogue under its own id", async ({
 		request,
 	}) => {
 		const response = await request.get(CATALOGUE, { headers: HEADERS })
@@ -46,7 +46,7 @@ test.describe('page-layout leaf', () => {
 			Record<string, unknown>
 		>
 
-		expect(entries.map(entry => String(entry.id ?? ''))).toContain(LEAF_ID)
+		expect(entries.map((entry) => String(entry.id ?? ''))).toContain(LEAF_ID)
 	})
 
 	test('the leaf offers no way to append a layout', async ({ request }) => {

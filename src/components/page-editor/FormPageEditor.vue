@@ -416,7 +416,9 @@ export default {
 			 * @spec openspec/specs/openbuild-page-designer/spec.md#requirement-form-page-sub-editor-with-exactly-one-of-submit-handling
 			 */
 			async handler(register) {
-				this.schemas = register ? await this.picker.fetchSchemas(register) : []
+				this.schemas = register
+					? await this.picker.fetchSchemas(register)
+					: []
 			},
 		},
 	},

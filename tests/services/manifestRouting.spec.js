@@ -13,9 +13,8 @@
  */
 import { describe, expect, it } from 'vitest'
 
-const { normalizeManifestRouting } = await import(
-	'../../src/services/manifestRouting.js'
-)
+const { normalizeManifestRouting } =
+	await import('../../src/services/manifestRouting.js')
 
 describe('normalizeManifestRouting', () => {
 	it('names a page that carries no id after its own route', () => {

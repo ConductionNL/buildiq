@@ -1558,11 +1558,16 @@ export default {
 			if (typeof err === 'string' && err !== '') {
 				return err
 			}
-			const detail = err && typeof err === 'object'
-				? (typeof err.details === 'string' ? err.details : err.message)
-				: ''
+			const detail =
+				err && typeof err === 'object'
+					? typeof err.details === 'string'
+						? err.details
+						: err.message
+					: ''
 			return detail
-				? this.t('buildiq', 'Could not save the schema: {error}', { error: detail })
+				? this.t('buildiq', 'Could not save the schema: {error}', {
+						error: detail,
+					})
 				: this.t('buildiq', 'Could not save the schema.')
 		},
 

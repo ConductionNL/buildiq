@@ -45,7 +45,9 @@
 				<NcTextField
 					:modelValue="org"
 					:label="t('buildiq', 'Create under organisation (optional)')"
-					:placeholder="t('buildiq', 'Leave empty to use your own account')"
+					:placeholder="
+						t('buildiq', 'Leave empty to use your own account')
+					"
 					@update:modelValue="org = $event" />
 			</template>
 			<p class="publish-confirm__cred">

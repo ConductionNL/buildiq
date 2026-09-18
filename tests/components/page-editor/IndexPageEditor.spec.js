@@ -264,7 +264,10 @@ describe('IndexPageEditor', () => {
 	it('drops a late answer for a schema that is no longer selected', async () => {
 		let answerTerm
 		fetchSchemaProperties.mockImplementationOnce(
-			() => new Promise((resolve) => { answerTerm = resolve }),
+			() =>
+				new Promise((resolve) => {
+					answerTerm = resolve
+				}),
 		)
 		const wrapper = mountEditor({ register: 'vocab', schema: 'term' })
 		await wrapper.setProps({ config: { register: 'vocab', schema: 'concept' } })
