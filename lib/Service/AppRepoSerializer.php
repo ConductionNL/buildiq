@@ -156,7 +156,11 @@ class AppRepoSerializer {
 		// exception, so serialisation never becomes the thing that blocks a
 		// publish. The counter-measure against that silently producing an
 		// empty artefact is the descriptor's channel counts, below.
-		$channels = $this->collectChannels(application: $application, slug: $slug);
+		$channels = $this->collectChannels(
+			application: $application,
+			slug: $slug,
+			versionRegister: trim((string)($version['register'] ?? ''))
+		);
 
 		$files = [];
 		$files['openbuild-app.json'] = $this->encode(
@@ -184,11 +188,12 @@ class AppRepoSerializer {
 	 *
 	 * @param array<string,mixed> $application The Application object.
 	 * @param string $slug The Application slug.
+	 * @param string $versionRegister The register the published version names.
 	 *
 	 * @return array<string,mixed> Every collector's raw output, keyed by channel.
 	 */
-	private function collectChannels(array $application, string $slug): array {
-		$companions = $this->collectCompanionSchemas(slug: $slug);
+	private function collectChannels(array $application, string $slug, string $versionRegister = ''): array {
+		$companions = $this->companionSchemas(slug: $slug, versionRegister: $versionRegister);
 		ksort($companions);
 
 		$dataRegisters = $this->collectDataRegisters(application: $application);
@@ -870,66 +875,24 @@ class AppRepoSerializer {
 	}//end deriveCredentials()
 
 	/**
-	 * Read the app's per-app register companion schemas, keyed by schema slug.
+	 * The schemas of the register this version publishes.
 	 *
-	 * Mirrors DataRegisterExportBundler's schema resolution; a register that is
-	 * absent (an app never provisioned a per-app register) yields no companions
-	 * rather than an error — serialise is total.
-	 *
-	 * @param string $slug The Application slug (per-app register is `buildiq-{slug}`).
+	 * @param string $slug The Application slug.
+	 * @param string $versionRegister The register named by the version being published.
 	 *
 	 * @return array<string,array<string,mixed>> Schema blobs keyed by slug.
 	 *
 	 * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
 	 */
-	private function collectCompanionSchemas(string $slug): array {
-		if ($slug === '') {
-			return [];
-		}
+	private function companionSchemas(string $slug, string $versionRegister): array {
+		$collector = new CompanionSchemaCollector(
+			registerMapper: $this->registerMapper,
+			schemaMapper: $this->schemaMapper,
+			logger: $this->logger
+		);
 
-		try {
-			$register = $this->registerMapper->find('openbuild-' . $slug, _multitenancy: false);
-		} catch (Throwable $e) {
-			$this->logger->debug(
-				'Buildiq AppRepoSerializer: no per-app register for "' . $slug . '": ' . $e->getMessage()
-			);
-			return [];
-		}
-
-		$schemas = [];
-		foreach ((array)$register->getSchemas() as $schemaId) {
-			try {
-				$schema = $this->schemaMapper->find($schemaId, _multitenancy: false);
-			} catch (Throwable $e) {
-				$this->logger->debug(
-					'Buildiq AppRepoSerializer: could not resolve schema ' . ((string)$schemaId) . ': ' . $e->getMessage()
-				);
-				continue;
-			}
-
-			$schemaSlug = $schema->getSlug();
-			if ($schemaSlug === '') {
-				continue;
-			}
-
-			$version = (string)$schema->getVersion();
-			if ($version === '') {
-				$version = '0.1.0';
-			}
-
-			$schemas[$schemaSlug] = [
-				'slug' => $schemaSlug,
-				'title' => (string)$schema->getTitle(),
-				'description' => (string)$schema->getDescription(),
-				'version' => $version,
-				'type' => 'object',
-				'required' => array_values((array)$schema->getRequired()),
-				'properties' => (array)$schema->getProperties(),
-			];
-		}//end foreach
-
-		return $schemas;
-	}//end collectCompanionSchemas()
+		return $collector->collect(slug: $slug, versionRegister: $versionRegister);
+	}//end companionSchemas()
 
 	/**
 	 * Build the optional README.md (name + description + provenance line).
