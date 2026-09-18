@@ -104,25 +104,30 @@ final class LayoutDeltaService {
 					continue;
 				}
 
+				$baseList = [];
+				if (is_array($base[$key] ?? null) === true) {
+					$baseList = $base[$key];
+				}
+
 				$result[$key] = $this->mergeKeyedList(
-					(is_array($base[$key] ?? null) === true ? $base[$key] : []),
-					$value,
-					$this->orderFor($value)
+					baseList: $baseList,
+					patch: $value,
+					order: $this->orderFor(patch: $value)
 				);
 				continue;
 			}
 
 			if (is_array($value) === true
-				&& $this->isMap($value) === true
+				&& $this->isMap(value: $value) === true
 				&& is_array($base[$key] ?? null) === true
-				&& $this->isMap($base[$key]) === true
+				&& $this->isMap(value: $base[$key]) === true
 			) {
 				if (($value['$op'] ?? null) === self::REMOVE_MARKER) {
 					unset($result[$key]);
 					continue;
 				}
 
-				$result[$key] = $this->merge($base[$key], $value);
+				$result[$key] = $this->merge(base: $base[$key], delta: $value);
 				continue;
 			}
 
@@ -163,8 +168,13 @@ final class LayoutDeltaService {
 				continue;
 			}
 
+			$baseEntries = [];
+			if (is_array($base[$key] ?? null) === true) {
+				$baseEntries = $base[$key];
+			}
+
 			$existing = [];
-			foreach ((is_array($base[$key] ?? null) === true ? $base[$key] : []) as $entry) {
+			foreach ($baseEntries as $entry) {
 				if (is_array($entry) === true && (string)($entry['id'] ?? '') !== '') {
 					$existing[] = (string)$entry['id'];
 				}
@@ -178,7 +188,7 @@ final class LayoutDeltaService {
 				// A patch that ADDS an entry is not an orphan: it names an id the
 				// base does not have on purpose.
 				if (is_array($patch) === true && ($patch['$op'] ?? null) !== self::REMOVE_MARKER
-					&& $this->looksLikeANewEntry($patch) === true
+					&& $this->looksLikeANewEntry(patch: $patch) === true
 				) {
 					continue;
 				}
@@ -213,7 +223,7 @@ final class LayoutDeltaService {
 			}
 		}
 
-		return hash('sha256', (string)json_encode($this->normalise($patchable)));
+		return hash('sha256', (string)json_encode($this->normalise(value: $patchable)));
 	}//end fingerprint()
 
 	/**
@@ -235,7 +245,7 @@ final class LayoutDeltaService {
 			return false;
 		}
 
-		return ($this->fingerprint($base) === $storedFingerprint);
+		return ($this->fingerprint(base: $base) === $storedFingerprint);
 	}//end isCurrent()
 
 	/**
@@ -278,7 +288,7 @@ final class LayoutDeltaService {
 			}
 
 			if (array_key_exists($id, $byId) === true) {
-				$byId[$id] = $this->merge($byId[$id], $entryPatch);
+				$byId[$id] = $this->merge(base: $byId[$id], delta: $entryPatch);
 				continue;
 			}
 
@@ -385,14 +395,14 @@ final class LayoutDeltaService {
 		}
 
 		if (array_is_list($value) === true) {
-			return array_map(fn (mixed $entry): mixed => $this->normalise($entry), $value);
+			return array_map(fn (mixed $entry): mixed => $this->normalise(value: $entry), $value);
 		}
 
 		ksort($value);
 
 		$out = [];
 		foreach ($value as $key => $entry) {
-			$out[$key] = $this->normalise($entry);
+			$out[$key] = $this->normalise(value: $entry);
 		}
 
 		return $out;

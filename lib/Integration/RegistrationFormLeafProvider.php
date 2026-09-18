@@ -119,18 +119,18 @@ final class RegistrationFormLeafProvider implements IntegrationProvider {
 	/**
 	 * The group the leaf sorts under.
 	 *
-	 * @return string|null The group.
+	 * @return string The group.
 	 */
-	public function getGroup(): ?string {
+	public function getGroup(): string {
 		return 'Forms';
 	}//end getGroup()
 
 	/**
 	 * The app that must be installed for this leaf to answer.
 	 *
-	 * @return string|null The app id.
+	 * @return string The app id.
 	 */
-	public function getRequiredApp(): ?string {
+	public function getRequiredApp(): string {
 		return 'buildiq';
 	}//end getRequiredApp()
 
@@ -193,7 +193,7 @@ final class RegistrationFormLeafProvider implements IntegrationProvider {
 	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-006, REQ-OBRF-009)
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		$forms = $this->publishedFormsFor($register, $schema, $objectId);
+		$forms = $this->publishedFormsFor(register: $register, schema: $schema, objectId: $objectId);
 
 		$audience = (string)($filters['audience'] ?? '');
 		if ($audience !== '') {
@@ -229,18 +229,18 @@ final class RegistrationFormLeafProvider implements IntegrationProvider {
 			$forms = array_merge($onChannel, $channelless);
 		}
 
-		$forms = $this->defaultsFirst($forms);
+		$forms = $this->defaultsFirst(forms: $forms);
 
 		$items = [];
 		foreach ($forms as $form) {
-			$items[] = $this->serve($form);
+			$items[] = $this->serve(form: $form);
 		}
 
 		return [
 			'items' => $items,
 			'total' => count($items),
 			'nextCursor' => null,
-			'drafts' => $this->draftsOfCaller($items),
+			'drafts' => $this->draftsOfCaller(forms: $items),
 		];
 	}//end list()
 
@@ -257,9 +257,10 @@ final class RegistrationFormLeafProvider implements IntegrationProvider {
 	 * @throws RuntimeException When no such form is bound to this type.
 	 */
 	public function get(string $register, string $schema, string $objectId, string $entityId): array {
-		foreach ($this->publishedFormsFor($register, $schema, $objectId) as $form) {
+		$published = $this->publishedFormsFor(register: $register, schema: $schema, objectId: $objectId);
+		foreach ($published as $form) {
 			if ((string)($form['id'] ?? '') === $entityId) {
-				return $this->serve($form);
+				return $this->serve(form: $form);
 			}
 		}
 
@@ -296,10 +297,15 @@ final class RegistrationFormLeafProvider implements IntegrationProvider {
 			throw new RuntimeException('A draft has to say which form it is an answer to.');
 		}
 
+		$values = [];
+		if (is_array($payload['values'] ?? null) === true) {
+			$values = $payload['values'];
+		}
+
 		$draft = [
 			'registrationFormId' => $formId,
 			'userId' => $user->getUID(),
-			'values' => (is_array($payload['values'] ?? null) === true ? $payload['values'] : []),
+			'values' => $values,
 			'step' => (int)($payload['step'] ?? 0),
 			'updatedAt' => gmdate('Y-m-d\TH:i:s\Z'),
 		];
@@ -409,6 +415,18 @@ final class RegistrationFormLeafProvider implements IntegrationProvider {
 			$fields[] = $field;
 		}
 
+		$sections = $this->orderedSections(form: $form);
+
+		$steps = [];
+		if (is_array($form['steps'] ?? null) === true) {
+			$steps = $form['steps'];
+		}
+
+		$formLogic = [];
+		if (is_array($form['formLogic'] ?? null) === true) {
+			$formLogic = $form['formLogic'];
+		}
+
 		return [
 			'id' => (string)($form['id'] ?? ''),
 			'name' => (string)($form['name'] ?? ''),
@@ -418,10 +436,10 @@ final class RegistrationFormLeafProvider implements IntegrationProvider {
 			'isPublic' => (($form['isPublic'] ?? false) === true),
 			'confirmationText' => (string)($form['confirmationText'] ?? ''),
 			'allowSaveForLater' => (($form['allowSaveForLater'] ?? false) === true),
-			'sections' => $this->orderedSections($form),
-			'fields' => $this->orderFields($fields, $this->orderedSections($form)),
-			'steps' => (is_array($form['steps'] ?? null) === true ? $form['steps'] : []),
-			'formLogic' => (is_array($form['formLogic'] ?? null) === true ? $form['formLogic'] : []),
+			'sections' => $sections,
+			'fields' => $this->orderFields(fields: $fields, sections: $sections),
+			'steps' => $steps,
+			'formLogic' => $formLogic,
 			'presets' => $presets,
 		];
 	}//end serve()
@@ -480,7 +498,8 @@ final class RegistrationFormLeafProvider implements IntegrationProvider {
 			}
 		);
 
-		return array_values($fields);
+		// Usort already reindexes, so the list needs no second pass.
+		return $fields;
 	}//end orderFields()
 
 	/**

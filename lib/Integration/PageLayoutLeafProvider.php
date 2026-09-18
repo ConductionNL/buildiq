@@ -36,7 +36,8 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-003, REQ-OBPL-006, REQ-OBPL-007, REQ-OBPL-008, REQ-OBPL-009)
+ * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-003, REQ-OBPL-006)
+ * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-007, REQ-OBPL-008, REQ-OBPL-009)
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -127,18 +128,18 @@ final class PageLayoutLeafProvider implements IntegrationProvider {
 	/**
 	 * The group the leaf sorts under.
 	 *
-	 * @return string|null The group.
+	 * @return string The group.
 	 */
-	public function getGroup(): ?string {
+	public function getGroup(): string {
 		return 'Design';
 	}//end getGroup()
 
 	/**
 	 * The app that must be installed for this leaf to answer.
 	 *
-	 * @return string|null The app id.
+	 * @return string The app id.
 	 */
-	public function getRequiredApp(): ?string {
+	public function getRequiredApp(): string {
 		return 'buildiq';
 	}//end getRequiredApp()
 
@@ -201,13 +202,21 @@ final class PageLayoutLeafProvider implements IntegrationProvider {
 	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-003, REQ-OBPL-006)
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		$object = (is_array($filters['object'] ?? null) === true ? $filters['object'] : $this->readHost($register, $schema, $objectId));
+		// The host object comes with the call when the consumer already has it,
+		// and is read here only when it does not: this path runs on every detail
+		// page, and a second read of an object the caller just handed over is a
+		// query nobody asked for.
+		$object = ($filters['object'] ?? null);
+		if (is_array($object) === false) {
+			$object = $this->readHost(register: $register, schema: $schema, objectId: $objectId);
+		}
+
 		if ($object === null) {
 			return ['items' => [], 'total' => 0, 'nextCursor' => null, 'appliedLayers' => [], 'withheld' => []];
 		}
 
-		$published = $this->publishedLayoutsFor($register, $schema);
-		$layers = $this->orderLayers($published, $object);
+		$published = $this->publishedLayoutsFor(register: $register, schema: $schema);
+		$layers = $this->orderLayers(published: $published, object: $object);
 
 		$composed = [];
 		$applied = [];
@@ -227,9 +236,14 @@ final class PageLayoutLeafProvider implements IntegrationProvider {
 			if (is_array($delta) === false || $delta === []) {
 				// A whole layout, not a patch: this is the pre-override shape and
 				// it keeps working exactly as it did.
-				$composed = ($composed === [] ? $layer : $this->deltas->merge($composed, $this->patchableOf($layer)));
+				if ($composed === []) {
+					$composed = $layer;
+				} else {
+					$composed = $this->deltas->merge($composed, $this->patchableOf(layout: $layer));
+				}
+
 				$overrideBase = $composed;
-				$applied[] = $this->describeLayer($layer);
+				$applied[] = $this->describeLayer(layer: $layer);
 				continue;
 			}
 
@@ -240,17 +254,17 @@ final class PageLayoutLeafProvider implements IntegrationProvider {
 				$withheld[] = [
 					'id' => (string)($layer['id'] ?? ''),
 					'name' => (string)($layer['name'] ?? ''),
-					'audience' => $this->audienceOf($layer),
+					'audience' => $this->audienceOf(layout: $layer),
 					'reason' => 'drift',
 					'orphanedPaths' => $this->deltas->orphanedPaths($overrideBase, $delta),
 				];
 
-				$this->flagForReview($layer);
+				$this->flagForReview(layer: $layer);
 				continue;
 			}
 
 			$composed = $this->deltas->merge($composed, $delta);
-			$applied[] = $this->describeLayer($layer);
+			$applied[] = $this->describeLayer(layer: $layer);
 		}
 
 		if ($composed === []) {
@@ -261,7 +275,7 @@ final class PageLayoutLeafProvider implements IntegrationProvider {
 		}
 
 		return [
-			'items' => [$this->serve($composed, $this->schemaWideOf($layers), $object)],
+			'items' => [$this->serve(layout: $composed, schemaWide: $this->schemaWideOf(layers: $layers), object: $object)],
 			'total' => 1,
 			'nextCursor' => null,
 			// A handler who sees fewer tabs than a colleague has no way to learn
@@ -299,7 +313,7 @@ final class PageLayoutLeafProvider implements IntegrationProvider {
 		$userOverrides = [];
 
 		foreach ($published as $layout) {
-			$audience = $this->audienceOf($layout);
+			$audience = $this->audienceOf(layout: $layout);
 			$kind = (string)($audience['kind'] ?? 'everyone');
 
 			if ($kind === 'everyone') {
@@ -307,7 +321,7 @@ final class PageLayoutLeafProvider implements IntegrationProvider {
 				continue;
 			}
 
-			if ($this->callerIsIn($audience) === false) {
+			if ($this->callerIsIn(audience: $audience) === false) {
 				continue;
 			}
 
@@ -335,14 +349,15 @@ final class PageLayoutLeafProvider implements IntegrationProvider {
 			}
 		}
 
-		$audienceOverrides = $this->keepThoseForThisObject($audienceOverrides, $object);
-		$userOverrides = $this->keepThoseForThisObject($userOverrides, $object);
+		$audienceOverrides = $this->keepThoseForThisObject(overrides: $audienceOverrides, object: $object);
+		$userOverrides = $this->keepThoseForThisObject(overrides: $userOverrides, object: $object);
 
 		// A visitor with no account gets `portal` first; a signed-in caller gets
 		// the narrower `team` before the wider `group`.
-		$rank = ($this->callerHasNoAccount() === true
-			? ['portal' => 0, 'team' => 1, 'group' => 2]
-			: ['team' => 0, 'group' => 1, 'portal' => 2]);
+		$rank = ['team' => 0, 'group' => 1, 'portal' => 2];
+		if ($this->callerHasNoAccount() === true) {
+			$rank = ['portal' => 0, 'team' => 1, 'group' => 2];
+		}
 
 		usort(
 			$audienceOverrides,
@@ -451,7 +466,7 @@ final class PageLayoutLeafProvider implements IntegrationProvider {
 
 		$user = $this->userSession->getUser();
 		if ($user === null || $ref === '') {
-			// group, team and user need somebody to be, and a visitor with no
+			// Group, team and user need somebody to be, and a visitor with no
 			// account is nobody.
 			return false;
 		}
@@ -489,7 +504,7 @@ final class PageLayoutLeafProvider implements IntegrationProvider {
 		return [
 			'id' => (string)($layer['id'] ?? ''),
 			'name' => (string)($layer['name'] ?? ''),
-			'audience' => $this->audienceOf($layer),
+			'audience' => $this->audienceOf(layout: $layer),
 			'typeValue' => (string)($layer['typeValue'] ?? ''),
 		];
 	}//end describeLayer()
@@ -580,7 +595,7 @@ final class PageLayoutLeafProvider implements IntegrationProvider {
 	 * @throws RuntimeException When that layout does not apply here.
 	 */
 	public function get(string $register, string $schema, string $objectId, string $entityId): array {
-		$listed = $this->list($register, $schema, $objectId);
+		$listed = $this->list(register: $register, schema: $schema, objectId: $objectId);
 		foreach ($listed['items'] as $layout) {
 			if ((string)$layout['id'] === $entityId) {
 				return $layout;
@@ -669,13 +684,38 @@ final class PageLayoutLeafProvider implements IntegrationProvider {
 			}
 
 			if (is_array($tab['widgets'] ?? null) === true) {
-				$tab['widgets'] = $this->keepWidgetsThatHold($tab['widgets'], $object);
+				$tab['widgets'] = $this->keepWidgetsThatHold(widgets: $tab['widgets'], object: $object);
 			}
 
 			$tabs[] = $tab;
 		}
 
 		usort($tabs, static fn (array $a, array $b): int => ((int)($a['order'] ?? 0) <=> (int)($b['order'] ?? 0)));
+
+		// A type header REPLACES the schema-wide header whole. The fall-backs
+		// below are for a type layout that declares NO header, task list or
+		// upload fields at all, which is a different thing from one that
+		// declares a shorter header.
+		$header = null;
+		if (is_array($layout['header'] ?? null) === true) {
+			$header = $layout['header'];
+		} elseif (is_array($schemaWide['header'] ?? null) === true) {
+			$header = $schemaWide['header'];
+		}
+
+		$taskList = null;
+		if (is_array($layout['taskList'] ?? null) === true) {
+			$taskList = $layout['taskList'];
+		} elseif (is_array($schemaWide['taskList'] ?? null) === true) {
+			$taskList = $schemaWide['taskList'];
+		}
+
+		$uploadFields = [];
+		if (is_array($layout['uploadFields'] ?? null) === true && $layout['uploadFields'] !== []) {
+			$uploadFields = $layout['uploadFields'];
+		} elseif (is_array($schemaWide['uploadFields'] ?? null) === true) {
+			$uploadFields = $schemaWide['uploadFields'];
+		}
 
 		return [
 			'id' => (string)($layout['id'] ?? ''),
@@ -684,20 +724,11 @@ final class PageLayoutLeafProvider implements IntegrationProvider {
 			'schema' => (string)($layout['schema'] ?? ''),
 			'typeProperty' => (string)($layout['typeProperty'] ?? ''),
 			'typeValue' => (string)($layout['typeValue'] ?? ''),
-			// A type header REPLACES the schema-wide header whole. The fall-back
-			// below is for a type layout that declares NO header at all, which is
-			// a different thing from one that declares a shorter header.
-			'header' => (is_array($layout['header'] ?? null) === true
-				? $layout['header']
-				: (is_array($schemaWide['header'] ?? null) === true ? $schemaWide['header'] : null)),
+			'header' => $header,
 			'tabs' => $tabs,
-			'widgets' => $this->keepWidgetsThatHold(($layout['widgets'] ?? []), $object),
-			'taskList' => (is_array($layout['taskList'] ?? null) === true
-				? $layout['taskList']
-				: (is_array($schemaWide['taskList'] ?? null) === true ? $schemaWide['taskList'] : null)),
-			'uploadFields' => (is_array($layout['uploadFields'] ?? null) === true && $layout['uploadFields'] !== []
-				? $layout['uploadFields']
-				: (is_array($schemaWide['uploadFields'] ?? null) === true ? $schemaWide['uploadFields'] : [])),
+			'widgets' => $this->keepWidgetsThatHold(widgets: ($layout['widgets'] ?? []), object: $object),
+			'taskList' => $taskList,
+			'uploadFields' => $uploadFields,
 		];
 	}//end serve()
 
@@ -726,7 +757,7 @@ final class PageLayoutLeafProvider implements IntegrationProvider {
 				continue;
 			}
 
-			if ($this->conditionsHold(($widget['conditions'] ?? []), $object) === true) {
+			if ($this->conditionsHold(conditions: ($widget['conditions'] ?? []), object: $object) === true) {
 				$kept[] = $widget;
 			}
 		}
@@ -759,7 +790,11 @@ final class PageLayoutLeafProvider implements IntegrationProvider {
 			$operator = (string)($condition['operator'] ?? '');
 			$expected = (string)($condition['value'] ?? '');
 			$actual = ($object[$field] ?? null);
-			$actualText = (is_scalar($actual) === true ? (string)$actual : '');
+			$actualText = '';
+			if (is_scalar($actual) === true) {
+				$actualText = (string)$actual;
+			}
+
 
 			$holds = match ($operator) {
 				'equals' => ($actualText === $expected),

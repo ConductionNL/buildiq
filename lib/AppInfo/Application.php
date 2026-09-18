@@ -479,10 +479,10 @@ class Application extends App implements IBootstrap {
 			listener: AutomationApprovalTriggerListener::class
 		);
 
-		// forms-per-case-type REQ-OBRF-006 — contribute buildiq's leaves to
-		// OpenRegister's catalogue, so a consuming app can ask which form to
-		// show for a type without buildiq knowing the app. Guarded on the event
-		// class: buildiq boots without OpenRegister.
+		// Contribute buildiq's leaves to OpenRegister's catalogue
+		// (forms-per-case-type REQ-OBRF-006), so a consuming app can ask which
+		// form to show for a type without buildiq knowing the app. Guarded on
+		// the event class: buildiq boots without OpenRegister.
 		if (class_exists('OCA\\OpenRegister\\Event\\RegisterLeafProvidersEvent') === true) {
 			$context->registerEventListener(
 				event: \OCA\OpenRegister\Event\RegisterLeafProvidersEvent::class,

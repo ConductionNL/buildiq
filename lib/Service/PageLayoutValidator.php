@@ -103,14 +103,14 @@ final class PageLayoutValidator {
 	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-001, REQ-OBPL-004, REQ-OBPL-005, REQ-OBPL-009)
 	 */
 	public function validate(array $layout, array $existing = [], ?array $knownLeafIds = null): array {
-		$this->assertAudience($layout);
-		$this->assertOverride($layout);
-		$this->assertUnique($layout, $existing);
-		$this->assertTabs($layout);
-		$this->assertWidgets($layout);
-		$this->assertUploadFields($layout);
+		$this->assertAudience(layout: $layout);
+		$this->assertOverride(layout: $layout);
+		$this->assertUnique(layout: $layout, existing: $existing);
+		$this->assertTabs(layout: $layout);
+		$this->assertWidgets(layout: $layout);
+		$this->assertUploadFields(layout: $layout);
 
-		return $this->unknownLeafWarnings($layout, $knownLeafIds);
+		return $this->unknownLeafWarnings(layout: $layout, knownLeafIds: $knownLeafIds);
 	}//end validate()
 
 	/**
@@ -119,6 +119,8 @@ final class PageLayoutValidator {
 	 * @param array<string, mixed> $layout The layout or a lookup.
 	 *
 	 * @return string The key.
+	 *
+	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-005)
 	 */
 	public function tupleKey(array $layout): string {
 		$parts = [];
@@ -130,8 +132,15 @@ final class PageLayoutValidator {
 		// screens for one case type is the point, and only two for the SAME
 		// audience is the collision (REQ-OBSO-005).
 		$audience = ($layout['audience'] ?? null);
-		$parts[] = (is_array($audience) === true ? (string)($audience['kind'] ?? 'everyone') : 'everyone');
-		$parts[] = (is_array($audience) === true ? (string)($audience['ref'] ?? '') : '');
+		$kind = 'everyone';
+		$ref = '';
+		if (is_array($audience) === true) {
+			$kind = (string)($audience['kind'] ?? 'everyone');
+			$ref = (string)($audience['ref'] ?? '');
+		}
+
+		$parts[] = $kind;
+		$parts[] = $ref;
 
 		return implode('|', $parts);
 	}//end tupleKey()
@@ -211,13 +220,13 @@ final class PageLayoutValidator {
 			return;
 		}
 
-		$key = $this->tupleKey($layout);
+		$key = $this->tupleKey(layout: $layout);
 		$selfId = (string)($layout['id'] ?? '');
 
 		foreach ($existing as $candidate) {
 			if (is_array($candidate) === false
 				|| (string)($candidate['status'] ?? '') !== 'published'
-				|| $this->tupleKey($candidate) !== $key
+				|| $this->tupleKey(layout: $candidate) !== $key
 			) {
 				continue;
 			}
@@ -226,11 +235,16 @@ final class PageLayoutValidator {
 				continue;
 			}
 
+			$scope = ' type';
+			if ((string)($layout['typeValue'] ?? '') === '') {
+				$scope = ' schema';
+			}
+
 			throw new InvalidArgumentException(
 				sprintf(
 					'"%s" already covers this%s for the same audience (%s); retire it before publishing another.',
 					(string)($candidate['name'] ?? 'A published layout'),
-					((string)($layout['typeValue'] ?? '') === '' ? ' schema' : ' type'),
+					$scope,
 					(string)($candidate['id'] ?? '?')
 				)
 			);
@@ -280,7 +294,7 @@ final class PageLayoutValidator {
 				);
 			}
 
-			$this->assertWidgetList(($tab['widgets'] ?? []), $label);
+			$this->assertWidgetList(widgets: ($tab['widgets'] ?? []), where: $label);
 		}
 	}//end assertTabs()
 
@@ -294,7 +308,7 @@ final class PageLayoutValidator {
 	 * @throws InvalidArgumentException When a widget is not renderable.
 	 */
 	private function assertWidgets(array $layout): void {
-		$this->assertWidgetList(($layout['widgets'] ?? []), 'the page');
+		$this->assertWidgetList(widgets: ($layout['widgets'] ?? []), where: 'the page');
 	}//end assertWidgets()
 
 	/**

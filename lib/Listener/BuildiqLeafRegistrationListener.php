@@ -105,10 +105,10 @@ final class BuildiqLeafRegistrationListener implements IEventListener {
 			null,
 		);
 
-		// case-page-layout-per-case-type REQ-OBPL-003 — the owning app asks what
-		// its detail page should show for this object, and renders its own
-		// manifest unchanged when nothing answers. No render surface: buildiq
-		// serves the layout, the owning app draws it.
+		// The owning app asks what its detail page should show for this object,
+		// and renders its own manifest unchanged when nothing answers
+		// (case-page-layout-per-case-type REQ-OBPL-003). No render surface:
+		// buildiq serves the layout, the owning app draws it.
 		$event->registerLeaf(
 			new LeafDescriptor(
 				id: PageLayoutLeafProvider::LEAF_ID,

@@ -81,14 +81,14 @@ final class RegistrationFormValidator {
 		?array $targetProperties = null,
 		?array $targetChannels = null,
 	): array {
-		$this->assertName($form);
-		$this->assertAudience($form);
-		$this->assertSections($form);
-		$this->assertChannel($form, $targetChannels);
-		$this->assertNameIsFree($form, $existing);
-		$this->assertOneDefault($form, $existing);
+		$this->assertName(form: $form);
+		$this->assertAudience(form: $form);
+		$this->assertSections(form: $form);
+		$this->assertChannel(form: $form, targetChannels: $targetChannels);
+		$this->assertNameIsFree(form: $form, existing: $existing);
+		$this->assertOneDefault(form: $form, existing: $existing);
 
-		return $this->presetWarnings($form, $targetProperties);
+		return $this->presetWarnings(form: $form, targetProperties: $targetProperties);
 	}//end validate()
 
 	/**
@@ -97,6 +97,8 @@ final class RegistrationFormValidator {
 	 * @param array<string, mixed> $form The form or a lookup.
 	 *
 	 * @return string The key.
+	 *
+	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
 	 */
 	public function tupleKey(array $form): string {
 		$parts = [];
@@ -171,11 +173,16 @@ final class RegistrationFormValidator {
 		}
 
 		if ($unknown !== []) {
+			$has = 'none';
+			if ($declared !== []) {
+				$has = implode(', ', $declared);
+			}
+
 			throw new InvalidArgumentException(
 				sprintf(
 					'This form puts a field in %s, which it does not declare. The sections it has are: %s.',
 					implode(', ', array_unique($unknown)),
-					($declared === [] ? 'none' : implode(', ', $declared))
+					$has
 				)
 			);
 		}
@@ -222,12 +229,12 @@ final class RegistrationFormValidator {
 	 * @throws InvalidArgumentException When the name is taken.
 	 */
 	private function assertNameIsFree(array $form, array $existing): void {
-		$key = $this->tupleKey($form);
+		$key = $this->tupleKey(form: $form);
 		$name = (string)$form['name'];
 		$selfId = (string)($form['id'] ?? '');
 
 		foreach ($existing as $candidate) {
-			if (is_array($candidate) === false || $this->tupleKey($candidate) !== $key) {
+			if (is_array($candidate) === false || $this->tupleKey(form: $candidate) !== $key) {
 				continue;
 			}
 
@@ -261,14 +268,14 @@ final class RegistrationFormValidator {
 			return;
 		}
 
-		$key = $this->tupleKey($form);
+		$key = $this->tupleKey(form: $form);
 		$audience = (string)$form['audience'];
 		$channel = (string)($form['channel'] ?? '');
 		$selfId = (string)($form['id'] ?? '');
 
 		foreach ($existing as $candidate) {
 			if (is_array($candidate) === false
-				|| $this->tupleKey($candidate) !== $key
+				|| $this->tupleKey(form: $candidate) !== $key
 				|| ($candidate['isDefault'] ?? false) !== true
 				|| (string)($candidate['status'] ?? '') !== 'published'
 				|| (string)($candidate['audience'] ?? '') !== $audience
@@ -281,12 +288,17 @@ final class RegistrationFormValidator {
 				continue;
 			}
 
+			$onChannel = '';
+			if ($channel !== '') {
+				$onChannel = sprintf(' on channel %s', $channel);
+			}
+
 			throw new InvalidArgumentException(
 				sprintf(
 					'"%s" is already the default %s form%s for this type; unset it before making this one the default.',
 					(string)($candidate['name'] ?? '?'),
 					$audience,
-					($channel === '' ? '' : sprintf(' on channel %s', $channel))
+					$onChannel
 				)
 			);
 		}
