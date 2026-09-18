@@ -5,7 +5,7 @@
 
 ## 2. Builder
 
-- [ ] 2.1 Form list per type in the applies-to panel with name, audience and default; "Add form" (REQ-OBRF-004)
+- [x] 2.1 Form list per type in the applies-to panel with name, audience and default; "Add form" (REQ-OBRF-004). `RegistrationFormList.vue` sits under the applies-to panel and reads the type from it. The endpoint answers a whole schema, so the filter to one type happens in the panel
 - [ ] 2.2 Presets row per field in `FormPageEditor.vue` with value and hidden toggle; validate preset field names on save (REQ-OBRF-005)
 - [x] 2.3 A save path that runs the rules: `PUT /api/registration-forms` calls `RegistrationFormValidator`, which until now had no caller anywhere in `lib/`, so every one of its refusals was written and enforced nowhere. Admin-only. The panel that posts to it is 2.1
 
