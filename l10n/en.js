@@ -203,7 +203,6 @@ OC.L10N.register(
         "Confirm": "Confirm",
         "Connect a remote registry to browse and install shared templates from a store.": "Connect a remote registry to browse and install shared templates from a store.",
         "Connect a template registry to browse and install shared templates from a store.": "Connect a template registry to browse and install shared templates from a store.",
-        "Connect this app to a GitHub repository so you can publish and pull versions.": "Connect this app to a GitHub repository so you can publish and pull versions.",
         "Conversation transport": "Conversation transport",
         "conversationSource": "conversationSource",
         "conversationSource (message stream)": "conversationSource (message stream)",
@@ -1467,7 +1466,11 @@ OC.L10N.register(
         "Start from a template that ships with Buildiq, or install an app published to GitHub. Either way you get an editable draft app.": "Start from a template that ships with Buildiq, or install an app published to GitHub. Either way you get an editable draft app.",
         "The app could not be created.": "The app could not be created.",
         "The built-in templates could not be loaded. Reload the page to try again.": "The built-in templates could not be loaded. Reload the page to try again.",
-        "What the app is for": "What the app is for"
+        "What the app is for": "What the app is for",
+    "This app has no repository yet. Name one. Publishing creates it as a public repository, tagged so the store can find it." : "This app has no repository yet. Name one. Publishing creates it as a public repository, tagged so the store can find it.",
+    "Give the repository a name of letters, numbers and dashes." : "Give the repository a name of letters, numbers and dashes.",
+    "GitHub is rate-limiting this credential right now. Try again shortly." : "GitHub is rate-limiting this credential right now. Try again shortly.",
+    "Point this app at a repository that already exists, so you can publish and pull versions. To make a new one, publish instead: it creates the repository for you." : "Point this app at a repository that already exists, so you can publish and pull versions. To make a new one, publish instead: it creates the repository for you."
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -831,7 +831,6 @@ OC.L10N.register(
         "This GitHub app is missing its repository identity.": "Deze GitHub-app mist de repository-identiteit.",
         "{message} (in {file})": "{message} (in {file})",
         "Link a GitHub repository": "Een GitHub-repository koppelen",
-        "Connect this app to a GitHub repository so you can publish and pull versions.": "Koppel deze app aan een GitHub-repository om versies te publiceren en op te halen.",
         "Repository owner (user or org)": "Repository-eigenaar (gebruiker of organisatie)",
         "Create under organisation (optional)": "Aanmaken onder organisatie (optioneel)",
         "Leave empty to use your own account": "Laat leeg om je eigen account te gebruiken",
@@ -1157,7 +1156,11 @@ OC.L10N.register(
         "Start from a template that ships with Buildiq, or install an app published to GitHub. Either way you get an editable draft app.": "Begin met een sjabloon dat met Buildiq wordt meegeleverd, of installeer een app die op GitHub staat. In beide gevallen krijg je een bewerkbare concept-app.",
         "The app could not be created.": "De app kon niet worden gemaakt.",
         "The built-in templates could not be loaded. Reload the page to try again.": "De ingebouwde sjablonen konden niet worden geladen. Laad de pagina opnieuw om het nog eens te proberen.",
-        "What the app is for": "Waar de app voor is"
+        "What the app is for": "Waar de app voor is",
+    "This app has no repository yet. Name one. Publishing creates it as a public repository, tagged so the store can find it." : "Deze app heeft nog geen repository. Geef er een naam. Publiceren maakt een openbare repository aan, met het label waarmee de store hem vindt.",
+    "Give the repository a name of letters, numbers and dashes." : "Geef de repository een naam met letters, cijfers en streepjes.",
+    "GitHub is rate-limiting this credential right now. Try again shortly." : "GitHub beperkt het aantal aanvragen voor deze inloggegeven. Probeer het zo meteen opnieuw.",
+    "Point this app at a repository that already exists, so you can publish and pull versions. To make a new one, publish instead: it creates the repository for you." : "Koppel deze app aan een repository die al bestaat, zodat je versies kunt publiceren en ophalen. Wil je een nieuwe? Publiceer dan: dat maakt de repository voor je aan."
     },
     "nplurals=2; plural=(n != 1);"
 )
