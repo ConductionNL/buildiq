@@ -5,7 +5,7 @@
 
 ## 2. Editor
 
-- [ ] 2.1 Add the "applies to" panel to `DetailPageEditor.vue` and the save path to a `pageLayout` object (REQ-OBPL-002)
+- [x] 2.1 Add the "applies to" panel to `DetailPageEditor.vue` and the save path to a `pageLayout` object (REQ-OBPL-002). `AppliesToPanel.vue` saves the binding through `PUT /api/page-layouts`. It deliberately does NOT author tabs: a manifest sidebar tab is `{id, label, icon, component}` and a pageLayout tab is `{kind, ref, fields, widgets}`, so translating one into the other in an editor would be a second page model nothing else agrees with. The tab picker is 6.1
 - [ ] 2.2 Warn on save when a `tabs[].ref` leaf id is unknown to the integration registry
 
 ## 3. Leaf
