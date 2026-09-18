@@ -48,6 +48,18 @@ use InvalidArgumentException;
  */
 final class RegistrationFormValidator {
 	/**
+	 * Constructor.
+	 *
+	 * @param RegistrationFormTargetWarnings $targetWarnings What this form says about a schema it does not own.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly RegistrationFormTargetWarnings $targetWarnings = new RegistrationFormTargetWarnings(),
+	) {
+	}//end __construct()
+
+	/**
 	 * The parts that bind a form to one type value.
 	 *
 	 * @var array<int, string>
@@ -88,7 +100,7 @@ final class RegistrationFormValidator {
 		$this->assertNameIsFree(form: $form, existing: $existing);
 		$this->assertOneDefault(form: $form, existing: $existing);
 
-		return $this->presetWarnings(form: $form, targetProperties: $targetProperties);
+		return $this->targetWarnings->forForm(form: $form, targetProperties: $targetProperties);
 	}//end validate()
 
 	/**
@@ -153,6 +165,37 @@ final class RegistrationFormValidator {
 	 * @throws InvalidArgumentException When a section is unknown.
 	 */
 	private function assertSections(array $form): void {
+		$declared = $this->declaredSections(form: $form);
+		$unknown = $this->undeclaredSections(form: $form, declared: $declared);
+
+		if ($unknown === []) {
+			return;
+		}
+
+		$has = 'none';
+		if ($declared !== []) {
+			$has = implode(', ', $declared);
+		}
+
+		throw new InvalidArgumentException(
+			sprintf(
+				'This form puts a field in %s, which it does not declare. The sections it has are: %s.',
+				implode(', ', array_unique($unknown)),
+				$has
+			)
+		);
+	}//end assertSections()
+
+	/**
+	 * The section names the form declares.
+	 *
+	 * @param array<string, mixed> $form The form.
+	 *
+	 * @return array<int, string> The names.
+	 *
+	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-008)
+	 */
+	private function declaredSections(array $form): array {
 		$declared = [];
 		foreach (($form['sections'] ?? []) as $section) {
 			if (is_array($section) === true && (string)($section['name'] ?? '') !== '') {
@@ -160,6 +203,20 @@ final class RegistrationFormValidator {
 			}
 		}
 
+		return $declared;
+	}//end declaredSections()
+
+	/**
+	 * The sections the form's fields sit in that the form never declared.
+	 *
+	 * @param array<string, mixed> $form The form.
+	 * @param array<int, string> $declared The sections it declares.
+	 *
+	 * @return array<int, string> The names nothing declares.
+	 *
+	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-008)
+	 */
+	private function undeclaredSections(array $form, array $declared): array {
 		$unknown = [];
 		foreach (($form['fields'] ?? []) as $field) {
 			if (is_array($field) === false) {
@@ -172,21 +229,8 @@ final class RegistrationFormValidator {
 			}
 		}
 
-		if ($unknown !== []) {
-			$has = 'none';
-			if ($declared !== []) {
-				$has = implode(', ', $declared);
-			}
-
-			throw new InvalidArgumentException(
-				sprintf(
-					'This form puts a field in %s, which it does not declare. The sections it has are: %s.',
-					implode(', ', array_unique($unknown)),
-					$has
-				)
-			);
-		}
-	}//end assertSections()
+		return $unknown;
+	}//end undeclaredSections()
 
 	/**
 	 * Refuse a channel the consuming schema does not accept, naming the ones it
@@ -274,13 +318,7 @@ final class RegistrationFormValidator {
 		$selfId = (string)($form['id'] ?? '');
 
 		foreach ($existing as $candidate) {
-			if (is_array($candidate) === false
-				|| $this->tupleKey(form: $candidate) !== $key
-				|| ($candidate['isDefault'] ?? false) !== true
-				|| (string)($candidate['status'] ?? '') !== 'published'
-				|| (string)($candidate['audience'] ?? '') !== $audience
-				|| (string)($candidate['channel'] ?? '') !== $channel
-			) {
+			if ($this->holdsTheDefault(candidate: $candidate, key: $key, audience: $audience, channel: $channel) === false) {
 				continue;
 			}
 
@@ -305,47 +343,28 @@ final class RegistrationFormValidator {
 	}//end assertOneDefault()
 
 	/**
-	 * Warn, do not refuse, on a preset naming a property the target schema does
-	 * not have.
+	 * Whether a stored form already holds the default for this audience and
+	 * channel.
 	 *
-	 * A warning rather than a refusal because buildiq reads the target schema
-	 * across an app boundary: a schema it cannot read would otherwise make every
-	 * save fail, and a form that is merely wrong is easier to fix than a builder
-	 * nobody can save in (REQ-OBRF-005).
+	 * @param mixed $candidate The stored form.
+	 * @param string $key The identity of the type the form is bound to.
+	 * @param string $audience The audience the new default claims.
+	 * @param string $channel The channel it claims, or an empty string.
 	 *
-	 * @param array<string, mixed> $form The form.
-	 * @param array<int, string>|null $targetProperties The properties the target schema declares, or null.
+	 * @return bool True when this candidate already holds it.
 	 *
-	 * @return array<int, string> The warnings.
+	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
 	 */
-	private function presetWarnings(array $form, ?array $targetProperties): array {
-		if ($targetProperties === null || $targetProperties === []) {
-			return [];
+	private function holdsTheDefault(mixed $candidate, string $key, string $audience, string $channel): bool {
+		if (is_array($candidate) === false || $this->tupleKey(form: $candidate) !== $key) {
+			return false;
 		}
 
-		$warnings = [];
-		foreach (($form['presets'] ?? []) as $preset) {
-			if (is_array($preset) === false) {
-				continue;
-			}
-
-			$field = (string)($preset['field'] ?? '');
-			if ($field !== '' && in_array($field, $targetProperties, true) === false) {
-				$warnings[] = sprintf('The preset "%s" names a property the target schema does not have; it will be written and ignored.', $field);
-			}
+		if (($candidate['isDefault'] ?? false) !== true || (string)($candidate['status'] ?? '') !== 'published') {
+			return false;
 		}
 
-		foreach (($form['fields'] ?? []) as $field) {
-			if (is_array($field) === false) {
-				continue;
-			}
-
-			$name = (string)($field['name'] ?? '');
-			if ($name !== '' && in_array($name, $targetProperties, true) === false) {
-				$warnings[] = sprintf('The field "%s" names a property the target schema does not have; its answer will be dropped on save.', $name);
-			}
-		}
-
-		return $warnings;
-	}//end presetWarnings()
+		return ((string)($candidate['audience'] ?? '') === $audience
+			&& (string)($candidate['channel'] ?? '') === $channel);
+	}//end holdsTheDefault()
 }//end class

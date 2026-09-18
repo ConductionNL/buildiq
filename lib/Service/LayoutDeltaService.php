@@ -52,6 +52,18 @@ namespace OCA\Buildiq\Service;
  */
 final class LayoutDeltaService {
 	/**
+	 * Constructor.
+	 *
+	 * @param KeyedListMerger $keyedLists The rules for a list whose entries carry an id.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly KeyedListMerger $keyedLists = new KeyedListMerger(),
+	) {
+	}//end __construct()
+
+	/**
 	 * The one deletion marker the contract knows.
 	 *
 	 * @var string
@@ -93,41 +105,18 @@ final class LayoutDeltaService {
 				continue;
 			}
 
-			if (in_array($key, self::KEYED_LISTS, true) === true && is_array($value) === true) {
-				if (array_is_list($value) === true) {
-					// A LIST, not a keyed patch. That is a whole layer handing over
-					// its own tabs rather than patching somebody else's, and it
-					// replaces. Running it through the keyed merge would skip every
-					// integer key and silently leave the layer beneath it in place,
-					// which reads as a layout that did nothing.
-					$result[$key] = $value;
-					continue;
-				}
-
+			if ($this->isKeyedListPatch(key: $key, value: $value) === true) {
 				$baseList = [];
 				if (is_array($base[$key] ?? null) === true) {
 					$baseList = $base[$key];
 				}
 
-				$result[$key] = $this->mergeKeyedList(
+				$result[$key] = $this->keyedLists->apply(
 					baseList: $baseList,
 					patch: $value,
-					order: $this->orderFor(patch: $value)
+					order: $this->keyedLists->orderFor(patch: $value),
+					deltas: $this
 				);
-				continue;
-			}
-
-			if (is_array($value) === true
-				&& $this->isMap(value: $value) === true
-				&& is_array($base[$key] ?? null) === true
-				&& $this->isMap(value: $base[$key]) === true
-			) {
-				if (($value['$op'] ?? null) === self::REMOVE_MARKER) {
-					unset($result[$key]);
-					continue;
-				}
-
-				$result[$key] = $this->merge(base: $base[$key], delta: $value);
 				continue;
 			}
 
@@ -136,11 +125,50 @@ final class LayoutDeltaService {
 				continue;
 			}
 
-			$result[$key] = $value;
+			$result[$key] = $this->mergedValue(baseValue: ($base[$key] ?? null), value: $value);
 		}
 
 		return $result;
 	}//end merge()
+
+	/**
+	 * Whether this key and value are a patch OF a keyed list rather than a
+	 * replacement FOR one.
+	 *
+	 * A LIST is a whole layer handing over its own tabs rather than patching
+	 * somebody else's, and it replaces. Running it through the keyed merge would
+	 * skip every integer key and silently leave the layer beneath it in place,
+	 * which reads as a layout that did nothing.
+	 *
+	 * @param int|string $key The key being merged.
+	 * @param mixed $value The value being merged.
+	 *
+	 * @return bool True when the keyed-list rules apply.
+	 */
+	private function isKeyedListPatch(int|string $key, mixed $value): bool {
+		if (in_array($key, self::KEYED_LISTS, true) === false || is_array($value) === false) {
+			return false;
+		}
+
+		return (array_is_list($value) === false);
+	}//end isKeyedListPatch()
+
+	/**
+	 * What a single key becomes: a recursive merge when both sides are maps, and
+	 * the new value otherwise.
+	 *
+	 * @param mixed $baseValue What the base holds for this key.
+	 * @param mixed $value What the delta holds for it.
+	 *
+	 * @return mixed The merged value.
+	 */
+	private function mergedValue(mixed $baseValue, mixed $value): mixed {
+		if ($this->isMap(value: $value) === true && $this->isMap(value: $baseValue) === true) {
+			return $this->merge(base: $baseValue, delta: $value);
+		}
+
+		return $value;
+	}//end mergedValue()
 
 	/**
 	 * Which paths of a delta find nothing in the base.
@@ -173,34 +201,77 @@ final class LayoutDeltaService {
 				$baseEntries = $base[$key];
 			}
 
-			$existing = [];
-			foreach ($baseEntries as $entry) {
-				if (is_array($entry) === true && (string)($entry['id'] ?? '') !== '') {
-					$existing[] = (string)$entry['id'];
-				}
-			}
-
-			foreach ($value as $id => $patch) {
-				if ($id === self::ORDER_KEY || is_string($id) === false) {
-					continue;
-				}
-
-				// A patch that ADDS an entry is not an orphan: it names an id the
-				// base does not have on purpose.
-				if (is_array($patch) === true && ($patch['$op'] ?? null) !== self::REMOVE_MARKER
-					&& $this->looksLikeANewEntry(patch: $patch) === true
-				) {
-					continue;
-				}
-
-				if (in_array($id, $existing, true) === false) {
-					$orphans[] = $key . '.' . $id;
-				}
+			foreach ($this->orphansUnder(existing: $this->idsIn(entries: $baseEntries), patch: $value) as $id) {
+				$orphans[] = $key . '.' . $id;
 			}
 		}
 
 		return $orphans;
 	}//end orphanedPaths()
+
+	/**
+	 * The ids the base list carries.
+	 *
+	 * @param array<int, mixed> $entries The base entries.
+	 *
+	 * @return array<int, string> The ids.
+	 */
+	private function idsIn(array $entries): array {
+		$ids = [];
+		foreach ($entries as $entry) {
+			if (is_array($entry) === true && (string)($entry['id'] ?? '') !== '') {
+				$ids[] = (string)$entry['id'];
+			}
+		}
+
+		return $ids;
+	}//end idsIn()
+
+	/**
+	 * The ids a patch names that the base does not have.
+	 *
+	 * A patch that ADDS an entry is not an orphan: it names an id the base does
+	 * not have on purpose.
+	 *
+	 * @param array<int, string> $existing The ids the base carries.
+	 * @param array<string, mixed> $patch The patch, keyed by entry id.
+	 *
+	 * @return array<int, string> The orphaned ids.
+	 */
+	private function orphansUnder(array $existing, array $patch): array {
+		$orphans = [];
+
+		foreach ($patch as $id => $entryPatch) {
+			if ($id === self::ORDER_KEY || is_string($id) === false) {
+				continue;
+			}
+
+			if ($this->isAnAddition(patch: $entryPatch) === true) {
+				continue;
+			}
+
+			if (in_array($id, $existing, true) === false) {
+				$orphans[] = $id;
+			}
+		}
+
+		return $orphans;
+	}//end orphansUnder()
+
+	/**
+	 * Whether an entry patch adds an entry rather than patching one.
+	 *
+	 * @param mixed $patch The entry patch.
+	 *
+	 * @return bool True when it adds.
+	 */
+	private function isAnAddition(mixed $patch): bool {
+		if (is_array($patch) === false || ($patch['$op'] ?? null) === self::REMOVE_MARKER) {
+			return false;
+		}
+
+		return $this->keyedLists->looksLikeANewEntry(patch: $patch);
+	}//end isAnAddition()
 
 	/**
 	 * A stable hash of a base layout, over the parts an override can patch.
@@ -247,128 +318,6 @@ final class LayoutDeltaService {
 
 		return ($this->fingerprint(base: $base) === $storedFingerprint);
 	}//end isCurrent()
-
-	/**
-	 * Merge a list of id-bearing entries with a patch keyed by those ids.
-	 *
-	 * @param array<int, mixed> $baseList The base list.
-	 * @param array<string, mixed> $patch The patch, keyed by entry id.
-	 * @param array<int, string> $order The requested order of ids, or an empty list.
-	 *
-	 * @return array<int, mixed> The merged list.
-	 */
-	private function mergeKeyedList(array $baseList, array $patch, array $order): array {
-		$byId = [];
-		$sequence = [];
-		foreach ($baseList as $entry) {
-			if (is_array($entry) === false) {
-				continue;
-			}
-
-			$id = (string)($entry['id'] ?? '');
-			if ($id === '') {
-				// An entry with no id cannot be patched or reordered, so it is
-				// carried through untouched rather than dropped.
-				$sequence[] = $entry;
-				continue;
-			}
-
-			$byId[$id] = $entry;
-			$sequence[] = $id;
-		}
-
-		foreach ($patch as $id => $entryPatch) {
-			if ($id === self::ORDER_KEY || is_string($id) === false || is_array($entryPatch) === false) {
-				continue;
-			}
-
-			if (($entryPatch['$op'] ?? null) === self::REMOVE_MARKER) {
-				unset($byId[$id]);
-				continue;
-			}
-
-			if (array_key_exists($id, $byId) === true) {
-				$byId[$id] = $this->merge(base: $byId[$id], delta: $entryPatch);
-				continue;
-			}
-
-			$entryPatch['id'] = $id;
-			$byId[$id] = $entryPatch;
-			$sequence[] = $id;
-		}
-
-		if ($order !== []) {
-			$ordered = [];
-			foreach ($order as $id) {
-				if (array_key_exists($id, $byId) === true) {
-					$ordered[] = $id;
-				}
-			}
-
-			foreach ($sequence as $item) {
-				if (is_string($item) === true && in_array($item, $ordered, true) === false && array_key_exists($item, $byId) === true) {
-					$ordered[] = $item;
-				}
-			}
-
-			$sequence = $ordered;
-		}
-
-		$out = [];
-		foreach ($sequence as $item) {
-			if (is_array($item) === true) {
-				$out[] = $item;
-				continue;
-			}
-
-			if (array_key_exists($item, $byId) === true) {
-				$out[] = $byId[$item];
-				unset($byId[$item]);
-			}
-		}
-
-		// Anything added by the patch that the sequence did not already carry.
-		foreach ($byId as $entry) {
-			$out[] = $entry;
-		}
-
-		return $out;
-	}//end mergeKeyedList()
-
-	/**
-	 * The requested order inside a keyed patch, if any.
-	 *
-	 * @param array<string, mixed> $patch The patch.
-	 *
-	 * @return array<int, string> The ids, in order.
-	 */
-	private function orderFor(array $patch): array {
-		$order = ($patch[self::ORDER_KEY] ?? null);
-		if (is_array($order) === false) {
-			return [];
-		}
-
-		$ids = [];
-		foreach ($order as $id) {
-			if (is_string($id) === true && $id !== '') {
-				$ids[] = $id;
-			}
-		}
-
-		return $ids;
-	}//end orderFor()
-
-	/**
-	 * Whether a patch entry looks like a whole new entry rather than a patch of
-	 * an existing one.
-	 *
-	 * @param array<string, mixed> $patch The entry patch.
-	 *
-	 * @return bool True when it carries enough to stand on its own.
-	 */
-	private function looksLikeANewEntry(array $patch): bool {
-		return (array_key_exists('kind', $patch) === true || array_key_exists('id', $patch) === true);
-	}//end looksLikeANewEntry()
 
 	/**
 	 * Whether an array is a map rather than a list.

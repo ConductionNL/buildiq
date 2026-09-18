@@ -40,6 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Integration;
 
+use OCA\Buildiq\Service\RegistrationFormPresenter;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
 use OCP\IAppConfig;
@@ -79,6 +80,7 @@ final class RegistrationFormLeafProvider implements IntegrationProvider {
 	 * @param ObjectServiceInterface $objectService OpenRegister's object service.
 	 * @param IAppConfig $appConfig App config, for the register slug.
 	 * @param IUserSession $userSession The calling user, who owns the drafts.
+	 * @param RegistrationFormPresenter $presenter The shape a form takes on its way out.
 	 *
 	 * @return void
 	 */
@@ -86,6 +88,7 @@ final class RegistrationFormLeafProvider implements IntegrationProvider {
 		private readonly ObjectServiceInterface $objectService,
 		private readonly IAppConfig $appConfig,
 		private readonly IUserSession $userSession,
+		private readonly RegistrationFormPresenter $presenter = new RegistrationFormPresenter(),
 	) {
 	}//end __construct()
 
@@ -229,11 +232,11 @@ final class RegistrationFormLeafProvider implements IntegrationProvider {
 			$forms = array_merge($onChannel, $channelless);
 		}
 
-		$forms = $this->defaultsFirst(forms: $forms);
+		$forms = $this->presenter->defaultsFirst(forms: $forms);
 
 		$items = [];
 		foreach ($forms as $form) {
-			$items[] = $this->serve(form: $form);
+			$items[] = $this->presenter->serve(form: $form);
 		}
 
 		return [
@@ -260,7 +263,7 @@ final class RegistrationFormLeafProvider implements IntegrationProvider {
 		$published = $this->publishedFormsFor(register: $register, schema: $schema, objectId: $objectId);
 		foreach ($published as $form) {
 			if ((string)($form['id'] ?? '') === $entityId) {
-				return $this->serve(form: $form);
+				return $this->presenter->serve(form: $form);
 			}
 		}
 
@@ -285,6 +288,11 @@ final class RegistrationFormLeafProvider implements IntegrationProvider {
 	 * @throws RuntimeException When there is no session, or no form is named.
 	 *
 	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-006)
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The parameters are mandated by the
+	 *   IntegrationProvider interface. A draft is scoped to the form it answers and to
+	 *   the person who owns it, never to the host object, so the host coordinates are
+	 *   deliberately not read here.
 	 */
 	public function create(string $register, string $schema, string $objectId, array $payload): array {
 		$user = $this->userSession->getUser();
@@ -336,6 +344,10 @@ final class RegistrationFormLeafProvider implements IntegrationProvider {
 	 * @return array<string, mixed> Never returns.
 	 *
 	 * @throws RuntimeException Always.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The parameters are mandated by the
+	 *   IntegrationProvider interface; this method refuses the call, and a provider that
+	 *   dropped them could not be registered as a leaf at all.
 	 */
 	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
 		throw new RuntimeException('A registration form is edited in buildiq, where the rules that validate it live.');
@@ -352,6 +364,10 @@ final class RegistrationFormLeafProvider implements IntegrationProvider {
 	 * @return void
 	 *
 	 * @throws RuntimeException Always.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The parameters are mandated by the
+	 *   IntegrationProvider interface; this method refuses the call, and a provider that
+	 *   dropped them could not be registered as a leaf at all.
 	 */
 	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
 		throw new RuntimeException('A registration form is retired in buildiq, not deleted from a consuming app.');
@@ -366,163 +382,9 @@ final class RegistrationFormLeafProvider implements IntegrationProvider {
 		return ['status' => 'ok', 'leaf' => self::LEAF_ID];
 	}//end health()
 
-	/**
-	 * Turn a stored form into what a consumer renders.
-	 *
-	 * @param array<string, mixed> $form The stored form.
-	 *
-	 * @return array<string, mixed> The served form.
-	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-008)
-	 */
-	private function serve(array $form): array {
-		$presets = [];
-		$hidden = [];
-		$visible = [];
-		foreach (($form['presets'] ?? []) as $preset) {
-			if (is_array($preset) === false || (string)($preset['field'] ?? '') === '') {
-				continue;
-			}
 
-			$field = (string)$preset['field'];
-			$presets[] = ['field' => $field, 'value' => ($preset['value'] ?? null), 'hidden' => (($preset['hidden'] ?? false) === true)];
 
-			if (($preset['hidden'] ?? false) === true) {
-				$hidden[] = $field;
-				continue;
-			}
 
-			$visible[$field] = ($preset['value'] ?? null);
-		}
-
-		$fields = [];
-		foreach (($form['fields'] ?? []) as $field) {
-			if (is_array($field) === false) {
-				continue;
-			}
-
-			$name = (string)($field['name'] ?? '');
-			if ($name === '' || in_array($name, $hidden, true) === true) {
-				// Removed, not marked hidden. A field still in the payload is
-				// still readable by anybody who opens the network tab.
-				continue;
-			}
-
-			if (array_key_exists($name, $visible) === true) {
-				$field['default'] = $visible[$name];
-			}
-
-			$fields[] = $field;
-		}
-
-		$sections = $this->orderedSections(form: $form);
-
-		$steps = [];
-		if (is_array($form['steps'] ?? null) === true) {
-			$steps = $form['steps'];
-		}
-
-		$formLogic = [];
-		if (is_array($form['formLogic'] ?? null) === true) {
-			$formLogic = $form['formLogic'];
-		}
-
-		return [
-			'id' => (string)($form['id'] ?? ''),
-			'name' => (string)($form['name'] ?? ''),
-			'audience' => (string)($form['audience'] ?? ''),
-			'channel' => (string)($form['channel'] ?? ''),
-			'isDefault' => (($form['isDefault'] ?? false) === true),
-			'isPublic' => (($form['isPublic'] ?? false) === true),
-			'confirmationText' => (string)($form['confirmationText'] ?? ''),
-			'allowSaveForLater' => (($form['allowSaveForLater'] ?? false) === true),
-			'sections' => $sections,
-			'fields' => $this->orderFields(fields: $fields, sections: $sections),
-			'steps' => $steps,
-			'formLogic' => $formLogic,
-			'presets' => $presets,
-		];
-	}//end serve()
-
-	/**
-	 * The form's sections, in the order the administrator set.
-	 *
-	 * @param array<string, mixed> $form The stored form.
-	 *
-	 * @return array<int, array<string, mixed>> The sections.
-	 */
-	private function orderedSections(array $form): array {
-		$sections = [];
-		foreach (($form['sections'] ?? []) as $section) {
-			if (is_array($section) === true && (string)($section['name'] ?? '') !== '') {
-				$sections[] = $section;
-			}
-		}
-
-		usort(
-			$sections,
-			static fn (array $a, array $b): int => ((int)($a['order'] ?? 0) <=> (int)($b['order'] ?? 0))
-		);
-
-		return $sections;
-	}//end orderedSections()
-
-	/**
-	 * The fields grouped into their sections and ordered inside each, sections
-	 * in their own order first and the section-less fields last.
-	 *
-	 * @param array<int, array<string, mixed>> $fields The served fields.
-	 * @param array<int, array<string, mixed>> $sections The ordered sections.
-	 *
-	 * @return array<int, array<string, mixed>> The ordered fields.
-	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-008)
-	 */
-	private function orderFields(array $fields, array $sections): array {
-		$order = [];
-		foreach ($sections as $index => $section) {
-			$order[(string)$section['name']] = $index;
-		}
-
-		usort(
-			$fields,
-			static function (array $a, array $b) use ($order): int {
-				$sectionA = ($order[(string)($a['section'] ?? '')] ?? PHP_INT_MAX);
-				$sectionB = ($order[(string)($b['section'] ?? '')] ?? PHP_INT_MAX);
-
-				if ($sectionA !== $sectionB) {
-					return ($sectionA <=> $sectionB);
-				}
-
-				return ((int)($a['order'] ?? 0) <=> (int)($b['order'] ?? 0));
-			}
-		);
-
-		// Usort already reindexes, so the list needs no second pass.
-		return $fields;
-	}//end orderFields()
-
-	/**
-	 * Put the defaults at the front, keeping the rest in their stored order.
-	 *
-	 * @param array<int, array<string, mixed>> $forms The forms.
-	 *
-	 * @return array<int, array<string, mixed>> The forms, defaults first.
-	 */
-	private function defaultsFirst(array $forms): array {
-		$defaults = [];
-		$rest = [];
-		foreach ($forms as $form) {
-			if (($form['isDefault'] ?? false) === true) {
-				$defaults[] = $form;
-				continue;
-			}
-
-			$rest[] = $form;
-		}
-
-		return array_merge($defaults, $rest);
-	}//end defaultsFirst()
 
 	/**
 	 * The calling user's own drafts for the listed forms.
