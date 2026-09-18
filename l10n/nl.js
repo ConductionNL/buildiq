@@ -887,7 +887,7 @@ OC.L10N.register(
         "Predicted": "Voorspeld",
         "Send": "Verzenden",
         "The proposed manifest did not pass validation, so it cannot be created. Try rephrasing your brief.": "Het voorgestelde manifest is niet gevalideerd en kan daarom niet worden aangemaakt. Probeer je omschrijving anders te formuleren.",
-        "This app could not be loaded — it may have been deleted, or it has no pages yet.": "Deze app kon niet worden geladen — mogelijk is deze verwijderd of heeft deze nog geen pagina's.",
+        "This app could not be loaded. It may have been deleted, or it has no pages yet.": "Deze app kon niet worden geladen. Mogelijk is deze verwijderd of heeft deze nog geen pagina's.",
         "This proposal did not pass validation and cannot be applied.": "Dit voorstel is niet gevalideerd en kan niet worden toegepast.",
         "Tip: configure an AI provider in the Nextcloud AI settings to unlock \"Generate with AI\".": "Tip: configureer een AI-provider in de Nextcloud AI-instellingen om \"Genereren met AI\" te ontgrendelen.",
         "Describe your app": "Beschrijf je app",

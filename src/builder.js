@@ -43,6 +43,7 @@ import pinia from './pinia.js'
 import { registerDirectives } from './registerDirectives.js'
 import { runtimeRegistry } from './runtimeRegistry.js'
 import { fetchAppRegister } from './services/appRegister.js'
+import { normalizeManifestRouting } from './services/manifestRouting.js'
 import { keepVersionQuery } from './services/versionQuery.js'
 import { virtualAppSupportDialog } from './utils/virtualAppSupportDialog.js'
 
@@ -114,7 +115,7 @@ const AppNotFound = {
 			name: t('buildiq', 'App not found'),
 			description: t(
 				'buildiq',
-				'This app could not be loaded — it may have been deleted, or it has no pages yet.',
+				'This app could not be loaded. It may have been deleted, or it has no pages yet.',
 			),
 		})
 	},
@@ -339,6 +340,10 @@ async function boot() {
 
 	// Normalise pages (config-as-object guard + inline page titles for data pages).
 	normalizeManifestPages(manifest)
+	// Name every page and point every menu entry at one, so a manifest written
+	// before page ids existed — or one whose menu carries paths — still opens
+	// with its navigation instead of an empty shell.
+	normalizeManifestRouting(manifest)
 
 	// Registers/schemas (+ columns) for the in-app pages editor, passed to CnAppRoot
 	// as a LOADER rather than a pre-fetched snapshot. The modals re-invoke it every
