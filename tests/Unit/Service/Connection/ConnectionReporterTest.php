@@ -223,6 +223,22 @@ class ConnectionReporterTest extends TestCase {
 	}//end testAMissingDocumentRouteNamesTheRoute()
 
 	/**
+	 * The error names every app that can answer, not only the newest one.
+	 *
+	 * An admin on an instance that still runs docudesk reads this message. A
+	 * message naming only Filinq sends them looking for the wrong app.
+	 *
+	 * @return void
+	 */
+	public function testAMissingDocumentRouteNamesEveryAppThatCanAnswer(): void {
+		$this->assertTrue(condition: $this->reporter()->reportDocumentRouteMissing(route: 'filinq.correspondence.generate'));
+
+		$message = $this->sent[0]->message;
+		$this->assertStringContainsString(needle: 'Filinq', haystack: $message);
+		$this->assertStringContainsString(needle: 'Docudesk', haystack: $message);
+	}//end testAMissingDocumentRouteNamesEveryAppThatCanAnswer()
+
+	/**
 	 * An outcome about one request or one credential sends nothing and writes no memory.
 	 *
 	 * @return void
