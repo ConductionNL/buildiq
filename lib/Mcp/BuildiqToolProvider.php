@@ -244,8 +244,8 @@ class BuildiqToolProvider implements IMcpToolProvider {
 			'name' => 'Create or update a menu item',
 			'description' => 'Create or update a top-level menu item in the draft manifest.'
 				. ' id is the unique key; if it exists it is replaced.'
-				. ' route is a path and MUST start with "/": give the same route as the page it opens,'
-				. ' so a page on "/tools" gets a menu item on "/tools", never the bare page id.'
+				. ' route names the page this item opens: give that page\'s pageId (the page\'s own'
+				. ' route path works too). Never invent a route no page has.'
 				. ' order controls sort. icon is an MDI/standard icon name. Defaults versionSlug to "development".',
 			'inputSchema' => [
 				'type' => 'object',
@@ -259,7 +259,7 @@ class BuildiqToolProvider implements IMcpToolProvider {
 						'type' => 'string',
 						'minLength' => 1,
 						'maxLength' => 200,
-						'description' => 'A path starting with "/", matching the route of the page it opens.',
+						'description' => 'The pageId of the page this item opens, e.g. "tools". A path works too.',
 					],
 					'order' => ['type' => 'integer', 'minimum' => 0, 'maximum' => 999],
 				],

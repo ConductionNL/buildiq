@@ -14,18 +14,30 @@
  * "Confirm & create", and the handler then refused the write — so the whole
  * plan rolled back on the one click the reader had been told was safe.
  *
- * Both halves of that are fixed here. {@see normalise()} turns the bare page
- * id a reasonable model writes into the path it meant, and {@see isValid()} is
- * the single guard both handlers now call, so the rule cannot drift between
- * them again.
+ * A page and a menu item do not mean the same thing by "route", and that is
+ * where the bug lived:
+ *
+ *  - a PAGE's route is a path, so {@see normalise()} roots a bare one and
+ *    {@see isValid()} is the guard;
+ *  - a MENU ITEM's route is the NAME of the route to go to, and the runtime
+ *    names every route after its page id (`src/services/manifestRouting.js`;
+ *    the wizard's own seed manifest targets `Dashboard` and `MessagesIndex`
+ *    that way). A path works too, because that runtime repoints a menu entry
+ *    naming a page's path onto that page's id. {@see isValidMenuTarget()}
+ *    accepts both and rewrites neither.
+ *
+ * Rooting a menu target would have been worse than refusing it: measured on
+ * the live instance, the plan's `borrow-tool` item named a page whose route is
+ * `/loans/new`, so `/borrow-tool` matched nothing and the entry vanished from
+ * the navigation, while the bare `borrow-tool` is that page's id and resolves.
  *
  * WHAT NORMALISING DELIBERATELY DOES NOT DO. It never rescues a route that
  * names somewhere else. A value with a colon before its first slash is a
  * scheme (`javascript:alert(1)`, `https://example.org`), and a value starting
  * with `//` is protocol-relative; prefixing either would turn an input the
  * guard exists to refuse into one it accepts. Those are handed back untouched
- * and {@see isValid()} rejects them, which keeps the ai-copilot spec's
- * "Execution reuses the handlers, not a copy" scenario true.
+ * and both guards reject them, which keeps the ai-copilot spec's "Execution
+ * reuses the handlers, not a copy" scenario true.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -89,7 +101,41 @@ final class ManifestRoute {
 	}//end normalise()
 
 	/**
-	 * Whether a route is one the manifest may store.
+	 * Whether a menu item's target is one the manifest may store.
+	 *
+	 * A menu item does not carry a path: it carries the NAME of the route the
+	 * shell should go to, and the runtime names every route after its page id
+	 * (see `src/services/manifestRouting.js`, and the wizard's own seed
+	 * manifest, whose two menu items target `Dashboard` and `MessagesIndex`).
+	 * A path is accepted too, because that same runtime repoints a menu entry
+	 * naming a page's path onto that page's id.
+	 *
+	 * So both shapes are valid here and neither is rewritten. The guard that
+	 * demanded a leading `/` was the page rule copied onto the menu, and it
+	 * refused exactly the shape this tool's own description asked for.
+	 *
+	 * @param string $route The candidate menu target.
+	 *
+	 * @return bool True when the target is safe to store.
+	 *
+	 * @spec openspec/specs/ai-copilot/spec.md
+	 */
+	public static function isValidMenuTarget(string $route): bool {
+		if (self::isValid(route: $route) === true) {
+			return true;
+		}
+
+		if (strlen($route) > self::MAX_LENGTH) {
+			return false;
+		}
+
+		// A bare route name: a page id. No slash, no colon, so no scheme and
+		// no host can be spelt this way.
+		return (bool)preg_match('#^[a-zA-Z0-9][a-zA-Z0-9_\-\.]*$#', $route);
+	}//end isValidMenuTarget()
+
+	/**
+	 * Whether a page's route is one the manifest may store.
 	 *
 	 * Accepts paths that start with `/` and consist only of alphanumeric
 	 * characters, hyphens, underscores, dots, forward slashes, and route

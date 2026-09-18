@@ -428,10 +428,8 @@ class CopilotService {
 	 * Two things a reasonable model writes were accepted at review and then
 	 * refused or ignored at execute, which is the worst possible order:
 	 *
-	 *  - a menu item's `route` written as the bare page id (`overview`), which
-	 *    is what this tool's own description asked for. `UpsertMenuItemHandler`
-	 *    demanded a leading `/` and rejected the write, so the whole plan
-	 *    rolled back on the click the review screen had just enabled;
+	 *  - a page's `route` written as a bare id (`tools`), where the manifest
+	 *    wants a path. That is rooted here;
 	 *  - a page's `config.register` / `config.schema` (and a widget's, one
 	 *    level in) written as the short names the model asked `upsertSchema`
 	 *    for. `upsertSchema` namespaces what it creates, nothing rewrote the
@@ -441,7 +439,12 @@ class CopilotService {
 	 * review screen then shows the routes and bindings that will actually be
 	 * stored, so what the reader approves is what they get. What a model
 	 * cannot be normalised out of — a route naming a scheme or a host — stays
-	 * refused by {@see ManifestRoute::isValid()} in the handler.
+	 * refused by the handler's own guard.
+	 *
+	 * A MENU ITEM's route is deliberately not touched: it names a route rather
+	 * than a path, the runtime names every route after its page id, and
+	 * `UpsertMenuItemHandler` now accepts both spellings. Rooting it was the
+	 * original refusal's mistake repeated one layer up.
 	 *
 	 * @param array<string, mixed> $plan Decoded plan `{summary, steps[]}`.
 	 *
@@ -485,7 +488,11 @@ class CopilotService {
 	 * ManifestDataBinding are pure rules with no collaborators and no state.
 	 */
 	private function normaliseStepArguments(string $tool, array $args): array {
-		if (isset($args['route']) === true && is_string($args['route']) === true) {
+		// Only a PAGE's route is a path. A menu item's route names a route, and
+		// the runtime names routes after page ids, so rooting one would break
+		// exactly the entries that were right: `borrow-tool` is a page id and
+		// resolves, `/borrow-tool` is a path that page does not have.
+		if ($tool === 'buildiq.upsertPage' && isset($args['route']) === true && is_string($args['route']) === true) {
 			$args['route'] = ManifestRoute::normalise(route: $args['route']);
 		}
 

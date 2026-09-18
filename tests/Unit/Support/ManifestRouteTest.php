@@ -42,8 +42,8 @@ use PHPUnit\Framework\TestCase;
 class ManifestRouteTest extends TestCase {
 
 	/**
-	 * The four bare menu routes the live plan carried become paths, and a
-	 * route parameter survives the rooting.
+	 * A page route written as a bare id becomes a path, and a route parameter
+	 * survives the rooting.
 	 *
 	 * @return void
 	 */
@@ -70,6 +70,35 @@ class ManifestRouteTest extends TestCase {
 			);
 		}
 	}//end testEveryRootedRouteIsAcceptedByTheGuard()
+
+	/**
+	 * A menu item targets a route by name, so a bare page id is valid and so
+	 * is a path. Every menu item in the live plan of 2026-09-18 was a bare
+	 * page id, and the handler refused all four.
+	 *
+	 * @return void
+	 */
+	public function testAMenuTargetMayBeAPageIdOrAPath(): void {
+		foreach (['overview', 'tools', 'loans', 'borrow-tool', 'Dashboard', 'MessagesIndex'] as $pageId) {
+			self::assertTrue(ManifestRoute::isValidMenuTarget(route: $pageId), "'{$pageId}' is a page id");
+		}
+
+		foreach (['/overview', '/tools/:id', '/'] as $path) {
+			self::assertTrue(ManifestRoute::isValidMenuTarget(route: $path), "'{$path}' is a path");
+		}
+	}//end testAMenuTargetMayBeAPageIdOrAPath()
+
+	/**
+	 * A menu target naming a scheme or a host is refused, so the wider shape a
+	 * menu item accepts does not widen what can be injected.
+	 *
+	 * @return void
+	 */
+	public function testAMenuTargetStillRefusesASchemeOrHost(): void {
+		foreach (['javascript:alert(1)', 'javascript:void(0)', 'https://example.org/x', '//example.org/x', 'data:text/html,x', 'tools/:id'] as $route) {
+			self::assertFalse(ManifestRoute::isValidMenuTarget(route: $route), "'{$route}' must stay refused");
+		}
+	}//end testAMenuTargetStillRefusesASchemeOrHost()
 
 	/**
 	 * A route that already names a path is left exactly as it is, so a plan

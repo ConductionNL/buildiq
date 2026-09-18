@@ -1449,16 +1449,18 @@ class CopilotServiceTest extends TestCase {
 	}//end testRollbackReportsWhatItRemovedAndWhatItCouldNot()
 
 	/**
-	 * A menu item whose route is the bare page id reaches the handler as a
-	 * path. Every one of the four menu items in the plan the live copilot
-	 * returned on 2026-09-18 was written this way — the tool's own description
-	 * asked for a route that "should match a page id" — and the first of them
-	 * made the handler refuse the write and roll the whole approved plan back
-	 * with "Invalid route 'overview'".
+	 * A page's bare route is rooted before it reaches the handler, and a menu
+	 * item's is left exactly as written.
+	 *
+	 * Measured on the live instance on 2026-09-18: the plan's `borrow-tool`
+	 * menu item targets a page whose route is `/loans/new`, so rooting it to
+	 * `/borrow-tool` matched no page and the entry vanished from the
+	 * navigation, while the bare `borrow-tool` is that page's id and resolves.
+	 * The two keys are spelt the same and mean different things.
 	 *
 	 * @return void
 	 */
-	public function testABareMenuRouteReachesTheHandlerAsAPath(): void {
+	public function testAPageRouteIsRootedAndAMenuTargetIsNot(): void {
 		$plan = [
 			'summary' => 'x',
 			'steps' => [
@@ -1482,9 +1484,9 @@ class CopilotServiceTest extends TestCase {
 
 		$this->makeService()->execute(plan: $plan, userId: 'alice');
 
-		self::assertSame('/overview', $seen['buildiq.upsertMenuItem']['route']);
-		self::assertSame('/tools', $seen['buildiq.upsertPage']['route']);
-	}//end testABareMenuRouteReachesTheHandlerAsAPath()
+		self::assertSame('overview', $seen['buildiq.upsertMenuItem']['route'], 'a menu target names a page id');
+		self::assertSame('/tools', $seen['buildiq.upsertPage']['route'], 'a page route is a path');
+	}//end testAPageRouteIsRootedAndAMenuTargetIsNot()
 
 	/**
 	 * A page config naming the short schema slug the model asked upsertSchema

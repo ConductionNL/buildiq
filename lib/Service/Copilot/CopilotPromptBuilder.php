@@ -186,9 +186,10 @@ class CopilotPromptBuilder {
         Two rules the tool schemas cannot express, and a plan that breaks
         either is refused or comes out empty:
 
-        1. Every "route" is a PATH and starts with "/" — "/tools", "/tools/:id".
-           A menu item's route is the route of the page it opens, never the
-           bare page id.
+        1. A PAGE's "route" is a path and starts with "/" — "/tools",
+           "/tools/:id". A MENU ITEM's "route" is not a path: it is the pageId
+           of the page that item opens, e.g. "tools". Never give a menu item a
+           route no page has.
         2. A page's config.schema, and the same key inside a widget's config,
            names the data the page shows. Give the SHORT slug you passed to
            upsertSchema (e.g. "loan") — Buildiq points it at this version's own

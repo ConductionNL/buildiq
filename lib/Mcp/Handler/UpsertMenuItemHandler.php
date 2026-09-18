@@ -134,10 +134,7 @@ class UpsertMenuItemHandler extends AbstractToolHandler {
 		$id = (string)($args['id'] ?? '');
 		$label = (string)($args['label'] ?? '');
 		$icon = (string)($args['icon'] ?? '');
-		// A bare page id is what this tool's own description used to ask for,
-		// so it is what a model writes. Root it rather than refuse it; see
-		// ManifestRoute for what stays refused.
-		$route = ManifestRoute::normalise(route: (string)($args['route'] ?? ''));
+		$route = trim((string)($args['route'] ?? ''));
 		$order = 100;
 		if (isset($args['order']) === true) {
 			$order = (int)$args['order'];
@@ -159,11 +156,15 @@ class UpsertMenuItemHandler extends AbstractToolHandler {
 			return ['error' => 'route is required.'];
 		}
 
-		// Validate route to a safe path pattern (issue #167 — route injection guard).
-		if (ManifestRoute::isValid(route: $route) === false) {
+		// A menu item targets a route by NAME, and the runtime names every route
+		// after its page id, so a bare page id is the canonical value here and a
+		// path is accepted too. Only a scheme or a host is refused, which is what
+		// the injection guard in issue #167 was actually for.
+		if (ManifestRoute::isValidMenuTarget(route: $route) === false) {
 			return [
 				'error' => "Invalid route '{$route}'. "
-				. "Routes must start with '/' and contain only safe path characters.",
+				. 'A menu route is a page id, or a path starting with \'/\', '
+				. 'and may contain only safe path characters.',
 			];
 		}
 

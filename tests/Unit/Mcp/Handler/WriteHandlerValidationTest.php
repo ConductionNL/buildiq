@@ -404,17 +404,19 @@ class WriteHandlerValidationTest extends TestCase {
 	}//end testUpsertPageRootsARelativeRoute()
 
 	/**
-	 * upsertMenuItem roots a route written as the bare page id, and stores the
-	 * rooted one.
+	 * upsertMenuItem accepts a route written as the bare page id.
 	 *
 	 * Every menu item in the plan the live copilot returned on 2026-09-18 was
 	 * written this way, because this tool's own description asked for a route
 	 * that "should match a page id". The first of them ended the run with
-	 * "Invalid route 'overview'".
+	 * "Invalid route 'overview'", and the description had been right: the
+	 * runtime names every route after its page id, so the page id is exactly
+	 * what a menu item should carry. The leading-slash rule was the page rule
+	 * copied onto the menu.
 	 *
 	 * @return void
 	 */
-	public function testUpsertMenuItemRootsABarePageId(): void {
+	public function testUpsertMenuItemAcceptsABarePageId(): void {
 		$this->userSession->method('getUser')->willReturn($this->ownerUser);
 		$this->groupManager->method('isAdmin')->willReturn(false);
 		$this->groupManager->method('getUserGroups')->willReturn([]);
@@ -432,10 +434,10 @@ class WriteHandlerValidationTest extends TestCase {
 		]);
 
 		$this->assertTrue($result['isError']);
-		$this->assertNotSame('invalid_arguments', $result['error'], 'A bare page id must be rooted, not refused');
+		$this->assertNotSame('invalid_arguments', $result['error'], 'A bare page id is what a menu item targets');
 		$this->assertSame('not_found', $result['error']);
 
-	}//end testUpsertMenuItemRootsABarePageId()
+	}//end testUpsertMenuItemAcceptsABarePageId()
 
 	/**
 	 * upsertPage accepts a valid absolute route (RBAC gate then fails with not_found
