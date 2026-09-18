@@ -7,6 +7,7 @@
 
 - [ ] 2.1 Form list per type in the applies-to panel with name, audience and default; "Add form" (REQ-OBRF-004)
 - [ ] 2.2 Presets row per field in `FormPageEditor.vue` with value and hidden toggle; validate preset field names on save (REQ-OBRF-005)
+- [x] 2.3 A save path that runs the rules: `PUT /api/registration-forms` calls `RegistrationFormValidator`, which until now had no caller anywhere in `lib/`, so every one of its refusals was written and enforced nowhere. Admin-only. The panel that posts to it is 2.1
 
 ## 3. Leaf
 
@@ -21,7 +22,7 @@
 ## 5. Wave 3 schema
 
 - [x] 5.1 Add `channel`, `isPublic` and `confirmationText` to `registrationForm`, with the default rule spanning audience and channel (REQ-OBRF-007)
-- [x] 5.2 Validate `channel` against the target schema's channel property and refuse an unknown value (REQ-OBRF-007)
+- [x] 5.2 Validate `channel` against the target schema's channel property and refuse an unknown value (REQ-OBRF-007). The rule is written and now runs on every save, but the save path passes the channel list as null because it cannot read the consumer's schema, and the validator reads null as "no channels declared" and returns. So an unknown channel is still not refused in practice. It starts refusing when 6.1 reads the enum and hands it over
 - [x] 5.3 Add `sections[]` and `order` plus `section` on `fields[]`, with the unknown-section refusal (REQ-OBRF-008)
 - [ ] 5.4 Extend the seed: a `portal` client form and a `desk` internal form for `dossiq/case` `caseType = bouwvergunning`, the portal one public with a confirmation text
 

@@ -272,6 +272,13 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         ['name' => 'pageLayout#index', 'url' => '/api/page-layouts', 'verb' => 'GET'],
         ['name' => 'pageLayout#save',  'url' => '/api/page-layouts', 'verb' => 'PUT'],
 
+        // The registration forms a case type carries (forms-per-case-type).
+        // Same reason as the page layouts above: the leaf reads and refuses
+        // every edit because the rules that validate a form live in buildiq,
+        // and until now nothing called them. Admin-only.
+        ['name' => 'registrationForm#index', 'url' => '/api/registration-forms', 'verb' => 'GET'],
+        ['name' => 'registrationForm#save',  'url' => '/api/registration-forms', 'verb' => 'PUT'],
+
         // Remote template store (buildiq-remote-template-store). Consume-only:
         // search proxies the configured remote OpenRegister catalogue server-side;
         // install resolves a remote template by slug and clones it locally via the
