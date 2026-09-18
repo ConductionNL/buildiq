@@ -2049,7 +2049,15 @@ class ApplicationsController extends Controller {
 				'manifest' => $manifest,
 				'register' => $registerSlug,
 				'semver' => '1.0.0',
-				'status' => 'published',
+				// A draft, like every other new version. Installing a template or
+				// a repository copies someone else's work into your instance for
+				// you to change: nothing has been published yet, and the store
+				// says so in as many words ("an editable draft app"). Arriving as
+				// `published` also skipped the draft → published transition that
+				// VersionPromotionService owns, so the detail page reported a
+				// state no one had reached and the Application record beside it
+				// still read `draft`.
+				'status' => 'draft',
 				'application' => $appUuid,
 			];
 
