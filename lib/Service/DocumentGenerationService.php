@@ -468,7 +468,10 @@ class DocumentGenerationService {
 		[$route, $url] = $this->generateRoute();
 		if ($url === null) {
 			$this->invalidateToken(provider: $provider, token: $token);
-			$this->logger->error('Buildiq: DocumentGenerationService found no route "' . $route . '", so the Filinq call is skipped.');
+			$this->logger->error(
+				'Buildiq: DocumentGenerationService found no route "' . $route . '", so the document call is skipped. '
+				. 'Tried these app ids in order: ' . implode(', ', FleetAppId::CANDIDATES['filinq']) . '.'
+			);
 			$this->connectionReporter?->reportDocumentRouteMissing(route: $route);
 			return null;
 		}

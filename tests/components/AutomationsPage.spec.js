@@ -266,4 +266,46 @@ describe('AutomationsPage', () => {
 		await flush()
 		expect(wrapper.vm.automations.map((a) => a.id)).toEqual(['aut-2'])
 	})
+
+	it('lands on the app and version the link names, and keeps them in the URL', async () => {
+		const $router = { replace: vi.fn().mockResolvedValue(undefined) }
+		const $route = { query: { app: 'permit-tracker', version: 'version-1' } }
+		const wrapper = mount(AutomationsPage, {
+			stubs,
+			global: { mocks: { $router, $route } },
+		})
+		await flush()
+		await flush()
+		await flush()
+
+		// Before this, the page opened with both pickers empty whatever the
+		// link said, so a reload meant picking the app again every time.
+		expect(wrapper.vm.selectedApp.slug).toBe('permit-tracker')
+		expect(wrapper.vm.selectedVersionId).toBe('version-1')
+		expect(wrapper.findAll('[data-testid="automation-row"]')).toHaveLength(1)
+	})
+
+	it('asks the register for this app version\u2019s automations, not for every automation', async () => {
+		const wrapper = mount(AutomationsPage, { stubs })
+		await flush()
+		wrapper.vm.selectedApp = application
+		wrapper.vm.onAppChange()
+		await flush()
+		wrapper.vm.selectedVersion = version
+		wrapper.vm.onVersionChange()
+		await flush()
+		await flush()
+
+		// An unfiltered read is one default page long, so on a busy instance
+		// an app's own automations fell off the end and the page said it had
+		// none. `limit` would be read as a filter, hence `_limit`.
+		const call = axios.get.mock.calls.find(
+			([url]) => String(url).includes('/objects/buildiq/automation'),
+		)
+		expect(call[1].params).toEqual({
+			_limit: 200,
+			applicationSlug: 'permit-tracker',
+			versionUuid: 'version-1',
+		})
+	})
 })

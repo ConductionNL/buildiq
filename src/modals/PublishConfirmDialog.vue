@@ -13,7 +13,7 @@
 	<NcModal v-if="open" size="small" @close="onClose">
 		<div class="publish-confirm">
 			<h2>{{ t('buildiq', 'Publish to GitHub') }}</h2>
-			<p class="publish-confirm__summary">
+			<p v-if="linked" class="publish-confirm__summary">
 				{{
 					t(
 						'buildiq',
@@ -28,6 +28,26 @@
 					)
 				}}
 			</p>
+			<template v-else>
+				<p class="publish-confirm__summary">
+					{{
+						t(
+							'buildiq',
+							'This app has no repository yet. Name one. Publishing creates it as a public repository, tagged so the store can find it.',
+						)
+					}}
+				</p>
+				<NcTextField
+					:modelValue="repoName"
+					:label="t('buildiq', 'Repository name')"
+					:placeholder="defaultRepoName"
+					@update:modelValue="repoName = $event" />
+				<NcTextField
+					:modelValue="org"
+					:label="t('buildiq', 'Create under organisation (optional)')"
+					:placeholder="t('buildiq', 'Leave empty to use your own account')"
+					@update:modelValue="org = $event" />
+			</template>
 			<p class="publish-confirm__cred">
 				{{
 					t('buildiq', 'Using credential: {name}', {
@@ -51,6 +71,7 @@
 				<NcButton
 					variant="primary"
 					:disabled="!credentialId || submitting"
+					data-testid="publish-confirm-submit"
 					@click="submit">
 					{{
 						submitting
@@ -66,11 +87,11 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcModal, NcSelect } from '@nextcloud/vue'
+import { NcButton, NcModal, NcSelect, NcTextField } from '@nextcloud/vue'
 
 export default {
 	name: 'PublishConfirmDialog',
-	components: { NcButton, NcModal, NcSelect },
+	components: { NcButton, NcModal, NcSelect, NcTextField },
 	props: {
 		/** Whether the modal is shown. */
 		open: { type: Boolean, default: false },
@@ -90,12 +111,52 @@ export default {
 	data() {
 		return {
 			selectedVersion: null,
+			repoName: '',
+			org: '',
 			submitting: false,
 			error: '',
 		}
 	},
 
 	computed: {
+		/**
+		 * Whether the app already points at a repository.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/github-app-sync/specs/application-detail-ui/spec.md
+		 */
+		linked() {
+			return !!(this.repo && this.repo.owner && this.repo.name)
+		},
+
+		/**
+		 * The repository name proposed for an app that has none, matching the
+		 * name the server would pick for a published template.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/github-app-sync/specs/application-detail-ui/spec.md
+		 */
+		defaultRepoName() {
+			return this.slug ? `openbuild-${this.slug}` : ''
+		},
+
+		/**
+		 * The repository this publish creates, or null when one is linked.
+		 *
+		 * @return {?object} `{ name, org }`, or null.
+		 * @spec openspec/changes/github-app-sync/specs/application-detail-ui/spec.md
+		 */
+		newRepo() {
+			if (this.linked) {
+				return null
+			}
+			const name = (this.repoName || this.defaultRepoName).trim()
+			if (!/^[A-Za-z0-9][A-Za-z0-9-]*$/.test(name)) {
+				return null
+			}
+			return { name, org: this.org.trim() }
+		},
+
 		/**
 		 * Human label of the linked repository for the summary line.
 		 *
@@ -124,9 +185,19 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * Seed the form each time the dialog opens, so a second publish never
+		 * shows the first one's answers.
+		 *
+		 * @param {boolean} value Whether the dialog is now open.
+		 * @return {void}
+		 * @spec openspec/changes/github-app-sync/specs/application-detail-ui/spec.md
+		 */
 		open(value) {
 			if (value) {
 				this.selectedVersion = null
+				this.repoName = this.defaultRepoName
+				this.org = ''
 				this.error = ''
 				this.submitting = false
 			}
@@ -171,6 +242,11 @@ export default {
 				),
 
 				not_linked: t('buildiq', 'Link a repository before publishing.'),
+				github_rate_limited: t(
+					'buildiq',
+					'GitHub is rate-limiting this credential right now. Try again shortly.',
+				),
+
 				github_unreachable: t(
 					'buildiq',
 					'GitHub could not be reached. Try again shortly.',
@@ -199,6 +275,21 @@ export default {
 					{ slug: this.slug },
 				)
 				const body = { credentialId: this.credentialId }
+				// An app with no repository names one here, and the push endpoint
+				// creates it, tags it with the discovery topic and links it. Without
+				// this the publish came back `not_linked`, and the only way to a
+				// first repository was to create it on github.com by hand.
+				if (!this.linked) {
+					if (this.newRepo === null) {
+						this.error = t(
+							'buildiq',
+							'Give the repository a name of letters, numbers and dashes.',
+						)
+						this.submitting = false
+						return
+					}
+					body.repo = this.newRepo
+				}
 				const versionSlug =
 					this.selectedVersion?.id ?? this.selectedVersion ?? null
 				if (versionSlug) {

@@ -66,6 +66,13 @@ class ExportJobService {
 	public const EXPORT_JOB_SCHEMA = 'export-job';
 
 	/**
+	 * Normalises the untrusted parts of a submit payload.
+	 *
+	 * @var ExportRequestSanitiser
+	 */
+	private ExportRequestSanitiser $sanitiser;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ContainerInterface $container Container — used to lazily fetch OR
@@ -82,6 +89,7 @@ class ExportJobService {
 		private LoggerInterface $logger,
 		private JobOwnerImpersonator $jobOwnerImpersonator,
 	) {
+		$this->sanitiser = new ExportRequestSanitiser();
 	}//end __construct()
 
 	/**
@@ -131,7 +139,7 @@ class ExportJobService {
 			'applicationUuid' => (string)($payload['applicationUuid'] ?? ''),
 			'applicationVersion' => (string)($payload['applicationVersion'] ?? ''),
 			// Which version row to export; the semver alone is shared by a draft and its production.
-			'applicationVersionSlug' => $this->sanitiseSlug(raw: $payload['applicationVersionSlug'] ?? ''),
+			'applicationVersionSlug' => $this->sanitiser->slug(raw: $payload['applicationVersionSlug'] ?? ''),
 			'target' => $target,
 			'status' => 'queued',
 			'githubOrg' => $githubOrg,
@@ -141,8 +149,8 @@ class ExportJobService {
 			'githubCredentialId' => (string)($payload['githubCredentialId'] ?? ''),
 			'requestedBy' => (string)($requestedBy ?? ''),
 			'includeSeedData' => (bool)($payload['includeSeedData'] ?? false),
-			'dataRegisters' => $this->sanitiseDataRegisters(raw: $payload['dataRegisters'] ?? []),
-			'flows' => $this->sanitiseFlows(raw: $payload['flows'] ?? []),
+			'dataRegisters' => $this->sanitiser->dataRegisters(raw: $payload['dataRegisters'] ?? []),
+			'flows' => $this->sanitiser->flows(raw: $payload['flows'] ?? []),
 			'license' => (string)($payload['license'] ?? 'EUPL-1.2'),
 			'log' => [],
 		];
@@ -183,103 +191,6 @@ class ExportJobService {
 
 		return true;
 	}//end runNow()
-
-	/**
-	 * Normalise the submit request's `dataRegisters` choice onto the shape
-	 * `{register: string, includeData: bool}` — mirrors the existing
-	 * `includeSeedData` boolean-cast pattern above. Malformed entries (not
-	 * an array, or missing/empty `register`) are dropped rather than
-	 * rejected — no existence validation of the referenced register is
-	 * performed here (matches the head spec's own Non-Goal for a dangling
-	 * `Application.dataRegisters[].register` slug).
-	 *
-	 * @param mixed $raw The request payload's `dataRegisters` value.
-	 *
-	 * @return array<int,array{register:string,includeData:bool}>
-	 *
-	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.3
-	 */
-	private function sanitiseDataRegisters(mixed $raw): array {
-		if (is_array($raw) === false) {
-			return [];
-		}
-
-		$out = [];
-		foreach ($raw as $entry) {
-			if (is_array($entry) === false) {
-				continue;
-			}
-
-			$register = (string)($entry['register'] ?? '');
-			if ($register === '') {
-				continue;
-			}
-
-			$out[] = [
-				'register' => $register,
-				'includeData' => (bool)($entry['includeData'] ?? false),
-			];
-		}
-
-		return $out;
-	}//end sanitiseDataRegisters()
-
-	/**
-	 * Keep a slug-shaped string, drop anything else.
-	 *
-	 * @param mixed $raw The request value.
-	 *
-	 * @return string The slug, '' when the value is not one.
-	 *
-	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-export-targets-a-specific-application-version
-	 */
-	private function sanitiseSlug(mixed $raw): string {
-		if (is_string($raw) === false || preg_match('/^[a-z0-9][a-z0-9-]{0,99}$/', $raw) !== 1) {
-			return '';
-		}
-
-		return $raw;
-	}//end sanitiseSlug()
-
-	/**
-	 * Normalise the submit request's `flows` choice.
-	 *
-	 * Mirrors `sanitiseDataRegisters()`: same defensive shape, because this is
-	 * the same untrusted request payload arriving by the same route.
-	 *
-	 * Only the UUID is kept. `label` is a builder-UI convenience and has no
-	 * meaning to the exporter, which resolves the flow and writes the flow's
-	 * own name into the bundle.
-	 *
-	 * No sibling `sanitiseAgents()` exists on purpose: agents carry
-	 * `applicationSlug` and are found by asking which agents point at the
-	 * application, so there is no agent choice in the payload to sanitise.
-	 *
-	 * @param mixed $raw The request payload's `flows` value.
-	 *
-	 * @return array<int, array{flow: string}> Normalised bindings.
-	 */
-	private function sanitiseFlows(mixed $raw): array {
-		if (is_array($raw) === false) {
-			return [];
-		}
-
-		$out = [];
-		foreach ($raw as $entry) {
-			if (is_array($entry) === false) {
-				continue;
-			}
-
-			$flow = trim((string)($entry['flow'] ?? ''));
-			if ($flow === '') {
-				continue;
-			}
-
-			$out[] = ['flow' => $flow];
-		}
-
-		return $out;
-	}//end sanitiseFlows()
 
 	/**
 	 * Persist the ExportJob record via OR (best-effort; falls back to a no-op

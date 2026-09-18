@@ -203,7 +203,6 @@ OC.L10N.register(
         "Confirm": "Confirm",
         "Connect a remote registry to browse and install shared templates from a store.": "Connect a remote registry to browse and install shared templates from a store.",
         "Connect a template registry to browse and install shared templates from a store.": "Connect a template registry to browse and install shared templates from a store.",
-        "Connect this app to a GitHub repository so you can publish and pull versions.": "Connect this app to a GitHub repository so you can publish and pull versions.",
         "Conversation transport": "Conversation transport",
         "conversationSource": "conversationSource",
         "conversationSource (message stream)": "conversationSource (message stream)",
@@ -1083,7 +1082,7 @@ OC.L10N.register(
         "Predicted": "Predicted",
         "Send": "Send",
         "The proposed manifest did not pass validation, so it cannot be created. Try rephrasing your brief.": "The proposed manifest did not pass validation, so it cannot be created. Try rephrasing your brief.",
-        "This app could not be loaded — it may have been deleted, or it has no pages yet.": "This app could not be loaded — it may have been deleted, or it has no pages yet.",
+        "This app could not be loaded. It may have been deleted, or it has no pages yet.": "This app could not be loaded. It may have been deleted, or it has no pages yet.",
         "This proposal did not pass validation and cannot be applied.": "This proposal did not pass validation and cannot be applied.",
         "Tip: configure an AI provider in the Nextcloud AI settings to unlock \"Generate with AI\".": "Tip: configure an AI provider in the Nextcloud AI settings to unlock \"Generate with AI\".",
         "Describe your app": "Describe your app",
@@ -1452,7 +1451,6 @@ OC.L10N.register(
         "Select a page type": "Select a page type",
         "Compare": "Compare",
         "With": "With",
-        "Install an app published to GitHub. The store lists every repository tagged with the openbuild-app topic. Installing adds a copy to your apps that you can change.": "Install an app published to GitHub. The store lists every repository tagged with the openbuild-app topic. Installing adds a copy to your apps that you can change.",
         "Loading versions…": "Loading versions…",
         "No differences. Both versions have the same manifest.": "No differences. Both versions have the same manifest.",
         "Nothing to diff. Neither version has a manifest yet.": "Nothing to diff. Neither version has a manifest yet.",
@@ -1487,7 +1485,7 @@ OC.L10N.register(
         "Apps on GitHub": "Apps on GitHub",
         "No built-in templates yet": "No built-in templates yet",
         "Only administrators can create an app from a template.": "Only administrators can create an app from a template.",
-        "Start from a template that ships with Buildiq, or install an app published to GitHub. Either way you get an editable draft app.": "Start from a template that ships with Buildiq, or install an app published to GitHub. Either way you get an editable draft app.",
+        "Start from a template that ships with Buildiq, or install an app published to GitHub. Either way you get your own copy of the app to change.": "Start from a template that ships with Buildiq, or install an app published to GitHub. Either way you get your own copy of the app to change.",
         "The app could not be created.": "The app could not be created.",
         "The built-in templates could not be loaded. Reload the page to try again.": "The built-in templates could not be loaded. Reload the page to try again.",
         "What the app is for": "What the app is for",
@@ -1503,7 +1501,12 @@ OC.L10N.register(
         "{name} ({semver})": "{name} ({semver})",
         "Ask for a page, a widget or a menu item. You review every change before it is applied.": "Ask for a page, a widget or a menu item. You review every change before it is applied.",
         "Asking the AI provider. This usually takes a few seconds.": "Asking the AI provider. This usually takes a few seconds.",
-        "Close the copilot": "Close the copilot"
+        "Close the copilot": "Close the copilot",
+    "This app has no repository yet. Name one. Publishing creates it as a public repository, tagged so the store can find it." : "This app has no repository yet. Name one. Publishing creates it as a public repository, tagged so the store can find it.",
+    "Give the repository a name of letters, numbers and dashes." : "Give the repository a name of letters, numbers and dashes.",
+    "GitHub is rate-limiting this credential right now. Try again shortly." : "GitHub is rate-limiting this credential right now. Try again shortly.",
+    "Point this app at a repository that already exists, so you can publish and pull versions. To make a new one, publish instead: it creates the repository for you." : "Point this app at a repository that already exists, so you can publish and pull versions. To make a new one, publish instead: it creates the repository for you.",
+        "{name} ({semver})": "{name} ({semver})"
     },
     "nplurals=2; plural=(n != 1);"
 )
