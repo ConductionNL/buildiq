@@ -68,6 +68,84 @@ class ManifestWidgetShapeTest extends TestCase {
 	}//end testAppendToReproducesTheSharedFixture()
 
 	/**
+	 * A stat tile written with a flat register and schema gets the nested
+	 * `content.source` block its component actually reads.
+	 *
+	 * `CnStatWidget::fetchValue()` begins `const s = this.content.source || {}`
+	 * and returns early when `!s.register || !s.schema` — there is no fallback
+	 * to the flat keys. Measured on the live instance on 2026-09-18: all three
+	 * data tiles the copilot proposed rendered an em dash, and the same tile
+	 * written with a `source` block rendered the real count.
+	 *
+	 * @return void
+	 */
+	public function testAStatTileGetsTheNestedSourceBlockItsComponentReads(): void {
+		[, $widget] = ManifestWidgetShape::appendTo(
+			page: ['id' => 'overview', 'type' => 'dashboard'],
+			widgetType: 'stat',
+			widgetConfig: [
+				'register' => 'openbuild-tool-library-development',
+				'schema' => 'tool-library-development-loan',
+				'aggregate' => 'count',
+				'filter' => ['returned' => false],
+				'icon' => 'hammer-wrench',
+			],
+			widgetId: 'loans-open',
+			title: 'Open loans'
+		);
+
+		self::assertSame(
+			[
+				'register' => 'openbuild-tool-library-development',
+				'schema' => 'tool-library-development-loan',
+				'filter' => ['returned' => false],
+				'aggregate' => 'count',
+			],
+			$widget['content']['source']
+		);
+		// The flat keys stay: object-list reads them, and nothing that reads
+		// `source` is troubled by their being there too.
+		self::assertSame('openbuild-tool-library-development', $widget['content']['register']);
+		self::assertSame('hammer-wrench', $widget['content']['icon']);
+	}//end testAStatTileGetsTheNestedSourceBlockItsComponentReads()
+
+	/**
+	 * An object list is left flat, because that is the shape its own component
+	 * reads. The binding block is per widget type, not a rule applied to all.
+	 *
+	 * @return void
+	 */
+	public function testAnObjectListKeepsItsFlatBinding(): void {
+		[, $widget] = ManifestWidgetShape::appendTo(
+			page: ['id' => 'overview', 'type' => 'dashboard'],
+			widgetType: 'object-list',
+			widgetConfig: ['register' => 'openbuild-tool-library-development', 'schema' => 'tool-library-development-loan'],
+			title: 'Recent loans'
+		);
+
+		self::assertArrayNotHasKey('source', $widget['content']);
+		self::assertArrayNotHasKey('dataSource', $widget['content']);
+		self::assertSame('tool-library-development-loan', $widget['content']['schema']);
+	}//end testAnObjectListKeepsItsFlatBinding()
+
+	/**
+	 * A tile that names no register and no schema is handed back untouched:
+	 * a binding is lifted, never invented.
+	 *
+	 * @return void
+	 */
+	public function testATileWithNoBindingIsUntouched(): void {
+		[, $widget] = ManifestWidgetShape::appendTo(
+			page: ['id' => 'overview', 'type' => 'dashboard'],
+			widgetType: 'stat',
+			widgetConfig: ['label' => 'Manual number', 'value' => 7],
+			title: 'Manual'
+		);
+
+		self::assertArrayNotHasKey('source', $widget['content']);
+	}//end testATileWithNoBindingIsUntouched()
+
+	/**
 	 * Every widget carries the three non-empty strings the canonical validator
 	 * demands, even when the caller supplies neither an id nor a title.
 	 *

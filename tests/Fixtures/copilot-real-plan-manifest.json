@@ -30,7 +30,15 @@
 								"status": "out"
 							},
 							"icon": "hammer-wrench",
-							"color": "primary"
+							"color": "primary",
+							"source": {
+								"register": "loan",
+								"schema": "loan",
+								"filter": {
+									"status": "out"
+								},
+								"aggregate": "count"
+							}
 						}
 					},
 					{
@@ -46,7 +54,15 @@
 								"status": "overdue"
 							},
 							"icon": "alert-circle-outline",
-							"color": "error"
+							"color": "error",
+							"source": {
+								"register": "loan",
+								"schema": "loan",
+								"filter": {
+									"status": "overdue"
+								},
+								"aggregate": "count"
+							}
 						}
 					},
 					{

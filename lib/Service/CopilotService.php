@@ -41,7 +41,9 @@ use OCA\Buildiq\Exception\CopilotException;
 use OCA\Buildiq\Mcp\BuildiqToolProvider;
 use OCA\Buildiq\Service\Copilot\CopilotPlanValidator;
 use OCA\Buildiq\Service\Copilot\CopilotPromptBuilder;
+use OCA\Buildiq\Support\ManifestDataBinding;
 use OCA\Buildiq\Support\ManifestPageShape;
+use OCA\Buildiq\Support\ManifestRoute;
 use OCA\Buildiq\Support\ManifestWidgetShape;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -317,6 +319,7 @@ class CopilotService {
 		);
 
 		$plan = $this->applyTargetVersion(plan: $plan, versionSlug: $versionSlug);
+		$plan = $this->normalisePlan(plan: $plan);
 
 		$violations = $this->planValidator->validate(plan: $plan, toolDescriptors: $effectiveDescriptors);
 		if ($violations !== []) {
@@ -419,6 +422,239 @@ class CopilotService {
 	}//end applyTargetVersion()
 
 	/**
+	 * Bring every step's arguments into the shape the handlers accept, before
+	 * the plan is validated, predicted, reviewed or executed.
+	 *
+	 * Two things a reasonable model writes were accepted at review and then
+	 * refused or ignored at execute, which is the worst possible order:
+	 *
+	 *  - a page's `route` written as a bare id (`tools`), where the manifest
+	 *    wants a path. That is rooted here;
+	 *  - a page's `config.register` / `config.schema` (and a widget's, one
+	 *    level in) written as the short names the model asked `upsertSchema`
+	 *    for. `upsertSchema` namespaces what it creates, nothing rewrote the
+	 *    page, and the app came out with every list page empty.
+	 *
+	 * Normalising here rather than rejecting is the deliberate choice: the
+	 * review screen then shows the routes and bindings that will actually be
+	 * stored, so what the reader approves is what they get. What a model
+	 * cannot be normalised out of — a route naming a scheme or a host — stays
+	 * refused by the handler's own guard.
+	 *
+	 * A MENU ITEM's route is deliberately not touched: it names a route rather
+	 * than a path, the runtime names every route after its page id, and
+	 * `UpsertMenuItemHandler` now accepts both spellings. Rooting it was the
+	 * original refusal's mistake repeated one layer up.
+	 *
+	 * @param array<string, mixed> $plan Decoded plan `{summary, steps[]}`.
+	 *
+	 * @return array<string, mixed> The plan, with every step's arguments settled.
+	 *
+	 * @spec openspec/specs/ai-copilot/spec.md#requirement-an-approved-plan-executes-atomically-through-the-mcp-handler-layer
+	 */
+	private function normalisePlan(array $plan): array {
+		$steps = (array)($plan['steps'] ?? []);
+		$authoredSchemas = $this->authoredSchemaSlugs(steps: $steps);
+
+		foreach ($steps as $index => $step) {
+			if (is_array($step) === false) {
+				continue;
+			}
+
+			$args = ($step['arguments'] ?? []);
+			if (is_array($args) === false) {
+				continue;
+			}
+
+			$steps[$index]['arguments'] = $this->normaliseStepArguments(
+				tool: (string)($step['tool'] ?? ''),
+				args: $args,
+				authoredSchemas: $authoredSchemas
+			);
+		}
+
+		$plan['steps'] = $steps;
+
+		return $plan;
+	}//end normalisePlan()
+
+	/**
+	 * The short schema slugs this plan authors, keyed by `appSlug@versionSlug`.
+	 *
+	 * Only what the plan itself says, so nothing here is a guess about what
+	 * already exists on the instance.
+	 *
+	 * @param array<int, mixed> $steps The plan's steps.
+	 *
+	 * @return array<string, array<string, bool>>
+	 */
+	private function authoredSchemaSlugs(array $steps): array {
+		$slugs = [];
+		foreach ($steps as $step) {
+			if (is_array($step) === false || (string)($step['tool'] ?? '') !== 'buildiq.upsertSchema') {
+				continue;
+			}
+
+			$args = (array)($step['arguments'] ?? []);
+			$slug = strtolower(trim((string)($args['slug'] ?? '')));
+			$appSlug = (string)($args['appSlug'] ?? '');
+			$versionSlug = (string)($args['versionSlug'] ?? 'development');
+			if ($slug === '' || $appSlug === '') {
+				continue;
+			}
+
+			if ($versionSlug === '') {
+				$versionSlug = 'development';
+			}
+
+			$slugs[$appSlug . '@' . $versionSlug][$slug] = true;
+		}
+
+		return $slugs;
+	}//end authoredSchemaSlugs()
+
+	/**
+	 * The version a step's write will land on.
+	 *
+	 * @param array<string, mixed> $args The step's arguments.
+	 *
+	 * @return string
+	 */
+	private static function targetVersionSlug(array $args): string {
+		// An absent versionSlug lands on `development` in every handler, so the
+		// binding has to name the same version the write will land on.
+		$versionSlug = (string)($args['versionSlug'] ?? 'development');
+		if ($versionSlug === '') {
+			return 'development';
+		}
+
+		return $versionSlug;
+	}//end targetVersionSlug()
+
+	/**
+	 * Turn a `submitHandler` that names one of the plan's own schemas into the
+	 * page's data binding.
+	 *
+	 * A form page must name exactly one place to post to. The model wrote
+	 * `"submitHandler": "loan"` on the live plan of 2026-09-18, and `loan` is
+	 * the schema it had just asked `upsertSchema` for, not a handler anyone
+	 * registered. The rendered page said so and posted nothing:
+	 * `CnFormPage: handler "loan" not registered`.
+	 *
+	 * Naming the schema on the page instead lets
+	 * {@see ManifestPageShape::withSubmitDestination()} point the form at the
+	 * collection it belongs to, which is what it already does for a form that
+	 * named no destination at all. Proven on the deployed instance: the same
+	 * page with its schema named posted 201 Created and the record appeared on
+	 * the app's own Loans page.
+	 *
+	 * Nothing happens unless the value matches a schema THIS PLAN creates, so
+	 * a genuine registered handler is never touched.
+	 *
+	 * @param array<string, mixed> $config The form page's config block.
+	 * @param array<string, bool> $authored Short schema slugs this plan authors for this version.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function resolveSubmitHandler(array $config, array $authored): array {
+		$handler = $config['submitHandler'] ?? null;
+		if (is_string($handler) === false || trim($handler) === '') {
+			return $config;
+		}
+
+		if (isset($authored[strtolower(trim($handler))]) === false) {
+			return $config;
+		}
+
+		$schema = ($config['schema'] ?? null);
+		if (is_string($schema) === true && trim($schema) !== '') {
+			// The page already says which collection it belongs to, so the
+			// handler name adds nothing but the error the reader saw.
+			unset($config['submitHandler']);
+			return $config;
+		}
+
+		$config['schema'] = trim($handler);
+		unset($config['submitHandler']);
+
+		return $config;
+	}//end resolveSubmitHandler()
+
+	/**
+	 * Normalise one step's arguments. Split out of {@see normalisePlan()} to
+	 * keep both within the project's PHPMD complexity thresholds.
+	 *
+	 * @param string $tool The step's tool id.
+	 * @param array<string, mixed> $args The step's arguments.
+	 * @param array<string, array<string, bool>> $authoredSchemas Short schema slugs this
+	 *                                                            plan authors, keyed by
+	 *                                                            `appSlug@versionSlug`.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ManifestRoute and
+	 * ManifestDataBinding are pure rules with no collaborators and no state.
+	 */
+	private function normaliseStepArguments(string $tool, array $args, array $authoredSchemas = []): array {
+		$args = self::withRootedPageRoute(tool: $tool, args: $args);
+
+		$bindKey = match ($tool) {
+			'buildiq.upsertPage' => 'config',
+			'buildiq.addWidget' => 'widgetConfig',
+			default => '',
+		};
+
+		$config = ($args[$bindKey] ?? null);
+		if ($bindKey === '' || is_array($config) === false) {
+			return $args;
+		}
+
+		$appSlug = (string)($args['appSlug'] ?? '');
+		$versionSlug = self::targetVersionSlug(args: $args);
+
+		if ((string)($args['type'] ?? '') === 'form') {
+			$config = $this->resolveSubmitHandler(
+				config: $config,
+				authored: (array)($authoredSchemas[$appSlug . '@' . $versionSlug] ?? [])
+			);
+		}
+
+		$args[$bindKey] = ManifestDataBinding::bindBlock(
+			config: $config,
+			appSlug: $appSlug,
+			versionSlug: $versionSlug
+		);
+
+		return $args;
+	}//end normaliseStepArguments()
+
+	/**
+	 * Root a PAGE step's route, and leave every other step's alone.
+	 *
+	 * Only a page's route is a path. A menu item's route names a route, and the
+	 * runtime names routes after page ids, so rooting one would break exactly
+	 * the entries that were right: `borrow-tool` is a page id and resolves,
+	 * `/borrow-tool` is a path that page does not have.
+	 *
+	 * @param string $tool The step's tool id.
+	 * @param array<string, mixed> $args The step's arguments.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ManifestRoute is a pure rule with
+	 * no collaborators and no state.
+	 */
+	private static function withRootedPageRoute(string $tool, array $args): array {
+		if ($tool !== 'buildiq.upsertPage' || is_string(($args['route'] ?? null)) === false) {
+			return $args;
+		}
+
+		$args['route'] = ManifestRoute::normalise(route: $args['route']);
+
+		return $args;
+	}//end withRootedPageRoute()
+
+	/**
 	 * Predict the manifest impact of a plan without writing anything.
 	 *
 	 * Applies every manifest-mutating step (upsertPage, addWidget,
@@ -500,6 +736,11 @@ class CopilotService {
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
 	 */
 	public function execute(array $plan, string $userId, ?string $agentId = null, string $prompt = ''): array {
+		// The server never trusts the client's review, so it re-normalises for
+		// the same reason it re-validates: a plan posted straight at this
+		// endpoint gets the routes and data bindings the review screen showed.
+		$plan = $this->normalisePlan(plan: $plan);
+
 		$agent = $this->resolveAgentForExecute(plan: $plan, userId: $userId, prompt: $prompt, agentId: $agentId);
 
 		$steps = (array)($plan['steps'] ?? []);
@@ -632,7 +873,7 @@ class CopilotService {
 
 			return ['results' => $results];
 		} catch (Throwable $e) {
-			$this->rollback(snapshots: $snapshots, createdAppUuid: $createdAppUuid, createdAppSlug: $createdAppSlug);
+			$rollback = $this->rollback(snapshots: $snapshots, createdAppUuid: $createdAppUuid, createdAppSlug: $createdAppSlug);
 
 			if ($agent !== null) {
 				$this->agentRunLogger->log(
@@ -646,7 +887,10 @@ class CopilotService {
 			}
 
 			if ($e instanceof CopilotException) {
-				throw $e;
+				// The reader is told what the rollback removed and, when
+				// something resisted, exactly which resource is still there —
+				// the names come from the plan, so they are known, not guessed.
+				throw $e->withContext(extra: ['rollback' => $rollback]);
 			}
 
 			$this->logger->error('Buildiq Copilot: execute failed: ' . $e->getMessage(), ['exception' => $e]);
@@ -654,6 +898,7 @@ class CopilotService {
 				errorCode: 'execution_failed',
 				message: 'Failed to execute the plan. See server logs for details.',
 				httpStatus: 422,
+				context: ['rollback' => $rollback],
 				previous: $e
 			);
 		}//end try
@@ -1609,9 +1854,12 @@ class CopilotService {
 	 * @param string|null $createdAppUuid Uuid of an app created by this plan, if any.
 	 * @param string|null $createdAppSlug Slug of an app created by this plan, if any.
 	 *
-	 * @return void
+	 * @return array{deletedApp: string, restoreFailures: array<int, string>, orphaned: array<int, string>}
+	 *         What the rollback removed, and what it could not.
 	 */
-	private function rollback(array $snapshots, ?string $createdAppUuid, ?string $createdAppSlug): void {
+	private function rollback(array $snapshots, ?string $createdAppUuid, ?string $createdAppSlug): array {
+		$report = ['deletedApp' => '', 'restoreFailures' => [], 'orphaned' => []];
+
 		foreach ($snapshots as $snapshot) {
 			$version = $snapshot['version'];
 			if ($version === null || $snapshot['manifest'] === null) {
@@ -1631,26 +1879,42 @@ class CopilotService {
 					uuid: $versionUuid,
 				);
 			} catch (Throwable $e) {
+				$target = $snapshot['appSlug'] . '@' . $snapshot['versionSlug'];
+				$report['restoreFailures'][] = $target;
 				$this->logger->error(
 					'Buildiq Copilot: rollback failed to restore manifest for '
-						. $snapshot['appSlug'] . '@' . $snapshot['versionSlug'] . ': ' . $e->getMessage()
+						. $target . ': ' . $e->getMessage()
 				);
 			}//end try
 		}//end foreach
 
 		if ($createdAppUuid === null || $createdAppUuid === '') {
-			return;
+			return $report;
 		}
 
 		try {
-			$this->appDeletionService->deleteApplication(
+			// Note deleteData: TRUE. Everything under a plan-created app was
+			// made by this same plan seconds ago: its per-version registers by
+			// `createApp`, the schemas inside them by `upsertSchema` — so there
+			// is no user data here to preserve, which is the only reason the
+			// flag defaults to false for the delete button in the UI. With it
+			// false the app row went and the registers and schemas stayed: a
+			// failed run left `openbuild-<slug>-development`,
+			// `openbuild-<slug>-production` and every schema behind with no app
+			// to reach them by, against a spec that says in as many words that
+			// a failed plan leaves no plan-created state behind.
+			$report['orphaned'] = $this->appDeletionService->deleteApplication(
 				appUuid: $createdAppUuid,
 				appSlug: (string)$createdAppSlug,
-				deleteData: false
+				deleteData: true
 			);
+			$report['deletedApp'] = (string)$createdAppSlug;
 		} catch (Throwable $e) {
+			$report['orphaned'][] = 'application ' . (string)$createdAppSlug;
 			$this->logger->error('Buildiq Copilot: rollback failed to delete created app ' . $createdAppUuid . ': ' . $e->getMessage());
 		}
+
+		return $report;
 	}//end rollback()
 
 	/**
