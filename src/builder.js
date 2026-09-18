@@ -115,7 +115,7 @@ const AppNotFound = {
 			name: t('buildiq', 'App not found'),
 			description: t(
 				'buildiq',
-				'This app could not be loaded — it may have been deleted, or it has no pages yet.',
+				'This app could not be loaded. It may have been deleted, or it has no pages yet.',
 			),
 		})
 	},

@@ -1083,7 +1083,7 @@ OC.L10N.register(
         "Predicted": "Predicted",
         "Send": "Send",
         "The proposed manifest did not pass validation, so it cannot be created. Try rephrasing your brief.": "The proposed manifest did not pass validation, so it cannot be created. Try rephrasing your brief.",
-        "This app could not be loaded — it may have been deleted, or it has no pages yet.": "This app could not be loaded — it may have been deleted, or it has no pages yet.",
+        "This app could not be loaded. It may have been deleted, or it has no pages yet.": "This app could not be loaded. It may have been deleted, or it has no pages yet.",
         "This proposal did not pass validation and cannot be applied.": "This proposal did not pass validation and cannot be applied.",
         "Tip: configure an AI provider in the Nextcloud AI settings to unlock \"Generate with AI\".": "Tip: configure an AI provider in the Nextcloud AI settings to unlock \"Generate with AI\".",
         "Describe your app": "Describe your app",
