@@ -302,6 +302,12 @@ export default {
 						icon: 'MapMarkerPath',
 						onSelect: () => this.openWalkthroughDesigner('walkthrough'),
 					},
+					{
+						id: 'app-automations',
+						label: t('buildiq', 'Automations'),
+						icon: 'Sitemap',
+						onSelect: () => this.openAutomations(),
+					},
 				)
 			}
 			if (isOwner) {
@@ -819,6 +825,34 @@ export default {
 					query: mode === 'setup' ? { mode: 'setup' } : {},
 				})
 				.catch(() => {})
+		},
+
+		/**
+		 * Open the automations page for this app, on the version the header
+		 * pills have selected.
+		 *
+		 * The page has no menu entry of its own: automations belong to an app,
+		 * so they are reached from the app. Until this action existed the page
+		 * could only be reached by typing its URL, which is why an app's
+		 * automations were invisible from the app itself.
+		 *
+		 * @return {void}
+		 *
+		 * @spec exclude routes to an existing page, no new behaviour
+		 */
+		openAutomations() {
+			const slug = this.obApp && this.obApp.slug
+			if (!slug) {
+				return
+			}
+
+			const query = { app: slug }
+			const selected = this.selectedVersion
+			if (selected) {
+				query.version = selected.slug || selected.id
+			}
+
+			this.$router.push({ name: 'Automations', query }).catch(() => {})
 		},
 
 		/**

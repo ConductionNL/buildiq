@@ -238,10 +238,76 @@ export default {
 	},
 
 	mounted() {
-		this.fetchApplications()
+		this.openFromQuery()
 	},
 
 	methods: {
+		/**
+		 * Select the app and version the URL names, so a link to this page
+		 * lands on one app's automations and a reload keeps them.
+		 *
+		 * The page is reached from an app, never from the main menu, so
+		 * arriving with no app selected means picking the same app again on
+		 * every visit.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/automation-designer/spec.md#req-autd-001
+		 */
+		async openFromQuery() {
+			await this.fetchApplications()
+			const query = (this.$route && this.$route.query) || {}
+			const appSlug = String(query.app || '')
+			if (!appSlug) {
+				return
+			}
+			const app = this.applications.find((a) => a.slug === appSlug)
+			if (!app) {
+				return
+			}
+			this.selectedApp = app
+			this.selectedVersion = null
+			this.versions = []
+			this.automations = []
+			await this.fetchVersions()
+			const wanted = String(query.version || '')
+			const version =
+				this.versions.find((v) => v.slug === wanted || v.id === wanted)
+				|| this.versions[0]
+				|| null
+			if (!version) {
+				return
+			}
+			this.selectedVersion = version
+			await this.fetchAutomations()
+		},
+
+		/**
+		 * Write the current app and version into the URL, so the page can be
+		 * linked to and survives a reload.
+		 *
+		 * @return {void}
+		 * @spec openspec/specs/automation-designer/spec.md#req-autd-001
+		 */
+		syncQuery() {
+			if (!this.$router) {
+				return
+			}
+			const query = {}
+			if (this.selectedApp) {
+				query.app = this.selectedApp.slug
+			}
+			if (this.selectedVersion) {
+				query.version = this.selectedVersion.slug || this.selectedVersion.id
+			}
+			const current = (this.$route && this.$route.query) || {}
+			if (current.app === query.app && current.version === query.version) {
+				return
+			}
+			this.$router.replace({ query }).catch(() => {
+				// A duplicated navigation is not an error worth surfacing.
+			})
+		},
+
 		/**
 		 * Load the caller's Applications for the picker.
 		 *
@@ -271,6 +337,7 @@ export default {
 			this.selectedVersion = null
 			this.versions = []
 			this.automations = []
+			this.syncQuery()
 			if (this.selectedApp) {
 				this.fetchVersions()
 			}
@@ -307,14 +374,21 @@ export default {
 		 */
 		onVersionChange() {
 			this.automations = []
+			this.syncQuery()
 			if (this.selectedVersion) {
 				this.fetchAutomations()
 			}
 		},
 
 		/**
-		 * Load every `automation` object and filter to the selected
-		 * Application + ApplicationVersion, then fetch drift status for each.
+		 * Load the selected Application + ApplicationVersion's automations,
+		 * then fetch drift status for each.
+		 *
+		 * The register is asked for this app's automations, not for every
+		 * automation on the instance: an unfiltered list is one default page
+		 * long, so on a busy instance an app's own automations fell off the
+		 * end and the page said the app had none. The objects endpoint filters
+		 * on bare property names and pages with `_limit`.
 		 *
 		 * @return {Promise<void>}
 		 * @spec openspec/specs/automation-designer/spec.md#req-autd-001
@@ -326,7 +400,13 @@ export default {
 				const url = generateUrl(
 					'/apps/openregister/api/objects/buildiq/automation',
 				)
-				const { data } = await axios.get(url)
+				const { data } = await axios.get(url, {
+					params: {
+						_limit: 200,
+						applicationSlug: this.selectedApp.slug,
+						versionUuid: this.selectedVersionId,
+					},
+				})
 				const all = this.extractResults(data)
 				this.automations = all.filter(
 					(a) =>
