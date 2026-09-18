@@ -786,6 +786,15 @@ export default {
 	color: var(--color-main-text);
 }
 
+.template-gallery__header {
+	/* Clear the Nextcloud navigation toggle, which is absolutely positioned at
+	   the left edge of .app-content and sat on top of the first letter of the
+	   title. Same 56px the library's page headers reserve
+	   (.cn-dashboard-page__header). Only the HEADER shifts: the cards below
+	   keep the full width. */
+	padding-inline-start: 56px;
+}
+
 .template-gallery__header h1 {
 	margin: 0 0 4px 0;
 }
