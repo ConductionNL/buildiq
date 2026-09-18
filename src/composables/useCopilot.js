@@ -136,11 +136,13 @@ export function useCopilot() {
 	 * @param {string} [agentId] - optional Agent id narrowing the effective tool
 	 *   allow-list and prefixing its instructions onto the system prompt
 	 *   (spec `agent-workspace`).
+	 * @param {string} [versionSlug] - the version the caller is editing; steps that
+	 *   omit a version are settled on it server-side.
 	 * @return {Promise<void>}
 	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
 	 */
-	async function generatePlan(brief, appSlug, agentId) {
+	async function generatePlan(brief, appSlug, agentId, versionSlug) {
 		const thisTurn = ++turn
 		state.value = 'planning'
 		errorMessage.value = ''
@@ -149,7 +151,7 @@ export function useCopilot() {
 		manifestErrors.value = new Map()
 		lastPrompt.value = brief
 		try {
-			const result = await requestPlan({ brief, appSlug, agentId })
+			const result = await requestPlan({ brief, appSlug, agentId, versionSlug })
 			if (thisTurn !== turn) {
 				return
 			}

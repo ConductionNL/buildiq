@@ -61,15 +61,17 @@ export async function fetchCopilotHealth() {
  * @param {string} [params.agentId] - optional Agent id narrowing the effective
  *   tool allow-list and prefixing its instructions onto the system prompt
  *   (spec `agent-workspace`).
+ * @param {string} [params.versionSlug] - the version the caller is editing; every
+ *   step that omits `versionSlug` is settled on it server-side.
  * @return {Promise<{summary: string, steps: Array, manifests: object}>}
  * @throws {{status: number, error: string, message: string}} Normalised error envelope.
  * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
  * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
  */
-export async function requestPlan({ brief, appSlug, agentId } = {}) {
+export async function requestPlan({ brief, appSlug, agentId, versionSlug } = {}) {
 	try {
 		const url = generateUrl('/apps/buildiq/api/copilot/plan')
-		const { data } = await axios.post(url, { brief, appSlug, agentId })
+		const { data } = await axios.post(url, { brief, appSlug, agentId, versionSlug })
 		return data
 	} catch (err) {
 		throw normaliseError(err)

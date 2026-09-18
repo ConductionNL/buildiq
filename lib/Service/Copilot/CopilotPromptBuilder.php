@@ -192,7 +192,7 @@ class CopilotPromptBuilder {
 	/**
 	 * Build the optional target-app context section.
 	 *
-	 * @param array<string, mixed>|null $targetContext `{appSlug, manifestSummary}`, or null.
+	 * @param array<string, mixed>|null $targetContext `{appSlug, versionSlug, manifestSummary}`, or null.
 	 *
 	 * @return string
 	 */
@@ -207,7 +207,14 @@ class CopilotPromptBuilder {
 			$summary = '{}';
 		}
 
+		$versionLine = '';
+		$versionSlug = (string)($targetContext['versionSlug'] ?? '');
+		if ($versionSlug !== '') {
+			$versionLine = "\nThe user is editing the '{$versionSlug}' version. Set versionSlug to '{$versionSlug}' in every step.";
+		}
+
 		return "This plan targets the EXISTING app '{$appSlug}'. Do not include a createApp step."
+			. $versionLine
 			. "\nCurrent manifest summary:\n{$summary}\n";
 	}//end targetSection()
 }//end class

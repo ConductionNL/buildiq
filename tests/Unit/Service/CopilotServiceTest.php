@@ -510,6 +510,104 @@ class CopilotServiceTest extends TestCase {
 	}//end testPlanReportsAProviderFailureOnceAndKeepsItsMessage()
 
 	/**
+	 * A plan for the version the user is editing lands on that version, even
+	 * when the model leaves `versionSlug` out (the tools would otherwise
+	 * default it to `development`, and the designer would show no change).
+	 *
+	 * Fails on the pre-2026-09-18 code, which had no version parameter.
+	 *
+	 * @return void
+	 */
+	public function testPlanSettlesEveryStepOnTheVersionBeingEdited(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->wireSuccessfulLlmReply(
+			json_encode(
+				[
+					'summary' => 'Adds a repairs page',
+					'steps' => [
+						[
+							'tool' => 'buildiq.upsertPage',
+							'arguments' => [
+								'appSlug' => 'bike-repairs',
+								'pageId' => 'repairs',
+								'title' => 'Repairs',
+								'type' => 'index',
+								'route' => '/repairs',
+							],
+						],
+					],
+				]
+			)
+		);
+
+		$this->wireCaller(uid: 'alice');
+		$this->objectService->method('searchObjectsBySlug')->willReturn(
+			[
+				['id' => 'app-1', 'slug' => 'bike-repairs', 'appType' => 'virtual', 'permissions' => ['owners' => ['user:alice']], 'manifest' => []],
+			]
+		);
+
+		$result = $this->makeService()->plan(
+			brief: 'Add a repairs page',
+			appSlug: 'bike-repairs',
+			userId: 'alice',
+			agentId: null,
+			versionSlug: 'production'
+		);
+
+		self::assertSame('production', $result['steps'][0]['arguments']['versionSlug']);
+		self::assertArrayHasKey('bike-repairs@production', $result['manifests']);
+	}//end testPlanSettlesEveryStepOnTheVersionBeingEdited()
+
+	/**
+	 * A version the model DID choose is left alone.
+	 *
+	 * @return void
+	 */
+	public function testPlanKeepsAVersionTheModelChose(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->wireSuccessfulLlmReply(
+			json_encode(
+				[
+					'summary' => 'Adds a repairs page',
+					'steps' => [
+						[
+							'tool' => 'buildiq.upsertPage',
+							'arguments' => [
+								'appSlug' => 'bike-repairs',
+								'versionSlug' => 'development',
+								'pageId' => 'repairs',
+								'title' => 'Repairs',
+								'type' => 'index',
+								'route' => '/repairs',
+							],
+						],
+					],
+				]
+			)
+		);
+
+		$this->wireCaller(uid: 'alice');
+		$this->objectService->method('searchObjectsBySlug')->willReturn(
+			[
+				['id' => 'app-1', 'slug' => 'bike-repairs', 'appType' => 'virtual', 'permissions' => ['owners' => ['user:alice']], 'manifest' => []],
+			]
+		);
+
+		$result = $this->makeService()->plan(
+			brief: 'Add a repairs page to development',
+			appSlug: 'bike-repairs',
+			userId: 'alice',
+			agentId: null,
+			versionSlug: 'production'
+		);
+
+		self::assertSame('development', $result['steps'][0]['arguments']['versionSlug']);
+	}//end testPlanKeepsAVersionTheModelChose()
+
+	/**
 	 * A step outside the allow-list is rejected with 422 plan_invalid.
 	 *
 	 * @return void

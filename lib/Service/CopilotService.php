@@ -116,6 +116,19 @@ class CopilotService {
 	private const MANIFEST_MUTATING_TOOLS = ['buildiq.upsertPage', 'buildiq.addWidget', 'buildiq.upsertMenuItem'];
 
 	/**
+	 * Tools that write into one version of an app, and therefore take a
+	 * `versionSlug` argument.
+	 *
+	 * @var array<int, string>
+	 */
+	private const VERSION_SCOPED_TOOLS = [
+		'buildiq.upsertSchema',
+		'buildiq.upsertPage',
+		'buildiq.addWidget',
+		'buildiq.upsertMenuItem',
+	];
+
+	/**
 	 * Tools that require an existing-app RBAC check at execute time (every
 	 * write tool except createApp, which creates its own app and grants the
 	 * caller ownership instead).
@@ -217,6 +230,10 @@ class CopilotService {
 	 * @param string|null $agentId Optional `Agent` id narrowing the effective tool allow-list and
 	 *                             prefixing the agent's instructions onto the system prompt
 	 *                             (agent-workspace design.md Decision 1).
+	 * @param string|null $versionSlug The version the caller is editing. Named in the prompt, and
+	 *                                 filled in on any step that leaves `versionSlug` out, so a
+	 *                                 plan lands on the version the user is looking at rather
+	 *                                 than on the tools' `development` default.
 	 *
 	 * @return array{summary: string, steps: array<int, array<string, mixed>>, manifests: array<string, array{current: array, predicted: array}>}
 	 *
@@ -225,7 +242,7 @@ class CopilotService {
 	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
 	 */
-	public function plan(string $brief, ?string $appSlug, string $userId, ?string $agentId = null): array {
+	public function plan(string $brief, ?string $appSlug, string $userId, ?string $agentId = null, ?string $versionSlug = null): array {
 		$this->assertAvailable();
 		$this->assertValidBrief(brief: $brief);
 
@@ -236,7 +253,7 @@ class CopilotService {
 		}
 
 		try {
-			return $this->planWithinContext(brief: $brief, appSlug: $appSlug, userId: $userId, agent: $agent);
+			return $this->planWithinContext(brief: $brief, appSlug: $appSlug, userId: $userId, agent: $agent, versionSlug: $versionSlug);
 		} catch (CopilotException $e) {
 			if ($agent !== null) {
 				$this->agentRunLogger->log(
@@ -262,18 +279,20 @@ class CopilotService {
 	 *                             agent when `$agent` is non-null).
 	 * @param string $userId Acting user's UID.
 	 * @param array<string, mixed>|null $agent The resolved `Agent` record, or null for the bare copilot path.
+	 * @param string|null $versionSlug The version the caller is editing, or null.
 	 *
 	 * @return array{summary: string, steps: array<int, array<string, mixed>>, manifests: array<string, array{current: array, predicted: array}>}
 	 *
 	 * @throws CopilotException On RBAC denial or an unparsable/invalid/over-cap plan.
 	 */
-	private function planWithinContext(string $brief, ?string $appSlug, string $userId, ?array $agent): array {
+	private function planWithinContext(string $brief, ?string $appSlug, string $userId, ?array $agent, ?string $versionSlug = null): array {
 		$targetContext = null;
 		if ($appSlug !== null && $appSlug !== '') {
 			$app = $this->requireExistingVirtualApp(appSlug: $appSlug);
 			$this->assertWriteRoleOnApp(app: $app, userId: $userId);
 			$targetContext = [
 				'appSlug' => $appSlug,
+				'versionSlug' => ($versionSlug ?? ''),
 				'manifestSummary' => $this->summariseManifest(manifest: (array)($app['manifest'] ?? [])),
 			];
 		}
@@ -294,6 +313,8 @@ class CopilotService {
 			toolDescriptors: $effectiveDescriptors,
 			instructionsPrefix: $instructionsPrefix
 		);
+
+		$plan = $this->applyTargetVersion(plan: $plan, versionSlug: $versionSlug);
 
 		$violations = $this->planValidator->validate(plan: $plan, toolDescriptors: $effectiveDescriptors);
 		if ($violations !== []) {
@@ -352,6 +373,48 @@ class CopilotService {
 			outcome: 'discarded'
 		);
 	}//end discard()
+
+	/**
+	 * Fill in the version the caller is editing on every step that left
+	 * `versionSlug` out.
+	 *
+	 * The builder tools default an absent `versionSlug` to `development`, which
+	 * is the right default for a misfired tool call and the wrong one for a
+	 * person editing `production` in the page designer: the plan applies, the
+	 * designer reloads, and nothing they can see has changed. Naming the
+	 * version in the prompt is not enough on its own, because a model that
+	 * omits the argument would silently fall back to that default.
+	 *
+	 * @param array<string, mixed> $plan Decoded plan `{summary, steps[]}`.
+	 * @param string|null $versionSlug The version the caller is editing, or null.
+	 *
+	 * @return array<string, mixed> The plan, with every step's target version settled.
+	 */
+	private function applyTargetVersion(array $plan, ?string $versionSlug): array {
+		if ($versionSlug === null || $versionSlug === '') {
+			return $plan;
+		}
+
+		$steps = (array)($plan['steps'] ?? []);
+		foreach ($steps as $index => $step) {
+			$tool = (string)($step['tool'] ?? '');
+			if (in_array(needle: $tool, haystack: self::VERSION_SCOPED_TOOLS, strict: true) === false) {
+				continue;
+			}
+
+			$args = (array)($step['arguments'] ?? []);
+			if (($args['versionSlug'] ?? '') !== '') {
+				continue;
+			}
+
+			$args['versionSlug'] = $versionSlug;
+			$steps[$index]['arguments'] = $args;
+		}
+
+		$plan['steps'] = $steps;
+
+		return $plan;
+	}//end applyTargetVersion()
 
 	/**
 	 * Predict the manifest impact of a plan without writing anything.
