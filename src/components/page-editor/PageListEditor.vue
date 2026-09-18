@@ -168,7 +168,8 @@ export const PAGE_TYPES = [
 	'wiki',
 ]
 
-export const ROUTE_PATTERN = /^\/$|^(\/[A-Za-z0-9_-]+|\/:[A-Za-z_][A-Za-z0-9_]*(\(.*\))?)+$/
+export const ROUTE_PATTERN =
+	/^\/$|^(\/[A-Za-z0-9_-]+|\/:[A-Za-z_][A-Za-z0-9_]*(\(.*\))?)+$/
 
 const DEFAULT_CONFIGS = {
 	index: { register: '', schema: '', columns: [], actions: [] },

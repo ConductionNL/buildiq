@@ -50,7 +50,7 @@ describe('BackToVirtualApps', () => {
 		expect(showBackToVirtualApps()).toBe(false)
 	})
 
-	it("steps aside where the app declares its own primary action", () => {
+	it('steps aside where the app declares its own primary action', () => {
 		const manifest = {
 			pages: [
 				{ id: 'list', primaryAction: { label: 'New order' } },
@@ -60,7 +60,10 @@ describe('BackToVirtualApps', () => {
 		expect(declaresPrimaryAction(manifest, 'list')).toBe(true)
 		expect(declaresPrimaryAction(manifest, 'home')).toBe(false)
 		expect(
-			declaresPrimaryAction({ nav: { primaryAction: { label: 'New' } } }, 'home'),
+			declaresPrimaryAction(
+				{ nav: { primaryAction: { label: 'New' } } },
+				'home',
+			),
 		).toBe(true)
 		expect(declaresPrimaryAction(null, 'home')).toBe(false)
 	})

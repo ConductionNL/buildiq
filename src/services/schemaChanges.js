@@ -19,7 +19,9 @@ function typeOf(property) {
 	if (!property || typeof property !== 'object') {
 		return ''
 	}
-	return Array.isArray(property.type) ? property.type.join('|') : String(property.type || '')
+	return Array.isArray(property.type)
+		? property.type.join('|')
+		: String(property.type || '')
 }
 
 /**
@@ -38,7 +40,13 @@ export function describeBreakingChanges(saved, next) {
 
 	for (const name of Object.keys(savedProps)) {
 		if (!(name in nextProps)) {
-			lines.push(t('buildiq', 'The field "{name}" is removed. Existing records lose its values.', { name }))
+			lines.push(
+				t(
+					'buildiq',
+					'The field "{name}" is removed. Existing records lose its values.',
+					{ name },
+				),
+			)
 		}
 	}
 
@@ -49,13 +57,25 @@ export function describeBreakingChanges(saved, next) {
 		const before = typeOf(savedProps[name])
 		const after = typeOf(nextProps[name])
 		if (before !== '' && after !== '' && before !== after) {
-			lines.push(t('buildiq', 'The field "{name}" changes from {before} to {after}. Existing values may no longer fit.', { name, before, after }))
+			lines.push(
+				t(
+					'buildiq',
+					'The field "{name}" changes from {before} to {after}. Existing values may no longer fit.',
+					{ name, before, after },
+				),
+			)
 		}
 	}
 
 	for (const name of (next && next.required) || []) {
 		if (!savedRequired.has(name)) {
-			lines.push(t('buildiq', 'The field "{name}" becomes required. Records without a value fail validation until someone fills it in.', { name }))
+			lines.push(
+				t(
+					'buildiq',
+					'The field "{name}" becomes required. Records without a value fail validation until someone fills it in.',
+					{ name },
+				),
+			)
 		}
 	}
 

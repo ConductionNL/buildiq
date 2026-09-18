@@ -150,8 +150,12 @@ export default {
 						slug: this.obApp.slug,
 					}),
 				)
-				const rows = Array.isArray(data) ? data : (data && data.results) || []
-				this.versions = rows.filter((v) => (v.status || 'draft') !== 'archived')
+				const rows = Array.isArray(data)
+					? data
+					: (data && data.results) || []
+				this.versions = rows.filter(
+					(v) => (v.status || 'draft') !== 'archived',
+				)
 			} catch {
 				this.versions = []
 			} finally {
@@ -172,14 +176,18 @@ export default {
 				return
 			}
 			const production =
-				options.find((o) => o.id === this.productionUuid) || options[options.length - 1]
+				options.find((o) => o.id === this.productionUuid)
+				|| options[options.length - 1]
 			const selectedSlug =
-				(this.$route && this.$route.query && this.$route.query._version) || ''
+				(this.$route && this.$route.query && this.$route.query._version)
+				|| ''
 			const upstream = this.versions.find(
 				(v) => v.promotesTo && v.promotesTo === production.id,
 			)
 			const from =
-				options.find((o) => o.slug === selectedSlug && o.id !== production.id)
+				options.find(
+					(o) => o.slug === selectedSlug && o.id !== production.id,
+				)
 				|| (upstream && options.find((o) => o.id === rowUuid(upstream)))
 				|| options.find((o) => o.id !== production.id)
 			this.fromOption = from

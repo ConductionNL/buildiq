@@ -24,10 +24,14 @@
 			{{ error }}
 		</p>
 		<p v-else-if="!hasAnyContent" class="manifest-diff__empty">
-			{{ t('buildiq', 'Nothing to diff. Neither version has a manifest yet.') }}
+			{{
+				t('buildiq', 'Nothing to diff. Neither version has a manifest yet.')
+			}}
 		</p>
 		<p v-else-if="isIdentical" class="manifest-diff__empty">
-			{{ t('buildiq', 'No differences. Both versions have the same manifest.') }}
+			{{
+				t('buildiq', 'No differences. Both versions have the same manifest.')
+			}}
 		</p>
 		<pre v-else class="manifest-diff__pane"><span
 			v-for="(part, idx) in diffParts"

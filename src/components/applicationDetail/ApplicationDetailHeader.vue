@@ -33,7 +33,12 @@
 			role="status"
 			aria-live="polite">
 			<template v-if="error">
-				{{ t('buildiq', 'Could not load this app. Reload the page to try again.') }}
+				{{
+					t(
+						'buildiq',
+						'Could not load this app. Reload the page to try again.',
+					)
+				}}
 			</template>
 			<template v-else>
 				<NcLoadingIcon :size="20" />
@@ -241,9 +246,7 @@ export default {
 			if (!source || !source.promotesTo) {
 				return null
 			}
-			return (
-				this.versions.find((v) => v.uuid === source.promotesTo) || null
-			)
+			return this.versions.find((v) => v.uuid === source.promotesTo) || null
 		},
 
 		/**
@@ -664,7 +667,11 @@ export default {
 			}
 			this.promoting = true
 			this.promoteFailed = false
-			this.promoteNotice = t('buildiq', 'Promoting {source} to {target}…', names)
+			this.promoteNotice = t(
+				'buildiq',
+				'Promoting {source} to {target}…',
+				names,
+			)
 			closePromoteDialog()
 			try {
 				await axios.post(
@@ -674,15 +681,24 @@ export default {
 					),
 					{ strategy },
 				)
-				this.promoteNotice = t('buildiq', '{source} is promoted to {target}.', names)
+				this.promoteNotice = t(
+					'buildiq',
+					'{source} is promoted to {target}.',
+					names,
+				)
 				markPromoted()
 			} catch (e) {
 				const data = (e && e.response && e.response.data) || {}
 				this.promoteFailed = true
-				this.promoteNotice = t('buildiq', 'Could not promote {source}: {reason}', {
-					...names,
-					reason: data.message || data.detail || (e && e.message) || '',
-				})
+				this.promoteNotice = t(
+					'buildiq',
+					'Could not promote {source}: {reason}',
+					{
+						...names,
+						reason:
+							data.message || data.detail || (e && e.message) || '',
+					},
+				)
 			} finally {
 				this.promoting = false
 			}

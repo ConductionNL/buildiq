@@ -80,7 +80,7 @@ test.describe('screen overrides', () => {
 				appliedLayers?: Array<{ audience?: { kind?: string } }>
 			}
 			const kinds = (body.appliedLayers ?? []).map(
-				layer => layer.audience?.kind ?? 'everyone',
+				(layer) => layer.audience?.kind ?? 'everyone',
 			)
 
 			expect(kinds).not.toContain('group')

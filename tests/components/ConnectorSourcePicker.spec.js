@@ -56,8 +56,18 @@ describe('ConnectorSourcePicker', () => {
 	}
 	const BAG = { id: 'src-bag', name: 'BAG' }
 	const ENDPOINTS = [
-		{ id: 'e1', endpoint: '/kvk/companies', targetType: 'api', targetId: 'src-kvk' },
-		{ id: 'e2', endpoint: 'bag/addresses', targetType: 'api', targetId: 'src-bag' },
+		{
+			id: 'e1',
+			endpoint: '/kvk/companies',
+			targetType: 'api',
+			targetId: 'src-kvk',
+		},
+		{
+			id: 'e2',
+			endpoint: 'bag/addresses',
+			targetType: 'api',
+			targetId: 'src-bag',
+		},
 	]
 
 	it('reads sources and endpoints from the connector register', async () => {
@@ -120,7 +130,10 @@ describe('ConnectorSourcePicker', () => {
 		})
 		await flush()
 		await flush()
-		expect(wrapper.vm.selectedSourceOption).toEqual({ label: 'KvK', id: 'src-kvk' })
+		expect(wrapper.vm.selectedSourceOption).toEqual({
+			label: 'KvK',
+			id: 'src-kvk',
+		})
 		expect(wrapper.vm.selectedOption).toEqual({
 			label: 'kvk/companies (KvK)',
 			path: 'kvk/companies',

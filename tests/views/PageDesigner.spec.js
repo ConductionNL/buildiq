@@ -673,14 +673,18 @@ describe('PageDesigner', () => {
 					'/apps/openregister/api/registers/openbuild-hello-world-development/schemas',
 				)
 				expect(
-					urls.some((url) => url.includes('/registers/openbuild-hello-world/')),
+					urls.some((url) =>
+						url.includes('/registers/openbuild-hello-world/'),
+					),
 				).toBe(false)
 				expect(wrapper.vm.targetSchemaSlugs).toEqual(['message'])
 
 				wrapper.vm.selectPage(0)
 				await wrapper.vm.$nextTick()
 				expect(
-					wrapper.findComponent({ name: 'IndexPageEditor' }).props('appRegister'),
+					wrapper
+						.findComponent({ name: 'IndexPageEditor' })
+						.props('appRegister'),
 				).toBe('openbuild-hello-world-development')
 			} finally {
 				global.fetch = originalFetch

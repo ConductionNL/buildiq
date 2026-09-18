@@ -315,9 +315,7 @@ describe('PageListEditor', () => {
 			])
 			expect(wrapper.vm.duplicateRoutes).toEqual(['/'])
 			expect(wrapper.text()).toContain('More than one page uses the route:')
-			expect(
-				wrapper.findAll('.page-list-editor__row--error').length,
-			).toBe(2)
+			expect(wrapper.findAll('.page-list-editor__row--error').length).toBe(2)
 		})
 
 		it('edits the title of an existing page', async () => {

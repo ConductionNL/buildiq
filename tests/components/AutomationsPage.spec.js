@@ -299,8 +299,8 @@ describe('AutomationsPage', () => {
 		// An unfiltered read is one default page long, so on a busy instance
 		// an app's own automations fell off the end and the page said it had
 		// none. `limit` would be read as a filter, hence `_limit`.
-		const call = axios.get.mock.calls.find(
-			([url]) => String(url).includes('/objects/buildiq/automation'),
+		const call = axios.get.mock.calls.find(([url]) =>
+			String(url).includes('/objects/buildiq/automation'),
 		)
 		expect(call[1].params).toEqual({
 			_limit: 200,

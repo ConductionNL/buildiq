@@ -110,10 +110,7 @@ import AppSettingsModal from '../modals/AppSettingsModal.vue'
 import GitHubSyncModal from '../modals/GitHubSyncModal.vue'
 import PermissionHistoryModal from '../modals/PermissionHistoryModal.vue'
 import PermissionsModal from '../modals/PermissionsModal.vue'
-import {
-	openPromoteDialog,
-	promoteDialog,
-} from '../composables/usePromoteDialog.js'
+import { openPromoteDialog, promoteDialog } from '../composables/usePromoteDialog.js'
 import { useRegisterPicker } from '../composables/useRegisterPicker.js'
 import { getCurrentUserGroups } from '../composables/useRole.js'
 import applicationContext from '../mixins/applicationContext.js'
@@ -421,7 +418,9 @@ export default {
 		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		selectedVersion() {
-			const slug = (this.$route && this.$route.query && this.$route.query._version) || ''
+			const slug =
+				(this.$route && this.$route.query && this.$route.query._version)
+				|| ''
 			if (!slug) {
 				return null
 			}

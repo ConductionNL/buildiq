@@ -25,7 +25,7 @@ vi.mock('@nextcloud/initial-state', () => ({
 import axios from '@nextcloud/axios'
 import ApplicationDetailActions from '../../src/components/ApplicationDetailActions.vue'
 
-function t (app, text, vars) {
+function t(app, text, vars) {
 	let out = String(text)
 	Object.entries(vars || {}).forEach(([k, v]) => {
 		out = out.replace(`{${k}}`, v)
@@ -35,7 +35,11 @@ function t (app, text, vars) {
 globalThis.t = t
 
 const router = { push: vi.fn().mockResolvedValue(undefined) }
-const route = { name: 'VirtualAppDetail', params: {}, query: { _version: 'production' } }
+const route = {
+	name: 'VirtualAppDetail',
+	params: {},
+	query: { _version: 'production' },
+}
 
 const application = {
 	'@self': { id: 'app-uuid' },
@@ -46,7 +50,12 @@ const application = {
 }
 
 const versions = [
-	{ id: 'version-1', slug: 'production', name: 'Production', register: 'openbuild-permit-tracker-production' },
+	{
+		id: 'version-1',
+		slug: 'production',
+		name: 'Production',
+		register: 'openbuild-permit-tracker-production',
+	},
 ]
 
 function mountActions() {
@@ -55,7 +64,11 @@ function mountActions() {
 		global: {
 			mocks: { t, $router: router, $route: route },
 			stubs: {
-				CnActionButtons: { name: 'CnActionButtons', props: ['actions', 'inline', 'overflowLabel'], template: '<div class="cn-action-buttons-stub" />' },
+				CnActionButtons: {
+					name: 'CnActionButtons',
+					props: ['actions', 'inline', 'overflowLabel'],
+					template: '<div class="cn-action-buttons-stub" />',
+				},
 			},
 		},
 	})

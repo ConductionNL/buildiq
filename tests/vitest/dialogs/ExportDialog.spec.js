@@ -154,7 +154,11 @@ describe('ExportDialog — versions and starting the export', () => {
 				return {
 					data: [
 						{ name: 'Production', slug: 'production', semver: '0.1.0' },
-						{ name: 'Development', slug: 'development', semver: '0.1.0' },
+						{
+							name: 'Development',
+							slug: 'development',
+							semver: '0.1.0',
+						},
 					],
 				}
 			}
@@ -169,10 +173,13 @@ describe('ExportDialog — versions and starting the export', () => {
 		return wrapper
 	}
 
-	it('offers the application\'s own versions and starts on the live draft', async () => {
+	it("offers the application's own versions and starts on the live draft", async () => {
 		const wrapper = await mountWithVersions()
 
-		expect(wrapper.vm.versionOptions.map((option) => option.slug)).toEqual(['production', 'development'])
+		expect(wrapper.vm.versionOptions.map((option) => option.slug)).toEqual([
+			'production',
+			'development',
+		])
 		expect(wrapper.vm.form.version.slug).toBe('development')
 	})
 
@@ -186,7 +193,9 @@ describe('ExportDialog — versions and starting the export', () => {
 			applicationVersion: '0.1.0',
 			applicationVersionSlug: 'development',
 		})
-		expect(axios.post.mock.calls[1][0]).toBe('/apps/buildiq/api/exports/job-9/run')
+		expect(axios.post.mock.calls[1][0]).toBe(
+			'/apps/buildiq/api/exports/job-9/run',
+		)
 		expect(wrapper.emitted('queued')).toEqual([['job-9']])
 	})
 
@@ -211,7 +220,9 @@ describe('ExportDialog — versions and starting the export', () => {
 		})
 		await new Promise((resolve) => setTimeout(resolve, 0))
 
-		expect(wrapper.vm.versionOptions).toEqual([{ label: '0.1.0', value: '0.1.0' }])
+		expect(wrapper.vm.versionOptions).toEqual([
+			{ label: '0.1.0', value: '0.1.0' },
+		])
 		expect(wrapper.vm.form.version.value).toBe('0.1.0')
 	})
 })
