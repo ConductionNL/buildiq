@@ -329,9 +329,11 @@ export default {
 		},
 
 		/**
-		 * Handle an application selection: reset the version + list, fetch versions.
+		 * Handle an application selection: reset the version + list, fetch
+		 * versions, and put the app in the URL.
 		 *
 		 * @return {void}
+		 * @spec openspec/specs/automation-designer/spec.md#req-autd-001
 		 */
 		onAppChange() {
 			this.selectedVersion = null
@@ -368,9 +370,11 @@ export default {
 		},
 
 		/**
-		 * Handle a version selection: fetch its automations.
+		 * Handle a version selection: fetch its automations, and put the
+		 * version in the URL.
 		 *
 		 * @return {void}
+		 * @spec openspec/specs/automation-designer/spec.md#req-autd-001
 		 */
 		onVersionChange() {
 			this.automations = []
