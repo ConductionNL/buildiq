@@ -41,6 +41,7 @@
     "schemas": {
       "Application": {
         "x-schema-org": "schema:SoftwareApplication",
+        "x-openregister-demo-data": "buildiq's own register of the apps it has built. A generated app has no version with pages behind it, so it lists on the dashboard and never opens.",
         "slug": "built-app",
         "icon": "AppsBox",
         "version": "0.6.0",
@@ -265,6 +266,7 @@
       },
       "ApplicationTemplate": {
         "x-schema-org": "schema:CreativeWork",
+        "x-openregister-demo-data": "The store's starter packs. A generated template stands beside the real built-in ones and clones into an app with no pages.",
         "slug": "application-template",
         "icon": "ViewGridOutline",
         "version": "0.1.0",
@@ -376,6 +378,7 @@
         }
       },
       "BuiltAppRoute": {
+        "x-openregister-demo-data": "An index the Application lifecycle upserts on publish and deletes on archive. A generated row routes a slug to an app nobody created.",
         "slug": "built-app-route",
         "icon": "RouterNetwork",
         "version": "0.1.0",
@@ -458,6 +461,7 @@
       },
       "ApplicationVersion": {
         "x-schema-org": "schema:SoftwareApplication",
+        "x-openregister-demo-data": "Written by publish and promote. A generated version points at no application and carries a manifest with no pages, so the app it belongs to renders empty.",
         "x-openregister-notifications": {
           "version-published": {
             "trigger": {
@@ -717,6 +721,7 @@
       },
       "exportJob": {
         "x-schema-org": "schema:Action",
+        "x-openregister-demo-data": "Written by the export pipeline. A generated row reads as a finished export nobody ran.",
         "x-openregister-notifications": {
           "export-succeeded": {
             "trigger": {

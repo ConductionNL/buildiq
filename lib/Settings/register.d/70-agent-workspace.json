@@ -88,6 +88,7 @@
       },
       "AgentRun": {
         "x-schema-org": "schema:Action",
+        "x-openregister-demo-data": "Written by AgentRunLogger. A generated row is a transcript of an agent run nobody issued, including tool calls that were never made.",
         "slug": "agent-run",
         "icon": "History",
         "version": "1.0.0",
