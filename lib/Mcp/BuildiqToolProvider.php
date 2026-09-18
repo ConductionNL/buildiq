@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Mcp;
 
+use OCA\Buildiq\Mcp\Handler\AddWidgetHandler;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -213,7 +214,9 @@ class BuildiqToolProvider implements IMcpToolProvider {
 			'name' => 'Add a widget to a page',
 			'description' => 'Append a widget to a page\'s config.widgets array in the draft manifest,'
 				. ' and place it on the page\'s grid. The target page must be type "dashboard".'
-				. ' widgetType is e.g. "stat", "chart", "table". widgetConfig is widget-type-specific.'
+				. ' widgetType MUST be one of the values in its enum below. widgetConfig is'
+				. ' widget-type-specific: a stat, gauge or delta tile takes {register, schema}'
+				. ' plus an aggregate; an object-list takes {register, schema} plus columns.'
 				. ' Give every widget a widgetId (kebab-case, unique within the page) and a title:'
 				. ' both are stored on the widget and the manifest is invalid without them.'
 				. ' Omit them only if you have nothing better, and one will be derived.'
@@ -224,7 +227,18 @@ class BuildiqToolProvider implements IMcpToolProvider {
 					'appSlug' => ['type' => 'string', 'pattern' => '^[a-z0-9][a-z0-9-]*[a-z0-9]$', 'minLength' => 2, 'maxLength' => 48],
 					'versionSlug' => ['type' => 'string', 'pattern' => '^[a-z0-9][a-z0-9-]*[a-z0-9]$', 'default' => 'development'],
 					'pageId' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 64],
-					'widgetType' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 48],
+					// The enum is the handler's own allow-list, spelt out so the
+					// plan validator can refuse an unknown type at plan time
+					// instead of the executor refusing it after the reader has
+					// already clicked Confirm. Keep it in step with
+					// AddWidgetHandler::ALLOWED_WIDGET_TYPES; WidgetTypeParityTest
+					// fails when the two drift.
+					'widgetType' => [
+						'type' => 'string',
+						'enum' => AddWidgetHandler::ALLOWED_WIDGET_TYPES,
+						'minLength' => 1,
+						'maxLength' => 48,
+					],
 					'widgetId' => ['type' => 'string', 'pattern' => '^[a-z0-9][a-z0-9-]*[a-z0-9]$', 'minLength' => 2, 'maxLength' => 48],
 					'title' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 80],
 					'widgetConfig' => ['type' => 'object'],

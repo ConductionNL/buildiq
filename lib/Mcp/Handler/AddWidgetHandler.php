@@ -46,9 +46,15 @@ class AddWidgetHandler extends AbstractToolHandler {
 	 * widget registry. Unknown types are rejected at input time so invalid
 	 * manifests never reach OR storage.
 	 *
+	 * Public because `BuildiqToolProvider` publishes it as this tool's
+	 * `widgetType` enum. The copilot shows that catalogue to the model and
+	 * validates a plan against it, so spelling the list out there is what
+	 * stops an unknown type being accepted at review and refused at execute:
+	 * the same gap that let a bare menu route through.
+	 *
 	 * @var array<int, string>
 	 */
-	private const ALLOWED_WIDGET_TYPES = [
+	public const ALLOWED_WIDGET_TYPES = [
 		// Content & layout widgets.
 		'header',
 		'label',
