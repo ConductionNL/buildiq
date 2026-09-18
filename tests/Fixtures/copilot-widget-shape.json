@@ -13,7 +13,11 @@
 					"type": "stat",
 					"content": {
 						"register": "tool-library",
-						"schema": "loan"
+						"schema": "loan",
+						"source": {
+							"register": "tool-library",
+							"schema": "loan"
+						}
 					}
 				},
 				{
