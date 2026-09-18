@@ -264,6 +264,46 @@ describe('useCopilot — spec ai-copilot REQ-OBAIC-001/002/003', () => {
 		expect(copilot.state.value).toBe('idle')
 	})
 
+	it('keeps the provider\'s own message as errorDetail on a 502', async () => {
+		axiosPost.mockRejectedValueOnce({
+			response: {
+				status: 502,
+				data: {
+					error: 'provider_error',
+					message: 'The AI provider could not answer.',
+					providerMessage: 'Chat provider is not configured.',
+				},
+			},
+		})
+		const copilot = useCopilot()
+		await copilot.generatePlan('a bike repair app')
+
+		expect(copilot.state.value).toBe('error')
+		expect(copilot.errorMessage.value).toBe(
+			'The AI provider could not answer.',
+		)
+		expect(copilot.errorDetail.value).toBe(
+			'Chat provider is not configured.',
+		)
+	})
+
+	it('drops the answer to a turn the user discarded while it was in flight', async () => {
+		let resolvePlan
+		axiosPost.mockReturnValueOnce(
+			new Promise((resolve) => {
+				resolvePlan = resolve
+			}),
+		)
+		const copilot = useCopilot()
+		const pending = copilot.generatePlan('a bike repair app')
+		copilot.discard()
+		resolvePlan({ data: { summary: 'late', steps: [], manifests: {} } })
+		await pending
+
+		expect(copilot.state.value).toBe('idle')
+		expect(copilot.plan.value).toBe(null)
+	})
+
 	it('discard() without agentId still sends no request (bare copilot, unchanged)', async () => {
 		axiosPost.mockResolvedValueOnce({
 			data: { summary: 'x', steps: [], manifests: {} },

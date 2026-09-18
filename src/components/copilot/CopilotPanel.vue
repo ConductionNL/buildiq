@@ -20,6 +20,19 @@
 -->
 <template>
 	<div data-testid="copilot-panel" class="copilot-panel">
+		<div class="copilot-panel__header">
+			<h3 class="copilot-panel__heading">
+				{{ t('buildiq', 'AI copilot') }}
+			</h3>
+			<NcButton
+				v-if="closable"
+				variant="tertiary"
+				:aria-label="t('buildiq', 'Close the copilot')"
+				@click="$emit('close')">
+				{{ t('buildiq', 'Close') }}
+			</NcButton>
+		</div>
+
 		<div
 			v-if="agentId"
 			data-testid="copilot-acting-as"
@@ -33,6 +46,14 @@
 		</div>
 
 		<div class="copilot-panel__messages">
+			<p v-if="messages.length === 0" class="copilot-panel__empty">
+				{{
+					t(
+						'buildiq',
+						'Ask for a page, a widget or a menu item. You review every change before it is applied.',
+					)
+				}}
+			</p>
 			<div
 				v-for="message in messages"
 				:key="message.id"
@@ -54,9 +75,23 @@
 					v-else-if="message.role === 'assistant'"
 					class="copilot-panel__bubble copilot-panel__bubble--error">
 					{{ message.error }}
+					<span
+						v-if="message.errorDetail"
+						class="copilot-panel__bubble-detail">
+						{{ message.errorDetail }}
+					</span>
 				</p>
 			</div>
 		</div>
+
+		<p v-if="state === 'planning'" class="copilot-panel__waiting">
+			{{
+				t(
+					'buildiq',
+					'Asking the AI provider. This usually takes a few seconds.',
+				)
+			}}
+		</p>
 
 		<div class="copilot-panel__input-row">
 			<textarea
@@ -137,9 +172,20 @@ export default {
 			type: Array,
 			default: () => [],
 		},
+
+		/**
+		 * Whether to offer a Close button in the panel header. True where the
+		 * panel is an overlay the user has to be able to dismiss (the page
+		 * designer's side rail); false where it is part of the page already
+		 * (the agent workspace tab).
+		 */
+		closable: {
+			type: Boolean,
+			default: false,
+		},
 	},
 
-	emits: ['executed'],
+	emits: ['executed', 'close'],
 
 	setup() {
 		return { copilot: useCopilot() }
@@ -241,6 +287,7 @@ export default {
 					id: assistantId,
 					role: 'assistant',
 					error: this.copilot.errorMessage.value,
+					errorDetail: this.copilot.errorDetail.value,
 				})
 			}
 		},
@@ -288,6 +335,34 @@ export default {
 	flex-direction: column;
 	height: 100%;
 	gap: 8px;
+}
+
+.copilot-panel__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.copilot-panel__heading {
+	margin: 0;
+	font-size: 1.1em;
+}
+
+.copilot-panel__empty {
+	color: var(--color-text-maxcontrast);
+	margin: 0;
+}
+
+.copilot-panel__waiting {
+	color: var(--color-text-maxcontrast);
+	margin: 0;
+}
+
+.copilot-panel__bubble-detail {
+	display: block;
+	color: var(--color-text-maxcontrast);
+	font-size: 0.9em;
 }
 
 .copilot-panel__messages {

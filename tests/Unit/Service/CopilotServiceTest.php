@@ -40,6 +40,7 @@ use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\TaskProcessing\IManager;
+use OCP\TaskProcessing\ISynchronousProvider;
 use OCP\TaskProcessing\Task;
 use OCP\TaskProcessing\TaskTypes\TextToText;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -440,6 +441,73 @@ class CopilotServiceTest extends TestCase {
 			throw $e;
 		}
 	}//end testPlanRetriesExactlyOnceThenFails()
+
+	/**
+	 * A synchronous provider is run INLINE (`runTask`), never handed to the
+	 * background job, so the answer does not wait for the next cron run.
+	 *
+	 * Fails on the pre-2026-09-18 code, which always called `scheduleTask()`.
+	 *
+	 * @return void
+	 */
+	public function testPlanRunsASynchronousProviderInline(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->taskManager->method('getPreferredProvider')->willReturn($this->createMock(ISynchronousProvider::class));
+
+		$done = new Task(TextToText::ID, ['input' => 'x'], 'buildiq', 'alice');
+		$done->setStatus(Task::STATUS_SUCCESSFUL);
+		$done->setOutput(
+			[
+				'output' => json_encode(
+					[
+						'summary' => 'A tool library',
+						'steps' => [['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']]],
+					]
+				),
+			]
+		);
+
+		$this->taskManager->expects(self::never())->method('scheduleTask');
+		$this->taskManager->expects(self::once())->method('runTask')->willReturn($done);
+
+		$result = $this->makeService()->plan(brief: 'A tool library', appSlug: null, userId: 'alice');
+
+		self::assertSame('A tool library', $result['summary']);
+	}//end testPlanRunsASynchronousProviderInline()
+
+	/**
+	 * A provider that fails (for instance because no model is configured behind
+	 * it) is reported as a provider error, once, carrying the provider's own
+	 * message. No repair round-trip: the model was never reached, so asking it
+	 * again only doubles the wait.
+	 *
+	 * Fails on the pre-2026-09-18 code, which ran a second task and then
+	 * answered 422 `plan_invalid` "rephrase your request".
+	 *
+	 * @return void
+	 */
+	public function testPlanReportsAProviderFailureOnceAndKeepsItsMessage(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->taskManager->method('getPreferredProvider')->willReturn($this->createMock(ISynchronousProvider::class));
+
+		$failed = new Task(TextToText::ID, ['input' => 'x'], 'buildiq', 'alice');
+		$failed->setStatus(Task::STATUS_FAILED);
+		$failed->setErrorMessage('Chat provider is not configured.');
+
+		$this->taskManager->expects(self::once())->method('runTask')->willReturn($failed);
+
+		$this->expectException(CopilotException::class);
+		try {
+			$this->makeService()->plan(brief: 'A tool library', appSlug: null, userId: 'alice');
+		} catch (CopilotException $e) {
+			self::assertSame('provider_error', $e->getErrorCode());
+			self::assertSame(502, $e->getHttpStatus());
+			self::assertStringContainsString('Chat provider is not configured.', (string)($e->getContext()['providerMessage'] ?? ''));
+			throw $e;
+		}
+	}//end testPlanReportsAProviderFailureOnceAndKeepsItsMessage()
 
 	/**
 	 * A step outside the allow-list is rejected with 422 plan_invalid.

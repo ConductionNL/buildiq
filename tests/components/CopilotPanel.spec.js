@@ -34,6 +34,50 @@ describe('CopilotPanel.vue — spec ai-copilot REQ-OBAIC-007', () => {
 		clearCopilotHealthCache()
 	})
 
+	it('says what the panel is for before anyone has typed', () => {
+		const wrapper = mount(CopilotPanel, {
+			propsData: { appSlug: 'tool-library' },
+		})
+
+		expect(wrapper.text()).toContain('AI copilot')
+		expect(wrapper.text()).toContain('You review every change')
+	})
+
+	it('emits close from the header button when closable', async () => {
+		const wrapper = mount(CopilotPanel, {
+			propsData: { appSlug: 'tool-library', closable: true },
+		})
+
+		await wrapper.find('.copilot-panel__header button').trigger('click')
+
+		expect(wrapper.emitted('close')).toBeTruthy()
+	})
+
+	it('shows what the provider said under a failed turn', async () => {
+		axiosPost.mockRejectedValueOnce({
+			response: {
+				status: 502,
+				data: {
+					error: 'provider_error',
+					message: 'The AI provider could not answer.',
+					providerMessage: 'Chat provider is not configured.',
+				},
+			},
+		})
+		const wrapper = mount(CopilotPanel, {
+			propsData: { appSlug: 'tool-library' },
+		})
+		await wrapper
+			.find('[data-testid="copilot-message-input"]')
+			.setValue('Add a suppliers page')
+		await wrapper
+			.find('[data-testid="copilot-message-input"]')
+			.trigger('keydown.enter')
+		await flush()
+
+		expect(wrapper.text()).toContain('Chat provider is not configured.')
+	})
+
 	it('renders a user bubble synchronously on send', async () => {
 		axiosPost.mockReturnValueOnce(new Promise(() => {})) // never resolves in this test
 		const wrapper = mount(CopilotPanel, {
