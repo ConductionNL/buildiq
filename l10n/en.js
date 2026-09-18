@@ -1448,7 +1448,6 @@ OC.L10N.register(
         "Error": "Error",
         "Compare": "Compare",
         "With": "With",
-        "Install an app published to GitHub. The store lists every repository tagged with the openbuild-app topic. Installing adds a copy to your apps that you can change.": "Install an app published to GitHub. The store lists every repository tagged with the openbuild-app topic. Installing adds a copy to your apps that you can change.",
         "Loading versions…": "Loading versions…",
         "No differences. Both versions have the same manifest.": "No differences. Both versions have the same manifest.",
         "Nothing to diff. Neither version has a manifest yet.": "Nothing to diff. Neither version has a manifest yet.",
@@ -1463,14 +1462,15 @@ OC.L10N.register(
         "Apps on GitHub": "Apps on GitHub",
         "No built-in templates yet": "No built-in templates yet",
         "Only administrators can create an app from a template.": "Only administrators can create an app from a template.",
-        "Start from a template that ships with Buildiq, or install an app published to GitHub. Either way you get an editable draft app.": "Start from a template that ships with Buildiq, or install an app published to GitHub. Either way you get an editable draft app.",
+        "Start from a template that ships with Buildiq, or install an app published to GitHub. Either way you get your own copy of the app to change.": "Start from a template that ships with Buildiq, or install an app published to GitHub. Either way you get your own copy of the app to change.",
         "The app could not be created.": "The app could not be created.",
         "The built-in templates could not be loaded. Reload the page to try again.": "The built-in templates could not be loaded. Reload the page to try again.",
         "What the app is for": "What the app is for",
     "This app has no repository yet. Name one. Publishing creates it as a public repository, tagged so the store can find it." : "This app has no repository yet. Name one. Publishing creates it as a public repository, tagged so the store can find it.",
     "Give the repository a name of letters, numbers and dashes." : "Give the repository a name of letters, numbers and dashes.",
     "GitHub is rate-limiting this credential right now. Try again shortly." : "GitHub is rate-limiting this credential right now. Try again shortly.",
-    "Point this app at a repository that already exists, so you can publish and pull versions. To make a new one, publish instead: it creates the repository for you." : "Point this app at a repository that already exists, so you can publish and pull versions. To make a new one, publish instead: it creates the repository for you."
+    "Point this app at a repository that already exists, so you can publish and pull versions. To make a new one, publish instead: it creates the repository for you." : "Point this app at a repository that already exists, so you can publish and pull versions. To make a new one, publish instead: it creates the repository for you.",
+        "{name} ({semver})": "{name} ({semver})"
     },
     "nplurals=2; plural=(n != 1);"
 )

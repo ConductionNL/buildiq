@@ -1119,7 +1119,6 @@ OC.L10N.register(
         "Error": "Fout",
         "Compare": "Vergelijk",
         "With": "Met",
-        "Install an app published to GitHub. The store lists every repository tagged with the openbuild-app topic. Installing adds a copy to your apps that you can change.": "Installeer een app die op GitHub is gepubliceerd. De winkel toont elke repository met het onderwerp openbuild-app. Installeren voegt een kopie toe aan je apps die je kunt aanpassen.",
         "Loading versions…": "Versies laden…",
         "No differences. Both versions have the same manifest.": "Geen verschillen. Beide versies hebben hetzelfde manifest.",
         "Nothing to diff. Neither version has a manifest yet.": "Niets te vergelijken. Geen van beide versies heeft al een manifest.",
@@ -1153,14 +1152,15 @@ OC.L10N.register(
         "Apps on GitHub": "Apps op GitHub",
         "No built-in templates yet": "Nog geen ingebouwde sjablonen",
         "Only administrators can create an app from a template.": "Alleen beheerders kunnen een app maken vanuit een sjabloon.",
-        "Start from a template that ships with Buildiq, or install an app published to GitHub. Either way you get an editable draft app.": "Begin met een sjabloon dat met Buildiq wordt meegeleverd, of installeer een app die op GitHub staat. In beide gevallen krijg je een bewerkbare concept-app.",
+        "Start from a template that ships with Buildiq, or install an app published to GitHub. Either way you get your own copy of the app to change.": "Begin met een sjabloon dat met Buildiq wordt meegeleverd, of installeer een app die op GitHub staat. In beide gevallen krijg je een eigen kopie van de app die je kunt aanpassen.",
         "The app could not be created.": "De app kon niet worden gemaakt.",
         "The built-in templates could not be loaded. Reload the page to try again.": "De ingebouwde sjablonen konden niet worden geladen. Laad de pagina opnieuw om het nog eens te proberen.",
         "What the app is for": "Waar de app voor is",
     "This app has no repository yet. Name one. Publishing creates it as a public repository, tagged so the store can find it." : "Deze app heeft nog geen repository. Geef er een naam. Publiceren maakt een openbare repository aan, met het label waarmee de store hem vindt.",
     "Give the repository a name of letters, numbers and dashes." : "Geef de repository een naam met letters, cijfers en streepjes.",
     "GitHub is rate-limiting this credential right now. Try again shortly." : "GitHub beperkt het aantal aanvragen voor deze inloggegeven. Probeer het zo meteen opnieuw.",
-    "Point this app at a repository that already exists, so you can publish and pull versions. To make a new one, publish instead: it creates the repository for you." : "Koppel deze app aan een repository die al bestaat, zodat je versies kunt publiceren en ophalen. Wil je een nieuwe? Publiceer dan: dat maakt de repository voor je aan."
+    "Point this app at a repository that already exists, so you can publish and pull versions. To make a new one, publish instead: it creates the repository for you." : "Koppel deze app aan een repository die al bestaat, zodat je versies kunt publiceren en ophalen. Wil je een nieuwe? Publiceer dan: dat maakt de repository voor je aan.",
+        "{name} ({semver})": "{name} ({semver})"
     },
     "nplurals=2; plural=(n != 1);"
 )

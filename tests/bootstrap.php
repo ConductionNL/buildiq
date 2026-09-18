@@ -192,6 +192,9 @@ foreach ([
 // classes ARE available (in-container run).
 require_once __DIR__ . '/stubs/openregister-stubs.php';
 
+// Leaf-provider contract (ADR-066). Same guards: a no-op in-container.
+require_once __DIR__ . '/stubs/openregister-leaf.stub.php';
+
 // Same guard for the IMcpToolProvider interface which ships with OR but may
 // not be present until OR#1466 merges.
 require_once __DIR__ . '/Stubs/Mcp/IMcpToolProvider.php';
