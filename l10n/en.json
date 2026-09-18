@@ -1498,7 +1498,11 @@
         "Could not load the connector sources and endpoints.": "Could not load the connector sources and endpoints.",
         "Endpoint": "Endpoint",
         "Select a source": "Select a source",
-        "This source has no endpoints yet.": "This source has no endpoints yet."
+        "This source has no endpoints yet.": "This source has no endpoints yet.",
+        "{name} ({semver})": "{name} ({semver})",
+        "Ask for a page, a widget or a menu item. You review every change before it is applied.": "Ask for a page, a widget or a menu item. You review every change before it is applied.",
+        "Asking the AI provider. This usually takes a few seconds.": "Asking the AI provider. This usually takes a few seconds.",
+        "Close the copilot": "Close the copilot"
     },
     "plurals": "",
     "pluralForm": "nplurals=2; plural=(n != 1);"
