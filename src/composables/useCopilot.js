@@ -76,11 +76,19 @@ export function useCopilot() {
 	const plan = ref(null)
 	const manifestErrors = ref(new Map())
 	const errorMessage = ref('')
+	// What the AI provider itself said about a failure, shown as a detail line
+	// under `errorMessage` so "no provider configured" never reads as "your
+	// wording was wrong".
+	const errorDetail = ref('')
 	const executeResult = ref(null)
 	// The brief that produced the current/last plan — carried through to
 	// execute()/discard() so an agent-scoped AgentRun record captures the
 	// original prompt (spec `agent-workspace`).
 	const lastPrompt = ref('')
+	// Every plan request carries a turn number. `discard()` bumps it, so the
+	// answer to a turn the user has already walked away from is dropped instead
+	// of re-opening a proposal over whatever they are doing now.
+	let turn = 0
 
 	const isAvailable = computed(() => !!(health.value && health.value.available))
 
@@ -133,20 +141,29 @@ export function useCopilot() {
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
 	 */
 	async function generatePlan(brief, appSlug, agentId) {
+		const thisTurn = ++turn
 		state.value = 'planning'
 		errorMessage.value = ''
+		errorDetail.value = ''
 		plan.value = null
 		manifestErrors.value = new Map()
 		lastPrompt.value = brief
 		try {
 			const result = await requestPlan({ brief, appSlug, agentId })
+			if (thisTurn !== turn) {
+				return
+			}
 			plan.value = result
 			manifestErrors.value = validatePredictedManifests(
 				result && result.manifests,
 			)
 			state.value = 'review'
 		} catch (err) {
+			if (thisTurn !== turn) {
+				return
+			}
 			errorMessage.value = (err && err.message) || 'Failed to generate a plan.'
+			errorDetail.value = (err && err.providerMessage) || ''
 			state.value = 'error'
 		}
 	}
@@ -168,6 +185,7 @@ export function useCopilot() {
 		}
 		state.value = 'executing'
 		errorMessage.value = ''
+		errorDetail.value = ''
 		try {
 			const result = await executePlan(
 				{ summary: plan.value.summary, steps: plan.value.steps },
@@ -178,6 +196,7 @@ export function useCopilot() {
 		} catch (err) {
 			errorMessage.value =
 				(err && err.message) || 'Failed to execute the plan.'
+			errorDetail.value = (err && err.providerMessage) || ''
 			state.value = 'error'
 		}
 	}
@@ -195,6 +214,7 @@ export function useCopilot() {
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/agent-workspace/spec.md
 	 */
 	function discard(agentId) {
+		turn += 1
 		if (agentId && plan.value) {
 			discardRun({
 				agentId,
@@ -206,6 +226,7 @@ export function useCopilot() {
 		plan.value = null
 		manifestErrors.value = new Map()
 		errorMessage.value = ''
+		errorDetail.value = ''
 		executeResult.value = null
 	}
 
@@ -216,6 +237,7 @@ export function useCopilot() {
 		plan,
 		manifestErrors,
 		errorMessage,
+		errorDetail,
 		executeResult,
 		canApprove,
 		checkHealth,

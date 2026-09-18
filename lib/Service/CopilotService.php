@@ -57,7 +57,6 @@ use Psr\Log\LoggerInterface;
 // them here is safe even on NC 28/29; every call site that constructs or
 // references them is reached only after health()/assertAvailable() has
 // already confirmed `OCP\TaskProcessing\IManager` exists.
-use RuntimeException;
 use Throwable;
 
 /**
@@ -939,9 +938,19 @@ class CopilotService {
 	private function runPlanAttempt(object $manager, string $prompt, string $userId, ?string $appSlug = null): array {
 		try {
 			$raw = $this->runTextToTextTask(manager: $manager, prompt: $prompt, userId: $userId, appSlug: $appSlug);
+		} catch (CopilotException $e) {
+			// A provider/transport failure is NOT a parse failure: the model was
+			// never reached, so a repair round-trip would only wait a second time
+			// and then blame the user's wording. Surface it as-is.
+			throw $e;
 		} catch (Throwable $e) {
 			$this->logger->warning('Buildiq Copilot: LLM task failed: ' . $e->getMessage());
-			return [null, '', $e->getMessage()];
+			throw new CopilotException(
+				errorCode: 'provider_error',
+				message: 'The AI provider could not answer. Ask an administrator to check the AI settings.',
+				httpStatus: 502,
+				context: ['providerMessage' => $e->getMessage()]
+			);
 		}
 
 		$stripped = $this->stripCodeFences(text: $raw);
@@ -960,18 +969,36 @@ class CopilotService {
 	}//end runPlanAttempt()
 
 	/**
-	 * Schedule a `TextToText` TaskProcessing task and poll to completion.
+	 * Run a `TextToText` TaskProcessing task and return its output text.
+	 *
+	 * A synchronous provider (the common case: every in-process NC provider
+	 * implements `ISynchronousProvider`) is run INLINE through
+	 * `IManager::runTask()`, which processes the task in this request. The
+	 * former `scheduleTask()` + poll path handed the work to the
+	 * `SynchronousBackgroundJob` instead, so the answer only arrived when
+	 * cron next ran that job: measured on this instance on 2026-09-18 a
+	 * scheduled task was still untouched after 6 minutes, while the poll loop
+	 * gave up at 120s and the panel then blamed the user's wording.
+	 *
+	 * An asynchronous (ExApp) provider still has to be scheduled and polled,
+	 * because nothing can run it in-process. That path keeps the 120s deadline
+	 * and now CANCELS the task it gave up on, so an abandoned request cannot
+	 * be picked up an hour later and billed to the provider.
 	 *
 	 * @param object $manager `OCP\TaskProcessing\IManager` instance.
 	 * @param string $prompt The prompt to send as task input.
 	 * @param string $userId Acting user's UID.
 	 * @param string|null $appSlug Optional target app slug, carried as the task's customId.
+	 * @param float|null $timeoutSeconds How long to wait for a worker, defaulting to
+	 *                                   {@see LLM_TIMEOUT_SECONDS}. Only a test passes
+	 *                                   this, so the give-up path can be exercised
+	 *                                   without waiting two minutes for it.
 	 *
 	 * @return string The task's `output` text.
 	 *
-	 * @throws RuntimeException On task failure, cancellation, or timeout.
+	 * @throws CopilotException (502) On provider failure, cancellation, or timeout.
 	 */
-	private function runTextToTextTask(object $manager, string $prompt, string $userId, ?string $appSlug = null): string {
+	private function runTextToTextTask(object $manager, string $prompt, string $userId, ?string $appSlug = null, ?float $timeoutSeconds = null): string {
 		$task = new Task(
 			TextToText::ID,
 			['input' => $prompt],
@@ -980,34 +1007,120 @@ class CopilotService {
 			$appSlug,
 		);
 
+		if ($this->preferredProviderRunsInline(manager: $manager) === true) {
+			return $this->readTaskOutput(task: $manager->runTask($task));
+		}
+
 		$manager->scheduleTask($task);
 		$taskId = $task->getId();
 		if ($taskId === null) {
-			throw new RuntimeException('TaskProcessing did not assign a task id.');
+			throw $this->providerError(message: 'The AI provider did not accept the request.', detail: 'TaskProcessing did not assign a task id.');
 		}
 
-		$deadline = microtime(as_float: true) + self::LLM_TIMEOUT_SECONDS;
+		$budget = ($timeoutSeconds ?? self::LLM_TIMEOUT_SECONDS);
+		$deadline = microtime(as_float: true) + $budget;
 
 		while (true) {
 			$current = $manager->getTask($taskId);
 			$status = $current->getStatus();
 
-			if ($status === Task::STATUS_SUCCESSFUL) {
-				$output = $current->getOutput();
-				return (string)($output['output'] ?? '');
-			}
-
-			if ($status === Task::STATUS_FAILED || $status === Task::STATUS_CANCELLED) {
-				throw new RuntimeException('LLM task failed: ' . ((string)$current->getErrorMessage()));
+			if ($status === Task::STATUS_SUCCESSFUL || $status === Task::STATUS_FAILED || $status === Task::STATUS_CANCELLED) {
+				return $this->readTaskOutput(task: $current);
 			}
 
 			if (microtime(as_float: true) > $deadline) {
-				throw new RuntimeException('LLM task timed out after ' . ((int)self::LLM_TIMEOUT_SECONDS) . 's.');
+				$this->cancelAbandonedTask(manager: $manager, taskId: $taskId);
+				throw $this->providerError(
+					message: 'No AI worker picked up the request in time. Ask an administrator to check the AI settings.',
+					detail: 'TaskProcessing task ' . $taskId . ' was still waiting after ' . ((int)$budget) . 's.'
+				);
 			}
 
 			usleep(self::POLL_INTERVAL_MICROSECONDS);
 		}//end while
 	}//end runTextToTextTask()
+
+	/**
+	 * Whether the preferred provider for `core:text2text` can run in this
+	 * request (`ISynchronousProvider`), rather than needing a worker.
+	 *
+	 * @param object $manager `OCP\TaskProcessing\IManager` instance.
+	 *
+	 * @return boolean
+	 */
+	private function preferredProviderRunsInline(object $manager): bool {
+		if (interface_exists('OCP\\TaskProcessing\\ISynchronousProvider') === false || method_exists($manager, 'runTask') === false) {
+			return false;
+		}
+
+		try {
+			$provider = $manager->getPreferredProvider(self::TEXT_TO_TEXT_TASK_TYPE_ID);
+		} catch (Throwable $e) {
+			$this->logger->warning('Buildiq Copilot: could not resolve the preferred text2text provider: ' . $e->getMessage());
+			return false;
+		}
+
+		return $provider instanceof \OCP\TaskProcessing\ISynchronousProvider;
+	}//end preferredProviderRunsInline()
+
+	/**
+	 * Read a finished task's output, turning a failed one into a provider error
+	 * that carries the provider's own message (e.g. "Chat provider is not
+	 * configured"), so the panel never reports a missing provider as bad wording.
+	 *
+	 * @param Task $task The finished task.
+	 *
+	 * @return string The task's `output` text.
+	 *
+	 * @throws CopilotException (502) When the task did not succeed.
+	 */
+	private function readTaskOutput(Task $task): string {
+		if ($task->getStatus() === Task::STATUS_SUCCESSFUL) {
+			$output = $task->getOutput();
+			return (string)($output['output'] ?? '');
+		}
+
+		throw $this->providerError(
+			message: 'The AI provider could not answer. Ask an administrator to check the AI settings.',
+			detail: (string)$task->getErrorMessage()
+		);
+	}//end readTaskOutput()
+
+	/**
+	 * Cancel a task this request has stopped waiting for. Best effort: a failed
+	 * cancel must never replace the timeout the caller is about to report.
+	 *
+	 * @param object $manager `OCP\TaskProcessing\IManager` instance.
+	 * @param integer $taskId The abandoned task's id.
+	 *
+	 * @return void
+	 */
+	private function cancelAbandonedTask(object $manager, int $taskId): void {
+		try {
+			$manager->cancelTask($taskId);
+		} catch (Throwable $e) {
+			$this->logger->warning('Buildiq Copilot: could not cancel abandoned task ' . $taskId . ': ' . $e->getMessage());
+		}
+	}//end cancelAbandonedTask()
+
+	/**
+	 * Build the 502 envelope for a provider-side failure.
+	 *
+	 * @param string $message User-facing message.
+	 * @param string $detail The provider's own message, carried for the panel's detail line.
+	 *
+	 * @return CopilotException
+	 */
+	private function providerError(string $message, string $detail): CopilotException {
+		$this->logger->warning('Buildiq Copilot: provider error: ' . $detail);
+
+		return new CopilotException(
+			errorCode: 'provider_error',
+			message: $message,
+			httpStatus: 502,
+			context: ['providerMessage' => $detail]
+		);
+	}//end providerError()
 
 	/**
 	 * Strip ```json ... ``` / ``` ... ``` code fences from an LLM response, if present.
