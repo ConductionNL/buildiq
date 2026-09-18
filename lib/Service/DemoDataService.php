@@ -255,7 +255,7 @@ class DemoDataService {
 
 		// 🔴 REFUSED BEFORE ANYTHING IS WRITTEN, NOT FILTERED. See
 		// `schemasThatCarryNoDemoData()`.
-		$forbidden = $this->forbiddenSchemas($data);
+		$forbidden = $this->forbiddenSchemas(data: $data);
 		if ($forbidden !== []) {
 			throw new RuntimeException(
 				'The demo dataset carries objects for schema(s) this app writes itself: '
@@ -336,21 +336,15 @@ class DemoDataService {
 	 * @spec exclude Demo-import guard; ADR-111 has no per-app behavioural spec.
 	 */
 	private function schemasThatCarryNoDemoData(): array {
-		$settings = $this->appManager->getAppPath(Application::APP_ID) . '/lib/Settings';
-		$paths    = array_merge(
-			(glob($settings . '/*.json') ?: []),
-			(glob($settings . '/register.d/*.json') ?: [])
-		);
-
 		$names = [];
-		foreach ($paths as $path) {
+		foreach ($this->descriptorPaths() as $path) {
 			$data = json_decode((string)file_get_contents($path), true);
 			if (is_array($data) === false) {
 				continue;
 			}
 
 			// The generated dataset itself is not a source of declarations.
-			if ((($data['x-openregister']['type'] ?? '') === 'mock')) {
+			if ((($data['x-openregister']['type'] ?? '') === 'mock') === true) {
 				continue;
 			}
 
@@ -359,26 +353,71 @@ class DemoDataService {
 				continue;
 			}
 
-			foreach ($schemas as $key => $schema) {
-				if (is_array($schema) === false || array_key_exists('x-openregister-demo-data', $schema) === false) {
-					continue;
-				}
-
-				$declared = $schema['x-openregister-demo-data'];
-				if ($declared !== false && (is_string($declared) === false || trim($declared) === '')) {
-					continue;
-				}
-
-				$names[] = (string)$key;
-				if (is_string(($schema['slug'] ?? null)) === true && $schema['slug'] !== '') {
-					$names[] = $schema['slug'];
-				}
-			}
+			$names = array_merge($names, $this->excludedSchemasIn(schemas: $schemas));
 		}
 
 		return array_values(array_unique($names));
 
 	}//end schemasThatCarryNoDemoData()
+
+	/**
+	 * The app's own register descriptors, base file and fragments.
+	 *
+	 * @return array<int, string> Absolute paths, base files before fragments.
+	 *
+	 * @spec exclude Demo-import guard; ADR-111 has no per-app behavioural spec.
+	 */
+	private function descriptorPaths(): array {
+		$settings = $this->appManager->getAppPath(Application::APP_ID) . '/lib/Settings';
+
+		$base = glob($settings . '/*.json');
+		if ($base === false) {
+			$base = [];
+		}
+
+		$fragments = glob($settings . '/register.d/*.json');
+		if ($fragments === false) {
+			$fragments = [];
+		}
+
+		return array_merge($base, $fragments);
+
+	}//end descriptorPaths()
+
+	/**
+	 * The excluded schemas in one `components.schemas` block, by key and slug.
+	 *
+	 * `false` and a non-empty string both exclude; a string is the reason. `true`
+	 * and absence both mean the schema takes demo data like any other.
+	 *
+	 * @param array<string, mixed> $schemas The block.
+	 *
+	 * @return array<int, string> Keys and slugs, in declaration order.
+	 *
+	 * @spec exclude Demo-import guard; ADR-111 has no per-app behavioural spec.
+	 */
+	private function excludedSchemasIn(array $schemas): array {
+		$names = [];
+		foreach ($schemas as $key => $schema) {
+			if (is_array($schema) === false) {
+				continue;
+			}
+
+			$declared = ($schema['x-openregister-demo-data'] ?? true);
+			if ($declared !== false && (is_string($declared) === false || trim($declared) === '')) {
+				continue;
+			}
+
+			$names[] = (string)$key;
+			$slug    = ($schema['slug'] ?? null);
+			if (is_string($slug) === true && $slug !== '') {
+				$names[] = $slug;
+			}
+		}
+
+		return $names;
+
+	}//end excludedSchemasIn()
 
 	/**
 	 * The schemas a dataset declares objects for although this app forbids them.
