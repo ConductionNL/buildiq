@@ -264,7 +264,7 @@ describe('useCopilot — spec ai-copilot REQ-OBAIC-001/002/003', () => {
 		expect(copilot.state.value).toBe('idle')
 	})
 
-	it('keeps the provider\'s own message as errorDetail on a 502', async () => {
+	it("keeps the provider's own message as errorDetail on a 502", async () => {
 		axiosPost.mockRejectedValueOnce({
 			response: {
 				status: 502,
@@ -279,12 +279,8 @@ describe('useCopilot — spec ai-copilot REQ-OBAIC-001/002/003', () => {
 		await copilot.generatePlan('a bike repair app')
 
 		expect(copilot.state.value).toBe('error')
-		expect(copilot.errorMessage.value).toBe(
-			'The AI provider could not answer.',
-		)
-		expect(copilot.errorDetail.value).toBe(
-			'Chat provider is not configured.',
-		)
+		expect(copilot.errorMessage.value).toBe('The AI provider could not answer.')
+		expect(copilot.errorDetail.value).toBe('Chat provider is not configured.')
 	})
 
 	it('drops the answer to a turn the user discarded while it was in flight', async () => {
