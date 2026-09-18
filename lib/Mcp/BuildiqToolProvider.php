@@ -179,7 +179,9 @@ class BuildiqToolProvider implements IMcpToolProvider {
 				. ' pageId is the unique key; if it exists it is replaced.'
 				. ' Type is one of dashboard, index, detail, form.'
 				. ' config is page-type-specific, and each type has fields the manifest is invalid without:'
-				. ' index and detail take {register, schema} plus optional columns;'
+				. ' index and detail take {register, schema} plus optional columns, where schema is the'
+				. ' short slug you gave upsertSchema (e.g. "loan") — Buildiq namespaces it onto this'
+				. " version's own register for you;"
 				. ' dashboard takes {widgets, layout}, or leave both out and use addWidget;'
 				. ' form MUST take a non-empty fields array, each entry {key, label, type} with type one of'
 				. ' boolean, number, string, enum, password, json, file, and exactly one of'
@@ -193,7 +195,12 @@ class BuildiqToolProvider implements IMcpToolProvider {
 					'pageId' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 64],
 					'title' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 80],
 					'type' => ['type' => 'string', 'enum' => ['dashboard', 'index', 'detail', 'form']],
-					'route' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 200],
+					'route' => [
+						'type' => 'string',
+						'minLength' => 1,
+						'maxLength' => 200,
+						'description' => 'A path starting with "/", e.g. "/tools" or "/tools/:id".',
+					],
 					'config' => ['type' => 'object'],
 				],
 				'required' => ['appSlug', 'pageId', 'title', 'type', 'route'],
@@ -236,7 +243,9 @@ class BuildiqToolProvider implements IMcpToolProvider {
 			'action' => 'upsert',
 			'name' => 'Create or update a menu item',
 			'description' => 'Create or update a top-level menu item in the draft manifest.'
-				. ' id is the unique key; if it exists it is replaced. route should match a page id.'
+				. ' id is the unique key; if it exists it is replaced.'
+				. ' route is a path and MUST start with "/": give the same route as the page it opens,'
+				. ' so a page on "/tools" gets a menu item on "/tools", never the bare page id.'
 				. ' order controls sort. icon is an MDI/standard icon name. Defaults versionSlug to "development".',
 			'inputSchema' => [
 				'type' => 'object',
@@ -246,7 +255,12 @@ class BuildiqToolProvider implements IMcpToolProvider {
 					'id' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 64],
 					'label' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 80],
 					'icon' => ['type' => 'string', 'maxLength' => 80],
-					'route' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 200],
+					'route' => [
+						'type' => 'string',
+						'minLength' => 1,
+						'maxLength' => 200,
+						'description' => 'A path starting with "/", matching the route of the page it opens.',
+					],
 					'order' => ['type' => 'integer', 'minimum' => 0, 'maximum' => 999],
 				],
 				'required' => ['appSlug', 'id', 'label', 'route'],

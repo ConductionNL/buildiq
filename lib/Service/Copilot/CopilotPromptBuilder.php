@@ -183,6 +183,18 @@ class CopilotPromptBuilder {
         addWidget/upsertMenuItem steps, and never a promoteVersion step unless the
         brief explicitly asks to publish/release.
 
+        Two rules the tool schemas cannot express, and a plan that breaks
+        either is refused or comes out empty:
+
+        1. Every "route" is a PATH and starts with "/" — "/tools", "/tools/:id".
+           A menu item's route is the route of the page it opens, never the
+           bare page id.
+        2. A page's config.schema, and the same key inside a widget's config,
+           names the data the page shows. Give the SHORT slug you passed to
+           upsertSchema (e.g. "loan") — Buildiq points it at this version's own
+           register and namespaced schema for you, and fills config.register in
+           itself. Never invent a register slug of your own.
+
         Tool catalogue:
         {$catalogue}
 

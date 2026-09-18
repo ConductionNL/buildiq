@@ -26,6 +26,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Mcp\Handler;
 
+use OCA\Buildiq\Support\ManifestRoute;
+
 /**
  * Handles the buildiq.upsertMenuItem tool invocation.
  *
@@ -122,6 +124,9 @@ class UpsertMenuItemHandler extends AbstractToolHandler {
 	 * @param array<string, mixed> $args Raw tool arguments.
 	 *
 	 * @return array{appSlug?: string, versionSlug?: string, id?: string, label?: string, icon?: string, route?: string, order?: int, error?: string}
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ManifestRoute is a pure rule with
+	 * no collaborators and no state.
 	 */
 	private function validateArgs(array $args): array {
 		$appSlug = (string)($args['appSlug'] ?? '');
@@ -129,7 +134,10 @@ class UpsertMenuItemHandler extends AbstractToolHandler {
 		$id = (string)($args['id'] ?? '');
 		$label = (string)($args['label'] ?? '');
 		$icon = (string)($args['icon'] ?? '');
-		$route = (string)($args['route'] ?? '');
+		// A bare page id is what this tool's own description used to ask for,
+		// so it is what a model writes. Root it rather than refuse it; see
+		// ManifestRoute for what stays refused.
+		$route = ManifestRoute::normalise(route: (string)($args['route'] ?? ''));
 		$order = 100;
 		if (isset($args['order']) === true) {
 			$order = (int)$args['order'];
@@ -152,7 +160,7 @@ class UpsertMenuItemHandler extends AbstractToolHandler {
 		}
 
 		// Validate route to a safe path pattern (issue #167 — route injection guard).
-		if ($this->isValidRoute(route: $route) === false) {
+		if (ManifestRoute::isValid(route: $route) === false) {
 			return [
 				'error' => "Invalid route '{$route}'. "
 				. "Routes must start with '/' and contain only safe path characters.",
@@ -170,28 +178,6 @@ class UpsertMenuItemHandler extends AbstractToolHandler {
 		];
 
 	}//end validateArgs()
-
-	/**
-	 * Validate a route value against a safe path pattern.
-	 *
-	 * Accepts paths that start with '/' and consist only of alphanumeric
-	 * characters, hyphens, underscores, dots, forward slashes, and route
-	 * parameter placeholders (:param or {param}). Rejects javascript: URIs,
-	 * protocol-relative paths, and other injection vectors (issue #167).
-	 *
-	 * @param string $route The candidate route string.
-	 *
-	 * @return bool
-	 */
-	private function isValidRoute(string $route): bool {
-		if (strlen($route) > 256) {
-			return false;
-		}
-
-		// Require the character after the leading '/' to be non-slash so that
-		// protocol-relative URLs (//host/path) are rejected.
-		return (bool)preg_match('#^/([a-zA-Z0-9_\-\.:\{][a-zA-Z0-9/_\-\.:\{\}]*)?$#', $route);
-	}//end isValidRoute()
 
 	/**
 	 * Upsert a menu item in the menu list using case-insensitive id matching.

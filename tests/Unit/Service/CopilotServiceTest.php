@@ -306,6 +306,31 @@ class CopilotServiceTest extends TestCase {
 					'required' => ['appSlug', 'pageId', 'title', 'type', 'route'],
 				],
 			],
+			[
+				'id' => 'buildiq.upsertMenuItem',
+				'inputSchema' => [
+					'type' => 'object',
+					'properties' => [
+						'appSlug' => ['type' => 'string'],
+						'id' => ['type' => 'string'],
+						'label' => ['type' => 'string'],
+						'route' => ['type' => 'string'],
+					],
+					'required' => ['appSlug', 'id', 'label', 'route'],
+				],
+			],
+			[
+				'id' => 'buildiq.addWidget',
+				'inputSchema' => [
+					'type' => 'object',
+					'properties' => [
+						'appSlug' => ['type' => 'string'],
+						'pageId' => ['type' => 'string'],
+						'widgetType' => ['type' => 'string'],
+					],
+					'required' => ['appSlug', 'pageId', 'widgetType'],
+				],
+			],
 		];
 	}//end descriptors()
 
@@ -1358,9 +1383,18 @@ class CopilotServiceTest extends TestCase {
 			}
 		);
 
+		// deleteData: TRUE. Everything under a plan-created app was made by this
+		// same plan, so there is no user data to spare; with it false the app
+		// row went and its registers and schemas stayed behind. Measured on the
+		// live instance on 2026-09-18: a plan that failed on step 13 left
+		// `openbuild-tool-library-development`,
+		// `openbuild-tool-library-production` and four schemas with no app to
+		// reach them by, against a spec that says a failed plan leaves no
+		// plan-created state behind.
 		$this->deletionService->expects(self::once())
 			->method('deleteApplication')
-			->with(appUuid: 'app-uuid-1', appSlug: 'tool-library', deleteData: false);
+			->with(appUuid: 'app-uuid-1', appSlug: 'tool-library', deleteData: true)
+			->willReturn([]);
 
 		$this->expectException(CopilotException::class);
 		try {
@@ -1372,6 +1406,123 @@ class CopilotServiceTest extends TestCase {
 			throw $e;
 		}
 	}//end testExecuteRollsBackOnMidPlanFailure()
+
+	/**
+	 * A rolled-back plan says what it removed and what it could not, by name.
+	 * The names come from the plan itself, so nothing here is a guess about
+	 * which app on the instance was the failed one.
+	 *
+	 * @return void
+	 */
+	public function testRollbackReportsWhatItRemovedAndWhatItCouldNot(): void {
+		$plan = [
+			'summary' => 'x',
+			'steps' => [
+				['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'home', 'title' => 'Home', 'type' => 'index', 'route' => '/']],
+			],
+		];
+
+		$this->toolProvider->method('invokeTool')->willReturnCallback(
+			function (string $tool): array {
+				if ($tool === 'buildiq.createApp') {
+					return ['success' => true, 'created' => true, 'app' => ['uuid' => 'app-uuid-1', 'slug' => 'tool-library', 'name' => 'Tool Library']];
+				}
+
+				return ['isError' => true, 'error' => 'upsert_failed', 'message' => 'boom'];
+			}
+		);
+
+		$this->deletionService->method('deleteApplication')
+			->willReturn(['register openbuild-tool-library-production']);
+
+		try {
+			$this->makeService()->execute(plan: $plan, userId: 'alice');
+			self::fail('execute() should have thrown');
+		} catch (CopilotException $e) {
+			$rollback = $e->getContext()['rollback'] ?? null;
+			self::assertIsArray($rollback, 'the 422 body should carry a rollback report');
+			self::assertSame('tool-library', $rollback['deletedApp']);
+			self::assertSame(['register openbuild-tool-library-production'], $rollback['orphaned']);
+			self::assertSame([], $rollback['restoreFailures']);
+		}
+	}//end testRollbackReportsWhatItRemovedAndWhatItCouldNot()
+
+	/**
+	 * A menu item whose route is the bare page id reaches the handler as a
+	 * path. Every one of the four menu items in the plan the live copilot
+	 * returned on 2026-09-18 was written this way — the tool's own description
+	 * asked for a route that "should match a page id" — and the first of them
+	 * made the handler refuse the write and roll the whole approved plan back
+	 * with "Invalid route 'overview'".
+	 *
+	 * @return void
+	 */
+	public function testABareMenuRouteReachesTheHandlerAsAPath(): void {
+		$plan = [
+			'summary' => 'x',
+			'steps' => [
+				['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
+				['tool' => 'buildiq.upsertMenuItem', 'arguments' => ['appSlug' => 'tool-library', 'versionSlug' => 'development', 'id' => 'overview', 'label' => 'Overview', 'route' => 'overview', 'order' => 0]],
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'versionSlug' => 'development', 'pageId' => 'tools', 'title' => 'Tools', 'type' => 'index', 'route' => 'tools']],
+			],
+		];
+
+		$seen = [];
+		$this->toolProvider->method('invokeTool')->willReturnCallback(
+			function (string $tool, array $args) use (&$seen): array {
+				$seen[$tool] = $args;
+				if ($tool === 'buildiq.createApp') {
+					return ['success' => true, 'created' => true, 'app' => ['uuid' => 'app-uuid-1', 'slug' => 'tool-library', 'name' => 'Tool Library']];
+				}
+
+				return ['success' => true, 'action' => 'created'];
+			}
+		);
+
+		$this->makeService()->execute(plan: $plan, userId: 'alice');
+
+		self::assertSame('/overview', $seen['buildiq.upsertMenuItem']['route']);
+		self::assertSame('/tools', $seen['buildiq.upsertPage']['route']);
+	}//end testABareMenuRouteReachesTheHandlerAsAPath()
+
+	/**
+	 * A page config naming the short schema slug the model asked upsertSchema
+	 * for reaches the handler pointed at this version's own register and its
+	 * namespaced schema. Without this the created app opened with every list
+	 * page and every KPI card empty (buildiq#75, on the copilot path).
+	 *
+	 * @return void
+	 */
+	public function testAShortSchemaSlugReachesTheHandlerBoundToThisVersion(): void {
+		$plan = [
+			'summary' => 'x',
+			'steps' => [
+				['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'versionSlug' => 'development', 'pageId' => 'loans', 'title' => 'Loans', 'type' => 'index', 'route' => '/loans', 'config' => ['register' => 'loan', 'schema' => 'loan']]],
+				['tool' => 'buildiq.addWidget', 'arguments' => ['appSlug' => 'tool-library', 'versionSlug' => 'development', 'pageId' => 'overview', 'widgetType' => 'stat', 'widgetId' => 'loans-open', 'title' => 'Open loans', 'widgetConfig' => ['register' => 'loan', 'schema' => 'loan', 'aggregate' => 'count']]],
+			],
+		];
+
+		$seen = [];
+		$this->toolProvider->method('invokeTool')->willReturnCallback(
+			function (string $tool, array $args) use (&$seen): array {
+				$seen[$tool] = $args;
+				if ($tool === 'buildiq.createApp') {
+					return ['success' => true, 'created' => true, 'app' => ['uuid' => 'app-uuid-1', 'slug' => 'tool-library', 'name' => 'Tool Library']];
+				}
+
+				return ['success' => true, 'action' => 'created'];
+			}
+		);
+
+		$this->makeService()->execute(plan: $plan, userId: 'alice');
+
+		self::assertSame('openbuild-tool-library-development', $seen['buildiq.upsertPage']['config']['register']);
+		self::assertSame('tool-library-development-loan', $seen['buildiq.upsertPage']['config']['schema']);
+		self::assertSame('openbuild-tool-library-development', $seen['buildiq.addWidget']['widgetConfig']['register']);
+		self::assertSame('tool-library-development-loan', $seen['buildiq.addWidget']['widgetConfig']['schema']);
+	}//end testAShortSchemaSlugReachesTheHandlerBoundToThisVersion()
 
 	/**
 	 * execute() denies a viewer-only caller against an existing app (403) and runs no step.
