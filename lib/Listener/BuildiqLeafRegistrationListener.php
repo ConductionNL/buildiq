@@ -46,11 +46,16 @@ use OCP\EventDispatcher\IEventListener;
  */
 final class BuildiqLeafRegistrationListener implements IEventListener {
 	/**
-	 * The render-surface half of the registration-form leaf.
+	 * The id the unbuilt render surface used to announce.
+	 *
+	 * Kept as a named constant, not deleted, because it is the only record that
+	 * the id was ever published. A consumer that stored it, or a manifest that
+	 * still names it, should find the answer here rather than an absence.
+	 * Nothing registers it: see the note in `handle()`.
 	 *
 	 * @var string
 	 */
-	public const FORM_PANEL_ID = 'buildiq-registration-form-panel';
+	public const RETIRED_FORM_PANEL_ID = 'buildiq-registration-form-panel';
 
 	/**
 	 * Constructor.
@@ -92,18 +97,25 @@ final class BuildiqLeafRegistrationListener implements IEventListener {
 			$this->forms,
 		);
 
-		$event->registerLeaf(
-			new LeafDescriptor(
-				id: self::FORM_PANEL_ID,
-				label: 'Registration forms',
-				icon: 'FormSelect',
-				kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
-				requiredApp: 'buildiq',
-				group: 'Forms',
-				surfaces: ['widget', 'tab'],
-			),
-			null,
-		);
+		// 🔴 THE RENDER SURFACE THAT WAS DECLARED AND NEVER BUILT IS GONE.
+		//
+		// `buildiq-registration-form-panel` announced a widget and a tab, and
+		// buildiq has no client half for either: no `registerIntegration` call
+		// anywhere in `src/`, no component, and the id appeared nowhere outside
+		// its own constant and its own registration. It also ships no leaf
+		// bundle and loads no integration script, so there was nothing on any
+		// page that could have rendered it.
+		//
+		// So every consumer was told a widget and a tab existed, `getLeaves()`
+		// returned them, and a host page that made room for them showed an empty
+		// space. openregister now logs that as an error naming the missing file,
+		// which is how this was found.
+		//
+		// Removed rather than given a bundle: shipping a `leaves` entry here
+		// would mean inventing a widget and a tab nobody designed, to satisfy a
+		// declaration nobody implemented. The two DATA-PROVIDER leaves below and
+		// above are untouched; they work, they have providers, and a data leaf
+		// needs no bundle at all.
 
 		// case-page-layout-per-case-type REQ-OBPL-003 — the owning app asks what
 		// its detail page should show for this object, and renders its own
