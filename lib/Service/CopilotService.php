@@ -989,12 +989,16 @@ class CopilotService {
 	 * @param string $prompt The prompt to send as task input.
 	 * @param string $userId Acting user's UID.
 	 * @param string|null $appSlug Optional target app slug, carried as the task's customId.
+	 * @param float|null $timeoutSeconds How long to wait for a worker, defaulting to
+	 *                                   {@see LLM_TIMEOUT_SECONDS}. Only a test passes
+	 *                                   this, so the give-up path can be exercised
+	 *                                   without waiting two minutes for it.
 	 *
 	 * @return string The task's `output` text.
 	 *
 	 * @throws CopilotException (502) On provider failure, cancellation, or timeout.
 	 */
-	private function runTextToTextTask(object $manager, string $prompt, string $userId, ?string $appSlug = null): string {
+	private function runTextToTextTask(object $manager, string $prompt, string $userId, ?string $appSlug = null, ?float $timeoutSeconds = null): string {
 		$task = new Task(
 			TextToText::ID,
 			['input' => $prompt],
@@ -1013,7 +1017,8 @@ class CopilotService {
 			throw $this->providerError(message: 'The AI provider did not accept the request.', detail: 'TaskProcessing did not assign a task id.');
 		}
 
-		$deadline = microtime(as_float: true) + self::LLM_TIMEOUT_SECONDS;
+		$budget = ($timeoutSeconds ?? self::LLM_TIMEOUT_SECONDS);
+		$deadline = microtime(as_float: true) + $budget;
 
 		while (true) {
 			$current = $manager->getTask($taskId);
@@ -1027,7 +1032,7 @@ class CopilotService {
 				$this->cancelAbandonedTask(manager: $manager, taskId: $taskId);
 				throw $this->providerError(
 					message: 'No AI worker picked up the request in time. Ask an administrator to check the AI settings.',
-					detail: 'TaskProcessing task ' . $taskId . ' was still waiting after ' . ((int)self::LLM_TIMEOUT_SECONDS) . 's.'
+					detail: 'TaskProcessing task ' . $taskId . ' was still waiting after ' . ((int)$budget) . 's.'
 				);
 			}
 
