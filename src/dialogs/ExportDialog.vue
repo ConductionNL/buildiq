@@ -258,7 +258,9 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-1
 		 */
 		versionOptions() {
-			return this.loadedVersions.length ? this.loadedVersions : this.availableVersions
+			return this.loadedVersions.length
+				? this.loadedVersions
+				: this.availableVersions
 		},
 
 		/**
@@ -373,8 +375,9 @@ export default {
 					}))
 				if (this.loadedVersions.length) {
 					this.form.version =
-						this.loadedVersions.find((option) => option.slug === 'development')
-						|| this.loadedVersions[0]
+						this.loadedVersions.find(
+							(option) => option.slug === 'development',
+						) || this.loadedVersions[0]
 				}
 			} catch {
 				this.loadedVersions = []
@@ -397,7 +400,9 @@ export default {
 			if (!uuid) {
 				return
 			}
-			const url = generateUrl(`/apps/buildiq/api/exports/${encodeURIComponent(uuid)}/run`)
+			const url = generateUrl(
+				`/apps/buildiq/api/exports/${encodeURIComponent(uuid)}/run`,
+			)
 			Promise.resolve(axios.post(url)).catch(() => {})
 		},
 

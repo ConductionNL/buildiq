@@ -110,7 +110,9 @@ export async function fetchAppRegister(appSlug, versionSlug) {
 		)
 		const apps = Array.isArray(data && data.results) ? data.results : []
 		const app = apps.find((a) => a && a.slug === appSlug)
-		return app ? await fetchProductionRegister(appSlug, app.productionVersion) : ''
+		return app
+			? await fetchProductionRegister(appSlug, app.productionVersion)
+			: ''
 	} catch {
 		return ''
 	}

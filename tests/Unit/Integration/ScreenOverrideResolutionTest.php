@@ -24,6 +24,8 @@ namespace OCA\Buildiq\Tests\Unit\Integration;
 
 use OCA\Buildiq\Integration\PageLayoutLeafProvider;
 use OCA\Buildiq\Service\LayoutDeltaService;
+use OCA\Buildiq\Service\PageLayoutLayerStack;
+use OCA\Buildiq\Service\PageLayoutPresenter;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IAppConfig;
@@ -118,8 +120,8 @@ final class ScreenOverrideResolutionTest extends TestCase {
 			objectService: $objectService,
 			appConfig: $appConfig,
 			deltas: $this->deltas,
-			userSession: $session,
-			groupManager: $groupManager,
+			layers: new PageLayoutLayerStack(userSession: $session, groupManager: $groupManager),
+			presenter: new PageLayoutPresenter(),
 			logger: $this->createMock(LoggerInterface::class),
 		);
 	}//end makeProvider()

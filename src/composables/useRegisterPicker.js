@@ -103,8 +103,7 @@ export function useRegisterPicker(opts = {}) {
 	 * @return {string} - the register slug, or '' while it is unknown.
 	 */
 	function resolveAppRegister() {
-		const value =
-			typeof appRegister === 'function' ? appRegister() : appRegister
+		const value = typeof appRegister === 'function' ? appRegister() : appRegister
 		return typeof value === 'string' ? value : ''
 	}
 

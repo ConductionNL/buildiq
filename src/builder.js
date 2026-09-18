@@ -470,7 +470,10 @@ async function boot() {
 					h(
 						CnAppNav,
 						navProps,
-						declaresPrimaryAction(manifest, router.currentRoute.value.name)
+						declaresPrimaryAction(
+							manifest,
+							router.currentRoute.value.name,
+						)
 							? {}
 							: { 'primary-action': () => h(BackToVirtualApps) },
 					),

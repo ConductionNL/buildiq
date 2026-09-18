@@ -252,6 +252,7 @@
 				}
 			},
 			"formDraft": {
+				"x-openregister-demo-data": "One person's half-filled form, owner-only. A generated draft belongs to a user who does not exist, so nobody can ever open it.",
 				"slug": "formDraft",
 				"icon": "ContentSaveEditOutline",
 				"version": "0.1.0",
