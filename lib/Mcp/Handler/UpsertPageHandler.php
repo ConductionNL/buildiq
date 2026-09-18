@@ -26,6 +26,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Mcp\Handler;
 
+use OCA\Buildiq\Support\ManifestPageShape;
+
 /**
  * Handles the buildiq.upsertPage tool invocation.
  */
@@ -39,6 +41,9 @@ class UpsertPageHandler extends AbstractToolHandler {
 	 * @param array<string, mixed> $args Tool arguments (appSlug, versionSlug, pageId, title, type, route, config).
 	 *
 	 * @return array<string, mixed>
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ManifestPageShape is a pure shape
+	 * builder with no collaborators and no state.
 	 */
 	public function handle(array $args): array {
 		$validation = $this->validateArgs(args: $args);
@@ -69,13 +74,16 @@ class UpsertPageHandler extends AbstractToolHandler {
 			$manifest = (array)($version['manifest'] ?? []);
 			$pages = (array)($manifest['pages'] ?? []);
 
-			$newPage = [
+			// Shared with CopilotService::applyUpsertPage() so the page reviewed
+			// and the page stored are the same one. See ManifestPageShape for
+			// the per-type fields the canonical validator insists on.
+			$newPage = ManifestPageShape::normalise(page: [
 				'id' => $pageId,
 				'route' => $validation['route'],
 				'type' => $validation['type'],
 				'title' => $validation['title'],
 				'config' => $validation['config'],
-			];
+			]);
 
 			[$pages, $replaced] = $this->upsertPageInList(pages: $pages, pageId: $pageId, newPage: $newPage);
 

@@ -178,8 +178,13 @@ class BuildiqToolProvider implements IMcpToolProvider {
 			'description' => 'Create or update a page in the draft manifest.'
 				. ' pageId is the unique key; if it exists it is replaced.'
 				. ' Type is one of dashboard, index, detail, form.'
-				. ' config is page-type-specific (e.g. {register, schema, columns} for index pages,'
-				. ' {widgets, layout} for dashboards). Defaults versionSlug to "development".',
+				. ' config is page-type-specific, and each type has fields the manifest is invalid without:'
+				. ' index and detail take {register, schema} plus optional columns;'
+				. ' dashboard takes {widgets, layout}, or leave both out and use addWidget;'
+				. ' form MUST take a non-empty fields array, each entry {key, label, type} with type one of'
+				. ' boolean, number, string, enum, password, json, file, and exactly one of'
+				. ' submitHandler or submitEndpoint saying where the form posts.'
+				. ' Defaults versionSlug to "development".',
 			'inputSchema' => [
 				'type' => 'object',
 				'properties' => [
@@ -199,8 +204,12 @@ class BuildiqToolProvider implements IMcpToolProvider {
 			'subject' => 'widget',
 			'action' => 'create',
 			'name' => 'Add a widget to a page',
-			'description' => 'Append a widget to a page\'s config.widgets array in the draft manifest.'
+			'description' => 'Append a widget to a page\'s config.widgets array in the draft manifest,'
+				. ' and place it on the page\'s grid. The target page must be type "dashboard".'
 				. ' widgetType is e.g. "stat", "chart", "table". widgetConfig is widget-type-specific.'
+				. ' Give every widget a widgetId (kebab-case, unique within the page) and a title:'
+				. ' both are stored on the widget and the manifest is invalid without them.'
+				. ' Omit them only if you have nothing better, and one will be derived.'
 				. ' Defaults versionSlug to "development".',
 			'inputSchema' => [
 				'type' => 'object',
@@ -209,8 +218,15 @@ class BuildiqToolProvider implements IMcpToolProvider {
 					'versionSlug' => ['type' => 'string', 'pattern' => '^[a-z0-9][a-z0-9-]*[a-z0-9]$', 'default' => 'development'],
 					'pageId' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 64],
 					'widgetType' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 48],
+					'widgetId' => ['type' => 'string', 'pattern' => '^[a-z0-9][a-z0-9-]*[a-z0-9]$', 'minLength' => 2, 'maxLength' => 48],
+					'title' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 80],
 					'widgetConfig' => ['type' => 'object'],
 				],
+				// Note that widgetId and title stay OUT of `required` on purpose.
+				// The description asks for both, and the handler derives them
+				// when they are missing. Making them required would turn a model
+				// that forgot one into a rejected plan, which is the failure
+				// this change exists to remove.
 				'required' => ['appSlug', 'pageId', 'widgetType'],
 			],
 		],
