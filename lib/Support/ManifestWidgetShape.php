@@ -38,6 +38,8 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * @spec openspec/specs/ai-copilot/spec.md#requirement-the-plan-response-carries-a-predicted-manifest-for-review-and-validation
  */
 
 declare(strict_types=1);
@@ -46,6 +48,8 @@ namespace OCA\Buildiq\Support;
 
 /**
  * Builds a valid dashboard widget entry plus its layout row.
+ *
+ * @spec openspec/specs/ai-copilot/spec.md#requirement-the-plan-response-carries-a-predicted-manifest-for-review-and-validation
  */
 final class ManifestWidgetShape {
 
@@ -180,13 +184,13 @@ final class ManifestWidgetShape {
 	 * @return string A non-empty title.
 	 */
 	private static function resolveTitle(string $title, array $widgetConfig, string $widgetType): string {
-		$candidates = [
-			$title,
-			(is_string(($widgetConfig['title'] ?? null)) === true ? $widgetConfig['title'] : ''),
-			(is_string(($widgetConfig['label'] ?? null)) === true ? $widgetConfig['label'] : ''),
-		];
+		$candidates = [$title, ($widgetConfig['title'] ?? null), ($widgetConfig['label'] ?? null)];
 
 		foreach ($candidates as $candidate) {
+			if (is_string($candidate) === false) {
+				continue;
+			}
+
 			$trimmed = trim($candidate);
 			if ($trimmed !== '') {
 				return $trimmed;

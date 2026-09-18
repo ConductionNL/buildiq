@@ -41,6 +41,8 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * @spec openspec/specs/ai-copilot/spec.md#requirement-the-plan-response-carries-a-predicted-manifest-for-review-and-validation
  */
 
 declare(strict_types=1);
@@ -49,6 +51,8 @@ namespace OCA\Buildiq\Support;
 
 /**
  * Normalises a page written by the builder tools.
+ *
+ * @spec openspec/specs/ai-copilot/spec.md#requirement-the-plan-response-carries-a-predicted-manifest-for-review-and-validation
  */
 final class ManifestPageShape {
 
@@ -120,8 +124,8 @@ final class ManifestPageShape {
 		// endpoint is where an index page on the same pair reads from, so the
 		// form posts to the collection it lists. Nothing is invented when that
 		// pair is absent: the page stays invalid and says so.
-		$register = (is_string(($config['register'] ?? null)) === true ? trim($config['register']) : '');
-		$schema = (is_string(($config['schema'] ?? null)) === true ? trim($config['schema']) : '');
+		$register = self::stringValue(value: ($config['register'] ?? null));
+		$schema = self::stringValue(value: ($config['schema'] ?? null));
 		if ($register !== '' && $schema !== '') {
 			$config['submitEndpoint'] = '/apps/openregister/api/objects/' . $register . '/' . $schema;
 		}
@@ -151,7 +155,7 @@ final class ManifestPageShape {
 			return null;
 		}
 
-		$key = (is_string(($field['key'] ?? null)) === true ? trim($field['key']) : '');
+		$key = self::stringValue(value: ($field['key'] ?? null));
 		if ($key === '') {
 			return null;
 		}
@@ -167,6 +171,21 @@ final class ManifestPageShape {
 
 		return $field;
 	}//end normaliseField()
+
+	/**
+	 * Read a value as a trimmed string, or '' when it is not one.
+	 *
+	 * @param mixed $value Candidate value.
+	 *
+	 * @return string
+	 */
+	private static function stringValue(mixed $value): string {
+		if (is_string($value) === false) {
+			return '';
+		}
+
+		return trim($value);
+	}//end stringValue()
 
 	/**
 	 * Drop a dashboard's `widgets` or `layout` when it is not a list.
