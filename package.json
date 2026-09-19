@@ -11,6 +11,7 @@
     "test:l10n:write": "node tests/l10n/check-l10n.js --write",
     "postinstall": "patch-package",
     "build": "NODE_ENV=production webpack --config webpack.config.js --progress",
+    "postbuild": "node scripts/check-single-dexie.js",
     "dev": "NODE_ENV=development webpack --config webpack.config.js --progress",
     "watch": "NODE_ENV=development webpack --config webpack.config.js --progress --watch",
     "lint": "eslint src tests scripts",
@@ -36,7 +37,8 @@
     "test:coverage": "vitest run --coverage --coverage.provider=v8 --coverage.reporter=json-summary --coverage.reporter=text-summary --coverage.include=src/** --coverage.reportsDirectory=coverage-vitest",
     "test:coverage-ratchet": "npm run test:coverage && bash tests/coverage-ratchet.sh vitest coverage-vitest/coverage-summary.json",
     "test:unit:watch": "vitest",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "check:dexie": "node scripts/check-single-dexie.js"
   },
   "browserslist": [
     "extends @nextcloud/browserslist-config"
@@ -55,7 +57,7 @@
     "@nextcloud/vue": "^9.11.0",
     "@vueuse/core": "^14.3.0",
     "axe-core": "^4.10.0",
-    "dexie": "^4.0.8",
+    "dexie": "^4.4.5",
     "diff": "^9.0.0",
     "dompurify": "^3.4.15",
     "floating-vue": "^5.2.2",
