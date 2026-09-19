@@ -1307,7 +1307,14 @@ OC.L10N.register(
         "Whose draft this is. The only person who may read it.": "Van wie dit concept is. Alleen die persoon mag het lezen.",
         "Widget Id": "Widget-id",
         "Widgets shown on the page outside any tab.": "Widgets die op de pagina staan, buiten de tabbladen om.",
-        "Width": "Breedte"
+        "Width": "Breedte",
+        "Attach a Dossiq case type": "Koppel een Dossiq-zaaktype",
+        "Attach a Filinq template": "Koppel een Filinq-sjabloon",
+        "No Dossiq case is linked to this object yet.": "Er is nog geen Dossiq-zaak aan dit object gekoppeld.",
+        "Open case in Dossiq": "Zaak openen in Dossiq",
+        "No Dossiq case types are attached yet. Attach one to start a case when an object is created.": "Er zijn nog geen Dossiq-zaaktypen gekoppeld. Koppel er een om een zaak te starten wanneer een object wordt aangemaakt.",
+        "No Filinq templates are attached yet. Attach one to let users generate a branded document from an object.": "Er zijn nog geen Filinq-sjablonen gekoppeld. Koppel er een zodat gebruikers een gehuisstijld document uit een object kunnen genereren.",
+        "Back to apps": "Terug naar apps"
     },
     "nplurals=2; plural=(n != 1);"
 )

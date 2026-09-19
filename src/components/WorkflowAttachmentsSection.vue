@@ -24,7 +24,7 @@
 			{{
 				t(
 					'buildiq',
-					'No Procest case types are attached yet. Attach one to start a case when an object is created.',
+					'No Dossiq case types are attached yet. Attach one to start a case when an object is created.',
 				)
 			}}
 		</p>
