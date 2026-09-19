@@ -11,7 +11,7 @@
 	<div class="ob-back-to-apps">
 		<a class="ob-back-to-apps__link" :href="href">
 			<span aria-hidden="true">←</span>
-			{{ t('buildiq', 'Back to virtual apps') }}
+			{{ t('buildiq', 'Back to apps') }}
 		</a>
 	</div>
 </template>

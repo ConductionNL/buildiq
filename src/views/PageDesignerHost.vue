@@ -40,7 +40,7 @@
 				<router-link
 					class="page-designer-host__link"
 					:to="{ name: 'VirtualApps' }">
-					{{ t('buildiq', 'Back to Apps') }}
+					{{ t('buildiq', 'Back to apps') }}
 				</router-link>
 				<a
 					v-if="builderUrl"

@@ -45,7 +45,7 @@
 			{{
 				t(
 					'buildiq',
-					'No Docudesk templates are attached yet. Attach one to let users generate a branded document from an object.',
+					'No Filinq templates are attached yet. Attach one to let users generate a branded document from an object.',
 				)
 			}}
 		</p>
