@@ -5,7 +5,7 @@
  * Playwright e2e — the running app's way back to Buildiq's app list
  * (openspec change `runtime-back-to-virtual-apps`).
  *
- * Tutorial 06 (step 5) sends a builder from a preview "Back to virtual apps",
+ * Tutorial 06 (step 5) sends a builder from a preview "Back to apps",
  * into the designer and out to the preview again. These tests hold the first
  * step of that loop: the link is there for a builder, points at the app
  * list, is absent for a viewer, and never ends up in the manifest.
@@ -20,7 +20,7 @@ import { ensureVersionChain } from './support/versionChain.ts'
 
 const TEST_SLUG = process.env.NC_TEST_SLUG ?? 'pw-verchain'
 const ADMIN_STATE = 'tests/e2e/.auth/admin.json'
-const LINK_NAME = /back to virtual apps/i
+const LINK_NAME = /back to apps/i
 
 test.describe('the running app offers builders a way back', () => {
 	test.beforeAll(async ({ browser }) => {
