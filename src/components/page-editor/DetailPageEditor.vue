@@ -134,18 +134,48 @@
 				@update:modelValue="updateSidebarPropsTabs($event)" />
 			<InlineFieldMark :error="markFor('sidebarProps')" />
 		</fieldset>
+
+		<AppliesToPanel
+			:modelValue="config.pageLayout || {}"
+			:register="config.register || ''"
+			:schema="config.schema || ''"
+			:targetApp="appSlug"
+			@update:modelValue="update('pageLayout', $event)"
+			@saved="$refs.overrideList && $refs.overrideList.reload()" />
+
+		<ScreenOverrideList
+			ref="overrideList"
+			:register="config.register || ''"
+			:schema="config.schema || ''" />
+
+		<RegistrationFormList
+			:register="config.register || ''"
+			:schema="config.schema || ''"
+			:typeProperty="(config.pageLayout || {}).typeProperty || ''"
+			:typeValue="(config.pageLayout || {}).typeValue || ''"
+			:targetApp="appSlug" />
 	</div>
 </template>
 
 <script>
+import AppliesToPanel from './fields/AppliesToPanel.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
+import RegistrationFormList from './fields/RegistrationFormList.vue'
+import ScreenOverrideList from './fields/ScreenOverrideList.vue'
 import SidebarTabBuilder from './fields/SidebarTabBuilder.vue'
 import { useRegisterPicker } from '../../composables/useRegisterPicker.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'DetailPageEditor',
-	components: { SidebarTabBuilder, InlineFieldMark },
+	components: {
+		AppliesToPanel,
+		InlineFieldMark,
+		RegistrationFormList,
+		ScreenOverrideList,
+		SidebarTabBuilder,
+	},
+
 	mixins: [pageEditorValidationMixin],
 	props: {
 		config: {
