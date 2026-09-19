@@ -133,7 +133,7 @@
 							v-for="(err, i) in validatorErrors"
 							:key="i"
 							class="page-designer__error-row">
-							{{ err }}
+							{{ resolveValidationMessage(err) }}
 						</li>
 					</ul>
 					<p v-else-if="!depthError" class="page-designer__ok">
@@ -236,6 +236,7 @@ import { useRegisterPicker } from '../composables/useRegisterPicker.js'
 import { useSessionHistory } from '../composables/useSessionHistory.js'
 import registry from '../registry.js'
 import { versionRegister } from '../services/appRegister.js'
+import { resolveValidationMessage as resolveMessage } from '../services/manifestValidation/connectorErrorMessages.js'
 import { isEditableTarget } from '../utils/isEditableTarget.js'
 
 // Width the preview lays out at before scaling. The shell's nav is a rigid
@@ -707,6 +708,21 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Render one validation error as a sentence.
+		 *
+		 * The validators return `<pointer>: <code>`; this is where the code
+		 * becomes something a user can act on. Unknown codes pass through, so a
+		 * validator that already produces prose is untouched.
+		 *
+		 * @param {string} err - the error as the validator returned it.
+		 * @return {string} The message to show.
+		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-001
+		 */
+		resolveValidationMessage(err) {
+			return resolveMessage(err)
+		},
+
 		/**
 		 * Track how far the preview viewport must shrink to fit the pane, so it
 		 * follows the window instead of its mount-time width. Leaves the scale
