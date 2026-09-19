@@ -1,7 +1,7 @@
 ---
 sidebar_position: 3
 title: Manage Buildiq settings
-description: The three things every Buildiq admin touches: version, register and the template registry.
+description: "The three things every Buildiq admin touches: version, register and the template registry."
 ---
 
 # Manage Buildiq settings
