@@ -328,6 +328,50 @@ export const CnWidgetGrid = {
 }
 
 /**
+ * Stub for `CnWidgetWrapper`. Declares the props the Nextcloud-dashboard panel
+ * binds, and renders its default slot, so a spec can read the chrome variant
+ * that was asked for AND assert the content inside the panel. A stub that
+ * swallowed its children would make every assertion about panel content read
+ * as empty.
+ */
+export const CnWidgetWrapper = {
+	name: 'CnWidgetWrapper',
+	props: {
+		title: { type: String, default: '' },
+		showTitle: { type: Boolean, default: true },
+		showActions: { type: Boolean, default: true },
+		chrome: { type: String, default: 'default' },
+		widgetId: { type: String, default: '' },
+	},
+	render() {
+		return h(
+			'div',
+			{
+				class: 'cn-widget-wrapper-stub',
+				'data-chrome': this.chrome,
+				'data-show-title': String(this.showTitle),
+				'data-widget-id': this.widgetId,
+			},
+			this.$slots?.default?.(),
+		)
+	},
+}
+
+/**
+ * Stub for `registerBuiltinDashboardWidgets()`.
+ *
+ * A documented NO-OP, and it has to be: the real function pulls in every
+ * built-in widget's `.vue` module, which is the exact thing this stub file
+ * exists to keep out of the Vite transform pipeline. A spec that needs a
+ * resolvable widget key registers one itself with `registerDashboardWidget()`,
+ * against the REAL registry re-exported below, so nothing here fakes the
+ * lookup the code under test performs.
+ *
+ * @return {void}
+ */
+export function registerBuiltinDashboardWidgets() {}
+
+/**
  * Stub for `CnAddWidgetModal`. Declares every prop the panel binds (the spec
  * asserts `surface`, `userAddableOnly` and `editingWidget` on it) and both
  * emits, so a spec can drive a submit through the panel's persist path.
@@ -446,7 +490,9 @@ export default {
 	diffManifest,
 	useScopedTheme,
 	CnWidgetGrid,
+	CnWidgetWrapper,
 	CnAddWidgetModal,
+	registerBuiltinDashboardWidgets,
 	dashboardWidgetRegistry,
 	registerDashboardWidget,
 	listWidgetTypes,
