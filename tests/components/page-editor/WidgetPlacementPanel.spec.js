@@ -120,9 +120,10 @@ describe('WidgetPlacementPanel', () => {
 		it('writes a new placement carrying all six required fields', async () => {
 			const wrapper = mountPanel(dashboardPage([]))
 			await wrapper.find('[data-testid="placement-add"]').trigger('click')
-			wrapper
-				.findComponent({ name: 'CnAddWidgetModal' })
-				.vm.$emit('submit', { type: ANY_SURFACE_TYPE, content: { label: 'x' } })
+			wrapper.findComponent({ name: 'CnAddWidgetModal' }).vm.$emit('submit', {
+				type: ANY_SURFACE_TYPE,
+				content: { label: 'x' },
+			})
 			await wrapper.vm.$nextTick()
 
 			const widgets = emittedWidgets(wrapper)
@@ -150,12 +151,10 @@ describe('WidgetPlacementPanel', () => {
 			await wrapper
 				.findAll('[data-testid="placement-edit"]')[1]
 				.trigger('click')
-			wrapper
-				.findComponent({ name: 'CnAddWidgetModal' })
-				.vm.$emit('submit', {
-					type: ANY_SURFACE_TYPE,
-					content: { label: 'edited' },
-				})
+			wrapper.findComponent({ name: 'CnAddWidgetModal' }).vm.$emit('submit', {
+				type: ANY_SURFACE_TYPE,
+				content: { label: 'edited' },
+			})
 			await wrapper.vm.$nextTick()
 
 			const widgets = emittedWidgets(wrapper)
@@ -231,7 +230,11 @@ describe('WidgetPlacementPanel', () => {
 		it('offers no row control in header-actions', () => {
 			const wrapper = mountPanel(
 				dashboardPage([
-					bodyWidget({ slot: 'header-actions', gridWidth: 2, gridHeight: 1 }),
+					bodyWidget({
+						slot: 'header-actions',
+						gridWidth: 2,
+						gridHeight: 1,
+					}),
 				]),
 			)
 			expect(wrapper.find('[data-testid="placement-grid-y"]').exists()).toBe(
@@ -284,7 +287,12 @@ describe('WidgetPlacementPanel', () => {
 		it('stores the geometry a drag produced, read back from the save path', async () => {
 			const page = dashboardPage([
 				bodyWidget({ id: 'one' }),
-				bodyWidget({ id: 'aside', slot: 'sidebar', gridWidth: 1, gridHeight: 4 }),
+				bodyWidget({
+					id: 'aside',
+					slot: 'sidebar',
+					gridWidth: 1,
+					gridHeight: 4,
+				}),
 			])
 			const wrapper = mountPanel(page)
 			const grid = wrapper.findComponent({ name: 'CnWidgetGrid' })
@@ -381,14 +389,14 @@ describe('WidgetPlacementPanel', () => {
 			const wrapper = mountPanel(customPage([]))
 			const addButton = wrapper.find('[data-testid="placement-add"]')
 			expect(addButton.attributes('disabled')).toBeDefined()
-			expect(wrapper.find('[data-testid="pending-note-hint"]').text()).toContain(
-				'document why a standard page type was not feasible',
-			)
+			expect(
+				wrapper.find('[data-testid="pending-note-hint"]').text(),
+			).toContain('document why a standard page type was not feasible')
 
 			await addButton.trigger('click')
-			expect(wrapper.findComponent({ name: 'CnAddWidgetModal' }).props('show')).toBe(
-				false,
-			)
+			expect(
+				wrapper.findComponent({ name: 'CnAddWidgetModal' }).props('show'),
+			).toBe(false)
 			expect(wrapper.emitted('update:widgets')).toBeFalsy()
 		})
 
@@ -451,9 +459,9 @@ describe('WidgetPlacementPanel', () => {
 			expect(text).toContain('custom page in disguise')
 			// Way out (a): declare the page as custom, naming the component.
 			expect(text).toContain('Declare this page as custom')
-			expect(
-				warning.find('[data-testid="disguise-component"]').text(),
-			).toBe('case-timeline')
+			expect(warning.find('[data-testid="disguise-component"]').text()).toBe(
+				'case-timeline',
+			)
 			// Way out (b): add a second widget.
 			expect(text).toContain('add a second widget')
 		})
@@ -546,9 +554,10 @@ describe('WidgetPlacementPanel', () => {
 				]),
 			)
 			await wrapper.find('[data-testid="placement-edit"]').trigger('click')
-			wrapper
-				.findComponent({ name: 'CnAddWidgetModal' })
-				.vm.$emit('submit', { type: ANY_SURFACE_TYPE, content: { label: 'new' } })
+			wrapper.findComponent({ name: 'CnAddWidgetModal' }).vm.$emit('submit', {
+				type: ANY_SURFACE_TYPE,
+				content: { label: 'new' },
+			})
 			await wrapper.vm.$nextTick()
 
 			expect(emittedWidgets(wrapper)[0].props).toEqual({
