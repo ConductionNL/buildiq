@@ -717,6 +717,7 @@ export default {
 		 *
 		 * @param {string} err - the error as the validator returned it.
 		 * @return {string} The message to show.
+		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-001
 		 */
 		resolveValidationMessage(err) {
 			return resolveMessage(err)
