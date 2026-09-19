@@ -501,6 +501,20 @@ export default {
 
 .page-list-editor__add-row {
 	display: flex;
+	/* The row holds five controls (type picker, Title, Slug, Confirm, Cancel)
+	   inside a pane measured at 284px. Without wrapping they overflow to the
+	   RIGHT, out of the pane and under the centre panel, which paints over
+	   them: measured at 1280x900, Cancel sat at x=684 while the row ended at
+	   x=639, so `elementFromPoint` on its centre returned
+	   `.page-designer__empty` and the click never reached the button. Escape
+	   does not close the row either, so the only way out of an accidental
+	   "Add page" was reloading the designer.
+
+	   Wrapping is what fixes it, and it is the whole fix: with the two inputs
+	   already carrying `min-width: 0` (see `.page-list-editor__field`), the
+	   controls fall onto three lines and every one of them lands inside the
+	   pane. */
+	flex-wrap: wrap;
 	gap: 6px;
 	align-items: center;
 }
