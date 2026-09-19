@@ -77,6 +77,67 @@ final class ExportServiceTest extends TestCase {
 	}//end testGenerateAppZipResolvesPlaceholdersAcrossTheTree()
 
 	/**
+	 * A freshly built archive must not already be older than the window the
+	 * cleanup job purges by.
+	 *
+	 * `CleanupExpiredExports` unlinks any ZIP where
+	 * `time() - filemtime($zip) > 86400`. The exporter used to `touch()` the
+	 * finished archive to its deterministic 2026-01-01 timestamp, which made
+	 * every archive roughly 22 million seconds old the moment it was written,
+	 * so the next cleanup pass deleted it while the ExportJob still read
+	 * "Succeeded" and still offered a Download ZIP button.
+	 *
+	 * The second assertion is the control: it pins the reason the `touch()`
+	 * was there in the first place. Entry timestamps INSIDE the archive stay
+	 * deterministic, because those are the bytes that have to match between
+	 * two exports of the same tree. Deleting the whole determinism story to
+	 * fix the expiry would pass the first assertion and fail this one.
+	 *
+	 * @return void
+	 */
+	public function testGeneratedZipIsNotBornOlderThanTheCleanupWindow(): void {
+		$jobUuid = 'unit-' . bin2hex(random_bytes(6));
+		$zipPath = $this->buildService()->generateAppZip(
+			applicationUuid: 'app-uuid',
+			versionSlug: '1.2.3',
+			context: $this->context(),
+			jobUuid: $jobUuid,
+			dataRegisters: [],
+			source: null
+		);
+		$this->litter[] = $zipPath;
+		$this->litter[] = sys_get_temp_dir() . '/buildiq-work/' . $jobUuid;
+
+		self::assertFileExists(filename: $zipPath);
+
+		$age = time() - (int)filemtime($zipPath);
+		self::assertLessThan(
+			expected: 86400,
+			actual: $age,
+			message: 'a just-written export archive is already past the cleanup window, so the next pass deletes it'
+		);
+
+		$zip = new ZipArchive();
+		self::assertTrue(condition: $zip->open($zipPath) === true);
+		$entryStamps = [];
+		for ($i = 0; $i < $zip->numFiles; $i++) {
+			$stat = $zip->statIndex($i);
+			if ($stat !== false) {
+				$entryStamps[] = (int)$stat['mtime'];
+			}
+		}
+
+		$zip->close();
+
+		self::assertNotEmpty(actual: $entryStamps);
+		self::assertSame(
+			expected: [1767225600],
+			actual: array_values(array_unique($entryStamps)),
+			message: 'archive entries must keep the single deterministic timestamp that makes two exports byte-identical'
+		);
+	}//end testGeneratedZipIsNotBornOlderThanTheCleanupWindow()
+
+	/**
 	 * REQ-OBEX-008: archive entries are written in a stable, case-sensitive
 	 * ASCII sort, so two exports of the same tree line up entry-for-entry.
 	 */
