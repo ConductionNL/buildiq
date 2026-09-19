@@ -17,10 +17,10 @@
 
 ## 3. Editor
 
-- [ ] 3.1 Save an override as a minimal delta via `diffManifest`, writing `baseFingerprint` and `baseCutAt` (REQ-OBSO-001, REQ-OBSO-002)
-- [ ] 3.2 Add name and audience to the "applies to" panel of `DetailPageEditor.vue` (REQ-OBSO-004)
-- [ ] 3.3 List the overrides on a layout with their audiences and their state
-- [ ] 3.4 Offer re-cut on a `needs-review` override: recompute the delta against the new base and save (REQ-OBSO-003)
+- [x] 3.1 Save an override as a minimal delta via `diffManifest`, writing `baseFingerprint` and `baseCutAt` (REQ-OBSO-001, REQ-OBSO-002). The SERVER half ships: `PUT /api/page-layouts` stamps `baseFingerprint` and `baseCutAt` from the base the resolver itself composes, and discards any fingerprint in the payload. Cutting the minimal delta with `diffManifest` still belongs to the editor in 3.2
+- [x] 3.2 Add name and audience to the "applies to" panel of `DetailPageEditor.vue` (REQ-OBSO-004). The five audience kinds the resolver knows, and a group, team or user audience with no ref is refused in the panel as well as on the server
+- [x] 3.3 List the overrides on a layout with their audiences and their state. `GET /api/page-layouts?register=&schema=` answers each layout with `drifted` and `orphanedPaths`, and `ScreenOverrideList.vue` renders them: who each screen is for, whether it still applies, and which paths stopped applying
+- [x] 3.4 Offer re-cut on a `needs-review` override: recompute the delta against the new base and save (REQ-OBSO-003). `POST /api/page-layouts/{id}/recut` drops the orphaned paths, re-pins to the base it has now, returns the override to `published` and answers with what it dropped. The button sits on the drifted row in `ScreenOverrideList.vue` and shows what the re-cut dropped
 
 ## 4. Quality
 

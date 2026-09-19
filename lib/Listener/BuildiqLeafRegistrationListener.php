@@ -46,11 +46,16 @@ use OCP\EventDispatcher\IEventListener;
  */
 final class BuildiqLeafRegistrationListener implements IEventListener {
 	/**
-	 * The render-surface half of the registration-form leaf.
+	 * The id the unbuilt render surface used to announce.
+	 *
+	 * Kept as a named constant, not deleted, because it is the only record that
+	 * the id was ever published. A consumer that stored it, or a manifest that
+	 * still names it, should find the answer here rather than an absence.
+	 * Nothing registers it: see the note in `handle()`.
 	 *
 	 * @var string
 	 */
-	public const FORM_PANEL_ID = 'buildiq-registration-form-panel';
+	public const RETIRED_FORM_PANEL_ID = 'buildiq-registration-form-panel';
 
 	/**
 	 * Constructor.
@@ -96,7 +101,7 @@ final class BuildiqLeafRegistrationListener implements IEventListener {
 		//
 		// This advertised `widget` and `tab` surfaces to OpenRegister's leaf
 		// catalogue while buildiq shipped no JS half for it — no
-		// `registerIntegration({ id: self::FORM_PANEL_ID })` exists anywhere in
+		// `registerIntegration({ id: self::RETIRED_FORM_PANEL_ID })` exists anywhere in
 		// src/, and nothing in the fleet references the id. So the catalogue
 		// offered an owning app two places to render something that could
 		// never mount: a phantom render surface, ADR-066 decision 4.
