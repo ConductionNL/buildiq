@@ -95,7 +95,13 @@ describe('slotGeometry', () => {
 
 		it('pins gridY to 0 in header-actions', () => {
 			const out = applySlotRules(
-				{ slot: 'header-actions', gridX: 1, gridY: 7, gridWidth: 2, gridHeight: 1 },
+				{
+					slot: 'header-actions',
+					gridX: 1,
+					gridY: 7,
+					gridWidth: 2,
+					gridHeight: 1,
+				},
 				{ config: {} },
 			)
 			expect(out.gridY).toBe(0)
@@ -114,9 +120,15 @@ describe('slotGeometry', () => {
 			})
 		})
 
-		it('parses a number input\'s string and falls back on a cleared field', () => {
+		it("parses a number input's string and falls back on a cleared field", () => {
 			const out = applySlotRules(
-				{ slot: 'body', gridX: '3', gridY: '', gridWidth: '4', gridHeight: 'x' },
+				{
+					slot: 'body',
+					gridX: '3',
+					gridY: '',
+					gridWidth: '4',
+					gridHeight: 'x',
+				},
 				{ config: {} },
 			)
 			expect(out).toMatchObject({
@@ -129,7 +141,9 @@ describe('slotGeometry', () => {
 
 		it('falls back to the body slot when the slot is missing or unspellable', () => {
 			expect(applySlotRules({}, { config: {} }).slot).toBe('body')
-			expect(applySlotRules({ slot: 'nowhere' }, { config: {} }).slot).toBe('body')
+			expect(applySlotRules({ slot: 'nowhere' }, { config: {} }).slot).toBe(
+				'body',
+			)
 		})
 
 		it('keeps every key it does not own, including unknown ones', () => {
@@ -170,7 +184,9 @@ describe('slotGeometry', () => {
 			expect(slotOffersSpan('sidebar', { config: {} })).toBe(false)
 			// A page that widens the sidebar gets the span control back.
 			expect(
-				slotOffersSpan('sidebar', { config: { slotColumns: { sidebar: 2 } } }),
+				slotOffersSpan('sidebar', {
+					config: { slotColumns: { sidebar: 2 } },
+				}),
 			).toBe(true)
 		})
 	})
@@ -187,7 +203,11 @@ describe('slotGeometry', () => {
 		})
 
 		it('does not fill a 12-column body, so the first widget on an empty dashboard stays valid', () => {
-			const out = defaultGeometryFor('body', { type: 'dashboard', config: {} }, [])
+			const out = defaultGeometryFor(
+				'body',
+				{ type: 'dashboard', config: {} },
+				[],
+			)
 			expect(out.gridWidth).toBeLessThan(12)
 			expect(out).toMatchObject({ gridX: 0, gridY: 0, gridHeight: 3 })
 		})
@@ -199,16 +219,32 @@ describe('slotGeometry', () => {
 
 		it('puts a header action on row zero even when the slot is occupied', () => {
 			const existing = [
-				{ slot: 'header-actions', gridX: 0, gridY: 0, gridWidth: 2, gridHeight: 1 },
+				{
+					slot: 'header-actions',
+					gridX: 0,
+					gridY: 0,
+					gridWidth: 2,
+					gridHeight: 1,
+				},
 			]
-			const out = defaultGeometryFor('header-actions', { config: {} }, existing)
+			const out = defaultGeometryFor(
+				'header-actions',
+				{ config: {} },
+				existing,
+			)
 			expect(out.gridY).toBe(0)
 		})
 	})
 
 	describe('isValidSlot', () => {
 		it('accepts the five literals and the two patterns', () => {
-			for (const slot of ['body', 'sidebar', 'header-actions', 'footer', 'modal']) {
+			for (const slot of [
+				'body',
+				'sidebar',
+				'header-actions',
+				'footer',
+				'modal',
+			]) {
 				expect(isValidSlot(slot)).toBe(true)
 			}
 			expect(isValidSlot('tab:general')).toBe(true)

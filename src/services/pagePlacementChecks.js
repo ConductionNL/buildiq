@@ -102,8 +102,7 @@ export function customPageInDisguiseKey(page) {
 	const gridX = typeof widget.gridX === 'number' ? widget.gridX : 0
 	const gridY = typeof widget.gridY === 'number' ? widget.gridY : 0
 	const gridWidth = typeof widget.gridWidth === 'number' ? widget.gridWidth : 12
-	const gridHeight
-		= typeof widget.gridHeight === 'number' ? widget.gridHeight : 12
+	const gridHeight = typeof widget.gridHeight === 'number' ? widget.gridHeight : 12
 	if (
 		widget.slot !== 'body'
 		|| gridX !== 0

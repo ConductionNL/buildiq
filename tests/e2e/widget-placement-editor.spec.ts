@@ -192,10 +192,13 @@ test.describe('v2 widget placement editor', () => {
 		await page.getByRole('button', { name: /save pages/i }).click()
 
 		await expect
-			.poll(async () => (await storedWidgets(page, 'pw-placement-add')).length, {
-				timeout: 30_000,
-				message: 'the added placement must reach the stored manifest',
-			})
+			.poll(
+				async () => (await storedWidgets(page, 'pw-placement-add')).length,
+				{
+					timeout: 30_000,
+					message: 'the added placement must reach the stored manifest',
+				},
+			)
 			.toBe(1)
 
 		const [stored] = await storedWidgets(page, 'pw-placement-add')
@@ -225,17 +228,22 @@ test.describe('v2 widget placement editor', () => {
 		await page.locator('[data-testid="placement-edit"]').nth(1).click()
 		// The type select is hidden in edit mode: a placement's type is fixed,
 		// which is itself the proof the modal opened on the existing entry.
-		await expect(
-			page.locator('[data-testid="widget-type-select"]'),
-		).toHaveCount(0)
+		await expect(page.locator('[data-testid="widget-type-select"]')).toHaveCount(
+			0,
+		)
 		await page.locator('[data-testid="add-widget-save"]').click()
 		await page.getByRole('button', { name: /save pages/i }).click()
 
 		await expect
 			.poll(
 				async () =>
-					(await storedWidgets(page, 'pw-placement-edit')).map((w) => w.id),
-				{ timeout: 30_000, message: 'the edit must reach the stored manifest' },
+					(await storedWidgets(page, 'pw-placement-edit')).map(
+						(w) => w.id,
+					),
+				{
+					timeout: 30_000,
+					message: 'the edit must reach the stored manifest',
+				},
 			)
 			// The placement keeps its position in widgets[], and its id is never
 			// regenerated: a stored delta override keys widgets[] by id.
@@ -259,8 +267,13 @@ test.describe('v2 widget placement editor', () => {
 		await expect
 			.poll(
 				async () =>
-					(await storedWidgets(page, 'pw-placement-delete')).map((w) => w.id),
-				{ timeout: 30_000, message: 'only the deleted entry must disappear' },
+					(await storedWidgets(page, 'pw-placement-delete')).map(
+						(w) => w.id,
+					),
+				{
+					timeout: 30_000,
+					message: 'only the deleted entry must disappear',
+				},
 			)
 			.toEqual(['keep-one', 'keep-two'])
 
@@ -274,7 +287,11 @@ test.describe('v2 widget placement editor', () => {
 	}) => {
 		await seedPages(page, [
 			dashboardPage('pw-placement-sidebar', [
-				bodyPlacement('aside', { slot: 'sidebar', gridWidth: 1, gridHeight: 2 }),
+				bodyPlacement('aside', {
+					slot: 'sidebar',
+					gridWidth: 1,
+					gridHeight: 2,
+				}),
 			]),
 		])
 		await openDesignerOnPage(page, 0)
@@ -295,7 +312,12 @@ test.describe('v2 widget placement editor', () => {
 				async () => (await storedWidgets(page, 'pw-placement-sidebar'))[0],
 				{ timeout: 30_000, message: 'the field edits must be stored' },
 			)
-			.toMatchObject({ slot: 'sidebar', gridY: 2, gridHeight: 6, gridWidth: 1 })
+			.toMatchObject({
+				slot: 'sidebar',
+				gridY: 2,
+				gridHeight: 6,
+				gridWidth: 1,
+			})
 	})
 
 	// @e2e openbuild-page-designer::moving-a-placement-to-another-slot-re-applies-that-slots-rules
@@ -320,7 +342,8 @@ test.describe('v2 widget placement editor', () => {
 		await expect
 			.poll(async () => (await storedWidgets(page, 'pw-placement-slot'))[0], {
 				timeout: 30_000,
-				message: 'the slot move must be stored with that slot\'s rules applied',
+				message:
+					"the slot move must be stored with that slot's rules applied",
 			})
 			.toMatchObject({ slot: 'header-actions', gridY: 0 })
 	})
@@ -347,10 +370,13 @@ test.describe('v2 widget placement editor', () => {
 		await page.getByRole('button', { name: /save pages/i }).click()
 
 		await expect
-			.poll(async () => (await storedWidgets(page, 'pw-placement-header'))[0], {
-				timeout: 30_000,
-				message: 'a header action must stay on row zero',
-			})
+			.poll(
+				async () => (await storedWidgets(page, 'pw-placement-header'))[0],
+				{
+					timeout: 30_000,
+					message: 'a header action must stay on row zero',
+				},
+			)
 			.toMatchObject({ slot: 'header-actions', gridY: 0 })
 	})
 
@@ -377,9 +403,9 @@ test.describe('v2 widget placement editor', () => {
 		// Both documented ways out, named.
 		await expect(warning).toContainText('custom page in disguise')
 		await expect(warning).toContainText('Declare this page as custom')
-		await expect(
-			page.locator('[data-testid="disguise-component"]'),
-		).toHaveText('case-timeline')
+		await expect(page.locator('[data-testid="disguise-component"]')).toHaveText(
+			'case-timeline',
+		)
 		await expect(warning).toContainText('add a second widget')
 	})
 
@@ -403,9 +429,9 @@ test.describe('v2 widget placement editor', () => {
 			add,
 			'a placement on a custom page cannot be confirmed without a note',
 		).toBeDisabled()
-		await expect(page.locator('[data-testid="pending-note-hint"]')).toContainText(
-			'why a standard page type was not feasible',
-		)
+		await expect(
+			page.locator('[data-testid="pending-note-hint"]'),
+		).toContainText('why a standard page type was not feasible')
 
 		await page
 			.locator('[data-testid="pending-note"]')
@@ -414,9 +440,7 @@ test.describe('v2 widget placement editor', () => {
 	})
 
 	// @e2e openbuild-page-designer::a-non-custom-page-does-not-demand-a-note
-	test('adds a placement to a dashboard page without a note', async ({
-		page,
-	}) => {
+	test('adds a placement to a dashboard page without a note', async ({ page }) => {
 		await seedPages(page, [dashboardPage('pw-placement-nonote')])
 		await openDesignerOnPage(page, 0)
 
@@ -429,15 +453,17 @@ test.describe('v2 widget placement editor', () => {
 
 		await expect
 			.poll(
-				async () => (await storedWidgets(page, 'pw-placement-nonote')).length,
+				async () =>
+					(await storedWidgets(page, 'pw-placement-nonote')).length,
 				{ timeout: 30_000, message: 'the placement must be stored' },
 			)
 			.toBe(1)
 
 		const [stored] = await storedWidgets(page, 'pw-placement-nonote')
-		expect(stored, 'no _note key is written on a dashboard page').not.toHaveProperty(
-			'_note',
-		)
+		expect(
+			stored,
+			'no _note key is written on a dashboard page',
+		).not.toHaveProperty('_note')
 	})
 
 	// @e2e openbuild-page-designer::two-placements-of-the-same-widget-type-do-not-collide
@@ -455,10 +481,13 @@ test.describe('v2 widget placement editor', () => {
 		await page.getByRole('button', { name: /save pages/i }).click()
 
 		await expect
-			.poll(async () => (await storedWidgets(page, 'pw-placement-ids')).length, {
-				timeout: 30_000,
-				message: 'both placements must be stored',
-			})
+			.poll(
+				async () => (await storedWidgets(page, 'pw-placement-ids')).length,
+				{
+					timeout: 30_000,
+					message: 'both placements must be stored',
+				},
+			)
 			.toBe(2)
 
 		const stored = await storedWidgets(page, 'pw-placement-ids')
@@ -505,9 +534,7 @@ test.describe('v2 widget placement editor', () => {
 	})
 
 	// @e2e openbuild-page-designer::a-detail-only-type-is-not-offered-on-a-dashboard-page
-	test('hides detail-only widget types on a dashboard page', async ({
-		page,
-	}) => {
+	test('hides detail-only widget types on a dashboard page', async ({ page }) => {
 		await seedPages(page, [dashboardPage('pw-placement-surface')])
 		await openDesignerOnPage(page, 0)
 

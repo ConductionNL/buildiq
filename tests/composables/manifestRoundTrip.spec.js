@@ -343,7 +343,10 @@ describe('manifest round-trip', () => {
 			// the very same array, so the serialised manifest cannot move.
 			const reopened = {
 				...manifest,
-				pages: manifest.pages.map((page) => ({ ...page, widgets: page.widgets })),
+				pages: manifest.pages.map((page) => ({
+					...page,
+					widgets: page.widgets,
+				})),
 			}
 			expect(JSON.stringify(reopened)).toBe(raw)
 		})

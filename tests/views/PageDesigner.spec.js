@@ -707,18 +707,31 @@ describe('PageDesigner', () => {
 			...overrides,
 		})
 
-		it('replaces the selected page\'s widgets[] and leaves the others alone', async () => {
+		it("replaces the selected page's widgets[] and leaves the others alone", async () => {
 			const wrapper = mountDesigner({
 				pages: [
-					{ id: 'a', type: 'dashboard', config: {}, widgets: [placement('a1')] },
-					{ id: 'b', type: 'dashboard', config: {}, widgets: [placement('b1')] },
+					{
+						id: 'a',
+						type: 'dashboard',
+						config: {},
+						widgets: [placement('a1')],
+					},
+					{
+						id: 'b',
+						type: 'dashboard',
+						config: {},
+						widgets: [placement('b1')],
+					},
 				],
 				menu: [],
 			})
 			wrapper.vm.selectPage(1)
 			await wrapper.vm.$nextTick()
 
-			wrapper.vm.onWidgetsUpdate([placement('b1', { gridX: 6 }), placement('b2')])
+			wrapper.vm.onWidgetsUpdate([
+				placement('b1', { gridX: 6 }),
+				placement('b2'),
+			])
 			await wrapper.vm.$nextTick()
 
 			const emitted = wrapper.emitted('update:manifest')
@@ -742,7 +755,10 @@ describe('PageDesigner', () => {
 						id: 'a',
 						type: 'dashboard',
 						config: {},
-						widgets: [placement('keep'), placement('drop', { gridX: 6 })],
+						widgets: [
+							placement('keep'),
+							placement('drop', { gridX: 6 }),
+						],
 					},
 				],
 				menu: [],
@@ -774,7 +790,9 @@ describe('PageDesigner', () => {
 			const emitted = wrapper.emitted('update:manifest')
 			const next = emitted[emitted.length - 1][0]
 			expect(next.version).toBe('2.0.0')
-			expect(next.menu).toEqual([{ id: 'm', label: 'Home', route: 'a', order: 10 }])
+			expect(next.menu).toEqual([
+				{ id: 'm', label: 'Home', route: 'a', order: 10 },
+			])
 			expect(next.runtime).toEqual({ externalForms: [{ id: 'f' }] })
 		})
 
@@ -805,9 +823,9 @@ describe('PageDesigner', () => {
 
 			const emitted = wrapper.emitted('update:manifest')
 			expect(emitted).toBeTruthy()
-			expect(
-				emitted[emitted.length - 1][0].pages[0].widgets[0].id,
-			).toBe('from-the-panel')
+			expect(emitted[emitted.length - 1][0].pages[0].widgets[0].id).toBe(
+				'from-the-panel',
+			)
 		})
 	})
 })

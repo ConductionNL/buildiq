@@ -62,8 +62,12 @@
 				{{ t('buildiq', 'That shape reads as a custom page in disguise.') }}
 			</p>
 			<p>
-				{{ t('buildiq', 'Declare this page as custom, with this component:') }}
-				<code data-testid="disguise-component">{{ disguisedWidgetKey }}</code>
+				{{
+					t('buildiq', 'Declare this page as custom, with this component:')
+				}}
+				<code data-testid="disguise-component">{{
+					disguisedWidgetKey
+				}}</code>
 			</p>
 			<p>{{ t('buildiq', 'Or add a second widget to the page.') }}</p>
 		</div>
@@ -135,7 +139,13 @@
 							class="widget-placement-panel__number"
 							:value="row.entry.gridX"
 							data-testid="placement-grid-x"
-							@input="updateGeometry(row.index, 'gridX', $event.target.value)" />
+							@input="
+								updateGeometry(
+									row.index,
+									'gridX',
+									$event.target.value,
+								)
+							" />
 					</label>
 
 					<label
@@ -148,7 +158,13 @@
 							class="widget-placement-panel__number"
 							:value="row.entry.gridY"
 							data-testid="placement-grid-y"
-							@input="updateGeometry(row.index, 'gridY', $event.target.value)" />
+							@input="
+								updateGeometry(
+									row.index,
+									'gridY',
+									$event.target.value,
+								)
+							" />
 					</label>
 
 					<label
@@ -163,7 +179,11 @@
 							:value="row.entry.gridWidth"
 							data-testid="placement-grid-width"
 							@input="
-								updateGeometry(row.index, 'gridWidth', $event.target.value)
+								updateGeometry(
+									row.index,
+									'gridWidth',
+									$event.target.value,
+								)
 							" />
 					</label>
 
@@ -176,7 +196,11 @@
 							:value="row.entry.gridHeight"
 							data-testid="placement-grid-height"
 							@input="
-								updateGeometry(row.index, 'gridHeight', $event.target.value)
+								updateGeometry(
+									row.index,
+									'gridHeight',
+									$event.target.value,
+								)
 							" />
 					</label>
 
@@ -238,7 +262,10 @@
 					v-model="pendingSlot"
 					class="widget-placement-panel__select"
 					data-testid="pending-slot">
-					<option v-for="option in slotOptions" :key="option" :value="option">
+					<option
+						v-for="option in slotOptions"
+						:key="option"
+						:value="option">
 						{{ slotLabel(option) }}
 					</option>
 				</select>
@@ -396,8 +423,10 @@ export default {
 				const ai = SLOT_DISPLAY_ORDER.indexOf(a)
 				const bi = SLOT_DISPLAY_ORDER.indexOf(b)
 				if (ai !== bi) {
-					return (ai === -1 ? SLOT_DISPLAY_ORDER.length : ai)
+					return (
+						(ai === -1 ? SLOT_DISPLAY_ORDER.length : ai)
 						- (bi === -1 ? SLOT_DISPLAY_ORDER.length : bi)
+					)
 				}
 				return a.localeCompare(b)
 			})
@@ -419,13 +448,15 @@ export default {
 		 */
 		slotOptions() {
 			const options = [...SLOT_DISPLAY_ORDER]
-			const config
-				= this.page && this.page.config && typeof this.page.config === 'object'
+			const config =
+				this.page && this.page.config && typeof this.page.config === 'object'
 					? this.page.config
 					: {}
 			const declared = [
 				...(Array.isArray(config.tabs)
-					? config.tabs.map((tab) => (tab && tab.id ? `tab:${tab.id}` : null))
+					? config.tabs.map((tab) =>
+							tab && tab.id ? `tab:${tab.id}` : null,
+						)
 					: []),
 				...(Array.isArray(config.sections)
 					? config.sections.map((section) =>
@@ -529,9 +560,10 @@ export default {
 			}
 			return {
 				type: entry.widgetKey,
-				content: entry.props && typeof entry.props === 'object'
-					? { ...entry.props }
-					: {},
+				content:
+					entry.props && typeof entry.props === 'object'
+						? { ...entry.props }
+						: {},
 			}
 		},
 
@@ -544,8 +576,8 @@ export default {
 		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
 		 */
 		dataContext() {
-			const config
-				= this.page && this.page.config && typeof this.page.config === 'object'
+			const config =
+				this.page && this.page.config && typeof this.page.config === 'object'
 					? this.page.config
 					: null
 			if (!config || !config.register || !config.schema) {
@@ -757,15 +789,16 @@ export default {
 				// Identity first: the grid hands back the same objects. Then the
 				// id, which is how the grid itself keys an item. Then body order,
 				// which is the grid's own index fallback.
-				const moved
-					= emitted.find((candidate) => candidate === entry)
-						|| (entry.id
-							? emitted.find(
-									(candidate) => candidate && candidate.id === entry.id,
-								)
-							: null)
-						|| emitted[bodyIndex]
-						|| entry
+				const moved =
+					emitted.find((candidate) => candidate === entry)
+					|| (entry.id
+						? emitted.find(
+								(candidate) =>
+									candidate && candidate.id === entry.id,
+							)
+						: null)
+					|| emitted[bodyIndex]
+					|| entry
 				return applySlotRules(
 					{
 						...entry,
@@ -839,12 +872,12 @@ export default {
 		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
 		 */
 		buildProps(payload, existingProps) {
-			const content
-				= payload && payload.content && typeof payload.content === 'object'
+			const content =
+				payload && payload.content && typeof payload.content === 'object'
 					? payload.content
 					: {}
-			const chrome
-				= payload && payload.chrome && typeof payload.chrome === 'object'
+			const chrome =
+				payload && payload.chrome && typeof payload.chrome === 'object'
 					? payload.chrome
 					: {}
 			const props = { ...(existingProps || {}), ...content }

@@ -54,7 +54,13 @@ describe('pagePlacementChecks', () => {
 		})
 
 		it('gives every other page type the app dashboard surface', () => {
-			for (const type of ['dashboard', 'index', 'custom', 'form', 'settings']) {
+			for (const type of [
+				'dashboard',
+				'index',
+				'custom',
+				'form',
+				'settings',
+			]) {
 				expect(widgetSurfaceForPageType(type)).toBe('app-dashboard')
 			}
 			expect(widgetSurfaceForPageType(undefined)).toBe('app-dashboard')
@@ -76,9 +82,9 @@ describe('pagePlacementChecks', () => {
 
 	describe('customPageInDisguiseKey', () => {
 		it('flags a lone full-width CUSTOM widget on a dashboard page', () => {
-			expect(customPageInDisguiseKey(fullWidthDashboard('case-timeline'))).toBe(
-				'case-timeline',
-			)
+			expect(
+				customPageInDisguiseKey(fullWidthDashboard('case-timeline')),
+			).toBe('case-timeline')
 			expect(isCustomPageInDisguise(fullWidthDashboard('case-timeline'))).toBe(
 				true,
 			)

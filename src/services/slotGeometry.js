@@ -68,8 +68,8 @@ export function isValidSlot(slot) {
  * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
  */
 export function columnsForSlot(slot, page) {
-	const slotColumns
-		= page && page.config && typeof page.config === 'object'
+	const slotColumns =
+		page && page.config && typeof page.config === 'object'
 			? page.config.slotColumns
 			: null
 	return resolveSlotColumns(slot, slotColumns || null)
@@ -112,8 +112,8 @@ export function slotOffersSpan(slot, page) {
  * @return {number} an integer at or above `min`.
  */
 function toInt(value, min) {
-	const parsed
-		= typeof value === 'number' ? Math.trunc(value) : parseInt(value, 10)
+	const parsed =
+		typeof value === 'number' ? Math.trunc(value) : parseInt(value, 10)
 	if (!Number.isFinite(parsed) || parsed < min) {
 		return min
 	}
