@@ -1,57 +1,61 @@
 ---
 sidebar_position: 7
-title: Snapshot and roll back a version
-description: Save a named snapshot of your virtual app, compare it against the current draft, and roll back if needed.
+title: Compare and roll back a version
+description: Switch between the development and production versions of your app, compare their manifests, and roll one back.
 ---
 
-# Snapshot and roll back a version
+# Compare and roll back a version
 
-Every virtual app has a **Version history** tab. Each time you publish the app — or click *Snapshot* manually — Buildiq freezes the full manifest (schemas + pages + menu + data sources) into a versioned record. Rolling back is one click.
+Every Buildiq app carries versions. Two of them do the day to day work: **development**, where you and the AI build, and **production**, what everyone else opens. The sidebar holds the history, the diff and the roll back.
 
 ## Goal
 
-By the end you will have created a named snapshot of your app, edited something, looked at the diff between the snapshot and the current draft, and rolled back.
+By the end you will have switched between your app's versions, read the diff between them, and rolled one version's manifest back onto the app.
 
 ## Prerequisites
 
-- A virtual app with at least one saved page (see [Design a page](./04-design-page.md)).
-- A clear change you want to make and undo — to actually exercise the rollback.
+- An app with at least one saved page (see [Design a page](./04-design-page.md)).
+- Two versions on that app. An app created from a template gets **Development** and **Production**. A seeded example may carry production only, and then there is nothing to compare.
+- Owner or editor rights on the app. A non-production version is hidden from everyone else.
 
 ## Steps
 
-1. Open your app's detail page and switch to the **Version history** tab. The tab lists every snapshot ever taken with its label, who took it, when, and the manifest checksum.
+1. Go to **Apps** and open your app. Under the title sit the version pills: **Development** and **\* Production**. The asterisk marks the production version. Clicking a pill switches the page to that version and writes `?_version=` into the URL.
 
-   ![Version history tab](/screenshots/tutorials/user/07-version-snapshots-01.png)
+   ![The app detail page with its version pills](/screenshots/tutorials/user/07-version-snapshots-01.png)
 
-2. Click **Take snapshot**. Give it a short label (*v1 — initial*, *before adding tasks page*, …) and click **Save**. The new snapshot appears at the top of the list.
+2. Open the sidebar and pick the **Version history** tab. Each row shows the version name, its semver, its status, and a **Production** badge on the live one. The actions on a row are **Open**, **Edit**, **Release**, **Promote** and **Roll back**.
 
-   ![Take snapshot dialog](/screenshots/tutorials/user/07-version-snapshots-02.png)
+   ![The version history tab](/screenshots/tutorials/user/07-version-snapshots-02.png)
 
-3. Make a change you can undo — add a page, rename a property, remove a menu entry — and **Save pages**. The draft is now diverged from the snapshot.
+3. Make a change you can undo. Click **Edit** on the **Development** row, change a page, and click **Save pages**. The designer writes to the version you opened it on, so development now differs from production.
 
-   ![Make a change](/screenshots/tutorials/user/07-version-snapshots-03.png)
+   ![A change saved on the development version](/screenshots/tutorials/user/07-version-snapshots-03.png)
 
-4. Switch to the **Diff** tab on the app detail page. Pick the snapshot from the left side; the diff panel shows added / removed / changed manifest entries side by side.
+4. Switch to the **Diff** tab. It opens on **Compare** set to Development and **With** set to Production, which is the comparison you make before promoting. The **Manifest diff** below names both sides and highlights what moved.
 
-   ![Diff tab](/screenshots/tutorials/user/07-version-snapshots-04.png)
+   ![The diff tab](/screenshots/tutorials/user/07-version-snapshots-04.png)
 
-5. Click **Roll back to this version** on the snapshot row. Confirm in the dialog. Buildiq swaps the current manifest for the snapshot's manifest, keeps the current state as a *Previous draft* snapshot (so you can roll forward again), and reloads.
+5. Happy with the change? Use the **›** button beside the Development pill, or **Promote** on its row, to move it into production. Unhappy? Click **Roll back** on the row you want back and confirm. Rolling back copies that version's manifest onto the app's current draft. The history is append only, so nothing is lost.
 
-   ![Rolled back](/screenshots/tutorials/user/07-version-snapshots-05.png)
+   ![After a roll back](/screenshots/tutorials/user/07-version-snapshots-05.png)
 
 ## Verification
 
-The roll-back worked when: the **Version history** tab shows a new *Previous draft* snapshot at the top, the page designer loads with the schemas / pages / menu of the snapshot you rolled to, and the builder host renders the rolled-back app.
+The roll back worked when the page designer loads with the pages, menu and schemas of the version you rolled to, and the running app renders them. Check the app's status: a roll back leaves it as a draft, so it never republishes behind your back.
 
 ## Common issues
 
 | Symptom | Fix |
 |---|---|
-| **Take snapshot** errors *"manifest is invalid"* | The current draft has validation errors — fix them in the page designer first, then snapshot. |
-| Diff is empty | The snapshot and the draft are byte-identical — make at least one save in the designer between snapshots. |
-| Rollback restored the manifest but the data looks wrong | Snapshots cover the *manifest* only (schemas, pages, menu), not the records — record rollback uses OpenRegister's revisions, see the per-record audit trail. |
+| "This app has one version, so there is nothing to compare yet." | The app carries production only. Create a draft version first, or work on an app made from a template. |
+| No version pills under the title | Non-production versions are visible to owners and editors only. Ask the owner for rights on the app. |
+| "Rollback failed" under the version list | The version you picked has no stored manifest. Pick a version that was saved at least once. |
+| The roll back restored the pages but not the data | Versions cover the manifest: pages, menu, schemas and data sources. Records are not in it. Record history lives in OpenRegister's audit trail. |
+| The diff is empty | Both sides hold the same manifest. Save a change in the designer between the two versions first. |
 
 ## Reference
 
-- [Export the app](./08-export-app.md) — turn a snapshot into a downloadable bundle.
-- [The manifest](../../elements/manifest.md), what exactly is in a snapshot.
+- [Preview and run your app](./06-preview-app.md), how `?_version=` decides what you see.
+- [Export your app](./08-export-app.md), pick the version you want to ship.
+- [The manifest](../../elements/manifest.md), what exactly a version holds.
