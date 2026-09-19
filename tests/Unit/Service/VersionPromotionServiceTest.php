@@ -33,6 +33,7 @@ use OCA\Buildiq\Exception\InvalidStrategyException;
 use OCA\Buildiq\Exception\NoPromoteTargetException;
 use OCA\Buildiq\Exception\PromotionFailedException;
 use OCA\Buildiq\Exception\VersionLockedException;
+use OCA\Buildiq\Service\RegisterRowReader;
 use OCA\Buildiq\Service\VersionPromotionService;
 use OCA\Buildiq\Service\VersionSchemaCarrier;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -97,6 +98,11 @@ class VersionPromotionServiceTest extends TestCase {
 				registerMapper: $this->registerMapper,
 				schemaMapper: $this->schemaMapper,
 			),
+			// The REAL reader, over the same object-service double. A stubbed
+			// reader here would put the defect this suite now covers back
+			// behind a double: the point is that the query reaching
+			// searchObjects() names a schema.
+			rowReader: new RegisterRowReader($this->objectService),
 		);
 	}//end setUp()
 
@@ -620,6 +626,98 @@ class VersionPromotionServiceTest extends TestCase {
 
 		self::assertSame('2.0.0', $result['semver']);
 	}//end testEmptyStartWipesButDoesNotCopy()
+
+	/**
+	 * REQ-OBVP-004: empty-start deletes the rows the target register holds.
+	 *
+	 * The test above cannot see the defect this covers, because its double
+	 * answers the same two rows to any query. Production asked
+	 * `@self.register` with no `@self.schema`; OpenRegister resolves its
+	 * table from the PAIR, so that query reached no table and answered `[]`
+	 * for every target. The wipe then deleted nothing, `copyRowsFromSource`
+	 * copied nothing, and the promotion still flipped the target to
+	 * `published`. An admin who chose empty-start got the old data back,
+	 * silently, in a version marked live.
+	 *
+	 * The double here answers only the register+schema pair that holds the
+	 * rows. Mutation check, run 2026-09-19 both ways: restoring
+	 * `['@self' => ['register' => $registerId]]` in
+	 * VersionPromotionService::wipeTargetRegister(), and separately dropping
+	 * `'schema' => $schemaId` from RegisterRowReader's query, each redden the
+	 * `$deleted` assertSame below with `[]` against
+	 * `['r-stale-1', 'r-stale-2']` — deleteObject is never reached.
+	 *
+	 * @return void
+	 */
+	public function testEmptyStartDeletesTheRowsHeldInTheTargetRegistersSchemas(): void {
+		$source = [
+			'id' => 'u-src',
+			'register' => 'openbuild-app-staging',
+			'manifest' => ['version' => '2.0.0'],
+			'semver' => '2.0.0',
+			'promotesTo' => 'u-tgt',
+		];
+
+		$target = [
+			'id' => 'u-tgt',
+			'register' => 'openbuild-app-production',
+			'manifest' => ['version' => '1.0.0'],
+			'semver' => '1.0.0',
+		];
+
+		$this->objectService->method('find')->willReturn($this->buildObjectEntity(uuid: 'u-tgt', payload: $target));
+
+		// The target register owns two schemas and holds one stale row in each.
+		$targetRegister = $this->buildRegister(id: 21, slug: 'openbuild-app-production', schemas: ['s1', 's2']);
+		$this->registerMapper->method('find')->willReturn($targetRegister);
+
+		$stale = [
+			's1' => $this->buildObjectEntity(uuid: 'r-stale-1', payload: ['id' => 'r-stale-1']),
+			's2' => $this->buildObjectEntity(uuid: 'r-stale-2', payload: ['id' => 'r-stale-2']),
+		];
+
+		$this->objectService->method('searchObjects')->willReturnCallback(
+			static function (array $query) use ($stale): array {
+				$schema = (string)($query['@self']['schema'] ?? '');
+				if ($schema === '' || (string)($query['@self']['register'] ?? '') !== '21') {
+					return [];
+				}
+
+				return isset($stale[$schema]) ? [$stale[$schema]] : [];
+			}
+		);
+
+		$deleted = [];
+		$this->objectService->method('deleteObject')->willReturnCallback(
+			static function (string $uuid) use (&$deleted): bool {
+				$deleted[] = $uuid;
+				return true;
+			}
+		);
+
+		$this->objectService->method('saveObject')->willReturn(
+			$this->buildObjectEntity(
+				uuid: 'u-tgt',
+				payload: [
+					'id' => 'u-tgt',
+					'register' => 'openbuild-app-production',
+					'semver' => '2.0.0',
+					'status' => 'published',
+				]
+			)
+		);
+
+		$this->service->promote(
+			source: $source,
+			strategy: VersionPromotionService::STRATEGY_EMPTY_START
+		);
+
+		self::assertSame(
+			['r-stale-1', 'r-stale-2'],
+			$deleted,
+			'empty-start must delete every row the target register holds, across all of its schemas'
+		);
+	}//end testEmptyStartDeletesTheRowsHeldInTheTargetRegistersSchemas()
 
 	/**
 	 * REQ-OBVP-012 (data-registers-runtime): start-with-source-data leaves a
@@ -1180,11 +1278,20 @@ class VersionPromotionServiceTest extends TestCase {
 		);
 
 		$sourceRow = $this->buildObjectEntity(uuid: 'r1', payload: ['id' => 'r1', 'text' => 'hi', '@self' => ['schema' => '12']]);
-		$searchCall = 0;
+
+		// Answers the QUERY, not the call ordinal. The row lives in register 1
+		// schema 12 and nowhere else, so a reader that asks register-only — or
+		// that asks the target register — gets nothing, which is what the
+		// ordinal double this replaces could not express.
 		$this->objectService->method('searchObjects')->willReturnCallback(
-			static function () use (&$searchCall, $sourceRow): array {
-				$searchCall++;
-				return $searchCall === 1 ? [] : [$sourceRow];
+			static function (array $query) use ($sourceRow): array {
+				$register = (string)($query['@self']['register'] ?? '');
+				$schema = (string)($query['@self']['schema'] ?? '');
+				if ($register === '1' && $schema === '12') {
+					return [$sourceRow];
+				}
+
+				return [];
 			}
 		);
 

@@ -128,6 +128,7 @@ class VersionPromotionService {
 	 * @param ObjectServiceInterface $objectService OR object surface (lock, save, search, delete)
 	 * @param RegisterMapper $registerMapper Resolves register slugs to entities
 	 * @param VersionSchemaCarrier $schemaCarrier Carries schemas and manifest wiring to the target version
+	 * @param RegisterRowReader $rowReader Reads a register's rows across every schema it owns
 	 *
 	 * @return void
 	 */
@@ -136,6 +137,7 @@ class VersionPromotionService {
 		private readonly ObjectServiceInterface $objectService,
 		private readonly RegisterMapper $registerMapper,
 		private readonly VersionSchemaCarrier $schemaCarrier,
+		private readonly RegisterRowReader $rowReader,
 	) {
 	}//end __construct()
 
@@ -323,15 +325,17 @@ class VersionPromotionService {
 		}
 
 		$register = $this->registerMapper->find($targetRegisterSlug, _multitenancy: false);
-		$registerId = $register->getId();
 
-		$rows = $this->objectService->searchObjects(
-			query: ['@self' => ['register' => $registerId]],
+		// Per schema, not per register. A register-only search names no table
+		// for OpenRegister to read, so it answered [] for every target and
+		// this wipe deleted nothing while empty-start reported published.
+		$rows = $this->rowReader->rowsInRegister(
+			register: $register,
 			_rbac: false,
 			_multitenancy: false
 		);
 
-		if (is_array($rows) === false || $rows === []) {
+		if ($rows === []) {
 			return;
 		}
 
@@ -370,13 +374,16 @@ class VersionPromotionService {
 
 		$sourceRegister = $this->registerMapper->find($sourceRegisterSlug, _multitenancy: false);
 
-		$rows = $this->objectService->searchObjects(
-			query: ['@self' => ['register' => $sourceRegister->getId()]],
+		// Per schema, not per register: see wipeTargetRegister(). This read
+		// answered [] for every source, so start-with-source-data copied
+		// nothing into a target it had also failed to wipe.
+		$rows = $this->rowReader->rowsInRegister(
+			register: $sourceRegister,
 			_rbac: false,
 			_multitenancy: false
 		);
 
-		if (is_array($rows) === false || $rows === []) {
+		if ($rows === []) {
 			return;
 		}
 
