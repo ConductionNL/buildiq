@@ -292,6 +292,177 @@ export function useScopedTheme(opts) {
 	return _useScopedTheme(opts)
 }
 
+// ── v2 widget placement editor (v2-widget-placement-editor) ──────────────────
+//
+// Two SFCs and three pure leaves. The SFCs are stubbed, because they are the
+// `require('*.vue')` shape this whole file exists to route around; the leaves
+// are re-exported from the package's own ESM output by their deep subpath, the
+// same real-leaf pattern `mergeManifestDelta` and `validateManifest` follow
+// above. That distinction is the point: `slotGeometry.js` resolves its column
+// count through `resolveSlotColumns`, and a FAKE of that function would make
+// the clamp spec assert the fake's arithmetic rather than the one number the
+// validator's post-schema check reads.
+
+/**
+ * Stub for `CnWidgetGrid`. Declares the props and the emit the placement panel
+ * binds, so a spec can read what was bound and can fire `layout-change`
+ * itself. The real component drives GridStack, which jsdom cannot run.
+ */
+export const CnWidgetGrid = {
+	name: 'CnWidgetGrid',
+	props: {
+		widgets: { type: Array, default: () => [] },
+		slotName: { type: String, required: true },
+		editable: { type: Boolean, default: false },
+		columns: { type: Number, default: null },
+		registry: { type: Object, default: null },
+	},
+	emits: ['layout-change'],
+	render() {
+		return h('div', {
+			class: 'cn-widget-grid-stub',
+			'data-slot': this.slotName,
+			'data-editable': String(this.editable),
+		})
+	},
+}
+
+/**
+ * Stub for `CnWidgetWrapper`. Declares the props the Nextcloud-dashboard panel
+ * binds, and renders its default slot, so a spec can read the chrome variant
+ * that was asked for AND assert the content inside the panel. A stub that
+ * swallowed its children would make every assertion about panel content read
+ * as empty.
+ */
+export const CnWidgetWrapper = {
+	name: 'CnWidgetWrapper',
+	props: {
+		title: { type: String, default: '' },
+		showTitle: { type: Boolean, default: true },
+		showActions: { type: Boolean, default: true },
+		chrome: { type: String, default: 'default' },
+		widgetId: { type: String, default: '' },
+	},
+	render() {
+		return h(
+			'div',
+			{
+				class: 'cn-widget-wrapper-stub',
+				'data-chrome': this.chrome,
+				'data-show-title': String(this.showTitle),
+				'data-widget-id': this.widgetId,
+			},
+			this.$slots?.default?.(),
+		)
+	},
+}
+
+/**
+ * Stub for `registerBuiltinDashboardWidgets()`.
+ *
+ * A documented NO-OP, and it has to be: the real function pulls in every
+ * built-in widget's `.vue` module, which is the exact thing this stub file
+ * exists to keep out of the Vite transform pipeline. A spec that needs a
+ * resolvable widget key registers one itself with `registerDashboardWidget()`,
+ * against the REAL registry re-exported below, so nothing here fakes the
+ * lookup the code under test performs.
+ *
+ * @return {void}
+ */
+export function registerBuiltinDashboardWidgets() {}
+
+/**
+ * Stub for `CnAddWidgetModal`. Declares every prop the panel binds (the spec
+ * asserts `surface`, `userAddableOnly` and `editingWidget` on it) and both
+ * emits, so a spec can drive a submit through the panel's persist path.
+ */
+export const CnAddWidgetModal = {
+	name: 'CnAddWidgetModal',
+	props: {
+		show: { type: Boolean, default: false },
+		preselectedType: { type: String, default: null },
+		editingWidget: { type: Object, default: null },
+		surface: { type: String, default: 'app-dashboard' },
+		userAddableOnly: { type: Boolean, default: false },
+		pageConfig: { type: Object, default: null },
+		dataContext: { type: Object, default: null },
+		uploadFn: { type: Function, default: null },
+		fileUploadFn: { type: Function, default: null },
+		calendarsFetcher: { type: Function, default: null },
+	},
+	emits: ['close', 'submit'],
+	render() {
+		return this.show ? h('div', { class: 'cn-add-widget-modal-stub' }) : null
+	},
+}
+
+import {
+	dashboardWidgetRegistry as _dashboardWidgetRegistry,
+	getDefaultContent as _getDefaultContent,
+	getWidgetTypeEntry as _getWidgetTypeEntry,
+	listUserAddableWidgetTypes as _listUserAddableWidgetTypes,
+	listWidgetTypes as _listWidgetTypes,
+	registerDashboardWidget as _registerDashboardWidget,
+} from '@conduction/nextcloud-vue/dist/esm/components/CnWidgetGrid/dashboardWidgetRegistry.js'
+import { resolveSlotColumns as _resolveSlotColumns } from '@conduction/nextcloud-vue/dist/esm/utils/resolveSlotColumns.js'
+
+/** The REAL shared catalog object, so a spec can register a type and see it. */
+export const dashboardWidgetRegistry = _dashboardWidgetRegistry
+
+/**
+ * @param {string} type - the widget type key.
+ * @param {object} entry - the registry entry.
+ * @return {void}
+ */
+export function registerDashboardWidget(type, entry) {
+	return _registerDashboardWidget(type, entry)
+}
+
+/**
+ * @param {string} [surface] - the surface key to filter by.
+ * @return {string[]} the offerable type keys.
+ */
+export function listWidgetTypes(surface) {
+	return _listWidgetTypes(surface)
+}
+
+/**
+ * @param {string} [surface] - the surface key to filter by.
+ * @return {string[]} the type keys a user may add themselves.
+ */
+export function listUserAddableWidgetTypes(surface) {
+	return _listUserAddableWidgetTypes(surface)
+}
+
+/**
+ * @param {string} type - the widget type key.
+ * @return {object|null} the registry entry, or null.
+ */
+export function getWidgetTypeEntry(type) {
+	return _getWidgetTypeEntry(type)
+}
+
+/**
+ * @param {string} type - the widget type key.
+ * @return {object} a fresh copy of the type's default content.
+ */
+export function getDefaultContent(type) {
+	return _getDefaultContent(type)
+}
+
+/**
+ * The REAL column resolver — the one function `validateManifest`'s
+ * `gridX + gridWidth` post-schema check calls, with the same arguments.
+ *
+ * @param {string} slotName - the slot key.
+ * @param {object|null} [slotColumns] - the page's `config.slotColumns`.
+ * @param {number|null} [propColumns] - an explicit `columns` override.
+ * @return {number} the effective column count.
+ */
+export function resolveSlotColumns(slotName, slotColumns, propColumns) {
+	return _resolveSlotColumns(slotName, slotColumns, propColumns)
+}
+
 export default {
 	NcModal,
 	NcDialog,
@@ -318,4 +489,15 @@ export default {
 	mergeManifestDelta,
 	diffManifest,
 	useScopedTheme,
+	CnWidgetGrid,
+	CnWidgetWrapper,
+	CnAddWidgetModal,
+	registerBuiltinDashboardWidgets,
+	dashboardWidgetRegistry,
+	registerDashboardWidget,
+	listWidgetTypes,
+	listUserAddableWidgetTypes,
+	getWidgetTypeEntry,
+	getDefaultContent,
+	resolveSlotColumns,
 }
