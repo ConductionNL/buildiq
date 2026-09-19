@@ -215,7 +215,7 @@ class SyntheticServiceResolutionPinTest extends TestCase {
 	 *
 	 * The test runs on the CLI with no user session, where
 	 * isEnabledForUser() would otherwise decide the answer and
-	 * loadLazyPanels() would `continue` past every widget — turning the pin
+	 * loadLazyPanels() would `continue` past every widget, turning the pin
 	 * into a test that cannot fail. Only that one service is substituted;
 	 * every other name, including the synthetic one this test exists to
 	 * resolve, goes to the real container.

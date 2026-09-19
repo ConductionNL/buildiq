@@ -5,9 +5,9 @@
  *
  * Runs a scalar aggregation through OpenRegister's in-process aggregation
  * runner. OpenRegister publishes no aggregation method on
- * `OCA\OpenRegister\Contract\ObjectServiceInterface` — the only aggregation
+ * `OCA\OpenRegister\Contract\ObjectServiceInterface`. The only aggregation
  * surface is the REST endpoint and the `Service\Aggregation\AggregationRunner`
- * behind it — so the runner is resolved duck-typed, the same way this app
+ * behind it, so the runner is resolved duck-typed, the same way this app
  * already reaches `ObjectEventSubscription`. When it is absent the gateway
  * returns null and the caller renders an honest empty state rather than a
  * guessed number.

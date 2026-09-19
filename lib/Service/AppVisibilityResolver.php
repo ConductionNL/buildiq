@@ -6,8 +6,8 @@
  * The ONE implementation of the per-user visibility check order that gates a
  * published virtual app's surfaces. Two call sites share it:
  *
- *   - AppNavigationService::isVisibleForCurrentUser() — the top-bar entry.
- *   - VirtualAppWidget::isEnabled() — a promoted Nextcloud dashboard widget.
+ *   - AppNavigationService::isVisibleForCurrentUser(), the top-bar entry.
+ *   - VirtualAppWidget::isEnabled(), a promoted Nextcloud dashboard widget.
  *
  * It is a class rather than a copied method because two copies of an
  * authorization check drift, and the drift is invisible until someone sees
@@ -48,7 +48,7 @@ use OCP\IUserSession;
  */
 class AppVisibilityResolver {
 	/**
-	 * Group:* sentinel — when present in any role array, the surface is
+	 * Group:* sentinel. When present in any role array, the surface is
 	 * visible to all signed-in users (REQ-OBNAV-003).
 	 */
 	public const WILDCARD = 'group:*';
@@ -84,7 +84,7 @@ class AppVisibilityResolver {
 			array_values($extraPrincipals)
 		);
 
-		// 1. Wildcard sentinel — visible to everyone signed in.
+		// 1. Wildcard sentinel: visible to everyone signed in.
 		if (in_array(self::WILDCARD, $allPrincipals, strict: true) === true) {
 			return true;
 		}

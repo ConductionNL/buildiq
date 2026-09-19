@@ -107,7 +107,7 @@ class WidgetItemProjectorTest extends TestCase {
 	}//end testADeclarativeDataSourceBecomesOneItemPerRow()
 
 	/**
-	 * GRAMMAR TEST 1 — the OBJECTS endpoint gets BARE filter keys.
+	 * GRAMMAR TEST 1: the OBJECTS endpoint gets BARE filter keys.
 	 *
 	 * A bracketed key here is read as the EMPTY SET and the widget shows
 	 * nothing, which looks exactly like a widget with no matching rows.
@@ -174,7 +174,7 @@ class WidgetItemProjectorTest extends TestCase {
 	}//end testAnAggregatingDataSourceBecomesASingleNumber()
 
 	/**
-	 * GRAMMAR TEST 2 — the AGGREGATIONS endpoint gets BRACKETED filter keys.
+	 * GRAMMAR TEST 2: the AGGREGATIONS endpoint gets BRACKETED filter keys.
 	 *
 	 * The aggregations endpoint DROPS a bare key and counts the WHOLE
 	 * REGISTER, so the wrong spelling yields a confident wrong number rather

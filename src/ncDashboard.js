@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: EUPL-1.2
 //
-// ncDashboard.js — the browser half of a promoted virtual-app widget.
+// ncDashboard.js: the browser half of a promoted virtual-app widget.
 //
 // `VirtualAppWidget::load()` hands this entry the descriptors the signed-in
 // user may see, as server-provided initial state, then adds this script. The

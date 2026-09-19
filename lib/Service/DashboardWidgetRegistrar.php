@@ -22,7 +22,7 @@
  * Per ADR-031 §Exceptions this is imperative because widget registration
  * requires a closure factory evaluated per request, container service
  * registration under a name computed at runtime and
- * `IManager::lazyRegisterWidget()` — none of which are OpenRegister
+ * `IManager::lazyRegisterWidget()`. None of those are OpenRegister
  * calculation vocabulary. It is the same carve-out AppNavigationService
  * documents for `INavigationManager::add()`. WHICH widgets are promoted stays
  * declarative and lives in the app manifest.

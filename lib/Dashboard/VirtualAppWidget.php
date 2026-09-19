@@ -14,7 +14,7 @@
  * widget registration requires a closure factory evaluated per request,
  * container service registration under a name computed at runtime,
  * `IManager::lazyRegisterWidget()`, and per-request `IGroupManager` calls
- * inside `isEnabled()` — none of which are OpenRegister calculation
+ * inside `isEnabled()`. None of those are OpenRegister calculation
  * vocabulary, and none of which OpenRegister has an extension to declare
  * against. It is the same carve-out `AppNavigationService` documents one level
  * up for `INavigationManager::add()`. WHICH widgets are promoted, what they

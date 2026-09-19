@@ -4,8 +4,8 @@
  * Buildiq Published Application Provider
  *
  * Owns the single per-request read of every published Application from
- * OpenRegister. Both boot-time consumers — AppNavigationService (top-bar
- * entries) and DashboardWidgetRegistrar (Nextcloud dashboard widgets) — read
+ * OpenRegister. Both boot-time consumers, AppNavigationService (top-bar
+ * entries) and DashboardWidgetRegistrar (Nextcloud dashboard widgets), read
  * from this one cache, so registering widgets adds no second query to a
  * request that already reads the same records for the app menu.
  *
@@ -37,7 +37,7 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
  *
  * Registered as a SHARED container service (see Application::register), because
  * an autowired resolution builds a fresh instance per call site and two
- * instances mean two caches and two queries — which is the thing this class
+ * instances mean two caches and two queries, which is the thing this class
  * exists to prevent.
  */
 class PublishedApplicationProvider {
