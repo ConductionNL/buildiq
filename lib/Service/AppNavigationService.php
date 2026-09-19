@@ -64,27 +64,6 @@ class AppNavigationService {
 	public const ENTRY_ID_PREFIX = 'openbuild-app-';
 
 	/**
-	 * Register slug that hosts Application objects.
-	 */
-	private const REGISTER_SLUG = 'buildiq';
-
-	/**
-	 * Schema slug for Application objects.
-	 */
-	private const APPLICATION_SCHEMA = 'built-app';
-
-	/**
-	 * Status value that indicates a published Application.
-	 */
-	private const STATUS_PUBLISHED = 'published';
-
-	/**
-	 * Group:* sentinel — when present in any role array, the entry is
-	 * visible to all signed-in users (REQ-OBNAV-003).
-	 */
-	private const WILDCARD = 'group:*';
-
-	/**
 	 * App-config key overriding the base nav order of virtual-app entries.
 	 */
 	private const ORDER_BASE_CONFIG_KEY = 'nav_order_base';
@@ -97,11 +76,25 @@ class AppNavigationService {
 	private const ORDER_BASE_DEFAULT = 100;
 
 	/**
-	 * Cache of published applications fetched this request (per-request).
+	 * The shared per-request published-application read.
 	 *
-	 * @var array<array<string,mixed>>|null
+	 * Injected in production so this service and DashboardWidgetRegistrar hold
+	 * the SAME instance, and therefore the same cache — one query per request.
+	 * It is optional and trailing so the constructor signature this service
+	 * has always had still works; when it is absent one is built from the
+	 * object service passed in. The query itself exists in exactly one place
+	 * either way, which is what stops the two paths drifting.
+	 *
+	 * @var PublishedApplicationProvider|null
 	 */
-	private ?array $cachedApplications = null;
+	private ?PublishedApplicationProvider $applicationProvider;
+
+	/**
+	 * The shared per-user visibility check order.
+	 *
+	 * @var AppVisibilityResolver
+	 */
+	private AppVisibilityResolver $visibilityResolver;
 
 	/**
 	 * Constructor.
@@ -112,6 +105,8 @@ class AppNavigationService {
 	 * @param IGroupManager $groupManager Group manager
 	 * @param IAppConfig $appConfig App config (nav order base override)
 	 * @param LoggerInterface $logger PSR logger
+	 * @param PublishedApplicationProvider|null $applicationProvider Shared published-app read
+	 * @param AppVisibilityResolver|null $visibilityResolver Shared visibility check order
 	 *
 	 * @return void
 	 */
@@ -122,7 +117,11 @@ class AppNavigationService {
 		private readonly IGroupManager $groupManager,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
+		?PublishedApplicationProvider $applicationProvider = null,
+		?AppVisibilityResolver $visibilityResolver = null,
 	) {
+		$this->applicationProvider = $applicationProvider;
+		$this->visibilityResolver = ($visibilityResolver ?? new AppVisibilityResolver());
 	}//end __construct()
 
 	/**
@@ -255,100 +254,20 @@ class AppNavigationService {
 		IUserSession $userSession,
 		IGroupManager $groupManager,
 	): bool {
-		$user = $userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		$uid = $user->getUID();
-		$allPrincipals = $this->flattenPermissions(permissions: $permissions);
-
-		// 1. Wildcard sentinel — visible to everyone signed in.
-		if (in_array(self::WILDCARD, $allPrincipals, strict: true) === true) {
-			return true;
-		}
-
-		// 2. Direct UID match.
-		if (in_array('user:' . $uid, $allPrincipals, strict: true) === true) {
-			return true;
-		}
-
-		// 3. Group-based match.
-		$userGroups = $groupManager->getUserGroupIds(user: $user);
-		if ($this->principalsMatchGroups(principals: $allPrincipals, userGroups: $userGroups) === true) {
-			return true;
-		}
-
-		// 4. Nextcloud admin always sees all entries.
-		return $groupManager->isAdmin($uid);
+		// Delegated, not duplicated: VirtualAppWidget::isEnabled() calls the
+		// same resolver with the widget placement's `roles` as extra
+		// principals. Two copies of an authorization check drift, and the
+		// drift is invisible until someone sees something they should not.
+		return $this->visibilityResolver->isVisible(
+			permissions: $permissions,
+			extraPrincipals: [],
+			userSession: $userSession,
+			groupManager: $groupManager
+		);
 	}//end isVisibleForCurrentUser()
 
 	/**
-	 * Flatten the three permission role arrays into a single principal list.
-	 *
-	 * @param array<string,mixed> $permissions The Application's permissions block.
-	 *
-	 * @return array<mixed> All principals from owners + editors + viewers.
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-5
-	 */
-	private function flattenPermissions(array $permissions): array {
-		$owners = ($permissions['owners'] ?? []);
-		$editors = ($permissions['editors'] ?? []);
-		$viewers = ($permissions['viewers'] ?? []);
-
-		if (is_array($owners) === false) {
-			$owners = [];
-		}
-
-		if (is_array($editors) === false) {
-			$editors = [];
-		}
-
-		if (is_array($viewers) === false) {
-			$viewers = [];
-		}
-
-		return array_merge($owners, $editors, $viewers);
-	}//end flattenPermissions()
-
-	/**
-	 * Check whether any principal in the list matches one of the user's groups.
-	 *
-	 * @param array<mixed> $principals All principals from the permissions block.
-	 * @param array<string> $userGroups The calling user's group IDs.
-	 *
-	 * @return bool True when a group match is found.
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-5
-	 */
-	private function principalsMatchGroups(array $principals, array $userGroups): bool {
-		foreach ($principals as $principal) {
-			if (is_string($principal) === false) {
-				continue;
-			}
-
-			// Strip "group:" prefix for the normalised comparison.
-			$gid = $principal;
-			if (str_starts_with($principal, 'group:') === true) {
-				$gid = substr($principal, strlen('group:'));
-			}
-
-			if ($gid === '*') {
-				// Already handled by the wildcard sentinel in the caller.
-				continue;
-			}
-
-			if (in_array($gid, $userGroups, strict: true) === true) {
-				return true;
-			}
-		}//end foreach
-
-		return false;
-	}//end principalsMatchGroups()
-
-	/**
-	 * Fetch (and cache per-request) all published Applications from OR.
+	 * Fetch all published Applications through the shared per-request provider.
 	 *
 	 * @return array<array<string,mixed>> List of normalised Application arrays.
 	 *
@@ -356,67 +275,15 @@ class AppNavigationService {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-4
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-7
+	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-published-applications-are-read-once-per-request
 	 */
 	private function getPublishedApplications(): array {
-		if ($this->cachedApplications !== null) {
-			return $this->cachedApplications;
+		if ($this->applicationProvider === null) {
+			$this->applicationProvider = new PublishedApplicationProvider(
+				objectService: $this->objectService
+			);
 		}
 
-		// RBAC + multitenancy are disabled here on purpose: this runs during
-		// app boot, where the user session is often NOT yet resolved (OCS
-		// navigation requests, WebDAV, cron). With the default filters the
-		// query silently returned 0 rows on those requests and no nav entries
-		// were ever registered. Per-user visibility is enforced later, inside
-		// each entry's closure (isVisibleForCurrentUser, REQ-OBNAV-002), which
-		// runs when the user IS known.
-		$results = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => self::REGISTER_SLUG,
-					'schema' => self::APPLICATION_SCHEMA,
-					'status' => self::STATUS_PUBLISHED,
-				],
-				'limit' => 1000,
-			],
-			_rbac: false,
-			_multitenancy: false
-		);
-
-		$applications = [];
-		foreach ($results as $item) {
-			$applications[] = $this->normaliseObject(object: $item);
-		}
-
-		$this->cachedApplications = $applications;
-		return $applications;
+		return $this->applicationProvider->getPublishedApplications();
 	}//end getPublishedApplications()
-
-	/**
-	 * Coerce an OR result entry (ObjectEntity or array) to an associative array.
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normaliseObject(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normaliseObject()
 }//end class

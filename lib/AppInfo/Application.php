@@ -28,6 +28,7 @@ use OCA\Buildiq\Capabilities;
 use OCA\Buildiq\Controller\DashboardController;
 use OCA\Buildiq\Controller\PreferencesController;
 use OCA\Buildiq\Controller\SettingsController;
+use OCA\Buildiq\Dashboard\VirtualAppWidgetContext;
 use OCA\Buildiq\Lifecycle\ApplicationVersionOwnerGuard;
 use OCA\Buildiq\Listener\ApprovalOutcomeListener;
 use OCA\Buildiq\Listener\AutomationApprovalTriggerListener;
@@ -39,8 +40,14 @@ use OCA\Buildiq\Mcp\BuildiqToolProvider;
 use OCA\Buildiq\Repair\InitializeSettings;
 use OCA\Buildiq\Sections\SettingsSection;
 use OCA\Buildiq\Service\AppNavigationService;
+use OCA\Buildiq\Service\AppVisibilityResolver;
 use OCA\Buildiq\Service\Connection\ConnectionReporter;
+use OCA\Buildiq\Service\Dashboard\AggregationGateway;
+use OCA\Buildiq\Service\Dashboard\OpenRegisterAggregationGateway;
+use OCA\Buildiq\Service\Dashboard\WidgetItemProjector;
+use OCA\Buildiq\Service\DashboardWidgetRegistrar;
 use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Service\PublishedApplicationProvider;
 use OCA\Buildiq\Service\SettingsService;
 use OCA\Buildiq\Settings\AdminSettings;
 use OCA\OpenRegister\AppHost\Bootstrap;
@@ -61,6 +68,7 @@ use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\AppFramework\Services\IInitialState;
+use OCP\Dashboard\IManager as IDashboardManager;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\INavigationManager;
@@ -255,6 +263,47 @@ class Application extends App implements IBootstrap {
 		// NC's DI container resolve the leaf class names to the real Buildiq
 		// controllers (last registration wins), so the canonical routes keep
 		// working while everything else is generic.
+
+		// The published-Application read is SHARED on purpose. Autowiring
+		// builds a fresh instance per injection point, and two instances mean
+		// two per-request caches and two OpenRegister queries — the exact
+		// thing this provider exists to prevent. Both boot-time consumers
+		// (AppNavigationService for the top bar, DashboardWidgetRegistrar for
+		// the dashboard widgets) resolve this one name.
+		$context->registerService(
+			PublishedApplicationProvider::class,
+			static fn ($c): PublishedApplicationProvider => new PublishedApplicationProvider(
+				objectService: $c->get(ObjectServiceInterface::class)
+			)
+		);
+
+		// AppNavigationService takes the shared provider explicitly, because
+		// its own constructor keeps the object service for the fallback path.
+		$context->registerService(
+			AppNavigationService::class,
+			static fn ($c): AppNavigationService => new AppNavigationService(
+				objectService: $c->get(ObjectServiceInterface::class),
+				urlGenerator: $c->get('OCP\\IURLGenerator'),
+				userSession: $c->get('OCP\\IUserSession'),
+				groupManager: $c->get('OCP\\IGroupManager'),
+				appConfig: $c->get('OCP\\IAppConfig'),
+				logger: $c->get(LoggerInterface::class),
+				applicationProvider: $c->get(PublishedApplicationProvider::class),
+				visibilityResolver: $c->get(AppVisibilityResolver::class)
+			)
+		);
+
+		// OpenRegister publishes no aggregation method on its contract, so the
+		// gateway resolves the runner duck-typed and answers null when it is
+		// absent. Bound here so the projector type-hints the interface.
+		$context->registerService(
+			AggregationGateway::class,
+			static fn ($c): AggregationGateway => new OpenRegisterAggregationGateway(
+				container: $c,
+				logger: $c->get(LoggerInterface::class)
+			)
+		);
+
 		$context->registerService(
 			DashboardController::class,
 			static fn ($c): DashboardController => new DashboardController(
@@ -723,5 +772,54 @@ class Application extends App implements IBootstrap {
 				['exception' => $e]
 			);
 		}//end try
+
+		// Promoted dashboard widgets, beside the nav entries and reading the
+		// SAME published-Application query (PublishedApplicationProvider is a
+		// shared service, so this adds no second read).
+		//
+		// Its own guard, not the one above. Sharing a try block would mean a
+		// nav-entry failure silently skipped the widgets and a widget failure
+		// silently skipped nothing, and neither would be visible in the log as
+		// what it was.
+		$this->registerDashboardWidgets(context: $context);
 	}//end boot()
+
+	/**
+	 * Register the promoted virtual-app dashboard widgets.
+	 *
+	 * Never throws. An instance without OpenRegister, a failing object
+	 * service, or a Nextcloud without the Dashboard app all land here as a
+	 * warning and zero registered widgets, and the dashboard renders its other
+	 * widgets normally.
+	 *
+	 * @param IBootContext $context The boot context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-promoted-widgets-are-registered-with-the-nextcloud-dashboard
+	 */
+	private function registerDashboardWidgets(IBootContext $context): void {
+		try {
+			$container = $context->getAppContainer();
+			$widgetContext = new VirtualAppWidgetContext(
+				urlGenerator: $container->get(IURLGenerator::class),
+				userSession: $container->get('OCP\\IUserSession'),
+				groupManager: $container->get('OCP\\IGroupManager'),
+				visibility: $container->get(AppVisibilityResolver::class),
+				projector: $container->get(WidgetItemProjector::class),
+				initialState: $container->get(IInitialState::class)
+			);
+
+			$container->get(DashboardWidgetRegistrar::class)->registerWidgets(
+				container: $container,
+				dashboardManager: $container->get(IDashboardManager::class),
+				context: $widgetContext
+			);
+		} catch (\Throwable $e) {
+			\OCP\Server::get(LoggerInterface::class)->warning(
+				'Buildiq: dashboard-widget registration failed during boot: ' . $e->getMessage(),
+				['exception' => $e]
+			);
+		}//end try
+	}//end registerDashboardWidgets()
 }//end class
