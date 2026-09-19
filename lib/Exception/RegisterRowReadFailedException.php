@@ -25,7 +25,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/register-row-reads-name-a-schema/tasks.md#task-1
+ * @spec openspec/specs/version-promotion/spec.md#requirement-empty-start-drops-target-rows-imports-source-schema-set
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use Throwable;
 /**
  * A register's rows could not be read for one of its schemas.
  *
- * @spec openspec/changes/register-row-reads-name-a-schema/tasks.md#task-1
+ * @spec openspec/specs/version-promotion/spec.md#requirement-empty-start-drops-target-rows-imports-source-schema-set
  */
 final class RegisterRowReadFailedException extends RuntimeException {
 	/**

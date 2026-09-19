@@ -32,7 +32,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/register-row-reads-name-a-schema/tasks.md#task-1
+ * @spec openspec/specs/version-promotion/spec.md#requirement-empty-start-drops-target-rows-imports-source-schema-set
  *
  * @SPDX-License-Identifier: EUPL-1.2
  * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
@@ -55,7 +55,8 @@ use Throwable;
  * defect it fixes: a caller cannot tell an empty register from one it was
  * unable to read unless the two answer differently.
  *
- * @spec openspec/changes/register-row-reads-name-a-schema/tasks.md#task-1
+ * @spec openspec/specs/version-promotion/spec.md#requirement-empty-start-drops-target-rows-imports-source-schema-set
+ * @spec openspec/specs/openbuild-exporter/spec.md#requirement-optional-seed-data-inclusion
  */
 class RegisterRowReader {
 	/**
@@ -85,7 +86,8 @@ class RegisterRowReader {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags mirror searchObjects() upstream.
 	 *
-	 * @spec openspec/changes/register-row-reads-name-a-schema/tasks.md#task-1
+	 * @spec openspec/specs/version-promotion/spec.md#requirement-empty-start-drops-target-rows-imports-source-schema-set
+	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-optional-seed-data-inclusion
 	 */
 	public function rowsInRegister(
 		Register $register,
