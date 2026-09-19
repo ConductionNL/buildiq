@@ -1650,7 +1650,14 @@
         "Whose draft this is. The only person who may read it.": "Whose draft this is. The only person who may read it.",
         "Widget Id": "Widget Id",
         "Widgets shown on the page outside any tab.": "Widgets shown on the page outside any tab.",
-        "Width": "Width"
+        "Width": "Width",
+        "Attach a Dossiq case type": "Attach a Dossiq case type",
+        "Attach a Filinq template": "Attach a Filinq template",
+        "Back to apps": "Back to apps",
+        "No Dossiq case is linked to this object yet.": "No Dossiq case is linked to this object yet.",
+        "No Dossiq case types are attached yet. Attach one to start a case when an object is created.": "No Dossiq case types are attached yet. Attach one to start a case when an object is created.",
+        "No Filinq templates are attached yet. Attach one to let users generate a branded document from an object.": "No Filinq templates are attached yet. Attach one to let users generate a branded document from an object.",
+        "Open case in Dossiq": "Open case in Dossiq"
     },
     "plurals": "",
     "pluralForm": "nplurals=2; plural=(n != 1);"

@@ -30,7 +30,7 @@
 
 		<div v-else-if="!hasLinkedCase" class="procest-case-status-panel__unlinked">
 			<p>
-				{{ t('buildiq', 'No Procest case is linked to this object yet.') }}
+				{{ t('buildiq', 'No Dossiq case is linked to this object yet.') }}
 			</p>
 			<NcButton variant="primary" :disabled="starting" @click="startNow">
 				{{
@@ -76,7 +76,7 @@
 				:href="deepLink"
 				target="_blank"
 				rel="noopener noreferrer">
-				{{ t('buildiq', 'Open case in Procest') }}
+				{{ t('buildiq', 'Open case in Dossiq') }}
 			</a>
 		</div>
 	</div>

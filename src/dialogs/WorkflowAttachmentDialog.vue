@@ -16,7 +16,7 @@
 		:name="
 			editing
 				? t('buildiq', 'Edit workflow attachment')
-				: t('buildiq', 'Attach a Procest case type')
+				: t('buildiq', 'Attach a Dossiq case type')
 		"
 		size="normal"
 		@update:open="$emit('update:open', $event)"
