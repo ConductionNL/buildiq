@@ -14,14 +14,29 @@
 			</button>
 		</header>
 		<div v-if="addingType !== null" class="page-list-editor__add-row">
-			<select v-model="addingType" class="page-list-editor__select">
+			<select
+				v-model="addingType"
+				class="page-list-editor__select"
+				:aria-label="t('buildiq', 'Page type')">
 				<option value="">
-					{{ t('buildiq', '— select page type —') }}
+					{{ t('buildiq', 'Select a page type') }}
 				</option>
 				<option v-for="type in PAGE_TYPES" :key="type" :value="type">
 					{{ type }}
 				</option>
 			</select>
+			<input
+				v-model="addingTitle"
+				type="text"
+				class="page-list-editor__field page-list-editor__add-title"
+				:placeholder="t('buildiq', 'Title')"
+				:aria-label="t('buildiq', 'Title')" />
+			<input
+				v-model="addingId"
+				type="text"
+				class="page-list-editor__field page-list-editor__add-id"
+				:placeholder="t('buildiq', 'Slug')"
+				:aria-label="t('buildiq', 'Slug')" />
 			<button type="button" :disabled="!addingType" @click="confirmAdd">
 				{{ t('buildiq', 'Confirm') }}
 			</button>
@@ -33,7 +48,15 @@
 		     `:value`/`@input`, sortable options are plain props instead of an
 		     `:options` object, and rows MUST come from the `#item` scoped slot —
 		     a v-for in the default slot throws "draggable element must have an
-		     item slot" at render. -->
+		     item slot" at render.
+
+		     Keep comments OUT of the `#item` slot: dev builds keep comment nodes
+		     (production strips them), so one beside the row makes the slot yield
+		     two children and vuedraggable rejects it.
+
+		     The row uses `role="group"`, not `role="button"`, because it contains
+		     interactive controls a button role would hide; `@focusin` selects it
+		     so keyboard users get what the mouse always had. -->
 		<Draggable
 			:modelValue="pages"
 			handle=".page-list-editor__drag-handle"
@@ -42,20 +65,6 @@
 			class="page-list-editor__list"
 			@update:modelValue="onReorder">
 			<template #item="{ element: page, index }">
-				<!--
-					The row is selected by CLICK, and until now by click only:
-					every field inside carries `@click.stop`, so a keyboard user
-					tabbing into a row's inputs was editing a page that was never
-					selected. `@focusin` is the substantive repair — it gives the
-					keyboard the same selection the mouse always had.
-
-					`role="group"` + `aria-label` (not `role="button"`) because the
-					row CONTAINS interactive controls; a button's children are
-					presentational, so `role="button"` here would hide the inputs
-					from assistive technology. `tabindex="-1"` makes the row
-					programmatically focusable without adding a second tab stop in
-					front of the fields it wraps.
-				-->
 				<div
 					class="page-list-editor__row"
 					:class="{
@@ -75,6 +84,14 @@
 						:title="t('buildiq', 'Drag to reorder')">
 						⠿
 					</span>
+					<input
+						:value="page.title || ''"
+						type="text"
+						class="page-list-editor__field page-list-editor__title"
+						:placeholder="t('buildiq', 'Title')"
+						:aria-label="t('buildiq', 'Title')"
+						@click.stop
+						@input="updateField(index, 'title', $event.target.value)" />
 					<input
 						:value="page.id || ''"
 						type="text"
@@ -118,6 +135,13 @@
 		<p v-if="duplicateIds.length" class="page-list-editor__error" role="alert">
 			{{ t('buildiq', 'Duplicate page ids:') }} {{ duplicateIds.join(', ') }}
 		</p>
+		<p
+			v-if="duplicateRoutes.length"
+			class="page-list-editor__error"
+			role="alert">
+			{{ t('buildiq', 'More than one page uses the route:') }}
+			{{ duplicateRoutes.join(', ') }}
+		</p>
 		<p v-if="invalidRoutes.length" class="page-list-editor__error" role="alert">
 			{{ t('buildiq', 'Invalid route(s):') }} {{ invalidRoutes.join(', ') }}
 		</p>
@@ -144,7 +168,8 @@ export const PAGE_TYPES = [
 	'wiki',
 ]
 
-const ROUTE_PATTERN = /^\/$|^(\/[A-Za-z0-9_-]+|\/:[A-Za-z_][A-Za-z0-9_]*(\(.*\))?)+$/
+export const ROUTE_PATTERN =
+	/^\/$|^(\/[A-Za-z0-9_-]+|\/:[A-Za-z_][A-Za-z0-9_]*(\(.*\))?)+$/
 
 const DEFAULT_CONFIGS = {
 	index: { register: '', schema: '', columns: [], actions: [] },
@@ -160,6 +185,50 @@ const DEFAULT_CONFIGS = {
 	roadmap: {},
 	search: { register: '', schema: '', facets: [] },
 	wiki: { register: '', schema: '' },
+}
+
+/**
+ * A page slug: lower case, words joined by dashes, route-safe.
+ *
+ * @param {string} value - what the user typed.
+ * @return {string} the slug, or '' when nothing usable is left.
+ */
+function slugify(value) {
+	return String(value || '')
+		.trim()
+		.toLowerCase()
+		.replace(/[^a-z0-9_-]+/g, '-')
+		.replace(/^-+|-+$/g, '')
+}
+
+/**
+ * `value`, or `value-2`, `value-3`… when `value` is already taken.
+ *
+ * @param {string} value - the preferred value.
+ * @param {Set<string>} taken - values already in use.
+ * @return {string} a value not in `taken`.
+ */
+function uniqueValue(value, taken) {
+	if (!taken.has(value)) {
+		return value
+	}
+	let n = 2
+	while (taken.has(`${value}-${n}`)) {
+		n++
+	}
+	return `${value}-${n}`
+}
+
+/**
+ * A readable title for a new page of `type`, used when none is typed. The
+ * running app shows a page title as written, so it must be words, not a
+ * translation key.
+ *
+ * @param {string} type - the page type.
+ * @return {string} the title.
+ */
+function defaultTitle(type) {
+	return type.charAt(0).toUpperCase() + type.slice(1)
 }
 
 export default {
@@ -182,6 +251,8 @@ export default {
 		return {
 			PAGE_TYPES,
 			addingType: null,
+			addingTitle: '',
+			addingId: '',
 		}
 	},
 
@@ -225,6 +296,25 @@ export default {
 		},
 
 		/**
+		 * Routes more than one page uses. Two pages on one route means only
+		 * one of them can ever be reached.
+		 *
+		 * @return {string[]}
+		 * @spec openspec/specs/openbuild-page-designer/spec.md#requirement-page-list-editor-with-uniqueness-and-route-pattern-validation
+		 */
+		duplicateRoutes() {
+			const counts = new Map()
+			for (const p of this.pages) {
+				if (p && p.route) {
+					counts.set(p.route, (counts.get(p.route) || 0) + 1)
+				}
+			}
+			return Array.from(counts.entries())
+				.filter(([, c]) => c > 1)
+				.map(([route]) => route)
+		},
+
+		/**
 		 * Observed behaviour of `invalidRoutes` (retrofit annotation).
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
@@ -244,6 +334,8 @@ export default {
 		 */
 		startAdd() {
 			this.addingType = ''
+			this.addingTitle = ''
+			this.addingId = ''
 		},
 
 		/**
@@ -253,6 +345,8 @@ export default {
 		 */
 		cancelAdd() {
 			this.addingType = null
+			this.addingTitle = ''
+			this.addingId = ''
 		},
 
 		/**
@@ -266,17 +360,31 @@ export default {
 			}
 			const type = this.addingType
 			const next = this.pages.slice()
+			const takenIds = new Set(next.map((p) => p && p.id))
+			const takenRoutes = new Set(next.map((p) => p && p.route))
+			const id = uniqueValue(
+				slugify(this.addingId) || `${type}-page-${next.length + 1}`,
+				takenIds,
+			)
+			// The first page on "/" is the home page; any later page gets its
+			// own route, so it does not hide behind the one already there.
+			const typedSlug = slugify(this.addingId)
+			let route = uniqueValue(`/${typedSlug || type}`, takenRoutes)
+			if (type === 'index' && !typedSlug && !takenRoutes.has('/')) {
+				route = '/'
+			}
+			const title = this.addingTitle.trim() || defaultTitle(type)
 			const placeholder = {
-				id: `${type}-page-${next.length + 1}`,
-				route: type === 'index' ? '/' : `/${type}`,
+				id,
+				route,
 				type,
-				title: `${type}.title`,
+				title,
 				config: JSON.parse(JSON.stringify(DEFAULT_CONFIGS[type] || {})),
 			}
 			next.push(placeholder)
 			this.$emit('update:pages', next)
 			this.$emit('select', next.length - 1)
-			this.addingType = null
+			this.cancelAdd()
 		},
 
 		/**
@@ -286,7 +394,7 @@ export default {
 		 * `type` is fixed at add time and `config` belongs to the sub-editor.
 		 *
 		 * @param {number} index - position of the page in the `pages` prop, taken from the vuedraggable `#item` slot.
-		 * @param {string} key - the page key being written: `id`, `route` or `permission`.
+		 * @param {string} key - the page key being written: `title`, `id`, `route` or `permission`.
 		 * @param {string} value - the new value from the bound input (for `permission` the `group:<gid>` string from PermissionGroupField); `''` deletes the key.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
@@ -334,7 +442,8 @@ export default {
 
 		/**
 		 * Whether a row should be outlined red: its `id` collides with another
-		 * page's, or its `route` fails the route-pattern grammar.
+		 * page's, its `route` is shared with another page, or its `route` fails the
+		 * route-pattern grammar.
 		 *
 		 * @param {{id?: string, route?: string, type: string, config?: object}} page - the page record for this row, from the vuedraggable `#item` slot.
 		 * @param {number} index - position of the page in the `pages` prop. It is only ever compared against -1, a value the `#item` slot cannot produce, so in practice it never makes a row invalid.
@@ -343,6 +452,9 @@ export default {
 		 */
 		hasError(page, index) {
 			if (this.duplicateIds.includes(page && page.id)) {
+				return true
+			}
+			if (page && page.route && this.duplicateRoutes.includes(page.route)) {
 				return true
 			}
 			if (page && page.route && !ROUTE_PATTERN.test(page.route)) {
@@ -389,6 +501,20 @@ export default {
 
 .page-list-editor__add-row {
 	display: flex;
+	/* The row holds five controls (type picker, Title, Slug, Confirm, Cancel)
+	   inside a pane measured at 284px. Without wrapping they overflow to the
+	   RIGHT, out of the pane and under the centre panel, which paints over
+	   them: measured at 1280x900, Cancel sat at x=684 while the row ended at
+	   x=639, so `elementFromPoint` on its centre returned
+	   `.page-designer__empty` and the click never reached the button. Escape
+	   does not close the row either, so the only way out of an accidental
+	   "Add page" was reloading the designer.
+
+	   Wrapping is what fixes it, and it is the whole fix: with the two inputs
+	   already carrying `min-width: 0` (see `.page-list-editor__field`), the
+	   controls fall onto three lines and every one of them lands inside the
+	   pane. */
+	flex-wrap: wrap;
 	gap: 6px;
 	align-items: center;
 }

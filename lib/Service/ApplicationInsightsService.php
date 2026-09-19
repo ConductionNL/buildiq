@@ -15,7 +15,10 @@
  *     auto-granted.
  *   - Walk `manifest.pages[].config.{register,schema}` to derive the
  *     schema-set scoped to the version's per-version register
- *     (`buildiq-{appSlug}-{versionSlug}`).
+ *     (`openbuild-{appSlug}-{versionSlug}`, from
+ *     ApplicationVersionService::VERSION_REGISTER_PREFIX, which is frozen at
+ *     the old prefix on purpose and is what the applicationVersion schema
+ *     pattern accepts).
  *   - Fan out four KPI calls + one chart call to OpenRegister mappers /
  *     services and assemble the response payload.
  *
@@ -132,6 +135,7 @@ class ApplicationInsightsService {
 	 * @param ICacheFactory $cacheFactory Distributed-cache factory (memoises computed payloads)
 	 * @param LoggerInterface $logger PSR logger
 	 * @param PermissionResolver|null $permissionResolver Shared role/group matcher (group-aware insights authz, L9)
+	 * @param VersionDataSourceResolver|null $dataSourceResolver Finds the (register, schema) pairs holding a version's data
 	 *
 	 * @return void
 	 */
@@ -143,9 +147,21 @@ class ApplicationInsightsService {
 		ICacheFactory $cacheFactory,
 		private readonly LoggerInterface $logger,
 		private readonly ?PermissionResolver $permissionResolver = null,
+		?VersionDataSourceResolver $dataSourceResolver = null,
 	) {
 		$this->cache = $cacheFactory->createDistributed('buildiq_insights');
+		$this->dataSources = ($dataSourceResolver ?? new VersionDataSourceResolver(
+			registerMapper: $registerMapper,
+			schemaMapper: $schemaMapper
+		));
 	}//end __construct()
+
+	/**
+	 * Finds the (register, schema) pairs holding a version's data.
+	 *
+	 * @var VersionDataSourceResolver
+	 */
+	private VersionDataSourceResolver $dataSources;
 
 	/**
 	 * Distributed cache for computed insights payloads.
@@ -214,6 +230,17 @@ class ApplicationInsightsService {
 	 * pre-validate at the controller layer; the defensive check here keeps
 	 * the service safe in isolation).
 	 *
+	 * The per-version register fallback takes its prefix from
+	 * {@see ApplicationVersionService::VERSION_REGISTER_PREFIX}. This method
+	 * used to type it as `sprintf('buildiq-%s-%s', ...)`, and that named a
+	 * register no instance can hold: every writer of a per-version register
+	 * uses the constant, which is `openbuild-` and is frozen there on purpose,
+	 * and the applicationVersion schema pins `"pattern": "^openbuild-..."` so a
+	 * `buildiq-` register is rejected at write time. The read then matched
+	 * nothing and the panel showed zero objects, zero files and zero audit
+	 * events, which is byte for byte what a real but empty version looks like.
+	 * {@see \OCA\Buildiq\Tests\Unit\Support\RegisterSlugPinTest} guards it now.
+	 *
 	 * @param string $appUuid Application UUID (path parameter).
 	 * @param string $versionUuid ApplicationVersion UUID (path parameter).
 	 * @param string $window Window string — one of `7d`, `30d`, `90d`.
@@ -275,24 +302,28 @@ class ApplicationInsightsService {
 				return $payload;
 			}
 
-			// Prefer the version's REAL register. Versions may share production's
-			// register (manifest-only versioning), so the
-			// `buildiq-{appSlug}-{versionSlug}` convention can name a register
-			// that does not exist (yielding empty KPIs). Fall back to the
-			// convention only when the version carries no register.
+			// Prefer the version's REAL register; fall back to the per-version
+			// naming convention only when the version carries none. The prefix
+			// comes from ApplicationVersionService and is never typed here: see
+			// this method's docblock.
 			$versionSlug = (string)($version['slug'] ?? '');
 			$registerSlug = (string)($version['register'] ?? '');
 			if ($registerSlug === '') {
-				$registerSlug = sprintf('buildiq-%s-%s', $appSlug, $versionSlug);
+				$registerSlug = ApplicationVersionService::VERSION_REGISTER_PREFIX . $appSlug . '-' . $versionSlug;
 			}
 
 			$manifest = $this->extractManifest(version: $version);
-			$schemaSlugs = $this->deriveSchemaIds(manifest: $manifest, registerSlug: $registerSlug);
-			$schemaIds = $this->resolveSchemaSlugsToIntIds(schemaSlugs: $schemaSlugs);
+			$sources = $this->dataSources->resolve(
+				manifest: $manifest,
+				registerSlug: $registerSlug,
+				pageSchemaRefs: $this->deriveSchemaIds(manifest: $manifest, registerSlug: $registerSlug)
+			);
+
+			[$objectCount, $schemaCounts, $schemaIds] = $this->countDataSources(sources: $sources);
 
 			$kpis = [
 				'activeUsers' => $this->safeDistinctActorCount(schemaIds: $schemaIds, hours: $hours),
-				'objectCount' => $this->countObjects(schemaIds: $schemaIds, registerSlug: $registerSlug),
+				'objectCount' => $objectCount,
 				'filesCount' => $this->countAttachedFiles(registerSlug: $registerSlug, schemaIds: $schemaIds),
 				'auditEventCount' => $this->countAuditEvents(schemaIds: $schemaIds, hours: $hours),
 			];
@@ -302,6 +333,7 @@ class ApplicationInsightsService {
 			$payload = [
 				'kpis' => $kpis,
 				'activity' => $activity,
+				'schemaCounts' => $schemaCounts,
 			];
 			$this->cache->set($cacheKey, $payload, self::CACHE_TTL_SECONDS);
 			return $payload;
@@ -523,35 +555,29 @@ class ApplicationInsightsService {
 	}//end deriveSchemaIds()
 
 	/**
-	 * Resolve an array of schema slugs to their integer database IDs via
-	 * SchemaMapper::find(). Slugs that cannot be resolved (not found, OR
-	 * not available) are silently skipped so a single bad slug in the
-	 * manifest does not zero-out all KPIs.
+	 * Count the objects in each data source.
 	 *
-	 * @param array<int, string> $schemaSlugs Schema slugs from the manifest.
+	 * @param array<int, array{register: string, schemaId: int, schemaSlug: string}> $sources The data sources.
 	 *
-	 * @return array<int, int> Integer schema IDs suitable for AuditTrailMapper queries.
+	 * @return array{0: int, 1: array<string, int>, 2: array<int, int>} Total, count per schema id and slug, schema ids.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-18
+	 * @spec openspec/specs/application-insights/spec.md
 	 */
-	private function resolveSchemaSlugsToIntIds(array $schemaSlugs): array {
-		$intIds = [];
-		foreach ($schemaSlugs as $slug) {
-			try {
-				$intId = $this->schemaMapper->find($slug, _multitenancy: false)->getId();
-				if ($intId !== null) {
-					$intIds[] = (int)$intId;
-				}
-			} catch (Throwable $e) {
-				$this->logger->debug(
-					'Buildiq: could not resolve schema slug "{slug}" to integer ID: {message}',
-					['slug' => $slug, 'message' => $e->getMessage()]
-				);
+	private function countDataSources(array $sources): array {
+		$total = 0;
+		$perSchema = [];
+		$schemaIds = [];
+		foreach ($sources as $source) {
+			$schemaIds[$source['schemaId']] = true;
+			$count = $this->countObjects(schemaIds: [$source['schemaId']], registerSlug: $source['register']);
+			$total += $count;
+			foreach (array_filter([(string)$source['schemaId'], $source['schemaSlug']]) as $key) {
+				$perSchema[$key] = (($perSchema[$key] ?? 0) + $count);
 			}
-		}//end foreach
+		}
 
-		return array_values(array_unique($intIds));
-	}//end resolveSchemaSlugsToIntIds()
+		return [$total, $perSchema, array_keys($schemaIds)];
+	}//end countDataSources()
 
 	/**
 	 * Extract a schema ID from a manifest page entry IF the entry's

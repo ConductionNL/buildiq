@@ -192,10 +192,14 @@ touches, and dispatch each step in order through
 `BuildiqToolProvider::invokeTool()` — the same handler classes, RBAC
 checks, OR object locks and caps as the MCP surface, with no duplicated
 builder logic. On any step failure the service SHALL restore all snapshotted
-manifests, delete an application created by this plan (via
-`ApplicationDeletionService`), and return **422** with the failed step index
-and the handler's error envelope — a failed plan leaves no plan-created
-state behind. On success it SHALL return the ordered per-step results. When
+manifests, delete an application created by this plan **with its data**
+(`ApplicationDeletionService` with `deleteData: true`, so the per-version
+registers and the schemas inside them go too: this plan created them
+moments earlier, so no user data is at risk), and return **422** with the
+failed step index, the handler's error envelope, and a `rollback` report
+naming the app it removed and any resource it could not. A failed plan
+leaves no plan-created state behind. On success it SHALL return the
+ordered per-step results. When
 `agentId` is present, the service SHALL persist an `AgentRun` record (see
 `agent-workspace`) capturing the prompt, plan, each tool call's arguments and
 result, and the final outcome, regardless of success, rollback, or
@@ -221,8 +225,10 @@ Playwright specs under REQ-OBAIC-006/007, which create and mutate real apps.
 
 - **WHEN** step 4 of a 5-step plan returns `isError` from its handler
 - **THEN** the manifests of all touched versions are restored to their
-  pre-plan snapshots, an app created in step 1 is deleted, and the response
-  is 422 carrying the failed step index and the handler's error message
+  pre-plan snapshots, an app created in step 1 is deleted along with its
+  registers and schemas, and the response is 422 carrying the failed step
+  index, the handler's error message, and a `rollback` report naming what
+  was removed and what was not
 
 #### Scenario: Execution reuses the handlers, not a copy
 

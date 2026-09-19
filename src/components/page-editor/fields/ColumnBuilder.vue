@@ -218,13 +218,16 @@ export default {
 
 .column-builder__row {
 	display: flex;
+	flex-wrap: wrap;
 	gap: 6px;
 	align-items: center;
 }
 
 .column-builder__key,
 .column-builder__label {
-	flex: 1 1 auto;
+	/* Shrink with a narrow editor, and wrap before running out of it. */
+	flex: 1 1 120px;
+	min-width: 0;
 	padding: 4px 6px;
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius);

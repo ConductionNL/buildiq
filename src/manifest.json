@@ -1,9 +1,20 @@
 {
 	"$schema": "https://github.com/ConductionNL/nextcloud-vue/raw/main/src/schemas/app-manifest-v2.schema.json",
-	"version": "2.1.0",
+	"version": "2.2.0",
 	"openbuildEditable": false,
 	"dependencies": [
 		"openregister"
+	],
+	"credentials": [
+		{
+			"provider": "github",
+			"reason": "Publish apps to GitHub and install apps from private repositories. Use a fine-grained token with Administration and Contents set to read and write, and Metadata set to read-only.",
+			"scopes": [
+				"administration:write",
+				"contents:write",
+				"metadata:read"
+			]
+		}
 	],
 	"setup": {
 		"enabled": true,
@@ -116,35 +127,80 @@
 						}
 					},
 					{
+						"id": "add-app",
+						"sinceVersion": "2.2.0",
+						"placement": "bottom",
+						"body": "Every app is created from this button. The wizard asks for a name and how many versions you want to run. Nothing else.",
+						"task": "Click Add app",
+						"allowManualNext": true,
+						"target": {
+							"kind": "element",
+							"ref": "add-app"
+						},
+						"advanceOn": {
+							"type": "click-target"
+						}
+					},
+					{
 						"id": "create-app",
 						"sinceVersion": "0.5.9",
-						"placement": "bottom",
-						"body": "Name it Pet Store. A blank app gives you an empty register to shape yourself.",
+						"placement": "left",
+						"body": "Name it Pet Store and the slug fills itself in. Pick Single on the preset step (one version is plenty here), then Create on the review step.",
 						"task": "Create an app called Pet Store",
 						"allowManualNext": true,
 						"target": {
-							"kind": "page",
-							"ref": "VirtualApps"
+							"kind": "selector",
+							"selector": ".modal-container"
 						},
 						"advanceOn": {
-							"type": "object-created",
-							"register": "buildiq",
-							"schema": "built-app",
+							"type": "route-match",
+							"route": "VirtualAppDetail",
 							"capture": {
-								"applicationId": ":id"
+								"applicationId": ":objectId"
 							}
+						}
+					},
+					{
+						"id": "open-schemas",
+						"sinceVersion": "2.2.0",
+						"placement": "top",
+						"body": "This page is the app itself: its versions, schemas, pages and flows all hang off it. A fresh app holds no data shapes yet.",
+						"task": "Click + Add schema in the Schemas widget",
+						"allowManualNext": true,
+						"target": {
+							"kind": "element",
+							"ref": "app-add-schema"
+						},
+						"advanceOn": {
+							"type": "route-match",
+							"route": "SchemaDesignerList"
 						}
 					},
 					{
 						"id": "add-schema",
 						"sinceVersion": "0.5.9",
 						"placement": "bottom",
-						"body": "A schema is the shape of one record. Yours is a Pet: it needs a name, a species and a status.",
-						"task": "Add a schema called Pet",
+						"body": "A schema is the shape of one record. Yours is a Pet.",
+						"task": "Click Add schema",
 						"allowManualNext": true,
 						"target": {
-							"kind": "page",
-							"ref": "SchemaDesignerList"
+							"kind": "element",
+							"ref": "schema-add"
+						},
+						"advanceOn": {
+							"type": "click-target"
+						}
+					},
+					{
+						"id": "name-schema",
+						"sinceVersion": "2.2.0",
+						"placement": "left",
+						"body": "Title it Pet, and the slug follows from it. The version can stay at 0.1.0.",
+						"task": "Name it Pet and confirm with Add schema",
+						"allowManualNext": true,
+						"target": {
+							"kind": "selector",
+							"selector": ".modal-container"
 						},
 						"advanceOn": {
 							"type": "route-match",
@@ -152,15 +208,61 @@
 						}
 					},
 					{
-						"id": "add-page",
-						"sinceVersion": "0.5.9",
-						"placement": "bottom",
-						"body": "An index page lists every record of one schema. Point it at Pet and the store has a shop floor.",
-						"task": "Add an index page over Pet",
+						"id": "define-schema",
+						"sinceVersion": "2.2.0",
+						"placement": "left",
+						"body": "Give the Pet its properties: a name, a species and a status. Each one becomes a field on every pet record you store.",
+						"task": "Add the three properties, then Save",
+						"target": {
+							"kind": "element",
+							"ref": "schema-designer"
+						},
+						"advanceOn": {
+							"type": "manual"
+						}
+					},
+					{
+						"id": "back-to-app",
+						"sinceVersion": "2.2.0",
+						"placement": "right",
+						"body": "The schema is stored in this app's manifest. The screens that show it are laid out from the app page.",
+						"task": "Click Apps in the menu",
 						"allowManualNext": true,
 						"target": {
-							"kind": "page",
-							"ref": "PageDesigner"
+							"kind": "nav-item",
+							"ref": "VirtualApps"
+						},
+						"advanceOn": {
+							"type": "route-match",
+							"route": "VirtualApps"
+						}
+					},
+					{
+						"id": "open-app",
+						"sinceVersion": "2.2.0",
+						"placement": "top",
+						"body": "Every app you build is listed here.",
+						"task": "Open Pet Store",
+						"allowManualNext": true,
+						"target": {
+							"kind": "element",
+							"ref": "cn-index-page"
+						},
+						"advanceOn": {
+							"type": "route-match",
+							"route": "VirtualAppDetail"
+						}
+					},
+					{
+						"id": "open-page-designer",
+						"sinceVersion": "2.2.0",
+						"placement": "top",
+						"body": "Pages are designed per version, so a live version is never edited by accident. This opens the designer on the one you are looking at.",
+						"task": "Click + Add page in the Pages widget",
+						"allowManualNext": true,
+						"target": {
+							"kind": "element",
+							"ref": "app-add-page"
 						},
 						"advanceOn": {
 							"type": "route-match",
@@ -168,15 +270,28 @@
 						}
 					},
 					{
+						"id": "add-page",
+						"sinceVersion": "0.5.9",
+						"placement": "left",
+						"body": "An index page lists every record of one schema. Add one on the left, pick the index type, then point it at Pet in the middle pane. That is the shop floor.",
+						"task": "Add an index page over Pet",
+						"target": {
+							"kind": "element",
+							"ref": "page-designer"
+						},
+						"advanceOn": {
+							"type": "manual"
+						}
+					},
+					{
 						"id": "preview",
 						"sinceVersion": "0.5.9",
-						"placement": "center",
-						"body": "Open the app to see the page you just laid out, running on real data.",
-						"task": "Open the app and add your first pet",
-						"allowManualNext": true,
+						"placement": "bottom",
+						"body": "Saving renders the page in the live preview on the right, running on this version's real data.",
+						"task": "Save & open preview",
 						"target": {
-							"kind": "page",
-							"ref": "BuilderHost"
+							"kind": "element",
+							"ref": "page-save-preview"
 						},
 						"advanceOn": {
 							"type": "manual"
@@ -254,7 +369,7 @@
 			"id": "Documentation",
 			"label": "Documentation",
 			"icon": "BookOpenVariantOutline",
-			"href": "https://openbuild.conduction.nl",
+			"href": "https://buildiq.conduction.nl",
 			"section": "footer",
 			"order": 90
 		},
@@ -311,7 +426,7 @@
 					"enabled": true,
 					"showMetadata": true
 				},
-				"documentationUrl": "https://openbuild.conduction.nl"
+				"documentationUrl": "https://buildiq.conduction.nl"
 			}
 		},
 		{
@@ -340,6 +455,10 @@
 				"showRelatedObjects": false,
 				"showRefresh": false,
 				"showRequestFeature": false,
+				"showDocumentation": false,
+				"showReportBug": false,
+				"showEditAction": false,
+				"_note_actions": "The generic header chrome is off so ApplicationDetailActions owns this page's action cluster outright. showRefresh/showRequestFeature/showDocumentation/showReportBug: CnActionsMenu renders whenever ANY of its items resolves, so leaving the last two at their true defaults put a second '···' beside the app's own menu — Documentation is not lost, that cluster carries its own entry. showEditAction: the page's standalone Edit button would sit OUTSIDE the cluster's inline count; ApplicationDetailActions renders Edit as the last entry instead, driven by the openEditForm the #actions slot scope hands it, so one count governs the whole header.",
 				"_note": "Purpose-built maintainer cockpit, NOT the generic data+audit-trail archetype — deliberately exempt from the standard detail-page widget composition (detail-page-redesign brief). headerComponent/actionsComponent/slots.before-body are pre-existing, spec-driven custom components (openspec/changes/retrofit-2026-05-26-application-detail-ui): the before-body ApplicationDetailDashboard already surfaces the KPI grid, activity graph, and a Manifest/Register/Groups widget row — Register's widget already deep-links to this Application's pages/schemas/menu structure (comment in ApplicationDetailDashboard.vue: 'the schema/page/menu detail always reflects the latest manifest and is reachable from the manifest layers'), so the FK-scoped versions/pages/schemas visibility the brief calls for is already covered there, NOT duplicated here. pages and schemas are NOT OpenRegister objects (they live inside ApplicationVersion.manifest as a JSON blob) so no object-list can FK-scope them; ApplicationVersion IS a real FK child (application relation) and its history is what the sidebar 'history' tab already surfaces via rollback-capable VersionHistory. The five non-audit sidebar tabs (Manifest raw editor, Version history+rollback, Diff, Icon upload, Export jobs) are bespoke registered components (kind:'tab' in src/registry.js) with NO catalog widget equivalent (no diff/rollback/icon-upload widget type exists) — moving them into config.widgets is not expressible without inventing a widget type or registering a new kind:'widget' component, both forbidden by the manifest-only rule. Kept as-is; only the audit tab was normalised to the canonical nc-vue built-in below so History still resolves without app registration.",
 				"sidebar": {
 					"enabled": true,
@@ -410,7 +529,7 @@
 				"sidebar": {
 					"enabled": false
 				},
-				"documentationUrl": "https://openbuild.conduction.nl"
+				"documentationUrl": "https://buildiq.conduction.nl"
 			},
 			"_note": "Top-level schemas overview — renders the SchemaDesignerView (list mode) via the registry-backed `slots.default` override so the primary action is the native \"Add schema\" flow (SchemaListPanel + AddSchemaDialog). Previously this page was type:\"index\" and fell through to the generic CnIndexPage, which keys its Add button off config.schema (\"application\") and so mislabelled the action \"Add Application\". A type:\"custom\" + top-level `component` does NOT resolve here because CnPageRenderer (beta.107) dispatches custom pages via the empty legacy customComponents map, not the v2 registry; the slot-override path (resolvedSlotEntries) is the one that reads cnRegistry. With no :schemaId route param SchemaDesignerView renders list mode and the no-slug /schemas shortcut falls back to the hello-world app. Per-app drill-down lives under /builder/:slug/schemas."
 		},
@@ -423,7 +542,7 @@
 			"config": {
 				"register": "buildiq",
 				"schema": "application-template",
-				"documentationUrl": "https://openbuild.conduction.nl"
+				"documentationUrl": "https://buildiq.conduction.nl"
 			},
 			"_note": "Templates renders the store-aware TemplateGallery view (buildiq-remote-template-store): when a registry is configured the remote store search is the primary surface with built-in templates secondary; with no registry it falls back to the built-in templates as today. Install clones via CloneTemplateDialog."
 		},
@@ -442,7 +561,7 @@
 				"sidebar": {
 					"enabled": false
 				},
-				"documentationUrl": "https://openbuild.conduction.nl"
+				"documentationUrl": "https://buildiq.conduction.nl"
 			},
 			"_note": "Per-app schema list under the builder route — renders SchemaDesignerView (list mode, since there is no :schemaId param) via the registry-backed `slots.default` override, scoped to the virtual app identified by :slug (SchemaDesigner.vue reads `$route.params.slug`). Previously type:\"index\" with no slot, which fell through to the generic CnIndexPage keyed on config.schema (\"application\") and so listed Applications instead of the app's schemas (buildiq#41). Mirrors the top-level `/schemas` page fix above; per-schema drill-down lives at /builder/:slug/schemas/:schemaId (SchemaDesigner, detail mode)."
 		},
@@ -459,7 +578,7 @@
 					"enabled": true,
 					"showMetadata": true
 				},
-				"documentationUrl": "https://openbuild.conduction.nl"
+				"documentationUrl": "https://buildiq.conduction.nl"
 			},
 			"slots": {
 				"default": "SchemaDesignerView"
@@ -478,7 +597,7 @@
 					"enabled": true,
 					"showMetadata": true
 				},
-				"documentationUrl": "https://openbuild.conduction.nl"
+				"documentationUrl": "https://buildiq.conduction.nl"
 			},
 			"slots": {
 				"default": "PageDesignerView"
@@ -497,7 +616,7 @@
 					"enabled": true,
 					"showMetadata": true
 				},
-				"documentationUrl": "https://openbuild.conduction.nl"
+				"documentationUrl": "https://buildiq.conduction.nl"
 			},
 			"slots": {
 				"default": "WalkthroughDesignerView"
@@ -516,7 +635,7 @@
 					"enabled": true,
 					"showMetadata": true
 				},
-				"documentationUrl": "https://openbuild.conduction.nl"
+				"documentationUrl": "https://buildiq.conduction.nl"
 			}
 		},
 		{
@@ -1039,7 +1158,7 @@
 			"type": "roadmap",
 			"title": "Features & roadmap",
 			"config": {
-				"documentationUrl": "https://openbuild.conduction.nl"
+				"documentationUrl": "https://buildiq.conduction.nl"
 			}
 		},
 		{

@@ -120,11 +120,21 @@ class ApplicationsControllerTest extends TestCase {
 	 * @param string $uid Caller UID
 	 * @param array<int, string> $callerGroups Group IDs the caller belongs to
 	 * @param bool $isAdmin Whether the caller is in the `admin` group
+	 * @param string|null $versionParam The `?_version=` query value, if any
 	 *
 	 * @return ApplicationsController
 	 */
-	private function buildController(string $uid = 'bob', array $callerGroups = [], bool $isAdmin = false): ApplicationsController {
+	private function buildController(string $uid = 'bob', array $callerGroups = [], bool $isAdmin = false, ?string $versionParam = null): ApplicationsController {
 		$request = $this->createMock(IRequest::class);
+		$request->method('getParam')->willReturnCallback(
+			static function (string $key, mixed $default = null) use ($versionParam): mixed {
+				if ($key === '_version') {
+					return $versionParam;
+				}
+
+				return $default;
+			}
+		);
 
 		$registerEntity = $this->getMockBuilder(Register::class)
 			->disableOriginalConstructor()
@@ -358,6 +368,65 @@ class ApplicationsControllerTest extends TestCase {
 		$data = $result->getData();
 		self::assertSame('not_found', $data['error']);
 	}//end testGetManifestReturns404WhenSlugUnknown()
+
+	/**
+	 * An app without a BuiltAppRoute entry still serves its manifest.
+	 *
+	 * Apps installed by the seed, a template or GitHub have no route index
+	 * entry, and the Manifest tab answered 404 for all of them. The lookup now
+	 * falls back to the Application's own slug.
+	 *
+	 * @return void
+	 */
+	public function testGetManifestFindsAnAppWithoutARouteEntry(): void {
+		$controller = $this->buildController(uid: 'bob');
+
+		$searches = 0;
+		$this->objectService->method('searchObjects')->willReturnCallback(
+			static function () use (&$searches): array {
+				$searches++;
+				if ($searches === 1) {
+					return [];
+				}
+
+				return [['id' => 'abc-123', 'slug' => 'hello-world']];
+			}
+		);
+		$applicationEntity = $this->createMock(ObjectEntity::class);
+		$applicationEntity->method('jsonSerialize')->willReturn([
+			'slug' => 'hello-world',
+			'permissions' => ['owners' => ['user:bob'], 'editors' => [], 'viewers' => []],
+		]);
+		$this->objectService->method('find')->with('abc-123')->willReturn($applicationEntity);
+		$this->manifestResolver->method('resolve')->willReturn(['version' => '1.0.0', 'menu' => [], 'pages' => []]);
+
+		$result = $controller->getManifest(slug: 'hello-world');
+
+		self::assertSame(Http::STATUS_OK, $result->getStatus());
+		self::assertSame('1.0.0', $result->getData()['version']);
+	}//end testGetManifestFindsAnAppWithoutARouteEntry()
+
+	/**
+	 * A search hit whose slug differs is not the app (no fuzzy matches).
+	 *
+	 * @return void
+	 */
+	public function testGetManifestFallbackIgnoresAHitWithAnotherSlug(): void {
+		$controller = $this->buildController(uid: 'bob');
+
+		$searches = 0;
+		$this->objectService->method('searchObjects')->willReturnCallback(
+			static function () use (&$searches): array {
+				$searches++;
+				return $searches === 1 ? [] : [['id' => 'abc-123', 'slug' => 'hello-world-2']];
+			}
+		);
+		$this->objectService->expects(self::never())->method('find');
+
+		$result = $controller->getManifest(slug: 'hello-world');
+
+		self::assertSame(Http::STATUS_NOT_FOUND, $result->getStatus());
+	}//end testGetManifestFallbackIgnoresAHitWithAnotherSlug()
 
 	/**
 	 * Inconsistent state — route exists but no applicationUuid → 500.
@@ -634,4 +703,22 @@ class ApplicationsControllerTest extends TestCase {
 		self::assertSame(Http::STATUS_OK, $result->getStatus());
 		self::assertSame('Pet Store', $result->getData()['name']);
 	}//end testGetManifestKeepsConsistentName()
+	/**
+	 * A `?_version=` preview also carries the Application's display name, so
+	 * the running app's browser tab reads "Pet Store", not the slug.
+	 *
+	 * @return void
+	 */
+	public function testVersionedManifestSuppliesApplicationName(): void {
+		$controller = $this->buildController(uid: 'bob', versionParam: 'development');
+		$this->wireApplicationWithName(appName: 'Pet Store', manifestName: null);
+		$this->manifestResolver->method('resolve')->willReturn(
+			['version' => '1.0.0', 'menu' => [], 'pages' => []]
+		);
+
+		$result = $controller->getManifest(slug: 'pet-store');
+
+		self::assertSame(Http::STATUS_OK, $result->getStatus());
+		self::assertSame('Pet Store', $result->getData()['name']);
+	}//end testVersionedManifestSuppliesApplicationName()
 }//end class

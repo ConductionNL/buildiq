@@ -112,6 +112,35 @@ describe('AutomationEditDialog', () => {
 		clearAppStatusCache()
 	})
 
+	it('fills the synchronization picker from the connector register this instance has', async () => {
+		globalThis.OC = { appswebroots: { integriq: '/apps/integriq' } }
+		axios.get.mockImplementation((url) => {
+			if (url.includes('/objects/integriq/synchronization')) {
+				return Promise.resolve({
+					data: { results: [{ id: 'sync-1', name: 'BRP sync' }] },
+				})
+			}
+			return Promise.resolve({ data: { results: [] } })
+		})
+
+		const wrapper = factory()
+		await openDialog(wrapper)
+
+		// The old code asked for the `openconnector` register with a `limit`
+		// param: a 404 on this instance, and a filter that matches nothing on
+		// any instance. Both leave the picker empty and say nothing.
+		const syncCall = axios.get.mock.calls.find(([url]) =>
+			url.includes('/synchronization'),
+		)
+		expect(syncCall[0]).toBe(
+			'/apps/openregister/api/objects/integriq/synchronization',
+		)
+		expect(syncCall[1].params).toEqual({ _limit: 500 })
+		expect(wrapper.vm.syncOptions).toEqual([{ id: 'sync-1', label: 'BRP sync' }])
+		expect(wrapper.vm.syncPickerAvailable).toBe(true)
+		delete globalThis.OC
+	})
+
 	it('REQ-AUTD-002 scenario 1: composes an event-triggered notification', async () => {
 		const wrapper = factory()
 		await openDialog(wrapper)

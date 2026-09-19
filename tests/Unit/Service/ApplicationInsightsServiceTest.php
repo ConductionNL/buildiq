@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -373,6 +374,128 @@ class ApplicationInsightsServiceTest extends TestCase {
 		self::assertArrayHasKey('activeUsers', $result['kpis']);
 		self::assertArrayHasKey('activity', $result);
 	}//end testHybridAppComputesFromInstalledAppRegisters()
+
+	/**
+	 * Hello World keeps its messages in the `buildiq` register and has no
+	 * register of its own. The object count read 0; it now counts where the
+	 * pages point, and reports the count per schema for the Schemas widget.
+	 *
+	 * @return void
+	 */
+	public function testVersionWithoutOwnRegisterCountsWherePagesPoint(): void {
+		$this->wireVersion(
+			manifest: ['pages' => [
+				['config' => ['register' => 'buildiq', 'schema' => 'hello-message']],
+				['config' => ['register' => 'buildiq', 'schema' => 'hello-message']],
+			]],
+			register: 'openbuild-hello-world'
+		);
+		$this->registerMapper->method('find')->willThrowException(new \RuntimeException('no such register'));
+		$this->schemaMapper->method('find')->willReturnCallback(
+			static fn (string|int $ref): Schema => self::schema(id: 7, slug: 'hello-message')
+		);
+		$counted = &$this->countPerRegister(['buildiq#7' => 3]);
+
+		$result = $this->service->computeInsights('app-uuid', 'prod-uuid', '7d', $this->mockUser('alice'));
+
+		self::assertSame(3, $result['kpis']['objectCount']);
+		self::assertSame(['buildiq#7'], $counted, 'counted once, in the register the pages name');
+		self::assertSame(3, $result['schemaCounts']['hello-message']);
+		self::assertSame(3, $result['schemaCounts']['7']);
+	}//end testVersionWithoutOwnRegisterCountsWherePagesPoint()
+
+	/**
+	 * A schema in the version's register that no page names yet still counts.
+	 *
+	 * @return void
+	 */
+	public function testVersionRegisterSchemasCountEvenWithoutAPage(): void {
+		$this->wireVersion(manifest: ['pages' => []], register: 'openbuild-shop-production');
+		$register = new Register();
+		$register->setSchemas([21]);
+		$this->registerMapper->method('find')->willReturn($register);
+		$this->schemaMapper->method('find')->willReturnCallback(
+			static fn (string|int $ref): Schema => self::schema(id: (int)$ref, slug: 'shop-production-order')
+		);
+		$this->countPerRegister(['openbuild-shop-production#21' => 2]);
+
+		$result = $this->service->computeInsights('app-uuid', 'prod-uuid', '7d', $this->mockUser('alice'));
+
+		self::assertSame(2, $result['kpis']['objectCount']);
+		self::assertSame(2, $result['schemaCounts']['shop-production-order']);
+	}//end testVersionRegisterSchemasCountEvenWithoutAPage()
+
+	/**
+	 * Wire an app (alice is a viewer) and its production version.
+	 *
+	 * @param array<string, mixed> $manifest The version manifest.
+	 * @param string $register The version's register slug.
+	 *
+	 * @return void
+	 */
+	private function wireVersion(array $manifest, string $register): void {
+		$app = $this->mockEntity([
+			'uuid' => 'app-uuid',
+			'slug' => 'hello-world',
+			'productionVersion' => 'prod-uuid',
+			'permissions' => ['viewers' => ['user:alice']],
+		]);
+		$version = $this->mockEntity([
+			'uuid' => 'prod-uuid',
+			'slug' => 'production',
+			'application' => 'app-uuid',
+			'register' => $register,
+			'manifest' => $manifest,
+		]);
+		$this->objectService->method('find')->willReturnOnConsecutiveCalls($app, $version);
+	}//end wireVersion()
+
+	/**
+	 * Answer count() per `register#schema` and record what was counted.
+	 *
+	 * @param array<string, int> $counts Count per `register#schema`.
+	 *
+	 * @return array<int, string> Reference to the list of counted pairs.
+	 */
+	private function &countPerRegister(array $counts): array {
+		$state = ['register' => '', 'schema' => ''];
+		$counted = [];
+		$this->objectService->method('setRegister')->willReturnCallback(
+			function ($register) use (&$state) {
+				$state['register'] = (string)$register;
+				return $this->objectService;
+			}
+		);
+		$this->objectService->method('setSchema')->willReturnCallback(
+			function ($schema) use (&$state) {
+				$state['schema'] = (string)$schema;
+				return $this->objectService;
+			}
+		);
+		$this->objectService->method('count')->willReturnCallback(
+			static function () use (&$state, &$counted, $counts): int {
+				$key = $state['register'] . '#' . $state['schema'];
+				$counted[] = $key;
+				return ($counts[$key] ?? 0);
+			}
+		);
+		return $counted;
+	}//end countPerRegister()
+
+	/**
+	 * A Schema entity with an id and a slug.
+	 *
+	 * @param int $id Schema id.
+	 * @param string $slug Schema slug.
+	 *
+	 * @return Schema
+	 */
+	private static function schema(int $id, string $slug): Schema {
+		$schema = new Schema();
+		$schema->setId($id);
+		$schema->setSlug($slug);
+		return $schema;
+	}//end schema()
 
 	/**
 	 * Schema-set walk dedupes schema IDs and ignores tuples referencing other registers.

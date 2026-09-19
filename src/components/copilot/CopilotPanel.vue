@@ -20,6 +20,19 @@
 -->
 <template>
 	<div data-testid="copilot-panel" class="copilot-panel">
+		<div class="copilot-panel__header">
+			<h3 class="copilot-panel__heading">
+				{{ t('buildiq', 'AI copilot') }}
+			</h3>
+			<NcButton
+				v-if="closable"
+				variant="tertiary"
+				:aria-label="t('buildiq', 'Close the copilot')"
+				@click="$emit('close')">
+				{{ t('buildiq', 'Close') }}
+			</NcButton>
+		</div>
+
 		<div
 			v-if="agentId"
 			data-testid="copilot-acting-as"
@@ -32,7 +45,23 @@
 			>
 		</div>
 
+		<p v-if="versionSlug" class="copilot-panel__scope">
+			{{
+				t('buildiq', 'Changes go to the {version} version.', {
+					version: versionSlug,
+				})
+			}}
+		</p>
+
 		<div class="copilot-panel__messages">
+			<p v-if="messages.length === 0" class="copilot-panel__empty">
+				{{
+					t(
+						'buildiq',
+						'Ask for a page, a widget or a menu item. You review every change before it is applied.',
+					)
+				}}
+			</p>
 			<div
 				v-for="message in messages"
 				:key="message.id"
@@ -47,6 +76,9 @@
 					v-else-if="message.role === 'assistant' && message.plan"
 					:plan="message.plan"
 					:canApprove="isPendingProposal(message) ? canApprove : false"
+					:validationErrors="
+						isPendingProposal(message) ? validationErrors : []
+					"
 					:busy="isPendingProposal(message) && state === 'executing'"
 					@approve="onApprove(message)"
 					@discard="onDiscard(message)" />
@@ -54,9 +86,23 @@
 					v-else-if="message.role === 'assistant'"
 					class="copilot-panel__bubble copilot-panel__bubble--error">
 					{{ message.error }}
+					<span
+						v-if="message.errorDetail"
+						class="copilot-panel__bubble-detail">
+						{{ message.errorDetail }}
+					</span>
 				</p>
 			</div>
 		</div>
+
+		<p v-if="state === 'planning'" class="copilot-panel__waiting">
+			{{
+				t(
+					'buildiq',
+					'Asking the AI provider. This usually takes a few seconds.',
+				)
+			}}
+		</p>
 
 		<div class="copilot-panel__input-row">
 			<textarea
@@ -137,9 +183,31 @@ export default {
 			type: Array,
 			default: () => [],
 		},
+
+		/**
+		 * Whether to offer a Close button in the panel header. True where the
+		 * panel is an overlay the user has to be able to dismiss (the page
+		 * designer's side rail); false where it is part of the page already
+		 * (the agent workspace tab).
+		 */
+		closable: {
+			type: Boolean,
+			default: false,
+		},
+
+		/**
+		 * The version of the app this panel writes to. Shown under the heading
+		 * and sent with every plan request, so a proposal lands on the version
+		 * the user is editing rather than on the builder tools' `development`
+		 * default.
+		 */
+		versionSlug: {
+			type: String,
+			default: '',
+		},
 	},
 
-	emits: ['executed'],
+	emits: ['executed', 'close'],
 
 	setup() {
 		return { copilot: useCopilot() }
@@ -174,6 +242,27 @@ export default {
 		 */
 		canApprove() {
 			return this.copilot.canApprove.value
+		},
+
+		/**
+		 * The pending proposal's canonical-validator messages, flattened and
+		 * de-duplicated across the plan's predicted manifests. Passed to the
+		 * proposal card so a refusal names the field that failed rather than
+		 * leaving the reader to guess at their own wording.
+		 *
+		 * @return {Array<string>}
+		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 */
+		validationErrors() {
+			const seen = new Set()
+			for (const errors of this.copilot.manifestErrors.value.values()) {
+				for (const line of errors || []) {
+					if (typeof line === 'string' && line.length > 0) {
+						seen.add(line)
+					}
+				}
+			}
+			return [...seen]
 		},
 
 		/**
@@ -226,6 +315,7 @@ export default {
 				text,
 				this.appSlug,
 				this.agentId || undefined,
+				this.versionSlug || undefined,
 			)
 
 			const assistantId = this.nextMessageId++
@@ -241,6 +331,7 @@ export default {
 					id: assistantId,
 					role: 'assistant',
 					error: this.copilot.errorMessage.value,
+					errorDetail: this.copilot.errorDetail.value,
 				})
 			}
 		},
@@ -288,6 +379,40 @@ export default {
 	flex-direction: column;
 	height: 100%;
 	gap: 8px;
+}
+
+.copilot-panel__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.copilot-panel__heading {
+	margin: 0;
+	font-size: 1.1em;
+}
+
+.copilot-panel__scope {
+	color: var(--color-text-maxcontrast);
+	margin: 0;
+	font-size: 0.9em;
+}
+
+.copilot-panel__empty {
+	color: var(--color-text-maxcontrast);
+	margin: 0;
+}
+
+.copilot-panel__waiting {
+	color: var(--color-text-maxcontrast);
+	margin: 0;
+}
+
+.copilot-panel__bubble-detail {
+	display: block;
+	color: var(--color-text-maxcontrast);
+	font-size: 0.9em;
 }
 
 .copilot-panel__messages {

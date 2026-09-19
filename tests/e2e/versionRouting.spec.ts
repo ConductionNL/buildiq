@@ -4,6 +4,11 @@
 import { expect, request as playwrightRequest, test } from '@playwright/test'
 import { suppressSetupWizard, suppressSupportDialog } from './support/appFixture.ts'
 import { grantAppRoles } from './support/appRoles.ts'
+// The one place a target enters this suite, and the place the shared-instance
+// guard sits. This was a private `process.env.PLAYWRIGHT_BASE_URL ??
+// 'http://localhost:8080'` constant, so a run with nothing set wrote to the
+// shared dev instance. See tests/e2e/shared-instance.ts.
+import { E2E_BASE_URL as BASE } from './support/baseUrl.ts'
 import { ensureVersionChain } from './support/versionChain.ts'
 
 /**
@@ -31,7 +36,6 @@ import { ensureVersionChain } from './support/versionChain.ts'
  * gracefully with a TODO comment pointing to the blocking dependency.
  */
 
-const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 // Every session comes from globalSetup — admin here, and one per rbac-* fixture
 // role for 9.2. No spec form-logs-in: consecutive logins trip Nextcloud's
 // brute-force throttle and turn a whole run red.
