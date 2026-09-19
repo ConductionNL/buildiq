@@ -428,8 +428,20 @@ class ExportService {
 			throw new RuntimeException('Failed to finalise ZIP archive: ' . $zipPath);
 		}
 
-		// Pin mtime on the file itself for reproducibility.
-		touch($zipPath, $this->zipTimestamp);
+		// The archive's ENTRIES carry the deterministic timestamp, which is what
+		// makes two exports of the same tree byte-identical. The .zip file's own
+		// mtime is filesystem metadata outside the archive bytes, so pinning it
+		// buys no reproducibility, and it used to cost the download entirely:
+		// CleanupExpiredExports purges by `time() - filemtime($zip) > 86400`, and
+		// a file stamped 2026-01-01 is already ~22 million seconds old the moment
+		// it is written. Every archive was therefore deleted by the next cleanup
+		// pass while its ExportJob still read "Succeeded" and still offered a
+		// Download ZIP button.
+		//
+		// Leaving the mtime at creation time is what makes that 24 hour window
+		// mean 24 hours. The job's own docblock describes expiring by the
+		// ExportJob's `downloadExpiresAt` instead, which is the better contract,
+		// but nothing writes that field yet.
 
 		return $zipPath;
 	}//end packageZip()
