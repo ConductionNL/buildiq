@@ -1577,6 +1577,115 @@ class CopilotServiceTest extends TestCase {
 	}//end testAHandlerThePlanDidNotAuthorIsLeftAlone()
 
 	/**
+	 * A field the plan's own schema declares required is rendered required.
+	 *
+	 * Measured on the live instance on 2026-09-19: the generated "Borrow a
+	 * tool" form showed no asterisk on `member`, let the user submit it empty,
+	 * and OpenRegister answered 400. The schema step had said
+	 * `required: ["member"]` all along; nothing carried it onto the page.
+	 *
+	 * @return void
+	 */
+	public function testAFieldTheSchemaDeclaresRequiredIsMarkedRequiredOnTheForm(): void {
+		$plan = [
+			'summary' => 'x',
+			'steps' => [
+				['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
+				['tool' => 'buildiq.upsertSchema', 'arguments' => ['appSlug' => 'tool-library', 'versionSlug' => 'development', 'slug' => 'loan', 'title' => 'Loan', 'properties' => ['member' => ['type' => 'string'], 'note' => ['type' => 'string']], 'required' => ['member']]],
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'versionSlug' => 'development', 'pageId' => 'borrow-tool', 'title' => 'Borrow a tool', 'type' => 'form', 'route' => '/loans/new', 'config' => ['schema' => 'loan', 'fields' => [['key' => 'member', 'label' => 'Member', 'type' => 'string'], ['key' => 'note', 'label' => 'Note', 'type' => 'string']]]]],
+			],
+		];
+
+		$seen = [];
+		$this->toolProvider->method('invokeTool')->willReturnCallback(
+			function (string $tool, array $args) use (&$seen): array {
+				$seen[$tool] = $args;
+				if ($tool === 'buildiq.createApp') {
+					return ['success' => true, 'created' => true, 'app' => ['uuid' => 'app-uuid-1', 'slug' => 'tool-library', 'name' => 'Tool Library']];
+				}
+
+				return ['success' => true, 'action' => 'created'];
+			}
+		);
+
+		$this->makeService()->execute(plan: $plan, userId: 'alice');
+
+		$fields = $seen['buildiq.upsertPage']['config']['fields'];
+		self::assertTrue($fields[0]['validation']['required'], 'the schema declares member required');
+		self::assertArrayNotHasKey('validation', $fields[1], 'a property the schema left optional gains nothing');
+	}//end testAFieldTheSchemaDeclaresRequiredIsMarkedRequiredOnTheForm()
+
+	/**
+	 * A `required` the plan stated itself is a decision, not an omission, so
+	 * it survives in either direction.
+	 *
+	 * Without this the fill-in would overwrite `false` with `true` and the
+	 * page would contradict the plan the user approved on the review screen.
+	 *
+	 * @return void
+	 */
+	public function testARequiredFlagThePlanStatedIsLeftAlone(): void {
+		$plan = [
+			'summary' => 'x',
+			'steps' => [
+				['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
+				['tool' => 'buildiq.upsertSchema', 'arguments' => ['appSlug' => 'tool-library', 'versionSlug' => 'development', 'slug' => 'loan', 'title' => 'Loan', 'properties' => ['member' => ['type' => 'string']], 'required' => ['member']]],
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'versionSlug' => 'development', 'pageId' => 'borrow-tool', 'title' => 'Borrow a tool', 'type' => 'form', 'route' => '/loans/new', 'config' => ['schema' => 'loan', 'fields' => [['key' => 'member', 'label' => 'Member', 'type' => 'string', 'validation' => ['required' => false, 'message' => 'Optional here']]]]]],
+			],
+		];
+
+		$seen = [];
+		$this->toolProvider->method('invokeTool')->willReturnCallback(
+			function (string $tool, array $args) use (&$seen): array {
+				$seen[$tool] = $args;
+				if ($tool === 'buildiq.createApp') {
+					return ['success' => true, 'created' => true, 'app' => ['uuid' => 'app-uuid-1', 'slug' => 'tool-library', 'name' => 'Tool Library']];
+				}
+
+				return ['success' => true, 'action' => 'created'];
+			}
+		);
+
+		$this->makeService()->execute(plan: $plan, userId: 'alice');
+
+		$field = $seen['buildiq.upsertPage']['config']['fields'][0];
+		self::assertFalse($field['validation']['required'], 'the plan said optional and meant it');
+		self::assertSame('Optional here', $field['validation']['message'], 'the rest of the block survives');
+	}//end testARequiredFlagThePlanStatedIsLeftAlone()
+
+	/**
+	 * A form naming a schema this plan did not author gains no requirements:
+	 * this code only ever reads what the plan itself declared.
+	 *
+	 * @return void
+	 */
+	public function testAFormOnAForeignSchemaGainsNoRequirements(): void {
+		$plan = [
+			'summary' => 'x',
+			'steps' => [
+				['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'versionSlug' => 'development', 'pageId' => 'borrow-tool', 'title' => 'Borrow a tool', 'type' => 'form', 'route' => '/loans/new', 'config' => ['schema' => 'loan', 'fields' => [['key' => 'member', 'label' => 'Member', 'type' => 'string']]]]],
+			],
+		];
+
+		$seen = [];
+		$this->toolProvider->method('invokeTool')->willReturnCallback(
+			function (string $tool, array $args) use (&$seen): array {
+				$seen[$tool] = $args;
+				if ($tool === 'buildiq.createApp') {
+					return ['success' => true, 'created' => true, 'app' => ['uuid' => 'app-uuid-1', 'slug' => 'tool-library', 'name' => 'Tool Library']];
+				}
+
+				return ['success' => true, 'action' => 'created'];
+			}
+		);
+
+		$this->makeService()->execute(plan: $plan, userId: 'alice');
+
+		self::assertArrayNotHasKey('validation', $seen['buildiq.upsertPage']['config']['fields'][0]);
+	}//end testAFormOnAForeignSchemaGainsNoRequirements()
+
+	/**
 	 * A page config naming the short schema slug the model asked upsertSchema
 	 * for reaches the handler pointed at this version's own register and its
 	 * namespaced schema. Without this the created app opened with every list
