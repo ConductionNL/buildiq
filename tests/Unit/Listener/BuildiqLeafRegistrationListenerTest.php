@@ -54,7 +54,23 @@ use Psr\Log\NullLogger;
 /**
  * `BuildiqLeafRegistrationListener`.
  *
+ * The five `@uses` below are not decoration. `phpunit.xml` sets
+ * `beStrictAboutCoverageMetadata="true"` next to `failOnRisky="true"`, so under
+ * a coverage run a test that carries `@covers` and executes any class outside
+ * that list is RISKY, and one risky test is exit 1 for the whole suite. This
+ * test builds the providers and their collaborators for real, because they are
+ * final, so it touches all five. Locally that is invisible: `composer test:unit`
+ * passes `--no-coverage` and there is no coverage driver on a dev box, while CI
+ * runs the same tests with `--coverage-clover` and every matrix cell goes red.
+ * Reproduced with pcov: exit 0 without coverage, exit 1 with it, same 1277 tests.
+ *
  * @covers \OCA\Buildiq\Listener\BuildiqLeafRegistrationListener
+ *
+ * @uses \OCA\Buildiq\Integration\PageLayoutLeafProvider
+ * @uses \OCA\Buildiq\Integration\RegistrationFormLeafProvider
+ * @uses \OCA\Buildiq\Service\LayoutDeltaService
+ * @uses \OCA\Buildiq\Service\PageLayoutFrozenBase
+ * @uses \OCA\Buildiq\Service\PageLayoutLayerStack
  */
 class BuildiqLeafRegistrationListenerTest extends TestCase {
 
