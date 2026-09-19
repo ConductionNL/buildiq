@@ -106,7 +106,8 @@ export function slotOffersSpan(slot, page) {
  * Coerce a value to an integer at or above `min`, falling back to `min` when
  * the input is a cleared field, a blank string or anything non-numeric.
  *
- * @param {*} value - the raw value, typically a number input's string.
+ * @param {number|string|null|undefined} value - the raw value, typically a
+ *   number input's string.
  * @param {number} min - the floor.
  * @return {number} an integer at or above `min`.
  */

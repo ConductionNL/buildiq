@@ -24,13 +24,13 @@ what comes back. Nothing below builds a grid, a type picker or a validator.
 - [x] 3.1 Add `onWidgetsUpdate(widgets)` to `PageDesigner.vue` (rebuild the selected page as `{ ...page, widgets }`, replace `pages`, spread onto the manifest, `emitManifest`) with a docblock stating why this is a whole-array replace and not the `mergeManifestDelta` path `onInsertWidgets` uses, and verify a vitest spec asserts the emitted manifest
 - [x] 3.2 Mint ids for every placement the editor creates through `blockInsert.js`'s `mintWidgetId`, seeded from the page's current ids, and never regenerate an existing id, and verify a vitest spec covers two placements of one type and an edit that keeps its id
 - [x] 3.3 Spread every placement on write and delete a key rather than storing an empty value, and verify `tests/composables/manifestRoundTrip.spec.js`, extended with a placement carrying keys this editor never surfaces, round-trips them unchanged against the installed schema
-- [ ] 3.4 Mount the placement panel in the designer's centre pane beside `WidgetSelectionPanel` (which keeps "save as block") and verify the designer loads and saves a page end to end in the browser
+- [x] 3.4 Mount the placement panel in the designer's centre pane beside `WidgetSelectionPanel` (which keeps "save as block") and verify the designer loads and saves a page end to end in the browser
 
 ## 4. Copy, access and verification
 
-- [ ] 4.1 Load the hydra `writing` skill and write every string on this surface through it, and verify no em-dash and no Title Case survives in the added strings
-- [ ] 4.2 Verify the whole editor is operable without a pointer: every `NcSelect` carries an `inputLabel`, the field path reaches add, edit and delete by keyboard, and no slot family is drag-only
-- [ ] 4.3 Add `tests/e2e/widget-placement-editor.spec.ts` covering every scenario that carries an `@e2e` reference in the delta spec, and verify gate 19 reports no unreferenced added scenario
+- [x] 4.1 Load the hydra `writing` skill and write every string on this surface through it, and verify no em-dash and no Title Case survives in the added strings
+- [x] 4.2 Verify the whole editor is operable without a pointer: every `NcSelect` carries an `inputLabel`, the field path reaches add, edit and delete by keyboard, and no slot family is drag-only
+- [x] 4.3 Add `tests/e2e/widget-placement-editor.spec.ts` covering every scenario that carries an `@e2e` reference in the delta spec, and verify gate 19 reports no unreferenced added scenario
 - [ ] 4.4 Run `hydra/scripts/diff-check.sh` green on the diff, then `COMPOSER_PROCESS_TIMEOUT=0 composer check:strict` and `npm run lint` once before push
 
 ## Acceptance criteria

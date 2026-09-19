@@ -54,9 +54,12 @@
 				{{
 					t(
 						'buildiq',
-						'A dashboard page holding one full width custom widget counts as a custom page in disguise.',
+						'This dashboard holds one full width custom widget and nothing else.',
 					)
 				}}
+			</p>
+			<p>
+				{{ t('buildiq', 'That shape reads as a custom page in disguise.') }}
 			</p>
 			<p>
 				{{ t('buildiq', 'Declare this page as custom, with this component:') }}
@@ -94,7 +97,7 @@
 				:widgets="bodyPlacements"
 				slotName="body"
 				:editable="true"
-				@layout-change="onLayoutChange" />
+				@layoutChange="onLayoutChange" />
 
 			<ul class="widget-placement-panel__rows">
 				<li
@@ -590,6 +593,7 @@ export default {
 		 *
 		 * @param {string} slot - the placement's slot.
 		 * @return {boolean} true when `gridY` is the author's to set.
+		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
 		 */
 		offersRow(slot) {
 			return slotOffersRow(slot)
@@ -600,6 +604,7 @@ export default {
 		 *
 		 * @param {string} slot - the placement's slot.
 		 * @return {boolean} true when `gridX` and `gridWidth` are the author's.
+		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
 		 */
 		offersSpan(slot) {
 			return slotOffersSpan(slot, this.page)
@@ -610,6 +615,7 @@ export default {
 		 *
 		 * @param {string} slot - the placement's slot.
 		 * @return {number} the effective column count.
+		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
 		 */
 		columnsFor(slot) {
 			return columnsForSlot(slot, this.page)
@@ -960,7 +966,7 @@ export default {
 }
 
 .widget-placement-panel__notice--warning {
-	border-left: 4px solid var(--color-warning);
+	border-inline-start: 4px solid var(--color-warning);
 }
 
 .widget-placement-panel__notice p {

@@ -84,12 +84,15 @@ function bodyWidget(overrides = {}) {
 	}
 }
 
-const dashboardPage = (widgets = []) => ({
-	id: 'home',
-	type: 'dashboard',
-	config: {},
-	widgets,
-})
+/**
+ * A `type: "dashboard"` page carrying the given placements.
+ *
+ * @param {Array<object>} widgets - the page's placements.
+ * @return {object} the page.
+ */
+function dashboardPage(widgets = []) {
+	return { id: 'home', type: 'dashboard', config: {}, widgets }
+}
 
 describe('WidgetPlacementPanel', () => {
 	describe('listing, adding, editing and deleting', () => {
