@@ -8,6 +8,7 @@ use OCA\Buildiq\Service\DataRegisterExportBundler;
 use OCA\Buildiq\Service\ExportAppContentBundler;
 use OCA\Buildiq\Service\ExportService;
 use OCA\Buildiq\Service\PlaceholderResolver;
+use OCA\Buildiq\Service\RegisterRowReader;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -283,6 +284,71 @@ final class ExportServiceTest extends TestCase {
 	}//end testGenerateAppZipWritesSeedDataOnlyWhenIncludeDataTrue()
 
 	/**
+	 * The seed-data fixture carries the register's rows, read per schema.
+	 *
+	 * The test above cannot see this defect, because its double answers the
+	 * same two rows to any query at all. In production the bundler asked
+	 * `@self.register` with no `@self.schema`, which OpenRegister answers
+	 * `[]` to whatever the register holds, so every includeData export
+	 * shipped `"objects": []` — a fixture that reads exactly like a register
+	 * with nothing in it, for a toggle the admin had just switched on.
+	 *
+	 * The double here answers only the register+schema pair that actually
+	 * holds the rows. Mutation check, run 2026-09-19: drop
+	 * `'schema' => $schemaId` from the query RegisterRowReader emits, and the
+	 * assertCount below reddens with "the exported fixture must carry the
+	 * register's rows, not an empty list / actual size 0 matches expected
+	 * size 1" — the assertion, not a setup line.
+	 *
+	 * @return void
+	 */
+	public function testSeedDataFixtureCarriesRowsReadPerSchema(): void {
+		$register = $this->buildRegisterMock(schemaIds: [42]);
+		$schema = $this->buildSchemaMock(slug: 'spectr-company', title: 'Company', required: [], properties: []);
+
+		$registerMapper = $this->createMock(RegisterMapper::class);
+		$registerMapper->method('find')->with('spectr')->willReturn($register);
+
+		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$schemaMapper->method('find')->with(42)->willReturn($schema);
+
+		$objectService = $this->createMock(ObjectServiceInterface::class);
+		$objectService->method('searchObjects')->willReturnCallback(
+			static function (array $query): array {
+				// OpenRegister resolves its table from the PAIR. A query that
+				// names only the register reaches no table and answers [].
+				if (isset($query['@self']['schema']) === false) {
+					return [];
+				}
+
+				if ((string)$query['@self']['register'] !== '7' || (string)$query['@self']['schema'] !== '42') {
+					return [];
+				}
+
+				return [['id' => 'row-1', 'name' => 'Acme']];
+			}
+		);
+
+		$entries = $this->export(
+			dataRegisters: [['register' => 'spectr', 'includeData' => true]],
+			service: $this->buildService(
+				registerMapper: $registerMapper,
+				schemaMapper: $schemaMapper,
+				objectService: $objectService
+			)
+		);
+
+		$decodedSeed = json_decode($entries['lib/Settings/data-registers/spectr.seed-data.json'], true);
+
+		self::assertCount(
+			1,
+			$decodedSeed['objects'],
+			'the exported fixture must carry the register\'s rows, not an empty list'
+		);
+		self::assertSame('Acme', $decodedSeed['objects'][0]['name']);
+	}//end testSeedDataFixtureCarriesRowsReadPerSchema()
+
+	/**
 	 * REQ (buildiq-exporter, data-registers-runtime): includeData omitted
 	 * (or explicitly false) defaults to schema-defs-only — no seed-data file,
 	 * and no row read against OpenRegister at all.
@@ -511,8 +577,8 @@ final class ExportServiceTest extends TestCase {
 		$bundler = new DataRegisterExportBundler(
 			$registerMapper ?? $this->createMock(RegisterMapper::class),
 			$schemaMapper ?? $this->createMock(SchemaMapper::class),
-			$objectService ?? $this->createMock(ObjectServiceInterface::class),
-			new NullLogger()
+			new NullLogger(),
+			new RegisterRowReader($objectService ?? $this->createMock(ObjectServiceInterface::class))
 		);
 
 		return new ExportService(
