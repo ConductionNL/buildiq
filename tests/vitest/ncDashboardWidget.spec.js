@@ -95,9 +95,9 @@ describe('ncDashboard entry', () => {
 		}
 
 		expect(resolveWidgetComponent(descriptor(), {})).toBe(KnownWidget)
-		expect(
-			resolveWidgetComponent(descriptor(), { [KNOWN_KEY]: Override }),
-		).toBe(Override)
+		expect(resolveWidgetComponent(descriptor(), { [KNOWN_KEY]: Override })).toBe(
+			Override,
+		)
 	})
 
 	it('registers one dashboard widget per descriptor, and skips a descriptor with no id', () => {
@@ -105,7 +105,9 @@ describe('ncDashboard entry', () => {
 		const registered = registerNcDashboardWidgets(
 			[
 				descriptor(),
-				descriptor({ id: 'buildiq-11111111-2222-3333-4444-555555555555-recent' }),
+				descriptor({
+					id: 'buildiq-11111111-2222-3333-4444-555555555555-recent',
+				}),
 				descriptor({ id: '' }),
 			],
 			{ register },

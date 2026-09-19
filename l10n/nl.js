@@ -1,6 +1,7 @@
 OC.L10N.register(
     "buildiq",
     {
+        "Widget unavailable": "Widget niet beschikbaar",
         "A custom page must document why a standard page type was not feasible.": "Een aangepaste pagina moet vastleggen waarom een standaard paginatype niet haalbaar was.",
         "Column": "Kolom",
         "Declare this page as custom, with this component:": "Declareer deze pagina als aangepast, met deze component:",

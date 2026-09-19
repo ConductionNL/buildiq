@@ -102,17 +102,17 @@ export function createNcDashboardWidget(descriptor, registry = runtimeRegistry) 
 					default: () =>
 						component
 							? h(component, {
-								...(descriptor.props || {}),
-								content: descriptor.props || {},
-								dataSource: descriptor.dataSource || {},
-							})
-							// Visible as UNKNOWN, never as a blank panel. A blank
-							// panel reads as "this widget has nothing to show"
-							// and sends nobody looking for the missing key.
-							: h(NcEmptyContent, {
-								name: t('buildiq', 'Widget unavailable'),
-								description: descriptor.widgetKey || '',
-							}),
+									...(descriptor.props || {}),
+									content: descriptor.props || {},
+									dataSource: descriptor.dataSource || {},
+								})
+							: // Visible as UNKNOWN, never as a blank panel. A blank
+								// panel reads as "this widget has nothing to show"
+								// and sends nobody looking for the missing key.
+								h(NcEmptyContent, {
+									name: t('buildiq', 'Widget unavailable'),
+									description: descriptor.widgetKey || '',
+								}),
 				},
 			)
 		},

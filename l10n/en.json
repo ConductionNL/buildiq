@@ -1733,7 +1733,8 @@
         "This dashboard holds one full width custom widget and nothing else.": "This dashboard holds one full width custom widget and nothing else.",
         "This page has no widgets yet. Add one to start placing them.": "This page has no widgets yet. Add one to start placing them.",
         "Why this page is custom": "Why this page is custom",
-        "Widget placements": "Widget placements"
+        "Widget placements": "Widget placements",
+        "Widget unavailable": "Widget unavailable"
     },
     "plurals": "",
     "pluralForm": "nplurals=2; plural=(n != 1);"
