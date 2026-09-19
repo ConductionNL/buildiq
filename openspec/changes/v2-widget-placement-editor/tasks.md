@@ -31,7 +31,7 @@ what comes back. Nothing below builds a grid, a type picker or a validator.
 - [x] 4.1 Load the hydra `writing` skill and write every string on this surface through it, and verify no em-dash and no Title Case survives in the added strings
 - [x] 4.2 Verify the whole editor is operable without a pointer: every `NcSelect` carries an `inputLabel`, the field path reaches add, edit and delete by keyboard, and no slot family is drag-only
 - [x] 4.3 Add `tests/e2e/widget-placement-editor.spec.ts` covering every scenario that carries an `@e2e` reference in the delta spec, and verify gate 19 reports no unreferenced added scenario
-- [ ] 4.4 Run `hydra/scripts/diff-check.sh` green on the diff, then `COMPOSER_PROCESS_TIMEOUT=0 composer check:strict` and `npm run lint` once before push
+- [x] 4.4 Run `hydra/scripts/diff-check.sh` green on the diff, then `COMPOSER_PROCESS_TIMEOUT=0 composer check:strict` and `npm run lint` once before push
 
 ## Acceptance criteria
 
