@@ -97,25 +97,27 @@ final class BuildiqLeafRegistrationListener implements IEventListener {
 			$this->forms,
 		);
 
-		// 🔴 THE RENDER SURFACE THAT WAS DECLARED AND NEVER BUILT IS GONE.
+		// NOT REGISTERED: the render-surface half of the registration-form leaf.
 		//
-		// `buildiq-registration-form-panel` announced a widget and a tab, and
-		// buildiq has no client half for either: no `registerIntegration` call
-		// anywhere in `src/`, no component, and the id appeared nowhere outside
-		// its own constant and its own registration. It also ships no leaf
-		// bundle and loads no integration script, so there was nothing on any
-		// page that could have rendered it.
+		// This advertised `widget` and `tab` surfaces to OpenRegister's leaf
+		// catalogue while buildiq shipped no JS half for it — no
+		// `registerIntegration({ id: self::RETIRED_FORM_PANEL_ID })` exists anywhere in
+		// src/, and nothing in the fleet references the id. So the catalogue
+		// offered an owning app two places to render something that could
+		// never mount: a phantom render surface, ADR-066 decision 4.
 		//
-		// So every consumer was told a widget and a tab existed, `getLeaves()`
-		// returned them, and a host page that made room for them showed an empty
-		// space. openregister now logs that as an error naming the missing file,
-		// which is how this was found.
+		// Withdrawing the advertisement changes nothing a user could see, and
+		// it lets gate-24 (integration-parity) run green while the surface is
+		// genuinely absent instead of merely broken. To restore it, ship the
+		// JS half FIRST: a `registerIntegration` carrying a complete render
+		// pair for its renderMode (tab + widget for the default 'component'),
+		// reachable on the owning app's page — which for a cross-app leaf
+		// means a `leaves` webpack entry, since buildiq's own bundles do not
+		// load there — and then re-register the descriptor below it.
 		//
-		// Removed rather than given a bundle: shipping a `leaves` entry here
-		// would mean inventing a widget and a tab nobody designed, to satisfy a
-		// declaration nobody implemented. The two DATA-PROVIDER leaves below and
-		// above are untouched; they work, they have providers, and a data leaf
-		// needs no bundle at all.
+		// The DATA PROVIDER half above is untouched and still serves the
+		// forms; it is the render surface, and only the render surface, that
+		// was never built.
 
 		// The owning app asks what its detail page should show for this object,
 		// and renders its own manifest unchanged when nothing answers
