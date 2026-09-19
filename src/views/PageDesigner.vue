@@ -96,6 +96,13 @@
 						:runtimeExternalForms="externalForms"
 						@update:config="onConfigUpdate"
 						@update:runtimeExternalForms="onExternalFormsUpdate" />
+					<!-- v2-widget-placement-editor task 3.4: the placement
+					     editor for the page's uniform v2 widgets[] array. It
+					     sits beside WidgetSelectionPanel, which keeps "save as
+					     block" and does not author. -->
+					<WidgetPlacementPanel
+						:page="selectedPage"
+						@update:widgets="onWidgetsUpdate" />
 					<!-- component-blocks task 2.2: widget/section selection
 					     affordance feeding SaveBlockDialog. Operates on the
 					     page's uniform v2 widgets[] array. -->
@@ -227,6 +234,7 @@ import RoadmapPageEditor from '../components/page-editor/RoadmapPageEditor.vue'
 import SearchPageEditor from '../components/page-editor/SearchPageEditor.vue'
 import SettingsPageEditor from '../components/page-editor/SettingsPageEditor.vue'
 import StubPageEditor from '../components/page-editor/StubPageEditor.vue'
+import WidgetPlacementPanel from '../components/page-editor/WidgetPlacementPanel.vue'
 import WidgetSelectionPanel from '../components/page-editor/WidgetSelectionPanel.vue'
 import WikiPageEditor from '../components/page-editor/WikiPageEditor.vue'
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
@@ -271,6 +279,7 @@ export default {
 		PreviewSandbox,
 		NcAppSidebar,
 		BlockLibraryPanel,
+		WidgetPlacementPanel,
 		WidgetSelectionPanel,
 		PageListEditor,
 		MenuTreeEditor,
@@ -956,6 +965,43 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
 		onPagesUpdate(pages) {
+			const next = { ...(this.manifest || {}), pages }
+			this.emitManifest(next)
+		},
+
+		/**
+		 * Write the selected page's complete replacement `widgets[]` array,
+		 * from `WidgetPlacementPanel`'s `update:widgets` event.
+		 *
+		 * 🔴 THIS IS A WHOLE-ARRAY REPLACE, NOT THE `mergeManifestDelta` PATH
+		 * `onInsertWidgets` USES, and the difference is deliberate
+		 * (v2-widget-placement-editor design.md D5). The merge engine keys
+		 * `widgets[]` by `id`. That is exactly right for insert, which only
+		 * ever adds freshly minted entries, and wrong for an editor, for two
+		 * reasons. A keyed merge cannot express a REMOVAL, so delete would
+		 * need a second path anyway. And an entry with NO `id`, which every
+		 * schema-valid entry is allowed to be and many existing entries are,
+		 * has no merge key at all, so a delta cannot target it. Replacing the
+		 * array sidesteps both, and matches the shape `onPagesUpdate` already
+		 * sets for a whole-collection edit.
+		 *
+		 * A later tidy-up into one shared write helper has to argue with that
+		 * reason, not just with the code.
+		 *
+		 * @param {Array<object>} widgets - the complete replacement `widgets[]`
+		 *   for the selected page, in the uniform v2 `widgetEntry` shape.
+		 * @return {void}
+		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 */
+		onWidgetsUpdate(widgets) {
+			if (this.selectedIndex < 0 || !Array.isArray(widgets)) {
+				return
+			}
+			const pages = this.pages.slice()
+			pages[this.selectedIndex] = {
+				...pages[this.selectedIndex],
+				widgets,
+			}
 			const next = { ...(this.manifest || {}), pages }
 			this.emitManifest(next)
 		},

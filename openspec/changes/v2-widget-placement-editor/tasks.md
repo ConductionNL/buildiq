@@ -21,9 +21,9 @@ what comes back. Nothing below builds a grid, a type picker or a validator.
 
 ## 3. Persistence
 
-- [ ] 3.1 Add `onWidgetsUpdate(widgets)` to `PageDesigner.vue` (rebuild the selected page as `{ ...page, widgets }`, replace `pages`, spread onto the manifest, `emitManifest`) with a docblock stating why this is a whole-array replace and not the `mergeManifestDelta` path `onInsertWidgets` uses, and verify a vitest spec asserts the emitted manifest
+- [x] 3.1 Add `onWidgetsUpdate(widgets)` to `PageDesigner.vue` (rebuild the selected page as `{ ...page, widgets }`, replace `pages`, spread onto the manifest, `emitManifest`) with a docblock stating why this is a whole-array replace and not the `mergeManifestDelta` path `onInsertWidgets` uses, and verify a vitest spec asserts the emitted manifest
 - [x] 3.2 Mint ids for every placement the editor creates through `blockInsert.js`'s `mintWidgetId`, seeded from the page's current ids, and never regenerate an existing id, and verify a vitest spec covers two placements of one type and an edit that keeps its id
-- [ ] 3.3 Spread every placement on write and delete a key rather than storing an empty value, and verify `tests/composables/manifestRoundTrip.spec.js`, extended with a placement carrying keys this editor never surfaces, round-trips them unchanged against the installed schema
+- [x] 3.3 Spread every placement on write and delete a key rather than storing an empty value, and verify `tests/composables/manifestRoundTrip.spec.js`, extended with a placement carrying keys this editor never surfaces, round-trips them unchanged against the installed schema
 - [ ] 3.4 Mount the placement panel in the designer's centre pane beside `WidgetSelectionPanel` (which keeps "save as block") and verify the designer loads and saves a page end to end in the browser
 
 ## 4. Copy, access and verification

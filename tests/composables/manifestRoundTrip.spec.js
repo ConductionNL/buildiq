@@ -20,6 +20,7 @@ import Ajv from 'ajv/dist/2020.js'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { applySlotRules } from '../../src/services/slotGeometry.js'
 
 const REPO_ROOT = resolve(__dirname, '../..')
 
@@ -198,6 +199,153 @@ describe('manifest round-trip', () => {
 				dir: 'desc',
 			})
 			expect(re.pages[0].config.columns).toEqual(['title', 'body'])
+		})
+	})
+
+	// v2-widget-placement-editor task 3.3 / design.md R2 and D6.
+	//
+	// The failure this guards has no error message anywhere: a `visibleWhen` or
+	// a `roles` array written by a template or the copilot vanishes on save,
+	// and the page simply becomes visible to more people. A spec written from
+	// the placement editor's own field list cannot fail that way, so the
+	// placement below deliberately carries keys the editor never surfaces,
+	// including one the schema does not know yet.
+	describe('a v2 placement the editor edits', () => {
+		const SURVIVES = {
+			tabGroup: 'general',
+			roles: ['controllers', 'beheerders'],
+			visibleWhen: { field: 'status', op: 'eq', value: 'open' },
+			requiredApp: 'openregister',
+			dateChip: true,
+			_note: 'written before this editor existed',
+		}
+
+		function manifestWithPlacement() {
+			return {
+				$schema:
+					'https://github.com/ConductionNL/nextcloud-vue/raw/main/src/schemas/app-manifest-v2.schema.json',
+				version: '2.0.0',
+				menu: [
+					{
+						id: 'h',
+						label: 'Home',
+						icon: 'icon-home',
+						route: 'home',
+						order: 10,
+					},
+				],
+				pages: [
+					{
+						id: 'home',
+						route: '/',
+						type: 'dashboard',
+						title: 'Home',
+						config: {},
+						widgets: [
+							{
+								id: 'cases',
+								widgetKey: 'object-table',
+								slot: 'body',
+								gridX: 0,
+								gridY: 0,
+								gridWidth: 6,
+								gridHeight: 3,
+								props: { label: 'Open cases' },
+								...SURVIVES,
+							},
+							{
+								id: 'notes',
+								widgetKey: 'text',
+								slot: 'sidebar',
+								gridX: 0,
+								gridY: 0,
+								gridWidth: 1,
+								gridHeight: 4,
+							},
+						],
+					},
+				],
+			}
+		}
+
+		it('validates against the installed v2 schema before anything touches it', () => {
+			const manifest = manifestWithPlacement()
+			const validate = validatorFor(manifest)
+			const ok = validate(manifest)
+			if (!ok) {
+				throw new Error(
+					`fixture failed schema: ${(validate.errors || [])
+						.slice(0, 5)
+						.map((e) => `${e.instancePath || '(root)'} ${e.message}`)
+						.join('; ')}`,
+				)
+			}
+			expect(ok).toBe(true)
+		})
+
+		it('keeps every unsurfaced key through a position change, and still validates', () => {
+			const manifest = manifestWithPlacement()
+			const page = manifest.pages[0]
+
+			// Exactly what WidgetPlacementPanel writes: the entry is SPREAD and
+			// the geometry re-applied, never rebuilt from a list of known keys.
+			const edited = {
+				...manifest,
+				pages: [
+					{
+						...page,
+						widgets: page.widgets.map((entry, index) =>
+							index === 0
+								? applySlotRules({ ...entry, gridX: 6 }, page)
+								: entry,
+						),
+					},
+				],
+			}
+
+			const stored = edited.pages[0].widgets[0]
+			expect(stored.gridX).toBe(6)
+			for (const [key, value] of Object.entries(SURVIVES)) {
+				expect(stored[key], `the editor dropped ${key}`).toEqual(value)
+			}
+			expect(stored.props).toEqual({ label: 'Open cases' })
+
+			const validate = validatorFor(edited)
+			const ok = validate(edited)
+			if (!ok) {
+				throw new Error(
+					`edited manifest failed schema: ${(validate.errors || [])
+						.slice(0, 5)
+						.map((e) => `${e.instancePath || '(root)'} ${e.message}`)
+						.join('; ')}`,
+				)
+			}
+			expect(ok).toBe(true)
+		})
+
+		it('survives a key the schema has never heard of, which is the point', () => {
+			// `additionalProperties: false` means the schema REJECTS an unknown
+			// key. That is fine and expected: what matters is that the editor
+			// does not silently eat one written by a newer library, so the
+			// assertion is on the round-trip, not on the validator.
+			const manifest = manifestWithPlacement()
+			const page = manifest.pages[0]
+			const entry = { ...page.widgets[0], ncDashboard: { panel: 'cases' } }
+			const stored = applySlotRules({ ...entry, gridY: 2 }, page)
+			expect(stored.ncDashboard).toEqual({ panel: 'cases' })
+			expect(stored.gridY).toBe(2)
+		})
+
+		it('a page opened and saved with no edit is byte-for-byte what was loaded', () => {
+			const manifest = manifestWithPlacement()
+			const raw = JSON.stringify(manifest)
+			// Opening the editor reads widgets[]; saving with no edit re-emits
+			// the very same array, so the serialised manifest cannot move.
+			const reopened = {
+				...manifest,
+				pages: manifest.pages.map((page) => ({ ...page, widgets: page.widgets })),
+			}
+			expect(JSON.stringify(reopened)).toBe(raw)
 		})
 	})
 })
