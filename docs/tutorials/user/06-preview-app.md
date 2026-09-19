@@ -25,7 +25,7 @@ By the end you will have opened your app in the builder host, clicked through it
 
 2. Mind which version you are looking at. The plain URL always serves the **production** version. Add `?_version=development` to see the development one, which is where the designers and the AI write. A version you may not read answers with "Version not found".
 
-3. The left navigation lists the menu entries you configured in [Design a page](./04-design-page.md), with **Back to virtual apps** above them. Click each entry in turn. Every page should load without an error banner.
+3. The left navigation lists the menu entries you configured in [Design a page](./04-design-page.md), with **Back to apps** above them. Click each entry in turn. Every page should load without an error banner.
 
    ![Menu navigation in the running app](/screenshots/tutorials/user/06-preview-app-02.png)
 
@@ -37,9 +37,9 @@ By the end you will have opened your app in the builder host, clicked through it
 
    ![A form page in the running app](/screenshots/tutorials/user/06-preview-app-04.png)
 
-6. Spot a bug? Click **Back to virtual apps** at the top of the left navigation, open the app, fix the page, and hit **Save & open preview** again. The cycle is short on purpose: the host reads the manifest on every load.
+6. Spot a bug? Click **Back to apps** at the top of the left navigation, open the app, fix the page, and hit **Save & open preview** again. The cycle is short on purpose: the host reads the manifest on every load.
 
-   ![Back to virtual apps](/screenshots/tutorials/user/06-preview-app-05.png)
+   ![Back to apps](/screenshots/tutorials/user/06-preview-app-05.png)
 
 ## Verification
 

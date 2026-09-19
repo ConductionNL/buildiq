@@ -24,7 +24,10 @@ describe('BackToVirtualApps', () => {
 		const wrapper = mount(BackToVirtualApps)
 		const link = wrapper.find('a')
 		expect(link.attributes('href')).toBe('/index.php/apps/buildiq/applications')
-		expect(link.text()).toContain('Back to virtual apps')
+		// The label follows the navigation item, which is "Apps". It said
+		// "virtual apps" until #878, and this assertion is what caught the
+		// rename reaching the component.
+		expect(link.text()).toContain('Back to apps')
 	})
 
 	it('shows in a version preview', () => {
