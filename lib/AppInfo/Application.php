@@ -293,6 +293,33 @@ class Application extends App implements IBootstrap {
 			)
 		);
 
+		// The registrar and the projector are bound explicitly rather than
+		// autowired. Autowiring builds them as PHP 8.4 lazy ghosts, and when a
+		// constructor argument fails to resolve, Nextcloud's ExceptionSerializer
+		// runs get_object_vars() over the half-built ghost while serialising
+		// that failure — which re-enters the initializer and throws a SECOND
+		// time, this time out of the catch block that was handling the first.
+		// A closure factory never becomes a ghost, so the guard in
+		// registerDashboardWidgets() actually gets to do its job.
+		$context->registerService(
+			DashboardWidgetRegistrar::class,
+			static fn ($c): DashboardWidgetRegistrar => new DashboardWidgetRegistrar(
+				applications: $c->get(PublishedApplicationProvider::class),
+				visibility: $c->get(AppVisibilityResolver::class),
+				logger: $c->get(LoggerInterface::class)
+			)
+		);
+		$context->registerService(
+			WidgetItemProjector::class,
+			static fn ($c): WidgetItemProjector => new WidgetItemProjector(
+				objectService: $c->get(ObjectServiceInterface::class),
+				aggregations: $c->get(AggregationGateway::class),
+				urlGenerator: $c->get(IURLGenerator::class),
+				l10n: $c->get('OCP\\IL10N'),
+				logger: $c->get(LoggerInterface::class)
+			)
+		);
+
 		// OpenRegister publishes no aggregation method on its contract, so the
 		// gateway resolves the runner duck-typed and answers null when it is
 		// absent. Bound here so the projector type-hints the interface.
