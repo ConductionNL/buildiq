@@ -110,6 +110,8 @@ class AppVisibilityResolver {
 	 * @param array<string,mixed> $permissions The Application's permissions block.
 	 *
 	 * @return array<mixed> All principals from owners + editors + viewers.
+	 *
+	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-a-user-only-sees-widgets-they-are-allowed-to-see
 	 */
 	public function flattenPermissions(array $permissions): array {
 		$owners = ($permissions['owners'] ?? []);
