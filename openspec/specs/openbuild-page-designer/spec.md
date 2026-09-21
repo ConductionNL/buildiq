@@ -1,5 +1,8 @@
 # buildiq-page-designer Specification
 
+**Status**: in-progress
+**OpenSpec changes**: [publish-widgets-to-nc-dashboard](../../changes/publish-widgets-to-nc-dashboard/), [v2-widget-placement-editor](../../changes/v2-widget-placement-editor/)
+
 ## Purpose
 
 Ships the visual Page Designer that replaces the textarea-only manifest editor
