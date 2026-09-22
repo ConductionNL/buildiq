@@ -16,14 +16,15 @@
  * test and enforced nowhere. A validator nothing calls is the same as no
  * validation, and it looks identical from a green suite.
  *
- * WHAT IT STILL CANNOT CHECK
- * --------------------------
+ * WHAT IT CHECKS AGAINST THE CONSUMER'S SCHEMA
+ * --------------------------------------------
  * The preset field names and the channel enum are properties of the CONSUMER's
- * schema, which this service cannot read. Both are passed as null, which the
- * validator documents as "cannot be read" rather than "empty", so a preset
- * naming a property that does not exist is neither warned about nor refused
- * yet. That is tasks 2.2 and 6.1 of forms-per-case-type, and saying so here is
- * the only thing that keeps anyone from assuming it is covered.
+ * schema. `RegistrationFormTargetSchemaReader` reads them, so a preset naming a
+ * property that does not exist now earns a warning and a channel the consumer
+ * never declared is now refused. When the schema cannot be read the reader
+ * returns null, the validator reads null as "cannot be read" rather than
+ * "empty", and the reader's note travels back as a warning so the author can
+ * see that the check did not run.
  *
  * @category Service
  * @package  OCA\Buildiq\Service
@@ -67,6 +68,7 @@ class RegistrationFormAuthoringService {
 	 * @param ObjectServiceInterface $objectService OpenRegister's object service.
 	 * @param IAppConfig $appConfig App config, for the register slug.
 	 * @param RegistrationFormValidator $validator The rules a form has to pass.
+	 * @param RegistrationFormTargetSchemaReader $targetSchema Reads the consuming schema.
 	 *
 	 * @return void
 	 */
@@ -74,6 +76,7 @@ class RegistrationFormAuthoringService {
 		private readonly ObjectServiceInterface $objectService,
 		private readonly IAppConfig $appConfig,
 		private readonly RegistrationFormValidator $validator,
+		private readonly RegistrationFormTargetSchemaReader $targetSchema,
 	) {
 	}//end __construct()
 
@@ -95,15 +98,27 @@ class RegistrationFormAuthoringService {
 			throw new InvalidArgumentException('A form has to say which register and schema it is for.');
 		}
 
+		$target = $this->targetSchema->read(
+			registerSlug: $register,
+			schemaSlug: $schema,
+			channelProperty: (string)($form['channelProperty'] ?? '')
+		);
+
 		// The validator excludes the form's own id from both uniqueness rules,
 		// so the stored set is handed over whole rather than filtered here: one
 		// place deciding what counts as a collision, not two.
 		$warnings = $this->validator->validate(
 			$form,
 			$this->storedFor(register: $register, schema: $schema),
-			null,
-			null
+			$target['properties'],
+			$target['channels']
 		);
+
+		// A check that could not run says so. Silence here would be
+		// indistinguishable from a clean pass.
+		if ($target['note'] !== null) {
+			$warnings[] = $target['note'];
+		}
 
 		$this->objectService->saveObject(
 			object: $form,
@@ -128,6 +143,29 @@ class RegistrationFormAuthoringService {
 	public function listFor(string $register, string $schema): array {
 		return $this->storedFor(register: $register, schema: $schema);
 	}//end listFor()
+
+	/**
+	 * What the consuming schema declares, for the builder's pickers.
+	 *
+	 * The builder offers the target schema's own property names and its channel
+	 * values rather than free text, because a typed property name is a field
+	 * whose answer is dropped on save and nothing in the form says so.
+	 *
+	 * @param string $register The consuming app's register.
+	 * @param string $schema The schema the form writes into.
+	 * @param string $channelProperty The property carrying the intake channel.
+	 *
+	 * @return array{properties: array<int, string>|null, channels: array<int, string>|null, note: string|null} What it declares.
+	 *
+	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-007)
+	 */
+	public function targetFor(string $register, string $schema, string $channelProperty = ''): array {
+		return $this->targetSchema->read(
+			registerSlug: $register,
+			schemaSlug: $schema,
+			channelProperty: $channelProperty
+		);
+	}//end targetFor()
 
 	/**
 	 * Read the stored forms for one register and schema.

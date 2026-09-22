@@ -278,6 +278,9 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // and until now nothing called them. Admin-only.
         ['name' => 'registrationForm#index', 'url' => '/api/registration-forms', 'verb' => 'GET'],
         ['name' => 'registrationForm#save',  'url' => '/api/registration-forms', 'verb' => 'PUT'],
+        // What the consuming schema declares, so the builder's field, preset and
+        // channel pickers offer real values instead of free text.
+        ['name' => 'registrationForm#target', 'url' => '/api/registration-forms/target', 'verb' => 'GET'],
 
         // Remote template store (buildiq-remote-template-store). Consume-only:
         // search proxies the configured remote OpenRegister catalogue server-side;

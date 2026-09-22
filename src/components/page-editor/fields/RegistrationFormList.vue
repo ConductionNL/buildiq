@@ -41,9 +41,32 @@
 					<span class="form-list__audience">{{
 						audienceLabel(form)
 					}}</span>
+					<span v-if="form.channel" class="form-list__audience">{{
+						form.channel
+					}}</span>
 					<span v-if="form.isDefault" class="form-list__default">
 						{{ t('buildiq', 'Default') }}
 					</span>
+					<button type="button" @click="edit(form)">
+						{{ t('buildiq', 'Edit') }}
+					</button>
+				</li>
+			</ul>
+
+			<RegistrationFormEditor
+				v-if="editing"
+				:modelValue="editing"
+				:properties="properties"
+				:channels="channels"
+				:note="note"
+				:saving="adding"
+				@update:modelValue="editing = $event"
+				@save="saveEdited"
+				@close="editing = null" />
+
+			<ul v-if="warnings.length" class="form-list__warnings" role="alert">
+				<li v-for="warning in warnings" :key="warning">
+					{{ warning }}
 				</li>
 			</ul>
 
@@ -100,13 +123,17 @@
 </template>
 
 <script>
+import RegistrationFormEditor from './RegistrationFormEditor.vue'
 import {
 	fetchRegistrationForms,
+	fetchTargetSchema,
 	saveRegistrationForm,
 } from '../../../services/registrationForms.js'
 
 export default {
 	name: 'RegistrationFormList',
+
+	components: { RegistrationFormEditor },
 
 	props: {
 		register: {
@@ -150,6 +177,11 @@ export default {
 			draftName: '',
 			draftAudience: 'client',
 			draftDefault: false,
+			editing: null,
+			properties: null,
+			channels: null,
+			note: '',
+			warnings: [],
 		}
 	},
 
@@ -195,9 +227,90 @@ export default {
 				this.reload()
 			},
 		},
+
+		'editing.channelProperty': {
+			/**
+			 * The channel list is the nominated property's enum, so it is re-read
+			 * whenever the nomination changes. Leaving a stale list on screen
+			 * would offer channels the newly named property never accepts.
+			 *
+			 * @return {void}
+			 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-007)
+			 */
+			handler() {
+				this.readTarget()
+			},
+		},
 	},
 
 	methods: {
+		/**
+		 * Read what the target schema declares, for the editor's pickers.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-007)
+		 */
+		async readTarget() {
+			if (!this.scoped) {
+				return
+			}
+
+			try {
+				const target = await fetchTargetSchema({
+					register: this.register,
+					schema: this.schema,
+					channelProperty: (this.editing || {}).channelProperty || '',
+				})
+				this.properties = target.properties
+				this.channels = target.channels
+				this.note = target.note || ''
+			} catch (refusal) {
+				// The editor still works on free text. Saying the pickers are
+				// missing beats an empty picker that looks like a schema with no
+				// properties.
+				this.properties = null
+				this.channels = null
+				this.note = refusal.message
+			}
+		},
+
+		/**
+		 * Open one form for editing.
+		 *
+		 * @param {object} form - the stored form.
+		 * @return {void}
+		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-008)
+		 */
+		edit(form) {
+			// A copy, so closing without saving leaves the list as it was.
+			this.editing = { ...form }
+			this.refusal = ''
+			this.warnings = []
+			this.readTarget()
+		},
+
+		/**
+		 * Save the form being edited.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-008)
+		 */
+		async saveEdited() {
+			this.adding = true
+			this.refusal = ''
+			this.warnings = []
+
+			try {
+				const result = await saveRegistrationForm(this.editing)
+				this.warnings = result.warnings
+				await this.reload()
+			} catch (refusal) {
+				this.refusal = refusal.message
+			} finally {
+				this.adding = false
+			}
+		},
+
 		/**
 		 * Read the forms for this type.
 		 *
@@ -280,6 +393,9 @@ export default {
 				this.draftDefault = false
 				this.$emit('added', result.form)
 				await this.reload()
+
+				// A form with no fields asks nothing, so adding one opens it.
+				this.edit(result.form)
 			} catch (refusal) {
 				this.refusal = refusal.message
 			} finally {
@@ -319,5 +435,10 @@ export default {
 
 .form-list__warn {
 	color: var(--color-error);
+}
+
+.form-list__warnings {
+	color: var(--color-warning-text, var(--color-text-maxcontrast));
+	padding-inline-start: 16px;
 }
 </style>

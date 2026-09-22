@@ -27,11 +27,17 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use InvalidArgumentException;
 use OCA\Buildiq\Service\RegistrationFormAuthoringService;
+use OCA\Buildiq\Service\RegistrationFormTargetSchemaReader;
 use OCA\Buildiq\Service\RegistrationFormValidator;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 /**
  * Covers the save path and the rules it makes real.
@@ -60,6 +66,26 @@ final class RegistrationFormAuthoringServiceTest extends TestCase {
 		parent::setUp();
 		$this->store = [];
 
+		$this->service = new RegistrationFormAuthoringService(
+			objectService: $this->objectServiceOverStore(),
+			appConfig: $this->appConfigStub(),
+			validator: new RegistrationFormValidator(),
+			targetSchema: $this->readerOver(
+				[
+					'caseType' => ['type' => 'string'],
+					'naam' => ['type' => 'string'],
+					'intakeChannel' => ['type' => 'string', 'enum' => ['portal', 'desk']],
+				]
+			),
+		);
+	}//end setUp()
+
+	/**
+	 * An object service over the in-memory store.
+	 *
+	 * @return ObjectServiceInterface The double.
+	 */
+	private function objectServiceOverStore(): ObjectServiceInterface {
 		// onlyMethods: the double may not invent a method the contract lacks.
 		$objectService = $this->getMockBuilder(ObjectServiceInterface::class)
 			->disableOriginalConstructor()
@@ -81,15 +107,52 @@ final class RegistrationFormAuthoringServiceTest extends TestCase {
 			}
 		);
 
+		return $objectService;
+	}//end objectServiceOverStore()
+
+	/**
+	 * App config answering buildiq's own register slug.
+	 *
+	 * @return IAppConfig The double.
+	 */
+	private function appConfigStub(): IAppConfig {
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueString')->willReturn('buildiq');
 
-		$this->service = new RegistrationFormAuthoringService(
-			objectService: $objectService,
-			appConfig: $appConfig,
-			validator: new RegistrationFormValidator(),
+		return $appConfig;
+	}//end appConfigStub()
+
+	/**
+	 * A reader over one register holding the `Zaak` schema.
+	 *
+	 * The real reader over doubled mappers, not a double of the reader: the
+	 * shape it returns is the contract the save path depends on, and a double
+	 * would let that shape drift without a red test.
+	 *
+	 * @param array<string, mixed> $properties What `Zaak` declares.
+	 *
+	 * @return RegistrationFormTargetSchemaReader The reader.
+	 */
+	private function readerOver(array $properties): RegistrationFormTargetSchemaReader {
+		$schema = $this->createMock(Schema::class);
+		$schema->method('getSlug')->willReturn('Zaak');
+		$schema->method('getProperties')->willReturn($properties);
+
+		$register = $this->createMock(Register::class);
+		$register->method('getSchemas')->willReturn([1]);
+
+		$registerMapper = $this->createMock(RegisterMapper::class);
+		$registerMapper->method('find')->willReturn($register);
+
+		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$schemaMapper->method('find')->willReturn($schema);
+
+		return new RegistrationFormTargetSchemaReader(
+			registerMapper: $registerMapper,
+			schemaMapper: $schemaMapper,
+			logger: $this->createMock(LoggerInterface::class),
 		);
-	}//end setUp()
+	}//end readerOver()
 
 	/**
 	 * One form on the building-permit type.
@@ -207,4 +270,89 @@ final class RegistrationFormAuthoringServiceTest extends TestCase {
 
 		$this->assertCount(2, $this->store);
 	}//end testTheSameNameOnAnotherSchemaIsFree()
+
+	/**
+	 * A channel the consumer never declared is refused, and the refusal names
+	 * the ones it did. This rule was written, unit-tested and enforced on
+	 * nothing until the save path could read the consuming schema.
+	 *
+	 * @return void
+	 */
+	public function testAChannelTheConsumerDoesNotDeclareIsRefused(): void {
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessageMatches('/portal, desk/');
+
+		$this->service->save(
+			$this->form(['channelProperty' => 'intakeChannel', 'channel' => 'fax'])
+		);
+	}//end testAChannelTheConsumerDoesNotDeclareIsRefused()
+
+	/**
+	 * A channel the consumer does declare goes through.
+	 *
+	 * @return void
+	 */
+	public function testADeclaredChannelIsAccepted(): void {
+		$saved = $this->service->save(
+			$this->form(['channelProperty' => 'intakeChannel', 'channel' => 'portal'])
+		);
+
+		$this->assertSame('portal', $saved['form']['channel']);
+		$this->assertSame([], $saved['warnings']);
+	}//end testADeclaredChannelIsAccepted()
+
+	/**
+	 * A preset naming a property the target schema does not have earns a
+	 * warning. It is a warning and not a refusal because buildiq reads that
+	 * schema across an app boundary.
+	 *
+	 * @return void
+	 */
+	public function testAPresetOnAnUnknownPropertyWarns(): void {
+		$saved = $this->service->save(
+			$this->form(['presets' => [['field' => 'verzonnenVeld', 'value' => 'x', 'hidden' => true]]])
+		);
+
+		$this->assertCount(1, $saved['warnings']);
+		$this->assertStringContainsString('verzonnenVeld', $saved['warnings'][0]);
+	}//end testAPresetOnAnUnknownPropertyWarns()
+
+	/**
+	 * A target schema nothing answers to leaves the save working and says the
+	 * checks did not run. Silence would be indistinguishable from a clean pass.
+	 *
+	 * @return void
+	 */
+	public function testASchemaThatCannotBeReadIsReportedAndTheSaveStillWorks(): void {
+		$service = new RegistrationFormAuthoringService(
+			objectService: $this->objectServiceOverStore(),
+			appConfig: $this->appConfigStub(),
+			validator: new RegistrationFormValidator(),
+			targetSchema: $this->readerOverNothing(),
+		);
+
+		$saved = $service->save($this->form());
+
+		$this->assertArrayHasKey('rf-1', $this->store);
+		$this->assertStringContainsString('did not run', $saved['warnings'][0]);
+	}//end testASchemaThatCannotBeReadIsReportedAndTheSaveStillWorks()
+
+	/**
+	 * A reader whose register holds no schema at all.
+	 *
+	 * @return RegistrationFormTargetSchemaReader The reader.
+	 */
+	private function readerOverNothing(): RegistrationFormTargetSchemaReader {
+		$register = $this->createMock(Register::class);
+		$register->method('getSchemas')->willReturn([]);
+
+		$registerMapper = $this->createMock(RegisterMapper::class);
+		$registerMapper->method('find')->willReturn($register);
+
+		return new RegistrationFormTargetSchemaReader(
+			registerMapper: $registerMapper,
+			schemaMapper: $this->createMock(SchemaMapper::class),
+			logger: $this->createMock(LoggerInterface::class),
+		);
+	}//end readerOverNothing()
 }//end class
