@@ -22,7 +22,7 @@
 ## 5. Wave 3 schema
 
 - [x] 5.1 Add `channel`, `isPublic` and `confirmationText` to `registrationForm`, with the default rule spanning audience and channel (REQ-OBRF-007)
-- [x] 5.2 Validate `channel` against the target schema's channel property and refuse an unknown value (REQ-OBRF-007). The rule is written and now runs on every save, but the save path passes the channel list as null because it cannot read the consumer's schema, and the validator reads null as "no channels declared" and returns. So an unknown channel is still not refused in practice. It starts refusing when 6.1 reads the enum and hands it over
+- [x] 5.2 Validate `channel` against the target schema's channel property and refuse an unknown value (REQ-OBRF-007). `RegistrationFormTargetSchemaReader` reads the consuming schema, so the rule now refuses in practice. The form nominates the property in `channelProperty`; buildiq never guesses which property is the channel. A schema that cannot be read leaves the save working and returns a warning saying the check did not run
 - [x] 5.3 Add `sections[]` and `order` plus `section` on `fields[]`, with the unknown-section refusal (REQ-OBRF-008)
 - [ ] 5.4 Extend the seed: a `portal` client form and a `desk` internal form for `dossiq/case` `caseType = bouwvergunning`, the portal one public with a confirmation text
 

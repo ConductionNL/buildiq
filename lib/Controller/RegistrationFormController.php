@@ -104,6 +104,40 @@ class RegistrationFormController extends Controller {
 	}//end index()
 
 	/**
+	 * What the consuming schema declares: its property names and the channels
+	 * it accepts, so the builder offers pickers instead of free text.
+	 *
+	 * @return JSONResponse 200 with `{properties, channels, note}`; 400 without a register and schema.
+	 *
+	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-007)
+	 */
+	#[AuthorizedAdminSetting(AdminSettings::class)]
+	public function target(): JSONResponse {
+		$guard = $this->requireAdmin();
+		if ($guard !== null) {
+			return $guard;
+		}
+
+		$register = (string)$this->request->getParam('register', '');
+		$schema = (string)$this->request->getParam('schema', '');
+		if ($register === '' || $schema === '') {
+			return $this->error(code: 'missing_scope', status: Http::STATUS_BAD_REQUEST, detail: 'Name the register and the schema.');
+		}
+
+		try {
+			$target = $this->authoring->targetFor(
+				$register,
+				$schema,
+				(string)$this->request->getParam('channelProperty', '')
+			);
+		} catch (Throwable $e) {
+			return $this->unexpected(what: 'reading the target schema', e: $e);
+		}
+
+		return new JSONResponse($target, Http::STATUS_OK);
+	}//end target()
+
+	/**
 	 * Store one form.
 	 *
 	 * @return JSONResponse 200 with `{form, warnings}`; 422 when a rule refuses it.

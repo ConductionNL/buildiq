@@ -5,7 +5,7 @@
 			"registrationForm": {
 				"slug": "registrationForm",
 				"icon": "FormSelect",
-				"version": "0.2.0",
+				"version": "0.3.0",
 				"title": "Registration Form",
 				"description": "A form bound to one type value of one object in one app: the intake form for a bouwvergunning, the desk form for the same type, the form an architect fills in on a client's behalf. One type carries SEVERAL forms, each named, each for an audience and a channel, and at most one of them is the default for its audience and channel. The form owns the order and the grouping of its fields, so what a filer sees is what an administrator arranged and not whatever order the schema happens to list its properties in.",
 				"x-openregister-audit-trail": {
@@ -54,6 +54,12 @@
 						"example": "portal",
 						"title": "Channel",
 						"description": "The intake channel this form serves. Validated against the consuming schema's own channel property where one is declared, so a channel the consumer has never heard of is refused rather than published and never asked for. A form with no channel serves every channel (REQ-OBRF-007)."
+					},
+					"channelProperty": {
+						"type": "string",
+						"example": "intakeChannel",
+						"title": "Channel Property",
+						"description": "The property on the target schema that carries the intake channel, named the same way `typeProperty` names the one carrying the type. Its enum is what a channel is checked against. Buildiq never guesses this from a property name: refusing a save on a name that merely looks channel-ish is a worse failure than not refusing at all. A form that names no channel property is not channel-checked (REQ-OBRF-007)."
 					},
 					"isPublic": {
 						"type": "boolean",

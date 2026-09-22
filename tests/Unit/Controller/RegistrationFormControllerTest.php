@@ -95,7 +95,7 @@ class RegistrationFormControllerTest extends TestCase {
 	private function authoringDouble(): RegistrationFormAuthoringService {
 		return $this->getMockBuilder(RegistrationFormAuthoringService::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['save', 'listFor'])
+			->onlyMethods(['save', 'listFor', 'targetFor'])
 			->getMock();
 	}//end authoringDouble()
 
@@ -153,12 +153,60 @@ class RegistrationFormControllerTest extends TestCase {
 	}//end testAListWithoutAScopeIsRefused()
 
 	/**
+	 * The target read is admin-only too. It answers with the consuming schema's
+	 * property names, which is a map of somebody else's data model.
+	 *
+	 * @return void
+	 */
+	public function testANonAdminCannotReadTheTargetSchema(): void {
+		$authoring = $this->authoringDouble();
+		$authoring->expects($this->never())->method('targetFor');
+
+		$response = $this->make('ayse', false, $authoring, ['register' => 'dossiq', 'schema' => 'Zaak'])->target();
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+	}//end testANonAdminCannotReadTheTargetSchema()
+
+	/**
+	 * A target read without a register and a schema is a bad request.
+	 *
+	 * @return void
+	 */
+	public function testATargetReadWithoutAScopeIsRefused(): void {
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $this->make('beheerder', true, null, [])->target()->getStatus());
+	}//end testATargetReadWithoutAScopeIsRefused()
+
+	/**
+	 * The target read passes the nominated channel property through, because
+	 * the channel enum is read off that property and no other.
+	 *
+	 * @return void
+	 */
+	public function testTheTargetReadPassesTheNominatedChannelProperty(): void {
+		$authoring = $this->authoringDouble();
+		$authoring->expects($this->once())
+			->method('targetFor')
+			->with('dossiq', 'Zaak', 'intakeChannel')
+			->willReturn(['properties' => ['caseType'], 'channels' => ['portal'], 'note' => null]);
+
+		$response = $this->make(
+			'beheerder',
+			true,
+			$authoring,
+			['register' => 'dossiq', 'schema' => 'Zaak', 'channelProperty' => 'intakeChannel']
+		)->target();
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame(['portal'], $response->getData()['channels']);
+	}//end testTheTargetReadPassesTheNominatedChannelProperty()
+
+	/**
 	 * The admin posture is declared to the middleware too.
 	 *
 	 * @return void
 	 */
 	public function testTheAdminPostureIsDeclaredToTheMiddleware(): void {
-		foreach (['index', 'save'] as $method) {
+		foreach (['index', 'save', 'target'] as $method) {
 			$attributes = (new ReflectionMethod(RegistrationFormController::class, $method))
 				->getAttributes(AuthorizedAdminSetting::class);
 
