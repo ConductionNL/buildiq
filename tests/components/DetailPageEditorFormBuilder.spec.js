@@ -93,8 +93,8 @@ describe('the registration-form builder on the page the designer renders', () =>
 			wrapper.findComponent({ name: 'FormLayoutBuilder' }).exists(),
 			'the layout builder is not reachable from the page the designer renders',
 		).toBe(true)
-		expect(
-			wrapper.findComponent({ name: 'FormPresetsBuilder' }).exists(),
-		).toBe(true)
+		expect(wrapper.findComponent({ name: 'FormPresetsBuilder' }).exists()).toBe(
+			true,
+		)
 	})
 })

@@ -13,7 +13,6 @@
  */
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-
 import FormLayoutBuilder from '../../src/components/page-editor/fields/FormLayoutBuilder.vue'
 
 const SECTIONS = [
