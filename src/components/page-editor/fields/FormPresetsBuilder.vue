@@ -128,6 +128,7 @@ export default {
 		 * Add an empty preset.
 		 *
 		 * @return {void}
+		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005)
 		 */
 		add() {
 			this.$emit('update:presets', [
@@ -141,6 +142,7 @@ export default {
 		 *
 		 * @param {number} index - which preset.
 		 * @return {void}
+		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005)
 		 */
 		remove(index) {
 			const next = this.presets.slice()
