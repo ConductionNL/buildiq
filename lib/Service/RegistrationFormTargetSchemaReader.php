@@ -159,7 +159,11 @@ final class RegistrationFormTargetSchemaReader {
 
 			$properties = $schema->getProperties();
 
-			return is_array($properties) === true ? $properties : [];
+			if (is_array($properties) === true) {
+				return $properties;
+			}
+
+			return [];
 		}
 
 		return null;
@@ -192,6 +196,10 @@ final class RegistrationFormTargetSchemaReader {
 			}
 		}
 
-		return $channels === [] ? null : $channels;
+		if ($channels === []) {
+			return null;
+		}
+
+		return $channels;
 	}//end channelsOf()
 }//end class
