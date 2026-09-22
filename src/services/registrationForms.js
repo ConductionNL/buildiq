@@ -49,6 +49,33 @@ export async function fetchRegistrationForms({ register, schema }) {
 }
 
 /**
+ * GET what the consuming schema declares: its property names and the values
+ * the nominated channel property accepts.
+ *
+ * The builder offers these as pickers. A typed property name is a field whose
+ * answer is dropped on save, and nothing on the form would say so.
+ *
+ * @param {{register: string, schema: string, channelProperty?: string}} scope - which schema to read.
+ * @return {Promise<{properties: Array<string>|null, channels: Array<string>|null, note: string|null}>} What it declares.
+ * @throws {{status: number, error: string, message: string}} Normalised refusal.
+ * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-007)
+ */
+export async function fetchTargetSchema({ register, schema, channelProperty }) {
+	try {
+		const { data } = await axios.get(generateUrl(`${BASE}/target`), {
+			params: { register, schema, channelProperty: channelProperty || '' },
+		})
+		return {
+			properties: (data && data.properties) || null,
+			channels: (data && data.channels) || null,
+			note: (data && data.note) || null,
+		}
+	} catch (err) {
+		throw normaliseError(err)
+	}
+}
+
+/**
  * PUT one form.
  *
  * @param {object} form - the form to store.
