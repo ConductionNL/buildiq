@@ -64,6 +64,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use DateTime;
+use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\Http\Client\IClientService;
 use OCP\IUserSession;
@@ -92,8 +93,11 @@ class RuleActionDispatcher {
 	 * @param ContainerInterface $container PSR container — lazily resolves RuleEngineService
 	 *                                      for `call-rule-set` to avoid a constructor cycle.
 	 * @param LoggerInterface $logger PSR logger.
+	 * @param ConnectionReporter|null $connectionReporter Tells integriq what a webhook call met, or nothing when absent.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
 	 */
 	public function __construct(
 		private readonly ObjectServiceInterface $objectService,
@@ -103,6 +107,7 @@ class RuleActionDispatcher {
 		private readonly JobOwnerImpersonator $ownerImpersonator,
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
+		private readonly ?ConnectionReporter $connectionReporter = null,
 	) {
 
 	}//end __construct()
@@ -231,9 +236,16 @@ class RuleActionDispatcher {
 	/**
 	 * Webhook — POST the compiled target via NC's HTTP client service.
 	 *
+	 * What the call met is reported to integriq's connection registry as the
+	 * one `rule-webhooks` family row, at most once an hour while it stays the
+	 * same (adopt-connection-registry). A failed post still throws, exactly as
+	 * before, into {@see __invoke()}.
+	 *
 	 * @param array<string,mixed> $params Action parameters.
 	 *
 	 * @return int|null The response status code, or null on skip/failure.
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
 	 */
 	private function dispatchWebhook(array $params): ?int {
 		$url = (string)($params['url'] ?? '');
@@ -248,9 +260,17 @@ class RuleActionDispatcher {
 		}
 
 		$client = $this->httpClientService->newClient();
-		$response = $client->post($url, ['json' => $payload, 'timeout' => 10]);
+		try {
+			$response = $client->post($url, ['json' => $payload, 'timeout' => 10]);
+		} catch (Throwable $e) {
+			$this->connectionReporter?->reportWebhookCall(url: $url, httpStatus: $this->connectionReporter->httpStatusOf(exception: $e));
+			throw $e;
+		}
 
-		return $response->getStatusCode();
+		$status = $response->getStatusCode();
+		$this->connectionReporter?->reportWebhookCall(url: $url, httpStatus: $status);
+
+		return $status;
 	}//end dispatchWebhook()
 
 	/**

@@ -25,6 +25,9 @@ import registry from './registry.js'
 
 // Library CSS — must be an explicit import (webpack tree-shakes side-effect imports from aliased packages).
 import '@conduction/nextcloud-vue/css/index.css'
+// Toast styles. Without them every showSuccess/showError renders as bare text
+// in the top-left corner, which reads as no message at all.
+import '@nextcloud/dialogs/style.css'
 // nc-vue's CnDashboardGrid/CnWidgetGrid no longer bundle gridstack's JS or
 // CSS (nc-vue#557) — it is a peerDependency now, so this app must supply
 // both. Without this import every grid item renders 0px wide (height comes

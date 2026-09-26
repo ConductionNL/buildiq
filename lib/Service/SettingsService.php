@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -52,6 +53,8 @@ class SettingsService {
 
 	/**
 	 * Per-key default values. Keys absent here default to ''.
+	 * `register` defaults to the app's own register, the one the repair step
+	 * imports, so a fresh install shows it instead of an empty field.
 	 * `registry_register` defaults to `buildiq` (the catalogue's register
 	 * segment); `registry_url` defaults to '' so the store stays hidden until an
 	 * admin configures it (the placeholder URL is only a UI hint, never stored).
@@ -59,7 +62,21 @@ class SettingsService {
 	 * @var array<string, string>
 	 */
 	private const CONFIG_DEFAULTS = [
+		'register' => ApplicationVersionService::REGISTER_SLUG,
 		'registry_register' => 'buildiq',
+	];
+
+	/**
+	 * Keys whose stored empty value also falls back to the default.
+	 *
+	 * Saving the admin form with the field cleared writes '', and an empty
+	 * register points Buildiq nowhere. Reading that back as the app's own
+	 * register keeps the field and the app in agreement.
+	 *
+	 * @var array<string>
+	 */
+	private const EMPTY_MEANS_DEFAULT = [
+		'register',
 	];
 
 	/**
@@ -81,8 +98,11 @@ class SettingsService {
 	 * @param IGroupManager $groupManager The group manager
 	 * @param IUserSession $userSession The user session
 	 * @param LoggerInterface $logger The logger
+	 * @param ConnectionReporter|null $connectionReporter Asks integriq to look again after a store save.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-002-a-store-settings-save-asks-integriq-to-look-again
 	 */
 	public function __construct(
 		private IAppConfig $appConfig,
@@ -91,6 +111,7 @@ class SettingsService {
 		private IGroupManager $groupManager,
 		private IUserSession $userSession,
 		private LoggerInterface $logger,
+		private ?ConnectionReporter $connectionReporter = null,
 	) {
 	}//end __construct()
 
@@ -119,7 +140,12 @@ class SettingsService {
 		$settings = [];
 		foreach (self::CONFIG_KEYS as $key) {
 			$default = (self::CONFIG_DEFAULTS[$key] ?? '');
-			$settings[$key] = $this->appConfig->getValueString(Application::APP_ID, $key, $default);
+			$value = $this->appConfig->getValueString(Application::APP_ID, $key, $default);
+			if ($value === '' && in_array($key, self::EMPTY_MEANS_DEFAULT, true) === true) {
+				$value = $default;
+			}
+
+			$settings[$key] = $value;
 		}
 
 		$user = $this->userSession->getUser();
@@ -147,14 +173,21 @@ class SettingsService {
 	 *
 	 * @param array<string,mixed> $data The data to update
 	 *
+	 * After the write it asks integriq to resolve every connection whose keys
+	 * the save wrote (adopt-connection-registry). That never throws, does
+	 * nothing without integriq, and never changes the result.
+	 *
 	 * @return array<string,mixed> The updated settings
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-settings-and-observability/tasks.md#task-2
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-002-a-store-settings-save-asks-integriq-to-look-again
 	 */
 	public function updateSettings(array $data): array {
+		$written = [];
 		foreach (self::CONFIG_KEYS as $key) {
 			if (isset($data[$key]) === true) {
 				$this->appConfig->setValueString(Application::APP_ID, $key, (string)$data[$key]);
+				$written[] = $key;
 			}
 		}
 
@@ -175,8 +208,11 @@ class SettingsService {
 					(string)$data[$key],
 					sensitive: true
 				);
+				$written[] = $key;
 			}
 		}
+
+		$this->connectionReporter?->refreshFromSave(savedKeys: $written);
 
 		return $this->getSettings();
 	}//end updateSettings()

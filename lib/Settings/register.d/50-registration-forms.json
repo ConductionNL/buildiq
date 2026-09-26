@@ -1,0 +1,311 @@
+{
+	"_comment": "ADR-037 register fragment — registration forms. Adds the disjoint schema keys `registrationForm` and `formDraft` to the shared `buildiq` register's components.schemas map (key-union merge, no existing schema is touched). A registration form is the manifest form contract bound to one type value of one consuming app's object, and a type carries several of them: one per audience and channel, at most one default each. The form owns its own field order and grouping, so a served form is what an administrator arranged rather than the target schema's property order. Presets let a form decide an answer the filer never sees, and they travel BESIDE the served form: buildiq hands them to the consumer and never writes the consuming app's object itself (ADR-066). See openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md, REQ-OBRF-004 through REQ-OBRF-009.",
+	"components": {
+		"schemas": {
+			"registrationForm": {
+				"slug": "registrationForm",
+				"icon": "FormSelect",
+				"version": "0.3.0",
+				"title": "Registration Form",
+				"description": "A form bound to one type value of one object in one app: the intake form for a bouwvergunning, the desk form for the same type, the form an architect fills in on a client's behalf. One type carries SEVERAL forms, each named, each for an audience and a channel, and at most one of them is the default for its audience and channel. The form owns the order and the grouping of its fields, so what a filer sees is what an administrator arranged and not whatever order the schema happens to list its properties in.",
+				"x-openregister-audit-trail": {
+					"enabled": true,
+					"description": "A registration form is what a citizen is asked. Every create, edit and publication is recorded, so what was asked on a given day stays answerable."
+				},
+				"x-spec": "openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md",
+				"type": "object",
+				"required": [
+					"targetApp",
+					"register",
+					"schema",
+					"typeProperty",
+					"typeValue",
+					"name",
+					"audience",
+					"status"
+				],
+				"properties": {
+					"name": {
+						"type": "string",
+						"example": "client-intake",
+						"title": "Name",
+						"description": "The form's own name, unique within the type tuple. This is what a consumer asks for by name, so it is stable and an administrator renames it deliberately (REQ-OBRF-004)."
+					},
+					"audience": {
+						"type": "string",
+						"enum": [
+							"client",
+							"internal",
+							"supplier"
+						],
+						"example": "client",
+						"title": "Audience",
+						"description": "Who fills this form in: the applicant, a member of staff at the desk, or a professional acting for somebody else. The same case type is asked differently by each (REQ-OBRF-004)."
+					},
+					"isDefault": {
+						"type": "boolean",
+						"default": false,
+						"example": true,
+						"title": "Is Default",
+						"description": "Whether this is the form a consumer gets when it asks for the audience and channel without naming one. At most one published form per (type tuple, audience, channel) may be the default; a second is refused and names the first (REQ-OBRF-004, REQ-OBRF-007)."
+					},
+					"channel": {
+						"type": "string",
+						"example": "portal",
+						"title": "Channel",
+						"description": "The intake channel this form serves. Validated against the consuming schema's own channel property where one is declared, so a channel the consumer has never heard of is refused rather than published and never asked for. A form with no channel serves every channel (REQ-OBRF-007)."
+					},
+					"channelProperty": {
+						"type": "string",
+						"example": "intakeChannel",
+						"title": "Channel Property",
+						"description": "The property on the target schema that carries the intake channel, named the same way `typeProperty` names the one carrying the type. Its enum is what a channel is checked against. Buildiq never guesses this from a property name: refusing a save on a name that merely looks channel-ish is a worse failure than not refusing at all. A form that names no channel property is not channel-checked (REQ-OBRF-007)."
+					},
+					"isPublic": {
+						"type": "boolean",
+						"default": false,
+						"example": true,
+						"title": "Is Public",
+						"description": "Whether the form may be shown to somebody who is not logged in. The portal reads this; buildiq does not serve the form itself (REQ-OBRF-009)."
+					},
+					"confirmationText": {
+						"type": "string",
+						"example": "Uw aanvraag is ontvangen. U hoort binnen acht weken van ons.",
+						"title": "Confirmation Text",
+						"description": "What the filer reads after submitting. Written by the administrator who owns the form, because the sentence that ends an application is part of the application."
+					},
+					"targetApp": {
+						"type": "string",
+						"example": "dossiq",
+						"title": "Target App",
+						"description": "The app whose object this form creates."
+					},
+					"register": {
+						"type": "string",
+						"example": "dossiq",
+						"title": "Register",
+						"description": "The register slug holding that object."
+					},
+					"schema": {
+						"type": "string",
+						"example": "Zaak",
+						"title": "Schema",
+						"description": "The schema slug of that object."
+					},
+					"typeProperty": {
+						"type": "string",
+						"example": "caseType",
+						"title": "Type Property",
+						"description": "The property on that schema carrying the type value."
+					},
+					"typeValue": {
+						"type": "string",
+						"example": "bouwvergunning",
+						"title": "Type Value",
+						"description": "The type value this form is bound to."
+					},
+					"sections": {
+						"type": "array",
+						"description": "The groups the fields are arranged into, in the order an administrator set. A field naming a section that is not declared here is refused on save (REQ-OBRF-008).",
+						"items": {
+							"type": "object",
+							"properties": {
+								"name": {
+									"type": "string",
+									"example": "uw-gegevens",
+									"title": "Name",
+									"description": "The section's own name, referenced by fields."
+								},
+								"label": {
+									"type": "string",
+									"example": "Uw gegevens",
+									"title": "Label",
+									"description": "The heading the filer reads."
+								},
+								"order": {
+									"type": "integer",
+									"example": 1,
+									"title": "Order",
+									"description": "Where the section sits on the form."
+								}
+							},
+							"required": [
+								"name"
+							]
+						},
+						"title": "Sections"
+					},
+					"fields": {
+						"type": "array",
+						"description": "The fields this form asks, with their order and their section. A form lists only the fields an administrator put on it, never every property of the target schema in fetch order.",
+						"items": {
+							"type": "object",
+							"properties": {
+								"name": {
+									"type": "string",
+									"example": "applicantRole",
+									"title": "Name",
+									"description": "The property on the target schema this field writes."
+								},
+								"label": {
+									"type": "string",
+									"example": "Rol van de aanvrager",
+									"title": "Label",
+									"description": "What the filer reads above the input."
+								},
+								"type": {
+									"type": "string",
+									"example": "select",
+									"title": "Type",
+									"description": "The input type, as the manifest form contract names it."
+								},
+								"required": {
+									"type": "boolean",
+									"example": true,
+									"title": "Required",
+									"description": "Whether the filer must answer it."
+								},
+								"section": {
+									"type": "string",
+									"example": "uw-gegevens",
+									"title": "Section",
+									"description": "The declared section this field sits in. A section the form does not declare is refused on save (REQ-OBRF-008)."
+								},
+								"order": {
+									"type": "integer",
+									"example": 10,
+									"title": "Order",
+									"description": "Where the field sits inside its section. The served form uses this order and NEVER the schema's property order: a form that fell back to property order would silently reshuffle the day somebody adds a property (REQ-OBRF-008)."
+								},
+								"default": {
+									"type": "string",
+									"example": "gemachtigde",
+									"title": "Default",
+									"description": "Pre-filled value. Set by the serving layer from a visible preset; an author sets it directly for a plain default."
+								}
+							},
+							"required": [
+								"name"
+							]
+						},
+						"title": "Fields"
+					},
+					"steps": {
+						"type": "array",
+						"description": "The manifest form contract's steps, each with a free phase label shown as the group heading.",
+						"items": {
+							"type": "object"
+						},
+						"title": "Steps"
+					},
+					"formLogic": {
+						"type": "object",
+						"description": "The manifest form contract's conditional logic: visibleWhen and validation, authored by the same editor that authors every other manifest form.",
+						"title": "Form Logic"
+					},
+					"presets": {
+						"type": "array",
+						"description": "Values the form sets on the object it creates. A hidden preset is REMOVED from the served fields and travels beside the form instead, so the filer never sees a question whose answer was already decided; a visible one is pre-filled and stays editable. buildiq never writes the target object: the consumer does, from these (REQ-OBRF-005).",
+						"items": {
+							"type": "object",
+							"properties": {
+								"field": {
+									"type": "string",
+									"example": "intakeChannel",
+									"title": "Field",
+									"description": "The property on the target schema this preset sets."
+								},
+								"value": {
+									"type": "string",
+									"example": "portal",
+									"title": "Value",
+									"description": "The value it is set to."
+								},
+								"hidden": {
+									"type": "boolean",
+									"default": false,
+									"example": true,
+									"title": "Hidden",
+									"description": "Whether the filer sees it. Hidden means removed from the form, not merely styled away."
+								}
+							},
+							"required": [
+								"field",
+								"value"
+							]
+						},
+						"title": "Presets"
+					},
+					"allowSaveForLater": {
+						"type": "boolean",
+						"default": false,
+						"example": true,
+						"title": "Allow Save For Later",
+						"description": "Whether a filer may save a draft and come back to it."
+					},
+					"status": {
+						"type": "string",
+						"enum": [
+							"draft",
+							"published",
+							"retired"
+						],
+						"default": "draft",
+						"example": "published",
+						"title": "Status",
+						"description": "Lifecycle. Only a published form is served to a consumer; a draft is the administrator's working copy."
+					}
+				}
+			},
+			"formDraft": {
+				"x-openregister-demo-data": "One person's half-filled form, owner-only. A generated draft belongs to a user who does not exist, so nobody can ever open it.",
+				"slug": "formDraft",
+				"icon": "ContentSaveEditOutline",
+				"version": "0.1.0",
+				"title": "Form Draft",
+				"description": "A half-filled registration form belonging to one person. Owner-only: the values are that person's own answers, often personal data, and nobody else has a reason to read them. Drafts are the one append the leaf allows, because they are buildiq's own data and nothing else's (ADR-066).",
+				"x-openregister-audit-trail": {
+					"enabled": true,
+					"description": "Draft values are personal data; every write is recorded."
+				},
+				"type": "object",
+				"required": [
+					"registrationFormId",
+					"userId"
+				],
+				"properties": {
+					"registrationFormId": {
+						"type": "string",
+						"example": "rf-2026-0001",
+						"title": "Registration Form Id",
+						"description": "The form this draft is an answer to."
+					},
+					"userId": {
+						"type": "string",
+						"example": "j.devries",
+						"title": "User Id",
+						"description": "Whose draft this is. The only person who may read it."
+					},
+					"values": {
+						"type": "object",
+						"description": "The answers so far, keyed by field name.",
+						"title": "Values"
+					},
+					"step": {
+						"type": "integer",
+						"example": 2,
+						"title": "Step",
+						"description": "Which step the filer had reached."
+					},
+					"updatedAt": {
+						"type": "string",
+						"format": "date-time",
+						"example": "2026-09-18T11:04:00Z",
+						"title": "Updated At",
+						"description": "When it was last saved."
+					}
+				}
+			}
+		}
+	}
+}

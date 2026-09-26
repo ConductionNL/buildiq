@@ -40,6 +40,7 @@ use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\TaskProcessing\IManager;
+use OCP\TaskProcessing\ISynchronousProvider;
 use OCP\TaskProcessing\Task;
 use OCP\TaskProcessing\TaskTypes\TextToText;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -305,6 +306,44 @@ class CopilotServiceTest extends TestCase {
 					'required' => ['appSlug', 'pageId', 'title', 'type', 'route'],
 				],
 			],
+			[
+				'id' => 'buildiq.upsertMenuItem',
+				'inputSchema' => [
+					'type' => 'object',
+					'properties' => [
+						'appSlug' => ['type' => 'string'],
+						'id' => ['type' => 'string'],
+						'label' => ['type' => 'string'],
+						'route' => ['type' => 'string'],
+					],
+					'required' => ['appSlug', 'id', 'label', 'route'],
+				],
+			],
+			[
+				'id' => 'buildiq.addWidget',
+				'inputSchema' => [
+					'type' => 'object',
+					'properties' => [
+						'appSlug' => ['type' => 'string'],
+						'pageId' => ['type' => 'string'],
+						'widgetType' => ['type' => 'string'],
+					],
+					'required' => ['appSlug', 'pageId', 'widgetType'],
+				],
+			],
+			[
+				'id' => 'buildiq.upsertSchema',
+				'inputSchema' => [
+					'type' => 'object',
+					'properties' => [
+						'appSlug' => ['type' => 'string'],
+						'slug' => ['type' => 'string'],
+						'title' => ['type' => 'string'],
+						'properties' => ['type' => 'object'],
+					],
+					'required' => ['appSlug', 'slug', 'title', 'properties'],
+				],
+			],
 		];
 	}//end descriptors()
 
@@ -440,6 +479,252 @@ class CopilotServiceTest extends TestCase {
 			throw $e;
 		}
 	}//end testPlanRetriesExactlyOnceThenFails()
+
+	/**
+	 * A synchronous provider is run INLINE (`runTask`), never handed to the
+	 * background job, so the answer does not wait for the next cron run.
+	 *
+	 * Fails on the pre-2026-09-18 code, which always called `scheduleTask()`.
+	 *
+	 * @return void
+	 */
+	public function testPlanRunsASynchronousProviderInline(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->taskManager->method('getPreferredProvider')->willReturn($this->createMock(ISynchronousProvider::class));
+
+		$done = new Task(TextToText::ID, ['input' => 'x'], 'buildiq', 'alice');
+		$done->setStatus(Task::STATUS_SUCCESSFUL);
+		$done->setOutput(
+			[
+				'output' => json_encode(
+					[
+						'summary' => 'A tool library',
+						'steps' => [['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']]],
+					]
+				),
+			]
+		);
+
+		$this->taskManager->expects(self::never())->method('scheduleTask');
+		$this->taskManager->expects(self::once())->method('runTask')->willReturn($done);
+
+		$result = $this->makeService()->plan(brief: 'A tool library', appSlug: null, userId: 'alice');
+
+		self::assertSame('A tool library', $result['summary']);
+	}//end testPlanRunsASynchronousProviderInline()
+
+	/**
+	 * A provider that fails (for instance because no model is configured behind
+	 * it) is reported as a provider error, once, carrying the provider's own
+	 * message. No repair round-trip: the model was never reached, so asking it
+	 * again only doubles the wait.
+	 *
+	 * Fails on the pre-2026-09-18 code, which ran a second task and then
+	 * answered 422 `plan_invalid` "rephrase your request".
+	 *
+	 * @return void
+	 */
+	public function testPlanReportsAProviderFailureOnceAndKeepsItsMessage(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->taskManager->method('getPreferredProvider')->willReturn($this->createMock(ISynchronousProvider::class));
+
+		$failed = new Task(TextToText::ID, ['input' => 'x'], 'buildiq', 'alice');
+		$failed->setStatus(Task::STATUS_FAILED);
+		$failed->setErrorMessage('Chat provider is not configured.');
+
+		$this->taskManager->expects(self::once())->method('runTask')->willReturn($failed);
+
+		$this->expectException(CopilotException::class);
+		try {
+			$this->makeService()->plan(brief: 'A tool library', appSlug: null, userId: 'alice');
+		} catch (CopilotException $e) {
+			self::assertSame('provider_error', $e->getErrorCode());
+			self::assertSame(502, $e->getHttpStatus());
+			self::assertStringContainsString('Chat provider is not configured.', (string)($e->getContext()['providerMessage'] ?? ''));
+			throw $e;
+		}
+	}//end testPlanReportsAProviderFailureOnceAndKeepsItsMessage()
+
+	/**
+	 * An asynchronous provider that nothing picks up: the request gives up,
+	 * cancels the task it abandoned, and says a worker is missing rather than
+	 * blaming the brief.
+	 *
+	 * The wait budget is passed in so the give-up path runs in milliseconds.
+	 *
+	 * @return void
+	 */
+	public function testAnUnpickedTaskIsGivenUpOnAndCancelled(): void {
+		$scheduled = new Task(TextToText::ID, ['input' => 'x'], 'buildiq', 'alice');
+		$scheduled->setId(42);
+		$scheduled->setStatus(Task::STATUS_SCHEDULED);
+
+		$this->taskManager->method('scheduleTask')->willReturnCallback(
+			function (Task $task): void {
+				$task->setId(42);
+			}
+		);
+		$this->taskManager->method('getTask')->willReturn($scheduled);
+		$this->taskManager->expects(self::once())->method('cancelTask')->with(42);
+
+		$method = new \ReflectionMethod(CopilotService::class, 'runTextToTextTask');
+		$method->setAccessible(true);
+
+		$this->expectException(CopilotException::class);
+		try {
+			$method->invoke($this->makeService(), $this->taskManager, 'a prompt', 'alice', null, 0.05);
+		} catch (CopilotException $e) {
+			self::assertSame('provider_error', $e->getErrorCode());
+			self::assertStringContainsString('still waiting', (string)($e->getContext()['providerMessage'] ?? ''));
+			throw $e;
+		}
+	}//end testAnUnpickedTaskIsGivenUpOnAndCancelled()
+
+	/**
+	 * A scheduled task with no id is a provider error, not a null dereference.
+	 *
+	 * @return void
+	 */
+	public function testATaskWithoutAnIdIsAProviderError(): void {
+		$this->taskManager->method('scheduleTask');
+
+		$method = new \ReflectionMethod(CopilotService::class, 'runTextToTextTask');
+		$method->setAccessible(true);
+
+		$this->expectException(CopilotException::class);
+		try {
+			$method->invoke($this->makeService(), $this->taskManager, 'a prompt', 'alice', null, 0.05);
+		} catch (CopilotException $e) {
+			self::assertSame('provider_error', $e->getErrorCode());
+			throw $e;
+		}
+	}//end testATaskWithoutAnIdIsAProviderError()
+
+	/**
+	 * A provider catalogue that cannot be read falls back to the scheduled
+	 * path rather than failing the plan.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadableProviderCatalogueFallsBackToScheduling(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->taskManager->method('getPreferredProvider')->willThrowException(new \RuntimeException('catalogue unavailable'));
+		$this->wireSuccessfulLlmReply(
+			json_encode(
+				[
+					'summary' => 'A tool library',
+					'steps' => [['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']]],
+				]
+			)
+		);
+
+		$this->taskManager->expects(self::never())->method('runTask');
+
+		$result = $this->makeService()->plan(brief: 'A tool library', appSlug: null, userId: 'alice');
+
+		self::assertSame('A tool library', $result['summary']);
+	}//end testAnUnreadableProviderCatalogueFallsBackToScheduling()
+
+	/**
+	 * A plan for the version the user is editing lands on that version, even
+	 * when the model leaves `versionSlug` out (the tools would otherwise
+	 * default it to `development`, and the designer would show no change).
+	 *
+	 * Fails on the pre-2026-09-18 code, which had no version parameter.
+	 *
+	 * @return void
+	 */
+	public function testPlanSettlesEveryStepOnTheVersionBeingEdited(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->wireSuccessfulLlmReply(
+			json_encode(
+				[
+					'summary' => 'Adds a repairs page',
+					'steps' => [
+						[
+							'tool' => 'buildiq.upsertPage',
+							'arguments' => [
+								'appSlug' => 'bike-repairs',
+								'pageId' => 'repairs',
+								'title' => 'Repairs',
+								'type' => 'index',
+								'route' => '/repairs',
+							],
+						],
+					],
+				]
+			)
+		);
+
+		$this->wireCaller(uid: 'alice');
+		$this->objectService->method('searchObjectsBySlug')->willReturn(
+			[
+				['id' => 'app-1', 'slug' => 'bike-repairs', 'appType' => 'virtual', 'permissions' => ['owners' => ['user:alice']], 'manifest' => []],
+			]
+		);
+
+		$result = $this->makeService()->plan(
+			brief: 'Add a repairs page',
+			appSlug: 'bike-repairs',
+			userId: 'alice',
+			agentId: null,
+			versionSlug: 'production'
+		);
+
+		self::assertSame('production', $result['steps'][0]['arguments']['versionSlug']);
+		self::assertArrayHasKey('bike-repairs@production', $result['manifests']);
+	}//end testPlanSettlesEveryStepOnTheVersionBeingEdited()
+
+	/**
+	 * A version the model DID choose is left alone.
+	 *
+	 * @return void
+	 */
+	public function testPlanKeepsAVersionTheModelChose(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->wireSuccessfulLlmReply(
+			json_encode(
+				[
+					'summary' => 'Adds a repairs page',
+					'steps' => [
+						[
+							'tool' => 'buildiq.upsertPage',
+							'arguments' => [
+								'appSlug' => 'bike-repairs',
+								'versionSlug' => 'development',
+								'pageId' => 'repairs',
+								'title' => 'Repairs',
+								'type' => 'index',
+								'route' => '/repairs',
+							],
+						],
+					],
+				]
+			)
+		);
+
+		$this->wireCaller(uid: 'alice');
+		$this->objectService->method('searchObjectsBySlug')->willReturn(
+			[
+				['id' => 'app-1', 'slug' => 'bike-repairs', 'appType' => 'virtual', 'permissions' => ['owners' => ['user:alice']], 'manifest' => []],
+			]
+		);
+
+		$result = $this->makeService()->plan(
+			brief: 'Add a repairs page to development',
+			appSlug: 'bike-repairs',
+			userId: 'alice',
+			agentId: null,
+			versionSlug: 'production'
+		);
+
+		self::assertSame('development', $result['steps'][0]['arguments']['versionSlug']);
+	}//end testPlanKeepsAVersionTheModelChose()
 
 	/**
 	 * A step outside the allow-list is rejected with 422 plan_invalid.
@@ -919,6 +1204,100 @@ class CopilotServiceTest extends TestCase {
 	}//end testPredictManifestsComputesPredictedManifest()
 
 	/**
+	 * A predicted addWidget step produces a widget the canonical validator
+	 * accepts: non-empty id, title and type, plus the layout row that places
+	 * it. Before this, the predictor appended `{type, config}`, so the review
+	 * screen refused every plan that added a widget and told the user to
+	 * rephrase their brief.
+	 *
+	 * @return void
+	 */
+	public function testPredictManifestsGivesEveryWidgetAnIdTitleAndPlacement(): void {
+		$plan = [
+			'summary' => 'x',
+			'steps' => [
+				['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'overview', 'title' => 'Overview', 'type' => 'dashboard', 'route' => '/']],
+				['tool' => 'buildiq.addWidget', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'overview', 'widgetType' => 'stat', 'widgetConfig' => ['register' => 'tool-library', 'schema' => 'loan']]],
+				['tool' => 'buildiq.addWidget', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'overview', 'widgetType' => 'stat', 'widgetId' => 'overdue-tools', 'title' => 'Overdue tools']],
+			],
+		];
+
+		$manifests = $this->makeService()->predictManifests(plan: $plan, appSlug: null);
+		$page = $manifests['tool-library@development']['predicted']['pages'][0];
+		$widgets = $page['config']['widgets'];
+
+		self::assertCount(2, $widgets);
+		foreach ($widgets as $widget) {
+			self::assertIsString($widget['id']);
+			self::assertNotSame('', $widget['id'], 'every widget needs an id the validator accepts');
+			self::assertIsString($widget['title']);
+			self::assertNotSame('', $widget['title'], 'every widget needs a title the validator accepts');
+			self::assertIsString($widget['type']);
+			self::assertNotSame('', $widget['type']);
+		}
+
+		self::assertSame('overdue-tools', $widgets[1]['id'], 'an explicit widgetId is honoured');
+		self::assertSame('Overdue tools', $widgets[1]['title']);
+		self::assertSame(
+			array_column($widgets, 'id'),
+			array_column($page['config']['layout'], 'widgetId'),
+			'each widget is placed on the grid, not merely stored'
+		);
+	}//end testPredictManifestsGivesEveryWidgetAnIdTitleAndPlacement()
+
+	/**
+	 * Predicting the same plan twice yields the same widget ids, so the
+	 * manifest a user approves names the same widgets the executor writes.
+	 *
+	 * @return void
+	 */
+	public function testPredictedWidgetIdsAreStableAcrossRuns(): void {
+		$plan = [
+			'summary' => 'x',
+			'steps' => [
+				['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'overview', 'title' => 'Overview', 'type' => 'dashboard', 'route' => '/']],
+				['tool' => 'buildiq.addWidget', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'overview', 'widgetType' => 'stat', 'title' => 'Loans']],
+				['tool' => 'buildiq.addWidget', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'overview', 'widgetType' => 'stat', 'title' => 'Loans']],
+			],
+		];
+
+		$first = $this->makeService()->predictManifests(plan: $plan, appSlug: null);
+		$second = $this->makeService()->predictManifests(plan: $plan, appSlug: null);
+
+		self::assertSame(
+			array_column($first['tool-library@development']['predicted']['pages'][0]['config']['widgets'], 'id'),
+			array_column($second['tool-library@development']['predicted']['pages'][0]['config']['widgets'], 'id')
+		);
+		self::assertSame(
+			['loans', 'loans-2'],
+			array_column($first['tool-library@development']['predicted']['pages'][0]['config']['widgets'], 'id')
+		);
+	}//end testPredictedWidgetIdsAreStableAcrossRuns()
+
+	/**
+	 * The plan the live copilot actually returned on 2026-09-18 predicts the
+	 * manifest in `tests/Fixtures/copilot-real-plan-manifest.json`, which
+	 * `tests/vitest/copilotRealPlan.spec.js` runs through the canonical
+	 * validator. Against development that same plan predicted a manifest with
+	 * 15 errors, so Confirm and create stayed disabled.
+	 *
+	 * @return void
+	 */
+	public function testARealPlanPredictsAManifestTheValidatorAccepts(): void {
+		$plan = json_decode((string)file_get_contents(__DIR__ . '/../../Fixtures/copilot-real-plan.json'), true);
+		$expected = json_decode(
+			(string)file_get_contents(__DIR__ . '/../../Fixtures/copilot-real-plan-manifest.json'),
+			true
+		);
+
+		$manifests = $this->makeService()->predictManifests(plan: ['summary' => 'x', 'steps' => $plan['steps']], appSlug: null);
+
+		self::assertSame($expected, $manifests['tool-library@development']['predicted']);
+	}//end testARealPlanPredictsAManifestTheValidatorAccepts()
+
+	/**
 	 * predictManifests() throws when the predicted manifest exceeds the pages cap.
 	 *
 	 * @return void
@@ -1017,9 +1396,18 @@ class CopilotServiceTest extends TestCase {
 			}
 		);
 
+		// deleteData: TRUE. Everything under a plan-created app was made by this
+		// same plan, so there is no user data to spare; with it false the app
+		// row went and its registers and schemas stayed behind. Measured on the
+		// live instance on 2026-09-18: a plan that failed on step 13 left
+		// `openbuild-tool-library-development`,
+		// `openbuild-tool-library-production` and four schemas with no app to
+		// reach them by, against a spec that says a failed plan leaves no
+		// plan-created state behind.
 		$this->deletionService->expects(self::once())
 			->method('deleteApplication')
-			->with(appUuid: 'app-uuid-1', appSlug: 'tool-library', deleteData: false);
+			->with(appUuid: 'app-uuid-1', appSlug: 'tool-library', deleteData: true)
+			->willReturn([]);
 
 		$this->expectException(CopilotException::class);
 		try {
@@ -1031,6 +1419,309 @@ class CopilotServiceTest extends TestCase {
 			throw $e;
 		}
 	}//end testExecuteRollsBackOnMidPlanFailure()
+
+	/**
+	 * A rolled-back plan says what it removed and what it could not, by name.
+	 * The names come from the plan itself, so nothing here is a guess about
+	 * which app on the instance was the failed one.
+	 *
+	 * @return void
+	 */
+	public function testRollbackReportsWhatItRemovedAndWhatItCouldNot(): void {
+		$plan = [
+			'summary' => 'x',
+			'steps' => [
+				['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'home', 'title' => 'Home', 'type' => 'index', 'route' => '/']],
+			],
+		];
+
+		$this->toolProvider->method('invokeTool')->willReturnCallback(
+			function (string $tool): array {
+				if ($tool === 'buildiq.createApp') {
+					return ['success' => true, 'created' => true, 'app' => ['uuid' => 'app-uuid-1', 'slug' => 'tool-library', 'name' => 'Tool Library']];
+				}
+
+				return ['isError' => true, 'error' => 'upsert_failed', 'message' => 'boom'];
+			}
+		);
+
+		$this->deletionService->method('deleteApplication')
+			->willReturn(['register openbuild-tool-library-production']);
+
+		try {
+			$this->makeService()->execute(plan: $plan, userId: 'alice');
+			self::fail('execute() should have thrown');
+		} catch (CopilotException $e) {
+			$rollback = $e->getContext()['rollback'] ?? null;
+			self::assertIsArray($rollback, 'the 422 body should carry a rollback report');
+			self::assertSame('tool-library', $rollback['deletedApp']);
+			self::assertSame(['register openbuild-tool-library-production'], $rollback['orphaned']);
+			self::assertSame([], $rollback['restoreFailures']);
+		}
+	}//end testRollbackReportsWhatItRemovedAndWhatItCouldNot()
+
+	/**
+	 * A page's bare route is rooted before it reaches the handler, and a menu
+	 * item's is left exactly as written.
+	 *
+	 * Measured on the live instance on 2026-09-18: the plan's `borrow-tool`
+	 * menu item targets a page whose route is `/loans/new`, so rooting it to
+	 * `/borrow-tool` matched no page and the entry vanished from the
+	 * navigation, while the bare `borrow-tool` is that page's id and resolves.
+	 * The two keys are spelt the same and mean different things.
+	 *
+	 * @return void
+	 */
+	public function testAPageRouteIsRootedAndAMenuTargetIsNot(): void {
+		$plan = [
+			'summary' => 'x',
+			'steps' => [
+				['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
+				['tool' => 'buildiq.upsertMenuItem', 'arguments' => ['appSlug' => 'tool-library', 'versionSlug' => 'development', 'id' => 'overview', 'label' => 'Overview', 'route' => 'overview', 'order' => 0]],
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'versionSlug' => 'development', 'pageId' => 'tools', 'title' => 'Tools', 'type' => 'index', 'route' => 'tools']],
+			],
+		];
+
+		$seen = [];
+		$this->toolProvider->method('invokeTool')->willReturnCallback(
+			function (string $tool, array $args) use (&$seen): array {
+				$seen[$tool] = $args;
+				if ($tool === 'buildiq.createApp') {
+					return ['success' => true, 'created' => true, 'app' => ['uuid' => 'app-uuid-1', 'slug' => 'tool-library', 'name' => 'Tool Library']];
+				}
+
+				return ['success' => true, 'action' => 'created'];
+			}
+		);
+
+		$this->makeService()->execute(plan: $plan, userId: 'alice');
+
+		self::assertSame('overview', $seen['buildiq.upsertMenuItem']['route'], 'a menu target names a page id');
+		self::assertSame('/tools', $seen['buildiq.upsertPage']['route'], 'a page route is a path');
+	}//end testAPageRouteIsRootedAndAMenuTargetIsNot()
+
+	/**
+	 * A form whose `submitHandler` names one of the plan's own schemas is
+	 * pointed at that collection instead, so the form posts somewhere.
+	 *
+	 * Measured on the live instance on 2026-09-18: the plan's "Borrow a tool"
+	 * page carried `"submitHandler": "loan"`, which is the schema it had just
+	 * asked upsertSchema for and not a handler anyone registered. The page
+	 * rendered `CnFormPage: handler "loan" not registered` and Submit posted
+	 * nothing. The same page with its schema named posted 201 Created.
+	 *
+	 * @return void
+	 */
+	public function testAFormHandlerNamingThePlansOwnSchemaBecomesItsBinding(): void {
+		$plan = [
+			'summary' => 'x',
+			'steps' => [
+				['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
+				['tool' => 'buildiq.upsertSchema', 'arguments' => ['appSlug' => 'tool-library', 'versionSlug' => 'development', 'slug' => 'loan', 'title' => 'Loan', 'properties' => ['member' => ['type' => 'string']]]],
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'versionSlug' => 'development', 'pageId' => 'borrow-tool', 'title' => 'Borrow a tool', 'type' => 'form', 'route' => '/loans/new', 'config' => ['fields' => [['key' => 'member', 'label' => 'Member', 'type' => 'string']], 'submitHandler' => 'loan']]],
+			],
+		];
+
+		$seen = [];
+		$this->toolProvider->method('invokeTool')->willReturnCallback(
+			function (string $tool, array $args) use (&$seen): array {
+				$seen[$tool] = $args;
+				if ($tool === 'buildiq.createApp') {
+					return ['success' => true, 'created' => true, 'app' => ['uuid' => 'app-uuid-1', 'slug' => 'tool-library', 'name' => 'Tool Library']];
+				}
+
+				return ['success' => true, 'action' => 'created'];
+			}
+		);
+
+		$this->makeService()->execute(plan: $plan, userId: 'alice');
+
+		$config = $seen['buildiq.upsertPage']['config'];
+		self::assertArrayNotHasKey('submitHandler', $config, 'a schema name is not a handler');
+		self::assertSame('tool-library-development-loan', $config['schema']);
+		self::assertSame('openbuild-tool-library-development', $config['register']);
+	}//end testAFormHandlerNamingThePlansOwnSchemaBecomesItsBinding()
+
+	/**
+	 * A submitHandler naming something this plan did not create is left
+	 * exactly as it is: a registered handler is none of this code's business.
+	 *
+	 * @return void
+	 */
+	public function testAHandlerThePlanDidNotAuthorIsLeftAlone(): void {
+		$plan = [
+			'summary' => 'x',
+			'steps' => [
+				['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'versionSlug' => 'development', 'pageId' => 'contact', 'title' => 'Contact', 'type' => 'form', 'route' => '/contact', 'config' => ['fields' => [['key' => 'body', 'label' => 'Body', 'type' => 'string']], 'submitHandler' => 'sendSupportMail']]],
+			],
+		];
+
+		$seen = [];
+		$this->toolProvider->method('invokeTool')->willReturnCallback(
+			function (string $tool, array $args) use (&$seen): array {
+				$seen[$tool] = $args;
+				if ($tool === 'buildiq.createApp') {
+					return ['success' => true, 'created' => true, 'app' => ['uuid' => 'app-uuid-1', 'slug' => 'tool-library', 'name' => 'Tool Library']];
+				}
+
+				return ['success' => true, 'action' => 'created'];
+			}
+		);
+
+		$this->makeService()->execute(plan: $plan, userId: 'alice');
+
+		self::assertSame('sendSupportMail', $seen['buildiq.upsertPage']['config']['submitHandler']);
+		self::assertArrayNotHasKey('schema', $seen['buildiq.upsertPage']['config']);
+	}//end testAHandlerThePlanDidNotAuthorIsLeftAlone()
+
+	/**
+	 * A field the plan's own schema declares required is rendered required.
+	 *
+	 * Measured on the live instance on 2026-09-19: the generated "Borrow a
+	 * tool" form showed no asterisk on `member`, let the user submit it empty,
+	 * and OpenRegister answered 400. The schema step had said
+	 * `required: ["member"]` all along; nothing carried it onto the page.
+	 *
+	 * @return void
+	 */
+	public function testAFieldTheSchemaDeclaresRequiredIsMarkedRequiredOnTheForm(): void {
+		$plan = [
+			'summary' => 'x',
+			'steps' => [
+				['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
+				['tool' => 'buildiq.upsertSchema', 'arguments' => ['appSlug' => 'tool-library', 'versionSlug' => 'development', 'slug' => 'loan', 'title' => 'Loan', 'properties' => ['member' => ['type' => 'string'], 'note' => ['type' => 'string']], 'required' => ['member']]],
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'versionSlug' => 'development', 'pageId' => 'borrow-tool', 'title' => 'Borrow a tool', 'type' => 'form', 'route' => '/loans/new', 'config' => ['schema' => 'loan', 'fields' => [['key' => 'member', 'label' => 'Member', 'type' => 'string'], ['key' => 'note', 'label' => 'Note', 'type' => 'string']]]]],
+			],
+		];
+
+		$seen = [];
+		$this->toolProvider->method('invokeTool')->willReturnCallback(
+			function (string $tool, array $args) use (&$seen): array {
+				$seen[$tool] = $args;
+				if ($tool === 'buildiq.createApp') {
+					return ['success' => true, 'created' => true, 'app' => ['uuid' => 'app-uuid-1', 'slug' => 'tool-library', 'name' => 'Tool Library']];
+				}
+
+				return ['success' => true, 'action' => 'created'];
+			}
+		);
+
+		$this->makeService()->execute(plan: $plan, userId: 'alice');
+
+		$fields = $seen['buildiq.upsertPage']['config']['fields'];
+		self::assertTrue($fields[0]['validation']['required'], 'the schema declares member required');
+		self::assertArrayNotHasKey('validation', $fields[1], 'a property the schema left optional gains nothing');
+	}//end testAFieldTheSchemaDeclaresRequiredIsMarkedRequiredOnTheForm()
+
+	/**
+	 * A `required` the plan stated itself is a decision, not an omission, so
+	 * it survives in either direction.
+	 *
+	 * Without this the fill-in would overwrite `false` with `true` and the
+	 * page would contradict the plan the user approved on the review screen.
+	 *
+	 * @return void
+	 */
+	public function testARequiredFlagThePlanStatedIsLeftAlone(): void {
+		$plan = [
+			'summary' => 'x',
+			'steps' => [
+				['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
+				['tool' => 'buildiq.upsertSchema', 'arguments' => ['appSlug' => 'tool-library', 'versionSlug' => 'development', 'slug' => 'loan', 'title' => 'Loan', 'properties' => ['member' => ['type' => 'string']], 'required' => ['member']]],
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'versionSlug' => 'development', 'pageId' => 'borrow-tool', 'title' => 'Borrow a tool', 'type' => 'form', 'route' => '/loans/new', 'config' => ['schema' => 'loan', 'fields' => [['key' => 'member', 'label' => 'Member', 'type' => 'string', 'validation' => ['required' => false, 'message' => 'Optional here']]]]]],
+			],
+		];
+
+		$seen = [];
+		$this->toolProvider->method('invokeTool')->willReturnCallback(
+			function (string $tool, array $args) use (&$seen): array {
+				$seen[$tool] = $args;
+				if ($tool === 'buildiq.createApp') {
+					return ['success' => true, 'created' => true, 'app' => ['uuid' => 'app-uuid-1', 'slug' => 'tool-library', 'name' => 'Tool Library']];
+				}
+
+				return ['success' => true, 'action' => 'created'];
+			}
+		);
+
+		$this->makeService()->execute(plan: $plan, userId: 'alice');
+
+		$field = $seen['buildiq.upsertPage']['config']['fields'][0];
+		self::assertFalse($field['validation']['required'], 'the plan said optional and meant it');
+		self::assertSame('Optional here', $field['validation']['message'], 'the rest of the block survives');
+	}//end testARequiredFlagThePlanStatedIsLeftAlone()
+
+	/**
+	 * A form naming a schema this plan did not author gains no requirements:
+	 * this code only ever reads what the plan itself declared.
+	 *
+	 * @return void
+	 */
+	public function testAFormOnAForeignSchemaGainsNoRequirements(): void {
+		$plan = [
+			'summary' => 'x',
+			'steps' => [
+				['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'versionSlug' => 'development', 'pageId' => 'borrow-tool', 'title' => 'Borrow a tool', 'type' => 'form', 'route' => '/loans/new', 'config' => ['schema' => 'loan', 'fields' => [['key' => 'member', 'label' => 'Member', 'type' => 'string']]]]],
+			],
+		];
+
+		$seen = [];
+		$this->toolProvider->method('invokeTool')->willReturnCallback(
+			function (string $tool, array $args) use (&$seen): array {
+				$seen[$tool] = $args;
+				if ($tool === 'buildiq.createApp') {
+					return ['success' => true, 'created' => true, 'app' => ['uuid' => 'app-uuid-1', 'slug' => 'tool-library', 'name' => 'Tool Library']];
+				}
+
+				return ['success' => true, 'action' => 'created'];
+			}
+		);
+
+		$this->makeService()->execute(plan: $plan, userId: 'alice');
+
+		self::assertArrayNotHasKey('validation', $seen['buildiq.upsertPage']['config']['fields'][0]);
+	}//end testAFormOnAForeignSchemaGainsNoRequirements()
+
+	/**
+	 * A page config naming the short schema slug the model asked upsertSchema
+	 * for reaches the handler pointed at this version's own register and its
+	 * namespaced schema. Without this the created app opened with every list
+	 * page and every KPI card empty (buildiq#75, on the copilot path).
+	 *
+	 * @return void
+	 */
+	public function testAShortSchemaSlugReachesTheHandlerBoundToThisVersion(): void {
+		$plan = [
+			'summary' => 'x',
+			'steps' => [
+				['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'versionSlug' => 'development', 'pageId' => 'loans', 'title' => 'Loans', 'type' => 'index', 'route' => '/loans', 'config' => ['register' => 'loan', 'schema' => 'loan']]],
+				['tool' => 'buildiq.addWidget', 'arguments' => ['appSlug' => 'tool-library', 'versionSlug' => 'development', 'pageId' => 'overview', 'widgetType' => 'stat', 'widgetId' => 'loans-open', 'title' => 'Open loans', 'widgetConfig' => ['register' => 'loan', 'schema' => 'loan', 'aggregate' => 'count']]],
+			],
+		];
+
+		$seen = [];
+		$this->toolProvider->method('invokeTool')->willReturnCallback(
+			function (string $tool, array $args) use (&$seen): array {
+				$seen[$tool] = $args;
+				if ($tool === 'buildiq.createApp') {
+					return ['success' => true, 'created' => true, 'app' => ['uuid' => 'app-uuid-1', 'slug' => 'tool-library', 'name' => 'Tool Library']];
+				}
+
+				return ['success' => true, 'action' => 'created'];
+			}
+		);
+
+		$this->makeService()->execute(plan: $plan, userId: 'alice');
+
+		self::assertSame('openbuild-tool-library-development', $seen['buildiq.upsertPage']['config']['register']);
+		self::assertSame('tool-library-development-loan', $seen['buildiq.upsertPage']['config']['schema']);
+		self::assertSame('openbuild-tool-library-development', $seen['buildiq.addWidget']['widgetConfig']['register']);
+		self::assertSame('tool-library-development-loan', $seen['buildiq.addWidget']['widgetConfig']['schema']);
+	}//end testAShortSchemaSlugReachesTheHandlerBoundToThisVersion()
 
 	/**
 	 * execute() denies a viewer-only caller against an existing app (403) and runs no step.

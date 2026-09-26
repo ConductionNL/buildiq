@@ -9,18 +9,21 @@
   - events that mutate the staged copy; Save composes the JSON Schema
   - body and PUTs via the schemas store.
   -
-  - Per ADR-031 every behaviour-shaping field is a typed declarative
-  - record drawn from OR's declarative vocabulary; the editor itself
-  - is code, but its output is declarative JSON.
+  - Every behaviour-shaping field is a typed declarative record drawn
+  - from OR's declarative vocabulary; the editor itself is code, but its
+  - output is declarative JSON.
   -
-  - All OR CRUD goes through the `useSchemasStore` Pinia store (which
-  - wraps `createObjectStore` from `@conduction/nextcloud-vue`) — never
-  - via direct axios calls. The store hits the per-virtual-app register
-  - `buildiq-{slug}` per the hybrid register model: system schemas
-  - live in shared `buildiq`, user-authored schemas live per-app.
+  - Schema CRUD goes through the `useSchemasStore` Pinia store (which
+  - wraps `createObjectStore` from `@conduction/nextcloud-vue`). The list
+  - is the exception: it reads the per-version register's own schema set
+  - (`GET /api/registers/{register}/schemas`), which is what makes a
+  - schema "belong" to an app under the hybrid register model — system
+  - schemas live in shared `buildiq`, user-authored schemas per-app.
   -->
 <template>
-	<div class="buildiq-schema-designer">
+	<!-- data-walkthrough-id: the tour's `define-schema` step spotlights the whole
+	     designer — anything outside its cutout is dimmed and unclickable. -->
+	<div class="buildiq-schema-designer" data-walkthrough-id="schema-designer">
 		<!-- List mode -->
 		<template v-if="!schemaId">
 			<div v-if="canImport" class="buildiq-schema-designer__toolbar">
@@ -30,7 +33,7 @@
 			</div>
 			<SchemaListPanel
 				:schemas="schemas"
-				:loading="loadingList"
+				:loading="loadingList || versionLoading"
 				@add="addSchema"
 				@open="openSchema"
 				@delete="deleteSchema" />
@@ -139,7 +142,7 @@
 					{{
 						t(
 							'buildiq',
-							"Saving this read scope will make this schema's records invisible to you. Save remains available — this may be an intentional admin-assisted handover.",
+							"After you save this read scope, you can no longer see this schema's records. You can still save, for example to hand the schema to another team.",
 						)
 					}}
 				</NcNoteCard>
@@ -177,6 +180,13 @@
 			</NcEmptyContent>
 		</div>
 
+		<BreakingSchemaChangeDialog
+			:open="breakingChanges !== null"
+			:changes="breakingChanges || []"
+			:busy="saving"
+			@confirm="save({ acknowledgeBreaking: true })"
+			@cancel="breakingChanges = null" />
+
 		<ImportDataWizard
 			v-if="showImportWizard"
 			:registerId="importRegisterId"
@@ -190,7 +200,7 @@
 <script>
 import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
-import { generateUrl } from '@nextcloud/router'
+import { generateOcsUrl, generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 import ArrowLeftIcon from 'vue-material-design-icons/ArrowLeft.vue'
 import RedoIcon from 'vue-material-design-icons/Redo.vue'
@@ -220,11 +230,13 @@ import WidgetEditor, {
 	editorToWidgets,
 	widgetsToEditor,
 } from '../components/schema-editor/WidgetEditor.vue'
+import BreakingSchemaChangeDialog from '../dialogs/BreakingSchemaChangeDialog.vue'
 import ImportDataWizard from '../dialogs/ImportDataWizard.vue'
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 import { getCurrentUserGroups, useRole } from '../composables/useRole.js'
 import { useSessionHistory } from '../composables/useSessionHistory.js'
 import { buildVersionedRoute } from '../router/helpers.js'
+import { describeBreakingChanges } from '../services/schemaChanges.js'
 import { registerSlugForApp, useSchemasStore } from '../store/schemas.js'
 import { isEditableTarget } from '../utils/isEditableTarget.js'
 
@@ -254,6 +266,7 @@ export default {
 		SchemaHeaderForm,
 		SchemaListPanel,
 		WidgetEditor,
+		BreakingSchemaChangeDialog,
 		ImportDataWizard,
 	},
 
@@ -290,6 +303,11 @@ export default {
 			// Import-data wizard state (buildiq-data-import-wizard).
 			applicationRecord: null,
 			showImportWizard: false,
+			// The instance's groups, offered in the Access group picker.
+			instanceGroups: [],
+			// Plain-language breaking changes awaiting confirmation; null when
+			// no confirmation is pending.
+			breakingChanges: null,
 		}
 	},
 
@@ -343,14 +361,34 @@ export default {
 		},
 
 		/**
-		 * The active version's own per-version register — the ONLY import
-		 * target the wizard writes into (ADR-002).
+		 * The resolved version's own per-version register: the schema list's
+		 * scope, and the ONLY import target the wizard writes into (ADR-002).
 		 *
+		 * Read off the version record rather than rebuilt from the route,
+		 * because `registerSlugForApp` has no version to work with when the URL
+		 * carries no `?_version=` and falls back to the legacy per-app register
+		 * — a register that does not exist for any app the wizard created.
+		 *
+		 * @return {string} Register slug, or '' until the version resolves.
+		 * @spec openspec/specs/openbuild-schema-designer/spec.md#requirement-schema-list-panel-scoped-to-the-virtual-app-s-register-namespace
+		 */
+		registerSlug() {
+			const fromVersion =
+				this.applicationVersion && this.applicationVersion.register
+			if (fromVersion) {
+				return fromVersion
+			}
+			return this.versionSlug
+				? registerSlugForApp(this.appSlug, this.versionSlug)
+				: ''
+		},
+
+		/**
 		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.2
 		 * @return {string} Register slug.
 		 */
 		importRegisterId() {
-			return registerSlugForApp(this.appSlug, this.versionSlug)
+			return this.registerSlug
 		},
 
 		/**
@@ -444,7 +482,15 @@ export default {
 				.filter((p) => typeof p === 'string' && !p.startsWith('user:'))
 				.map((p) => (p.startsWith('group:') ? p.slice('group:'.length) : p))
 				.filter((gid) => gid !== '')
-			return [...new Set(groups)]
+			// The instance's groups (admins can list them) and the author's own
+			// groups (always known), so a group does not have to be typed in.
+			return [
+				...new Set([
+					...groups,
+					...this.instanceGroups,
+					...getCurrentUserGroups(),
+				]),
+			]
 		},
 
 		/**
@@ -645,9 +691,9 @@ export default {
 			 * @spec openspec/specs/builder-undo-redo/spec.md#req-bur-005
 			 * @return {void}
 			 */
-			handler() {
-				this.resolveVersion()
-				this.refreshList()
+			async handler() {
+				await this.resolveVersion()
+				await this.refreshList()
 				if (this.history) {
 					this.history.reset(this.staged)
 				}
@@ -664,9 +710,9 @@ export default {
 			 * @spec openspec/specs/builder-undo-redo/spec.md#req-bur-005
 			 * @return {void}
 			 */
-			handler() {
-				this.resolveVersion()
-				this.refreshList()
+			async handler() {
+				await this.resolveVersion()
+				await this.refreshList()
 				if (this.history) {
 					this.history.reset(this.staged)
 				}
@@ -683,19 +729,17 @@ export default {
 	 */
 	async mounted() {
 		// REQ-OBVR-004: resolve the active ApplicationVersion via useApplicationVersion.
-		this.resolveVersion()
+		const versionReady = this.resolveVersion()
 		this.loadApplicationRecord()
-		// Load the SELECTED SCHEMA FIRST, then the list. refreshList() pulls the
-		// whole organisation's schema collection (~1900 rows on the shared dev
-		// instance) and filters it down to this app; awaiting that before the
-		// detail delayed the detail's own single-row request by ~13s, so opening
-		// a schema — including the one you just created — sat on a spinner for
-		// well over ten seconds. The two cannot be run concurrently: they share
-		// one object-store entry for the `schema` type, and an in-flight
-		// collection fetch leaves the concurrent object fetch unresolved.
+		this.loadInstanceGroups()
+		// Load the SELECTED SCHEMA FIRST, then the list: the detail is what the
+		// user is looking at, and it needs no version to resolve.
 		if (this.schemaId) {
 			await this.loadDetail()
 		}
+		// The list is scoped by the version's register, so it can only run once
+		// the version has settled.
+		await versionReady
 		await this.refreshList()
 		// REQ-BUR-003/-005: document-level undo/redo shortcuts. `onKeydown`
 		// itself no-ops outside detail mode (no staged model to act on), so
@@ -709,6 +753,29 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Load the instance's groups for the Access group picker.
+		 *
+		 * Listing groups needs admin or group-admin rights. Anyone else keeps
+		 * the app's own groups and their own groups, plus free entry.
+		 *
+		 * @spec openspec/specs/data-scopes-authoring/spec.md
+		 * @return {Promise<void>}
+		 */
+		async loadInstanceGroups() {
+			try {
+				const response = await axios.get(generateOcsUrl('cloud/groups'), {
+					params: { format: 'json' },
+				})
+				const groups = response?.data?.ocs?.data?.groups
+				this.instanceGroups = Array.isArray(groups)
+					? groups.filter((gid) => typeof gid === 'string' && gid !== '')
+					: []
+			} catch {
+				this.instanceGroups = []
+			}
+		},
+
 		/**
 		 * Resolve the caller's Application record (from the "my applications"
 		 * list) so the "Import data" affordance can be gated by the caller's
@@ -753,14 +820,15 @@ export default {
 		 * NOTE: we do NOT call $router.replace() here — that would strip ?_version=
 		 * and break bookmarkability (REQ-OBVR-008). We just read what the URL contains.
 		 *
+		 * Returns the composable's `ready` promise: `refreshList()` needs the
+		 * resolved version's register, not merely a reactive render of it.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
-		 * @return {void}
+		 * @return {Promise<void>}
 		 */
 		resolveVersion() {
-			const { applicationVersion, loading, error } = useApplicationVersion(
-				this.appSlug,
-				this.versionSlug,
-			)
+			const { applicationVersion, loading, error, ready } =
+				useApplicationVersion(this.appSlug, this.versionSlug)
 			// Watch the reactive refs and mirror them into component data.
 			this.applicationVersion = applicationVersion.value
 			this.versionLoading = loading.value
@@ -784,39 +852,40 @@ export default {
 					}
 				},
 			)
+
+			return ready
 		},
 
 		/**
-		 * Fetch the schema collection and filter to this app/version register.
+		 * List the schemas that belong to this app/version's register.
+		 *
+		 * Asks the register for its schema set rather than pulling the whole
+		 * organisation's collection and keeping the slugs that start with
+		 * `{appSlug}-`. That prefix is not an ownership test: schemas cloned for
+		 * an app that was later deleted keep their slug forever, and every
+		 * version of a live app carries the same one, so the list showed the
+		 * same schema once per generation (issue: "shows the same schema 4
+		 * times"). `register.schemas` is the authoritative set — and it costs one
+		 * scoped request instead of ~1900 rows.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {Promise<void>}
 		 */
 		async refreshList() {
+			if (!this.registerSlug) {
+				// No resolved version means no register to ask. `versionLoading`
+				// still holds the list spinner while that resolves.
+				this.schemas = []
+				return
+			}
 			this.loadingList = true
 			try {
-				const results = await this.store.fetchCollection(SCHEMA_TYPE)
-				const all = Array.isArray(results) ? results : []
-				// OR's schemas endpoint returns every schema in the
-				// organisation. Filter to the namespaced subset that
-				// belongs to this app+version register so the designer
-				// only shows the user's relevant schemas. Per the wizard
-				// (issue #71) seed slugs are `{appSlug}-{versionSlug}-X`.
-				const prefix = this.versionSlug
-					? `${this.appSlug}-${this.versionSlug}-`
-					: `${this.appSlug}-`
-				this.schemas = all.filter((s) => {
-					const slug = s.slug || (s['@self'] && s['@self'].slug) || ''
-					return typeof slug === 'string' && slug.startsWith(prefix)
-				})
-				const err = this.store.errors[SCHEMA_TYPE]
-				if (err) {
-					showError(
-						this.t('buildiq', 'Failed to load schemas: {error}', {
-							error: err,
-						}),
-					)
-				}
+				const url = generateUrl(
+					`/apps/openregister/api/registers/${encodeURIComponent(this.registerSlug)}/schemas`,
+				)
+				const { data } = await axios.get(url)
+				const results = (data && data.results) || data
+				this.schemas = Array.isArray(results) ? results : []
 			} catch (e) {
 				this.schemas = []
 				showError(
@@ -1209,15 +1278,14 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async addSchema(payload) {
-			// The designer's list is the global schema collection filtered to the
-			// slugs owned by this app+version (see refreshList()'s `prefix`), and
-			// OpenRegister only exposes the register-scoped schema route for
-			// reading (GET /api/registers/{register}/schemas — POST there is 405).
-			// So a schema created with the raw user-typed slug was invisible in
-			// the list it was created from AND unattached to the app's register,
-			// leaving the follow-on detail navigation on "Schema not found"
-			// (buildiq#41). Namespace the slug to the same convention the
-			// wizard uses, then attach the new schema to the app's register.
+			// OpenRegister exposes the register-scoped schema route read-only
+			// (POST there is 405), so a schema is created globally and then
+			// attached to the register. Namespace the slug to the wizard's
+			// convention so it stays unique across the organisation, and keep the
+			// attach BEFORE refreshList() — the list reads the register's schema
+			// set, so an unattached schema is invisible in the list it was created
+			// from and the follow-on detail navigation lands on "Schema not found"
+			// (buildiq#41).
 			const body = {
 				slug: this.namespacedSlug(payload.slug),
 				title: payload.title,
@@ -1251,14 +1319,18 @@ export default {
 			const newSlug =
 				(data && (data.slug || (data['@self'] && data['@self'].slug)))
 				|| body.slug
-			await this.attachSchemaToRegister(data)
-			await this.refreshList()
-			// Stage what the create call just returned, so the detail view we are
-			// about to navigate to renders immediately from it instead of issuing
-			// a redundant fetch for an object we already hold (see loadDetail()).
-			// Best-effort: if the returned body cannot be staged, fall through to
-			// the normal fetch-on-navigate path rather than blocking navigation.
+			// The schema exists from here on, so the rest is best-effort: a throw
+			// in attachSchemaToRegister() or refreshList() used to skip the
+			// navigation silently — SchemaListPanel.onAddConfirm cannot report it
+			// either, since Vue 3's $emit returns the instance, not the handler's
+			// promise.
 			try {
+				await this.attachSchemaToRegister(data)
+				await this.refreshList()
+				// Stage what the create call just returned, so the detail view we
+				// are about to navigate to renders immediately from it instead of
+				// issuing a redundant fetch for an object we already hold (see
+				// loadDetail()).
 				const stagedFromCreate = this.bodyToStaged(data)
 				this.persisted = data
 				this.staged = stagedFromCreate
@@ -1267,6 +1339,7 @@ export default {
 					this.history.reset(this.staged)
 				}
 			} catch (e) {
+				// Fall through to the normal fetch-on-navigate path.
 				this.persisted = null
 				this.staged = null
 			}
@@ -1275,13 +1348,15 @@ export default {
 			// that dialog.
 			await this.$nextTick()
 			// REQ-OBVR-006: use buildVersionedRoute to forward ?_version= on navigation.
-			this.$router.push(
-				buildVersionedRoute(
-					'SchemaDesigner',
-					{ slug: this.appSlug, schemaId: newSlug },
-					this.versionSlug,
-				),
-			)
+			this.$router
+				.push(
+					buildVersionedRoute(
+						'SchemaDesigner',
+						{ slug: this.appSlug, schemaId: newSlug },
+						this.versionSlug,
+					),
+				)
+				.catch(() => {})
 			showSuccess(
 				this.t('buildiq', 'Schema {slug} created.', { slug: newSlug }),
 			)
@@ -1363,17 +1438,23 @@ export default {
 		/**
 		 * Persist the composed schema body via the store (PUT on existing).
 		 *
+		 * When OpenRegister refuses a breaking change, the designer asks the
+		 * author to confirm and calls this again with `acknowledgeBreaking`.
+		 *
 		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @param {object} [options] Save options.
+		 * @param {boolean} [options.acknowledgeBreaking] Whether the author confirmed a breaking change.
 		 * @return {Promise<void>}
 		 */
-		async save() {
+		async save(options = {}) {
+			const acknowledgeBreaking = options.acknowledgeBreaking === true
 			if (!this.staged || this.saving) {
 				return
 			}
 			this.saving = true
 			this.saveError = ''
 			try {
-				const body = this.composeSchemaBody(this.staged)
+				const body = this.writeBody(this.staged, acknowledgeBreaking)
 				// `saveObject` switches to PUT when `id` is present, and the
 				// store's `_buildUrl` puts that `id` on the URL tail.
 				//
@@ -1391,12 +1472,20 @@ export default {
 				})
 				if (!data) {
 					const err = this.store.errors[SCHEMA_TYPE]
-					this.saveError =
-						typeof err === 'string'
-							? err
-							: this.t('buildiq', 'Failed to save schema')
+					if (!acknowledgeBreaking && this.isBreakingRefusal(err)) {
+						// OpenRegister wants the author to confirm. Say what they
+						// are confirming, then save again with the confirmation.
+						this.breakingChanges = describeBreakingChanges(
+							this.persisted,
+							body,
+						)
+						return
+					}
+					this.breakingChanges = null
+					this.saveError = this.saveErrorText(err)
 					return
 				}
+				this.breakingChanges = null
 				this.persisted = data
 				this.staged = this.bodyToStaged(data)
 				// REQ-BUR-005: a successful save is a session boundary —
@@ -1405,12 +1494,81 @@ export default {
 				if (this.history) {
 					this.history.reset(this.staged)
 				}
-				showSuccess(this.t('buildiq', 'Schema saved.'))
+				showSuccess(
+					this.t('buildiq', 'Schema saved as version {version}.', {
+						version: data.version || this.staged.version,
+					}),
+				)
 			} catch (e) {
 				this.saveError = this.errorMessage(e)
 			} finally {
 				this.saving = false
 			}
+		},
+
+		/**
+		 * The body a save sends.
+		 *
+		 * Two differences from composeSchemaBody(). `required` is always sent,
+		 * because OpenRegister keeps the stored list when the key is missing, so
+		 * clearing the last required field never stuck. `version` is left out
+		 * while the author has not changed it, so OpenRegister moves the version
+		 * to match the change instead of keeping the old number.
+		 *
+		 * @spec openspec/specs/schema-designer-ui/spec.md
+		 * @param {object} staged Staged editor model.
+		 * @param {boolean} acknowledgeBreaking Whether the author confirmed a breaking change.
+		 * @return {object} Request body.
+		 */
+		writeBody(staged, acknowledgeBreaking) {
+			const body = this.composeSchemaBody(staged)
+			body.required = body.required || []
+			const savedVersion = this.persisted && this.persisted.version
+			if (savedVersion && body.version === savedVersion) {
+				delete body.version
+			}
+			if (acknowledgeBreaking) {
+				body.acknowledgeBreaking = true
+			}
+			return body
+		},
+
+		/**
+		 * Whether a failed save is OpenRegister asking to confirm a breaking change.
+		 *
+		 * @spec openspec/specs/schema-designer-ui/spec.md
+		 * @param {object|string|null} err The store's error for the save.
+		 * @return {boolean} True for the 409 breaking-change refusal.
+		 */
+		isBreakingRefusal(err) {
+			if (!err || typeof err !== 'object' || err.status !== 409) {
+				return false
+			}
+			return /breaking/i.test(String(err.details || ''))
+		},
+
+		/**
+		 * The message shown for a failed save.
+		 *
+		 * @spec openspec/specs/schema-designer-ui/spec.md
+		 * @param {object|string|null} err The store's error for the save.
+		 * @return {string} The message.
+		 */
+		saveErrorText(err) {
+			if (typeof err === 'string' && err !== '') {
+				return err
+			}
+			const detail =
+				err && typeof err === 'object'
+					? typeof err.details === 'string'
+						? err.details
+						: err.message
+					: ''
+			return detail
+				? this.t('buildiq', 'Could not save the schema: {error}', {
+						error: detail,
+					})
+				: this.t('buildiq', 'Could not save the schema.')
 		},
 
 		/**

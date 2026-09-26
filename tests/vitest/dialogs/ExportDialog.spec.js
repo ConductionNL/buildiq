@@ -104,7 +104,8 @@ describe('ExportDialog — the GitHub target holds no token', () => {
 		wrapper.vm.form.githubRepo = 'hello-world'
 		await wrapper.vm.submit()
 
-		expect(axios.post).toHaveBeenCalledTimes(1)
+		// The submit, then the call that starts the export right away.
+		expect(axios.post).toHaveBeenCalledTimes(2)
 		const payload = axios.post.mock.calls[0][1]
 
 		expect(payload.githubCredentialId).toBe('cred-1')
@@ -134,5 +135,94 @@ describe('ExportDialog — the GitHub target holds no token', () => {
 			label: 'My GitHub',
 			value: 'cred-1',
 		})
+	})
+})
+
+describe('ExportDialog — versions and starting the export', () => {
+	beforeEach(() => {
+		vi.clearAllMocks()
+	})
+
+	/**
+	 * Mount the dialog with the versions API answering two versions.
+	 *
+	 * @return {Promise<object>} The mounted wrapper.
+	 */
+	async function mountWithVersions() {
+		axios.get.mockImplementation(async (url) => {
+			if (String(url).includes('/versions')) {
+				return {
+					data: [
+						{ name: 'Production', slug: 'production', semver: '0.1.0' },
+						{
+							name: 'Development',
+							slug: 'development',
+							semver: '0.1.0',
+						},
+					],
+				}
+			}
+			return { data: { results: [] } }
+		})
+		const wrapper = mount(ExportDialog, {
+			props: { applicationSlug: 'hello-world' },
+			global: { stubs, mocks: { t: (app, s) => s } },
+		})
+		await new Promise((resolve) => setTimeout(resolve, 0))
+		await wrapper.vm.$nextTick()
+		return wrapper
+	}
+
+	it("offers the application's own versions and starts on the live draft", async () => {
+		const wrapper = await mountWithVersions()
+
+		expect(wrapper.vm.versionOptions.map((option) => option.slug)).toEqual([
+			'production',
+			'development',
+		])
+		expect(wrapper.vm.form.version.slug).toBe('development')
+	})
+
+	it('sends the chosen version slug and then starts the export right away', async () => {
+		axios.post.mockResolvedValue({ data: { uuid: 'job-9' } })
+		const wrapper = await mountWithVersions()
+
+		await wrapper.vm.submit()
+
+		expect(axios.post.mock.calls[0][1]).toMatchObject({
+			applicationVersion: '0.1.0',
+			applicationVersionSlug: 'development',
+		})
+		expect(axios.post.mock.calls[1][0]).toBe(
+			'/apps/buildiq/api/exports/job-9/run',
+		)
+		expect(wrapper.emitted('queued')).toEqual([['job-9']])
+	})
+
+	it('still closes when starting right away fails, leaving the job for cron', async () => {
+		axios.post
+			.mockResolvedValueOnce({ data: { uuid: 'job-10' } })
+			.mockRejectedValueOnce(new Error('network'))
+		const wrapper = await mountWithVersions()
+
+		await wrapper.vm.submit()
+		await new Promise((resolve) => setTimeout(resolve, 0))
+
+		expect(wrapper.vm.errorMessage).toBe('')
+		expect(wrapper.emitted('close')).toHaveLength(1)
+	})
+
+	it('keeps the fallback version when the versions call fails', async () => {
+		axios.get.mockRejectedValue(new Error('offline'))
+		const wrapper = mount(ExportDialog, {
+			props: { applicationSlug: 'hello-world' },
+			global: { stubs, mocks: { t: (app, s) => s } },
+		})
+		await new Promise((resolve) => setTimeout(resolve, 0))
+
+		expect(wrapper.vm.versionOptions).toEqual([
+			{ label: '0.1.0', value: '0.1.0' },
+		])
+		expect(wrapper.vm.form.version.value).toBe('0.1.0')
 	})
 })

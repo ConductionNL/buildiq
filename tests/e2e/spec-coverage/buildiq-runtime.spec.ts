@@ -638,11 +638,11 @@ test('REQ-OBR-006b — the owner-only publish control is reachable and reflects 
 		timeout: 20_000,
 	})
 
-	await page
-		.getByRole('button', { name: /^actions$/i })
-		.first()
-		.click()
-	const settings = page.getByRole('menuitem', { name: /^settings$/i })
+	// Settings is one of the two collapsible actions CnActionButtons PROMOTES
+	// to an inline button (`inline: 2` in ApplicationDetailActions.vue,
+	// Settings + Edit) rather than folding into the "···" overflow menu, so it
+	// renders directly in the header — no menu to open first.
+	const settings = page.locator('[data-testid="cn-action-app-settings-action"]')
 	await expect(
 		settings.first(),
 		'an owner must see the Settings entry that holds the publish switch',
@@ -1182,12 +1182,19 @@ test('REQ-OBR-008b — an owner sees the editable manifest, Save, and every owne
 	await expect(page.locator('.ob-detail-header__name')).toBeVisible({
 		timeout: 20_000,
 	})
+	// Settings is promoted to an inline header button (`inline: 2` in
+	// ApplicationDetailActions.vue, Settings + Edit), so it is checked
+	// directly rather than inside the "···" overflow menu the rest fold into.
+	await expect(
+		page.locator('[data-testid="cn-action-app-settings-action"]').first(),
+		'owner-only action /^settings$/i must be visible',
+	).toBeVisible({ timeout: 10_000 })
+
 	await page
 		.getByRole('button', { name: /^actions$/i })
 		.first()
 		.click()
 	for (const label of [
-		/^settings$/i,
 		/manage permissions/i,
 		/permission history/i,
 		/^delete$/i,

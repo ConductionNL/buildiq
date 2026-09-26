@@ -425,6 +425,7 @@
 			},
 			"RuleExecutionLog": {
 				"x-schema-org": "schema:Event",
+				"x-openregister-demo-data": "Written by the rule engine on every evaluation. A generated row is an audit record of an evaluation that never happened, under a schema that exists for GDPR article 22 explainability.",
 				"slug": "rule-execution-log",
 				"icon": "ClipboardText",
 				"version": "1.0.0",

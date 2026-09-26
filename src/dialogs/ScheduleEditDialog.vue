@@ -139,8 +139,6 @@
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
 	NcCheckboxRadioSwitch,
@@ -148,6 +146,7 @@ import {
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
+import { fetchConnectorSynchronizations } from '../services/connectorSynchronizations.js'
 import {
 	isValidCron,
 	validateScheduleEntry,
@@ -439,21 +438,7 @@ export default {
 			this.syncLoading = true
 			this.syncFetchFailed = false
 			try {
-				const url = generateUrl(
-					'/apps/openregister/api/objects/openconnector/synchronization',
-				)
-				const { data } = await axios.get(url, { params: { limit: 500 } })
-				const list = Array.isArray(data && data.results)
-					? data.results
-					: Array.isArray(data)
-						? data
-						: []
-				this.syncOptions = list
-					.map((sync) => ({
-						id: String(sync.id || sync.uuid),
-						label: sync.name || sync.title || sync.id,
-					}))
-					.filter((o) => o.id && o.id !== 'undefined')
+				this.syncOptions = await fetchConnectorSynchronizations()
 				if (this.syncOptions.length === 0) {
 					this.syncFetchFailed = true
 				} else {

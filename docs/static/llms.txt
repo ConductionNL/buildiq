@@ -6,8 +6,8 @@ Buildiq is an open-source citizen-developer app builder for the Nextcloud worksp
 
 ## Docs
 
-- [Documentation](https://openbuild.conduction.nl/docs/intro): main entry, including tutorials, user guide, and admin guide.
-- [API reference](https://openbuild.conduction.nl/api): OpenAPI documentation.
+- [Documentation](https://buildiq.conduction.nl/docs/intro): main entry, including tutorials, user guide, and admin guide.
+- [API reference](https://buildiq.conduction.nl/api): OpenAPI documentation.
 
 ## Optional
 

@@ -139,9 +139,12 @@ describe('CloneTemplateDialog.vue — remote store install', () => {
 		await wrapper.vm.submit()
 
 		expect(wrapper.emitted('submit')).toBeTruthy()
+		// The local path also carries the description the dialog asks for
+		// (empty when left blank), since the Store's "Use this template" flow.
 		expect(wrapper.emitted('submit')[0][0]).toEqual({
 			name: 'My Permits',
 			slug: 'my-permits',
+			description: '',
 		})
 		expect(axiosMock.post).not.toHaveBeenCalled()
 	})
