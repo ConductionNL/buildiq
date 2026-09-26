@@ -187,12 +187,23 @@
 			"area": "apps",
 			"name": "Create a new app from scratch without writing code.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/dialogs/CreateApplicationWizard.vue:1-60 (custom preset, no template) POSTs to /apps/buildiq/api/applications/wizard (appinfo/routes.php:25 applicationCreation#wizard) -> lib/Controller/ApplicationCreationController.php:110 wizard() -> lib/Service/ApplicationCreationService.php (Step 3, per-version register provisioning, lines 262-330)",
+				"reachedOn": "VirtualApps /applications, header action opens CreateApplicationWizard, Step2Preset 'custom' choice",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "buildiq-app-creation-wizard",
+			"featureConfidence": "high",
+			"reachedOn": "VirtualApps /applications, header action opens CreateApplicationWizard, Step2Preset 'custom' choice",
 			"evidence": {}
 		},
 		{
@@ -200,12 +211,23 @@
 			"area": "apps",
 			"name": "Set up a new app in a guided few-step wizard that creates its data store, first version and pages together.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/dialogs/CreateApplicationWizard.vue:20-56 four steps (Basics, Preset, Custom, Review) -> POST /apps/buildiq/api/applications/wizard (routes.php:25) -> ApplicationCreationController.php:110 -> ApplicationCreationService.php creates Application + N ApplicationVersions + N per-version OR registers atomically (lines 262-330, rollback on failure at :325)",
+				"reachedOn": "VirtualApps /applications, 'Create app' wizard",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "buildiq-app-creation-wizard",
+			"featureConfidence": "high",
+			"reachedOn": "VirtualApps /applications, 'Create app' wizard",
 			"evidence": {}
 		},
 		{
@@ -213,12 +235,23 @@
 			"area": "apps",
 			"name": "Start a new app from a ready-made template.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/views/TemplateGallery.vue:512 POST /apps/buildiq/api/applications/from-template/{templateSlug} (routes.php:50 applications#createFromTemplate) -> lib/Controller/ApplicationsController.php:1566 createFromTemplate() -> installFromTemplateArray():1670",
+				"reachedOn": "TemplateGallery /templates, clicking a template card",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "buildiq-templates-marketplace",
+			"featureConfidence": "high",
+			"reachedOn": "TemplateGallery /templates, clicking a template card",
 			"evidence": {}
 		},
 		{
@@ -226,12 +259,22 @@
 			"area": "apps",
 			"name": "Generate a working app from an uploaded spreadsheet or table.",
 			"source": "competitor",
-			"buildiq": "unknown",
+			"buildiq": "partial",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/dialogs/ImportDataWizard.vue:1-20 uploads xlsx/xls/csv/json and either adds rows to an EXISTING schema or 'create a new schema from the file' (OR infers fields from header row). Only reachable from src/views/SchemaDesigner.vue:190 and src/components/applicationDetail/ApplicationDetailDashboard.vue:305, both of which require an app/version to already exist. Delegates parsing to OpenRegister's register-import via useDataImport.js."
+			},
+			"reachedOn": "SchemaDesigner (opened on an existing app version)",
+			"provider": "openregister",
+			"providerHow": "read-from-code",
+			"feature": "openbuild-data-import-wizard",
+			"featureConfidence": "high",
+			"note": "Row asks for generating 'a working app' from a spreadsheet; the code only generates one SCHEMA inside an app that must already exist -- no pages, no new app, no data-store creation from the upload. Narrower than the row.",
 			"evidence": {}
 		},
 		{
@@ -239,12 +282,20 @@
 			"area": "apps",
 			"name": "Generate an app from the tables of an existing database.",
 			"source": "competitor",
-			"buildiq": "unknown",
+			"buildiq": "no",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "none",
+				"evidence": "grep -rniF 'postgres|mysql|jdbc|odbc|database connection|sql server|db connection' src lib (excl. tests): no hits. No controller or service resolves an external database connection to auto-generate a schema/app."
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "app-create-from-database",
+			"featureConfidence": "high",
 			"evidence": {}
 		},
 		{
@@ -252,12 +303,23 @@
 			"area": "apps",
 			"name": "See every app you have built in one overview with its status.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "GET /apps/buildiq/api/applications (routes.php:43 applications#listMine) -> lib/Controller/ApplicationsController.php:1049 listMine() (server-side RBAC filter, per-app permissions) -> src/components/ApplicationCard.vue:103 renders name/status/version/role per card",
+				"reachedOn": "VirtualApps /applications (manifest.json route /applications)",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "buildiq-rbac",
+			"featureConfidence": "high",
+			"reachedOn": "VirtualApps /applications (manifest.json route /applications)",
 			"evidence": {}
 		},
 		{
@@ -265,12 +327,22 @@
 			"area": "apps",
 			"name": "Open an app's maintainer view showing its versions, pages, data and recent activity in one place.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/manifest.json:443-518 VirtualAppDetail page at /applications/:objectId, headerComponent ApplicationDetailHeader, before-body ApplicationDetailDashboard (KPI grid + activity + manifest/register/groups widgets), sidebarTabs: Manifest, Version history, Diff, Icons, Exports, History(audit)",
+				"reachedOn": "VirtualApps -> click an app row -> /applications/:objectId"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "buildiq-app-detail-overview",
+			"featureConfidence": "high",
+			"reachedOn": "VirtualApps -> click an app row -> /applications/:objectId",
 			"evidence": {}
 		},
 		{
@@ -278,12 +350,24 @@
 			"area": "apps",
 			"name": "Change an app's name, description and slug after creating it.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "lib/Settings/openbuild_register.json:82-98 Application schema has editable name/description properties (read-only only for hybrid apps). src/manifest.json:459 sets showEditAction:false because src/components/ApplicationDetailActions.vue:157,267-272 renders its own 'Edit' action calling the generic openEditForm() function handed in via the detail page's #actions slot scope -- the shared nextcloud-vue generic object edit form (name/description/slug).",
+				"reachedOn": "VirtualAppDetail /applications/:objectId, header action menu 'Edit'",
+				"owner": "ConductionNL/nextcloud-vue"
+			},
+			"provider": "nextcloud-vue",
+			"providerHow": "read-from-code",
+			"feature": "app-rename-describe",
+			"featureConfidence": "medium",
+			"note": "Slug is NOT editable after creation per the schema description (drives /builder/{slug}/* paths); only name/description are freely editable.",
+			"reachedOn": "VirtualAppDetail /applications/:objectId, header action menu 'Edit'",
 			"evidence": {}
 		},
 		{
@@ -291,12 +375,23 @@
 			"area": "apps",
 			"name": "Delete an app you no longer need, including what it created.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "DELETE /apps/buildiq/api/applications/{appUuid} (routes.php:118 applicationPublish#destroy) wired from src/components/AppDeleteDialogSlot.vue:105 which fills CnIndexPage's #delete-dialog slot with Buildiq's own DeleteAppDialog (data checkbox + full cleanup of versions/registers/routes) instead of a bare OR object delete",
+				"reachedOn": "VirtualApps /applications, table row Delete action -> DeleteAppDialog",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "app-delete",
+			"featureConfidence": "high",
+			"reachedOn": "VirtualApps /applications, table row Delete action -> DeleteAppDialog",
 			"evidence": {}
 		},
 		{
@@ -304,12 +399,23 @@
 			"area": "apps",
 			"name": "Publish an app so its users can open it, and unpublish it again.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/components/ApplicationDetailActions.vue:668-707 publish/unpublish toggle (owner-only, isPublished bound at :58) POSTs /apps/buildiq/api/applications/{appUuid}/publish|unpublish (routes.php:116-117 applicationPublish#publish/unpublish) -> flips Application.status draft<->published, gating AppNavigationService (lib/Service/AppNavigationService.php:135 STATUS_PUBLISHED filter)",
+				"reachedOn": "VirtualAppDetail header actions, Publish/Unpublish",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "buildiq-nextcloud-nav",
+			"featureConfidence": "high",
+			"reachedOn": "VirtualAppDetail header actions, Publish/Unpublish",
 			"evidence": {}
 		},
 		{
@@ -317,12 +423,22 @@
 			"area": "apps",
 			"name": "Give a published app its own entry in the platform's top navigation.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "lib/AppInfo/Application.php:713-720 boot() calls AppNavigationService::registerNavEntries(INavigationManager) every request; lib/Service/AppNavigationService.php:59-180 registers one INavigationManager::add() entry per published Application (status==published), gated by owners/editors/viewers roles + group:* wildcard, ordered via nav_order_base appconfig, href generated from route 'buildiq.icon.iconLight' + /builder/{slug}",
+				"reachedOn": "Nextcloud top bar, once an app is published"
+			},
+			"provider": "nextcloud",
+			"providerHow": "read-from-code",
+			"feature": "buildiq-nextcloud-nav",
+			"featureConfidence": "high",
+			"reachedOn": "Nextcloud top bar, once an app is published",
 			"evidence": {}
 		},
 		{
@@ -330,12 +446,23 @@
 			"area": "apps",
 			"name": "Give each app its own icon, with a light and a dark variant.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "routes.php:175-176 icon#iconDark '/icons/{slug}-dark.svg' before icon#iconLight '/icons/{slug}.svg' (deliberate ordering, see comment); lib/Settings/openbuild_register.json:160-184 Application.icon/iconDark reference an SVG file attached to the record via OR files-attached-to-object",
+				"reachedOn": "Any published app's nav entry icon + VirtualAppDetail 'Icons' sidebar tab (ApplicationIconTab)",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "buildiq-nextcloud-nav",
+			"featureConfidence": "high",
+			"reachedOn": "Any published app's nav entry icon + VirtualAppDetail 'Icons' sidebar tab (ApplicationIconTab)",
 			"evidence": {}
 		},
 		{
@@ -343,12 +470,22 @@
 			"area": "apps",
 			"name": "Open a built app at its own stable web address.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "routes.php:124-160 dashboard#builder '/builder/{slug}' (+ trailing-slash alias, + designer sub-paths, + catch-all builderPath for the app's own deep links) serves the standalone virtual-app runtime via CnAppRoot/CnPageRenderer at a stable URL per app slug",
+				"reachedOn": "/builder/{slug} for any published (or previewed) app"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "buildiq-deep-links",
+			"featureConfidence": "high",
+			"reachedOn": "/builder/{slug} for any published (or previewed) app",
 			"evidence": {}
 		},
 		{
@@ -356,12 +493,22 @@
 			"area": "apps",
 			"name": "Fill a new app with demo records so you can try it straight away.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/manifest.json:31-46 setup wizard steps 'demo-data' (choice) + 'load-demo-data' (run-action) -> POST /api/setup/action/load-demo-data (routes.php:30 setup#runAction) -> lib/Controller/SetupController.php:263 runAction() branches on 'load-demo-data' -> lib/Service/DemoDataService.php:132 listChoices() / :230 install()",
+				"reachedOn": "First-run setup wizard (CnSetupWizard), 'Load example data?' step"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "buildiq-first-time-setup",
+			"featureConfidence": "high",
+			"reachedOn": "First-run setup wizard (CnSetupWizard), 'Load example data?' step",
 			"evidence": {}
 		},
 		{
@@ -369,12 +516,22 @@
 			"area": "apps",
 			"name": "Get a first-time setup checklist that tells an administrator what is still missing.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/manifest.json:19-27 setup.enabled + steps (welcome, demo-data, load-demo-data, seed, store) rendered by the shared CnSetupWizard; GET /api/setup/status (routes.php:29 setup#status) -> lib/Controller/SetupController.php reports what is still missing (e.g. templates not seeded, no remote store configured)",
+				"reachedOn": "Admin settings, Buildiq first-time setup wizard"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "buildiq-first-time-setup",
+			"featureConfidence": "high",
+			"reachedOn": "Admin settings, Buildiq first-time setup wizard",
 			"evidence": {}
 		},
 		{
@@ -382,12 +539,20 @@
 			"area": "apps",
 			"name": "Embed a built app or one of its pages in another website.",
 			"source": "competitor",
-			"buildiq": "unknown",
+			"buildiq": "no",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "none",
+				"evidence": "grep -rniF 'iframe|embed' src lib (excl. tests, node_modules): no hits. No embed-token or iframe-safe-headers mechanism found."
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "app-embed-external",
+			"featureConfidence": "high",
 			"evidence": {}
 		},
 		{
@@ -395,12 +560,20 @@
 			"area": "apps",
 			"name": "Run a built app on its own server, separate from the builder.",
 			"source": "competitor",
-			"buildiq": "unknown",
+			"buildiq": "no",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "none",
+				"evidence": "grep -rniF 'docker|standalone deploy|self-host|deploy.*server' lib/Controller lib/Service: no hits. lc-export-real-app produces an installable Nextcloud-app ZIP (still requires a Nextcloud+OpenRegister host), not a self-contained standalone server."
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "app-standalone-deploy",
+			"featureConfidence": "high",
 			"evidence": {}
 		},
 		{
@@ -408,12 +581,23 @@
 			"area": "data",
 			"name": "Design the data model visually: add an object type and its fields without code.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/views/SchemaDesigner.vue:1-20 mounted at /builder/:slug/schemas (list) and /builder/:slug/schemas/:schemaId (detail); SchemaListPanel emits add -> addSchema() at SchemaDesigner.vue:1280; FieldEditor.vue add-field button composes properties/required into the schema body on Save (SchemaDesigner.vue save() around line 1027-1055)",
+				"reachedOn": "buildiq builder, Schemas tab -> Add schema -> field editor",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "openbuild-schema-designer",
+			"featureConfidence": "high",
+			"reachedOn": "buildiq builder, Schemas tab -> Add schema -> field editor",
 			"evidence": {}
 		},
 		{
@@ -421,12 +605,24 @@
 			"area": "data",
 			"name": "Choose from typed fields such as text, number, date, choice, file and yes or no.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "partial",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/components/schema-editor/FieldEditor.vue:319-327 SUPPORTED_TYPES = ['string','number','integer','boolean','array','object','relation']; no dedicated date/choice/file type. 'date' is only reachable as a free-text format string on 'string' (FieldEditor.vue:102-106 field.validation.format). No enum/select/choice picker anywhere (grep for enum/choice/select field type in FieldEditor.vue and repo-wide returned nothing but the word 'enum' in a docblock)",
+				"reachedOn": "buildiq builder, Schemas tab, field type dropdown",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "openbuild-schema-designer",
+			"featureConfidence": "high",
+			"note": "text/number/integer/boolean/array/object/relation exist; no native date, choice/enum or file field type. 'yes or no' = boolean is real; 'date' and 'choice' are not typed, 'file' is handled only via record attachments, not as a schema field type",
+			"reachedOn": "buildiq builder, Schemas tab, field type dropdown",
 			"evidence": {}
 		},
 		{
@@ -434,12 +630,23 @@
 			"area": "data",
 			"name": "Mark fields as required and set validation rules such as length, range or pattern.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/components/schema-editor/FieldEditor.vue:84-86 required checkbox; :109-173 pattern/minLength/maxLength/minimum/maximum/multipleOf inputs per type; propertyFromField() writes them back into JSON Schema properties + required[] (FieldEditor.vue:751-800 area)",
+				"reachedOn": "buildiq builder, Schemas tab, field editor validation fields",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "openbuild-schema-designer",
+			"featureConfidence": "high",
+			"reachedOn": "buildiq builder, Schemas tab, field editor validation fields",
 			"evidence": {}
 		},
 		{
@@ -447,12 +654,23 @@
 			"area": "data",
 			"name": "Link one object type to another, for example a request to the person who made it.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/components/schema-editor/FieldEditor.vue:242-275 field.type==='relation' writes x-openregister-relation (target+cardinality) per property (FieldEditor.vue:814-818); src/components/schema-editor/RelationEditor.vue authors schema-level x-openregister-relations. OpenRegister executes both: git -C openregister grep x-openregister-relation origin/development hits lib/Service/Relation/RelationTypeResolver.php and lib/Service/Object/RenderObject.php, so it is resolved at render/read time, not merely declared",
+				"reachedOn": "buildiq builder, Schemas tab, Relations section and per-field relation type",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "openbuild-schema-designer",
+			"featureConfidence": "high",
+			"reachedOn": "buildiq builder, Schemas tab, Relations section and per-field relation type",
 			"evidence": {}
 		},
 		{
@@ -460,12 +678,21 @@
 			"area": "data",
 			"name": "Add a field whose value is calculated from other fields.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "no",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "building",
+				"evidence": "src/components/schema-editor/CalculationEditor.vue:1-30, explicit docblock: 'v1 STUB (REQ-OBSD-005 - calculations slice deferred to v1.1)...v1 surfaces a read-only view of any existing x-openregister-calculations block + a coming in v1.1 message; authoring lands in tasks 8.2'. No way to add or edit a calculation from the UI, only render existing ones read-only"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "openbuild-schema-designer",
+			"featureConfidence": "high",
+			"note": "not a defect, it is a documented stub: authoring is not implemented, only display of a pre-existing x-openregister-calculations block",
 			"evidence": {}
 		},
 		{
@@ -473,12 +700,20 @@
 			"area": "data",
 			"name": "Maintain the choice lists a field offers in one place.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "no",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "none",
+				"evidence": "searched: grep -rn 'choice-list|choiceList|x-openregister-choices|enum' across src/ and lib/; no field type, no schema-editor component, and no shared-choice-list concept anywhere in buildiq. The only 'enum' hit is a docblock comment describing the fixed type picker itself (FieldEditor.vue:7), not a choice-list feature. openspec/parity/capabilities.json:472 lists the row id but that is the self-description file the brief says not to rate from"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "openbuild-schema-designer",
+			"featureConfidence": "high",
 			"evidence": {}
 		},
 		{
@@ -486,12 +721,24 @@
 			"area": "data",
 			"name": "Give an object a status with allowed transitions between states.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/components/schema-editor/LifecycleEditor.vue authors states/transitions; SchemaDesigner.vue:574-577 validates exactly one initial state client-side; SchemaDesigner.vue:979-1029 converts editor model to/from x-openregister-lifecycle via lifecycleToEditor/editorToLifecycle and writes it on Save. OpenRegister actually executes it (not just a declaration): git -C openregister grep x-openregister-lifecycle origin/development hits lib/Controller/TransitionController.php, lib/Listener/LifecycleValidationListener.php, lib/Listener/LifecycleInitialStateListener.php, lib/Listener/AutoTransitionRecordListener.php, lib/Db/StateHistory.php",
+				"reachedOn": "buildiq builder, Schemas tab, Lifecycle section",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "openbuild-schema-designer",
+			"featureConfidence": "high",
+			"note": "not pending: OpenRegister has real listeners/controllers executing transitions, this is not a bare x-openregister-* declaration with no evidence of execution",
+			"reachedOn": "buildiq builder, Schemas tab, Lifecycle section",
 			"evidence": {}
 		},
 		{
@@ -499,12 +746,23 @@
 			"area": "data",
 			"name": "Import records into an app from a CSV or Excel file.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/views/SchemaDesigner.vue:30 'Import data' button opens ImportDataWizard.vue; ImportDataWizard.vue:766 calls useDataImport().importFile(); src/composables/useDataImport.js:145-179 POSTs multipart to /apps/openregister/api/registers/{registerId}/import (routes.php owned by OpenRegister). Buildiq's own docblock (useDataImport.js:4-8) states it adds no parsing/inference/writing of its own",
+				"reachedOn": "buildiq builder, Schemas tab -> Import data wizard",
+				"owner": "ConductionNL/openregister"
+			},
+			"provider": "openregister",
+			"providerHow": "read-from-code",
+			"feature": "data-import-wizard",
+			"featureConfidence": "high",
+			"reachedOn": "buildiq builder, Schemas tab -> Import data wizard",
 			"evidence": {}
 		},
 		{
@@ -512,12 +770,23 @@
 			"area": "data",
 			"name": "Undo an import that went wrong.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "ImportDataWizard.vue:786-798 Undo action calls useDataImport().rollbackImport(); useDataImport.js:186-200 POSTs to /apps/openregister/api/registers/import/rollback with the importJobId returned by the import summary",
+				"reachedOn": "buildiq builder, Schemas tab -> Import data wizard, result step -> Undo",
+				"owner": "ConductionNL/openregister"
+			},
+			"provider": "openregister",
+			"providerHow": "read-from-code",
+			"feature": "data-import-wizard",
+			"featureConfidence": "high",
+			"reachedOn": "buildiq builder, Schemas tab -> Import data wizard, result step -> Undo",
 			"evidence": {}
 		},
 		{
@@ -525,12 +794,23 @@
 			"area": "data",
 			"name": "Export an app's records to CSV or Excel.",
 			"source": "competitor",
-			"buildiq": "unknown",
+			"buildiq": "no",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "none",
+				"evidence": "searched: grep -rln 'export.*csv|CSV|xlsx|Excel' src/ -> only useDataImport.js (import template download), FilesPageEditor.vue and ImportDataWizard.vue. lib/Service/ExportService.php docblock: 'Imperative exporter that produces a standalone Nextcloud-app tree from a published Application record' -> this and DataRegisterExportBundler.php/ExportJobsList.vue export the APPLICATION DEFINITION (code/manifest/schema bundle) for reinstall/publishing, not an app's data records to CSV/Excel",
+				"reachedOn": ""
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "openbuild-exporter",
+			"featureConfidence": "high",
+			"note": "buildiq's exporter ships the app itself, not a records-to-CSV/Excel export. nextcloud-vue v2.55.1 CnIndexPage DOES ship a native records Export menu (allowExport prop + schema.exportable, CnIndexPage.vue:1633-1641) but it defaults to false and buildiq never sets allowExport nor exposes an exportable checkbox anywhere in IndexPageEditor.vue or SchemaHeaderForm.vue (grep -rn allowExport src/ -> no hits), so a maker building purely in buildiq cannot turn it on",
+			"reachedOn": "",
 			"evidence": {}
 		},
 		{
@@ -538,12 +818,23 @@
 			"area": "data",
 			"name": "Edit records inline in a spreadsheet-like grid.",
 			"source": "competitor",
-			"buildiq": "unknown",
+			"buildiq": "no",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "none",
+				"evidence": "searched: grep -rln 'DataGrid|data-grid|AgGrid|NcTable|spreadsheet|grid-edit|CnDataMatrix' src/ -> no hits in buildiq (only FilesPageEditor.vue and ImportDataWizard.vue for unrelated terms), and grep 'Matrix|Grid|Table' in src/registry.js and src/runtimeRegistry.js has no component registration. nextcloud-vue v2.55.1 DOES ship a spreadsheet-like component (src/components/CnDataMatrix/CnDataMatrix.vue, click-to-edit cells with commitEdit/startEdit) but buildiq never imports or registers CnDataMatrix anywhere, and no buildiq page-editor type (src/components/page-editor/*) offers a grid view",
+				"reachedOn": ""
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "data-grid-edit",
+			"featureConfidence": "high",
+			"note": "the capability exists as a component in the locked nextcloud-vue library (CnDataMatrix) but buildiq does not wire it into any page type or registry, so a built app cannot reach it",
+			"reachedOn": "",
 			"evidence": {}
 		},
 		{
@@ -551,12 +842,24 @@
 			"area": "data",
 			"name": "Store an app's data in a built-in database without setting one up.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "lib/Service/ApplicationCreationService.php:262-325 the wizard provisions a per-version OpenRegister register automatically ('Step 3: Create ApplicationVersions + provision registers', registerSlug = buildiq-{appSlug}-{versionSlug}) with no manual OR setup by the maker; storage itself is OpenRegister's own JSON object store",
+				"reachedOn": "buildiq builder, New application wizard (POST /api/applications/wizard)",
+				"owner": "ConductionNL/openregister"
+			},
+			"provider": "openregister",
+			"providerHow": "read-from-code",
+			"feature": "openbuild-application-register",
+			"featureConfidence": "high",
+			"note": "buildiq's contribution is the automatic, zero-config provisioning of the register at app-creation time; the database engine itself is OpenRegister's",
+			"reachedOn": "buildiq builder, New application wizard (POST /api/applications/wizard)",
 			"evidence": {}
 		},
 		{
@@ -564,12 +867,22 @@
 			"area": "data",
 			"name": "Read and write records in an external SQL database such as PostgreSQL or MySQL.",
 			"source": "competitor",
-			"buildiq": "unknown",
+			"buildiq": "no",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "none",
+				"evidence": "searched: grep -rni 'sql|postgres|mysql' src/ lib/ -> no external SQL data-source hits (only an unrelated Doctrine migration in lib/Repair/RenameDutchRuleColumns.php and a diagram caption). The only alternative data-source origin is 'OpenConnector' (src/components/page-editor/DataSourceOriginToggle.vue:13-30), which is a generic API-endpoint picker (ConnectorSourcePicker.vue), not a direct SQL/PostgreSQL/MySQL connection",
+				"reachedOn": ""
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "data-external-db",
+			"featureConfidence": "high",
+			"reachedOn": "",
 			"evidence": {}
 		},
 		{
@@ -577,12 +890,23 @@
 			"area": "data",
 			"name": "Use records from an external API as an app's data source.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/components/page-editor/DataSourceOriginToggle.vue:13-42 'OpenRegister | OpenConnector' toggle, shared by IndexPageEditor and DashboardPageEditor; ConnectorSourcePicker.vue:131 useAppStatus('integriq'), :257 resolveFleetAppId('integriq') -> GET /api/endpoints (integriq); ConnectorFieldMapper.vue maps the returned sample into page fields. integriq's appinfo/info.xml <id> is 'integriq', confirmed current (not the stale 'openconnector' id)",
+				"reachedOn": "buildiq builder, page editor for an index/dashboard page, Data source = OpenConnector",
+				"owner": "ConductionNL/integriq"
+			},
+			"provider": "integriq",
+			"providerHow": "read-from-code",
+			"feature": "openconnector-api-sources",
+			"featureConfidence": "high",
+			"reachedOn": "buildiq builder, page editor for an index/dashboard page, Data source = OpenConnector",
 			"evidence": {}
 		},
 		{
@@ -590,12 +914,24 @@
 			"area": "data",
 			"name": "Attach files to a record and keep them with it.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/components/page-editor/DetailPageEditor.vue:67-99 a maker can set config.sidebar=true (boolean shape checkbox) or config.sidebar={enabled:true} on a detail page; nextcloud-vue v2.55.1 CnDetailPage renders CnObjectSidebar with default tabs ['files','notes','tags','tasks','auditTrail'] (CnObjectSidebar.vue:877) unless hiddenTabs excludes them; CnFilesTab.vue is the Files tab implementation",
+				"reachedOn": "buildiq builder, page editor for a detail page, enable Sidebar -> Files tab",
+				"owner": "ConductionNL/nextcloud-vue"
+			},
+			"provider": "nextcloud-vue",
+			"providerHow": "read-from-code",
+			"feature": "page-editor-coverage",
+			"featureConfidence": "high",
+			"note": "buildiq's own contribution is the sidebar on/off + tabs config in DetailPageEditor.vue; the Files tab itself is the shared renderer's default",
+			"reachedOn": "buildiq builder, page editor for a detail page, enable Sidebar -> Files tab",
 			"evidence": {}
 		},
 		{
@@ -603,12 +939,23 @@
 			"area": "data",
 			"name": "See the change history of a record and who made each change.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "same sidebar path as data-files-on-record (DetailPageEditor.vue:67-99, config.sidebar=true); nextcloud-vue's CnObjectSidebar default tabs include auditTrail (CnObjectSidebar.vue:148-156, 877) which renders CnAuditTrailTab.vue (action/user/date/IP/session per entry) sourced from OpenRegister's per-object audit trail, the same OR audit REST the buildiq-own PermissionHistoryModal.vue consumes for its own Application object",
+				"reachedOn": "buildiq builder, page editor for a detail page, enable Sidebar -> Audit trail tab",
+				"owner": "ConductionNL/nextcloud-vue"
+			},
+			"provider": "nextcloud-vue",
+			"providerHow": "read-from-code",
+			"feature": "page-editor-coverage",
+			"featureConfidence": "high",
+			"reachedOn": "buildiq builder, page editor for a detail page, enable Sidebar -> Audit trail tab",
 			"evidence": {}
 		},
 		{
@@ -616,12 +963,20 @@
 			"area": "data",
 			"name": "Restore a record to an earlier state.",
 			"source": "competitor",
-			"buildiq": "unknown",
+			"buildiq": "no",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "none",
+				"evidence": "searched: grep -rni 'restore|revert|rollback' src/ lib/ -> every hit is about ApplicationVersion rollback (ApplicationVersionsTab.vue), theme preview revert (ThemePickerDialog.vue), or Copilot manifest-snapshot rollback (CopilotService.php), none about restoring a data RECORD's earlier state. nextcloud-vue's CnAuditTrailTab.vue (the record history viewer) has no restore/revert action in its template (grep -i 'restore|revert' on that file returned nothing)"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "data-restore-record",
+			"featureConfidence": "high",
 			"evidence": {}
 		},
 		{
@@ -629,12 +984,23 @@
 			"area": "data",
 			"name": "Reuse an object type that another app already defines instead of copying it.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/composables/useRegisterPicker.js:21-33 docblock + fetchRegisters() (lines ~120-215): GET /apps/openregister/api/registers lists every register in the instance, not just the app's own; when Application.dataRegisters bindings are declared (design.md Decision 1) matching registers are labelled and hoisted, so a page/schema picker in IndexPageEditor/FormPageEditor/DashboardPageEditor can bind to a register+schema another app already owns instead of re-declaring it",
+				"reachedOn": "buildiq builder, any page editor's register/schema picker (Data source = OpenRegister)",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "data-registers-runtime",
+			"featureConfidence": "high",
+			"reachedOn": "buildiq builder, any page editor's register/schema picker (Data source = OpenRegister)",
 			"evidence": {}
 		},
 		{
@@ -642,12 +1008,23 @@
 			"area": "data",
 			"name": "Search across an app's records by keyword.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "buildiq registers CnIndexPage as a built-in page type (src/registry.js:18 'Built-in page types (CnIndexPage, CnDetailPage, CnDashboardPage, ...)' resolved before buildiq's own registry) and IndexPageEditor.vue configures it; nextcloud-vue's CnIndexPage.vue wires :searchValue/:searchPlaceholder/@search (lines 60-61, 83) into the object list query against the bound register/schema. Also a dedicated type:'search' page exists (SearchPageEditor.vue) that scopes a search box to a register/schema, though it says its own query execution is 'wired by the consuming app via the @search contract'",
+				"reachedOn": "buildiq builder, any index page (search box) or a dedicated search page",
+				"owner": "ConductionNL/nextcloud-vue"
+			},
+			"provider": "nextcloud-vue",
+			"providerHow": "read-from-code",
+			"feature": "page-editor-coverage",
+			"featureConfidence": "high",
+			"reachedOn": "buildiq builder, any index page (search box) or a dedicated search page",
 			"evidence": {}
 		},
 		{
@@ -655,12 +1032,23 @@
 			"area": "data",
 			"name": "Save a filtered and sorted view of records and share it with others.",
 			"source": "competitor",
-			"buildiq": "unknown",
+			"buildiq": "no",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "none",
+				"evidence": "nextcloud-vue v2.55.1 CnIndexPage.vue ships CnSavedViewsControl (apply/save/delete OpenRegister saved-search views, lines ~104-118) gated by the allowSavedViews prop, default false, opt-in per page (CnIndexPage.vue:1650-1657: 'Defaults to false - an app must explicitly enable it per page'). grep -rn allowSavedViews src/ in buildiq returns no hits, and IndexPageEditor.vue exposes no checkbox for it, so no page a maker builds through buildiq can turn this on",
+				"reachedOn": ""
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "data-saved-views",
+			"featureConfidence": "high",
+			"note": "same shape as data-export-records: the renderer has the feature, buildiq's page editor never surfaces the toggle",
+			"reachedOn": "",
 			"evidence": {}
 		},
 		{
@@ -668,12 +1056,23 @@
 			"area": "data",
 			"name": "Change or delete many records in one action.",
 			"source": "competitor",
-			"buildiq": "unknown",
+			"buildiq": "partial",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "nextcloud-vue CnIndexPage.vue defaults selectable=true (line ~1283) and showDeleteAction=true (line ~1858), wiring a selection strip -> CnMassDeleteDialog (lines ~204-212) for bulk delete of the selected rows, on by default with no buildiq configuration needed. CnMassCopyDialog also exists (bulk duplicate). No mass-edit/mass-update-field dialog exists (grep -n 'class CnMass|MassUpdate|MassEdit|bulkEdit' in nextcloud-vue found only MassDelete/MassCopy/MassExport), so changing a field value across many records in one action is not built, only deleting (or copying) many is",
+				"reachedOn": "buildiq builder, any index page, select rows -> Delete"
+			},
+			"provider": "nextcloud-vue",
+			"providerHow": "read-from-code",
+			"feature": "page-editor-coverage",
+			"featureConfidence": "high",
+			"note": "bulk delete works out of the box; bulk field-edit across a selection does not exist",
+			"reachedOn": "buildiq builder, any index page, select rows -> Delete",
 			"evidence": {}
 		},
 		{
@@ -681,12 +1080,24 @@
 			"area": "pages",
 			"name": "Design an app's pages in a visual editor instead of editing configuration by hand.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/views/PageDesigner.vue (1474 lines, form-based sub-editors dispatched via SUB_EDITOR_MAP at line 252) edits manifest.pages[], saved through useApplicationVersion.js -> PUT /apps/buildiq/api/applications/{slug}/manifest (builder.js:313,420; ApplicationManifestTab.vue:124,183); rendered at runtime by BuilderHost.vue (nested CnAppRoot) via lib/Service/ManifestResolverService.php:107 resolve()",
+				"reachedOn": "buildiq builder, /builder/{slug}/pages tab",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "openbuild-page-designer",
+			"featureConfidence": "high",
+			"note": "form/config editing per page type, not a visual/canvas designer -- see pg-drag-drop-canvas",
+			"reachedOn": "buildiq builder, /builder/{slug}/pages tab",
 			"evidence": {}
 		},
 		{
@@ -694,12 +1105,21 @@
 			"area": "pages",
 			"name": "Drag components onto a free canvas and position them where you want.",
 			"source": "competitor",
-			"buildiq": "unknown",
+			"buildiq": "no",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "none",
+				"evidence": "grep 'drag|canvas|drop' across src/views/PageDesigner.vue and src/components/page-editor/*.vue: only hits are vuedraggable-based REORDERING of list rows (PageListEditor.vue, MenuTreeEditor.vue use `Draggable` from vuedraggable to reorder pages/menu entries by drag handle). No free-canvas positioning of components anywhere in page-editor/."
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "openbuild-page-designer",
+			"featureConfidence": "high",
+			"note": "the designer is a set of config forms per page type (register/schema pickers, column/action/widget list builders); there is no free canvas to drop and position components on",
 			"evidence": {}
 		},
 		{
@@ -707,12 +1127,23 @@
 			"area": "pages",
 			"name": "See a live preview of the page while you edit it.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/components/page-editor/PreviewSandbox.vue (473 lines) mounted in PageDesigner.vue:178 (:pageTypes=\"previewPageTypes\"); useLivePreview.js composable feeds edited manifest into an in-memory CnAppRoot render at PREVIEW_VIEWPORT_WIDTH=1024 (PageDesigner.vue:244)",
+				"reachedOn": "buildiq builder, Pages tab, live preview pane next to the config form",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "openbuild-page-designer",
+			"featureConfidence": "high",
+			"reachedOn": "buildiq builder, Pages tab, live preview pane next to the config form",
 			"evidence": {}
 		},
 		{
@@ -720,12 +1151,23 @@
 			"area": "pages",
 			"name": "Undo and redo changes while designing a page.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/views/PageDesigner.vue:236 imports useSessionHistory from src/composables/useSessionHistory.js (thin adapter over nc-vue's shared history engine); history created at PageDesigner.vue:354 with limit:100; undo()/redo() methods at lines 1069/1084; keyboard chords Ctrl+Z / Ctrl+Shift+Z wired at ~1106-1121 (spec openspec/specs/builder-undo-redo/spec.md#req-bur-003); same pattern reused in SchemaDesigner.vue:281",
+				"reachedOn": "buildiq builder, Pages and Schemas tabs, toolbar undo/redo buttons + keyboard shortcuts",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "builder-undo-redo",
+			"featureConfidence": "high",
+			"reachedOn": "buildiq builder, Pages and Schemas tabs, toolbar undo/redo buttons + keyboard shortcuts",
 			"evidence": {}
 		},
 		{
@@ -733,12 +1175,24 @@
 			"area": "pages",
 			"name": "Add a list page that shows records in a table with sorting, filtering and paging.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/components/page-editor/IndexPageEditor.vue (471 lines) authors config.register/schema/columns/actions/sidebar for `type:\"index\"`; SUB_EDITOR_MAP['index']='IndexPageEditor' (PageDesigner.vue:253); renderer mounts CnIndexPage for type 'index' (nextcloud-vue v2.55.1 src/components/CnPageRenderer/pageTypes.js line 'index: ... CnIndexPage.vue')",
+				"reachedOn": "any built app page authored as type index, e.g. /apps/buildiq/builder/{slug}/{route}",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "nextcloud-vue",
+			"providerHow": "read-from-code",
+			"feature": "openbuild-page-designer",
+			"featureConfidence": "high",
+			"note": "sorting/filtering/paging are CnIndexPage's own behaviour; buildiq's part is authoring which register/schema/columns/actions feed it",
+			"reachedOn": "any built app page authored as type index, e.g. /apps/buildiq/builder/{slug}/{route}",
 			"evidence": {}
 		},
 		{
@@ -746,12 +1200,23 @@
 			"area": "pages",
 			"name": "Add a detail page that shows one record with its fields, related items and files.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "partial",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/components/page-editor/DetailPageEditor.vue (504 lines) authors config.register/schema/sidebar(+tabs)/pageLayout for type:\"detail\"; renders via CnDetailPage (pageTypes.js). DetailPageEditor.vue has NO fields for headerActions, lifecycleActions or widgets (grep for those terms in the file returns nothing) -- buttons/related-item widgets on a detail page cannot be authored from this editor at all.",
+				"reachedOn": "any built app page authored as type detail"
+			},
+			"provider": "nextcloud-vue",
+			"providerHow": "read-from-code",
+			"feature": "openbuild-page-designer",
+			"featureConfidence": "high",
+			"note": "record + sidebar/tabs are authorable; header actions, related-item widgets and files on a detail page have no authoring UI in DetailPageEditor.vue, so the row's 'related items and files' half is not reachable from the designer for this page type (files have their own separate page type, pg-files-page)",
+			"reachedOn": "any built app page authored as type detail",
 			"evidence": {}
 		},
 		{
@@ -759,12 +1224,24 @@
 			"area": "pages",
 			"name": "Add a dashboard page with tiles, counts and charts.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/components/page-editor/DashboardPageEditor.vue authors config.widgets (via WidgetBuilder.vue) and config.layout (via LayoutItemBuilder.vue) for type:\"dashboard\"; renders via CnDashboardPage (pageTypes.js)",
+				"reachedOn": "any built app page authored as type dashboard",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "nextcloud-vue",
+			"providerHow": "read-from-code",
+			"feature": "openbuild-page-designer",
+			"featureConfidence": "high",
+			"note": "buildiq writes to config.widgets (legacy shape per CnPageRenderer.vue v2.55.1 lines 92-122), not page-level widgets[], so the KNOWN GAP documented there (widgets[] short-circuiting the typed component) does NOT apply to buildiq-authored dashboards -- using the legacy path is what keeps them safe",
+			"reachedOn": "any built app page authored as type dashboard",
 			"evidence": {}
 		},
 		{
@@ -772,12 +1249,23 @@
 			"area": "pages",
 			"name": "Show records as bar, line or pie charts.",
 			"source": "competitor",
-			"buildiq": "unknown",
+			"buildiq": "partial",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "renderer: nextcloud-vue v2.55.1 CnChartWidget.vue supports type area/line/bar/pie/donut/radialBar (validator list at CnChartWidget.vue:227) and CnWidgetGrid mounts it when widgetDef.type==='chart'. buildiq authoring: src/components/page-editor/fields/WidgetBuilder.vue only exposes 3 free-text inputs per widget -- id, title, type (lines 6-45) -- with no fields for chartKind, series, categories, labels or colors; addWidget() seeds {id:'',title:'',type:'custom'} (line ~90).",
+				"reachedOn": "Dashboard page editor, Widgets fieldset"
+			},
+			"provider": "nextcloud-vue",
+			"providerHow": "read-from-code",
+			"feature": "openbuild-page-designer",
+			"featureConfidence": "high",
+			"note": "a chart CAN render if someone hand-writes the right JSON widget props, but buildiq's own widget builder UI has no way to pick a chart type or bind series/categories data -- so a builder user cannot configure a working chart through the UI alone",
+			"reachedOn": "Dashboard page editor, Widgets fieldset",
 			"evidence": {}
 		},
 		{
@@ -785,12 +1273,21 @@
 			"area": "pages",
 			"name": "Show records on a kanban board and move them between columns.",
 			"source": "competitor",
-			"buildiq": "unknown",
+			"buildiq": "no",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "none",
+				"evidence": "grep -ri 'kanban' across buildiq src/ and lib/: no hits. nextcloud-vue v2.55.1 src/components/CnPageRenderer/pageTypes.js defaultPageTypes has no 'kanban' entry (full list: index, detail, dashboard, logs, settings, chat, files, form, map, roadmap, reports, store, search, wiki, flow/flows/flow-detail)."
+			},
+			"provider": "nextcloud-vue",
+			"providerHow": "read-from-code",
+			"feature": "page-types",
+			"featureConfidence": "high",
+			"note": "no page type absent from SUB_EDITOR_MAP falls back to StubPageEditor.vue (raw JSON textarea), but there is also no 'kanban' renderer component to point a custom page at -- the capability does not exist end to end",
 			"evidence": {}
 		},
 		{
@@ -798,12 +1295,21 @@
 			"area": "pages",
 			"name": "Show records on a calendar by their date field.",
 			"source": "competitor",
-			"buildiq": "unknown",
+			"buildiq": "no",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "none",
+				"evidence": "grep -ri 'calendar' across buildiq src/ and lib/: only hit is src/components/runtime/ProcestCaseStatusPanel.vue (unrelated, a case/status panel, not a records-by-date calendar view). No 'calendar' entry in nextcloud-vue v2.55.1 pageTypes.js (note: CnCalendarWidget exists as a dashboard widget per docs/components/_generated/CnCalendarWidget.md, but that is a small widget, not a page type showing records by date field)."
+			},
+			"provider": "nextcloud-vue",
+			"providerHow": "read-from-code",
+			"feature": "page-types",
+			"featureConfidence": "medium",
+			"note": "did not fully trace CnCalendarWidget's capabilities inside a dashboard widget slot; flagging as a possible partial-adjacent capability worth a follow-up read, but no page-level calendar view exists",
 			"evidence": {}
 		},
 		{
@@ -811,12 +1317,20 @@
 			"area": "pages",
 			"name": "Show records on a Gantt or timeline view.",
 			"source": "competitor",
-			"buildiq": "unknown",
+			"buildiq": "no",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "none",
+				"evidence": "grep -ri 'gantt|timeline' across buildiq src/ and lib/: no hits at all. No 'gantt'/'timeline' entry in nextcloud-vue v2.55.1 pageTypes.js."
+			},
+			"provider": "nextcloud-vue",
+			"providerHow": "read-from-code",
+			"feature": "page-types",
+			"featureConfidence": "high",
 			"evidence": {}
 		},
 		{
@@ -824,12 +1338,23 @@
 			"area": "pages",
 			"name": "Show records with a location on a map.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/components/page-editor/MapPageEditor.vue (746 lines) authors config for type:\"map\"; SUB_EDITOR_MAP['map']='MapPageEditor'; renderer mounts CnMapPage (pageTypes.js)",
+				"reachedOn": "any built app page authored as type map",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "nextcloud-vue",
+			"providerHow": "read-from-code",
+			"feature": "openbuild-page-designer",
+			"featureConfidence": "high",
+			"reachedOn": "any built app page authored as type map",
 			"evidence": {}
 		},
 		{
@@ -837,12 +1362,23 @@
 			"area": "pages",
 			"name": "Add a page that browses the files belonging to the app.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/components/page-editor/FilesPageEditor.vue (306 lines) authors config for type:\"files\"; SUB_EDITOR_MAP['files']='FilesPageEditor'; renderer mounts CnFilesPage (pageTypes.js)",
+				"reachedOn": "any built app page authored as type files",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "nextcloud-vue",
+			"providerHow": "read-from-code",
+			"feature": "openbuild-page-designer",
+			"featureConfidence": "high",
+			"reachedOn": "any built app page authored as type files",
 			"evidence": {}
 		},
 		{
@@ -850,12 +1386,23 @@
 			"area": "pages",
 			"name": "Add a page of formatted text or documentation to an app.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/components/page-editor/WikiPageEditor.vue (624 lines) authors config for type:\"wiki\"; SUB_EDITOR_MAP['wiki']='WikiPageEditor'; renderer mounts CnWikiPage (pageTypes.js)",
+				"reachedOn": "any built app page authored as type wiki",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "nextcloud-vue",
+			"providerHow": "read-from-code",
+			"feature": "openbuild-page-designer",
+			"featureConfidence": "high",
+			"reachedOn": "any built app page authored as type wiki",
 			"evidence": {}
 		},
 		{
@@ -863,12 +1410,23 @@
 			"area": "pages",
 			"name": "Add a search page that searches the app's records.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/components/page-editor/SearchPageEditor.vue (597 lines) authors config for type:\"search\"; SUB_EDITOR_MAP['search']='SearchPageEditor'; renderer mounts CnSearchPage (pageTypes.js)",
+				"reachedOn": "any built app page authored as type search",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "nextcloud-vue",
+			"providerHow": "read-from-code",
+			"feature": "openbuild-page-designer",
+			"featureConfidence": "high",
+			"reachedOn": "any built app page authored as type search",
 			"evidence": {}
 		},
 		{
@@ -876,12 +1434,23 @@
 			"area": "pages",
 			"name": "Add a chat or conversation page to an app.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/components/page-editor/ChatPageEditor.vue (272 lines) authors config.conversationSource or config.postUrl for type:\"chat\" (api-paths.txt: /api/objects/:slug/messages referenced at ChatPageEditor.vue:61,48); SUB_EDITOR_MAP['chat']='ChatPageEditor'; renderer mounts CnChatPage (pageTypes.js)",
+				"reachedOn": "any built app page authored as type chat",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "nextcloud-vue",
+			"providerHow": "read-from-code",
+			"feature": "openbuild-page-designer",
+			"featureConfidence": "high",
+			"reachedOn": "any built app page authored as type chat",
 			"evidence": {}
 		},
 		{
@@ -889,12 +1458,23 @@
 			"area": "pages",
 			"name": "Add a page that shows an activity or log stream.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/components/page-editor/LogsPageEditor.vue (425 lines) authors config for type:\"logs\" (api-paths.txt: /api/objects/:slug/audit referenced at LogsPageEditor.vue:94); SUB_EDITOR_MAP['logs']='LogsPageEditor'; renderer mounts CnLogsPage (pageTypes.js)",
+				"reachedOn": "any built app page authored as type logs",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "nextcloud-vue",
+			"providerHow": "read-from-code",
+			"feature": "openbuild-page-designer",
+			"featureConfidence": "high",
+			"reachedOn": "any built app page authored as type logs",
 			"evidence": {}
 		},
 		{
@@ -902,12 +1482,23 @@
 			"area": "pages",
 			"name": "Add a settings page where the app's users change the app's options.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/components/page-editor/SettingsPageEditor.vue (417 lines) authors config for type:\"settings\" (api-paths.txt: /api/objects/:slug/settings at SettingsPageEditor.vue:35); SUB_EDITOR_MAP['settings']='SettingsPageEditor'; renderer mounts CnSettingsPage (pageTypes.js)",
+				"reachedOn": "any built app page authored as type settings",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "nextcloud-vue",
+			"providerHow": "read-from-code",
+			"feature": "openbuild-page-designer",
+			"featureConfidence": "high",
+			"reachedOn": "any built app page authored as type settings",
 			"evidence": {}
 		},
 		{
@@ -915,12 +1506,23 @@
 			"area": "pages",
 			"name": "Arrange the app's menu and its nesting in an editor.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/components/page-editor/MenuTreeEditor.vue (584 lines) drag-reorders top-level + child menu entries with a depth-2 cap (vuedraggable, handle='.menu-tree-editor__drag-handle', lines 24-140), authors id/label/icon/route/href/target/action/permission per entry (updateField, lines ~288-289)",
+				"reachedOn": "buildiq builder, Pages tab, Menu editor panel",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "openbuild-page-designer",
+			"featureConfidence": "high",
+			"reachedOn": "buildiq builder, Pages tab, Menu editor panel",
 			"evidence": {}
 		},
 		{
@@ -928,12 +1530,24 @@
 			"area": "pages",
 			"name": "Show or hide a component or menu item depending on a condition or the user's role.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "Two mechanisms: (1) role/permission gating on menu entries (MenuTreeEditor.vue:124-127, `entry.permission`) and pages (PageListEditor.vue:115-120, `page.permission`), both authored via PermissionGroupField.vue (group:<gid> grammar) and enforced server/render-side by nextcloud-vue v2.55.1 CnPageRenderer.vue:376,812 (`cnPermissions` inject, forbiddenPagePermission() at ~805-818) and CnAppRoot.vue:820 (cnPermissions getter) -- fixed from a prior SCHEMA-ONLY state per the CnAppRoot.vue:810-821 comment (dossiq had a page reachable by direct URL despite being hidden from nav before this fix). (2) field-level conditional visibility on form pages via `visibleWhen` ({field, op, value} predicate, ops eq/neq/gt/gte/lt/lte) authored in src/components/page-editor/fields/VisibleWhenBuilder.vue and FormFieldBuilder.vue:94,206-220,303-352.",
+				"reachedOn": "Menu editor (per-entry permission), Page list editor (per-page permission), Form page editor (per-field visibleWhen)",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "nextcloud-vue",
+			"providerHow": "read-from-code",
+			"feature": "openbuild-runtime",
+			"featureConfidence": "high",
+			"note": "visibleWhen conditional visibility is form-page-only by design (FormFieldBuilder.vue:14 comment); role-based menu/page gating covers navigation and direct-URL access more broadly",
+			"reachedOn": "Menu editor (per-entry permission), Page list editor (per-page permission), Form page editor (per-field visibleWhen)",
 			"evidence": {}
 		},
 		{
@@ -941,12 +1555,23 @@
 			"area": "pages",
 			"name": "Add buttons to a page that run an action, such as changing a status or starting a flow.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "partial",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/components/page-editor/IndexPageEditor.vue:77-79 authors config.actions via src/components/page-editor/fields/ActionBuilder.vue, which authors {id, label, icon, target} per action with target restricted to a 3-option <select>: navigate | emit | none (ActionBuilder.vue lines ~31-42). DetailPageEditor.vue has no actions/headerActions/lifecycleActions fields at all (grep for 'action'/'Actions' in that file returns nothing).",
+				"reachedOn": "Index (list) page editor, Actions list"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "openbuild-page-designer",
+			"featureConfidence": "high",
+			"note": "list-page row actions exist but only navigate/emit/none as target -- there is no built-in 'change status' or 'start a flow' action kind, an emit target would need a listener wired elsewhere to actually run a flow. Detail-page header/lifecycle actions have no authoring UI at all, consistent with the known CnPageRenderer widgets[] vs config.widgets gap note in the brief (though buildiq's dashboard editor avoids that specific gap by using config.widgets, detail pages simply have no action-authoring surface to hit the gap with)",
+			"reachedOn": "Index (list) page editor, Actions list",
 			"evidence": {}
 		},
 		{
@@ -954,12 +1579,23 @@
 			"area": "pages",
 			"name": "Drop in a custom component written in code when the built-in ones are not enough.",
 			"source": "competitor",
-			"buildiq": "unknown",
+			"buildiq": "partial",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/components/page-editor/CustomPageEditor.vue authors {component, props} for type:\"custom\" -- 'component' is a free-text input (with datalist suggestions when a registry list is available) naming a key in the CONSUMING APP's pre-registered customComponents map (CustomPageEditor.vue:3-18 comment); 'props' is a raw-JSON textarea. There is no code editor anywhere in buildiq for writing a new component's implementation.",
+				"reachedOn": "any built app page authored as type custom"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "openbuild-page-designer",
+			"featureConfidence": "high",
+			"note": "DEFECT CANDIDATE risk (matches known pattern, not verified live here): naming a component key that isn't registered renders as an empty/dark page with no error, per project memory reference_a-custom-page-naming-an-unregistered-component-renders-as-an-empty-buildiq-page.md. This is picking a pre-built component, not dropping in user-written code.",
+			"reachedOn": "any built app page authored as type custom",
 			"evidence": {}
 		},
 		{
@@ -967,12 +1603,20 @@
 			"area": "pages",
 			"name": "Write JavaScript expressions to bind or transform values on a page.",
 			"source": "competitor",
-			"buildiq": "unknown",
+			"buildiq": "no",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "none",
+				"evidence": "searched for 'expression'/'jsExpr'/'customJs'/'bindingExpression'/'Function(' across src/components/page-editor/ and src/services/: no hits. The only conditional-value mechanism found is visibleWhen ({field, op, value} with a fixed op enum eq/neq/gt/gte/lt/lte, VisibleWhenBuilder.vue:69-73) -- a declarative predicate, not a JavaScript expression language. No formula/computed-value field editor exists."
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "openbuild-page-designer",
+			"featureConfidence": "high",
 			"evidence": {}
 		},
 		{
@@ -980,12 +1624,23 @@
 			"area": "pages",
 			"name": "Have every page adapt to phone and tablet screens without separate design.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "nextcloud-vue v2.55.1 ships @media queries across 22 of its Cn*.vue renderer components (git grep -l '@media' src/components/Cn*.vue), including CnAppRoot.vue, CnIndexPage.vue, CnDetailPage.vue",
+				"reachedOn": "any built app page, rendered through CnAppRoot/CnPageRenderer"
+			},
+			"provider": "nextcloud-vue",
+			"providerHow": "read-from-code",
+			"feature": "page-types",
+			"featureConfidence": "medium",
+			"note": "did not load the app in a real viewport to confirm visually; rating from the presence of responsive CSS in the shared renderer components buildiq mounts",
+			"reachedOn": "any built app page, rendered through CnAppRoot/CnPageRenderer",
 			"evidence": {}
 		},
 		{
@@ -993,12 +1648,20 @@
 			"area": "pages",
 			"name": "Build a native mobile app for iOS or Android from the same design.",
 			"source": "competitor",
-			"buildiq": "unknown",
+			"buildiq": "no",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "none",
+				"evidence": "grep for capacitor/cordova/react-native/ios/android across src/ and package.json: no genuine hits (the few 'ios'/'android' string matches were substrings of unrelated words like 'axios'). No native mobile build tooling anywhere in the repo."
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "n/a",
+			"featureConfidence": "high",
 			"evidence": {}
 		},
 		{
@@ -1006,12 +1669,20 @@
 			"area": "pages",
 			"name": "Let users keep working in an app while offline and sync later.",
 			"source": "competitor",
-			"buildiq": "unknown",
+			"buildiq": "no",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "none",
+				"evidence": "grep for serviceWorker/offline/workbox/indexedDB across src/: only hits are in src/composables/useDataImport.js and src/dialogs/ImportDataWizard.vue, an 'offline import template' -- a CSV/spreadsheet TEMPLATE users download, fill in offline, and re-upload later for bulk data import. This is unrelated to running a built app while offline with sync; no service worker, no offline cache, no local-first storage for the running app anywhere in the repo."
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "n/a",
+			"featureConfidence": "high",
 			"evidence": {}
 		},
 		{
@@ -1019,12 +1690,23 @@
 			"area": "pages",
 			"name": "Author a guided walkthrough that introduces an app's pages to new users.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/views/WalkthroughDesignerHost.vue (264 lines) authors an app's walkthrough, saved via PUT to /apps/buildiq/api/applications/{routeSlug}/versions/{versionSlug} (WalkthroughDesignerHost.vue:220); route registered at appinfo/routes.php:151 designerPath enum includes 'walkthrough' (dashboard#builderDesigner -> /builder/{slug}/walkthrough); at runtime nextcloud-vue v2.55.1 CnAppRoot.vue provides a walkthrough overlay (translate() calls for 'Walkthrough'/'Take the guided tour of this app again.'/'Restart walkthrough' at lines 2699-2717). buildiq dogfoods the same mechanism for its OWN builder UI: src/manifest.json:89 declares a 'walkthrough' block with steps 'define-schema' (line 211) and 'add-page' (line 273) whose data-walkthrough-id spotlight targets exist in src/views/SchemaDesigner.vue:24 and src/views/PageDesigner.vue:13,42",
+				"reachedOn": "buildiq builder, /builder/{slug}/walkthrough tab; running built app shows the tour via CnAppRoot on first visit",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "openbuild-page-designer",
+			"featureConfidence": "high",
+			"reachedOn": "buildiq builder, /builder/{slug}/walkthrough tab; running built app shows the tour via CnAppRoot on first visit",
 			"evidence": {}
 		},
 		{
@@ -1032,12 +1714,23 @@
 			"area": "pages",
 			"name": "Show a helpful empty state on a page that has no records yet.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "nextcloud-vue v2.55.1 CnIndexPage.vue:410-415 renders NcEmptyContent with a resolvedEmptyText when a list has no records, automatically, with no config required from buildiq's IndexPageEditor.vue (which has no emptyState/emptyText field at all -- grep for 'empty' in that file returns nothing)",
+				"reachedOn": "any built app list page (type index) with zero records"
+			},
+			"provider": "nextcloud-vue",
+			"providerHow": "read-from-code",
+			"feature": "page-types",
+			"featureConfidence": "medium",
+			"note": "a default empty state appears automatically; buildiq offers no UI to customise its text/icon per app",
+			"reachedOn": "any built app list page (type index) with zero records",
 			"evidence": {}
 		},
 		{
@@ -2423,12 +3116,23 @@
 			"area": "experience",
 			"name": "Apply a government design system theme, such as NL Design System, to a built app.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/dialogs/ThemePickerDialog.vue lets a user pick an NL Design token set from a catalogue when Thematiq is installed (nldesignAvailable gate, checked via src/composables/useAppStatus.js which resolves fleet-renamed app ids correctly -- confirmed thematiq's current <id> in appinfo/info.xml is 'thematiq', and useAppStatus.js:26 imports fleetAppCandidates/resolveFleetAppId from src/services/fleetAppId.js to answer to both old and new ids); saved to manifest runtime.theme and applied at render time by the shared scoped-theme-applier",
+				"reachedOn": "Application detail page, Theme section -> Choose an NL Design theme",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "thematiq",
+			"providerHow": "read-from-code",
+			"feature": "nldesign-theme-selection",
+			"featureConfidence": "high",
+			"reachedOn": "Application detail page, Theme section -> Choose an NL Design theme",
 			"evidence": {}
 		},
 		{
@@ -2436,12 +3140,23 @@
 			"area": "experience",
 			"name": "Change an app's colours, fonts and logo in a theme editor.",
 			"source": "competitor",
-			"buildiq": "unknown",
+			"buildiq": "partial",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/dialogs/ThemePickerDialog.vue offers picking a PRESET token set from the Thematiq catalogue (primaryColor/backgroundColor shown as read-only preview swatches from the selected preset, ThemePickerDialog.vue:59-70) -- there are no free-form color/font inputs. src/dialogs/IconUploadSection.vue separately lets a user upload a light/dark app icon (nav icon), which is not a general logo-in-theme control.",
+				"reachedOn": "Application detail page, Theme section"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "nldesign-theme-selection",
+			"featureConfidence": "high",
+			"note": "picking a preset theme and uploading a nav icon exist; a free colour/font/logo theme editor for a built app's own UI does not",
+			"reachedOn": "Application detail page, Theme section",
 			"evidence": {}
 		},
 		{
@@ -2449,12 +3164,23 @@
 			"area": "experience",
 			"name": "Have built apps follow the user's dark mode.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "buildiq and nextcloud-vue components use Nextcloud CSS custom properties throughout (e.g. DashboardPageEditor.vue, DetailPageEditor.vue, StubPageEditor.vue all use var(--color-main-background), var(--color-main-text), var(--color-border) rather than hardcoded colours), which is the platform's own dark-mode mechanism -- no dedicated dark-mode code needed in buildiq itself",
+				"reachedOn": "any built app or builder screen, following the Nextcloud account's dark mode setting"
+			},
+			"provider": "nextcloud",
+			"providerHow": "read-from-code",
+			"feature": "n/a",
+			"featureConfidence": "medium",
+			"note": "inherited from Nextcloud's CSS variable theming; did not check every custom component for a hardcoded colour",
+			"reachedOn": "any built app or builder screen, following the Nextcloud account's dark mode setting",
 			"evidence": {}
 		},
 		{
@@ -2462,12 +3188,21 @@
 			"area": "experience",
 			"name": "Offer a built app's interface in several languages.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "no",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "none",
+				"evidence": "src/builder.js:157-167, translateForApp(key, vars) comment: 'Virtual-app manifests usually carry plain strings; t() returns them unchanged when no translation is registered.' There is no per-built-app translation catalogue or locale-keyed label shape anywhere in the manifest schema or page-editor fields (labels are plain strings, e.g. IndexPageEditor.vue field placeholders)."
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "n/a",
+			"featureConfidence": "high",
+			"note": "do not confuse with ux-dutch-builder: the BUILDER's own chrome is translated via l10n/, but a built app's own content/labels stay in whichever language they were typed in",
 			"evidence": {}
 		},
 		{
@@ -2475,12 +3210,23 @@
 			"area": "experience",
 			"name": "Use the builder itself in Dutch.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "l10n/nl.json and l10n/nl.js exist among 60 locale files shipped in l10n/; buildiq's own UI strings are wrapped in t('buildiq', ...) throughout (e.g. src/builder.js:11-12,166-167)",
+				"reachedOn": "buildiq builder UI, when the Nextcloud account language is set to Dutch",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "n/a",
+			"featureConfidence": "high",
+			"reachedOn": "buildiq builder UI, when the Nextcloud account language is set to Dutch",
 			"evidence": {}
 		},
 		{
@@ -2488,12 +3234,23 @@
 			"area": "experience",
 			"name": "Build apps that meet WCAG accessibility requirements without extra work.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "partial",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "built apps render through nextcloud-vue's shared Cn* components (CnIndexPage, CnFormPage, etc.), which are the fleet's common accessibility baseline and are subject to hydra a11y gates (hydra-gate-nc-input-labels etc.) in CI for buildiq's OWN code paths. However buildiq's page/schema/widget editors let a user freely type labels/config without any accessibility validation on the resulting BUILT APP's content (e.g. ActionBuilder.vue and WidgetBuilder.vue take free-text labels with no required aria/label pairing check).",
+				"reachedOn": "any built app, via the shared renderer components"
+			},
+			"provider": "nextcloud-vue",
+			"providerHow": "read-from-code",
+			"feature": "n/a",
+			"featureConfidence": "low",
+			"note": "componentry gives a reasonable accessible baseline but 'without extra work' overstates it -- nothing stops a builder user from authoring inaccessible content, and there is no in-builder accessibility validation (see ux-a11y-checker)",
+			"reachedOn": "any built app, via the shared renderer components",
 			"evidence": {}
 		},
 		{
@@ -2501,12 +3258,20 @@
 			"area": "experience",
 			"name": "Check a page for accessibility problems in the builder.",
 			"source": "competitor",
-			"buildiq": "unknown",
+			"buildiq": "no",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "none",
+				"evidence": "grep for axe-core/a11y/accessibility check/wcag across src/: no hits anywhere in the app or its designer UI"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "n/a",
+			"featureConfidence": "high",
 			"evidence": {}
 		},
 		{
@@ -2514,12 +3279,23 @@
 			"area": "experience",
 			"name": "Operate built apps fully by keyboard.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "built apps use standard HTML form controls and Nextcloud's NcButton/NcSelect/NcActions components throughout the renderer (CnIndexPage.vue imports NcActionButton/NcActions/NcButton etc., v2.55.1 line 733), which are natively keyboard-operable; buildiq's own designer also wires explicit keyboard chords for undo/redo (PageDesigner.vue ~1106-1121)",
+				"reachedOn": "any built app or builder screen"
+			},
+			"provider": "nextcloud-vue",
+			"providerHow": "read-from-code",
+			"feature": "n/a",
+			"featureConfidence": "low",
+			"note": "inherited from standard NC components rather than verified with a live keyboard-only pass",
+			"reachedOn": "any built app or builder screen",
 			"evidence": {}
 		},
 		{
@@ -2527,25 +3303,24 @@
 			"area": "experience",
 			"name": "Check that a chosen theme keeps enough colour contrast.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
-			"evidence": {}
-		},
-		{
-			"id": "ux-notifications",
-			"area": "experience",
-			"name": "Receive notifications from an app in the platform's notification centre.",
-			"source": "own-code",
-			"buildiq": "unknown",
-			"nocobase": "unknown",
-			"budibase": "unknown",
-			"appsmith": "unknown",
-			"mendix": "unknown",
-			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/dialogs/ThemePickerDialog.vue implements REQ-NTS-008 warn-only contrast facts: calls /api/contrast/evaluate and renders pass/warn rows per contrastResults (lines 81-104, 292-308); explicitly documented as 'never a save gate' (line 81 comment)",
+				"reachedOn": "Application detail page, Theme section -> theme picker shows contrast pass/warn rows for the selected candidate",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "nldesign-theme-selection",
+			"featureConfidence": "high",
+			"note": "informational only, never blocks saving a low-contrast theme",
+			"reachedOn": "Application detail page, Theme section -> theme picker shows contrast pass/warn rows for the selected candidate",
 			"evidence": {}
 		},
 		{
@@ -2553,12 +3328,23 @@
 			"area": "experience",
 			"name": "Get guided onboarding when using the builder for the first time.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/manifest.json:89 declares buildiq's OWN 'walkthrough' block (completionConfigKey 'walkthrough_completed_version') with steps including 'define-schema' (line 211) and 'add-page' (line 273); the spotlight targets are data-walkthrough-id attributes present in src/views/SchemaDesigner.vue:24 and src/views/PageDesigner.vue:13,42 (15 data-walkthrough-id attributes total across src/). buildiq mounts itself via CnAppRoot like any built app, so this is the same walkthrough runtime that pg-walkthrough gives to built apps, dogfooded for the builder's own onboarding.",
+				"reachedOn": "buildiq's own app shell, first visit (or Settings -> Restart walkthrough)",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "n/a",
+			"featureConfidence": "high",
+			"reachedOn": "buildiq's own app shell, first visit (or Settings -> Restart walkthrough)",
 			"evidence": {}
 		},
 		{
@@ -2566,12 +3352,23 @@
 			"area": "experience",
 			"name": "Show users which features of an app are stable, in beta or coming soon.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/components/page-editor/RoadmapPageEditor.vue (303 lines) authors config for type:\"roadmap\"; SUB_EDITOR_MAP['roadmap']='RoadmapPageEditor'; renderer mounts CnFeaturesAndRoadmapPage (pageTypes.js). buildiq also uses the same mechanism for itself: src/views/FeaturesRoadmap.vue wraps CnFeaturesAndRoadmapView, mounted as a manifest 'custom' page at route /features-roadmap surfaced from Settings.",
+				"reachedOn": "any built app page authored as type roadmap; also buildiq's own Settings -> Features & Roadmap",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "nextcloud-vue",
+			"providerHow": "read-from-code",
+			"feature": "openbuild-page-designer",
+			"featureConfidence": "high",
+			"reachedOn": "any built app page authored as type roadmap; also buildiq's own Settings -> Features & Roadmap",
 			"evidence": {}
 		},
 		{
@@ -2579,12 +3376,23 @@
 			"area": "operate",
 			"name": "See how much each app is used, per version and period.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "lib/Controller/ApplicationInsightsController.php + lib/Service/ApplicationInsightsService.php, route GET /api/applications/{appUuid}/versions/{versionUuid}/insights?window=7d|30d|90d (appinfo/routes.php:100); consumed by src/composables/useApplicationInsights.js and rendered in src/components/applicationDetail/ApplicationDetailDashboard.vue:1141 (api-paths.txt confirms both call sites)",
+				"reachedOn": "Application detail page, Insights/Dashboard tab, per version, windowed 7d/30d/90d",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "application-insights",
+			"featureConfidence": "high",
+			"reachedOn": "Application detail page, Insights/Dashboard tab, per version, windowed 7d/30d/90d",
 			"evidence": {}
 		},
 		{
@@ -2592,12 +3400,23 @@
 			"area": "operate",
 			"name": "Run the builder on your own infrastructure.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "buildiq is an ordinary Nextcloud app (appinfo/info.xml, standard app structure) shipping its own buildiq-compose.yaml for local/self-hosted deployment; EUPL-1.2 licensed and open source (info.xml licence, README)",
+				"reachedOn": "any self-managed Nextcloud instance with the app installed",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "nextcloud",
+			"providerHow": "read-from-code",
+			"feature": "n/a",
+			"featureConfidence": "high",
+			"reachedOn": "any self-managed Nextcloud instance with the app installed",
 			"evidence": {}
 		},
 		{
@@ -2605,12 +3424,23 @@
 			"area": "operate",
 			"name": "Run built apps inside the same platform as files, calendar and chat, with no separate server.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "buildiq runs entirely as a Nextcloud app (appinfo/info.xml id 'buildiq'); built apps are mounted inside the same Nextcloud instance at /apps/buildiq/builder/{slug}/... via a nested CnAppRoot (BuilderHost.vue), sharing the same server, auth, files and other NC apps -- no separate server or deployment for a built app",
+				"reachedOn": "/apps/buildiq/builder/{slug}/...",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "nextcloud",
+			"providerHow": "read-from-code",
+			"feature": "n/a",
+			"featureConfidence": "high",
+			"reachedOn": "/apps/buildiq/builder/{slug}/...",
 			"evidence": {}
 		},
 		{
@@ -2618,12 +3448,21 @@
 			"area": "operate",
 			"name": "Run apps for several organisations on one installation with their data kept apart.",
 			"source": "competitor",
-			"buildiq": "unknown",
+			"buildiq": "no",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "none",
+				"evidence": "lib/Service/ManifestResolverService.php:233-236 explicit comment: applications 'operate in the global (non-tenant-isolated) scope. Buildiq ships... are not partitioned by tenant/organisation. Cross-tenant slug [collisions possible]'; lib/Controller/ApplicationsController.php:2193 comment warns a tenant-partitioning change 'breaks every existing single-tenant install'; lib/Service/RuleEngineService.php:11 lists 'Multi-tenant isolation' as an explicit non-goal/future item in its design notes."
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "n/a",
+			"featureConfidence": "high",
+			"note": "this is a deliberate, documented architectural limitation, not an oversight",
 			"evidence": {}
 		},
 		{
@@ -2631,12 +3470,20 @@
 			"area": "operate",
 			"name": "Edit an app together with colleagues at the same time.",
 			"source": "competitor",
-			"buildiq": "unknown",
+			"buildiq": "no",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "none",
+				"evidence": "grep for collaborat/realtime/websocket/yjs/liveblocks/presence across lib/ and src/: every hit is either a dependency-injection 'collaborator' class (design pattern term, e.g. lib/Service/FlowChannelProvisioner.php, lib/Mcp/BuildiqToolProvider.php) or an unrelated 'presence' (auth-session presence check in CopilotController.php, or a data-presence check in ProductionVersionGuardListener.php). No real-time multi-user editing, CRDT, or websocket sync of a design session anywhere."
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "n/a",
+			"featureConfidence": "high",
 			"evidence": {}
 		},
 		{
@@ -2644,12 +3491,20 @@
 			"area": "operate",
 			"name": "Leave comments for colleagues on an app's design.",
 			"source": "competitor",
-			"buildiq": "unknown",
+			"buildiq": "no",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "none",
+				"evidence": "grep 'comment' in src/views/PageDesigner.vue and src/views/SchemaDesigner.vue: no hits. No comment/annotation feature anywhere in the designer UI."
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "n/a",
+			"featureConfidence": "high",
 			"evidence": {}
 		},
 		{
@@ -2657,12 +3512,23 @@
 			"area": "operate",
 			"name": "Configure the builder centrally in the platform's admin settings.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "appinfo/info.xml:277 <admin>OCA\\Buildiq\\Settings\\AdminSettings</admin> registers lib/Settings/AdminSettings.php as a Nextcloud admin settings section",
+				"reachedOn": "Nextcloud Administration settings, Buildiq section",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "n/a",
+			"featureConfidence": "high",
+			"reachedOn": "Nextcloud Administration settings, Buildiq section",
 			"evidence": {}
 		},
 		{
@@ -2670,12 +3536,23 @@
 			"area": "operate",
 			"name": "Clean up expired exports and old logs automatically.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "appinfo/info.xml:106-109 <background-jobs> registers OCA\\Buildiq\\BackgroundJob\\CleanupExpiredExports and OCA\\Buildiq\\BackgroundJob\\RuleExecutionLogCleanup; both classes exist at lib/BackgroundJob/CleanupExpiredExports.php and lib/BackgroundJob/RuleExecutionLogCleanup.php",
+				"reachedOn": "runs automatically via Nextcloud's background job cron, no user-facing page",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "n/a",
+			"featureConfidence": "high",
+			"reachedOn": "runs automatically via Nextcloud's background job cron, no user-facing page",
 			"evidence": {}
 		},
 		{
@@ -2683,12 +3560,20 @@
 			"area": "operate",
 			"name": "Monitor the performance and errors of built apps.",
 			"source": "competitor",
-			"buildiq": "unknown",
+			"buildiq": "no",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "none",
+				"evidence": "grep for errorTracking/Sentry/'performance monitor'/APM/'slow quer' across lib/ and src/: no hits. ops-usage-insights (view/create counts per version/window) is the closest built capability but it is usage analytics, not error/performance monitoring."
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "n/a",
+			"featureConfidence": "high",
 			"evidence": {}
 		},
 		{
@@ -2696,12 +3581,23 @@
 			"area": "operate",
 			"name": "Use the builder without per-user licence fees.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "yes",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "appinfo/info.xml:26 <licence>EUPL-1.2</licence>; description text 'Free and open source under the EUPL-1.2 license.'; no per-user licensing/seat code anywhere in lib/ or src/",
+				"reachedOn": "n/a (licensing model, not a UI feature)",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "n/a",
+			"featureConfidence": "high",
+			"reachedOn": "n/a (licensing model, not a UI feature)",
 			"evidence": {}
 		},
 		{
@@ -2709,12 +3605,24 @@
 			"area": "operate",
 			"name": "Manage apps and templates from the command line.",
 			"source": "own-code",
-			"buildiq": "unknown",
+			"buildiq": "partial",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "appinfo/info.xml:272-273 registers two commands: OCA\\Buildiq\\Command\\SeedHelloWorldFixture ('buildiq:seed-hello-world-fixture', description says 'test/dev only') and OCA\\Buildiq\\Command\\PublishTemplates ('buildiq:templates:publish', 'Publish seeded Buildiq application-templates to GitHub as buildiq-app repos')",
+				"reachedOn": "occ buildiq:templates:publish / occ buildiq:seed-hello-world-fixture",
+				"owner": "ConductionNL/buildiq"
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "n/a",
+			"featureConfidence": "high",
+			"note": "template publishing is a real CLI capability; there is no CLI to manage (list/create/delete/export) a built application itself, and the other registered command is explicitly dev/test-only",
+			"reachedOn": "occ buildiq:templates:publish / occ buildiq:seed-hello-world-fixture",
 			"evidence": {}
 		},
 		{
@@ -2722,14 +3630,48 @@
 			"area": "operate",
 			"name": "Get generated API documentation for each built app.",
 			"source": "competitor",
-			"buildiq": "unknown",
+			"buildiq": "no",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
 			"mendix": "unknown",
 			"power-apps": "unknown",
+			"built": {
+				"state": "none",
+				"evidence": "grep for OpenAPI/swagger/'api-docs'/apiDocs across lib/ and src/: the only hits (lib/Service/SettingsService.php:296,367) are internal comments about OpenAPI-SHAPED data structures (components.schemas/paths as keyed objects) used for schema import/export bookkeeping, not generated API documentation for a built app."
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "n/a",
+			"featureConfidence": "high",
 			"evidence": {}
 		}
 	],
-	"pending": []
+	"pending": [
+		{
+			"id": "ux-notifications",
+			"area": "experience",
+			"name": "Receive notifications from an app in the platform's notification centre.",
+			"source": "own-code",
+			"buildiq": "partial",
+			"nocobase": "unknown",
+			"budibase": "unknown",
+			"appsmith": "unknown",
+			"mendix": "unknown",
+			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/views/SchemaDesigner.vue:163 NotificationEditor authors x-openregister-notifications on a built app's own schema (staged.notifications, read/written at lines 1004,1057-1058); this is a declaration on the schema, executed (if at all) by the installed OpenRegister app, not by buildiq code",
+				"reachedOn": "buildiq builder, Schemas tab, per-schema Notifications section",
+				"readingRating": "yes"
+			},
+			"provider": "openregister",
+			"providerHow": "read-from-code",
+			"feature": "n/a",
+			"featureConfidence": "medium",
+			"note": "per brief: a yes resting only on an x-openregister-* declaration is pending until OpenRegister's execution of it is confirmed; built.readingRating is what I'd rate if OpenRegister does execute it end to end",
+			"reachedOn": "buildiq builder, Schemas tab, per-schema Notifications section",
+			"evidence": {}
+		}
+	]
 }
