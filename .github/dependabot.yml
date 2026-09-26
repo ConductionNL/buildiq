@@ -24,6 +24,11 @@ updates:
     # limits, not security ones: `npm audit` reports no advisory against any of
     # the versions pinned here.
     ignore:
+      # dexie must be the same version in every app bundle. openregister's
+      # integration-global bundle loads on every page, and two dexie versions
+      # on one page stop the app from mounting. Move it together with
+      # openregister across the fleet, never one app alone.
+      - dependency-name: "dexie"
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
       # vue-router 5 peers `vite: ^7.3.0 || ^8.0.0` and expects a Vite
