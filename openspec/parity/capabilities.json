@@ -2057,13 +2057,14 @@
 				"state": "built",
 				"evidence": "Two authoring paths. (1) Form pages: src/views/PageDesigner.vue:219,256 maps page type 'form' to src/components/page-editor/FormPageEditor.vue, whose Fields fieldset (FormPageEditor.vue:137-143) mounts src/components/page-editor/fields/FormFieldBuilder.vue (add field :111, key/label/type per row :22-43, remove :78-83); rendered by nextcloud-vue v2.55.1 CnFormPage (src/components/CnFormPage/CnFormPage.vue). (2) Registration forms: src/components/page-editor/DetailPageEditor.vue:151 RegistrationFormList -> fields/RegistrationFormEditor.vue -> fields/FormLayoutBuilder.vue:4-16,67 (sections and fields with explicit order, move up/down) saved via src/services/registrationForms.js:86 PUT /api/registration-forms (routes.php:280) -> lib/Controller/RegistrationFormController.php:148 save() -> lib/Service/RegistrationFormAuthoringService.php save()",
 				"reachedOn": "buildiq builder /builder/:slug/pages, a page of type form (Fields section); and a detail page's Registration forms list",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"readOn": "2026-09-26"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
 			"feature": "openbuild-page-designer",
 			"featureConfidence": "high",
-			"note": "Ordering exists only in the registration-form layout builder; the form-page FormFieldBuilder has add and remove but no move up/down, so a form page's field order is insertion order. DEFECT CANDIDATE: src/components/page-editor/fields/FormFieldBuilder.vue:122 (and FormLayoutBuilder.vue:246) offer types 'select', 'textarea' and 'date', none of which the locked renderer knows (nextcloud-vue v2.55.1 src/composables/cnFormFieldRenderer.js:127 KNOWN_TYPES = boolean, number, password, string, enum, json, file; unknown types fall back to a plain text field at :323-340). A maker who picks 'select' gets a free-text input and there is no options editor; 'textarea' has to be type string plus widget textarea.",
+			"note": "Ordering exists only in the registration-form layout builder; the form-page FormFieldBuilder has add and remove but no move up/down, so a form page's field order is insertion order. DEFECT CANDIDATE: src/components/page-editor/fields/FormFieldBuilder.vue:122 offers types 'select', 'textarea' and 'date', none of which the locked form-page renderer knows (nextcloud-vue v2.55.1 src/composables/cnFormFieldRenderer.js:127 KNOWN_TYPES = boolean, number, password, string, enum, json, file; unknown types fall back to a plain text field at :323-340). A maker who picks 'select' on a form page gets a free-text input and there is no options editor; 'textarea' has to be type string plus widget textarea. Corrected 2026-09-26 (buildiq#913): only FormFieldBuilder (form pages) draws select, textarea and date as text. FormLayoutBuilder.vue:246 offers the same types for registration forms, and those feed portaliq's src/site/components/FormBlock.vue, which renders them (:23-37 select, :39-43 textarea, :207 date among its known input types).",
 			"reachedOn": "buildiq builder /builder/:slug/pages, a page of type form (Fields section); and a detail page's Registration forms list",
 			"evidence": {
 				"nocobase": "docs-only: openregister/nocobase/specs/ui-builder/spec.md (2026-03-14): Form block for record creation and editing with configured fields",
@@ -3926,13 +3927,14 @@
 				"state": "built",
 				"evidence": "src/components/schema-editor/AccessEditor.vue:1-23,164-214 authors the schema authorization block per action with scope kinds: everyone with app access, groups, own records (@creator) or a field-value condition; mounted from src/views/SchemaDesigner.vue (availableGroups :463-495, lock-out warning, production read-only :532-545). OpenRegister enforces it (origin/development lib/Service/ConditionMatcher.php, lib/Db/MagicMapper/MagicRbacHandler.php). But the own-records and condition kinds are offered only when OR advertises capabilities.openregister.authorization.scopes (src/composables/useOrAccessCapabilities.js:26,39-50, baseline ['group'])",
 				"reachedOn": "buildiq builder /builder/:slug/schemas/:schemaId, Access section",
-				"owner": "ConductionNL/openregister"
+				"owner": "ConductionNL/buildiq",
+				"readOn": "2026-09-26"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
 			"feature": "data-scopes-authoring",
 			"featureConfidence": "medium",
-			"note": "DEFECT CANDIDATE: OpenRegister origin/development registers only UrnCapability and IntegrationsCapability (lib/AppInfo/Application.php:974,979) and nothing advertises 'authorization.scopes', so src/composables/useOrAccessCapabilities.js:42-50 always falls back to ['group'] and the 'only their own records' and condition options never show. What a maker can set today is group-scoped read/create/update/delete per schema; existing own/condition entries are shown read-only and preserved.",
+			"note": "DEFECT CANDIDATE: OpenRegister origin/development registers only UrnCapability and IntegrationsCapability (lib/AppInfo/Application.php:974,979) and nothing advertises 'authorization.scopes', so src/composables/useOrAccessCapabilities.js:42-50 always falls back to ['group'] and the 'only their own records' and condition options never show. What a maker can set today is group-scoped read/create/update/delete per schema; existing own/condition entries are shown read-only and preserved. Owner corrected from ConductionNL/openregister to ConductionNL/buildiq on 2026-09-26 (buildiq#913): buildiq writes ['@creator'] and authorization.conditions, shapes OpenRegister never reads, while OpenRegister already enforces its own {group, match} form with $userId. The gap between what the editor writes and what the engine reads is buildiq's to close.",
 			"reachedOn": "buildiq builder /builder/:slug/schemas/:schemaId, Access section",
 			"evidence": {
 				"nocobase": "docs-only: openregister/nocobase/specs/access-control/spec.md (2026-03-14): data scope limits records per role, for example own records only",
@@ -5770,7 +5772,7 @@
 			"area": "forms",
 			"name": "Decide an answer on a form that the person filling it in never sees, such as the intake channel.",
 			"source": "own-code",
-			"buildiq": "partial",
+			"buildiq": "yes",
 			"nocobase": "yes",
 			"budibase": "yes",
 			"appsmith": "yes",
@@ -5779,15 +5781,16 @@
 			"built": {
 				"state": "built",
 				"evidence": "src/components/page-editor/fields/FormPresetsBuilder.vue (mounted by RegistrationFormEditor.vue) authors presets; lib/Integration/RegistrationFormLeafProvider.php:8-16 strips hidden presets from fields[] and serves them in presets[]",
-				"reachedOn": "authoring: page designer registration-form editor; effect: only through the buildiq-registration-form leaf, which no fleet app requests yet",
-				"owner": "ConductionNL/buildiq"
+				"reachedOn": "authoring: page designer registration-form editor; effect: portaliq reads the published registration form with its presets from the buildiq register (portaliq lib/Service/Intake/PortalFormBindingResolver.php:67 DEFAULT_FORM_REGISTER 'buildiq', :279-287 publishedForm(), :342-361 fieldsOf() applies presets); the buildiq-registration-form leaf itself is still requested by no fleet app",
+				"owner": "ConductionNL/buildiq",
+				"readOn": "2026-09-26"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
 			"feature": "forms-per-case-type",
 			"featureConfidence": "medium",
-			"note": "Proposed by reader r2. Partial because the preset is authored but no consumer asks the leaf for the form.",
-			"reachedOn": "authoring: page designer registration-form editor; effect: only through the buildiq-registration-form leaf, which no fleet app requests yet",
+			"note": "Proposed by reader r2. Re-rated partial to yes on 2026-09-26 (buildiq#913) for the direct path: portaliq's PortalFormBindingResolver (lib/Service/Intake/PortalFormBindingResolver.php:279-361) reads published registration forms with their presets straight from the buildiq register, so a preset authored here reaches the portal form. The leaf path stays unconsumed: no consumer asks lib/Integration/RegistrationFormLeafProvider.php for the form.",
+			"reachedOn": "authoring: page designer registration-form editor; effect: portaliq reads the published registration form with its presets from the buildiq register (portaliq lib/Service/Intake/PortalFormBindingResolver.php:67 DEFAULT_FORM_REGISTER 'buildiq', :279-287 publishedForm(), :342-361 fieldsOf() applies presets); the buildiq-registration-form leaf itself is still requested by no fleet app",
 			"evidence": {
 				"nocobase": "docs-only: https://docs.nocobase.com/llms.txt (2026-09-26): Field Assignment action setting and field default values set values the user does not fill in",
 				"budibase": "docs-only: https://docs.budibase.com/llms.txt (2026-09-26): guide Saving static values: save a value the user does not enter",
