@@ -82,6 +82,7 @@ final class RegistrationFormPresenter {
 			'channel' => (string)($form['channel'] ?? ''),
 			'isDefault' => (($form['isDefault'] ?? false) === true),
 			'isPublic' => (($form['isPublic'] ?? false) === true),
+			'minTrust' => $this->signInLevel(form: $form),
 			'confirmationText' => (string)($form['confirmationText'] ?? ''),
 			'allowSaveForLater' => (($form['allowSaveForLater'] ?? false) === true),
 			'sections' => $sections,
@@ -91,6 +92,25 @@ final class RegistrationFormPresenter {
 			'presets' => $presets['served'],
 		];
 	}//end serve()
+
+	/**
+	 * The sign-in level the form asks for, or null for an anonymous form.
+	 * Only a level portaliq knows is served (buildiq#935).
+	 *
+	 * @param array<string, mixed> $form The stored form.
+	 *
+	 * @return string|null The level.
+	 *
+	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-009)
+	 */
+	private function signInLevel(array $form): ?string {
+		$level = ($form['minTrust'] ?? null);
+		if (is_string($level) === true && in_array($level, RegistrationFormValidator::SIGN_IN_LEVELS, true) === true) {
+			return $level;
+		}
+
+		return null;
+	}//end signInLevel()
 
 	/**
 	 * The form's presets, split into what travels beside the form, which fields

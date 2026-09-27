@@ -77,6 +77,7 @@ final class RegistrationFormFragmentTest extends TestCase {
 				'isDefault',
 				'channel',
 				'isPublic',
+				'minTrust',
 				'confirmationText',
 				'targetApp',
 				'register',
@@ -156,4 +157,18 @@ final class RegistrationFormFragmentTest extends TestCase {
 			self::assertTrue($this->schemas()[$slug]['x-openregister-audit-trail']['enabled'], $slug);
 		}
 	}//end testBothSchemasAreAudited()
+
+	/**
+	 * The sign-in level carries exactly the values portaliq enforces, and no
+	 * `anonymous` value: absence means anonymous (buildiq#935, portaliq#725).
+	 *
+	 * @return void
+	 */
+	public function testTheSignInLevelIsPortaliqsValueSet(): void {
+		$property = $this->schemas()['registrationForm']['properties']['minTrust'];
+
+		self::assertSame('string', $property['type']);
+		self::assertSame(['low', 'substantial', 'high'], $property['enum']);
+		self::assertNotContains('minTrust', $this->schemas()['registrationForm']['required']);
+	}//end testTheSignInLevelIsPortaliqsValueSet()
 }//end class
