@@ -578,9 +578,10 @@
 			"mendix": "partial",
 			"power-apps": "yes",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "grep -rniF 'postgres|mysql|jdbc|odbc|database connection|sql server|db connection' src lib (excl. tests): no hits. No controller or service resolves an external database connection to auto-generate a schema/app.",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/data-external-database-sources (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -936,9 +937,10 @@
 			"mendix": "yes",
 			"power-apps": "no",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "grep -rniF 'docker|standalone deploy|self-host|deploy.*server' lib/Controller lib/Service: no hits. lc-export-real-app produces an installable Nextcloud-app ZIP (still requires a Nextcloud+OpenRegister host), not a self-contained standalone server.",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/apps-standalone-deploy (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1330,10 +1332,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "searched: grep -rni 'sql|postgres|mysql' src/ lib/ -> no external SQL data-source hits (only an unrelated Doctrine migration in lib/Repair/RenameDutchRuleColumns.php and a diagram caption). The only alternative data-source origin is 'OpenConnector' (src/components/page-editor/DataSourceOriginToggle.vue:13-30), which is a generic API-endpoint picker (ConnectorSourcePicker.vue), not a direct SQL/PostgreSQL/MySQL connection",
 				"reachedOn": "",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/data-external-database-sources (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1454,9 +1457,10 @@
 			"mendix": "partial",
 			"power-apps": "partial",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "searched: grep -rni 'restore|revert|rollback' src/ lib/ -> every hit is about ApplicationVersion rollback (ApplicationVersionsTab.vue), theme preview revert (ThemePickerDialog.vue), or Copilot manifest-snapshot rollback (CopilotService.php), none about restoring a data RECORD's earlier state. nextcloud-vue's CnAuditTrailTab.vue (the record history viewer) has no restore/revert action in its template (grep -i 'restore|revert' on that file returned nothing)",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/data-restore-record-version (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -3716,10 +3720,11 @@
 			"mendix": "yes",
 			"power-apps": "partial",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "grep -riE 'sql|database connection|pdo' over src/components/page-editor, src/dialogs and lib/Service: no connected-database query feature; data sources are OpenRegister registers or integriq endpoints only (DataSourceOriginToggle.vue:13-42).",
 				"reachedOn": "",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/data-external-database-sources (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -5184,9 +5189,10 @@
 			"mendix": "yes",
 			"power-apps": "partial",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "grep for 'import' across lib/Controller: only SettingsController's internal re-import of openbuild_register.json config, and ExportsController comments unrelated to importing an app package. No route or controller accepts an uploaded ZIP/ package to recreate an app; lib/Service/AppRepoParser.php only parses a GitHub repo URL (github-shop-catalogue / github-app-sync), not an uploaded file.",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/lifecycle-import-app-and-cli (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -5212,9 +5218,10 @@
 			"mendix": "yes",
 			"power-apps": "partial",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "lib/Controller/GitHubSyncController.php + lib/Service/GitHubPushService.php/GitHubAppSyncService.php: link/push/pull/status against a single repo, no branch parameter or merge concept -- one manifest round-trip per app, not a branching workflow.",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/lifecycle-git-branches (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -6267,9 +6274,10 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "grep for errorTracking/Sentry/'performance monitor'/APM/'slow quer' across lib/ and src/: no hits. ops-usage-insights (view/create counts per version/window) is the closest built capability but it is usage analytics, not error/performance monitoring.",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/operate-debug-log-and-monitoring (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -6325,10 +6333,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"evidence": "appinfo/info.xml:272-273 registers two commands: OCA\\Buildiq\\Command\\SeedHelloWorldFixture ('buildiq:seed-hello-world-fixture', description says 'test/dev only') and OCA\\Buildiq\\Command\\PublishTemplates ('buildiq:templates:publish', 'Publish seeded Buildiq application-templates to GitHub as buildiq-app repos')",
 				"reachedOn": "occ buildiq:templates:publish / occ buildiq:seed-hello-world-fixture",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/lifecycle-import-app-and-cli (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8124,10 +8133,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "Searched: grep -iE 'diagram|erd|graph' over src/components/schema-editor and src/views/SchemaDesigner.vue: no diagram view; schemas are edited as a list",
 				"reachedOn": "nothing reaches it",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/data-model-diagram (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8523,10 +8533,11 @@
 			"mendix": "partial",
 			"power-apps": "yes",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "No in-builder error log for page data and bindings (grep -iE 'debugger|error log' over src/views and src/components/page-editor: no hits); automation runs have a partial run log (logic-run-log)",
 				"reachedOn": "nothing reaches it",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/operate-debug-log-and-monitoring (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",

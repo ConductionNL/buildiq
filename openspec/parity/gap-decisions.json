@@ -48,6 +48,14 @@
 		"decidedOn": "2026-09-27"
 	},
 	{
+		"row": "app-create-from-database",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Two competitors rated yes (Budibase, Power Apps) and the row is in buildiq's core area (apps).",
+		"change": "data-external-database-sources",
+		"decidedOn": "2026-09-27"
+	},
+	{
 		"row": "app-duplicate",
 		"matrix": "buildiq",
 		"decision": "build",
@@ -61,6 +69,14 @@
 		"decision": "build",
 		"reason": "Four competitors rated yes (NocoBase, Budibase, Appsmith, Power Apps) and the row is in buildiq's core area (apps).",
 		"change": "apps-embed-in-other-sites",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "app-standalone-deploy",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "One competitor rated yes (Mendix), but the row is in buildiq's core area (apps) and no recorded non-goal rules it out.",
+		"change": "apps-standalone-deploy",
 		"decidedOn": "2026-09-27"
 	},
 	{
@@ -88,6 +104,14 @@
 		"decidedOn": "2026-09-27"
 	},
 	{
+		"row": "data-external-db",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Five competitors rated yes and the row is in buildiq's core area (data).",
+		"change": "data-external-database-sources",
+		"decidedOn": "2026-09-27"
+	},
+	{
 		"row": "data-field-types",
 		"matrix": "buildiq",
 		"decision": "build",
@@ -101,6 +125,22 @@
 		"decision": "build",
 		"reason": "Five competitors rated yes and the row is in buildiq's core area (data). nextcloud-vue ships an inline-edit grid (CnDataMatrix) that no buildiq page type offers.",
 		"change": "data-index-grid-and-saved-views",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "data-model-diagram",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Three competitors rated yes (NocoBase, Mendix, Power Apps) and the row is in buildiq's core area (data).",
+		"change": "data-model-diagram",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "data-restore-record",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "No competitor rated yes, but the row is in buildiq's core area (data): a record's history is shown and cannot be restored.",
+		"change": "data-restore-record-version",
 		"decidedOn": "2026-09-27"
 	},
 	{
@@ -208,6 +248,14 @@
 		"decidedOn": "2026-09-27"
 	},
 	{
+		"row": "int-sql-query",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Four competitors rated yes (NocoBase, Budibase, Appsmith, Mendix).",
+		"change": "data-external-database-sources",
+		"decidedOn": "2026-09-27"
+	},
+	{
 		"row": "lc-channels",
 		"matrix": "buildiq",
 		"decision": "defer",
@@ -216,11 +264,35 @@
 		"decidedOn": "2026-09-27"
 	},
 	{
+		"row": "lc-debug-log",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Two competitors rated yes (Appsmith, Power Apps).",
+		"change": "operate-debug-log-and-monitoring",
+		"decidedOn": "2026-09-27"
+	},
+	{
 		"row": "lc-export-password",
 		"matrix": "buildiq",
 		"decision": "defer",
 		"reason": "Only one competitor rated yes (Budibase) and no tender, featureRequest or roadmap demand; outside buildiq's core area (apps and data, the areas of the matrix's first 30 rows).",
 		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "lc-git-branching",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Two competitors rated yes (Appsmith, Mendix): GitHub sync pushes and pulls one repository with no branch.",
+		"change": "lifecycle-git-branches",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "lc-import-app",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Four competitors rated yes (NocoBase, Budibase, Appsmith, Mendix): no screen or route takes an app package file.",
+		"change": "lifecycle-import-app-and-cli",
 		"decidedOn": "2026-09-27"
 	},
 	{
@@ -272,11 +344,27 @@
 		"decidedOn": "2026-09-27"
 	},
 	{
+		"row": "ops-cli",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Partial and built, three competitors rated yes on the missing half (NocoBase, Mendix, Power Apps): the two occ commands seed a fixture and publish templates, none manages apps.",
+		"change": "lifecycle-import-app-and-cli",
+		"decidedOn": "2026-09-27"
+	},
+	{
 		"row": "ops-comments-builder",
 		"matrix": "buildiq",
 		"decision": "defer",
 		"reason": "Only one competitor rated yes (Power Apps) and no tender, featureRequest or roadmap demand; outside buildiq's core area (apps and data, the areas of the matrix's first 30 rows).",
 		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "ops-performance-monitor",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Two competitors rated yes (Mendix, Power Apps).",
+		"change": "operate-debug-log-and-monitoring",
 		"decidedOn": "2026-09-27"
 	},
 	{
