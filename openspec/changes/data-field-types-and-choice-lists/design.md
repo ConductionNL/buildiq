@@ -20,7 +20,8 @@ openregister development `ae898b0`.
 - nextcloud-vue 2.57.1 `src/utils/schema.js:290-311`: `enum` renders a select,
   `referenceType: 'nextcloud-user'` or `format: 'user'` a user picker (and an
   array of them a multi-user picker), `format: date` a date picker,
-  `date-time` a date-time picker.
+  `date-time` a date-time picker. `x-enum-labels` maps each `enum` value to its
+  label (`src/utils/schema.js:625-627`).
 - openregister: `lib/Service/Schemas/PropertyValidatorHandler.php:903` handles
   `type: file`; `lib/Service/Vocabulary/CodedPropertyDeclarationFactory.php:106-135`
   reads a property's `x-openregister-concepts` or its simple `conceptScheme`
