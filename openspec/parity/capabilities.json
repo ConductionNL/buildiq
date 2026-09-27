@@ -578,9 +578,10 @@
 			"mendix": "partial",
 			"power-apps": "yes",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "grep -rniF 'postgres|mysql|jdbc|odbc|database connection|sql server|db connection' src lib (excl. tests): no hits. No controller or service resolves an external database connection to auto-generate a schema/app.",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/data-external-database-sources (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -907,9 +908,10 @@
 			"mendix": "partial",
 			"power-apps": "yes",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "grep -rniF 'iframe|embed' src lib (excl. tests, node_modules): no hits. No embed-token or iframe-safe-headers mechanism found.",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/apps-embed-in-other-sites (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -935,9 +937,10 @@
 			"mendix": "yes",
 			"power-apps": "no",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "grep -rniF 'docker|standalone deploy|self-host|deploy.*server' lib/Controller lib/Service: no hits. lc-export-real-app produces an installable Nextcloud-app ZIP (still requires a Nextcloud+OpenRegister host), not a self-contained standalone server.",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/apps-standalone-deploy (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -993,10 +996,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"evidence": "src/components/schema-editor/FieldEditor.vue:319-327 SUPPORTED_TYPES = ['string','number','integer','boolean','array','object','relation']; no dedicated date/choice/file type. 'date' is only reachable as a free-text format string on 'string' (FieldEditor.vue:102-106 field.validation.format). No enum/select/choice picker anywhere (grep for enum/choice/select field type in FieldEditor.vue and repo-wide returned nothing but the word 'enum' in a docblock)",
 				"reachedOn": "buildiq builder, Schemas tab, field type dropdown",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/data-field-types-and-choice-lists (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1113,9 +1117,10 @@
 			"mendix": "yes",
 			"power-apps": "partial",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "searched: grep -rn 'choice-list|choiceList|x-openregister-choices|enum' across src/ and lib/; no field type, no schema-editor component, and no shared-choice-list concept anywhere in buildiq. The only 'enum' hit is a docblock comment describing the fixed type picker itself (FieldEditor.vue:7), not a choice-list feature. openspec/parity/capabilities.json:472 lists the row id but that is the self-description file the brief says not to rate from",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/data-field-types-and-choice-lists (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1225,24 +1230,25 @@
 			"area": "data",
 			"name": "Export an app's records to CSV or Excel.",
 			"source": "competitor",
-			"buildiq": "no",
+			"buildiq": "yes",
 			"nocobase": "yes",
 			"budibase": "yes",
 			"appsmith": "yes",
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "none",
-				"evidence": "searched: grep -rln 'export.*csv|CSV|xlsx|Excel' src/ -> only useDataImport.js (import template download), FilesPageEditor.vue and ImportDataWizard.vue. lib/Service/ExportService.php docblock: 'Imperative exporter that produces a standalone Nextcloud-app tree from a published Application record' -> this and DataRegisterExportBundler.php/ExportJobsList.vue export the APPLICATION DEFINITION (code/manifest/schema bundle) for reinstall/publishing, not an app's data records to CSV/Excel",
-				"reachedOn": "",
-				"owner": "ConductionNL/buildiq"
+				"state": "built",
+				"evidence": "A built app's index page renders @conduction/nextcloud-vue 2.57.1 CnIndexPage: showMassExport defaults to true (src/components/CnIndexPage/CnIndexPage.vue:1674-1677); src/components/CnActionsBar/CnActionsBar.vue:205-212 renders Export; src/components/CnMassExportDialog/CnMassExportDialog.vue:136-141 offers Excel (.xlsx) and CSV (.csv); src/components/CnIndexPage/selfModeActions.js:151-166 and selfModeIO.js:58-61 download GET /apps/openregister/api/objects/{register}/{schema}/export?type=<format>. Buildiq sets none of these off.",
+				"reachedOn": "Published app, any index page, Actions menu, Export, pick Excel or CSV",
+				"owner": "ConductionNL/nextcloud-vue",
+				"note": "Matrix corrected in the OpenSpec pass 2026-09-27: the earlier reading grepped buildiq's own src and missed the renderer. It exports every record of the schema, not the filtered view; the filtered menu (allowExport) also needs a schema exportable flag OpenRegister does not serve."
 			},
-			"provider": "buildiq",
+			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
 			"feature": "openbuild-exporter",
 			"featureConfidence": "high",
 			"note": "buildiq's exporter ships the app itself, not a records-to-CSV/Excel export. nextcloud-vue v2.55.1 CnIndexPage DOES ship a native records Export menu (allowExport prop + schema.exportable, CnIndexPage.vue:1633-1641) but it defaults to false and buildiq never sets allowExport nor exposes an exportable checkbox anywhere in IndexPageEditor.vue or SchemaHeaderForm.vue (grep -rn allowExport src/ -> no hits), so a maker building purely in buildiq cannot turn it on",
-			"reachedOn": "",
+			"reachedOn": "Published app, any index page, Actions menu, Export, pick Excel or CSV",
 			"evidence": {
 				"nocobase": "source read at v2.2.18, not driven: packages/plugins/@nocobase/plugin-action-export/src/client-v2/ExportActionModel.tsx:242 Export action with field selection, written by packages/plugins/@nocobase/plugin-action-export/src/server/services/xlsx-exporter.ts:25 (xlsx); builtIn packages/presets/nocobase/package.json:125 Reached on: table block, Actions, Export",
 				"budibase": "source read at v3.46.0, not driven: packages/builder/src/components/backend/DataTable/buttons/ExportButton.svelte:39-48 export rows as CSV, JSON or JSON with schema; mounted as GridExportButton at packages/builder/src/pages/builder/workspace/[workspaceId]/data/table/[tableId]/index.svelte:368. No Excel format Reached on: workspace data > table > Export",
@@ -1263,10 +1269,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "searched: grep -rln 'DataGrid|data-grid|AgGrid|NcTable|spreadsheet|grid-edit|CnDataMatrix' src/ -> no hits in buildiq (only FilesPageEditor.vue and ImportDataWizard.vue for unrelated terms), and grep 'Matrix|Grid|Table' in src/registry.js and src/runtimeRegistry.js has no component registration. nextcloud-vue v2.55.1 DOES ship a spreadsheet-like component (src/components/CnDataMatrix/CnDataMatrix.vue, click-to-edit cells with commitEdit/startEdit) but buildiq never imports or registers CnDataMatrix anywhere, and no buildiq page-editor type (src/components/page-editor/*) offers a grid view",
 				"reachedOn": "",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/data-index-grid-and-saved-views (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1325,10 +1332,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "searched: grep -rni 'sql|postgres|mysql' src/ lib/ -> no external SQL data-source hits (only an unrelated Doctrine migration in lib/Repair/RenameDutchRuleColumns.php and a diagram caption). The only alternative data-source origin is 'OpenConnector' (src/components/page-editor/DataSourceOriginToggle.vue:13-30), which is a generic API-endpoint picker (ConnectorSourcePicker.vue), not a direct SQL/PostgreSQL/MySQL connection",
 				"reachedOn": "",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/data-external-database-sources (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1355,11 +1363,12 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"owner": "ConductionNL/buildiq",
 				"evidence": "Authoring (reader r2): src/components/page-editor/DataSourceOriginToggle.vue:13-42 'OpenRegister | OpenConnector' toggle, shared by IndexPageEditor and DashboardPageEditor; ConnectorSourcePicker.vue:131 useAppStatus('integriq'), :257 resolveFleetAppId('integriq') -> GET /api/endpoints (integriq); ConnectorFieldMapper.vue maps the returned sample into page fields. integriq's appinfo/info.xml <id> is 'integriq', confirmed current (not the stale 'openconnector' id) || Runtime (reader r4): CnIndexPage and CnDashboardPage in nextcloud-vue 2.55.1 never read dataSource.connector; the projection in src/composables/useConnectorDataSource.js runs only inside ConnectorDataView, registered as 'connector-data' at src/runtimeRegistry.js:90, which no page editor lets a maker place, so an authored connector-bound page has no runtime renderer (see int-rest-connector and int-connector-field-map).",
 				"reachedOn": "authoring: page editor, Data source = OpenConnector; runtime: no authored page renders the connector data",
-				"readingRating": "r2 read yes from the authoring half; r4 read the runtime half as missing"
+				"readingRating": "r2 read yes from the authoring half; r4 read the runtime half as missing",
+				"note": "Specified in openspec/changes/integrations-connector-bound-pages (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1448,9 +1457,10 @@
 			"mendix": "partial",
 			"power-apps": "partial",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "searched: grep -rni 'restore|revert|rollback' src/ lib/ -> every hit is about ApplicationVersion rollback (ApplicationVersionsTab.vue), theme preview revert (ThemePickerDialog.vue), or Copilot manifest-snapshot rollback (CopilotService.php), none about restoring a data RECORD's earlier state. nextcloud-vue's CnAuditTrailTab.vue (the record history viewer) has no restore/revert action in its template (grep -i 'restore|revert' on that file returned nothing)",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/data-restore-record-version (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1537,10 +1547,11 @@
 			"mendix": "partial",
 			"power-apps": "partial",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "nextcloud-vue v2.55.1 CnIndexPage.vue ships CnSavedViewsControl (apply/save/delete OpenRegister saved-search views, lines ~104-118) gated by the allowSavedViews prop, default false, opt-in per page (CnIndexPage.vue:1650-1657: 'Defaults to false - an app must explicitly enable it per page'). grep -rn allowSavedViews src/ in buildiq returns no hits, and IndexPageEditor.vue exposes no checkbox for it, so no page a maker builds through buildiq can turn this on",
 				"reachedOn": "",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/data-index-grid-and-saved-views (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -2200,10 +2211,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"evidence": "src/components/page-editor/IndexPageEditor.vue:77-79 authors config.actions via src/components/page-editor/fields/ActionBuilder.vue, which authors {id, label, icon, target} per action with target restricted to a 3-option <select>: navigate | emit | none (ActionBuilder.vue lines ~31-42). DetailPageEditor.vue has no actions/headerActions/lifecycleActions fields at all (grep for 'action'/'Actions' in that file returns nothing).",
 				"reachedOn": "Index (list) page editor, Actions list",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/pages-action-buttons (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -2623,10 +2635,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "CnFormPage v2.55.1 accepts a static initialValue (CnFormPage.vue:369-372, consumed for mode edit), and FormPageEditor.vue:374 lists 'initialValue' only as a validated config key with no input for it. No binding of a field to the current user or known data: grep 'currentUser|getCurrentUser|prefill' in src/components/page-editor hits only FieldValidationBuilder.vue (legacy required/pattern display prefill) and no field default or user-placeholder option exists in FormFieldBuilder.vue",
 				"reachedOn": "",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/forms-live-values-and-checks (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -2715,10 +2728,11 @@
 			"mendix": "unknown",
 			"power-apps": "partial",
 			"built": {
-				"state": "none",
+				"state": "decided-no",
 				"evidence": "grep -rliF captcha|recaptcha|hcaptcha|altcha|honeypot over src lib appinfo openspec/specs: no hits. The anonymous surface that does exist (portaliq PortalEmbedController.php:102,162) is protected by #[AnonRateLimit] only",
 				"reachedOn": "",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Decided no in the OpenSpec pass 2026-09-27: Recorded boundary: openspec/changes/forms-per-case-type/proposal.md Out of scope says rendering a public form and the captcha are portaliq's (cluster 51), and hydra ADR-108 puts citizen-facing form access in portaliq. A buildiq-built form sits behind a Nextcloud login."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -3581,10 +3595,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"evidence": "Builder side: IndexPageEditor.vue:12 and DashboardPageEditor.vue:12 host DataSourceOriginToggle (OpenRegister | OpenConnector); src/components/page-editor/ConnectorSourcePicker.vue:256-262 lists integriq source and endpoint objects via GET /apps/openregister/api/objects/{integriq|openconnector}/source|endpoint and writes dataSource.connector.endpointPath. Runtime side: src/components/runtime/ConnectorDataView.vue:83 -> src/composables/useConnectorDataSource.js:88 GET /apps/{integriq}/api/endpoint/{path} (integriq appinfo/routes.php:391 endpoints#handlePath exists), registered only as runtime widget 'connector-data' (src/runtimeRegistry.js:90). Break: nothing turns a page's dataSource.connector into that widget. grep 'connector-data' over src finds only runtimeRegistry.js; nextcloud-vue v2.55.1 CnIndexPage/CnPageRenderer/CnDashboardPage never read dataSource.connector (git grep connector in those dirs: no reader).",
 				"reachedOn": "page designer, index or dashboard page editor, Data source = OpenConnector (authoring only); the built app page does not render the bound data",
-				"owner": "ConductionNL/integriq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Owner moved from ConductionNL/integriq to ConductionNL/buildiq in the OpenSpec pass 2026-09-27: integriq serves the endpoint call (endpoints#handlePath); the missing half is buildiq's page renderer. Specified in openspec/changes/integrations-connector-bound-pages (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -3643,10 +3658,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"evidence": "src/components/page-editor/ConnectorFieldMapper.vue (hosted by DataSourceOriginToggle.vue:39): sample response as a JSON tree, click to set itemsPath and add field selectors, live sample values, re-fetch flags broken selectors; runtime projection in src/composables/useConnectorDataSource.js via src/services/selectors.js. Same break as int-rest-connector: the projection runs only inside ConnectorDataView, which no authored page renders.",
 				"reachedOn": "page designer, index/dashboard editor, Data source = OpenConnector, field mapper (authoring only)",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/integrations-connector-bound-pages (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -3704,10 +3720,11 @@
 			"mendix": "yes",
 			"power-apps": "partial",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "grep -riE 'sql|database connection|pdo' over src/components/page-editor, src/dialogs and lib/Service: no connected-database query feature; data sources are OpenRegister registers or integriq endpoints only (DataSourceOriginToggle.vue:13-42).",
 				"reachedOn": "",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/data-external-database-sources (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -3734,10 +3751,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "buildiq ships no service-specific connectors (grep -iE 'google|salesforce|slack|sheets' over src and lib: none in connector code). Its only external-data path is a generic integriq endpoint binding (ConnectorSourcePicker.vue) whose runtime rendering is not wired (see int-rest-connector).",
 				"reachedOn": "",
-				"owner": "ConductionNL/integriq"
+				"owner": "ConductionNL/integriq",
+				"note": "Specified in ConductionNL/integriq openspec/changes/connectors-catalogue-expansion (owning lane, OpenSpec pass 2026-09-27)."
 			},
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -3950,10 +3968,11 @@
 			"mendix": "unknown",
 			"power-apps": "unknown",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "grep -riE 'kvk|haal.?centraal|\\bbrp\\b|bag\\b' over buildiq src and lib: only a doc comment example path in src/services/fleetAppId.js:111 ('/apps/integriq/api/endpoint/kvk/companies') and a placeholder string in src/dialogs/ScheduleEditDialog.vue:42. No registry lookup component or field type. The only route to such data is a generic integriq endpoint binding, whose runtime rendering is not wired (see int-rest-connector).",
 				"reachedOn": "",
-				"owner": "ConductionNL/integriq"
+				"owner": "ConductionNL/integriq",
+				"note": "Specified in ConductionNL/integriq openspec/changes/registry-backed-field-source (owning lane, OpenSpec pass 2026-09-27). Integriq's lane records that showing the lookup result on a built page is buildiq's half; a registry endpoint renders on a connector-bound page with openspec/changes/integrations-connector-bound-pages."
 			},
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -4447,7 +4466,8 @@
 				"evidence": "src/components/schema-editor/AccessEditor.vue:1-23,164-214 authors the schema authorization block per action with scope kinds: everyone with app access, groups, own records (@creator) or a field-value condition; mounted from src/views/SchemaDesigner.vue (availableGroups :463-495, lock-out warning, production read-only :532-545). OpenRegister enforces it (origin/development lib/Service/ConditionMatcher.php, lib/Db/MagicMapper/MagicRbacHandler.php). But the own-records and condition kinds are offered only when OR advertises capabilities.openregister.authorization.scopes (src/composables/useOrAccessCapabilities.js:26,39-50, baseline ['group'])",
 				"reachedOn": "buildiq builder /builder/:slug/schemas/:schemaId, Access section",
 				"owner": "ConductionNL/buildiq",
-				"readOn": "2026-09-26"
+				"readOn": "2026-09-26",
+				"note": "OpenSpec pass 2026-09-27: buildiq's half shipped with openspec/changes/archive/2026-07-11-data-scopes-authoring. The missing half is openregister's: it does not advertise capabilities.openregister.authorization.scopes (ae898b0 lib/Capabilities has only IntegrationsCapability and UrnCapability), so buildiq offers the group scope only."
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -4720,10 +4740,11 @@
 			"mendix": "yes",
 			"power-apps": "partial",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"evidence": "No built-app page is public: every builder route is #[NoAdminRequired] behind login (DashboardController.php:123-226), no #[PublicPage] except the generated-document download link (GeneratedDocumentController.php:107). Deliberate public exposure exists for data and forms only: ExternalFormAccessDialog.vue:37-47 adds 'public' to a schema's create/read authorization (externalFormProvisioningService.js:114-151) and portaliq serves anonymous pages (PortalEmbedController.php:100,160 #[PublicPage])",
 				"reachedOn": "form page External access -> Configure; portaliq portal",
-				"owner": "ConductionNL/portaliq"
+				"owner": "ConductionNL/portaliq",
+				"note": "Specified in ConductionNL/portaliq openspec/changes/portal-theme-blocks-and-contributed-pages (owning lane, OpenSpec pass 2026-09-27)."
 			},
 			"provider": "portaliq",
 			"providerHow": "read-from-code",
@@ -5168,9 +5189,10 @@
 			"mendix": "yes",
 			"power-apps": "partial",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "grep for 'import' across lib/Controller: only SettingsController's internal re-import of openbuild_register.json config, and ExportsController comments unrelated to importing an app package. No route or controller accepts an uploaded ZIP/ package to recreate an app; lib/Service/AppRepoParser.php only parses a GitHub repo URL (github-shop-catalogue / github-app-sync), not an uploaded file.",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/lifecycle-import-app-and-cli (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -5196,9 +5218,10 @@
 			"mendix": "yes",
 			"power-apps": "partial",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "lib/Controller/GitHubSyncController.php + lib/Service/GitHubPushService.php/GitHubAppSyncService.php: link/push/pull/status against a single repo, no branch parameter or merge concept -- one manifest round-trip per app, not a branching workflow.",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/lifecycle-git-branches (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -5440,7 +5463,8 @@
 				"state": "built",
 				"evidence": "Store: routes.php:257-259 appOverride#get/save/clear GET|PUT|DELETE /api/app-overrides/{appId} -> lib/Controller/AppOverrideController.php:119 get(), :456 save(), :588 clear(); a first PUT creates a hybrid Application plus Production ApplicationVersion carrying the manifestDelta (lib/Service/AppOverrideService.php createHybridApp, appType 'hybrid' :668); GET returns the layered delta (AppOverrideService.php:149 resolveLayeredDelta). Edit surface lives in the fleet app: nextcloud-vue v2.55.1 src/components/CnAppRoot/CnAppRoot.vue:1100 persistManifestDelta prop and :1544-1550 buildiq edit availability (src/composables/useBuildiqEditAvailability.js:38 checks app ids buildiq or openbuild) render CnBuildiqEditButton in edit mode. The only fleet consumer: pipelinq origin/development src/App.vue:24,229-233 persistManifestDelta PUTs /apps/buildiq/api/app-overrides/pipelinq and src/main.js:217 loads it at boot and merges it over the bundled manifest. Fleet grep of origin/development for 'api/app-overrides' and 'persistManifestDelta' in src: no other app.",
 				"reachedOn": "Inside pipelinq: the buildiq edit button on a page switches to edit mode and saves the delta; buildiq then lists pipelinq as a hybrid app (src/views/DashboardIndex.vue:275 hybrid count) with its layers on /applications/:objectId/manifest",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "OpenSpec pass 2026-09-27: buildiq's half is specified and built by openspec/changes/openbuild-inline-edit-persistence. The missing half is each fleet app wiring persistManifestDelta through nextcloud-vue (hydra ADR-101); only pipelinq does."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -5712,10 +5736,11 @@
 			"mendix": "partial",
 			"power-apps": "yes",
 			"built": {
-				"state": "built",
+				"state": "decided-no",
 				"evidence": "src/dialogs/ThemePickerDialog.vue offers picking a PRESET token set from the Thematiq catalogue (primaryColor/backgroundColor shown as read-only preview swatches from the selected preset, ThemePickerDialog.vue:59-70) -- there are no free-form color/font inputs. src/dialogs/IconUploadSection.vue separately lets a user upload a light/dark app icon (nav icon), which is not a general logo-in-theme control.",
 				"reachedOn": "Application detail page, Theme section",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Decided no in the OpenSpec pass 2026-09-27: Recorded non-goal: archived change 2026-07-25-theme-picker-consumes-nldesign (proposal and design Non-Goals) rules out per-app custom colour and token authoring in buildiq; revert commit f8b6612a2 says app-specific theming belongs to nldesign. Custom token sets are thematiq's to build."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -6249,9 +6274,10 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "grep for errorTracking/Sentry/'performance monitor'/APM/'slow quer' across lib/ and src/: no hits. ops-usage-insights (view/create counts per version/window) is the closest built capability but it is usage analytics, not error/performance monitoring.",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/operate-debug-log-and-monitoring (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -6307,10 +6333,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"evidence": "appinfo/info.xml:272-273 registers two commands: OCA\\Buildiq\\Command\\SeedHelloWorldFixture ('buildiq:seed-hello-world-fixture', description says 'test/dev only') and OCA\\Buildiq\\Command\\PublishTemplates ('buildiq:templates:publish', 'Publish seeded Buildiq application-templates to GitHub as buildiq-app repos')",
 				"reachedOn": "occ buildiq:templates:publish / occ buildiq:seed-hello-world-fixture",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/lifecycle-import-app-and-cli (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -6421,7 +6448,7 @@
 			"area": "lifecycle",
 			"name": "Preview a non-production version of an app as its owner before promoting it.",
 			"source": "own-code",
-			"buildiq": "partial",
+			"buildiq": "yes",
 			"nocobase": "no",
 			"budibase": "yes",
 			"appsmith": "yes",
@@ -6429,16 +6456,17 @@
 			"power-apps": "partial",
 			"built": {
 				"state": "built",
-				"evidence": "lib/Service/ManifestResolverService.php:107-150 resolve() honours ?_version=<slug> for owners and editors only; src/builder.js:313-316 forwards the query to GET /api/applications/{slug}/manifest; src/services/versionQuery.js:3-15 keeps ?_version= on links inside the running app. grep -rnF '_version' src finds no button or link in the version list that builds the URL",
-				"reachedOn": "the running app at /apps/buildiq/builder/{slug}?_version=<version>, typed by hand; no page offers the link",
-				"owner": "ConductionNL/buildiq"
+				"evidence": "src/views/VersionHistory.vue:35 (row link) and :58 (Open button) point at versionUrl() (:357-368), which returns /apps/buildiq/builder/{slug}?_version=<versionSlug> for every non-production version; lib/Service/ManifestResolverService.php:107-150 resolve() serves ?_version= to owners and editors; src/services/versionQuery.js keeps ?_version= on links inside the running app.",
+				"reachedOn": "App detail page, Versions list, Open on a draft or development version",
+				"owner": "ConductionNL/buildiq",
+				"note": "Matrix corrected in the OpenSpec pass 2026-09-27: the version list links every version to its preview, shipped with openspec/changes/archive/2026-06-26-version-lifecycle-and-switcher (anchors since 52db97a, 2026-09-10). The earlier reading grepped for a button that builds the URL and missed the string concatenation."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
 			"feature": "version-routing",
 			"featureConfidence": "medium",
 			"note": "Proposed by reader r1. Partial because the preview works but nothing in the builder links to it.",
-			"reachedOn": "the running app at /apps/buildiq/builder/{slug}?_version=<version>, typed by hand; no page offers the link",
+			"reachedOn": "App detail page, Versions list, Open on a draft or development version",
 			"evidence": {
 				"nocobase": "source read at v2.2.18, not driven: no preview of a stored version: the commercial version control page (https://docs.nocobase.com/ops-management/version-control/index.md) offers create and restore only; the free packages/core/cli/src/commands/revision/create.ts:34 saves a revision; UI Editor edits are live (packages/core/client-v2/src/flow/admin-shell/admin-layout/AdminLayoutComponent.tsx:442)",
 				"budibase": "source read at v3.46.0, not driven: packages/builder/src/pages/builder/workspace/[workspaceId]/_components/PreviewOverlay.svelte:42 iframe preview of the unpublished dev app, mounted in _layout.workspace.svelte:101 and opened from AppPanel.svelte:36 or the command palette (packages/builder/src/components/commandPalette/CommandPalette.svelte:59-63); SideNav.svelte:375-398 opens the dev app URL in a new tab Reached on: design > preview; command palette > Preview App",
@@ -6491,10 +6519,11 @@
 			"mendix": "partial",
 			"power-apps": "partial",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"evidence": "lib/Integration/RegistrationFormLeafProvider.php:75,297-324,407 formDraft schema and create() appending a draft for the current user; lib/Settings/register.d/50-registration-forms.json formDraft. No page in buildiq or a consumer app saves or reopens a draft",
 				"reachedOn": "nothing: the leaf is served to no consumer",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/registration-form-builder (existing change, OpenSpec pass 2026-09-27): the formDraft schema and leaf are built; saving and resuming a draft is the consumer screen its task 4.4 hands to dossiq."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -6906,10 +6935,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "src/components/schema-editor/CalculationEditor.vue:1-30 is a v1 stub (read-only view, authoring deferred); FormPageEditor.vue and fields/FormFieldBuilder.vue offer no calculated field; nextcloud-vue v2.55.1 src/components/CnFormPage: grep -iE 'calculat|formula|computed' finds no in-form calculation",
 				"reachedOn": "nothing reaches it",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/forms-live-values-and-checks (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -6939,10 +6969,11 @@
 			"mendix": "unknown",
 			"power-apps": "partial",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "Searched: grep -iE 'payment|betal|mollie|stripe|ideal' over buildiq src/ lib/ (only an icon label at src/utils/openGemeentenIcons.json:574) and portaliq origin/development lib/ (no hits); no form or portal step takes a payment",
 				"reachedOn": "nothing reaches it",
-				"owner": "ConductionNL/portaliq"
+				"owner": "ConductionNL/portaliq",
+				"note": "Specified in ConductionNL/portaliq openspec/changes/intake-pay-on-submit (owning lane, OpenSpec pass 2026-09-27)."
 			},
 			"provider": "portaliq",
 			"providerHow": "read-from-code",
@@ -7071,10 +7102,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"evidence": "No copy action on a page or registration form (src/components/page-editor/PageListEditor.vue:135-143 only validates duplicate ids). A configured widget can be saved as a component block and inserted again (src/views/PageDesigner.vue:39-64 Blocks panel, insert deep-copies via BlockInsertService), and a whole app can be saved as a template (src/dialogs/SaveAsTemplateDialog.vue)",
 				"reachedOn": "page designer Blocks panel (widget level), not a form-level copy",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/apps-copy-app-and-page (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7170,10 +7202,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"evidence": "Business rules can decide an outcome from data (lib/Service/RuleEngineService.php, lib/Service/DecisionTableEvaluator.php; example 'loan-eligibility' in lib/Settings/register.d/10-business-rules.json:599-602), but no form page evaluates a rule while it is filled in and shows the unmet condition; forms show field validation only (form-validation-messages)",
 				"reachedOn": "rule sets page authoring only; not on the form",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/forms-live-values-and-checks (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7533,10 +7566,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "built",
+				"state": "decided-no",
 				"evidence": "Built apps have no push channel of their own (pg-native-mobile no); a notification that reaches the Nextcloud notification centre is pushed to the Nextcloud mobile apps by the platform, and buildiq's notification path is itself only an x-openregister-notifications declaration (pending row ux-notifications, src/views/SchemaDesigner.vue:163)",
 				"reachedOn": "Nextcloud mobile app notifications, when OpenRegister sends one",
-				"owner": "nextcloud/server"
+				"owner": "nextcloud/server",
+				"note": "Decided no in the OpenSpec pass 2026-09-27: Owned by nextcloud/server: push notifications to phones is a platform capability of the Nextcloud installation, outside the fleet (addendum rule for rows owed to nextcloud/server)."
 			},
 			"provider": "nextcloud",
 			"providerHow": "read-from-code",
@@ -7599,10 +7633,11 @@
 			"mendix": "yes",
 			"power-apps": "unknown",
 			"built": {
-				"state": "built",
+				"state": "decided-no",
 				"evidence": "nextcloud/server apps/oauth2/appinfo/info.xml:9 'OAuth 2.0' lets Nextcloud act as an OAuth 2.0 authorisation server for other systems; a full OpenID Connect provider needs an extra app from the app store, and buildiq adds nothing here",
 				"reachedOn": "Nextcloud admin settings, Security, OAuth 2.0 clients",
-				"owner": "nextcloud/server"
+				"owner": "nextcloud/server",
+				"note": "Decided no in the OpenSpec pass 2026-09-27: Owned by nextcloud/server: acting as the sign-in provider for other systems is a platform capability of the Nextcloud installation, outside the fleet (addendum rule for rows owed to nextcloud/server)."
 			},
 			"provider": "nextcloud",
 			"providerHow": "read-from-code",
@@ -7665,10 +7700,11 @@
 			"mendix": "yes",
 			"power-apps": "partial",
 			"built": {
-				"state": "none",
+				"state": "decided-no",
 				"evidence": "Searched: no custom CSS or class field on a widget or page in src/components/page-editor/*.vue (grep -iE 'css|customClass|className': no authoring hits); theming is by preset token sets only (src/dialogs/ThemePickerDialog.vue:59-70)",
 				"reachedOn": "nothing reaches it",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Decided no in the OpenSpec pass 2026-09-27: Recorded non-goal: archived change 2026-07-25-theme-picker-consumes-nldesign design.md Non-Goals, \"No scoped-CSS applier of any kind remains in OpenBuild\"; styling comes from nldesign tokens (hydra ADR-010), and the reverted app-theming shows the cost of a second styling path."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7698,10 +7734,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "buildiq has no OpenAPI import (grep -iE 'openapi|swagger' over src/: no hits; lib/Service/SettingsService.php:296,367 only merge the app's own OpenAPI settings file); external endpoints are picked from existing integriq source objects (src/components/page-editor/ConnectorSourcePicker.vue:256-262)",
 				"reachedOn": "nothing reaches it from buildiq",
-				"owner": "ConductionNL/integriq"
+				"owner": "ConductionNL/integriq",
+				"note": "Specified in ConductionNL/integriq openspec/changes/gateway-openapi-import-and-publish (owning lane, OpenSpec pass 2026-09-27)."
 			},
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -7731,10 +7768,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "Connections use shared credentials kept in the vault (int-credentials-vault, lib/Service/Credential); grep -iE 'per.?user|user.?token|oauth' over src/components/page-editor: no per-user sign-in for a connector",
 				"reachedOn": "nothing reaches it",
-				"owner": "ConductionNL/integriq"
+				"owner": "ConductionNL/integriq",
+				"note": "Specified in ConductionNL/integriq openspec/changes/sources-per-user-oauth (owning lane, OpenSpec pass 2026-09-27)."
 			},
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -8061,10 +8099,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "none",
+				"state": "decided-no",
 				"evidence": "buildiq has no backup feature (grep -i backup over src/ lib/: no hits); nextcloud/server ships no scheduled backup app (apps/ holds twofactor_backupcodes only); backups of the database and data directory are left to the operator",
 				"reachedOn": "nothing reaches it",
-				"owner": "nextcloud/server"
+				"owner": "nextcloud/server",
+				"note": "Decided no in the OpenSpec pass 2026-09-27: Owned by nextcloud/server: scheduled backups with retention and restore is a platform capability of the Nextcloud installation, outside the fleet (addendum rule for rows owed to nextcloud/server)."
 			},
 			"provider": "nextcloud",
 			"providerHow": "read-from-code",
@@ -8094,10 +8133,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "Searched: grep -iE 'diagram|erd|graph' over src/components/schema-editor and src/views/SchemaDesigner.vue: no diagram view; schemas are edited as a list",
 				"reachedOn": "nothing reaches it",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/data-model-diagram (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8127,10 +8167,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "built",
+				"state": "decided-no",
 				"evidence": "A user in several Nextcloud groups holds the union of the app roles granted to those groups (acc-group-access); there is no way to switch to one role at a time (grep -iE 'switch.?role|active.?role' over src/ lib/: no hits)",
 				"reachedOn": "app access settings by group; no role switcher",
-				"owner": "nextcloud/server"
+				"owner": "nextcloud/server",
+				"note": "Decided no in the OpenSpec pass 2026-09-27: Owned by nextcloud/server: giving a user several roles through groups is a platform capability of the Nextcloud installation, outside the fleet (addendum rule for rows owed to nextcloud/server)."
 			},
 			"provider": "nextcloud",
 			"providerHow": "read-from-code",
@@ -8259,10 +8300,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "The schema designer offers string, number, integer, boolean, array, object and relation (src/components/schema-editor/FieldEditor.vue:319-327); a relation points at another schema, not at Nextcloud users, and there is no user picker type",
 				"reachedOn": "nothing reaches it",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/data-field-types-and-choice-lists (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8457,10 +8499,11 @@
 			"mendix": "partial",
 			"power-apps": "yes",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"evidence": "No copy-app action on the app list or detail page (grep -iE 'duplicat|clone app' over src/components/ApplicationDetailActions.vue and VirtualAppsActions.vue: no app copy); an app can be saved as a template (src/dialogs/SaveAsTemplateDialog.vue) and a new app created from it (app-create-from-template)",
 				"reachedOn": "save as template, then New application from that template",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/apps-copy-app-and-page (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8490,10 +8533,11 @@
 			"mendix": "partial",
 			"power-apps": "yes",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "No in-builder error log for page data and bindings (grep -iE 'debugger|error log' over src/views and src/components/page-editor: no hits); automation runs have a partial run log (logic-run-log)",
 				"reachedOn": "nothing reaches it",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/operate-debug-log-and-monitoring (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
