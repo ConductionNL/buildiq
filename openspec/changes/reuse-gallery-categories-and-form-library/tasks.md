@@ -1,0 +1,12 @@
+# Tasks: reuse-gallery-categories-and-form-library
+
+- [ ] **T01**: Add the template category filter, the per-category headings, the GitHub card narrowing and the `?category=` query to `src/views/TemplateGallery.vue` (REQ-BQGL-001). Verify: vitest cases in a new `tests/views/TemplateGallery.categories.spec.js`, and extend `tests/e2e/template-gallery.spec.ts` to filter by a category.
+- [ ] **T02**: Declare `formTemplate` in a new fragment `lib/Settings/register.d/83-form-library.json` (REQ-BQGL-002). Verify: PHPUnit on the register import accepting a form template.
+- [ ] **T03**: Add `src/services/formCapture.js` reusing `deNamespaceSlug` and `rewriteSchemaRefs`, and `src/dialogs/SaveFormToLibraryDialog.vue`, opened from `FormPageEditor.vue` and `RegistrationFormEditor.vue`, refusing a form bound to a missing property (REQ-BQGL-002). Verify: vitest `tests/services/formCapture.spec.js` and a dialog spec under `tests/dialogs/`.
+- [ ] **T04**: Add the "Forms" view to `TemplateGallery.vue` with search and the category filter (REQ-BQGL-003). Verify: vitest cases in `tests/views/TemplateGallery.categories.spec.js`.
+- [ ] **T05**: Add `src/dialogs/UseLibraryFormDialog.vue` with app, version, target and schema mapping, the missing property list and "Add these properties", writing only on confirm (REQ-BQGL-004). Verify: vitest `tests/dialogs/UseLibraryFormDialog.spec.js`.
+- [ ] **T06**: Add `src/services/formExport.js` following `blockExport.js`, with export and validated import in the "Forms" view (REQ-BQGL-005). Verify: vitest `tests/services/formExport.spec.js` for a round trip and a refused `component-block` file.
+- [ ] **T07**: Add the `buildiq-form` topic search to `lib/Service/GitHubCatalogService.php`, a route beside `shop#githubSearch` in `appinfo/routes.php`, and install into a local library form (REQ-BQGL-005). Verify: PHPUnit cases in `tests/Unit/Service/GitHubCatalogServiceTest.php` for the topic query, the cache and a repository without `form.json`.
+- [ ] **T08**: Playwright `tests/e2e/form-library.spec.ts`: save a registration form to the library, find it, use it in a second app, export and import it (REQ-BQGL-002 to REQ-BQGL-005).
+- [ ] **T09**: Strings and docs: English and Dutch for the filter, "Forms", the dialogs and the refusals (`l10n/en.json`, `l10n/nl.json`), and a page in `docs/` on the form library and sharing forms with other organisations.
+- [ ] **T10**: Run `openspec validate reuse-gallery-categories-and-form-library --strict`.
