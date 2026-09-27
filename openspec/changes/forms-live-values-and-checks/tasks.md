@@ -1,0 +1,12 @@
+# Tasks: forms-live-values-and-checks
+
+- [ ] **T01**: Add `mode: preview` to `RulesController::evaluate()` that skips `persistLog()` and keeps RBAC, rate limit and size guard (REQ-BQLV-004). Verify: PHPUnit asserting no execution log is written in preview and one is written otherwise.
+- [ ] **T02**: Add the default picker (literal, `@me`, `@me.displayName`, `@me.email`, `@today`, `@object.<field>`) to `FormFieldBuilder.vue` (REQ-BQLV-001). Verify: vitest for the stored `default`.
+- [ ] **T03**: Add the calculated-field binding (`ruleSet`, `output`, `inputs[]`) to `FormFieldBuilder.vue`, listing rule sets and outputs from `GET /api/rules/{slug}/schema` (REQ-BQLV-002). Verify: vitest with a mocked rule set schema.
+- [ ] **T04**: Add the eligibility check section to `FormPageEditor.vue` (`ruleSet`, `passWhen`, `explainWith`, `blockSubmit`) (REQ-BQLV-003). Verify: vitest for the stored config.
+- [ ] **T05**: Add the runtime bridge in `src/services/formLiveValues.js` that debounces input changes and calls evaluate in preview mode, handed to the form renderer through the hooks nextcloud-vue adds (REQ-BQLV-002, REQ-BQLV-003). Verify: vitest with fake timers and a mocked client.
+- [ ] **T06**: Add the save-time listener on `ObjectCreatingEvent` and `ObjectUpdatingEvent` that recomputes calculated fields and enforces a blocking eligibility check (REQ-BQLV-005). Verify: PHPUnit with a constructed real event object, a tampered value replaced and a failing check refused.
+- [ ] **T07**: Playwright `tests/e2e/form-live-values.spec.ts`: a permit form whose fee field follows the chosen size, whose applicant e-mail is prefilled for the signed-in user, and whose submit waits on an eligibility check that explains the unmet condition (REQ-BQLV-001, REQ-BQLV-002, REQ-BQLV-003). Runs once nextcloud-vue ships the hooks.
+- [ ] **T08**: Hand nextcloud-vue its half (default tokens, calculate hook, unmet-conditions slot) as an issue through its lane.
+- [ ] **T09**: English and Dutch strings for the three editors and the eligibility notice; a section in `docs/`.
+- [ ] **T10**: Run `openspec validate forms-live-values-and-checks --strict`.
