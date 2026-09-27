@@ -48,6 +48,70 @@
 		"decidedOn": "2026-09-27"
 	},
 	{
+		"row": "ai-agent-knowledge-base",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Two competitors rated yes (Budibase, Mendix); the Budibase changelog row names the same competitor.",
+		"change": "ai-agents-knowledge-and-run-trace",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "ai-agent-run-log",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Partial and built, two competitors rated yes on the missing half (Budibase, Mendix): a run and its tool calls are recorded (AgentRunLogger.php:87-96), its model steps, repairs and the knowledge it used are not.",
+		"change": "ai-agents-knowledge-and-run-trace",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "ai-code-assist",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Five competitors rated yes: the copilot proposes manifest changes only, and the expression, condition and mapping editors have no AI help.",
+		"change": "ai-copilot-documents-and-code-help",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "ai-computed-column",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Two competitors rated yes (Budibase, Power Apps).",
+		"change": "ai-llm-steps-and-computed-fields",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "ai-llm-action",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Two competitors rated yes (NocoBase, Budibase). With hermiq installed a maker can already place hermiq.agent-step in the OpenRegister flow canvas that Automations, Edit flows opens; the composer offers no AI step and nothing writes the answer back to the record.",
+		"change": "ai-llm-steps-and-computed-fields",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "ai-named-agents",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Partial and built, two competitors rated yes on the missing half (NocoBase, Budibase): the Agents page is routable but nothing links to it.",
+		"change": "ai-agents-knowledge-and-run-trace",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "ai-smart-paste",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "A roadmap demand row (Power Apps 2026 wave 1) and two competitors rated yes (NocoBase, Power Apps).",
+		"change": "ai-smart-paste-into-forms",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "ai-spec-to-app",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Partial and built, a roadmap demand row (Mendix what's new) and two competitors rated yes on the missing half (Mendix, Power Apps): Generate with AI takes typed text only and produces no user stories.",
+		"change": "ai-copilot-documents-and-code-help",
+		"decidedOn": "2026-09-27"
+	},
+	{
 		"row": "app-create-from-database",
 		"matrix": "buildiq",
 		"decision": "build",
@@ -256,6 +320,14 @@
 		"decidedOn": "2026-09-27"
 	},
 	{
+		"row": "lc-automated-tests",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Partial and built, two competitors rated yes on the missing half (Mendix, Power Apps): only rule sets carry tests, and nothing runs them before a release.",
+		"change": "lifecycle-release-test-gate",
+		"decidedOn": "2026-09-27"
+	},
+	{
 		"row": "lc-channels",
 		"matrix": "buildiq",
 		"decision": "defer",
@@ -320,6 +392,30 @@
 		"decidedOn": "2026-09-27"
 	},
 	{
+		"row": "logic-action-update-record",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Partial and built, three competitors rated yes on the missing half: outside an approval follow-up the composer compiles a record step to a lifecycle action OpenRegister has no handler for. Archived automation-designer shipped without it.",
+		"change": "logic-automation-actions-that-run",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "logic-action-webhook",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Partial and built, four competitors rated yes on the missing half: the webhook step compiles to webhook-dispatch, which OpenRegister's lifecycle executor cannot run.",
+		"change": "logic-automation-actions-that-run",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "logic-custom-code-step",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Three competitors rated yes (NocoBase, Budibase, Mendix).",
+		"change": "logic-script-step",
+		"decidedOn": "2026-09-27"
+	},
+	{
 		"row": "logic-decision-table",
 		"matrix": "buildiq",
 		"decision": "defer",
@@ -344,6 +440,46 @@
 		"decidedOn": "2026-09-27"
 	},
 	{
+		"row": "logic-rules-engine",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Partial and built, two competitors rated yes on the missing half (Mendix, Power Apps): the evaluate route has no caller and a manual-trigger automation compiles to a rule set nothing runs.",
+		"change": "logic-automation-actions-that-run",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "logic-trigger-email",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Three competitors rated yes (Budibase, Mendix, Power Apps).",
+		"change": "logic-email-and-webhook-triggers",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "logic-trigger-webhook",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Two competitors rated yes (Budibase, Mendix).",
+		"change": "logic-email-and-webhook-triggers",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "logic-workflow-attach",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Partial and built, four competitors rated yes on the missing half: Application.flows is stored and exported, and nothing uses it to run or scope a flow.",
+		"change": "logic-shared-flows-and-automations",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "ops-api-docs",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Two competitors rated yes (NocoBase, Mendix).",
+		"change": "operate-api-docs",
+		"decidedOn": "2026-09-27"
+	},
+	{
 		"row": "ops-cli",
 		"matrix": "buildiq",
 		"decision": "build",
@@ -357,6 +493,14 @@
 		"decision": "defer",
 		"reason": "Only one competitor rated yes (Power Apps) and no tender, featureRequest or roadmap demand; outside buildiq's core area (apps and data, the areas of the matrix's first 30 rows).",
 		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "ops-multi-tenant",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Two competitors rated yes (NocoBase, Budibase). No recorded non-goal rules it out: the archived business-rules-engine design lists per-tenant scoping as a goal, and RuleEngineService.php:11 says tenant isolation lives there.",
+		"change": "operate-organisation-scoped-apps",
 		"decidedOn": "2026-09-27"
 	},
 	{
@@ -389,6 +533,46 @@
 		"decision": "build",
 		"reason": "Partial and built, five competitors rated yes on the missing half: an index action can only navigate or emit, and a detail page has no action buttons at all.",
 		"change": "pages-action-buttons",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "pg-custom-code-component",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Partial and built, five competitors rated yes on the missing half: a custom page can only name a component the consuming app already registered.",
+		"change": "pages-custom-code",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "pg-custom-js",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Three competitors rated yes (NocoBase, Budibase, Appsmith).",
+		"change": "pages-custom-code",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "pg-drag-drop-canvas",
+		"matrix": "buildiq",
+		"decision": "existing",
+		"reason": "Matrix corrected: in a published app, Edit with Buildiq makes the widget grids of dashboard pages and detail-page bodies draggable and resizable (nextcloud-vue 2.57.1 CnDashboardGrid.vue:1-12 on GridStack, CnDashboardPage.vue:1605-1615 gridEditable, CnDetailPage.vue:425-436), with keyboard moves and Add widget, and src/builder.js:418 saves the arrangement to the manifest. The earlier reading searched only the page designer, whose own layout editor still takes numbers (LayoutItemBuilder.vue).",
+		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "pg-native-mobile",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Two competitors rated yes (Mendix, Power Apps).",
+		"change": "pages-installable-offline-and-mobile",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "pg-offline",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Two competitors rated yes (Mendix, Power Apps).",
+		"change": "pages-installable-offline-and-mobile",
 		"decidedOn": "2026-09-27"
 	},
 	{
@@ -440,6 +624,14 @@
 		"decidedOn": "2026-09-27"
 	},
 	{
+		"row": "reuse-shared-logic",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Partial and built, two competitors rated yes on the missing half (Budibase, Power Apps): rule sets are shared, automations are not.",
+		"change": "logic-shared-flows-and-automations",
+		"decidedOn": "2026-09-27"
+	},
+	{
 		"row": "reuse-user-overrides",
 		"matrix": "buildiq",
 		"decision": "defer",
@@ -461,6 +653,14 @@
 		"decision": "decided-no",
 		"reason": "Recorded non-goal: archived change 2026-07-25-theme-picker-consumes-nldesign design.md Non-Goals, \"No scoped-CSS applier of any kind remains in OpenBuild\"; styling comes from nldesign tokens (hydra ADR-010), and the reverted app-theming shows the cost of a second styling path.",
 		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "ux-multilingual-ui",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Two competitors rated yes (NocoBase, Mendix).",
+		"change": "experience-multilingual-apps",
 		"decidedOn": "2026-09-27"
 	},
 	{
