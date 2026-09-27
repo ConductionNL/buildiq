@@ -64,6 +64,32 @@
 						class="my-approvals-widget__object"
 						>{{ candidateLabel(step) }}</span
 					>
+					<span
+						v-if="deadlineOf(step)"
+						class="my-approvals-widget__deadline">
+						<span
+							v-if="deadlineFlag(step)"
+							class="my-approvals-widget__flag"
+							:class="[
+								`my-approvals-widget__flag--${deadlineFlag(step)}`,
+							]"
+							data-testid="my-approvals-deadline-flag">
+							{{
+								deadlineFlag(step) === 'overdue'
+									? t('buildiq', 'Overdue')
+									: t('buildiq', 'Due soon')
+							}}
+						</span>
+						<time
+							:datetime="deadlineOf(step)"
+							data-testid="my-approvals-due">
+							{{
+								t('buildiq', 'Due {date}', {
+									date: formatDeadline(deadlineOf(step)),
+								})
+							}}
+						</time>
+					</span>
 				</div>
 				<div class="my-approvals-widget__row-actions">
 					<NcButton
@@ -102,6 +128,13 @@ import NcNoteCard from '@nextcloud/vue/components/NcNoteCard'
  */
 const INBOX_SCOPES = ['pooled', 'assigned']
 
+/**
+ * A task with less than this many whole days left is flagged "Due soon".
+ * OpenRegister's `daysUntilDue` counts whole days, so 0 is under a day and
+ * 1 is under two.
+ */
+const DUE_SOON_DAYS = 2
+
 export default {
 	name: 'MyApprovalsWidget',
 	components: { NcButton, NcNoteCard },
@@ -133,6 +166,57 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * The task's deadline: its advisory due date, else its enforced
+		 * expiry. The same order OpenRegister's `TaskTemporalProjection`
+		 * uses for `overdue` and `daysUntilDue`.
+		 *
+		 * @param {object} step - the task row.
+		 * @return {string|null} ISO-8601 instant, or null.
+		 * @spec openspec/changes/automation-approval-steps/tasks.md#4.1
+		 */
+		deadlineOf(step) {
+			return step.dueAt || step.expiresAt || null
+		},
+
+		/**
+		 * Which warning a row carries, read off the server's projection.
+		 *
+		 * @param {object} step - the task row.
+		 * @return {string} 'overdue', 'soon' or ''.
+		 * @spec openspec/changes/automation-approval-steps/tasks.md#4.1
+		 */
+		deadlineFlag(step) {
+			if (step.overdue === true) {
+				return 'overdue'
+			}
+			if (
+				typeof step.daysUntilDue === 'number'
+				&& step.daysUntilDue < DUE_SOON_DAYS
+			) {
+				return 'soon'
+			}
+			return ''
+		},
+
+		/**
+		 * Format a deadline in the viewer's locale.
+		 *
+		 * @param {string} iso - ISO-8601 instant.
+		 * @return {string}
+		 * @spec openspec/changes/automation-approval-steps/tasks.md#4.1
+		 */
+		formatDeadline(iso) {
+			const date = new Date(iso)
+			if (Number.isNaN(date.getTime())) {
+				return iso
+			}
+			return date.toLocaleString(undefined, {
+				dateStyle: 'medium',
+				timeStyle: 'short',
+			})
+		},
+
 		/**
 		 * Who the task is offered to, for the row's second line.
 		 *
@@ -183,7 +267,22 @@ export default {
 						}
 					}
 				}
+				// Each scope comes back sorted by deadline; keep that order
+				// across the merge, with tasks that have no deadline last.
 				this.steps = rows
+					.map((row, index) => ({ row, index }))
+					.sort((a, b) => {
+						const da = this.deadlineOf(a.row)
+						const db = this.deadlineOf(b.row)
+						if (da && db) {
+							return new Date(da) - new Date(db) || a.index - b.index
+						}
+						if (da || db) {
+							return da ? -1 : 1
+						}
+						return a.index - b.index
+					})
+					.map(({ row }) => row)
 			} catch (err) {
 				this.error = true
 				this.steps = []
@@ -292,6 +391,30 @@ export default {
 .my-approvals-widget__object {
 	color: var(--color-text-maxcontrast);
 	font-size: 0.85em;
+}
+
+.my-approvals-widget__deadline {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 0.85em;
+	color: var(--color-text-maxcontrast);
+}
+
+.my-approvals-widget__flag {
+	padding: 0 6px;
+	border-radius: var(--border-radius-pill, 12px);
+	font-weight: bold;
+}
+
+.my-approvals-widget__flag--overdue {
+	color: var(--color-error-text, var(--color-error));
+	border: 1px solid var(--color-error);
+}
+
+.my-approvals-widget__flag--soon {
+	color: var(--color-warning-text, var(--color-warning));
+	border: 1px solid var(--color-warning);
 }
 
 .my-approvals-widget__row-actions {

@@ -6808,16 +6808,16 @@
 			"power-apps": "unknown",
 			"built": {
 				"state": "built",
-				"evidence": "openregister origin/development lib/Db/Task.php:530-547 gives a flow task an advisory dueAt (:534, changes reporting) and an enforcing deadline with a declared on-expiry behaviour (:537-547), run by lib/BackgroundJob/FlowTimerWorker.php; buildiq's only task surface, src/components/runtime/MyApprovalsWidget.vue:144 (GET /api/flow-tasks?status=pending), shows no due date or warning (grep -iE 'due|overdue|deadline' in it: no hits) and no buildiq page reports workflow progress",
-				"reachedOn": "a built app dashboard with the my-approvals widget (pending list only); deadlines enforce in the engine, nothing warns on screen",
+				"evidence": "openregister origin/development lib/Db/Task.php gives a flow task an advisory dueAt and an enforcing expiresAt with a declared on-expiry behaviour, run by lib/BackgroundJob/FlowTimerWorker.php, and lib/Service/Task/TaskInboxService.php row() sends the derived overdue, daysUntilDue and daysOverdue on every /api/flow-tasks row. buildiq's task surface, src/components/runtime/MyApprovalsWidget.vue, reads the pooled and assigned inbox scopes (#936) and shows each task its deadline (dueAt, else expiresAt) in a time element, sorts soonest first, and flags a task 'Overdue' (overdue true) or 'Due soon' (daysUntilDue under 2) in words, not colour alone (#937; tests/components/MyApprovalsWidget.spec.js 'shows each task its due date, and flags overdue and due-soon tasks in words'). The second half of the row, reporting on workflow progress, has no buildiq page, so the rating stays partial.",
+				"reachedOn": "a built app dashboard with the My approvals widget: each open task shows its due date, with an Overdue or Due soon flag; no buildiq page reports workflow progress",
 				"owner": "ConductionNL/openregister"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
 			"feature": "automation-designer",
 			"featureConfidence": "medium",
-			"reachedOn": "a built app dashboard with the my-approvals widget (pending list only); deadlines enforce in the engine, nothing warns on screen",
-			"note": "Mined 2026-09-26 from tender: VGGM wens W4.",
+			"reachedOn": "a built app dashboard with the My approvals widget: each open task shows its due date, with an Overdue or Due soon flag; no buildiq page reports workflow progress",
+			"note": "Mined 2026-09-26 from tender: VGGM wens W4. The deadline warning shipped in buildiq#937 (after #936 made the widget list tasks at all); workflow progress reporting is the open half.",
 			"evidence": {
 				"nocobase": "source read at v2.2.18, not driven: searched packages/plugins/@nocobase/plugin-workflow-manual/src/locale/en-US.json and packages/plugins/@nocobase/plugin-workflow/src/locale/en-US.json for deadline, due, overdue, SLA: none; a delay node (packages/plugins/@nocobase/plugin-workflow-delay/src/client-v2/DelayInstruction.tsx:16) can time out a branch but gives no warning or progress report",
 				"budibase": "source read at v3.46.0, not driven: no workflow tasks with deadlines (packages/shared-core/src/automations/steps/index.ts:1-34); a Schedule trigger (packages/shared-core/src/automations/triggers/cron.ts:11) plus a query could email about overdue rows by hand, but there is no task deadline or progress report",
