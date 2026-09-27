@@ -105,7 +105,7 @@ final class RegistrationFormPresenter {
 	 */
 	private function signInLevel(array $form): ?string {
 		$level = ($form['minTrust'] ?? null);
-		if (is_string($level) === true && in_array($level, RegistrationFormValidator::SIGN_IN_LEVELS, true) === true) {
+		if (is_string($level) === true && in_array($level, RegistrationFormSignInLevel::LEVELS, true) === true) {
 			return $level;
 		}
 

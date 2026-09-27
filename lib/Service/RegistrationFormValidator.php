@@ -74,14 +74,6 @@ final class RegistrationFormValidator {
 	public const AUDIENCES = ['client', 'internal', 'supplier'];
 
 	/**
-	 * The sign-in levels portaliq enforces. No level means anonymous; there
-	 * is no `anonymous` value (buildiq#935, portaliq#725).
-	 *
-	 * @var array<int, string>
-	 */
-	public const SIGN_IN_LEVELS = ['low', 'substantial', 'high'];
-
-	/**
 	 * Validate a form against the forms already stored for its type.
 	 *
 	 * @param array<string, mixed> $form The form about to be saved.
@@ -103,7 +95,7 @@ final class RegistrationFormValidator {
 	): array {
 		$this->assertName(form: $form);
 		$this->assertAudience(form: $form);
-		$this->assertSignInLevel(form: $form);
+		(new RegistrationFormSignInLevel())->assertValid(form: $form);
 		$this->assertSections(form: $form);
 		$this->assertChannel(form: $form, targetChannels: $targetChannels);
 		$this->assertNameIsFree(form: $form, existing: $existing);
@@ -162,42 +154,6 @@ final class RegistrationFormValidator {
 			);
 		}
 	}//end assertAudience()
-
-	/**
-	 * A sign-in level is one portaliq knows, and a form that asks for one is
-	 * not also open to anyone (buildiq#935). A level the portal does not know
-	 * would refuse every filer with nothing telling the maker why.
-	 *
-	 * @param array<string, mixed> $form The form.
-	 *
-	 * @return void
-	 *
-	 * @throws InvalidArgumentException When the level is unknown or contradicts isPublic.
-	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-009)
-	 */
-	private function assertSignInLevel(array $form): void {
-		$level = ($form['minTrust'] ?? null);
-		if ($level === null || $level === '') {
-			return;
-		}
-
-		if (is_string($level) === false || in_array($level, self::SIGN_IN_LEVELS, true) === false) {
-			throw new InvalidArgumentException(
-				sprintf(
-					'Unknown sign-in level %s; expected one of %s, or none for an anonymous form.',
-					var_export($level, true),
-					implode(', ', self::SIGN_IN_LEVELS)
-				)
-			);
-		}
-
-		if (($form['isPublic'] ?? false) === true) {
-			throw new InvalidArgumentException(
-				'A form open to anyone without signing in cannot also ask for a sign-in level; choose one of the two.'
-			);
-		}
-	}//end assertSignInLevel()
 
 	/**
 	 * Refuse a field pointing at a section the form does not declare, naming the
