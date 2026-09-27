@@ -53,9 +53,11 @@ false) and "Center on my position when the page opens"
 When a manifest is saved, buildiq derives the device features it needs:
 `microphone` for an `audio` field, `geolocation` for a `location` field or
 `showUserLocation`. It stores them on the `ApplicationVersion` as
-`deviceFeatures[]`. `DashboardController::builder()` reads the served version's
-`deviceFeatures` and sets a `FeaturePolicy` on the response that adds `'self'`
-for those features only. An app that uses none gets Nextcloud's default policy
+`deviceFeatures[]`. The three responses that serve a built app,
+`DashboardController::builder()`, `builderSlash()` and `builderPath()`
+(`lib/Controller/DashboardController.php:125`, `158`, `193`), read the served
+version's `deviceFeatures` and set a `FeaturePolicy` that adds `'self'` for those
+features only. An app that uses none gets Nextcloud's default policy
 unchanged. `pages-qr-and-barcodes` adds `camera` through the same list.
 
 ## D5. Validation
