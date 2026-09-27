@@ -1761,7 +1761,18 @@ OC.L10N.register(
         "Approval": "Approval",
         "Due {date}": "Due {date}",
         "Due soon": "Due soon",
-        "Overdue": "Overdue"
+        "Overdue": "Overdue",
+        "DigiD or eHerkenning, level high": "DigiD or eHerkenning, level high",
+        "DigiD or eHerkenning, level low": "DigiD or eHerkenning, level low",
+        "DigiD or eHerkenning, level substantial": "DigiD or eHerkenning, level substantial",
+        "No sign-in": "No sign-in",
+        "No sign-in, anyone may fill it in": "No sign-in, anyone may fill it in",
+        "Open this form to people outside the organisation": "Open this form to people outside the organisation",
+        "Sign-in required": "Sign-in required",
+        "The portal asks for this sign-in before it shows the form or accepts an answer.": "The portal asks for this sign-in before it shows the form or accepts an answer.",
+        "This form asks for a sign-in, so it is only open through the portal page. The anonymous submit address stays closed.": "This form asks for a sign-in, so it is only open through the portal page. The anonymous submit address stays closed.",
+        "Sign-in Level": "Sign-in Level",
+        "The sign-in a filer needs before the portal shows or accepts this form: DigiD for citizens or eHerkenning for businesses, at level low, substantial or high. Left empty, anyone may fill the form in. The portal enforces it; buildiq only records the maker's choice, and refuses a public form that also asks for a sign-in.": "The sign-in a filer needs before the portal shows or accepts this form: DigiD for citizens or eHerkenning for businesses, at level low, substantial or high. Left empty, anyone may fill the form in. The portal enforces it; buildiq only records the maker's choice, and refuses a public form that also asks for a sign-in."
     },
     "nplurals=2; plural=(n != 1);"
 )

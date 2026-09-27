@@ -133,9 +133,38 @@
 				<input
 					type="checkbox"
 					:checked="!!modelValue.isPublic"
-					@change="write('isPublic', $event.target.checked)" />
+					@change="writePublic($event.target.checked)" />
 				{{ t('buildiq', 'Anyone may fill this in, without signing in') }}
 			</label>
+
+			<label class="form-editor__field">
+				{{ t('buildiq', 'Sign-in required') }}
+				<select
+					:value="modelValue.minTrust || ''"
+					data-testid="registration-form-sign-in-level"
+					@change="writeSignInLevel($event.target.value)">
+					<option value="">
+						{{ t('buildiq', 'No sign-in') }}
+					</option>
+					<option value="low">
+						{{ t('buildiq', 'DigiD or eHerkenning, level low') }}
+					</option>
+					<option value="substantial">
+						{{ t('buildiq', 'DigiD or eHerkenning, level substantial') }}
+					</option>
+					<option value="high">
+						{{ t('buildiq', 'DigiD or eHerkenning, level high') }}
+					</option>
+				</select>
+			</label>
+			<p class="form-editor__hint">
+				{{
+					t(
+						'buildiq',
+						'The portal asks for this sign-in before it shows the form or accepts an answer.',
+					)
+				}}
+			</p>
 
 			<label class="form-editor__field">
 				{{ t('buildiq', 'What they read after sending') }}
@@ -257,6 +286,43 @@ export default {
 		 */
 		write(key, value) {
 			this.$emit('update:modelValue', { ...this.modelValue, [key]: value })
+		},
+
+		/**
+		 * Write the sign-in level. No sign-in removes the key: portaliq has no
+		 * "anonymous" level, absence is anonymous. A form that asks for a
+		 * sign-in is no longer open to anyone, so `isPublic` goes off with it
+		 * (buildiq#935).
+		 *
+		 * @param {string} value - '' for none, or low, substantial or high.
+		 * @return {void}
+		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-009)
+		 */
+		writeSignInLevel(value) {
+			const next = { ...this.modelValue }
+			if (value) {
+				next.minTrust = value
+				next.isPublic = false
+			} else {
+				delete next.minTrust
+			}
+			this.$emit('update:modelValue', next)
+		},
+
+		/**
+		 * Write `isPublic`. Opening a form to anyone drops its sign-in level,
+		 * since the server refuses a form that is both.
+		 *
+		 * @param {boolean} checked - the new value.
+		 * @return {void}
+		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-009)
+		 */
+		writePublic(checked) {
+			const next = { ...this.modelValue, isPublic: checked }
+			if (checked) {
+				delete next.minTrust
+			}
+			this.$emit('update:modelValue', next)
 		},
 	},
 }

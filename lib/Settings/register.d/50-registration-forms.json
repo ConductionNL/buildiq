@@ -5,7 +5,7 @@
 			"registrationForm": {
 				"slug": "registrationForm",
 				"icon": "FormSelect",
-				"version": "0.3.0",
+				"version": "0.4.0",
 				"title": "Registration Form",
 				"description": "A form bound to one type value of one object in one app: the intake form for a bouwvergunning, the desk form for the same type, the form an architect fills in on a client's behalf. One type carries SEVERAL forms, each named, each for an audience and a channel, and at most one of them is the default for its audience and channel. The form owns the order and the grouping of its fields, so what a filer sees is what an administrator arranged and not whatever order the schema happens to list its properties in.",
 				"x-openregister-audit-trail": {
@@ -67,6 +67,17 @@
 						"example": true,
 						"title": "Is Public",
 						"description": "Whether the form may be shown to somebody who is not logged in. The portal reads this; buildiq does not serve the form itself (REQ-OBRF-009)."
+					},
+					"minTrust": {
+						"type": "string",
+						"enum": [
+							"low",
+							"substantial",
+							"high"
+						],
+						"example": "substantial",
+						"title": "Sign-in Level",
+						"description": "The sign-in a filer needs before the portal shows or accepts this form: DigiD for citizens or eHerkenning for businesses, at level low, substantial or high. Left empty, anyone may fill the form in. The portal enforces it; buildiq only records the maker's choice, and refuses a public form that also asks for a sign-in."
 					},
 					"confirmationText": {
 						"type": "string",

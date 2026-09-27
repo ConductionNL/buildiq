@@ -2562,7 +2562,7 @@
 			"power-apps": "partial",
 			"built": {
 				"state": "built",
-				"evidence": "Working path: registration forms authored in buildiq (DetailPageEditor.vue:151 RegistrationFormList, PUT /api/registration-forms routes.php:280, stored in schema registrationForm, lib/Settings/register.d/50-registration-forms.json:5) are read at render time by portaliq origin/development lib/Service/Intake/PortalFormBindingResolver.php:67,73 (DEFAULT_FORM_REGISTER 'buildiq', schema 'registrationForm') and served anonymously by portaliq lib/Controller/PortalEmbedController.php:100-103 frame() and :160-163 submit(), both #[PublicPage] with #[AnonRateLimit]. Second path: FormPageEditor.vue:153-196 'External access' opens src/dialogs/ExternalFormAccessDialog.vue which via src/services/externalFormProvisioningService.js:114-123 adds group 'public' to the target OR schema's authorization.create (and read) and POSTs a portaliq portalPage (:305-313)",
+				"evidence": "Working path: registration forms authored in buildiq (DetailPageEditor.vue:151 RegistrationFormList, PUT /api/registration-forms routes.php:280, stored in schema registrationForm, lib/Settings/register.d/50-registration-forms.json:5) are read at render time by portaliq origin/development lib/Service/Intake/PortalFormBindingResolver.php:67,73 (DEFAULT_FORM_REGISTER 'buildiq', schema 'registrationForm') and served anonymously by portaliq lib/Controller/PortalEmbedController.php:100-103 frame() and :160-163 submit(), both #[PublicPage] with #[AnonRateLimit]. Second path: FormPageEditor.vue:153-196 'External access' opens src/dialogs/ExternalFormAccessDialog.vue which via src/services/externalFormProvisioningService.js:114-123 adds group 'public' to the target OR schema's authorization.create (and read) and POSTs a portaliq portalPage whose create action and collection are anonymous unless the maker chose a sign-in level (buildiq#935)",
 				"reachedOn": "portaliq public portal page bound to a buildiq registration form; builder side: detail page Registration forms, or form page External access -> Configure",
 				"owner": "ConductionNL/portaliq"
 			},
@@ -2570,7 +2570,7 @@
 			"providerHow": "read-from-code",
 			"feature": "external-form-provisioning",
 			"featureConfidence": "medium",
-			"note": "Buildiq never hosts an anonymous surface itself; portaliq (info.xml id portaliq, matches) does. DEFECT CANDIDATE: the form-page path writes a portalPage that does not match portaliq's schema: externalFormProvisioningService.js:178-185 builds the action as {type, register, schema, anonymous, minTrust: 0} with no 'id' or 'label' (portaliq lib/Settings/portaliq_register.json portalPage.actions.items.required = id, type, label) and minTrust 0 where the schema's enum is the string low|substantial|high (also at page level :309); pages: [] (:312) gives the portal page no block that renders the form, and portalPath is hard-coded '/portal' (:301,316). So a form built on a form page can be opened to anonymous POSTs at OR, but gets no rendered public form.",
+			"note": "Buildiq never hosts an anonymous surface itself; portaliq (info.xml id portaliq, matches) does. DEFECT CANDIDATE: the form-page path writes a portalPage that does not match portaliq's schema: externalFormProvisioningService.js builds the create action as {type, register, schema, anonymous} with no 'id' or 'label' (portaliq lib/Settings/portaliq_register.json portalPage.actions.items.required = id, type, label; buildiq#921). The invalid minTrust 0 is gone since buildiq#935: an anonymous entry carries no minTrust, a signed-in one a string level; pages: [] (:312) gives the portal page no block that renders the form, and portalPath is hard-coded '/portal' (:301,316). So a form built on a form page can be opened to anonymous POSTs at OR, but gets no rendered public form.",
 			"reachedOn": "portaliq public portal page bound to a buildiq registration form; builder side: detail page Registration forms, or form page External access -> Configure",
 			"evidence": {
 				"nocobase": "source read at v2.2.18, not driven: packages/plugins/@nocobase/plugin-public-forms/src/client-v2/plugin.tsx:27 Public forms settings page (enable, password, copy link, QR code per en-US.json); success prompt at packages/plugins/@nocobase/plugin-public-forms/src/client-v2/models/PublicFormPageModel.tsx:75; optional preset plugin packages/presets/nocobase/package.json:77 Reached on: Settings, Public forms, Add New, Copy link",
@@ -6965,7 +6965,7 @@
 			"source": "competitor",
 			"origin": "tender",
 			"originUrl": "https://www.tenderned.nl/aankondigingen/overzicht/382064",
-			"buildiq": "partial",
+			"buildiq": "yes",
 			"nocobase": "no",
 			"budibase": "no",
 			"appsmith": "no",
@@ -6973,16 +6973,16 @@
 			"power-apps": "unknown",
 			"built": {
 				"state": "built",
-				"evidence": "Registration forms authored in buildiq are provisioned with minTrust 0, the anonymous floor, hard-coded at src/services/externalFormProvisioningService.js:184 and :309, so a single form cannot require DigiD from the builder; portaliq origin/development can run a whole portal DigiD-only (lib/Controller/ContentController.php:112-118, modes ['digid']) through its broker (lib/Controller/SessionController.php:260 digid|eherkenning|eidas|generic)",
-				"reachedOn": "portaliq portal configured DigiD-only; not settable per form in buildiq",
+				"evidence": "A maker sets a per-form sign-in level (minTrust: low, substantial or high; absent is anonymous) on both publish paths (buildiq#935). Registration forms: src/components/page-editor/fields/RegistrationFormEditor.vue 'Sign-in required' select writes minTrust into schema registrationForm (lib/Settings/register.d/50-registration-forms.json, enum low|substantial|high), lib/Service/RegistrationFormSignInLevel.php assertValid() (called from RegistrationFormValidator::validate()) refuses an unknown level or one combined with isPublic, and portaliq origin/development lib/Service/Intake/PortalFormBindingResolver.php render() carries the form's minTrust into lib/Service/Intake/PortalFormTrustLevel.php required(), enforced on the embed frame and submit (portaliq#725, PR #727). Form pages: src/dialogs/ExternalFormAccessDialog.vue 'Sign-in required' select; src/services/externalFormProvisioningService.js applySignInLevel() writes the level on the portalPage create action and collection without anonymous, keeps a stored level on a repeat save that names none, and grants no OpenRegister public create when a level is set. Tests: tests/services/externalFormProvisioningService.spec.js, tests/dialogs/ExternalFormAccessDialog.spec.js, tests/components/RegistrationFormEditorSignIn.spec.js, tests/Unit/Service/RegistrationFormValidatorTest.php.",
+				"reachedOn": "buildiq detail page, Registration forms, form editor 'Sign-in required'; or form page, External access, 'Sign-in required'; portaliq enforces it on the form",
 				"owner": "ConductionNL/portaliq"
 			},
 			"provider": "portaliq",
 			"providerHow": "read-from-code",
 			"feature": "external-form-provisioning",
 			"featureConfidence": "medium",
-			"reachedOn": "portaliq portal configured DigiD-only; not settable per form in buildiq",
-			"note": "Mined 2026-09-26 from tender: Katwijk e-formulieren 2025.",
+			"reachedOn": "buildiq detail page, Registration forms, form editor 'Sign-in required'; or form page, External access, 'Sign-in required'; portaliq enforces it on the form",
+			"note": "Mined 2026-09-26 from tender: Katwijk e-formulieren 2025. Rated yes on code reading, not driven live. Caveat: on a registration form portaliq's PortalFormTrustLevel still treats a declared 'low' as anonymous, while its portalPage contract treats 'low' as signed in; filed as portaliq#731. Levels substantial and high are enforced on both paths.",
 			"evidence": {
 				"nocobase": "source read at v2.2.18, not driven: searched packages for digid, eherkenning, saml: none in the public source; SAML and OIDC login are commercial (https://docs.nocobase.com/auth-verification/auth-saml/index.md) and there is no DigiD or eHerkenning adapter; public forms (packages/plugins/@nocobase/plugin-public-forms/src/client-v2/plugin.tsx:27) are anonymous or password protected",
 				"budibase": "source read at v3.46.0, not driven: sign-in supports OIDC and Google only (packages/builder/src/settings/pages/auth/index.svelte:33,66); grep -il saml in packages/worker/src and packages/backend-core/src/auth: none, so DigiD and eHerkenning (SAML) are not supported directly, only through an external OIDC broker",

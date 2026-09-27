@@ -95,6 +95,7 @@ final class RegistrationFormValidator {
 	): array {
 		$this->assertName(form: $form);
 		$this->assertAudience(form: $form);
+		(new RegistrationFormSignInLevel())->assertValid(form: $form);
 		$this->assertSections(form: $form);
 		$this->assertChannel(form: $form, targetChannels: $targetChannels);
 		$this->assertNameIsFree(form: $form, existing: $existing);

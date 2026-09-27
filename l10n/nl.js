@@ -1349,7 +1349,18 @@ OC.L10N.register(
         "Which property carries the channel": "Welk veld draagt het kanaal",
         "Who may open it": "Wie het mag openen",
         "Channel Property": "Kanaalveld",
-        "The property on the target schema that carries the intake channel, named the same way `typeProperty` names the one carrying the type. Its enum is what a channel is checked against. Buildiq never guesses this from a property name: refusing a save on a name that merely looks channel-ish is a worse failure than not refusing at all. A form that names no channel property is not channel-checked (REQ-OBRF-007).": "Het veld op het doelschema dat het aanvraagkanaal draagt, net zoals `typeProperty` het veld met het type noemt. De enum daarvan is waar een kanaal tegen gecontroleerd wordt. Buildiq raadt dit nooit uit een veldnaam: een opslag weigeren op een naam die alleen maar op een kanaal lijkt is erger dan niet weigeren. Een formulier dat geen kanaalveld noemt, wordt niet op het kanaal gecontroleerd (REQ-OBRF-007)."
+        "The property on the target schema that carries the intake channel, named the same way `typeProperty` names the one carrying the type. Its enum is what a channel is checked against. Buildiq never guesses this from a property name: refusing a save on a name that merely looks channel-ish is a worse failure than not refusing at all. A form that names no channel property is not channel-checked (REQ-OBRF-007).": "Het veld op het doelschema dat het aanvraagkanaal draagt, net zoals `typeProperty` het veld met het type noemt. De enum daarvan is waar een kanaal tegen gecontroleerd wordt. Buildiq raadt dit nooit uit een veldnaam: een opslag weigeren op een naam die alleen maar op een kanaal lijkt is erger dan niet weigeren. Een formulier dat geen kanaalveld noemt, wordt niet op het kanaal gecontroleerd (REQ-OBRF-007).",
+        "Sign-in Level": "Inlogniveau",
+        "The sign-in a filer needs before the portal shows or accepts this form: DigiD for citizens or eHerkenning for businesses, at level low, substantial or high. Left empty, anyone may fill the form in. The portal enforces it; buildiq only records the maker's choice, and refuses a public form that also asks for a sign-in.": "Het inloggen dat een invuller nodig heeft voordat het portaal dit formulier toont of aanneemt: DigiD voor inwoners of eHerkenning voor bedrijven, op niveau laag, substantieel of hoog. Leeg betekent dat iedereen het formulier mag invullen. Het portaal dwingt het af; buildiq legt alleen de keuze van de maker vast en weigert een openbaar formulier dat ook om inloggen vraagt.",
+        "Sign-in required": "Inloggen vereist",
+        "No sign-in": "Niet inloggen",
+        "No sign-in, anyone may fill it in": "Niet inloggen, iedereen mag het invullen",
+        "DigiD or eHerkenning, level low": "DigiD of eHerkenning, niveau laag",
+        "DigiD or eHerkenning, level substantial": "DigiD of eHerkenning, niveau substantieel",
+        "DigiD or eHerkenning, level high": "DigiD of eHerkenning, niveau hoog",
+        "The portal asks for this sign-in before it shows the form or accepts an answer.": "Het portaal vraagt om dit inloggen voordat het het formulier toont of een antwoord aanneemt.",
+        "Open this form to people outside the organisation": "Dit formulier openstellen voor mensen buiten de organisatie",
+        "This form asks for a sign-in, so it is only open through the portal page. The anonymous submit address stays closed.": "Dit formulier vraagt om inloggen, dus het is alleen open via de portaalpagina. Het anonieme verzendadres blijft dicht."
     },
     "nplurals=2; plural=(n != 1);"
 )
