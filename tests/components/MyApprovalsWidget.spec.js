@@ -181,6 +181,77 @@ describe('MyApprovalsWidget', () => {
 		expect(wrapper.find('[data-testid="my-approvals-row"]').exists()).toBe(false)
 	})
 
+	it('shows each task its due date, and flags overdue and due-soon tasks in words', async () => {
+		loadState.mockReturnValue(['permit-reviewers'])
+		axios.get.mockImplementation(
+			inboxByScope({
+				pooled: {
+					results: [
+						taskRow({
+							id: 3,
+							uuid: 'task-later',
+							displayTitle: 'Approve: Later',
+							dueAt: '2026-10-20T12:00:00+00:00',
+							daysUntilDue: 23,
+						}),
+						taskRow({
+							id: 4,
+							uuid: 'task-late',
+							displayTitle: 'Approve: Late',
+							dueAt: '2026-09-20T12:00:00+00:00',
+							overdue: true,
+							daysOverdue: 7,
+						}),
+						taskRow({
+							id: 5,
+							uuid: 'task-soon',
+							displayTitle: 'Approve: Soon',
+							dueAt: null,
+							expiresAt: '2026-09-28T12:00:00+00:00',
+							daysUntilDue: 1,
+						}),
+						taskRow({
+							id: 6,
+							uuid: 'task-open',
+							displayTitle: 'Approve: No deadline',
+						}),
+					],
+				},
+			}),
+		)
+
+		const wrapper = mount(MyApprovalsWidget, { stubs })
+		await flush()
+		await wrapper.vm.$nextTick()
+
+		const rows = wrapper.findAll('[data-testid="my-approvals-row"]')
+		// Soonest deadline first across both scopes, tasks without one last.
+		expect(rows.map((r) => r.find('.my-approvals-widget__role').text())).toEqual(
+			[
+				'Approve: Late',
+				'Approve: Soon',
+				'Approve: Later',
+				'Approve: No deadline',
+			],
+		)
+
+		const due = (row) => row.find('[data-testid="my-approvals-due"]')
+		const flag = (row) => row.find('[data-testid="my-approvals-deadline-flag"]')
+
+		expect(due(rows[0]).attributes('datetime')).toBe('2026-09-20T12:00:00+00:00')
+		expect(flag(rows[0]).text()).toBe('Overdue')
+
+		// An expiry counts as the deadline when there is no advisory due date.
+		expect(due(rows[1]).attributes('datetime')).toBe('2026-09-28T12:00:00+00:00')
+		expect(flag(rows[1]).text()).toBe('Due soon')
+
+		expect(due(rows[2]).attributes('datetime')).toBe('2026-10-20T12:00:00+00:00')
+		expect(flag(rows[2]).exists()).toBe(false)
+
+		expect(due(rows[3]).exists()).toBe(false)
+		expect(flag(rows[3]).exists()).toBe(false)
+	})
+
 	it('approve completes the task with an approving outcome', async () => {
 		loadState.mockReturnValue(['permit-reviewers'])
 		axios.get.mockImplementation(inboxByScope({ pooled: pooledPage }))
