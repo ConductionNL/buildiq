@@ -1634,16 +1634,18 @@
 			"area": "pages",
 			"name": "Drag components onto a free canvas and position them where you want.",
 			"source": "competitor",
-			"buildiq": "no",
+			"buildiq": "yes",
 			"nocobase": "partial",
 			"budibase": "yes",
 			"appsmith": "yes",
 			"mendix": "partial",
 			"power-apps": "yes",
 			"built": {
-				"state": "none",
-				"evidence": "grep 'drag|canvas|drop' across src/views/PageDesigner.vue and src/components/page-editor/*.vue: only hits are vuedraggable-based REORDERING of list rows (PageListEditor.vue, MenuTreeEditor.vue use `Draggable` from vuedraggable to reorder pages/menu entries by drag handle). No free-canvas positioning of components anywhere in page-editor/.",
-				"owner": "ConductionNL/buildiq"
+				"state": "built",
+				"evidence": "A published app in Edit with Buildiq mode makes the widget grids of dashboard pages and detail-page bodies draggable and resizable: @conduction/nextcloud-vue 2.57.1 src/components/CnDashboardGrid/CnDashboardGrid.vue:1-12 (GridStack drag, resize, keyboard moves), src/components/CnDashboardPage/CnDashboardPage.vue:1605-1615 gridEditable() true in the Buildiq editor, :2677-2700 writes the layout back, src/components/CnDetailPage/CnDetailPage.vue:425-436 the editable detail grid; buildiq src/builder.js:418 persistManifestDelta PUTs the manifest to /api/applications/{slug}/manifest.",
+				"owner": "ConductionNL/buildiq",
+				"reachedOn": "Published app, Edit with Buildiq, a dashboard page or a detail page with a widget grid, drag or resize a widget, Save",
+				"note": "Matrix corrected in the OpenSpec pass 2026-09-27: the earlier reading searched the page designer only. Grid positioning, not free pixel placement, as the competitors rated yes (Budibase container grid, Appsmith fixed grid). The page designer's own dashboard editor still takes numeric positions (src/components/page-editor/fields/LayoutItemBuilder.vue)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1656,7 +1658,8 @@
 				"appsmith": "source read at v2.4.2, not driven: app/client/src/layoutSystems/fixedlayout/editor/FixedLayoutCanvasArenas/hooks/useCanvasDragging.ts:1 free grid dragging in the fixed layout (layoutSystems/types/index.ts:7 FIXED, :8 AUTO, :9 ANVIL); widgets dragged from app/client/src/pages/AppIDE/components/WidgetAdd/WidgetsList.tsx:19 Reached on: app editor canvas, drag from the widget list",
 				"mendix": "docs-only: corpus/mendix.tsv #26370 (2026-04-10): drag-and-drop WYSIWYG page builder; free positioning on a canvas not confirmed (pages use layout grids)",
 				"power-apps": "docs-only: https://learn.microsoft.com/en-us/power-apps/maker/canvas-apps/data-platform-create-app (2026-09-26): start with a blank canvas app and add controls and data yourself"
-			}
+			},
+			"reachedOn": "Published app, Edit with Buildiq, a dashboard page or a detail page with a widget grid, drag or resize a widget, Save"
 		},
 		{
 			"id": "pg-live-preview",
@@ -2243,10 +2246,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"evidence": "src/components/page-editor/CustomPageEditor.vue authors {component, props} for type:\"custom\" -- 'component' is a free-text input (with datalist suggestions when a registry list is available) naming a key in the CONSUMING APP's pre-registered customComponents map (CustomPageEditor.vue:3-18 comment); 'props' is a raw-JSON textarea. There is no code editor anywhere in buildiq for writing a new component's implementation.",
 				"reachedOn": "any built app page authored as type custom",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/pages-custom-code (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -2274,9 +2278,10 @@
 			"mendix": "partial",
 			"power-apps": "partial",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "searched for 'expression'/'jsExpr'/'customJs'/'bindingExpression'/'Function(' across src/components/page-editor/ and src/services/: no hits. The only conditional-value mechanism found is visibleWhen ({field, op, value} with a fixed op enum eq/neq/gt/gte/lt/lte, VisibleWhenBuilder.vue:69-73) -- a declarative predicate, not a JavaScript expression language. No formula/computed-value field editor exists.",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/pages-custom-code (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -2333,9 +2338,10 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "grep for capacitor/cordova/react-native/ios/android across src/ and package.json: no genuine hits (the few 'ios'/'android' string matches were substrings of unrelated words like 'axios'). No native mobile build tooling anywhere in the repo.",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/pages-installable-offline-and-mobile (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -2361,9 +2367,10 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "grep for serviceWorker/offline/workbox/indexedDB across src/: only hits are in src/composables/useDataImport.js and src/dialogs/ImportDataWizard.vue, an 'offline import template' -- a CSV/spreadsheet TEMPLATE users download, fill in offline, and re-upload later for bulk data import. This is unrelated to running a built app while offline with sync; no service worker, no offline cache, no local-first storage for the running app anywhere in the repo.",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/pages-installable-offline-and-mobile (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -2914,10 +2921,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"evidence": "src/views/RuleSetsPage.vue:169 lists rule sets via GET /apps/openregister/api/objects/buildiq/rule-set; editors src/dialogs/DecisionTableEditor.vue:259 and src/dialogs/ConditionActionRuleEditor.vue:174 save through OR REST; evaluation lib/Controller/RulesController.php:116 evaluate() -> lib/Service/RuleEngineService.php:149 evaluate() -> DecisionTableEvaluator / ConditionActionExecutor. The only page-called rules route is test-all (RuleSetsPage.vue:227, RuleSetTestSandboxModal.vue:180 -> RulesController.php:236). POST /api/rules/{slug}/evaluate (routes.php:191) and GET /schema (routes.php:192) appear in no frontend path in _lane/api-paths.txt, and no sibling (openregister, procest, portaliq, hermiq, decidesk, openconnector, zaakafhandelapp, pipelinq on origin/development) calls them. Other in-process callers: RuleActionDispatcher.php:310 call-rule-set (used by approval follow-ups via ApprovalOutcomeListener) and the manual-trigger automation backend, which nothing runs.",
 				"reachedOn": "/business-rules (BusinessRules page, src/manifest.d/20-business-rules.json:7), which has menu: [] and no in-app link or router push anywhere in src/: only reachable by typing the URL",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/logic-automation-actions-that-run (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -3348,10 +3356,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"evidence": "Composer webhook form (AutomationEditDialog.vue:233-246). Allowed only with lifecycle-transition or manual (AutomationCompilerService.php:153,155). lifecycle-transition compiles to {type: 'webhook-dispatch', url, payloadTemplate, marker} appended to the transition's actions (AutomationCompilerService.php:828-839, applyLifecycleActions :1284-1294). OpenRegister's LifecycleActionExecutor reads the handler name from the 'action' key and throws when it is empty (openregister lib/Service/Lifecycle/LifecycleActionExecutor.php:83-88), and LifecycleActionRegistry only maps set-fields/set-field (LifecycleActionRegistry.php:70-71); git grep webhook-dispatch|related-object-upsert over openregister lib: no match. manual compiles to a RuleSet (compileRulesBackend :910-933) that nothing runs (no run route; evaluate has no page caller). Working path: as an on-approve/on-reject follow-up (src/components/AutomationActionListEditor.vue:79,145) dispatched by ApprovalOutcomeListener.php:364 -> RuleActionDispatcher::dispatchWebhook, real HTTP POST at RuleActionDispatcher.php:264.",
 				"reachedOn": "/automations composer: only effective inside a 'Require approval' action's on-approve/on-reject list",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/logic-automation-actions-that-run (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -3379,10 +3388,11 @@
 			"mendix": "yes",
 			"power-apps": "partial",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"evidence": "Composer object-op form: operation, target schema, field mapping JSON (AutomationEditDialog.vue:205-231). Transition path compiles to {type: 'related-object-upsert'} lifecycle actions OpenRegister cannot run (AutomationCompilerService.php:815-827; no handler in openregister LifecycleActionRegistry.php:70-71). Manual path compiles to a RuleSet nothing runs. Working path: object-op inside an approval's on-approve/on-reject list (AutomationActionListEditor.vue:53,142) -> RuleActionDispatcher::dispatchObjectOp -> objectService->saveObject (RuleActionDispatcher.php:198-225, owner-impersonated). Also OpenRegister flow canvas embedded via 'Edit flows...' (ObjectWriteNode/SetFieldsNode on openregister origin/development).",
 				"reachedOn": "/automations composer, only inside a 'Require approval' follow-up list; or the embedded OpenRegister flow canvas",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/logic-automation-actions-that-run (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -3534,10 +3544,11 @@
 			"mendix": "yes",
 			"power-apps": "partial",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "Searched: composer action types (AutomationEditDialog.vue:570-584) have no script step; RuleActionDispatcher.php:127-131 supports send-notification/object-op/webhook/start-workflow/call-rule-set, and start-workflow is a logged no-op (RuleActionDispatcher.php:135-141); FeelParser.php:17 forbids function calls; openregister origin/development lib/Service/Flow/Nodes has no script or code node (file list: AwaitSignal, DecisionTable, End, Explode, Filter, FlowState, Iterate, LockObject, Loop, Map, Merge, ObjectRead, ObjectWrite, PortalTask, Router, SendEmail, SendNotification, SendTalkMessage, SetFields, SubFlow, Switch, Trigger*, UnlockObject, UserTask, Wait).",
 				"reachedOn": "",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/logic-script-step (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -3564,10 +3575,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"evidence": "App settings modal: ApplicationDetailActions.vue:869-890 onSettingsOpen loads GET /apps/openregister/api/flows; src/modals/AppSettingsModal.vue:115 flow picker, :263-270 emits [{flow, label}]; ApplicationDetailActions.vue:900-910 setFlows -> obPatchApp({flows}) onto Application.flows (lib/Settings/register.d/22-flows-and-agents.json). Consumers of Application.flows in buildiq: export and GitHub bundling (lib/Service/ExportService.php:166, FlowChannelProvisioner.php:304-333, AppRepoSerializer.php:239-274) and the app detail FlowsWidget list; nothing in buildiq or OpenRegister (git grep \"['flows']\" over openregister lib) uses the binding to trigger or scope a flow.",
 				"reachedOn": "app detail /applications/{slug}, settings modal, 'Flows' picker (owner only)",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/logic-shared-flows-and-automations (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -4154,10 +4166,11 @@
 			"mendix": "partial",
 			"power-apps": "partial",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"evidence": "src/views/AgentsPage.vue lists and deletes agents via OR REST /apps/openregister/api/objects/buildiq/buildAgent (:226, :290); src/dialogs/AgentEditDialog.vue:6-71 name, instructions, modelTaskType, enabledTools (subset of BuildiqToolProvider tools, validated server-side), save :335; per-agent chat = CopilotPanel scoped to agentId (AgentsPage.vue:104). Page registered at /agents (src/manifest.d/70-agent-workspace.json) with menu: [], and grep over src finds no router push, link or menu entry to it.",
 				"reachedOn": "/agents, only by typing the URL (no menu entry or in-app link)",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/ai-agents-knowledge-and-run-trace (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -4185,10 +4198,11 @@
 			"mendix": "yes",
 			"power-apps": "partial",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"evidence": "lib/Service/AgentRunLogger.php persists an AgentRun on agent-scoped execute/discard (CopilotService.php:186, :364 discard logs a discarded run); GET /api/agents/{uuid}/runs (routes.php:330) -> lib/Controller/AgentsController.php runs(), owners/editors only; src/components/agents/AgentRunHistory.vue:139 renders it inside AgentsPage.",
 				"reachedOn": "/agents, per-agent run history, only by typing the URL",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/ai-agents-knowledge-and-run-trace (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -4247,10 +4261,11 @@
 			"mendix": "partial",
 			"power-apps": "partial",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "Searched: automation action types (src/dialogs/AutomationEditDialog.vue:570-584) and RuleActionDispatcher.php:127-131 have no LLM step; grep -iE 'llm|TaskProcessing|summar|classif' over AutomationEditDialog.vue, RuleActionDispatcher.php, AutomationCompilerService.php: none. openregister origin/development lib/Service/Flow/Nodes has no AI or LLM node (file list in logic-custom-code-step). buildiq's only LLM use is the copilot (CopilotService.php TextToText).",
 				"reachedOn": "",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/ai-llm-steps-and-computed-fields (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -4339,10 +4354,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "The copilot proposes manifest changes (pages, schemas, menus, widgets) only (BuildiqToolProvider.php:84-258); no AI help in the FEEL/condition editors (src/dialogs/DecisionTableEditor.vue, ConditionActionRuleEditor.vue, src/utils/feelCell.js), the automation field-mapping or payload JSON boxes (AutomationEditDialog.vue:205-246), or the raw manifest editor; grep -iE 'copilot|generate with' over those files: none.",
 				"reachedOn": "",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/ai-copilot-documents-and-code-help (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -5247,10 +5263,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"evidence": "routes.php:184 rules#testAll POST /api/rules/{ruleSetSlug}/test-all -> lib/Controller/RulesController.php:236 testAll() runs stored RuleTestCase rows against a rule set via versioningService->runTestGate(); reached from src/views/RuleSetsPage.vue:227 and src/modals/RuleSetTestSandboxModal.vue:180",
 				"reachedOn": "RuleSets page /business-rules (typed URL only), 'Run all tests' on a business-rule set",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/lifecycle-release-test-gate (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -5613,10 +5630,11 @@
 			"mendix": "partial",
 			"power-apps": "yes",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"evidence": "RuleSet lives in the system-wide buildiq register with ownerApp and isGlobal (lib/Settings/register.d/10-business-rules.json RuleSet), not per app; any app's automation can reference one by slug: src/dialogs/AutomationEditDialog.vue:132-135,549,1211-1212 condition kind 'rule-set' -> lib/Service/AutomationCompilerService.php:987-995 maps it to a call-rule-set action; rule sets can also call each other (lib/Service/RuleActionDispatcher.php:131,303 dispatchCallRuleSet). Rule sets are edited on src/views/RuleSetsPage.vue (page BusinessRules /business-rules, src/manifest.d/20-business-rules.json).",
 				"reachedOn": "Automations dialog condition 'Reference a rule set' (reached from ApplicationDetailActions.vue:854); rule sets on /business-rules by typed URL only",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/logic-shared-flows-and-automations (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -5799,9 +5817,10 @@
 			"mendix": "yes",
 			"power-apps": "partial",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "src/builder.js:157-167, translateForApp(key, vars) comment: 'Virtual-app manifests usually carry plain strings; t() returns them unchanged when no translation is registered.' There is no per-built-app translation catalogue or locale-keyed label shape anywhere in the manifest schema or page-editor fields (labels are plain strings, e.g. IndexPageEditor.vue field placeholders).",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/experience-multilingual-apps (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -6129,9 +6148,10 @@
 			"mendix": "unknown",
 			"power-apps": "partial",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "lib/Service/ManifestResolverService.php:233-236 explicit comment: applications 'operate in the global (non-tenant-isolated) scope. Buildiq ships... are not partitioned by tenant/organisation. Cross-tenant slug [collisions possible]'; lib/Controller/ApplicationsController.php:2193 comment warns a tenant-partitioning change 'breaks every existing single-tenant install'; lib/Service/RuleEngineService.php:11 lists 'Multi-tenant isolation' as an explicit non-goal/future item in its design notes.",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/operate-organisation-scoped-apps (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -6365,9 +6385,10 @@
 			"mendix": "yes",
 			"power-apps": "partial",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "grep for OpenAPI/swagger/'api-docs'/apiDocs across lib/ and src/: the only hits (lib/Service/SettingsService.php:296,367) are internal comments about OpenAPI-SHAPED data structures (components.schemas/paths as keyed objects) used for schema import/export bookkeeping, not generated API documentation for a built app.",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/operate-api-docs (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7434,10 +7455,11 @@
 			"mendix": "yes",
 			"power-apps": "partial",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "src/dialogs/AgentEditDialog.vue:6-71 holds name, instructions, modelTaskType and enabledTools only; grep -iE 'knowledge|rag|embedding' in AgentEditDialog.vue: no document knowledge base",
 				"reachedOn": "nothing reaches it",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/ai-agents-knowledge-and-run-trace (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7500,10 +7522,11 @@
 			"mendix": "unknown",
 			"power-apps": "yes",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "Searched: no paste-to-fill on form pages (src/components/page-editor/FormPageEditor.vue, nextcloud-vue v2.55.1 CnFormPage); the AI companion (CnAiCompanion via hermiq, src/views/BuilderHost.vue:38) answers questions and does not fill a form",
 				"reachedOn": "nothing reaches it",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/ai-smart-paste-into-forms (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7667,10 +7690,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"evidence": "'Generate with AI' takes a typed description only: src/dialogs/CopilotGenerateDialog.vue:30 NcTextArea (no file upload in the dialog) -> POST /apps/buildiq/api/copilot/plan (appinfo/routes.php:320) -> lib/Controller/CopilotController.php:122; it proposes schemas and pages, not user stories, and a document's text can only be pasted",
 				"reachedOn": "/applications, New application wizard, 'Generate with AI'",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/ai-copilot-documents-and-code-help (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8201,10 +8225,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "Automation triggers are object created, updated, deleted, lifecycle transition, cron schedule and manual only (src/dialogs/AutomationEditDialog.vue:484-495); no mail-received trigger",
 				"reachedOn": "nothing reaches it",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/logic-email-and-webhook-triggers (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8234,10 +8259,11 @@
 			"mendix": "yes",
 			"power-apps": "partial",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "Automation triggers are object events, lifecycle transition, schedule and manual (src/dialogs/AutomationEditDialog.vue:484-495); webhook exists only as an outgoing action (:233); other systems can write records through the REST API (int-inbound-api), which then fires an object trigger",
 				"reachedOn": "nothing reaches it",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/logic-email-and-webhook-triggers (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8334,10 +8360,11 @@
 			"mendix": "partial",
 			"power-apps": "yes",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "No AI field type (src/components/schema-editor/FieldEditor.vue:319-327) and no LLM automation step (ai-llm-action, src/dialogs/AutomationEditDialog.vue:570-584)",
 				"reachedOn": "nothing reaches it",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/ai-llm-steps-and-computed-fields (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
