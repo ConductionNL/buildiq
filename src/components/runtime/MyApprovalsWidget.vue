@@ -5,11 +5,8 @@
   - steps task 4.1/4.2, spec automation-approval-action REQ "My Approvals
   - runtime widget lists pending steps for the viewer's groups").
   -
-  - Registrable page-widget type for a built (virtual) app: lists PENDING
-  - OpenRegister `ApprovalStep`s whose `role` is present in the viewer's NC
-  - groups (read via `loadState('buildiq', 'currentUserGroups')`, published
-  - by DashboardController::builder() — never a DOM attribute read, ADR-004
-  - hard rule). Approve/reject buttons call OpenRegister's
+  - Registrable page-widget type for a built (virtual) app: lists the open
+  - OpenRegister tasks waiting for the viewer. Approve/reject buttons call OpenRegister's
   - `/api/flow-tasks/{uuid}/complete` DIRECTLY — no Buildiq pass-through
   - controller exists for these calls (ADR-022 redundant-controller gate;
   - design.md Decision 4 of automation-approval-steps).
@@ -19,11 +16,12 @@
   - approval is an ordered task sequence, and a decision is `complete` with an
   - `outcome`. A rejecting outcome refuses an empty comment, so one is sent.
   -
-  - OpenRegister's task list has no "assigned to me" filter
-  - (only status/role/chainId/objectUuid) — client-side group filtering is
-  - the only option without an OR-side API addition, and matches the SAME
-  - group-based check OR itself enforces server-side (`verifyRole`), so the
-  - client-side filter can never show an action a server call would reject.
+  - The task inbox narrows to the caller server side: `scope=pooled` is the
+  - unclaimed tasks in the caller's candidate groups, `scope=assigned` the
+  - ones the caller holds (TaskInboxCriteria). A task names its candidates in
+  - `candidateGroups` / `candidateRole` and has no `role` field, so the old
+  - client-side role filter dropped every row (#936). `isTerminal=false`
+  - keeps completed tasks out; the endpoint has no `status` parameter.
   -->
 <template>
 	<div class="my-approvals-widget">
@@ -58,10 +56,14 @@
 				class="my-approvals-widget__row"
 				data-testid="my-approvals-row">
 				<div class="my-approvals-widget__row-main">
-					<span class="my-approvals-widget__role">{{ step.role }}</span>
-					<span class="my-approvals-widget__object">{{
-						step.objectUuid
+					<span class="my-approvals-widget__role">{{
+						step.displayTitle || step.title || t('buildiq', 'Approval')
 					}}</span>
+					<span
+						v-if="candidateLabel(step)"
+						class="my-approvals-widget__object"
+						>{{ candidateLabel(step) }}</span
+					>
 				</div>
 				<div class="my-approvals-widget__row-actions">
 					<NcButton
@@ -93,7 +95,12 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import NcButton from '@nextcloud/vue/components/NcButton'
 import NcNoteCard from '@nextcloud/vue/components/NcNoteCard'
-import { getCurrentUserGroups } from '../../composables/useRole.js'
+
+/**
+ * The inbox scopes that together mean "waiting for me": the unclaimed tasks
+ * in my groups, and the ones I hold.
+ */
+const INBOX_SCOPES = ['pooled', 'assigned']
 
 export default {
 	name: 'MyApprovalsWidget',
@@ -110,17 +117,14 @@ export default {
 
 	computed: {
 		/**
-		 * Pending steps whose `role` is one of the viewer's NC groups
-		 * (client-side filter — task 4.1).
+		 * Open tasks waiting for the viewer. OpenRegister already narrowed
+		 * each scope to the viewer's user and groups, so no client filter.
 		 *
 		 * @return {Array}
+		 * @spec openspec/changes/automation-approval-steps/tasks.md#4.1
 		 */
 		pendingSteps() {
-			const groups = getCurrentUserGroups()
-			if (groups.length === 0) {
-				return []
-			}
-			return this.steps.filter((step) => groups.includes(step.role))
+			return this.steps
 		},
 	},
 
@@ -129,6 +133,23 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Who the task is offered to, for the row's second line.
+		 *
+		 * @param {object} step - the task row.
+		 * @return {string}
+		 * @spec openspec/changes/automation-approval-steps/tasks.md#4.1
+		 */
+		candidateLabel(step) {
+			const groups = Array.isArray(step.candidateGroups)
+				? step.candidateGroups
+				: []
+			if (groups.length > 0) {
+				return groups.join(', ')
+			}
+			return step.candidateRole || ''
+		},
+
 		/**
 		 * Load pending approval steps directly from OpenRegister's REST API.
 		 *
@@ -142,13 +163,27 @@ export default {
 				// openregister #3302 retired /api/approval-steps; an approval is an
 				// ordered task sequence now, and its open positions are tasks.
 				const url = generateUrl('/apps/openregister/api/flow-tasks')
-				const { data } = await axios.get(url, {
-					params: { status: 'pending' },
-				})
-				// The task list answers either a bare array or a paginated
-				// envelope depending on the query, so accept both rather than
-				// silently rendering nothing.
-				this.steps = Array.isArray(data) ? data : (data?.results ?? [])
+				const pages = await Promise.all(
+					INBOX_SCOPES.map((scope) =>
+						axios.get(url, {
+							params: { scope, isTerminal: 'false', limit: 50 },
+						}),
+					),
+				)
+				// A claimed task can surface in more than one scope: show it once.
+				const seen = new Set()
+				const rows = []
+				for (const { data } of pages) {
+					const page = Array.isArray(data) ? data : (data?.results ?? [])
+					for (const row of page) {
+						const key = row.uuid ?? row.id
+						if (!seen.has(key)) {
+							seen.add(key)
+							rows.push(row)
+						}
+					}
+				}
+				this.steps = rows
 			} catch (err) {
 				this.error = true
 				this.steps = []
