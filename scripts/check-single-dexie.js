@@ -23,16 +23,18 @@
 //   from being the cause next time: `dexie` was declared `^4.0.8` here, a
 //   range wide enough for any `npm install` to walk the fleet apart.
 //
+//   Since 2026-09-27 every app is on @conduction/nextcloud-vue 2.57.1, which
+//   imports Dexie on first use of the offline database. No app's main or
+//   every-page bundle carries Dexie any more, so a version difference between
+//   apps only matters on a page that really opens the offline database. The
+//   fleet-version check this guard used to make (FLEET_DEXIE) is gone with
+//   the exact pin; what remains is that THIS app never ships two copies.
+//
 // WHAT IT CHECKS
 //
 //   1. every built chunk that embeds a Dexie copy embeds the SAME version;
 //   2. that version is the one package-lock.json resolves, so a stale chunk
-//      from an earlier build cannot ship unnoticed;
-//   3. that version is FLEET_DEXIE, the version the other apps ship.
-//
-//   Check 3 will fail the day the fleet moves to a new Dexie, and that is the
-//   intent: the apps that share a page move together, in one pass. A failure
-//   here is never fixed by deleting the check.
+//      from an earlier build cannot ship unnoticed.
 //
 // HOW IT DETECTS A COPY
 //
@@ -49,18 +51,11 @@
 //   exist yet it skips loudly instead of failing.
 //
 // Exit codes:
-//   0: zero or one Dexie version across js/, matching the lockfile and the fleet
-//   1: two or more versions, or a version the lockfile or the fleet disagrees with
+//   0: zero or one Dexie version across js/, matching the lockfile
+//   1: two or more versions, or a version the lockfile disagrees with
 
 const fs = require('fs')
 const path = require('path')
-
-// The Dexie version every other Conduction app on an instance ships today.
-// Moved to 4.4.6 on 2026-09-25 in one fleet-wide pass together with
-// ConductionNL/openregister#3788 (it was 4.4.5, verified 2026-09-19 against
-// hermiq, dossiq, openregister, opencatalogi and integriq). Still within
-// @conduction/nextcloud-vue's peer range ^4.0.8. Move this only together with them.
-const FLEET_DEXIE = '4.4.6'
 
 const repoRoot = path.join(__dirname, '..')
 const jsDir = path.join(repoRoot, 'js')
@@ -89,13 +84,6 @@ try {
 	console.log(
 		`i dexie singleton: could not read package-lock.json (${e.message}); checking chunk agreement only`,
 	)
-}
-
-if (expected && expected !== FLEET_DEXIE) {
-	console.error(
-		`x dexie singleton: package-lock.json resolves dexie ${expected}, but the fleet ships ${FLEET_DEXIE}. Buildiq shares every one of its pages with hermiq's panel and openregister's integration script, so this drift blanks them all. Pin dexie back, or bump FLEET_DEXIE in the same pass that bumps the rest of the fleet.`,
-	)
-	process.exit(1)
 }
 
 const findings = []
@@ -150,13 +138,6 @@ if (expected && distinct[0] !== expected) {
 	process.exit(1)
 }
 
-if (distinct[0] !== FLEET_DEXIE) {
-	console.error(
-		`x dexie singleton: built chunks carry dexie ${distinct[0]} but the fleet ships ${FLEET_DEXIE}. Buildiq's pages also carry hermiq's panel and openregister's integration script; two versions in one page blank them all.`,
-	)
-	process.exit(1)
-}
-
 console.log(
-	`+ dexie singleton: one Dexie version (${distinct[0]}) across ${findings.length} chunk(s), matching the lockfile and the fleet`,
+	`+ dexie singleton: one Dexie version (${distinct[0]}) across ${findings.length} chunk(s), matching the lockfile`,
 )
