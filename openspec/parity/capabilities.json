@@ -2705,10 +2705,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "grep -rli 'signature|CnSignatureCapture' src lib: hits are only app-signature/version-signature code (src/builder.js, useApplicationVersion.js, ApplicationsController.php), no form field. nextcloud-vue v2.55.1 ships src/components/CnSignatureCapture/CnSignatureCapture.vue but it is not a formField type (cnFormFieldRenderer.js:127) and buildiq never imports or registers it (src/registry.js, src/runtimeRegistry.js)",
 				"reachedOn": "",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/forms-signature-audio-and-location (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -5326,10 +5327,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"evidence": "src/manifest.json:537-547 page Templates /templates mounts TemplateGallery (nav entry src/manifest.json:356); src/views/TemplateGallery.vue:463 fetchTemplates() reads /apps/openregister/api/objects/buildiq/application-template (:327) and renders cards with a category chip (:101-103, labels :329-334); four seeded templates lib/Settings/templates/*.json each carry a category (e.g. permit-tracker.json:6), seeded by lib/Repair/SeedApplicationTemplates.php (appinfo/info.xml:185,267) via lib/Service/TemplateSeedService.php:112; clone POSTs /api/applications/from-template/{templateSlug} (TemplateGallery.vue:512, routes.php:50 -> ApplicationsController.php:1566 createFromTemplate)",
 				"reachedOn": "Templates page /templates (titled 'App store'), 'Built-in templates' section",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/reuse-gallery-categories-and-form-library (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7190,10 +7192,11 @@
 			"mendix": "partial",
 			"power-apps": "partial",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"evidence": "No form-level library. Whole apps, forms included, can be saved as a template (src/dialogs/SaveAsTemplateDialog.vue) and published to or installed from GitHub (reuse-github-shop, lib/Service/GitHubCatalogService.php), which other organisations can pick up",
 				"reachedOn": "template gallery and GitHub shop (app level, not per form)",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/reuse-gallery-categories-and-form-library (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7257,10 +7260,11 @@
 			"mendix": "partial",
 			"power-apps": "partial",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "A registration form targets one register, schema and type value (src/components/page-editor/DetailPageEditor.vue:151-156, fields/RegistrationFormEditor.vue:42-82); nothing splits one submission into several records or processes",
 				"reachedOn": "nothing reaches it",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/forms-multi-product-request (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8057,10 +8061,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "Searched: grep -iE 'qr|barcode|camera' over src/ and nextcloud-vue v2.55.1 page components: no scan action; the hits in src/ are the word scan in comments",
 				"reachedOn": "nothing reaches it",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/pages-qr-and-barcodes (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8293,10 +8298,11 @@
 			"mendix": "yes",
 			"power-apps": "unknown",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "Searched: grep -iE 'qr|barcode' over src/ and the nextcloud-vue v2.55.1 widget set offers no code generator widget",
 				"reachedOn": "nothing reaches it",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/pages-qr-and-barcodes (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8460,10 +8466,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "grep -iE 'geolocation' over src/: no hits; the map page (pg-map) plots records, not the user's position",
 				"reachedOn": "nothing reaches it",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/forms-signature-audio-and-location (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8493,10 +8500,11 @@
 			"mendix": "unknown",
 			"power-apps": "yes",
 			"built": {
-				"state": "none",
+				"state": "specified",
 				"evidence": "grep -iE 'MediaRecorder|audio' over src/ and nextcloud-vue v2.55.1 CnFormPage: no recorder field",
 				"reachedOn": "nothing reaches it",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Specified in openspec/changes/forms-signature-audio-and-location (OpenSpec pass 2026-09-27)."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",

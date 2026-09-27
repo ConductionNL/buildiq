@@ -232,6 +232,14 @@
 		"decidedOn": "2026-09-27"
 	},
 	{
+		"row": "form-audio-record",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Two competitors rated yes (Appsmith, Power Apps).",
+		"change": "forms-signature-audio-and-location",
+		"decidedOn": "2026-09-27"
+	},
+	{
 		"row": "form-calculation",
 		"matrix": "buildiq",
 		"decision": "build",
@@ -264,6 +272,14 @@
 		"decidedOn": "2026-09-27"
 	},
 	{
+		"row": "form-multi-product-request",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Tender demand (TenderNed 234319). journey-designer authors writes[] for one submission, but not one write per requested product.",
+		"change": "forms-multi-product-request",
+		"decidedOn": "2026-09-27"
+	},
+	{
 		"row": "form-prefill",
 		"matrix": "buildiq",
 		"decision": "build",
@@ -277,6 +293,14 @@
 		"decision": "existing",
 		"reason": "Open change registration-form-builder specifies the formDraft schema and allowSaveForLater (lib/Integration/RegistrationFormLeafProvider.php serves drafts); rendering and resuming the draft is the consumer's, handed over in its task 4.4.",
 		"change": "registration-form-builder",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "form-signature",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Three competitors rated yes (Budibase, Mendix, Power Apps).",
+		"change": "forms-signature-audio-and-location",
 		"decidedOn": "2026-09-27"
 	},
 	{
@@ -552,11 +576,27 @@
 		"decidedOn": "2026-09-27"
 	},
 	{
+		"row": "pg-device-location",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Three competitors rated yes (Appsmith, Mendix, Power Apps).",
+		"change": "forms-signature-audio-and-location",
+		"decidedOn": "2026-09-27"
+	},
+	{
 		"row": "pg-drag-drop-canvas",
 		"matrix": "buildiq",
 		"decision": "existing",
 		"reason": "Matrix corrected: in a published app, Edit with Buildiq makes the widget grids of dashboard pages and detail-page bodies draggable and resizable (nextcloud-vue 2.57.1 CnDashboardGrid.vue:1-12 on GridStack, CnDashboardPage.vue:1605-1615 gridEditable, CnDetailPage.vue:425-436), with keyboard moves and Add widget, and src/builder.js:418 saves the arrangement to the manifest. The earlier reading searched only the page designer, whose own layout editor still takes numbers (LayoutItemBuilder.vue).",
 		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "pg-generate-code",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Two competitors rated yes (Budibase, Mendix).",
+		"change": "pages-qr-and-barcodes",
 		"decidedOn": "2026-09-27"
 	},
 	{
@@ -581,6 +621,14 @@
 		"decision": "decided-no",
 		"reason": "Owned by nextcloud/server: push notifications to phones is a platform capability of the Nextcloud installation, outside the fleet (addendum rule for rows owed to nextcloud/server).",
 		"change": null,
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "pg-scan-code",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Five competitors rated yes.",
+		"change": "pages-qr-and-barcodes",
 		"decidedOn": "2026-09-27"
 	},
 	{
@@ -624,11 +672,27 @@
 		"decidedOn": "2026-09-27"
 	},
 	{
+		"row": "reuse-shared-form-library",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Partial and built, tender demand (TenderNed 382064) on the missing half: forms can only be shared as part of a whole app template.",
+		"change": "reuse-gallery-categories-and-form-library",
+		"decidedOn": "2026-09-27"
+	},
+	{
 		"row": "reuse-shared-logic",
 		"matrix": "buildiq",
 		"decision": "build",
 		"reason": "Partial and built, two competitors rated yes on the missing half (Budibase, Power Apps): rule sets are shared, automations are not.",
 		"change": "logic-shared-flows-and-automations",
+		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "reuse-template-gallery",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Partial and built, three competitors rated yes on the missing half (Appsmith, Mendix, Power Apps): templates show a category chip and cannot be browsed or filtered by it.",
+		"change": "reuse-gallery-categories-and-form-library",
 		"decidedOn": "2026-09-27"
 	},
 	{
