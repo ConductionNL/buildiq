@@ -1757,7 +1757,8 @@ OC.L10N.register(
         "Which property carries the channel": "Which property carries the channel",
         "Who may open it": "Who may open it",
         "Channel Property": "Channel Property",
-        "The property on the target schema that carries the intake channel, named the same way `typeProperty` names the one carrying the type. Its enum is what a channel is checked against. Buildiq never guesses this from a property name: refusing a save on a name that merely looks channel-ish is a worse failure than not refusing at all. A form that names no channel property is not channel-checked (REQ-OBRF-007).": "The property on the target schema that carries the intake channel, named the same way `typeProperty` names the one carrying the type. Its enum is what a channel is checked against. Buildiq never guesses this from a property name: refusing a save on a name that merely looks channel-ish is a worse failure than not refusing at all. A form that names no channel property is not channel-checked (REQ-OBRF-007)."
+        "The property on the target schema that carries the intake channel, named the same way `typeProperty` names the one carrying the type. Its enum is what a channel is checked against. Buildiq never guesses this from a property name: refusing a save on a name that merely looks channel-ish is a worse failure than not refusing at all. A form that names no channel property is not channel-checked (REQ-OBRF-007).": "The property on the target schema that carries the intake channel, named the same way `typeProperty` names the one carrying the type. Its enum is what a channel is checked against. Buildiq never guesses this from a property name: refusing a save on a name that merely looks channel-ish is a worse failure than not refusing at all. A form that names no channel property is not channel-checked (REQ-OBRF-007).",
+        "Approval": "Approval"
     },
     "nplurals=2; plural=(n != 1);"
 )
