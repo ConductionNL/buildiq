@@ -991,15 +991,19 @@ class ApplicationCreationService {
 	 * @param array<string,mixed> $manifest The manifest template blob
 	 * @param string $registerSlug The per-version register slug
 	 * @param string $schemaSlugPrefix Namespaced prefix for schema slugs (e.g. `permit-flow-development-`)
+	 * @param array<int,string> $dataRegisters Register slugs the Application binds in `dataRegisters`;
+	 *                                         a page on one of them keeps its schema slug
 	 *
 	 * @return array<string,mixed> The manifest with tokens substituted
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
+	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generated-pages-keep-the-database-register-req-bqdb-004
 	 */
 	public function substituteVersionContext(
 		array $manifest,
 		string $registerSlug,
 		string $schemaSlugPrefix,
+		array $dataRegisters = [],
 	): array {
 		if (isset($manifest['pages']) === false || is_array($manifest['pages']) === false) {
 			return $manifest;
@@ -1018,7 +1022,10 @@ class ApplicationCreationService {
 				$page['config']['register'] = $registerSlug;
 			}
 
+			// REQ-BQDB-004: a page on a bound data register keeps its schema.
+			$onDataRegister = in_array(($page['config']['register'] ?? null), $dataRegisters, true);
 			if ($schemaSlugPrefix !== ''
+				&& $onDataRegister === false
 				&& isset($page['config']['schema']) === true
 				&& is_string($page['config']['schema']) === true
 				&& $page['config']['schema'] !== ''
