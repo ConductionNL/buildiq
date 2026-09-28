@@ -247,6 +247,27 @@ describe('AutomationEditDialog', () => {
 		).toBeUndefined()
 	})
 
+	it('buildiq#923: a rule set is not offered as a gate that stops the actions', async () => {
+		// A rule-set condition compiles to a call-rule-set action ahead of the
+		// automation's own actions, and the actions run whatever the rule set
+		// decides. The picker must not sell it as a condition.
+		const wrapper = factory({
+			...baseAutomation(),
+			condition: { type: 'rule-set', ruleSetSlug: 'always-no' },
+		})
+		await openDialog(wrapper)
+
+		const option = wrapper.vm.conditionKindOptions.find(
+			(o) => o.value === 'rule-set',
+		)
+		expect(option.label).toBe('Also run a rule set')
+		expect(wrapper.vm.conditionKind).toBe('rule-set')
+
+		const note = wrapper.find('[data-testid="condition-rule-set-note"]')
+		expect(note.exists()).toBe(true)
+		expect(note.text()).toContain('The actions always run.')
+	})
+
 	it('REQ-AUTD-003: blocks a condition on a schedule trigger', async () => {
 		const wrapper = factory()
 		await openDialog(wrapper)
