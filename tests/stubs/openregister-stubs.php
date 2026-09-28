@@ -1505,8 +1505,9 @@ namespace OCA\OpenRegister\Service {
 			 * Scheme-only SSRF guard for unit-test isolation.
 			 *
 			 * Mirrors the real SecurityService logic for scheme validation (rejects
-			 * non-http/https URLs with the same exception) but skips DNS resolution,
-			 * which fails for `.test` / `.example.test` hostnames used in fixtures.
+			 * non-http/https URLs with the same exception) and for a literal IP
+			 * host, but skips DNS resolution of a host name, which fails for
+			 * `.test` / `.example.test` hostnames used in fixtures.
 			 *
 			 * @param string $url The URL to guard.
 			 *
@@ -1525,7 +1526,19 @@ namespace OCA\OpenRegister\Service {
 					throw new \InvalidArgumentException('Only http and https URLs are allowed.');
 				}
 
-				// DNS resolution intentionally skipped in unit-test stub.
+				// A literal IP host is checked exactly as the real guard checks
+				// it, since that needs no DNS: loopback, private (RFC-1918 / ULA)
+				// and reserved or link-local ranges (cloud metadata) are refused.
+				// The real guard also refuses a bracketed IPv6 literal, because
+				// it cannot resolve it; the stub refuses it by its range instead.
+				$host = trim($parts['host'], '[]');
+				if (filter_var($host, FILTER_VALIDATE_IP) !== false
+					&& filter_var($host, FILTER_VALIDATE_IP, (FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) === false
+				) {
+					throw new \InvalidArgumentException('URL resolves to a non-public address and cannot be fetched.');
+				}
+
+				// DNS resolution of a host name is intentionally skipped in the unit-test stub.
 			}//end assertSafeFetchUrl()
 		}//end class
 	}//end if
