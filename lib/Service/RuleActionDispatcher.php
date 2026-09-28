@@ -25,7 +25,10 @@
  *     {@see JobOwnerImpersonator} is used so the write is attributed the
  *     same way OR attributes any other write.
  *   - `webhook` — POSTs the compiled target via `OCP\Http\Client\IClientService`.
- *     Params: `url` (required), `payload` (object, default `[]`).
+ *     Params: `url` (required), `payload` (object, default `[]`). The URL is
+ *     typed by a maker, so it passes OpenRegister's shared egress guard
+ *     (`SecurityService::assertSafeFetchUrl()`, ADR-067) first: only http(s)
+ *     to a public address, and redirects are never followed.
  *   - `start-workflow` — reserved: no workflow engine exists in buildiq
  *     (design.md non-goal); logged and treated as a no-op so the action type
  *     stays declaratively valid without inventing a new imperative engine.
@@ -66,6 +69,7 @@ namespace OCA\Buildiq\Service;
 use DateTime;
 use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Service\SecurityService;
 use OCP\Http\Client\IClientService;
 use OCP\IUserSession;
 use OCP\Notification\IManager;
@@ -75,6 +79,11 @@ use Throwable;
 
 /**
  * Wired dispatcher for ConditionActionExecutor side-effecting actions.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) One dispatcher per action type is
+ *   the point of this class: each side effect brings its own boundary (notifications,
+ *   OpenRegister objects, the HTTP client and its egress guard, the rule engine), and
+ *   the egress guard ADR-067 requires on the webhook is what tipped the count over.
  */
 class RuleActionDispatcher {
 	/**
@@ -243,9 +252,21 @@ class RuleActionDispatcher {
 	 *
 	 * @param array<string,mixed> $params Action parameters.
 	 *
+	 * The URL is typed by a maker, so it goes through OpenRegister's shared
+	 * egress guard before anything is sent (ADR-067, buildiq#987): a scheme
+	 * other than http(s), or a host that resolves to a loopback, private,
+	 * link-local (cloud metadata) or reserved address, throws here and no
+	 * request leaves the server. The guard checks the address once, so the
+	 * post does not follow redirects: a public URL cannot bounce the request
+	 * on to an address the guard would have refused.
+	 *
 	 * @return int|null The response status code, or null on skip/failure.
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SecurityService::assertSafeFetchUrl is static upstream;
+	 *   OpenRegister's store plane calls it the same way.
+	 *
 	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
+	 * @spec openspec/specs/automation-designer/spec.md#req-autd-010
 	 */
 	private function dispatchWebhook(array $params): ?int {
 		$url = (string)($params['url'] ?? '');
@@ -254,6 +275,8 @@ class RuleActionDispatcher {
 			return null;
 		}
 
+		SecurityService::assertSafeFetchUrl($url);
+
 		$payload = [];
 		if (is_array($params['payload'] ?? null) === true) {
 			$payload = $params['payload'];
@@ -261,7 +284,7 @@ class RuleActionDispatcher {
 
 		$client = $this->httpClientService->newClient();
 		try {
-			$response = $client->post($url, ['json' => $payload, 'timeout' => 10]);
+			$response = $client->post($url, ['json' => $payload, 'timeout' => 10, 'allow_redirects' => false]);
 		} catch (Throwable $e) {
 			$this->connectionReporter?->reportWebhookCall(url: $url, httpStatus: $this->connectionReporter->httpStatusOf(exception: $e));
 			throw $e;

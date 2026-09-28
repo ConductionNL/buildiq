@@ -175,6 +175,8 @@
                 <referencedClass name="OCA\OpenRegister\Service\ConfigurationService"/>
                 <referencedClass name="OCA\OpenRegister\Service\RegisterService"/>
                 <referencedClass name="OCA\OpenRegister\Service\FileService"/>
+                <!-- OpenRegister's shared egress guard (ADR-067); RuleActionDispatcher calls its static assertSafeFetchUrl() before a webhook post. -->
+                <referencedClass name="OCA\OpenRegister\Service\SecurityService"/>
                 <referencedClass name="OCA\OpenRegister\Service\CalendarEventService"/>
                 <referencedClass name="OCA\OpenRegister\Mcp\IMcpToolProvider"/>
                 <referencedClass name="OCA\OpenRegister\Lifecycle\LifecycleGuardInterface"/>
