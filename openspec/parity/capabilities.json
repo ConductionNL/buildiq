@@ -968,9 +968,10 @@
 			"power-apps": "yes",
 			"built": {
 				"state": "built",
-				"evidence": "src/views/SchemaDesigner.vue:1-20 mounted at /builder/:slug/schemas (list) and /builder/:slug/schemas/:schemaId (detail); SchemaListPanel emits add -> addSchema() at SchemaDesigner.vue:1280; FieldEditor.vue add-field button composes properties/required into the schema body on Save (SchemaDesigner.vue save() around line 1027-1055)",
+				"evidence": "src/views/SchemaDesigner.vue:1-20 mounted at /builder/:slug/schemas (list) and /builder/:slug/schemas/:schemaId (detail); SchemaListPanel emits add -> addSchema() at SchemaDesigner.vue:1280; FieldEditor.vue add-field button composes properties/required into the schema body on Save (SchemaDesigner.vue save() around line 1027-1055) Corrections round 8 (2026-09-28), buildiq#990: a save rebuilds every field from the few keys the editor knows, src/components/schema-editor/FieldEditor.vue:716 fieldFromProperty reads only type, description, default and validation keys and :778 propertyFromField writes only those back, src/views/SchemaDesigner.vue:1016 composeSchemaBody sets properties to that map and :1469 saves it with PUT, so enum, per-field title and x- keys set by an import or another tool are lost on the first designer save, at 974af86.",
 				"reachedOn": "buildiq builder, Schemas tab -> Add schema -> field editor",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Corrections round 8 (2026-09-28): saving a schema in the designer drops each field's enum, title and x- keys, buildiq#990; rating kept because adding an object type and its fields, which this row rates, works, and choice fields are rated in data-field-types and data-choice-lists."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1489,9 +1490,10 @@
 			"power-apps": "yes",
 			"built": {
 				"state": "built",
-				"evidence": "src/composables/useRegisterPicker.js:21-33 docblock + fetchRegisters() (lines ~120-215): GET /apps/openregister/api/registers lists every register in the instance, not just the app's own; when Application.dataRegisters bindings are declared (design.md Decision 1) matching registers are labelled and hoisted, so a page/schema picker in IndexPageEditor/FormPageEditor/DashboardPageEditor can bind to a register+schema another app already owns instead of re-declaring it",
+				"evidence": "src/composables/useRegisterPicker.js:21-33 docblock + fetchRegisters() (lines ~120-215): GET /apps/openregister/api/registers lists every register in the instance, not just the app's own; when Application.dataRegisters bindings are declared (design.md Decision 1) matching registers are labelled and hoisted, so a page/schema picker in IndexPageEditor/FormPageEditor/DashboardPageEditor can bind to a register+schema another app already owns instead of re-declaring it Corrections round 8 (2026-09-28), buildiq#990: the designer save that drops enum, title and x- keys (src/components/schema-editor/FieldEditor.vue:778) is not on this path, because the designer lists only the version's own register (src/views/SchemaDesigner.vue:884) and the page editors bind to another app's register and schema without writing it, at 974af86.",
 				"reachedOn": "buildiq builder, any page editor's register/schema picker (Data source = OpenRegister)",
-				"owner": "ConductionNL/buildiq"
+				"owner": "ConductionNL/buildiq",
+				"note": "Corrections round 8 (2026-09-28): buildiq#990 loses field keys only when a schema is saved through the designer, which does not list schemas of other apps' registers; rating kept because reuse binds to the other app's schema without rewriting it."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
