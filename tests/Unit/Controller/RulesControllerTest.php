@@ -28,8 +28,13 @@ namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\RulesController;
 use OCA\Buildiq\Service\RuleEngineService;
+use OCA\Buildiq\Service\RuleObjectReader;
 use OCA\Buildiq\Service\RuleSetVersioningService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\IRequest;
@@ -91,12 +96,30 @@ final class RulesControllerTest extends TestCase {
 	 * @return RulesController
 	 */
 	private function controller(): RulesController {
+		$register = new Register();
+		$register->setId(7);
+		$register->setSchemas([101, 105]);
+		$registerMapper = $this->createMock(RegisterMapper::class);
+		$registerMapper->method('find')->willReturnCallback(
+			static function (string|int $id, bool $_rbac = true, bool $_multitenancy = true) use ($register): Register {
+				if ($_multitenancy === true) {
+					throw new DoesNotExistException('Register not found in the caller organisation: ' . $id);
+				}
+
+				return $register;
+			}
+		);
+		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$schemaMapper->method('findIdsBySlugs')->willReturnCallback(
+			static fn (array $slugs): array => [strtolower($slugs[0]) => [($slugs[0] === 'rule-set' ? '101' : '105')]]
+		);
+
 		return new RulesController(
 			$this->request,
 			$this->createMock(LoggerInterface::class),
 			$this->ruleEngine,
 			$this->versioningService,
-			$this->objectService,
+			new RuleObjectReader($this->objectService, $registerMapper, $schemaMapper, $this->createMock(LoggerInterface::class)),
 			$this->userSession,
 		);
 
@@ -232,7 +255,7 @@ final class RulesControllerTest extends TestCase {
 	 */
 	public function testTestAllReturns404WhenRuleSetMissing(): void {
 		$this->authenticate();
-		$this->objectService->method('searchObjectsBySlug')->willReturn([]);
+		$this->objectService->method('searchObjects')->willReturn([]);
 		$this->versioningService->expects($this->never())->method('runTestGate');
 
 		$response = $this->controller()->testAll('does-not-exist');
@@ -248,7 +271,7 @@ final class RulesControllerTest extends TestCase {
 	 */
 	public function testTestAllRunsTheGateAndReportsTotals(): void {
 		$this->authenticate();
-		$this->objectService->method('searchObjectsBySlug')->willReturn(
+		$this->objectService->method('searchObjects')->willReturn(
 			[['id' => 'rs-1', 'slug' => 'loan-eligibility']]
 		);
 		$this->versioningService->expects($this->once())
@@ -268,7 +291,7 @@ final class RulesControllerTest extends TestCase {
 	 */
 	public function testTestAllTranslatesGateFailure(): void {
 		$this->authenticate();
-		$this->objectService->method('searchObjectsBySlug')->willReturn(
+		$this->objectService->method('searchObjects')->willReturn(
 			[['id' => 'rs-1', 'slug' => 'loan-eligibility']]
 		);
 		$this->versioningService->method('runTestGate')
@@ -279,4 +302,71 @@ final class RulesControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
 
 	}//end testTestAllTranslatesGateFailure()
+
+	/**
+	 * REQ-BRE-007: the schema of a rule set held by another organisation is a
+	 * 404 for a caller in organisation B, as the spec's scenario says.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-007-per-tenant-isolation-and-multitenancy
+	 */
+	public function testSchemaOfAnotherOrganisationsRuleSetIsNotFound(): void {
+		$this->authenticate();
+		$this->modelOrganisationB();
+
+		$response = $this->controller()->schema('loan-eligibility');
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+
+	}//end testSchemaOfAnotherOrganisationsRuleSetIsNotFound()
+
+	/**
+	 * REQ-BRE-007: test-all on a rule set held by another organisation is a
+	 * 404 and runs no test case.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-007-per-tenant-isolation-and-multitenancy
+	 */
+	public function testTestAllOnAnotherOrganisationsRuleSetIsNotFound(): void {
+		$this->authenticate();
+		$this->modelOrganisationB();
+		$this->versioningService->expects($this->never())->method('runTestGate');
+
+		$response = $this->controller()->testAll('loan-eligibility');
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+
+	}//end testTestAllOnAnotherOrganisationsRuleSetIsNotFound()
+
+	/**
+	 * OpenRegister as a caller in organisation B meets it, with the rule set
+	 * and the `buildiq` register held by organisation A: with the organisation
+	 * filter on nothing is visible and the filtered register lookup throws.
+	 *
+	 * @return void
+	 */
+	private function modelOrganisationB(): void {
+		$ruleSet = ['id' => 'rs-1', 'slug' => 'loan-eligibility', 'version' => '1.0.0', 'inputSchema' => []];
+		$this->objectService->method('searchObjectsBySlug')->willReturnCallback(
+			static function (string $registerSlug, string $schema, array $filters = [], bool $_rbac = true, bool $_multitenancy = true) use ($ruleSet): array {
+				if ($_multitenancy === true) {
+					throw new DoesNotExistException('searchObjectsBySlug: register slug not found in caller organisation: ' . $registerSlug);
+				}
+
+				return [$ruleSet];
+			}
+		);
+		$this->objectService->method('searchObjects')->willReturnCallback(
+			static function (array $query = [], bool $_rbac = true, bool $_multitenancy = true) use ($ruleSet): array {
+				if ($_multitenancy === true) {
+					return [];
+				}
+
+				return [$ruleSet];
+			}
+		);
+
+	}//end modelOrganisationB()
 }//end class
