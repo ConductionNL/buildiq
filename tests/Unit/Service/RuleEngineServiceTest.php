@@ -33,8 +33,13 @@ use OCA\OpenRegister\Service\Dmn\DecisionTableEvaluator as SharedEvaluator;
 use OCA\Buildiq\Service\ExpressionEvaluator;
 use OCA\Buildiq\Service\RuleActionDispatcher;
 use OCA\Buildiq\Service\RuleEngineService;
+use OCA\Buildiq\Service\RuleObjectReader;
 use OCA\Buildiq\Service\RuleSetCacheManager;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -46,6 +51,19 @@ use RuntimeException;
  * Tests for {@see RuleEngineService}.
  */
 final class RuleEngineServiceTest extends TestCase {
+
+	/**
+	 * Numeric ids of the rule-engine schemas in the `buildiq` register.
+	 *
+	 * @var array<string,int>
+	 */
+	private const SCHEMA_IDS = [
+		'rule-set' => 101,
+		'decision-table' => 102,
+		'condition-action-rule' => 103,
+		'rule-execution-log' => 104,
+		'rule-test-case' => 105,
+	];
 
 	/**
 	 * Mock OpenRegister object service.
@@ -76,6 +94,13 @@ final class RuleEngineServiceTest extends TestCase {
 	private RuleEngineService $service;
 
 	/**
+	 * The real organisation-scoped reader, over the mocked object service.
+	 *
+	 * @var RuleObjectReader
+	 */
+	private RuleObjectReader $reader;
+
+	/**
 	 * Mock wired action dispatcher (spec REQ-AUTD-010).
 	 *
 	 * @var RuleActionDispatcher&MockObject
@@ -98,6 +123,13 @@ final class RuleEngineServiceTest extends TestCase {
 		$user->method('getUID')->willReturn('alice');
 		$this->userSession->method('getUser')->willReturn($user);
 
+		$this->reader = new RuleObjectReader(
+			$this->objectService,
+			$this->registerMapper(),
+			$this->schemaMapper(),
+			$this->createMock(LoggerInterface::class),
+		);
+
 		$evaluator = new ExpressionEvaluator();
 		$this->actionDispatcher = $this->createMock(RuleActionDispatcher::class);
 		$this->service = new RuleEngineService(
@@ -108,6 +140,7 @@ final class RuleEngineServiceTest extends TestCase {
 			$this->userSession,
 			$this->createMock(LoggerInterface::class),
 			$this->actionDispatcher,
+			$this->reader,
 		);
 
 	}//end setUp()
@@ -182,7 +215,7 @@ final class RuleEngineServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testEvaluateLoanApprove(): void {
-		$this->objectService->method('searchObjectsBySlug')->willReturnCallback(
+		$this->stubScopedRows(
 			function (string $registerSlug, string $schema, array $filters = []): array {
 				return $this->loanFindAllResults($schema);
 			}
@@ -208,7 +241,7 @@ final class RuleEngineServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testEvaluateNotFound(): void {
-		$this->objectService->method('searchObjectsBySlug')->willReturn([]);
+		$this->stubScopedRows(static fn (): array => []);
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionCode(404);
 		$this->service->evaluate('does-not-exist', []);
@@ -221,7 +254,7 @@ final class RuleEngineServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testPiiMasking(): void {
-		$this->objectService->method('searchObjectsBySlug')->willReturnCallback(
+		$this->stubScopedRows(
 			function (string $registerSlug, string $schema, array $filters = []): array {
 				return $this->loanFindAllResults($schema);
 			}
@@ -283,7 +316,7 @@ final class RuleEngineServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testWetEvaluationInvokesDispatcher(): void {
-		$this->objectService->method('searchObjectsBySlug')->willReturnCallback(
+		$this->stubScopedRows(
 			function (string $registerSlug, string $schema, array $filters = []): array {
 				return $this->conditionActionFindAllResults($schema);
 			}
@@ -305,7 +338,7 @@ final class RuleEngineServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testDryRunDoesNotInvokeDispatcher(): void {
-		$this->objectService->method('searchObjectsBySlug')->willReturnCallback(
+		$this->stubScopedRows(
 			function (string $registerSlug, string $schema, array $filters = []): array {
 				return $this->conditionActionFindAllResults($schema);
 			}
@@ -333,9 +366,10 @@ final class RuleEngineServiceTest extends TestCase {
 			$this->userSession,
 			$this->createMock(LoggerInterface::class),
 			$this->actionDispatcher,
+			$this->reader,
 		);
 
-		$this->objectService->method('searchObjectsBySlug')->willReturnCallback(
+		$this->stubScopedRows(
 			function (string $registerSlug, string $schema, array $filters = []): array {
 				if ($schema === RuleEngineService::RULE_SET_SCHEMA) {
 					return [['slug' => 'loop', 'version' => '1.0', 'ruleType' => 'condition-action']];
@@ -380,9 +414,10 @@ final class RuleEngineServiceTest extends TestCase {
 			$this->userSession,
 			$this->createMock(LoggerInterface::class),
 			$this->actionDispatcher,
+			$this->reader,
 		);
 
-		$this->objectService->method('searchObjectsBySlug')->willReturnCallback(
+		$this->stubScopedRows(
 			function (string $registerSlug, string $schema, array $filters = []): array {
 				if ($schema === RuleEngineService::RULE_SET_SCHEMA) {
 					return [['slug' => 'chain', 'version' => '1.0', 'ruleType' => 'condition-action']];
@@ -413,16 +448,23 @@ final class RuleEngineServiceTest extends TestCase {
 	}//end testCallRuleSetDepthIsBounded()
 
 	/**
-	 * M1: rule-set resolution is authorization-scoped — it uses
-	 * `searchObjectsBySlug` (RBAC + org) and never the unscoped `findAll`.
+	 * M1 and REQ-BRE-007: every rule-engine read is a numeric-id search with
+	 * schema RBAC AND the organisation filter on. It never uses the unscoped
+	 * `findAll`, nor the slug search whose filtered register lookup throws.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-007-per-tenant-isolation-and-multitenancy
 	 */
 	public function testResolutionUsesAuthorizationScopedSearch(): void {
 		$this->objectService->expects($this->never())->method('findAll');
-		$this->objectService->method('searchObjectsBySlug')->willReturnCallback(
-			function (string $registerSlug, string $schema, array $filters = []): array {
-				return $this->loanFindAllResults($schema);
+		$this->objectService->expects($this->never())->method('searchObjectsBySlug');
+
+		$flags = [];
+		$this->objectService->method('searchObjects')->willReturnCallback(
+			function (array $query = [], bool $_rbac = true, bool $_multitenancy = true) use (&$flags): array {
+				$flags[] = [$_rbac, $_multitenancy, ($query['@self']['register'] ?? null)];
+				return $this->loanFindAllResults($this->schemaSlugOf(query: $query));
 			}
 		);
 
@@ -431,6 +473,8 @@ final class RuleEngineServiceTest extends TestCase {
 			['applicant' => ['age' => 30, 'monthlyIncome' => 3000, 'creditScore' => 700]]
 		);
 		$this->assertSame('approve', $outcome['result']['decision']);
+		$this->assertNotSame([], $flags);
+		$this->assertSame([[true, true, 7]], array_values(array_unique($flags, SORT_REGULAR)));
 
 	}//end testResolutionUsesAuthorizationScopedSearch()
 
@@ -441,10 +485,212 @@ final class RuleEngineServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testOutOfScopeRuleSetResolvesNotFound(): void {
-		$this->objectService->method('searchObjectsBySlug')->willReturn([]);
+		$this->stubScopedRows(static fn (): array => []);
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionCode(404);
 		$this->service->evaluate('foreign-rule-set', []);
 
 	}//end testOutOfScopeRuleSetResolvesNotFound()
+
+	/**
+	 * REQ-BRE-007: a rule set held by another organisation is not found.
+	 *
+	 * The caller sits in organisation B; `loan-eligibility` and the `buildiq`
+	 * register are held by organisation A. OpenRegister's organisation filter is
+	 * modelled as it behaves: a read with `_multitenancy: true` sees none of
+	 * organisation A's objects, and the filtered register lookup behind
+	 * `searchObjectsBySlug` throws. Only a read with the filter OFF sees the rule
+	 * set, which is exactly what must not happen (buildiq#988).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-007-per-tenant-isolation-and-multitenancy
+	 */
+	public function testRuleSetHeldByAnotherOrganisationResolvesNotFound(): void {
+		$this->modelOrganisationB();
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionCode(404);
+		$this->service->evaluate(
+			'loan-eligibility',
+			['applicant' => ['age' => 30, 'monthlyIncome' => 3000, 'creditScore' => 700]]
+		);
+
+	}//end testRuleSetHeldByAnotherOrganisationResolvesNotFound()
+
+	/**
+	 * REQ-BRE-007: the shared bundle cache does not hand organisation A's rule
+	 * set to a caller in organisation B.
+	 *
+	 * The cache is distributed and was keyed by slug alone, so the first
+	 * caller's bundle answered every caller for 30 seconds.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-007-per-tenant-isolation-and-multitenancy
+	 */
+	public function testCachedBundleOfAnotherOrganisationIsNotServed(): void {
+		$this->modelOrganisationB();
+
+		$cache = $this->createMock(RuleSetCacheManager::class);
+		$cache->method('get')->willReturn(
+			[
+				'ruleSet' => $this->loanFindAllResults('rule-set')[0],
+				'ruleType' => 'decision-table',
+				'decisionTables' => $this->loanFindAllResults('decision-table'),
+				'conditionRules' => [],
+			]
+		);
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionCode(404);
+		$this->serviceWith(cacheManager: $cache)->evaluate(
+			'loan-eligibility',
+			['applicant' => ['age' => 30, 'monthlyIncome' => 3000, 'creditScore' => 700]]
+		);
+
+	}//end testCachedBundleOfAnotherOrganisationIsNotServed()
+
+	/**
+	 * OpenRegister's register lookup: the `buildiq` register is held by one
+	 * organisation, so only the unfiltered lookup finds it for every caller.
+	 *
+	 * @return RegisterMapper&MockObject
+	 */
+	private function registerMapper(): RegisterMapper&MockObject {
+		$register = new Register();
+		$register->setId(7);
+		$register->setSchemas(array_values(self::SCHEMA_IDS));
+
+		$mapper = $this->createMock(RegisterMapper::class);
+		$mapper->method('find')->willReturnCallback(
+			static function (string|int $id, bool $_rbac = true, bool $_multitenancy = true) use ($register): Register {
+				if ($_multitenancy === true) {
+					throw new DoesNotExistException('Register not found in the caller organisation: ' . $id);
+				}
+
+				return $register;
+			}
+		);
+
+		return $mapper;
+
+	}//end registerMapper()
+
+	/**
+	 * OpenRegister's slug-to-id lookup, with `rule-test-case` also held by
+	 * another app, so resolution has to pick the one in the register.
+	 *
+	 * @return SchemaMapper&MockObject
+	 */
+	private function schemaMapper(): SchemaMapper&MockObject {
+		$mapper = $this->createMock(SchemaMapper::class);
+		$mapper->method('findIdsBySlugs')->willReturnCallback(
+			static function (array $slugs): array {
+				$map = [];
+				foreach ($slugs as $slug) {
+					$ids = [];
+					if (isset(self::SCHEMA_IDS[$slug]) === true) {
+						$ids[] = (string)self::SCHEMA_IDS[$slug];
+					}
+
+					if ($slug === 'rule-test-case') {
+						$ids[] = '9001';
+					}
+
+					$map[strtolower($slug)] = $ids;
+				}
+
+				return $map;
+			}
+		);
+
+		return $mapper;
+
+	}//end schemaMapper()
+
+	/**
+	 * Answer the organisation-scoped search with rows per schema slug.
+	 *
+	 * @param callable $rows Called as ($registerSlug, $schemaSlug, $filters).
+	 *
+	 * @return void
+	 */
+	private function stubScopedRows(callable $rows): void {
+		$this->objectService->method('searchObjects')->willReturnCallback(
+			function (array $query = [], bool $_rbac = true, bool $_multitenancy = true) use ($rows): array {
+				$filters = $query;
+				unset($filters['@self']);
+				return $rows(RuleEngineService::REGISTER_SLUG, $this->schemaSlugOf(query: $query), $filters);
+			}
+		);
+
+	}//end stubScopedRows()
+
+	/**
+	 * OpenRegister as a caller in organisation B meets it, with every rule-engine
+	 * object held by organisation A.
+	 *
+	 * @return void
+	 */
+	private function modelOrganisationB(): void {
+		$this->objectService->method('searchObjectsBySlug')->willReturnCallback(
+			function (string $registerSlug, string $schema, array $filters = [], bool $_rbac = true, bool $_multitenancy = true): array {
+				if ($_multitenancy === true) {
+					throw new DoesNotExistException('searchObjectsBySlug: register slug not found in caller organisation: ' . $registerSlug);
+				}
+
+				return $this->loanFindAllResults($schema);
+			}
+		);
+		$this->objectService->method('searchObjects')->willReturnCallback(
+			function (array $query = [], bool $_rbac = true, bool $_multitenancy = true): array {
+				if ($_multitenancy === true) {
+					return [];
+				}
+
+				return $this->loanFindAllResults($this->schemaSlugOf(query: $query));
+			}
+		);
+
+	}//end modelOrganisationB()
+
+	/**
+	 * The schema slug a numeric-id search names, per {@see self::SCHEMA_IDS}.
+	 *
+	 * @param array<string,mixed> $query The searchObjects query.
+	 *
+	 * @return string
+	 */
+	private function schemaSlugOf(array $query): string {
+		$slug = array_search((int)($query['@self']['schema'] ?? 0), self::SCHEMA_IDS, true);
+		if ($slug === false) {
+			return '';
+		}
+
+		return $slug;
+
+	}//end schemaSlugOf()
+
+	/**
+	 * A service wired like setUp()'s, with another cache manager.
+	 *
+	 * @param RuleSetCacheManager $cacheManager The cache to use.
+	 *
+	 * @return RuleEngineService
+	 */
+	private function serviceWith(RuleSetCacheManager $cacheManager): RuleEngineService {
+		$evaluator = new ExpressionEvaluator();
+		return new RuleEngineService(
+			$this->objectService,
+			new DecisionTableEvaluator($evaluator, $this->sharedEvaluator()),
+			new ConditionActionExecutor($evaluator),
+			$cacheManager,
+			$this->userSession,
+			$this->createMock(LoggerInterface::class),
+			$this->actionDispatcher,
+			$this->reader,
+		);
+
+	}//end serviceWith()
 }//end class
