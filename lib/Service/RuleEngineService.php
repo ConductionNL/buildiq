@@ -117,8 +117,11 @@ class RuleEngineService {
 	 *                                               fixes the verified defect where side-effecting
 	 *                                               actions silently no-op in wet runs because no
 	 *                                               dispatcher was ever passed to the executor).
+	 * @param RuleObjectReader $reader Organisation-scoped reads of rule-engine objects (REQ-BRE-007).
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-007-per-tenant-isolation-and-multitenancy
 	 */
 	public function __construct(
 		private readonly ObjectServiceInterface $objectService,
@@ -128,6 +131,7 @@ class RuleEngineService {
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 		private readonly RuleActionDispatcher $actionDispatcher,
+		private readonly RuleObjectReader $reader,
 	) {
 
 	}//end __construct()
@@ -270,25 +274,24 @@ class RuleEngineService {
 	/**
 	 * Load (and cache) a RuleSet bundle: the RuleSet plus its tables/rules.
 	 *
-	 * Resolution runs through OpenRegister `searchObjectsBySlug` (see
-	 * {@see findMany()}), which applies the schema's RBAC. IMPORTANT: `buildiq`
-	 * is a system-wide register (not org-scoped), so multitenancy is intentionally
-	 * bypassed and this is NOT per-owner or per-organisation read isolation — with
-	 * a read-open rule-set schema, any authenticated caller can resolve a rule-set
-	 * by slug. Write operations (create/update/delete) remain admin-gated at the
-	 * schema. (No false "foreign slug → 404 / no IDOR" guarantee is implied.)
+	 * Every read goes through {@see RuleObjectReader}, which applies the
+	 * schema's RBAC and the caller's organisation (REQ-BRE-007): a rule set
+	 * held by another organisation resolves to null, so the caller answers 404.
+	 *
+	 * The rule set itself is read on every call, never from the cache. The
+	 * cache is distributed and shared by every caller, so a bundle keyed by
+	 * slug alone handed the first caller's rule set to everyone for the TTL.
+	 * The key now carries the resolved rule set's identity, and only its
+	 * tables and rules are served from it.
 	 *
 	 * @param string $slug The RuleSet slug.
 	 * @param string|null $version Optional pinned version.
 	 *
 	 * @return array{ruleSet:array<string,mixed>,decisionTables:array<int,mixed>,conditionRules:array<int,mixed>}|null
+	 *
+	 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-007-per-tenant-isolation-and-multitenancy
 	 */
 	private function loadBundle(string $slug, ?string $version): ?array {
-		$cached = $this->cacheManager->get($slug, $version);
-		if ($cached !== null) {
-			return $cached;
-		}
-
 		$ruleSet = $this->findOne(schema: self::RULE_SET_SCHEMA, filters: ['slug' => $slug]);
 		if ($ruleSet === null) {
 			return null;
@@ -301,6 +304,13 @@ class RuleEngineService {
 			return null;
 		}
 
+		$cacheKey = $slug . '#' . $this->identityOf(ruleSet: $ruleSet);
+		$cached = $this->cacheManager->get($cacheKey, $version);
+		if ($cached !== null) {
+			$cached['ruleSet'] = $ruleSet;
+			return $cached;
+		}
+
 		$bundle = [
 			'ruleSet' => $ruleSet,
 			'ruleType' => (string)($ruleSet['ruleType'] ?? 'decision-table'),
@@ -308,9 +318,33 @@ class RuleEngineService {
 			'conditionRules' => $this->findMany(schema: self::CONDITION_RULE_SCHEMA, filters: ['ruleSetId' => $slug]),
 		];
 
-		$this->cacheManager->set($slug, $bundle, $version);
+		$this->cacheManager->set($cacheKey, $bundle, $version);
 		return $bundle;
 	}//end loadBundle()
+
+	/**
+	 * What tells this rule set apart from another organisation's rule set with
+	 * the same slug: its object id, and its organisation and version.
+	 *
+	 * @param array<string,mixed> $ruleSet The resolved rule set.
+	 *
+	 * @return string
+	 */
+	private function identityOf(array $ruleSet): string {
+		$self = [];
+		if (is_array($ruleSet['@self'] ?? null) === true) {
+			$self = $ruleSet['@self'];
+		}
+
+		return implode(
+			'|',
+			[
+				(string)($ruleSet['id'] ?? ($self['id'] ?? ($self['uuid'] ?? ''))),
+				(string)($self['organisation'] ?? ''),
+				(string)($ruleSet['version'] ?? ''),
+			]
+		);
+	}//end identityOf()
 
 	/**
 	 * Persist a RuleExecutionLog audit record.
@@ -430,83 +464,18 @@ class RuleEngineService {
 	}//end findOne()
 
 	/**
-	 * Find objects by schema + filters in the shared register.
+	 * Find objects by schema + filters in the shared register, scoped to the
+	 * caller's organisation and the schema's RBAC (REQ-BRE-007).
 	 *
 	 * @param string $schema The schema slug.
 	 * @param array<string,mixed> $filters Equality filters.
 	 * @param int|null $limit Optional row limit.
 	 *
 	 * @return array<int,array<string,mixed>>
+	 *
+	 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-007-per-tenant-isolation-and-multitenancy
 	 */
 	private function findMany(string $schema, array $filters, ?int $limit = null): array {
-		// Authorization-aware resolution (harden-rules-authz-and-audit-parity,
-		// M1): resolve through searchObjectsBySlug (which applies the schema's
-		// RBAC) rather than a raw findAll. `buildiq` is a SYSTEM-WIDE register
-		// (not org-scoped) — mirror ListAppsHandler and pass _multitenancy:false
-		// so cross-org callers still resolve it (a true org filter would make
-		// registerMapper->find() throw and break evaluation). Note: for a
-		// read-open rule-set schema this does not isolate reads per owner/org;
-		// write operations remain admin-gated at the schema.
-		try {
-			$results = $this->objectService->searchObjectsBySlug(
-				self::REGISTER_SLUG,
-				$schema,
-				$filters,
-				_rbac: true,
-				_multitenancy: false
-			);
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				'Buildiq: rule-engine searchObjects failed',
-				['schema' => $schema, 'exception' => $e->getMessage()]
-			);
-			return [];
-		}
-
-		if (is_array($results) === false) {
-			return [];
-		}
-
-		$normalised = [];
-		foreach ($results as $row) {
-			$normalised[] = $this->normalise(object: $row);
-		}
-
-		// The slug variant has no server-side limit param; apply the caller's
-		// cap (used by findOne) client-side.
-		if ($limit !== null && count($normalised) > $limit) {
-			$normalised = array_slice($normalised, 0, $limit);
-		}
-
-		return $normalised;
+		return $this->reader->find(schema: $schema, filters: $filters, limit: $limit);
 	}//end findMany()
-
-	/**
-	 * Coerce an OR result entry to a plain array.
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normalise(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normalise()
 }//end class
