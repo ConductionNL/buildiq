@@ -1768,11 +1768,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"evidence": "src/components/page-editor/DetailPageEditor.vue (504 lines) authors config.register/schema/sidebar(+tabs)/pageLayout for type:\"detail\"; renders via CnDetailPage (pageTypes.js). DetailPageEditor.vue has NO fields for headerActions, lifecycleActions or widgets (grep for those terms in the file returns nothing) -- buttons/related-item widgets on a detail page cannot be authored from this editor at all.",
 				"reachedOn": "any built app page authored as type detail",
 				"owner": "ConductionNL/buildiq",
-				"note": "The missing half is buildiq's designer, so the owner moved to ConductionNL/buildiq (nextcloud-vue lane) (nextcloud-vue lane, OpenSpec pass 2026-09-27; owner was ConductionNL/nextcloud-vue)."
+				"note": "The missing half is buildiq's designer, so the owner moved to ConductionNL/buildiq (nextcloud-vue lane) (nextcloud-vue lane, OpenSpec pass 2026-09-27; owner was ConductionNL/nextcloud-vue). Specified in openspec/changes/pages-detail-related-items (owner-moves pass 2026-09-28) for related lists, link buttons and the files tab; header and status buttons are specified in openspec/changes/pages-action-buttons."
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -1831,11 +1831,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "built",
+				"state": "specified",
 				"evidence": "renderer: nextcloud-vue v2.55.1 CnChartWidget.vue supports type area/line/bar/pie/donut/radialBar (validator list at CnChartWidget.vue:227) and CnWidgetGrid mounts it when widgetDef.type==='chart'. buildiq authoring: src/components/page-editor/fields/WidgetBuilder.vue only exposes 3 free-text inputs per widget -- id, title, type (lines 6-45) -- with no fields for chartKind, series, categories, labels or colors; addWidget() seeds {id:'',title:'',type:'custom'} (line ~90).",
 				"reachedOn": "Dashboard page editor, Widgets fieldset",
 				"owner": "ConductionNL/buildiq",
-				"note": "The missing half is buildiq's designer, so the owner moved to ConductionNL/buildiq (nextcloud-vue lane) (nextcloud-vue lane, OpenSpec pass 2026-09-27; owner was ConductionNL/nextcloud-vue)."
+				"note": "The missing half is buildiq's designer, so the owner moved to ConductionNL/buildiq (nextcloud-vue lane) (nextcloud-vue lane, OpenSpec pass 2026-09-27; owner was ConductionNL/nextcloud-vue). Specified in openspec/changes/pages-chart-widget-authoring (owner-moves pass 2026-09-28): WidgetBuilder mounts nextcloud-vue's CnChartWidgetForm for a chart widget and saves props.chartKind and dataSource."
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",

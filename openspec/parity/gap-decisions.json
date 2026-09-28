@@ -782,5 +782,21 @@
 		"reason": "Partial and built (case-page-layout-per-case-type serves the task-list columns per case type), and three competitors rated yes on the missing half (GZAC, xxllnc Zaaksysteem, ZAC put the task panel beside the case tabs). The layout does not yet say where the task panel sits or on which tabs it shows; dossiq renders it.",
 		"change": "pages-task-panel-beside-case-tabs",
 		"decidedOn": "2026-09-27"
+	},
+	{
+		"row": "pg-charts",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Requested by nextcloud-vue: its decision (nextcloud-vue PR #1269) says the chart renderer and CnChartWidgetForm are built and the missing half is buildiq's WidgetBuilder, which offers only id, title and type; buildiq PR #989 moved the owner. Partial and built, and all five competitors rate it yes, so the missing half matters. The change mounts the library's chart form in the widget list.",
+		"change": "pages-chart-widget-authoring",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "pg-detail",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Requested by nextcloud-vue: its decision (nextcloud-vue PR #1269) says CnDetailPage renders actions, related collections and files and the missing half is buildiq's DetailPageEditor; buildiq PR #989 moved the owner. Partial and built, and four competitors rate it yes. Header and status buttons are already specified in pages-action-buttons; the new change authors related lists, link buttons and the files tab.",
+		"change": "pages-detail-related-items",
+		"decidedOn": "2026-09-28"
 	}
 ]
