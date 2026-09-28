@@ -4501,7 +4501,7 @@
 				"reachedOn": "buildiq builder /builder/:slug/schemas/:schemaId, Access section",
 				"owner": "ConductionNL/buildiq",
 				"readOn": "2026-09-26",
-				"note": "OpenSpec pass 2026-09-27: buildiq's half shipped with openspec/changes/archive/2026-07-11-data-scopes-authoring. The missing half is openregister's: it does not advertise capabilities.openregister.authorization.scopes (ae898b0 lib/Capabilities has only IntegrationsCapability and UrnCapability), so buildiq offers the group scope only."
+				"note": "OpenSpec pass 2026-09-27: buildiq's half shipped with openspec/changes/archive/2026-07-11-data-scopes-authoring. The missing half is openregister's: it does not advertise capabilities.openregister.authorization.scopes (ae898b0 lib/Capabilities has only IntegrationsCapability and UrnCapability), so buildiq offers the group scope only. Corrections round 9 (2026-09-28): the OpenRegister half is specified in ConductionNL/openregister openspec/changes/access-owner-and-condition-scopes (owner-moves pass, openregister#4112; openregister openspec/parity/gap-decisions.json records it build for this row): OpenRegister reads the @creator and condition rules buildiq writes and advertises capabilities.openregister.authorization.scopes."
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
