@@ -455,6 +455,7 @@ class CopilotService {
 	private function normalisePlan(array $plan): array {
 		$steps = (array)($plan['steps'] ?? []);
 		$authoredSchemas = $this->authoredSchemaSlugs(steps: $steps);
+		$dataRegisters = $this->dataRegistersByApp(steps: $steps);
 
 		foreach ($steps as $index => $step) {
 			if (is_array($step) === false) {
@@ -469,7 +470,8 @@ class CopilotService {
 			$steps[$index]['arguments'] = $this->normaliseStepArguments(
 				tool: (string)($step['tool'] ?? ''),
 				args: $args,
-				authoredSchemas: $authoredSchemas
+				authoredSchemas: $authoredSchemas,
+				dataRegisters: $dataRegisters
 			);
 		}
 
@@ -477,6 +479,60 @@ class CopilotService {
 
 		return $plan;
 	}//end normalisePlan()
+
+	/**
+	 * The register slugs each existing target app binds in `dataRegisters`,
+	 * keyed by app slug.
+	 *
+	 * A page or widget on one of those registers reads shared data somebody
+	 * else owns, so the data binding must leave its register and schema alone
+	 * (REQ-BQDB-004). An app this plan creates binds none yet, so it is not
+	 * looked up.
+	 *
+	 * @param array<int, mixed> $steps The plan's steps.
+	 *
+	 * @return array<string, array<int, string>>
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ManifestDataBinding is a pure rule
+	 * with no collaborators and no state.
+	 *
+	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generated-pages-keep-the-database-register-req-bqdb-004
+	 */
+	private function dataRegistersByApp(array $steps): array {
+		$created = $this->collectCreatedAppSlugs(steps: $steps);
+		$byApp = [];
+		foreach ($steps as $step) {
+			$appSlug = self::bindingStepAppSlug(step: $step);
+			if ($appSlug === '' || isset($byApp[$appSlug]) === true || isset($created[$appSlug]) === true) {
+				continue;
+			}
+
+			$app = $this->resolveApplicationBySlug(appSlug: $appSlug);
+			$byApp[$appSlug] = ManifestDataBinding::dataRegisterSlugs(bindings: ($app['dataRegisters'] ?? []));
+		}
+
+		return $byApp;
+	}//end dataRegistersByApp()
+
+	/**
+	 * The app slug of a step whose config the data binding rewrites, or ''.
+	 *
+	 * @param mixed $step One plan step.
+	 *
+	 * @return string
+	 */
+	private static function bindingStepAppSlug(mixed $step): string {
+		if (is_array($step) === false || in_array((string)($step['tool'] ?? ''), ['buildiq.upsertPage', 'buildiq.addWidget'], true) === false) {
+			return '';
+		}
+
+		$args = ($step['arguments'] ?? null);
+		if (is_array($args) === false) {
+			return '';
+		}
+
+		return (string)($args['appSlug'] ?? '');
+	}//end bindingStepAppSlug()
 
 	/**
 	 * The short schema slugs this plan authors, keyed by `appSlug@versionSlug`,
@@ -677,13 +733,15 @@ class CopilotService {
 	 * @param array<string, array<string, array{required: array<int, string>}>> $authoredSchemas Short schema
 	 *                                                            slugs this plan authors, keyed by
 	 *                                                            `appSlug@versionSlug`.
+	 * @param array<string, array<int, string>> $dataRegisters Register slugs each target app binds in
+	 *                                                         `dataRegisters`, keyed by app slug.
 	 *
 	 * @return array<string, mixed>
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) ManifestRoute and
 	 * ManifestDataBinding are pure rules with no collaborators and no state.
 	 */
-	private function normaliseStepArguments(string $tool, array $args, array $authoredSchemas = []): array {
+	private function normaliseStepArguments(string $tool, array $args, array $authoredSchemas = [], array $dataRegisters = []): array {
 		$args = self::withRootedPageRoute(tool: $tool, args: $args);
 
 		$bindKey = match ($tool) {
@@ -709,7 +767,8 @@ class CopilotService {
 		$args[$bindKey] = ManifestDataBinding::bindBlock(
 			config: $config,
 			appSlug: $appSlug,
-			versionSlug: $versionSlug
+			versionSlug: $versionSlug,
+			dataRegisters: ($dataRegisters[$appSlug] ?? [])
 		);
 
 		return $args;
