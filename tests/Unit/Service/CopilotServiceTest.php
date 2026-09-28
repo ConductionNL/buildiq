@@ -1724,6 +1724,69 @@ class CopilotServiceTest extends TestCase {
 	}//end testAShortSchemaSlugReachesTheHandlerBoundToThisVersion()
 
 	/**
+	 * A page and a widget an approved plan puts on a register the app binds in
+	 * `dataRegisters` keep that register and its schema, while a page on the
+	 * app's own data is still pointed at this version's register (REQ-BQDB-004,
+	 * buildiq#991). Goes through execute() with the real ManifestDataBinding.
+	 *
+	 * @return void
+	 */
+	public function testAPageOnABoundDataRegisterKeepsItsRegisterAndSchema(): void {
+		$this->wireCaller(uid: 'alice');
+		$this->objectService->method('searchObjectsBySlug')->willReturnCallback(
+			static function (string $register, string $schema, array $filters): array {
+				if ($schema === 'built-app') {
+					return [
+						[
+							'id' => 'app-1',
+							'slug' => 'vergunningen',
+							'permissions' => ['owners' => ['user:alice']],
+							'dataRegisters' => [['register' => 'permits-db', 'label' => 'Permits database']],
+						],
+					];
+				}
+
+				return [['id' => 'ver-1', 'slug' => 'development', 'application' => 'app-1', 'manifest' => ['version' => '1.0.0', 'menu' => [], 'pages' => []]]];
+			}
+		);
+
+		$plan = [
+			'summary' => 'x',
+			'steps' => [
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'vergunningen', 'versionSlug' => 'development', 'pageId' => 'permits', 'title' => 'Permits', 'type' => 'index', 'route' => '/permits', 'config' => ['register' => 'permits-db', 'schema' => 'permits']]],
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'vergunningen', 'versionSlug' => 'development', 'pageId' => 'notes', 'title' => 'Notes', 'type' => 'index', 'route' => '/notes', 'config' => ['register' => 'note', 'schema' => 'note']]],
+				['tool' => 'buildiq.addWidget', 'arguments' => ['appSlug' => 'vergunningen', 'versionSlug' => 'development', 'pageId' => 'overview', 'widgetType' => 'stat', 'widgetId' => 'permits-open', 'title' => 'Open permits', 'widgetConfig' => ['register' => 'permits-db', 'schema' => 'permits', 'aggregate' => 'count']]],
+			],
+		];
+
+		$seen = [];
+		$this->toolProvider->method('invokeTool')->willReturnCallback(
+			function (string $tool, array $args) use (&$seen): array {
+				$seen[] = ['tool' => $tool, 'args' => $args];
+
+				return ['success' => true, 'action' => 'created'];
+			}
+		);
+
+		$this->makeService()->execute(plan: $plan, userId: 'alice');
+
+		$pages = array_values(array_filter($seen, static fn (array $call): bool => $call['tool'] === 'buildiq.upsertPage'));
+		$widgets = array_values(array_filter($seen, static fn (array $call): bool => $call['tool'] === 'buildiq.addWidget'));
+		self::assertCount(2, $pages);
+		self::assertCount(1, $widgets);
+
+		// The bound data register and the schema beside it are left alone.
+		self::assertSame('permits-db', $pages[0]['args']['config']['register']);
+		self::assertSame('permits', $pages[0]['args']['config']['schema']);
+		self::assertSame('permits-db', $widgets[0]['args']['widgetConfig']['register']);
+		self::assertSame('permits', $widgets[0]['args']['widgetConfig']['schema']);
+
+		// The app's own data is still bound to this version, as before.
+		self::assertSame('openbuild-vergunningen-development', $pages[1]['args']['config']['register']);
+		self::assertSame('vergunningen-development-note', $pages[1]['args']['config']['schema']);
+	}//end testAPageOnABoundDataRegisterKeepsItsRegisterAndSchema()
+
+	/**
 	 * execute() denies a viewer-only caller against an existing app (403) and runs no step.
 	 *
 	 * @return void
