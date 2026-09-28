@@ -211,21 +211,40 @@ final class ManifestDataBinding {
 				continue;
 			}
 
-			if ($key === 'register') {
-				$node[$key] = self::bindRegister(value: $value, appSlug: $appSlug, versionSlug: $versionSlug);
-				continue;
-			}
-
-			if ($key === 'schema') {
-				$node[$key] = self::bindSchema(value: $value, appSlug: $appSlug, versionSlug: $versionSlug);
-				continue;
-			}
-
-			$node[$key] = self::bind(node: $value, appSlug: $appSlug, versionSlug: $versionSlug, dataRegisters: $dataRegisters);
+			$node[$key] = self::bindEntry(
+				key: $key,
+				value: $value,
+				appSlug: $appSlug,
+				versionSlug: $versionSlug,
+				dataRegisters: $dataRegisters
+			);
 		}
 
 		return $node;
 	}//end bind()
+
+	/**
+	 * Bind one entry of a block: its `register`, its `schema`, or a nested level.
+	 *
+	 * @param int|string $key The entry's key.
+	 * @param mixed $value The entry's value.
+	 * @param string $appSlug The application slug.
+	 * @param string $versionSlug The version slug.
+	 * @param array<int, string> $dataRegisters Register slugs the Application binds in `dataRegisters`.
+	 *
+	 * @return mixed
+	 */
+	private static function bindEntry(int|string $key, mixed $value, string $appSlug, string $versionSlug, array $dataRegisters): mixed {
+		if ($key === 'register') {
+			return self::bindRegister(value: $value, appSlug: $appSlug, versionSlug: $versionSlug);
+		}
+
+		if ($key === 'schema') {
+			return self::bindSchema(value: $value, appSlug: $appSlug, versionSlug: $versionSlug);
+		}
+
+		return self::bind(node: $value, appSlug: $appSlug, versionSlug: $versionSlug, dataRegisters: $dataRegisters);
+	}//end bindEntry()
 
 	/**
 	 * Whether a block's `register` is one of the Application's data registers.
