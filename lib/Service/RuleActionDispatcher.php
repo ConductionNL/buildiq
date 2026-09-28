@@ -79,6 +79,11 @@ use Throwable;
 
 /**
  * Wired dispatcher for ConditionActionExecutor side-effecting actions.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) One dispatcher per action type is
+ *   the point of this class: each side effect brings its own boundary (notifications,
+ *   OpenRegister objects, the HTTP client and its egress guard, the rule engine), and
+ *   the egress guard ADR-067 requires on the webhook is what tipped the count over.
  */
 class RuleActionDispatcher {
 	/**
@@ -256,8 +261,6 @@ class RuleActionDispatcher {
 	 * on to an address the guard would have refused.
 	 *
 	 * @return int|null The response status code, or null on skip/failure.
-	 *
-	 * @throws \InvalidArgumentException When the egress guard refuses the URL.
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) SecurityService::assertSafeFetchUrl is static upstream;
 	 *   OpenRegister's store plane calls it the same way.
