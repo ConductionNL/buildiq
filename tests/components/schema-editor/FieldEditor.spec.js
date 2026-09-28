@@ -307,7 +307,7 @@ describe('FieldEditor', () => {
 			expect(properties.status).toEqual(importedSchema().properties.status)
 		})
 
-		it('an edited description and type still win over the loaded property', () => {
+		it('an edited description and type still win over the loaded property', async () => {
 			const wrapper = mountWith(schemaToFields(importedSchema()))
 			wrapper.vm.updateField(0, 'description', 'Edited by the maker')
 			const edited = wrapper.emitted('update:fields')[0][0]
@@ -316,7 +316,7 @@ describe('FieldEditor', () => {
 			expect(properties.status.enum).toEqual(['open', 'granted', 'refused'])
 			expect(properties.status.title).toBe('Status')
 
-			wrapper.setProps({ fields: edited })
+			await wrapper.setProps({ fields: edited })
 			wrapper.vm.updateField(0, 'type', 'integer')
 			const retyped = wrapper.emitted('update:fields')[1][0]
 			const saved = fieldsToSchema(retyped).properties.status
@@ -329,11 +329,11 @@ describe('FieldEditor', () => {
 			)
 		})
 
-		it('clearing a key the editor owns still removes it', () => {
+		it('clearing a key the editor owns still removes it', async () => {
 			const wrapper = mountWith(schemaToFields(importedSchema()))
 			wrapper.vm.updateValidation(0, 'minLength', '')
 			const next = wrapper.emitted('update:fields')[0][0]
-			wrapper.setProps({ fields: next })
+			await wrapper.setProps({ fields: next })
 			wrapper.vm.updateField(0, 'description', '')
 			const cleared = wrapper.emitted('update:fields')[1][0]
 			const saved = fieldsToSchema(cleared).properties.status
