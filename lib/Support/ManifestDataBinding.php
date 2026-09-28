@@ -26,6 +26,9 @@
  * per-version register somebody chose on purpose, and a schema slug already
  * carrying this version's prefix has been through here before. Both are
  * returned untouched, so running this twice changes nothing the first run did.
+ * A block whose register is one the Application binds in `dataRegisters` is
+ * shared data somebody else owns: its register and the schema beside it are
+ * returned untouched too (REQ-BQDB-004).
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -97,6 +100,37 @@ final class ManifestDataBinding {
 	}//end schemaPrefix()
 
 	/**
+	 * The register slugs an Application's `dataRegisters` bindings name.
+	 *
+	 * Each binding is `{register, label}`; anything else is skipped.
+	 *
+	 * @param mixed $bindings The Application's `dataRegisters` value.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generated-pages-keep-the-database-register-req-bqdb-004
+	 */
+	public static function dataRegisterSlugs(mixed $bindings): array {
+		if (is_array($bindings) === false) {
+			return [];
+		}
+
+		$slugs = [];
+		foreach ($bindings as $binding) {
+			$register = null;
+			if (is_array($binding) === true) {
+				$register = ($binding['register'] ?? null);
+			}
+
+			if (is_string($register) === true && trim($register) !== '') {
+				$slugs[] = trim($register);
+			}
+		}
+
+		return array_values(array_unique($slugs));
+	}//end dataRegisterSlugs()
+
+	/**
 	 * Bind one whole config block: a page's `config`, or the `widgetConfig`
 	 * an `addWidget` step carries.
 	 *
@@ -109,17 +143,19 @@ final class ManifestDataBinding {
 	 * @param array<string, mixed> $config The config block as the step carries it.
 	 * @param string $appSlug The application slug the step targets.
 	 * @param string $versionSlug The version slug the step targets.
+	 * @param array<int, string> $dataRegisters Register slugs the Application binds in `dataRegisters`.
 	 *
 	 * @return array<string, mixed>
 	 *
 	 * @spec openspec/specs/ai-copilot/spec.md
+	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generated-pages-keep-the-database-register-req-bqdb-004
 	 */
-	public static function bindBlock(array $config, string $appSlug, string $versionSlug): array {
+	public static function bindBlock(array $config, string $appSlug, string $versionSlug, array $dataRegisters = []): array {
 		if ($appSlug === '' || $versionSlug === '') {
 			return $config;
 		}
 
-		$bound = self::bind(node: $config, appSlug: $appSlug, versionSlug: $versionSlug);
+		$bound = self::bind(node: $config, appSlug: $appSlug, versionSlug: $versionSlug, dataRegisters: $dataRegisters);
 		if (is_array($bound) === false) {
 			return $config;
 		}
@@ -151,37 +187,81 @@ final class ManifestDataBinding {
 	 * Rewrite every `register` / `schema` binding in a config block.
 	 *
 	 * Walks the whole block, so a page's own `{register, schema}` pair and each
-	 * widget's `content.{register, schema}` are both reached.
+	 * widget's `content.{register, schema}` are both reached. A level whose
+	 * register is a bound data register keeps its register and schema.
 	 *
 	 * @param mixed $node The config block, or any part of it.
 	 * @param string $appSlug The application slug the step targets.
 	 * @param string $versionSlug The version slug the step targets.
+	 * @param array<int, string> $dataRegisters Register slugs the Application binds in `dataRegisters`.
 	 *
 	 * @return mixed The block with its bindings pointed at this version's data.
 	 *
 	 * @spec openspec/specs/ai-copilot/spec.md
+	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generated-pages-keep-the-database-register-req-bqdb-004
 	 */
-	public static function bind(mixed $node, string $appSlug, string $versionSlug): mixed {
+	public static function bind(mixed $node, string $appSlug, string $versionSlug, array $dataRegisters = []): mixed {
 		if (is_array($node) === false || $appSlug === '' || $versionSlug === '') {
 			return $node;
 		}
 
+		$onDataRegister = self::isOnDataRegister(block: $node, dataRegisters: $dataRegisters);
 		foreach ($node as $key => $value) {
-			if ($key === 'register') {
-				$node[$key] = self::bindRegister(value: $value, appSlug: $appSlug, versionSlug: $versionSlug);
+			if ($onDataRegister === true && ($key === 'register' || $key === 'schema')) {
 				continue;
 			}
 
-			if ($key === 'schema') {
-				$node[$key] = self::bindSchema(value: $value, appSlug: $appSlug, versionSlug: $versionSlug);
-				continue;
-			}
-
-			$node[$key] = self::bind(node: $value, appSlug: $appSlug, versionSlug: $versionSlug);
+			$node[$key] = self::bindEntry(
+				key: $key,
+				value: $value,
+				appSlug: $appSlug,
+				versionSlug: $versionSlug,
+				dataRegisters: $dataRegisters
+			);
 		}
 
 		return $node;
 	}//end bind()
+
+	/**
+	 * Bind one entry of a block: its `register`, its `schema`, or a nested level.
+	 *
+	 * @param int|string $key The entry's key.
+	 * @param mixed $value The entry's value.
+	 * @param string $appSlug The application slug.
+	 * @param string $versionSlug The version slug.
+	 * @param array<int, string> $dataRegisters Register slugs the Application binds in `dataRegisters`.
+	 *
+	 * @return mixed
+	 */
+	private static function bindEntry(int|string $key, mixed $value, string $appSlug, string $versionSlug, array $dataRegisters): mixed {
+		if ($key === 'register') {
+			return self::bindRegister(value: $value, appSlug: $appSlug, versionSlug: $versionSlug);
+		}
+
+		if ($key === 'schema') {
+			return self::bindSchema(value: $value, appSlug: $appSlug, versionSlug: $versionSlug);
+		}
+
+		return self::bind(node: $value, appSlug: $appSlug, versionSlug: $versionSlug, dataRegisters: $dataRegisters);
+	}//end bindEntry()
+
+	/**
+	 * Whether a block's `register` is one of the Application's data registers.
+	 *
+	 * @param array<array-key, mixed> $block The block, or any level of it.
+	 * @param array<int, string> $dataRegisters Register slugs the Application binds in `dataRegisters`.
+	 *
+	 * @return bool
+	 */
+	private static function isOnDataRegister(array $block, array $dataRegisters): bool {
+		$register = ($block['register'] ?? null);
+		if ($dataRegisters === [] || is_string($register) === false) {
+			return false;
+		}
+
+		return in_array(trim($register), $dataRegisters, true);
+	}//end isOnDataRegister()
 
 	/**
 	 * Point one `register` value at this version's own register.

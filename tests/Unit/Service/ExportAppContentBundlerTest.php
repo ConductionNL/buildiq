@@ -152,6 +152,25 @@ final class ExportAppContentBundlerTest extends TestCase {
 	}//end testBundleWritesThePortableLayout()
 
 	/**
+	 * The README only names a way to use the archive that exists (buildiq#992).
+	 *
+	 * Buildiq has no route, controller or button that takes an uploaded app
+	 * archive, so the README must not send the reader to one. Running the
+	 * archive as its own Nextcloud app is the path that works.
+	 *
+	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-a-maker-imports-an-exported-archive-as-a-new-app-req-bqic-001
+	 */
+	public function testReadmeDoesNotPointAtAnImportButtonBuildiqLacks(): void {
+		$this->bundleDevelopment(includeSeedData: false);
+
+		$readme = (string)file_get_contents($this->root . '/README.md');
+		self::assertStringNotContainsString('Import application', $readme);
+		self::assertStringNotContainsString('when you import this archive', $readme);
+		self::assertStringContainsString('As its own app: run `composer install`', $readme);
+		self::assertStringContainsString('Buildiq cannot import this archive yet', $readme);
+	}//end testReadmeDoesNotPointAtAnImportButtonBuildiqLacks()
+
+	/**
 	 * With seed data on, the records go in both layouts, stripped of their source identity.
 	 */
 	public function testBundleWritesRecordsOnlyWhenSeedDataIsIncluded(): void {
