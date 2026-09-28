@@ -476,6 +476,6 @@ class RuleEngineService {
 	 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-007-per-tenant-isolation-and-multitenancy
 	 */
 	private function findMany(string $schema, array $filters, ?int $limit = null): array {
-		return $this->reader->find(schema: $schema, filters: $filters, limit: $limit);
+		return $this->reader->findScoped(schema: $schema, filters: $filters, limit: $limit);
 	}//end findMany()
 }//end class

@@ -118,7 +118,7 @@ final class RuleObjectReaderTest extends TestCase {
 			->with(['ruleSetId' => 'loan', '@self' => ['register' => 7, 'schema' => 105]], true, true)
 			->willReturn([['name' => 'case-1']]);
 
-		$this->assertSame([['name' => 'case-1']], $this->reader()->find(schema: 'rule-test-case', filters: ['ruleSetId' => 'loan']));
+		$this->assertSame([['name' => 'case-1']], $this->reader()->findScoped(schema: 'rule-test-case', filters: ['ruleSetId' => 'loan']));
 
 	}//end testSearchIsOrganisationScopedOnTheRegistersOwnSchema()
 
@@ -135,7 +135,7 @@ final class RuleObjectReaderTest extends TestCase {
 			->with(['slug' => 'loan', '@self' => ['register' => 7, 'schema' => 101]], true, true)
 			->willReturn([]);
 
-		$this->assertSame([], $this->reader()->find(schema: 'rule-set', filters: ['slug' => 'loan']));
+		$this->assertSame([], $this->reader()->findScoped(schema: 'rule-set', filters: ['slug' => 'loan']));
 
 	}//end testSchemaHeldBySlugResolvesWhenUnambiguous()
 
@@ -150,7 +150,7 @@ final class RuleObjectReaderTest extends TestCase {
 		$this->objectService->expects($this->never())->method('searchObjects');
 		$this->objectService->expects($this->never())->method('searchObjectsBySlug');
 
-		$this->assertSame([], $this->reader()->find(schema: 'rule-set', filters: ['slug' => 'loan']));
+		$this->assertSame([], $this->reader()->findScoped(schema: 'rule-set', filters: ['slug' => 'loan']));
 
 	}//end testSchemaOutsideTheRegisterReadsAsNothing()
 
@@ -166,8 +166,8 @@ final class RuleObjectReaderTest extends TestCase {
 		);
 
 		$reader = $this->reader();
-		$this->assertSame([['n' => 1]], $reader->find(schema: 'rule-set', filters: [], limit: 1));
-		$this->assertSame([], $reader->find(schema: 'rule-set', filters: []));
+		$this->assertSame([['n' => 1]], $reader->findScoped(schema: 'rule-set', filters: [], limit: 1));
+		$this->assertSame([], $reader->findScoped(schema: 'rule-set', filters: []));
 
 	}//end testFailureReadsAsNothingAndLimitApplies()
 }//end class

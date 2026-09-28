@@ -307,7 +307,7 @@ class RulesController extends Controller {
 	 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-007-per-tenant-isolation-and-multitenancy
 	 */
 	private function query(string $schema, array $filters, ?int $limit): array {
-		return $this->reader->find(schema: $schema, filters: $filters, limit: $limit);
+		return $this->reader->findScoped(schema: $schema, filters: $filters, limit: $limit);
 	}//end query()
 
 	/**

@@ -89,7 +89,7 @@ class RuleObjectReader {
 	 * Schema RBAC and the caller's organisation both apply: an object held by
 	 * another organisation is not returned. A lookup or search failure reads as
 	 * no rows, so a caller answers "not found" rather than falling back to an
-	 * unscoped read.
+	 * unscoped read. It never throws.
 	 *
 	 * @param string              $schema  The schema slug.
 	 * @param array<string,mixed> $filters Equality filters on object fields.
@@ -99,7 +99,7 @@ class RuleObjectReader {
 	 *
 	 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-007-per-tenant-isolation-and-multitenancy
 	 */
-	public function find(string $schema, array $filters, ?int $limit = null): array {
+	public function findScoped(string $schema, array $filters, ?int $limit = null): array {
 		$scope = $this->scopeOf(schema: $schema);
 		if ($scope === null) {
 			return [];
@@ -135,7 +135,7 @@ class RuleObjectReader {
 
 		return $rows;
 
-	}//end find()
+	}//end findScoped()
 
 	/**
 	 * The `buildiq` register id and the id of one of its schemas.
