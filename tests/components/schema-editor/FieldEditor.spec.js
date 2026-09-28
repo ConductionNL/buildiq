@@ -325,7 +325,9 @@ describe('FieldEditor', () => {
 			expect(saved.minLength).toBeUndefined()
 			expect(saved.title).toBe('Status')
 			expect(saved['x-openregister-dependent-values']).toEqual(
-				importedSchema().properties.status['x-openregister-dependent-values'],
+				importedSchema().properties.status[
+					'x-openregister-dependent-values'
+				],
 			)
 		})
 
