@@ -798,5 +798,133 @@
 		"reason": "Requested by nextcloud-vue: its decision (nextcloud-vue PR #1269) says CnDetailPage renders actions, related collections and files and the missing half is buildiq's DetailPageEditor; buildiq PR #989 moved the owner. Partial and built, and four competitors rate it yes. Header and status buttons are already specified in pages-action-buttons; the new change authors related lists, link buttons and the files tab.",
 		"change": "pages-detail-related-items",
 		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "data-computed-field",
+		"matrix": "buildiq",
+		"decision": "build",
+		"reason": "Building row in the core area (data) with four competitors rated yes. CalculationEditor.vue is a read-only stub; the new change adds authoring through the property-level calculation key OpenRegister already accepts and validates.",
+		"change": "data-calculated-field-authoring",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "form-address-lookup",
+		"matrix": "buildiq",
+		"decision": "decided-no",
+		"reason": "No competitor rated yes and no tender, featureRequest or roadmap demand; outside buildiq's core area (apps and data). The registry lookup itself is integriq's (registry-backed-field-source).",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "form-layout-per-type",
+		"matrix": "buildiq",
+		"decision": "existing",
+		"reason": "Building row: the authoring and the leaf are built; the open change case-page-layout-per-case-type (tasks 1.2, 2.2, 3.2, 4.x, 5.5, 6.x to 8.x) holds the missing half, including the nextcloud-vue CnDetailPage consumer. The same change covers dossiq rows 11.6 to 11.8.",
+		"change": "case-page-layout-per-case-type",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "form-screen-override",
+		"matrix": "buildiq",
+		"decision": "existing",
+		"reason": "Building row: the authoring and the leaf are built; the open change case-page-layout-per-case-type (tasks 1.2, 2.2, 3.2, 4.x, 5.5, 6.x to 8.x) holds the missing half, including the nextcloud-vue CnDetailPage consumer. The same change covers dossiq rows 11.6 to 11.8.",
+		"change": "case-page-layout-per-case-type",
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "logic-rule-versioning",
+		"matrix": "buildiq",
+		"decision": "decided-no",
+		"reason": "Building row with no change for its missing half. No competitor rated yes, no demand; outside buildiq's core area (apps and data). What exists stays: RuleSetVersioningService has no caller and is not wired by this decision.",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "logic-rule-impact",
+		"matrix": "buildiq",
+		"decision": "decided-no",
+		"reason": "Building row with no change for its missing half. No competitor rated yes, no demand; outside buildiq's core area (apps and data). RuleImpactAnalysisService stays unwired.",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "lc-channels",
+		"matrix": "buildiq",
+		"decision": "decided-no",
+		"reason": "No competitor rated yes and no demand; outside buildiq's core area (apps and data).",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "lc-release-notes",
+		"matrix": "buildiq",
+		"decision": "decided-no",
+		"reason": "Single competitor (Power Apps), no demand; outside buildiq's core area (apps and data).",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "lc-lock-version",
+		"matrix": "buildiq",
+		"decision": "decided-no",
+		"reason": "Single competitor (Power Apps), no demand; outside buildiq's core area (apps and data).",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "reuse-plugin-marketplace",
+		"matrix": "buildiq",
+		"decision": "decided-no",
+		"reason": "Single competitor (Mendix), no demand; outside buildiq's core area (apps and data).",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "ux-a11y-checker",
+		"matrix": "buildiq",
+		"decision": "decided-no",
+		"reason": "Single competitor (Power Apps), no demand; outside buildiq's core area (apps and data).",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "ops-realtime-coedit",
+		"matrix": "buildiq",
+		"decision": "decided-no",
+		"reason": "Single competitor (Power Apps), no demand; outside buildiq's core area (apps and data).",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "ops-comments-builder",
+		"matrix": "buildiq",
+		"decision": "decided-no",
+		"reason": "Single competitor (Power Apps), no demand; outside buildiq's core area (apps and data).",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "ai-agent-chat-channels",
+		"matrix": "buildiq",
+		"decision": "decided-no",
+		"reason": "Single competitor (Budibase), no demand beyond that competitor's own changelog; outside buildiq's core area (apps and data).",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "int-realtime-stream",
+		"matrix": "buildiq",
+		"decision": "decided-no",
+		"reason": "One featureRequest (appsmith#1866) but no competitor rated yes, so the featureRequest plus one yes rule is not met; outside buildiq's core area (apps and data).",
+		"change": null,
+		"decidedOn": "2026-09-28"
+	},
+	{
+		"row": "lc-export-password",
+		"matrix": "buildiq",
+		"decision": "decided-no",
+		"reason": "Single competitor (Budibase), no demand; outside buildiq's core area (apps and data).",
+		"change": null,
+		"decidedOn": "2026-09-28"
 	}
 ]
