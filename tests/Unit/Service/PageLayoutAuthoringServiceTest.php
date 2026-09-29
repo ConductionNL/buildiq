@@ -30,6 +30,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use InvalidArgumentException;
 use OCA\Buildiq\Integration\PageLayoutLeafProvider;
+use OCA\Buildiq\Service\ContainerLocator;
 use OCA\Buildiq\Service\LayoutDeltaService;
 use OCA\Buildiq\Service\PageLayoutAuthoringService;
 use OCA\Buildiq\Service\PageLayoutFrozenBase;
@@ -423,4 +424,75 @@ final class PageLayoutAuthoringServiceTest extends TestCase {
 
 		$this->assertSame([], $this->withheld(), 'A group-wide whole layout must not make another override read as drifted.');
 	}//end testAGroupScopedWholeLayoutDoesNotMoveTheFrozenBase()
+
+	/**
+	 * Task 2.2: a save warns when a leaf tab names a leaf the integration
+	 * registry does not know. The validator had the rule, but the service
+	 * passed it no leaf ids, so the warning could never fire.
+	 *
+	 * The registry double carries OpenRegister's real method name, listIds().
+	 *
+	 * @return void
+	 */
+	public function testASaveWarnsOnALeafTheRegistryDoesNotKnow(): void {
+		$registry = new class {
+			/**
+			 * The ids of every registered provider.
+			 *
+			 * @return array<int, string>
+			 */
+			public function listIds(): array {
+				return ['filinq-documents', 'dossiq-tasks'];
+			}//end listIds()
+		};
+		$locator = $this->getMockBuilder(ContainerLocator::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['get'])
+			->getMock();
+		$locator->method('get')->willReturnCallback(
+			static fn (string $class): ?object => $class === PageLayoutAuthoringService::REGISTRY_CLASS ? $registry : null
+		);
+		$service = new PageLayoutAuthoringService(
+			objectService: $this->makeObjectService(),
+			appConfig: $this->appConfigFor(),
+			validator: new PageLayoutValidator(),
+			deltas: $this->deltas,
+			provider: $this->provider,
+			locator: $locator,
+		);
+
+		$layout = $this->schemaWide();
+		$layout['tabs'][] = ['id' => 'kaart', 'kind' => 'leaf', 'label' => 'Kaart', 'ref' => 'nobody-offers-this'];
+		$result = $service->save($layout, 'beheerder');
+
+		$this->assertSame(
+			['No installed app offers the leaf "nobody-offers-this"; that tab will render empty until one does.'],
+			$result['warnings']
+		);
+	}//end testASaveWarnsOnALeafTheRegistryDoesNotKnow()
+
+	/**
+	 * Without OpenRegister's registry the save still succeeds, silently: a
+	 * missing app must not make a layout unsaveable.
+	 *
+	 * @return void
+	 */
+	public function testASaveWithoutTheRegistryDoesNotWarn(): void {
+		$layout = $this->schemaWide();
+		$layout['tabs'][] = ['id' => 'kaart', 'kind' => 'leaf', 'label' => 'Kaart', 'ref' => 'nobody-offers-this'];
+
+		$this->assertSame([], $this->service->save($layout, 'beheerder')['warnings']);
+	}//end testASaveWithoutTheRegistryDoesNotWarn()
+
+	/**
+	 * An app config that names the buildiq register.
+	 *
+	 * @return IAppConfig The config.
+	 */
+	private function appConfigFor(): IAppConfig {
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')->willReturn('buildiq');
+
+		return $appConfig;
+	}//end appConfigFor()
 }//end class
