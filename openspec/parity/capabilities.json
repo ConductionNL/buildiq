@@ -1087,30 +1087,32 @@
 			"area": "data",
 			"name": "Add a field whose value is calculated from other fields.",
 			"source": "own-code",
-			"buildiq": "no",
+			"buildiq": "yes",
 			"nocobase": "yes",
 			"budibase": "yes",
 			"appsmith": "partial",
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "building",
-				"evidence": "src/components/schema-editor/CalculationEditor.vue:1-30, explicit docblock: 'v1 STUB (REQ-OBSD-005 - calculations slice deferred to v1.1)...v1 surfaces a read-only view of any existing x-openregister-calculations block + a coming in v1.1 message; authoring lands in tasks 8.2'. No way to add or edit a calculation from the UI, only render existing ones read-only",
+				"state": "built",
+				"evidence": "src/components/schema-editor/CalculationEditor.vue (add, type, expression builder from the OpenRegister operator catalogue, try panel) and ExpressionNodeEditor.vue; src/services/calculations.js applyCalculations writes properties.<name>.calculation, which OpenRegister PropertyCalculations forwards and validates; src/views/SchemaDesigner.vue stages propertyCalculations and maps a 422 refusal onto its field",
 				"owner": "ConductionNL/buildiq",
-				"change": "data-calculated-field-authoring"
+				"change": "2026-09-29-data-calculated-field-authoring",
+				"reachedOn": "Schema designer of an app version, open a schema, Calculations section"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
 			"feature": "openbuild-schema-designer",
 			"featureConfidence": "high",
-			"note": "not a defect, it is a documented stub: authoring is not implemented, only display of a pre-existing x-openregister-calculations block",
+			"note": "Built 2026-09-29 by change data-calculated-field-authoring: the stub became an editor that writes the property-level calculation key.",
 			"evidence": {
 				"nocobase": "source read at v2.2.18, not driven: packages/plugins/@nocobase/plugin-field-formula/src/client/interfaces/formula.tsx:92 Formula field interface computing a value from other fields; registered at packages/plugins/@nocobase/plugin-field-formula/src/client-v2/plugin.tsx:52; builtIn per packages/presets/nocobase/package.json:150 Reached on: Configure fields, Add field, Formula",
 				"budibase": "source read at v3.46.0, not driven: packages/builder/src/components/backend/DataTable/modals/CreateEditColumn.svelte:933 Formula Type (dynamic or static) and :972-977 Formula editor over row bindings (ModalBindableInput); also an AI column type at packages/builder/src/constants/backend/index.ts:166 Reached on: workspace data > table > add Formula column",
 				"mendix": "docs-only: https://docs.mendix.com/refguide/attributes/ (2026-09-26): an attribute can have a microflow that calculates its value",
 				"power-apps": "docs-only: https://learn.microsoft.com/en-us/power-apps/maker/data-platform/formula-columns (2026-09-26): formula columns display a calculated value using Power Fx",
 				"appsmith": "source read at v2.4.2, not driven: app/client/src/widgets/TableWidgetV2/widget/propertyConfig/PanelConfig/Data/index.ts:79 computedValue, a JS binding per table column such as {{currentRow.a * currentRow.b}}; table registered app/client/src/widgets/index.ts:346. Display-only and written in JS, not a stored computed field Reached on: table widget, column settings, Computed value"
-			}
+			},
+			"reachedOn": "Schema designer of an app version, open a schema, Calculations section"
 		},
 		{
 			"id": "data-choice-lists",

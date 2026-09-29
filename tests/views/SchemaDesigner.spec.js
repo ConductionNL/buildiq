@@ -157,7 +157,7 @@ const editorStubs = {
 	},
 	CalculationEditor: {
 		name: 'CalculationEditor',
-		props: ['calculations'],
+		props: ['calculations', 'propertyCalculations', 'fieldNames', 'refusals'],
 		template: '<div class="calc-stub" />',
 	},
 	NotificationEditor: {
@@ -683,5 +683,118 @@ describe('SchemaDesigner', () => {
 		expect(
 			wrapper.findComponent({ name: 'AccessEditor' }).props('availableGroups'),
 		).toEqual(expect.arrayContaining(['vets', 'admin']))
+	})
+
+	// data-calculated-field-authoring REQ-BQCF-001 and REQ-BQCF-004.
+	describe('calculated fields', () => {
+		const total = {
+			type: 'number',
+			expression: { '*': [{ prop: 'quantity' }, { prop: 'unitPrice' }] },
+		}
+		const orderSchema = {
+			...persistedSchema,
+			properties: {
+				quantity: { type: 'number' },
+				unitPrice: { type: 'number' },
+				old: {
+					type: 'number',
+					calculation: { type: 'number', expression: 1 },
+				},
+			},
+			'x-property-order': ['quantity', 'unitPrice', 'old'],
+			'x-openregister-calculations': {
+				age: { type: 'integer', expression: 1 },
+			},
+		}
+
+		async function mountOrder() {
+			storeMocks.fetchCollection.mockResolvedValue([orderSchema])
+			storeMocks.fetchObject.mockResolvedValue(orderSchema)
+			const wrapper = mount(SchemaDesigner, {
+				stubs: editorStubs,
+				mocks: {
+					$route: makeRouter({ schemaId: 'hello' }),
+					$router: { push: vi.fn().mockResolvedValue() },
+				},
+			})
+			await new Promise((resolve) => setTimeout(resolve, 0))
+			await wrapper.vm.$nextTick()
+			return wrapper
+		}
+
+		it('REQ-BQCF-001: stages the property calculations and hands them to the editor', async () => {
+			const wrapper = await mountOrder()
+			const editor = wrapper.findComponent({ name: 'CalculationEditor' })
+			expect(editor.props('propertyCalculations')).toEqual({
+				old: { type: 'number', expression: 1 },
+			})
+			expect(editor.props('calculations')).toEqual(
+				orderSchema['x-openregister-calculations'],
+			)
+			expect(editor.props('fieldNames')).toEqual([
+				'quantity',
+				'unitPrice',
+				'old',
+			])
+		})
+
+		it('REQ-BQCF-001: a save writes the calculation on its property and keeps the register file block', async () => {
+			const wrapper = await mountOrder()
+			storeMocks.saveObject.mockImplementation(async (_type, body) => body)
+			wrapper.vm.onPropertyCalculationsChange({ total })
+			await wrapper.vm.$nextTick()
+			await wrapper.vm.save()
+			const [, body] = storeMocks.saveObject.mock.calls[0]
+			expect(body.properties.total).toEqual({
+				type: 'number',
+				calculation: total,
+			})
+			expect(body.properties.old).toEqual({ type: 'number' })
+			expect(body['x-property-order']).toEqual([
+				'quantity',
+				'unitPrice',
+				'old',
+				'total',
+			])
+			expect(body['x-openregister-calculations']).toEqual(
+				orderSchema['x-openregister-calculations'],
+			)
+		})
+
+		it('REQ-BQCF-004: a refused calculation shows on its field and the staged edit is kept', async () => {
+			const wrapper = await mountOrder()
+			wrapper.vm.onPropertyCalculationsChange({ total })
+			const refusal = [
+				{
+					code: 'calculation-prop-unknown',
+					message:
+						'Calculation "total": prop "qty" is not a property or calculation.',
+				},
+			]
+			storeMocks.saveObject.mockImplementationOnce(async () => {
+				storeMocks.errors = {
+					schema: {
+						status: 422,
+						message: 'Validation failed for schema',
+						details: refusal,
+						fields: refusal,
+						isValidation: true,
+					},
+				}
+				return null
+			})
+			await wrapper.vm.save()
+			await wrapper.vm.$nextTick()
+			expect(
+				wrapper
+					.findComponent({ name: 'CalculationEditor' })
+					.props('refusals'),
+			).toEqual({
+				total: [
+					'Calculation "total": prop "qty" is not a property or calculation.',
+				],
+			})
+			expect(wrapper.vm.staged.propertyCalculations.total).toEqual(total)
+		})
 	})
 })
