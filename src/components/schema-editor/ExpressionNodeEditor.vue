@@ -80,7 +80,7 @@ import { NcButton, NcSelect, NcTextField } from '@nextcloud/vue'
 /**
  * The kind of an expression node.
  *
- * @spec openspec/changes/data-calculated-field-authoring/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
+ * @spec openspec/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
  * @param {unknown} node An expression AST node.
  * @return {'field'|'value'|'operator'} The kind.
  */
@@ -94,7 +94,7 @@ export function nodeKind(node) {
 /**
  * A fresh node of a kind.
  *
- * @spec openspec/changes/data-calculated-field-authoring/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
+ * @spec openspec/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
  * @param {'field'|'value'|'operator'} kind The kind.
  * @param {Array<string>} fieldNames The schema's fields.
  * @return {unknown} The node; an operator node without an operator is null.
@@ -128,7 +128,7 @@ function arityBounds(arity) {
  * An open arity (`1+`) starts with two operands, so a multiply has
  * something to multiply.
  *
- * @spec openspec/changes/data-calculated-field-authoring/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
+ * @spec openspec/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
  * @param {unknown} node The current node.
  * @param {{op: string, arity: string}} operator A catalogue row.
  * @return {object} The operator node.
@@ -147,7 +147,7 @@ export function withOperator(node, operator) {
 /**
  * Add a value operand to an operator node.
  *
- * @spec openspec/changes/data-calculated-field-authoring/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
+ * @spec openspec/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
  * @param {object} node The operator node.
  * @return {object} The new node.
  */
@@ -159,7 +159,7 @@ export function addOperand(node) {
 /**
  * Remove one operand of an operator node.
  *
- * @spec openspec/changes/data-calculated-field-authoring/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
+ * @spec openspec/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
  * @param {object} node The operator node.
  * @param {number} index The operand to remove.
  * @return {object} The new node.
@@ -172,7 +172,7 @@ export function removeOperand(node, index) {
 /**
  * Read a typed literal out of what a maker typed.
  *
- * @spec openspec/changes/data-calculated-field-authoring/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
+ * @spec openspec/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
  * @param {string} text The typed text.
  * @return {number|boolean|string} The literal.
  */
@@ -203,12 +203,24 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The kind of this node.
+		 *
+		 * @spec openspec/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
+		 * @return {string} The value.
+		 */
 		kind() {
 			return this.pickedOperator && this.node === null
 				? 'operator'
 				: nodeKind(this.node)
 		},
 
+		/**
+		 * The kinds a node can be.
+		 *
+		 * @spec openspec/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
+		 * @return {Array<object>} The value.
+		 */
 		kindOptions() {
 			return [
 				{ value: 'field', label: this.t('buildiq', 'Field') },
@@ -217,27 +229,57 @@ export default {
 			]
 		},
 
+		/**
+		 * The chosen kind option.
+		 *
+		 * @spec openspec/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
+		 * @return {object} The value.
+		 */
 		kindOption() {
 			return this.kindOptions.find((o) => o.value === this.kind)
 		},
 
+		/**
+		 * The field a field node reads.
+		 *
+		 * @spec openspec/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
+		 * @return {string|null} The value.
+		 */
 		fieldName() {
 			const args = this.node?.prop
 			return Array.isArray(args) ? args[0] : args || null
 		},
 
+		/**
+		 * The text of a value node.
+		 *
+		 * @spec openspec/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
+		 * @return {string} The value.
+		 */
 		valueText() {
 			return this.node === null || this.node === undefined
 				? ''
 				: String(this.node)
 		},
 
+		/**
+		 * The catalogue operators offered.
+		 *
+		 * @spec openspec/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
+		 * @return {Array<object>} The value.
+		 */
 		operatorOptions() {
 			return this.operators
 				.filter((o) => o.op !== 'prop' && o.op !== 'lit')
 				.map((o) => ({ ...o, label: `${o.op} (${o.category})` }))
 		},
 
+		/**
+		 * The chosen catalogue operator.
+		 *
+		 * @spec openspec/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
+		 * @return {object|null} The value.
+		 */
 		operatorOption() {
 			if (nodeKind(this.node) !== 'operator') {
 				return null
@@ -246,18 +288,36 @@ export default {
 			return this.operatorOptions.find((o) => o.op === op) || null
 		},
 
+		/**
+		 * The operands of an operator node.
+		 *
+		 * @spec openspec/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
+		 * @return {Array} The value.
+		 */
 		operands() {
 			return nodeKind(this.node) === 'operator'
 				? Object.values(this.node)[0]
 				: []
 		},
 
+		/**
+		 * The fewest operands the operator takes.
+		 *
+		 * @spec openspec/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
+		 * @return {number} The value.
+		 */
 		minOperands() {
 			return this.operatorOption
 				? arityBounds(this.operatorOption.arity).min
 				: 0
 		},
 
+		/**
+		 * The whether the operator takes more operands.
+		 *
+		 * @spec openspec/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
+		 * @return {boolean} The value.
+		 */
 		isOpenArity() {
 			return this.operatorOption
 				? arityBounds(this.operatorOption.arity).open
@@ -272,7 +332,7 @@ export default {
 		/**
 		 * Emit a replaced node.
 		 *
-		 * @spec openspec/changes/data-calculated-field-authoring/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
+		 * @spec openspec/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
 		 * @param {unknown} node The new node.
 		 * @return {void}
 		 */
@@ -283,7 +343,7 @@ export default {
 		/**
 		 * Switch the node's kind.
 		 *
-		 * @spec openspec/changes/data-calculated-field-authoring/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
+		 * @spec openspec/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
 		 * @param {{value: string}} option The chosen kind.
 		 * @return {void}
 		 */
@@ -295,7 +355,7 @@ export default {
 		/**
 		 * Choose the operator of an operator node.
 		 *
-		 * @spec openspec/changes/data-calculated-field-authoring/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
+		 * @spec openspec/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
 		 * @param {object} option The chosen catalogue row.
 		 * @return {void}
 		 */
@@ -308,7 +368,7 @@ export default {
 		/**
 		 * Replace one operand.
 		 *
-		 * @spec openspec/changes/data-calculated-field-authoring/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
+		 * @spec openspec/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
 		 * @param {number} index The operand.
 		 * @param {unknown} operand Its new node.
 		 * @return {void}

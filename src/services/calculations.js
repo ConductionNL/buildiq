@@ -10,7 +10,7 @@
  * 422 and a list of `{code, message}` errors whose message quotes the name.
  *
  * @module services/calculations
- * @spec openspec/changes/data-calculated-field-authoring/specs/data-calculated-fields/spec.md
+ * @spec openspec/specs/data-calculated-fields/spec.md
  */
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
@@ -24,7 +24,7 @@ export const CALCULATION_TYPES = ['string', 'integer', 'number', 'boolean', 'dat
 /**
  * Load the operator catalogue OpenRegister publishes.
  *
- * @spec openspec/changes/data-calculated-field-authoring/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
+ * @spec openspec/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
  * @return {Promise<{operators: Array<object>, categories: Array<string>}|null>} The catalogue, or null when OpenRegister does not publish one.
  */
 export async function loadOperatorCatalogue() {
@@ -47,7 +47,7 @@ export async function loadOperatorCatalogue() {
 /**
  * Evaluate an unsaved declaration against a sample record. Nothing is saved.
  *
- * @spec openspec/changes/data-calculated-field-authoring/specs/data-calculated-fields/spec.md#requirement-a-maker-tries-a-calculation-before-saving-req-bqcf-003
+ * @spec openspec/specs/data-calculated-fields/spec.md#requirement-a-maker-tries-a-calculation-before-saving-req-bqcf-003
  * @param {object} declaration The `{type, expression}` declaration.
  * @param {object} sample The sample record's values.
  * @return {Promise<{ok: boolean, value: *, error: object|null}>} The value, or the refusal.
@@ -82,7 +82,7 @@ export async function tryCalculation(declaration, sample) {
  * OpenRegister quotes the name in every message (`Calculation "total" ...`)
  * and lists the names of a cycle as `a -> b -> a`.
  *
- * @spec openspec/changes/data-calculated-field-authoring/specs/data-calculated-fields/spec.md#requirement-a-refused-save-is-shown-on-its-field-req-bqcf-004
+ * @spec openspec/specs/data-calculated-fields/spec.md#requirement-a-refused-save-is-shown-on-its-field-req-bqcf-004
  * @param {Array<{code: string, message: string}>|unknown} errors The refusal list.
  * @param {Array<string>} names The calculation names to map onto.
  * @return {Object<string, Array<string>>} Messages per name.
@@ -120,7 +120,7 @@ function escapeRegExp(value) {
 /**
  * Read the property-level calculations out of a schema's properties.
  *
- * @spec openspec/changes/data-calculated-field-authoring/specs/data-calculated-fields/spec.md#requirement-a-maker-adds-a-calculated-field-in-the-schema-designer-req-bqcf-001
+ * @spec openspec/specs/data-calculated-fields/spec.md#requirement-a-maker-adds-a-calculated-field-in-the-schema-designer-req-bqcf-001
  * @param {object} properties The schema's `properties` map.
  * @return {Object<string, {type: string, expression: *}>} Declarations by property name.
  */
@@ -156,7 +156,7 @@ function propertyForType(type) {
  * does not have yet adds that property, typed from the declaration, at the
  * end of the property order. The input is not changed.
  *
- * @spec openspec/changes/data-calculated-field-authoring/specs/data-calculated-fields/spec.md#requirement-a-maker-adds-a-calculated-field-in-the-schema-designer-req-bqcf-001
+ * @spec openspec/specs/data-calculated-fields/spec.md#requirement-a-maker-adds-a-calculated-field-in-the-schema-designer-req-bqcf-001
  * @param {object} properties The composed `properties` map.
  * @param {Array<string>} order The composed property order.
  * @param {Object<string, {type: string, expression: *}>} calculations Declarations by name.
@@ -188,7 +188,7 @@ export function applyCalculations(properties, order, calculations) {
 /**
  * The field names an expression reads, in first-read order.
  *
- * @spec openspec/changes/data-calculated-field-authoring/specs/data-calculated-fields/spec.md#requirement-a-maker-tries-a-calculation-before-saving-req-bqcf-003
+ * @spec openspec/specs/data-calculated-fields/spec.md#requirement-a-maker-tries-a-calculation-before-saving-req-bqcf-003
  * @param {unknown} expression The expression AST.
  * @return {Array<string>} Field names.
  */

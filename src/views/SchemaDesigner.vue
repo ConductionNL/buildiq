@@ -1189,7 +1189,7 @@ export default {
 		/**
 		 * Stage the property calculations the Calculations section emits.
 		 *
-		 * @spec openspec/changes/data-calculated-field-authoring/specs/data-calculated-fields/spec.md#requirement-a-maker-adds-a-calculated-field-in-the-schema-designer-req-bqcf-001
+		 * @spec openspec/specs/data-calculated-fields/spec.md#requirement-a-maker-adds-a-calculated-field-in-the-schema-designer-req-bqcf-001
 		 * @param {object} propertyCalculations Declarations by property name.
 		 * @return {void}
 		 */

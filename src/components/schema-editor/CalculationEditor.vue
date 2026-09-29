@@ -186,10 +186,22 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * Whether the operator catalogue loaded, so editing is possible.
+		 *
+		 * @spec openspec/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
+		 * @return {boolean} The value.
+		 */
 		canEdit() {
 			return this.catalogueLoaded && this.operators.length > 0
 		},
 
+		/**
+		 * The register file calculations, read-only.
+		 *
+		 * @spec openspec/specs/data-calculated-fields/spec.md#requirement-a-maker-adds-a-calculated-field-in-the-schema-designer-req-bqcf-001
+		 * @return {object} The value.
+		 */
 		annotation() {
 			return this.calculations
 				&& typeof this.calculations === 'object'
@@ -198,6 +210,12 @@ export default {
 				: {}
 		},
 
+		/**
+		 * Whether the schema has no calculation at all.
+		 *
+		 * @spec openspec/specs/data-calculated-fields/spec.md#requirement-a-maker-adds-a-calculated-field-in-the-schema-designer-req-bqcf-001
+		 * @return {boolean} The value.
+		 */
 		isEmpty() {
 			return (
 				Object.keys(this.annotation).length === 0
@@ -208,7 +226,7 @@ export default {
 		/**
 		 * Why the typed name cannot be added, or an empty string.
 		 *
-		 * @spec openspec/changes/data-calculated-field-authoring/specs/data-calculated-fields/spec.md#requirement-a-maker-adds-a-calculated-field-in-the-schema-designer-req-bqcf-001
+		 * @spec openspec/specs/data-calculated-fields/spec.md#requirement-a-maker-adds-a-calculated-field-in-the-schema-designer-req-bqcf-001
 		 * @return {string} The reason.
 		 */
 		newNameError() {
@@ -235,6 +253,12 @@ export default {
 		},
 	},
 
+	/**
+	 * Load the operator catalogue once.
+	 *
+	 * @spec openspec/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
+	 * @return {Promise<void>} The value.
+	 */
 	async mounted() {
 		const catalogue = await loadOperatorCatalogue()
 		this.operators = catalogue ? catalogue.operators : []
@@ -245,7 +269,7 @@ export default {
 		/**
 		 * Pretty-print a value for a read-only block.
 		 *
-		 * @spec openspec/changes/data-calculated-field-authoring/specs/data-calculated-fields/spec.md#requirement-a-maker-adds-a-calculated-field-in-the-schema-designer-req-bqcf-001
+		 * @spec openspec/specs/data-calculated-fields/spec.md#requirement-a-maker-adds-a-calculated-field-in-the-schema-designer-req-bqcf-001
 		 * @param {unknown} value The value.
 		 * @return {string} The text.
 		 */
@@ -263,7 +287,7 @@ export default {
 		/**
 		 * Emit the calculations with one entry replaced or removed.
 		 *
-		 * @spec openspec/changes/data-calculated-field-authoring/specs/data-calculated-fields/spec.md#requirement-a-maker-adds-a-calculated-field-in-the-schema-designer-req-bqcf-001
+		 * @spec openspec/specs/data-calculated-fields/spec.md#requirement-a-maker-adds-a-calculated-field-in-the-schema-designer-req-bqcf-001
 		 * @param {string} name The calculation.
 		 * @param {object|null} calc Its declaration, or null to remove it.
 		 * @return {void}
@@ -281,7 +305,7 @@ export default {
 		/**
 		 * Add a calculated field with the typed name.
 		 *
-		 * @spec openspec/changes/data-calculated-field-authoring/specs/data-calculated-fields/spec.md#requirement-a-maker-adds-a-calculated-field-in-the-schema-designer-req-bqcf-001
+		 * @spec openspec/specs/data-calculated-fields/spec.md#requirement-a-maker-adds-a-calculated-field-in-the-schema-designer-req-bqcf-001
 		 * @return {void}
 		 */
 		addCalculation() {
@@ -296,7 +320,7 @@ export default {
 		/**
 		 * Remove a calculation; its property stays as a plain field.
 		 *
-		 * @spec openspec/changes/data-calculated-field-authoring/specs/data-calculated-fields/spec.md#requirement-a-maker-adds-a-calculated-field-in-the-schema-designer-req-bqcf-001
+		 * @spec openspec/specs/data-calculated-fields/spec.md#requirement-a-maker-adds-a-calculated-field-in-the-schema-designer-req-bqcf-001
 		 * @param {string} name The calculation.
 		 * @return {void}
 		 */
@@ -307,7 +331,7 @@ export default {
 		/**
 		 * Change the result type of a calculation.
 		 *
-		 * @spec openspec/changes/data-calculated-field-authoring/specs/data-calculated-fields/spec.md#requirement-a-maker-adds-a-calculated-field-in-the-schema-designer-req-bqcf-001
+		 * @spec openspec/specs/data-calculated-fields/spec.md#requirement-a-maker-adds-a-calculated-field-in-the-schema-designer-req-bqcf-001
 		 * @param {string} name The calculation.
 		 * @param {string} type The new type.
 		 * @return {void}
@@ -319,7 +343,7 @@ export default {
 		/**
 		 * Replace the expression of a calculation.
 		 *
-		 * @spec openspec/changes/data-calculated-field-authoring/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
+		 * @spec openspec/specs/data-calculated-fields/spec.md#requirement-an-expression-is-built-from-the-published-operators-req-bqcf-002
 		 * @param {string} name The calculation.
 		 * @param {unknown} expression The new expression.
 		 * @return {void}
@@ -331,7 +355,7 @@ export default {
 		/**
 		 * The fields a trial asks sample values for.
 		 *
-		 * @spec openspec/changes/data-calculated-field-authoring/specs/data-calculated-fields/spec.md#requirement-a-maker-tries-a-calculation-before-saving-req-bqcf-003
+		 * @spec openspec/specs/data-calculated-fields/spec.md#requirement-a-maker-tries-a-calculation-before-saving-req-bqcf-003
 		 * @param {string} name The calculation.
 		 * @return {Array<string>} Field names.
 		 */
@@ -342,6 +366,7 @@ export default {
 		/**
 		 * The typed sample value of one field.
 		 *
+		 * @spec openspec/specs/data-calculated-fields/spec.md#requirement-a-maker-tries-a-calculation-before-saving-req-bqcf-003
 		 * @param {string} name The calculation.
 		 * @param {string} field The field.
 		 * @return {string} The text.
@@ -353,7 +378,7 @@ export default {
 		/**
 		 * Set a sample value for a trial.
 		 *
-		 * @spec openspec/changes/data-calculated-field-authoring/specs/data-calculated-fields/spec.md#requirement-a-maker-tries-a-calculation-before-saving-req-bqcf-003
+		 * @spec openspec/specs/data-calculated-fields/spec.md#requirement-a-maker-tries-a-calculation-before-saving-req-bqcf-003
 		 * @param {string} name The calculation.
 		 * @param {string} field The field.
 		 * @param {string} text The typed value.
@@ -369,7 +394,7 @@ export default {
 		/**
 		 * Evaluate the unsaved calculation against the sample. Nothing is saved.
 		 *
-		 * @spec openspec/changes/data-calculated-field-authoring/specs/data-calculated-fields/spec.md#requirement-a-maker-tries-a-calculation-before-saving-req-bqcf-003
+		 * @spec openspec/specs/data-calculated-fields/spec.md#requirement-a-maker-tries-a-calculation-before-saving-req-bqcf-003
 		 * @param {string} name The calculation.
 		 * @return {Promise<void>}
 		 */
