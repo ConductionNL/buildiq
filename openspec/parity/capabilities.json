@@ -2895,7 +2895,9 @@
 				"evidence": "Authoring and serving exist: DetailPageEditor.vue:138-144 layout editor with typeProperty/typeValue writing config.pageLayout and saving via src/services/pageLayouts.js:75 PUT /api/page-layouts (routes.php:273) -> lib/Controller/PageLayoutController.php:123 (admin only :181-196) -> lib/Service/PageLayoutAuthoringService.php; served by lib/Integration/PageLayoutLeafProvider.php:71 leaf 'buildiq-page-layout' (type value layout wins, then schema-wide, then nothing). No consumer: git grep 'buildiq-page-layout' on origin/development of procest, portaliq, openregister, zaakafhandelapp, pipelinq, decidesk returns nothing, and nextcloud-vue v2.55.1 has no reference to pageLayout or the leaf",
 				"reachedOn": "authoring only: buildiq builder, detail page editor, page layout section",
 				"owner": "ConductionNL/buildiq",
-				"change": "case-page-layout-per-case-type"
+				"change": "case-page-layout-per-case-type",
+				"blocker": "nextcloud-vue runtime-detail-layout: CnDetailPage does not ask the buildiq-page-layout leaf yet (case-page-layout-per-case-type task 3.2); dossiq hand-off is task 8.5.",
+				"note": "Buildiq half complete 2026-09-29: the page designer authors tabs, widgets, header, task list and upload fields per case type (PageLayoutBodyEditor.vue) and the leaf serves them. The row stays building until a consumer renders them."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -2927,7 +2929,9 @@
 				"evidence": "src/components/page-editor/fields/ScreenOverrideList.vue:1-45,172-182 lists published screens per audience (everyone or a group) and offers re-cut via src/services/pageLayouts.js:104 POST /api/page-layouts/{layoutId}/recut (routes.php:271) -> PageLayoutController.php:157; PageLayoutAuthoringService.php header: overrides are patches pinned to a base fingerprint and withheld when the base moves; resolution with fall-through in lib/Service/PageLayoutLayerStack.php and PageLayoutLeafProvider.php:228-250. Same missing consumer as form-layout-per-type: no app places the 'buildiq-page-layout' leaf",
 				"reachedOn": "authoring only: buildiq builder, detail page editor, 'Screens for this schema'",
 				"owner": "ConductionNL/buildiq",
-				"change": "case-page-layout-per-case-type"
+				"change": "case-page-layout-per-case-type",
+				"blocker": "nextcloud-vue runtime-detail-layout: CnDetailPage does not ask the buildiq-page-layout leaf yet (case-page-layout-per-case-type task 3.2); dossiq hand-off is task 8.5.",
+				"note": "Buildiq half complete 2026-09-29: the page designer authors tabs, widgets, header, task list and upload fields per case type (PageLayoutBodyEditor.vue) and the leaf serves them. The row stays building until a consumer renders them."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
