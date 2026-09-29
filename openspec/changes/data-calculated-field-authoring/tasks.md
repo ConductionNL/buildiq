@@ -1,0 +1,7 @@
+# Tasks: data-calculated-field-authoring
+
+- [ ] **T01**: Add `src/services/calculations.js`: load the operator catalogue, evaluate a declaration, and map a refusal body onto a property name (REQ-BQCF-002, REQ-BQCF-003, REQ-BQCF-004). Verify: vitest `tests/services/calculations.spec.js` with a recorded catalogue response, an evaluate success and a refusal naming a property.
+- [ ] **T02**: Replace the stub in `src/components/schema-editor/CalculationEditor.vue` with the list of calculated properties, add and remove, the type picker and the expression tree builder; annotation entries stay read-only (REQ-BQCF-001, REQ-BQCF-002). Verify: vitest `tests/components/schema-editor/CalculationEditor.spec.js` for add, remove, a two-level expression and a read-only annotation entry.
+- [ ] **T03**: Wire the editor into `src/views/SchemaDesigner.vue`: stage `properties.<name>.calculation`, keep `x-openregister-calculations` unchanged, show a refusal next to its field (REQ-BQCF-001, REQ-BQCF-004). Verify: vitest on the body the designer PUTs and on a 400 refusal keeping the staged edit; validate the PUT body's property against OpenRegister's `CalculationAnnotationValidator` in a PHP test with the real class.
+- [ ] **T04**: The "Try" panel with a sample record (REQ-BQCF-003). Verify: vitest for a result and for a refusal shown in the panel.
+- [ ] **T05**: English and Dutch strings, no em-dashes, sentence case; a section in `docs/` on calculated fields.
