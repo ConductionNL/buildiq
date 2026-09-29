@@ -128,4 +128,69 @@ describe('AppliesToPanel', () => {
 			'There is no published layout for this schema to patch.',
 		)
 	})
+
+	it('REQ-OBPL-004: publishes the tabs, header and upload fields authored in the body editor', async () => {
+		const tabs = [
+			{
+				id: 'tab-1',
+				kind: 'leaf',
+				label: 'Documenten',
+				order: 0,
+				ref: 'filinq-documents',
+			},
+		]
+		const wrapper = mountPanel({
+			modelValue: {
+				typeValue: 'bouwvergunning',
+				tabs,
+				header: { fields: [{ field: 'location', label: '', order: 0 }] },
+				uploadFields: [
+					{
+						field: 'confidentiality',
+						visibility: 'readOnly',
+						default: 'intern',
+					},
+				],
+			},
+			targetApp: 'dossiq',
+		})
+		expect(
+			wrapper.findComponent({ name: 'PageLayoutBodyEditor' }).exists(),
+		).toBe(true)
+
+		await wrapper.find('.applies-to__save').trigger('click')
+		await flush()
+
+		const sent = savePageLayout.mock.calls[0][0]
+		expect(sent.tabs).toEqual(tabs)
+		expect(sent.header.fields[0].field).toBe('location')
+		expect(sent.uploadFields[0].default).toBe('intern')
+	})
+
+	it('REQ-OBPL-009: will not save a hidden upload field that has no default', async () => {
+		const wrapper = mountPanel({
+			modelValue: {
+				uploadFields: [
+					{ field: 'documentType', visibility: 'hidden', default: '' },
+				],
+			},
+		})
+
+		expect(
+			wrapper.find('.applies-to__save').attributes('disabled'),
+		).toBeDefined()
+		await wrapper.find('.applies-to__save').trigger('click')
+		expect(savePageLayout).not.toHaveBeenCalled()
+	})
+
+	it('passes a body editor change up as the new binding', async () => {
+		const wrapper = mountPanel({ modelValue: { name: 'Scherm' } })
+		wrapper
+			.findComponent({ name: 'PageLayoutBodyEditor' })
+			.vm.$emit('update:modelValue', { name: 'Scherm', tabs: [] })
+		expect(wrapper.emitted('update:modelValue').at(-1)[0]).toEqual({
+			name: 'Scherm',
+			tabs: [],
+		})
+	})
 })
