@@ -68,7 +68,10 @@ export async function tryCalculation(declaration, sample) {
 		return {
 			ok: false,
 			value: null,
-			error: body?.error ?? { code: 'request-failed', message: e?.message || '' },
+			error: body?.error ?? {
+				code: 'request-failed',
+				message: e?.message || '',
+			},
 		}
 	}
 }
@@ -80,7 +83,7 @@ export async function tryCalculation(declaration, sample) {
  * and lists the names of a cycle as `a -> b -> a`.
  *
  * @spec openspec/changes/data-calculated-field-authoring/specs/data-calculated-fields/spec.md#requirement-a-refused-save-is-shown-on-its-field-req-bqcf-004
- * @param {Array<{code: string, message: string}>|*} errors The refusal list.
+ * @param {Array<{code: string, message: string}>|unknown} errors The refusal list.
  * @param {Array<string>} names The calculation names to map onto.
  * @return {Object<string, Array<string>>} Messages per name.
  */
@@ -93,7 +96,9 @@ export function refusalsByProperty(errors, names) {
 		const message = String(error?.message || '')
 		for (const name of names) {
 			const quoted = message.includes(`"${name}"`)
-			const inCycle = new RegExp(`(^|[\\s:])${escapeRegExp(name)} ->|-> ${escapeRegExp(name)}(\\s|$)`).test(message)
+			const inCycle = new RegExp(
+				`(^|[\\s:])${escapeRegExp(name)} ->|-> ${escapeRegExp(name)}(\\s|$)`,
+			).test(message)
 			if (quoted || inCycle) {
 				out[name] = [...(out[name] || []), message]
 			}
@@ -184,7 +189,7 @@ export function applyCalculations(properties, order, calculations) {
  * The field names an expression reads, in first-read order.
  *
  * @spec openspec/changes/data-calculated-field-authoring/specs/data-calculated-fields/spec.md#requirement-a-maker-tries-a-calculation-before-saving-req-bqcf-003
- * @param {*} expression The expression AST.
+ * @param {unknown} expression The expression AST.
  * @return {Array<string>} Field names.
  */
 export function referencedFields(expression) {

@@ -31,9 +31,30 @@ const {
 
 const catalogue = {
 	operators: [
-		{ op: 'prop', category: 'reference', arity: '1', operands: ['string'], result: 'any', description: 'Reads a property of the object.' },
-		{ op: '*', category: 'arithmetic', arity: '1+', operands: ['number'], result: 'number', description: 'Multiplies its operands.' },
-		{ op: '/', category: 'arithmetic', arity: '2', operands: ['number', 'number'], result: 'number', description: 'Divides.' },
+		{
+			op: 'prop',
+			category: 'reference',
+			arity: '1',
+			operands: ['string'],
+			result: 'any',
+			description: 'Reads a property of the object.',
+		},
+		{
+			op: '*',
+			category: 'arithmetic',
+			arity: '1+',
+			operands: ['number'],
+			result: 'number',
+			description: 'Multiplies its operands.',
+		},
+		{
+			op: '/',
+			category: 'arithmetic',
+			arity: '2',
+			operands: ['number', 'number'],
+			result: 'number',
+			description: 'Divides.',
+		},
 	],
 	categories: ['reference', 'arithmetic'],
 }
@@ -52,7 +73,9 @@ describe('loadOperatorCatalogue', () => {
 	it('reads the published catalogue from OpenRegister', async () => {
 		getMock.mockResolvedValue({ data: catalogue })
 		const result = await loadOperatorCatalogue()
-		expect(getMock).toHaveBeenCalledWith('/apps/openregister/api/schemas/calculation-operators')
+		expect(getMock).toHaveBeenCalledWith(
+			'/apps/openregister/api/schemas/calculation-operators',
+		)
 		expect(result.operators.map((o) => o.op)).toEqual(['prop', '*', '/'])
 	})
 
@@ -64,21 +87,45 @@ describe('loadOperatorCatalogue', () => {
 
 describe('tryCalculation', () => {
 	it('posts the declaration with a sample and returns the value', async () => {
-		postMock.mockResolvedValue({ data: { ok: true, value: 8, dependencies: ['quantity', 'unitPrice'] } })
-		const result = await tryCalculation(total, { quantity: 2, unitPrice: 4 })
-		expect(postMock).toHaveBeenCalledWith('/apps/openregister/api/schemas/calculation-evaluate', {
-			calculation: total,
-			object: { quantity: 2, unitPrice: 4 },
+		postMock.mockResolvedValue({
+			data: { ok: true, value: 8, dependencies: ['quantity', 'unitPrice'] },
 		})
+		const result = await tryCalculation(total, { quantity: 2, unitPrice: 4 })
+		expect(postMock).toHaveBeenCalledWith(
+			'/apps/openregister/api/schemas/calculation-evaluate',
+			{
+				calculation: total,
+				object: { quantity: 2, unitPrice: 4 },
+			},
+		)
 		expect(result).toEqual({ ok: true, value: 8, error: null })
 	})
 
 	it('returns the refusal of a 422 instead of throwing', async () => {
 		postMock.mockRejectedValue({
-			response: { status: 422, data: { ok: false, error: { code: 'calculation-unknown-op', message: 'Unknown operator "pow".' } } },
+			response: {
+				status: 422,
+				data: {
+					ok: false,
+					error: {
+						code: 'calculation-unknown-op',
+						message: 'Unknown operator "pow".',
+					},
+				},
+			},
 		})
-		const result = await tryCalculation({ type: 'number', expression: { pow: [1, 2] } }, {})
-		expect(result).toEqual({ ok: false, value: null, error: { code: 'calculation-unknown-op', message: 'Unknown operator "pow".' } })
+		const result = await tryCalculation(
+			{ type: 'number', expression: { pow: [1, 2] } },
+			{},
+		)
+		expect(result).toEqual({
+			ok: false,
+			value: null,
+			error: {
+				code: 'calculation-unknown-op',
+				message: 'Unknown operator "pow".',
+			},
+		})
 	})
 })
 
@@ -86,12 +133,17 @@ describe('refusalsByProperty', () => {
 	it('maps each refusal onto the calculation names its message quotes', () => {
 		const errors = [
 			{ code: 'calculation-cycle', message: 'Calculation cycle: a -> b -> a' },
-			{ code: 'calculation-prop-unknown', message: 'Calculation "total" reads unknown property "qty".' },
+			{
+				code: 'calculation-prop-unknown',
+				message: 'Calculation "total" reads unknown property "qty".',
+			},
 		]
 		const map = refusalsByProperty(errors, ['a', 'b', 'total'])
 		expect(map.a).toEqual(['Calculation cycle: a -> b -> a'])
 		expect(map.b).toEqual(['Calculation cycle: a -> b -> a'])
-		expect(map.total).toEqual(['Calculation "total" reads unknown property "qty".'])
+		expect(map.total).toEqual([
+			'Calculation "total" reads unknown property "qty".',
+		])
 	})
 
 	it('answers an empty map for a refusal that is not a list', () => {
@@ -101,7 +153,10 @@ describe('refusalsByProperty', () => {
 
 describe('calculationsFromProperties and applyCalculations', () => {
 	it('reads the property-level calculation key', () => {
-		const properties = { quantity: { type: 'number' }, total: { type: 'number', calculation: total } }
+		const properties = {
+			quantity: { type: 'number' },
+			total: { type: 'number', calculation: total },
+		}
 		expect(calculationsFromProperties(properties)).toEqual({ total })
 	})
 
@@ -110,13 +165,21 @@ describe('calculationsFromProperties and applyCalculations', () => {
 			quantity: { type: 'number' },
 			old: { type: 'number', calculation: { type: 'number', expression: 1 } },
 		}
-		const { properties: out, order } = applyCalculations(properties, ['quantity', 'old'], {
-			total,
-			due: { type: 'date', expression: { prop: 'start' } },
-		})
+		const { properties: out, order } = applyCalculations(
+			properties,
+			['quantity', 'old'],
+			{
+				total,
+				due: { type: 'date', expression: { prop: 'start' } },
+			},
+		)
 		expect(out.old).toEqual({ type: 'number' })
 		expect(out.total).toEqual({ type: 'number', calculation: total })
-		expect(out.due).toEqual({ type: 'string', format: 'date', calculation: { type: 'date', expression: { prop: 'start' } } })
+		expect(out.due).toEqual({
+			type: 'string',
+			format: 'date',
+			calculation: { type: 'date', expression: { prop: 'start' } },
+		})
 		expect(order).toEqual(['quantity', 'old', 'total', 'due'])
 		expect(properties.old.calculation).toBeDefined()
 	})
@@ -124,6 +187,10 @@ describe('calculationsFromProperties and applyCalculations', () => {
 
 describe('referencedFields', () => {
 	it('lists the fields an expression reads, once each', () => {
-		expect(referencedFields({ '+': [{ prop: 'a' }, { '*': [{ prop: 'b' }, { prop: ['a'] }] }, 3] })).toEqual(['a', 'b'])
+		expect(
+			referencedFields({
+				'+': [{ prop: 'a' }, { '*': [{ prop: 'b' }, { prop: ['a'] }] }, 3],
+			}),
+		).toEqual(['a', 'b'])
 	})
 })
