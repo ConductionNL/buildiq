@@ -234,12 +234,14 @@ describe('CalculationEditor', () => {
 		const wrapper = await mountEditor({
 			propertyCalculations: { total },
 			refusals: {
-				total: ['Calculation "total" reads unknown property "qty".'],
+				total: [
+					'Calculation "total": prop "qty" is not a property or calculation.',
+				],
 			},
 		})
 		expect(
 			wrapper.find('[data-calculation="total"] [role="alert"]').text(),
-		).toContain('unknown property')
+		).toContain('is not a property')
 	})
 })
 

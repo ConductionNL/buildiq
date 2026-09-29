@@ -97,7 +97,7 @@ export function refusalsByProperty(errors, names) {
 		for (const name of names) {
 			const quoted = message.includes(`"${name}"`)
 			const inCycle = new RegExp(
-				`(^|[\\s:])${escapeRegExp(name)} ->|-> ${escapeRegExp(name)}(\\s|$)`,
+				`(^|[\\s:])${escapeRegExp(name)} ->|-> ${escapeRegExp(name)}(\\W|$)`,
 			).test(message)
 			if (quoted || inCycle) {
 				out[name] = [...(out[name] || []), message]

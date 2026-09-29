@@ -159,7 +159,12 @@
 					@update:widgets="onWidgetsChange" />
 
 				<AggregationEditor :aggregations="staged.aggregations" />
-				<CalculationEditor :calculations="staged.calculations" />
+				<CalculationEditor
+					:calculations="staged.calculations"
+					:propertyCalculations="staged.propertyCalculations"
+					:fieldNames="fieldNames"
+					:refusals="calculationRefusals"
+					@update:propertyCalculations="onPropertyCalculationsChange" />
 				<NotificationEditor :notifications="staged.notifications" />
 			</template>
 
@@ -236,6 +241,11 @@ import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 import { getCurrentUserGroups, useRole } from '../composables/useRole.js'
 import { useSessionHistory } from '../composables/useSessionHistory.js'
 import { buildVersionedRoute } from '../router/helpers.js'
+import {
+	applyCalculations,
+	calculationsFromProperties,
+	refusalsByProperty,
+} from '../services/calculations.js'
 import { describeBreakingChanges } from '../services/schemaChanges.js'
 import { registerSlugForApp, useSchemasStore } from '../store/schemas.js'
 import { isEditableTarget } from '../utils/isEditableTarget.js'
@@ -294,6 +304,8 @@ export default {
 			detailAttempted: false,
 			saving: false,
 			saveError: '',
+			// Save refusals of property calculations, by calculation name (REQ-BQCF-004).
+			calculationRefusals: {},
 			staged: null,
 			persisted: null,
 			// REQ-OBVR-004: reactive version state resolved by useApplicationVersion.
@@ -1001,6 +1013,7 @@ export default {
 				widgets: widgetsToEditor(body['x-openregister-widgets']),
 				aggregations: body['x-openregister-aggregations'] || null,
 				calculations: body['x-openregister-calculations'] || null,
+				propertyCalculations: calculationsFromProperties(body.properties),
 				notifications: body['x-openregister-notifications'] || null,
 			}
 		},
@@ -1013,7 +1026,14 @@ export default {
 		 * @return {object} Canonical schema body.
 		 */
 		composeSchemaBody(staged) {
-			const { properties, required, order } = fieldsToSchema(staged.fields)
+			const composed = fieldsToSchema(staged.fields)
+			const { required } = composed
+			// REQ-BQCF-001: property calculations ride on their property.
+			const { properties, order } = applyCalculations(
+				composed.properties,
+				composed.order,
+				staged.propertyCalculations,
+			)
 			const body = {
 				slug: staged.slug,
 				title: staged.title,
@@ -1164,6 +1184,17 @@ export default {
 		 */
 		onWidgetsChange(widgets) {
 			this.commitStaged({ ...this.staged, widgets })
+		},
+
+		/**
+		 * Stage the property calculations the Calculations section emits.
+		 *
+		 * @spec openspec/changes/data-calculated-field-authoring/specs/data-calculated-fields/spec.md#requirement-a-maker-adds-a-calculated-field-in-the-schema-designer-req-bqcf-001
+		 * @param {object} propertyCalculations Declarations by property name.
+		 * @return {void}
+		 */
+		onPropertyCalculationsChange(propertyCalculations) {
+			this.commitStaged({ ...this.staged, propertyCalculations })
 		},
 
 		/**
@@ -1453,6 +1484,7 @@ export default {
 			}
 			this.saving = true
 			this.saveError = ''
+			this.calculationRefusals = {}
 			try {
 				const body = this.writeBody(this.staged, acknowledgeBreaking)
 				// `saveObject` switches to PUT when `id` is present, and the
@@ -1483,6 +1515,11 @@ export default {
 					}
 					this.breakingChanges = null
 					this.saveError = this.saveErrorText(err)
+					// REQ-BQCF-004: a refused calculation shows on its own field.
+					this.calculationRefusals = refusalsByProperty(
+						err && typeof err === 'object' ? err.fields : null,
+						Object.keys(this.staged.propertyCalculations || {}),
+					)
 					return
 				}
 				this.breakingChanges = null

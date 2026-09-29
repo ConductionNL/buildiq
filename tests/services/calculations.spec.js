@@ -132,17 +132,21 @@ describe('tryCalculation', () => {
 describe('refusalsByProperty', () => {
 	it('maps each refusal onto the calculation names its message quotes', () => {
 		const errors = [
-			{ code: 'calculation-cycle', message: 'Calculation cycle: a -> b -> a' },
+			{
+				code: 'calculation-cycle',
+				message: 'Calculation cycle detected: a -> b -> a.',
+			},
 			{
 				code: 'calculation-prop-unknown',
-				message: 'Calculation "total" reads unknown property "qty".',
+				message:
+					'Calculation "total": prop "qty" is not a property or calculation.',
 			},
 		]
 		const map = refusalsByProperty(errors, ['a', 'b', 'total'])
-		expect(map.a).toEqual(['Calculation cycle: a -> b -> a'])
-		expect(map.b).toEqual(['Calculation cycle: a -> b -> a'])
+		expect(map.a).toEqual(['Calculation cycle detected: a -> b -> a.'])
+		expect(map.b).toEqual(['Calculation cycle detected: a -> b -> a.'])
 		expect(map.total).toEqual([
-			'Calculation "total" reads unknown property "qty".',
+			'Calculation "total": prop "qty" is not a property or calculation.',
 		])
 	})
 
