@@ -270,6 +270,12 @@ export default {
 			return layoutBlocked(this.binding)
 		},
 
+		/**
+		 * Whether the audience needs a group or user and none is named yet.
+		 *
+		 * @return {boolean} True when the save would be refused.
+		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-002)
+		 */
 		audienceRefMissing() {
 			return this.audienceNeedsRef && this.audienceRef === ''
 		},

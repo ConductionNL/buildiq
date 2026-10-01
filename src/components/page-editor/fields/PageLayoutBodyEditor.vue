@@ -748,6 +748,7 @@ export default {
 		 *
 		 * @param {string} text The text.
 		 * @return {Array<string>} The items.
+		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-case-type-declares-its-task-list-columns-and-search-fields-req-obpl-008
 		 */
 		splitList(text) {
 			return String(text || '')
@@ -761,6 +762,7 @@ export default {
 		 *
 		 * @param {string} kind The kind.
 		 * @return {string} The label.
+		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-tab-declares-its-kind-and-an-admin-orders-tabs-per-case-type-req-obpl-004
 		 */
 		kindLabel(kind) {
 			return (
@@ -778,6 +780,7 @@ export default {
 		 *
 		 * @param {string} width The width.
 		 * @return {string} The label.
+		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-widget-tab-holds-a-grid-each-widget-with-a-width-and-an-order-req-obpl-005
 		 */
 		widthLabel(width) {
 			return (
@@ -795,6 +798,7 @@ export default {
 		 *
 		 * @param {string} width The width.
 		 * @return {number} Units out of four.
+		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-widget-tab-holds-a-grid-each-widget-with-a-width-and-an-order-req-obpl-005
 		 */
 		widthUnits(width) {
 			return UNITS[width] || UNITS.medium
@@ -805,6 +809,7 @@ export default {
 		 *
 		 * @param {string} op The operator.
 		 * @return {string} The label.
+		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-widget-carries-display-conditions-and-a-high-contrast-flag-req-obpl-006
 		 */
 		operatorLabel(op) {
 			return (
@@ -823,6 +828,7 @@ export default {
 		 *
 		 * @param {object} tab The tab.
 		 * @return {string} The message.
+		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-tab-declares-its-kind-and-an-admin-orders-tabs-per-case-type-req-obpl-004
 		 */
 		missingText(tab) {
 			return {
