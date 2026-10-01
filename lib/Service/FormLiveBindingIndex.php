@@ -41,6 +41,11 @@ use Psr\Log\LoggerInterface;
 
 /**
  * The live-form bindings of every app version, by register and schema.
+ *
+ * @psalm-type LiveCalc = array{field:string,ruleSet:string,output:string,inputs:list<string>}
+ * @psalm-type LiveBinding = array{register:string,schema:string,calculate:list<LiveCalc>,eligibility:array<string,mixed>|null}
+ * @phpstan-type LiveCalc array{field:string,ruleSet:string,output:string,inputs:list<string>}
+ * @phpstan-type LiveBinding array{register:string,schema:string,calculate:list<LiveCalc>,eligibility:array<string,mixed>|null}
  */
 class FormLiveBindingIndex {
 
@@ -96,13 +101,12 @@ class FormLiveBindingIndex {
 			versionRegister: (string)($version['register'] ?? '')
 		);
 
-		if ($bindings === []) {
-			if (array_key_exists($versionId, $all) === false) {
-				return;
-			}
+		if ($bindings === [] && array_key_exists($versionId, $all) === false) {
+			return;
+		}
 
-			unset($all[$versionId]);
-		} else {
+		unset($all[$versionId]);
+		if ($bindings !== []) {
 			$all[$versionId] = $bindings;
 		}
 
@@ -118,7 +122,7 @@ class FormLiveBindingIndex {
 	 * @param array<int,string> $registerKeys The register's id and slug
 	 * @param array<int,string> $schemaKeys The schema's id and slug
 	 *
-	 * @return list<array{register:string,schema:string,calculate:list<array{field:string,ruleSet:string,output:string,inputs:list<string>}>,eligibility:array<string,mixed>|null}>
+	 * @return list<LiveBinding>
 	 *
 	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-the-server-recomputes-before-a-save-req-bqlv-005
 	 */
@@ -156,7 +160,7 @@ class FormLiveBindingIndex {
 	 * @param array<string,mixed> $manifest The app manifest
 	 * @param string $versionRegister The version's register slug
 	 *
-	 * @return list<array{register:string,schema:string,calculate:list<array{field:string,ruleSet:string,output:string,inputs:list<string>}>,eligibility:array<string,mixed>|null}>
+	 * @return list<LiveBinding>
 	 */
 	private function extract(array $manifest, string $versionRegister): array {
 		$bindings = [];
@@ -218,12 +222,16 @@ class FormLiveBindingIndex {
 	 *
 	 * @param array<int,mixed> $fields The form's fields
 	 *
-	 * @return list<array{field:string,ruleSet:string,output:string,inputs:list<string>}>
+	 * @return list<LiveCalc>
 	 */
 	private function calculations(array $fields): array {
 		$out = [];
 		foreach ($fields as $field) {
-			$calc = (is_array($field) === true) ? ($field['calculate'] ?? null) : null;
+			if (is_array($field) === false) {
+				continue;
+			}
+
+			$calc = ($field['calculate'] ?? null);
 			if (is_array($calc) === false
 				|| is_string($field['key'] ?? null) === false
 				|| (string)($calc['ruleSet'] ?? '') === ''
@@ -274,7 +282,7 @@ class FormLiveBindingIndex {
 	/**
 	 * Read the whole index.
 	 *
-	 * @return array<string,list<array{register:string,schema:string,calculate:list<array{field:string,ruleSet:string,output:string,inputs:list<string>}>,eligibility:array<string,mixed>|null}>>
+	 * @return array<string,list<LiveBinding>>
 	 */
 	private function read(): array {
 		$raw = $this->appConfig->getValueString(Application::APP_ID, self::CONFIG_KEY, '');
@@ -289,7 +297,7 @@ class FormLiveBindingIndex {
 		}
 
 		/*
-		 * @var array<string,list<array{register:string,schema:string,calculate:list<array{field:string,ruleSet:string,output:string,inputs:list<string>}>,eligibility:array<string,mixed>|null}>> $decoded
+		 * @var array<string,list<LiveBinding>> $decoded
 		 */
 		return $decoded;
 	}//end read()

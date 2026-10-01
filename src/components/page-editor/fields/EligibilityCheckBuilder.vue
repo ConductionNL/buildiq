@@ -129,6 +129,12 @@ export default {
 		},
 	},
 
+	/**
+	 * Load the rule sets, and the outputs of the bound one.
+	 *
+	 * @return {Promise<void>}
+	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003
+	 */
 	async mounted() {
 		try {
 			this.ruleSets = await listRuleSets()

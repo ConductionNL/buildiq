@@ -124,6 +124,12 @@ export default {
 		},
 	},
 
+	/**
+	 * Load the rule sets, and the outputs of the bound one.
+	 *
+	 * @return {Promise<void>}
+	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
+	 */
 	async mounted() {
 		try {
 			this.ruleSets = await listRuleSets()

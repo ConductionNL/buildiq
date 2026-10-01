@@ -44,6 +44,7 @@ use OCA\Buildiq\Service\ApplicationVersionService;
 use OCA\Buildiq\Service\FormLiveBindingIndex;
 use OCA\Buildiq\Service\FormLiveValuesRecomputer;
 use OCA\Buildiq\Service\ObjectSchemaSlugResolver;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCP\EventDispatcher\Event;
@@ -55,6 +56,9 @@ use Throwable;
  * Recomputes live form values and enforces blocking checks before a save.
  *
  * @template-implements IEventListener<Event>
+ *
+ * @psalm-import-type LiveBinding from FormLiveBindingIndex
+ * @phpstan-import-type LiveBinding from FormLiveBindingIndex
  */
 class FormLiveValuesListener implements IEventListener {
 
@@ -94,15 +98,8 @@ class FormLiveValuesListener implements IEventListener {
 	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-the-server-recomputes-before-a-save-req-bqlv-005
 	 */
 	public function handle(Event $event): void {
-		if ($this->running === true) {
-			return;
-		}
-
-		if ($event instanceof ObjectCreatingEvent) {
-			$entity = $event->getObject();
-		} elseif ($event instanceof ObjectUpdatingEvent) {
-			$entity = $event->getNewObject();
-		} else {
+		$entity = $this->entityOf(event: $event);
+		if ($entity === null || $this->running === true) {
 			return;
 		}
 
@@ -128,10 +125,40 @@ class FormLiveValuesListener implements IEventListener {
 			registerKeys: [$registerSlug, (string)$entity->getRegister()],
 			schemaKeys: [$schemaSlug, (string)$entity->getSchema()]
 		);
-		if ($bindings === []) {
-			return;
+		if ($bindings !== []) {
+			$this->apply(event: $event, data: $data, bindings: $bindings);
+		}
+	}//end handle()
+
+	/**
+	 * The object an OpenRegister save event carries, or null for any other event.
+	 *
+	 * @param Event $event The dispatched event
+	 *
+	 * @return ObjectEntity|null
+	 */
+	private function entityOf(Event $event): ?ObjectEntity {
+		if ($event instanceof ObjectCreatingEvent) {
+			return $event->getObject();
 		}
 
+		if ($event instanceof ObjectUpdatingEvent) {
+			return $event->getNewObject();
+		}
+
+		return null;
+	}//end entityOf()
+
+	/**
+	 * Recompute and either hand the values back or refuse the save.
+	 *
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The save event
+	 * @param array<string,mixed> $data The object data
+	 * @param list<LiveBinding> $bindings The live forms writing here
+	 *
+	 * @return void
+	 */
+	private function apply(ObjectCreatingEvent|ObjectUpdatingEvent $event, array $data, array $bindings): void {
 		$this->running = true;
 		try {
 			$outcome = $this->recomputer->recompute(object: $data, bindings: $bindings);
@@ -154,18 +181,18 @@ class FormLiveValuesListener implements IEventListener {
 		if ($outcome['changes'] !== []) {
 			$event->setModifiedData(array_merge($event->getModifiedData(), $outcome['changes']));
 		}
-	}//end handle()
+	}//end apply()
 
 	/**
 	 * Read an app version's manifest into the index. A failure is logged and
 	 * never blocks saving the version.
 	 *
-	 * @param object $entity The ApplicationVersion entity
+	 * @param ObjectEntity $entity The ApplicationVersion entity
 	 * @param array<string,mixed> $version Its data
 	 *
 	 * @return void
 	 */
-	private function reindex(object $entity, array $version): void {
+	private function reindex(ObjectEntity $entity, array $version): void {
 		$versionId = '';
 		try {
 			$versionId = (string)$entity->getUuid();

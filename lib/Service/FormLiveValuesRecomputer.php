@@ -38,6 +38,9 @@ use Throwable;
 
 /**
  * Recomputes calculated fields and enforces blocking checks for a save.
+ *
+ * @psalm-import-type LiveBinding from FormLiveBindingIndex
+ * @phpstan-import-type LiveBinding from FormLiveBindingIndex
  */
 class FormLiveValuesRecomputer {
 
@@ -59,7 +62,7 @@ class FormLiveValuesRecomputer {
 	 * Recompute an object's calculated fields and run its blocking checks.
 	 *
 	 * @param array<string,mixed> $object The object data being saved
-	 * @param list<array{calculate:list<array{field:string,ruleSet:string,output:string,inputs:list<string>}>,eligibility:array<string,mixed>|null}> $bindings The live forms writing here
+	 * @param list<LiveBinding> $bindings The live forms writing here
 	 *
 	 * @return array{changes:array<string,mixed>,refusal:array{code:string,message:string}|null}
 	 *

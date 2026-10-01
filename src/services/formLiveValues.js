@@ -301,6 +301,13 @@ export function createLiveValuesBridge({
 	}
 
 	return {
+		/**
+		 * Note a change of the answers; evaluation follows once they settle.
+		 *
+		 * @param {object} answers All answers of the form.
+		 * @return {void}
+		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
+		 */
 		answersChanged(answers) {
 			pending = { ...(answers || {}) }
 			if (timer !== null) {
@@ -308,6 +315,12 @@ export function createLiveValuesBridge({
 			}
 			timer = setTimeout(run, delay)
 		},
+		/**
+		 * Cancel a pending evaluation, when the form closes.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
+		 */
 		dispose() {
 			if (timer !== null) {
 				clearTimeout(timer)
