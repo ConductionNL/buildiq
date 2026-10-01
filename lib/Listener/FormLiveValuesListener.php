@@ -98,10 +98,13 @@ class FormLiveValuesListener implements IEventListener {
 	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-the-server-recomputes-before-a-save-req-bqlv-005
 	 */
 	public function handle(Event $event): void {
-		$entity = $this->entityOf(event: $event);
-		if ($entity === null || $this->running === true) {
+		if ($this->running === true
+			|| ($event instanceof ObjectCreatingEvent || $event instanceof ObjectUpdatingEvent) === false
+		) {
 			return;
 		}
+
+		$entity = $this->entityOf(event: $event);
 
 		$schemaSlug = $this->slugs->schemaSlug(entity: $entity);
 		$registerSlug = $this->slugs->registerSlug(entity: $entity);
@@ -131,22 +134,18 @@ class FormLiveValuesListener implements IEventListener {
 	}//end handle()
 
 	/**
-	 * The object an OpenRegister save event carries, or null for any other event.
+	 * The object an OpenRegister save event carries.
 	 *
-	 * @param Event $event The dispatched event
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The save event
 	 *
-	 * @return ObjectEntity|null
+	 * @return ObjectEntity
 	 */
-	private function entityOf(Event $event): ?ObjectEntity {
+	private function entityOf(ObjectCreatingEvent|ObjectUpdatingEvent $event): ObjectEntity {
 		if ($event instanceof ObjectCreatingEvent) {
 			return $event->getObject();
 		}
 
-		if ($event instanceof ObjectUpdatingEvent) {
-			return $event->getNewObject();
-		}
-
-		return null;
+		return $event->getNewObject();
 	}//end entityOf()
 
 	/**
