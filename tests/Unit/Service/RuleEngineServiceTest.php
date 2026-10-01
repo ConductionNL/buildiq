@@ -236,6 +236,57 @@ final class RuleEngineServiceTest extends TestCase {
 	}//end testEvaluateLoanApprove()
 
 	/**
+	 * REQ-BQLV-004: a preview evaluation answers the same result and writes no
+	 * rule execution log entry.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-live-evaluation-leaves-no-log-trail-req-bqlv-004
+	 */
+	public function testPreviewWritesNoExecutionLog(): void {
+		$this->stubScopedRows(
+			function (string $registerSlug, string $schema, array $filters = []): array {
+				return $this->loanFindAllResults($schema);
+			}
+		);
+
+		$this->objectService->expects($this->never())->method('saveObject');
+
+		$outcome = $this->service->evaluate(
+			ruleSetSlug: 'loan-eligibility',
+			payload: ['applicant' => ['age' => 30, 'monthlyIncome' => 3000, 'creditScore' => 700]],
+			preview: true
+		);
+
+		$this->assertSame('approve', $outcome['result']['decision']);
+
+	}//end testPreviewWritesNoExecutionLog()
+
+	/**
+	 * REQ-BQLV-004: a preview runs on every keystroke, so it never fires a
+	 * rule's side-effecting action either.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-live-evaluation-leaves-no-log-trail-req-bqlv-004
+	 */
+	public function testPreviewDoesNotInvokeDispatcher(): void {
+		$this->stubScopedRows(
+			function (string $registerSlug, string $schema, array $filters = []): array {
+				return $this->conditionActionFindAllResults($schema);
+			}
+		);
+
+		$this->actionDispatcher->expects($this->never())->method('__invoke');
+		$this->objectService->expects($this->never())->method('saveObject');
+
+		$outcome = $this->service->evaluate(ruleSetSlug: 'escalate', payload: [], preview: true);
+
+		$this->assertContains('always-notify', $outcome['triggeredRules'], 'sanity: rule fired');
+
+	}//end testPreviewDoesNotInvokeDispatcher()
+
+	/**
 	 * An unknown RuleSet slug raises a 404-coded exception.
 	 *
 	 * @return void

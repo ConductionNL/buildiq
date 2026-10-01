@@ -143,6 +143,14 @@
 		</fieldset>
 
 		<fieldset class="form-page-editor__fieldset">
+			<legend>{{ t('buildiq', 'Eligibility check') }}</legend>
+			<EligibilityCheckBuilder
+				:modelValue="config.eligibility || null"
+				@update:modelValue="update('eligibility', $event)" />
+			<InlineFieldMark :error="markFor('eligibility')" />
+		</fieldset>
+
+		<fieldset class="form-page-editor__fieldset">
 			<legend>{{ t('buildiq', 'Steps') }}</legend>
 			<FormStepsManager
 				:steps="config.steps || []"
@@ -202,6 +210,7 @@
 
 <script>
 import ExternalFormAccessDialog from '../../dialogs/ExternalFormAccessDialog.vue'
+import EligibilityCheckBuilder from './fields/EligibilityCheckBuilder.vue'
 import FormFieldBuilder from './fields/FormFieldBuilder.vue'
 import FormStepsManager from './fields/FormStepsManager.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
@@ -217,6 +226,7 @@ export default {
 	name: 'FormPageEditor',
 	components: {
 		FormFieldBuilder,
+		EligibilityCheckBuilder,
 		FormStepsManager,
 		InlineFieldMark,
 		ExternalFormAccessDialog,
@@ -361,6 +371,7 @@ export default {
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 * @spec openspec/specs/form-editor-logic/spec.md#req-obfel-001
+		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003
 		 */
 		validatedConfigKeys() {
 			return [
@@ -373,6 +384,7 @@ export default {
 				'fields',
 				'initialValue',
 				'steps',
+				'eligibility',
 			]
 		},
 
