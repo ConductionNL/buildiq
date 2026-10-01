@@ -4287,11 +4287,12 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "specified",
-				"evidence": "src/views/BuilderHost.vue:38 mounts every built app's CnAppRoot with :aiCompanion=\"true\"; nextcloud-vue v2.55.1 CnAppRoot.vue:412 renders CnAiCompanion with chatAppId defaulting to 'hermiq' (src/composables/aiChatConfig.js:41), shown only after GET /apps/hermiq/api/chat/health succeeds (CnAiCompanion.vue:5,20); hermiq appinfo/info.xml id 'hermiq', routes.php:514,529,545 chat/send, health, stream exist.",
-				"reachedOn": "any built app opened at /builder/{slug}, floating AI companion (when hermiq is installed and healthy)",
+				"state": "built",
+				"evidence": "Built in hermiq: an organisation admin picks one agent per app ('Assistant for this app', Agent.appAssistantFor), the companion in that app uses it on both chat endpoints and searches the app's own registers first (lib/Service/Engine/AppRegisterScope.php). buildiq src/views/BuilderHost.vue:38 mounts CnAppRoot with :aiCompanion=\"true\", so every built app gets it.",
+				"reachedOn": "any built app opened at /builder/{slug}, floating AI companion (hermiq installed, an agent picked for the app)",
 				"owner": "ConductionNL/hermiq",
-				"note": "Specified in ConductionNL/hermiq openspec/changes/agents-bound-to-their-app (hermiq lane, OpenSpec pass 2026-09-27)."
+				"note": "Built by the hermiq lane (archive 2026-10-01-agents-bound-to-their-app); set built in buildiq's matrix 2026-10-02 after reading hermiq development.",
+				"change": "ConductionNL/hermiq archive openspec/changes/archive/2026-10-01-agents-bound-to-their-app (hermiq development d3cac1131)"
 			},
 			"provider": "hermiq",
 			"providerHow": "read-from-code",
@@ -7658,11 +7659,12 @@
 			"mendix": "partial",
 			"power-apps": "yes",
 			"built": {
-				"state": "specified",
-				"evidence": "No AI summary widget on detail pages: buildiq src/runtimeRegistry.js registers no summary widget and DetailPageEditor.vue offers none; the hermiq companion (src/views/BuilderHost.vue:38 aiCompanion) answers questions on request, it does not show a summary on the record",
-				"reachedOn": "nothing reaches it",
+				"state": "built",
+				"evidence": "Built in hermiq: the agent object leaf (CnAgentRunsWidget, src/utils/recordSummary.js) generates, shows and refreshes a summary of the record on screen, labelled as AI-written, stored per object version (lib/Controller/RecordSummaryController.php, lib/Service/Assistant/RecordSummaryService.php). Where buildiq places it on a detail page is the page editor's ordinary leaf placement.",
+				"reachedOn": "a built app's record page with the hermiq agent leaf placed on it",
 				"owner": "ConductionNL/hermiq",
-				"note": "Specified in ConductionNL/hermiq openspec/changes/agents-bound-to-their-app (hermiq lane, OpenSpec pass 2026-09-27)."
+				"note": "Built by the hermiq lane (archive 2026-10-01-agents-bound-to-their-app); set built in buildiq's matrix 2026-10-02 after reading hermiq development.",
+				"change": "ConductionNL/hermiq archive openspec/changes/archive/2026-10-01-agents-bound-to-their-app (hermiq development d3cac1131)"
 			},
 			"provider": "hermiq",
 			"providerHow": "read-from-code",
