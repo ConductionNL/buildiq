@@ -33,6 +33,7 @@ use OCA\Buildiq\Listener\ApprovalOutcomeListener;
 use OCA\Buildiq\Listener\AutomationApprovalTriggerListener;
 use OCA\Buildiq\Listener\AutomationCleanupListener;
 use OCA\Buildiq\Listener\DocumentGenerationListener;
+use OCA\Buildiq\Listener\FormLiveValuesListener;
 use OCA\Buildiq\Listener\HybridMetadataLockListener;
 use OCA\Buildiq\Listener\ProductionVersionGuardListener;
 use OCA\Buildiq\Mcp\BuildiqToolProvider;
@@ -454,6 +455,24 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(
 			event: ObjectUpdatingEvent::class,
 			listener: HybridMetadataLockListener::class
+		);
+
+		// Live form values (forms-live-values-and-checks, REQ-BQLV-005).
+		// Before any object is stored, recompute the fields a built app's form
+		// calculates and enforce its blocking eligibility check, so a value
+		// changed in the browser never lands. Unfiltered on purpose: the
+		// registers a built app's form writes to are created per app and
+		// version, so no static register or schema list can name them. Every
+		// write that no live form targets returns after one app config read.
+		// The same listener keeps that index current from ApplicationVersion
+		// saves.
+		$context->registerEventListener(
+			event: ObjectCreatingEvent::class,
+			listener: FormLiveValuesListener::class
+		);
+		$context->registerEventListener(
+			event: ObjectUpdatingEvent::class,
+			listener: FormLiveValuesListener::class
 		);
 
 		// Automation-approval-steps: trigger-fire half of the `approval`
