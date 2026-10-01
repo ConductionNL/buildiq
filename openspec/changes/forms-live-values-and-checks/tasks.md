@@ -1,6 +1,6 @@
 # Tasks: forms-live-values-and-checks
 
-- [ ] **T01**: Add `mode: preview` to `RulesController::evaluate()` that skips `persistLog()` and keeps RBAC, rate limit and size guard (REQ-BQLV-004). Verify: PHPUnit asserting no execution log is written in preview and one is written otherwise.
+- [x] **T01**: Add `mode: preview` to `RulesController::evaluate()` that skips `persistLog()` and keeps RBAC, rate limit and size guard (REQ-BQLV-004). Verify: PHPUnit asserting no execution log is written in preview and one is written otherwise. `RuleEngineServiceTest::testPreviewWritesNoExecutionLog`, `testPreviewDoesNotInvokeDispatcher` (a preview also runs no side-effecting action: it fires on every keystroke), `RulesControllerTest::testEvaluatePreviewModeReachesTheEngine`, `testEvaluateWithoutPreviewIsLogged`.
 - [ ] **T02**: Add the default picker (literal, `@me`, `@me.displayName`, `@me.email`, `@today`, `@object.<field>`) to `FormFieldBuilder.vue` (REQ-BQLV-001). Verify: vitest for the stored `default`.
 - [ ] **T03**: Add the calculated-field binding (`ruleSet`, `output`, `inputs[]`) to `FormFieldBuilder.vue`, listing rule sets and outputs from `GET /api/rules/{slug}/schema` (REQ-BQLV-002). Verify: vitest with a mocked rule set schema.
 - [ ] **T04**: Add the eligibility check section to `FormPageEditor.vue` (`ruleSet`, `passWhen`, `explainWith`, `blockSubmit`) (REQ-BQLV-003). Verify: vitest for the stored config.

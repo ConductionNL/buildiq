@@ -144,10 +144,15 @@ class RuleEngineService {
 	 * @param string|null $version Optional pinned version (default: active).
 	 * @param bool $dryRun When true, side-effecting actions are suppressed.
 	 * @param bool $maskPii When true, mask PII fields in the audit log.
+	 * @param bool $preview When true, a live preview for a form being filled
+	 *   in: no execution log entry is written and no side-effecting action runs
+	 *   (REQ-BQLV-004). A preview answer is never trusted for a save.
 	 *
 	 * @return array{result:array<string,mixed>,triggeredRules:array<int,mixed>,executionTime:int,errors:array<int,string>}
 	 *
 	 * @throws RuntimeException When the RuleSet is not found / not owned, or on timeout.
+	 *
+	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-live-evaluation-leaves-no-log-trail-req-bqlv-004
 	 */
 	public function evaluate(
 		string $ruleSetSlug,
@@ -155,6 +160,7 @@ class RuleEngineService {
 		?string $version = null,
 		bool $dryRun = false,
 		bool $maskPii = true,
+		bool $preview = false,
 	): array {
 		// Re-entry cycle guard: a rule set already active in this chain must not
 		// be re-evaluated (self- or mutually-referential call-rule-set). Thrown
@@ -181,8 +187,9 @@ class RuleEngineService {
 				ruleSetSlug: $ruleSetSlug,
 				payload: $payload,
 				version: $version,
-				dryRun: $dryRun,
-				maskPii: $maskPii
+				dryRun: ($dryRun === true || $preview === true),
+				maskPii: $maskPii,
+				preview: $preview
 			);
 		} finally {
 			--$this->callDepth;
@@ -199,6 +206,7 @@ class RuleEngineService {
 	 * @param string|null $version Optional pinned version (default: active).
 	 * @param bool $dryRun When true, side-effecting actions are suppressed.
 	 * @param bool $maskPii When true, mask PII fields in the audit log.
+	 * @param bool $preview When true, no execution log entry is written.
 	 *
 	 * @return array{result:array<string,mixed>,triggeredRules:array<int,mixed>,executionTime:int,errors:array<int,string>}
 	 *
@@ -210,6 +218,7 @@ class RuleEngineService {
 		?string $version = null,
 		bool $dryRun = false,
 		bool $maskPii = true,
+		bool $preview = false,
 	): array {
 		$startedAt = microtime(true);
 
@@ -251,16 +260,18 @@ class RuleEngineService {
 			$errors[] = 'Evaluation exceeded the ' . self::TIMEOUT_MS . 'ms soft timeout (' . $durationMs . 'ms).';
 		}
 
-		$this->persistLog(
-			ruleSetSlug: $ruleSetSlug,
-			version: (string)($bundle['ruleSet']['version'] ?? ''),
-			payload: $payload,
-			result: $result,
-			triggeredRules: $triggeredRules,
-			durationMs: $durationMs,
-			errors: $errors,
-			maskPii: $maskPii
-		);
+		if ($preview === false) {
+			$this->persistLog(
+				ruleSetSlug: $ruleSetSlug,
+				version: (string)($bundle['ruleSet']['version'] ?? ''),
+				payload: $payload,
+				result: $result,
+				triggeredRules: $triggeredRules,
+				durationMs: $durationMs,
+				errors: $errors,
+				maskPii: $maskPii
+			);
+		}
 
 		return [
 			'result' => $result,
