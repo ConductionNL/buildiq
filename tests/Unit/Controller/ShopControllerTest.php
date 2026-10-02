@@ -238,4 +238,62 @@ class ShopControllerTest extends TestCase {
 
 	}//end testGithubInstallRequiresNameAndSlug()
 
+	/**
+	 * githubFormSearch (REQ-BQGL-005): anonymous callers get 401 and GitHub is not asked.
+	 *
+	 * @return void
+	 */
+	public function testGithubFormSearchRejectsAnonymous(): void {
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->catalogService->expects(self::never())->method('searchForms');
+
+		$response = $this->controller()->githubFormSearch();
+
+		self::assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+	}//end testGithubFormSearchRejectsAnonymous()
+
+	/**
+	 * githubFormSearch: a signed-in caller gets the form cards for their query.
+	 *
+	 * @return void
+	 */
+	public function testGithubFormSearchReturnsFormCards(): void {
+		$this->authenticate();
+		$this->request->method('getParam')->willReturnCallback(static fn (string $key) => $key === 'q' ? 'subsidie' : null);
+		$this->catalogService->expects(self::once())
+			->method('searchForms')
+			->with('subsidie', 'bob', null)
+			->willReturn(
+				[
+					'outcome' => 'ok',
+					'cards' => [['repo' => 'subsidie-formulier', 'installable' => true]],
+					'brokerUsed' => false,
+					'rateLimited' => false,
+				]
+			);
+
+		$response = $this->controller()->githubFormSearch();
+
+		self::assertSame(Http::STATUS_OK, $response->getStatus());
+		self::assertSame('subsidie-formulier', $response->getData()['cards'][0]['repo']);
+		self::assertSame('ok', $response->getData()['outcome']);
+	}//end testGithubFormSearchReturnsFormCards()
+
+	/**
+	 * githubFormSearch: a failing lookup reads as unreachable, not as no forms.
+	 *
+	 * @return void
+	 */
+	public function testGithubFormSearchFailureIsUnreachable(): void {
+		$this->authenticate();
+		$this->request->method('getParam')->willReturn(null);
+		$this->catalogService->method('searchForms')->willThrowException(new \RuntimeException('boom'));
+
+		$response = $this->controller()->githubFormSearch();
+
+		self::assertSame(Http::STATUS_OK, $response->getStatus());
+		self::assertSame('github_unreachable', $response->getData()['outcome']);
+		self::assertSame([], $response->getData()['cards']);
+	}//end testGithubFormSearchFailureIsUnreachable()
+
 }//end class
