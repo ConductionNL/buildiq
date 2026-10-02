@@ -485,6 +485,76 @@ final class PageLayoutAuthoringServiceTest extends TestCase {
 	}//end testASaveWithoutTheRegistryDoesNotWarn()
 
 	/**
+	 * A registry that cannot answer says nothing about whether a leaf exists,
+	 * so the save stays silent: OpenRegister not resolvable, a registry
+	 * without listIds(), one that throws, and one that answers no list.
+	 *
+	 * @return void
+	 */
+	public function testARegistryThatCannotAnswerDoesNotWarn(): void {
+		$throws = new class {
+			/**
+			 * Fails the way a half-booted registry does.
+			 *
+			 * @return array<int, string>
+			 */
+			public function listIds(): array {
+				throw new \RuntimeException('registry not booted');
+			}//end listIds()
+		};
+		$noList = new class {
+			/**
+			 * Answers something that is not a list of ids.
+			 *
+			 * @return string
+			 */
+			public function listIds(): string {
+				return 'not-a-list';
+			}//end listIds()
+		};
+		$cases = [
+			'not resolvable'   => null,
+			'without listIds'  => new \stdClass(),
+			'throws'           => $throws,
+			'answers no list'  => $noList,
+		];
+
+		foreach ($cases as $name => $registry) {
+			$layout = $this->schemaWide();
+			$layout['tabs'][] = ['id' => 'kaart', 'kind' => 'leaf', 'label' => 'Kaart', 'ref' => 'nobody-offers-this'];
+			$result = $this->serviceWithRegistry(registry: $registry)->save($layout, 'beheerder');
+
+			$this->assertSame([], $result['warnings'], 'A registry that '.$name.' must not make the save warn.');
+		}
+	}//end testARegistryThatCannotAnswerDoesNotWarn()
+
+	/**
+	 * A service whose locator resolves the integration registry to $registry.
+	 *
+	 * @param object|null $registry What the locator answers for the registry class.
+	 *
+	 * @return PageLayoutAuthoringService The service.
+	 */
+	private function serviceWithRegistry(?object $registry): PageLayoutAuthoringService {
+		$locator = $this->getMockBuilder(ContainerLocator::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['get'])
+			->getMock();
+		$locator->method('get')->willReturnCallback(
+			static fn (string $class): ?object => $class === PageLayoutAuthoringService::REGISTRY_CLASS ? $registry : null
+		);
+
+		return new PageLayoutAuthoringService(
+			objectService: $this->makeObjectService(),
+			appConfig: $this->appConfigFor(),
+			validator: new PageLayoutValidator(),
+			deltas: $this->deltas,
+			provider: $this->provider,
+			locator: $locator,
+		);
+	}//end serviceWithRegistry()
+
+	/**
 	 * An app config that names the buildiq register.
 	 *
 	 * @return IAppConfig The config.
