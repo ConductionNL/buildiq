@@ -586,10 +586,10 @@ export default {
 	},
 
 	/**
-	 * Load the built-in templates, run the initial GitHub search and detect a
-	 * GitHub credential.
+	 * Open on the category a shared link names.
 	 *
-	 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
+	 * @return {void}
+	 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/template-catalogue-ui/spec.md#requirement-templates-can-be-filtered-and-browsed-by-category-req-bqgl-001
 	 */
 	created() {
 		// REQ-BQGL-001: a shared link opens on the category it names.
@@ -599,6 +599,13 @@ export default {
 			: null
 	},
 
+	/**
+	 * Load the built-in templates, run the initial GitHub search and detect a
+	 * GitHub credential.
+	 *
+	 * @return {void}
+	 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
+	 */
 	mounted() {
 		// The store is GitHub-only: run the initial (empty-query) search so the
 		// topic:openbuild-app repositories appear, and feature-detect a github

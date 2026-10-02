@@ -26,7 +26,6 @@ use OCA\Buildiq\Controller\ApplicationsController;
 use OCA\Buildiq\Controller\ShopController;
 use OCA\Buildiq\Service\AppRepoParser;
 use OCA\Buildiq\Service\GitHubCatalogService;
-use OCA\Buildiq\Service\GitHubFormCatalogService;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
 use OCP\IUser;
@@ -67,13 +66,6 @@ class ShopControllerTest extends TestCase {
 	private $catalogService;
 
 	/**
-	 * GitHub source of shared forms.
-	 *
-	 * @var GitHubFormCatalogService&MockObject
-	 */
-	private $formCatalog;
-
-	/**
 	 * Repo parser mock.
 	 *
 	 * @var AppRepoParser&MockObject
@@ -98,7 +90,6 @@ class ShopControllerTest extends TestCase {
 		$this->request = $this->createMock(IRequest::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->catalogService = $this->createMock(GitHubCatalogService::class);
-		$this->formCatalog = $this->createMock(GitHubFormCatalogService::class);
 		$this->repoParser = $this->createMock(AppRepoParser::class);
 		$this->appsController = $this->createMock(ApplicationsController::class);
 
@@ -116,8 +107,7 @@ class ShopControllerTest extends TestCase {
 			userSession: $this->userSession,
 			catalogService: $this->catalogService,
 			repoParser: $this->repoParser,
-			appsController: $this->appsController,
-			formCatalog: $this->formCatalog
+			appsController: $this->appsController
 		);
 
 	}//end controller()
@@ -247,63 +237,5 @@ class ShopControllerTest extends TestCase {
 		self::assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 
 	}//end testGithubInstallRequiresNameAndSlug()
-
-	/**
-	 * githubFormSearch (REQ-BQGL-005): anonymous callers get 401 and GitHub is not asked.
-	 *
-	 * @return void
-	 */
-	public function testGithubFormSearchRejectsAnonymous(): void {
-		$this->userSession->method('getUser')->willReturn(null);
-		$this->formCatalog->expects(self::never())->method('searchForms');
-
-		$response = $this->controller()->githubFormSearch();
-
-		self::assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
-	}//end testGithubFormSearchRejectsAnonymous()
-
-	/**
-	 * githubFormSearch: a signed-in caller gets the form cards for their query.
-	 *
-	 * @return void
-	 */
-	public function testGithubFormSearchReturnsFormCards(): void {
-		$this->authenticate();
-		$this->request->method('getParam')->willReturnCallback(static fn (string $key) => $key === 'q' ? 'subsidie' : null);
-		$this->formCatalog->expects(self::once())
-			->method('searchForms')
-			->with('subsidie', 'bob', null)
-			->willReturn(
-				[
-					'outcome' => 'ok',
-					'cards' => [['repo' => 'subsidie-formulier', 'installable' => true]],
-					'brokerUsed' => false,
-					'rateLimited' => false,
-				]
-			);
-
-		$response = $this->controller()->githubFormSearch();
-
-		self::assertSame(Http::STATUS_OK, $response->getStatus());
-		self::assertSame('subsidie-formulier', $response->getData()['cards'][0]['repo']);
-		self::assertSame('ok', $response->getData()['outcome']);
-	}//end testGithubFormSearchReturnsFormCards()
-
-	/**
-	 * githubFormSearch: a failing lookup reads as unreachable, not as no forms.
-	 *
-	 * @return void
-	 */
-	public function testGithubFormSearchFailureIsUnreachable(): void {
-		$this->authenticate();
-		$this->request->method('getParam')->willReturn(null);
-		$this->formCatalog->method('searchForms')->willThrowException(new \RuntimeException('boom'));
-
-		$response = $this->controller()->githubFormSearch();
-
-		self::assertSame(Http::STATUS_OK, $response->getStatus());
-		self::assertSame('github_unreachable', $response->getData()['outcome']);
-		self::assertSame([], $response->getData()['cards']);
-	}//end testGithubFormSearchFailureIsUnreachable()
 
 }//end class

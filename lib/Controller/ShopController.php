@@ -44,7 +44,6 @@ use OCA\Buildiq\Exception\AppRepoParseException;
 use OCA\Buildiq\Service\AppRepoParser;
 use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCA\Buildiq\Service\GitHubCatalogService;
-use OCA\Buildiq\Service\GitHubFormCatalogService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -84,7 +83,6 @@ class ShopController extends Controller {
 	 * @param GitHubCatalogService $catalogService Fixed-host GitHub source.
 	 * @param AppRepoParser $repoParser Strict repo-file-map parser (change 1).
 	 * @param ApplicationsController $appsController Shared clone/install seam.
-	 * @param GitHubFormCatalogService $formCatalog GitHub source of shared forms.
 	 * @param ConnectionReporter|null $connectionReporter Tells integriq what a search met, or nothing when absent.
 	 *
 	 * @return void
@@ -98,7 +96,6 @@ class ShopController extends Controller {
 		private readonly GitHubCatalogService $catalogService,
 		private readonly AppRepoParser $repoParser,
 		private readonly ApplicationsController $appsController,
-		private readonly GitHubFormCatalogService $formCatalog,
 		private readonly ?ConnectionReporter $connectionReporter = null,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
@@ -173,50 +170,6 @@ class ShopController extends Controller {
 			statusCode: Http::STATUS_OK
 		);
 	}//end githubSearch()
-
-	/**
-	 * Search GitHub for shared forms (`topic:buildiq-form`, a form.json at the root).
-	 *
-	 * Login-required (in-body 401 guard). Each card carries the form export
-	 * envelope its repository publishes; installing one is creating a local
-	 * library form from that envelope, which the browser does through
-	 * OpenRegister after validating it (src/services/formExport.js).
-	 *
-	 * @return JSONResponse 200 with `{outcome, cards, rateLimited}`; 401 anonymous.
-	 *
-	 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-forms-travel-between-organisations-req-bqgl-005
-	 */
-	#[NoAdminRequired]
-	public function githubFormSearch(): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return $this->error(code: 'unauthenticated', status: Http::STATUS_UNAUTHORIZED);
-		}
-
-		$query = $this->request->getParam('q');
-		if (is_string($query) === false) {
-			$query = null;
-		}
-
-		try {
-			$result = $this->formCatalog->searchForms(
-				query: $query,
-				actingUserId: $user->getUID(),
-				credentialId: $this->credentialParam()
-			);
-		} catch (Throwable $e) {
-			$this->logger->error('Buildiq shop: GitHub form search failed: ' . $e->getMessage());
-			return new JSONResponse(
-				data: ['outcome' => GitHubCatalogService::OUTCOME_UNREACHABLE, 'cards' => [], 'rateLimited' => false],
-				statusCode: Http::STATUS_OK
-			);
-		}
-
-		return new JSONResponse(
-			data: ['outcome' => $result['outcome'], 'cards' => $result['cards'], 'rateLimited' => $result['rateLimited']],
-			statusCode: Http::STATUS_OK
-		);
-	}//end githubFormSearch()
 
 	/**
 	 * Install a GitHub app: fetch → strictly parse → reuse the clone seam.

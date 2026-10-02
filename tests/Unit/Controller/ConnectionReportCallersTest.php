@@ -36,7 +36,6 @@ use OCA\Buildiq\Service\AppRepoParser;
 use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCA\Buildiq\Service\GitHubAppSyncService;
 use OCA\Buildiq\Service\GitHubCatalogService;
-use OCA\Buildiq\Service\GitHubFormCatalogService;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCP\AppFramework\Http\JSONResponse;
@@ -156,7 +155,6 @@ class ConnectionReportCallersTest extends TestCase {
 			catalogService: $catalog,
 			repoParser: $this->createMock(originalClassName: AppRepoParser::class),
 			appsController: $this->createMock(originalClassName: ApplicationsController::class),
-			formCatalog: $this->createMock(originalClassName: GitHubFormCatalogService::class),
 			connectionReporter: $this->reporter
 		);
 	}//end shopController()
