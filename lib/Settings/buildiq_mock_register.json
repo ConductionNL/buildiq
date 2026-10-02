@@ -47,6 +47,267 @@
         },
         "title": "Voorbeeld Title 3",
         "body": "Voorbeeld Body 3"
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "pageLayout",
+          "slug": "layout-dossiq-case-all"
+        },
+        "targetApp": "dossiq",
+        "register": "dossiq",
+        "schema": "case",
+        "typeProperty": "",
+        "status": "published",
+        "audience": {
+          "kind": "everyone",
+          "ref": ""
+        },
+        "id": "layout-dossiq-case-all",
+        "name": "Standaard zaakscherm",
+        "typeValue": "",
+        "header": {
+          "titleField": "title",
+          "subtitleField": "identifier",
+          "chips": [
+            "status"
+          ],
+          "fields": [
+            {
+              "field": "deadline",
+              "label": "Uiterste datum",
+              "order": 0
+            }
+          ]
+        },
+        "tabs": [
+          {
+            "id": "gegevens",
+            "kind": "fieldGroup",
+            "label": "Gegevens",
+            "order": 0,
+            "fields": [
+              "title",
+              "description",
+              "startDate",
+              "deadline"
+            ]
+          },
+          {
+            "id": "documenten",
+            "kind": "leaf",
+            "label": "Documenten",
+            "order": 1,
+            "ref": "filinq-documents"
+          }
+        ],
+        "taskList": {
+          "columns": [
+            {
+              "field": "title",
+              "label": "Taak",
+              "order": 0
+            },
+            {
+              "field": "deadline",
+              "label": "Uiterste datum",
+              "order": 1
+            }
+          ],
+          "searchFields": [
+            {
+              "field": "title",
+              "operator": "contains"
+            }
+          ]
+        }
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "pageLayout",
+          "slug": "layout-dossiq-case-bouwvergunning"
+        },
+        "targetApp": "dossiq",
+        "register": "dossiq",
+        "schema": "case",
+        "typeProperty": "caseType",
+        "status": "published",
+        "audience": {
+          "kind": "everyone",
+          "ref": ""
+        },
+        "id": "layout-dossiq-case-bouwvergunning",
+        "name": "Bouwvergunning",
+        "typeValue": "bouwvergunning",
+        "header": {
+          "titleField": "title",
+          "subtitleField": "identifier",
+          "chips": [
+            "status",
+            "confidentiality"
+          ],
+          "fields": [
+            {
+              "field": "deadline",
+              "label": "Uiterste datum",
+              "order": 0
+            },
+            {
+              "field": "assignee",
+              "label": "Behandelaar",
+              "order": 1
+            }
+          ]
+        },
+        "tabs": [
+          {
+            "id": "overzicht",
+            "kind": "widgets",
+            "label": "Overzicht",
+            "order": 0,
+            "widgets": [
+              {
+                "id": "termijn",
+                "order": 0,
+                "width": "medium",
+                "conditions": [],
+                "highContrast": true
+              },
+              {
+                "id": "behandelaar",
+                "order": 1,
+                "width": "medium",
+                "conditions": [],
+                "highContrast": false
+              },
+              {
+                "id": "besluit",
+                "order": 2,
+                "width": "extraLarge",
+                "conditions": [
+                  {
+                    "field": "result",
+                    "operator": "isNotEmpty"
+                  }
+                ],
+                "highContrast": false
+              }
+            ]
+          },
+          {
+            "id": "gegevens",
+            "kind": "fieldGroup",
+            "label": "Gegevens",
+            "order": 1,
+            "fields": [
+              "title",
+              "description",
+              "deadline",
+              "confidentiality"
+            ]
+          },
+          {
+            "id": "documenten",
+            "kind": "leaf",
+            "label": "Documenten",
+            "order": 2,
+            "ref": "filinq-documents"
+          }
+        ],
+        "taskList": {
+          "columns": [
+            {
+              "field": "title",
+              "label": "Taak",
+              "order": 0
+            },
+            {
+              "field": "deadline",
+              "label": "Uiterste datum",
+              "order": 1
+            },
+            {
+              "field": "assignee",
+              "label": "Behandelaar",
+              "order": 2
+            }
+          ],
+          "searchFields": [
+            {
+              "field": "title",
+              "operator": "contains"
+            },
+            {
+              "field": "assignee",
+              "operator": "equals"
+            }
+          ]
+        },
+        "uploadFields": [
+          {
+            "field": "documentType",
+            "label": "Documenttype",
+            "order": 0,
+            "visibility": "editable"
+          },
+          {
+            "field": "confidentiality",
+            "label": "Vertrouwelijkheid",
+            "order": 1,
+            "visibility": "readOnly",
+            "default": "intern"
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "pageLayout",
+          "slug": "layout-dossiq-case-evenementenvergunning"
+        },
+        "targetApp": "dossiq",
+        "register": "dossiq",
+        "schema": "case",
+        "typeProperty": "caseType",
+        "status": "published",
+        "audience": {
+          "kind": "everyone",
+          "ref": ""
+        },
+        "id": "layout-dossiq-case-evenementenvergunning",
+        "name": "Evenementenvergunning",
+        "typeValue": "evenementenvergunning",
+        "tabs": [
+          {
+            "id": "gegevens",
+            "kind": "fieldGroup",
+            "label": "Gegevens",
+            "order": 0,
+            "fields": [
+              "title",
+              "startDate",
+              "endDate"
+            ]
+          },
+          {
+            "id": "adviezen",
+            "kind": "relatedList",
+            "label": "Adviezen",
+            "order": 1,
+            "relatedRegister": "dossiq",
+            "relatedSchema": "adviceResponse"
+          }
+        ],
+        "uploadFields": [
+          {
+            "field": "confidentiality",
+            "label": "Vertrouwelijkheid",
+            "order": 0,
+            "visibility": "hidden",
+            "default": "openbaar"
+          }
+        ]
       }
     ]
   }
