@@ -21,8 +21,12 @@
  */
 
 import { expect, test } from '@playwright/test'
+// The one place a target enters this suite, and the place the shared-instance
+// guard sits. This was a private `process.env.PLAYWRIGHT_BASE_URL ??
+// 'http://localhost:8080'` constant, so a run with nothing set wrote to the
+// shared dev instance. See tests/e2e/shared-instance.ts.
+import { E2E_BASE_URL as BASE } from '../support/baseUrl.ts'
 
-const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 const LIVE = process.env.BUILDIQ_E2E_LIVE === '1'
 
 // STUB/QUARANTINE NOTE CORRECTED 2026-08-25. The old text blamed buildiq#41 for the admin UI "not functional in this build". #41 is a PR that MERGED on 2026-07-27, and 47 spec files in this suite already pass against that UI — applicationDetailOverview.spec.ts alone has 9 passing tests. What actually blocks these is that their bodies are stubs (goto + main-visible), so enabling them would pass while asserting nothing.

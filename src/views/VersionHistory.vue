@@ -31,12 +31,8 @@
 				v-for="row in versions"
 				:key="rowKey(row)"
 				class="version-history__row"
-				:class="{ 'version-history__row--current': isProduction(row) }"
-				tabindex="0"
-				role="button"
-				@click="openVersion(row)"
-				@keydown.enter="openVersion(row)">
-				<div class="version-history__row-main">
+				:class="{ 'version-history__row--current': isProduction(row) }">
+				<a class="version-history__row-main" :href="versionUrl(row)">
 					<div class="version-history__row-title">
 						<strong>{{ rowName(row) }}</strong>
 						<small class="version-history__semver">{{
@@ -53,24 +49,33 @@
 							{{ t('buildiq', 'Production') }}
 						</span>
 					</div>
-				</div>
-				<!-- Actions stop row-click propagation so a button never doubles as "open". -->
-				<div class="version-history__actions" @click.stop>
-					<button class="version-history__btn" @click="openVersion(row)">
+				</a>
+				<div class="version-history__actions">
+					<!-- Open leaves the SPA for the live shell, so it is an href;
+					     Edit is the in-app page designer, so it is a router link.
+					     Both are anchors: no click handler can give back
+					     middle-click or "open in new tab". -->
+					<a class="version-history__btn" :href="versionUrl(row)">
 						{{ t('buildiq', 'Open') }}
-					</button>
-					<button
+					</a>
+					<router-link
 						v-if="canEdit"
 						class="version-history__btn"
-						@click="editVersion(row)">
+						:to="editRoute(row)">
 						{{ t('buildiq', 'Edit') }}
-					</button>
+					</router-link>
 					<button
 						v-if="canRelease && rowStatus(row) === 'draft'"
 						class="version-history__btn version-history__btn--primary"
 						:disabled="releasing === rowUuid(row)"
 						@click="release(row)">
 						{{ t('buildiq', 'Release') }}
+					</button>
+					<button
+						v-if="canEdit && row.promotesTo"
+						class="version-history__btn"
+						@click="promote(row)">
+						{{ t('buildiq', 'Promote') }}
 					</button>
 					<button
 						v-if="!isProduction(row)"
@@ -96,6 +101,8 @@ import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
 import RollbackConfirmModal from '../modals/RollbackConfirmModal.vue'
+import { openPromoteDialog, promoteDialog } from '../composables/usePromoteDialog.js'
+import { buildVersionedRoute } from '../router/helpers.js'
 
 export default {
 	name: 'VersionHistory',
@@ -143,10 +150,20 @@ export default {
 			releasing: '',
 			rollbackOpen: false,
 			rollbackTarget: null,
+			promoteDialog,
 		}
 	},
 
 	watch: {
+		/**
+		 * Reload the list after a promotion, so status and semver are current.
+		 *
+		 * @return {void}
+		 */
+		'promoteDialog.promotedAt': function () {
+			this.refresh()
+		},
+
 		appSlug: {
 			immediate: true,
 			/**
@@ -162,24 +179,6 @@ export default {
 					this.refresh()
 				} else if (!this.applicationUuid) {
 					this.versions = []
-				}
-			},
-		},
-
-		applicationUuid: {
-			immediate: true,
-			/**
-			 * Fallback: reload via OR objects endpoint when only applicationUuid
-			 * is supplied (no appSlug available yet).
-			 *
-			 * @param {string} uuid The parent Application UUID.
-			 * @return {void}
-			 *
-			 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-routing-ui/spec.md
-			 */
-			handler(uuid) {
-				if (uuid && !this.appSlug) {
-					this.refresh()
 				}
 			},
 		},
@@ -199,52 +198,37 @@ export default {
 		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-routing-ui/spec.md
 		 */
 		async refresh() {
-			if (!this.appSlug && !this.applicationUuid) {
+			// Only the slug endpoint exists. The uuid fallback asked for
+			// `/api/applicationversions?applicationUuid=`, a route this app
+			// never had, so every detail page logged a 404 before the slug
+			// arrived. Without a slug there is nothing to load yet.
+			if (!this.appSlug) {
 				this.versions = []
 				return
 			}
 			this.loading = true
 			try {
-				let url
-				if (this.appSlug) {
-					url = generateUrl(
-						'/apps/buildiq/api/applications/{slug}/versions',
-						{ slug: this.appSlug },
-					)
-				} else {
-					url = generateUrl(
-						'/apps/buildiq/api/applicationversions?applicationUuid={uuid}',
-						{ uuid: this.applicationUuid },
-					)
-				}
+				const url = generateUrl(
+					'/apps/buildiq/api/applications/{slug}/versions',
+					{ slug: this.appSlug },
+				)
 				const { data } = await axios.get(url)
 				const raw = Array.isArray(data)
 					? data
 					: data && data.results
 						? data.results
 						: []
-				// The IDOR filter applies ONLY to the unscoped endpoint. The
-				// by-slug URL above is already app-scoped server-side, and its
-				// rows do not carry `applicationUuid` at all — measured, every
-				// row comes back without the key:
-				//
-				//   GET /api/applications/pw-verchain/versions
-				//   -> 3 rows, each { name, slug, manifest, ..., status } and no
-				//      applicationUuid
-				//
-				// ApplicationVersionsTab passes BOTH app-slug and
-				// application-uuid, so this filter removed every row and the
-				// "Version history" tab rendered `.version-history__empty` for
-				// every app, always. Filtering a server-scoped response against
-				// a field that response does not contain is not defence in
-				// depth — it is an unconditional deny.
-				const filtered =
-					this.applicationUuid && !this.appSlug
-						? raw.filter(
-								(r) =>
-									r && r.applicationUuid === this.applicationUuid,
-							)
-						: raw
+				// The endpoint is already scoped to the app. A row that names
+				// another parent through its `application` relation is still
+				// dropped, as defence in depth.
+				const filtered = this.applicationUuid
+					? raw.filter(
+							(r) =>
+								r
+								&& (!r.application
+									|| r.application === this.applicationUuid),
+						)
+					: raw
 				this.versions = filtered
 					.filter((r) => this.rowStatus(r) !== 'archived')
 					.sort((a, b) => {
@@ -363,45 +347,54 @@ export default {
 		},
 
 		/**
-		 * Open a version in the live shell — production at the canonical URL,
+		 * A version's URL in the live shell — production at the canonical URL,
 		 * any other version via `?_version=` (RBAC-gated server-side).
 		 *
 		 * @param {object} row The version row.
-		 * @return {void}
+		 * @return {string|null} The URL, or null without an app slug.
 		 *
 		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-lifecycle-ui/spec.md
 		 */
-		openVersion(row) {
+		versionUrl(row) {
 			if (!this.appSlug) {
-				return
+				return null
 			}
 			const base = generateUrl('/apps/buildiq/builder/{slug}', {
 				slug: this.appSlug,
 			})
-			window.location.href = this.isProduction(row)
+			return this.isProduction(row)
 				? base
 				: base + '?_version=' + encodeURIComponent(this.rowSlug(row))
 		},
 
 		/**
-		 * Edit a version in the page designer, scoped via `?_version=` for
-		 * non-production versions (editor+ only — gated by `canEdit`).
+		 * The page-designer route for a version, scoped via `?_version=` for
+		 * non-production versions (editor+ only — gated by `canEdit`). A router
+		 * location, so the Edit link stays inside the SPA.
+		 *
+		 * @param {object} row The version row.
+		 * @return {object} A vue-router location.
+		 *
+		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-lifecycle-ui/spec.md
+		 */
+		editRoute(row) {
+			return buildVersionedRoute(
+				'PageDesigner',
+				{ slug: this.appSlug },
+				this.isProduction(row) ? undefined : this.rowSlug(row),
+			)
+		},
+
+		/**
+		 * Open the promotion dialog for a row (the page header mounts it).
 		 *
 		 * @param {object} row The version row.
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-lifecycle-ui/spec.md
+		 * @spec openspec/specs/version-promotion/spec.md
 		 */
-		editVersion(row) {
-			if (!this.appSlug) {
-				return
-			}
-			const base = generateUrl('/apps/buildiq/builder/{slug}/pages', {
-				slug: this.appSlug,
-			})
-			window.location.href = this.isProduction(row)
-				? base
-				: base + '?_version=' + encodeURIComponent(this.rowSlug(row))
+		promote(row) {
+			openPromoteDialog({ sourceVersion: row })
 		},
 
 		/**
@@ -541,6 +534,14 @@ export default {
 	background: var(--color-primary-light, #e6f0fa);
 }
 
+/* The row body is the link to the version in the live shell. */
+.version-history__row-main {
+	flex: 1;
+	min-width: 0;
+	color: inherit;
+	text-decoration: none;
+}
+
 .version-history__row-title {
 	display: flex;
 	align-items: center;
@@ -576,7 +577,11 @@ export default {
 	gap: 8px;
 }
 
+/* Open and Edit are anchors, the rest are buttons — this keeps them one row of
+   identical controls. */
 .version-history__btn {
+	display: inline-flex;
+	align-items: center;
 	font-size: 13px;
 	padding: 4px 8px;
 	border-radius: var(--border-radius, 4px);
@@ -584,6 +589,7 @@ export default {
 	border: 1px solid var(--color-border, #ddd);
 	background: var(--color-main-background, #fff);
 	color: var(--color-main-text, #222);
+	text-decoration: none;
 }
 
 .version-history__btn--primary {

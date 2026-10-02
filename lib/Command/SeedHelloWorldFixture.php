@@ -30,6 +30,7 @@ use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCP\AppFramework\Db\DoesNotExistException;
 use stdClass;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -72,6 +73,17 @@ class SeedHelloWorldFixture extends Command {
 	private const VERSION_REGISTER_PREFIX = ApplicationVersionService::VERSION_REGISTER_PREFIX;
 
 	private const SEED_SLUG = 'hello-world';
+
+	/**
+	 * The card text on the Hello World app. Users read it, so it describes
+	 * the app, not the test harness that seeds it.
+	 */
+	private const SEED_DESCRIPTION = 'Your first app: a list of messages, a detail page and a form, all built from one manifest.';
+
+	/**
+	 * Slug of the schema the Hello World pages and sample messages use.
+	 */
+	private const MESSAGE_SCHEMA = 'hello-message';
 
 	private const VERSION_SLUG = 'production';
 
@@ -168,6 +180,10 @@ class SeedHelloWorldFixture extends Command {
 			// 404 on the ambiguous slug.
 			if ($this->applicationExists(register: $register) === true || $this->routeExists(register: $register) === true) {
 				$output->writeln('<info>hello-world fixture already present — skipping the virtual app.</info>');
+				// Still ensure the register: installs seeded before this step
+				// existed have the app but no register, and re-running the seed
+				// is how they get one.
+				$this->ensureVersionRegister(output: $output);
 				$this->seedHybridExample(register: $register, output: $output);
 				return Command::SUCCESS;
 			}
@@ -179,7 +195,7 @@ class SeedHelloWorldFixture extends Command {
 				data: [
 					'slug' => self::SEED_SLUG,
 					'name' => 'Hello World',
-					'description' => 'Seeded e2e fixture — your first virtual app built from a JSON manifest.',
+					'description' => self::SEED_DESCRIPTION,
 					// Grant the admin user owner rights so automation ops
 					// (compile/enable/dry-run — WRITE_ROLES ['owners','editors'])
 					// are permitted. See SEED_PERMISSIONS.
@@ -217,7 +233,7 @@ class SeedHelloWorldFixture extends Command {
 				data: [
 					'slug' => self::SEED_SLUG,
 					'name' => 'Hello World',
-					'description' => 'Seeded e2e fixture — your first virtual app built from a JSON manifest.',
+					'description' => self::SEED_DESCRIPTION,
 					'permissions' => self::SEED_PERMISSIONS,
 					'productionVersion' => $versionUuid,
 				],
@@ -239,6 +255,9 @@ class SeedHelloWorldFixture extends Command {
 				$this->create(register: $register, schema: 'hello-message', data: $message);
 			}
 
+			// 6. The per-version register the version above names.
+			$this->ensureVersionRegister(output: $output);
+
 			$output->writeln('<info>Seeded hello-world fixture (application ' . $applicationUuid . ').</info>');
 
 			// Also seed the hybrid example app (unify-apps-with-app-type).
@@ -249,6 +268,63 @@ class SeedHelloWorldFixture extends Command {
 			return Command::FAILURE;
 		}//end try
 	}//end execute()
+
+	/**
+	 * Make sure the per-version register the Hello World version names exists
+	 * and lists the `hello-message` schema.
+	 *
+	 * The version has always pointed at `openbuild-hello-world`, but nothing
+	 * created that register. Every per-app surface that resolves the app's
+	 * register (the Schemas page, `GET /api/registers/openbuild-hello-world/schemas`)
+	 * therefore answered 404, and Hello World showed no schemas at all. The
+	 * wizard provisions this register for every app it creates; the seed has
+	 * to do the same for the one app it writes by hand.
+	 *
+	 * The schema is SHARED with the `buildiq` register, not copied: the
+	 * manifest pages and the sample messages keep reading `buildiq`, so no
+	 * existing data moves. Re-running is a no-op once the register exists and
+	 * lists the schema.
+	 *
+	 * @param OutputInterface $output The command output.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/openbuild-schema-designer/spec.md
+	 */
+	private function ensureVersionRegister(OutputInterface $output): void {
+		$registerSlug = self::VERSION_REGISTER_PREFIX . self::SEED_SLUG;
+		$schemaId = $this->schemaMapper->find(self::MESSAGE_SCHEMA, _multitenancy: false)->getId();
+
+		try {
+			$register = $this->registerMapper->find($registerSlug, _multitenancy: false);
+		} catch (DoesNotExistException) {
+			$register = $this->registerMapper->createFromArray(
+				[
+					'slug' => $registerSlug,
+					'title' => 'Buildiq — ' . self::SEED_SLUG . ' (' . self::VERSION_SLUG . ')',
+					'description' => 'Per-version schema namespace for Buildiq app `' . self::SEED_SLUG . '`.',
+					'version' => '0.1.0',
+					'schemas' => [],
+				]
+			);
+			$output->writeln('<info>Created register ' . $registerSlug . '.</info>');
+		}
+
+		$schemas = $register->getSchemas();
+		if (is_array($schemas) === false) {
+			$schemas = [];
+		}
+
+		$listed = array_map(static fn ($id): string => (string)$id, $schemas);
+		if (in_array((string)$schemaId, $listed, true) === true) {
+			return;
+		}
+
+		$schemas[] = $schemaId;
+		$register->setSchemas(array_values($schemas));
+		$this->registerMapper->update($register);
+		$output->writeln('<info>Added the ' . self::MESSAGE_SCHEMA . ' schema to register ' . $registerSlug . '.</info>');
+	}//end ensureVersionRegister()
 
 	/**
 	 * Idempotently seed one HYBRID example app (unify-apps-with-app-type): a

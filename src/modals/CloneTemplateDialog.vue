@@ -19,12 +19,18 @@
 				:modelValue="localName"
 				:label="t('buildiq', 'Application name')"
 				:placeholder="t('buildiq', 'My permits')"
-				@update:modelValue="localName = $event" />
+				@update:modelValue="onNameInput" />
 			<NcTextField
 				:modelValue="localSlug"
 				:label="t('buildiq', 'Slug (kebab-case, max 32 chars)')"
 				:placeholder="t('buildiq', 'my-permits')"
-				@update:modelValue="localSlug = $event" />
+				@update:modelValue="onSlugInput" />
+			<NcTextField
+				v-if="isLocal"
+				:modelValue="localDescription"
+				:label="t('buildiq', 'Description (optional)')"
+				:placeholder="t('buildiq', 'What the app is for')"
+				@update:modelValue="localDescription = $event" />
 			<p v-if="error" class="clone-dialog__error" role="alert">
 				{{ error }}
 			</p>
@@ -72,12 +78,27 @@ export default {
 		return {
 			localName: '',
 			localSlug: '',
+			localDescription: '',
+			// True once the user typed in the slug field. Until then the slug
+			// follows the name.
+			slugEdited: false,
 			error: '',
 			submitting: false,
 		}
 	},
 
 	computed: {
+		/**
+		 * Whether the dialog clones a built-in template (neither a remote
+		 * store template nor a GitHub app).
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
+		 */
+		isLocal() {
+			return !this.remote && !this.github
+		},
+
 		/**
 		 * Title shown in the dialog heading and used as the NcModal `name`
 		 * (required for accessibility — provides the modal's accessible label).
@@ -129,8 +150,8 @@ export default {
 					: t('buildiq', 'Install')
 			}
 			return this.submitting
-				? t('buildiq', 'Cloning…')
-				: t('buildiq', 'Clone template')
+				? t('buildiq', 'Creating…')
+				: t('buildiq', 'Create')
 		},
 
 		/**
@@ -180,6 +201,8 @@ export default {
 				const tpl = this.template || {}
 				this.localName = tpl.title || tpl.slug || ''
 				this.localSlug = this.suggestSlug(tpl.slug || tpl.title || '')
+				this.localDescription = ''
+				this.slugEdited = false
 				this.error = ''
 				this.submitting = false
 			}
@@ -187,6 +210,33 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Name field input: store it, and let the slug follow until the user
+		 * has typed in the slug field.
+		 *
+		 * @param {string} value The new name.
+		 * @return {void}
+		 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
+		 */
+		onNameInput(value) {
+			this.localName = value
+			if (!this.slugEdited) {
+				this.localSlug = this.suggestSlug(value)
+			}
+		},
+
+		/**
+		 * Slug field input: from now on the slug stays as typed.
+		 *
+		 * @param {string} value The new slug.
+		 * @return {void}
+		 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
+		 */
+		onSlugInput(value) {
+			this.localSlug = value
+			this.slugEdited = true
+		},
+
 		/**
 		 * Observed behaviour of `onClose` (retrofit annotation).
 		 *
@@ -213,6 +263,9 @@ export default {
 			const payload = {
 				name: this.localName.trim(),
 				slug: this.localSlug.trim(),
+			}
+			if (this.isLocal) {
+				payload.description = this.localDescription.trim()
 			}
 			this.submitting = true
 			this.error = ''

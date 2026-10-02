@@ -48,6 +48,8 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // template's companion schemas into it, rewrites manifest schema refs, and persists a new
         // Application in the shared `buildiq` register tagged with the caller's UID.
         ['name' => 'applications#createFromTemplate', 'url' => '/api/applications/from-template/{templateSlug}', 'verb' => 'POST'],
+        // Copy an app (apps-copy-app-and-page REQ-BQCP-001/002): same gates as from-template.
+        ['name' => 'applications#copy', 'url' => '/api/applications/{slug}/copy', 'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Manifest endpoint — returns the stored manifest JSON blob for a given virtual-app slug.
         // Per ADR-016 routes.php is the only registration path; #[NoAdminRequired] is set on the
@@ -178,12 +180,15 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // Export pipeline (Phase-2 graduation).
         ['name' => 'exports#submit',   'url' => '/api/applications/{slug}/exports', 'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'exports#download', 'url' => '/api/exports/{uuid}/download',     'verb' => 'GET'],
+        // Runs a queued export in the request instead of waiting for cron (the dialog fires it and moves on).
+        ['name' => 'exports#run',      'url' => '/api/exports/{uuid}/run',          'verb' => 'POST'],
 
         // Business-rules engine (spec business-rules-engine REQ-BRE-006 / REQ-BRE-004).
         // All three carry #[NoAdminRequired] on the controller; resolution goes
-        // through searchObjectsBySlug (schema RBAC applied). `buildiq` is a
-        // system-wide register, so this is NOT per-owner/per-org read isolation
-        // (writes stay admin-gated at the schema). evaluate/test-all are POST so they cannot collide
+        // through RuleObjectReader (schema RBAC and the caller's organisation
+        // applied, REQ-BRE-007): another organisation's rule set is a 404. This is
+        // organisation scope, not per-owner isolation (writes stay admin-gated at
+        // the schema). evaluate/test-all are POST so they cannot collide
         // with the GET SPA catch-all; the GET schema route's `/schema` suffix makes it
         // strictly more specific than `/{path}`. Slugs are kebab-case.
         ['name' => 'rules#evaluate', 'url' => '/api/rules/{ruleSetSlug}/evaluate', 'verb' => 'POST', 'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
@@ -256,6 +261,30 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         ['name' => 'appOverride#save',  'url' => '/api/app-overrides/{appId}', 'verb' => 'PUT',    'requirements' => ['appId' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'appOverride#clear', 'url' => '/api/app-overrides/{appId}', 'verb' => 'DELETE', 'requirements' => ['appId' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
+        // Detail-page layouts and the screen overrides that patch them
+        // (case-page-layout-per-case-type, screen-overrides-as-a-patch-with-fall-through).
+        // The leaf provider reads and refuses every write, because the rules
+        // that validate a layout live here: the uniqueness of a published
+        // tuple, the audience a resolver knows, and the base fingerprint an
+        // override is pinned to, which is stamped server-side and never taken
+        // from the payload. Admin-only via #[AuthorizedAdminSetting] plus an
+        // isAdmin() check in the body. Specific-first: the `/recut` segment is
+        // declared before nothing else claims it, and both precede the SPA
+        // catch-all the engine appends.
+        ['name' => 'pageLayout#recut', 'url' => '/api/page-layouts/{layoutId}/recut', 'verb' => 'POST'],
+        ['name' => 'pageLayout#index', 'url' => '/api/page-layouts', 'verb' => 'GET'],
+        ['name' => 'pageLayout#save',  'url' => '/api/page-layouts', 'verb' => 'PUT'],
+
+        // The registration forms a case type carries (forms-per-case-type).
+        // Same reason as the page layouts above: the leaf reads and refuses
+        // every edit because the rules that validate a form live in buildiq,
+        // and until now nothing called them. Admin-only.
+        ['name' => 'registrationForm#index', 'url' => '/api/registration-forms', 'verb' => 'GET'],
+        ['name' => 'registrationForm#save',  'url' => '/api/registration-forms', 'verb' => 'PUT'],
+        // What the consuming schema declares, so the builder's field, preset and
+        // channel pickers offer real values instead of free text.
+        ['name' => 'registrationForm#target', 'url' => '/api/registration-forms/target', 'verb' => 'GET'],
+
         // Remote template store (buildiq-remote-template-store). Consume-only:
         // search proxies the configured remote OpenRegister catalogue server-side;
         // install resolves a remote template by slug and clones it locally via the
@@ -270,6 +299,8 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // before the engine-appended SPA catch-all.
         ['name' => 'shop#githubSearch',  'url' => '/api/shop/github/search',  'verb' => 'GET'],
         ['name' => 'shop#githubInstall', 'url' => '/api/shop/github/install', 'verb' => 'POST'],
+        // Shared forms on GitHub (reuse-gallery-categories-and-form-library REQ-BQGL-005).
+        ['name' => 'formLibrary#githubSearch', 'url' => '/api/shop/github/forms', 'verb' => 'GET'],
 
         // GitHub owner round-trip (github-app-sync REQ-GHAS-001..004). All four
         // #[NoAdminRequired] with a per-object owner guard (status viewer-readable).

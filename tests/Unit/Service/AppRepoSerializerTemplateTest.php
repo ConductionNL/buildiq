@@ -33,6 +33,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 use OCA\Buildiq\Service\AppRepoParser;
 use OCA\Buildiq\Service\AppRepoSerializer;
 use OCA\Buildiq\Service\TemplateRepoSerializer;
+use OCA\Buildiq\Tests\Unit\Support\FakeSlugResolver;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -71,7 +72,8 @@ class AppRepoSerializerTemplateTest extends TestCase {
 			$registerMapper,
 			$this->schemaMapper,
 			$logger,
-			new TemplateRepoSerializer($this->schemaMapper, $logger)
+			new TemplateRepoSerializer($this->schemaMapper, $logger),
+			new FakeSlugResolver(['integriq'])
 		);
 	}//end setUp()
 
@@ -99,7 +101,11 @@ class AppRepoSerializerTemplateTest extends TestCase {
 		$descriptor = json_decode($files['openbuild-app.json'], true);
 		$this->assertSame('virtual', $descriptor['appType']);
 		$this->assertSame('incident-reporter', $descriptor['slug']);
-		$this->assertSame('1.0.0', $descriptor['version']);
+		// Read from the fixture, not pinned: the seeder only overwrites a stored
+		// template when the bundled version is strictly newer, so a fixture's
+		// version MOVES whenever its content changes. A literal here turns every
+		// legitimate bump red, which says nothing about serialisation.
+		$this->assertSame($template['version'], $descriptor['version']);
 		$this->assertSame('Field-work incident reporting', $descriptor['useCase']);
 
 		// Round-trip: the strict parser accepts the emitted repo and yields a
@@ -110,7 +116,7 @@ class AppRepoSerializerTemplateTest extends TestCase {
 		$this->assertSame('incident-reporter', $parsed['slug']);
 		$this->assertSame('Incident Reporter', $parsed['title']);
 		$this->assertSame('field-work', $parsed['category']);
-		$this->assertSame('1.0.0', $parsed['version']);
+		$this->assertSame($template['version'], $parsed['version']);
 		$this->assertSame('Field-work incident reporting', $parsed['useCase']);
 		$this->assertIsArray($parsed['manifest']);
 		$this->assertArrayHasKey('pages', $parsed['manifest']);

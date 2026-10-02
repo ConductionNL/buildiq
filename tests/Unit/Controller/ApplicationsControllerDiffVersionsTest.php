@@ -308,4 +308,147 @@ class ApplicationsControllerDiffVersionsTest extends TestCase {
 		self::assertSame('not_found', ($data['error'] ?? null));
 
 	}//end testDiffVersionsReturns404WhenTheVersionLookupThrows()
+	/**
+	 * Two versions of the app diff, and the app needs no route index entry.
+	 *
+	 * The Diff tab never showed a diff. The lookup required a BuiltAppRoute,
+	 * which apps installed from the seed, a template or GitHub do not have, and
+	 * a version counted as belonging to the app only when it carried an
+	 * `applicationUuid` field, which no ApplicationVersion has (its parent is
+	 * the `application` relation).
+	 *
+	 * @return void
+	 */
+	public function testDiffVersionsComparesTwoVersionsOfAnAppWithoutARoute(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('bob');
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->groupManager->method('getUserGroups')->willReturn([]);
+
+		$register = $this->createMock(\OCA\OpenRegister\Db\Register::class);
+		$register->method('getId')->willReturn(1);
+		$this->registerMapper->method('find')->willReturn($register);
+		$schema = $this->createMock(\OCA\OpenRegister\Db\Schema::class);
+		$schema->method('getId')->willReturn(2);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		// First search is the route index (empty), the second the Application by slug.
+		$searches = 0;
+		$this->objectService->method('searchObjects')->willReturnCallback(
+			function () use (&$searches): array {
+				$searches++;
+				if ($searches === 1) {
+					return [];
+				}
+
+				return [$this->buildEntity(['id' => 'app-uuid-1', 'slug' => 'hello-world'])];
+			}
+		);
+
+		$objects = [
+			'app-uuid-1' => $this->buildEntity(
+				[
+					'id' => 'app-uuid-1',
+					'slug' => 'hello-world',
+					'permissions' => ['owners' => ['user:bob'], 'editors' => [], 'viewers' => []],
+				]
+			),
+			'11111111-1111-4111-8111-111111111111' => $this->buildEntity(['id' => '11111111-1111-4111-8111-111111111111', 'application' => 'app-uuid-1', 'semver' => '0.2.0', 'manifest' => ['pages' => ['new']]]),
+			'22222222-2222-4222-8222-222222222222' => $this->buildEntity(['id' => '22222222-2222-4222-8222-222222222222', 'application' => 'app-uuid-1', 'semver' => '0.1.0', 'manifest' => ['pages' => []]]),
+		];
+		$this->objectService->method('find')->willReturnCallback(
+			static fn (string $id): ObjectEntity => $objects[$id]
+		);
+
+		$response = $this->controller()->diffVersions(slug: 'hello-world', from: '11111111-1111-4111-8111-111111111111', to: '22222222-2222-4222-8222-222222222222');
+
+		self::assertSame(Http::STATUS_OK, $response->getStatus());
+		$data = $response->getData();
+		self::assertSame(['pages' => ['new']], $data['from']['manifest']);
+		self::assertSame('0.2.0', $data['from']['version']);
+		self::assertSame(['pages' => []], $data['to']['manifest']);
+	}//end testDiffVersionsComparesTwoVersionsOfAnAppWithoutARoute()
+
+	/**
+	 * A version of ANOTHER app is still a miss.
+	 *
+	 * @return void
+	 */
+	public function testDiffVersionsRejectsAVersionOfAnotherApp(): void {
+		$this->resolvableApplication();
+
+		$objects = [
+			'app-uuid-1' => $this->buildEntity(
+				[
+					'slug' => 'hello-world',
+					'permissions' => ['owners' => ['user:bob'], 'editors' => [], 'viewers' => []],
+				]
+			),
+			'v-mine' => $this->buildEntity(['id' => 'v-mine', 'application' => 'app-uuid-1', 'manifest' => []]),
+			'v-other' => $this->buildEntity(['id' => 'v-other', 'application' => ['id' => 'app-uuid-2'], 'manifest' => ['secret' => true]]),
+		];
+		$this->objectService->method('find')->willReturnCallback(
+			static fn (string $id): ObjectEntity => $objects[$id]
+		);
+
+		$response = $this->controller()->diffVersions(slug: 'hello-world', from: 'v-mine', to: 'v-other');
+
+		self::assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+	}//end testDiffVersionsRejectsAVersionOfAnotherApp()
+
+	/**
+	 * The spec's canonical refs are version slugs (`development`, `production`).
+	 *
+	 * @return void
+	 */
+	public function testDiffVersionsAcceptsVersionSlugs(): void {
+		$this->resolvableApplication();
+
+		$this->objectService->method('find')->willReturn(
+			$this->buildEntity(
+				[
+					'slug' => 'hello-world',
+					'permissions' => ['owners' => ['user:bob'], 'editors' => [], 'viewers' => []],
+				]
+			)
+		);
+
+		$development = $this->buildEntity(['slug' => 'development', 'application' => 'app-uuid-1', 'semver' => '0.2.0', 'manifest' => ['a' => 1]]);
+		$production = $this->buildEntity(['slug' => 'production', 'application' => 'app-uuid-1', 'semver' => '0.1.0', 'manifest' => ['a' => 0]]);
+		$route = $this->buildEntity(['slug' => 'hello-world', 'applicationUuid' => 'app-uuid-1']);
+
+		// resolvableApplication() already stubbed searchObjects; a fresh mock
+		// lets this test answer the version searches too.
+		$application = $this->objectService->find('app-uuid-1');
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
+		// Like OpenRegister: a slug is not an object id, so that lookup throws.
+		$this->objectService->method('find')->willReturnCallback(
+			static function (string $id) use ($application) {
+				if ($id === 'app-uuid-1') {
+					return $application;
+				}
+
+				throw new \OCP\AppFramework\Db\DoesNotExistException('Object not found');
+			}
+		);
+		$this->objectService->method('searchObjects')->willReturnCallback(
+			static function (array $query) use ($development, $production, $route): array {
+				if (isset($query['application']) === false) {
+					return [$route];
+				}
+
+				// Answer with both, so the slug check in the controller matters.
+				return [$development, $production];
+			}
+		);
+
+		$response = $this->controller()->diffVersions(slug: 'hello-world', from: 'production', to: 'development');
+
+		self::assertSame(Http::STATUS_OK, $response->getStatus());
+		$data = $response->getData();
+		self::assertSame(['a' => 0], $data['from']['manifest']);
+		self::assertSame(['a' => 1], $data['to']['manifest']);
+		self::assertSame('0.2.0', $data['to']['semver']);
+	}//end testDiffVersionsAcceptsVersionSlugs()
+
 }//end class

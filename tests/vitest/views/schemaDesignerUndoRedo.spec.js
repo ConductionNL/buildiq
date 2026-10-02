@@ -461,7 +461,9 @@ describe('SchemaDesigner — undo/redo (builder-undo-redo)', () => {
 		])
 		await wrapper.vm.$nextTick()
 		expect(wrapper.vm.canUndo).toBe(true)
-		wrapper.vm.$options.watch.appSlug.handler.call(wrapper.vm)
+		// The handler resolves the version before refreshing the list, so the
+		// history reset lands after those awaits — not on the next tick.
+		await wrapper.vm.$options.watch.appSlug.handler.call(wrapper.vm)
 		await wrapper.vm.$nextTick()
 		expect(wrapper.vm.canUndo).toBe(false)
 		expect(wrapper.vm.canRedo).toBe(false)
@@ -484,7 +486,9 @@ describe('SchemaDesigner — undo/redo (builder-undo-redo)', () => {
 		])
 		await wrapper.vm.$nextTick()
 		expect(wrapper.vm.canUndo).toBe(true)
-		wrapper.vm.$options.watch.versionSlug.handler.call(wrapper.vm)
+		// The handler resolves the version before refreshing the list, so the
+		// history reset lands after those awaits — not on the next tick.
+		await wrapper.vm.$options.watch.versionSlug.handler.call(wrapper.vm)
 		await wrapper.vm.$nextTick()
 		expect(wrapper.vm.canUndo).toBe(false)
 		expect(wrapper.vm.canRedo).toBe(false)

@@ -103,4 +103,34 @@ test.describe('Buildiq template gallery', () => {
 		await expect(settled.first()).toBeVisible({ timeout: 45_000 })
 		await expect(page.locator('.template-gallery__loading')).toHaveCount(0)
 	})
+
+	/**
+	 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/template-catalogue-ui/spec.md#requirement-templates-can-be-filtered-and-browsed-by-category-req-bqgl-001
+	 * @e2e template-catalogue-ui/requirement-templates-can-be-filtered-and-browsed-by-category-req-bqgl-001/a-shared-link-opens-the-same-view
+	 * @e2e template-catalogue-ui/requirement-templates-can-be-filtered-and-browsed-by-category-req-bqgl-001/a-maker-looks-for-field-work-templates
+	 */
+	test('REQ-BQGL-001: a link with ?category= opens the Templates view on that category', async ({
+		page,
+	}) => {
+		await page.goto(
+			`${NEXTCLOUD_URL}/apps/buildiq/templates?category=field-work`,
+			{
+				waitUntil: 'domcontentloaded',
+			},
+		)
+		await expect(page.locator('.template-gallery')).toBeVisible({
+			timeout: 45_000,
+		})
+		await dismissOverlays(page)
+		await expect(page.locator('.template-gallery__loading').first()).toBeHidden({
+			timeout: 45_000,
+		})
+
+		// The seeded Incident Reporter is a field work template; every
+		// category heading that shows must be Field work.
+		const headings = page.locator('.template-gallery__category-title')
+		await expect(headings.first()).toHaveText('Field work', { timeout: 45_000 })
+		await expect(headings).toHaveCount(1)
+		await expect(page).toHaveURL(/[?&]category=field-work/)
+	})
 })

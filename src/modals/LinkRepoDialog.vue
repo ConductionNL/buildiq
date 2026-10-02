@@ -3,8 +3,11 @@
   - SPDX-FileCopyrightText: 2026 Conduction B.V.
   -
   - LinkRepoDialog — owner affordance to link (or re-link) an Application to a
-  - GitHub repository. Collects owner + name (+ optional org) and POSTs to the
-  - GitHub sync link endpoint. Kept in its own file per ADR-004
+  - GitHub repository that ALREADY exists. Collects owner + name and POSTs to
+  - the GitHub sync link endpoint, which records the linkage and resolves the
+  - default branch; it creates nothing. Creating a repository is the publish
+  - dialog's job, because the push endpoint is the seam that creates, tags and
+  - links in one call. Kept in its own file per ADR-004
   - gate-modal-isolation. Opened from GitHubSyncModal.
   -->
 <template>
@@ -15,7 +18,7 @@
 				{{
 					t(
 						'buildiq',
-						'Connect this app to a GitHub repository so you can publish and pull versions.',
+						'Point this app at a repository that already exists, so you can publish and pull versions. To make a new one, publish instead: it creates the repository for you.',
 					)
 				}}
 			</p>
@@ -29,11 +32,6 @@
 				:label="t('buildiq', 'Repository name')"
 				:placeholder="t('buildiq', 'my-app')"
 				@update:modelValue="name = $event" />
-			<NcTextField
-				:modelValue="org"
-				:label="t('buildiq', 'Create under organisation (optional)')"
-				:placeholder="t('buildiq', 'Leave empty to use your own account')"
-				@update:modelValue="org = $event" />
 			<p v-if="error" class="link-repo__error" role="alert">
 				{{ error }}
 			</p>
@@ -76,7 +74,6 @@ export default {
 		return {
 			owner: '',
 			name: '',
-			org: '',
 			submitting: false,
 			error: '',
 		}
@@ -100,7 +97,6 @@ export default {
 			if (value) {
 				this.owner = ''
 				this.name = ''
-				this.org = ''
 				this.error = ''
 				this.submitting = false
 			}
@@ -138,9 +134,6 @@ export default {
 					{ slug: this.slug },
 				)
 				const body = { owner: this.owner.trim(), name: this.name.trim() }
-				if (this.org.trim()) {
-					body.org = this.org.trim()
-				}
 				const { data } = await axios.post(url, body)
 				this.$emit('linked', data)
 				this.$emit('close')

@@ -356,16 +356,24 @@ class SetupController extends Controller {
 		// would let a failed install present as a finished step.
 		$this->appConfig->setValueString(Application::APP_ID, self::DEMO_DATA_DECIDED_KEY, 'installed');
 
-		// 🔴 THE COUNTS, ALWAYS. "Demo data installed" with no numbers cannot be
-		// told apart from an import that wrote nothing.
+		// 🔴 THE COUNTS, ALWAYS, AND BOTH OF THEM. "Demo data installed" with no
+		// numbers cannot be told apart from an import that wrote nothing — and
+		// neither can a count that merely repeats what was asked for. An
+		// operator who got part of the dataset must see the gap.
+		$declared = (int)($imported['declared'] ?? $imported['objects']);
+		$skipped  = (int)($imported['skipped'] ?? 0);
+		$message  = sprintf('Imported %d of %d demo object(s).', $imported['objects'], $declared);
+		if ($skipped > 0) {
+			$message .= sprintf(
+				' %d skipped: their schema is not installed on this instance.',
+				$skipped
+			);
+		}
+
 		return new JSONResponse(
 			[
 				'success' => true,
-				'message' => sprintf(
-					'Demo data installed: %d objects across %d schemas.',
-					$imported['objects'],
-					$imported['schemas']
-				),
+				'message' => $message,
 				'detail'  => $imported,
 			]
 		);

@@ -271,4 +271,92 @@ describe('FieldEditor', () => {
 			})
 		})
 	})
+
+	// REQ-BQFT-004 (buildiq#990): a save keeps every property key the editor
+	// does not own. Before the fix `propertyFromField()` rebuilt each property
+	// from an empty object, so an imported `enum`, a `title` and any `x-` key
+	// were gone after the first designer save.
+	describe('REQ-BQFT-004: a save keeps the keys the designer does not edit', () => {
+		const importedSchema = () => ({
+			properties: {
+				status: {
+					type: 'string',
+					title: 'Status',
+					description: 'Where the permit stands',
+					enum: ['open', 'granted', 'refused'],
+					minLength: 2,
+					'x-openregister-dependent-values': {
+						field: 'kind',
+						values: { tree: ['open', 'granted'] },
+					},
+				},
+			},
+			required: ['status'],
+			'x-property-order': ['status'],
+		})
+
+		function mountWith(fields) {
+			return mount(FieldEditor, {
+				propsData: { fields, schemaSlugs: [] },
+				stubs,
+			})
+		}
+
+		it('an unedited field keeps enum, title and x- keys through a round trip', () => {
+			const { properties } = fieldsToSchema(schemaToFields(importedSchema()))
+			expect(properties.status).toEqual(importedSchema().properties.status)
+		})
+
+		it('an edited description and type still win over the loaded property', async () => {
+			const wrapper = mountWith(schemaToFields(importedSchema()))
+			wrapper.vm.updateField(0, 'description', 'Edited by the maker')
+			const edited = wrapper.emitted('update:fields')[0][0]
+			const { properties } = fieldsToSchema(edited)
+			expect(properties.status.description).toBe('Edited by the maker')
+			expect(properties.status.enum).toEqual(['open', 'granted', 'refused'])
+			expect(properties.status.title).toBe('Status')
+
+			await wrapper.setProps({ fields: edited })
+			wrapper.vm.updateField(0, 'type', 'integer')
+			const retyped = wrapper.emitted('update:fields')[1][0]
+			const saved = fieldsToSchema(retyped).properties.status
+			expect(saved.type).toBe('integer')
+			// The previous type's own slot is cleared on a type change.
+			expect(saved.minLength).toBeUndefined()
+			expect(saved.title).toBe('Status')
+			expect(saved['x-openregister-dependent-values']).toEqual(
+				importedSchema().properties.status[
+					'x-openregister-dependent-values'
+				],
+			)
+		})
+
+		it('clearing a key the editor owns still removes it', async () => {
+			const wrapper = mountWith(schemaToFields(importedSchema()))
+			wrapper.vm.updateValidation(0, 'minLength', '')
+			const next = wrapper.emitted('update:fields')[0][0]
+			await wrapper.setProps({ fields: next })
+			wrapper.vm.updateField(0, 'description', '')
+			const cleared = wrapper.emitted('update:fields')[1][0]
+			const saved = fieldsToSchema(cleared).properties.status
+			expect(saved.minLength).toBeUndefined()
+			expect(saved.description).toBeUndefined()
+			expect(saved.enum).toEqual(['open', 'granted', 'refused'])
+		})
+
+		it('a new field row with no loaded property saves only what the editor holds', () => {
+			const { properties } = fieldsToSchema([
+				{
+					_key: 'k1',
+					name: 'note',
+					type: 'string',
+					required: false,
+					default: null,
+					description: '',
+					validation: { maxLength: 10 },
+				},
+			])
+			expect(properties.note).toEqual({ type: 'string', maxLength: 10 })
+		})
+	})
 })

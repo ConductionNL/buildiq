@@ -30,7 +30,6 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -60,14 +59,14 @@ class DataRegisterExportBundler {
 	 *
 	 * @param RegisterMapper $registerMapper Resolves a bound data register's slug.
 	 * @param SchemaMapper $schemaMapper Resolves a bound data register's schema definitions.
-	 * @param ObjectServiceInterface $objectService Reads a bound data register's row data (includeData opt-in).
 	 * @param LoggerInterface $logger Logger.
+	 * @param RegisterRowReader $rowReader Reads a bound data register's row data (includeData opt-in).
 	 */
 	public function __construct(
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,
-		private readonly ObjectServiceInterface $objectService,
 		private readonly LoggerInterface $logger,
+		private readonly RegisterRowReader $rowReader,
 	) {
 	}//end __construct()
 
@@ -216,20 +215,24 @@ class DataRegisterExportBundler {
 	 */
 	private function writeSeedDataFile(string $targetDir, string $registerSlug, Register $register): void {
 		try {
-			$rows = $this->objectService->searchObjects(
-				query: ['@self' => ['register' => $register->getId()]],
+			// Per schema, not per register. resolveRegisterSchemaDefinitions()
+			// above already walks getSchemas(); this read did not, and a
+			// register-only search names no table for OpenRegister to read.
+			// Every includeData export therefore shipped "objects": [].
+			$rows = $this->rowReader->rowsInRegister(
+				register: $register,
 				_rbac: false,
 				_multitenancy: false
 			);
 		} catch (Throwable $e) {
-			$this->logger->info(
-				'Buildiq export: could not read row data for data register "' . $registerSlug . '": ' . $e->getMessage()
+			// Still not fatal to the export as a whole, but say which
+			// register lost its data rather than writing an empty fixture
+			// that reads as a register with nothing in it.
+			$this->logger->warning(
+				'Buildiq export: could not read row data for data register "' . $registerSlug
+				. '"; its seed-data fixture is NOT written: ' . $e->getMessage()
 			);
 			return;
-		}
-
-		if (is_array($rows) === false) {
-			$rows = [];
 		}
 
 		$objects = [];

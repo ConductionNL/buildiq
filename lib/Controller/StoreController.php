@@ -64,6 +64,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
 use OCP\AppFramework\Controller;
@@ -94,8 +95,11 @@ class StoreController extends Controller {
 	 * @param IUserSession $userSession Current NC user session.
 	 * @param GenericStoreService $storeService Engine-owned store client.
 	 * @param ApplicationsController $appsController Shared clone/install seam.
+	 * @param ConnectionReporter|null $connectionReporter Tells integriq what a search met, or nothing when absent.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
 	 */
 	public function __construct(
 		IRequest $request,
@@ -103,6 +107,7 @@ class StoreController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly GenericStoreService $storeService,
 		private readonly ApplicationsController $appsController,
+		private readonly ?ConnectionReporter $connectionReporter = null,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
@@ -137,9 +142,14 @@ class StoreController extends Controller {
 	 * 401 rather than a redirect). Returns normalised cards or a generic
 	 * outcome — NEVER the registry URL or token, which stay server-side.
 	 *
+	 * The outcome is also reported to integriq's connection registry, at most
+	 * once an hour while it stays the same (adopt-connection-registry). The
+	 * report never changes the response.
+	 *
 	 * @return JSONResponse 200 with `{outcome, cards}`; 401 for anonymous.
 	 *
 	 * @spec openspec/specs/openbuild-remote-template-store/spec.md
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
 	 *
 	 * @no-admin-idor-exempt Addresses no buildiq-owned object: the slug identifies a
 	 *   template in an EXTERNAL catalogue (the configured store registry / a GitHub
@@ -173,11 +183,14 @@ class StoreController extends Controller {
 			// Detail to the log, generic outcome to the browser: a registry's
 			// internals are not the caller's business.
 			$this->logger->error('Buildiq store: search failed: ' . $e->getMessage());
+			$this->connectionReporter?->reportStoreSearch(outcome: GenericStoreService::OUTCOME_UNREACHABLE);
 			return new JSONResponse(
 				data: ['outcome' => GenericStoreService::OUTCOME_UNREACHABLE, 'cards' => []],
 				statusCode: Http::STATUS_OK
 			);
 		}
+
+		$this->connectionReporter?->reportStoreSearch(outcome: (string)$result['outcome']);
 
 		return new JSONResponse(
 			data: ['outcome' => $result['outcome'], 'cards' => $result['cards']],

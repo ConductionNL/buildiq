@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\BackgroundJob;
 
+use OCA\Buildiq\Service\ExportAppContentBundler;
 use OCA\Buildiq\Service\ExportJobService;
 use OCA\Buildiq\Service\ExportService;
 use OCA\Buildiq\Service\GitHubPushService;
@@ -51,6 +52,8 @@ class RunExportJob extends QueuedJob {
 	 * @param ExportJobService $exportJobService Job orchestration helper.
 	 * @param GitHubPushService $githubPushService GitHub delivery target.
 	 * @param LoggerInterface $logger Logger.
+	 * @param ExportAppContentBundler|null $contentBundler Finds the application and version the job names.
+	 *                                                     Null exports the bare scaffold.
 	 */
 	public function __construct(
 		ITimeFactory $time,
@@ -58,6 +61,7 @@ class RunExportJob extends QueuedJob {
 		private ExportJobService $exportJobService,
 		private GitHubPushService $githubPushService,
 		private LoggerInterface $logger,
+		private ?ExportAppContentBundler $contentBundler = null,
 	) {
 		parent::__construct(time: $time);
 	}//end __construct()
@@ -84,6 +88,14 @@ class RunExportJob extends QueuedJob {
 			return;
 		}
 
+		// The job can be started twice: by the export dialog right away and by
+		// cron. Only a job that is still queued runs; a record without a status
+		// predates the field and counts as queued.
+		if ($this->isStillQueued(jobUuid: $jobUuid) === false) {
+			$this->logger->info('Buildiq RunExportJob: job already picked up, skipping', ['jobUuid' => $jobUuid]);
+			return;
+		}
+
 		// Lifecycle transition: queued → running (declarative, via OR
 		// TransitionEngine). The schema's `x-openregister-lifecycle.transitions`
 		// entry named "start" drives this; we never write `status` directly.
@@ -106,6 +118,39 @@ class RunExportJob extends QueuedJob {
 			);
 		}//end try
 	}//end run()
+
+	/**
+	 * Run the export for one job now, outside cron.
+	 *
+	 * Used when the export dialog starts a job right away. The caller removes
+	 * the job from the job list first; run() still skips a job that is no
+	 * longer queued.
+	 *
+	 * @param string $jobUuid Job UUID.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-export-is-asynchronous-via-nextcloud-s-ijob
+	 */
+	public function runFor(string $jobUuid): void {
+		$this->run(argument: ['jobUuid' => $jobUuid]);
+	}//end runFor()
+
+	/**
+	 * Whether the job is still waiting to run.
+	 *
+	 * @param string $jobUuid Job UUID.
+	 *
+	 * @return bool False only when the record says it left the queued state.
+	 *
+	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-export-is-asynchronous-via-nextcloud-s-ijob
+	 */
+	private function isStillQueued(string $jobUuid): bool {
+		$job = $this->exportJobService->loadJob(jobUuid: $jobUuid);
+		$status = (string)($job['status'] ?? 'queued');
+
+		return $status === 'queued';
+	}//end isStillQueued()
 
 	/**
 	 * Pull the job UUID from the Nextcloud job argument.
@@ -166,7 +211,9 @@ class RunExportJob extends QueuedJob {
 			);
 		}
 
-		$context = [
+		$source = $this->resolveSource(job: $job, applicationUuid: $applicationUuid, applicationVersion: $applicationVersion);
+
+		$context = $this->nameFromSource(source: $source, context: [
 			'appId' => $applicationSlug,
 			'appNamespace' => $this->slugToNamespace(slug: $applicationSlug),
 			'appName' => $this->slugToLabel(slug: $applicationSlug),
@@ -174,7 +221,7 @@ class RunExportJob extends QueuedJob {
 			'authorName' => 'Buildiq Citizen Developer',
 			'authorEmail' => 'dev@conduction.nl',
 			'license' => $license,
-		];
+		]);
 
 		$this->exportService->generateAppZip(
 			applicationUuid: $applicationUuid,
@@ -185,7 +232,8 @@ class RunExportJob extends QueuedJob {
 			flows: $flows,
 			// The application's own slug IS the agent lookup: agents carry
 			// `applicationSlug`, so there is no agent binding to pass.
-			applicationSlug: $applicationSlug
+			applicationSlug: $applicationSlug,
+			source: $source
 		);
 
 		// Name what could not be resolved on the job itself. A skip that only
@@ -199,9 +247,103 @@ class RunExportJob extends QueuedJob {
 			$extra['skipped'] = $skipped;
 		}
 
+		$extra = array_merge($extra, $this->contentLog());
+
 		$this->exportJobService->transitionJob(jobUuid: $jobUuid, action: 'succeed', extraFields: $extra);
 		$this->logger->info('Buildiq export succeeded', ['jobUuid' => $jobUuid]);
 	}//end executePipeline()
+
+	/**
+	 * Find the application and version the job names.
+	 *
+	 * An export that cannot read its application would produce the empty
+	 * template and call it a success, so that fails the job instead.
+	 *
+	 * @param array<string,mixed> $job The loaded ExportJob record.
+	 * @param string $applicationUuid The application UUID.
+	 * @param string $applicationVersion The semver on the job.
+	 *
+	 * @return array{application: array<string,mixed>, version: array<string,mixed>}|null Null without a bundler.
+	 *
+	 * @throws RuntimeException When the application or its version cannot be found.
+	 *
+	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-export-targets-a-specific-application-version
+	 */
+	private function resolveSource(array $job, string $applicationUuid, string $applicationVersion): ?array {
+		if ($this->contentBundler === null) {
+			return null;
+		}
+
+		$source = $this->contentBundler->resolveSource(
+			applicationUuid: $applicationUuid,
+			semver: $applicationVersion,
+			versionSlug: (string)($job['applicationVersionSlug'] ?? '')
+		);
+
+		if ($source === null) {
+			throw new RuntimeException('The application to export could not be read.');
+		}
+
+		if ($source['version'] === []) {
+			throw new RuntimeException('The application has no version to export.');
+		}
+
+		$source['includeSeedData'] = (($job['includeSeedData'] ?? false) === true);
+
+		return $source;
+	}//end resolveSource()
+
+	/**
+	 * Name the exported app after the application rather than its slug.
+	 *
+	 * @param array<string,mixed>|null $source From resolveSource().
+	 * @param array<string,string> $context The placeholder context so far.
+	 *
+	 * @return array<string,string> The context with the application's name and description.
+	 *
+	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-exported-tree-shape-conforms-to-the-nextcloud-app-template-baseline
+	 */
+	private function nameFromSource(?array $source, array $context): array {
+		$application = (array)($source['application'] ?? []);
+
+		$name = trim((string)($application['name'] ?? ''));
+		if ($name !== '') {
+			$context['appName'] = $name;
+		}
+
+		$description = trim((string)($application['description'] ?? ''));
+		if ($description !== '') {
+			$context['appDescription'] = $description;
+		}
+
+		return $context;
+	}//end nameFromSource()
+
+	/**
+	 * The job log line saying what went into the archive.
+	 *
+	 * @return array<string,array<int,string>> `['log' => [line]]`, or [] when nothing was bundled.
+	 *
+	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-export-is-asynchronous-via-nextcloud-s-ijob
+	 */
+	private function contentLog(): array {
+		$content = $this->exportService->lastContent();
+		if ($content === null) {
+			return [];
+		}
+
+		return [
+			'log' => [
+				sprintf(
+					'Exported %d pages, %d menu items, %d schemas and %d records.',
+					$content['pages'],
+					$content['menu'],
+					$content['schemas'],
+					$content['records']
+				),
+			],
+		];
+	}//end contentLog()
 
 	/**
 	 * Convert a kebab-case app slug to a PascalCase PHP namespace segment.

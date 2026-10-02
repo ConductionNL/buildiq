@@ -33,17 +33,20 @@ use OCA\Buildiq\Listener\ApprovalOutcomeListener;
 use OCA\Buildiq\Listener\AutomationApprovalTriggerListener;
 use OCA\Buildiq\Listener\AutomationCleanupListener;
 use OCA\Buildiq\Listener\DocumentGenerationListener;
+use OCA\Buildiq\Listener\FormLiveValuesListener;
 use OCA\Buildiq\Listener\HybridMetadataLockListener;
 use OCA\Buildiq\Listener\ProductionVersionGuardListener;
 use OCA\Buildiq\Mcp\BuildiqToolProvider;
 use OCA\Buildiq\Repair\InitializeSettings;
 use OCA\Buildiq\Sections\SettingsSection;
 use OCA\Buildiq\Service\AppNavigationService;
+use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Service\SettingsService;
 use OCA\Buildiq\Settings\AdminSettings;
 use OCA\OpenRegister\AppHost\Bootstrap;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
@@ -111,6 +114,32 @@ class Application extends App implements IBootstrap {
 			ObjectServiceInterface::class,
 			'OCA\OpenRegister\Service\ObjectService'
 		);
+
+		// The register-slug resolver, bound the same way and for the same reason.
+		//
+		// Register slugs live in `openregister_registers`, and nine fleet apps
+		// ship a repair step that renames theirs. The step is per instance, so
+		// both slugs are live across the estate at once and a literal is wrong
+		// on half of it. The old-slug case is the quiet one: OpenRegister finds
+		// no register, matches no rows, and returns an empty set that is
+		// byte-for-byte what a healthy empty register returns. No exception, no
+		// 404, no log line. This app read the connectors channel that way.
+		//
+		// Verified against this container, not assumed: OpenRegister registers
+		// the resolver in its OWN container, so nothing of that registration
+		// reaches here. What reaches here is the alias stated here plus autowiring
+		// of the concrete class, whose only dependencies are `RegisterMapper`
+		// and `LoggerInterface`. Both resolve from a leaf app's DIContainer, and
+		// the interface then answers with a live resolution. The one thing lost
+		// is OpenRegister's shared-instance registration: a leaf container
+		// autowires a fresh resolver per injection point, so the request-scoped
+		// memo is per consumer rather than per request. That costs one indexed
+		// read per consumer and changes no answer.
+		$context->registerServiceAlias(
+			RegisterSlugResolverInterface::class,
+			'OCA\OpenRegister\Service\RegisterSlugResolver'
+		);
+
 		// ADR-040 AppHost adoption: one call wires the standard plumbing —
 		// the generic dashboard/settings/preferences controllers, the
 		// observability (health + metrics) controllers, the install repair
@@ -272,7 +301,11 @@ class Application extends App implements IBootstrap {
 				container: $c,
 				groupManager: $c->get('OCP\\IGroupManager'),
 				userSession: $c->get('OCP\\IUserSession'),
-				logger: $c->get('Psr\\Log\\LoggerInterface')
+				logger: $c->get('Psr\\Log\\LoggerInterface'),
+				// Adopt-connection-registry: without it a store save would never
+				// ask integriq to look again, and nothing would say so. The
+				// argument is optional, so leaving it out here is a silent no-op.
+				connectionReporter: $c->get(ConnectionReporter::class)
 			)
 		);
 		// InitializeSettings repair step — bind Buildiq's own class so it wins
@@ -424,6 +457,24 @@ class Application extends App implements IBootstrap {
 			listener: HybridMetadataLockListener::class
 		);
 
+		// Live form values (forms-live-values-and-checks, REQ-BQLV-005).
+		// Before any object is stored, recompute the fields a built app's form
+		// calculates and enforce its blocking eligibility check, so a value
+		// changed in the browser never lands. Unfiltered on purpose: the
+		// registers a built app's form writes to are created per app and
+		// version, so no static register or schema list can name them. Every
+		// write that no live form targets returns after one app config read.
+		// The same listener keeps that index current from ApplicationVersion
+		// saves.
+		$context->registerEventListener(
+			event: ObjectCreatingEvent::class,
+			listener: FormLiveValuesListener::class
+		);
+		$context->registerEventListener(
+			event: ObjectUpdatingEvent::class,
+			listener: FormLiveValuesListener::class
+		);
+
 		// Automation-approval-steps: trigger-fire half of the `approval`
 		// action kind (spec REQ-AUTD-004 approval scenarios). No declarative
 		// primitive already dispatches "start a compiled ApprovalChain
@@ -446,6 +497,17 @@ class Application extends App implements IBootstrap {
 			event: ObjectCreatedEvent::class,
 			listener: AutomationApprovalTriggerListener::class
 		);
+
+		// Contribute buildiq's leaves to OpenRegister's catalogue
+		// (forms-per-case-type REQ-OBRF-006), so a consuming app can ask which
+		// form to show for a type without buildiq knowing the app. Guarded on
+		// the event class: buildiq boots without OpenRegister.
+		if (class_exists('OCA\\OpenRegister\\Event\\RegisterLeafProvidersEvent') === true) {
+			$context->registerEventListener(
+				event: \OCA\OpenRegister\Event\RegisterLeafProvidersEvent::class,
+				listener: \OCA\Buildiq\Listener\BuildiqLeafRegistrationListener::class
+			);
+		}
 		$context->registerEventListener(
 			event: ObjectUpdatedEvent::class,
 			listener: AutomationApprovalTriggerListener::class

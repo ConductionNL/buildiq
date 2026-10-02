@@ -33,6 +33,7 @@ namespace OCA\Buildiq\Service;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\RegisterService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -62,6 +63,9 @@ class ApplicationDeletionService {
 	 * @param ObjectServiceInterface $objectService OR object surface (find + delete)
 	 * @param RegisterService $registerService OR register-level service (delete)
 	 * @param RegisterMapper $registerMapper OR register lookup (by slug)
+	 * @param SchemaMapper $schemaMapper OR schema lookup + delete
+	 * @param SchemaReferenceResolver $schemaReferences Whether a schema is still claimed elsewhere
+	 * @param VersionSchemaLocator $schemaLocator Finds version schemas no register lists
 	 * @param LoggerInterface $logger PSR logger
 	 *
 	 * @return void
@@ -70,13 +74,17 @@ class ApplicationDeletionService {
 		private readonly ObjectServiceInterface $objectService,
 		private readonly RegisterService $registerService,
 		private readonly RegisterMapper $registerMapper,
+		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaReferenceResolver $schemaReferences,
+		private readonly VersionSchemaLocator $schemaLocator,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
 	/**
 	 * Delete an Application plus its versions and routes, and — only when
-	 * $deleteData is true — its per-version registers and all their objects.
+	 * $deleteData is true — its per-version registers, every object stored in
+	 * them, and the schema definitions those registers owned.
 	 *
 	 * By default ($deleteData false) the underlying registers and the data
 	 * inside them are PRESERVED: the app wrapper is removed but the user's data
@@ -84,10 +92,15 @@ class ApplicationDeletionService {
 	 *
 	 * @param string $appUuid The Application UUID.
 	 * @param string $appSlug The Application slug (for log context).
-	 * @param bool $deleteData When true, also delete the per-version registers
-	 *                         and every object stored in them.
+	 * @param bool $deleteData When true, also delete the per-version registers,
+	 *                         every object stored in them, and their schemas.
 	 *
-	 * @return array<int,string> Resources that could not be removed (orphaned).
+	 * @return array<int,string> The resources this call TRIED to remove and
+	 *                          could not, empty when everything attempted was
+	 *                          removed. Data preserved by $deleteData false was
+	 *                          never attempted and is never listed here, so an
+	 *                          empty array does not mean nothing survives the
+	 *                          delete.
 	 *
 	 * @spec openspec/specs/application-detail-ui/spec.md
 	 */
@@ -100,16 +113,28 @@ class ApplicationDeletionService {
 			field: 'application',
 			value: $appUuid
 		);
+		$ownedSchemaIds = [];
+		if ($deleteData === true) {
+			$ownedSchemaIds = $this->deleteVersionRegisters(appSlug: $appSlug, versions: $versions, orphaned: $orphaned);
+		}
+
 		foreach ($versions as $version) {
 			$versionUuid = (string)($version['id'] ?? ($version['@self']['id'] ?? ''));
-			$registerSlug = (string)($version['register'] ?? '');
-			if ($deleteData === true && $registerSlug !== '') {
-				$this->deleteRegister(registerSlug: $registerSlug, orphaned: $orphaned);
-			}
-
 			if ($versionUuid !== '') {
 				$this->deleteObject(uuid: $versionUuid, label: 'version', orphaned: $orphaned);
 			}
+		}
+
+		// Schema cleanup runs once, after every register this app owned is
+		// already gone: scanning per-version would repeat the same full-table
+		// register scan, and would still see this app's own not-yet-deleted
+		// registers as claiming their own schemas.
+		if ($ownedSchemaIds !== []) {
+			$this->deleteUnreferencedSchemas(
+				schemaIds: array_values(array_unique($ownedSchemaIds)),
+				appSlug: $appSlug,
+				orphaned: $orphaned
+			);
 		}
 
 		// 2. BuiltAppRoute slug-index entries pointing at this app.
@@ -132,6 +157,36 @@ class ApplicationDeletionService {
 
 		return $orphaned;
 	}//end deleteApplication()
+
+	/**
+	 * Delete every version's register, with its data.
+	 *
+	 * @param string $appSlug The application slug.
+	 * @param array<int,array<string,mixed>> $versions The app's version rows.
+	 * @param array<int,string> $orphaned Collector for failures.
+	 *
+	 * @return array<int,mixed> Schema ids/slugs the deleted registers owned.
+	 */
+	private function deleteVersionRegisters(string $appSlug, array $versions, array &$orphaned): array {
+		// Looked up before the first register goes.
+		$detached = $this->schemaLocator->findDetachedSchemaIds(appSlug: $appSlug, versions: $versions);
+		$ownedSchemaIds = [];
+		foreach ($versions as $version) {
+			$registerSlug = (string)($version['register'] ?? '');
+			if ($registerSlug === '') {
+				continue;
+			}
+
+			$this->deleteRegister(
+				registerSlug: $registerSlug,
+				orphaned: $orphaned,
+				ownedSchemaIds: $ownedSchemaIds,
+				extraSchemaIds: ($detached[(string)($version['slug'] ?? '')] ?? [])
+			);
+		}
+
+		return $ownedSchemaIds;
+	}//end deleteVersionRegisters()
 
 	/**
 	 * Find child objects of the application by a filter field.
@@ -185,10 +240,22 @@ class ApplicationDeletionService {
 	 *
 	 * @param string $registerSlug The register slug.
 	 * @param array<int,string> $orphaned Collector for failures.
+	 * @param array<int,mixed> $ownedSchemaIds Collector for schema ids/slugs the
+	 *                                         deleted register owned; the caller
+	 *                                         cleans these up once every register
+	 *                                         has been deleted.
+	 * @param array<int,mixed> $extraSchemaIds Schemas of this version that the
+	 *                                         register no longer lists (see
+	 *                                         {@see VersionSchemaLocator::findDetachedSchemaIds()}).
 	 *
 	 * @return void
 	 */
-	private function deleteRegister(string $registerSlug, array &$orphaned): void {
+	private function deleteRegister(
+		string $registerSlug,
+		array &$orphaned,
+		array &$ownedSchemaIds,
+		array $extraSchemaIds = [],
+	): void {
 		try {
 			$register = $this->registerMapper->find($registerSlug, _multitenancy: false);
 		} catch (Throwable $e) {
@@ -201,12 +268,16 @@ class ApplicationDeletionService {
 			return;
 		}
 
+		// Read the schema set BEFORE the register goes: it is the only record of
+		// which schemas this app owned.
+		$schemaIds = array_values(array_unique(array_merge(($register->getSchemas() ?? []), $extraSchemaIds)));
+
 		// RegisterMapper::delete() refuses to remove a register that still has
 		// objects attached. Drain it first: otherwise the register — and its
 		// unique organisation+slug row — survives the teardown, and a later
 		// re-create with the same slug fails with a duplicate-key rollback
 		// (wizard_rollback at register-provision-*).
-		$this->purgeRegisterObjects(register: $register, registerSlug: $registerSlug, orphaned: $orphaned);
+		$this->purgeRegisterObjects(schemaIds: $schemaIds, registerSlug: $registerSlug, orphaned: $orphaned);
 
 		try {
 			$this->registerService->delete(register: $register);
@@ -216,8 +287,81 @@ class ApplicationDeletionService {
 				['slug' => $registerSlug, 'message' => $e->getMessage()]
 			);
 			$orphaned[] = 'register:' . $registerSlug;
+			return;
+		}
+
+		foreach ($schemaIds as $schemaId) {
+			$ownedSchemaIds[] = $schemaId;
 		}
 	}//end deleteRegister()
+
+	/**
+	 * Delete the schema DEFINITIONS the just-removed register owned.
+	 *
+	 * Draining a register removes the rows stored under each of its schemas, and
+	 * deleting the register removes the namespace — but the schemas the wizard
+	 * cloned into that namespace (`{app}-{version}-{name}`) outlive both. They
+	 * are invisible to every list scoped by register, yet a schema search still
+	 * finds them, so "Also permanently delete all data" left a growing pile of
+	 * unowned definitions behind on every delete.
+	 *
+	 * A schema is only removed when no OTHER register still lists it: OR models
+	 * `register.schemas` as a reference list, so the same definition can legally
+	 * be shared, and deleting a shared one would break the register that kept it.
+	 * Comparison is by string, never by (int) cast — `register.schemas` may
+	 * legally hold a non-numeric slug (see {@see Register::addSchema()}), and
+	 * casting one to int collapses it to 0, making it look unclaimed.
+	 *
+	 * The delete itself still goes through {@see SchemaMapper::delete()}, which
+	 * runs its own RBAC + organisation checks regardless of the widened find()
+	 * below — a schema visible only because of that widened lookup simply fails
+	 * to delete here and is reported as orphaned rather than removed.
+	 *
+	 * @param array<int,mixed> $schemaIds Schema ids/slugs the deleted registers owned.
+	 * @param string $appSlug The application slug (for log context).
+	 * @param array<int,string> $orphaned Collector for failures.
+	 *
+	 * @return void
+	 */
+	private function deleteUnreferencedSchemas(array $schemaIds, string $appSlug, array &$orphaned): void {
+		if ($schemaIds === []) {
+			return;
+		}
+
+		try {
+			$referenced = $this->schemaReferences->heldByOtherRegisters();
+		} catch (Throwable $e) {
+			// A scan we cannot trust must not authorise a delete: skip the
+			// cleanup and orphan the schemas rather than risk removing one
+			// another register still holds.
+			$this->logger->error(
+				'Buildiq: deleteApplication({slug}) could not scan registers for schema references: {message}',
+				['slug' => $appSlug, 'message' => $e->getMessage()]
+			);
+			foreach ($schemaIds as $schemaId) {
+				$orphaned[] = 'schema:' . (string)$schemaId;
+			}
+
+			return;
+		}
+
+		foreach ($schemaIds as $schemaId) {
+			if ($this->schemaReferences->isReferenced(schemaId: $schemaId, referenced: $referenced) === true) {
+				continue;
+			}
+
+			try {
+				$schema = $this->schemaMapper->find(id: $schemaId, _rbac: false, _multitenancy: false);
+				$this->schemaMapper->delete(entity: $schema);
+			} catch (Throwable $e) {
+				$this->logger->error(
+					'Buildiq: deleteApplication({slug}) failed to delete schema {schema}: {message}',
+					['slug' => $appSlug, 'schema' => (string)$schemaId, 'message' => $e->getMessage()]
+				);
+				$orphaned[] = 'schema:' . (string)$schemaId;
+			}
+		}
+	}//end deleteUnreferencedSchemas()
 
 	/**
 	 * Delete every object stored in a register, across all its schemas.
@@ -227,14 +371,14 @@ class ApplicationDeletionService {
 	 * (OR default), which is enough to satisfy the register-delete guard — its
 	 * object count excludes soft-deleted rows (`_deleted IS NULL`).
 	 *
-	 * @param Register $register The register to drain.
+	 * @param array<int,mixed> $schemaIds The schemas to drain the register over.
 	 * @param string $registerSlug The register slug (for log context).
 	 * @param array<int,string> $orphaned Collector for failures.
 	 *
 	 * @return void
 	 */
-	private function purgeRegisterObjects(Register $register, string $registerSlug, array &$orphaned): void {
-		foreach (($register->getSchemas() ?? []) as $schemaId) {
+	private function purgeRegisterObjects(array $schemaIds, string $registerSlug, array &$orphaned): void {
+		foreach ($schemaIds as $schemaId) {
 			$this->purgeRegisterSchema(registerSlug: $registerSlug, schemaId: $schemaId, orphaned: $orphaned);
 		}
 	}//end purgeRegisterObjects()

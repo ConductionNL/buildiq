@@ -261,7 +261,8 @@ export default {
 	 * @spec openspec/specs/openbuild-runtime/spec.md#req-obr-007b
 	 */
 	created() {
-		ensureProductionVersionsLoaded()
+		const pv = this.app.productionVersion
+		ensureProductionVersionsLoaded(typeof pv === 'string' ? pv : '')
 	},
 
 	methods: {

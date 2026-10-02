@@ -138,6 +138,14 @@ class ApplicationPublishController extends Controller {
 	 * affirmative purges. This deliberately does NOT rely on PHP/Nextcloud
 	 * stringy-bool coercion for an irreversible action.
 	 *
+	 * `orphanedResources` is a FAILURE list, not an inventory of what the
+	 * delete left standing: it names the resources this call tried to remove
+	 * and could not. The normal answer is an empty array, including the
+	 * ordinary `deleteData: false` case, where the registers and their objects
+	 * are kept on purpose and so were never attempted. Read as an inventory it
+	 * says the opposite of what it means, which is how it was read during the
+	 * demo review of 2026-09-19.
+	 *
 	 * @param string $appUuid Parent Application UUID (path param)
 	 *
 	 * @return JSONResponse 200 + `{deleted, orphanedResources}`, or an error envelope

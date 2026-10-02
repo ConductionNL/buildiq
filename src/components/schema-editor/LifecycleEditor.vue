@@ -15,7 +15,7 @@
 				{{
 					t(
 						'buildiq',
-						'Declare states and transitions. Every action is a typed declarative record per ADR-031 — no free-text code.',
+						'Declare states and transitions. You pick each action from a fixed list, so no code is needed.',
 					)
 				}}
 			</p>

@@ -76,6 +76,29 @@ export function createObjectStore() {
 // these; they only need the symbols to exist.
 export const CnAppRoot = stub('CnAppRoot')
 export const CnAppNav = stub('CnAppNav')
+// Renders `#nav-end` as well as the default slot: the real strip carries page
+// controls there, and a stub that dropped it made every assertion about them
+// read as absent.
+export const CnTabs = {
+	name: 'CnTabs',
+	render() {
+		return h('div', { class: 'cntabs-stub' }, [
+			this.$slots?.['nav-end']?.(),
+			this.$slots?.default?.(),
+		])
+	},
+}
+// Props declared so a spec can read the title/active a consumer binds.
+export const CnTab = {
+	name: 'CnTab',
+	props: {
+		title: { type: String, default: '' },
+		active: { type: Boolean, default: false },
+	},
+	render() {
+		return h('div', { class: 'cntab-stub' }, this.$slots?.default?.())
+	},
+}
 export const CnPageRenderer = { name: 'CnPageRenderer', render: () => h('div') }
 export const CnCard = {
 	name: 'CnCard',
@@ -145,15 +168,24 @@ export function dedupeCatalogue(entries) {
 	})
 }
 
+import { validateManifest as _validateManifest } from '@conduction/nextcloud-vue/dist/esm/utils/validateManifest.js'
 /**
- * Lightweight stand-in for the lib's manifest validator. The unit suite
- * only needs it to be callable; the structural manifest checks live in
- * tests/vitest/manifest.spec.js. Returns `{ valid: true, errors: [] }`.
+ * The REAL manifest validator, reached by its deep path so the bare-specifier
+ * alias that brings you here does not send you round again.
  *
+ * It used to be a stand-in returning `{ valid: true, errors: [] }`, which made
+ * every test of a validator gate unfailable: the copilot review screen refuses
+ * to enable Confirm & create while a predicted manifest is invalid, and no
+ * unit test could ever see that refusal, because the validator behind it
+ * always said yes. That is how a builder tool shipped a widget shape the
+ * validator rejects.
+ *
+ * @param {object} manifest - the manifest to validate.
+ * @param {object} [options] - validator options.
  * @return {{valid: boolean, errors: Array}}
  */
-export function validateManifest() {
-	return { valid: true, errors: [] }
+export function validateManifest(manifest, options) {
+	return _validateManifest(manifest, options)
 }
 
 /**
@@ -273,6 +305,8 @@ export default {
 	createObjectStore,
 	CnAppRoot,
 	CnAppNav,
+	CnTabs,
+	CnTab,
 	CnPageRenderer,
 	defaultPageTypes,
 	registerIcons,

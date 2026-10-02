@@ -39,6 +39,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use Psr\Log\LoggerInterface;
@@ -59,16 +60,23 @@ class AppRepoSerializer {
 	public const FORMAT_VERSION = '2.0';
 
 	/**
-	 * The OpenRegister register OpenConnector's configuration objects live in.
+	 * The OpenRegister register Integriq's configuration objects live in.
 	 *
-	 * OpenConnector was re-platformed onto OpenRegister — it has no `lib/Db` and
+	 * Integriq was re-platformed onto OpenRegister — it has no `lib/Db` and
 	 * no `openconnector_*` tables — so its Sources/Mappings/Synchronizations/Jobs
 	 * are ordinary OR objects. Reading them here is therefore an OR read, NOT a
 	 * cross-app PHP dependency (ADR-022).
 	 *
+	 * The CANONICAL slug, which is not what the read uses: Integriq's per-instance
+	 * repair step renames this register from `openconnector`, so both names are
+	 * live across the estate. Resolve it through
+	 * {@see RegisterSlugResolverInterface} and read with the answer, because
+	 * reading with a slug this instance does not carry returns zero rows, not an
+	 * error.
+	 *
 	 * @var string
 	 */
-	private const CONNECTOR_REGISTER = 'openconnector';
+	private const CONNECTOR_REGISTER = 'integriq';
 
 	/**
 	 * The connector kinds an application may declare. `endpoint` and `rule` are
@@ -94,6 +102,9 @@ class AppRepoSerializer {
 	 * @param SchemaMapper $schemaMapper Resolves companion schema definitions by id.
 	 * @param LoggerInterface $logger PSR logger (server-side diagnostics only).
 	 * @param TemplateRepoSerializer $templateSerializer Serialises a seeded template into the same repo layout.
+	 * @param RegisterSlugResolverInterface $slugResolver Which slug the connector register answers to on THIS
+	 *                                                    instance. Required, not nullable: the only fallback a
+	 *                                                    null would leave is the literal it replaces.
 	 * @param ObjectServiceInterface|null $objectService Reads connector + automation objects (app-repo-format-v2).
 	 *                                                   Nullable so the v1 construction shape still works and the
 	 *                                                   new channels simply collect nothing when it is absent.
@@ -116,6 +127,7 @@ class AppRepoSerializer {
 		private readonly SchemaMapper $schemaMapper,
 		private readonly LoggerInterface $logger,
 		private readonly TemplateRepoSerializer $templateSerializer,
+		private readonly RegisterSlugResolverInterface $slugResolver,
 		private readonly ?ObjectServiceInterface $objectService = null,
 		private readonly ?FlowAgentChannelCollector $flowAgentCollector = null,
 		private readonly AppRepoPayloadSafety $payloadSafety = new AppRepoPayloadSafety(),
@@ -144,7 +156,11 @@ class AppRepoSerializer {
 		// exception, so serialisation never becomes the thing that blocks a
 		// publish. The counter-measure against that silently producing an
 		// empty artefact is the descriptor's channel counts, below.
-		$channels = $this->collectChannels(application: $application, slug: $slug);
+		$channels = $this->collectChannels(
+			application: $application,
+			slug: $slug,
+			versionRegister: trim((string)($version['register'] ?? ''))
+		);
 
 		$files = [];
 		$files['openbuild-app.json'] = $this->encode(
@@ -172,11 +188,12 @@ class AppRepoSerializer {
 	 *
 	 * @param array<string,mixed> $application The Application object.
 	 * @param string $slug The Application slug.
+	 * @param string $versionRegister The register the published version names.
 	 *
 	 * @return array<string,mixed> Every collector's raw output, keyed by channel.
 	 */
-	private function collectChannels(array $application, string $slug): array {
-		$companions = $this->collectCompanionSchemas(slug: $slug);
+	private function collectChannels(array $application, string $slug, string $versionRegister = ''): array {
+		$companions = $this->companionSchemas(slug: $slug, versionRegister: $versionRegister);
 		ksort($companions);
 
 		$dataRegisters = $this->collectDataRegisters(application: $application);
@@ -574,15 +591,29 @@ class AppRepoSerializer {
 			return null;
 		}
 
+		// Which slug the connector register carries HERE. Branching on the absence
+		// is the point of the resolution type: reading with a canonical slug on an
+		// instance that has not run Integriq's rename returns zero rows, which is
+		// what a register holding nothing returns too.
+		$registerSlug = $this->slugResolver->resolve(canonical: self::CONNECTOR_REGISTER);
+		if ($registerSlug->isResolved() === false) {
+			$this->logger->warning(
+				'Buildiq AppRepoSerializer: the connector register is not on this instance under any of its '
+				. 'known slugs (' . implode(', ', $registerSlug->candidates) . '), so declared connector "'
+				. $kind . '/' . $uuid . '" could not be resolved.'
+			);
+			return null;
+		}
+
 		try {
 			// Resolved with find(), NOT findAll(filters: ['uuid' => …]): a uuid is OpenRegister
 			// METADATA, not an object property, so a filter on it matches nothing.
-			// Resolved by UUID rather than slug because OpenConnector objects
+			// Resolved by UUID rather than slug because Integriq objects
 			// overwhelmingly have no slug (measured live: 0 of 74 jobs, 1 of 291
 			// mappings), so a slug lookup would miss most real ingestion.
 			$found = $this->objectService->find(
 				id: $uuid,
-				register: self::CONNECTOR_REGISTER,
+				register: $registerSlug->slug,
 				schema: $kind
 			);
 		} catch (Throwable $e) {
@@ -656,7 +687,9 @@ class AppRepoSerializer {
 	 * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
 	 */
 	private function collectAutomations(string $slug): array {
-		if ($slug === '' || $this->objectService === null) {
+		// Buildiq's own register is renamed from `openbuild` per instance, so resolve it like the connector register.
+		$registerSlug = $this->slugResolver->resolve(canonical: 'buildiq');
+		if ($slug === '' || $this->objectService === null || $registerSlug->isResolved() === false) {
 			return [];
 		}
 
@@ -664,7 +697,7 @@ class AppRepoSerializer {
 			$results = $this->objectService->findAll(
 				config: [
 					'filters' => [
-						'register' => 'buildiq',
+						'register' => $registerSlug->slug,
 						'schema' => 'automation',
 						'applicationSlug' => $slug,
 					],
@@ -842,66 +875,24 @@ class AppRepoSerializer {
 	}//end deriveCredentials()
 
 	/**
-	 * Read the app's per-app register companion schemas, keyed by schema slug.
+	 * The schemas of the register this version publishes.
 	 *
-	 * Mirrors DataRegisterExportBundler's schema resolution; a register that is
-	 * absent (an app never provisioned a per-app register) yields no companions
-	 * rather than an error — serialise is total.
-	 *
-	 * @param string $slug The Application slug (per-app register is `buildiq-{slug}`).
+	 * @param string $slug The Application slug.
+	 * @param string $versionRegister The register named by the version being published.
 	 *
 	 * @return array<string,array<string,mixed>> Schema blobs keyed by slug.
 	 *
 	 * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
 	 */
-	private function collectCompanionSchemas(string $slug): array {
-		if ($slug === '') {
-			return [];
-		}
+	private function companionSchemas(string $slug, string $versionRegister): array {
+		$collector = new CompanionSchemaCollector(
+			registerMapper: $this->registerMapper,
+			schemaMapper: $this->schemaMapper,
+			logger: $this->logger
+		);
 
-		try {
-			$register = $this->registerMapper->find('openbuild-' . $slug, _multitenancy: false);
-		} catch (Throwable $e) {
-			$this->logger->debug(
-				'Buildiq AppRepoSerializer: no per-app register for "' . $slug . '": ' . $e->getMessage()
-			);
-			return [];
-		}
-
-		$schemas = [];
-		foreach ((array)$register->getSchemas() as $schemaId) {
-			try {
-				$schema = $this->schemaMapper->find($schemaId, _multitenancy: false);
-			} catch (Throwable $e) {
-				$this->logger->debug(
-					'Buildiq AppRepoSerializer: could not resolve schema ' . ((string)$schemaId) . ': ' . $e->getMessage()
-				);
-				continue;
-			}
-
-			$schemaSlug = $schema->getSlug();
-			if ($schemaSlug === '') {
-				continue;
-			}
-
-			$version = (string)$schema->getVersion();
-			if ($version === '') {
-				$version = '0.1.0';
-			}
-
-			$schemas[$schemaSlug] = [
-				'slug' => $schemaSlug,
-				'title' => (string)$schema->getTitle(),
-				'description' => (string)$schema->getDescription(),
-				'version' => $version,
-				'type' => 'object',
-				'required' => array_values((array)$schema->getRequired()),
-				'properties' => (array)$schema->getProperties(),
-			];
-		}//end foreach
-
-		return $schemas;
-	}//end collectCompanionSchemas()
+		return $collector->collect(slug: $slug, versionRegister: $versionRegister);
+	}//end companionSchemas()
 
 	/**
 	 * Build the optional README.md (name + description + provenance line).

@@ -8,18 +8,25 @@
 		<form class="export-dialog" @submit.prevent="submit">
 			<NcSelect
 				v-model="form.version"
+				class="export-dialog__select"
 				:inputLabel="t('buildiq', 'Version')"
 				:options="versionOptions"
+				:clearable="false"
+				:loading="loadingVersions"
 				:disabled="submitting" />
 			<NcSelect
 				v-model="form.target"
+				class="export-dialog__select"
 				:inputLabel="t('buildiq', 'Target')"
 				:options="targetOptions"
+				:clearable="false"
 				:disabled="submitting" />
 			<NcSelect
 				v-model="form.license"
+				class="export-dialog__select"
 				:inputLabel="t('buildiq', 'License')"
 				:options="licenseOptions"
+				:clearable="false"
 				:disabled="submitting" />
 			<NcCheckboxRadioSwitch
 				v-model="form.includeSeedData"
@@ -200,6 +207,10 @@ export default {
 			// Buildiq only ever learns their UUIDs — never the tokens behind them.
 			githubCredentials: [],
 			loadingCredentials: false,
+			// The application's own versions, loaded from the versions API.
+			// Until they arrive (or when the call fails) the prop is used.
+			loadedVersions: [],
+			loadingVersions: false,
 			form: {
 				version: this.availableVersions[0] || {
 					label: '0.1.0',
@@ -247,7 +258,9 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-1
 		 */
 		versionOptions() {
-			return this.availableVersions
+			return this.loadedVersions.length
+				? this.loadedVersions
+				: this.availableVersions
 		},
 
 		/**
@@ -288,8 +301,15 @@ export default {
 		},
 	},
 
+	/**
+	 * Load the GitHub credentials and the application's versions.
+	 *
+	 * @spec openspec/specs/exporter-ui/spec.md
+	 * @return {void}
+	 */
 	mounted() {
 		this.fetchGithubCredentials()
+		this.fetchVersions()
 	},
 
 	methods: {
@@ -326,6 +346,67 @@ export default {
 		},
 
 		/**
+		 * Load the application's versions so the user picks a real one.
+		 *
+		 * Development and production often share a semver, so each option
+		 * carries the version slug too. The live draft (development) is the
+		 * default, as the export tutorial describes.
+		 *
+		 * @spec openspec/specs/exporter-ui/spec.md
+		 * @return {Promise<void>}
+		 */
+		async fetchVersions() {
+			this.loadingVersions = true
+			try {
+				const url = generateUrl(
+					`/apps/buildiq/api/applications/${encodeURIComponent(this.applicationSlug)}/versions`,
+				)
+				const response = await axios.get(url)
+				const rows = Array.isArray(response?.data) ? response.data : []
+				this.loadedVersions = rows
+					.filter((row) => row && row.slug && row.semver)
+					.map((row) => ({
+						label: this.t('buildiq', '{name} ({semver})', {
+							name: row.name || row.slug,
+							semver: row.semver,
+						}),
+						value: row.semver,
+						slug: row.slug,
+					}))
+				if (this.loadedVersions.length) {
+					this.form.version =
+						this.loadedVersions.find(
+							(option) => option.slug === 'development',
+						) || this.loadedVersions[0]
+				}
+			} catch {
+				this.loadedVersions = []
+			} finally {
+				this.loadingVersions = false
+			}
+		},
+
+		/**
+		 * Start the queued export right away instead of waiting for cron.
+		 *
+		 * Not awaited: the export runs in that request, and the exports list
+		 * follows its status. If it fails to start, cron still picks the job up.
+		 *
+		 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-export-is-asynchronous-via-nextcloud-s-ijob
+		 * @param {string} uuid The queued job's UUID.
+		 * @return {void}
+		 */
+		startNow(uuid) {
+			if (!uuid) {
+				return
+			}
+			const url = generateUrl(
+				`/apps/buildiq/api/exports/${encodeURIComponent(uuid)}/run`,
+			)
+			Promise.resolve(axios.post(url)).catch(() => {})
+		},
+
+		/**
 		 * Observed behaviour of `onClose` (retrofit annotation).
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-1
@@ -348,6 +429,11 @@ export default {
 			try {
 				const payload = {
 					applicationVersion: this.form.version.value,
+					// Which version row: the semver alone is shared by draft and production.
+					...(this.form.version.slug
+						? { applicationVersionSlug: this.form.version.slug }
+						: {}),
+
 					target: this.form.target.value,
 					license: this.form.license.value,
 					includeSeedData: this.form.includeSeedData,
@@ -385,6 +471,7 @@ export default {
 					`/apps/buildiq/api/applications/${encodeURIComponent(this.applicationSlug)}/exports`,
 				)
 				const response = await axios.post(url, payload)
+				this.startNow(response.data.uuid)
 				this.$emit('queued', response.data.uuid)
 				this.$emit('close')
 			} catch (err) {
@@ -408,6 +495,21 @@ export default {
 	flex-direction: column;
 	gap: var(--default-grid-baseline, 8px);
 	padding: var(--default-grid-baseline, 8px) 0;
+}
+
+.export-dialog__select {
+	width: 100%;
+	min-width: 0;
+}
+
+/* Keep a selected value on one line. Without this a narrow select breaks
+   "ZIP download" in the middle of a word. */
+.export-dialog__select :deep(.vs__selected) {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	overflow-wrap: normal;
+	word-break: normal;
 }
 
 .export-dialog__scope-hint {

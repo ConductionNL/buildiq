@@ -35,10 +35,38 @@
 					:checked="enabled"
 					type="checkbox"
 					@change="enabled = $event.target.checked" />
-				{{ t('buildiq', 'Allow anonymous submissions to this endpoint') }}
+				{{
+					t('buildiq', 'Open this form to people outside the organisation')
+				}}
 			</label>
 
 			<template v-if="enabled">
+				<label class="ob-external-form-access__field">
+					{{ t('buildiq', 'Sign-in required') }}
+					<select
+						:value="minTrust"
+						data-testid="external-form-sign-in-level"
+						@change="onMinTrustChange($event.target.value)">
+						<option value="">
+							{{ t('buildiq', 'No sign-in, anyone may fill it in') }}
+						</option>
+						<option value="low">
+							{{ t('buildiq', 'DigiD or eHerkenning, level low') }}
+						</option>
+						<option value="substantial">
+							{{
+								t(
+									'buildiq',
+									'DigiD or eHerkenning, level substantial',
+								)
+							}}
+						</option>
+						<option value="high">
+							{{ t('buildiq', 'DigiD or eHerkenning, level high') }}
+						</option>
+					</select>
+				</label>
+
 				<label class="ob-external-form-access__toggle">
 					<input
 						:checked="publicRead"
@@ -83,7 +111,15 @@
 			</NcNoteCard>
 
 			<div v-if="showUrls" class="ob-external-form-access__urls">
-				<p>
+				<p v-if="minTrust">
+					{{
+						t(
+							'buildiq',
+							'This form asks for a sign-in, so it is only open through the portal page. The anonymous submit address stays closed.',
+						)
+					}}
+				</p>
+				<p v-else>
 					<strong>{{ t('buildiq', 'Raw public submit URL') }}</strong
 					><br />
 					<code>{{ rawSubmitUrl }}</code>
@@ -121,6 +157,7 @@ import {
 	enablePublicCreate,
 	provisionPortalPage,
 	revokePublicCreate,
+	SIGN_IN_LEVELS,
 } from '../services/externalFormProvisioningService.js'
 
 /**
@@ -176,6 +213,12 @@ export default {
 			publicRead: false,
 			organisationScope: null,
 			trackLinkEnabled: false,
+			// '' for no sign-in, else one of SIGN_IN_LEVELS (buildiq#935).
+			minTrust: '',
+			// Whether the maker touched the level in this session. Until they
+			// do, a save asks the portal page to keep the level it stores, so
+			// a level raised in portaliq is not reset by a repeat save.
+			minTrustChanged: false,
 			saving: false,
 			errorMessage: '',
 			portalHint: false,
@@ -285,6 +328,21 @@ export default {
 				&& e.trackLinkAction
 				&& e.trackLinkAction.enabled
 			)
+			this.minTrust =
+				e && SIGN_IN_LEVELS.includes(e.minTrust) ? e.minTrust : ''
+			this.minTrustChanged = false
+		},
+
+		/**
+		 * The maker picked a sign-in level.
+		 *
+		 * @param {string} value - '' for none, or a level.
+		 * @return {void}
+		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-004
+		 */
+		onMinTrustChange(value) {
+			this.minTrust = SIGN_IN_LEVELS.includes(value) ? value : ''
+			this.minTrustChanged = true
 		},
 
 		/**
@@ -310,10 +368,25 @@ export default {
 					await this.onDisable()
 					return
 				}
-				await enablePublicCreate({
-					schema: this.schema,
-					publicRead: this.publicRead,
-				})
+				if (this.minTrust) {
+					// portaliq writes past OpenRegister's RBAC itself, so a
+					// public create grant would only be a way around the
+					// sign-in. Take back the one an anonymous save gave.
+					const grantedBefore =
+						this.hadEnabledEntry
+						&& !SIGN_IN_LEVELS.includes(this.entry.minTrust)
+					if (grantedBefore) {
+						await revokePublicCreate({
+							schema: this.schema,
+							removeRead: false,
+						})
+					}
+				} else {
+					await enablePublicCreate({
+						schema: this.schema,
+						publicRead: this.publicRead,
+					})
+				}
 				const existingObjectId =
 					this.entry
 					&& this.entry.portalPage
@@ -322,6 +395,9 @@ export default {
 					register: this.register,
 					schema: this.schema,
 					objectId: existingObjectId || null,
+					...(this.minTrustChanged
+						? { minTrust: this.minTrust || null }
+						: {}),
 				})
 				this.portalHint = !!portalResult.unavailable
 				this.savedPortalUrl = portalResult.portalPath
@@ -335,6 +411,7 @@ export default {
 					status: 'enabled',
 					publicRead: this.publicRead,
 					organisationScope: this.organisationScope || null,
+					minTrust: this.minTrust || null,
 					portalPage: portalResult.unavailable
 						? null
 						: {
@@ -452,6 +529,12 @@ export default {
 	display: flex;
 	gap: 8px;
 	align-items: center;
+}
+
+.ob-external-form-access__field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
 }
 
 .ob-external-form-access__urls {
