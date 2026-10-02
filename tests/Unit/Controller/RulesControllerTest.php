@@ -156,6 +156,46 @@ final class RulesControllerTest extends TestCase {
 	}//end testEvaluateOk()
 
 	/**
+	 * REQ-BQLV-004: `mode: preview` reaches the engine as a preview, after the
+	 * same authentication and size guard; any other call is a logged one.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-live-evaluation-leaves-no-log-trail-req-bqlv-004
+	 */
+	public function testEvaluatePreviewModeReachesTheEngine(): void {
+		$this->authenticate();
+		$this->request->method('getParams')->willReturn(['payload' => ['x' => 1], 'mode' => 'preview']);
+		$this->ruleEngine->expects($this->once())
+			->method('evaluate')
+			->with('fee', ['x' => 1], null, false, true, true)
+			->willReturn(['result' => ['fee' => 40], 'triggeredRules' => [], 'executionTime' => 1, 'errors' => []]);
+
+		$response = $this->controller()->evaluate('fee');
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+
+	}//end testEvaluatePreviewModeReachesTheEngine()
+
+	/**
+	 * A call without `mode: preview` stays a logged evaluation.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-live-evaluation-leaves-no-log-trail-req-bqlv-004
+	 */
+	public function testEvaluateWithoutPreviewIsLogged(): void {
+		$this->authenticate();
+		$this->request->method('getParams')->willReturn(['payload' => ['x' => 1], 'mode' => 'anything']);
+		$this->ruleEngine->expects($this->once())
+			->method('evaluate')
+			->with('fee', ['x' => 1], null, false, true, false)
+			->willReturn(['result' => [], 'triggeredRules' => [], 'executionTime' => 1, 'errors' => []]);
+
+		$this->controller()->evaluate('fee');
+
+	}//end testEvaluateWithoutPreviewIsLogged()
+
+	/**
 	 * evaluate returns 404 when the engine reports the RuleSet missing.
 	 *
 	 * @return void
@@ -302,6 +342,39 @@ final class RulesControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
 
 	}//end testTestAllTranslatesGateFailure()
+
+	/**
+	 * REQ-BQLV-002: the rule set schema lists the inputs a calculated form
+	 * field reads and the outputs it can show, from the decision table.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
+	 */
+	public function testSchemaListsTheDecisionTableInputsAndOutputs(): void {
+		$this->authenticate();
+		$this->objectService->method('searchObjects')->willReturnCallback(
+			static function (array $query): array {
+				if ((string)$query['@self']['schema'] === '101') {
+					return [['slug' => 'event-fee', 'name' => 'Event fee', 'version' => '1.0.0', 'status' => 'active', 'ruleType' => 'decision-table']];
+				}
+
+				return [
+					[
+						'ruleSetId' => 'event-fee',
+						'inputColumns' => [['name' => 'Attendees', 'type' => 'integer', 'expressionPath' => 'attendees']],
+						'outputColumns' => [['name' => 'fee', 'type' => 'number'], ['name' => 'band', 'type' => 'string']],
+					],
+				];
+			}
+		);
+
+		$data = $this->controller()->schema('event-fee')->getData();
+
+		$this->assertSame([['name' => 'Attendees', 'path' => 'attendees', 'type' => 'integer']], $data['inputs']);
+		$this->assertSame([['name' => 'fee', 'type' => 'number'], ['name' => 'band', 'type' => 'string']], $data['outputs']);
+
+	}//end testSchemaListsTheDecisionTableInputsAndOutputs()
 
 	/**
 	 * REQ-BRE-007: the schema of a rule set held by another organisation is a

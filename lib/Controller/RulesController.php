@@ -99,11 +99,16 @@ class RulesController extends Controller {
 	/**
 	 * Synchronously evaluate a RuleSet against a payload.
 	 *
+	 * `mode: preview` is the live evaluation a form runs while it is filled
+	 * in: the same authentication, RBAC, rate limit and size guard, but no
+	 * execution log entry and no side-effecting action (REQ-BQLV-004).
+	 *
 	 * @param string $ruleSetSlug The RuleSet slug.
 	 *
 	 * @return JSONResponse 200 with the result, 404 on miss, 408 on timeout, 422 on bad input.
 	 *
 	 * @spec openspec/changes/business-rules-engine/tasks.md#9.1
+	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-live-evaluation-leaves-no-log-trail-req-bqlv-004
 	 *
 	 * @no-admin-idor-exempt Authorization is delegated to OpenRegister: every read here
 	 *   goes through RuleObjectReader::find(), which searches with `_rbac: true` and
@@ -145,7 +150,9 @@ class RulesController extends Controller {
 				ruleSetSlug: $ruleSetSlug,
 				payload: $payload,
 				version: $version,
-				dryRun: $dryRun
+				dryRun: $dryRun,
+				maskPii: true,
+				preview: (($params['mode'] ?? null) === 'preview')
 			);
 		} catch (Throwable $e) {
 			if ($e->getCode() === 404) {
@@ -183,6 +190,7 @@ class RulesController extends Controller {
 	 * @return JSONResponse 200 with the schema metadata, or 404.
 	 *
 	 * @spec openspec/changes/business-rules-engine/tasks.md#9.1
+	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
 	 *
 	 * @no-admin-idor-exempt Authorization is delegated to OpenRegister: every read here
 	 *   goes through RuleObjectReader::find(), which searches with `_rbac: true` and
@@ -201,6 +209,8 @@ class RulesController extends Controller {
 			return $this->error(code: 'not_found', detail: 'RuleSet ' . $ruleSetSlug . ' not found', status: Http::STATUS_NOT_FOUND);
 		}
 
+		$columns = $this->decisionColumns(slug: (string)($ruleSet['slug'] ?? $ruleSetSlug));
+
 		return new JSONResponse(
 			data: [
 				'slug' => (string)($ruleSet['slug'] ?? $ruleSetSlug),
@@ -208,11 +218,51 @@ class RulesController extends Controller {
 				'version' => (string)($ruleSet['version'] ?? ''),
 				'status' => (string)($ruleSet['status'] ?? ''),
 				'ruleType' => (string)($ruleSet['ruleType'] ?? ''),
+				'inputs' => $columns['inputs'],
+				'outputs' => $columns['outputs'],
 			],
 			statusCode: Http::STATUS_OK
 		);
 
 	}//end schema()
+
+	/**
+	 * The input and output columns of a rule set's decision table, for a
+	 * calculated form field or an eligibility check to bind to (REQ-BQLV-002).
+	 *
+	 * A condition-action rule set has no declared columns and answers two
+	 * empty lists.
+	 *
+	 * @param string $slug The RuleSet slug.
+	 *
+	 * @return array{inputs:list<array{name:string,path:string,type:string}>,outputs:list<array{name:string,type:string}>}
+	 *
+	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
+	 */
+	private function decisionColumns(string $slug): array {
+		$inputs = [];
+		$outputs = [];
+		$tables = $this->query(schema: RuleEngineService::DECISION_TABLE_SCHEMA, filters: ['ruleSetId' => $slug], limit: 1);
+		$table = ($tables[0] ?? []);
+
+		foreach ((array)($table['inputColumns'] ?? []) as $column) {
+			if (is_array($column) === true && is_string($column['name'] ?? null) === true) {
+				$inputs[] = [
+					'name' => $column['name'],
+					'path' => (string)($column['expressionPath'] ?? $column['name']),
+					'type' => (string)($column['type'] ?? ''),
+				];
+			}
+		}
+
+		foreach ((array)($table['outputColumns'] ?? []) as $column) {
+			if (is_array($column) === true && is_string($column['name'] ?? null) === true) {
+				$outputs[] = ['name' => $column['name'], 'type' => (string)($column['type'] ?? '')];
+			}
+		}
+
+		return ['inputs' => $inputs, 'outputs' => $outputs];
+	}//end decisionColumns()
 
 	/**
 	 * Run all TestCases for a RuleSet and return pass/fail per case.
