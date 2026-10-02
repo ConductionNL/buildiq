@@ -48,6 +48,8 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // template's companion schemas into it, rewrites manifest schema refs, and persists a new
         // Application in the shared `buildiq` register tagged with the caller's UID.
         ['name' => 'applications#createFromTemplate', 'url' => '/api/applications/from-template/{templateSlug}', 'verb' => 'POST'],
+        // Copy an app (apps-copy-app-and-page REQ-BQCP-001/002): same gates as from-template.
+        ['name' => 'applications#copy', 'url' => '/api/applications/{slug}/copy', 'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Manifest endpoint — returns the stored manifest JSON blob for a given virtual-app slug.
         // Per ADR-016 routes.php is the only registration path; #[NoAdminRequired] is set on the
