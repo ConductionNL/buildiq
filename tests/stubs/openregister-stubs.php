@@ -1890,6 +1890,27 @@ namespace OCA\OpenRegister\Event {
 			public function getErrors(): array {
 				return $this->errors;
 			}//end getErrors()
+			/**
+			 * @var array<string, mixed>
+			 */
+			private array $modifiedData = [];
+
+			/**
+			 * Mirrors openregister development: hooks hand back changed
+			 * fields, which MagicMapper merges into the object before it saves.
+			 *
+			 * @param array<string, mixed> $data
+			 */
+			public function setModifiedData(array $data): void {
+				$this->modifiedData = $data;
+			}//end setModifiedData()
+
+			/**
+			 * @return array<string, mixed>
+			 */
+			public function getModifiedData(): array {
+				return $this->modifiedData;
+			}//end getModifiedData()
 		}//end class
 	}//end if
 
@@ -1945,6 +1966,27 @@ namespace OCA\OpenRegister\Event {
 			public function getErrors(): array {
 				return $this->errors;
 			}//end getErrors()
+			/**
+			 * @var array<string, mixed>
+			 */
+			private array $modifiedData = [];
+
+			/**
+			 * Mirrors openregister development: hooks hand back changed
+			 * fields, which MagicMapper merges into the object before it saves.
+			 *
+			 * @param array<string, mixed> $data
+			 */
+			public function setModifiedData(array $data): void {
+				$this->modifiedData = $data;
+			}//end setModifiedData()
+
+			/**
+			 * @return array<string, mixed>
+			 */
+			public function getModifiedData(): array {
+				return $this->modifiedData;
+			}//end getModifiedData()
 		}//end class
 	}//end if
 

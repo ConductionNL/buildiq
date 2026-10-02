@@ -106,6 +106,27 @@
 						:legacyPattern="field.pattern || ''"
 						@update:modelValue="updateValidation(index, $event)" />
 				</div>
+				<div class="form-field-builder__section">
+					<span class="form-field-builder__section-label">{{
+						t('buildiq', 'Filled in when the form opens')
+					}}</span>
+					<FieldDefaultBuilder
+						:modelValue="
+							field.default === undefined ? null : field.default
+						"
+						@update:modelValue="updateLive(index, 'default', $event)" />
+				</div>
+				<div class="form-field-builder__section">
+					<span class="form-field-builder__section-label">{{
+						t('buildiq', 'Calculated')
+					}}</span>
+					<FieldCalculationBuilder
+						:modelValue="field.calculate || null"
+						:fieldOptions="siblingKeys(index)"
+						@update:modelValue="
+							updateLive(index, 'calculate', $event)
+						" />
+				</div>
 			</div>
 		</div>
 		<button type="button" class="form-field-builder__add" @click="addField">
@@ -115,6 +136,8 @@
 </template>
 
 <script>
+import FieldCalculationBuilder from './FieldCalculationBuilder.vue'
+import FieldDefaultBuilder from './FieldDefaultBuilder.vue'
 import FieldValidationBuilder from './FieldValidationBuilder.vue'
 import InlineFieldMark from './InlineFieldMark.vue'
 import VisibleWhenBuilder from './VisibleWhenBuilder.vue'
@@ -123,7 +146,14 @@ const FIELD_TYPES = ['string', 'number', 'boolean', 'select', 'textarea', 'date'
 
 export default {
 	name: 'FormFieldBuilder',
-	components: { VisibleWhenBuilder, FieldValidationBuilder, InlineFieldMark },
+	components: {
+		VisibleWhenBuilder,
+		FieldValidationBuilder,
+		InlineFieldMark,
+		FieldDefaultBuilder,
+		FieldCalculationBuilder,
+	},
+
 	props: {
 		modelValue: {
 			type: Array,
@@ -248,6 +278,29 @@ export default {
 		},
 
 		/**
+		 * Write (or delete, on `null`) one field's `default` or `calculate`
+		 * (REQ-BQLV-001, REQ-BQLV-002). Unknown sibling keys survive.
+		 *
+		 * @param {number} index - the field index.
+		 * @param {'default'|'calculate'} key - the key to write.
+		 * @param {*} value - the next value, or `null` to clear.
+		 * @return {void}
+		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-prefilled-from-the-user-or-the-record-req-bqlv-001
+		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
+		 */
+		updateLive(index, key, value) {
+			const next = this.localFields.slice()
+			const current = { ...next[index] }
+			if (value === null || value === undefined) {
+				delete current[key]
+			} else {
+				current[key] = value
+			}
+			next[index] = current
+			this.$emit('update:modelValue', next)
+		},
+
+		/**
 		 * Observed behaviour of `addField` (retrofit annotation).
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
@@ -351,6 +404,12 @@ export default {
 			}
 			if (field && field.visibleWhen) {
 				parts.push(t('buildiq', '1 condition'))
+			}
+			if (field && field.default !== undefined) {
+				parts.push(t('buildiq', 'prefilled'))
+			}
+			if (field && field.calculate) {
+				parts.push(t('buildiq', 'calculated'))
 			}
 			return parts.join(' · ')
 		},
