@@ -2,16 +2,15 @@
 <!--
   - AppliesToPanel: say which cases this detail page is for, and who sees it.
   -
-  - THIS PANEL DOES NOT AUTHOR TABS, ON PURPOSE
+  - TABS ARE PAGELAYOUT TABS, NOT MANIFEST TABS
   - A sidebar tab in a buildiq manifest is `{id, label, icon, component}`. A
   - pageLayout tab is `{kind, ref, fields, widgets}`. They are two vocabularies,
-  - and translating one into the other here would be a second page model,
-  - invented in an editor, that nothing else agrees with. The manifest's model
-  - belongs to nextcloud-vue and is consumed as it is. The pageLayout tab picker
-  - is task 6.1 of case-page-layout-per-case-type, and until it lands this panel
-  - saves the binding and leaves `tabs` exactly as it found them.
+  - and this panel never translates one into the other. The pageLayout body
+  - (tabs, widgets, header, task list, upload fields) is authored in its own
+  - vocabulary by PageLayoutBodyEditor (tasks 6.1 to 6.6), and a binding with
+  - no tabs is saved without any.
   -
-  - So this panel adds only the binding: the type value the screen is for, the
+  - The panel itself holds the binding: the type value the screen is for, the
   - audience it is for, and a name to tell three screens for one case type
   - apart.
   -
@@ -122,19 +121,14 @@
 				</select>
 			</label>
 
-			<p class="applies-to__hint">
-				{{
-					t(
-						'buildiq',
-						'The tabs stay as the app manifest declares them. A tab picker for this screen comes later.',
-					)
-				}}
-			</p>
+			<PageLayoutBodyEditor
+				:modelValue="binding"
+				@update:modelValue="$emit('update:modelValue', $event)" />
 
 			<button
 				type="button"
 				class="applies-to__save"
-				:disabled="saving || audienceRefMissing"
+				:disabled="saving || audienceRefMissing || bodyBlocked"
 				@click="publish">
 				{{
 					saving
@@ -157,10 +151,13 @@
 </template>
 
 <script>
+import PageLayoutBodyEditor, { layoutBlocked } from './PageLayoutBodyEditor.vue'
 import { savePageLayout } from '../../../services/pageLayouts.js'
 
 export default {
 	name: 'AppliesToPanel',
+
+	components: { PageLayoutBodyEditor },
 
 	props: {
 		// The `pageLayout` block on the page config: everything that decides
@@ -261,6 +258,22 @@ export default {
 		 * here saves a round trip.
 		 *
 		 * @return {boolean} True when the ref is missing.
+		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-002)
+		 */
+		/**
+		 * Whether the body editor holds something the server will refuse.
+		 *
+		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-case-type-declares-its-document-upload-fields-req-obpl-009
+		 * @return {boolean} True when the save is blocked.
+		 */
+		bodyBlocked() {
+			return layoutBlocked(this.binding)
+		},
+
+		/**
+		 * Whether the audience needs a group or user and none is named yet.
+		 *
+		 * @return {boolean} True when the save would be refused.
 		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-002)
 		 */
 		audienceRefMissing() {

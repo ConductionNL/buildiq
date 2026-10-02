@@ -63,6 +63,14 @@ class PageLayoutAuthoringService {
 	private const SCHEMA = 'pageLayout';
 
 	/**
+	 * OpenRegister's integration registry, which knows every leaf id an
+	 * installed app offers. Resolved by name so buildiq still loads without it.
+	 *
+	 * @var string
+	 */
+	public const REGISTRY_CLASS = 'OCA\\OpenRegister\\Service\\Integration\\IntegrationRegistry';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectServiceInterface $objectService OpenRegister's object service.
@@ -70,6 +78,7 @@ class PageLayoutAuthoringService {
 	 * @param PageLayoutValidator $validator The rules a layout has to pass.
 	 * @param LayoutDeltaService $deltas The fingerprint and the orphan report.
 	 * @param PageLayoutLeafProvider $provider The resolver, which owns what the base is.
+	 * @param ContainerLocator|null $locator Resolves OpenRegister's integration registry when it is installed.
 	 *
 	 * @return void
 	 */
@@ -79,6 +88,7 @@ class PageLayoutAuthoringService {
 		private readonly PageLayoutValidator $validator,
 		private readonly LayoutDeltaService $deltas,
 		private readonly PageLayoutLeafProvider $provider,
+		private readonly ?ContainerLocator $locator=null,
 	) {
 	}//end __construct()
 
@@ -124,11 +134,44 @@ class PageLayoutAuthoringService {
 		$warnings = $this->validator->validate(
 			$layout,
 			$this->storedFor(register: $register, schema: $schema, exceptId: (string)($layout['id'] ?? '')),
-			null
+			$this->knownLeafIds()
 		);
 
 		return ['layout' => $this->store(layout: $layout), 'warnings' => $warnings];
 	}//end save()
+
+	/**
+	 * The leaf ids the integration registry knows, or null when it cannot be read.
+	 *
+	 * Null keeps the save silent rather than warning on every leaf tab: a
+	 * registry that is not there says nothing about whether a leaf exists.
+	 *
+	 * @return array<int, string>|null The ids.
+	 *
+	 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-002)
+	 */
+	private function knownLeafIds(): ?array {
+		if ($this->locator === null) {
+			return null;
+		}
+
+		$registry = $this->locator->get(self::REGISTRY_CLASS);
+		if ($registry === null || method_exists($registry, 'listIds') === false) {
+			return null;
+		}
+
+		try {
+			$ids = $registry->listIds();
+		} catch (\Throwable) {
+			return null;
+		}
+
+		if (is_array($ids) === false) {
+			return null;
+		}
+
+		return array_values(array_map('strval', $ids));
+	}//end knownLeafIds()
 
 	/**
 	 * Re-cut a drifted override against the base it has now.

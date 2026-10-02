@@ -2897,7 +2897,9 @@
 				"evidence": "Authoring and serving exist: DetailPageEditor.vue:138-144 layout editor with typeProperty/typeValue writing config.pageLayout and saving via src/services/pageLayouts.js:75 PUT /api/page-layouts (routes.php:273) -> lib/Controller/PageLayoutController.php:123 (admin only :181-196) -> lib/Service/PageLayoutAuthoringService.php; served by lib/Integration/PageLayoutLeafProvider.php:71 leaf 'buildiq-page-layout' (type value layout wins, then schema-wide, then nothing). No consumer: git grep 'buildiq-page-layout' on origin/development of procest, portaliq, openregister, zaakafhandelapp, pipelinq, decidesk returns nothing, and nextcloud-vue v2.55.1 has no reference to pageLayout or the leaf",
 				"reachedOn": "authoring only: buildiq builder, detail page editor, page layout section",
 				"owner": "ConductionNL/buildiq",
-				"change": "case-page-layout-per-case-type"
+				"change": "case-page-layout-per-case-type",
+				"blocker": "nextcloud-vue runtime-detail-layout: CnDetailPage does not ask the buildiq-page-layout leaf yet (case-page-layout-per-case-type task 3.2); dossiq hand-off is task 8.5.",
+				"note": "Buildiq half complete 2026-09-29: the page designer authors tabs, widgets, header, task list and upload fields per case type (PageLayoutBodyEditor.vue) and the leaf serves them. The row stays building until a consumer renders them."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -2929,7 +2931,9 @@
 				"evidence": "src/components/page-editor/fields/ScreenOverrideList.vue:1-45,172-182 lists published screens per audience (everyone or a group) and offers re-cut via src/services/pageLayouts.js:104 POST /api/page-layouts/{layoutId}/recut (routes.php:271) -> PageLayoutController.php:157; PageLayoutAuthoringService.php header: overrides are patches pinned to a base fingerprint and withheld when the base moves; resolution with fall-through in lib/Service/PageLayoutLayerStack.php and PageLayoutLeafProvider.php:228-250. Same missing consumer as form-layout-per-type: no app places the 'buildiq-page-layout' leaf",
 				"reachedOn": "authoring only: buildiq builder, detail page editor, 'Screens for this schema'",
 				"owner": "ConductionNL/buildiq",
-				"change": "case-page-layout-per-case-type"
+				"change": "case-page-layout-per-case-type",
+				"blocker": "nextcloud-vue runtime-detail-layout: CnDetailPage does not ask the buildiq-page-layout leaf yet (case-page-layout-per-case-type task 3.2); dossiq hand-off is task 8.5.",
+				"note": "Buildiq half complete 2026-09-29: the page designer authors tabs, widgets, header, task list and upload fields per case type (PageLayoutBodyEditor.vue) and the leaf serves them. The row stays building until a consumer renders them."
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -4283,11 +4287,12 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "specified",
-				"evidence": "src/views/BuilderHost.vue:38 mounts every built app's CnAppRoot with :aiCompanion=\"true\"; nextcloud-vue v2.55.1 CnAppRoot.vue:412 renders CnAiCompanion with chatAppId defaulting to 'hermiq' (src/composables/aiChatConfig.js:41), shown only after GET /apps/hermiq/api/chat/health succeeds (CnAiCompanion.vue:5,20); hermiq appinfo/info.xml id 'hermiq', routes.php:514,529,545 chat/send, health, stream exist.",
-				"reachedOn": "any built app opened at /builder/{slug}, floating AI companion (when hermiq is installed and healthy)",
+				"state": "built",
+				"evidence": "Built in hermiq: an organisation admin picks one agent per app ('Assistant for this app', Agent.appAssistantFor), the companion in that app uses it on both chat endpoints and searches the app's own registers first (lib/Service/Engine/AppRegisterScope.php). buildiq src/views/BuilderHost.vue:38 mounts CnAppRoot with :aiCompanion=\"true\", so every built app gets it.",
+				"reachedOn": "any built app opened at /builder/{slug}, floating AI companion (hermiq installed, an agent picked for the app)",
 				"owner": "ConductionNL/hermiq",
-				"note": "Specified in ConductionNL/hermiq openspec/changes/agents-bound-to-their-app (hermiq lane, OpenSpec pass 2026-09-27)."
+				"note": "Built by the hermiq lane (archive 2026-10-01-agents-bound-to-their-app); set built in buildiq's matrix 2026-10-02 after reading hermiq development.",
+				"change": "ConductionNL/hermiq archive openspec/changes/archive/2026-10-01-agents-bound-to-their-app (hermiq development d3cac1131)"
 			},
 			"provider": "hermiq",
 			"providerHow": "read-from-code",
@@ -7654,11 +7659,12 @@
 			"mendix": "partial",
 			"power-apps": "yes",
 			"built": {
-				"state": "specified",
-				"evidence": "No AI summary widget on detail pages: buildiq src/runtimeRegistry.js registers no summary widget and DetailPageEditor.vue offers none; the hermiq companion (src/views/BuilderHost.vue:38 aiCompanion) answers questions on request, it does not show a summary on the record",
-				"reachedOn": "nothing reaches it",
+				"state": "built",
+				"evidence": "Built in hermiq: the agent object leaf (CnAgentRunsWidget, src/utils/recordSummary.js) generates, shows and refreshes a summary of the record on screen, labelled as AI-written, stored per object version (lib/Controller/RecordSummaryController.php, lib/Service/Assistant/RecordSummaryService.php). Where buildiq places it on a detail page is the page editor's ordinary leaf placement.",
+				"reachedOn": "a built app's record page with the hermiq agent leaf placed on it",
 				"owner": "ConductionNL/hermiq",
-				"note": "Specified in ConductionNL/hermiq openspec/changes/agents-bound-to-their-app (hermiq lane, OpenSpec pass 2026-09-27)."
+				"note": "Built by the hermiq lane (archive 2026-10-01-agents-bound-to-their-app); set built in buildiq's matrix 2026-10-02 after reading hermiq development.",
+				"change": "ConductionNL/hermiq archive openspec/changes/archive/2026-10-01-agents-bound-to-their-app (hermiq development d3cac1131)"
 			},
 			"provider": "hermiq",
 			"providerHow": "read-from-code",
