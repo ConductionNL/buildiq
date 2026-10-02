@@ -40,9 +40,36 @@
 				@click="onSelectBlocksTab">
 				{{ t('buildiq', 'Blocks') }}
 			</button>
+			<!-- REQ-BQGL-003: the form library beside templates and blocks. -->
+			<button
+				type="button"
+				role="tab"
+				data-testid="forms-tab"
+				:aria-selected="viewMode === 'forms'"
+				class="template-gallery__view-btn"
+				:class="[
+					{ 'template-gallery__view-btn--active': viewMode === 'forms' },
+				]"
+				@click="viewMode = 'forms'">
+				{{ t('buildiq', 'Forms') }}
+			</button>
 		</div>
 
 		<template v-if="viewMode === 'templates'">
+			<!-- REQ-BQGL-001: one category filter for the built-in, organisation
+			     and GitHub templates, kept in ?category= so a link opens the
+			     same view. -->
+			<div class="template-gallery__filters">
+				<NcSelect
+					data-testid="template-category-filter"
+					:modelValue="selectedTemplateCategory"
+					:inputLabel="t('buildiq', 'Filter by category')"
+					:options="templateCategoryOptions"
+					:clearable="true"
+					:placeholder="t('buildiq', 'All categories')"
+					@update:modelValue="onTemplateCategory" />
+			</div>
+
 			<!-- Built-in templates: the application-template records of the
 			     buildiq register (seeded ones first, then organisation ones). -->
 			<section
@@ -82,40 +109,62 @@
 						)
 					" />
 
-				<ul v-else class="template-gallery__grid">
-					<li
-						v-for="tpl in sortedTemplates"
-						:key="tpl.slug || tpl.id"
-						class="template-card"
-						data-testid="builtin-template-card">
-						<div class="template-card__body">
-							<h3 class="template-card__title">
-								{{ tpl.title || tpl.slug }}
-							</h3>
-							<span
-								v-if="tpl.isSeeded === false"
-								class="template-card__badge">
-								{{ t('buildiq', 'Organisation template') }}
-							</span>
-							<span
-								v-if="tpl.category"
-								class="template-card__category"
-								>{{ categoryLabel(tpl.category) }}</span
-							>
-							<p v-if="tpl.useCase" class="template-card__usecase">
-								{{ tpl.useCase }}
-							</p>
-							<p class="template-card__description">
-								{{ tpl.description || '' }}
-							</p>
-						</div>
-						<div class="template-card__actions">
-							<NcButton variant="primary" @click="openClone(tpl)">
-								{{ t('buildiq', 'Use this template') }}
-							</NcButton>
-						</div>
-					</li>
-				</ul>
+				<NcEmptyContent
+					v-else-if="templateGroups.length === 0"
+					:name="t('buildiq', 'No templates in this category')" />
+
+				<template v-else>
+					<section
+						v-for="group in templateGroups"
+						:key="group.id"
+						class="template-gallery__category"
+						data-testid="template-category-group"
+						:aria-labelledby="'template-category-' + group.id">
+						<h3
+							:id="'template-category-' + group.id"
+							class="template-gallery__category-title">
+							{{ group.label }}
+						</h3>
+						<ul class="template-gallery__grid">
+							<li
+								v-for="tpl in group.templates"
+								:key="tpl.slug || tpl.id"
+								class="template-card"
+								data-testid="builtin-template-card">
+								<div class="template-card__body">
+									<h4 class="template-card__title">
+										{{ tpl.title || tpl.slug }}
+									</h4>
+									<span
+										v-if="tpl.isSeeded === false"
+										class="template-card__badge">
+										{{ t('buildiq', 'Organisation template') }}
+									</span>
+									<span
+										v-if="tpl.category"
+										class="template-card__category"
+										>{{ categoryLabel(tpl.category) }}</span
+									>
+									<p
+										v-if="tpl.useCase"
+										class="template-card__usecase">
+										{{ tpl.useCase }}
+									</p>
+									<p class="template-card__description">
+										{{ tpl.description || '' }}
+									</p>
+								</div>
+								<div class="template-card__actions">
+									<NcButton
+										variant="primary"
+										@click="openClone(tpl)">
+										{{ t('buildiq', 'Use this template') }}
+									</NcButton>
+								</div>
+							</li>
+						</ul>
+					</section>
+				</template>
 			</section>
 
 			<h2 class="template-gallery__section-title">
@@ -167,7 +216,7 @@
 			</div>
 
 			<div
-				v-else-if="githubCards.length === 0 && githubSearched"
+				v-else-if="visibleGithubCards.length === 0 && githubSearched"
 				class="template-gallery__empty">
 				<NcEmptyContent
 					:name="t('buildiq', 'No GitHub apps match your search')" />
@@ -178,9 +227,10 @@
 				class="template-gallery__grid"
 				data-walkthrough-id="templates-grid">
 				<li
-					v-for="card in githubCards"
+					v-for="card in visibleGithubCards"
 					:key="card.owner + '/' + card.repo"
-					class="template-card">
+					class="template-card"
+					data-testid="github-card">
 					<div class="template-card__body">
 						<h3 class="template-card__title">
 							{{ card.name || card.slug || card.repo }}
@@ -248,6 +298,12 @@
 		<!-- component-blocks: "Blocks" filter — browse-only, no clone action
 		     (blocks insert via the page designer's block library, per
 		     REQ "Blocks filter shows blocks without the clone action"). -->
+		<FormLibraryView
+			v-else-if="viewMode === 'forms'"
+			:categoryOptions="templateCategoryOptions"
+			:category="templateCategory"
+			@update:category="onTemplateCategory" />
+
 		<template v-else>
 			<div class="template-gallery__filters">
 				<NcSelect
@@ -321,6 +377,7 @@ import {
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
+import FormLibraryView from '../components/store/FormLibraryView.vue'
 import CloneTemplateDialog from '../modals/CloneTemplateDialog.vue'
 
 const OR_BLOCKS = '/apps/openregister/api/objects/buildiq/component-block'
@@ -333,6 +390,21 @@ const CATEGORY_LABELS = {
 	'field-work': 'Field work',
 }
 
+// The group of templates and cards without one of the four categories.
+const OTHER_CATEGORY = 'other'
+
+/**
+ * The category a template or GitHub card is grouped under.
+ *
+ * @param {object} item A template or a GitHub card.
+ * @return {string} One of the four category ids, or OTHER_CATEGORY.
+ * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/template-catalogue-ui/spec.md#requirement-templates-can-be-filtered-and-browsed-by-category-req-bqgl-001
+ */
+function categoryOf(item) {
+	const category = item && item.category
+	return Object.hasOwn(CATEGORY_LABELS, category) ? category : OTHER_CATEGORY
+}
+
 export default {
 	name: 'TemplateGallery',
 	components: {
@@ -343,6 +415,7 @@ export default {
 		NcSelect,
 		NcTextField,
 		CloneTemplateDialog,
+		FormLibraryView,
 	},
 
 	data() {
@@ -373,10 +446,84 @@ export default {
 			blocksLoading: false,
 			blocksLoaded: false,
 			blockCategoryFilter: null,
+			// REQ-BQGL-001: the picked template category id, or null for all.
+			templateCategory: null,
 		}
 	},
 
 	computed: {
+		/**
+		 * The template categories the filter offers: the closed enum of
+		 * ApplicationTemplate.category, in its own order.
+		 *
+		 * @return {Array<{id: string, label: string}>}
+		 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/template-catalogue-ui/spec.md#requirement-templates-can-be-filtered-and-browsed-by-category-req-bqgl-001
+		 */
+		templateCategoryOptions() {
+			return Object.keys(CATEGORY_LABELS).map((id) => ({
+				id,
+				label: this.categoryLabel(id),
+			}))
+		},
+
+		/**
+		 * The filter's current option, or null when every category shows.
+		 *
+		 * @return {{id: string, label: string}|null}
+		 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/template-catalogue-ui/spec.md#requirement-templates-can-be-filtered-and-browsed-by-category-req-bqgl-001
+		 */
+		selectedTemplateCategory() {
+			return (
+				this.templateCategoryOptions.find(
+					(option) => option.id === this.templateCategory,
+				) || null
+			)
+		},
+
+		/**
+		 * The built-in and organisation templates under a heading per
+		 * category, in the enum's order, with templates without a known
+		 * category last under "Other". Inside a group the seeded templates
+		 * come first. Narrowed to the picked category.
+		 *
+		 * @return {Array<{id: string, label: string, templates: Array<object>}>}
+		 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/template-catalogue-ui/spec.md#requirement-templates-can-be-filtered-and-browsed-by-category-req-bqgl-001
+		 */
+		templateGroups() {
+			const ids = [...Object.keys(CATEGORY_LABELS), OTHER_CATEGORY]
+			return ids
+				.filter(
+					(id) => !this.templateCategory || id === this.templateCategory,
+				)
+				.map((id) => ({
+					id,
+					label:
+						id === OTHER_CATEGORY
+							? t('buildiq', 'Other')
+							: this.categoryLabel(id),
+					templates: this.sortedTemplates.filter(
+						(tpl) => categoryOf(tpl) === id,
+					),
+				}))
+				.filter((group) => group.templates.length > 0)
+		},
+
+		/**
+		 * The GitHub cards after the category filter, by the category
+		 * their descriptor carries.
+		 *
+		 * @return {Array<object>}
+		 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/template-catalogue-ui/spec.md#requirement-templates-can-be-filtered-and-browsed-by-category-req-bqgl-001
+		 */
+		visibleGithubCards() {
+			if (!this.templateCategory) {
+				return this.githubCards
+			}
+			return this.githubCards.filter(
+				(card) => categoryOf(card) === this.templateCategory,
+			)
+		},
+
 		/**
 		 * The built-in templates in display order: seeded ones first, then
 		 * organisation templates, each group in the order the register
@@ -439,9 +586,24 @@ export default {
 	},
 
 	/**
+	 * Open on the category a shared link names.
+	 *
+	 * @return {void}
+	 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/template-catalogue-ui/spec.md#requirement-templates-can-be-filtered-and-browsed-by-category-req-bqgl-001
+	 */
+	created() {
+		// REQ-BQGL-001: a shared link opens on the category it names.
+		const fromLink = this.$route?.query?.category
+		this.templateCategory = Object.hasOwn(CATEGORY_LABELS, fromLink)
+			? fromLink
+			: null
+	},
+
+	/**
 	 * Load the built-in templates, run the initial GitHub search and detect a
 	 * GitHub credential.
 	 *
+	 * @return {void}
 	 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
 	 */
 	mounted() {
@@ -454,6 +616,33 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Apply a category picked in the filter and keep it in ?category=,
+		 * leaving the rest of the query as it was.
+		 *
+		 * @param {{id: string}|string|null} option The picked option, or null when cleared.
+		 * @return {void}
+		 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/template-catalogue-ui/spec.md#requirement-templates-can-be-filtered-and-browsed-by-category-req-bqgl-001
+		 */
+		onTemplateCategory(option) {
+			const id = option && (option.id ?? option)
+			this.templateCategory = Object.hasOwn(CATEGORY_LABELS, id) ? id : null
+			if (!this.$router || typeof this.$router.replace !== 'function') {
+				return
+			}
+			const query = { ...(this.$route?.query || {}) }
+			if (this.templateCategory) {
+				query.category = this.templateCategory
+			} else {
+				delete query.category
+			}
+			const done = this.$router.replace({ query })
+			if (done && typeof done.catch === 'function') {
+				// Replacing with the same query is not an error worth showing.
+				done.catch(() => {})
+			}
+		},
+
 		/**
 		 * Load the built-in templates from the buildiq register.
 		 *
@@ -839,6 +1028,11 @@ export default {
 .template-gallery__section-title {
 	margin: 0;
 	font-size: 1.2rem;
+}
+
+.template-gallery__category-title {
+	margin: 12px 0 8px;
+	font-size: 1rem;
 }
 
 .template-card__usecase {

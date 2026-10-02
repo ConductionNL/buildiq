@@ -209,6 +209,12 @@
 			<button type="button" :disabled="saving" @click="$emit('save')">
 				{{ saving ? t('buildiq', 'Saving') : t('buildiq', 'Save form') }}
 			</button>
+			<button
+				type="button"
+				data-testid="open-save-form-to-library"
+				@click="$emit('saveToLibrary')">
+				{{ t('buildiq', 'Save to form library') }}
+			</button>
 			<button type="button" @click="$emit('close')">
 				{{ t('buildiq', 'Close') }}
 			</button>
@@ -255,7 +261,7 @@ export default {
 		},
 	},
 
-	emits: ['update:modelValue', 'save', 'close'],
+	emits: ['update:modelValue', 'save', 'close', 'saveToLibrary'],
 
 	computed: {
 		/**

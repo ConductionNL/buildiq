@@ -5396,11 +5396,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "specified",
-				"evidence": "src/manifest.json:537-547 page Templates /templates mounts TemplateGallery (nav entry src/manifest.json:356); src/views/TemplateGallery.vue:463 fetchTemplates() reads /apps/openregister/api/objects/buildiq/application-template (:327) and renders cards with a category chip (:101-103, labels :329-334); four seeded templates lib/Settings/templates/*.json each carry a category (e.g. permit-tracker.json:6), seeded by lib/Repair/SeedApplicationTemplates.php (appinfo/info.xml:185,267) via lib/Service/TemplateSeedService.php:112; clone POSTs /api/applications/from-template/{templateSlug} (TemplateGallery.vue:512, routes.php:50 -> ApplicationsController.php:1566 createFromTemplate)",
-				"reachedOn": "Templates page /templates (titled 'App store'), 'Built-in templates' section",
+				"state": "building",
+				"evidence": "src/views/TemplateGallery.vue: one category NcSelect (data-testid template-category-filter) groups built-in and organisation templates under a heading per category with Other last, narrows the GitHub cards by their descriptor's category, and keeps the choice in ?category= (onTemplateCategory, $router.replace); tests/views/TemplateGallery.categories.spec.js",
+				"reachedOn": "Templates page /templates (titled 'App store'), category filter above 'Built-in templates'",
 				"owner": "ConductionNL/buildiq",
-				"note": "Specified in openspec/changes/reuse-gallery-categories-and-form-library (OpenSpec pass 2026-09-27).",
+				"note": "Specified in openspec/changes/reuse-gallery-categories-and-form-library (OpenSpec pass 2026-09-27). Code built; stays building until the Playwright ?category= case (tests/e2e/template-gallery.spec.ts) has run against a live stack.",
 				"change": "reuse-gallery-categories-and-form-library"
 			},
 			"provider": "buildiq",
@@ -7281,11 +7281,11 @@
 			"mendix": "partial",
 			"power-apps": "partial",
 			"built": {
-				"state": "specified",
-				"evidence": "No form-level library. Whole apps, forms included, can be saved as a template (src/dialogs/SaveAsTemplateDialog.vue) and published to or installed from GitHub (reuse-github-shop, lib/Service/GitHubCatalogService.php), which other organisations can pick up",
-				"reachedOn": "template gallery and GitHub shop (app level, not per form)",
+				"state": "building",
+				"evidence": "lib/Settings/register.d/83-form-library.json formTemplate; src/dialogs/SaveFormToLibraryDialog.vue from FormPageEditor.vue and RegistrationFormEditor.vue (via RegistrationFormList.vue) captures with src/services/formCapture.js; src/components/store/FormLibraryView.vue is the app store's Forms tab (search, category, Export, Import via src/services/formExport.js, GitHub cards from GET /api/shop/github/forms -> ShopController::githubFormSearch -> GitHubCatalogService::searchForms on topic:buildiq-form); src/dialogs/UseLibraryFormDialog.vue adds a library form to an app as a form page or a draft registration form and adds missing schema properties on confirm (src/services/formLibrary.js useLibraryForm)",
+				"reachedOn": "Templates page /templates, 'Forms' tab; page designer form page and case type form list, 'Save to form library'",
 				"owner": "ConductionNL/buildiq",
-				"note": "Specified in openspec/changes/reuse-gallery-categories-and-form-library (OpenSpec pass 2026-09-27).",
+				"note": "Specified in openspec/changes/reuse-gallery-categories-and-form-library (OpenSpec pass 2026-09-27). Code built; stays building until tests/e2e/form-library.spec.ts has run against a live stack.",
 				"change": "reuse-gallery-categories-and-form-library"
 			},
 			"provider": "buildiq",

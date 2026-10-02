@@ -299,6 +299,8 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // before the engine-appended SPA catch-all.
         ['name' => 'shop#githubSearch',  'url' => '/api/shop/github/search',  'verb' => 'GET'],
         ['name' => 'shop#githubInstall', 'url' => '/api/shop/github/install', 'verb' => 'POST'],
+        // Shared forms on GitHub (reuse-gallery-categories-and-form-library REQ-BQGL-005).
+        ['name' => 'formLibrary#githubSearch', 'url' => '/api/shop/github/forms', 'verb' => 'GET'],
 
         // GitHub owner round-trip (github-app-sync REQ-GHAS-001..004). All four
         // #[NoAdminRequired] with a per-object owner guard (status viewer-readable).

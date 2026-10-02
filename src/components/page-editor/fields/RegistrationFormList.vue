@@ -69,7 +69,17 @@
 				:saving="adding"
 				@update:modelValue="editing = $event"
 				@save="saveEdited"
-				@close="editing = null" />
+				@close="editing = null"
+				@saveToLibrary="libraryDialogOpen = true" />
+
+			<SaveFormToLibraryDialog
+				v-if="libraryDialogOpen && editing"
+				v-model:open="libraryDialogOpen"
+				kind="registration-form"
+				:form="editing"
+				:register="register"
+				:schemaSlug="schema"
+				:appSlug="targetApp" />
 
 			<ul v-if="warnings.length" class="form-list__warnings" role="alert">
 				<li v-for="warning in warnings" :key="warning">
@@ -130,6 +140,7 @@
 </template>
 
 <script>
+import SaveFormToLibraryDialog from '../../../dialogs/SaveFormToLibraryDialog.vue'
 import RegistrationFormEditor from './RegistrationFormEditor.vue'
 import { copyOfForm } from '../../../services/formCopy.js'
 import {
@@ -141,7 +152,7 @@ import {
 export default {
 	name: 'RegistrationFormList',
 
-	components: { RegistrationFormEditor },
+	components: { RegistrationFormEditor, SaveFormToLibraryDialog },
 
 	props: {
 		register: {
@@ -187,6 +198,7 @@ export default {
 			draftAudience: 'client',
 			draftDefault: false,
 			editing: null,
+			libraryDialogOpen: false,
 			properties: null,
 			channels: null,
 			note: '',
