@@ -98,7 +98,11 @@
 				:disabled="!canSave"
 				data-testid="save-form-to-library"
 				@click="save">
-				{{ saving ? t('buildiq', 'Saving…') : t('buildiq', 'Save to form library') }}
+				{{
+					saving
+						? t('buildiq', 'Saving…')
+						: t('buildiq', 'Save to form library')
+				}}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -106,7 +110,13 @@
 
 <script>
 import { getCurrentUser } from '@nextcloud/auth'
-import { NcButton, NcDialog, NcSelect, NcTextArea, NcTextField } from '@nextcloud/vue'
+import {
+	NcButton,
+	NcDialog,
+	NcSelect,
+	NcTextArea,
+	NcTextField,
+} from '@nextcloud/vue'
 import { captureForm, FormBindingError } from '../services/formCapture.js'
 import { createLibraryForm, fetchRegisterSchema } from '../services/formLibrary.js'
 import { suggestSlug, TEMPLATE_CATEGORIES } from '../services/templateCapture.js'
@@ -173,7 +183,10 @@ export default {
 		 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-a-form-can-be-saved-to-the-library-req-bqgl-002
 		 */
 		categoryOption() {
-			return this.categoryOptions.find((option) => option.id === this.category) || null
+			return (
+				this.categoryOptions.find((option) => option.id === this.category)
+				|| null
+			)
 		},
 
 		/**
@@ -203,6 +216,7 @@ export default {
 							createdBy: (user && user.uid) || '',
 						},
 					}),
+
 					missing: [],
 				}
 			} catch (error) {
@@ -240,12 +254,14 @@ export default {
 		 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-a-form-can-be-saved-to-the-library-req-bqgl-002
 		 */
 		canSave() {
-			return !this.saving
+			return (
+				!this.saving
 				&& this.name.trim() !== ''
 				&& /^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(this.slug)
 				&& this.slug.length <= 64
 				&& this.category !== ''
 				&& this.record !== null
+			)
 		},
 	},
 
@@ -289,17 +305,29 @@ export default {
 			this.schemaError = ''
 			this.schema = null
 			if (!this.register || !this.schemaSlug) {
-				this.schemaError = t('buildiq', 'Pick the schema this form saves into before you save it to the library.')
+				this.schemaError = t(
+					'buildiq',
+					'Pick the schema this form saves into before you save it to the library.',
+				)
 				return
 			}
 			this.loadingSchema = true
 			try {
-				this.schema = await fetchRegisterSchema(this.register, this.schemaSlug)
+				this.schema = await fetchRegisterSchema(
+					this.register,
+					this.schemaSlug,
+				)
 				if (!this.schema) {
-					this.schemaError = t('buildiq', 'The schema this form saves into could not be read.')
+					this.schemaError = t(
+						'buildiq',
+						'The schema this form saves into could not be read.',
+					)
 				}
 			} catch {
-				this.schemaError = t('buildiq', 'The schema this form saves into could not be read.')
+				this.schemaError = t(
+					'buildiq',
+					'The schema this form saves into could not be read.',
+				)
 			} finally {
 				this.loadingSchema = false
 			}
@@ -361,7 +389,8 @@ export default {
 				this.$emit('update:open', false)
 			} catch (error) {
 				const data = error && error.response && error.response.data
-				this.saveError = (data && (data.detail || data.message || data.error))
+				this.saveError =
+					(data && (data.detail || data.message || data.error))
 					|| t('buildiq', 'Saving the form to the library failed.')
 			} finally {
 				this.saving = false

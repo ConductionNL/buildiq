@@ -112,9 +112,12 @@ test.describe('Buildiq template gallery', () => {
 	test('REQ-BQGL-001: a link with ?category= opens the Templates view on that category', async ({
 		page,
 	}) => {
-		await page.goto(`${NEXTCLOUD_URL}/apps/buildiq/templates?category=field-work`, {
-			waitUntil: 'domcontentloaded',
-		})
+		await page.goto(
+			`${NEXTCLOUD_URL}/apps/buildiq/templates?category=field-work`,
+			{
+				waitUntil: 'domcontentloaded',
+			},
+		)
 		await expect(page.locator('.template-gallery')).toBeVisible({
 			timeout: 45_000,
 		})

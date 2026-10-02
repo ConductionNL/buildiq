@@ -26,10 +26,21 @@ vi.mock('../../src/services/registrationForms.js', () => ({ saveRegistrationForm
 import UseLibraryFormDialog from '../../src/dialogs/UseLibraryFormDialog.vue'
 
 const stubs = {
-	NcDialog: { name: 'NcDialog', props: ['open', 'name', 'size'], template: '<div><slot /><slot name="actions" /></div>' },
+	NcDialog: {
+		name: 'NcDialog',
+		props: ['open', 'name', 'size'],
+		template: '<div><slot /><slot name="actions" /></div>',
+	},
 	NcSelect: {
 		name: 'NcSelect',
-		props: ['modelValue', 'options', 'inputLabel', 'disabled', 'loading', 'clearable'],
+		props: [
+			'modelValue',
+			'options',
+			'inputLabel',
+			'disabled',
+			'loading',
+			'clearable',
+		],
 		emits: ['update:modelValue'],
 		template: '<div class="select" :data-label="inputLabel" />',
 	},
@@ -37,7 +48,8 @@ const stubs = {
 		name: 'NcTextField',
 		props: ['modelValue', 'label'],
 		emits: ['update:modelValue'],
-		template: '<input :data-label="label" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)">',
+		template:
+			'<input :data-label="label" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)">',
 	},
 	NcCheckboxRadioSwitch: {
 		name: 'NcCheckboxRadioSwitch',
@@ -49,7 +61,8 @@ const stubs = {
 		name: 'NcButton',
 		props: ['variant', 'disabled'],
 		emits: ['click'],
-		template: '<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
+		template:
+			'<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
 	},
 }
 
@@ -61,7 +74,13 @@ const template = {
 	kind: 'registration-form',
 	category: 'citizen-engagement',
 	sourceSchema: 'aanvraag',
-	form: { fields: [{ name: 'naam', label: 'Naam' }, { name: 'verbruikKwh', label: 'Verbruik' }], confirmationText: 'Bedankt.' },
+	form: {
+		fields: [
+			{ name: 'naam', label: 'Naam' },
+			{ name: 'verbruikKwh', label: 'Verbruik' },
+		],
+		confirmationText: 'Bedankt.',
+	},
 	schemaFragment: { naam: { type: 'string' }, verbruikKwh: { type: 'number' } },
 }
 
@@ -71,15 +90,23 @@ const template = {
  * @return {Promise<object>}
  */
 async function mountAndPick() {
-	const wrapper = mount(UseLibraryFormDialog, { props: { open: true, template }, global: { stubs } })
+	const wrapper = mount(UseLibraryFormDialog, {
+		props: { open: true, template },
+		global: { stubs },
+	})
 	await flush()
-	const select = (label) => wrapper.findAllComponents({ name: 'NcSelect' }).find((s) => s.props('inputLabel') === label)
+	const select = (label) =>
+		wrapper
+			.findAllComponents({ name: 'NcSelect' })
+			.find((s) => s.props('inputLabel') === label)
 
 	select('App').vm.$emit('update:modelValue', { id: 'subsidies' })
 	await flush()
 	select('Version').vm.$emit('update:modelValue', { id: 'v1' })
 	await flush()
-	select('Schema the form saves into').vm.$emit('update:modelValue', { id: 'aanvraag' })
+	select('Schema the form saves into').vm.$emit('update:modelValue', {
+		id: 'aanvraag',
+	})
 	await flush()
 
 	const fields = wrapper.findAllComponents({ name: 'NcTextField' })
@@ -93,21 +120,42 @@ describe('UseLibraryFormDialog', () => {
 	beforeEach(() => {
 		axiosMock.get.mockReset().mockImplementation((url) => {
 			if (url.includes('built-app')) {
-				return Promise.resolve({ data: { results: [{ slug: 'subsidies', name: 'Subsidies' }] } })
+				return Promise.resolve({
+					data: { results: [{ slug: 'subsidies', name: 'Subsidies' }] },
+				})
 			}
 			if (url.endsWith('/versions')) {
 				return Promise.resolve({ data: [{ slug: 'v1', name: 'v1' }] })
 			}
 			if (url.endsWith('/versions/v1')) {
-				return Promise.resolve({ data: { slug: 'v1', register: 'subsidies-reg', '@self': { id: 'v-uuid' }, manifest: { pages: [] } } })
+				return Promise.resolve({
+					data: {
+						slug: 'v1',
+						register: 'subsidies-reg',
+						'@self': { id: 'v-uuid' },
+						manifest: { pages: [] },
+					},
+				})
 			}
 			if (url.includes('/registers/subsidies-reg/schemas')) {
-				return Promise.resolve({ data: { results: [{ id: 9, slug: 'aanvraag', properties: { naam: { type: 'string' } } }] } })
+				return Promise.resolve({
+					data: {
+						results: [
+							{
+								id: 9,
+								slug: 'aanvraag',
+								properties: { naam: { type: 'string' } },
+							},
+						],
+					},
+				})
 			}
 			return Promise.resolve({ data: [] })
 		})
 		axiosMock.patch.mockReset().mockResolvedValue({ data: {} })
-		saveRegistrationForm.mockReset().mockImplementation(async (form) => ({ form, warnings: [] }))
+		saveRegistrationForm
+			.mockReset()
+			.mockImplementation(async (form) => ({ form, warnings: [] }))
 	})
 
 	it('shows the whole form and the property the schema lacks, and writes nothing yet', async () => {
@@ -115,8 +163,12 @@ describe('UseLibraryFormDialog', () => {
 
 		expect(wrapper.text()).toContain('Naam')
 		expect(wrapper.text()).toContain('Verbruik')
-		expect(wrapper.find('[data-testid="missing-properties"]').text()).toContain('verbruikKwh')
-		expect(wrapper.find('[data-testid="confirm-use-form"]').attributes('disabled')).toBeDefined()
+		expect(wrapper.find('[data-testid="missing-properties"]').text()).toContain(
+			'verbruikKwh',
+		)
+		expect(
+			wrapper.find('[data-testid="confirm-use-form"]').attributes('disabled'),
+		).toBeDefined()
 		expect(axiosMock.patch).not.toHaveBeenCalled()
 		expect(saveRegistrationForm).not.toHaveBeenCalled()
 	})
@@ -124,7 +176,9 @@ describe('UseLibraryFormDialog', () => {
 	it('adds the property and the registration form once the maker confirms', async () => {
 		const wrapper = await mountAndPick()
 
-		wrapper.findComponent('[data-testid="add-properties"]').vm.$emit('update:modelValue', true)
+		wrapper
+			.findComponent('[data-testid="add-properties"]')
+			.vm.$emit('update:modelValue', true)
 		await flush()
 		await wrapper.find('[data-testid="confirm-use-form"]').trigger('click')
 		await flush()

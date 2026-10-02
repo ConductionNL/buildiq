@@ -83,14 +83,45 @@ const githubCards = [
 ]
 
 const libraryForms = [
-	{ slug: 'aanvraag-energiesubsidie', name: 'Aanvraag energiesubsidie', category: 'citizen-engagement', publisher: 'Gemeente Voorbeeld' },
-	{ slug: 'melding-openbare-ruimte', name: 'Melding openbare ruimte', category: 'field-work', publisher: 'Gemeente Elders' },
-	{ slug: 'verlofaanvraag', name: 'Verlofaanvraag', category: 'internal-operations', publisher: 'HR' },
+	{
+		slug: 'aanvraag-energiesubsidie',
+		name: 'Aanvraag energiesubsidie',
+		category: 'citizen-engagement',
+		publisher: 'Gemeente Voorbeeld',
+	},
+	{
+		slug: 'melding-openbare-ruimte',
+		name: 'Melding openbare ruimte',
+		category: 'field-work',
+		publisher: 'Gemeente Elders',
+	},
+	{
+		slug: 'verlofaanvraag',
+		name: 'Verlofaanvraag',
+		category: 'internal-operations',
+		publisher: 'HR',
+	},
 ]
 
 const githubForms = [
-	{ owner: 'b', repo: 'parkeren', name: 'Parkeervergunning', category: 'government-services', publisher: 'b', installable: true, htmlUrl: '' },
-	{ owner: 'b', repo: 'schouw', name: 'Schouwronde', category: 'field-work', publisher: 'b', installable: true, htmlUrl: '' },
+	{
+		owner: 'b',
+		repo: 'parkeren',
+		name: 'Parkeervergunning',
+		category: 'government-services',
+		publisher: 'b',
+		installable: true,
+		htmlUrl: '',
+	},
+	{
+		owner: 'b',
+		repo: 'schouw',
+		name: 'Schouwronde',
+		category: 'field-work',
+		publisher: 'b',
+		installable: true,
+		htmlUrl: '',
+	},
 ]
 
 /**
@@ -294,13 +325,19 @@ describe('TemplateGallery forms view (REQ-BQGL-003, REQ-BQGL-005)', () => {
 	 * @return {Array<string>}
 	 */
 	function formNames(wrapper) {
-		return wrapper.findAll('[data-testid="library-form-card"] h3').map((h) => h.text())
+		return wrapper
+			.findAll('[data-testid="library-form-card"] h3')
+			.map((h) => h.text())
 	}
 
 	it('lists the library forms with their category and publisher', async () => {
 		const { wrapper } = await openForms()
 
-		expect(formNames(wrapper)).toEqual(['Aanvraag energiesubsidie', 'Melding openbare ruimte', 'Verlofaanvraag'])
+		expect(formNames(wrapper)).toEqual([
+			'Aanvraag energiesubsidie',
+			'Melding openbare ruimte',
+			'Verlofaanvraag',
+		])
 		const card = wrapper.find('[data-testid="library-form-card"]')
 		expect(card.text()).toContain('Citizen engagement')
 		expect(card.text()).toContain('Published by {publisher}')
@@ -320,17 +357,29 @@ describe('TemplateGallery forms view (REQ-BQGL-003, REQ-BQGL-005)', () => {
 		const { wrapper } = await openForms({ category: 'field-work' })
 
 		expect(formNames(wrapper)).toEqual(['Melding openbare ruimte'])
-		expect(wrapper.findAll('[data-testid="github-form-card"] h3').map((h) => h.text())).toEqual(['Schouwronde'])
+		expect(
+			wrapper
+				.findAll('[data-testid="github-form-card"] h3')
+				.map((h) => h.text()),
+		).toEqual(['Schouwronde'])
 	})
 
 	it('refuses a file that is not a form export and creates nothing', async () => {
 		const { wrapper } = await openForms()
 		const view = wrapper.findComponent({ name: 'FormLibraryView' })
 
-		await view.vm.importText(JSON.stringify({ schemaVersion: '1.0', kind: 'component-block', block: {} }))
+		await view.vm.importText(
+			JSON.stringify({
+				schemaVersion: '1.0',
+				kind: 'component-block',
+				block: {},
+			}),
+		)
 		await wrapper.vm.$nextTick()
 
-		expect(wrapper.find('[role="alert"]').text()).toBe('This file is not a form export.')
+		expect(wrapper.find('[role="alert"]').text()).toBe(
+			'This file is not a form export.',
+		)
 		expect(axiosMock.post).not.toHaveBeenCalled()
 	})
 

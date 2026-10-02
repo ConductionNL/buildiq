@@ -70,7 +70,12 @@ final class FormLibraryFragmentTest extends TestCase {
 		$fragment = [];
 		foreach ($names as $index => $name) {
 			$fields[] = ['name' => $name, 'label' => ucfirst($name), 'order' => $index];
-			$fragment[$name] = ['type' => ($name === 'verbruikKwh' ? 'number' : 'string')];
+			$type = 'string';
+			if ($name === 'verbruikKwh') {
+				$type = 'number';
+			}
+
+			$fragment[$name] = ['type' => $type];
 		}
 
 		return [
@@ -117,7 +122,7 @@ final class FormLibraryFragmentTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheImportAcceptsASavedForm(): void {
-		$this->assertSame(expected: '', actual: $this->errors($this->subsidyRecord()));
+		$this->assertSame(expected: '', actual: $this->errors(record: $this->subsidyRecord()));
 	}//end testTheImportAcceptsASavedForm()
 
 	/**
@@ -129,7 +134,7 @@ final class FormLibraryFragmentTest extends TestCase {
 		$record = $this->subsidyRecord();
 		$record['kind'] = 'component-block';
 
-		$this->assertNotSame(expected: '', actual: $this->errors($record));
+		$this->assertNotSame(expected: '', actual: $this->errors(record: $record));
 	}//end testTheImportRefusesAnotherKind()
 
 	/**
@@ -141,7 +146,7 @@ final class FormLibraryFragmentTest extends TestCase {
 		$record = $this->subsidyRecord();
 		unset($record['schemaFragment']);
 
-		$this->assertNotSame(expected: '', actual: $this->errors($record));
+		$this->assertNotSame(expected: '', actual: $this->errors(record: $record));
 	}//end testTheImportRefusesAFormWithoutItsDefinitions()
 
 	/**
@@ -151,8 +156,9 @@ final class FormLibraryFragmentTest extends TestCase {
 	 */
 	public function testTheCategoryIsTheTemplateCategory(): void {
 		$template = json_decode((string)file_get_contents(__DIR__ . '/../../../lib/Settings/openbuild_register.json'), true);
-		$templateCategories = $this->findCategoryEnum($template);
-		$formCategories = json_decode((string)file_get_contents($this->path), true)['components']['schemas']['formTemplate']['properties']['category']['enum'];
+		$templateCategories = $this->findCategoryEnum(register: $template);
+		$formSchemas = json_decode((string)file_get_contents($this->path), true)['components']['schemas'];
+		$formCategories = $formSchemas['formTemplate']['properties']['category']['enum'];
 
 		$this->assertSame(expected: $templateCategories, actual: $formCategories);
 	}//end testTheCategoryIsTheTemplateCategory()

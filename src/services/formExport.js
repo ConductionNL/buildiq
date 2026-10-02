@@ -18,7 +18,12 @@ export const FORM_EXPORT_KIND = 'form-template'
 export const FORM_EXPORT_SCHEMA_VERSION = '1.0'
 
 /** The categories a library form can carry, as the formTemplate schema declares them. */
-const CATEGORIES = ['government-services', 'internal-operations', 'citizen-engagement', 'field-work']
+const CATEGORIES = [
+	'government-services',
+	'internal-operations',
+	'citizen-engagement',
+	'field-work',
+]
 
 /**
  * A refused import. `code` is one of invalid-json, not-a-form, invalid-form.
@@ -71,7 +76,9 @@ export function exportFormPayload(form) {
  * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-forms-travel-between-organisations-req-bqgl-005
  */
 export function downloadFormExport(form) {
-	const blob = new Blob([JSON.stringify(exportFormPayload(form), null, 2)], { type: 'application/json' })
+	const blob = new Blob([JSON.stringify(exportFormPayload(form), null, 2)], {
+		type: 'application/json',
+	})
 	const link = document.createElement('a')
 	link.href = URL.createObjectURL(blob)
 	link.download = `${(form && form.slug) || 'form-template'}.json`
@@ -96,17 +103,29 @@ export function parseFormImport(input) {
 			throw new FormImportError('invalid-json')
 		}
 	}
-	if (!data || typeof data !== 'object' || data.kind !== FORM_EXPORT_KIND || !data.form || typeof data.form !== 'object') {
+	if (
+		!data
+		|| typeof data !== 'object'
+		|| data.kind !== FORM_EXPORT_KIND
+		|| !data.form
+		|| typeof data.form !== 'object'
+	) {
 		throw new FormImportError('not-a-form')
 	}
 	const form = withoutIdentity(data.form)
-	const valid
-		= typeof form.slug === 'string' && /^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(form.slug)
-		&& typeof form.name === 'string' && form.name !== ''
+	const valid =
+		typeof form.slug === 'string'
+		&& /^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(form.slug)
+		&& typeof form.name === 'string'
+		&& form.name !== ''
 		&& FORM_KINDS.includes(form.kind)
 		&& CATEGORIES.includes(form.category)
-		&& form.form && typeof form.form === 'object' && Array.isArray(form.form.fields)
-		&& form.schemaFragment && typeof form.schemaFragment === 'object' && !Array.isArray(form.schemaFragment)
+		&& form.form
+		&& typeof form.form === 'object'
+		&& Array.isArray(form.form.fields)
+		&& form.schemaFragment
+		&& typeof form.schemaFragment === 'object'
+		&& !Array.isArray(form.schemaFragment)
 	if (!valid) {
 		throw new FormImportError('invalid-form')
 	}

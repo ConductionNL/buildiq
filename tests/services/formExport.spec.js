@@ -42,7 +42,9 @@ describe('formExport (REQ-BQGL-005)', () => {
 	})
 
 	it('round-trips: an imported export is the same library form, keeping its category and publisher', () => {
-		const imported = parseFormImport(JSON.stringify(exportFormPayload(libraryForm)))
+		const imported = parseFormImport(
+			JSON.stringify(exportFormPayload(libraryForm)),
+		)
 
 		expect(imported.slug).toBe('aanvraag-energiesubsidie')
 		expect(imported.category).toBe('citizen-engagement')
@@ -52,7 +54,11 @@ describe('formExport (REQ-BQGL-005)', () => {
 	})
 
 	it('refuses a component block export', () => {
-		const block = { schemaVersion: '1.0', kind: 'component-block', block: { slug: 'x', fragment: {} } }
+		const block = {
+			schemaVersion: '1.0',
+			kind: 'component-block',
+			block: { slug: 'x', fragment: {} },
+		}
 
 		expect(() => parseFormImport(JSON.stringify(block))).toThrow(FormImportError)
 		try {
@@ -71,7 +77,10 @@ describe('formExport (REQ-BQGL-005)', () => {
 		const badKind = exportFormPayload({ ...libraryForm, kind: 'page' })
 		expect(() => parseFormImport(badKind)).toThrow(FormImportError)
 
-		const badCategory = exportFormPayload({ ...libraryForm, category: 'anything' })
+		const badCategory = exportFormPayload({
+			...libraryForm,
+			category: 'anything',
+		})
 		expect(() => parseFormImport(badCategory)).toThrow(FormImportError)
 	})
 })

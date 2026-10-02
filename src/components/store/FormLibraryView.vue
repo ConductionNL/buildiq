@@ -25,7 +25,9 @@
 				:clearable="true"
 				:placeholder="t('buildiq', 'All categories')"
 				@update:modelValue="$emit('update:category', $event)" />
-			<NcButton data-testid="form-library-import" @click="$refs.importInput.click()">
+			<NcButton
+				data-testid="form-library-import"
+				@click="$refs.importInput.click()">
 				{{ t('buildiq', 'Import a form') }}
 			</NcButton>
 			<input
@@ -34,7 +36,7 @@
 				type="file"
 				accept="application/json,.json"
 				:aria-label="t('buildiq', 'Import a form')"
-				@change="onImportFile">
+				@change="onImportFile" />
 		</div>
 
 		<p v-if="notice" class="bq-form-library__notice" role="status">
@@ -44,7 +46,9 @@
 			{{ error }}
 		</p>
 
-		<section class="bq-form-library__section" aria-labelledby="bq-library-forms-heading">
+		<section
+			class="bq-form-library__section"
+			aria-labelledby="bq-library-forms-heading">
 			<h2 id="bq-library-forms-heading" class="bq-form-library__title">
 				{{ t('buildiq', 'Library forms') }}
 			</h2>
@@ -54,7 +58,12 @@
 			<NcEmptyContent
 				v-else-if="visibleForms.length === 0"
 				:name="t('buildiq', 'No forms match')"
-				:description="t('buildiq', 'Save a form page or a registration form to the library, or import a form file.')" />
+				:description="
+					t(
+						'buildiq',
+						'Save a form page or a registration form to the library, or import a form file.',
+					)
+				" />
 			<ul v-else class="bq-form-library__grid">
 				<li
 					v-for="form in visibleForms"
@@ -64,9 +73,15 @@
 					<h3 class="bq-form-library__name">
 						{{ form.name }}
 					</h3>
-					<span class="bq-form-library__chip">{{ categoryLabel(form.category) }}</span>
+					<span class="bq-form-library__chip">{{
+						categoryLabel(form.category)
+					}}</span>
 					<p class="bq-form-library__meta">
-						{{ t('buildiq', 'Published by {publisher}', { publisher: form.publisher || t('buildiq', 'unknown') }) }}
+						{{
+							t('buildiq', 'Published by {publisher}', {
+								publisher: form.publisher || t('buildiq', 'unknown'),
+							})
+						}}
 					</p>
 					<p class="bq-form-library__description">
 						{{ form.description || '' }}
@@ -83,7 +98,9 @@
 			</ul>
 		</section>
 
-		<section class="bq-form-library__section" aria-labelledby="bq-github-forms-heading">
+		<section
+			class="bq-form-library__section"
+			aria-labelledby="bq-github-forms-heading">
 			<h2 id="bq-github-forms-heading" class="bq-form-library__title">
 				{{ t('buildiq', 'Forms on GitHub') }}
 			</h2>
@@ -91,10 +108,22 @@
 				<NcLoadingIcon :size="32" />
 			</div>
 			<p v-else-if="githubOutcome !== 'ok'" class="bq-form-library__notice">
-				{{ t('buildiq', 'GitHub could not be reached right now. Try again shortly.') }}
+				{{
+					t(
+						'buildiq',
+						'GitHub could not be reached right now. Try again shortly.',
+					)
+				}}
 			</p>
-			<p v-else-if="visibleGithubCards.length === 0" class="bq-form-library__notice">
-				{{ t('buildiq', 'No forms on GitHub match. Publish one in a repository with the topic buildiq-form and a form.json at its root.') }}
+			<p
+				v-else-if="visibleGithubCards.length === 0"
+				class="bq-form-library__notice">
+				{{
+					t(
+						'buildiq',
+						'No forms on GitHub match. Publish one in a repository with the topic buildiq-form and a form.json at its root.',
+					)
+				}}
 			</p>
 			<ul v-else class="bq-form-library__grid">
 				<li
@@ -105,16 +134,29 @@
 					<h3 class="bq-form-library__name">
 						{{ card.name }}
 					</h3>
-					<span v-if="card.category" class="bq-form-library__chip">{{ categoryLabel(card.category) }}</span>
+					<span v-if="card.category" class="bq-form-library__chip">{{
+						categoryLabel(card.category)
+					}}</span>
 					<p class="bq-form-library__meta">
-						{{ t('buildiq', 'Published by {publisher}', { publisher: card.publisher }) }}
-						<a :href="card.htmlUrl" target="_blank" rel="noopener noreferrer">{{ card.owner }}/{{ card.repo }}</a>
+						{{
+							t('buildiq', 'Published by {publisher}', {
+								publisher: card.publisher,
+							})
+						}}
+						<a
+							:href="card.htmlUrl"
+							target="_blank"
+							rel="noopener noreferrer"
+							>{{ card.owner }}/{{ card.repo }}</a
+						>
 					</p>
 					<p class="bq-form-library__description">
 						{{ card.description || '' }}
 					</p>
 					<div class="bq-form-library__actions">
-						<NcButton :disabled="!card.installable" @click="install(card)">
+						<NcButton
+							:disabled="!card.installable"
+							@click="install(card)">
 							{{ t('buildiq', 'Add to my library') }}
 						</NcButton>
 					</div>
@@ -133,15 +175,36 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcEmptyContent, NcLoadingIcon, NcSelect, NcTextField } from '@nextcloud/vue'
+import {
+	NcButton,
+	NcEmptyContent,
+	NcLoadingIcon,
+	NcSelect,
+	NcTextField,
+} from '@nextcloud/vue'
 import UseLibraryFormDialog from '../../dialogs/UseLibraryFormDialog.vue'
-import { downloadFormExport, FormImportError, parseFormImport } from '../../services/formExport.js'
-import { createLibraryForm, fetchLibraryForms, filterLibraryForms } from '../../services/formLibrary.js'
+import {
+	downloadFormExport,
+	FormImportError,
+	parseFormImport,
+} from '../../services/formExport.js'
+import {
+	createLibraryForm,
+	fetchLibraryForms,
+	filterLibraryForms,
+} from '../../services/formLibrary.js'
 
 export default {
 	name: 'FormLibraryView',
 
-	components: { NcButton, NcEmptyContent, NcLoadingIcon, NcSelect, NcTextField, UseLibraryFormDialog },
+	components: {
+		NcButton,
+		NcEmptyContent,
+		NcLoadingIcon,
+		NcSelect,
+		NcTextField,
+		UseLibraryFormDialog,
+	},
 
 	props: {
 		// The gallery's category options, `{id, label}`.
@@ -176,7 +239,10 @@ export default {
 		 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-the-app-store-lists-library-forms-req-bqgl-003
 		 */
 		categoryOption() {
-			return this.categoryOptions.find((option) => option.id === this.category) || null
+			return (
+				this.categoryOptions.find((option) => option.id === this.category)
+				|| null
+			)
 		},
 
 		/**
@@ -186,7 +252,10 @@ export default {
 		 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-the-app-store-lists-library-forms-req-bqgl-003
 		 */
 		visibleForms() {
-			return filterLibraryForms(this.forms, { query: this.query, category: this.category || '' })
+			return filterLibraryForms(this.forms, {
+				query: this.query,
+				category: this.category || '',
+			})
 		},
 
 		/**
@@ -197,7 +266,9 @@ export default {
 		 */
 		visibleGithubCards() {
 			return this.category
-				? this.githubCards.filter((card) => card && card.category === this.category)
+				? this.githubCards.filter(
+						(card) => card && card.category === this.category,
+					)
 				: this.githubCards
 		},
 	},
@@ -268,10 +339,15 @@ export default {
 		async searchGithub() {
 			this.githubLoading = true
 			try {
-				const { data } = await axios.get(generateUrl('/apps/buildiq/api/shop/github/forms'), {
-					params: { q: this.query.trim() },
-				})
-				this.githubCards = Array.isArray(data && data.cards) ? data.cards : []
+				const { data } = await axios.get(
+					generateUrl('/apps/buildiq/api/shop/github/forms'),
+					{
+						params: { q: this.query.trim() },
+					},
+				)
+				this.githubCards = Array.isArray(data && data.cards)
+					? data.cards
+					: []
 				this.githubOutcome = (data && data.outcome) || 'ok'
 			} catch {
 				this.githubCards = []
@@ -301,7 +377,9 @@ export default {
 		 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-a-library-form-can-be-added-to-an-app-req-bqgl-004
 		 */
 		onUsed(result) {
-			this.notice = t('buildiq', 'The form was added to {app}.', { app: result.appSlug })
+			this.notice = t('buildiq', 'The form was added to {app}.', {
+				app: result.appSlug,
+			})
 		},
 
 		/**
@@ -323,7 +401,8 @@ export default {
 		 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-forms-travel-between-organisations-req-bqgl-005
 		 */
 		async onImportFile(event) {
-			const file = event && event.target && event.target.files && event.target.files[0]
+			const file =
+				event && event.target && event.target.files && event.target.files[0]
 			if (!file) {
 				return
 			}
@@ -346,18 +425,29 @@ export default {
 			try {
 				record = parseFormImport(input)
 			} catch (refusal) {
-				this.error = refusal instanceof FormImportError && refusal.code === 'invalid-form'
-					? t('buildiq', 'This file is a form export, but the form in it is not complete.')
-					: t('buildiq', 'This file is not a form export.')
+				this.error =
+					refusal instanceof FormImportError
+					&& refusal.code === 'invalid-form'
+						? t(
+								'buildiq',
+								'This file is a form export, but the form in it is not complete.',
+							)
+						: t('buildiq', 'This file is not a form export.')
 				return
 			}
 			if (this.forms.some((form) => form && form.slug === record.slug)) {
-				this.error = t('buildiq', 'Your library already has a form with the slug {slug}.', { slug: record.slug })
+				this.error = t(
+					'buildiq',
+					'Your library already has a form with the slug {slug}.',
+					{ slug: record.slug },
+				)
 				return
 			}
 			try {
 				await createLibraryForm(record)
-				this.notice = t('buildiq', '{name} is in your form library.', { name: record.name })
+				this.notice = t('buildiq', '{name} is in your form library.', {
+					name: record.name,
+				})
 				await this.load()
 			} catch {
 				this.error = t('buildiq', 'Adding the form to the library failed.')

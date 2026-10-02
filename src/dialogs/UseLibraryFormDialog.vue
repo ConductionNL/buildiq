@@ -22,7 +22,9 @@
 				{{ template ? template.name : '' }}
 			</p>
 
-			<section class="bq-use-form__preview" :aria-label="t('buildiq', 'What the form asks')">
+			<section
+				class="bq-use-form__preview"
+				:aria-label="t('buildiq', 'What the form asks')">
 				<h3>{{ t('buildiq', 'What the form asks') }}</h3>
 				<ul>
 					<li v-for="field in previewFields" :key="field">
@@ -30,7 +32,11 @@
 					</li>
 				</ul>
 				<p v-if="confirmationText" class="bq-use-form__note">
-					{{ t('buildiq', 'After sending: {text}', { text: confirmationText }) }}
+					{{
+						t('buildiq', 'After sending: {text}', {
+							text: confirmationText,
+						})
+					}}
 				</p>
 			</section>
 
@@ -86,7 +92,10 @@
 					@update:modelValue="typeValue = $event" />
 			</template>
 
-			<div v-if="missingNames.length" class="bq-use-form__missing" data-testid="missing-properties">
+			<div
+				v-if="missingNames.length"
+				class="bq-use-form__missing"
+				data-testid="missing-properties">
 				<p>
 					{{
 						n(
@@ -102,7 +111,9 @@
 						<code>{{ name }}</code>
 					</li>
 				</ul>
-				<NcCheckboxRadioSwitch v-model="addProperties" data-testid="add-properties">
+				<NcCheckboxRadioSwitch
+					v-model="addProperties"
+					data-testid="add-properties">
 					{{ t('buildiq', 'Add these properties') }}
 				</NcCheckboxRadioSwitch>
 			</div>
@@ -121,7 +132,11 @@
 				:disabled="!canConfirm"
 				data-testid="confirm-use-form"
 				@click="confirm">
-				{{ working ? t('buildiq', 'Adding…') : t('buildiq', 'Add to the app') }}
+				{{
+					working
+						? t('buildiq', 'Adding…')
+						: t('buildiq', 'Add to the app')
+				}}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -130,15 +145,25 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcCheckboxRadioSwitch, NcDialog, NcSelect, NcTextField } from '@nextcloud/vue'
+import {
+	NcButton,
+	NcCheckboxRadioSwitch,
+	NcDialog,
+	NcSelect,
+	NcTextField,
+} from '@nextcloud/vue'
 import { boundProperties } from '../services/formCapture.js'
-import { fetchRegisterSchemas, planLibraryFormUse, useLibraryForm } from '../services/formLibrary.js'
+import {
+	fetchRegisterSchemas,
+	planLibraryFormUse,
+	useLibraryForm,
+} from '../services/formLibrary.js'
 import { saveRegistrationForm } from '../services/registrationForms.js'
 
 /**
  * The results array of a list answer.
  *
- * @param {*} data The response body.
+ * @param {object|Array<object>|null} data The response body.
  * @return {Array<object>}
  */
 function resultsOf(data) {
@@ -187,9 +212,19 @@ export default {
 		 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-a-library-form-can-be-added-to-an-app-req-bqgl-004
 		 */
 		previewFields() {
-			const fields = (this.template && this.template.form && this.template.form.fields) || []
+			const fields =
+				(this.template && this.template.form && this.template.form.fields)
+				|| []
 			return fields
-				.map((field) => (field && (field.label || field.title || field.name || field.key)) || '')
+				.map(
+					(field) =>
+						(field
+							&& (field.label
+								|| field.title
+								|| field.name
+								|| field.key))
+						|| '',
+				)
 				.filter((label) => label !== '')
 		},
 
@@ -200,7 +235,12 @@ export default {
 		 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-a-library-form-can-be-added-to-an-app-req-bqgl-004
 		 */
 		confirmationText() {
-			return (this.template && this.template.form && this.template.form.confirmationText) || ''
+			return (
+				(this.template
+					&& this.template.form
+					&& this.template.form.confirmationText)
+				|| ''
+			)
 		},
 
 		/**
@@ -222,7 +262,9 @@ export default {
 		 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-a-library-form-can-be-added-to-an-app-req-bqgl-004
 		 */
 		appOption() {
-			return this.appOptions.find((option) => option.id === this.appSlug) || null
+			return (
+				this.appOptions.find((option) => option.id === this.appSlug) || null
+			)
 		},
 
 		/**
@@ -234,7 +276,10 @@ export default {
 		versionOptions() {
 			return this.versions
 				.filter((version) => version && version.slug)
-				.map((version) => ({ id: version.slug, label: version.name || version.semver || version.slug }))
+				.map((version) => ({
+					id: version.slug,
+					label: version.name || version.semver || version.slug,
+				}))
 		},
 
 		/**
@@ -244,7 +289,11 @@ export default {
 		 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-a-library-form-can-be-added-to-an-app-req-bqgl-004
 		 */
 		versionOption() {
-			return this.versionOptions.find((option) => this.version && option.id === this.version.slug) || null
+			return (
+				this.versionOptions.find(
+					(option) => this.version && option.id === this.version.slug,
+				) || null
+			)
 		},
 
 		/**
@@ -267,7 +316,10 @@ export default {
 		schemaOptions() {
 			return this.schemas
 				.filter((schema) => schema && schema.slug)
-				.map((schema) => ({ id: schema.slug, label: schema.title || schema.slug }))
+				.map((schema) => ({
+					id: schema.slug,
+					label: schema.title || schema.slug,
+				}))
 		},
 
 		/**
@@ -277,7 +329,10 @@ export default {
 		 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-a-library-form-can-be-added-to-an-app-req-bqgl-004
 		 */
 		schemaOption() {
-			return this.schemaOptions.find((option) => option.id === this.schemaSlug) || null
+			return (
+				this.schemaOptions.find((option) => option.id === this.schemaSlug)
+				|| null
+			)
 		},
 
 		/**
@@ -287,7 +342,11 @@ export default {
 		 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-a-library-form-can-be-added-to-an-app-req-bqgl-004
 		 */
 		schema() {
-			return this.schemas.find((schema) => schema && schema.slug === this.schemaSlug) || null
+			return (
+				this.schemas.find(
+					(schema) => schema && schema.slug === this.schemaSlug,
+				) || null
+			)
 		},
 
 		/**
@@ -313,7 +372,10 @@ export default {
 			if (this.working || !this.template || !this.version || !this.schema) {
 				return false
 			}
-			if (this.target === 'registration-form' && (this.typeProperty.trim() === '' || this.typeValue.trim() === '')) {
+			if (
+				this.target === 'registration-form'
+				&& (this.typeProperty.trim() === '' || this.typeValue.trim() === '')
+			) {
 				return false
 			}
 			return this.missingNames.length === 0 || this.addProperties
@@ -354,7 +416,10 @@ export default {
 			this.version = null
 			this.schemas = []
 			this.schemaSlug = ''
-			this.target = this.template && this.template.kind === 'registration-form' ? 'registration-form' : 'form-page'
+			this.target =
+				this.template && this.template.kind === 'registration-form'
+					? 'registration-form'
+					: 'form-page'
 			this.typeProperty = ''
 			this.typeValue = ''
 			this.addProperties = false
@@ -392,11 +457,16 @@ export default {
 			}
 			try {
 				const { data } = await axios.get(
-					generateUrl(`/apps/buildiq/api/applications/${encodeURIComponent(this.appSlug)}/versions`),
+					generateUrl(
+						`/apps/buildiq/api/applications/${encodeURIComponent(this.appSlug)}/versions`,
+					),
 				)
 				this.versions = resultsOf(data)
 			} catch {
-				this.error = t('buildiq', 'The versions of this app could not be read.')
+				this.error = t(
+					'buildiq',
+					'The versions of this app could not be read.',
+				)
 			}
 		},
 
@@ -417,7 +487,9 @@ export default {
 			}
 			try {
 				const { data } = await axios.get(
-					generateUrl(`/apps/buildiq/api/applications/${encodeURIComponent(this.appSlug)}/versions/${encodeURIComponent(slug)}`),
+					generateUrl(
+						`/apps/buildiq/api/applications/${encodeURIComponent(this.appSlug)}/versions/${encodeURIComponent(slug)}`,
+					),
 				)
 				this.version = data && typeof data === 'object' ? data : null
 				this.schemas = await fetchRegisterSchemas(this.register)
@@ -478,11 +550,21 @@ export default {
 					},
 					saveRegistrationForm,
 				})
-				this.$emit('used', { ...result, appSlug: this.appSlug, bound: boundProperties(this.template.form, this.template.kind) })
+				this.$emit('used', {
+					...result,
+					appSlug: this.appSlug,
+					bound: boundProperties(this.template.form, this.template.kind),
+				})
 				this.$emit('update:open', false)
 			} catch (error) {
 				const data = error && error.response && error.response.data
-				this.error = (error && error.message && !error.response && error.message !== 'missing-properties' ? error.message : '')
+				this.error =
+					(error
+					&& error.message
+					&& !error.response
+					&& error.message !== 'missing-properties'
+						? error.message
+						: '')
 					|| (data && (data.detail || data.message || data.error))
 					|| t('buildiq', 'Adding the form to the app failed.')
 			} finally {

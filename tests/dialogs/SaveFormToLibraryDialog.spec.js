@@ -24,31 +24,53 @@ import axios from '@nextcloud/axios'
 import SaveFormToLibraryDialog from '../../src/dialogs/SaveFormToLibraryDialog.vue'
 
 const stubs = {
-	NcDialog: { name: 'NcDialog', props: ['open', 'name', 'size'], template: '<div><slot /><slot name="actions" /></div>' },
+	NcDialog: {
+		name: 'NcDialog',
+		props: ['open', 'name', 'size'],
+		template: '<div><slot /><slot name="actions" /></div>',
+	},
 	NcTextField: {
 		name: 'NcTextField',
 		props: ['modelValue', 'label'],
 		emits: ['update:modelValue'],
-		template: '<input :data-label="label" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)">',
+		template:
+			'<input :data-label="label" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)">',
 	},
-	NcTextArea: { name: 'NcTextArea', props: ['modelValue', 'label'], emits: ['update:modelValue'], template: '<textarea />' },
-	NcSelect: { name: 'NcSelect', props: ['modelValue', 'options', 'inputLabel', 'clearable'], emits: ['update:modelValue'], template: '<div class="select" />' },
+	NcTextArea: {
+		name: 'NcTextArea',
+		props: ['modelValue', 'label'],
+		emits: ['update:modelValue'],
+		template: '<textarea />',
+	},
+	NcSelect: {
+		name: 'NcSelect',
+		props: ['modelValue', 'options', 'inputLabel', 'clearable'],
+		emits: ['update:modelValue'],
+		template: '<div class="select" />',
+	},
 	NcButton: {
 		name: 'NcButton',
 		props: ['variant', 'disabled'],
 		emits: ['click'],
-		template: '<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
+		template:
+			'<button :disabled="disabled || false" @click="$emit(\'click\')"><slot /></button>',
 	},
 }
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0))
 
 const schemaList = {
-	results: [{
-		id: 7,
-		slug: 'subsidies-aanvraag',
-		properties: { naam: { type: 'string' }, verbruikKwh: { type: 'number' }, intern: { type: 'string' } },
-	}],
+	results: [
+		{
+			id: 7,
+			slug: 'subsidies-aanvraag',
+			properties: {
+				naam: { type: 'string' },
+				verbruikKwh: { type: 'number' },
+				intern: { type: 'string' },
+			},
+		},
+	],
 }
 
 /**
@@ -80,10 +102,17 @@ describe('SaveFormToLibraryDialog', () => {
 	})
 
 	it('saves the form with the definitions of the properties it binds, and no records', async () => {
-		const wrapper = await mountWith({ name: 'Aanvraag energiesubsidie', fields: [{ name: 'naam' }, { name: 'verbruikKwh' }] })
+		const wrapper = await mountWith({
+			name: 'Aanvraag energiesubsidie',
+			fields: [{ name: 'naam' }, { name: 'verbruikKwh' }],
+		})
 
-		expect(axios.get).toHaveBeenCalledWith('/apps/openregister/api/registers/subsidies/schemas')
-		wrapper.findComponent({ name: 'NcSelect' }).vm.$emit('update:modelValue', { id: 'citizen-engagement' })
+		expect(axios.get).toHaveBeenCalledWith(
+			'/apps/openregister/api/registers/subsidies/schemas',
+		)
+		wrapper
+			.findComponent({ name: 'NcSelect' })
+			.vm.$emit('update:modelValue', { id: 'citizen-engagement' })
 		await flush()
 
 		const save = wrapper.find('[data-testid="save-form-to-library"]')
@@ -104,12 +133,21 @@ describe('SaveFormToLibraryDialog', () => {
 	})
 
 	it('refuses a form bound to a property its schema lacks, naming it', async () => {
-		const wrapper = await mountWith({ name: 'Kapot', fields: [{ name: 'naam' }, { name: 'iban' }] })
-		wrapper.findComponent({ name: 'NcSelect' }).vm.$emit('update:modelValue', { id: 'field-work' })
+		const wrapper = await mountWith({
+			name: 'Kapot',
+			fields: [{ name: 'naam' }, { name: 'iban' }],
+		})
+		wrapper
+			.findComponent({ name: 'NcSelect' })
+			.vm.$emit('update:modelValue', { id: 'field-work' })
 		await flush()
 
 		expect(wrapper.find('[role="alert"]').text()).toContain('iban')
-		expect(wrapper.find('[data-testid="save-form-to-library"]').attributes('disabled')).toBeDefined()
+		expect(
+			wrapper
+				.find('[data-testid="save-form-to-library"]')
+				.attributes('disabled'),
+		).toBeDefined()
 		expect(axios.post).not.toHaveBeenCalled()
 	})
 })

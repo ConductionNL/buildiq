@@ -70,7 +70,7 @@
 				@update:modelValue="editing = $event"
 				@save="saveEdited"
 				@close="editing = null"
-				@save-to-library="libraryDialogOpen = true" />
+				@saveToLibrary="libraryDialogOpen = true" />
 
 			<SaveFormToLibraryDialog
 				v-if="libraryDialogOpen && editing"
@@ -140,8 +140,8 @@
 </template>
 
 <script>
-import RegistrationFormEditor from './RegistrationFormEditor.vue'
 import SaveFormToLibraryDialog from '../../../dialogs/SaveFormToLibraryDialog.vue'
+import RegistrationFormEditor from './RegistrationFormEditor.vue'
 import { copyOfForm } from '../../../services/formCopy.js'
 import {
 	fetchRegistrationForms,

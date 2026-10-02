@@ -23,7 +23,7 @@ export const FORM_TARGETS = ['form-page', 'registration-form']
 /**
  * The results array of an OpenRegister list answer.
  *
- * @param {*} data The response body.
+ * @param {object|Array<object>|null} data The response body.
  * @return {Array<object>}
  */
 function resultsOf(data) {
@@ -55,7 +55,9 @@ function objectId(object) {
  * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-the-app-store-lists-library-forms-req-bqgl-003
  */
 export async function fetchLibraryForms(client = defaultAxios) {
-	const { data } = await client.get(generateUrl(FORM_LIBRARY_PATH), { params: { _limit: 200 } })
+	const { data } = await client.get(generateUrl(FORM_LIBRARY_PATH), {
+		params: { _limit: 200 },
+	})
 	return resultsOf(data)
 }
 
@@ -82,7 +84,9 @@ export async function createLibraryForm(record, client = defaultAxios) {
  * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-the-app-store-lists-library-forms-req-bqgl-003
  */
 export function filterLibraryForms(forms, { query = '', category = '' } = {}) {
-	const needle = String(query || '').trim().toLowerCase()
+	const needle = String(query || '')
+		.trim()
+		.toLowerCase()
 	return (Array.isArray(forms) ? forms : []).filter((form) => {
 		if (!form) {
 			return false
@@ -93,8 +97,10 @@ export function filterLibraryForms(forms, { query = '', category = '' } = {}) {
 		if (needle === '') {
 			return true
 		}
-		return [form.name, form.description, form.publisher]
-			.some((text) => typeof text === 'string' && text.toLowerCase().includes(needle))
+		return [form.name, form.description, form.publisher].some(
+			(text) =>
+				typeof text === 'string' && text.toLowerCase().includes(needle),
+		)
 	})
 }
 
@@ -111,7 +117,9 @@ export async function fetchRegisterSchemas(register, client = defaultAxios) {
 		return []
 	}
 	const { data } = await client.get(
-		generateUrl(`/apps/openregister/api/registers/${encodeURIComponent(register)}/schemas`),
+		generateUrl(
+			`/apps/openregister/api/registers/${encodeURIComponent(register)}/schemas`,
+		),
 	)
 	return resultsOf(data)
 }
@@ -130,7 +138,14 @@ export async function fetchRegisterSchema(register, schema, client = defaultAxio
 		return null
 	}
 	const schemas = await fetchRegisterSchemas(register, client)
-	return schemas.find((entry) => entry && (String(entry.slug) === String(schema) || String(entry.id) === String(schema))) || null
+	return (
+		schemas.find(
+			(entry) =>
+				entry
+				&& (String(entry.slug) === String(schema)
+					|| String(entry.id) === String(schema)),
+		) || null
+	)
 }
 
 /**
@@ -150,7 +165,9 @@ export async function addSchemaProperties(schema, additions, client = defaultAxi
 		}
 	}
 	const { data } = await client.patch(
-		generateUrl(`/apps/openregister/api/schemas/${encodeURIComponent(String(schema.id))}`),
+		generateUrl(
+			`/apps/openregister/api/schemas/${encodeURIComponent(String(schema.id))}`,
+		),
 		{ properties },
 	)
 	return data
@@ -223,7 +240,14 @@ export function registrationFormFromLibrary(template, target) {
 		typeProperty: target.typeProperty,
 		typeValue: target.typeValue,
 	}
-	for (const part of ['fields', 'steps', 'sections', 'formLogic', 'presets', 'confirmationText']) {
+	for (const part of [
+		'fields',
+		'steps',
+		'sections',
+		'formLogic',
+		'presets',
+		'confirmationText',
+	]) {
 		if (form[part] !== undefined && form[part] !== null) {
 			body[part] = form[part]
 		}
@@ -257,7 +281,7 @@ export function planLibraryFormUse(template, targetSchema) {
  * @param {boolean} input.addProperties Whether the maker confirmed adding the missing properties.
  * @param {object} [input.version] The application version, for a form page.
  * @param {object} [input.registration] typeProperty, typeValue and targetApp, for a registration form.
- * @param {Function} [input.saveRegistrationForm] Saves a registration form body.
+ * @param {function(object): Promise<object>} [input.saveRegistrationForm] Saves a registration form body.
  * @param {object} [client] Axios-like client.
  * @return {Promise<{added: Array<string>, page?: object, form?: object}>}
  * @throws {Error} `missing-properties` when properties are missing and not confirmed.
@@ -287,13 +311,19 @@ export async function useLibraryForm(input, client = defaultAxios) {
 		)
 		const manifest = { ...(version.manifest || {}), pages }
 		await client.patch(
-			generateUrl(`/apps/openregister/api/objects/buildiq/applicationVersion/${encodeURIComponent(objectId(version))}`),
+			generateUrl(
+				`/apps/openregister/api/objects/buildiq/applicationVersion/${encodeURIComponent(objectId(version))}`,
+			),
 			{ manifest },
 		)
 		return { added: missingNames, page: pages[pages.length - 1] }
 	}
 
-	const body = registrationFormFromLibrary(template, { ...(input.registration || {}), register, schema: schema.slug })
+	const body = registrationFormFromLibrary(template, {
+		...(input.registration || {}),
+		register,
+		schema: schema.slug,
+	})
 	const saved = await input.saveRegistrationForm(body)
 	return { added: missingNames, form: (saved && saved.form) || body }
 }
