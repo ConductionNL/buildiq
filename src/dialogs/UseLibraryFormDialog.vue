@@ -397,6 +397,12 @@ export default {
 		},
 	},
 
+	/**
+	 * Read the apps when the dialog mounts open.
+	 *
+	 * @return {void}
+	 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-a-library-form-can-be-added-to-an-app-req-bqgl-004
+	 */
 	created() {
 		if (this.open) {
 			this.reset()

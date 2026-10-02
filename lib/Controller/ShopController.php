@@ -44,6 +44,7 @@ use OCA\Buildiq\Exception\AppRepoParseException;
 use OCA\Buildiq\Service\AppRepoParser;
 use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCA\Buildiq\Service\GitHubCatalogService;
+use OCA\Buildiq\Service\GitHubFormCatalogService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -83,6 +84,7 @@ class ShopController extends Controller {
 	 * @param GitHubCatalogService $catalogService Fixed-host GitHub source.
 	 * @param AppRepoParser $repoParser Strict repo-file-map parser (change 1).
 	 * @param ApplicationsController $appsController Shared clone/install seam.
+	 * @param GitHubFormCatalogService $formCatalog GitHub source of shared forms.
 	 * @param ConnectionReporter|null $connectionReporter Tells integriq what a search met, or nothing when absent.
 	 *
 	 * @return void
@@ -96,6 +98,7 @@ class ShopController extends Controller {
 		private readonly GitHubCatalogService $catalogService,
 		private readonly AppRepoParser $repoParser,
 		private readonly ApplicationsController $appsController,
+		private readonly GitHubFormCatalogService $formCatalog,
 		private readonly ?ConnectionReporter $connectionReporter = null,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
@@ -196,7 +199,7 @@ class ShopController extends Controller {
 		}
 
 		try {
-			$result = $this->catalogService->searchForms(
+			$result = $this->formCatalog->searchForms(
 				query: $query,
 				actingUserId: $user->getUID(),
 				credentialId: $this->credentialParam()

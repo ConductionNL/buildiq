@@ -26,6 +26,7 @@ use OCA\Buildiq\Controller\ApplicationsController;
 use OCA\Buildiq\Controller\ShopController;
 use OCA\Buildiq\Service\AppRepoParser;
 use OCA\Buildiq\Service\GitHubCatalogService;
+use OCA\Buildiq\Service\GitHubFormCatalogService;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
 use OCP\IUser;
@@ -66,6 +67,13 @@ class ShopControllerTest extends TestCase {
 	private $catalogService;
 
 	/**
+	 * GitHub source of shared forms.
+	 *
+	 * @var GitHubFormCatalogService&MockObject
+	 */
+	private $formCatalog;
+
+	/**
 	 * Repo parser mock.
 	 *
 	 * @var AppRepoParser&MockObject
@@ -90,6 +98,7 @@ class ShopControllerTest extends TestCase {
 		$this->request = $this->createMock(IRequest::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->catalogService = $this->createMock(GitHubCatalogService::class);
+		$this->formCatalog = $this->createMock(GitHubFormCatalogService::class);
 		$this->repoParser = $this->createMock(AppRepoParser::class);
 		$this->appsController = $this->createMock(ApplicationsController::class);
 
@@ -107,7 +116,8 @@ class ShopControllerTest extends TestCase {
 			userSession: $this->userSession,
 			catalogService: $this->catalogService,
 			repoParser: $this->repoParser,
-			appsController: $this->appsController
+			appsController: $this->appsController,
+			formCatalog: $this->formCatalog
 		);
 
 	}//end controller()
@@ -245,7 +255,7 @@ class ShopControllerTest extends TestCase {
 	 */
 	public function testGithubFormSearchRejectsAnonymous(): void {
 		$this->userSession->method('getUser')->willReturn(null);
-		$this->catalogService->expects(self::never())->method('searchForms');
+		$this->formCatalog->expects(self::never())->method('searchForms');
 
 		$response = $this->controller()->githubFormSearch();
 
@@ -260,7 +270,7 @@ class ShopControllerTest extends TestCase {
 	public function testGithubFormSearchReturnsFormCards(): void {
 		$this->authenticate();
 		$this->request->method('getParam')->willReturnCallback(static fn (string $key) => $key === 'q' ? 'subsidie' : null);
-		$this->catalogService->expects(self::once())
+		$this->formCatalog->expects(self::once())
 			->method('searchForms')
 			->with('subsidie', 'bob', null)
 			->willReturn(
@@ -287,7 +297,7 @@ class ShopControllerTest extends TestCase {
 	public function testGithubFormSearchFailureIsUnreachable(): void {
 		$this->authenticate();
 		$this->request->method('getParam')->willReturn(null);
-		$this->catalogService->method('searchForms')->willThrowException(new \RuntimeException('boom'));
+		$this->formCatalog->method('searchForms')->willThrowException(new \RuntimeException('boom'));
 
 		$response = $this->controller()->githubFormSearch();
 

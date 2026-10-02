@@ -33,6 +33,7 @@ const CATEGORIES = [
 export class FormImportError extends Error {
 	/**
 	 * @param {string} code Why the file was refused.
+	 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-forms-travel-between-organisations-req-bqgl-005
 	 */
 	constructor(code) {
 		super(`buildiq.formLibrary.import.error.${code}`)

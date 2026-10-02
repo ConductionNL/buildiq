@@ -280,6 +280,12 @@ export default {
 		},
 	},
 
+	/**
+	 * Seed the fields when the dialog mounts open.
+	 *
+	 * @return {void}
+	 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-a-form-can-be-saved-to-the-library-req-bqgl-002
+	 */
 	created() {
 		if (this.open) {
 			this.reset()

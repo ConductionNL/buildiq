@@ -273,11 +273,23 @@ export default {
 		},
 	},
 
+	/**
+	 * Read the library and search GitHub when the view opens.
+	 *
+	 * @return {void}
+	 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-the-app-store-lists-library-forms-req-bqgl-003
+	 */
 	created() {
 		this.load()
 		this.searchGithub()
 	},
 
+	/**
+	 * Drop a pending GitHub search.
+	 *
+	 * @return {void}
+	 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-the-app-store-lists-library-forms-req-bqgl-003
+	 */
 	beforeUnmount() {
 		if (this.githubDebounce) {
 			clearTimeout(this.githubDebounce)

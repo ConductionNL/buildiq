@@ -40,6 +40,7 @@ const FORM_PARTS = [
 export class FormBindingError extends Error {
 	/**
 	 * @param {Array<string>} missing The property names the schema lacks.
+	 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-a-form-can-be-saved-to-the-library-req-bqgl-002
 	 */
 	constructor(missing) {
 		super(`buildiq.formLibrary.missing.${missing.join(',')}`)

@@ -37,6 +37,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\GitHubCatalogService;
+use OCA\Buildiq\Service\GitHubFormCatalogService;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
@@ -77,6 +78,23 @@ final class GitHubCatalogServiceTest extends TestCase {
 			container: $this->createMock(ContainerInterface::class)
 		);
 	}//end makeService()
+
+	/**
+	 * The form search over a catalogue service, caching off unless a factory is given.
+	 *
+	 * @param GitHubCatalogService $catalog      The GitHub source.
+	 * @param ICacheFactory|null   $cacheFactory The cache factory, or null for none.
+	 *
+	 * @return GitHubFormCatalogService
+	 */
+	private function formService(GitHubCatalogService $catalog, ?ICacheFactory $cacheFactory = null): GitHubFormCatalogService {
+		if ($cacheFactory === null) {
+			$cacheFactory = $this->createMock(ICacheFactory::class);
+			$cacheFactory->method('isAvailable')->willReturn(false);
+		}
+
+		return new GitHubFormCatalogService(catalog: $catalog, cacheFactory: $cacheFactory);
+	}//end formService()
 
 	/**
 	 * A 200 JSON response, the shape every `anonymousGet()` caller expects back.
@@ -383,7 +401,7 @@ final class GitHubCatalogServiceTest extends TestCase {
 		});
 		$this->clientService->method('newClient')->willReturn($client);
 
-		$result = $service->searchForms(query: 'subsidie', actingUserId: 'alice', credentialId: null);
+		$result = $this->formService(catalog: $service)->searchForms(query: 'subsidie', actingUserId: 'alice', credentialId: null);
 
 		$this->assertSame(GitHubCatalogService::OUTCOME_OK, $result['outcome']);
 		$this->assertStringContainsString('topic:buildiq-form subsidie', $asked[0]);
@@ -420,7 +438,7 @@ final class GitHubCatalogServiceTest extends TestCase {
 		});
 		$this->clientService->method('newClient')->willReturn($client);
 
-		$result = $service->searchForms(query: null, actingUserId: 'alice', credentialId: null);
+		$result = $this->formService(catalog: $service)->searchForms(query: null, actingUserId: 'alice', credentialId: null);
 
 		$this->assertCount(2, $result['cards']);
 		foreach ($result['cards'] as $card) {
@@ -456,7 +474,7 @@ final class GitHubCatalogServiceTest extends TestCase {
 			container: $this->createMock(ContainerInterface::class)
 		);
 
-		$this->assertSame($cached, $service->searchForms(query: 'x', actingUserId: 'alice', credentialId: null));
+		$this->assertSame($cached, $this->formService(catalog: $service, cacheFactory: $cacheFactory)->searchForms(query: 'x', actingUserId: 'alice', credentialId: null));
 		$this->assertStringStartsWith('forms:', $keys[0]);
 	}//end testFormSearchIsServedFromTheCache()
 }//end class
