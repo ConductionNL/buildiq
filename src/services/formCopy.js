@@ -9,7 +9,7 @@
  * be broken by copying. Only the keys the `registrationForm` schema declares
  * are carried over: the stored object's id and metadata stay behind.
  *
- * @spec openspec/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-a-registration-form-as-a-draft-req-bqcp-004
+ * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-a-registration-form-as-a-draft-req-bqcp-004
  */
 
 /** The `registrationForm` properties a copy carries over unchanged. */
@@ -40,7 +40,7 @@ const CARRIED = Object.freeze([
  * @param {string} name The copy's name.
  * @return {object}
  *
- * @spec openspec/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-a-registration-form-as-a-draft-req-bqcp-004
+ * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-a-registration-form-as-a-draft-req-bqcp-004
  */
 export function copyOfForm(form, name) {
 	const copy = { name, isDefault: false, status: 'draft' }

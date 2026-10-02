@@ -7213,7 +7213,7 @@
 				"reachedOn": "Page designer: the copy button on a page row; a registration form list: Copy form",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/apps-copy-app-and-page (OpenSpec pass 2026-09-27).",
-				"change": "2026-10-02-apps-copy-app-and-page"
+				"change": "apps-copy-app-and-page"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8648,12 +8648,12 @@
 			"mendix": "partial",
 			"power-apps": "yes",
 			"built": {
-				"state": "built",
+				"state": "building",
 				"evidence": "lib/Controller/ApplicationsController.php copy() (POST /api/applications/{slug}/copy, admin + owner or editor, rate limited like from-template) captures the app with lib/Service/AppTemplateCapture.php and installs it through installFromTemplateArray(); src/modals/CopyAppDialog.vue from ApplicationDetailActions.vue",
 				"reachedOn": "App detail page, Actions, Copy app",
 				"owner": "ConductionNL/buildiq",
-				"note": "Specified in openspec/changes/apps-copy-app-and-page (OpenSpec pass 2026-09-27).",
-				"change": "2026-10-02-apps-copy-app-and-page"
+				"note": "Specified in openspec/changes/apps-copy-app-and-page (OpenSpec pass 2026-09-27). Code built; stays building until the Playwright copy (tests/e2e/copy-app-and-page.spec.ts) has run against a live stack.",
+				"change": "apps-copy-app-and-page"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",

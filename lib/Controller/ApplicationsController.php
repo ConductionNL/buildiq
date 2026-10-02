@@ -1659,8 +1659,8 @@ class ApplicationsController extends Controller {
 	 *
 	 * @return JSONResponse 201 with the new app; 400, 401, 403, 404 or 409 otherwise
 	 *
-	 * @spec openspec/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
-	 * @spec openspec/specs/copy-app-page-and-form/spec.md#requirement-copying-an-app-has-the-gates-of-cloning-a-template-req-bqcp-002
+	 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
+	 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-copying-an-app-has-the-gates-of-cloning-a-template-req-bqcp-002
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 10, period: 3600)]
@@ -1730,7 +1730,7 @@ class ApplicationsController extends Controller {
 	 *
 	 * @throws InvalidArgumentException When two schemas de-namespace to one slug.
 	 *
-	 * @spec openspec/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
+	 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
 	 */
 	private function captureForCopy(array $application): array {
 		$version = [];

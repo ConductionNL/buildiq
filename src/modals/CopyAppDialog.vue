@@ -5,7 +5,7 @@
   - its own register and a copy of the source's schemas and current pages,
   - without records. Emits `copied` with the new app.
   -
-  - @spec openspec/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
+  - @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
   -->
 <template>
 	<NcModal
@@ -106,7 +106,7 @@ export default {
 		 * The source app's name, for the summary.
 		 *
 		 * @return {string}
-		 * @spec openspec/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
+		 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
 		 */
 		sourceName() {
 			return this.application.name || this.application.slug
@@ -116,7 +116,7 @@ export default {
 		 * Whether the name and slug can be sent.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
+		 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
 		 */
 		canSubmit() {
 			return (
@@ -133,7 +133,7 @@ export default {
 		 *
 		 * @param {string} value The name.
 		 * @return {void}
-		 * @spec openspec/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
+		 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
 		 */
 		onNameInput(value) {
 			this.localName = value
@@ -147,7 +147,7 @@ export default {
 		 *
 		 * @param {string} value The slug.
 		 * @return {void}
-		 * @spec openspec/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
+		 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
 		 */
 		onSlugInput(value) {
 			this.slugEdited = true
@@ -158,7 +158,7 @@ export default {
 		 * Ask the server for the copy.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/specs/copy-app-page-and-form/spec.md#requirement-copying-an-app-has-the-gates-of-cloning-a-template-req-bqcp-002
+		 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-copying-an-app-has-the-gates-of-cloning-a-template-req-bqcp-002
 		 */
 		async submit() {
 			if (!this.canSubmit || this.submitting) {
@@ -188,7 +188,7 @@ export default {
 		 *
 		 * @param {number} status The HTTP status.
 		 * @return {string}
-		 * @spec openspec/specs/copy-app-page-and-form/spec.md#requirement-copying-an-app-has-the-gates-of-cloning-a-template-req-bqcp-002
+		 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-copying-an-app-has-the-gates-of-cloning-a-template-req-bqcp-002
 		 */
 		messageFor(status) {
 			if (status === 409) {
@@ -213,7 +213,7 @@ export default {
 		 * Close without copying.
 		 *
 		 * @return {void}
-		 * @spec openspec/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
+		 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
 		 */
 		close() {
 			this.error = ''

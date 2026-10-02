@@ -6,7 +6,7 @@
  * entries are not copied: a copied page is not in the menu until the maker
  * adds it.
  *
- * @spec openspec/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-a-page-req-bqcp-003
+ * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-a-page-req-bqcp-003
  */
 
 /**
@@ -59,7 +59,7 @@ function copyRoute(route, routes) {
  * @param {Function} titleOf `(title) => string`, the copy's title.
  * @return {Array<object>} A new array; the input is not changed.
  *
- * @spec openspec/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-a-page-req-bqcp-003
+ * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-a-page-req-bqcp-003
  */
 export function copyPage(pages, index, titleOf) {
 	const source = pages[index]
