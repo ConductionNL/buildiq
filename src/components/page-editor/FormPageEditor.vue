@@ -205,11 +205,30 @@
 				}}
 			</p>
 		</fieldset>
+
+		<!-- reuse-gallery-categories-and-form-library REQ-BQGL-002 -->
+		<div class="form-page-editor__library">
+			<button
+				type="button"
+				data-testid="open-save-form-to-library"
+				@click="libraryDialogOpen = true">
+				{{ t('buildiq', 'Save to form library') }}
+			</button>
+			<SaveFormToLibraryDialog
+				v-if="libraryDialogOpen"
+				v-model:open="libraryDialogOpen"
+				kind="form-page"
+				:form="libraryForm"
+				:register="externalTarget ? externalTarget.register : ''"
+				:schemaSlug="targetSchema"
+				:appSlug="appSlug" />
+		</div>
 	</div>
 </template>
 
 <script>
 import ExternalFormAccessDialog from '../../dialogs/ExternalFormAccessDialog.vue'
+import SaveFormToLibraryDialog from '../../dialogs/SaveFormToLibraryDialog.vue'
 import EligibilityCheckBuilder from './fields/EligibilityCheckBuilder.vue'
 import FormFieldBuilder from './fields/FormFieldBuilder.vue'
 import FormStepsManager from './fields/FormStepsManager.vue'
@@ -230,6 +249,7 @@ export default {
 		FormStepsManager,
 		InlineFieldMark,
 		ExternalFormAccessDialog,
+		SaveFormToLibraryDialog,
 	},
 
 	mixins: [pageEditorValidationMixin],
@@ -295,6 +315,7 @@ export default {
 	data() {
 		return {
 			externalDialogOpen: false,
+			libraryDialogOpen: false,
 			// The submit choice the user clicked. Switching choices clears the
 			// other key, so with both keys empty the config alone cannot say
 			// which choice is active; this remembers it.
@@ -307,6 +328,17 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The form as the library captures it: the page config, named after
+		 * the page's submit label when it has one.
+		 *
+		 * @return {object}
+		 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-a-form-can-be-saved-to-the-library-req-bqgl-002
+		 */
+		libraryForm() {
+			return { ...this.config, name: this.config.title || this.pageId || '' }
+		},
+
 		/**
 		 * `{register, schema}` resolved from `config.submitEndpoint` when it
 		 * matches OR's `/api/objects/{register}/{schema}` shape; null
@@ -647,6 +679,10 @@ export default {
 	color: var(--color-text-maxcontrast);
 	font-size: 13px;
 	margin: 0;
+}
+
+.form-page-editor__library {
+	margin-top: 12px;
 }
 
 .form-page-editor__external-btn {

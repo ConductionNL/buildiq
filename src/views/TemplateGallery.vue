@@ -40,6 +40,19 @@
 				@click="onSelectBlocksTab">
 				{{ t('buildiq', 'Blocks') }}
 			</button>
+			<!-- REQ-BQGL-003: the form library beside templates and blocks. -->
+			<button
+				type="button"
+				role="tab"
+				data-testid="forms-tab"
+				:aria-selected="viewMode === 'forms'"
+				class="template-gallery__view-btn"
+				:class="[
+					{ 'template-gallery__view-btn--active': viewMode === 'forms' },
+				]"
+				@click="viewMode = 'forms'">
+				{{ t('buildiq', 'Forms') }}
+			</button>
 		</div>
 
 		<template v-if="viewMode === 'templates'">
@@ -285,6 +298,12 @@
 		<!-- component-blocks: "Blocks" filter — browse-only, no clone action
 		     (blocks insert via the page designer's block library, per
 		     REQ "Blocks filter shows blocks without the clone action"). -->
+		<FormLibraryView
+			v-else-if="viewMode === 'forms'"
+			:categoryOptions="templateCategoryOptions"
+			:category="templateCategory"
+			@update:category="onTemplateCategory" />
+
 		<template v-else>
 			<div class="template-gallery__filters">
 				<NcSelect
@@ -358,6 +377,7 @@ import {
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
+import FormLibraryView from '../components/store/FormLibraryView.vue'
 import CloneTemplateDialog from '../modals/CloneTemplateDialog.vue'
 
 const OR_BLOCKS = '/apps/openregister/api/objects/buildiq/component-block'
@@ -395,6 +415,7 @@ export default {
 		NcSelect,
 		NcTextField,
 		CloneTemplateDialog,
+		FormLibraryView,
 	},
 
 	data() {

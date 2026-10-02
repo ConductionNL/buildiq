@@ -82,6 +82,17 @@ const githubCards = [
 	},
 ]
 
+const libraryForms = [
+	{ slug: 'aanvraag-energiesubsidie', name: 'Aanvraag energiesubsidie', category: 'citizen-engagement', publisher: 'Gemeente Voorbeeld' },
+	{ slug: 'melding-openbare-ruimte', name: 'Melding openbare ruimte', category: 'field-work', publisher: 'Gemeente Elders' },
+	{ slug: 'verlofaanvraag', name: 'Verlofaanvraag', category: 'internal-operations', publisher: 'HR' },
+]
+
+const githubForms = [
+	{ owner: 'b', repo: 'parkeren', name: 'Parkeervergunning', category: 'government-services', publisher: 'b', installable: true, htmlUrl: '' },
+	{ owner: 'b', repo: 'schouw', name: 'Schouwronde', category: 'field-work', publisher: 'b', installable: true, htmlUrl: '' },
+]
+
 /**
  * Mount the gallery with a route query and a router double.
  *
@@ -96,6 +107,12 @@ async function mountGallery(query = {}) {
 		}
 		if (u.includes('shop/github/search')) {
 			return Promise.resolve({ data: { outcome: 'ok', cards: githubCards } })
+		}
+		if (u.includes('form-template')) {
+			return Promise.resolve({ data: { results: libraryForms } })
+		}
+		if (u.includes('shop/github/forms')) {
+			return Promise.resolve({ data: { outcome: 'ok', cards: githubForms } })
 		}
 		return Promise.resolve({ data: [] })
 	})
@@ -247,5 +264,100 @@ describe('TemplateGallery: templates by category (REQ-BQGL-001)', () => {
 
 		expect(filter(wrapper).props('modelValue')).toBe(null)
 		expect(groups(wrapper)).toHaveLength(3)
+	})
+})
+
+describe('TemplateGallery forms view (REQ-BQGL-003, REQ-BQGL-005)', () => {
+	beforeEach(() => {
+		axiosMock.get.mockReset()
+		axiosMock.post.mockReset()
+	})
+
+	/**
+	 * Open the "Forms" tab.
+	 *
+	 * @param {object} query The route query.
+	 * @return {Promise<object>}
+	 */
+	async function openForms(query = {}) {
+		const { wrapper, $router } = await mountGallery(query)
+		await wrapper.find('[data-testid="forms-tab"]').trigger('click')
+		await new Promise((resolve) => setTimeout(resolve, 0))
+		await wrapper.vm.$nextTick()
+		return { wrapper, $router }
+	}
+
+	/**
+	 * The names on the library form cards.
+	 *
+	 * @param {object} wrapper The mounted gallery.
+	 * @return {Array<string>}
+	 */
+	function formNames(wrapper) {
+		return wrapper.findAll('[data-testid="library-form-card"] h3').map((h) => h.text())
+	}
+
+	it('lists the library forms with their category and publisher', async () => {
+		const { wrapper } = await openForms()
+
+		expect(formNames(wrapper)).toEqual(['Aanvraag energiesubsidie', 'Melding openbare ruimte', 'Verlofaanvraag'])
+		const card = wrapper.find('[data-testid="library-form-card"]')
+		expect(card.text()).toContain('Citizen engagement')
+		expect(card.text()).toContain('Published by {publisher}')
+	})
+
+	it('finds a form by name', async () => {
+		const { wrapper } = await openForms()
+		const view = wrapper.findComponent({ name: 'FormLibraryView' })
+
+		view.vm.onQuery('subsidie')
+		await wrapper.vm.$nextTick()
+
+		expect(formNames(wrapper)).toEqual(['Aanvraag energiesubsidie'])
+	})
+
+	it('narrows library and GitHub forms by the category in the link', async () => {
+		const { wrapper } = await openForms({ category: 'field-work' })
+
+		expect(formNames(wrapper)).toEqual(['Melding openbare ruimte'])
+		expect(wrapper.findAll('[data-testid="github-form-card"] h3').map((h) => h.text())).toEqual(['Schouwronde'])
+	})
+
+	it('refuses a file that is not a form export and creates nothing', async () => {
+		const { wrapper } = await openForms()
+		const view = wrapper.findComponent({ name: 'FormLibraryView' })
+
+		await view.vm.importText(JSON.stringify({ schemaVersion: '1.0', kind: 'component-block', block: {} }))
+		await wrapper.vm.$nextTick()
+
+		expect(wrapper.find('[role="alert"]').text()).toBe('This file is not a form export.')
+		expect(axiosMock.post).not.toHaveBeenCalled()
+	})
+
+	it('imports a form export into the library', async () => {
+		axiosMock.post.mockResolvedValue({ data: {} })
+		const { wrapper } = await openForms()
+		const view = wrapper.findComponent({ name: 'FormLibraryView' })
+		const exported = {
+			schemaVersion: '1.0',
+			kind: 'form-template',
+			form: {
+				slug: 'nieuw-formulier',
+				name: 'Nieuw formulier',
+				category: 'citizen-engagement',
+				kind: 'registration-form',
+				publisher: 'Gemeente Ander',
+				form: { fields: [{ name: 'naam' }] },
+				schemaFragment: { naam: { type: 'string' } },
+			},
+		}
+
+		await view.vm.importText(JSON.stringify(exported))
+
+		expect(axiosMock.post).toHaveBeenCalledTimes(1)
+		const [url, record] = axiosMock.post.mock.calls[0]
+		expect(url).toBe('/apps/openregister/api/objects/buildiq/form-template')
+		expect(record.publisher).toBe('Gemeente Ander')
+		expect(record.category).toBe('citizen-engagement')
 	})
 })
