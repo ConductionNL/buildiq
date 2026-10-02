@@ -1817,7 +1817,9 @@ OC.L10N.register(
         "You do not meet the conditions of this form yet.": "You do not meet the conditions of this form yet.",
         "calculated": "calculated",
         "is": "is",
-        "prefilled": "prefilled"
+        "prefilled": "prefilled",
+        "Other": "Other",
+        "No templates in this category": "No templates in this category"
     },
     "nplurals=2; plural=(n != 1);"
 )

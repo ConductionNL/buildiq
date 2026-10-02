@@ -1406,7 +1406,10 @@ OC.L10N.register(
         "You do not meet the conditions of this form yet.": "Je voldoet nog niet aan de voorwaarden van dit formulier.",
         "calculated": "berekend",
         "is": "is",
-        "prefilled": "vooraf ingevuld"
+        "prefilled": "vooraf ingevuld",
+        "Filter by category": "Filteren op categorie",
+        "Other": "Overig",
+        "No templates in this category": "Geen sjablonen in deze categorie"
     },
     "nplurals=2; plural=(n != 1);"
 )
