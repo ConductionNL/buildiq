@@ -121,6 +121,14 @@
 						" />
 					<button
 						type="button"
+						class="page-list-editor__copy"
+						:title="t('buildiq', 'Copy page')"
+						:aria-label="t('buildiq', 'Copy page')"
+						@click.stop="copyPageAt(index)">
+						⧉
+					</button>
+					<button
+						type="button"
 						class="page-list-editor__remove"
 						:title="t('buildiq', 'Remove page')"
 						@click.stop="removePage(index)">
@@ -151,6 +159,7 @@
 <script>
 import Draggable from 'vuedraggable'
 import PermissionGroupField from './fields/PermissionGroupField.vue'
+import { copyPage } from '../../services/pageCopy.js'
 
 export const PAGE_TYPES = [
 	'index',
@@ -411,6 +420,24 @@ export default {
 		},
 
 		/**
+		 * Insert a copy of a page below it, with a unique id and route and the
+		 * title "Copy of ..." (REQ-BQCP-003). The page list's own duplicate
+		 * checks then run as for any page.
+		 *
+		 * @param {number} index - position of the page to copy.
+		 * @return {void}
+		 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-a-page-req-bqcp-003
+		 */
+		copyPageAt(index) {
+			this.$emit(
+				'update:pages',
+				copyPage(this.pages, index, (title) =>
+					t('buildiq', 'Copy of {title}', { title }),
+				),
+			)
+		},
+
+		/**
 		 * Drop a page from the manifest. When the removed page was the
 		 * selected one, `select` is re-emitted with -1 so PageDesigner clears
 		 * the centre pane instead of pointing at a shifted neighbour.
@@ -652,6 +679,15 @@ export default {
 	border-radius: var(--border-radius);
 	font-size: 11px;
 	color: var(--color-text-maxcontrast);
+}
+
+.page-list-editor__copy {
+	background: transparent;
+	border: 1px solid var(--color-border);
+	color: var(--color-main-text);
+	padding: 4px 8px;
+	border-radius: var(--border-radius);
+	cursor: pointer;
 }
 
 .page-list-editor__remove {

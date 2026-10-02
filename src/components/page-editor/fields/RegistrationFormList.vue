@@ -50,6 +50,13 @@
 					<button type="button" @click="edit(form)">
 						{{ t('buildiq', 'Edit') }}
 					</button>
+					<button
+						type="button"
+						class="form-list__copy"
+						:disabled="copying"
+						@click="copyForm(form)">
+						{{ t('buildiq', 'Copy form') }}
+					</button>
 				</li>
 			</ul>
 
@@ -124,6 +131,7 @@
 
 <script>
 import RegistrationFormEditor from './RegistrationFormEditor.vue'
+import { copyOfForm } from '../../../services/formCopy.js'
 import {
 	fetchRegistrationForms,
 	fetchTargetSchema,
@@ -173,6 +181,7 @@ export default {
 			forms: [],
 			loading: false,
 			adding: false,
+			copying: false,
 			refusal: '',
 			draftName: '',
 			draftAudience: 'client',
@@ -361,6 +370,36 @@ export default {
 				supplier: t('buildiq', 'A supplier'),
 			}
 			return labels[form.audience] || form.audience || ''
+		},
+
+		/**
+		 * Save a draft copy of a form and open it (REQ-BQCP-004). The copy is
+		 * never the default, so the original keeps that role.
+		 *
+		 * @param {object} form The form to copy.
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-a-registration-form-as-a-draft-req-bqcp-004
+		 */
+		async copyForm(form) {
+			this.copying = true
+			this.refusal = ''
+			try {
+				const result = await saveRegistrationForm(
+					copyOfForm(
+						form,
+						t('buildiq', 'Copy of {name}', {
+							name: form.name || form.id,
+						}),
+					),
+				)
+				this.$emit('added', result.form)
+				await this.reload()
+				this.edit(result.form)
+			} catch (refusal) {
+				this.refusal = refusal.message
+			} finally {
+				this.copying = false
+			}
 		},
 
 		/**
