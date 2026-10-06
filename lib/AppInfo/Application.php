@@ -168,7 +168,7 @@ class Application extends App implements IBootstrap {
 		//
 		// LOAD-ORDER HAZARD (measured, not theoretical). OC_App::getEnabledApps()
 		// sort()s the app list, and Coordinator::registerApps() walks THAT sorted
-		// list calling OC_App::registerAutoloading($appId) and then $app->register()
+		// list registering each app's autoloader and then calling $app->register()
 		// for one app at a time. So every app registers before the PSR-4 prefix of
 		// every alphabetically-LATER app exists: `buildiq` < `openregister`, so
 		// OCA\OpenRegister\ is not autoloadable at this point on a perfectly
@@ -192,9 +192,10 @@ class Application extends App implements IBootstrap {
 		//
 		// The fix is to put OpenRegister's prefix on the autoloader ourselves,
 		// which is exactly what Nextcloud will do a few iterations later. Two
-		// properties make this the correct call. First,
-		// OC_App::registerAutoloading() touches ONLY the autoloader and is
-		// idempotent — it early-returns on an $alreadyRegistered key. Second,
+		// properties make this the correct call. First, the prelude touches ONLY
+		// the autoloader (a PSR-4 loader for OCA\OpenRegister\ over its lib/,
+		// public IAppManager only — the private OC_App::registerAutoloading() it
+		// used to call is gone in Nextcloud 35) and is idempotent. Second,
 		// IAppManager::loadApp() would NOT be correct here: it marks OpenRegister
 		// loaded and calls Coordinator::bootApp(), booting OpenRegister BEFORE
 		// its own register() has run.

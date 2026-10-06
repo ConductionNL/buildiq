@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\AppInfo;
 
 use OCA\Buildiq\AppInfo\OpenRegisterAutoloader;
+use OCP\App\IAppManager;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -33,8 +34,51 @@ use PHPUnit\Framework\TestCase;
  * AppHost plumbing. A prelude that could itself throw would replace the silent
  * skip with an aborted `register()` — strictly worse — so "never throws" is the
  * contract under test, on ANY instance, with OpenRegister present or absent.
+ *
+ * It must also work on Nextcloud 35, which removed the private
+ * `OC_App::registerAutoloading()` it used to call, so it may only use public
+ * API and plain PHP.
  */
 class OpenRegisterAutoloaderTest extends TestCase {
+	/**
+	 * Temporary fake openregister app directory.
+	 *
+	 * @var string
+	 */
+	private string $appPath;
+
+	/**
+	 * Create a fake openregister app with one class under lib/.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+		OpenRegisterAutoloader::unregister();
+		$this->appPath = sys_get_temp_dir().'/buildiq-or-'.bin2hex(random_bytes(4));
+		mkdir($this->appPath.'/lib/Fake', 0777, true);
+		file_put_contents(
+			$this->appPath.'/lib/Fake/Probe.php',
+			"<?php\nnamespace OCA\\OpenRegister\\Fake;\nfinal class Probe {}\n"
+		);
+
+	}//end setUp()
+
+	/**
+	 * Take the loader off the SPL chain and remove the fake app.
+	 *
+	 * @return void
+	 */
+	protected function tearDown(): void {
+		OpenRegisterAutoloader::unregister();
+		@unlink($this->appPath.'/lib/Fake/Probe.php');
+		@rmdir($this->appPath.'/lib/Fake');
+		@rmdir($this->appPath.'/lib');
+		@rmdir($this->appPath);
+		parent::tearDown();
+
+	}//end tearDown()
+
 	/**
 	 * The prelude must never throw, whatever the instance looks like.
 	 *
@@ -65,8 +109,8 @@ class OpenRegisterAutoloaderTest extends TestCase {
 	/**
 	 * Calling the prelude twice must be free and must agree with itself.
 	 *
-	 * `OC_App::registerAutoloading()` early-returns on an `$alreadyRegistered`
-	 * key, so a second call is a no-op. `Application::register()` may run more
+	 * The prelude short-circuits while its loader is registered, so a second
+	 * call is a no-op. `Application::register()` may run more
 	 * than once in a single process, and a prelude that failed or threw on the
 	 * second call would be a latent bootstrap defect.
 	 *
@@ -83,8 +127,8 @@ class OpenRegisterAutoloaderTest extends TestCase {
 			expected: $afterFirst,
 			actual: $afterSecond,
 			message: 'A second call must not stack another autoloader — '
-				. 'OC_App::registerAutoloading() early-returns on an '
-				. '$alreadyRegistered key, so the prelude is free to repeat.'
+				. 'the prelude short-circuits while registered, so it is free '
+				. 'to repeat.'
 		);
 
 	}//end testRegisterIsIdempotent()
@@ -118,4 +162,83 @@ class OpenRegisterAutoloaderTest extends TestCase {
 		);
 
 	}//end testRegisterSwallowsAnAppThatCannotResolve()
+
+	/**
+	 * The prelude must not reach for the private OC_App class (gone in NC 35).
+	 *
+	 * @return void
+	 */
+	public function testSourceUsesNoPrivateOcAppApi(): void {
+		$source = (string) file_get_contents(__DIR__.'/../../../lib/AppInfo/OpenRegisterAutoloader.php');
+		$code   = (string) preg_replace('#/\*.*?\*/|//[^\n]*#s', '', $source);
+		$this->assertStringNotContainsString('OC_App', $code);
+
+	}//end testSourceUsesNoPrivateOcAppApi()
+
+	/**
+	 * With OpenRegister enabled, its classes become autoloadable, exactly once.
+	 *
+	 * @return void
+	 */
+	public function testRegistersPsr4PrefixWhenEnabled(): void {
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('isEnabledForAnyone')->with('openregister')->willReturn(true);
+		$appManager->method('getAppPath')->with('openregister')->willReturn($this->appPath.'/');
+
+		OpenRegisterAutoloader::register(appManager: $appManager);
+		$afterFirst = count(spl_autoload_functions());
+		OpenRegisterAutoloader::register(appManager: $appManager);
+
+		$this->assertSame($afterFirst, count(spl_autoload_functions()));
+		$this->assertTrue(class_exists('OCA\\OpenRegister\\Fake\\Probe'));
+
+	}//end testRegistersPsr4PrefixWhenEnabled()
+
+	/**
+	 * A disabled OpenRegister is never wired, and its path is never resolved.
+	 *
+	 * @return void
+	 */
+	public function testDoesNothingWhenDisabled(): void {
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('isEnabledForAnyone')->willReturn(false);
+		$appManager->expects($this->never())->method('getAppPath');
+
+		$before = count(spl_autoload_functions());
+		OpenRegisterAutoloader::register(appManager: $appManager);
+
+		$this->assertSame($before, count(spl_autoload_functions()));
+
+	}//end testDoesNothingWhenDisabled()
+
+	/**
+	 * An app manager that throws is swallowed, not rethrown.
+	 *
+	 * @return void
+	 */
+	public function testSwallowsAThrowingAppManager(): void {
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('isEnabledForAnyone')->willThrowException(new \RuntimeException('boom'));
+
+		$before = count(spl_autoload_functions());
+		OpenRegisterAutoloader::register(appManager: $appManager);
+
+		$this->assertSame($before, count(spl_autoload_functions()));
+
+	}//end testSwallowsAThrowingAppManager()
+
+	/**
+	 * The loader only ever answers for OpenRegister's own namespace.
+	 *
+	 * @return void
+	 */
+	public function testClassFileOnlyAnswersForOpenRegister(): void {
+		$this->assertSame(
+			'/x/lib/Db/Schema.php',
+			OpenRegisterAutoloader::classFile(appPath: '/x', class: 'OCA\\OpenRegister\\Db\\Schema')
+		);
+		$this->assertNull(OpenRegisterAutoloader::classFile(appPath: '/x', class: 'OCA\\Buildiq\\Foo'));
+		$this->assertNull(OpenRegisterAutoloader::classFile(appPath: '/x', class: 'OCA\\OpenRegister\\'));
+
+	}//end testClassFileOnlyAnswersForOpenRegister()
 }//end class
