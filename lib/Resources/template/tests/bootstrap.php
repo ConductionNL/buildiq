@@ -32,7 +32,9 @@ if (!defined('OC_CONSOLE')) {
 		require_once __DIR__ . '/../../../tests/autoload.php';
 	}
 
-	\OC_App::loadApps();
-	\OC_App::loadApp('app-template');
+	// Public API: NC 35 removed the private \OC_App app loaders.
+	$appManager = \OCP\Server::get(\OCP\App\IAppManager::class);
+	$appManager->loadApps();
+	$appManager->loadApp('app-template');
 	OC_Hook::clear();
 }

@@ -223,10 +223,10 @@ if (!defined('OC_CONSOLE') && $buildiqNcRoot !== null) {
 			require_once $ncAutoload;
 		}
 
-		if (class_exists(\OC_App::class)) {
-			\OC_App::loadApps();
-			\OC_App::loadApp('buildiq');
-		}
+		// Public API: NC 35 removed the private \OC_App app loaders.
+		$buildiqAppManager = \OCP\Server::get(\OCP\App\IAppManager::class);
+		$buildiqAppManager->loadApps();
+		$buildiqAppManager->loadApp('buildiq');
 
 		if (class_exists(\OC_Hook::class)) {
 			\OC_Hook::clear();

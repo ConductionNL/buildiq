@@ -17,7 +17,7 @@ When creating a new app, clone this template and use `/app-create` to rename all
 
 | Layer | Technology |
 |-------|------------|
-| Backend | PHP 8.1+, Nextcloud AppFramework |
+| Backend | PHP 8.3+, Nextcloud AppFramework |
 | Frontend | Vue 2.7, Pinia, @nextcloud/vue |
 | Data | OpenRegister (JSON object store) |
 | Testing | PHPUnit (unit + integration), Newman (API) |
