@@ -126,7 +126,11 @@ if (refsLine === undefined) {
 // are the same output otherwise.
 if (refs.length === 0) {
 	console.error(
-		'[check:nc-floor] Resolved ZERO CI legs from ' + WORKFLOW + ' / ' + INFO + '.',
+		'[check:nc-floor] Resolved ZERO CI legs from '
+			+ WORKFLOW
+			+ ' / '
+			+ INFO
+			+ '.',
 	)
 	console.error('[check:nc-floor] That is a broken parser, not a clean result.')
 	process.exit(2)
