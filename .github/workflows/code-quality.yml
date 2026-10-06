@@ -54,21 +54,11 @@ jobs:
       app-name: buildiq
       php-version: "8.3"
       php-test-versions: '["8.3", "8.4"]'
-      # stable31 is REMOVED, not "dropped for coverage". `additional-apps` below
-      # installs openregister, which declares min-version="32" and therefore
-      # cannot install on NC31 — `occ app:enable openregister` fails with only a
-      # ::warning::, so the run continues WITHOUT its data layer and every
-      # /apps/openregister/... call returns Nextcloud's HTML 404 page. A stable31
-      # leg was testing an impossible configuration, so its red said nothing.
-      # Newman, Playwright and journeydoc-capture all pin `fromJSON(...)[0]`, so
-      # the FIRST entry has to be a version openregister can load.
-      #
-      # THE LIST IS THE WHOLE DECLARED RANGE. appinfo/info.xml declares
-      # <nextcloud min-version="32" max-version="34"/>, so 32, 33 and 34 each get
-      # a leg. Adopting NC 34 by REPLACING the list left 32 and 33 advertised to
-      # the App Store with no job touching them — the declared floor became the
-      # untested end, which is the same drift as never testing 34, reversed.
-      nextcloud-test-refs: '["stable34", "stable32", "stable33"]'
+      # No `nextcloud-test-refs` override: the shared quality.yml derives the
+      # Nextcloud matrix from appinfo/info.xml (min-version..max-version), so
+      # every declared major — stable35 included — gets a leg and the tested
+      # range cannot drift from the declared one. scripts/check-nc-floor.js
+      # mirrors that derivation when the override is absent.
       enable-psalm: true
       enable-phpstan: true
       enable-phpmetrics: true
@@ -281,7 +271,8 @@ jobs:
       # rule, and fails LOUDLY (exit 2) if it enumerated nothing at all.
       #
       # `check:nc-floor` added 2026-08-08 with the 28 -> 32 floor raise. It
-      # asserts that every `nextcloud-test-refs` entry above is >= the
+      # asserts that every CI leg (a `nextcloud-test-refs` override if one is
+      # set above, else the range derived from info.xml) is >= the
       # `<nextcloud min-version>` in appinfo/info.xml, and pins the floor to 32
       # / PHP 8.3. It lives HERE and not in PHPUnit on purpose: the PHPUnit job
       # runs against a DEPLOYED copy of the app under `server/apps/buildiq`,

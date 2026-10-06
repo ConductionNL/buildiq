@@ -100,7 +100,7 @@ Vrij en open source onder de EUPL-1.2-licentie.
         max-version stays 34, which is the fleet value everywhere except
         openconnector (35).
         -->
-        <nextcloud min-version="32" max-version="34"/>
+        <nextcloud min-version="32" max-version="35"/>
     </dependencies>
 
     <background-jobs>
