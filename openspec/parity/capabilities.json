@@ -9504,8 +9504,8 @@
 				"evidence": "Re-rated 2026-10-07: archived openregister change 2026-10-05-flow-task-forms built the backend. openregister origin/development @26ff809cfb: lib/Service/Flow/Nodes/UserTaskNode.php:163 user-task node, lib/Service/Task/TaskFormResolver.php resolves the declared form, lib/Controller/TaskController.php:109-130 serves it and completes with a payload (TaskFormCompletion). Not reachable for a person: the change's own tasks.md (5.2) records that no task-completion surface consuming TaskFormResolver exists in nextcloud-vue, and buildiq's src/components/runtime/MyApprovalsWidget.vue:9-10 only approves or rejects through /api/flow-tasks/{uuid}/complete without form fields.",
 				"reachedOn": "/automations 'Require approval', or flow canvas user task; decided in the my-approvals widget",
 				"owner": "ConductionNL/openregister",
-				"note": "Still specified: the change was archived without the user-facing part. Missing: a task-completion component in nextcloud-vue that renders the resolved form, and buildiq's my-approvals widget (or a task inbox) using it.",
-				"change": "openregister/flow-task-forms",
+				"note": "Still specified: the change was archived without the user-facing part. Missing: a task-completion component in nextcloud-vue that renders the resolved form, and buildiq's my-approvals widget (or a task inbox) using it. Spec round part 3 (2026-10-07): buildiq's half (fields on the approval action, the form in My approvals) is specified in logic-approval-task-form; it waits on a nextcloud-vue task form component and on openregister carrying a chain form into the task.",
+				"change": "logic-approval-task-form",
 				"readOn": "2026-10-07"
 			},
 			"provider": "openregister",
@@ -9524,8 +9524,9 @@
 			"screen": {
 				"canvas": "5NkFW28vZUUij43xzxHg5a",
 				"board": [
-					"BqAutomatiseringen",
-					"BqAutomatiseringBewerken"
+					"BqAutomatiseringBewerken",
+					"BqMijnGoedkeuringen",
+					"BqAutomatiseringen"
 				]
 			}
 		},
