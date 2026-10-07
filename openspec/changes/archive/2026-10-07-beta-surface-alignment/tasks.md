@@ -1,6 +1,6 @@
 ## 1. Verify claims against `lib/` and `src/` at HEAD
 
-> Delta fix-up 2026-10-07: the dependency scenario now matches the code (openregister named in a comment inside `<dependencies>`, no `<app>` element, because the App Store schema rejects it), and 2.3 is rewritten to that. 4.x hold on the rewritten `docs/intro.md`. LEFT OPEN, needs a choice: the product page (EN and NL, conduction-website) shows `version="v0.10"` while `appinfo/info.xml` is `0.7.15` (the `v0.10.0-dev` tags of August were abandoned and the line restarted at 0.7). Either the page moves to `v0.7`, or the app's version line moves to 0.10; the scenario "Version drift is corrected" holds once one of the two happens.
+> Delta fix-up 2026-10-07: the dependency scenario now matches the code (openregister named in a comment inside `<dependencies>`, no `<app>` element, because the App Store schema rejects it), and 2.3 is rewritten to that. 4.x hold on the rewritten `docs/intro.md`. The version drift is closed by decision 91 (Ruben, 7 Oct): the product page (EN and NL, conduction-website) showed `version="v0.10"` while `appinfo/info.xml` is `0.7.15` (the `v0.10.0-dev` tags of August were abandoned and the line restarted at 0.7), so the page moves to `v0.7` (task 3.5).
 
 - [x] 1.1 Confirm `composer.json` license (`EUPL-1.2`) vs. `info.xml`
       `<licence>agpl</licence>` mismatch, and cross-check SPDX headers.
@@ -40,6 +40,8 @@
       alongside the existing ZIP-export/RBAC claims.
 - [x] 3.4 Fix NL page's dead `docs.conduction.nl/buildiq` link →
       `openbuild.conduction.nl`.
+- [x] 3.5 Move the product page `version` from `v0.10` to `v0.7` (EN and NL),
+      matching `info.xml` `0.7.15`: ConductionNL/conduction-website#240.
 
 ## 4. Fix docs
 
