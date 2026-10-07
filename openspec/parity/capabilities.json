@@ -716,16 +716,17 @@
 			"power-apps": "partial",
 			"built": {
 				"state": "built",
-				"evidence": "lib/Settings/openbuild_register.json:82-98 Application schema has editable name/description properties (read-only only for hybrid apps). src/manifest.json:459 sets showEditAction:false because src/components/ApplicationDetailActions.vue:157,267-272 renders its own 'Edit' action calling the generic openEditForm() function handed in via the detail page's #actions slot scope -- the shared nextcloud-vue generic object edit form (name/description/slug).",
+				"evidence": "lib/Settings/openbuild_register.json:82-98 Application schema has editable name/description properties (read-only only for hybrid apps). src/manifest.json:459 sets showEditAction:false because src/components/ApplicationDetailActions.vue:157,267-272 renders its own 'Edit' action calling the generic openEditForm() function handed in via the detail page's #actions slot scope -- the shared nextcloud-vue generic object edit form (name/description/slug). Spec written after the fact on 2026-10-07: the slug is editable on a virtual app (schema pattern, 2 to 48 chars, no -dark suffix); slug and name are locked only on a hybrid app (lib/Listener/HybridMetadataLockListener.php:95).",
 				"reachedOn": "VirtualAppDetail /applications/:objectId, header action menu 'Edit'",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "none"
+				"spec": "openspec/specs/application-rename-and-delete",
+				"readOn": "2026-10-07"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
 			"feature": "app-rename-describe",
 			"featureConfidence": "medium",
-			"note": "Slug is NOT editable after creation per the schema description (drives /builder/{slug}/* paths); only name/description are freely editable.",
+			"note": "Corrected 2026-10-07: the slug is editable after creation on a virtual app; slug and name are read-only only on a hybrid app, which mirrors an installed Nextcloud app (HybridMetadataLockListener.php:95, openbuild_register.json:75-79).",
 			"reachedOn": "VirtualAppDetail /applications/:objectId, header action menu 'Edit'",
 			"evidence": {
 				"budibase": "source read at v3.46.0, not driven: packages/builder/src/components/common/UpdateWorkspaceForm.svelte:168-199 edits Name, URL and Icon, each disabled={appDeployed}; mounted packages/builder/src/settings/pages/general.svelte:91. WorkspaceAppModal.svelte:192,204 edits app name and url. No description field in either form Reached on: workspace settings > general > info; home app row > edit",
@@ -755,7 +756,8 @@
 				"evidence": "DELETE /apps/buildiq/api/applications/{appUuid} (routes.php:118 applicationPublish#destroy) wired from src/components/AppDeleteDialogSlot.vue:105 which fills CnIndexPage's #delete-dialog slot with Buildiq's own DeleteAppDialog (data checkbox + full cleanup of versions/registers/routes) instead of a bare OR object delete",
 				"reachedOn": "VirtualApps /applications, table row Delete action -> DeleteAppDialog",
 				"owner": "ConductionNL/buildiq",
-				"spec": "none"
+				"spec": "openspec/specs/application-rename-and-delete",
+				"readOn": "2026-10-07"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
