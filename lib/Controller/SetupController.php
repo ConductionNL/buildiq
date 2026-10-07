@@ -331,14 +331,14 @@ class SetupController extends Controller {
 		// posts nothing and relies on the pick stored a step earlier. Nothing is
 		// stored before the load succeeds: a failed load must leave the step
 		// open for an operator who asked for data and got none.
-		$posted = $this->request->getParam('dataset');
+		$posted = $this->postedDataset();
 		if ($posted !== null) {
 			$refusal = $this->refuseDataset(value: $posted);
 			if ($refusal !== null) {
 				return $refusal;
 			}
 
-			$picked = (string)$posted;
+			$picked = $posted;
 		}
 
 		// The legacy id carries no answer, so it means the shipped dataset. A
@@ -401,23 +401,48 @@ class SetupController extends Controller {
 	}//end loadDataset()
 
 	/**
+	 * Read the dataset id a card's Load button posted.
+	 *
+	 * @return string|null The posted id, empty when the body held no scalar,
+	 *                     or null when nothing was posted.
+	 *
+	 * @spec openspec/changes/wizard-dataset-card-load/specs/first-time-setup/spec.md
+	 */
+	private function postedDataset(): ?string {
+		$posted = $this->request->getParam('dataset');
+		if ($posted === null) {
+			return null;
+		}
+
+		// A non-scalar body names no dataset; the empty id matches none.
+		if (is_scalar($posted) === false) {
+			return '';
+		}
+
+		return (string)$posted;
+	}//end postedDataset()
+
+	/**
 	 * Refuse a posted dataset id no dataset answers to.
 	 *
-	 * @param mixed $value The posted value.
+	 * The value arrives as a string so the class takes no `mixed` type: pdepend
+	 * counts that keyword as a class and pushes the coupling over phpmd's limit.
+	 *
+	 * @param string $value The posted value, empty when it was not a scalar.
 	 *
 	 * @return JSONResponse|null The refusal, or null when the dataset is known.
 	 *
 	 * @spec openspec/changes/wizard-dataset-card-load/specs/first-time-setup/spec.md
 	 */
-	private function refuseDataset(mixed $value): ?JSONResponse {
-		$named = 'that';
-		if (is_scalar($value) === true) {
-			$named = (string)$value;
+	private function refuseDataset(string $value): ?JSONResponse {
+		$known = array_column($this->demoDataService->listChoices(), 'id');
+		if ($value !== '' && in_array($value, $known, true) === true) {
+			return null;
 		}
 
-		$known = array_column($this->demoDataService->listChoices(), 'id');
-		if (is_scalar($value) === true && in_array($named, $known, true) === true) {
-			return null;
+		$named = $value;
+		if ($value === '') {
+			$named = 'that';
 		}
 
 		return new JSONResponse(
