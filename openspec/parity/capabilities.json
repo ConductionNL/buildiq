@@ -4658,8 +4658,8 @@
 				"evidence": "Re-rated 2026-10-07 (building -> specified): archived integriq change 2026-09-29-registry-backed-field-source built the resolvers. integriq origin/development @254619dff: lib/PropertySource/Provider/BagPropertySource.php, BrpPropertySource.php, KvkPropertySource.php behind lib/Controller/PropertySourceController.php, with a lookup dialog in integriq itself (src/dialogs/RegistryLookupDialog.vue). openregister accepts the declaration (lib/Service/Schemas/PropertySourceDeclaration.php). Nothing in buildiq declares or renders it: grep property-source/propertySource over buildiq src and lib, none; the same grep over nextcloud-vue src, none, so no form field reads a registry.",
 				"reachedOn": "",
 				"owner": "ConductionNL/integriq",
-				"note": "Still specified: the registry lookup exists in integriq and the schema key in openregister, but a buildiq maker cannot declare a registry-backed field and a built form cannot show one. Missing: a field-type option in buildiq's schema designer and a nextcloud-vue form field that calls integriq's property source.",
-				"change": "integriq/registry-backed-field-source",
+				"note": "Still specified: the registry lookup exists in integriq and the schema key in openregister, but a buildiq maker cannot declare a registry-backed field and a built form cannot show one. Missing: a field-type option in buildiq's schema designer and a nextcloud-vue form field that calls integriq's property source. Spec round part 3 (2026-10-07): buildiq's half (the field editor declares x-openregister-property-source) is specified in data-registry-backed-field-option; the nextcloud-vue form field that renders it is cross-repo.",
+				"change": "data-registry-backed-field-option",
 				"readOn": "2026-10-07"
 			},
 			"provider": "integriq",
@@ -4677,7 +4677,10 @@
 			},
 			"screen": {
 				"canvas": "5NkFW28vZUUij43xzxHg5a",
-				"board": "BqOntwerperKoppelingen"
+				"board": [
+					"BqVeldBewerken",
+					"BqOntwerperKoppelingen"
+				]
 			}
 		},
 		{
