@@ -716,16 +716,17 @@
 			"power-apps": "partial",
 			"built": {
 				"state": "built",
-				"evidence": "lib/Settings/openbuild_register.json:82-98 Application schema has editable name/description properties (read-only only for hybrid apps). src/manifest.json:459 sets showEditAction:false because src/components/ApplicationDetailActions.vue:157,267-272 renders its own 'Edit' action calling the generic openEditForm() function handed in via the detail page's #actions slot scope -- the shared nextcloud-vue generic object edit form (name/description/slug).",
+				"evidence": "lib/Settings/openbuild_register.json:82-98 Application schema has editable name/description properties (read-only only for hybrid apps). src/manifest.json:459 sets showEditAction:false because src/components/ApplicationDetailActions.vue:157,267-272 renders its own 'Edit' action calling the generic openEditForm() function handed in via the detail page's #actions slot scope -- the shared nextcloud-vue generic object edit form (name/description/slug). Spec written after the fact on 2026-10-07: the slug is editable on a virtual app (schema pattern, 2 to 48 chars, no -dark suffix); slug and name are locked only on a hybrid app (lib/Listener/HybridMetadataLockListener.php:95).",
 				"reachedOn": "VirtualAppDetail /applications/:objectId, header action menu 'Edit'",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "none"
+				"spec": "openspec/specs/application-rename-and-delete",
+				"readOn": "2026-10-07"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
 			"feature": "app-rename-describe",
 			"featureConfidence": "medium",
-			"note": "Slug is NOT editable after creation per the schema description (drives /builder/{slug}/* paths); only name/description are freely editable.",
+			"note": "Corrected 2026-10-07: the slug is editable after creation on a virtual app; slug and name are read-only only on a hybrid app, which mirrors an installed Nextcloud app (HybridMetadataLockListener.php:95, openbuild_register.json:75-79).",
 			"reachedOn": "VirtualAppDetail /applications/:objectId, header action menu 'Edit'",
 			"evidence": {
 				"budibase": "source read at v3.46.0, not driven: packages/builder/src/components/common/UpdateWorkspaceForm.svelte:168-199 edits Name, URL and Icon, each disabled={appDeployed}; mounted packages/builder/src/settings/pages/general.svelte:91. WorkspaceAppModal.svelte:192,204 edits app name and url. No description field in either form Reached on: workspace settings > general > info; home app row > edit",
@@ -755,7 +756,8 @@
 				"evidence": "DELETE /apps/buildiq/api/applications/{appUuid} (routes.php:118 applicationPublish#destroy) wired from src/components/AppDeleteDialogSlot.vue:105 which fills CnIndexPage's #delete-dialog slot with Buildiq's own DeleteAppDialog (data checkbox + full cleanup of versions/registers/routes) instead of a bare OR object delete",
 				"reachedOn": "VirtualApps /applications, table row Delete action -> DeleteAppDialog",
 				"owner": "ConductionNL/buildiq",
-				"spec": "none"
+				"spec": "openspec/specs/application-rename-and-delete",
+				"readOn": "2026-10-07"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -3814,26 +3816,27 @@
 			"area": "logic",
 			"name": "Send an email as an automation step.",
 			"source": "competitor",
-			"buildiq": "partial",
+			"buildiq": "yes",
 			"nocobase": "yes",
 			"budibase": "yes",
 			"appsmith": "partial",
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "specified",
-				"evidence": "Not in buildiq's composer: action options are send-notification, run-synchronization, object-op, webhook, approval, generateDocument (src/dialogs/AutomationEditDialog.vue:570-584); send-notification channels default to ['nc-notification'] with no channel picker (AutomationEditDialog.vue:812, form :172-185 has subject fields only); RuleActionDispatcher.php:127-131 has no email action; grep email|mail over AutomationCompilerService.php and RuleActionDispatcher.php: none. Available only in OpenRegister's flow canvas embedded on the same page ('Edit flows...', AutomationsPage.vue:22, CnFlowEditModal), where openregister origin/development has lib/Service/Flow/Nodes/SendEmailNode.php.",
-				"reachedOn": "/automations, 'Edit flows...' opens the OpenRegister flow canvas (send email node); not in the buildiq automation composer",
+				"state": "built",
+				"evidence": "Re-rated 2026-10-07 (archived openregister change 2026-10-05-flow-messaging-nodes, all tasks done). openregister origin/development @26ff809cfb: lib/Service/Flow/Nodes/SendEmailNode.php:53 type openregister.send-email with config keys recipients, subject, body, externalRecipients (:130); registered in the flow catalogue at lib/Listener/FlowNodeRegistrationListener.php:176. nextcloud-vue CnFlowDetail.vue:14-17 fills its step picker from that catalogue. buildiq reaches the canvas from src/views/AutomationsPage.vue:21-22 ('Edit flows…') through CnFlowEditModal (:153-157). buildiq's own composer still has no email action (src/dialogs/AutomationEditDialog.vue:581 lists send-notification, no email).",
+				"reachedOn": "/automations, \"Edit flows…\" opens the OpenRegister flow canvas; add the step \"Send an email\"",
 				"owner": "ConductionNL/openregister",
-				"note": "Specified in ConductionNL/openregister openspec/changes/flow-messaging-nodes (openregister lane, OpenSpec pass 2026-09-27).",
-				"change": "openregister/flow-messaging-nodes"
+				"note": "Satisfied by OpenRegister's flow node, reached from buildiq's automations page. The quick composer stays without an email action; that is a convenience, not the capability.",
+				"change": "openregister/flow-messaging-nodes",
+				"readOn": "2026-10-07"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
 			"feature": "automation-designer",
 			"featureConfidence": "medium",
-			"note": "The email step is OpenRegister's flow node; buildiq contributes only the embedding. I did not confirm the node palette in CnFlowDetail offers it.",
-			"reachedOn": "/automations, 'Edit flows...' opens the OpenRegister flow canvas (send email node); not in the buildiq automation composer",
+			"note": "The email step is OpenRegister's flow node; buildiq contributes the embedding. Confirmed 2026-10-07 that the canvas's step picker is fed from the flow catalogue where the node is registered.",
+			"reachedOn": "/automations, \"Edit flows…\" opens the OpenRegister flow canvas; add the step \"Send an email\"",
 			"evidence": {
 				"nocobase": "source read at v2.2.18, not driven: packages/plugins/@nocobase/plugin-workflow-mailer/src/client-v2/MailerInstruction.tsx:18 \"Mailer\" workflow node; builtIn packages/presets/nocobase/package.json:183 Reached on: Workflow canvas, add node, Mailer",
 				"budibase": "source read at v3.46.0, not driven: packages/shared-core/src/automations/steps/sendSmtpEmail.ts:14 'Send Email (SMTP)' step; offered in packages/builder/src/components/automation/AutomationBuilder/FlowChart/SelectStepSidePanel.svelte:182 (disabled until SMTP is configured) Reached on: automation editor > add step > Send Email (SMTP)",
@@ -3854,26 +3857,27 @@
 			"area": "logic",
 			"name": "Send an in-app notification to a user or group as an automation step.",
 			"source": "own-code",
-			"buildiq": "partial",
+			"buildiq": "yes",
 			"nocobase": "yes",
 			"budibase": "no",
 			"appsmith": "no",
 			"mendix": "partial",
 			"power-apps": "partial",
 			"built": {
-				"state": "specified",
-				"evidence": "send-notification form (AutomationEditDialog.vue:172-185: English and Dutch subject only); recipients fixed to [{kind: object-acl, permission: manage}] (AutomationEditDialog.vue:813-814); compiled to x-openregister-notifications on the target schema (AutomationCompilerService.php:762-781) and executed by OpenRegister AnnotationNotificationListener/AnnotationNotificationDispatcher (openregister Application.php:3415-3417; dispatcher matches trigger.type at AnnotationNotificationDispatcher.php:1986).",
-				"reachedOn": "/automations composer, action 'Send notification'",
+				"state": "built",
+				"evidence": "Re-rated 2026-10-07 (archived openregister change 2026-10-05-flow-messaging-nodes, all tasks done). openregister origin/development @26ff809cfb: lib/Service/Flow/Nodes/SendNotificationNode.php:55 type openregister.send-notification; its recipients field (:171-174) takes user or group ids or an item field such as {{ assignee }}, and expands groups; registered at lib/Listener/FlowNodeRegistrationListener.php:175. Reached from src/views/AutomationsPage.vue:21-22 through CnFlowEditModal. buildiq's quick composer still sends only to manage-rights holders (src/dialogs/AutomationEditDialog.vue:823-824).",
+				"reachedOn": "/automations, \"Edit flows…\" opens the OpenRegister flow canvas; add the step \"Send a notification\" and name users or groups",
 				"owner": "ConductionNL/openregister",
-				"note": "Specified in ConductionNL/openregister openspec/changes/flow-messaging-nodes (openregister lane, OpenSpec pass 2026-09-27).",
-				"change": "openregister/flow-messaging-nodes"
+				"note": "Choosing a user or group works in the flow canvas. The quick composer in buildiq still fixes recipients to whoever may manage the record.",
+				"change": "openregister/flow-messaging-nodes",
+				"readOn": "2026-10-07"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
 			"feature": "automation-designer",
 			"featureConfidence": "medium",
 			"note": "Narrower than the row: no way to choose a user or a group; it always goes to whoever holds manage rights on the record. Deleted-trigger notifications never fire (see logic-trigger-record-event). Manual-trigger and approval follow-up notifications go through RuleActionDispatcher, which needs recipientUid(s) the UI never sets (RuleActionDispatcher.php:170-173) and buildiq registers no notifier.",
-			"reachedOn": "/automations composer, action 'Send notification'",
+			"reachedOn": "/automations, \"Edit flows…\" opens the OpenRegister flow canvas; add the step \"Send a notification\" and name users or groups",
 			"evidence": {
 				"nocobase": "source read at v2.2.18, not driven: packages/plugins/@nocobase/plugin-workflow-notification/src/client-v2/NotificationInstruction.tsx:17 Notification node sending through channels such as in-app messages (packages/plugins/@nocobase/plugin-notification-in-app-message, builtIn packages/presets/nocobase/package.json:163); node plugin builtIn packages/presets/nocobase/package.json:185 Reached on: Workflow canvas, add node, Notification",
 				"appsmith": "source read at v2.4.2, not driven: app/client/src/components/editorComponents/ActionCreator/constants.ts:5 showAlert only toasts the current user; app/server/appsmith-server/src/main/java/com/appsmith/server/notifications holds platform mail, no in-app notification to another user or group. Searched for notification centre and inbox for app users, none",
@@ -4393,11 +4397,12 @@
 			"power-apps": "yes",
 			"built": {
 				"state": "specified",
-				"evidence": "buildiq ships no service-specific connectors (grep -iE 'google|salesforce|slack|sheets' over src and lib: none in connector code). Its only external-data path is a generic integriq endpoint binding (ConnectorSourcePicker.vue) whose runtime rendering is not wired (see int-rest-connector).",
+				"evidence": "Re-rated 2026-10-07: archived integriq change 2026-09-29-connectors-catalogue-expansion built the catalogue. integriq origin/development @254619dff ships lib/Settings/connector-templates/saas/google-sheets.json, salesforce-rest.json and slack.json. A buildiq app still cannot show their data: ConnectorSourcePicker.vue binds an integriq endpoint in the page editor, but no runtime draws a connector-bound page (row int-rest-connector; buildiq change integrations-connector-bound-pages has 0 of 7 tasks done).",
 				"reachedOn": "",
 				"owner": "ConductionNL/integriq",
-				"note": "Specified in ConductionNL/integriq openspec/changes/connectors-catalogue-expansion (owning lane, OpenSpec pass 2026-09-27).",
-				"change": "integriq/connectors-catalogue-expansion"
+				"note": "The connectors exist in integriq now (sibling-has). The buildiq half is rendering a connector-bound page, specified in integrations-connector-bound-pages; the integriq change is integriq/connectors-catalogue-expansion (archived).",
+				"change": "integrations-connector-bound-pages",
+				"readOn": "2026-10-07"
 			},
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -4648,12 +4653,13 @@
 			"mendix": "unknown",
 			"power-apps": "unknown",
 			"built": {
-				"state": "building",
-				"evidence": "grep -riE 'kvk|haal.?centraal|\\bbrp\\b|bag\\b' over buildiq src and lib: only a doc comment example path in src/services/fleetAppId.js:111 ('/apps/integriq/api/endpoint/kvk/companies') and a placeholder string in src/dialogs/ScheduleEditDialog.vue:42. No registry lookup component or field type. The only route to such data is a generic integriq endpoint binding, whose runtime rendering is not wired (see int-rest-connector).",
+				"state": "specified",
+				"evidence": "Re-rated 2026-10-07 (building -> specified): archived integriq change 2026-09-29-registry-backed-field-source built the resolvers. integriq origin/development @254619dff: lib/PropertySource/Provider/BagPropertySource.php, BrpPropertySource.php, KvkPropertySource.php behind lib/Controller/PropertySourceController.php, with a lookup dialog in integriq itself (src/dialogs/RegistryLookupDialog.vue). openregister accepts the declaration (lib/Service/Schemas/PropertySourceDeclaration.php). Nothing in buildiq declares or renders it: grep property-source/propertySource over buildiq src and lib, none; the same grep over nextcloud-vue src, none, so no form field reads a registry.",
 				"reachedOn": "",
 				"owner": "ConductionNL/integriq",
-				"note": "Specified in ConductionNL/integriq openspec/changes/registry-backed-field-source (owning lane, OpenSpec pass 2026-09-27). Integriq's lane records that showing the lookup result on a built page is buildiq's half; a registry endpoint renders on a connector-bound page with openspec/changes/integrations-connector-bound-pages. Building: ConductionNL/integriq openspec/changes/registry-backed-field-source, an existing open change, covers it (integriq lane, OpenSpec pass 2026-09-27).",
-				"change": "integriq/registry-backed-field-source"
+				"note": "Still specified: the registry lookup exists in integriq and the schema key in openregister, but a buildiq maker cannot declare a registry-backed field and a built form cannot show one. Missing: a field-type option in buildiq's schema designer and a nextcloud-vue form field that calls integriq's property source.",
+				"change": "integriq/registry-backed-field-source",
+				"readOn": "2026-10-07"
 			},
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -9491,11 +9497,12 @@
 			"power-apps": "yes",
 			"built": {
 				"state": "specified",
-				"evidence": "The approval step waits for a person or group and continues on approve or reject (src/dialogs/AutomationEditDialog.vue:248-278; approvers act in src/components/runtime/MyApprovalsWidget.vue:144,176); openregister origin/development lib/Service/Flow/Nodes/UserTaskNode.php:97 has a user-task node with a config form, reachable through the flow canvas buildiq opens (src/views/AutomationsPage.vue:22). The approval widget has no custom form fields",
+				"evidence": "Re-rated 2026-10-07: archived openregister change 2026-10-05-flow-task-forms built the backend. openregister origin/development @26ff809cfb: lib/Service/Flow/Nodes/UserTaskNode.php:163 user-task node, lib/Service/Task/TaskFormResolver.php resolves the declared form, lib/Controller/TaskController.php:109-130 serves it and completes with a payload (TaskFormCompletion). Not reachable for a person: the change's own tasks.md (5.2) records that no task-completion surface consuming TaskFormResolver exists in nextcloud-vue, and buildiq's src/components/runtime/MyApprovalsWidget.vue:9-10 only approves or rejects through /api/flow-tasks/{uuid}/complete without form fields.",
 				"reachedOn": "/automations 'Require approval', or flow canvas user task; decided in the my-approvals widget",
 				"owner": "ConductionNL/openregister",
-				"note": "Specified in ConductionNL/openregister openspec/changes/flow-task-forms (openregister lane, OpenSpec pass 2026-09-27).",
-				"change": "openregister/flow-task-forms"
+				"note": "Still specified: the change was archived without the user-facing part. Missing: a task-completion component in nextcloud-vue that renders the resolved form, and buildiq's my-approvals widget (or a task inbox) using it.",
+				"change": "openregister/flow-task-forms",
+				"readOn": "2026-10-07"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -10076,7 +10083,7 @@
 			"area": "apps",
 			"name": "Find an app or its records in the platform search and open it directly.",
 			"source": "spec-round-2026-10-07",
-			"buildiq": "no",
+			"buildiq": "partial",
 			"nocobase": "unknown",
 			"budibase": "unknown",
 			"appsmith": "unknown",
@@ -10084,10 +10091,11 @@
 			"power-apps": "unknown",
 			"built": {
 				"state": "specified",
-				"evidence": "lib/AppInfo/Application.php:143-148 wires the AppHost manifest-driven deep-link listener, which reads src/manifest.json deepLinks; src/manifest.json:1220 deepLinks is an empty list, so no buildiq object gets a deep link in unified search although the spec is marked done",
+				"evidence": "Re-rated 2026-10-07: records of a buildiq-built app are OpenRegister objects, so openregister's ObjectsProvider finds them in unified search (openregister lib/AppInfo/Application.php:1321), but a hit opens in OpenRegister, not in the app. buildiq registers no deep links: lib/AppInfo/Application.php:143-148 wires the AppHost manifest-driven deep-link listener, and src/manifest.json:1220 has \"deepLinks\": []. buildiq has no search provider of its own (no registerSearchProvider in lib). Apps themselves are not searchable.",
 				"owner": "ConductionNL/buildiq",
 				"spec": "openspec/specs/deep-link-registration",
-				"note": "Spec round 2026-10-07: the main spec deep-link-registration says done, the code registers nothing. Needs a decision: fill manifest deepLinks or retire the spec."
+				"note": "Main spec deep-link-registration is marked status: done and describes a listener that was deleted; the manifest that replaced it registers nothing. Rated partial (records findable, not opened in the app) and left specified until Ruben decides: fill manifest deepLinks, or retire the spec.",
+				"readOn": "2026-10-07"
 			},
 			"screen": {
 				"board": null,
