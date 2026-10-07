@@ -1599,7 +1599,8 @@
 				"evidence": "nextcloud-vue CnIndexPage.vue defaults selectable=true (line ~1283) and showDeleteAction=true (line ~1858), wiring a selection strip -> CnMassDeleteDialog (lines ~204-212) for bulk delete of the selected rows, on by default with no buildiq configuration needed. CnMassCopyDialog also exists (bulk duplicate). No mass-edit/mass-update-field dialog exists (grep -n 'class CnMass|MassUpdate|MassEdit|bulkEdit' in nextcloud-vue found only MassDelete/MassCopy/MassExport), so changing a field value across many records in one action is not built, only deleting (or copying) many is",
 				"reachedOn": "buildiq builder, any index page, select rows -> Delete",
 				"owner": "ConductionNL/nextcloud-vue",
-				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/index-bulk-edit-and-transitions (nextcloud-vue lane, OpenSpec pass 2026-09-27)."
+				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/index-bulk-edit-and-transitions (nextcloud-vue lane, OpenSpec pass 2026-09-27).",
+				"change": "nextcloud-vue/index-bulk-edit-and-transitions"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -1911,7 +1912,8 @@
 				"state": "specified",
 				"evidence": "grep -ri 'calendar' across buildiq src/ and lib/: only hit is src/components/runtime/ProcestCaseStatusPanel.vue (unrelated, a case/status panel, not a records-by-date calendar view). No 'calendar' entry in nextcloud-vue v2.55.1 pageTypes.js (note: CnCalendarWidget exists as a dashboard widget per docs/components/_generated/CnCalendarWidget.md, but that is a small widget, not a page type showing records by date field).",
 				"owner": "ConductionNL/nextcloud-vue",
-				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/index-calendar-view-mode (nextcloud-vue lane, OpenSpec pass 2026-09-27)."
+				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/index-calendar-view-mode (nextcloud-vue lane, OpenSpec pass 2026-09-27).",
+				"change": "nextcloud-vue/index-calendar-view-mode"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -2708,7 +2710,8 @@
 				"evidence": "Renderer supports it: nextcloud-vue v2.55.1 cnFormFieldRenderer.js:127,250-260 type 'file' renders CnFileField, value is the picked file as a data: URL (CnFormPage.vue:50-51). Builder does not offer it: FormFieldBuilder.vue:122 and FormLayoutBuilder.vue:246 FIELD_TYPES = string, number, boolean, select, textarea, date (no 'file'). Files on a saved record go through the detail sidebar Files tab (see data-files-on-record)",
 				"reachedOn": "only by typing type 'file' into the manifest via Raw JSON on a form page",
 				"owner": "ConductionNL/nextcloud-vue",
-				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/form-file-and-camera-fields (nextcloud-vue lane, OpenSpec pass 2026-09-27)."
+				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/form-file-and-camera-fields (nextcloud-vue lane, OpenSpec pass 2026-09-27).",
+				"change": "nextcloud-vue/form-file-and-camera-fields"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -3248,7 +3251,8 @@
 				"evidence": "buildiq path: trigger 'Cron schedule' (AutomationEditDialog.vue:493) allows only run-synchronization (AutomationCompilerService.php:154) and compiles to a manifest.schedules[] entry with action openconnector:synchronization on the ApplicationVersion (compileSchedulesBackend :872-898, applySchedules :1310-1375). Those entries are meant for OpenRegister's AppHost ScheduleReconciler (openregister lib/AppHost/Scheduling/ScheduleReconciler.php reconcile()), but on openregister origin/development nothing calls it: lib/BackgroundJob/ScheduleReconcilerJob.php does not exist and appinfo/info.xml registers no such job (git grep ScheduleReconciler finds only the class and openspec). Flow path: the Automations page embeds OpenRegister's flow canvas ('Edit flows...', AutomationsPage.vue:22, CnFlowEditModal), where TriggerScheduleNode exists and FlowScheduleWorker is registered in openregister appinfo/info.xml.",
 				"reachedOn": "/automations: schedule trigger in the composer (compiles but never runs); 'Edit flows...' canvas with a schedule trigger node (runs in OpenRegister)",
 				"owner": "ConductionNL/openregister",
-				"note": "Specified in ConductionNL/openregister openspec/changes/apphost-schedule-flow-action (openregister lane, OpenSpec pass 2026-09-27)."
+				"note": "Specified in ConductionNL/openregister openspec/changes/apphost-schedule-flow-action (openregister lane, OpenSpec pass 2026-09-27).",
+				"change": "openregister/apphost-schedule-flow-action"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -3342,7 +3346,8 @@
 				"evidence": "Not in buildiq's composer: action options are send-notification, run-synchronization, object-op, webhook, approval, generateDocument (src/dialogs/AutomationEditDialog.vue:570-584); send-notification channels default to ['nc-notification'] with no channel picker (AutomationEditDialog.vue:812, form :172-185 has subject fields only); RuleActionDispatcher.php:127-131 has no email action; grep email|mail over AutomationCompilerService.php and RuleActionDispatcher.php: none. Available only in OpenRegister's flow canvas embedded on the same page ('Edit flows...', AutomationsPage.vue:22, CnFlowEditModal), where openregister origin/development has lib/Service/Flow/Nodes/SendEmailNode.php.",
 				"reachedOn": "/automations, 'Edit flows...' opens the OpenRegister flow canvas (send email node); not in the buildiq automation composer",
 				"owner": "ConductionNL/openregister",
-				"note": "Specified in ConductionNL/openregister openspec/changes/flow-messaging-nodes (openregister lane, OpenSpec pass 2026-09-27)."
+				"note": "Specified in ConductionNL/openregister openspec/changes/flow-messaging-nodes (openregister lane, OpenSpec pass 2026-09-27).",
+				"change": "openregister/flow-messaging-nodes"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -3374,7 +3379,8 @@
 				"evidence": "send-notification form (AutomationEditDialog.vue:172-185: English and Dutch subject only); recipients fixed to [{kind: object-acl, permission: manage}] (AutomationEditDialog.vue:813-814); compiled to x-openregister-notifications on the target schema (AutomationCompilerService.php:762-781) and executed by OpenRegister AnnotationNotificationListener/AnnotationNotificationDispatcher (openregister Application.php:3415-3417; dispatcher matches trigger.type at AnnotationNotificationDispatcher.php:1986).",
 				"reachedOn": "/automations composer, action 'Send notification'",
 				"owner": "ConductionNL/openregister",
-				"note": "Specified in ConductionNL/openregister openspec/changes/flow-messaging-nodes (openregister lane, OpenSpec pass 2026-09-27)."
+				"note": "Specified in ConductionNL/openregister openspec/changes/flow-messaging-nodes (openregister lane, OpenSpec pass 2026-09-27).",
+				"change": "openregister/flow-messaging-nodes"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -3534,7 +3540,8 @@
 				"evidence": "Buildiq automations have no run log: GET /api/automations/{uuid}/status (routes.php:234, AutomationsController.php:375) returns compile drift and approvalState only (AutomationsPage.vue:429-476 renders a 'Drift detected' badge); grep runs|history|lastRun in src/views/AutomationsPage.vue: none. Flows bound to the app are listed in src/components/applicationDetail/widgets/FlowsWidget.vue (ApplicationDetailDashboard.vue:296), each row a link to OpenRegister's flow page (FlowsWidget.vue:126-135 generateUrl('/apps/openregister/flows/{uuid}')), where OpenRegister keeps flow runs.",
 				"reachedOn": "app detail /applications/{slug}, Flows widget rows open OpenRegister's flow page in a new tab",
 				"owner": "ConductionNL/openregister",
-				"note": "Specified in ConductionNL/openregister openspec/changes/rules-engine-operability (openregister lane, OpenSpec pass 2026-09-27)."
+				"note": "Specified in ConductionNL/openregister openspec/changes/rules-engine-operability (openregister lane, OpenSpec pass 2026-09-27).",
+				"change": "openregister/rules-engine-operability"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -3821,7 +3828,8 @@
 				"evidence": "buildiq ships no service-specific connectors (grep -iE 'google|salesforce|slack|sheets' over src and lib: none in connector code). Its only external-data path is a generic integriq endpoint binding (ConnectorSourcePicker.vue) whose runtime rendering is not wired (see int-rest-connector).",
 				"reachedOn": "",
 				"owner": "ConductionNL/integriq",
-				"note": "Specified in ConductionNL/integriq openspec/changes/connectors-catalogue-expansion (owning lane, OpenSpec pass 2026-09-27)."
+				"note": "Specified in ConductionNL/integriq openspec/changes/connectors-catalogue-expansion (owning lane, OpenSpec pass 2026-09-27).",
+				"change": "integriq/connectors-catalogue-expansion"
 			},
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -3884,7 +3892,8 @@
 				"evidence": "From buildiq: automation webhook actions only work as approval follow-ups (RuleActionDispatcher.php:264 HTTP POST); the transition webhook compiles to an action OpenRegister cannot run (see logic-action-webhook, AutomationCompilerService.php:828-839); object-created/updated/deleted triggers do not allow webhook at all (AutomationCompilerService.php:150-152). OpenRegister has its own webhook subscriptions (openregister appinfo/routes.php:1915-1917 /api/webhooks) that can target any register, including a built app's, configured in OpenRegister's admin, not in buildiq (grep /api/webhooks over buildiq src: none).",
 				"reachedOn": "no buildiq page for record-event webhooks; OpenRegister's own webhook admin",
 				"owner": "ConductionNL/openregister",
-				"note": "Specified in ConductionNL/openregister openspec/changes/webhooks-for-owners (openregister lane, OpenSpec pass 2026-09-27)."
+				"note": "Specified in ConductionNL/openregister openspec/changes/webhooks-for-owners (openregister lane, OpenSpec pass 2026-09-27).",
+				"change": "openregister/webhooks-for-owners"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -4039,7 +4048,8 @@
 				"evidence": "grep -riE 'kvk|haal.?centraal|\\bbrp\\b|bag\\b' over buildiq src and lib: only a doc comment example path in src/services/fleetAppId.js:111 ('/apps/integriq/api/endpoint/kvk/companies') and a placeholder string in src/dialogs/ScheduleEditDialog.vue:42. No registry lookup component or field type. The only route to such data is a generic integriq endpoint binding, whose runtime rendering is not wired (see int-rest-connector).",
 				"reachedOn": "",
 				"owner": "ConductionNL/integriq",
-				"note": "Specified in ConductionNL/integriq openspec/changes/registry-backed-field-source (owning lane, OpenSpec pass 2026-09-27). Integriq's lane records that showing the lookup result on a built page is buildiq's half; a registry endpoint renders on a connector-bound page with openspec/changes/integrations-connector-bound-pages. Building: ConductionNL/integriq openspec/changes/registry-backed-field-source, an existing open change, covers it (integriq lane, OpenSpec pass 2026-09-27)."
+				"note": "Specified in ConductionNL/integriq openspec/changes/registry-backed-field-source (owning lane, OpenSpec pass 2026-09-27). Integriq's lane records that showing the lookup result on a built page is buildiq's half; a registry endpoint renders on a connector-bound page with openspec/changes/integrations-connector-bound-pages. Building: ConductionNL/integriq openspec/changes/registry-backed-field-source, an existing open change, covers it (integriq lane, OpenSpec pass 2026-09-27).",
+				"change": "integriq/registry-backed-field-source"
 			},
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -4577,7 +4587,8 @@
 				"evidence": "grep -nE 'authorization|readOnly|writeOnly|visible' src/components/schema-editor/FieldEditor.vue: no hits; grep -rlnE 'property.?level|propertyAuthorization|fieldAccess' src lib: only lib/Mcp/Handler/AbstractToolHandler.php (unrelated). OpenRegister has property-level RBAC (origin/development lib/Service/PropertyRbacHandler.php) but buildiq offers no editor for it",
 				"reachedOn": "",
 				"owner": "ConductionNL/openregister",
-				"note": "Specified in ConductionNL/openregister openspec/changes/modelling-field-access-editor (openregister lane, OpenSpec pass 2026-09-27)."
+				"note": "Specified in ConductionNL/openregister openspec/changes/modelling-field-access-editor (openregister lane, OpenSpec pass 2026-09-27).",
+				"change": "openregister/modelling-field-access-editor"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -4824,7 +4835,8 @@
 				"evidence": "No built-app page is public: every builder route is #[NoAdminRequired] behind login (DashboardController.php:123-226), no #[PublicPage] except the generated-document download link (GeneratedDocumentController.php:107). Deliberate public exposure exists for data and forms only: ExternalFormAccessDialog.vue:37-47 adds 'public' to a schema's create/read authorization (externalFormProvisioningService.js:114-151) and portaliq serves anonymous pages (PortalEmbedController.php:100,160 #[PublicPage])",
 				"reachedOn": "form page External access -> Configure; portaliq portal",
 				"owner": "ConductionNL/portaliq",
-				"note": "Specified in ConductionNL/portaliq openspec/changes/portal-theme-blocks-and-contributed-pages (owning lane, OpenSpec pass 2026-09-27)."
+				"note": "Specified in ConductionNL/portaliq openspec/changes/portal-theme-blocks-and-contributed-pages (owning lane, OpenSpec pass 2026-09-27).",
+				"change": "portaliq/portal-theme-blocks-and-contributed-pages"
 			},
 			"provider": "portaliq",
 			"providerHow": "read-from-code",
@@ -5431,7 +5443,8 @@
 			"built": {
 				"state": "building",
 				"evidence": "Backend exists: routes.php:289-290 store#search GET /api/store/templates and store#install POST /api/store/templates/{slug}/install -> lib/Controller/StoreController.php:161 search(), :259 install(), delegating to OpenRegister's OCA\\OpenRegister\\AppHost\\Service\\GenericStoreService (present on openregister origin/development lib/AppHost/Service/GenericStoreService.php) with descriptor schema application-template (:121-137). No page reaches it: _lane/api-paths.txt has no frontend reference to /api/store/templates (search); the only install caller is src/modals/CloneTemplateDialog.vue:297-303 installRemote(), used only when the 'remote' prop (:65) is true, and the sole parent src/views/TemplateGallery.vue:304-305 passes only :github, never :remote (grep ':remote' in src: no hits).",
-				"owner": "ConductionNL/openregister"
+				"owner": "ConductionNL/openregister",
+				"change": "reuse-remote-store-section"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -6752,7 +6765,8 @@
 				"evidence": "src/components/runtime/MyApprovalsWidget.vue:144 GET /apps/openregister/api/flow-tasks?status=pending, :176 POST /api/flow-tasks/{uuid}/complete; registered as runtime widget 'my-approvals' at src/runtimeRegistry.js:99. grep -rn 'my-approvals' src finds no page-editor widget picker offering it",
 				"reachedOn": "a built app dashboard whose manifest names the my-approvals widget, placed by editing the manifest; the widget picker does not offer it",
 				"owner": "ConductionNL/openregister",
-				"note": "Specified in ConductionNL/openregister openspec/changes/flow-task-inbox-projections (openregister lane, OpenSpec pass 2026-09-27)."
+				"note": "Specified in ConductionNL/openregister openspec/changes/flow-task-inbox-projections (openregister lane, OpenSpec pass 2026-09-27).",
+				"change": "openregister/flow-task-inbox-projections"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -6912,7 +6926,8 @@
 				"evidence": "Searched: grep -iE 'substitut|stand-?in|vervang|out.?of.?office' over buildiq src/ lib/ and openregister origin/development lib/ finds no absence or substitute routing; buildiq src/components/runtime/MyApprovalsWidget.vue:144 lists the user's own pending tasks only",
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/openregister",
-				"note": "Specified in ConductionNL/openregister openspec/changes/tasks-delegation-and-substitution (openregister lane, OpenSpec pass 2026-09-27)."
+				"note": "Specified in ConductionNL/openregister openspec/changes/tasks-delegation-and-substitution (openregister lane, OpenSpec pass 2026-09-27).",
+				"change": "openregister/tasks-delegation-and-substitution"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -6946,7 +6961,8 @@
 				"evidence": "openregister origin/development lib/Db/Task.php gives a flow task an advisory dueAt and an enforcing expiresAt with a declared on-expiry behaviour, run by lib/BackgroundJob/FlowTimerWorker.php, and lib/Service/Task/TaskInboxService.php row() sends the derived overdue, daysUntilDue and daysOverdue on every /api/flow-tasks row. buildiq's task surface, src/components/runtime/MyApprovalsWidget.vue, reads the pooled and assigned inbox scopes (#936) and shows each task its deadline (dueAt, else expiresAt) in a time element, sorts soonest first, and flags a task 'Overdue' (overdue true) or 'Due soon' (daysUntilDue under 2) in words, not colour alone (#937; tests/components/MyApprovalsWidget.spec.js 'shows each task its due date, and flags overdue and due-soon tasks in words'). The second half of the row, reporting on workflow progress, has no buildiq page, so the rating stays partial.",
 				"reachedOn": "a built app dashboard with the My approvals widget: each open task shows its due date, with an Overdue or Due soon flag; no buildiq page reports workflow progress",
 				"owner": "ConductionNL/openregister",
-				"note": "Specified in ConductionNL/openregister openspec/changes/tasks-progress-report (openregister lane, OpenSpec pass 2026-09-27)."
+				"note": "Specified in ConductionNL/openregister openspec/changes/tasks-progress-report (openregister lane, OpenSpec pass 2026-09-27).",
+				"change": "openregister/tasks-progress-report"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -6980,7 +6996,8 @@
 				"evidence": "Searched: grep -iE 'delegat|reassign|mandat' over buildiq src/ lib/ and openregister origin/development lib/Controller/FlowTask* finds no task delegation; MyApprovalsWidget.vue:176 only completes a task (POST /api/flow-tasks/{uuid}/complete)",
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/openregister",
-				"note": "Specified in ConductionNL/openregister openspec/changes/tasks-delegation-and-substitution (openregister lane, OpenSpec pass 2026-09-27)."
+				"note": "Specified in ConductionNL/openregister openspec/changes/tasks-delegation-and-substitution (openregister lane, OpenSpec pass 2026-09-27).",
+				"change": "openregister/tasks-delegation-and-substitution"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -7014,7 +7031,8 @@
 				"evidence": "No four-eyes gate that holds a record change. Closest: an automation on a record event with 'Require approval' (src/dialogs/AutomationEditDialog.vue:248-278, compiled to x-openregister-approval-chains at lib/Service/AutomationCompilerService.php:783-795) runs after the write (grep -iE 'four.?eyes|4.?ogen|dual' in src/ lib/: no hits)",
 				"reachedOn": "/automations composer, 'Require approval' on a record-changed trigger (after the change, not before)",
 				"owner": "ConductionNL/openregister",
-				"note": "Specified in ConductionNL/openregister openspec/changes/records-change-held-for-approval (openregister lane, OpenSpec pass 2026-09-27)."
+				"note": "Specified in ConductionNL/openregister openspec/changes/records-change-held-for-approval (openregister lane, OpenSpec pass 2026-09-27).",
+				"change": "openregister/records-change-held-for-approval"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -7083,7 +7101,8 @@
 				"evidence": "Searched: grep -iE 'payment|betal|mollie|stripe|ideal' over buildiq src/ lib/ (only an icon label at src/utils/openGemeentenIcons.json:574) and portaliq origin/development lib/ (no hits); no form or portal step takes a payment",
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/portaliq",
-				"note": "Specified in ConductionNL/portaliq openspec/changes/intake-pay-on-submit (owning lane, OpenSpec pass 2026-09-27)."
+				"note": "Specified in ConductionNL/portaliq openspec/changes/intake-pay-on-submit (owning lane, OpenSpec pass 2026-09-27).",
+				"change": "portaliq/intake-pay-on-submit"
 			},
 			"provider": "portaliq",
 			"providerHow": "read-from-code",
@@ -7150,7 +7169,8 @@
 				"evidence": "nextcloud-vue v2.55.1 src/components/CnFormPage: grep -iE 'review|summary|overzicht' finds no summary step before submit; buildiq src/components/page-editor/fields/FormStepsManager.vue:79-120 authors steps only",
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/nextcloud-vue",
-				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/journey-runtime (nextcloud-vue lane, OpenSpec pass 2026-09-27)."
+				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/journey-runtime (nextcloud-vue lane, OpenSpec pass 2026-09-27).",
+				"change": "nextcloud-vue/journey-runtime"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -7390,7 +7410,8 @@
 				"evidence": "buildiq's approval step is compiled to x-openregister-approval-chains and fires on a trigger after the record is written (lib/Listener/AutomationApprovalTriggerListener.php:561, lib/Service/AutomationCompilerService.php:783-795); no path holds a submission unsaved until approval",
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/openregister",
-				"note": "Specified in ConductionNL/openregister openspec/changes/records-change-held-for-approval (openregister lane, OpenSpec pass 2026-09-27)."
+				"note": "Specified in ConductionNL/openregister openspec/changes/records-change-held-for-approval (openregister lane, OpenSpec pass 2026-09-27).",
+				"change": "openregister/records-change-held-for-approval"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -7424,7 +7445,8 @@
 				"evidence": "Every built index page renders nextcloud-vue v2.55.1 CnIndexPage, whose sidebar (CnActionsBar.vue:93 'Search and columns') lets the user show and hide columns (CnIndexSidebar.vue:579-621 toggles visibleColumns; CnIndexPage.vue:716,3495); no reorder or pin (grep -iE 'reorder|pin' in CnIndexSidebar: no hits)",
 				"reachedOn": "any built app index page, 'Search and columns' sidebar",
 				"owner": "ConductionNL/nextcloud-vue",
-				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/index-column-order-and-pinning (nextcloud-vue lane, OpenSpec pass 2026-09-27)."
+				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/index-column-order-and-pinning (nextcloud-vue lane, OpenSpec pass 2026-09-27).",
+				"change": "nextcloud-vue/index-column-order-and-pinning"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -7458,7 +7480,8 @@
 				"evidence": "nextcloud-vue v2.55.1 src/components/CnFormPage and CnFormDialog: grep -iE 'subtable|sub-table|inline.?array' finds no editable child-record table; buildiq fields/FormFieldBuilder.vue:22-43 offers scalar field types only",
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/nextcloud-vue",
-				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/form-child-records-table (nextcloud-vue lane, OpenSpec pass 2026-09-27)."
+				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/form-child-records-table (nextcloud-vue lane, OpenSpec pass 2026-09-27).",
+				"change": "nextcloud-vue/form-child-records-table"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -7868,7 +7891,8 @@
 				"evidence": "buildiq has no OpenAPI import (grep -iE 'openapi|swagger' over src/: no hits; lib/Service/SettingsService.php:296,367 only merge the app's own OpenAPI settings file); external endpoints are picked from existing integriq source objects (src/components/page-editor/ConnectorSourcePicker.vue:256-262)",
 				"reachedOn": "nothing reaches it from buildiq",
 				"owner": "ConductionNL/integriq",
-				"note": "Specified in ConductionNL/integriq openspec/changes/gateway-openapi-import-and-publish (owning lane, OpenSpec pass 2026-09-27)."
+				"note": "Specified in ConductionNL/integriq openspec/changes/gateway-openapi-import-and-publish (owning lane, OpenSpec pass 2026-09-27).",
+				"change": "integriq/gateway-openapi-import-and-publish"
 			},
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -7902,7 +7926,8 @@
 				"evidence": "Connections use shared credentials kept in the vault (int-credentials-vault, lib/Service/Credential); grep -iE 'per.?user|user.?token|oauth' over src/components/page-editor: no per-user sign-in for a connector",
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/integriq",
-				"note": "Specified in ConductionNL/integriq openspec/changes/sources-per-user-oauth (owning lane, OpenSpec pass 2026-09-27)."
+				"note": "Specified in ConductionNL/integriq openspec/changes/sources-per-user-oauth (owning lane, OpenSpec pass 2026-09-27).",
+				"change": "integriq/sources-per-user-oauth"
 			},
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -8003,7 +8028,8 @@
 				"evidence": "Form logic hides and shows fields only: src/components/page-editor/fields/VisibleWhenBuilder.vue:34-44 writes field.visibleWhen, evaluated by nextcloud-vue v2.55.1 CnFormPage.vue:485-510; grep -iE 'setValue|assign' in CnFormPage.vue finds no rule that sets another field's value",
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/nextcloud-vue",
-				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/form-live-values (nextcloud-vue lane, OpenSpec pass 2026-09-27)."
+				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/form-live-values (nextcloud-vue lane, OpenSpec pass 2026-09-27).",
+				"change": "nextcloud-vue/form-live-values"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -8037,7 +8063,8 @@
 				"evidence": "Built index pages render nextcloud-vue v2.55.1 CnIndexPage and CnDataTable, which sort by column (CnDataTable.md:6 sortable) but have no drag handle to reorder rows (grep -iE 'draggable|reorder' in CnIndexPage and CnDataTable: no hits)",
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/nextcloud-vue",
-				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/case-page-and-list-as-a-place (nextcloud-vue lane, OpenSpec pass 2026-09-27)."
+				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/case-page-and-list-as-a-place (nextcloud-vue lane, OpenSpec pass 2026-09-27).",
+				"change": "nextcloud-vue/case-page-and-list-as-a-place"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -8071,7 +8098,8 @@
 				"evidence": "Searched: no sequence or formatted-number field type in buildiq's schema designer (src/components/schema-editor, grep -iE 'sequence|autonumber|numbering': no hits) and none in openregister origin/development lib/Service/Object (grep -iE 'autoIncrement|sequence': no hits)",
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/openregister",
-				"note": "Specified in ConductionNL/openregister openspec/changes/generated-identifier (openregister lane, OpenSpec pass 2026-09-27)."
+				"note": "Specified in ConductionNL/openregister openspec/changes/generated-identifier (openregister lane, OpenSpec pass 2026-09-27).",
+				"change": "openregister/generated-identifier"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -8105,7 +8133,8 @@
 				"evidence": "A schema can relate to itself (data-relations, src/components/schema-editor), so a parent link can be modelled; no built page shows a tree: nextcloud-vue v2.55.1 CnIndexPage renders a flat table (grep -iE 'tree' in buildiq src/ finds only code comments)",
 				"reachedOn": "schema designer relation to the same schema; no tree view",
 				"owner": "ConductionNL/openregister",
-				"note": "Specified in ConductionNL/openregister openspec/changes/records-tree-view (openregister lane, OpenSpec pass 2026-09-27)."
+				"note": "Specified in ConductionNL/openregister openspec/changes/records-tree-view (openregister lane, OpenSpec pass 2026-09-27).",
+				"change": "openregister/records-tree-view"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -8139,7 +8168,8 @@
 				"evidence": "A built detail page can enable the object sidebar (src/components/page-editor/DetailPageEditor.vue:66-71 Sidebar settings), and nextcloud-vue v2.55.1 CnDetailPage.vue:12 renders CnObjectSidebar, whose Notes tab (CnObjectSidebar.vue:85-89) holds notes on the object; not threaded replies",
 				"reachedOn": "built app detail page with the sidebar enabled, Notes tab",
 				"owner": "ConductionNL/nextcloud-vue",
-				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/notes-replies-group-mentions-and-images (nextcloud-vue lane, OpenSpec pass 2026-09-27)."
+				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/notes-replies-group-mentions-and-images (nextcloud-vue lane, OpenSpec pass 2026-09-27).",
+				"change": "nextcloud-vue/notes-replies-group-mentions-and-images"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -8208,7 +8238,8 @@
 				"evidence": "The approval step waits for a person or group and continues on approve or reject (src/dialogs/AutomationEditDialog.vue:248-278; approvers act in src/components/runtime/MyApprovalsWidget.vue:144,176); openregister origin/development lib/Service/Flow/Nodes/UserTaskNode.php:97 has a user-task node with a config form, reachable through the flow canvas buildiq opens (src/views/AutomationsPage.vue:22). The approval widget has no custom form fields",
 				"reachedOn": "/automations 'Require approval', or flow canvas user task; decided in the my-approvals widget",
 				"owner": "ConductionNL/openregister",
-				"note": "Specified in ConductionNL/openregister openspec/changes/flow-task-forms (openregister lane, OpenSpec pass 2026-09-27)."
+				"note": "Specified in ConductionNL/openregister openspec/changes/flow-task-forms (openregister lane, OpenSpec pass 2026-09-27).",
+				"change": "openregister/flow-task-forms"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -8554,7 +8585,8 @@
 				"evidence": "buildiq's form field types (src/components/page-editor/fields/FormFieldBuilder.vue:22-43) include file upload at most (form-file-upload partial); grep -iE 'getUserMedia|camera|capture' over src/ and nextcloud-vue v2.55.1 CnFormPage: no camera capture",
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/nextcloud-vue",
-				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/form-file-and-camera-fields (nextcloud-vue lane, OpenSpec pass 2026-09-27)."
+				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/form-file-and-camera-fields (nextcloud-vue lane, OpenSpec pass 2026-09-27).",
+				"change": "nextcloud-vue/form-file-and-camera-fields"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
