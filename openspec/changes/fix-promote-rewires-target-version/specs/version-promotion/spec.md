@@ -48,9 +48,16 @@ promotion failure (REQ-OBVP-009) and the on-failure status flip applies.
   `{app}-production-order`
 - **AND** a page bound to another register keeps that register
 
-#### Scenario: A schema failure triggers the on-failure flow
+#### Scenario: OR's schema-import success continues the strategy step
 
-- **GIVEN** OR fails to update the target schema
+- **GIVEN** OR accepts every target schema update or create
+- **WHEN** the promotion endpoint carries the schema set over
+- **THEN** the strategy step continues (delete / copy / no-op per strategy)
+- **AND** the manifest + semver writes proceed
+
+#### Scenario: OR's schema-import failure triggers on-failure flow
+
+- **GIVEN** OR fails to update or create the target schema
 - **WHEN** the promotion endpoint carries the schema set over
 - **THEN** the promotion is treated as failed
 - **AND** the target's `status` flips to `archived` per REQ-OBVP-009

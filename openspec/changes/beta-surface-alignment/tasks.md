@@ -1,5 +1,7 @@
 ## 1. Verify claims against `lib/` and `src/` at HEAD
 
+> Archive pass 2026-10-07: code not done; open: 2.3, 4.1-4.3 (2.3: appinfo/info.xml dropped the openregister app element on purpose, the App Store schema rejects it, so the delta scenario "A hard runtime dependency is declared" contradicts the code and needs revising; 4.x: docs/intro.md no longer exists after the docs restructure).
+
 - [x] 1.1 Confirm `composer.json` license (`EUPL-1.2`) vs. `info.xml`
       `<licence>agpl</licence>` mismatch, and cross-check SPDX headers.
 - [x] 1.2 Grep `lib/`/`src/` for `launchpad` — only an unrelated placeholder
@@ -25,7 +27,7 @@
 - [x] 2.2 Remove fabricated "LaunchPad dashboards" from EN+NL `<description>`;
       rename "Conduction ecosystem" → "Technical Core" to match canonical
       fleet vocabulary (`connext.mdx`).
-- [x] 2.3 Add `<app>openregister</app>` to `<dependencies>`.
+- [ ] 2.3 Add `<app>openregister</app>` to `<dependencies>`.
 - [x] 2.4 Confirm `img/app.svg` matches the white-fill/24×24 convention (no
       change needed).
 
@@ -41,10 +43,10 @@
 
 ## 4. Fix docs
 
-- [x] 4.1 Correct `docs/intro.md` frontmatter description ("Pipelinq" → "Procest
+- [ ] 4.1 Correct `docs/intro.md` frontmatter description ("Pipelinq" → "Procest
       workflows").
-- [x] 4.2 Replace "n8n workflow" with "Procest workflow" in the Data wiring bullet.
-- [x] 4.3 Add a config-over-code bullet and extend the export bullet to
+- [ ] 4.2 Replace "n8n workflow" with "Procest workflow" in the Data wiring bullet.
+- [ ] 4.3 Add a config-over-code bullet and extend the export bullet to
       mention GitHub push, not just ZIP.
 
 ## 5. Record the change
