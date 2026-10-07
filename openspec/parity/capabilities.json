@@ -4067,8 +4067,9 @@
 				"evidence": "Buildiq automations have no run log: GET /api/automations/{uuid}/status (routes.php:234, AutomationsController.php:375) returns compile drift and approvalState only (AutomationsPage.vue:429-476 renders a 'Drift detected' badge); grep runs|history|lastRun in src/views/AutomationsPage.vue: none. Flows bound to the app are listed in src/components/applicationDetail/widgets/FlowsWidget.vue (ApplicationDetailDashboard.vue:296), each row a link to OpenRegister's flow page (FlowsWidget.vue:126-135 generateUrl('/apps/openregister/flows/{uuid}')), where OpenRegister keeps flow runs.",
 				"reachedOn": "app detail /applications/{slug}, Flows widget rows open OpenRegister's flow page in a new tab",
 				"owner": "ConductionNL/openregister",
-				"note": "Specified in ConductionNL/openregister openspec/changes/rules-engine-operability (openregister lane, OpenSpec pass 2026-09-27).",
-				"change": "openregister/rules-engine-operability"
+				"note": "Specified in ConductionNL/openregister openspec/changes/rules-engine-operability (openregister lane, OpenSpec pass 2026-09-27). Spec round part 3 (2026-10-07): openregister/rules-engine-operability is delivered (OpenRegister rule run log) but logs no buildiq automation; the buildiq run log is specified in logic-automation-run-log.",
+				"change": "logic-automation-run-log",
+				"readOn": "2026-10-07"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
