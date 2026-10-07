@@ -83,7 +83,7 @@ corrected.
 | "Pipelinq" (`docs/intro.md` frontmatter) | Copy-paste error — Pipelinq is an unrelated app. Replaced with "Procest". |
 | Stale product-page version `v0.3` | `info.xml` (source of truth) is `0.5.40`. Bumped product page (EN+NL) to `v0.5`. |
 | NL page's dead `docs.conduction.nl/buildiq` link | Real docs deploy topology serves at `openbuild.conduction.nl` (`docs/docusaurus.config.js` `url:`). Corrected to match the EN page. |
-| Missing `<app>openregister</app>` dependency | `src/manifest.json` already declares `"dependencies": ["openregister"]` as hard. Added the `<app>` element (precedent: `openconnector`, `portaliq` `info.xml`). |
+| Missing openregister dependency in `info.xml` | `src/manifest.json` already declares `"dependencies": ["openregister"]` as hard. Recorded as a comment inside `<dependencies>`: the App Store schema has no `<app>` child there, so an element fails App Store validation. |
 | "Config-over-code" / GitHub export not mentioned in copy | Both capabilities are real (see table above) but were absent from the product-page intro and docs bullet list. Added. |
 
 ## Impact
@@ -93,8 +93,8 @@ corrected.
   `conduction-website/i18n/nl/docusaurus-plugin-content-pages/apps/buildiq.mdx`;
   `buildiq/docs/intro.md`.
 - No code changes. No behavior changes. No new dependencies (the
-  `<app>openregister</app>` element documents an existing runtime dependency,
-  it does not add one).
+  openregister comment documents an existing runtime dependency, it does not
+  add one).
 - `src/manifest.json` nav/menu labels (Dashboard, Apps, Store, Documentation,
   Features & roadmap) were read as the canonical feature-name source and were
   already accurate — no edit needed there.

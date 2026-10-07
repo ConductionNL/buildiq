@@ -1,6 +1,6 @@
 ## 1. Verify claims against `lib/` and `src/` at HEAD
 
-> Archive pass 2026-10-07: code not done; open: 2.3, 4.1-4.3 (2.3: appinfo/info.xml dropped the openregister app element on purpose, the App Store schema rejects it, so the delta scenario "A hard runtime dependency is declared" contradicts the code and needs revising; 4.x: docs/intro.md no longer exists after the docs restructure).
+> Delta fix-up 2026-10-07: the dependency scenario now matches the code (openregister named in a comment inside `<dependencies>`, no `<app>` element, because the App Store schema rejects it), and 2.3 is rewritten to that. 4.x hold on the rewritten `docs/intro.md`. LEFT OPEN, needs a choice: the product page (EN and NL, conduction-website) shows `version="v0.10"` while `appinfo/info.xml` is `0.7.15` (the `v0.10.0-dev` tags of August were abandoned and the line restarted at 0.7). Either the page moves to `v0.7`, or the app's version line moves to 0.10; the scenario "Version drift is corrected" holds once one of the two happens.
 
 - [x] 1.1 Confirm `composer.json` license (`EUPL-1.2`) vs. `info.xml`
       `<licence>agpl</licence>` mismatch, and cross-check SPDX headers.
@@ -27,7 +27,7 @@
 - [x] 2.2 Remove fabricated "LaunchPad dashboards" from EN+NL `<description>`;
       rename "Conduction ecosystem" → "Technical Core" to match canonical
       fleet vocabulary (`connext.mdx`).
-- [ ] 2.3 Add `<app>openregister</app>` to `<dependencies>`.
+- [x] 2.3 Name openregister as a hard dependency in a comment inside `<dependencies>` (no `<app>` element: the App Store schema has no such child); `src/manifest.json` declares it machine-readably.
 - [x] 2.4 Confirm `img/app.svg` matches the white-fill/24×24 convention (no
       change needed).
 
@@ -43,11 +43,12 @@
 
 ## 4. Fix docs
 
-- [ ] 4.1 Correct `docs/intro.md` frontmatter description ("Pipelinq" → "Procest
-      workflows").
-- [ ] 4.2 Replace "n8n workflow" with "Procest workflow" in the Data wiring bullet.
-- [ ] 4.3 Add a config-over-code bullet and extend the export bullet to
-      mention GitHub push, not just ZIP.
+- [x] 4.1 `docs/intro.md` frontmatter no longer names Pipelinq (the page was
+      rewritten; its description names navigation, pages, data and flows).
+- [x] 4.2 No n8n claim left in `docs/intro.md`; `docs/elements/flows.md` says the
+      earlier n8n wording was wrong.
+- [x] 4.3 `docs/intro.md` says overrides survive upgrades as a delta, and that
+      an app exports as a ZIP or publishes to GitHub.
 
 ## 5. Record the change
 

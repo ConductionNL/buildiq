@@ -6,7 +6,7 @@
 
 Buildiq's `appinfo/info.xml` description, `src/manifest.json` nav/menu
 labels, the `conduction.nl/apps/buildiq` product page (EN + NL), and the
-`openbuild.conduction.nl` docs MUST only describe composition sources,
+`buildiq.conduction.nl` docs MUST only describe composition sources,
 license, and features that are demonstrably implemented in `lib/`/`src/` at
 the time of writing. A composition source or feature name MUST NOT appear on
 a public surface unless it is traceable to a concrete class/component.
@@ -31,9 +31,16 @@ a public surface unless it is traceable to a concrete class/component.
 The `<licence>`/`<description>` in `appinfo/info.xml`, the product page's
 hero/FeatureList copy, and the docs `intro.md` MUST name the same
 capabilities using the same terms (aligned to the fleet's "Technical Core"
-vocabulary), the product page's `version` prop MUST match `info.xml`'s
-`<version>` (the source of truth), and `<licence>` MUST match `composer.json`'s
-declared license and every source file's SPDX header.
+vocabulary), the product page's `version` prop MUST match the major and minor
+of `info.xml`'s `<version>` (the source of truth), and `<licence>` MUST match
+`composer.json`'s declared license and every source file's SPDX header.
+
+Every app Buildiq hard-depends on MUST be recorded machine-readably in
+`src/manifest.json` `dependencies`, and as a comment inside `<dependencies>`
+in `appinfo/info.xml`. It MUST NOT be an `<app>` element there: the App Store
+schema (`info.xsd`) has no `<app>` child under `<dependencies>`, so the element
+fails App Store validation, and Nextcloud's `DependencyAnalyzer` does not read
+it either.
 
 #### Scenario: License mismatch is corrected
 
@@ -45,13 +52,15 @@ declared license and every source file's SPDX header.
 
 #### Scenario: Version drift is corrected
 
-- **GIVEN** `info.xml` version `0.5.40`
+- **GIVEN** `info.xml` version `X.Y.Z` (for example `0.7.15`)
 - **WHEN** the product page hero is rendered
-- **THEN** its `version` prop MUST read `v0.5`, not a stale prior value
+- **THEN** its `version` prop MUST read `vX.Y` (`v0.7`), not a stale or a later value
 
 #### Scenario: A hard runtime dependency is declared
 
 - **GIVEN** `src/manifest.json` declares `"dependencies": ["openregister"]`
   as a hard requirement
 - **WHEN** `appinfo/info.xml` `<dependencies>` is reviewed
-- **THEN** it MUST include `<app>openregister</app>`
+- **THEN** it MUST name the openregister dependency in a comment, and MUST NOT
+  carry an `<app>openregister</app>` element, which the App Store schema
+  rejects
