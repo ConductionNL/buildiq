@@ -112,7 +112,6 @@ class SettingsController extends Controller {
 	 * authenticated user.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse
 	 *
@@ -153,7 +152,6 @@ class SettingsController extends Controller {
 	 * receive 403 and unauthenticated callers 401, exactly as before.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse
 	 *
@@ -174,7 +172,6 @@ class SettingsController extends Controller {
 	 * instance-wide; non-admin callers receive 403 (H6 guard).
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse
 	 *
