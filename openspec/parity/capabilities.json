@@ -8884,6 +8884,43 @@
 				"mendix": "docs-only: https://docs.mendix.com/refguide/debug-microflows-and-nanoflows/ (2026-09-26): Studio Pro debugs microflows and nanoflows with breakpoints and shows runtime log messages in the Console; tracing a page's data source queries and bindings is not described Reached on: Studio Pro, debugger and Console",
 				"power-apps": "docs-only: https://learn.microsoft.com/en-us/power-apps/maker/monitor-canvasapps (2026-09-26): Live monitor traces events as they happen in a canvas app while authoring in Power Apps Studio, and Monitor also debugs the published app (read via MicrosoftDocs/powerapps-docs powerapps-docs/maker/monitor-canvasapps.md) Reached on: Power Apps Studio, Live monitor"
 			}
+		},
+		{
+			"id": "lc-export-notification",
+			"area": "lifecycle",
+			"name": "Get a notification when an export of your app finishes or fails, and when a version is published.",
+			"source": "spec-round-2026-10-07",
+			"buildiq": "yes",
+			"nocobase": "unchecked",
+			"budibase": "unchecked",
+			"appsmith": "unchecked",
+			"mendix": "unchecked",
+			"power-apps": "unchecked",
+			"built": {
+				"state": "built",
+				"evidence": "lib/Settings/openbuild_register.json:725 exportJob declares x-openregister-notifications export-succeeded and export-failed on its transitions; :465 ApplicationVersion declares version-published; OpenRegister dispatches them as Nextcloud notifications",
+				"owner": "ConductionNL/buildiq",
+				"spec": "openspec/specs/notifications"
+			}
+		},
+		{
+			"id": "apps-unified-search",
+			"area": "apps",
+			"name": "Find an app or its records in the platform search and open it directly.",
+			"source": "spec-round-2026-10-07",
+			"buildiq": "no",
+			"nocobase": "unchecked",
+			"budibase": "unchecked",
+			"appsmith": "unchecked",
+			"mendix": "unchecked",
+			"power-apps": "unchecked",
+			"built": {
+				"state": "specified",
+				"evidence": "lib/AppInfo/Application.php:143-148 wires the AppHost manifest-driven deep-link listener, which reads src/manifest.json deepLinks; src/manifest.json:1220 deepLinks is an empty list, so no buildiq object gets a deep link in unified search although the spec is marked done",
+				"owner": "ConductionNL/buildiq",
+				"spec": "openspec/specs/deep-link-registration",
+				"note": "Spec round 2026-10-07: the main spec deep-link-registration says done, the code registers nothing. Needs a decision: fill manifest deepLinks or retire the spec."
+			}
 		}
 	],
 	"pending": [
