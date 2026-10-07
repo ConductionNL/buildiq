@@ -4067,8 +4067,9 @@
 				"evidence": "Buildiq automations have no run log: GET /api/automations/{uuid}/status (routes.php:234, AutomationsController.php:375) returns compile drift and approvalState only (AutomationsPage.vue:429-476 renders a 'Drift detected' badge); grep runs|history|lastRun in src/views/AutomationsPage.vue: none. Flows bound to the app are listed in src/components/applicationDetail/widgets/FlowsWidget.vue (ApplicationDetailDashboard.vue:296), each row a link to OpenRegister's flow page (FlowsWidget.vue:126-135 generateUrl('/apps/openregister/flows/{uuid}')), where OpenRegister keeps flow runs.",
 				"reachedOn": "app detail /applications/{slug}, Flows widget rows open OpenRegister's flow page in a new tab",
 				"owner": "ConductionNL/openregister",
-				"note": "Specified in ConductionNL/openregister openspec/changes/rules-engine-operability (openregister lane, OpenSpec pass 2026-09-27).",
-				"change": "openregister/rules-engine-operability"
+				"note": "Specified in ConductionNL/openregister openspec/changes/rules-engine-operability (openregister lane, OpenSpec pass 2026-09-27). Spec round part 3 (2026-10-07): openregister/rules-engine-operability is delivered (OpenRegister rule run log) but logs no buildiq automation; the buildiq run log is specified in logic-automation-run-log.",
+				"change": "logic-automation-run-log",
+				"readOn": "2026-10-07"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -4657,8 +4658,8 @@
 				"evidence": "Re-rated 2026-10-07 (building -> specified): archived integriq change 2026-09-29-registry-backed-field-source built the resolvers. integriq origin/development @254619dff: lib/PropertySource/Provider/BagPropertySource.php, BrpPropertySource.php, KvkPropertySource.php behind lib/Controller/PropertySourceController.php, with a lookup dialog in integriq itself (src/dialogs/RegistryLookupDialog.vue). openregister accepts the declaration (lib/Service/Schemas/PropertySourceDeclaration.php). Nothing in buildiq declares or renders it: grep property-source/propertySource over buildiq src and lib, none; the same grep over nextcloud-vue src, none, so no form field reads a registry.",
 				"reachedOn": "",
 				"owner": "ConductionNL/integriq",
-				"note": "Still specified: the registry lookup exists in integriq and the schema key in openregister, but a buildiq maker cannot declare a registry-backed field and a built form cannot show one. Missing: a field-type option in buildiq's schema designer and a nextcloud-vue form field that calls integriq's property source.",
-				"change": "integriq/registry-backed-field-source",
+				"note": "Still specified: the registry lookup exists in integriq and the schema key in openregister, but a buildiq maker cannot declare a registry-backed field and a built form cannot show one. Missing: a field-type option in buildiq's schema designer and a nextcloud-vue form field that calls integriq's property source. Spec round part 3 (2026-10-07): buildiq's half (the field editor declares x-openregister-property-source) is specified in data-registry-backed-field-option; the nextcloud-vue form field that renders it is cross-repo.",
+				"change": "data-registry-backed-field-option",
 				"readOn": "2026-10-07"
 			},
 			"provider": "integriq",
@@ -4676,7 +4677,10 @@
 			},
 			"screen": {
 				"canvas": "5NkFW28vZUUij43xzxHg5a",
-				"board": "BqOntwerperKoppelingen"
+				"board": [
+					"BqVeldBewerken",
+					"BqOntwerperKoppelingen"
+				]
 			}
 		},
 		{
@@ -9500,8 +9504,8 @@
 				"evidence": "Re-rated 2026-10-07: archived openregister change 2026-10-05-flow-task-forms built the backend. openregister origin/development @26ff809cfb: lib/Service/Flow/Nodes/UserTaskNode.php:163 user-task node, lib/Service/Task/TaskFormResolver.php resolves the declared form, lib/Controller/TaskController.php:109-130 serves it and completes with a payload (TaskFormCompletion). Not reachable for a person: the change's own tasks.md (5.2) records that no task-completion surface consuming TaskFormResolver exists in nextcloud-vue, and buildiq's src/components/runtime/MyApprovalsWidget.vue:9-10 only approves or rejects through /api/flow-tasks/{uuid}/complete without form fields.",
 				"reachedOn": "/automations 'Require approval', or flow canvas user task; decided in the my-approvals widget",
 				"owner": "ConductionNL/openregister",
-				"note": "Still specified: the change was archived without the user-facing part. Missing: a task-completion component in nextcloud-vue that renders the resolved form, and buildiq's my-approvals widget (or a task inbox) using it.",
-				"change": "openregister/flow-task-forms",
+				"note": "Still specified: the change was archived without the user-facing part. Missing: a task-completion component in nextcloud-vue that renders the resolved form, and buildiq's my-approvals widget (or a task inbox) using it. Spec round part 3 (2026-10-07): buildiq's half (fields on the approval action, the form in My approvals) is specified in logic-approval-task-form; it waits on a nextcloud-vue task form component and on openregister carrying a chain form into the task.",
+				"change": "logic-approval-task-form",
 				"readOn": "2026-10-07"
 			},
 			"provider": "openregister",
@@ -9520,8 +9524,9 @@
 			"screen": {
 				"canvas": "5NkFW28vZUUij43xzxHg5a",
 				"board": [
-					"BqAutomatiseringen",
-					"BqAutomatiseringBewerken"
+					"BqAutomatiseringBewerken",
+					"BqMijnGoedkeuringen",
+					"BqAutomatiseringen"
 				]
 			}
 		},
