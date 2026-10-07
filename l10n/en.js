@@ -1481,7 +1481,7 @@ OC.L10N.register(
         "You cannot edit aggregations here yet. Aggregations already on this schema are listed below.": "You cannot edit aggregations here yet. Aggregations already on this schema are listed below.",
         "You cannot edit calculations here yet. Calculations already on this schema are listed below.": "You cannot edit calculations here yet. Calculations already on this schema are listed below.",
         "You cannot edit notifications here yet. Notifications already on this schema are listed below.": "You cannot edit notifications here yet. Notifications already on this schema are listed below.",
-        "An admin can install the starter templates from the Buildiq setup wizard.": "An admin can install the starter templates from the Buildiq setup wizard.",
+        "An admin can install the starter templates from the Buildiq admin settings.": "An admin can install the starter templates from the Buildiq admin settings.",
         "An app with the slug {slug} already exists. Choose another slug.": "An app with the slug {slug} already exists. Choose another slug.",
         "Apps on GitHub": "Apps on GitHub",
         "No built-in templates yet": "No built-in templates yet",
@@ -1955,7 +1955,10 @@ OC.L10N.register(
         "Values the form sets on the object it creates.": "Values the form sets on the object it creates.",
         "What the filer reads after submitting.": "What the filer reads after submitting.",
         "What the form asks and who it is for.": "What the form asks and who it is for.",
-        "Where the form came from and where it can go: a form page of an app, or a registration form for a schema and type value.": "Where the form came from and where it can go: a form page of an app, or a registration form for a schema and type value."
+        "Where the form came from and where it can go: a form page of an app, or a registration form for a schema and type value.": "Where the form came from and where it can go: a form page of an app, or a registration form for a schema and type value.",
+        "Install starter templates": "Install starter templates",
+        "Fills the Store with the starter templates. Run it after you enable OpenRegister, or to repair a partial install. Templates that are already there stay as they are.": "Fills the Store with the starter templates. Run it after you enable OpenRegister, or to repair a partial install. Templates that are already there stay as they are.",
+        "Install templates": "Install templates"
     },
     "nplurals=2; plural=(n != 1);"
 )

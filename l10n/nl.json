@@ -1,9 +1,7 @@
 {
     "translations": {
         "Load example data?": "Voorbeeldgegevens laden?",
-        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Voorbeeldgegevens vullen de lijsten, detailpagina’s en dashboards, zodat je de app meteen ziet werken. Kies \"Geen\" op een productieomgeving.",
-        "Load the example data": "Laad de voorbeeldgegevens",
-        "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards.": "Laadt wat je koos. De gegevens zijn herkenbaar voorbeeldgegevens, je kunt dit meer dan een keer uitvoeren en je kunt ze daarna verwijderen.",
+        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install.": "Voorbeeldgegevens vullen de lijsten, detailpagina’s en dashboards, zodat je de app meteen ziet werken. Elke kaart heeft een eigen knop Laden. Kies \"Geen\" op een productieomgeving.",
         "None, I will set this up myself": "Geen, ik richt dit zelf in",
         "Nothing is imported. You start with an empty app and add your own data.": "Er wordt niets geïmporteerd. Je begint met een lege app en voegt zelf gegevens toe.",
         "Example data": "Voorbeeldgegevens",
@@ -1027,9 +1025,8 @@
         "Support & donation": "Support & donatie",
         "Failed to load settings": "Instellingen laden mislukt",
         "Welcome to Buildiq": "Welkom bij Buildiq",
-        "Buildiq builds apps from templates. This quick setup makes sure the bundled starter templates are available and, optionally, connects a remote template store. It is safe to run more than once.": "Buildiq bouwt apps op basis van sjablonen. Deze snelle installatie zorgt dat de meegeleverde startsjablonen beschikbaar zijn en koppelt optioneel een externe sjabloonwinkel. Je kunt dit veilig meerdere keren uitvoeren.",
+        "Buildiq builds apps from templates. This quick setup offers example data and can connect a remote template store. The starter templates install on their own. An admin can reinstall them in the admin settings.": "Buildiq bouwt apps uit sjablonen. Deze korte installatie biedt voorbeeldgegevens aan en kan een externe sjabloonwinkel koppelen. De startsjablonen installeren zichzelf. Een beheerder kan ze opnieuw installeren via de beheerinstellingen.",
         "Install starter templates": "Startsjablonen installeren",
-        "Fills the Store with the starter templates, so the create-from-template flow has something to offer. This normally runs on install. Run it here if OpenRegister was enabled after Buildiq, or to repair a partial install. Safe to run twice: existing templates are left untouched.": "Vult de Winkel met de startsjablonen, zodat er iets te kiezen valt bij het aanmaken vanaf een sjabloon. Dit gebeurt normaal bij installatie. Voer het hier uit als OpenRegister na Buildiq is ingeschakeld, of om een halve installatie te herstellen. Veilig om twee keer uit te voeren: bestaande sjablonen blijven ongemoeid.",
         "Remote template store (optional)": "Externe sjabloonwinkel (optioneel)",
         "Connect a remote template catalogue to offer more starter apps. The bundled templates work without it, so leave this blank to skip.": "Koppel een externe sjablooncatalogus om meer start-apps aan te bieden. De meegeleverde sjablonen werken ook zonder; laat dit leeg om over te slaan.",
         "Store URL": "Winkel-URL",
@@ -1155,7 +1152,7 @@
         "You cannot edit aggregations here yet. Aggregations already on this schema are listed below.": "Aggregaties bewerken kan hier nog niet. Aggregaties die al op dit schema staan, zie je hieronder.",
         "You cannot edit calculations here yet. Calculations already on this schema are listed below.": "Berekeningen bewerken kan hier nog niet. Berekeningen die al op dit schema staan, zie je hieronder.",
         "You cannot edit notifications here yet. Notifications already on this schema are listed below.": "Meldingen bewerken kan hier nog niet. Meldingen die al op dit schema staan, zie je hieronder.",
-        "An admin can install the starter templates from the Buildiq setup wizard.": "Een beheerder kan de startsjablonen installeren via de installatiewizard van Buildiq.",
+        "An admin can install the starter templates from the Buildiq admin settings.": "Een beheerder kan de startsjablonen installeren via de beheerinstellingen van Buildiq.",
         "An app with the slug {slug} already exists. Choose another slug.": "Er bestaat al een app met de slug {slug}. Kies een andere slug.",
         "Apps on GitHub": "Apps op GitHub",
         "No built-in templates yet": "Nog geen ingebouwde sjablonen",
@@ -1561,7 +1558,9 @@
         "Values the form sets on the object it creates.": "Waarden die het formulier zet op het object dat het aanmaakt.",
         "What the filer reads after submitting.": "Wat de indiener leest na het versturen.",
         "What the form asks and who it is for.": "Wat het formulier vraagt en voor wie het is.",
-        "Where the form came from and where it can go: a form page of an app, or a registration form for a schema and type value.": "Waar het formulier vandaan komt en waar het heen kan: een formulierpagina van een app, of een aanvraagformulier voor een schema en typewaarde."
+        "Where the form came from and where it can go: a form page of an app, or a registration form for a schema and type value.": "Waar het formulier vandaan komt en waar het heen kan: een formulierpagina van een app, of een aanvraagformulier voor een schema en typewaarde.",
+        "Fills the Store with the starter templates. Run it after you enable OpenRegister, or to repair a partial install. Templates that are already there stay as they are.": "Vult de Store met de startsjablonen. Voer dit uit nadat je OpenRegister hebt ingeschakeld, of om een half gelukte installatie te herstellen. Sjablonen die er al zijn blijven zoals ze zijn.",
+        "Install templates": "Sjablonen installeren"
     },
     "plurals": null,
     "pluralForm": "nplurals=2; plural=(n != 1);"

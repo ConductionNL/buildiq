@@ -25,7 +25,7 @@
 				"id": "welcome",
 				"type": "info",
 				"title": "Welcome to Buildiq",
-				"body": "Buildiq builds apps from templates. This quick setup makes sure the bundled starter templates are available and, optionally, connects a remote template store. It is safe to run more than once."
+				"body": "Buildiq builds apps from templates. This quick setup offers example data and can connect a remote template store. The starter templates install on their own. An admin can reinstall them in the admin settings."
 			},
 			{
 				"id": "demo-data",
@@ -33,25 +33,10 @@
 				"display": "cards",
 				"optionsSource": "datasets",
 				"configKey": "demo_dataset",
+				"loadAction": "load-demo-data",
 				"title": "Load example data?",
 				"required": false,
-				"body": "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install."
-			},
-			{
-				"id": "load-demo-data",
-				"type": "run-action",
-				"action": "load-demo-data",
-				"title": "Load the example data",
-				"required": false,
-				"body": "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards."
-			},
-			{
-				"id": "seed",
-				"type": "run-action",
-				"title": "Install starter templates",
-				"required": true,
-				"action": "seed-templates",
-				"body": "Fills the Store with the starter templates, so the create-from-template flow has something to offer. This normally runs on install. Run it here if OpenRegister was enabled after Buildiq, or to repair a partial install. Safe to run twice: existing templates are left untouched."
+				"body": "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install."
 			},
 			{
 				"id": "store",

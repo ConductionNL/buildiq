@@ -105,7 +105,7 @@
 					:description="
 						t(
 							'buildiq',
-							'An admin can install the starter templates from the Buildiq setup wizard.',
+							'An admin can install the starter templates from the Buildiq admin settings.',
 						)
 					" />
 
