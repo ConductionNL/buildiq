@@ -15,6 +15,8 @@ The two stores mirror each other and drift. Observed directly: a definition writ
 
 ### Requirement: A dangling binding MUST reach the operator
 
+The export job SHALL report every dangling binding in its result, where the operator reads it.
+
 The head requires that a dangling binding not be fatal and be "discoverable by whatever consumes it". This change names the consumer and therefore names the destination: the export job's RESULT, not only a log line.
 
 An operator reads the finished job. A log line they never open is indistinguishable from a binding that resolved.

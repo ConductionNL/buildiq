@@ -33,6 +33,14 @@ by schema ID and by schema slug. No pairs is a valid input: all four KPIs return
 - **WHEN** the service walks the manifest
 - **THEN** the resulting schema-set contains two unique schema IDs
 
+#### Scenario: Tuples referencing other registers are ignored
+
+- **GIVEN** the version's register exists
+- **AND** a manifest page entry with
+  `config:{register:"some-other-register", schema:"<nil>"}`
+- **WHEN** the service walks the manifest
+- **THEN** the resulting schema-set does NOT include that schema
+
 #### Scenario: A schema without a page still counts
 
 - **GIVEN** the version's register lists a schema that no page names

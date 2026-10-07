@@ -1,5 +1,7 @@
 ## 1. Store lists built-in templates
 
+> Archive pass 2026-10-07: code done (TemplateGallery.vue built-in section, CloneTemplateDialog.vue local mode, ApplicationsController::createFromTemplate description); not archived: its MODIFIED delta targets "Templates page offers Templates (GitHub) / Blocks tabs", which the main spec template-catalogue-ui no longer has (rewritten around the remote store and a no-registry fallback). The delta needs rebasing onto the current main spec first.
+
 - [x] 1.1 `TemplateGallery` fetches `application-template` records from the `buildiq` register on mount, next to the GitHub search.
 - [x] 1.2 Render a "Built-in templates" section above the GitHub search: title, category badge, use case, description and **Use this template**. Seeded templates first, then organisation templates with their badge.
 - [x] 1.3 Show a clear empty state when no template is seeded, pointing admins at the setup wizard. Show a warning note when loading fails.

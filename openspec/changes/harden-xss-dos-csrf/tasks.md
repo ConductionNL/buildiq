@@ -1,5 +1,7 @@
 # Tasks — harden-xss-dos-csrf
 
+> Archive pass 2026-10-07: code not done; open: 3.1, 3.3 (the attribute was removed but lib/Controller/SettingsController.php still carries the `@NoCSRFRequired` docblock on create (l.156) and load (l.177); Nextcloud's SecurityMiddleware honours docblock annotations (hasAnnotationOrAttribute), so CSRF is still skipped there. 0.1 is moot: RemoteTemplateStoreService was deleted in favour of OpenRegister's GenericStoreService).
+
 Acceptance criteria and quality reminders are plain-text bullets (not checkboxes)
 so the checkbox count stays within the supervisor cap.
 
@@ -24,9 +26,9 @@ so the checkbox count stays within the supervisor cap.
 
 ## 3. CSRF — remove unjustified NoCSRFRequired
 
-- [x] 3.1 Remove `#[NoCSRFRequired]` from `SettingsController::create` and `::load`.
+- [ ] 3.1 Remove `#[NoCSRFRequired]` from `SettingsController::create` and `::load`.
 - [x] 3.2 Remove the `@NoCSRFRequired` docblock from `PreferencesController::setPreference` (keep `@NoAdminRequired`).
-- [x] 3.3 Test: create / load / setPreference reject a request without a valid Nextcloud request token; the SPA path (token present) still succeeds.
+- [ ] 3.3 Test: create / load / setPreference reject a request without a valid Nextcloud request token; the SPA path (token present) still succeeds.
 
 ## 4. XSS — sanitize the sinks
 
