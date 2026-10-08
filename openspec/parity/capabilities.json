@@ -9699,6 +9699,31 @@
 			}
 		},
 		{
+			"id": "ops-reports",
+			"area": "operate",
+			"name": "See reports across all apps: apps by status and type, versions and exports.",
+			"source": "spec-round-2026-10-08",
+			"buildiq": "partial",
+			"nocobase": "unknown",
+			"budibase": "unknown",
+			"appsmith": "unknown",
+			"mendix": "unknown",
+			"power-apps": "unknown",
+			"built": {
+				"state": "specified",
+				"evidence": "src/manifest.json:361-367 menu \"Reports\" (settings section); 634-664 Reports card page (type reports); 666 ApplicationsReport (Published/Draft/Archived counts, donuts by status, by appType, templates by category, table Most recent) and 903 DeliveryReport (versions published, exports succeeded/failed, donuts by status, scope, target, table Most recent exports), all declarative over register buildiq (commit 37ad4814b). Every figure on the board is there. Missing: the board's \"Downloaden\" button; nextcloud-vue CnDashboardPage has no download.",
+				"change": "operate-report-download",
+				"spec": "openspec/specs/buildiq-reports",
+				"note": "Added by decision 99 (8 Oct): board without a row. Main spec buildiq-reports written after the fact for the built part.",
+				"owner": "ConductionNL/buildiq",
+				"readOn": "2026-10-08"
+			},
+			"screen": {
+				"canvas": "QAAxpcsFKBCvDUGbQbwtCa",
+				"board": "BqRapportages"
+			}
+		},
+		{
 			"id": "data-model-diagram",
 			"area": "data",
 			"name": "See the data model as a diagram of object types and their relations.",
@@ -10079,6 +10104,30 @@
 			}
 		},
 		{
+			"id": "pg-setup-wizard-designer",
+			"area": "pages",
+			"name": "Design the setup wizard an app shows an administrator on first open: steps, choices and required settings.",
+			"source": "spec-round-2026-10-08",
+			"buildiq": "yes",
+			"nocobase": "unknown",
+			"budibase": "unknown",
+			"appsmith": "unknown",
+			"mendix": "unknown",
+			"power-apps": "unknown",
+			"built": {
+				"state": "built",
+				"evidence": "src/components/walkthrough-editor/WalkthroughDesigner.vue:340-520 tab \"Setup wizard\" edits manifest.setup: enabled switch (15-20), add, reorder and delete steps, per step id, type (info, choice, config-fields, run-action, summary at 555-560), title, body, configKey, action, options with value and label, required, multiple, healthCheck, plus the validation note \"Fix these before saving\"; deep-linkable with ?mode=setup (609); saved by src/views/WalkthroughDesignerHost.vue:222/242 PUT to the app version. Opened from the app actions menu \"Setup wizard\".",
+				"spec": "openspec/specs/openbuild-walkthrough-editor",
+				"note": "Added by decision 99 (8 Oct): board without a row. Covered by REQ-WALK-OB-005 (the editor also edits the setup block).",
+				"owner": "ConductionNL/buildiq",
+				"readOn": "2026-10-08"
+			},
+			"screen": {
+				"canvas": "QAAxpcsFKBCvDUGbQbwtCa",
+				"board": "BqSetupWizardOntwerper"
+			}
+		},
+		{
 			"id": "form-audio-record",
 			"area": "forms",
 			"name": "Record audio in a form, for example a spoken note.",
@@ -10239,6 +10288,30 @@
 			"screen": {
 				"board": null,
 				"reason": "shows in Nextcloud unified search, no buildiq screen"
+			}
+		},
+		{
+			"id": "app-support-note",
+			"area": "apps",
+			"name": "Write the support and donation note a user sees the first time an app opens.",
+			"source": "spec-round-2026-10-08",
+			"buildiq": "partial",
+			"nocobase": "unknown",
+			"budibase": "unknown",
+			"appsmith": "unknown",
+			"mendix": "unknown",
+			"power-apps": "unknown",
+			"built": {
+				"state": "specified",
+				"evidence": "The editor exists: src/components/ApplicationDetailActions.vue:369-375 adds \"Support & donation\" to the app actions menu (canEditVersions), 803-818 loads GET /api/applications/{slug}/manifest and opens nextcloud-vue CnEditSupportModal on a working copy with every field the board draws. It does not save: the dialog saves through manifestModalDoneMixin.onDone() via the injected cnManifestEditor, which on the app detail page is buildiq's own CnAppRoot (src/App.vue passes no persistManifestDelta), then onSupportClose() (828-831) drops the copy; nothing calls PUT /api/applications/{slug}/manifest (appinfo/routes.php:65) from this path. Runtime works: src/utils/virtualAppSupportDialog.js:22-26 shows the note in a virtual app only when manifest.support.enabled is true (src/builder.js:394).",
+				"change": "apps-support-note-editor-saves",
+				"note": "Added by decision 99 (8 Oct): board without a row.",
+				"owner": "ConductionNL/buildiq",
+				"readOn": "2026-10-08"
+			},
+			"screen": {
+				"canvas": "QAAxpcsFKBCvDUGbQbwtCa",
+				"board": "BqSupportBewerken"
 			}
 		}
 	],
