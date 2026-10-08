@@ -26,9 +26,11 @@ so the checkbox count stays within the supervisor cap.
 
 ## 3. CSRF — remove unjustified NoCSRFRequired
 
-- [ ] 3.1 Remove `#[NoCSRFRequired]` from `SettingsController::create` and `::load`.
+- [x] 3.1 Remove `#[NoCSRFRequired]` from `SettingsController::create` and `::load`.
+  - Done 2026-10-07: the attribute was already gone; the `@NoCSRFRequired` docblock is now removed from `update`, `create` and `load` too. `index` (GET, read-only) keeps its exemption.
 - [x] 3.2 Remove the `@NoCSRFRequired` docblock from `PreferencesController::setPreference` (keep `@NoAdminRequired`).
-- [ ] 3.3 Test: create / load / setPreference reject a request without a valid Nextcloud request token; the SPA path (token present) still succeeds.
+- [x] 3.3 Test: create / load / setPreference reject a request without a valid Nextcloud request token; the SPA path (token present) still succeeds.
+  - `tests/Unit/Controller/SettingsControllerCsrfTest.php` asserts by reflection that update / create / load / setPreference carry neither `#[NoCSRFRequired]` nor `@NoCSRFRequired`, so SecurityMiddleware enforces the token. The SPA callers in `src/store/modules/settings.js` already send `requesttoken`.
 
 ## 4. XSS — sanitize the sinks
 
