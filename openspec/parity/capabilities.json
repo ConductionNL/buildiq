@@ -1549,8 +1549,8 @@
 				"power-apps": "docs-only: https://learn.microsoft.com/en-us/power-apps/maker/canvas-apps/embed-apps-dev (2026-09-26): embed canvas apps in an iframe in websites; only Power Apps users in the same tenant can access the embedded app"
 			},
 			"screen": {
-				"board": null,
-				"reason": "not designed yet: no board on the canvas covers it"
+				"canvas": "design-system",
+				"board": "BqAppBereik"
 			}
 		},
 		{
@@ -1583,8 +1583,8 @@
 				"power-apps": "docs-only: https://learn.microsoft.com/en-us/power-apps/powerapps-overview (2026-09-26): apps built with Power Apps run in a browser or on mobile devices through the service; no self-hosted runtime is documented, on-premises data is reached through a gateway (read via MicrosoftDocs/powerapps-docs powerapps-docs/powerapps-overview.md) Reached on: Power Apps service"
 			},
 			"screen": {
-				"board": null,
-				"reason": "not designed yet: no board on the canvas covers it"
+				"canvas": "design-system",
+				"board": "BqExporterenZelfstandig"
 			}
 		},
 		{
@@ -3297,8 +3297,8 @@
 				"appsmith": "source read at v2.4.2, not driven: app/client/public/manifest.json:12 only a generic standalone web manifest for the Appsmith client; searched client and deploy for capacitor, cordova, react-native and an app store build, none. Apps run in the mobile browser"
 			},
 			"screen": {
-				"board": null,
-				"reason": "not designed yet: no board on the canvas covers it"
+				"canvas": "design-system",
+				"board": "BqAppBereik"
 			}
 		},
 		{
@@ -3331,8 +3331,8 @@
 				"nocobase": "source read at v2.2.18, not driven: searched packages/core/client-v2/src/ and packages/plugins/@nocobase/plugin-mobile/src for serviceWorker, workbox, offline, IndexedDB sync: only packages/core/client-v2/src/components/AppComponents.tsx:45 matches a generic offline network message; no offline store or sync queue"
 			},
 			"screen": {
-				"board": null,
-				"reason": "not designed yet: no board on the canvas covers it"
+				"canvas": "design-system",
+				"board": "BqPaginaOntwerperFouten"
 			}
 		},
 		{
@@ -4869,8 +4869,8 @@
 				"power-apps": "docs-only: https://learn.microsoft.com/en-us/power-apps/maker/canvas-apps/add-manage-connections (2026-09-26): the Connections page in make.powerapps.com lets you create a connection to data sources, delete one or update its credentials in one place; a health status per connection is not described on this page (read via MicrosoftDocs/powerapps-docs powerapps-docs/maker/canvas-apps/add-manage-connections.md) Reached on: make.powerapps.com, Connections"
 			},
 			"screen": {
-				"board": null,
-				"reason": "not designed yet: no board on the canvas covers it"
+				"canvas": "design-system",
+				"board": "BqAppWerking"
 			}
 		},
 		{
@@ -7513,8 +7513,8 @@
 				"appsmith": "source read at v2.4.2, not driven: app/client/src/widgets/TextWidget/widget/index.tsx:174 labels are single strings; searched client for translation tables, locale switch or i18n for built apps, none. A builder could hand-roll lookups in a JS object"
 			},
 			"screen": {
-				"board": null,
-				"reason": "not designed yet: no board on the canvas covers it"
+				"canvas": "design-system",
+				"board": "BqAppBereik"
 			}
 		},
 		{
@@ -7901,8 +7901,8 @@
 				"power-apps": "docs-only: https://learn.microsoft.com/en-us/power-platform/admin/database-security (2026-09-26): each organisation is a Microsoft Entra tenant with its own environments and Dataverse databases, so data is separated per environment; one installation serving several customer tenants is not a Power Apps model Reached on: Power Platform admin center, environments"
 			},
 			"screen": {
-				"board": null,
-				"reason": "not designed yet: no board on the canvas covers it"
+				"canvas": "design-system",
+				"board": "BqAppBereik"
 			}
 		},
 		{
@@ -8063,8 +8063,8 @@
 				"power-apps": "docs-only: https://learn.microsoft.com/en-us/power-apps/maker/common/monitor-app-performance (2026-09-26): Monitor gives detailed information on app performance and actionable steps; Application Insights can collect telemetry (read via MicrosoftDocs/powerapps-docs powerapps-docs/maker/common/monitor-app-performance.md) Reached on: make.powerapps.com, Monitor"
 			},
 			"screen": {
-				"board": null,
-				"reason": "not designed yet: no board on the canvas covers it"
+				"canvas": "design-system",
+				"board": "BqAppWerking"
 			}
 		},
 		{
@@ -8169,8 +8169,8 @@
 				"power-apps": "docs-only: https://learn.microsoft.com/en-us/power-apps/developer/data-platform/webapi/overview (2026-09-26): Dataverse exposes an OData Web API with a service metadata document for all tables; this is per environment, not generated per app Reached on: Dataverse Web API"
 			},
 			"screen": {
-				"board": null,
-				"reason": "not designed yet: no board on the canvas covers it"
+				"canvas": "design-system",
+				"board": "BqAppWerking"
 			}
 		},
 		{
@@ -10760,8 +10760,8 @@
 				"power-apps": "docs-only: https://learn.microsoft.com/en-us/power-apps/maker/monitor-canvasapps (2026-09-26): Live monitor traces events as they happen in a canvas app while authoring in Power Apps Studio, and Monitor also debugs the published app (read via MicrosoftDocs/powerapps-docs powerapps-docs/maker/monitor-canvasapps.md) Reached on: Power Apps Studio, Live monitor"
 			},
 			"screen": {
-				"board": null,
-				"reason": "not designed yet: no board on the canvas covers it"
+				"canvas": "design-system",
+				"board": "BqPaginaOntwerperFouten"
 			}
 		},
 		{
