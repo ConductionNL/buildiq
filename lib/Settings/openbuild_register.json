@@ -41,6 +41,7 @@
     "schemas": {
       "Application": {
         "x-schema-org": "schema:SoftwareApplication",
+        "x-openregister-demo-data": "buildiq's own register of the apps it has built. A generated app has no version with pages behind it, so it lists on the dashboard and never opens.",
         "slug": "built-app",
         "icon": "AppsBox",
         "version": "0.6.0",
@@ -151,10 +152,7 @@
             },
             "description": "Relation → ApplicationVersion currently exposed at the canonical /apps/openbuild/{slug} URL. READ-ONLY on a hybrid app (its production version is the admin-managed shared delta): enforced server-side + reflected by the data widget. Set explicitly by the admin (creation wizard, detail-page version switcher), not derived from chain terminality. The referenced ApplicationVersion's `application` relation MUST point back at this Application. Enforced server-side by ApplicationVersionService::guardProductionVersionOwnership() (ADR-031 §Exceptions(1) cross-row guard).",
             "x-relation-filter": { "application": "@objectId" },
-            "x-openregister-relation": {
-              "target": "openbuild/applicationVersion",
-              "type": "many-to-one"
-            }
+            "$ref": "ApplicationVersion"
           },
           "icon": {
             "title": "Light Mode Icon",
@@ -268,6 +266,7 @@
       },
       "ApplicationTemplate": {
         "x-schema-org": "schema:CreativeWork",
+        "x-openregister-demo-data": "The store's starter packs. A generated template stands beside the real built-in ones and clones into an app with no pages.",
         "slug": "application-template",
         "icon": "ViewGridOutline",
         "version": "0.1.0",
@@ -379,6 +378,7 @@
         }
       },
       "BuiltAppRoute": {
+        "x-openregister-demo-data": "An index the Application lifecycle upserts on publish and deletes on archive. A generated row routes a slug to an app nobody created.",
         "slug": "built-app-route",
         "icon": "RouterNetwork",
         "version": "0.1.0",
@@ -461,6 +461,7 @@
       },
       "ApplicationVersion": {
         "x-schema-org": "schema:SoftwareApplication",
+        "x-openregister-demo-data": "Written by publish and promote. A generated version points at no application and carries a manifest with no pages, so the app it belongs to renders empty.",
         "x-openregister-notifications": {
           "version-published": {
             "trigger": {
@@ -610,10 +611,7 @@
             "type": "string",
             "format": "uuid",
             "description": "Relation → parent Application (required). Real first-class OR relation, not a UUID string (ADR-002 §Decision).",
-            "x-openregister-relation": {
-              "target": "openbuild/application",
-              "type": "many-to-one"
-            }
+            "$ref": "Application"
           },
           "promotesTo": {
             "title": "Promotes To",
@@ -621,10 +619,7 @@
             "format": "uuid",
             "description": "Optional relation → next ApplicationVersion in the linear promotion chain. Terminal versions have `promotesTo: null`. Cycle detection is enforced server-side by ApplicationVersionService::guardNoCycle() (ADR-031 §Exceptions(1) cross-row).",
             "x-relation-filter": { "application": "@object.application" },
-            "x-openregister-relation": {
-              "target": "openbuild/applicationVersion",
-              "type": "many-to-one"
-            }
+            "$ref": "ApplicationVersion"
           },
           "scope": {
             "title": "Delta Scope",
@@ -726,6 +721,7 @@
       },
       "exportJob": {
         "x-schema-org": "schema:Action",
+        "x-openregister-demo-data": "Written by the export pipeline. A generated row reads as a finished export nobody ran.",
         "x-openregister-notifications": {
           "export-succeeded": {
             "trigger": {

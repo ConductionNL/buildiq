@@ -23,6 +23,7 @@ import { generateUrl } from '@nextcloud/router'
  * @spec openspec/changes/openconnector-api-sources/tasks.md#task-2.2
  */
 import { ref } from 'vue'
+import { fleetAppCandidates, resolveFleetAppId } from '../services/fleetAppId.js'
 
 /** @type {Map<string, boolean>} */
 const statusCache = new Map()
@@ -31,7 +32,10 @@ const statusCache = new Map()
  * Probe whether an app is available. Returns reactive `{ available, checked }`
  * refs that flip once the async probe resolves.
  *
- * @param {string} appId - the app id, e.g. `procest` or `openconnector`.
+ * @param {string} appId - the CANONICAL app id, e.g. `dossiq` or
+ *   `integriq`. Renamed fleet apps are resolved across every id they answer
+ *   to (see `services/fleetAppId.js`), so a caller never has to know which
+ *   spelling this instance is on.
  * @param {object} [opts] - options.
  * @param {string} [opts.probePath] - app route to probe when the webroots map
  *   is silent (default `/apps/{appId}/api`).
@@ -56,21 +60,35 @@ export function useAppStatus(appId, opts = {}) {
 			checked.value = true
 			return available.value
 		}
-		// 1. Synchronous positive signal from the server-injected app webroots
-		// map (present when the app is installed + enabled).
+		// 1. The server-injected app webroots map lists every ENABLED app.
+		// Every id the app answers to counts: an instance still on the
+		// pre-rename release registers only the old one, and reading just the
+		// new name there reports a perfectly healthy app as absent.
+		//
+		// A populated map that lists none of the ids is a definitive "absent",
+		// not a reason to probe. Probing anyway sent a request to a route that
+		// cannot exist (`/apps/thematiq/api` with the theme app disabled), and
+		// that 404 landed in the console of every page designer load.
 		try {
 			const roots = (typeof OC !== 'undefined' && OC.appswebroots) || {}
-			if (roots[appId] !== undefined) {
+			if (fleetAppCandidates(appId).some((id) => roots[id] !== undefined)) {
 				available.value = true
 				checked.value = true
 				statusCache.set(appId, true)
 				return true
 			}
+			if (typeof roots === 'object' && Object.keys(roots).length > 0) {
+				available.value = false
+				checked.value = true
+				statusCache.set(appId, false)
+				return false
+			}
 		} catch {
 			// fall through to probe
 		}
-		// 2. Cheap authenticated probe.
-		const path = opts.probePath || `/apps/${appId}/api`
+		// 2. No usable webroots map (unit tests, early boot): a cheap
+		// authenticated probe.
+		const path = opts.probePath || `/apps/${resolveFleetAppId(appId)}/api`
 		try {
 			await client.get(generateUrl(path))
 			available.value = true

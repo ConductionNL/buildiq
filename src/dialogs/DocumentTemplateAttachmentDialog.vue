@@ -19,7 +19,7 @@
 		:name="
 			editing
 				? t('buildiq', 'Edit document attachment')
-				: t('buildiq', 'Attach a Docudesk template')
+				: t('buildiq', 'Attach a Filinq template')
 		"
 		size="normal"
 		@update:open="$emit('update:open', $event)"

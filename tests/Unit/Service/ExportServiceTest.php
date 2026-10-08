@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\DataRegisterExportBundler;
+use OCA\Buildiq\Service\ExportAppContentBundler;
 use OCA\Buildiq\Service\ExportService;
 use OCA\Buildiq\Service\PlaceholderResolver;
+use OCA\Buildiq\Service\RegisterRowReader;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -76,6 +78,67 @@ final class ExportServiceTest extends TestCase {
 	}//end testGenerateAppZipResolvesPlaceholdersAcrossTheTree()
 
 	/**
+	 * A freshly built archive must not already be older than the window the
+	 * cleanup job purges by.
+	 *
+	 * `CleanupExpiredExports` unlinks any ZIP where
+	 * `time() - filemtime($zip) > 86400`. The exporter used to `touch()` the
+	 * finished archive to its deterministic 2026-01-01 timestamp, which made
+	 * every archive roughly 22 million seconds old the moment it was written,
+	 * so the next cleanup pass deleted it while the ExportJob still read
+	 * "Succeeded" and still offered a Download ZIP button.
+	 *
+	 * The second assertion is the control: it pins the reason the `touch()`
+	 * was there in the first place. Entry timestamps INSIDE the archive stay
+	 * deterministic, because those are the bytes that have to match between
+	 * two exports of the same tree. Deleting the whole determinism story to
+	 * fix the expiry would pass the first assertion and fail this one.
+	 *
+	 * @return void
+	 */
+	public function testGeneratedZipIsNotBornOlderThanTheCleanupWindow(): void {
+		$jobUuid = 'unit-' . bin2hex(random_bytes(6));
+		$zipPath = $this->buildService()->generateAppZip(
+			applicationUuid: 'app-uuid',
+			versionSlug: '1.2.3',
+			context: $this->context(),
+			jobUuid: $jobUuid,
+			dataRegisters: [],
+			source: null
+		);
+		$this->litter[] = $zipPath;
+		$this->litter[] = sys_get_temp_dir() . '/buildiq-work/' . $jobUuid;
+
+		self::assertFileExists(filename: $zipPath);
+
+		$age = time() - (int)filemtime($zipPath);
+		self::assertLessThan(
+			expected: 86400,
+			actual: $age,
+			message: 'a just-written export archive is already past the cleanup window, so the next pass deletes it'
+		);
+
+		$zip = new ZipArchive();
+		self::assertTrue(condition: $zip->open($zipPath) === true);
+		$entryStamps = [];
+		for ($i = 0; $i < $zip->numFiles; $i++) {
+			$stat = $zip->statIndex($i);
+			if ($stat !== false) {
+				$entryStamps[] = (int)$stat['mtime'];
+			}
+		}
+
+		$zip->close();
+
+		self::assertNotEmpty(actual: $entryStamps);
+		self::assertSame(
+			expected: [1767225600],
+			actual: array_values(array_unique($entryStamps)),
+			message: 'archive entries must keep the single deterministic timestamp that makes two exports byte-identical'
+		);
+	}//end testGeneratedZipIsNotBornOlderThanTheCleanupWindow()
+
+	/**
 	 * REQ-OBEX-008: archive entries are written in a stable, case-sensitive
 	 * ASCII sort, so two exports of the same tree line up entry-for-entry.
 	 */
@@ -88,6 +151,49 @@ final class ExportServiceTest extends TestCase {
 		self::assertSame($sorted, $names, 'ZIP entries must be in stable ASCII order');
 		self::assertNotEmpty($names);
 	}//end testGenerateAppZipOrdersArchiveEntriesLexicographically()
+
+	/**
+	 * The register file is renamed with the app, because the resolved
+	 * SettingsService reads `<app_id>_register.json`.
+	 */
+	public function testGenerateAppZipRenamesTheRegisterFileTheAppReads(): void {
+		$entries = $this->export();
+
+		self::assertArrayHasKey('lib/Settings/demo_app_register.json', $entries);
+		self::assertArrayNotHasKey('lib/Settings/app_template_register.json', $entries);
+		self::assertStringContainsString("Settings/demo_app_register.json'", $entries['lib/Service/SettingsService.php']);
+	}//end testGenerateAppZipRenamesTheRegisterFileTheAppReads()
+
+	/**
+	 * With a source application, the archive carries its pages and schemas,
+	 * not the template's empty manifest and example schema.
+	 */
+	public function testGenerateAppZipCarriesTheApplicationContent(): void {
+		$bundler = $this->createMock(ExportAppContentBundler::class);
+		$bundler->expects(self::once())
+			->method('bundle')
+			->with(
+				self::anything(),
+				['application' => ['slug' => 'demo-app'], 'version' => ['slug' => 'development'], 'includeSeedData' => true],
+				'demo-app',
+				'1.2.3'
+			)
+			->willReturnCallback(
+				static function (string $rootDir): array {
+					file_put_contents($rootDir . '/manifest.json', '{"pages":[{"id":"Home"}]}');
+					return ['pages' => 1, 'menu' => 0, 'schemas' => 0, 'records' => 0];
+				}
+			);
+
+		$service = $this->buildService(contentBundler: $bundler);
+		$entries = $this->export(
+			service: $service,
+			source: ['application' => ['slug' => 'demo-app'], 'version' => ['slug' => 'development'], 'includeSeedData' => true]
+		);
+
+		self::assertSame('{"pages":[{"id":"Home"}]}', $entries['manifest.json']);
+		self::assertSame(['pages' => 1, 'menu' => 0, 'schemas' => 0, 'records' => 0], $service->lastContent());
+	}//end testGenerateAppZipCarriesTheApplicationContent()
 
 	/**
 	 * The snapshot bookkeeping files are artefacts of Buildiq, not of the
@@ -176,6 +282,71 @@ final class ExportServiceTest extends TestCase {
 		self::assertCount(2, $decodedSeed['objects']);
 		self::assertSame('Acme', $decodedSeed['objects'][0]['name']);
 	}//end testGenerateAppZipWritesSeedDataOnlyWhenIncludeDataTrue()
+
+	/**
+	 * The seed-data fixture carries the register's rows, read per schema.
+	 *
+	 * The test above cannot see this defect, because its double answers the
+	 * same two rows to any query at all. In production the bundler asked
+	 * `@self.register` with no `@self.schema`, which OpenRegister answers
+	 * `[]` to whatever the register holds, so every includeData export
+	 * shipped `"objects": []` — a fixture that reads exactly like a register
+	 * with nothing in it, for a toggle the admin had just switched on.
+	 *
+	 * The double here answers only the register+schema pair that actually
+	 * holds the rows. Mutation check, run 2026-09-19: drop
+	 * `'schema' => $schemaId` from the query RegisterRowReader emits, and the
+	 * assertCount below reddens with "the exported fixture must carry the
+	 * register's rows, not an empty list / actual size 0 matches expected
+	 * size 1" — the assertion, not a setup line.
+	 *
+	 * @return void
+	 */
+	public function testSeedDataFixtureCarriesRowsReadPerSchema(): void {
+		$register = $this->buildRegisterMock(schemaIds: [42]);
+		$schema = $this->buildSchemaMock(slug: 'spectr-company', title: 'Company', required: [], properties: []);
+
+		$registerMapper = $this->createMock(RegisterMapper::class);
+		$registerMapper->method('find')->with('spectr')->willReturn($register);
+
+		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$schemaMapper->method('find')->with(42)->willReturn($schema);
+
+		$objectService = $this->createMock(ObjectServiceInterface::class);
+		$objectService->method('searchObjects')->willReturnCallback(
+			static function (array $query): array {
+				// OpenRegister resolves its table from the PAIR. A query that
+				// names only the register reaches no table and answers [].
+				if (isset($query['@self']['schema']) === false) {
+					return [];
+				}
+
+				if ((string)$query['@self']['register'] !== '7' || (string)$query['@self']['schema'] !== '42') {
+					return [];
+				}
+
+				return [['id' => 'row-1', 'name' => 'Acme']];
+			}
+		);
+
+		$entries = $this->export(
+			dataRegisters: [['register' => 'spectr', 'includeData' => true]],
+			service: $this->buildService(
+				registerMapper: $registerMapper,
+				schemaMapper: $schemaMapper,
+				objectService: $objectService
+			)
+		);
+
+		$decodedSeed = json_decode($entries['lib/Settings/data-registers/spectr.seed-data.json'], true);
+
+		self::assertCount(
+			1,
+			$decodedSeed['objects'],
+			'the exported fixture must carry the register\'s rows, not an empty list'
+		);
+		self::assertSame('Acme', $decodedSeed['objects'][0]['name']);
+	}//end testSeedDataFixtureCarriesRowsReadPerSchema()
 
 	/**
 	 * REQ (buildiq-exporter, data-registers-runtime): includeData omitted
@@ -330,7 +501,11 @@ final class ExportServiceTest extends TestCase {
 	 *
 	 * @return array<string,string> Archive entries, in archive order.
 	 */
-	private function export(array $dataRegisters = [], ?ExportService $service = null): array {
+	private function export(
+		array $dataRegisters = [],
+		?ExportService $service = null,
+		?array $source = null,
+	): array {
 		$jobUuid = 'unit-' . bin2hex(random_bytes(6));
 
 		$zipPath = ($service ?? $this->buildService())->generateAppZip(
@@ -338,7 +513,8 @@ final class ExportServiceTest extends TestCase {
 			versionSlug: '1.2.3',
 			context: $this->context(),
 			jobUuid: $jobUuid,
-			dataRegisters: $dataRegisters
+			dataRegisters: $dataRegisters,
+			source: $source
 		);
 
 		$this->litter[] = $zipPath;
@@ -395,13 +571,14 @@ final class ExportServiceTest extends TestCase {
 		?RegisterMapper $registerMapper = null,
 		?SchemaMapper $schemaMapper = null,
 		?ObjectServiceInterface $objectService = null,
+		?ExportAppContentBundler $contentBundler = null,
 	): ExportService {
 		$appData = $this->createStub(IAppData::class);
 		$bundler = new DataRegisterExportBundler(
 			$registerMapper ?? $this->createMock(RegisterMapper::class),
 			$schemaMapper ?? $this->createMock(SchemaMapper::class),
-			$objectService ?? $this->createMock(ObjectServiceInterface::class),
-			new NullLogger()
+			new NullLogger(),
+			new RegisterRowReader($objectService ?? $this->createMock(ObjectServiceInterface::class))
 		);
 
 		return new ExportService(
@@ -417,7 +594,8 @@ final class ExportServiceTest extends TestCase {
 				$this->createMock(\OCA\OpenRegister\Service\ObjectService::class),
 				appManager: $this->createMock(originalClassName: \OCP\App\IAppManager::class),
 				logger: new NullLogger()
-			)
+			),
+			$contentBundler
 		);
 	}//end buildService()
 

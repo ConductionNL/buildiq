@@ -142,6 +142,38 @@ class ExportTreeFiles {
 	}//end copyTree()
 
 	/**
+	 * Rename files whose relative path contains a template name.
+	 *
+	 * The template ships `lib/Settings/app_template_register.json`, and the
+	 * resolved code reads `<app_id>_register.json`. Renaming only the
+	 * contents left the exported app looking for a file that was not there.
+	 *
+	 * @param string $dir The tree root.
+	 * @param array<string,string> $map Search to replace, as PlaceholderResolver::buildMap() returns it.
+	 * @param integer $timestamp mtime to stamp on every renamed file.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-exported-tree-shape-conforms-to-the-nextcloud-app-template-baseline
+	 */
+	public function renamePaths(string $dir, array $map, int $timestamp): void {
+		foreach ($this->listFilesSorted(baseDir: $dir) as $relative) {
+			$renamed = strtr($relative, $map);
+			if ($renamed === $relative) {
+				continue;
+			}
+
+			$target = $dir . '/' . $renamed;
+			if (is_dir(dirname($target)) === false) {
+				mkdir(dirname($target), 0o755, true);
+			}
+
+			rename($dir . '/' . $relative, $target);
+			touch($target, $timestamp);
+		}
+	}//end renamePaths()
+
+	/**
 	 * Every file under a directory, relative and sorted.
 	 *
 	 * Sorted because the ZIP must be byte-identical between two exports of the

@@ -558,6 +558,45 @@ class CreateFromTemplateTest extends TestCase {
 	}//end testProductionVersionLinkPreservesTheStoredApplication()
 
 	/**
+	 * The production version an install creates is a draft.
+	 *
+	 * The store promises "an editable draft app" and the Application record is
+	 * written with `status: draft`, but the version its manifest lives on was
+	 * created `published`. The detail page reads the version, so a freshly
+	 * installed app reported a state nobody had reached, next to a list card
+	 * reading draft. Only VersionPromotionService moves a version to published.
+	 *
+	 * Watched failing: with `'status' => 'published'` restored, this reports
+	 * "Failed asserting that two strings are identical. -'draft' +'published'".
+	 *
+	 * @return void
+	 */
+	public function testTheInstalledProductionVersionIsADraft(): void {
+		$this->authenticateAs('alice');
+		$this->withRequestParams(['name' => 'My permits', 'slug' => 'my-permits']);
+
+		$this->objectService->method('searchObjects')->willReturnOnConsecutiveCalls(
+			[$this->templateRecord(self::TEMPLATE_SLUG)],
+			[]
+		);
+		$this->schemaMapper->method('createFromArray')->willReturn($this->schemaWithId(7777));
+
+		$calls = [];
+		$this->recordSaves($calls);
+
+		$result = $this->controller->createFromTemplate(templateSlug: self::TEMPLATE_SLUG);
+		self::assertSame(Http::STATUS_CREATED, $result->getStatus());
+
+		$version = $calls[1]['object'];
+		self::assertSame('production', $version['slug'], 'expected the second write to be the version');
+		self::assertSame(
+			'draft',
+			$version['status'],
+			'an installed app has published nothing yet, so its version is a draft'
+		);
+	}//end testTheInstalledProductionVersionIsADraft()
+
+	/**
 	 * Test 4 — Manifest schema-refs are rewritten with the new-slug prefix.
 	 *
 	 * @return void
@@ -595,6 +634,57 @@ class CreateFromTemplateTest extends TestCase {
 			);
 		}
 	}//end testManifestSchemaRefsRewrittenWithNewSlugPrefix()
+
+	/**
+	 * The description typed in the Use this template dialog lands on the new
+	 * Application, trimmed (store-shows-built-in-templates).
+	 *
+	 * @return void
+	 */
+	public function testTheGivenDescriptionLandsOnTheApplication(): void {
+		$this->authenticateAs('bob');
+		$this->withRequestParams(['name' => 'Bob app', 'slug' => 'bob-app', 'description' => '  Permits for the north  ']);
+
+		$template = $this->templateRecord(self::TEMPLATE_SLUG);
+		$template['description'] = 'Template text';
+		$this->objectService->method('searchObjects')->willReturnOnConsecutiveCalls([$template], []);
+		$this->schemaMapper->method('createFromArray')->willReturn($this->schemaWithId(8888));
+
+		$calls = [];
+		$this->recordSaves($calls);
+
+		$result = $this->controller->createFromTemplate(templateSlug: self::TEMPLATE_SLUG);
+		self::assertSame(Http::STATUS_CREATED, $result->getStatus());
+
+		self::assertSame('Permits for the north', $calls[0]['object']['description'] ?? null);
+		self::assertSame('draft', $calls[0]['object']['status'] ?? null);
+		// The production-pointer re-save is a full replace: it must keep it.
+		self::assertSame('Permits for the north', $calls[count($calls) - 1]['object']['description'] ?? null);
+	}//end testTheGivenDescriptionLandsOnTheApplication()
+
+	/**
+	 * Without a description, the new Application takes the template's, so a
+	 * clone never starts with an empty card.
+	 *
+	 * @return void
+	 */
+	public function testWithoutADescriptionTheTemplateDescriptionIsUsed(): void {
+		$this->authenticateAs('bob');
+		$this->withRequestParams(['name' => 'Bob app', 'slug' => 'bob-app', 'description' => '   ']);
+
+		$template = $this->templateRecord(self::TEMPLATE_SLUG);
+		$template['description'] = 'Municipal building-permit workflow.';
+		$this->objectService->method('searchObjects')->willReturnOnConsecutiveCalls([$template], []);
+		$this->schemaMapper->method('createFromArray')->willReturn($this->schemaWithId(8888));
+
+		$calls = [];
+		$this->recordSaves($calls);
+
+		$result = $this->controller->createFromTemplate(templateSlug: self::TEMPLATE_SLUG);
+		self::assertSame(Http::STATUS_CREATED, $result->getStatus());
+
+		self::assertSame('Municipal building-permit workflow.', $calls[0]['object']['description'] ?? null);
+	}//end testWithoutADescriptionTheTemplateDescriptionIsUsed()
 
 	/**
 	 * Test 5 — Owner field on the persisted Application matches the authenticated UID.

@@ -638,4 +638,36 @@ final class ExportJobServiceTest extends TestCase {
 
 		self::assertFalse($result, 'transitionJob() must return false when the impersonated work throws');
 	}//end testTransitionJobReturnsFalseWhenTheImpersonatedWorkThrows()
+
+	/**
+	 * runNow() starts a job that is still in the job list, which removes it
+	 * from the list so cron cannot run it again.
+	 *
+	 * @return void
+	 */
+	public function testRunNowStartsAJobThatIsStillQueued(): void {
+		$argument = ['jobUuid' => 'job-1'];
+		$this->jobList->method('has')->with(\OCA\Buildiq\BackgroundJob\RunExportJob::class, $argument)->willReturn(true);
+
+		$this->jobList->expects(self::once())->method('remove')->with(\OCA\Buildiq\BackgroundJob\RunExportJob::class, $argument);
+
+		$job = $this->createMock(\OCA\Buildiq\BackgroundJob\RunExportJob::class);
+		$job->expects(self::once())->method('runFor')->with('job-1');
+		$this->container->method('get')->with(\OCA\Buildiq\BackgroundJob\RunExportJob::class)->willReturn($job);
+
+		self::assertTrue($this->service->runNow(jobUuid: 'job-1'));
+	}//end testRunNowStartsAJobThatIsStillQueued()
+
+	/**
+	 * runNow() leaves a job alone once it has left the job list.
+	 *
+	 * @return void
+	 */
+	public function testRunNowSkipsAJobThatWasAlreadyPickedUp(): void {
+		$this->jobList->method('has')->willReturn(false);
+		$this->jobList->expects(self::never())->method('remove');
+		$this->container->expects(self::never())->method('get');
+
+		self::assertFalse($this->service->runNow(jobUuid: 'job-2'));
+	}//end testRunNowSkipsAJobThatWasAlreadyPickedUp()
 }//end class

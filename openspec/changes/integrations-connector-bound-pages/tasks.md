@@ -1,0 +1,9 @@
+# Tasks: integrations-connector-bound-pages
+
+- [ ] **T01**: Add `src/services/connectorPages.js` with a pure `normalizeConnectorPages(manifest)` that rewrites connector-bound index and dashboard pages in memory (REQ-BQCB-001). Verify: vitest `src/services/__tests__/connectorPages.spec.js` for an index page, a dashboard page, a page without a connector (unchanged) and the stored manifest left untouched.
+- [ ] **T02**: Add `src/components/runtime/ConnectorListPage.vue` (title, search over mapped fields, `ConnectorDataView`) and register it as `connector-list` (kind `page`, ADR-049 `_note`) in `src/runtimeRegistry.js` through `getRuntimeRegistry()` (REQ-BQCB-002). Verify: vitest spec for the page component with a mocked resolver: rows, empty, error with Retry, stale.
+- [ ] **T03**: Call the normaliser from `normalizeManifestPages()` in `src/builder.js` and from `src/views/BuilderHost.vue` before the manifest reaches `CnAppRoot` (REQ-BQCB-001, REQ-BQCB-004). Verify: extend the host parity unit guard from `openbuild-connector-widget-runtime` to assert both hosts run the normaliser.
+- [ ] **T04**: Offer `connector-data` in the dashboard widget picker and bind it with the origin toggle, source picker and field mapper (REQ-BQCB-003). Verify: vitest spec for the picker entry and the widget's saved `dataSource`.
+- [ ] **T05**: Add `tests/e2e/connector-bound-pages.spec.ts`: publish a fixture app with a connector-bound index page against a fixture integriq endpoint, open `/apps/buildiq/builder/{slug}`, assert the mapped rows render and no `Unknown widgetKey` warning is logged; a second case for the dashboard widget (REQ-BQCB-001, REQ-BQCB-002, REQ-BQCB-003).
+- [ ] **T06**: English and Dutch strings for the list page (search label, empty state), and a section in `docs/` on binding a page to an external API.
+- [ ] **T07**: Run `openspec validate integrations-connector-bound-pages --strict`.

@@ -15,7 +15,10 @@ const service = vi.hoisted(() => ({
 	provisionPortalPage: vi.fn(),
 	draftPortalPage: vi.fn(),
 }))
-vi.mock('../../src/services/externalFormProvisioningService.js', () => service)
+vi.mock('../../src/services/externalFormProvisioningService.js', () => ({
+	...service,
+	SIGN_IN_LEVELS: ['low', 'substantial', 'high'],
+}))
 vi.mock('@nextcloud/router', async (importOriginal) => ({
 	...(await importOriginal()),
 	generateUrl: (p) => p,
@@ -189,6 +192,137 @@ describe('ExternalFormAccessDialog', () => {
 		await wrapper.setProps({ open: true })
 		await wrapper.vm.onDisable()
 		expect(service.draftPortalPage).not.toHaveBeenCalled()
+	})
+
+	it('offers no sign-in and the three portaliq levels, and nothing else', async () => {
+		const wrapper = factory()
+		await wrapper.setProps({ open: true })
+		wrapper.vm.enabled = true
+		await wrapper.vm.$nextTick()
+		const select = wrapper.find('[data-testid="external-form-sign-in-level"]')
+		expect(select.exists()).toBe(true)
+		expect(select.findAll('option').map((o) => o.element.value)).toEqual([
+			'',
+			'low',
+			'substantial',
+			'high',
+		])
+	})
+
+	it('a chosen sign-in level is sent to the portal page, stored on the entry, and opens no anonymous create', async () => {
+		service.provisionPortalPage.mockResolvedValue({
+			objectId: 'pp-1',
+			portalPath: '/portal',
+			unavailable: false,
+		})
+		const wrapper = factory()
+		await wrapper.setProps({ open: true })
+		wrapper.vm.enabled = true
+		await wrapper.vm.$nextTick()
+		await wrapper
+			.find('[data-testid="external-form-sign-in-level"]')
+			.setValue('substantial')
+		await wrapper.vm.onSave()
+		expect(service.provisionPortalPage).toHaveBeenCalledWith({
+			register: 'intake',
+			schema: 'report',
+			objectId: null,
+			minTrust: 'substantial',
+		})
+		// portaliq writes past OpenRegister's RBAC itself, so the public
+		// create grant would only open a way around the sign-in.
+		expect(service.enablePublicCreate).not.toHaveBeenCalled()
+		expect(wrapper.emitted().save[0][0].minTrust).toBe('substantial')
+	})
+
+	it('raising a form that was anonymous takes its public create grant away again', async () => {
+		service.revokePublicCreate.mockResolvedValue({})
+		service.provisionPortalPage.mockResolvedValue({
+			objectId: 'pp-1',
+			portalPath: '/portal',
+			unavailable: false,
+		})
+		const entry = {
+			id: 'ef-1',
+			pageId: 'page-1',
+			register: 'intake',
+			schema: 'report',
+			status: 'enabled',
+			publicRead: true,
+			organisationScope: null,
+			portalPage: { objectId: 'pp-1', portalPath: '/portal' },
+			trackLinkAction: { enabled: false },
+		}
+		const wrapper = factory({ entry })
+		await wrapper.setProps({ open: true })
+		await wrapper.vm.$nextTick()
+		await wrapper
+			.find('[data-testid="external-form-sign-in-level"]')
+			.setValue('high')
+		await wrapper.vm.onSave()
+		expect(service.revokePublicCreate).toHaveBeenCalledWith({
+			schema: 'report',
+			removeRead: false,
+		})
+		expect(service.enablePublicCreate).not.toHaveBeenCalled()
+	})
+
+	it('a repeat save that leaves the level alone asks the portal page to keep its stored level', async () => {
+		service.provisionPortalPage.mockResolvedValue({
+			objectId: 'pp-1',
+			portalPath: '/portal',
+			unavailable: false,
+		})
+		const entry = {
+			id: 'ef-1',
+			pageId: 'page-1',
+			register: 'intake',
+			schema: 'report',
+			status: 'enabled',
+			publicRead: false,
+			organisationScope: null,
+			minTrust: 'substantial',
+			portalPage: { objectId: 'pp-1', portalPath: '/portal' },
+			trackLinkAction: { enabled: false },
+		}
+		const wrapper = factory({ entry })
+		await wrapper.setProps({ open: true })
+		await wrapper.vm.onSave()
+		const args = service.provisionPortalPage.mock.calls[0][0]
+		expect(args).not.toHaveProperty('minTrust')
+		expect(wrapper.emitted().save[0][0].minTrust).toBe('substantial')
+		expect(service.enablePublicCreate).not.toHaveBeenCalled()
+	})
+
+	it('choosing no sign-in after a level sends null, so the portal page becomes anonymous again', async () => {
+		service.enablePublicCreate.mockResolvedValue({})
+		service.provisionPortalPage.mockResolvedValue({
+			objectId: 'pp-1',
+			portalPath: '/portal',
+			unavailable: false,
+		})
+		const entry = {
+			id: 'ef-1',
+			pageId: 'page-1',
+			register: 'intake',
+			schema: 'report',
+			status: 'enabled',
+			publicRead: false,
+			organisationScope: null,
+			minTrust: 'high',
+			portalPage: { objectId: 'pp-1', portalPath: '/portal' },
+			trackLinkAction: { enabled: false },
+		}
+		const wrapper = factory({ entry })
+		await wrapper.setProps({ open: true })
+		await wrapper.vm.$nextTick()
+		await wrapper
+			.find('[data-testid="external-form-sign-in-level"]')
+			.setValue('')
+		await wrapper.vm.onSave()
+		expect(service.provisionPortalPage.mock.calls[0][0].minTrust).toBeNull()
+		expect(service.enablePublicCreate).toHaveBeenCalled()
+		expect(wrapper.emitted().save[0][0].minTrust).toBeNull()
 	})
 
 	it('surfaces an error message and does not emit save on failure', async () => {

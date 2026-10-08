@@ -67,9 +67,12 @@
 						<strong>{{ agent.name }}</strong>
 						<span class="agents-page__item-meta">
 							{{
-								t('buildiq', '{count} tool(s) enabled', {
-									count: (agent.enabledTools || []).length,
-								})
+								n(
+									'buildiq',
+									'%n tool enabled',
+									'%n tools enabled',
+									(agent.enabledTools || []).length,
+								)
 							}}
 						</span>
 					</button>

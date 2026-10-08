@@ -33,22 +33,69 @@ describe('ConnectorSourcePicker', () => {
 		clearAppStatusCache()
 		axios.get.mockReset()
 
-		global.OC = { appswebroots: { openconnector: '/apps/openconnector' } }
+		global.OC = { appswebroots: { integriq: '/apps/integriq' } }
+	})
+
+	function wireObjects({ sources = [], endpoints = [] } = {}) {
+		axios.get.mockImplementation(async (url) => {
+			if (url === '/apps/openregister/api/objects/integriq/source') {
+				return { data: { results: sources } }
+			}
+			if (url === '/apps/openregister/api/objects/integriq/endpoint') {
+				return { data: { results: endpoints } }
+			}
+			throw Object.assign(new Error('404'), { response: { status: 404 } })
+		})
+	}
+
+	const KVK = {
+		id: 'src-kvk',
+		name: 'KvK',
+		apikey: 'SECRET',
+		password: 'SECRET2',
+	}
+	const BAG = { id: 'src-bag', name: 'BAG' }
+	const ENDPOINTS = [
+		{
+			id: 'e1',
+			endpoint: '/kvk/companies',
+			targetType: 'api',
+			targetId: 'src-kvk',
+		},
+		{
+			id: 'e2',
+			endpoint: 'bag/addresses',
+			targetType: 'api',
+			targetId: 'src-bag',
+		},
+	]
+
+	it('reads sources and endpoints from the connector register', async () => {
+		// Regression: the picker called /apps/openconnector/api/endpoints, a
+		// route the connector app no longer has, so the list was always empty.
+		wireObjects({ sources: [KVK, BAG], endpoints: ENDPOINTS })
+		const wrapper = mount(ConnectorSourcePicker, {
+			propsData: { binding: {} },
+			stubs: { NcSelect: NcSelectStub },
+		})
+		await flush()
+		await flush()
+		const urls = axios.get.mock.calls.map((call) => call[0])
+		expect(urls).toContain('/apps/openregister/api/objects/integriq/source')
+		expect(urls).toContain('/apps/openregister/api/objects/integriq/endpoint')
+		expect(urls.some((url) => url.includes('/api/endpoints'))).toBe(false)
+		expect(wrapper.vm.sourceOptions).toEqual([
+			{ label: 'KvK', id: 'src-kvk' },
+			{ label: 'BAG', id: 'src-bag' },
+		])
+		expect(wrapper.vm.endpointOptions.map((o) => o.path)).toEqual([
+			'kvk/companies',
+			'bag/addresses',
+		])
 	})
 
 	it('lists endpoints with path + source name only, never credentials', async () => {
-		axios.get.mockResolvedValueOnce({
-			data: {
-				results: [
-					{
-						path: 'kvk/companies',
-						sourceName: 'KvK',
-						apiKey: 'SECRET',
-						token: 'SECRET2',
-					},
-				],
-			},
-		})
+		wireObjects({ sources: [KVK], endpoints: [ENDPOINTS[0]] })
 		const wrapper = mount(ConnectorSourcePicker, {
 			propsData: { binding: {} },
 			stubs: { NcSelect: NcSelectStub },
@@ -61,8 +108,42 @@ describe('ConnectorSourcePicker', () => {
 		expect(html).not.toContain('SECRET')
 	})
 
+	it('offers only the endpoints of the picked source', async () => {
+		wireObjects({ sources: [KVK, BAG], endpoints: ENDPOINTS })
+		const wrapper = mount(ConnectorSourcePicker, {
+			propsData: { binding: {} },
+			stubs: { NcSelect: NcSelectStub },
+		})
+		await flush()
+		await flush()
+		wrapper.vm.onSelectSource({ id: 'src-bag', label: 'BAG' })
+		expect(wrapper.vm.endpointOptions).toEqual([
+			{ label: 'bag/addresses (BAG)', path: 'bag/addresses' },
+		])
+	})
+
+	it('shows the source of the endpoint already bound, and unbinds it on a source switch', async () => {
+		wireObjects({ sources: [KVK, BAG], endpoints: ENDPOINTS })
+		const wrapper = mount(ConnectorSourcePicker, {
+			propsData: { binding: { endpointPath: 'kvk/companies' } },
+			stubs: { NcSelect: NcSelectStub },
+		})
+		await flush()
+		await flush()
+		expect(wrapper.vm.selectedSourceOption).toEqual({
+			label: 'KvK',
+			id: 'src-kvk',
+		})
+		expect(wrapper.vm.selectedOption).toEqual({
+			label: 'kvk/companies (KvK)',
+			path: 'kvk/companies',
+		})
+		wrapper.vm.onSelectSource({ id: 'src-bag', label: 'BAG' })
+		expect(wrapper.emitted()['update:endpointPath'].pop()).toEqual([''])
+	})
+
 	it('carries an inputLabel on NcSelect (a11y gate)', async () => {
-		axios.get.mockResolvedValueOnce({ data: { results: [] } })
+		wireObjects()
 		const wrapper = mount(ConnectorSourcePicker, {
 			propsData: { binding: {} },
 			stubs: { NcSelect: NcSelectStub },

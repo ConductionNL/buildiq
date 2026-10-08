@@ -17,7 +17,7 @@
 			{{
 				t(
 					'buildiq',
-					'The aggregation editor ships in v1.1 (see design Decision 7). Existing aggregations declared on this schema are shown read-only below.',
+					'You cannot edit aggregations here yet. Aggregations already on this schema are listed below.',
 				)
 			}}
 		</NcNoteCard>

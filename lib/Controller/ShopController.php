@@ -42,6 +42,7 @@ namespace OCA\Buildiq\Controller;
 use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Exception\AppRepoParseException;
 use OCA\Buildiq\Service\AppRepoParser;
+use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCA\Buildiq\Service\GitHubCatalogService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -82,8 +83,11 @@ class ShopController extends Controller {
 	 * @param GitHubCatalogService $catalogService Fixed-host GitHub source.
 	 * @param AppRepoParser $repoParser Strict repo-file-map parser (change 1).
 	 * @param ApplicationsController $appsController Shared clone/install seam.
+	 * @param ConnectionReporter|null $connectionReporter Tells integriq what a search met, or nothing when absent.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
 	 */
 	public function __construct(
 		IRequest $request,
@@ -92,6 +96,7 @@ class ShopController extends Controller {
 		private readonly GitHubCatalogService $catalogService,
 		private readonly AppRepoParser $repoParser,
 		private readonly ApplicationsController $appsController,
+		private readonly ?ConnectionReporter $connectionReporter = null,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
@@ -103,9 +108,14 @@ class ShopController extends Controller {
 	 * `brokerCredentialAvailable` / `rateLimited` hint; never exposes the raw
 	 * GitHub body or any token.
 	 *
+	 * The outcome is also reported to integriq's connection registry, at most
+	 * once an hour while it stays the same (adopt-connection-registry). The
+	 * report never changes the response.
+	 *
 	 * @return JSONResponse 200 with `{outcome, cards, brokerCredentialAvailable, rateLimited}`; 401 anonymous.
 	 *
 	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
 	 */
 	#[NoAdminRequired]
 	public function githubSearch(): JSONResponse {
@@ -129,6 +139,10 @@ class ShopController extends Controller {
 			);
 		} catch (Throwable $e) {
 			$this->logger->error('Buildiq shop: GitHub search failed: ' . $e->getMessage());
+			$this->connectionReporter?->reportGitHubSearch(
+				outcome: GitHubCatalogService::OUTCOME_UNREACHABLE,
+				brokerAvailable: $this->catalogService->isBrokerAvailable()
+			);
 			return new JSONResponse(
 				data: [
 					'outcome' => GitHubCatalogService::OUTCOME_UNREACHABLE,
@@ -139,6 +153,11 @@ class ShopController extends Controller {
 				statusCode: Http::STATUS_OK
 			);
 		}
+
+		$this->connectionReporter?->reportGitHubSearch(
+			outcome: (string)$result['outcome'],
+			brokerAvailable: $this->catalogService->isBrokerAvailable()
+		);
 
 		return new JSONResponse(
 			data: [

@@ -34,10 +34,84 @@ const stubs = { NcButton: NcButtonStub, NcNoteCard: NcNoteCardStub }
 
 const flush = () => new Promise((r) => setTimeout(r, 0))
 
-const stepsFixture = [
-	{ id: 1, role: 'permit-reviewers', objectUuid: 'obj-1', status: 'pending' },
-	{ id: 2, role: 'finance-reviewers', objectUuid: 'obj-2', status: 'pending' },
-]
+/**
+ * One `/api/flow-tasks` row as OpenRegister sends it: `Task::jsonSerialize()`
+ * plus the derived fields `TaskInboxService::row()` adds (`subject`,
+ * `displayTitle`, `overdue`, `daysUntilDue`, `daysOverdue`). A task names its
+ * candidates in `candidateGroups` / `candidateRole`; it has NO `role` and NO
+ * `status` field, which is exactly what the retired fixture assumed.
+ *
+ * @param {object} overrides Fields to override.
+ * @return {object} A task row.
+ */
+function taskRow(overrides = {}) {
+	return {
+		id: 1,
+		uuid: 'task-uuid-1',
+		key: null,
+		title: null,
+		kind: null,
+		state: 'available',
+		isTerminal: false,
+		lastAction: 'approve',
+		outcome: null,
+		performerType: 'user',
+		assignee: null,
+		candidateUsers: null,
+		candidateGroups: ['permit-reviewers'],
+		candidateRole: null,
+		dueAt: null,
+		expiresAt: null,
+		priority: 'normal',
+		objectUuid: 'obj-1',
+		sequenceUuid: 'seq-1',
+		sequencePosition: 0,
+		subject: { uuid: 'obj-1', title: 'Permit 2026-001' },
+		displayTitle: 'Approve: Permit 2026-001',
+		overdue: false,
+		daysUntilDue: null,
+		daysOverdue: null,
+		...overrides,
+	}
+}
+
+const pooledPage = {
+	results: [taskRow()],
+	total: 1,
+	limit: 50,
+	offset: 0,
+}
+const assignedPage = {
+	results: [
+		taskRow({
+			id: 2,
+			uuid: 'task-uuid-2',
+			state: 'active',
+			assignee: 'admin',
+			candidateGroups: ['finance-reviewers'],
+			objectUuid: 'obj-2',
+			subject: { uuid: 'obj-2', title: 'Invoice 7' },
+			displayTitle: 'Approve: Invoice 7',
+		}),
+	],
+	total: 1,
+	limit: 50,
+	offset: 0,
+}
+
+/**
+ * Answer the widget's inbox reads per scope, the way OpenRegister does: the
+ * server already narrows each scope to the caller's user and groups.
+ *
+ * @param {object} pages Map of scope to page.
+ * @return {Function} An axios.get implementation.
+ */
+function inboxByScope(pages) {
+	return (url, config) =>
+		Promise.resolve({
+			data: pages[config?.params?.scope] ?? { results: [], total: 0 },
+		})
+}
 
 describe('MyApprovalsWidget', () => {
 	beforeEach(() => {
@@ -46,23 +120,56 @@ describe('MyApprovalsWidget', () => {
 		loadState.mockReset()
 	})
 
-	it("lists only pending steps whose role is in the viewer's groups", async () => {
+	it('lists the open tasks OpenRegister returns for the viewer, by title', async () => {
 		loadState.mockReturnValue(['permit-reviewers'])
-		axios.get.mockResolvedValue({ data: stepsFixture })
+		axios.get.mockImplementation(
+			inboxByScope({ pooled: pooledPage, assigned: assignedPage }),
+		)
 
 		const wrapper = mount(MyApprovalsWidget, { stubs })
 		await flush()
 		await wrapper.vm.$nextTick()
 
 		const rows = wrapper.findAll('[data-testid="my-approvals-row"]')
-		expect(rows).toHaveLength(1)
-		expect(wrapper.text()).toContain('permit-reviewers')
-		expect(wrapper.text()).not.toContain('finance-reviewers')
+		expect(rows).toHaveLength(2)
+		expect(wrapper.text()).toContain('Approve: Permit 2026-001')
+		expect(wrapper.text()).toContain('Approve: Invoice 7')
+		// The raw record uuid is not what a person reads.
+		expect(wrapper.text()).not.toContain('obj-1')
 	})
 
-	it("renders an empty state when the viewer's groups match no pending step", async () => {
+	it('asks the task API for open tasks with its own parameters, not status', async () => {
+		loadState.mockReturnValue(['permit-reviewers'])
+		axios.get.mockImplementation(inboxByScope({ pooled: pooledPage }))
+
+		mount(MyApprovalsWidget, { stubs })
+		await flush()
+
+		const scopes = axios.get.mock.calls.map(([url, config]) => {
+			expect(url).toBe('/apps/openregister/api/flow-tasks')
+			expect(config.params).not.toHaveProperty('status')
+			expect(config.params.isTerminal).toBe('false')
+			return config.params.scope
+		})
+		expect(scopes.sort()).toEqual(['assigned', 'pooled'])
+	})
+
+	it('shows a task once when it comes back in both scopes', async () => {
+		loadState.mockReturnValue(['permit-reviewers'])
+		axios.get.mockImplementation(
+			inboxByScope({ pooled: pooledPage, assigned: pooledPage }),
+		)
+
+		const wrapper = mount(MyApprovalsWidget, { stubs })
+		await flush()
+		await wrapper.vm.$nextTick()
+
+		expect(wrapper.findAll('[data-testid="my-approvals-row"]')).toHaveLength(1)
+	})
+
+	it('renders an empty state when no task is waiting for the viewer', async () => {
 		loadState.mockReturnValue(['no-match-group'])
-		axios.get.mockResolvedValue({ data: stepsFixture })
+		axios.get.mockImplementation(inboxByScope({}))
 
 		const wrapper = mount(MyApprovalsWidget, { stubs })
 		await flush()
@@ -74,9 +181,80 @@ describe('MyApprovalsWidget', () => {
 		expect(wrapper.find('[data-testid="my-approvals-row"]').exists()).toBe(false)
 	})
 
+	it('shows each task its due date, and flags overdue and due-soon tasks in words', async () => {
+		loadState.mockReturnValue(['permit-reviewers'])
+		axios.get.mockImplementation(
+			inboxByScope({
+				pooled: {
+					results: [
+						taskRow({
+							id: 3,
+							uuid: 'task-later',
+							displayTitle: 'Approve: Later',
+							dueAt: '2026-10-20T12:00:00+00:00',
+							daysUntilDue: 23,
+						}),
+						taskRow({
+							id: 4,
+							uuid: 'task-late',
+							displayTitle: 'Approve: Late',
+							dueAt: '2026-09-20T12:00:00+00:00',
+							overdue: true,
+							daysOverdue: 7,
+						}),
+						taskRow({
+							id: 5,
+							uuid: 'task-soon',
+							displayTitle: 'Approve: Soon',
+							dueAt: null,
+							expiresAt: '2026-09-28T12:00:00+00:00',
+							daysUntilDue: 1,
+						}),
+						taskRow({
+							id: 6,
+							uuid: 'task-open',
+							displayTitle: 'Approve: No deadline',
+						}),
+					],
+				},
+			}),
+		)
+
+		const wrapper = mount(MyApprovalsWidget, { stubs })
+		await flush()
+		await wrapper.vm.$nextTick()
+
+		const rows = wrapper.findAll('[data-testid="my-approvals-row"]')
+		// Soonest deadline first across both scopes, tasks without one last.
+		expect(rows.map((r) => r.find('.my-approvals-widget__role').text())).toEqual(
+			[
+				'Approve: Late',
+				'Approve: Soon',
+				'Approve: Later',
+				'Approve: No deadline',
+			],
+		)
+
+		const due = (row) => row.find('[data-testid="my-approvals-due"]')
+		const flag = (row) => row.find('[data-testid="my-approvals-deadline-flag"]')
+
+		expect(due(rows[0]).attributes('datetime')).toBe('2026-09-20T12:00:00+00:00')
+		expect(flag(rows[0]).text()).toBe('Overdue')
+
+		// An expiry counts as the deadline when there is no advisory due date.
+		expect(due(rows[1]).attributes('datetime')).toBe('2026-09-28T12:00:00+00:00')
+		expect(flag(rows[1]).text()).toBe('Due soon')
+
+		expect(due(rows[2]).attributes('datetime')).toBe('2026-10-20T12:00:00+00:00')
+		expect(flag(rows[2]).exists()).toBe(false)
+
+		expect(due(rows[3]).exists()).toBe(false)
+		expect(flag(rows[3]).exists()).toBe(false)
+	})
+
 	it('approve completes the task with an approving outcome', async () => {
 		loadState.mockReturnValue(['permit-reviewers'])
-		axios.get.mockResolvedValue({ data: stepsFixture })
+		axios.get.mockImplementation(inboxByScope({ pooled: pooledPage }))
 		axios.post.mockResolvedValue({ data: {} })
 
 		const wrapper = mount(MyApprovalsWidget, { stubs })
@@ -89,14 +267,14 @@ describe('MyApprovalsWidget', () => {
 		// openregister #3302 replaced the approve/reject verbs with one
 		// `complete` call carrying an outcome.
 		expect(axios.post).toHaveBeenCalledWith(
-			'/apps/openregister/api/flow-tasks/1/complete',
+			'/apps/openregister/api/flow-tasks/task-uuid-1/complete',
 			{ outcome: 'approved' },
 		)
 	})
 
 	it('reject completes the task with a rejecting outcome and a comment', async () => {
 		loadState.mockReturnValue(['permit-reviewers'])
-		axios.get.mockResolvedValue({ data: stepsFixture })
+		axios.get.mockImplementation(inboxByScope({ pooled: pooledPage }))
 		axios.post.mockResolvedValue({ data: {} })
 
 		const wrapper = mount(MyApprovalsWidget, { stubs })
@@ -109,7 +287,7 @@ describe('MyApprovalsWidget', () => {
 		// A rejecting outcome REFUSES an empty comment server-side
 		// (TaskService::completeInternal), so one must always be sent.
 		expect(axios.post).toHaveBeenCalledWith(
-			'/apps/openregister/api/flow-tasks/1/complete',
+			'/apps/openregister/api/flow-tasks/task-uuid-1/complete',
 			{
 				outcome: 'rejected',
 				comment: 'Rejected from the My approvals widget.',

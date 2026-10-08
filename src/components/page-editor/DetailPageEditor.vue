@@ -134,18 +134,48 @@
 				@update:modelValue="updateSidebarPropsTabs($event)" />
 			<InlineFieldMark :error="markFor('sidebarProps')" />
 		</fieldset>
+
+		<AppliesToPanel
+			:modelValue="config.pageLayout || {}"
+			:register="config.register || ''"
+			:schema="config.schema || ''"
+			:targetApp="appSlug"
+			@update:modelValue="update('pageLayout', $event)"
+			@saved="$refs.overrideList && $refs.overrideList.reload()" />
+
+		<ScreenOverrideList
+			ref="overrideList"
+			:register="config.register || ''"
+			:schema="config.schema || ''" />
+
+		<RegistrationFormList
+			:register="config.register || ''"
+			:schema="config.schema || ''"
+			:typeProperty="(config.pageLayout || {}).typeProperty || ''"
+			:typeValue="(config.pageLayout || {}).typeValue || ''"
+			:targetApp="appSlug" />
 	</div>
 </template>
 
 <script>
+import AppliesToPanel from './fields/AppliesToPanel.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
+import RegistrationFormList from './fields/RegistrationFormList.vue'
+import ScreenOverrideList from './fields/ScreenOverrideList.vue'
 import SidebarTabBuilder from './fields/SidebarTabBuilder.vue'
 import { useRegisterPicker } from '../../composables/useRegisterPicker.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'DetailPageEditor',
-	components: { SidebarTabBuilder, InlineFieldMark },
+	components: {
+		AppliesToPanel,
+		InlineFieldMark,
+		RegistrationFormList,
+		ScreenOverrideList,
+		SidebarTabBuilder,
+	},
+
 	mixins: [pageEditorValidationMixin],
 	props: {
 		config: {
@@ -161,6 +191,12 @@ export default {
 		// Current Application slug. Drives the hybrid register model so the
 		// register picker hoists `buildiq-{slug}` to the top of the list.
 		appSlug: {
+			type: String,
+			default: '',
+		},
+
+		// The app's own register, read off the version being edited.
+		appRegister: {
 			type: String,
 			default: '',
 		},
@@ -192,6 +228,7 @@ export default {
 	setup(props) {
 		const picker = useRegisterPicker({
 			appSlug: props.appSlug,
+			appRegister: () => props.appRegister,
 			dataRegisters: props.dataRegisters,
 		})
 		return { picker }

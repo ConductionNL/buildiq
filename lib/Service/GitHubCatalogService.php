@@ -15,8 +15,8 @@
  * supplies an allowed broker `github` credential the call is transparently
  * upgraded through OpenRegister's CredentialBrokerService so the token stays
  * broker-side and NEVER enters Buildiq. The broker is resolved lazily
- * (`class_exists` + `Server::get`, mirroring RemoteTemplateStoreService) so a
- * missing/older OpenRegister falls back to anonymous cleanly. Results + descriptors
+ * (`class_exists` + the injected container, mirroring RemoteTemplateStoreService)
+ * so a missing/older OpenRegister falls back to anonymous cleanly. Results + descriptors
  * are cached short-TTL against the tight anonymous rate limit; the raw GitHub body
  * and any token are never returned or logged.
  *
@@ -44,7 +44,7 @@ namespace OCA\Buildiq\Service;
 use OCP\Http\Client\IClientService;
 use OCP\ICache;
 use OCP\ICacheFactory;
-use OCP\Server;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -164,6 +164,8 @@ class GitHubCatalogService {
 	 * @param IClientService $clientService NC HTTP client factory (anonymous calls).
 	 * @param ICacheFactory $cacheFactory NC cache factory (short-TTL server cache).
 	 * @param LoggerInterface $logger PSR logger (secret-free diagnostics only).
+	 * @param ContainerInterface $container DI container, resolves the OpenRegister
+	 *                                      broker at call time (never the global server).
 	 *
 	 * @return void
 	 */
@@ -171,6 +173,7 @@ class GitHubCatalogService {
 		private readonly IClientService $clientService,
 		ICacheFactory $cacheFactory,
 		private readonly LoggerInterface $logger,
+		private readonly ContainerInterface $container,
 	) {
 		$cache = null;
 		if ($cacheFactory->isAvailable() === true) {
@@ -327,8 +330,10 @@ class GitHubCatalogService {
 	 * @param string|null $credentialId The advisory github credential, if any.
 	 *
 	 * @return array{ok: bool, items: array<int, array>, brokerUsed: bool, rateLimited: bool}
+	 *
+	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
-	private function fetchTopic(
+	public function fetchTopic(
 		string $topic,
 		string $term,
 		?string $actingUserId,
@@ -829,8 +834,10 @@ class GitHubCatalogService {
 	 * @param string|null $credentialId Optional allowed `github` credential.
 	 *
 	 * @return string|null The decoded file contents, or null when absent/unreadable.
+	 *
+	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
-	private function fetchFileContents(
+	public function fetchFileContents(
 		string $owner,
 		string $repo,
 		string $path,
@@ -907,7 +914,7 @@ class GitHubCatalogService {
 	 */
 	private function brokerGet(string $path, string $credentialId, ?string $actingUserId): ?array {
 		try {
-			$broker = Server::get(self::BROKER_CLASS);
+			$broker = $this->container->get(self::BROKER_CLASS);
 			$response = $broker->request(
 				$credentialId,
 				self::APP_ID,
@@ -978,8 +985,10 @@ class GitHubCatalogService {
 	 * @param string|null $ref Optional git ref.
 	 *
 	 * @return bool
+	 *
+	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
-	private function validRepo(string $owner, string $repo, ?string $ref): bool {
+	public function validRepo(string $owner, string $repo, ?string $ref): bool {
 		if (preg_match(self::OWNER_REPO_PATTERN, $owner) !== 1 || preg_match(self::OWNER_REPO_PATTERN, $repo) !== 1) {
 			return false;
 		}

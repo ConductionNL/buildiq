@@ -11,12 +11,13 @@
  *   - POST /api/rules/{ruleSetSlug}/test-all   — run every TestCase for the RuleSet
  *
  * All endpoints carry `#[NoAdminRequired]` per ADR-005: any authenticated user
- * may evaluate a RuleSet. Resolution runs through OpenRegister
- * `searchObjectsBySlug`, which applies the schema's RBAC. IMPORTANT: `buildiq`
- * is a system-wide register (not org-scoped), so this is NOT per-owner or
- * per-organisation read isolation — with a read-open rule-set schema, any
- * authenticated caller can resolve a RuleSet by slug; write operations stay
- * admin-gated at the schema. (No "foreign slug → 404 / no IDOR" guarantee.) The endpoints are
+ * may evaluate a RuleSet of their own organisation. Every read goes through
+ * {@see RuleObjectReader}, which applies the schema's RBAC and the caller's
+ * organisation (REQ-BRE-007): a RuleSet held by another organisation resolves
+ * to a 404, not a 403, so its existence does not leak. The `buildiq` register
+ * itself is system-wide, so only its lookup runs without the organisation
+ * filter; the object reads never do. This is organisation scope, not
+ * per-owner isolation, and write operations stay admin-gated at the schema. The endpoints are
  * NOT public; an unauthenticated request is rejected by the NC middleware before
  * reaching the controller. No secrets are returned; errors are uniform envelopes
  * with no stack traces.
@@ -45,8 +46,8 @@ namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Service\RuleEngineService;
+use OCA\Buildiq\Service\RuleObjectReader;
 use OCA\Buildiq\Service\RuleSetVersioningService;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -78,7 +79,7 @@ class RulesController extends Controller {
 	 * @param LoggerInterface $logger PSR logger.
 	 * @param RuleEngineService $ruleEngine The rule-evaluation orchestrator.
 	 * @param RuleSetVersioningService $versioningService Test-gate runner for test-all.
-	 * @param ObjectServiceInterface $objectService OpenRegister object service.
+	 * @param RuleObjectReader $reader Organisation-scoped reads of rule-engine objects (REQ-BRE-007).
 	 * @param IUserSession $userSession Current user session.
 	 *
 	 * @return void
@@ -88,7 +89,7 @@ class RulesController extends Controller {
 		private readonly LoggerInterface $logger,
 		private readonly RuleEngineService $ruleEngine,
 		private readonly RuleSetVersioningService $versioningService,
-		private readonly ObjectServiceInterface $objectService,
+		private readonly RuleObjectReader $reader,
 		private readonly IUserSession $userSession,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
@@ -98,18 +99,22 @@ class RulesController extends Controller {
 	/**
 	 * Synchronously evaluate a RuleSet against a payload.
 	 *
+	 * `mode: preview` is the live evaluation a form runs while it is filled
+	 * in: the same authentication, RBAC, rate limit and size guard, but no
+	 * execution log entry and no side-effecting action (REQ-BQLV-004).
+	 *
 	 * @param string $ruleSetSlug The RuleSet slug.
 	 *
 	 * @return JSONResponse 200 with the result, 404 on miss, 408 on timeout, 422 on bad input.
 	 *
 	 * @spec openspec/changes/business-rules-engine/tasks.md#9.1
+	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-live-evaluation-leaves-no-log-trail-req-bqlv-004
 	 *
-	 * @no-admin-idor-exempt Authorization is delegated to OpenRegister's schema RBAC:
-	 *   every read here goes through this controller's private `query()`, which calls
-	 *   `searchObjectsBySlug(..., _rbac: true, _multitenancy: false)`. The tenancy
-	 *   opt-out is deliberate and documented there — `buildiq` is a SYSTEM-WIDE
-	 *   register, not org-scoped, so a true org filter would throw and break
-	 *   resolution for every caller. `_rbac: true` is the guard, and it is explicit.
+	 * @no-admin-idor-exempt Authorization is delegated to OpenRegister: every read here
+	 *   goes through RuleObjectReader::find(), which searches with `_rbac: true` and
+	 *   `_multitenancy: true`, so the schema's RBAC and the caller's organisation both
+	 *   apply and a rule set held by another organisation resolves to 404 (REQ-BRE-007).
+	 *   Only the lookup of the system-wide `buildiq` register runs unfiltered.
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 60, period: 60)]
@@ -145,7 +150,9 @@ class RulesController extends Controller {
 				ruleSetSlug: $ruleSetSlug,
 				payload: $payload,
 				version: $version,
-				dryRun: $dryRun
+				dryRun: $dryRun,
+				maskPii: true,
+				preview: (($params['mode'] ?? null) === 'preview')
 			);
 		} catch (Throwable $e) {
 			if ($e->getCode() === 404) {
@@ -183,13 +190,13 @@ class RulesController extends Controller {
 	 * @return JSONResponse 200 with the schema metadata, or 404.
 	 *
 	 * @spec openspec/changes/business-rules-engine/tasks.md#9.1
+	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
 	 *
-	 * @no-admin-idor-exempt Authorization is delegated to OpenRegister's schema RBAC:
-	 *   every read here goes through this controller's private `query()`, which calls
-	 *   `searchObjectsBySlug(..., _rbac: true, _multitenancy: false)`. The tenancy
-	 *   opt-out is deliberate and documented there — `buildiq` is a SYSTEM-WIDE
-	 *   register, not org-scoped, so a true org filter would throw and break
-	 *   resolution for every caller. `_rbac: true` is the guard, and it is explicit.
+	 * @no-admin-idor-exempt Authorization is delegated to OpenRegister: every read here
+	 *   goes through RuleObjectReader::find(), which searches with `_rbac: true` and
+	 *   `_multitenancy: true`, so the schema's RBAC and the caller's organisation both
+	 *   apply and a rule set held by another organisation resolves to 404 (REQ-BRE-007).
+	 *   Only the lookup of the system-wide `buildiq` register runs unfiltered.
 	 */
 	#[NoAdminRequired]
 	public function schema(string $ruleSetSlug): JSONResponse {
@@ -202,6 +209,8 @@ class RulesController extends Controller {
 			return $this->error(code: 'not_found', detail: 'RuleSet ' . $ruleSetSlug . ' not found', status: Http::STATUS_NOT_FOUND);
 		}
 
+		$columns = $this->decisionColumns(slug: (string)($ruleSet['slug'] ?? $ruleSetSlug));
+
 		return new JSONResponse(
 			data: [
 				'slug' => (string)($ruleSet['slug'] ?? $ruleSetSlug),
@@ -209,11 +218,51 @@ class RulesController extends Controller {
 				'version' => (string)($ruleSet['version'] ?? ''),
 				'status' => (string)($ruleSet['status'] ?? ''),
 				'ruleType' => (string)($ruleSet['ruleType'] ?? ''),
+				'inputs' => $columns['inputs'],
+				'outputs' => $columns['outputs'],
 			],
 			statusCode: Http::STATUS_OK
 		);
 
 	}//end schema()
+
+	/**
+	 * The input and output columns of a rule set's decision table, for a
+	 * calculated form field or an eligibility check to bind to (REQ-BQLV-002).
+	 *
+	 * A condition-action rule set has no declared columns and answers two
+	 * empty lists.
+	 *
+	 * @param string $slug The RuleSet slug.
+	 *
+	 * @return array{inputs:list<array{name:string,path:string,type:string}>,outputs:list<array{name:string,type:string}>}
+	 *
+	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
+	 */
+	private function decisionColumns(string $slug): array {
+		$inputs = [];
+		$outputs = [];
+		$tables = $this->query(schema: RuleEngineService::DECISION_TABLE_SCHEMA, filters: ['ruleSetId' => $slug], limit: 1);
+		$table = ($tables[0] ?? []);
+
+		foreach ((array)($table['inputColumns'] ?? []) as $column) {
+			if (is_array($column) === true && is_string($column['name'] ?? null) === true) {
+				$inputs[] = [
+					'name' => $column['name'],
+					'path' => (string)($column['expressionPath'] ?? $column['name']),
+					'type' => (string)($column['type'] ?? ''),
+				];
+			}
+		}
+
+		foreach ((array)($table['outputColumns'] ?? []) as $column) {
+			if (is_array($column) === true && is_string($column['name'] ?? null) === true) {
+				$outputs[] = ['name' => $column['name'], 'type' => (string)($column['type'] ?? '')];
+			}
+		}
+
+		return ['inputs' => $inputs, 'outputs' => $outputs];
+	}//end decisionColumns()
 
 	/**
 	 * Run all TestCases for a RuleSet and return pass/fail per case.
@@ -224,12 +273,11 @@ class RulesController extends Controller {
 	 *
 	 * @spec openspec/changes/business-rules-engine/tasks.md#9.1
 	 *
-	 * @no-admin-idor-exempt Authorization is delegated to OpenRegister's schema RBAC:
-	 *   every read here goes through this controller's private `query()`, which calls
-	 *   `searchObjectsBySlug(..., _rbac: true, _multitenancy: false)`. The tenancy
-	 *   opt-out is deliberate and documented there — `buildiq` is a SYSTEM-WIDE
-	 *   register, not org-scoped, so a true org filter would throw and break
-	 *   resolution for every caller. `_rbac: true` is the guard, and it is explicit.
+	 * @no-admin-idor-exempt Authorization is delegated to OpenRegister: every read here
+	 *   goes through RuleObjectReader::find(), which searches with `_rbac: true` and
+	 *   `_multitenancy: true`, so the schema's RBAC and the caller's organisation both
+	 *   apply and a rule set held by another organisation resolves to 404 (REQ-BRE-007).
+	 *   Only the lookup of the system-wide `buildiq` register runs unfiltered.
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 20, period: 60)]
@@ -297,61 +345,19 @@ class RulesController extends Controller {
 	}//end findTestCases()
 
 	/**
-	 * Query the shared register for objects of a schema matching filters.
+	 * Query the shared register for objects of a schema matching filters,
+	 * scoped to the caller's organisation and the schema's RBAC (REQ-BRE-007).
 	 *
 	 * @param string $schema The schema slug.
 	 * @param array<string,mixed> $filters Equality filters.
 	 * @param int|null $limit Optional row limit.
 	 *
 	 * @return array<int,array<string,mixed>>
+	 *
+	 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-007-per-tenant-isolation-and-multitenancy
 	 */
 	private function query(string $schema, array $filters, ?int $limit): array {
-		// Authorization-aware resolution (harden-rules-authz-and-audit-parity,
-		// M1): resolve through searchObjectsBySlug (which applies the schema's
-		// RBAC) rather than a raw findAll. `buildiq` is a SYSTEM-WIDE register
-		// (not org-scoped) — mirror ListAppsHandler and pass _multitenancy:false
-		// so cross-org callers still resolve it (a true org filter would throw
-		// and break resolution).
-		try {
-			$results = $this->objectService->searchObjectsBySlug(
-				RuleEngineService::REGISTER_SLUG,
-				$schema,
-				$filters,
-				_rbac: true,
-				_multitenancy: false
-			);
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				'Buildiq: RulesController query failed',
-				['schema' => $schema, 'exception' => $e->getMessage()]
-			);
-			return [];
-		}
-
-		if (is_array($results) === true && $limit !== null && count($results) > $limit) {
-			$results = array_slice($results, 0, $limit);
-		}
-
-		if (is_array($results) === false) {
-			return [];
-		}
-
-		$out = [];
-		foreach ($results as $row) {
-			if (is_array($row) === true) {
-				$out[] = $row;
-				continue;
-			}
-
-			if (is_object($row) === true && method_exists($row, 'jsonSerialize') === true) {
-				$serialised = $row->jsonSerialize();
-				if (is_array($serialised) === true) {
-					$out[] = $serialised;
-				}
-			}
-		}
-
-		return $out;
+		return $this->reader->findScoped(schema: $schema, filters: $filters, limit: $limit);
 	}//end query()
 
 	/**

@@ -28,8 +28,13 @@ namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\RulesController;
 use OCA\Buildiq\Service\RuleEngineService;
+use OCA\Buildiq\Service\RuleObjectReader;
 use OCA\Buildiq\Service\RuleSetVersioningService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\IRequest;
@@ -91,12 +96,30 @@ final class RulesControllerTest extends TestCase {
 	 * @return RulesController
 	 */
 	private function controller(): RulesController {
+		$register = new Register();
+		$register->setId(7);
+		$register->setSchemas([101, 105]);
+		$registerMapper = $this->createMock(RegisterMapper::class);
+		$registerMapper->method('find')->willReturnCallback(
+			static function (string|int $id, bool $_rbac = true, bool $_multitenancy = true) use ($register): Register {
+				if ($_multitenancy === true) {
+					throw new DoesNotExistException('Register not found in the caller organisation: ' . $id);
+				}
+
+				return $register;
+			}
+		);
+		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$schemaMapper->method('findIdsBySlugs')->willReturnCallback(
+			static fn (array $slugs): array => [strtolower($slugs[0]) => [($slugs[0] === 'rule-set' ? '101' : '105')]]
+		);
+
 		return new RulesController(
 			$this->request,
 			$this->createMock(LoggerInterface::class),
 			$this->ruleEngine,
 			$this->versioningService,
-			$this->objectService,
+			new RuleObjectReader($this->objectService, $registerMapper, $schemaMapper, $this->createMock(LoggerInterface::class)),
 			$this->userSession,
 		);
 
@@ -131,6 +154,46 @@ final class RulesControllerTest extends TestCase {
 		$this->assertSame('approve', $response->getData()['result']['decision']);
 
 	}//end testEvaluateOk()
+
+	/**
+	 * REQ-BQLV-004: `mode: preview` reaches the engine as a preview, after the
+	 * same authentication and size guard; any other call is a logged one.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-live-evaluation-leaves-no-log-trail-req-bqlv-004
+	 */
+	public function testEvaluatePreviewModeReachesTheEngine(): void {
+		$this->authenticate();
+		$this->request->method('getParams')->willReturn(['payload' => ['x' => 1], 'mode' => 'preview']);
+		$this->ruleEngine->expects($this->once())
+			->method('evaluate')
+			->with('fee', ['x' => 1], null, false, true, true)
+			->willReturn(['result' => ['fee' => 40], 'triggeredRules' => [], 'executionTime' => 1, 'errors' => []]);
+
+		$response = $this->controller()->evaluate('fee');
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+
+	}//end testEvaluatePreviewModeReachesTheEngine()
+
+	/**
+	 * A call without `mode: preview` stays a logged evaluation.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-live-evaluation-leaves-no-log-trail-req-bqlv-004
+	 */
+	public function testEvaluateWithoutPreviewIsLogged(): void {
+		$this->authenticate();
+		$this->request->method('getParams')->willReturn(['payload' => ['x' => 1], 'mode' => 'anything']);
+		$this->ruleEngine->expects($this->once())
+			->method('evaluate')
+			->with('fee', ['x' => 1], null, false, true, false)
+			->willReturn(['result' => [], 'triggeredRules' => [], 'executionTime' => 1, 'errors' => []]);
+
+		$this->controller()->evaluate('fee');
+
+	}//end testEvaluateWithoutPreviewIsLogged()
 
 	/**
 	 * evaluate returns 404 when the engine reports the RuleSet missing.
@@ -232,7 +295,7 @@ final class RulesControllerTest extends TestCase {
 	 */
 	public function testTestAllReturns404WhenRuleSetMissing(): void {
 		$this->authenticate();
-		$this->objectService->method('searchObjectsBySlug')->willReturn([]);
+		$this->objectService->method('searchObjects')->willReturn([]);
 		$this->versioningService->expects($this->never())->method('runTestGate');
 
 		$response = $this->controller()->testAll('does-not-exist');
@@ -248,7 +311,7 @@ final class RulesControllerTest extends TestCase {
 	 */
 	public function testTestAllRunsTheGateAndReportsTotals(): void {
 		$this->authenticate();
-		$this->objectService->method('searchObjectsBySlug')->willReturn(
+		$this->objectService->method('searchObjects')->willReturn(
 			[['id' => 'rs-1', 'slug' => 'loan-eligibility']]
 		);
 		$this->versioningService->expects($this->once())
@@ -268,7 +331,7 @@ final class RulesControllerTest extends TestCase {
 	 */
 	public function testTestAllTranslatesGateFailure(): void {
 		$this->authenticate();
-		$this->objectService->method('searchObjectsBySlug')->willReturn(
+		$this->objectService->method('searchObjects')->willReturn(
 			[['id' => 'rs-1', 'slug' => 'loan-eligibility']]
 		);
 		$this->versioningService->method('runTestGate')
@@ -279,4 +342,104 @@ final class RulesControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
 
 	}//end testTestAllTranslatesGateFailure()
+
+	/**
+	 * REQ-BQLV-002: the rule set schema lists the inputs a calculated form
+	 * field reads and the outputs it can show, from the decision table.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
+	 */
+	public function testSchemaListsTheDecisionTableInputsAndOutputs(): void {
+		$this->authenticate();
+		$this->objectService->method('searchObjects')->willReturnCallback(
+			static function (array $query): array {
+				if ((string)$query['@self']['schema'] === '101') {
+					return [['slug' => 'event-fee', 'name' => 'Event fee', 'version' => '1.0.0', 'status' => 'active', 'ruleType' => 'decision-table']];
+				}
+
+				return [
+					[
+						'ruleSetId' => 'event-fee',
+						'inputColumns' => [['name' => 'Attendees', 'type' => 'integer', 'expressionPath' => 'attendees']],
+						'outputColumns' => [['name' => 'fee', 'type' => 'number'], ['name' => 'band', 'type' => 'string']],
+					],
+				];
+			}
+		);
+
+		$data = $this->controller()->schema('event-fee')->getData();
+
+		$this->assertSame([['name' => 'Attendees', 'path' => 'attendees', 'type' => 'integer']], $data['inputs']);
+		$this->assertSame([['name' => 'fee', 'type' => 'number'], ['name' => 'band', 'type' => 'string']], $data['outputs']);
+
+	}//end testSchemaListsTheDecisionTableInputsAndOutputs()
+
+	/**
+	 * REQ-BRE-007: the schema of a rule set held by another organisation is a
+	 * 404 for a caller in organisation B, as the spec's scenario says.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-007-per-tenant-isolation-and-multitenancy
+	 */
+	public function testSchemaOfAnotherOrganisationsRuleSetIsNotFound(): void {
+		$this->authenticate();
+		$this->modelOrganisationB();
+
+		$response = $this->controller()->schema('loan-eligibility');
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+
+	}//end testSchemaOfAnotherOrganisationsRuleSetIsNotFound()
+
+	/**
+	 * REQ-BRE-007: test-all on a rule set held by another organisation is a
+	 * 404 and runs no test case.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-007-per-tenant-isolation-and-multitenancy
+	 */
+	public function testTestAllOnAnotherOrganisationsRuleSetIsNotFound(): void {
+		$this->authenticate();
+		$this->modelOrganisationB();
+		$this->versioningService->expects($this->never())->method('runTestGate');
+
+		$response = $this->controller()->testAll('loan-eligibility');
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+
+	}//end testTestAllOnAnotherOrganisationsRuleSetIsNotFound()
+
+	/**
+	 * OpenRegister as a caller in organisation B meets it, with the rule set
+	 * and the `buildiq` register held by organisation A: with the organisation
+	 * filter on nothing is visible and the filtered register lookup throws.
+	 *
+	 * @return void
+	 */
+	private function modelOrganisationB(): void {
+		$ruleSet = ['id' => 'rs-1', 'slug' => 'loan-eligibility', 'version' => '1.0.0', 'inputSchema' => []];
+		$this->objectService->method('searchObjectsBySlug')->willReturnCallback(
+			static function (string $registerSlug, string $schema, array $filters = [], bool $_rbac = true, bool $_multitenancy = true) use ($ruleSet): array {
+				if ($_multitenancy === true) {
+					throw new DoesNotExistException('searchObjectsBySlug: register slug not found in caller organisation: ' . $registerSlug);
+				}
+
+				return [$ruleSet];
+			}
+		);
+		$this->objectService->method('searchObjects')->willReturnCallback(
+			static function (array $query = [], bool $_rbac = true, bool $_multitenancy = true) use ($ruleSet): array {
+				if ($_multitenancy === true) {
+					return [];
+				}
+
+				return [$ruleSet];
+			}
+		);
+
+	}//end modelOrganisationB()
 }//end class

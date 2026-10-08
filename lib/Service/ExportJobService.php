@@ -66,6 +66,13 @@ class ExportJobService {
 	public const EXPORT_JOB_SCHEMA = 'export-job';
 
 	/**
+	 * Normalises the untrusted parts of a submit payload.
+	 *
+	 * @var ExportRequestSanitiser
+	 */
+	private ExportRequestSanitiser $sanitiser;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ContainerInterface $container Container — used to lazily fetch OR
@@ -82,6 +89,7 @@ class ExportJobService {
 		private LoggerInterface $logger,
 		private JobOwnerImpersonator $jobOwnerImpersonator,
 	) {
+		$this->sanitiser = new ExportRequestSanitiser();
 	}//end __construct()
 
 	/**
@@ -130,6 +138,8 @@ class ExportJobService {
 			'applicationSlug' => $applicationSlug,
 			'applicationUuid' => (string)($payload['applicationUuid'] ?? ''),
 			'applicationVersion' => (string)($payload['applicationVersion'] ?? ''),
+			// Which version row to export; the semver alone is shared by a draft and its production.
+			'applicationVersionSlug' => $this->sanitiser->slug(raw: $payload['applicationVersionSlug'] ?? ''),
 			'target' => $target,
 			'status' => 'queued',
 			'githubOrg' => $githubOrg,
@@ -139,8 +149,8 @@ class ExportJobService {
 			'githubCredentialId' => (string)($payload['githubCredentialId'] ?? ''),
 			'requestedBy' => (string)($requestedBy ?? ''),
 			'includeSeedData' => (bool)($payload['includeSeedData'] ?? false),
-			'dataRegisters' => $this->sanitiseDataRegisters(raw: $payload['dataRegisters'] ?? []),
-			'flows' => $this->sanitiseFlows(raw: $payload['flows'] ?? []),
+			'dataRegisters' => $this->sanitiser->dataRegisters(raw: $payload['dataRegisters'] ?? []),
+			'flows' => $this->sanitiser->flows(raw: $payload['flows'] ?? []),
 			'license' => (string)($payload['license'] ?? 'EUPL-1.2'),
 			'log' => [],
 		];
@@ -155,84 +165,32 @@ class ExportJobService {
 	}//end queue()
 
 	/**
-	 * Normalise the submit request's `dataRegisters` choice onto the shape
-	 * `{register: string, includeData: bool}` — mirrors the existing
-	 * `includeSeedData` boolean-cast pattern above. Malformed entries (not
-	 * an array, or missing/empty `register`) are dropped rather than
-	 * rejected — no existence validation of the referenced register is
-	 * performed here (matches the head spec's own Non-Goal for a dangling
-	 * `Application.dataRegisters[].register` slug).
+	 * Run a queued export now, in this request, instead of waiting for cron.
 	 *
-	 * @param mixed $raw The request payload's `dataRegisters` value.
+	 * The job is only run when it is still in the job list: that is the
+	 * claim. It is removed from the list before it runs, so cron cannot pick
+	 * it up a second time, and a job cron already took is not in the list.
 	 *
-	 * @return array<int,array{register:string,includeData:bool}>
+	 * @param string $jobUuid ExportJob UUID.
 	 *
-	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.3
+	 * @return bool True when this call ran the job, false when it was no longer queued.
+	 *
+	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-export-is-asynchronous-via-nextcloud-s-ijob
 	 */
-	private function sanitiseDataRegisters(mixed $raw): array {
-		if (is_array($raw) === false) {
-			return [];
+	public function runNow(string $jobUuid): bool {
+		$argument = ['jobUuid' => $jobUuid];
+		if ($this->jobList->has(\OCA\Buildiq\BackgroundJob\RunExportJob::class, $argument) === false) {
+			return false;
 		}
 
-		$out = [];
-		foreach ($raw as $entry) {
-			if (is_array($entry) === false) {
-				continue;
-			}
+		// Take it off the list first, so cron cannot start it while it runs here.
+		$this->jobList->remove(\OCA\Buildiq\BackgroundJob\RunExportJob::class, $argument);
 
-			$register = (string)($entry['register'] ?? '');
-			if ($register === '') {
-				continue;
-			}
+		$job = $this->container->get(\OCA\Buildiq\BackgroundJob\RunExportJob::class);
+		$job->runFor(jobUuid: $jobUuid);
 
-			$out[] = [
-				'register' => $register,
-				'includeData' => (bool)($entry['includeData'] ?? false),
-			];
-		}
-
-		return $out;
-	}//end sanitiseDataRegisters()
-
-	/**
-	 * Normalise the submit request's `flows` choice.
-	 *
-	 * Mirrors `sanitiseDataRegisters()`: same defensive shape, because this is
-	 * the same untrusted request payload arriving by the same route.
-	 *
-	 * Only the UUID is kept. `label` is a builder-UI convenience and has no
-	 * meaning to the exporter, which resolves the flow and writes the flow's
-	 * own name into the bundle.
-	 *
-	 * No sibling `sanitiseAgents()` exists on purpose: agents carry
-	 * `applicationSlug` and are found by asking which agents point at the
-	 * application, so there is no agent choice in the payload to sanitise.
-	 *
-	 * @param mixed $raw The request payload's `flows` value.
-	 *
-	 * @return array<int, array{flow: string}> Normalised bindings.
-	 */
-	private function sanitiseFlows(mixed $raw): array {
-		if (is_array($raw) === false) {
-			return [];
-		}
-
-		$out = [];
-		foreach ($raw as $entry) {
-			if (is_array($entry) === false) {
-				continue;
-			}
-
-			$flow = trim((string)($entry['flow'] ?? ''));
-			if ($flow === '') {
-				continue;
-			}
-
-			$out[] = ['flow' => $flow];
-		}
-
-		return $out;
-	}//end sanitiseFlows()
+		return true;
+	}//end runNow()
 
 	/**
 	 * Persist the ExportJob record via OR (best-effort; falls back to a no-op

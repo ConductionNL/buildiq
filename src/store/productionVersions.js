@@ -61,6 +61,12 @@ export const productionVersions = reactive({})
 /** In-flight/settled fetch, so N cards mounting together issue ONE request. */
 let inflight = null
 
+/** Whether the last load has finished. */
+let settled = false
+
+/** Production version UUIDs a reload was already tried for. */
+const retried = new Set()
+
 /**
  * Load the caller's applications once and index their resolved production
  * versions by UUID.
@@ -72,14 +78,32 @@ let inflight = null
  * broken page. The failure IS logged — a silent catch here would recreate the
  * exact defect this module fixes.
  *
+ * @param {string} [uuid] A production version UUID the caller needs; when it
+ *   is missing from the settled index, the index is loaded once more.
  * @return {Promise<object>} The (possibly empty) uuid -> version map.
  *
  * @spec openspec/specs/application-versions/spec.md
  */
-export function ensureProductionVersionsLoaded() {
+export function ensureProductionVersionsLoaded(uuid = '') {
+	// A card whose production version is not in the index after the last load
+	// (the app was created or changed since, or the load failed) asks once
+	// more. Without this the cards read "Draft / Version —" after in-app
+	// navigation until a full reload.
+	if (
+		inflight
+		&& settled
+		&& typeof uuid === 'string'
+		&& uuid !== ''
+		&& !(uuid in productionVersions)
+		&& !retried.has(uuid)
+	) {
+		retried.add(uuid)
+		inflight = null
+	}
 	if (inflight) {
 		return inflight
 	}
+	settled = false
 	inflight = (async () => {
 		try {
 			const url = generateUrl('/apps/buildiq/api/applications')
@@ -104,7 +128,10 @@ export function ensureProductionVersionsLoaded() {
 					+ 'their placeholder status/version until this succeeds',
 				e,
 			)
+			// Let the next card try again instead of pinning the failure.
+			inflight = null
 		}
+		settled = true
 		return productionVersions
 	})()
 	return inflight
@@ -114,9 +141,12 @@ export function ensureProductionVersionsLoaded() {
  * Reset the cache — test seam, and the hook a future refresh action would use.
  *
  * @return {void}
+ * @spec openspec/specs/application-versions/spec.md
  */
 export function resetProductionVersions() {
 	inflight = null
+	settled = false
+	retried.clear()
 	for (const key of Object.keys(productionVersions)) {
 		delete productionVersions[key]
 	}

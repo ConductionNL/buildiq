@@ -166,6 +166,63 @@ describe('CopilotGenerateDialog.vue — spec ai-copilot REQ-OBAIC-001/006', () =
 		expect(wrapper.emitted('update:open')[0][0]).toBe(false)
 	})
 
+	it('names the fields that failed instead of blaming the brief', async () => {
+		// A plan whose predicted manifest carries a widget with no id and no
+		// title: exactly what the builder tools used to append. The dialog
+		// used to answer this with "Try rephrasing your brief", which sent
+		// the reader after a fault that was never theirs.
+		axiosPost.mockResolvedValueOnce({
+			data: {
+				summary: 'A tool library',
+				steps: [
+					{
+						tool: 'buildiq.addWidget',
+						arguments: { pageId: 'overview', widgetType: 'stat' },
+					},
+				],
+				manifests: {
+					'tool-library@development': {
+						current: { version: '1.0.0', menu: [], pages: [] },
+						predicted: {
+							version: '1.0.0',
+							menu: [],
+							pages: [
+								{
+									id: 'overview',
+									route: '/',
+									type: 'dashboard',
+									title: 'Overview',
+									config: {
+										widgets: [{ type: 'stat', config: {} }],
+									},
+								},
+							],
+						},
+					},
+				},
+			},
+		})
+
+		const wrapper = mount(CopilotGenerateDialog, {
+			propsData: { open: true },
+			stubs,
+		})
+		await wrapper.find('[data-testid="copilot-brief-input"]').setValue('x')
+		await wrapper.vm.onGenerate()
+		await flush()
+		await wrapper.vm.$nextTick()
+
+		expect(wrapper.vm.canApprove).toBe(false)
+
+		const block = wrapper.find('[data-testid="copilot-validation-errors"]')
+		expect(block.exists()).toBe(true)
+		expect(block.text()).not.toContain('rephrasing')
+		expect(block.text()).toContain('/pages/0/config/widgets/0/id')
+		expect(block.text()).toContain('/pages/0/config/widgets/0/title')
+		// The version key is an internal record id and stays off the screen.
+		expect(block.text()).not.toContain('tool-library@development')
+	})
+
 	it('Generate is disabled with a blank brief', () => {
 		const wrapper = mount(CopilotGenerateDialog, {
 			propsData: { open: true },

@@ -170,6 +170,24 @@ describe('ScheduleEditDialog', () => {
 		expect(wrapper.find('.ob-schedule-edit__sync-manual').exists()).toBe(true)
 	})
 
+	it('asks the connector register this instance has, paged with _limit', async () => {
+		globalThis.OC = { appswebroots: { integriq: '/apps/integriq' } }
+		axios.get.mockResolvedValueOnce({
+			data: { results: [{ id: 's1', name: 'BRP sync' }] },
+		})
+		const wrapper = factory()
+		await openDialog(wrapper)
+
+		// The old URL named the `openconnector` register, gone since the
+		// rename, and paged with `limit`, which OpenRegister reads as a filter.
+		// Either way the picker came up empty without an error.
+		const [url, config] = axios.get.mock.calls[0]
+		expect(url).toBe('/apps/openregister/api/objects/integriq/synchronization')
+		expect(config.params).toEqual({ _limit: 500 })
+		expect(wrapper.vm.syncPickerAvailable).toBe(true)
+		delete globalThis.OC
+	})
+
 	it('populates the sync picker when the list loads', async () => {
 		axios.get.mockResolvedValueOnce({
 			data: { results: [{ id: 's1', name: 'BRP sync' }] },
