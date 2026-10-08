@@ -397,7 +397,9 @@
 			"overlay": "application-creation-wizard",
 			"specs": [
 				"application-creation-wizard",
-				"openbuild-first-time-setup"
+				"openbuild-first-time-setup",
+				"creation-wizard-ui",
+				"first-time-setup"
 			]
 		},
 		{
@@ -410,7 +412,9 @@
 				"openbuild-rbac",
 				"application-rename-and-delete",
 				"apps-copy-app-and-page",
-				"apps-support-note-editor-saves"
+				"apps-support-note-editor-saves",
+				"application-detail-overview",
+				"application-detail-ui"
 			]
 		},
 		{
@@ -424,7 +428,8 @@
 				"apps-embed-in-other-sites",
 				"apps-standalone-deploy",
 				"openbuild-application-register",
-				"deep-link-registration"
+				"deep-link-registration",
+				"app-nav-entries"
 			]
 		},
 		{
@@ -447,7 +452,8 @@
 				"openbuild-schema-designer",
 				"data-field-types-and-choice-lists",
 				"data-calculated-fields",
-				"data-model-diagram"
+				"data-model-diagram",
+				"schema-designer-ui"
 			]
 		},
 		{
@@ -507,7 +513,8 @@
 				"openbuild-runtime",
 				"pages-action-buttons",
 				"pages-custom-code",
-				"apps-copy-app-and-page"
+				"apps-copy-app-and-page",
+				"page-designer-ui"
 			]
 		},
 		{
@@ -593,7 +600,8 @@
 				"logic-automation-run-log",
 				"logic-script-step",
 				"logic-shared-flows-and-automations",
-				"logic-email-and-webhook-triggers"
+				"logic-email-and-webhook-triggers",
+				"openbuild-schedules-authoring"
 			]
 		},
 		{
@@ -603,7 +611,8 @@
 			"area": "logic",
 			"overlay": null,
 			"specs": [
-				"logic-approval-task-form"
+				"logic-approval-task-form",
+				"automation-approval-action"
 			]
 		},
 		{
@@ -661,7 +670,8 @@
 			"overlay": "ai-agent-mcp-bridge",
 			"specs": [
 				"ai-agents-knowledge-and-run-trace",
-				"ai-copilot"
+				"ai-copilot",
+				"agent-workspace"
 			]
 		},
 		{
@@ -739,7 +749,10 @@
 				"application-versions",
 				"version-lifecycle-ui",
 				"lifecycle-release-test-gate",
-				"version-routing"
+				"version-routing",
+				"openbuild-version-snapshots",
+				"version-promotion",
+				"version-routing-ui"
 			]
 		},
 		{
@@ -751,7 +764,11 @@
 			"specs": [
 				"openbuild-exporter",
 				"lifecycle-import-app-and-cli",
-				"notifications"
+				"notifications",
+				"agent-export-hermiq-register",
+				"app-composition-bindings",
+				"app-export-completeness",
+				"exporter-ui"
 			]
 		},
 		{
@@ -762,7 +779,8 @@
 			"overlay": null,
 			"specs": [
 				"github-app-sync",
-				"lifecycle-git-branches"
+				"lifecycle-git-branches",
+				"app-channel-application"
 			]
 		},
 		{
@@ -776,7 +794,9 @@
 				"reuse-gallery-categories-and-form-library",
 				"reuse-remote-store-section",
 				"github-shop-catalogue",
-				"save-as-template"
+				"save-as-template",
+				"openbuild-template-catalogue",
+				"template-catalogue-ui"
 			]
 		},
 		{
@@ -799,7 +819,9 @@
 			"specs": [
 				"unified-app-model",
 				"app-override-persistence",
-				"screen-overrides-as-a-patch-with-fall-through"
+				"screen-overrides-as-a-patch-with-fall-through",
+				"application-delta-layers-ui",
+				"layered-app-deltas"
 			]
 		},
 		{
@@ -830,6 +852,60 @@
 			]
 		}
 	],
+	"internalSpecs": [
+		"beta-alignment",
+		"green-field-migration"
+	],
+	"specScreens": {
+		"app-composition-bindings": {
+			"board": [
+				"BqApp",
+				"BqExport"
+			]
+		},
+		"app-export-completeness": {
+			"board": [
+				"BqExport"
+			]
+		},
+		"app-nav-entries": {
+			"board": [
+				"BqAppInstellingen"
+			]
+		},
+		"application-delta-layers-ui": {
+			"board": [
+				"BqManifestlagen",
+				"BqEigenLaagBewerken",
+				"BqApp"
+			]
+		},
+		"layered-app-deltas": {
+			"board": [
+				"BqManifestlagen",
+				"BqEigenLaagBewerken",
+				"BqAppInstellingen"
+			]
+		},
+		"first-time-setup": {
+			"board": [
+				"BqBuildiqInstellen"
+			]
+		},
+		"openbuild-schedules-authoring": {
+			"board": [
+				"BqGeplandeTaak"
+			]
+		},
+		"beta-alignment": {
+			"board": null,
+			"reason": "Keeps info.xml, the product page and the docs in step with the code; no screen of its own."
+		},
+		"green-field-migration": {
+			"board": null,
+			"reason": "A one-shot repair step that migrates stored data on upgrade; it has no interface."
+		}
+	},
 	"providers": [
 		{
 			"key": "buildiq",
