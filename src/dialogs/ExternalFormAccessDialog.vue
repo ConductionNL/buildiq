@@ -377,7 +377,10 @@ export default {
 						type: 'form',
 						config: {
 							...(this.formConfig || {}),
-							destination: { register: this.register, schema: this.schema },
+							destination: {
+								register: this.register,
+								schema: this.schema,
+							},
 						},
 					},
 				],

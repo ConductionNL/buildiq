@@ -54,23 +54,39 @@ function form(status: string) {
 }
 
 test.describe('forms are valid against their destination', () => {
-	test('a draft with findings is saved and answers them; a published one is refused with every finding', async ({ request }) => {
-		const draft = await request.put(FORMS, { headers: HEADERS, data: form('draft') })
-		test.skip(draft.status() === 404, 'buildiq registration forms are not routed here')
+	test('a draft with findings is saved and answers them; a published one is refused with every finding', async ({
+		request,
+	}) => {
+		const draft = await request.put(FORMS, {
+			headers: HEADERS,
+			data: form('draft'),
+		})
+		test.skip(
+			draft.status() === 404,
+			'buildiq registration forms are not routed here',
+		)
 		expect(draft.status()).toBe(200)
 		const saved = await draft.json()
 		const codes = (saved.findings || []).map((f: { code: string }) => f.code)
-		test.skip(codes.includes('destination-unchecked'), 'OpenRegister without the form destination validator (openregister#4563)')
+		test.skip(
+			codes.includes('destination-unchecked'),
+			'OpenRegister without the form destination validator (openregister#4563)',
+		)
 		expect(codes).toContain('required-unmapped')
 
-		const published = await request.put(FORMS, { headers: HEADERS, data: form('published') })
+		const published = await request.put(FORMS, {
+			headers: HEADERS,
+			data: form('published'),
+		})
 		expect(published.status()).toBe(422)
 		const refused = await published.json()
 		expect(refused.error).toBe('destination_findings')
 		expect(refused.findings.length).toBe(saved.findings.length)
 	})
 
-	test('the designer check names the page and field of each finding', async ({ request }) => {
+	test('the designer check names the page and field of each finding', async ({
+		request,
+	}) => {
 		const response = await request.post(CHECK, {
 			headers: HEADERS,
 			data: {
@@ -80,7 +96,10 @@ test.describe('forms are valid against their destination', () => {
 							id: 'new-form',
 							type: 'form',
 							config: {
-								destination: { register: 'buildiq', schema: 'registrationForm' },
+								destination: {
+									register: 'buildiq',
+									schema: 'registrationForm',
+								},
 								fields: [{ key: 'nietBestaand', type: 'string' }],
 							},
 						},
@@ -91,9 +110,14 @@ test.describe('forms are valid against their destination', () => {
 		expect(response.status()).toBe(200)
 		const body = await response.json()
 		const codes = body.findings.map((f: { code: string }) => f.code)
-		test.skip(codes.includes('destination-unchecked'), 'OpenRegister without the form destination validator (openregister#4563)')
+		test.skip(
+			codes.includes('destination-unchecked'),
+			'OpenRegister without the form destination validator (openregister#4563)',
+		)
 		expect(body.accepted).toBe(false)
-		const unknown = body.findings.find((f: { code: string }) => f.code === 'property-unknown')
+		const unknown = body.findings.find(
+			(f: { code: string }) => f.code === 'property-unknown',
+		)
 		expect(unknown).toMatchObject({ page: 'new-form', field: 'nietBestaand' })
 	})
 })

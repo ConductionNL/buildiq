@@ -17,20 +17,37 @@ vi.mock('@nextcloud/router', () => ({ generateUrl: (path) => `/index.php${path}`
 
 describe('checkFormDestinations', () => {
 	it('posts the manifest and reports findings as not accepted', async () => {
-		const finding = { page: 'new', pageIndex: 0, field: 'a', property: 'a', code: 'type-mismatch', message: 'A' }
-		const client = { post: vi.fn().mockResolvedValue({ data: { accepted: false, findings: [finding] } }) }
+		const finding = {
+			page: 'new',
+			pageIndex: 0,
+			field: 'a',
+			property: 'a',
+			code: 'type-mismatch',
+			message: 'A',
+		}
+		const client = {
+			post: vi.fn().mockResolvedValue({
+				data: { accepted: false, findings: [finding] },
+			}),
+		}
 		const manifest = { pages: [] }
 
 		const answer = await checkFormDestinations(manifest, client)
 
-		expect(client.post).toHaveBeenCalledWith('/index.php/apps/buildiq/api/forms/destination-check', { manifest })
+		expect(client.post).toHaveBeenCalledWith(
+			'/index.php/apps/buildiq/api/forms/destination-check',
+			{ manifest },
+		)
 		expect(answer).toEqual({ accepted: false, findings: [finding] })
 	})
 
 	it('reads a malformed answer as no findings only when it carries none', async () => {
 		const client = { post: vi.fn().mockResolvedValue({ data: {} }) }
 
-		expect(await checkFormDestinations({}, client)).toEqual({ accepted: true, findings: [] })
+		expect(await checkFormDestinations({}, client)).toEqual({
+			accepted: true,
+			findings: [],
+		})
 	})
 
 	it('lets a failing check reject, so the caller can say it did not run', async () => {
@@ -62,6 +79,9 @@ describe('findingsByField', () => {
 		])
 
 		expect(Object.keys(grouped).sort()).toEqual(['', 'intakeChannel', 'naam'])
-		expect(grouped[''].map((f) => f.code)).toEqual(['required-unmapped', 'destination-not-public'])
+		expect(grouped[''].map((f) => f.code)).toEqual([
+			'required-unmapped',
+			'destination-not-public',
+		])
 	})
 })

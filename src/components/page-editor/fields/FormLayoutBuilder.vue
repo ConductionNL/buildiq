@@ -232,7 +232,8 @@
 					</button>
 					<!-- Decision 179: each destination finding on its own field. -->
 					<InlineFieldMark
-						v-for="(finding, findingIndex) in findings[entry.field.name] || []"
+						v-for="(finding, findingIndex) in findings[entry.field.name]
+						|| []"
 						:key="'finding-' + findingIndex"
 						:error="{ hasError: true, message: finding.message }" />
 				</div>

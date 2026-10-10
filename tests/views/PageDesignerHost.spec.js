@@ -431,8 +431,17 @@ describe('PageDesignerHost', () => {
 	})
 
 	it('save() keeps the pages as a draft and hands the destination findings to the designer (decision 189)', async () => {
-		const finding = { page: 'new', pageIndex: 0, field: 'x', property: 'x', code: 'property-unknown', message: 'X' }
-		axiosPostMock.mockResolvedValue({ data: { accepted: false, findings: [finding] } })
+		const finding = {
+			page: 'new',
+			pageIndex: 0,
+			field: 'x',
+			property: 'x',
+			code: 'property-unknown',
+			message: 'X',
+		}
+		axiosPostMock.mockResolvedValue({
+			data: { accepted: false, findings: [finding] },
+		})
 		const wrapper = mountHost({
 			version: null,
 			appList: [{ slug: 'petstore', '@self': { id: 'app-1' } }],
@@ -443,7 +452,10 @@ describe('PageDesignerHost', () => {
 		const saved = await wrapper.vm.save()
 
 		expect(saved).toBe(true)
-		expect(axiosPostMock).toHaveBeenCalledWith('/apps/buildiq/api/forms/destination-check', { manifest: expect.any(Object) })
+		expect(axiosPostMock).toHaveBeenCalledWith(
+			'/apps/buildiq/api/forms/destination-check',
+			{ manifest: expect.any(Object) },
+		)
 		expect(wrapper.vm.destinationFindings).toEqual([finding])
 		expect(wrapper.vm.toast).not.toBe('Pages saved.')
 	})

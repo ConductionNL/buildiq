@@ -38,8 +38,8 @@ export async function checkFormDestinations(manifest, client = axios) {
  * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-every-buildiq-form-must-be-valid-against-its-destination-before-it-is-published
  */
 export function findingsForPage(findings, pageId, pageIndex) {
-	return (findings || []).filter((f) =>
-		f && (pageId ? f.page === pageId : f.pageIndex === pageIndex),
+	return (findings || []).filter(
+		(f) => f && (pageId ? f.page === pageId : f.pageIndex === pageIndex),
 	)
 }
 
