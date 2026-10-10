@@ -80,6 +80,11 @@
 				@click="remove(index)">
 				✕
 			</button>
+			<!-- Decision 179: a preset value its property refuses is marked here. -->
+			<InlineFieldMark
+				v-for="(finding, findingIndex) in findings[preset.field] || []"
+				:key="'finding-' + findingIndex"
+				:error="{ hasError: true, message: finding.message }" />
 		</div>
 
 		<button type="button" @click="add">
@@ -89,8 +94,12 @@
 </template>
 
 <script>
+import InlineFieldMark from './InlineFieldMark.vue'
+
 export default {
 	name: 'FormPresetsBuilder',
+
+	components: { InlineFieldMark },
 
 	props: {
 		presets: {
@@ -103,6 +112,12 @@ export default {
 		properties: {
 			type: Array,
 			default: null,
+		},
+
+		// Decision 179/189: destination findings per property, from the last save.
+		findings: {
+			type: Object,
+			default: () => ({}),
 		},
 	},
 

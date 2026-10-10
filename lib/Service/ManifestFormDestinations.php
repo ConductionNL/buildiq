@@ -66,6 +66,9 @@ class ManifestFormDestinations {
 		'password' => 'text',
 		'json' => 'object',
 		'file' => 'file',
+		'select' => 'choice',
+		'textarea' => 'textarea',
+		'date' => 'date',
 	];
 
 	/**
@@ -104,8 +107,11 @@ class ManifestFormDestinations {
 				continue;
 			}
 
-			$config = (array)(ManifestPageShape::normalise(page: $page)['config'] ?? []);
-			$destination = (array)($config['destination'] ?? []);
+			// The destination comes from the normalised page; the fields from the
+			// page as authored, because normalising coerces the designer's
+			// `select`, `textarea` and `date` types to `string`.
+			$destination = (array)(ManifestPageShape::normalise(page: $page)['config']['destination'] ?? []);
+			$config = (array)($page['config'] ?? []);
 			if ((string)($destination['register'] ?? '') === '' || (string)($destination['schema'] ?? '') === '') {
 				continue;
 			}
@@ -142,6 +148,10 @@ class ManifestFormDestinations {
 	public function mappingOf(array $config): array {
 		$fields = [];
 		foreach ((array)($config['fields'] ?? []) as $field) {
+			if (is_string($field) === true) {
+				$field = ['key' => trim($field)];
+			}
+
 			if (is_array($field) === false || (string)($field['key'] ?? '') === '') {
 				continue;
 			}

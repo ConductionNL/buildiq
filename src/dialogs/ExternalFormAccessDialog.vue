@@ -108,6 +108,11 @@
 
 			<NcNoteCard v-if="errorMessage" type="error">
 				{{ errorMessage }}
+				<ul v-if="findings.length" data-testid="external-form-findings">
+					<li v-for="(finding, i) in findings" :key="i">
+						{{ finding.message }}
+					</li>
+				</ul>
 			</NcNoteCard>
 
 			<div v-if="showUrls" class="ob-external-form-access__urls">
@@ -159,6 +164,7 @@ import {
 	revokePublicCreate,
 	SIGN_IN_LEVELS,
 } from '../services/externalFormProvisioningService.js'
+import { checkFormDestinations } from '../services/formDestinationCheck.js'
 
 /**
  * Generate an `ef-<uuid>` bookkeeping id (design.md Decision 1). Falls back
@@ -204,6 +210,13 @@ export default {
 			type: Object,
 			default: null,
 		},
+
+		// The form page's config: its fields are checked against the
+		// destination before anything is provisioned (decision 179).
+		formConfig: {
+			type: Object,
+			default: () => ({}),
+		},
 	},
 
 	emits: ['update:open', 'save'],
@@ -221,6 +234,8 @@ export default {
 			minTrustChanged: false,
 			saving: false,
 			errorMessage: '',
+			// Decision 179: the findings that stopped provisioning.
+			findings: [],
 			portalHint: false,
 			saved: false,
 			savedPortalUrl: '',
@@ -346,6 +361,45 @@ export default {
 		},
 
 		/**
+		 * Whether the destination accepts this form, with zero findings.
+		 * Sets the error message and lists the findings when it does not.
+		 *
+		 * @param {boolean} anonymous - check for a public, signed-out audience.
+		 * @return {Promise<boolean>} true when there are no findings.
+		 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-an-external-form-must-have-a-public-destination-and-spam-protection
+		 */
+		async destinationAccepts(anonymous) {
+			const pageId = this.pageId || 'external-form'
+			const manifest = {
+				pages: [
+					{
+						id: pageId,
+						type: 'form',
+						config: {
+							...(this.formConfig || {}),
+							destination: { register: this.register, schema: this.schema },
+						},
+					},
+				],
+				runtime: anonymous
+					? { externalForms: [{ pageId, status: 'enabled' }] }
+					: {},
+			}
+			const { findings } = await checkFormDestinations(manifest)
+			this.findings = findings
+			if (findings.length === 0) {
+				return true
+			}
+			this.errorMessage = n(
+				'buildiq',
+				'External access is not switched on: where this form saves to refuses it on %n point. Fix it on the form first.',
+				'External access is not switched on: where this form saves to refuses it on %n points. Fix them on the form first.',
+				findings.length,
+			)
+			return false
+		},
+
+		/**
 		 * Persist the enable/update flow: read-merge-write the schema
 		 * authorization, then provision (create/update) the Portaliq
 		 * `portalPage`. Degrades gracefully — a Portaliq failure never blocks
@@ -368,6 +422,11 @@ export default {
 					await this.onDisable()
 					return
 				}
+				// Spec "An external form MUST have a public destination": the
+				// form is provisioned only with zero findings.
+				if (!(await this.destinationAccepts(false))) {
+					return
+				}
 				if (this.minTrust) {
 					// portaliq writes past OpenRegister's RBAC itself, so a
 					// public create grant would only be a way around the
@@ -386,6 +445,11 @@ export default {
 						schema: this.schema,
 						publicRead: this.publicRead,
 					})
+					// The grant is in; an anonymous form now needs a destination
+					// that lets a public visitor create.
+					if (!(await this.destinationAccepts(true))) {
+						return
+					}
 				}
 				const existingObjectId =
 					this.entry
@@ -420,6 +484,9 @@ export default {
 							},
 
 					trackLinkAction: { enabled: this.trackLinkEnabled },
+					// Spam protection for the anonymous form: a field no person
+					// sees, which the submit refuses when it is filled.
+					honeypot: '_hp',
 				}
 				this.saved = true
 				this.$emit('save', next)

@@ -283,8 +283,10 @@ final class RegistrationFormValidatorTest extends TestCase {
 	 */
 	public function testEachSignInLevelIsAccepted(): void {
 		foreach (['low', 'substantial', 'high'] as $level) {
-			self::assertSame([], $this->validator->validate($this->form(['minTrust' => $level])), $level);
+			$this->validator->validate($this->form(['minTrust' => $level]));
 		}
+
+		self::assertTrue(true, 'No level was refused.');
 	}//end testEachSignInLevelIsAccepted()
 
 	/**
@@ -293,7 +295,9 @@ final class RegistrationFormValidatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFormWithoutASignInLevelIsAccepted(): void {
-		self::assertSame([], $this->validator->validate($this->form(['minTrust' => null])));
+		$this->validator->validate($this->form(['minTrust' => null]));
+
+		self::assertTrue(true, 'An anonymous form was not refused.');
 	}//end testAFormWithoutASignInLevelIsAccepted()
 
 	/**

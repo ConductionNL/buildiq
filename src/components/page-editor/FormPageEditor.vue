@@ -135,8 +135,29 @@
 
 		<fieldset class="form-page-editor__fieldset">
 			<legend>{{ t('buildiq', 'Fields') }}</legend>
+			<!-- Decision 179/189: findings on no single field (a required
+			     property nothing fills, a destination that refuses the
+			     audience). The form saves as a draft; publishing waits. -->
+			<div
+				v-if="formFindings.length"
+				class="form-page-editor__findings"
+				data-testid="form-destination-findings">
+				<p class="form-page-editor__hint">
+					{{
+						t(
+							'buildiq',
+							'This form is saved as a draft. Its destination refuses it on the points below, so the app cannot be published until they are fixed.',
+						)
+					}}
+				</p>
+				<InlineFieldMark
+					v-for="(finding, i) in findingsOnNoField"
+					:key="'form-finding-' + i"
+					:error="{ hasError: true, message: finding.message }" />
+			</div>
 			<FormFieldBuilder
 				:modelValue="config.fields || []"
+				:findings="findingsPerField"
 				showLogic
 				@update:modelValue="update('fields', $event)" />
 			<InlineFieldMark :error="markFor('fields')" />
@@ -194,6 +215,7 @@
 					:schema="externalTarget.schema"
 					:pageId="pageId"
 					:entry="externalFormEntry"
+					:formConfig="config"
 					@save="onExternalFormSave" />
 			</template>
 			<p v-else class="form-page-editor__hint">
@@ -235,6 +257,7 @@ import FormStepsManager from './fields/FormStepsManager.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
 import { useRegisterPicker } from '../../composables/useRegisterPicker.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
+import { findingsByField } from '../../services/formDestinationCheck.js'
 
 // OpenRegister's object collection URL: POSTing the form's values here
 // creates an object in that register and schema.
@@ -293,6 +316,12 @@ export default {
 			type: Array,
 			default: () => [],
 		},
+
+		// Decision 179/189: this page's destination findings from the last save.
+		destinationFindings: {
+			type: Array,
+			default: () => [],
+		},
 	},
 
 	emits: ['update:config', 'update:runtimeExternalForms'],
@@ -328,6 +357,45 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * This page's destination findings.
+		 *
+		 * @return {Array<object>}
+		 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-a-draft-form-saves-with-its-findings
+		 */
+		formFindings() {
+			return Array.isArray(this.destinationFindings)
+				? this.destinationFindings
+				: []
+		},
+
+		/**
+		 * The findings grouped by the field they sit on.
+		 *
+		 * @return {Object<string, Array<object>>}
+		 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-every-buildiq-form-must-be-valid-against-its-destination-before-it-is-published
+		 */
+		findingsPerField() {
+			return findingsByField(this.formFindings)
+		},
+
+		/**
+		 * Findings that sit on no field this form has.
+		 *
+		 * @return {Array<object>}
+		 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-every-buildiq-form-must-be-valid-against-its-destination-before-it-is-published
+		 */
+		findingsOnNoField() {
+			const keys = new Set(
+				(this.config.fields || []).map((f) =>
+					typeof f === 'string' ? f : f && f.key,
+				),
+			)
+			return Object.entries(this.findingsPerField)
+				.filter(([key]) => !keys.has(key))
+				.flatMap(([, list]) => list)
+		},
+
 		/**
 		 * The form as the library captures it: the page config, named after
 		 * the page's submit label when it has one.
@@ -611,6 +679,10 @@ export default {
 				list.push(entry)
 			}
 			this.$emit('update:runtimeExternalForms', list)
+			// The anonymous form carries the honeypot its entry names.
+			if (entry && entry.honeypot && this.config.honeypot !== entry.honeypot) {
+				this.update('honeypot', entry.honeypot)
+			}
 		},
 	},
 }

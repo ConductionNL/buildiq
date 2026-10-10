@@ -180,25 +180,6 @@ class ApplicationPublishController extends Controller {
 
 			$this->assertOwner(application: $application, user: $user);
 
-			// Decision 179/189: the pages saved as a draft may carry destination
-			// findings; publishing makes them live, so it needs zero.
-			if ($status === self::STATUS_PUBLISHED) {
-				$findings = $this->formFindings(application: $application, user: $user);
-				if ($findings !== []) {
-					return new JSONResponse(
-						data: [
-							'error' => 'destination_findings',
-							'message' => sprintf(
-								'This app cannot be published: its forms have %d point(s) their destination refuses. Each one is marked on its field in the page designer.',
-								count($findings)
-							),
-							'findings' => $findings,
-						],
-						statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
-					);
-				}
-			}
-
 			$orphaned = $this->deletionService->deleteApplication(
 				appUuid: $appUuid,
 				appSlug: (string)($application['slug'] ?? ''),
@@ -308,6 +289,25 @@ class ApplicationPublishController extends Controller {
 			}
 
 			$this->assertOwner(application: $application, user: $user);
+
+			// Decision 179/189: the pages saved as a draft may carry destination
+			// findings; publishing makes them live, so it needs zero.
+			if ($status === self::STATUS_PUBLISHED) {
+				$findings = $this->formFindings(application: $application, user: $user);
+				if ($findings !== []) {
+					return new JSONResponse(
+						data: [
+							'error' => 'destination_findings',
+							'message' => sprintf(
+								'This app cannot be published: its forms have %d point(s) their destination refuses. Each one is marked on its field in the page designer.',
+								count($findings)
+							),
+							'findings' => $findings,
+						],
+						statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
+					);
+				}
+			}
 
 			// Strip the OR-managed metadata envelope before writing back — the
 			// save path expects the bare object data + the uuid (mirrors how

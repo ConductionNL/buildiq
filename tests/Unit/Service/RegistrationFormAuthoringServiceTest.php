@@ -312,7 +312,9 @@ final class RegistrationFormAuthoringServiceTest extends TestCase {
 	 */
 	public function testTheSameNameOnAnotherSchemaIsFree(): void {
 		$this->service->save($this->form());
-		$this->service->save($this->form(['id' => 'rf-3', 'schema' => 'Melding']));
+		// A draft: the destination double only knows `Zaak`, and this test is
+		// about the name rule, not the destination check.
+		$this->service->save($this->form(['id' => 'rf-3', 'schema' => 'Melding', 'status' => 'draft', 'isDefault' => false]));
 
 		$this->assertCount(2, $this->store);
 	}//end testTheSameNameOnAnotherSchemaIsFree()

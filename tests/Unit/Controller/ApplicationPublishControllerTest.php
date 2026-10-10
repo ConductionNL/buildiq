@@ -257,7 +257,7 @@ class ApplicationPublishControllerTest extends TestCase {
 
 		$response = $controller->publish('u-app');
 
-		self::assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
+		self::assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus(), json_encode($response->getData()));
 		self::assertSame('destination_findings', $response->getData()['error']);
 		self::assertSame([$finding], $response->getData()['findings']);
 	}//end testPublishIsRefusedWhileAFormPageHasFindings()

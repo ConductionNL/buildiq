@@ -76,6 +76,8 @@ final class ManifestFormDestinationsTest extends TestCase {
 					['key' => 'naam', 'type' => 'string', 'validation' => ['maxLength' => 80, 'required' => true]],
 					['key' => 'kanaal', 'type' => 'enum', 'enum' => ['portal', 'desk']],
 					['key' => 'akkoord', 'type' => 'boolean'],
+					['key' => 'datum', 'type' => 'date'],
+					'opmerking',
 				],
 			]
 		);
@@ -86,6 +88,8 @@ final class ManifestFormDestinationsTest extends TestCase {
 					['field' => 'naam', 'property' => 'naam', 'type' => 'text', 'maxLength' => 80],
 					['field' => 'kanaal', 'property' => 'kanaal', 'type' => 'choice', 'options' => ['portal', 'desk']],
 					['field' => 'akkoord', 'property' => 'akkoord', 'type' => 'boolean'],
+					['field' => 'datum', 'property' => 'datum', 'type' => 'date'],
+					['field' => 'opmerking', 'property' => 'opmerking', 'type' => 'text'],
 				],
 				'fixed' => [],
 			],

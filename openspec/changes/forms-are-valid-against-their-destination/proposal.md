@@ -20,7 +20,7 @@ The journey designer (`journey-designer`, not built) already says write mappings
 ## What changes
 
 1. **Every form names its destination.** Form pages, registration forms, external forms and journey `writes[]` store `destination { register, schema }`.
-2. **Save calls OpenRegister's validator.** Findings render on the field in the designer (board `BqPaginaOntwerperFouten`). A form with findings is not saved, from the first release (decision 181: no report-only mode).
+2. **Save calls OpenRegister's validator.** Findings render on the field in the designer (board to come: `BqFormulierBevindingen`, design backlog). A draft form saves with its findings; publishing needs zero, from the first release (decision 189, which refines decision 181: no report-only mode for publishing). Buildiq's forms keep their own `status` (`draft`, `published`) rather than OpenRegister's `@self.status` draft (openregister#4566), because that status is left only through a form submit.
 3. **`RegistrationFormTargetWarnings` becomes a caller of the validator.** Warnings for unknown fields become findings, and required-property coverage, types and enums are added. `presets[]` count as fixed values.
 4. **External forms**: publishing for an anonymous audience requires the destination to grant public create (REQ-EFP-003 already merges it) and a honeypot field; the portaliq page is created only after a clean validation.
 5. **Journey designer** uses the same validator for `writes[]`, so author time and submit time cannot diverge.
@@ -28,4 +28,4 @@ The journey designer (`journey-designer`, not built) already says write mappings
 
 ## Rollback
 
-The check refuses from the first release (decision 181). Rolling it back means reverting this change; the openregister validator stays.
+The check refuses publishing from the first release (decisions 181 and 189). Rolling it back means reverting this change; the openregister validator stays.
