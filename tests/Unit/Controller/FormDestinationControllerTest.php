@@ -24,13 +24,17 @@ namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\FormDestinationController;
 use OCA\Buildiq\Service\ManifestFormDestinations;
+use OCA\Buildiq\Service\ManifestResolverService;
+use OCA\Buildiq\Service\PermissionResolver;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
- * Covers the answer shape, the missing manifest and a failing check.
+ * Covers the answer shape, the missing manifest, the editor guard and a failing check.
  */
 final class FormDestinationControllerTest extends TestCase {
 	/**
@@ -72,15 +76,24 @@ final class FormDestinationControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFailingCheckIs500(): void {
-		$request = $this->createMock(IRequest::class);
-		$request->method('getParam')->willReturn(['pages' => []]);
 		$destinations = $this->createMock(ManifestFormDestinations::class);
 		$destinations->method('findings')->willThrowException(new RuntimeException('boom'));
 
-		$controller = new FormDestinationController('buildiq', $request, $destinations, $this->createMock(LoggerInterface::class));
-
-		self::assertSame(500, $controller->check()->getStatus());
+		self::assertSame(500, $this->controllerOver(manifest: ['pages' => []], destinations: $destinations, mayEdit: true)->check()->getStatus());
 	}//end testAFailingCheckIs500()
+
+	/**
+	 * Someone who may not edit the app gets a 403, and the check never runs:
+	 * its findings name the destination schema's properties.
+	 *
+	 * @return void
+	 */
+	public function testACallerWhoMayNotEditTheAppIsRefused(): void {
+		$destinations = $this->createMock(ManifestFormDestinations::class);
+		$destinations->expects($this->never())->method('findings');
+
+		self::assertSame(403, $this->controllerOver(manifest: ['pages' => []], destinations: $destinations, mayEdit: false)->check()->getStatus());
+	}//end testACallerWhoMayNotEditTheAppIsRefused()
 
 	/**
 	 * The controller over a request carrying this manifest and a check answering these findings.
@@ -91,11 +104,51 @@ final class FormDestinationControllerTest extends TestCase {
 	 * @return FormDestinationController The controller.
 	 */
 	private function controller(?array $manifest, array $findings): FormDestinationController {
-		$request = $this->createMock(IRequest::class);
-		$request->method('getParam')->willReturn($manifest);
 		$destinations = $this->createMock(ManifestFormDestinations::class);
 		$destinations->method('findings')->willReturn($findings);
 
-		return new FormDestinationController('buildiq', $request, $destinations, $this->createMock(LoggerInterface::class));
+		return $this->controllerOver(manifest: $manifest, destinations: $destinations, mayEdit: true);
 	}//end controller()
+
+	/**
+	 * The controller for the app `demo`, whose permissions do or do not admit the caller.
+	 *
+	 * @param array<string, mixed>|null $manifest The body's manifest.
+	 * @param ManifestFormDestinations $destinations The check.
+	 * @param bool $mayEdit Whether the caller is an owner or editor of `demo`.
+	 *
+	 * @return FormDestinationController The controller.
+	 */
+	private function controllerOver(?array $manifest, ManifestFormDestinations $destinations, bool $mayEdit): FormDestinationController {
+		$request = $this->createMock(IRequest::class);
+		$request->method('getParam')->willReturnCallback(
+			static fn (string $key, mixed $default = null): mixed => match ($key) {
+				'manifest' => $manifest,
+				'appSlug' => 'demo',
+				default => $default,
+			}
+		);
+
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+
+		$applications = $this->createMock(ManifestResolverService::class);
+		$applications->method('findApplication')->with('demo')->willReturn(['slug' => 'demo', 'permissions' => ['owners' => ['user:alice']]]);
+
+		$permissions = $this->createMock(PermissionResolver::class);
+		$permissions->method('resolveUserGroups')->willReturn([]);
+		$permissions->method('matchesCaller')->willReturn($mayEdit);
+
+		return new FormDestinationController(
+			appName: 'buildiq',
+			request: $request,
+			destinations: $destinations,
+			applications: $applications,
+			permissions: $permissions,
+			userSession: $session,
+			logger: $this->createMock(LoggerInterface::class),
+		);
+	}//end controllerOver()
 }//end class

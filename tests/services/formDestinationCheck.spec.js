@@ -32,11 +32,11 @@ describe('checkFormDestinations', () => {
 		}
 		const manifest = { pages: [] }
 
-		const answer = await checkFormDestinations(manifest, client)
+		const answer = await checkFormDestinations(manifest, 'demo', client)
 
 		expect(client.post).toHaveBeenCalledWith(
 			'/index.php/apps/buildiq/api/forms/destination-check',
-			{ manifest },
+			{ appSlug: 'demo', manifest },
 		)
 		expect(answer).toEqual({ accepted: false, findings: [finding] })
 	})
@@ -44,7 +44,7 @@ describe('checkFormDestinations', () => {
 	it('reads a malformed answer as no findings only when it carries none', async () => {
 		const client = { post: vi.fn().mockResolvedValue({ data: {} }) }
 
-		expect(await checkFormDestinations({}, client)).toEqual({
+		expect(await checkFormDestinations({}, 'demo', client)).toEqual({
 			accepted: true,
 			findings: [],
 		})
@@ -53,7 +53,9 @@ describe('checkFormDestinations', () => {
 	it('lets a failing check reject, so the caller can say it did not run', async () => {
 		const client = { post: vi.fn().mockRejectedValue(new Error('down')) }
 
-		await expect(checkFormDestinations({}, client)).rejects.toThrow('down')
+		await expect(checkFormDestinations({}, 'demo', client)).rejects.toThrow(
+			'down',
+		)
 	})
 })
 

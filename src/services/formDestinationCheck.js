@@ -15,14 +15,15 @@ import { generateUrl } from '@nextcloud/router'
  * Every destination finding on the manifest's form pages.
  *
  * @param {object} manifest - the manifest as it was saved.
+ * @param {string} appSlug - the app the manifest belongs to; only its owners and editors may ask.
  * @param {object} [client] - axios-compatible client (tests inject one).
  * @return {Promise<{accepted: boolean, findings: Array<object>}>} The answer.
  * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-a-draft-form-saves-with-its-findings
  */
-export async function checkFormDestinations(manifest, client = axios) {
+export async function checkFormDestinations(manifest, appSlug, client = axios) {
 	const { data } = await client.post(
 		generateUrl('/apps/buildiq/api/forms/destination-check'),
-		{ manifest },
+		{ appSlug, manifest },
 	)
 	const findings = data && Array.isArray(data.findings) ? data.findings : []
 	return { accepted: findings.length === 0, findings }

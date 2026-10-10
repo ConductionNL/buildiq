@@ -699,7 +699,10 @@ export default {
 		 */
 		async refreshDestinationFindings() {
 			try {
-				const { findings } = await checkFormDestinations(this.manifest)
+				const { findings } = await checkFormDestinations(
+					this.manifest,
+					this.routeSlug,
+				)
 				this.destinationFindings = findings
 				if (findings.length) {
 					this.toast = n(

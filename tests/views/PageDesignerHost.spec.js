@@ -454,7 +454,7 @@ describe('PageDesignerHost', () => {
 		expect(saved).toBe(true)
 		expect(axiosPostMock).toHaveBeenCalledWith(
 			'/apps/buildiq/api/forms/destination-check',
-			{ manifest: expect.any(Object) },
+			{ appSlug: expect.any(String), manifest: expect.any(Object) },
 		)
 		expect(wrapper.vm.destinationFindings).toEqual([finding])
 		expect(wrapper.vm.toast).not.toBe('Pages saved.')

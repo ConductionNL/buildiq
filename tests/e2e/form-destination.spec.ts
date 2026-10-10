@@ -90,6 +90,8 @@ test.describe('forms are valid against their destination', () => {
 		const response = await request.post(CHECK, {
 			headers: HEADERS,
 			data: {
+				// No app carries this slug, so the check is an admin's only.
+				appSlug: 'e2e-form-destination',
 				manifest: {
 					pages: [
 						{

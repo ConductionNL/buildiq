@@ -97,6 +97,9 @@ class ManifestFormDestinations {
 	 *
 	 * @return array<int, array<string, mixed>> Findings `{page, pageIndex, field?, property, code, message}`.
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ManifestPageShape is a pure shape rule with no state,
+	 * the same one the save path and the MCP page handler apply.
+	 *
 	 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-every-buildiq-form-must-be-valid-against-its-destination-before-it-is-published
 	 */
 	public function findings(array $manifest): array {
@@ -163,23 +166,35 @@ class ManifestFormDestinations {
 				'type' => (self::FIELD_TYPES[(string)($field['type'] ?? 'string')] ?? 'text'),
 			];
 
-			$options = ($field['options'] ?? ($field['enum'] ?? null));
-			if (is_array($options) === true) {
-				$entry['options'] = $options;
-			}
-
-			$limits = array_merge((array)($field['validation'] ?? []), $field);
-			foreach (self::LIMITS as $limit) {
-				if (array_key_exists($limit, $limits) === true && $limits[$limit] !== '' && $limits[$limit] !== null) {
-					$entry[$limit] = $limits[$limit];
-				}
-			}
-
-			$fields[] = $entry;
+			$fields[] = array_merge($entry, $this->constraintsOf(field: $field));
 		}
 
 		return ['fields' => $fields, 'fixed' => []];
 	}//end mappingOf()
+
+	/**
+	 * The options and limits a field declares of its own.
+	 *
+	 * @param array<string, mixed> $field The field as authored.
+	 *
+	 * @return array<string, mixed> `options` and any of the limits, when set.
+	 */
+	private function constraintsOf(array $field): array {
+		$constraints = [];
+		$options = ($field['options'] ?? ($field['enum'] ?? null));
+		if (is_array($options) === true) {
+			$constraints['options'] = $options;
+		}
+
+		$limits = array_merge((array)($field['validation'] ?? []), $field);
+		foreach (self::LIMITS as $limit) {
+			if (($limits[$limit] ?? '') !== '') {
+				$constraints[$limit] = $limits[$limit];
+			}
+		}
+
+		return $constraints;
+	}//end constraintsOf()
 
 	/**
 	 * The ids of the pages published for anonymous visitors.

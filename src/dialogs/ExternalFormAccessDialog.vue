@@ -217,6 +217,12 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
+		// The app the form belongs to: the destination check is for its editors.
+		appSlug: {
+			type: String,
+			default: '',
+		},
 	},
 
 	emits: ['update:open', 'save'],
@@ -389,7 +395,7 @@ export default {
 					? { externalForms: [{ pageId, status: 'enabled' }] }
 					: {},
 			}
-			const { findings } = await checkFormDestinations(manifest)
+			const { findings } = await checkFormDestinations(manifest, this.appSlug)
 			this.findings = findings
 			if (findings.length === 0) {
 				return true

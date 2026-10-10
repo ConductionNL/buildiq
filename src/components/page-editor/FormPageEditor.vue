@@ -216,6 +216,7 @@
 					:pageId="pageId"
 					:entry="externalFormEntry"
 					:formConfig="config"
+					:appSlug="appSlug"
 					@save="onExternalFormSave" />
 			</template>
 			<p v-else class="form-page-editor__hint">
