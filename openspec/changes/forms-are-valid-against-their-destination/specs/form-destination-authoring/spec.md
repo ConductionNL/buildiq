@@ -18,6 +18,7 @@ Saving a form page, a registration form, an external form or a journey SHALL cal
 - **GIVEN** the same form with a hidden preset `caseType = omgevingsvergunning`
 - **WHEN** it is saved
 - **THEN** the validator reports no finding on `caseType`
+- @e2e exclude needs a destination with a free-text required property and a preset; covered by PHPUnit against the real validator (`RegistrationFormTargetWarningsTest::testTheSpecScenariosAgainstTheRealValidator`)
 
 #### Scenario: Every finding is shown when the publish is refused
 - **GIVEN** a form with two findings on different fields
@@ -28,6 +29,7 @@ Saving a form page, a registration form, an external form or a journey SHALL cal
 - **GIVEN** an app whose form page writes a text field into an integer property
 - **WHEN** its owner publishes the app
 - **THEN** the publish is refused with the `type-mismatch` finding on that page's field
+- @e2e exclude publishing an app writes its route index and onboards credentials on a shared CI stack; covered by PHPUnit (`ApplicationPublishControllerTest::testPublishIsRefusedWhileAFormPageHasFindings`, `ManifestFormDestinationsTest::testARealTextFieldIntoAnIntegerIsATypeMismatch`), live pass owed (decision 139)
 
 ### Requirement: A draft form saves with its findings
 
@@ -51,6 +53,7 @@ Publishing a form for an anonymous audience SHALL require the destination schema
 - **GIVEN** a form with zero findings and External access switched on
 - **WHEN** it is provisioned
 - **THEN** the schema grants public create, the form carries a honeypot, and the portaliq page exists
+- @e2e exclude needs portaliq and a schema grant change on the CI stack; the dialog flow is a browser run owed in the live pass (decision 139)
 
 ### Requirement: A registration form's presets are checked against its destination
 
@@ -60,3 +63,4 @@ Presets SHALL count as fixed values for OpenRegister's form destination validato
 - **GIVEN** a preset `intakeChannel = fax` where the target enum is `portal, phone, desk`
 - **WHEN** the form is published
 - **THEN** the publish is refused with `fixed-value-invalid` on `intakeChannel`
+- @e2e exclude needs a destination with an `intakeChannel` enum; covered by PHPUnit against the real validator (`RegistrationFormTargetWarningsTest::testTheSpecScenariosAgainstTheRealValidator`)

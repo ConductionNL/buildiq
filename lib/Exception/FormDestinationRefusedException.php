@@ -46,7 +46,8 @@ final class FormDestinationRefusedException extends RuntimeException {
 	public function __construct(private readonly array $findings) {
 		parent::__construct(
 			message: sprintf(
-				'This form cannot be published: its destination refuses it on %d point(s). Each one is marked on its field; save it as a draft to keep working on it.',
+				'This form cannot be published: its destination refuses it on %d point(s). '
+				. 'Each one is marked on its field; save it as a draft to keep working on it.',
 				count($findings)
 			)
 		);

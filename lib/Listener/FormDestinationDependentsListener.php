@@ -107,6 +107,11 @@ final class FormDestinationDependentsListener implements IEventListener {
 				continue;
 			}
 
+			$audience = null;
+			if (($form['isPublic'] ?? false) === true) {
+				$audience = 'public';
+			}
+
 			$event->addForm(
 				new FormDependent(
 					id: (string)($form['id'] ?? ''),
@@ -117,7 +122,7 @@ final class FormDestinationDependentsListener implements IEventListener {
 					unpublish: function () use ($form): void {
 						$this->unpublish(form: $form);
 					},
-					audience: ($form['isPublic'] ?? false) === true ? 'public' : null,
+					audience: $audience,
 				)
 			);
 		}

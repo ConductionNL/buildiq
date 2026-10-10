@@ -141,7 +141,8 @@ class RegistrationFormController extends Controller {
 	/**
 	 * Store one form.
 	 *
-	 * @return JSONResponse 200 with `{form, warnings, findings}` (a draft keeps its findings); 422 when a rule refuses it, with `findings` when the destination refuses a form that is not a draft.
+	 * @return JSONResponse 200 with `{form, warnings, findings}` (a draft keeps its findings);
+	 *   422 when a rule refuses it, with `findings` when the destination refuses a form that is not a draft.
 	 *
 	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004, REQ-OBRF-005)
 	 */
