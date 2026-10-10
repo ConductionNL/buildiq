@@ -1,3 +1,3 @@
 # Screens
 
-- No board found yet (decision 150)
+- No screen: CSRF attribute fix on an export endpoint.

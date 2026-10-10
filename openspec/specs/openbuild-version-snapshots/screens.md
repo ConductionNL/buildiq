@@ -1,3 +1,3 @@
 # Screens
 
-- No board found yet (decision 150)
+- No screen: Snapshot retirement and diff endpoint, no UI surface.

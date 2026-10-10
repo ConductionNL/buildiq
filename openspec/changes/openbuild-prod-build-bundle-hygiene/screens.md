@@ -1,3 +1,3 @@
 # Screens
 
-- No board found yet (decision 150)
+- No screen: Webpack source-map setting and unused dependency removal.

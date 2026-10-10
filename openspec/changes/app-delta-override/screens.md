@@ -1,3 +1,3 @@
 # Screens
 
-- No board found yet (decision 150)
+- No screen: Manifest delta fields and server-side resolution, data model and backend.
