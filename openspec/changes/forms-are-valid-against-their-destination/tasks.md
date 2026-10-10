@@ -10,7 +10,7 @@
 - [ ] 2.1 Registration form save calls OpenRegister `POST /api/forms/validate`; `RegistrationFormTargetWarnings` maps findings
   - Spec ref: specs/form-destination-authoring/spec.md; amend `forms-per-case-type` REQ-OBRF-005 "Saving SHALL warn" to point here
   - Test: unit test per finding code that buildiq surfaces; control with zero findings
-- [ ] 2.2 Form page editor shows findings on the field (board BqPaginaOntwerperFouten); publish blocked in refuse mode
+- [ ] 2.2 Form page editor shows findings on the field (board BqPaginaOntwerperFouten); save refused on any finding, no report mode (decision 181)
 - [ ] 2.3 External form provisioning: public-create check, honeypot field, provisioning only on zero findings
 - [ ] 2.4 `journey-designer`: note in its tasks that `writes[]` validation calls the same endpoint
 

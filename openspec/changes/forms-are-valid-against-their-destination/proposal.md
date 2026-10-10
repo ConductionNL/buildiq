@@ -20,7 +20,7 @@ The journey designer (`journey-designer`, not built) already says write mappings
 ## What changes
 
 1. **Every form names its destination.** Form pages, registration forms, external forms and journey `writes[]` store `destination { register, schema }`.
-2. **Save calls OpenRegister's validator.** Findings render on the field in the designer (board `BqPaginaOntwerperFouten`). In report mode the save goes through with the findings shown; in refuse mode publish is blocked (question Q9, recommended option: one release of report mode).
+2. **Save calls OpenRegister's validator.** Findings render on the field in the designer (board `BqPaginaOntwerperFouten`). A form with findings is not saved, from the first release (decision 181: no report-only mode).
 3. **`RegistrationFormTargetWarnings` becomes a caller of the validator.** Warnings for unknown fields become findings, and required-property coverage, types and enums are added. `presets[]` count as fixed values.
 4. **External forms**: publishing for an anonymous audience requires the destination to grant public create (REQ-EFP-003 already merges it) and a honeypot field; the portaliq page is created only after a clean validation.
 5. **Journey designer** uses the same validator for `writes[]`, so author time and submit time cannot diverge.
@@ -28,4 +28,4 @@ The journey designer (`journey-designer`, not built) already says write mappings
 
 ## Rollback
 
-Report mode is the rollback: switching the setting back to `report` lets every save through with findings shown.
+The check refuses from the first release (decision 181). Rolling it back means reverting this change; the openregister validator stays.
