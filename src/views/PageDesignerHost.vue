@@ -709,7 +709,7 @@ export default {
 						findings.length,
 					)
 				}
-			} catch (e) {
+			} catch {
 				this.destinationFindings = []
 				this.error = t(
 					'buildiq',

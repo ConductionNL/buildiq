@@ -303,7 +303,7 @@ export default {
 		/**
 		 * The findings grouped by the field or preset they sit on.
 		 *
-		 * @return {Object<string, Array<object>>}
+		 * @return {{[key: string]: Array<object>}}
 		 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-every-buildiq-form-must-be-valid-against-its-destination-before-it-is-published
 		 */
 		findingsPerField() {

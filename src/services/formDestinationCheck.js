@@ -52,7 +52,7 @@ export function findingsForPage(findings, pageId, pageIndex) {
  * `property`, which is the field or preset it is about.
  *
  * @param {Array<object>} findings - the findings.
- * @return {Object<string, Array<object>>} Findings per field key.
+ * @return {{[key: string]: Array<object>}} Findings per field key.
  * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-every-buildiq-form-must-be-valid-against-its-destination-before-it-is-published
  */
 export function findingsByField(findings) {

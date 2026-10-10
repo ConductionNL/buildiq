@@ -381,6 +381,7 @@ export default {
 						},
 					},
 				],
+
 				runtime: anonymous
 					? { externalForms: [{ pageId, status: 'enabled' }] }
 					: {},
