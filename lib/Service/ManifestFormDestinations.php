@@ -151,26 +151,40 @@ class ManifestFormDestinations {
 	public function mappingOf(array $config): array {
 		$fields = [];
 		foreach ((array)($config['fields'] ?? []) as $field) {
-			if (is_string($field) === true) {
-				$field = ['key' => trim($field)];
+			$entry = $this->fieldEntry(field: $field);
+			if ($entry !== null) {
+				$fields[] = $entry;
 			}
-
-			if (is_array($field) === false || (string)($field['key'] ?? '') === '') {
-				continue;
-			}
-
-			$key = (string)$field['key'];
-			$entry = [
-				'field' => $key,
-				'property' => $key,
-				'type' => (self::FIELD_TYPES[(string)($field['type'] ?? 'string')] ?? 'text'),
-			];
-
-			$fields[] = array_merge($entry, $this->constraintsOf(field: $field));
 		}
 
 		return ['fields' => $fields, 'fixed' => []];
 	}//end mappingOf()
+
+	/**
+	 * One authored field as the validator reads it, or null when it names no key.
+	 *
+	 * @param mixed $field The field: an object, or a bare key.
+	 *
+	 * @return array<string, mixed>|null The mapping entry.
+	 */
+	private function fieldEntry(mixed $field): ?array {
+		if (is_string($field) === true) {
+			$field = ['key' => trim($field)];
+		}
+
+		if (is_array($field) === false || (string)($field['key'] ?? '') === '') {
+			return null;
+		}
+
+		$key = (string)$field['key'];
+		$entry = [
+			'field' => $key,
+			'property' => $key,
+			'type' => (self::FIELD_TYPES[(string)($field['type'] ?? 'string')] ?? 'text'),
+		];
+
+		return array_merge($entry, $this->constraintsOf(field: $field));
+	}//end fieldEntry()
 
 	/**
 	 * The options and limits a field declares of its own.
