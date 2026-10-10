@@ -113,8 +113,69 @@ final class ManifestPageShape {
 			$config['fields'] = $fields;
 		}
 
-		return self::withSubmitDestination(config: $config);
+		return self::withDestination(config: self::withSubmitDestination(config: self::withDestinationPair(config: $config)));
 	}//end normaliseForm()
+
+	/**
+	 * Fill `register` and `schema` from a `destination` the form names.
+	 *
+	 * Decision 179: every form names its destination object. `destination`
+	 * is the authority when present; `register`/`schema` and the derived
+	 * `submitEndpoint` follow from it, so the three cannot disagree.
+	 *
+	 * @param array<string, mixed> $config The page's config block.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function withDestinationPair(array $config): array {
+		$destination = ($config['destination'] ?? null);
+		if (is_array($destination) === false) {
+			return $config;
+		}
+
+		$register = self::stringValue(value: ($destination['register'] ?? null));
+		$schema = self::stringValue(value: ($destination['schema'] ?? null));
+		if ($register !== '' && $schema !== '') {
+			$config['register'] = $register;
+			$config['schema'] = $schema;
+		}
+
+		return $config;
+	}//end withDestinationPair()
+
+	/**
+	 * Record the form's destination `{register, schema}` when it posts into one.
+	 *
+	 * Read from the register/schema pair, or else from a submit endpoint
+	 * shaped like OpenRegister's `/api/objects/{register}/{schema}`. A form
+	 * with a custom submit handler posts through app code and gets none.
+	 *
+	 * @param array<string, mixed> $config The page's config block.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-every-buildiq-form-must-be-valid-against-its-destination-before-it-is-published
+	 */
+	private static function withDestination(array $config): array {
+		if (self::stringValue(value: ($config['submitHandler'] ?? null)) !== '') {
+			return $config;
+		}
+
+		$register = self::stringValue(value: ($config['register'] ?? null));
+		$schema = self::stringValue(value: ($config['schema'] ?? null));
+		$endpoint = self::stringValue(value: ($config['submitEndpoint'] ?? null));
+		$match = [];
+		if (preg_match('#^/(?:index\.php/)?(?:apps/openregister/)?api/objects/([^/]+)/([^/]+)/?$#', $endpoint, $match) === 1) {
+			$register = $match[1];
+			$schema = $match[2];
+		}
+
+		if ($register !== '' && $schema !== '') {
+			$config['destination'] = ['register' => $register, 'schema' => $schema];
+		}
+
+		return $config;
+	}//end withDestination()
 
 	/**
 	 * Make sure a form names exactly one place to post to.

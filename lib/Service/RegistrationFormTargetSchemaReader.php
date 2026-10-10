@@ -53,6 +53,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -138,36 +139,54 @@ final class RegistrationFormTargetSchemaReader {
 	/**
 	 * The property map of one schema in one register, matched by slug.
 	 *
-	 * Matched inside the register rather than by a bare slug lookup: two
-	 * registers may each hold a schema called `case`, and the wrong one's
-	 * properties would produce confident warnings about the wrong object.
-	 *
 	 * @param string $registerSlug The register.
 	 * @param string $schemaSlug The schema.
 	 *
 	 * @return array<string, mixed>|null The properties, or null when the register holds no such schema.
 	 */
 	private function propertiesOf(string $registerSlug, string $schemaSlug): ?array {
+		$schema = $this->schemaOf(registerSlug: $registerSlug, schemaSlug: $schemaSlug);
+		if ($schema === null) {
+			return null;
+		}
+
+		$properties = $schema->getProperties();
+		if (is_array($properties) === true) {
+			return $properties;
+		}
+
+		return [];
+	}//end propertiesOf()
+
+	/**
+	 * One schema in one register, matched by slug.
+	 *
+	 * Matched inside the register rather than by a bare slug lookup: two
+	 * registers may each hold a schema called `case`, and the wrong one's
+	 * properties would produce confident findings about the wrong object.
+	 *
+	 * @param string $registerSlug The register.
+	 * @param string $schemaSlug The schema.
+	 *
+	 * @return Schema|null The schema, or null when the register holds no such schema.
+	 *
+	 * @throws Throwable When the register or a schema cannot be read.
+	 *
+	 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-every-buildiq-form-must-be-valid-against-its-destination-before-it-is-published
+	 */
+	public function schemaOf(string $registerSlug, string $schemaSlug): ?Schema {
 		$register = $this->registerMapper->find($registerSlug, _multitenancy: false);
 		$wanted = strtolower($schemaSlug);
 
 		foreach ((array)($register->getSchemas() ?? []) as $schemaId) {
 			$schema = $this->schemaMapper->find($schemaId, _rbac: false, _multitenancy: false);
-			if (strtolower((string)$schema->getSlug()) !== $wanted) {
-				continue;
+			if (strtolower((string)$schema->getSlug()) === $wanted) {
+				return $schema;
 			}
-
-			$properties = $schema->getProperties();
-
-			if (is_array($properties) === true) {
-				return $properties;
-			}
-
-			return [];
 		}
 
 		return null;
-	}//end propertiesOf()
+	}//end schemaOf()
 
 	/**
 	 * The values the named channel property accepts.

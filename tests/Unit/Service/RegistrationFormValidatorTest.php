@@ -223,7 +223,6 @@ final class RegistrationFormValidatorTest extends TestCase {
 		$this->validator->validate(
 			$this->form(['channel' => 'fax']),
 			[],
-			null,
 			['portal', 'desk']
 		);
 	}//end testAChannelTheConsumerDoesNotAcceptIsRefused()
@@ -247,44 +246,10 @@ final class RegistrationFormValidatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testAConsumerWithNoDeclaredChannelsRefusesNothing(): void {
-		$this->validator->validate($this->form(['channel' => 'fax']), [], null, null);
+		$this->validator->validate($this->form(['channel' => 'fax']), [], null);
 
 		self::assertTrue(true);
 	}//end testAConsumerWithNoDeclaredChannelsRefusesNothing()
-
-	/**
-	 * A preset naming a property the target schema does not have WARNS rather
-	 * than refusing, because buildiq reads that schema across an app boundary and
-	 * a schema it cannot read would otherwise make every save fail
-	 * (REQ-OBRF-005).
-	 *
-	 * @return void
-	 */
-	public function testAnUnknownPresetFieldWarnsAndDoesNotRefuse(): void {
-		$warnings = $this->validator->validate(
-			$this->form(['presets' => [['field' => 'intakeChannnel', 'value' => 'portal', 'hidden' => true]]]),
-			[],
-			['applicantRole', 'intakeChannel']
-		);
-
-		self::assertCount(1, $warnings);
-		self::assertStringContainsString('intakeChannnel', $warnings[0]);
-	}//end testAnUnknownPresetFieldWarnsAndDoesNotRefuse()
-
-	/**
-	 * A preset naming a property that DOES exist warns about nothing.
-	 *
-	 * @return void
-	 */
-	public function testAKnownPresetFieldWarnsAboutNothing(): void {
-		$warnings = $this->validator->validate(
-			$this->form(['presets' => [['field' => 'intakeChannel', 'value' => 'portal', 'hidden' => true]]]),
-			[],
-			['applicantRole', 'intakeChannel']
-		);
-
-		self::assertSame([], $warnings);
-	}//end testAKnownPresetFieldWarnsAboutNothing()
 
 	/**
 	 * An unknown audience is refused: it decides what the form asks and which

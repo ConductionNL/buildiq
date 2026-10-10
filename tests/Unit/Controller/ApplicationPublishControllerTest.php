@@ -34,6 +34,8 @@ namespace OCA\Buildiq\Tests\Unit\Controller;
 use OCA\Buildiq\Controller\ApplicationPublishController;
 use OCA\Buildiq\Service\ApplicationDeletionService;
 use OCA\Buildiq\Service\Credential\VirtualAppCredentialRegistrar;
+use OCA\Buildiq\Service\ManifestFormDestinations;
+use OCA\Buildiq\Service\ManifestResolverService;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -216,6 +218,49 @@ class ApplicationPublishControllerTest extends TestCase {
 		self::assertSame('demo', $calls[1]['object']['slug']);
 		self::assertSame('u-app', $calls[1]['object']['applicationUuid']);
 	}//end testPublishSetsStatusPublished()
+
+	/**
+	 * Decision 179/189: publish is refused with every finding while the live
+	 * manifest's form pages have destination findings; nothing is written.
+	 *
+	 * @return void
+	 */
+	public function testPublishIsRefusedWhileAFormPageHasFindings(): void {
+		$this->signInAs(uid: 'alice');
+		$app = $this->buildEntity(payload: [
+			'id' => 'u-app',
+			'slug' => 'demo',
+			'status' => 'draft',
+			'permissions' => ['owners' => ['user:alice'], 'editors' => [], 'viewers' => []],
+		]);
+		$this->objectService->method('find')->willReturn($app);
+		$this->objectService->expects($this->never())->method('saveObject');
+
+		$manifest = ['pages' => [['id' => 'new', 'type' => 'form', 'config' => ['register' => 'dossiq', 'schema' => 'case', 'fields' => ['aantal']]]]];
+		$resolver = $this->createMock(ManifestResolverService::class);
+		$resolver->expects($this->once())->method('resolve')->with('demo', null, $this->anything())->willReturn($manifest);
+		$finding = ['page' => 'new', 'pageIndex' => 0, 'field' => 'aantal', 'property' => 'aantal', 'code' => 'type-mismatch', 'message' => 'A'];
+		$destinations = $this->createMock(ManifestFormDestinations::class);
+		$destinations->method('findings')->with($manifest)->willReturn([$finding]);
+
+		$controller = new ApplicationPublishController(
+			request: $this->request,
+			logger: $this->createMock(LoggerInterface::class),
+			objectService: $this->objectService,
+			userSession: $this->userSession,
+			permissionResolver: new PermissionResolver($this->groupManager, $this->createMock(LoggerInterface::class)),
+			deletionService: $this->deletionService,
+			credentialRegistrar: $this->credentialRegistrar,
+			manifests: $resolver,
+			formDestinations: $destinations,
+		);
+
+		$response = $controller->publish('u-app');
+
+		self::assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
+		self::assertSame('destination_findings', $response->getData()['error']);
+		self::assertSame([$finding], $response->getData()['findings']);
+	}//end testPublishIsRefusedWhileAFormPageHasFindings()
 
 	/**
 	 * publish() triggers credential-broker onboarding for the app's slug.
