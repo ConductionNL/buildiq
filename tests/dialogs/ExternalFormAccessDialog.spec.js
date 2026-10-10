@@ -19,6 +19,8 @@ vi.mock('../../src/services/externalFormProvisioningService.js', () => ({
 	...service,
 	SIGN_IN_LEVELS: ['low', 'substantial', 'high'],
 }))
+const destination = vi.hoisted(() => ({ checkFormDestinations: vi.fn() }))
+vi.mock('../../src/services/formDestinationCheck.js', () => destination)
 vi.mock('@nextcloud/router', async (importOriginal) => ({
 	...(await importOriginal()),
 	generateUrl: (p) => p,
@@ -66,6 +68,53 @@ function factory(props = {}) {
 describe('ExternalFormAccessDialog', () => {
 	beforeEach(() => {
 		Object.values(service).forEach((fn) => fn.mockReset())
+		destination.checkFormDestinations.mockReset()
+		destination.checkFormDestinations.mockResolvedValue({ accepted: true, findings: [] })
+	})
+
+	it('a form its destination refuses is not provisioned, and the findings are shown (decision 179)', async () => {
+		destination.checkFormDestinations.mockResolvedValue({
+			accepted: false,
+			findings: [{ page: 'page-1', property: 'caseType', code: 'required-unmapped', message: 'caseType is required.' }],
+		})
+		const wrapper = factory({ formConfig: { fields: [{ key: 'title' }] } })
+		await wrapper.setProps({ open: true })
+		wrapper.vm.enabled = true
+		await wrapper.vm.onSave()
+
+		expect(service.enablePublicCreate).not.toHaveBeenCalled()
+		expect(service.provisionPortalPage).not.toHaveBeenCalled()
+		expect(wrapper.emitted().save).toBeUndefined()
+		expect(wrapper.vm.findings).toHaveLength(1)
+		const manifest = destination.checkFormDestinations.mock.calls[0][0]
+		expect(manifest.pages[0].config.destination).toEqual({ register: 'intake', schema: 'report' })
+		expect(manifest.runtime).toEqual({})
+	})
+
+	it('a destination that still refuses a public visitor after the grant gets no portal page', async () => {
+		service.enablePublicCreate.mockResolvedValue({})
+		destination.checkFormDestinations
+			.mockResolvedValueOnce({ accepted: true, findings: [] })
+			.mockResolvedValueOnce({ accepted: false, findings: [{ property: '', code: 'destination-not-public', message: 'No public create.' }] })
+		const wrapper = factory()
+		await wrapper.setProps({ open: true })
+		wrapper.vm.enabled = true
+		await wrapper.vm.onSave()
+
+		expect(destination.checkFormDestinations.mock.calls[1][0].runtime).toEqual({ externalForms: [{ pageId: 'page-1', status: 'enabled' }] })
+		expect(service.provisionPortalPage).not.toHaveBeenCalled()
+		expect(wrapper.emitted().save).toBeUndefined()
+	})
+
+	it('a clean anonymous form is provisioned with a honeypot', async () => {
+		service.enablePublicCreate.mockResolvedValue({})
+		service.provisionPortalPage.mockResolvedValue({ objectId: 'pp-1', portalPath: '/portal', unavailable: false })
+		const wrapper = factory()
+		await wrapper.setProps({ open: true })
+		wrapper.vm.enabled = true
+		await wrapper.vm.onSave()
+
+		expect(wrapper.emitted().save[0][0].honeypot).toBe('_hp')
 	})
 
 	it('enabling provisions OR authorization + a portalPage and emits the resolved entry', async () => {

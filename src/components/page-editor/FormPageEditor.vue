@@ -670,7 +670,7 @@ export default {
 		 * @return {void}
 		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002
 		 */
-		onExternalFormSave(entry) {
+		async onExternalFormSave(entry) {
 			const list = (this.runtimeExternalForms || []).slice()
 			const idx = list.findIndex((e) => e && e.pageId === this.pageId)
 			if (idx >= 0) {
@@ -679,8 +679,12 @@ export default {
 				list.push(entry)
 			}
 			this.$emit('update:runtimeExternalForms', list)
-			// The anonymous form carries the honeypot its entry names.
+			// The anonymous form carries the honeypot its entry names. Written
+			// after the runtime change has reached the manifest: both edits
+			// rebuild the manifest from the prop, so the second would
+			// otherwise drop the first.
 			if (entry && entry.honeypot && this.config.honeypot !== entry.honeypot) {
+				await this.$nextTick()
 				this.update('honeypot', entry.honeypot)
 			}
 		},
