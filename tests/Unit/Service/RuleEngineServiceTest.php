@@ -29,12 +29,15 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\ConditionActionExecutor;
 use OCA\Buildiq\Service\DecisionTableEvaluator;
+use OCA\Buildiq\Service\DecisionTableShape;
 use OCA\OpenRegister\Service\Dmn\DecisionTableEvaluator as SharedEvaluator;
 use OCA\Buildiq\Service\ExpressionEvaluator;
 use OCA\Buildiq\Service\RuleActionDispatcher;
 use OCA\Buildiq\Service\RuleEngineService;
 use OCA\Buildiq\Service\RuleObjectReader;
 use OCA\Buildiq\Service\RuleSetCacheManager;
+use OCA\Buildiq\Service\StoredDecisionTables;
+use OCA\OpenRegister\Service\Dmn\DecisionTableStore;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -46,6 +49,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use UnexpectedValueException;
 
 /**
  * Tests for {@see RuleEngineService}.
@@ -101,6 +105,13 @@ final class RuleEngineServiceTest extends TestCase {
 	private RuleObjectReader $reader;
 
 	/**
+	 * The rule sets' decision tables, read from a double of OpenRegister's store.
+	 *
+	 * @var StoredDecisionTables
+	 */
+	private StoredDecisionTables $tables;
+
+	/**
 	 * Mock wired action dispatcher (spec REQ-AUTD-010).
 	 *
 	 * @var RuleActionDispatcher&MockObject
@@ -132,6 +143,7 @@ final class RuleEngineServiceTest extends TestCase {
 
 		$evaluator = new ExpressionEvaluator();
 		$this->actionDispatcher = $this->createMock(RuleActionDispatcher::class);
+		$this->tables = $this->storedTables(evaluator: new DecisionTableEvaluator($evaluator, $this->sharedEvaluator()));
 		$this->service = new RuleEngineService(
 			$this->objectService,
 			new DecisionTableEvaluator($evaluator, $this->sharedEvaluator()),
@@ -141,6 +153,7 @@ final class RuleEngineServiceTest extends TestCase {
 			$this->createMock(LoggerInterface::class),
 			$this->actionDispatcher,
 			$this->reader,
+			$this->tables,
 		);
 
 	}//end setUp()
@@ -172,6 +185,47 @@ final class RuleEngineServiceTest extends TestCase {
 		return $shared;
 
 	}//end sharedEvaluator()
+
+	/**
+	 * The tables as OpenRegister holds them since decision 196.
+	 *
+	 * The stored row is produced from the authoring fixture by the real
+	 * mapping, and the store double answers it under the rule set's key, so
+	 * every evaluation in this suite reads its table through the round trip
+	 * authoring shape -> stored shape -> authoring shape.
+	 *
+	 * @param DecisionTableEvaluator $evaluator The evaluator whose cell conversion the mapping uses.
+	 *
+	 * @return StoredDecisionTables The reader under test's dependency.
+	 */
+	private function storedTables(DecisionTableEvaluator $evaluator): StoredDecisionTables {
+		$store = $this->createMock(DecisionTableStore::class);
+		$shape = new DecisionTableShape($evaluator);
+		$tables = new StoredDecisionTables(
+			$store,
+			$this->objectService,
+			$shape,
+			$this->createMock(LoggerInterface::class),
+		);
+
+		$stored = $shape->toStored(
+			key: 'buildiq.loan-eligibility',
+			name: 'Loan eligibility',
+			table: $this->loanFindAllResults('decision-table')[0]
+		);
+		$store->method('find')->willReturnCallback(
+			static function (string $reference) use ($stored): array {
+				if ($reference === $stored['key']) {
+					return $stored;
+				}
+
+				throw new UnexpectedValueException('No decision table has the key or id "' . $reference . '".');
+			}
+		);
+
+		return $tables;
+
+	}//end storedTables()
 
 	/**
 	 * Build the loan RuleSet + DecisionTable rows returned by findAll.
@@ -418,6 +472,7 @@ final class RuleEngineServiceTest extends TestCase {
 			$this->createMock(LoggerInterface::class),
 			$this->actionDispatcher,
 			$this->reader,
+			$this->tables,
 		);
 
 		$this->stubScopedRows(
@@ -466,6 +521,7 @@ final class RuleEngineServiceTest extends TestCase {
 			$this->createMock(LoggerInterface::class),
 			$this->actionDispatcher,
 			$this->reader,
+			$this->tables,
 		);
 
 		$this->stubScopedRows(
@@ -741,6 +797,7 @@ final class RuleEngineServiceTest extends TestCase {
 			$this->createMock(LoggerInterface::class),
 			$this->actionDispatcher,
 			$this->reader,
+			$this->tables,
 		);
 
 	}//end serviceWith()
