@@ -2734,4 +2734,45 @@ namespace OCA\OpenRegister\Service\Dmn {
 			}
 		}
 	}
+	if (class_exists(DecisionTableStore::class, autoload: false) === false) {
+		/**
+		 * Stub DecisionTableStore: OpenRegister's reader of stored decision
+		 * tables (openregister#4572). Lookup and validation are proven in
+		 * openregister against the real class; buildiq's suite mocks this type
+		 * to prove its own mapping, so the signature is the part that matters.
+		 */
+		class DecisionTableStore {
+
+			/**
+			 * The register the tables live in.
+			 */
+			public const REGISTER = 'decision-tables';
+
+			/**
+			 * The schema of one table.
+			 */
+			public const SCHEMA = 'decision-table';
+
+			/**
+			 * @param string $reference The table's key or uuid.
+			 *
+			 * @return array<string, mixed> The stored table.
+			 *
+			 * @throws \UnexpectedValueException When no table carries the reference.
+			 */
+			public function find(string $reference): array {
+				throw new \UnexpectedValueException('No decision table has the key or id "' . $reference . '".');
+			}
+
+			/**
+			 * @param string               $reference The table's key or uuid.
+			 * @param array<string, mixed> $inputs    Named input values.
+			 *
+			 * @return array{outputs: array<string, mixed>, matchedRuleIds: array<int, string>, hitPolicy: string, tableKey: string}
+			 */
+			public function evaluate(string $reference, array $inputs): array {
+				return ['outputs' => [], 'matchedRuleIds' => [], 'hitPolicy' => 'UNIQUE', 'tableKey' => $reference];
+			}
+		}
+	}
 }

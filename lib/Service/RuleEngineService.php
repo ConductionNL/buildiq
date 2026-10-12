@@ -57,7 +57,6 @@ class RuleEngineService {
 	 * Schema slugs for the rules-engine objects.
 	 */
 	public const RULE_SET_SCHEMA = 'rule-set';
-	public const DECISION_TABLE_SCHEMA = 'decision-table';
 	public const CONDITION_RULE_SCHEMA = 'condition-action-rule';
 	public const EXECUTION_LOG_SCHEMA = 'rule-execution-log';
 
@@ -118,6 +117,7 @@ class RuleEngineService {
 	 *                                               actions silently no-op in wet runs because no
 	 *                                               dispatcher was ever passed to the executor).
 	 * @param RuleObjectReader $reader Organisation-scoped reads of rule-engine objects (REQ-BRE-007).
+	 * @param StoredDecisionTables $tables A rule set's decision table, held in OpenRegister's decision-tables register (decision 196).
 	 *
 	 * @return void
 	 *
@@ -132,6 +132,7 @@ class RuleEngineService {
 		private readonly LoggerInterface $logger,
 		private readonly RuleActionDispatcher $actionDispatcher,
 		private readonly RuleObjectReader $reader,
+		private readonly StoredDecisionTables $tables,
 	) {
 
 	}//end __construct()
@@ -288,6 +289,9 @@ class RuleEngineService {
 	 * Every read goes through {@see RuleObjectReader}, which applies the
 	 * schema's RBAC and the caller's organisation (REQ-BRE-007): a rule set
 	 * held by another organisation resolves to null, so the caller answers 404.
+	 * The decision table is then read from OpenRegister's decision-tables
+	 * register under a key derived from that resolved rule set, so it is only
+	 * reachable through a rule set the caller could already see.
 	 *
 	 * The rule set itself is read on every call, never from the cache. The
 	 * cache is distributed and shared by every caller, so a bundle keyed by
@@ -325,7 +329,7 @@ class RuleEngineService {
 		$bundle = [
 			'ruleSet' => $ruleSet,
 			'ruleType' => (string)($ruleSet['ruleType'] ?? 'decision-table'),
-			'decisionTables' => $this->findMany(schema: self::DECISION_TABLE_SCHEMA, filters: ['ruleSetId' => $slug]),
+			'decisionTables' => $this->tables->forRuleSet(ruleSet: $ruleSet),
 			'conditionRules' => $this->findMany(schema: self::CONDITION_RULE_SCHEMA, filters: ['ruleSetId' => $slug]),
 		];
 

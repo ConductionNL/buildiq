@@ -29,7 +29,6 @@
           "built-app-route",
           "component-block",
           "condition-action-rule",
-          "decision-table",
           "export-job",
           "hello-message",
           "rule-execution-log",

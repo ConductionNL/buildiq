@@ -280,8 +280,10 @@ class DecisionTableEvaluator {
 	 * @param string $cell The raw cell condition.
 	 *
 	 * @return string The cell in the shared grammar.
+	 *
+	 * @spec openspec/changes/decision-tables-live-in-openregister/specs/business-rules-engine/spec.md
 	 */
-	private function sharedCell(string $cell): string {
+	public function sharedCell(string $cell): string {
 		$trimmed = trim($cell);
 
 		if (in_array(strtolower($trimmed), self::DONT_CARE, true) === true) {
@@ -314,8 +316,10 @@ class DecisionTableEvaluator {
 	 * @param string $hitPolicy buildiq's declared hit policy.
 	 *
 	 * @return string The shared evaluator's spelling.
+	 *
+	 * @spec openspec/changes/decision-tables-live-in-openregister/specs/business-rules-engine/spec.md
 	 */
-	private function sharedHitPolicy(string $hitPolicy): string {
+	public function sharedHitPolicy(string $hitPolicy): string {
 		$upper = strtoupper(trim($hitPolicy));
 		if ($upper === 'RULE-ORDER') {
 			return 'FIRST';

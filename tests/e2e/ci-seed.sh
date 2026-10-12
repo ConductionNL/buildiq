@@ -298,6 +298,11 @@ required = {
         'built-app', 'application-template', 'built-app-route',
         'hello-message', 'applicationVersion', 'export-job',
         # lib/Settings/register.d/10-business-rules.json
+        #
+        # `decision-table` is no longer buildiq's: decision 196 moved the schema
+        # to OpenRegister's decision-tables register. The next line tells gate
+        # 109 so, and gate 109 checks openregister's descriptors for it.
+        # hydra-gate-109 external: decision-table owner=openregister
         'rule-set', 'decision-table', 'condition-action-rule',
         'rule-execution-log', 'rule-test-case',
         # lib/Settings/register.d/40|60|70-*.json

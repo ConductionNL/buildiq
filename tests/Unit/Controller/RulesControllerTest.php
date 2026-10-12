@@ -30,6 +30,12 @@ use OCA\Buildiq\Controller\RulesController;
 use OCA\Buildiq\Service\RuleEngineService;
 use OCA\Buildiq\Service\RuleObjectReader;
 use OCA\Buildiq\Service\RuleSetVersioningService;
+use OCA\Buildiq\Service\DecisionTableEvaluator;
+use OCA\Buildiq\Service\DecisionTableShape;
+use OCA\Buildiq\Service\ExpressionEvaluator;
+use OCA\Buildiq\Service\StoredDecisionTables;
+use OCA\OpenRegister\Service\Dmn\DecisionTableEvaluator as SharedEvaluator;
+use OCA\OpenRegister\Service\Dmn\DecisionTableStore;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -37,6 +43,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -45,6 +52,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use RuntimeException;
+use UnexpectedValueException;
 
 /**
  * Tests for {@see RulesController}.
@@ -77,6 +85,18 @@ final class RulesControllerTest extends TestCase {
 	private IUserSession&MockObject $userSession;
 
 	/**
+	 * OpenRegister's decision-table store (decision 196).
+	 *
+	 * @var DecisionTableStore&MockObject
+	 */
+	private DecisionTableStore&MockObject $store;
+
+	/**
+	 * @var IGroupManager&MockObject
+	 */
+	private IGroupManager&MockObject $groupManager;
+
+	/**
 	 * Build mocks before each test.
 	 *
 	 * @return void
@@ -87,6 +107,8 @@ final class RulesControllerTest extends TestCase {
 		$this->versioningService = $this->createMock(RuleSetVersioningService::class);
 		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->userSession = $this->createMock(IUserSession::class);
+		$this->store = $this->createMock(DecisionTableStore::class);
+		$this->groupManager = $this->createMock(IGroupManager::class);
 
 	}//end setUp()
 
@@ -121,6 +143,13 @@ final class RulesControllerTest extends TestCase {
 			$this->versioningService,
 			new RuleObjectReader($this->objectService, $registerMapper, $schemaMapper, $this->createMock(LoggerInterface::class)),
 			$this->userSession,
+			new StoredDecisionTables(
+				$this->store,
+				$this->objectService,
+				new DecisionTableShape(new DecisionTableEvaluator(new ExpressionEvaluator(), $this->createMock(SharedEvaluator::class))),
+				$this->createMock(LoggerInterface::class),
+			),
+			$this->groupManager,
 		);
 
 	}//end controller()
@@ -359,12 +388,23 @@ final class RulesControllerTest extends TestCase {
 					return [['slug' => 'event-fee', 'name' => 'Event fee', 'version' => '1.0.0', 'status' => 'active', 'ruleType' => 'decision-table']];
 				}
 
+				return [];
+			}
+		);
+		// The table is OpenRegister's row under the rule set's key (decision 196).
+		$this->store->method('find')->willReturnCallback(
+			static function (string $reference): array {
+				if ($reference !== 'buildiq.event-fee') {
+					throw new UnexpectedValueException('No decision table has the key or id "' . $reference . '".');
+				}
+
 				return [
-					[
-						'ruleSetId' => 'event-fee',
-						'inputColumns' => [['name' => 'Attendees', 'type' => 'integer', 'expressionPath' => 'attendees']],
-						'outputColumns' => [['name' => 'fee', 'type' => 'number'], ['name' => 'band', 'type' => 'string']],
-					],
+					'key' => 'buildiq.event-fee',
+					'name' => 'Event fee',
+					'hitPolicy' => 'FIRST',
+					'inputs' => [['name' => 'Attendees', 'type' => 'integer', 'expressionPath' => 'attendees']],
+					'outputs' => [['name' => 'fee', 'type' => 'number'], ['name' => 'band', 'type' => 'string']],
+					'rules' => [['id' => 'rule-0', 'inputEntries' => ['-'], 'outputEntries' => [10, 'small']]],
 				];
 			}
 		);
@@ -442,4 +482,134 @@ final class RulesControllerTest extends TestCase {
 		);
 
 	}//end modelOrganisationB()
+	/**
+	 * A rule set the caller's organisation holds, and the editor's table body.
+	 *
+	 * @param bool $admin Whether the caller is an administrator.
+	 *
+	 * @return void
+	 */
+	private function editorSavesATable(bool $admin): void {
+		$this->authenticate();
+		$this->groupManager->method('isInGroup')->willReturnCallback(
+			static fn (string $uid, string $group): bool => $admin === true && $group === 'admin'
+		);
+		$this->objectService->method('searchObjects')->willReturnCallback(
+			static function (array $query): array {
+				if ((string)$query['@self']['schema'] === '101' && ($query['slug'] ?? '') === 'event-fee') {
+					return [['slug' => 'event-fee', 'name' => 'Event fee', '@self' => ['organisation' => 'ORG-A']]];
+				}
+
+				return [];
+			}
+		);
+		$this->objectService->method('searchObjectsBySlug')->willReturn([]);
+		$this->request->method('getParam')->willReturnCallback(
+			static function (string $key, mixed $default = null): mixed {
+				$body = [
+					'hitPolicy' => 'rule-order',
+					'inputColumns' => [['name' => 'attendees', 'type' => 'integer', 'expressionPath' => 'event.attendees']],
+					'rules' => [
+						['conditions' => ['attendees' => '1..50'], 'values' => ['fee' => 10], 'label' => 'small'],
+						['conditions' => [], 'values' => ['fee' => 25], 'label' => 'large'],
+					],
+				];
+
+				return ($body[$key] ?? $default);
+			}
+		);
+
+	}//end editorSavesATable()
+
+	/**
+	 * Decision 196: the editor's table is written into OpenRegister's
+	 * decision-tables register, in the shape OpenRegister evaluates, under the
+	 * key of the rule set the caller resolved.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/decision-tables-live-in-openregister/specs/business-rules-engine/spec.md
+	 */
+	public function testAnAdministratorsTableIsStoredInOpenRegister(): void {
+		$this->editorSavesATable(admin: true);
+
+		$written = null;
+		$this->objectService->expects($this->once())->method('saveObject')->willReturnCallback(
+			function (array $object, ?array $extend = [], string|int|null $register = null, string|int|null $schema = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true) use (&$written) {
+				$this->assertSame('decision-tables', $register);
+				$this->assertSame('decision-table', $schema);
+				$this->assertNull($uuid);
+				$written = $object;
+				return $this->createMock(\OCA\OpenRegister\Db\ObjectEntity::class);
+			}
+		);
+
+		$response = $this->controller()->saveDecisionTable('event-fee');
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame('buildiq.org-a.event-fee', $written['key']);
+		$this->assertSame('FIRST', $written['hitPolicy']);
+		$this->assertSame('buildiq', $written['owner']);
+		$this->assertSame([['name' => 'attendees', 'type' => 'integer', 'expressionPath' => 'event.attendees']], $written['inputs']);
+		$this->assertSame([['name' => 'fee', 'type' => 'string']], $written['outputs']);
+		$this->assertSame(['[1..50]'], $written['rules'][0]['inputEntries']);
+		$this->assertSame([10], $written['rules'][0]['outputEntries']);
+		$this->assertSame(['-'], $written['rules'][1]['inputEntries']);
+		$this->assertSame('large', $written['rules'][1]['label']);
+
+	}//end testAnAdministratorsTableIsStoredInOpenRegister()
+
+	/**
+	 * Writing a decision table stays admin-only, as it was in buildiq's own register.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/decision-tables-live-in-openregister/specs/business-rules-engine/spec.md
+	 */
+	public function testANonAdministratorCannotWriteATable(): void {
+		$this->editorSavesATable(admin: false);
+		$this->objectService->expects($this->never())->method('saveObject');
+
+		$response = $this->controller()->saveDecisionTable('event-fee');
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+
+	}//end testANonAdministratorCannotWriteATable()
+
+	/**
+	 * A table OpenRegister refuses comes back as 422 with OpenRegister's reason.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/decision-tables-live-in-openregister/specs/business-rules-engine/spec.md
+	 */
+	public function testATableOpenRegisterRefusesIsUnprocessable(): void {
+		$this->editorSavesATable(admin: true);
+		$this->objectService->method('saveObject')->willThrowException(
+			new RuntimeException('The decision table cannot be run: rule rule-0 has 1 input entries for 2 declared inputs.')
+		);
+
+		$response = $this->controller()->saveDecisionTable('event-fee');
+
+		$this->assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
+		$this->assertStringContainsString('cannot be run', (string)$response->getData()['detail']);
+
+	}//end testATableOpenRegisterRefusesIsUnprocessable()
+
+	/**
+	 * A rule set the caller cannot resolve has no table to write: 404.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/decision-tables-live-in-openregister/specs/business-rules-engine/spec.md
+	 */
+	public function testATableForAnUnknownRuleSetIsNotFound(): void {
+		$this->editorSavesATable(admin: true);
+		$this->objectService->expects($this->never())->method('saveObject');
+
+		$response = $this->controller()->saveDecisionTable('no-such-set');
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+
+	}//end testATableForAnUnknownRuleSetIsNotFound()
 }//end class
