@@ -16,7 +16,14 @@ describe('FormFieldBuilder findings', () => {
 	it('shows a 422 finding under the field it names and nowhere else', () => {
 		// The shape the destination check answers with.
 		const findings = [
-			{ page: 'p1', pageIndex: 0, field: 'email', property: 'email', code: 'type-mismatch', message: 'Email must be a string.' },
+			{
+				page: 'p1',
+				pageIndex: 0,
+				field: 'email',
+				property: 'email',
+				code: 'type-mismatch',
+				message: 'Email must be a string.',
+			},
 		]
 		const wrapper = mount(FormFieldBuilder, {
 			props: {
@@ -34,7 +41,11 @@ describe('FormFieldBuilder findings', () => {
 		// It sits in the email row (the second remove button's row), not the name row.
 		const removes = wrapper.findAll('.form-field-builder__remove')
 		expect(removes).toHaveLength(2)
-		expect(removes[0].element.parentElement.contains(marks[0].element)).toBe(false)
-		expect(removes[1].element.parentElement.contains(marks[0].element)).toBe(true)
+		expect(removes[0].element.parentElement.contains(marks[0].element)).toBe(
+			false,
+		)
+		expect(removes[1].element.parentElement.contains(marks[0].element)).toBe(
+			true,
+		)
 	})
 })
