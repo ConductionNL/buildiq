@@ -46,6 +46,11 @@
              CRUD signatures are mandated from outside, so it reported each of
              their parameters as unused. -->
         <file name="tests/stubs/openregister-leaf.stub.php" preloadClasses="true" />
+        <!-- OpenRegister's form destination contract (FormDependent,
+             FormDestinationDependentsEvent, openregister#4563). Until that
+             lands on development the classes do not exist there; the stub is
+             guarded, so the real ones win once they do. -->
+        <file name="tests/stubs/openregister-form.stub.php" preloadClasses="true" />
         <!--
             OpenRegister's data-access contract, which this app's lib/ typehints
             but does not own. OpenRegister supplies it at RUNTIME; these are

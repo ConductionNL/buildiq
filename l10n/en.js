@@ -1958,7 +1958,15 @@ OC.L10N.register(
         "Where the form came from and where it can go: a form page of an app, or a registration form for a schema and type value.": "Where the form came from and where it can go: a form page of an app, or a registration form for a schema and type value.",
         "Install starter templates": "Install starter templates",
         "Fills the Store with the starter templates. Run it after you enable OpenRegister, or to repair a partial install. Templates that are already there stay as they are.": "Fills the Store with the starter templates. Run it after you enable OpenRegister, or to repair a partial install. Templates that are already there stay as they are.",
-        "Install templates": "Install templates"
+        "Install templates": "Install templates",
+        "Pages saved, but the forms could not be checked against where they save to. Save again to retry.": "Pages saved, but the forms could not be checked against where they save to. Save again to retry.",
+        "Saved as a draft. Where it saves to refuses it on the points marked below, so it can be published once they are fixed.": "Saved as a draft. Where it saves to refuses it on the points marked below, so it can be published once they are fixed.",
+        "This form cannot be published yet: where it saves to refuses it on the points marked below. Save it as a draft to keep working on it.": "This form cannot be published yet: where it saves to refuses it on the points marked below. Save it as a draft to keep working on it.",
+        "This form is saved as a draft. Its destination refuses it on the points below, so the app cannot be published until they are fixed.": "This form is saved as a draft. Its destination refuses it on the points below, so the app cannot be published until they are fixed.",
+        "External access is not switched on: where this form saves to refuses it on %n point. Fix it on the form first.": "External access is not switched on: where this form saves to refuses it on %n point. Fix it on the form first.",
+        "External access is not switched on: where this form saves to refuses it on %n points. Fix them on the form first.": "External access is not switched on: where this form saves to refuses it on %n points. Fix them on the form first.",
+        "Pages saved as a draft. A form has %n point its destination refuses; it is marked on its field, and the app can be published once it is fixed.": "Pages saved as a draft. A form has %n point its destination refuses; it is marked on its field, and the app can be published once it is fixed.",
+        "Pages saved as a draft. Forms have %n points their destination refuses; each is marked on its field, and the app can be published once they are fixed.": "Pages saved as a draft. Forms have %n points their destination refuses; each is marked on its field, and the app can be published once they are fixed."
     },
     "nplurals=2; plural=(n != 1);"
 )

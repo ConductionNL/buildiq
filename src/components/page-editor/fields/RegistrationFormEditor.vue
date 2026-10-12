@@ -193,13 +193,42 @@
 			:sections="modelValue.sections || []"
 			:fields="modelValue.fields || []"
 			:properties="properties"
+			:findings="findingsPerField"
 			@update:sections="write('sections', $event)"
 			@update:fields="write('fields', $event)" />
 
 		<FormPresetsBuilder
 			:presets="modelValue.presets || []"
 			:properties="properties"
+			:findings="findingsPerField"
 			@update:presets="write('presets', $event)" />
+
+		<!-- Decision 179/189: a draft saves with its findings; publishing
+		     needs none. Findings on no field or preset are listed here. -->
+		<div
+			v-if="findings.length"
+			class="form-editor__findings"
+			data-testid="registration-form-findings"
+			role="alert">
+			<p class="form-editor__warn">
+				{{
+					modelValue.status === 'published'
+						? t(
+								'buildiq',
+								'This form cannot be published yet: where it saves to refuses it on the points marked below. Save it as a draft to keep working on it.',
+							)
+						: t(
+								'buildiq',
+								'Saved as a draft. Where it saves to refuses it on the points marked below, so it can be published once they are fixed.',
+							)
+				}}
+			</p>
+			<ul v-if="findingsOnNoRow.length">
+				<li v-for="(finding, i) in findingsOnNoRow" :key="i">
+					{{ finding.message }}
+				</li>
+			</ul>
+		</div>
 
 		<p v-if="note" class="form-editor__warn" role="alert">
 			{{ note }}
@@ -225,6 +254,7 @@
 <script>
 import FormLayoutBuilder from './FormLayoutBuilder.vue'
 import FormPresetsBuilder from './FormPresetsBuilder.vue'
+import { findingsByField } from '../../../services/formDestinationCheck.js'
 
 export default {
 	name: 'RegistrationFormEditor',
@@ -259,11 +289,43 @@ export default {
 			type: Boolean,
 			default: false,
 		},
+
+		// Decision 179/189: destination findings from the last save.
+		findings: {
+			type: Array,
+			default: () => [],
+		},
 	},
 
 	emits: ['update:modelValue', 'save', 'close', 'saveToLibrary'],
 
 	computed: {
+		/**
+		 * The findings grouped by the field or preset they sit on.
+		 *
+		 * @return {{[key: string]: Array<object>}}
+		 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-every-buildiq-form-must-be-valid-against-its-destination-before-it-is-published
+		 */
+		findingsPerField() {
+			return findingsByField(this.findings)
+		},
+
+		/**
+		 * Findings no field or preset row of this form shows.
+		 *
+		 * @return {Array<object>}
+		 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-every-buildiq-form-must-be-valid-against-its-destination-before-it-is-published
+		 */
+		findingsOnNoRow() {
+			const rows = new Set([
+				...(this.modelValue.fields || []).map((f) => f && f.name),
+				...(this.modelValue.presets || []).map((p) => p && p.field),
+			])
+			return Object.entries(this.findingsPerField)
+				.filter(([key]) => !rows.has(key))
+				.flatMap(([, list]) => list)
+		},
+
 		/**
 		 * Whether the channel is still free text because no property was
 		 * nominated. Said out loud rather than left as an input that quietly

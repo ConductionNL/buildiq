@@ -192,6 +192,9 @@ foreach ([
 // classes ARE available (in-container run).
 require_once __DIR__ . '/stubs/openregister-stubs.php';
 
+// Form destination contract (openregister#4563). Same guards.
+require_once __DIR__ . '/stubs/openregister-form.stub.php';
+
 // Leaf-provider contract (ADR-066). Same guards: a no-op in-container.
 require_once __DIR__ . '/stubs/openregister-leaf.stub.php';
 

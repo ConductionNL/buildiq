@@ -223,7 +223,6 @@ final class RegistrationFormValidatorTest extends TestCase {
 		$this->validator->validate(
 			$this->form(['channel' => 'fax']),
 			[],
-			null,
 			['portal', 'desk']
 		);
 	}//end testAChannelTheConsumerDoesNotAcceptIsRefused()
@@ -247,44 +246,10 @@ final class RegistrationFormValidatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testAConsumerWithNoDeclaredChannelsRefusesNothing(): void {
-		$this->validator->validate($this->form(['channel' => 'fax']), [], null, null);
+		$this->validator->validate($this->form(['channel' => 'fax']), [], null);
 
 		self::assertTrue(true);
 	}//end testAConsumerWithNoDeclaredChannelsRefusesNothing()
-
-	/**
-	 * A preset naming a property the target schema does not have WARNS rather
-	 * than refusing, because buildiq reads that schema across an app boundary and
-	 * a schema it cannot read would otherwise make every save fail
-	 * (REQ-OBRF-005).
-	 *
-	 * @return void
-	 */
-	public function testAnUnknownPresetFieldWarnsAndDoesNotRefuse(): void {
-		$warnings = $this->validator->validate(
-			$this->form(['presets' => [['field' => 'intakeChannnel', 'value' => 'portal', 'hidden' => true]]]),
-			[],
-			['applicantRole', 'intakeChannel']
-		);
-
-		self::assertCount(1, $warnings);
-		self::assertStringContainsString('intakeChannnel', $warnings[0]);
-	}//end testAnUnknownPresetFieldWarnsAndDoesNotRefuse()
-
-	/**
-	 * A preset naming a property that DOES exist warns about nothing.
-	 *
-	 * @return void
-	 */
-	public function testAKnownPresetFieldWarnsAboutNothing(): void {
-		$warnings = $this->validator->validate(
-			$this->form(['presets' => [['field' => 'intakeChannel', 'value' => 'portal', 'hidden' => true]]]),
-			[],
-			['applicantRole', 'intakeChannel']
-		);
-
-		self::assertSame([], $warnings);
-	}//end testAKnownPresetFieldWarnsAboutNothing()
 
 	/**
 	 * An unknown audience is refused: it decides what the form asks and which
@@ -318,8 +283,10 @@ final class RegistrationFormValidatorTest extends TestCase {
 	 */
 	public function testEachSignInLevelIsAccepted(): void {
 		foreach (['low', 'substantial', 'high'] as $level) {
-			self::assertSame([], $this->validator->validate($this->form(['minTrust' => $level])), $level);
+			$this->validator->validate($this->form(['minTrust' => $level]));
 		}
+
+		self::assertTrue(true, 'No level was refused.');
 	}//end testEachSignInLevelIsAccepted()
 
 	/**
@@ -328,7 +295,9 @@ final class RegistrationFormValidatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFormWithoutASignInLevelIsAccepted(): void {
-		self::assertSame([], $this->validator->validate($this->form(['minTrust' => null])));
+		$this->validator->validate($this->form(['minTrust' => null]));
+
+		self::assertTrue(true, 'An anonymous form was not refused.');
 	}//end testAFormWithoutASignInLevelIsAccepted()
 
 	/**

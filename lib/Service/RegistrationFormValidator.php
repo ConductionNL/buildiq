@@ -48,18 +48,6 @@ use InvalidArgumentException;
  */
 final class RegistrationFormValidator {
 	/**
-	 * Constructor.
-	 *
-	 * @param RegistrationFormTargetWarnings $targetWarnings What this form says about a schema it does not own.
-	 *
-	 * @return void
-	 */
-	public function __construct(
-		private readonly RegistrationFormTargetWarnings $targetWarnings = new RegistrationFormTargetWarnings(),
-	) {
-	}//end __construct()
-
-	/**
 	 * The parts that bind a form to one type value.
 	 *
 	 * @var array<int, string>
@@ -78,10 +66,9 @@ final class RegistrationFormValidator {
 	 *
 	 * @param array<string, mixed> $form The form about to be saved.
 	 * @param array<int, array<string, mixed>> $existing Forms already stored for the same type.
-	 * @param array<int, string>|null $targetProperties The property names the target schema declares, or null when they cannot be read.
 	 * @param array<int, string>|null $targetChannels The channel values the consumer accepts, or null when it declares none.
 	 *
-	 * @return array<int, string> Warnings that do not block the save.
+	 * @return void
 	 *
 	 * @throws InvalidArgumentException When a rule refuses the form.
 	 *
@@ -90,9 +77,8 @@ final class RegistrationFormValidator {
 	public function validate(
 		array $form,
 		array $existing = [],
-		?array $targetProperties = null,
 		?array $targetChannels = null,
-	): array {
+	): void {
 		$this->assertName(form: $form);
 		$this->assertAudience(form: $form);
 		(new RegistrationFormSignInLevel())->assertValid(form: $form);
@@ -100,8 +86,6 @@ final class RegistrationFormValidator {
 		$this->assertChannel(form: $form, targetChannels: $targetChannels);
 		$this->assertNameIsFree(form: $form, existing: $existing);
 		$this->assertOneDefault(form: $form, existing: $existing);
-
-		return $this->targetWarnings->forForm(form: $form, targetProperties: $targetProperties);
 	}//end validate()
 
 	/**

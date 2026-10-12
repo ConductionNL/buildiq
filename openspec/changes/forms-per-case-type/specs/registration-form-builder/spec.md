@@ -32,8 +32,12 @@ audience)` SHALL be `isDefault`.
 
 ### Requirement: A form presets fields, hidden or visible (REQ-OBRF-005)
 
-A form SHALL carry `presets[]` of `{field, value, hidden}`. Saving SHALL
-warn on a `field` absent from the target schema. The served form SHALL
+A form SHALL carry `presets[]` of `{field, value, hidden}`. A preset is a
+fixed value for OpenRegister's form destination validator: a `field` absent
+from the target schema, or a value its property refuses, is a finding, and a
+form with findings saves only as a draft and cannot be published (amended by
+`forms-are-valid-against-their-destination`, decisions 179 and 189; this
+replaces "Saving SHALL warn"). The served form SHALL
 omit a hidden preset field from `fields[]` and SHALL set `default` on a
 visible one. The leaf SHALL return `presets[]` beside the form, and
 buildiq SHALL NOT write the target object.

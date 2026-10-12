@@ -82,6 +82,12 @@
 				@click="removeField(index)">
 				✕
 			</button>
+			<!-- Decision 179: each destination finding on its own field. -->
+			<InlineFieldMark
+				v-for="(finding, findingIndex) in findings[field.key] || []"
+				:key="'finding-' + findingIndex"
+				class="form-field-builder__finding"
+				:error="{ hasError: true, message: finding.message }" />
 
 			<div
 				v-if="showLogic && isExpanded(index)"
@@ -166,6 +172,13 @@ export default {
 		showLogic: {
 			type: Boolean,
 			default: false,
+		},
+
+		// Decision 179/189: destination findings per field key, from the
+		// last save. Each is marked under its field.
+		findings: {
+			type: Object,
+			default: () => ({}),
 		},
 	},
 

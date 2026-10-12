@@ -27,7 +27,10 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use InvalidArgumentException;
 use OCA\Buildiq\Service\RegistrationFormAuthoringService;
+use OCA\Buildiq\Exception\FormDestinationRefusedException;
+use OCA\Buildiq\Service\FormDestinationCheck;
 use OCA\Buildiq\Service\RegistrationFormTargetSchemaReader;
+use OCA\Buildiq\Service\RegistrationFormTargetWarnings;
 use OCA\Buildiq\Service\RegistrationFormValidator;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -37,6 +40,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -77,8 +81,50 @@ final class RegistrationFormAuthoringServiceTest extends TestCase {
 					'intakeChannel' => ['type' => 'string', 'enum' => ['portal', 'desk']],
 				]
 			),
+			destination: $this->destinationAnswering(findings: []),
 		);
 	}//end setUp()
+
+	/**
+	 * The destination check over a validator double answering these findings.
+	 *
+	 * @param array<int, array<string, mixed>> $findings What OpenRegister's validator answers.
+	 * @param RegistrationFormTargetSchemaReader|null $reader The reader, or one over `Zaak`.
+	 *
+	 * @return RegistrationFormTargetWarnings The destination check.
+	 */
+	private function destinationAnswering(array $findings, ?RegistrationFormTargetSchemaReader $reader = null): RegistrationFormTargetWarnings {
+		$validator = new class($findings) {
+			/**
+			 * @param array<int, array<string, mixed>> $findings What to answer.
+			 */
+			public function __construct(private readonly array $findings) {
+			}
+
+			/**
+			 * @param array<string, mixed> $mapping The mapping.
+			 * @param Schema $schema The schema.
+			 * @param array<string, mixed> $options The options.
+			 *
+			 * @return array<int, array<string, mixed>> The findings.
+			 */
+			public function validate(array $mapping, Schema $schema, array $options = []): array {
+				return $this->findings;
+			}
+		};
+
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('has')->willReturn(true);
+		$container->method('get')->willReturn($validator);
+
+		return new RegistrationFormTargetWarnings(
+			check: new FormDestinationCheck(
+				container: $container,
+				schemas: $reader ?? $this->readerOver(['caseType' => ['type' => 'string']]),
+				logger: $this->createMock(LoggerInterface::class),
+			),
+		);
+	}//end destinationAnswering()
 
 	/**
 	 * An object service over the in-memory store.
@@ -266,7 +312,9 @@ final class RegistrationFormAuthoringServiceTest extends TestCase {
 	 */
 	public function testTheSameNameOnAnotherSchemaIsFree(): void {
 		$this->service->save($this->form());
-		$this->service->save($this->form(['id' => 'rf-3', 'schema' => 'Melding']));
+		// A draft: the destination double only knows `Zaak`, and this test is
+		// about the name rule, not the destination check.
+		$this->service->save($this->form(['id' => 'rf-3', 'schema' => 'Melding', 'status' => 'draft', 'isDefault' => false]));
 
 		$this->assertCount(2, $this->store);
 	}//end testTheSameNameOnAnotherSchemaIsFree()
@@ -302,40 +350,77 @@ final class RegistrationFormAuthoringServiceTest extends TestCase {
 	}//end testADeclaredChannelIsAccepted()
 
 	/**
-	 * A preset naming a property the target schema does not have earns a
-	 * warning. It is a warning and not a refusal because buildiq reads that
-	 * schema across an app boundary.
+	 * Decision 189: a draft with findings is stored, and the findings come back
+	 * for the designer to mark on each field.
 	 *
 	 * @return void
 	 */
-	public function testAPresetOnAnUnknownPropertyWarns(): void {
-		$saved = $this->service->save(
-			$this->form(['presets' => [['field' => 'verzonnenVeld', 'value' => 'x', 'hidden' => true]]])
-		);
+	public function testADraftWithFindingsIsSavedAndReturnsThem(): void {
+		$finding = ['property' => 'caseType', 'code' => 'required-unmapped', 'message' => '"caseType" is required.'];
+		$service = $this->serviceWith(destination: $this->destinationAnswering(findings: [$finding]));
 
-		$this->assertCount(1, $saved['warnings']);
-		$this->assertStringContainsString('verzonnenVeld', $saved['warnings'][0]);
-	}//end testAPresetOnAnUnknownPropertyWarns()
+		$saved = $service->save($this->form(['status' => 'draft']));
+
+		$this->assertArrayHasKey('rf-1', $this->store);
+		$this->assertSame([$finding], $saved['findings']);
+	}//end testADraftWithFindingsIsSavedAndReturnsThem()
 
 	/**
-	 * A target schema nothing answers to leaves the save working and says the
-	 * checks did not run. Silence would be indistinguishable from a clean pass.
+	 * A published form with any finding is refused and nothing is stored: no
+	 * report-only mode (decision 181).
 	 *
 	 * @return void
 	 */
-	public function testASchemaThatCannotBeReadIsReportedAndTheSaveStillWorks(): void {
-		$service = new RegistrationFormAuthoringService(
+	public function testAPublishedFormWithFindingsIsRefusedAndNotStored(): void {
+		$findings = [
+			['field' => 'naam', 'property' => 'naam', 'code' => 'type-mismatch', 'message' => 'A'],
+			['property' => 'intakeChannel', 'code' => 'fixed-value-invalid', 'message' => 'B'],
+		];
+		$service = $this->serviceWith(destination: $this->destinationAnswering(findings: $findings));
+
+		try {
+			$service->save($this->form(['status' => 'published']));
+			$this->fail('A published form with findings was saved.');
+		} catch (FormDestinationRefusedException $e) {
+			$this->assertSame($findings, $e->getFindings());
+		}
+
+		$this->assertSame([], $this->store);
+	}//end testAPublishedFormWithFindingsIsRefusedAndNotStored()
+
+	/**
+	 * A target schema nothing answers to is a finding: the check did not run,
+	 * so a published form is refused. Silence would read as a clean pass.
+	 *
+	 * @return void
+	 */
+	public function testASchemaThatCannotBeReadRefusesPublishing(): void {
+		$service = $this->serviceWith(
+			destination: $this->destinationAnswering(findings: [], reader: $this->readerOverNothing()),
+			reader: $this->readerOverNothing()
+		);
+
+		$this->expectException(FormDestinationRefusedException::class);
+		$service->save($this->form());
+	}//end testASchemaThatCannotBeReadRefusesPublishing()
+
+	/**
+	 * The service over the in-memory store with this destination check.
+	 *
+	 * @param RegistrationFormTargetWarnings $destination The destination check.
+	 * @param RegistrationFormTargetSchemaReader|null $reader The reader.
+	 *
+	 * @return RegistrationFormAuthoringService The service.
+	 */
+	private function serviceWith(RegistrationFormTargetWarnings $destination, ?RegistrationFormTargetSchemaReader $reader = null): RegistrationFormAuthoringService {
+		return new RegistrationFormAuthoringService(
 			objectService: $this->objectServiceOverStore(),
 			appConfig: $this->appConfigStub(),
 			validator: new RegistrationFormValidator(),
-			targetSchema: $this->readerOverNothing(),
+			targetSchema: $reader ?? $this->readerOver(['caseType' => ['type' => 'string']]),
+			destination: $destination,
 		);
-
-		$saved = $service->save($this->form());
-
-		$this->assertArrayHasKey('rf-1', $this->store);
-		$this->assertStringContainsString('did not run', $saved['warnings'][0]);
-	}//end testASchemaThatCannotBeReadIsReportedAndTheSaveStillWorks()
+	}//end serviceWith()
 
 	/**
 	 * A reader whose register holds no schema at all.
