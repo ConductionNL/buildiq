@@ -142,7 +142,8 @@ final class OpenRegisterAutoloader {
 			// Checked before the short-circuit: under a long-lived worker this
 			// static outlives the request, and an OpenRegister disabled since
 			// must not stay wired.
-			if ($appManager->isEnabledForAnyone($appId ?? self::OPENREGISTER_APP_ID) === false) {
+			$enabled = $appManager->isEnabledForAnyone($appId ?? self::OPENREGISTER_APP_ID);
+			if ($enabled === false) {
 				self::unregister();
 				return;
 			}
@@ -152,7 +153,8 @@ final class OpenRegisterAutoloader {
 			}
 
 			// The app id is named at the call, so the ADR-040 gate (64) can read it.
-			$path = rtrim($appManager->getAppPath($appId ?? self::OPENREGISTER_APP_ID), '/');
+			$appPath = $appManager->getAppPath($appId ?? self::OPENREGISTER_APP_ID);
+			$path    = rtrim($appPath, '/');
 			if (is_dir($path.'/lib') === false) {
 				return;
 			}
