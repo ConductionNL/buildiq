@@ -22,7 +22,7 @@ Vrij en open source onder de EUPL-1.2-licentie.
 
 **Ondersteuning:** Voor ondersteuning, neem contact op via support@conduction.nl.
     ]]></description>
-    <version>0.7.15-unstable.20260919230536</version>
+    <version>0.7.16-unstable.20261011120000</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>Buildiq</namespace>
@@ -178,6 +178,14 @@ Vrij en open source onder de EUPL-1.2-licentie.
                 and orphaning every object on the first.
             -->
             <step>OCA\Buildiq\Repair\RenameAgentSchemaSlug</step>
+            <!--
+                BEFORE InitializeSettings: moves buildiq's decision tables into
+                OpenRegister's decision-tables register (decision 196) while the
+                old schema is still in the buildiq register, then renames the old
+                schema's slug so the import's slug lookup finds only
+                OpenRegister's `decision-table`. Idempotent; never throws.
+            -->
+            <step>OCA\Buildiq\Repair\MoveDecisionTablesToOpenRegister</step>
             <step>OCA\Buildiq\Repair\InitializeSettings</step>
             <step>OCA\Buildiq\Repair\MigrateToVersionedModel</step>
             <step>OCA\Buildiq\Repair\MigrateAppOverridesToHybrid</step>
@@ -260,6 +268,14 @@ Vrij en open source onder de EUPL-1.2-licentie.
                 and orphaning every object on the first.
             -->
             <step>OCA\Buildiq\Repair\RenameAgentSchemaSlug</step>
+            <!--
+                BEFORE InitializeSettings: moves buildiq's decision tables into
+                OpenRegister's decision-tables register (decision 196) while the
+                old schema is still in the buildiq register, then renames the old
+                schema's slug so the import's slug lookup finds only
+                OpenRegister's `decision-table`. Idempotent; never throws.
+            -->
+            <step>OCA\Buildiq\Repair\MoveDecisionTablesToOpenRegister</step>
             <step>OCA\Buildiq\Repair\InitializeSettings</step>
             <step>OCA\Buildiq\Repair\MigrateToVersionedModel</step>
             <step>OCA\Buildiq\Repair\MigrateAppOverridesToHybrid</step>

@@ -226,9 +226,9 @@ jobs:
       # the specs attach to, and it degrades to a log line when Docudesk is
       # missing. So this input is the whole fix.
       #
-      # `ref: main` — Docudesk has no `development` branch (verified by listing
-      # the repo's branches; it publishes `main` and `beta` only), and `main`
-      # carries every route above.
+      # `ref: development`: filinq's `main` caps Nextcloud at 34 (measured
+      # 2026-10-12), so the stable35 cell could not enable it. `development`
+      # declares 32 to 35 and carries every route above.
       #
       # Only the API is exercised. `additional-apps` clones and runs `composer
       # install` but never builds an app's frontend, so Docudesk's own JS bundle
@@ -241,7 +241,7 @@ jobs:
       # fails on every run. `app` is `integriq`, verified in its appinfo/info.xml
       # on `development` on 2026-09-14. Its frontend is not built here either, so
       # the spec only asserts that Add integration lands on integriq's URL.
-      additional-apps: '[{"repo":"ConductionNL/openregister","app":"openregister","ref":"development"},{"repo":"ConductionNL/filinq","app":"filinq","ref":"main"},{"repo":"ConductionNL/integriq","app":"integriq","ref":"development"}]'
+      additional-apps: '[{"repo":"ConductionNL/openregister","app":"openregister","ref":"development"},{"repo":"ConductionNL/filinq","app":"filinq","ref":"development"},{"repo":"ConductionNL/integriq","app":"integriq","ref":"development"}]'
       enable-sbom: true
 
       # (Integration Tests (Newman) is enabled at `enable-newman` above; the
