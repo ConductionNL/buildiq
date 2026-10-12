@@ -215,6 +215,19 @@ class ManifestResolverService {
 	}//end checkNonProductionAccess()
 
 	/**
+	 * The Application with this slug, or null.
+	 *
+	 * @param string $appSlug The virtual-app slug.
+	 *
+	 * @return array<string, mixed>|null The Application, normalised.
+	 *
+	 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-a-draft-form-saves-with-its-findings
+	 */
+	public function findApplication(string $appSlug): ?array {
+		return $this->findApplicationBySlug(appSlug: $appSlug);
+	}//end findApplication()
+
+	/**
 	 * Look up the Application object by slug via OR's ObjectService.
 	 *
 	 * Uses searchObjects with register=openbuild, schema=application, slug={appSlug}.

@@ -33,6 +33,7 @@
   - Target register/schema existence and every mapped property are validated before save; an unknown property is refused by name
   - Author-time and run-time validation call the SAME validator, asserted by feeding one invalid mapping through both and comparing the rejections — a designer that validates differently is false confidence, not a safety net
   - A dependent write referencing a preceding write's id validates
+  - Note (decision 179, `forms-are-valid-against-their-destination`): "the SAME validator" is OpenRegister's form destination validator (`POST /api/forms/validate`, openregister#4563), called through buildiq's `FormDestinationCheck`. A journey in draft saves with its findings; publishing needs zero (decision 189)
 - [ ] Implement
 - [ ] Test
 

@@ -285,6 +285,8 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // What the consuming schema declares, so the builder's field, preset and
         // channel pickers offer real values instead of free text.
         ['name' => 'registrationForm#target', 'url' => '/api/registration-forms/target', 'verb' => 'GET'],
+        // Decision 179/189: the page designer checks its form pages against their destinations on save.
+        ['name' => 'formDestination#check', 'url' => '/api/forms/destination-check', 'verb' => 'POST'],
 
         // Remote template store (buildiq-remote-template-store). Consume-only:
         // search proxies the configured remote OpenRegister catalogue server-side;

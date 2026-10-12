@@ -230,6 +230,12 @@
 						@click="removeField(entry.index)">
 						✕
 					</button>
+					<!-- Decision 179: each destination finding on its own field. -->
+					<InlineFieldMark
+						v-for="(finding, findingIndex) in findings[entry.field.name]
+						|| []"
+						:key="'finding-' + findingIndex"
+						:error="{ hasError: true, message: finding.message }" />
 				</div>
 			</div>
 
@@ -241,12 +247,15 @@
 </template>
 
 <script>
+import InlineFieldMark from './InlineFieldMark.vue'
 import { toKebabCase } from '../../../utils/slugPattern.js'
 
 const FIELD_TYPES = ['string', 'number', 'boolean', 'select', 'textarea', 'date']
 
 export default {
 	name: 'FormLayoutBuilder',
+
+	components: { InlineFieldMark },
 
 	props: {
 		sections: {
@@ -257,6 +266,12 @@ export default {
 		fields: {
 			type: Array,
 			default: () => [],
+		},
+
+		// Decision 179/189: destination findings per field name, from the last save.
+		findings: {
+			type: Object,
+			default: () => ({}),
 		},
 
 		// The property names the target schema declares, or null when buildiq

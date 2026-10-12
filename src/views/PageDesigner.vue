@@ -236,6 +236,7 @@ import { useRegisterPicker } from '../composables/useRegisterPicker.js'
 import { useSessionHistory } from '../composables/useSessionHistory.js'
 import registry from '../registry.js'
 import { versionRegister } from '../services/appRegister.js'
+import { findingsForPage } from '../services/formDestinationCheck.js'
 import { resolveValidationMessage as resolveMessage } from '../services/manifestValidation/connectorErrorMessages.js'
 import { isEditableTarget } from '../utils/isEditableTarget.js'
 
@@ -333,6 +334,13 @@ export default {
 		sessionKey: {
 			type: String,
 			default: '',
+		},
+
+		// Decision 179/189: destination findings from the last save, each
+		// `{page, pageIndex, field?, property, code, message}`.
+		destinationFindings: {
+			type: Array,
+			default: () => [],
 		},
 	},
 
@@ -903,6 +911,17 @@ export default {
 		 * @spec openspec/specs/page-designer-ui/spec.md#requirement-per-page-type-config-sub-editors-emit-validated-slices
 		 */
 		stubEditorProps(type) {
+			if (type === 'form') {
+				// Decision 179/189: the destination findings of the selected
+				// form page, marked on its fields by FormPageEditor.
+				return {
+					destinationFindings: findingsForPage(
+						this.destinationFindings,
+						(this.selectedPage && this.selectedPage.id) || '',
+						this.selectedIndex,
+					),
+				}
+			}
 			if (this.subEditorFor(type) !== 'StubPageEditor') {
 				return {}
 			}

@@ -67,6 +67,7 @@
 				:channels="channels"
 				:note="note"
 				:saving="adding"
+				:findings="findings"
 				@update:modelValue="editing = $event"
 				@save="saveEdited"
 				@close="editing = null"
@@ -203,6 +204,8 @@ export default {
 			channels: null,
 			note: '',
 			warnings: [],
+			// Decision 179/189: destination findings from the last save of `editing`.
+			findings: [],
 		}
 	},
 
@@ -307,6 +310,7 @@ export default {
 			this.editing = { ...form }
 			this.refusal = ''
 			this.warnings = []
+			this.findings = []
 			this.readTarget()
 		},
 
@@ -324,9 +328,11 @@ export default {
 			try {
 				const result = await saveRegistrationForm(this.editing)
 				this.warnings = result.warnings
+				this.findings = result.findings || []
 				await this.reload()
 			} catch (refusal) {
 				this.refusal = refusal.message
+				this.findings = refusal.findings || []
 			} finally {
 				this.adding = false
 			}

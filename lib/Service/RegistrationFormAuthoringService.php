@@ -46,6 +46,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use InvalidArgumentException;
+use OCA\Buildiq\Exception\FormDestinationRefusedException;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IAppConfig;
 
@@ -69,6 +70,7 @@ class RegistrationFormAuthoringService {
 	 * @param IAppConfig $appConfig App config, for the register slug.
 	 * @param RegistrationFormValidator $validator The rules a form has to pass.
 	 * @param RegistrationFormTargetSchemaReader $targetSchema Reads the consuming schema.
+	 * @param RegistrationFormTargetWarnings $destination Asks OpenRegister whether the destination accepts the form.
 	 *
 	 * @return void
 	 */
@@ -77,19 +79,29 @@ class RegistrationFormAuthoringService {
 		private readonly IAppConfig $appConfig,
 		private readonly RegistrationFormValidator $validator,
 		private readonly RegistrationFormTargetSchemaReader $targetSchema,
+		private readonly RegistrationFormTargetWarnings $destination,
 	) {
 	}//end __construct()
 
 	/**
 	 * Save one form.
 	 *
+	 * The rules run first, then OpenRegister's destination check. A draft is
+	 * saved with its findings, which come back for the designer to mark on
+	 * each field (decision 189). A form in any other status (published,
+	 * retired) with a finding is not saved: there is no report-only mode
+	 * (decision 181).
+	 *
 	 * @param array<string, mixed> $form The form to store.
 	 *
-	 * @return array<string, mixed> `{form, warnings}`.
+	 * @return array<string, mixed> `{form, warnings, findings}`; `warnings` stays for callers that read it and is empty.
 	 *
 	 * @throws InvalidArgumentException When a rule refuses it.
+	 * @throws FormDestinationRefusedException When a form that is not a draft has findings.
 	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004, REQ-OBRF-005)
+	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
+	 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-every-buildiq-form-must-be-valid-against-its-destination-before-it-is-published
+	 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-a-draft-form-saves-with-its-findings
 	 */
 	public function save(array $form): array {
 		$register = (string)($form['register'] ?? '');
@@ -107,17 +119,18 @@ class RegistrationFormAuthoringService {
 		// The validator excludes the form's own id from both uniqueness rules,
 		// so the stored set is handed over whole rather than filtered here: one
 		// place deciding what counts as a collision, not two.
-		$warnings = $this->validator->validate(
+		$this->validator->validate(
 			$form,
 			$this->storedFor(register: $register, schema: $schema),
-			$target['properties'],
 			$target['channels']
 		);
 
-		// A check that could not run says so. Silence here would be
-		// indistinguishable from a clean pass.
-		if ($target['note'] !== null) {
-			$warnings[] = $target['note'];
+		// Decision 189: a draft saves with its findings, so an author can save a
+		// half-built form and see on each field what is still wrong. Publishing
+		// needs zero findings; there is no report-only mode (decision 181).
+		$findings = $this->destination->findings(form: $form);
+		if ($findings !== [] && (string)($form['status'] ?? 'draft') !== 'draft') {
+			throw new FormDestinationRefusedException(findings: $findings);
 		}
 
 		$this->objectService->saveObject(
@@ -126,7 +139,7 @@ class RegistrationFormAuthoringService {
 			schema: self::SCHEMA,
 		);
 
-		return ['form' => $form, 'warnings' => $warnings];
+		return ['form' => $form, 'warnings' => [], 'findings' => $findings];
 	}//end save()
 
 	/**
