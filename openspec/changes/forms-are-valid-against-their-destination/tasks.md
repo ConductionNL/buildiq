@@ -22,7 +22,7 @@
 
 ## 3. nextcloud-vue
 
-- [ ] 3.1 `CnFormPage` renders a 422 `findings[]` answer per field, and a `honeypot` field (backward-compatible minor in ConductionNL/nextcloud-vue)
+- [x] 3.1 `CnFormPage` renders a 422 `findings[]` answer per field, and a `honeypot` field (backward-compatible minor in ConductionNL/nextcloud-vue) Released in @conduction/nextcloud-vue 2.81.0 (#1461); buildiq requires ^2.81.0.
 
 ## 4. Verification
 
