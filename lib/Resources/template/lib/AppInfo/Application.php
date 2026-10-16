@@ -53,8 +53,19 @@ class Application extends App implements IBootstrap {
 	 * @return void
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 * @SuppressWarnings(PHPMD.StaticAccess) OpenRegisterAutoloader is a static
+	 *                   prelude: this method is the composition root, so
+	 *                   there is no container to inject it from yet.
 	 */
 	public function register(IRegistrationContext $context): void {
+		// `app-template` sorts before `openregister`, so Nextcloud has not put
+		// OpenRegister's PSR-4 prefix on the autoloader yet when this runs. Do
+		// it here, through public API only (NC 35 removed the private
+		// \OC_App::registerAutoloading()). Never throws; returns false when
+		// OpenRegister is absent. Keep any OCA\OpenRegister\ class USE below
+		// this line (a ::class constant alone does not autoload).
+		OpenRegisterAutoloader::register();
+
 		// Register deep link patterns with OpenRegister's unified search provider.
 		// Only fires when OpenRegister is installed and dispatches the event.
 		$context->registerEventListener(

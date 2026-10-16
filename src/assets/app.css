@@ -33,12 +33,6 @@
 	z-index: 2;
 }
 
-/* Left-nav icons: always render black. NC applies `brightness(0) invert(1)`
-   (→ white) to the active entry's icon, which disappears on Buildiq's light
-   nav background; `brightness(0)` forces solid black in every state. (This
-   stylesheet only loads while Buildiq is open, so it never touches other
-   apps' navigation.) */
-.app-navigation .app-navigation-entry-icon,
-.app-navigation .app-navigation-entry.active .app-navigation-entry-icon {
-	filter: brightness(0) !important;
-}
+/* Don't filter `.app-navigation-entry-icon`. A `brightness(0)` used to pin the
+   left-nav icons black for the legacy `icon-*` background-images; every entry
+   now renders an MDI SVG on `currentColor`, which themes itself. */

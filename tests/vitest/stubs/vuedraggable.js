@@ -39,7 +39,16 @@ export default {
 	render() {
 		const item = this.$slots.item
 		const rows = item
-			? this.modelValue.map((element, index) => item({ element, index }))
+			? this.modelValue.map((element, index) => {
+					const nodes = item({ element, index })
+					// Mirrors the real guard. Worth stubbing because it only
+					// trips in dev builds, which keep comment nodes — so without
+					// it the suite passes while `npm run dev` renders the error.
+					if (nodes.length !== 1) {
+						throw new Error('Item slot must have only one child')
+					}
+					return nodes
+				})
 			: (this.$slots.default?.() ?? [])
 
 		return h('div', { class: 'vuedraggable-stub' }, [

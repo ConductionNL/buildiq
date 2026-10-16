@@ -100,6 +100,13 @@ class ExportService {
 	private array $lastSkipped = [];
 
 	/**
+	 * What the last export wrote of the application itself.
+	 *
+	 * @var array{pages: int, menu: int, schemas: int, records: int}|null
+	 */
+	private ?array $lastContent = null;
+
+	/**
 	 * Deterministic ZIP entry timestamp (REQ-OBEX-008).
 	 *
 	 * @var integer
@@ -119,6 +126,9 @@ class ExportService {
 	 * @param FlowAndAgentExportBundler $flowAndAgentBundler Bundles the application's flows and the
 	 *                                                       agents that point at it into the exported
 	 *                                                       tree, for the same reason.
+	 * @param ExportAppContentBundler|null $contentBundler Writes the application's own manifest, schemas
+	 *                                                     and records into the tree. Null only where a
+	 *                                                     caller builds the bare scaffold.
 	 */
 	public function __construct(
 		private IAppData $appData,
@@ -126,6 +136,7 @@ class ExportService {
 		private LoggerInterface $logger,
 		private DataRegisterExportBundler $dataRegisterBundler,
 		private FlowAndAgentExportBundler $flowAndAgentBundler,
+		private ?ExportAppContentBundler $contentBundler = null,
 	) {
 		// Constructed rather than injected: it is stateless, has no
 		// dependencies of its own, and is deterministic — so injecting it buys
@@ -156,6 +167,9 @@ class ExportService {
 	 *                                {@see FlowAndAgentExportBundler::bundle()}. Default `[]`.
 	 * @param string $applicationSlug Slug of the application whose agents to collect.
 	 *                                Default `''`.
+	 * @param array<string,mixed>|null $source The application and version to put in the tree, from
+	 *                                         ExportAppContentBundler::resolveSource(), plus
+	 *                                         `includeSeedData`. Null exports the bare scaffold.
 	 *
 	 * @return string Absolute (local) path to the produced ZIP.
 	 *
@@ -172,11 +186,23 @@ class ExportService {
 		array $dataRegisters = [],
 		array $flows = [],
 		string $applicationSlug = '',
+		?array $source = null,
 	): string {
 		$scratchDir = $this->prepareScratchDir(jobUuid: $jobUuid);
 		$this->copyTemplate(source: $this->templateRoot, dest: $scratchDir);
 		$this->resolvePlaceholders(rootDir: $scratchDir, context: $context);
 		$this->bundleDataRegisterSchemas(rootDir: $scratchDir, dataRegisters: $dataRegisters);
+
+		// The application itself: without this the archive is the empty template.
+		$this->lastContent = null;
+		if ($source !== null && $this->contentBundler !== null) {
+			$this->lastContent = $this->contentBundler->bundle(
+				rootDir: $scratchDir,
+				source: $source,
+				appId: $this->placeholderResolver->slug(value: (string)($context['appId'] ?? '')),
+				semver: $versionSlug
+			);
+		}
 
 		// The flows the app is composed of, and the agents that point at it.
 		// Skips are RETURNED so the job result can name them — an operator
@@ -197,8 +223,36 @@ class ExportService {
 			]
 		);
 
+		$this->pinTreeTimestamps(rootDir: $scratchDir);
+
 		return $this->packageZip(sourceDir: $scratchDir, jobUuid: $jobUuid);
 	}//end generateAppZip()
+
+	/**
+	 * What the last export wrote of the application itself.
+	 *
+	 * @return array{pages: int, menu: int, schemas: int, records: int}|null Null when no application was bundled.
+	 *
+	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-export-is-asynchronous-via-nextcloud-s-ijob
+	 */
+	public function lastContent(): ?array {
+		return $this->lastContent;
+	}//end lastContent()
+
+	/**
+	 * Stamp the fixed timestamp on every file, including the ones written after the copy.
+	 *
+	 * @param string $rootDir The tree root.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-re-exports-are-idempotent
+	 */
+	private function pinTreeTimestamps(string $rootDir): void {
+		foreach ($this->treeFiles->filePaths(dir: $rootDir) as $path) {
+			touch($path, $this->zipTimestamp);
+		}
+	}//end pinTreeTimestamps()
 
 	/**
 	 * What the last export could not resolve.
@@ -374,8 +428,20 @@ class ExportService {
 			throw new RuntimeException('Failed to finalise ZIP archive: ' . $zipPath);
 		}
 
-		// Pin mtime on the file itself for reproducibility.
-		touch($zipPath, $this->zipTimestamp);
+		// The archive's ENTRIES carry the deterministic timestamp, which is what
+		// makes two exports of the same tree byte-identical. The .zip file's own
+		// mtime is filesystem metadata outside the archive bytes, so pinning it
+		// buys no reproducibility, and it used to cost the download entirely:
+		// CleanupExpiredExports purges by `time() - filemtime($zip) > 86400`, and
+		// a file stamped 2026-01-01 is already ~22 million seconds old the moment
+		// it is written. Every archive was therefore deleted by the next cleanup
+		// pass while its ExportJob still read "Succeeded" and still offered a
+		// Download ZIP button.
+		//
+		// Leaving the mtime at creation time is what makes that 24 hour window
+		// mean 24 hours. The job's own docblock describes expiring by the
+		// ExportJob's `downloadExpiresAt` instead, which is the better contract,
+		// but nothing writes that field yet.
 
 		return $zipPath;
 	}//end packageZip()
@@ -416,6 +482,9 @@ class ExportService {
 				touch($path, $this->zipTimestamp);
 			}
 		}//end foreach
+
+		// File names carry the template's names too; the resolved code reads the renamed ones.
+		$this->treeFiles->renamePaths(dir: $rootDir, map: $map, timestamp: $this->zipTimestamp);
 	}//end resolvePlaceholders()
 
 	/**

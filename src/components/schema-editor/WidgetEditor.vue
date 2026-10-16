@@ -23,7 +23,7 @@
 			{{
 				t(
 					'buildiq',
-					'No widget catalogue registered yet — widget IDs are free-text. The page editor (chain spec #5) will narrow this to a picker once it ships.',
+					'There is no list of widgets yet, so type the widget ID yourself.',
 				)
 			}}
 		</NcNoteCard>

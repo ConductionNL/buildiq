@@ -30,7 +30,11 @@
 			</NcButton>
 		</div>
 
-		<NcButton variant="primary" @click="showWizard = true">
+		<!-- data-walkthrough-id: spotlighted by the tour's `add-app` step. -->
+		<NcButton
+			variant="primary"
+			data-walkthrough-id="add-app"
+			@click="showWizard = true">
 			{{ t('buildiq', 'Add app') }}
 		</NcButton>
 

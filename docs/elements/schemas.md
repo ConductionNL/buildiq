@@ -35,6 +35,28 @@ however the data is written.
 
 For logic that outgrows metadata, use a flow. See [Flows](./flows.md).
 
+## Calculated fields
+
+A calculated field gets its value from the record's other fields, such as a
+total that is the quantity times the unit price. Open a schema in the schema
+designer and go to Calculations:
+
+1. Type the name of the field and choose "Add calculated field". A name the
+   schema does not have yet becomes a new field.
+2. Choose the type of the result: text, whole number, number, yes or no, or a
+   date.
+3. Build the expression. Each part is a field of the record, a value you type,
+   or an operator such as multiply or add. An operator's parts are built the
+   same way, so you can nest them.
+4. Fill in sample values and choose "Try". The result shows below, and nothing
+   is saved.
+5. Save the schema. OpenRegister checks the calculation; when it refuses, the
+   reason shows next to the field and your edit stays in the designer.
+
+OpenRegister stores the calculated value with each record, so a list can sort
+and filter on it. A calculation written in the register file itself is listed
+too, but it can only be changed in that file.
+
 ## Access
 
 Per-record access is enforced by OpenRegister, not by your app. A user who may

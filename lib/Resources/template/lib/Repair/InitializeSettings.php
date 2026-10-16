@@ -132,7 +132,7 @@ class InitializeSettings implements IRepairStep {
 		}
 
 		try {
-			$report = $this->flowSeedService->seed(flowMapper: \OC::$server->get($mapperClass));
+			$report = $this->flowSeedService->seed(flowMapper: \OCP\Server::get($mapperClass));
 		} catch (\Throwable $e) {
 			$output->warning('Could not seed shipped flows: ' . $e->getMessage());
 			$this->logger->warning('AppTemplate: flow seeding failed: ' . $e->getMessage());

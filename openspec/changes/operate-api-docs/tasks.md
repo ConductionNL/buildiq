@@ -1,0 +1,8 @@
+# Tasks: operate-api-docs
+
+- [ ] **T01**: Add `src/services/appOpenApi.js`: from a version's manifest and the per-register OpenRegister documents, build one OpenAPI 3 document with the bound schemas only, the app name and version, and this instance's API base; list connector-bound pages separately (REQ-BQAD-001, REQ-BQAD-002). Verify: vitest `tests/services/appOpenApi.spec.js` for the own register, a data register with unrelated schemas cut away, a widget binding, and a connector page.
+- [ ] **T02**: Add `src/components/tabs/ApplicationApiTab.vue`: fetch the documents for the selected version's register and data registers, render the cut document (the nextcloud-vue reference component once it ships, a structured list until then), show the base address and the sign-in note, and offer "Download OpenAPI file" (REQ-BQAD-001, REQ-BQAD-003). Verify: vitest `tests/components/ApplicationApiTab.spec.js` for rendering, download content, and no request to an outside host.
+- [ ] **T03**: Register `ApplicationApiTab` with `tab()` in `src/registry.js` and add an `api` entry to the `VirtualAppDetail` `sidebarTabs` in `src/manifest.json` (REQ-BQAD-001). Verify: Playwright `tests/e2e/app-api-docs.spec.ts` opens an app's API tab, finds the `permit` schema's list call, and downloads a file that parses as OpenAPI 3.
+- [ ] **T04**: Ask nextcloud-vue for the OpenAPI reference component (sibling half) and record the change name here; switch the tab to it when buildiq's pin carries it.
+- [ ] **T05**: English and Dutch strings for the tab (`l10n/en.json`, `l10n/nl.json`), and a page in `docs/integrator-guide.md` on reading an app's API.
+- [ ] **T06**: Run `openspec validate operate-api-docs --strict`.

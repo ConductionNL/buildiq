@@ -29,6 +29,8 @@ namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\ExportsController;
 use OCA\Buildiq\Service\ExportJobService;
+use OCA\Buildiq\Tests\Unit\Support\FakeSlugResolver;
+use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
@@ -189,7 +191,20 @@ final class ExportsControllerTest extends TestCase {
 				return $class === 'OCA\\OpenRegister\\Service\\ObjectService';
 			}
 		);
-		$this->container->method('get')->willReturn($objectService);
+		// The controller now asks the container for TWO things: the object
+		// service, and the register-slug resolver it uses to name this app's own
+		// register. Returning the object service for every `get()` made the
+		// resolver call throw, the authorization try/catch swallow it, and every
+		// authorised case 403. An instance carrying `buildiq` is the migrated one.
+		$this->container->method('get')->willReturnCallback(
+			static function (string $class) use ($objectService): object {
+				if ($class === RegisterSlugResolverInterface::class) {
+					return new FakeSlugResolver(present: ['buildiq']);
+				}
+
+				return $objectService;
+			}
+		);
 	}//end stubAuthorisedFallback()
 
 	/**
@@ -482,7 +497,20 @@ final class ExportsControllerTest extends TestCase {
 				return $class === 'OCA\\OpenRegister\\Service\\ObjectService';
 			}
 		);
-		$this->container->method('get')->willReturn($objectService);
+		// The controller now asks the container for TWO things: the object
+		// service, and the register-slug resolver it uses to name this app's own
+		// register. Returning the object service for every `get()` made the
+		// resolver call throw, the authorization try/catch swallow it, and every
+		// authorised case 403. An instance carrying `buildiq` is the migrated one.
+		$this->container->method('get')->willReturnCallback(
+			static function (string $class) use ($objectService): object {
+				if ($class === RegisterSlugResolverInterface::class) {
+					return new FakeSlugResolver(present: ['buildiq']);
+				}
+
+				return $objectService;
+			}
+		);
 
 		$tmpZip = sys_get_temp_dir() . '/buildiq-controller-test-' . uniqid() . '.zip';
 		file_put_contents($tmpZip, 'PK fake zip bytes');
@@ -579,4 +607,47 @@ final class ExportsControllerTest extends TestCase {
 			message: 'download() must remain reachable by non-admin users (guarded by isAuthorisedForJob).'
 		);
 	}//end testSubmitDoesNotCarryNoCsrfRequiredWhileDownloadDoes()
+
+	/**
+	 * run() starts the owner's queued export right away.
+	 *
+	 * @return void
+	 */
+	public function testRunStartsTheQueuedExportForItsOwner(): void {
+		$this->stubAuthorisedFallback();
+		$this->exportJobService->expects(self::once())->method('runNow')->with('owned-uuid')->willReturn(true);
+
+		$response = $this->buildController()->run('owned-uuid');
+
+		self::assertSame(Http::STATUS_OK, $response->getStatus());
+		self::assertSame(['started' => true], $response->getData());
+	}//end testRunStartsTheQueuedExportForItsOwner()
+
+	/**
+	 * run() answers 409 when cron already took the job.
+	 *
+	 * @return void
+	 */
+	public function testRunReportsAJobThatWasAlreadyPickedUp(): void {
+		$this->stubAuthorisedFallback();
+		$this->exportJobService->method('runNow')->willReturn(false);
+
+		$response = $this->buildController()->run('owned-uuid');
+
+		self::assertSame(Http::STATUS_CONFLICT, $response->getStatus());
+	}//end testRunReportsAJobThatWasAlreadyPickedUp()
+
+	/**
+	 * run() never starts somebody else's job, and hides that it exists.
+	 *
+	 * @return void
+	 */
+	public function testRunRefusesAForeignJob(): void {
+		$this->container->method('has')->willReturn(false);
+		$this->exportJobService->expects(self::never())->method('runNow');
+
+		$response = $this->buildController()->run('foreign-uuid');
+
+		self::assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+	}//end testRunRefusesAForeignJob()
 }//end class

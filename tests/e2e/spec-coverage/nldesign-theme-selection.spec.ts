@@ -27,8 +27,11 @@
 
 import { expect, test } from '@playwright/test'
 import { dismissOverlays } from '../support/appFixture.ts'
-
-const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
+// The one place a target enters this suite, and the place the shared-instance
+// guard sits. This was a private `process.env.PLAYWRIGHT_BASE_URL ??
+// 'http://localhost:8080'` constant, so a run with nothing set wrote to the
+// shared dev instance. See tests/e2e/shared-instance.ts.
+import { E2E_BASE_URL as BASE } from '../support/baseUrl.ts'
 
 // @e2e nldesign-theme-selection::builder-picks-a-theme-from-the-visual-list
 // STUB BODY (goto + main-visible only) — needs real assertions written. The old note said "QUARANTINED (buildiq#41): builder UI not functional"; #41 is a PR that MERGED 2026-07-27, and 47 spec files already pass against that builder UI. Enabling this as it stands would pass while asserting nothing. Logic covered by vitest (ThemeSection.spec.js + ThemePickerDialog.spec.js, exercising the real published useScopedTheme.listTokenSets()).
