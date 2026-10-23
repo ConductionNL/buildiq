@@ -129,6 +129,8 @@ class ExportService {
 	 * @param ExportAppContentBundler|null $contentBundler Writes the application's own manifest, schemas
 	 *                                                     and records into the tree. Null only where a
 	 *                                                     caller builds the bare scaffold.
+	 * @param ServerBundleWriter|null $serverBundleWriter Writes `deploy/` for an export that runs on its
+	 *                                                    own server. Null leaves it out.
 	 */
 	public function __construct(
 		private IAppData $appData,
@@ -137,6 +139,7 @@ class ExportService {
 		private DataRegisterExportBundler $dataRegisterBundler,
 		private FlowAndAgentExportBundler $flowAndAgentBundler,
 		private ?ExportAppContentBundler $contentBundler = null,
+		private ?ServerBundleWriter $serverBundleWriter = null,
 	) {
 		// Constructed rather than injected: it is stateless, has no
 		// dependencies of its own, and is deterministic — so injecting it buys
@@ -170,8 +173,11 @@ class ExportService {
 	 * @param array<string,mixed>|null $source The application and version to put in the tree, from
 	 *                                         ExportAppContentBundler::resolveSource(), plus
 	 *                                         `includeSeedData`. Null exports the bare scaffold.
+	 * @param bool $includeServerBundle Add `deploy/`, the files that run the app on its own server.
 	 *
 	 * @return string Absolute (local) path to the produced ZIP.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag mirrors the export job's includeServerBundle field.
 	 *
 	 * @throws RuntimeException When packaging fails.
 	 *
@@ -187,9 +193,16 @@ class ExportService {
 		array $flows = [],
 		string $applicationSlug = '',
 		?array $source = null,
+		bool $includeServerBundle = false,
 	): string {
 		$scratchDir = $this->prepareScratchDir(jobUuid: $jobUuid);
 		$this->copyTemplate(source: $this->templateRoot, dest: $scratchDir);
+		$serverBundle = null;
+		if ($includeServerBundle === true) {
+			$serverBundle = $this->serverBundleWriter;
+		}
+
+		$serverBundle?->write(rootDir: $scratchDir);
 		$this->resolvePlaceholders(rootDir: $scratchDir, context: $context);
 		$this->bundleDataRegisterSchemas(rootDir: $scratchDir, dataRegisters: $dataRegisters);
 
@@ -203,6 +216,8 @@ class ExportService {
 				semver: $versionSlug
 			);
 		}
+
+		$serverBundle?->pointReadme(rootDir: $scratchDir);
 
 		// The flows the app is composed of, and the agents that point at it.
 		// Skips are RETURNED so the job result can name them — an operator

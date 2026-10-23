@@ -180,6 +180,8 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // Export pipeline (Phase-2 graduation).
         ['name' => 'exports#submit',   'url' => '/api/applications/{slug}/exports', 'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'exports#download', 'url' => '/api/exports/{uuid}/download',     'verb' => 'GET'],
+        // What a server needs to run an exported app (the export dialog's Own server target).
+        ['name' => 'exports#serverRequirements', 'url' => '/api/exports/server-requirements', 'verb' => 'GET'],
         // Runs a queued export in the request instead of waiting for cron (the dialog fires it and moves on).
         ['name' => 'exports#run',      'url' => '/api/exports/{uuid}/run',          'verb' => 'POST'],
 
