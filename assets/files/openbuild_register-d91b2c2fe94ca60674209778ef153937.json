@@ -3,7 +3,7 @@
   "info": {
     "title": "OpenBuild Register",
     "description": "Citizen-developer app builder for Nextcloud: compose apps from registers, connectors, workflows, and documents without code.",
-    "version": "0.11.0"
+    "version": "0.12.0"
   },
   "x-openregister": {
     "type": "application",
@@ -20,6 +20,7 @@
         "description": "OpenBuild register namespace: holds the Application + ApplicationVersion + BuiltAppRoute control schemas, the ApplicationTemplate catalogue, the automation/rule-engine schemas and the seed hello-message schema for the canonical hello-world app.",
         "version": "0.9.0",
         "schemas": [
+          "app-health-sample",
           "buildAgent",
           "agent-run",
           "built-app",
