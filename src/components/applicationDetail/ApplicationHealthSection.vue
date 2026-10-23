@@ -125,14 +125,32 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * Reload for another application.
+		 *
+		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-app-detail-page-shows-the-app-s-health-req-bqdm-006
+		 * @return {void}
+		 */
 		appUuid() {
 			this.load()
 		},
 
+		/**
+		 * Reload for another version.
+		 *
+		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-app-detail-page-shows-the-app-s-health-req-bqdm-006
+		 * @return {void}
+		 */
 		versionUuid() {
 			this.load()
 		},
 
+		/**
+		 * Reload for another window.
+		 *
+		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-app-detail-page-shows-the-app-s-health-req-bqdm-006
+		 * @return {void}
+		 */
 		window() {
 			this.load()
 		},
