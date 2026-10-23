@@ -245,6 +245,13 @@
 			</p>
 		</section>
 
+		<!-- 3b. Performance and errors of the active version (board BqAppWerking). -->
+		<ApplicationHealthSection
+			:appUuid="healthAppUuid"
+			:versionUuid="activeVersionUuid || ''"
+			:window="selectedWindow"
+			:pageTitles="pageTitles" />
+
 		<!-- 4. Customization-layer widget grid. The manifest-derived Schemas /
 		     Pages / Menu widgets are replaced by the Manifest widget (delta
 		     layers + version state) and the Register widget (counts + deep-link
@@ -323,6 +330,7 @@ import Harddisk from 'vue-material-design-icons/Harddisk.vue'
 import History from 'vue-material-design-icons/History.vue'
 import ImportDataWizard from '../../dialogs/ImportDataWizard.vue'
 import UserDeltaEditModal from '../../modals/UserDeltaEditModal.vue'
+import ApplicationHealthSection from './ApplicationHealthSection.vue'
 import FlowsWidget from './widgets/FlowsWidget.vue'
 import GroupsWidget from './widgets/GroupsWidget.vue'
 import ManifestWidget from './widgets/ManifestWidget.vue'
@@ -339,6 +347,7 @@ import { buildVersionedRoute } from '../../router/helpers.js'
 export default {
 	name: 'ApplicationDetailDashboard',
 	components: {
+		ApplicationHealthSection,
 		ArrowTopRight,
 		CnStatsBlock,
 		NcButton,
@@ -509,6 +518,27 @@ export default {
 		 * @return {object}
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
+		/**
+		 * The application UUID the health section reads.
+		 *
+		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-app-detail-page-shows-the-app-s-health-req-bqdm-006
+		 * @return {string} The UUID.
+		 */
+		healthAppUuid() {
+			return String((this.application && (this.application.uuid || this.application.id)) || this.objectId || '')
+		},
+
+		/**
+		 * Page titles by id, so the health section names pages as the app does.
+		 *
+		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-app-detail-page-shows-the-app-s-health-req-bqdm-006
+		 * @return {Record<string, string>} Titles.
+		 */
+		pageTitles() {
+			const pages = Array.isArray(this.activeManifest.pages) ? this.activeManifest.pages : []
+			return Object.fromEntries(pages.filter((page) => page && page.id).map((page) => [page.id, page.title || page.id]))
+		},
+
 		activeManifest() {
 			return (this.activeVersion && this.activeVersion.manifest) || {}
 		},

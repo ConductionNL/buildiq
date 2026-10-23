@@ -1984,7 +1984,23 @@ OC.L10N.register(
         "holds the app's schemas and records": "holds the app's schemas and records",
         "Nextcloud and the app run on it": "Nextcloud and the app run on it",
         "Database": "Database",
-        "Nextcloud keeps its data in it": "Nextcloud keeps its data in it"
+        "Nextcloud keeps its data in it": "Nextcloud keeps its data in it",
+        "Performance and errors": "Performance and errors",
+        "What the people using this version noticed: how fast its pages load and how often a request fails.": "What the people using this version noticed: how fast its pages load and how often a request fails.",
+        "The performance figures could not be loaded.": "The performance figures could not be loaded.",
+        "No page loads were reported in this window yet.": "No page loads were reported in this window yet.",
+        "Average load time": "Average load time",
+        "Loads of 3 s or more": "Loads of 3 s or more",
+        "Failed requests": "Failed requests",
+        "{share} of {count} requests": "{share} of {count} requests",
+        "Requests over 1 s": "Requests over 1 s",
+        "Slowest pages": "Slowest pages",
+        "Page": "Page",
+        "Average": "Average",
+        "3 s or more": "3 s or more",
+        "Loads": "Loads",
+        "{seconds} s": "{seconds} s",
+        "Not known": "Not known"
     },
     "nplurals=2; plural=(n != 1);"
 )

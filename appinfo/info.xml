@@ -106,6 +106,7 @@ Vrij en open source onder de EUPL-1.2-licentie.
     <background-jobs>
         <job>OCA\Buildiq\BackgroundJob\CleanupExpiredExports</job>
         <job>OCA\Buildiq\BackgroundJob\RuleExecutionLogCleanup</job>
+        <job>OCA\Buildiq\BackgroundJob\AppHealthSampleCleanup</job>
     </background-jobs>
 
     <repair-steps>
