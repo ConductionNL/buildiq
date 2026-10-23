@@ -100,6 +100,10 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // auto-granted — mirrors buildiq-version-routing). UUID path params + the
         // trailing `/insights` literal disambiguate from the slug-based CRUD routes.
         ['name' => 'applicationInsights#getInsights', 'url' => '/api/applications/{appUuid}/versions/{versionUuid}/insights', 'verb' => 'GET', 'requirements' => ['appUuid' => '[a-f0-9-]{8,}', 'versionUuid' => '[a-f0-9-]{8,}']],
+        // operate-debug-log-and-monitoring: a version's health for the app detail page (insights' own
+        // RBAC), and the counts a running app posts (the manifest endpoint's rule, rate-limited).
+        ['name' => 'appHealth#show', 'url' => '/api/applications/{appUuid}/versions/{versionUuid}/health', 'verb' => 'GET', 'requirements' => ['appUuid' => '[a-f0-9-]{8,}', 'versionUuid' => '[a-f0-9-]{8,}']],
+        ['name' => 'appHealth#record', 'url' => '/api/applications/{slug}/health-samples', 'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Manual promotion endpoint (buildiq-version-promotion REQ-OBVP-001).
         // Spec mandates UUID path params (`{appUuid}/versions/{versionUuid}/promote`)
