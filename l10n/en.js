@@ -2000,7 +2000,27 @@ OC.L10N.register(
         "3 s or more": "3 s or more",
         "Loads": "Loads",
         "{seconds} s": "{seconds} s",
-        "Not known": "Not known"
+        "Not known": "Not known",
+        "Error log": "Error log",
+        "Reload preview": "Reload preview",
+        "Failed data requests and broken bindings of the preview. They stay in this browser.": "Failed data requests and broken bindings of the preview. They stay in this browser.",
+        "No problems in the preview.": "No problems in the preview.",
+        "What went wrong": "What went wrong",
+        "Request": "Request",
+        "Go to the page": "Go to the page",
+        "Everything": "Everything",
+        "Broken bindings": "Broken bindings",
+        "Render errors": "Render errors",
+        "Unknown page": "Unknown page",
+        "The request did not complete": "The request did not complete",
+        "The server answered {status}": "The server answered {status}",
+        "Schema {schema} does not exist": "Schema {schema} does not exist",
+        "Register {register} does not exist": "Register {register} does not exist",
+        "{property} is not a field of schema {schema}": "{property} is not a field of schema {schema}",
+        "Unknown component {name}": "Unknown component {name}",
+        "{component} failed to draw: {message}": "{component} failed to draw: {message}",
+        "{time}, {count} times": "{time}, {count} times",
+        "Declared in: {where}": "Declared in: {where}"
     },
     "nplurals=2; plural=(n != 1);"
 )

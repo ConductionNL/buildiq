@@ -114,6 +114,16 @@ export default {
 			type: [Array, Object],
 			default: () => [],
 		},
+
+		/**
+		 * Hears the preview's diagnostics reports and render errors (the designer's error log).
+		 *
+		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
+		 */
+		diagnostics: {
+			type: Function,
+			default: null,
+		},
 	},
 
 	computed: {
@@ -137,6 +147,7 @@ export default {
 				pageTypes: this.pageTypes,
 				translate: this.translate,
 				permissions: this.permissions,
+				diagnostics: this.diagnostics,
 			}
 		},
 
@@ -418,6 +429,18 @@ export default {
 			}
 			const app = createApp({ render: () => h(CnAppRoot, state) })
 			app.mixin({ methods: { t, n } })
+			// A render error in the preview lands in the designer's error log, not only the console.
+			app.config.errorHandler = (error, instance) => {
+				this.diagnostics?.({
+					kind: 'render-error',
+					at: Date.now(),
+					pageId: router.currentRoute.value?.name ? String(router.currentRoute.value.name) : null,
+					component: instance?.$options?.name || instance?.$options?.__name || 'unknown',
+					message: error && error.message ? String(error.message) : String(error),
+				})
+				// eslint-disable-next-line no-console
+				console.error(error)
+			}
 			// Its own store instances, so a preview never writes over the
 			// designer's state.
 			app.use(createPinia())
