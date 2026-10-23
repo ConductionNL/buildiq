@@ -37,7 +37,11 @@
 				"status": "published",
 				"scope": "admin",
 				"register": "openbuild-pipelinq",
-				"manifest": {},
+				"manifest": {
+					"version": "1.0.4",
+					"menu": [],
+					"pages": []
+				},
 				"manifestDelta": {},
 				"baseRef": {
 					"kind": "fleet-app",
@@ -57,7 +61,11 @@
 				"status": "published",
 				"scope": "admin",
 				"register": "openbuild-pipelinq",
-				"manifest": {},
+				"manifest": {
+					"version": "1.1.0",
+					"menu": [],
+					"pages": []
+				},
 				"manifestDelta": {},
 				"baseRef": {
 					"kind": "fleet-app",
@@ -77,7 +85,11 @@
 				"status": "draft",
 				"scope": "admin",
 				"register": "openbuild-pipelinq",
-				"manifest": {},
+				"manifest": {
+					"version": "1.1.1",
+					"menu": [],
+					"pages": []
+				},
 				"manifestDelta": {
 					"pages": {
 						"Tickets": {
