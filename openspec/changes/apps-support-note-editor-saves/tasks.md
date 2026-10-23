@@ -1,0 +1,8 @@
+# Tasks: apps-support-note-editor-saves
+
+- [ ] **T01**: In `src/components/ApplicationDetailActions.vue`, give the support editor a save: provide a `cnManifestEditor`-shaped object (`save()`, `editing`) to `CnEditSupportModal` whose `save()` sends `PUT /apps/buildiq/api/applications/{slug}/manifest` with `{ manifest: supportWorkingManifest }` (design D1, D2). If scoped provide does not reach the library dialog, add `src/modals/SupportEditorModal.vue` that provides it and wraps the dialog. REQ-BQSN-001.
+- [ ] **T02**: On a failed save, keep `supportOpen` and `supportWorkingManifest`, and set the page error to "Could not save the support note: {reason}" (design D3). `onSupportClose()` drops the copy only after a successful save or on cancel. REQ-BQSN-002.
+- [ ] **T03**: Vitest `tests/components/ApplicationDetailActions.support.spec.js`: Done sends one PUT with the edited `support` block; close without Done sends none; a 500 keeps the dialog open; the action is absent without `canEditVersions`.
+- [ ] **T04**: Strings in `l10n/en.json` and `l10n/nl.json`: "Could not save the support note: {reason}" / "Kon de supportnotitie niet opslaan: {reason}". Run `npm run test:l10n`.
+- [ ] **T05**: Write `tests/e2e/support-note-editor.spec.ts`: save a note, reopen and see it; open the virtual app in a fresh context and see the note; a viewer has no action (REQ-BQSN-001 to REQ-BQSN-003).
+- [ ] **T06**: Add `@spec openspec/changes/apps-support-note-editor-saves/specs/support-note/spec.md` on the new and changed methods (replace the `@spec exclude` on `openSupportEditor`), and set row `app-support-note` to `building` in `openspec/parity/capabilities.json` when T01 to T03 are merged.

@@ -21,7 +21,7 @@ const BRAND_THEME = require.resolve('@conduction/docusaurus-preset/theme');
 const config = createConfig({
   title: 'Buildiq',
   tagline: 'Citizen-developer app builder for Nextcloud — compose apps from registers, connectors, workflows, and documents without code',
-  url: 'https://openbuild.conduction.nl',
+  url: 'https://buildiq.conduction.nl',
   baseUrl: '/',
 
   organizationName: 'ConductionNL',

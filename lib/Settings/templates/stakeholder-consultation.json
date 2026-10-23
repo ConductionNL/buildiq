@@ -6,13 +6,13 @@
   "category": "citizen-engagement",
   "screenshotUrl": "img/templates/stakeholder-consultation.svg",
   "isSeeded": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "manifest": {
     "version": "1.0.0",
     "dependencies": ["openregister"],
     "menu": [
-      { "label": "Consultations", "route": "/consultations" },
-      { "label": "Submit", "route": "/submit" }
+      { "label": "Consultations", "route": "Consultations" },
+      { "label": "Submit", "route": "ConsultationForm" }
     ],
     "pages": [
       {

@@ -21,6 +21,8 @@
  */
 
 import { mount } from '@vue/test-utils'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
@@ -76,6 +78,7 @@ async function stub(name) {
 				'config',
 				'pageType',
 				'appSlug',
+				'appRegister',
 				'dataRegisters',
 				'parentRoute',
 				'pageId',
@@ -600,6 +603,92 @@ describe('PageDesigner', () => {
 			await new Promise((r) => setTimeout(r, 0))
 			await wrapper.vm.$nextTick()
 			expect(wrapper.vm.applicationDataRegisters).toEqual([])
+		})
+	})
+
+	it('gives a supported editor no "Unsupported page type" label', async () => {
+		// Regression: the fallback editor's title was bound on every editor
+		// and fell through as an HTML title, so screen readers announced
+		// "Unsupported page type: index" for a supported page.
+		const wrapper = mountDesigner({
+			pages: [{ id: 'home', type: 'index', config: {} }],
+			menu: [],
+		})
+		wrapper.vm.selectPage(0)
+		await wrapper.vm.$nextTick()
+		const editor = wrapper.findComponent({ name: 'IndexPageEditor' })
+		expect(editor.attributes('title')).toBeUndefined()
+		expect(wrapper.html()).not.toContain('Unsupported page type')
+	})
+
+	it('lays the panes out by the width the designer gets, not the window', () => {
+		// At 1280x720 with the app navigation open the designer is about
+		// 920px wide; a window media query kept three columns there and the
+		// validation column covered the editor's "Remove column" buttons.
+		const source = readFileSync(
+			resolve(__dirname, '../../src/views/PageDesigner.vue'),
+			'utf8',
+		)
+		expect(source).toMatch(/container-type:\s*inline-size/)
+		expect(source).toMatch(/@container \(max-width: 1100px\)/)
+		expect(source).not.toMatch(/@media \(max-width: 1100px\)/)
+	})
+
+	describe("the app's register comes from its version", () => {
+		it('asks for schemas in the version register, never in openbuild-{slug}', async () => {
+			// Regression: the designer requested
+			// /registers/openbuild-hello-world/schemas, a register that does
+			// not exist for wizard-made apps (theirs carry the version suffix).
+			const fetchSpy = vi.fn(async () => ({
+				ok: true,
+				json: async () => ({ results: [{ slug: 'message' }] }),
+			}))
+			const originalFetch = global.fetch
+			global.fetch = fetchSpy
+			axiosGetMock.mockImplementation((url, config) => {
+				if (typeof url === 'string' && url.endsWith('/versions')) {
+					return Promise.resolve({
+						data: [
+							{
+								slug: 'development',
+								register: 'openbuild-hello-world-development',
+								'@self': { id: 'v-dev' },
+							},
+						],
+					})
+				}
+				const slug =
+					(config && config.params && config.params.slug) || 'hello-world'
+				return Promise.resolve({ data: { results: [{ slug }] } })
+			})
+			try {
+				const wrapper = mountDesigner({
+					pages: [{ id: 'home', type: 'index', config: {} }],
+					menu: [],
+				})
+				await new Promise((resolve) => setTimeout(resolve, 20))
+				await wrapper.vm.$nextTick()
+				const urls = fetchSpy.mock.calls.map((call) => String(call[0]))
+				expect(urls).toContain(
+					'/apps/openregister/api/registers/openbuild-hello-world-development/schemas',
+				)
+				expect(
+					urls.some((url) =>
+						url.includes('/registers/openbuild-hello-world/'),
+					),
+				).toBe(false)
+				expect(wrapper.vm.targetSchemaSlugs).toEqual(['message'])
+
+				wrapper.vm.selectPage(0)
+				await wrapper.vm.$nextTick()
+				expect(
+					wrapper
+						.findComponent({ name: 'IndexPageEditor' })
+						.props('appRegister'),
+				).toBe('openbuild-hello-world-development')
+			} finally {
+				global.fetch = originalFetch
+			}
 		})
 	})
 })

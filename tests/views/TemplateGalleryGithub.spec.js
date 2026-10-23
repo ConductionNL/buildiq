@@ -170,13 +170,15 @@ describe('TemplateGallery.vue — GitHub-only store', () => {
 		// component-blocks REQ-OBTC-003 adds a NEW, unrelated top-level
 		// Templates/Blocks toggle — that one is expected to exist.
 		expect(wrapper.find('.template-gallery__view-toggle').exists()).toBe(true)
-		expect(wrapper.findAll('[role="tab"]').length).toBe(2)
+		// Templates, Blocks and (REQ-BQGL-003) Forms.
+		expect(wrapper.findAll('[role="tab"]').length).toBe(3)
 	})
 
-	it('does not fetch local application-template or registry store endpoints', async () => {
+	it('does not fetch the remote registry store endpoint', async () => {
+		// The built-in application-template records ARE fetched now
+		// (store-shows-built-in-templates); the remote registry store is not.
 		await mountGallery()
 		const urls = axiosMock.get.mock.calls.map((c) => String(c[0]))
-		expect(urls.some((u) => u.includes('application-template'))).toBe(false)
 		expect(urls.some((u) => u.includes('store/templates'))).toBe(false)
 	})
 

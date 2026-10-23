@@ -58,8 +58,7 @@ class DemoDataServiceTest extends TestCase {
 	}
 
 	protected function tearDown(): void {
-		$file = $this->appDir . '/lib/Settings/buildiq_mock_register.json';
-		if (is_file($file) === true) {
+		foreach ((glob($this->appDir . '/lib/Settings/*.json') ?: []) as $file) {
 			unlink($file);
 		}
 		@rmdir($this->appDir . '/lib/Settings');
@@ -86,12 +85,34 @@ class DemoDataServiceTest extends TestCase {
 	/**
 	 * A stand-in for OpenRegister's importer that records how it was called.
 	 *
+	 * 🔴 ITS REPLY IS THE SUBJECT, NOT SCENERY. OpenRegister reports what it
+	 * WROTE in `objects`, what it left alone in `unchanged`, and what it refused
+	 * in `skipped` — it does not error on an object whose schema will not
+	 * resolve. So the reply shape is exactly what decides whether the service
+	 * can tell a seeded instance from an empty one.
+	 *
+	 * @param integer $wrote     Objects the importer claims to have written.
+	 * @param integer $unchanged Objects already present and identical.
+	 * @param integer $skipped   Objects it refused.
+	 *
 	 * @return object The fake.
 	 */
-	private function importerSpy(): object {
-		return new class {
+	private function importerSpy(int $wrote = 2, int $unchanged = 0, int $skipped = 0): object {
+		return new class($wrote, $unchanged, $skipped) {
 			/** @var array<string, mixed> */
 			public array $seen = [];
+
+			/**
+			 * @param integer $wrote     Objects written.
+			 * @param integer $unchanged Objects already present.
+			 * @param integer $skipped   Objects refused.
+			 */
+			public function __construct(
+				private readonly int $wrote,
+				private readonly int $unchanged,
+				private readonly int $skipped
+			) {
+			}
 
 			/**
 			 * @param string               $appId   Config identity.
@@ -103,21 +124,80 @@ class DemoDataServiceTest extends TestCase {
 			 */
 			public function importFromApp(string $appId, array $data, string $version, bool $force): array {
 				$this->seen = ['appId' => $appId, 'version' => $version, 'force' => $force];
-				return ['registers' => ['buildiq'], 'schemas' => ['Thing']];
+				return [
+					'registers' => ['buildiq'],
+					'schemas'   => ['Thing'],
+					'objects'   => array_fill(0, $this->wrote, ['id' => 'x']),
+					'unchanged' => ['objects' => $this->unchanged],
+					'skipped'   => ['objects' => $this->skipped],
+				];
 			}
 		};
 	}
 
 	public function testItImportsTheDescriptorAndReportsTheCounts(): void {
 		$this->shipDescriptor(objects: 5);
-		$spy = $this->importerSpy();
+		$spy = $this->importerSpy(wrote: 5);
 		$this->container->method('get')->willReturn($spy);
 
 		$result = $this->service->install();
 
 		$this->assertSame(5, $result['objects']);
+		$this->assertSame(5, $result['declared']);
+		$this->assertSame(0, $result['skipped']);
 		$this->assertSame(1, $result['registers']);
 		$this->assertSame(1, $result['schemas']);
+	}
+
+	/**
+	 * 🔴 THE REPORTED COUNT IS WHAT LANDED. Measured on the shared instance on
+	 * 2026-09-15: the wizard reported "Demo data installed: 18 objects" while
+	 * OpenRegister had skipped all 18, because the descriptor addressed schemas
+	 * by name and OpenRegister resolves them by slug. A count read off the file
+	 * repeats the request and can never expose that.
+	 */
+	public function testItReportsWhatLandedAndTheGapRatherThanWhatWasAskedFor(): void {
+		$this->shipDescriptor(objects: 5);
+		$spy = $this->importerSpy(wrote: 3, skipped: 2);
+		$this->container->method('get')->willReturn($spy);
+
+		$result = $this->service->install();
+
+		$this->assertSame(3, $result['objects']);
+		$this->assertSame(5, $result['declared']);
+		$this->assertSame(2, $result['skipped']);
+	}
+
+	/**
+	 * A dataset that declares objects and seeds none of them is a failed
+	 * import, not a quiet success — the same rule OpenRegister's own
+	 * RegisterDescriptorService applies.
+	 */
+	public function testADatasetThatSeedsNothingThrowsInsteadOfReportingSuccess(): void {
+		$this->shipDescriptor(objects: 5);
+		$spy = $this->importerSpy(wrote: 0, skipped: 5);
+		$this->container->method('get')->willReturn($spy);
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('declares 5 object(s) but OpenRegister imported none of them');
+
+		$this->service->install();
+	}
+
+	/**
+	 * Re-running the import is documented as safe, and the second run writes
+	 * nothing because everything is already there. That is landed data, so it
+	 * must not read as the "seeded nothing" failure above.
+	 */
+	public function testObjectsAlreadyPresentCountAsLandedSoARerunIsNotAFailure(): void {
+		$this->shipDescriptor(objects: 5);
+		$spy = $this->importerSpy(wrote: 0, unchanged: 5);
+		$this->container->method('get')->willReturn($spy);
+
+		$result = $this->service->install();
+
+		$this->assertSame(5, $result['objects']);
+		$this->assertSame(0, $result['skipped']);
 	}
 
 	/**
@@ -188,5 +268,117 @@ class DemoDataServiceTest extends TestCase {
 		$this->assertFalse($this->service->isAvailable(), 'no descriptor on disk');
 		$this->shipDescriptor();
 		$this->assertTrue($this->service->isAvailable());
+	}
+
+	/**
+	 * Lay down a register declaring `built-app` as carrying no demo data.
+	 *
+	 * @return void
+	 */
+	private function shipRegisterExcludingBuiltApp(): void {
+		file_put_contents(
+			$this->appDir . '/lib/Settings/buildiq_register.json',
+			json_encode(
+				[
+					'x-openregister' => ['type' => 'application', 'app' => 'buildiq'],
+					'components' => [
+						'registers' => ['buildiq' => ['schemas' => ['Application']]],
+						'schemas' => [
+							'Application' => [
+								'slug' => 'built-app',
+								'type' => 'object',
+								'x-openregister-demo-data' => 'buildiq writes these itself',
+							],
+							'Thing' => ['slug' => 'thing', 'type' => 'object'],
+						],
+					],
+				]
+			)
+		);
+	}
+
+	/**
+	 * Ship a dataset addressing one named schema.
+	 *
+	 * @param string $schema The schema slug the objects address.
+	 *
+	 * @return void
+	 */
+	private function shipDescriptorFor(string $schema): void {
+		file_put_contents(
+			$this->appDir . '/lib/Settings/buildiq_mock_register.json',
+			json_encode(
+				[
+					'x-openregister' => ['type' => 'mock', 'app' => 'buildiq'],
+					'components' => [
+						'registers' => ['buildiq' => []],
+						'objects' => array_fill(
+							0,
+							3,
+							['@self' => ['register' => 'buildiq', 'schema' => $schema]]
+						),
+					],
+				]
+			)
+		);
+	}
+
+	/**
+	 * 🔴 THE DATASET IS GENERATED, SO IT CAN REGRESS WITHOUT ANYBODY EDITING IT.
+	 * A generator run against a schema that has lost its declaration writes the
+	 * control-plane objects straight back, and they import silently: they
+	 * satisfy their schemas, OpenRegister has no opinion about what they mean,
+	 * and the wizard reports a cheerful count. On 2026-09-18 that produced
+	 * three apps on the dashboard that could not be opened.
+	 *
+	 * @return void
+	 */
+	public function testItRefusesADatasetCarryingObjectsForASchemaTheAppWritesItself(): void {
+		$this->shipRegisterExcludingBuiltApp();
+		$this->shipDescriptorFor('built-app');
+		$this->container->expects($this->never())->method('get');
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('built-app');
+
+		$this->service->install();
+	}
+
+	/**
+	 * Refused BEFORE anything is written, so a bad dataset cannot half-land.
+	 *
+	 * @return void
+	 */
+	public function testNothingIsImportedWhenTheDatasetIsRefused(): void {
+		$this->shipRegisterExcludingBuiltApp();
+		$this->shipDescriptorFor('built-app');
+		$spy = $this->importerSpy();
+		$this->container->method('get')->willReturn($spy);
+
+		try {
+			$this->service->install();
+			$this->fail('a dataset carrying control-plane objects must not import');
+		} catch (RuntimeException) {
+			$this->assertSame([], $spy->seen, 'the importer must never have been called');
+		}
+	}
+
+	/**
+	 * The control: an ordinary content schema still imports.
+	 *
+	 * Without this arm the guard could refuse everything and both assertions
+	 * above would still pass.
+	 *
+	 * @return void
+	 */
+	public function testADatasetCarryingOnlyContentSchemasStillImports(): void {
+		$this->shipRegisterExcludingBuiltApp();
+		$this->shipDescriptorFor('thing');
+		$spy = $this->importerSpy(wrote: 3);
+		$this->container->method('get')->willReturn($spy);
+
+		$result = $this->service->install();
+
+		$this->assertSame(3, $result['objects']);
 	}
 }

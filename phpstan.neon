@@ -31,3 +31,9 @@ parameters:
         # so SettingsSection and AdminSettings resolve their parent constructors during
         # static analysis when the openregister sibling app is absent (ADR-040).
         - tests/stubs/openregister-apphost.stub.php
+        # OpenRegister's leaf-provider contract (IntegrationProvider,
+        # LeafDescriptor, RegisterLeafProvidersEvent) so the providers in
+        # lib/Integration/ resolve the interface they implement and the event
+        # they are registered on. The stub was already loaded by the unit-test
+        # bootstrap; phpstan simply never saw it.
+        - tests/stubs/openregister-leaf.stub.php
