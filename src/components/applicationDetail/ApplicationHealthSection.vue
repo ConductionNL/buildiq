@@ -91,13 +91,29 @@ export default {
 	name: 'ApplicationHealthSection',
 
 	props: {
-		/** The application UUID. */
+		/**
+		 * The application UUID.
+		 *
+		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-app-detail-page-shows-the-app-s-health-req-bqdm-006
+		 */
 		appUuid: { type: String, default: '' },
-		/** The version UUID. */
+		/**
+		 * The version UUID.
+		 *
+		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-app-detail-page-shows-the-app-s-health-req-bqdm-006
+		 */
 		versionUuid: { type: String, default: '' },
-		/** 7d, 30d or 90d. */
+		/**
+		 * The window: 7d, 30d or 90d.
+		 *
+		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-app-detail-page-shows-the-app-s-health-req-bqdm-006
+		 */
 		window: { type: String, default: '7d' },
-		/** Page titles by page id, from the version's manifest. */
+		/**
+		 * Page titles by page id, from the version's manifest.
+		 *
+		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-app-detail-page-shows-the-app-s-health-req-bqdm-006
+		 */
 		pageTitles: { type: Object, default: () => ({}) },
 	},
 

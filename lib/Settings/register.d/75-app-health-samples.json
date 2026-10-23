@@ -4,7 +4,7 @@
 		"schemas": {
 			"AppHealthSample": {
 				"slug": "app-health-sample",
-				"icon": "HeartPulse",
+				"icon": "ChartBoxOutline",
 				"version": "1.0.0",
 				"title": "App health sample",
 				"description": "Counts one browser reported for one page of a running built app during one five-minute window.",
@@ -22,17 +22,17 @@
 					"versionUuid": { "title": "Version", "type": "string", "description": "The version the browser ran, derived by the server." },
 					"pageId": { "title": "Page", "type": "string", "maxLength": 128, "description": "The manifest page id." },
 					"windowStart": { "title": "Window start", "type": "string", "format": "date-time", "description": "Start of the five-minute window, as the server received it." },
-					"requests": { "title": "Requests", "type": "integer", "minimum": 0 },
-					"failures4xx": { "title": "Failures 4xx", "type": "integer", "minimum": 0 },
-					"failures5xx": { "title": "Failures 5xx", "type": "integer", "minimum": 0 },
-					"durationUnder250": { "title": "Requests under 250 ms", "type": "integer", "minimum": 0 },
-					"durationUnder1000": { "title": "Requests from 250 ms to 1 s", "type": "integer", "minimum": 0 },
-					"durationUnder3000": { "title": "Requests from 1 s to 3 s", "type": "integer", "minimum": 0 },
-					"durationOver3000": { "title": "Requests of 3 s and over", "type": "integer", "minimum": 0 },
-					"loads": { "title": "Page loads", "type": "integer", "minimum": 0 },
-					"loadMsSum": { "title": "Total load time (ms)", "type": "integer", "minimum": 0 },
-					"slowLoads": { "title": "Page loads of 3 s and over", "type": "integer", "minimum": 0 },
-					"clientErrors": { "title": "Client errors", "type": "integer", "minimum": 0 }
+					"requests": { "title": "Requests", "type": "integer", "minimum": 0 , "description": "Requests the page made in the window." },
+					"failures4xx": { "title": "Failures 4xx", "type": "integer", "minimum": 0 , "description": "Requests answered with a 4xx status." },
+					"failures5xx": { "title": "Failures 5xx", "type": "integer", "minimum": 0 , "description": "Requests answered with a 5xx status, or that did not complete." },
+					"durationUnder250": { "title": "Requests under 250 ms", "type": "integer", "minimum": 0 , "description": "Requests that took under 250 ms." },
+					"durationUnder1000": { "title": "Requests from 250 ms to 1 s", "type": "integer", "minimum": 0 , "description": "Requests that took from 250 ms to 1 s." },
+					"durationUnder3000": { "title": "Requests from 1 s to 3 s", "type": "integer", "minimum": 0 , "description": "Requests that took from 1 s to 3 s." },
+					"durationOver3000": { "title": "Requests of 3 s and over", "type": "integer", "minimum": 0 , "description": "Requests that took 3 s or more." },
+					"loads": { "title": "Page loads", "type": "integer", "minimum": 0 , "description": "Times the page was opened." },
+					"loadMsSum": { "title": "Total load time (ms)", "type": "integer", "minimum": 0 , "description": "Total time, in milliseconds, until the page had its data." },
+					"slowLoads": { "title": "Page loads of 3 s and over", "type": "integer", "minimum": 0 , "description": "Times the page took 3 s or more to get its data." },
+					"clientErrors": { "title": "Client errors", "type": "integer", "minimum": 0 , "description": "Render errors and unknown components on the page." }
 				}
 			}
 		}
