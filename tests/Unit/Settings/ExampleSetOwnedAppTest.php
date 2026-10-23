@@ -116,4 +116,22 @@ class ExampleSetOwnedAppTest extends TestCase {
 		$this->assertSame(expected: '{{object:version-pipelinq-1-1-1.id}}', actual: $automation['data']['versionUuid']);
 		$this->assertFalse(condition: $automation['data']['enabled']);
 	}//end testTheAppHasAnAutomationToTest()
+	/**
+	 * Every version carries a manifest with the three fields an app manifest requires: OpenRegister refuses an
+	 * empty one, and with it the whole example set.
+	 *
+	 * @return void
+	 */
+	public function testEveryVersionHasAManifestTheSchemaAccepts(): void {
+		foreach (self::objects() as $key => $object) {
+			if ($object['schema'] !== 'applicationVersion') {
+				continue;
+			}
+
+			$manifest = $object['data']['manifest'] ?? [];
+			self::assertSame(expected: $object['data']['semver'], actual: ($manifest['version'] ?? null), message: $key);
+			self::assertIsArray(actual: ($manifest['menu'] ?? null), message: $key);
+			self::assertIsArray(actual: ($manifest['pages'] ?? null), message: $key);
+		}
+	}//end testEveryVersionHasAManifestTheSchemaAccepts()
 }//end class
