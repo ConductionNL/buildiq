@@ -1552,7 +1552,25 @@ OC.L10N.register(
         "This form cannot be published yet: where it saves to refuses it on the points marked below. Save it as a draft to keep working on it.": "Dit formulier kan nog niet gepubliceerd worden: waar het in opslaat, weigert het op de punten die hieronder gemarkeerd zijn. Sla het op als concept om er verder aan te werken.",
         "This form is saved as a draft. Its destination refuses it on the points below, so the app cannot be published until they are fixed.": "Dit formulier is opgeslagen als concept. Waar het in opslaat, weigert het op de punten hieronder, dus de app kan pas gepubliceerd worden als die opgelost zijn.",
         "_External access is not switched on: where this form saves to refuses it on %n point. Fix it on the form first._::_External access is not switched on: where this form saves to refuses it on %n points. Fix them on the form first._": ["Externe toegang is niet aangezet: waar dit formulier in opslaat, weigert het op %n punt. Los dat eerst op in het formulier.","Externe toegang is niet aangezet: waar dit formulier in opslaat, weigert het op %n punten. Los die eerst op in het formulier."],
-        "_Pages saved as a draft. A form has %n point its destination refuses; it is marked on its field, and the app can be published once it is fixed._::_Pages saved as a draft. Forms have %n points their destination refuses; each is marked on its field, and the app can be published once they are fixed._": ["Pagina's opgeslagen als concept. Een formulier heeft %n punt dat waar het in opslaat weigert; het staat bij het veld, en de app kan gepubliceerd worden zodra het opgelost is.","Pagina's opgeslagen als concept. Formulieren hebben %n punten die waar ze in opslaan weigert; elk staat bij het veld, en de app kan gepubliceerd worden zodra ze opgelost zijn."]
+        "_Pages saved as a draft. A form has %n point its destination refuses; it is marked on its field, and the app can be published once it is fixed._::_Pages saved as a draft. Forms have %n points their destination refuses; each is marked on its field, and the app can be published once they are fixed._": ["Pagina's opgeslagen als concept. Een formulier heeft %n punt dat waar het in opslaat weigert; het staat bij het veld, en de app kan gepubliceerd worden zodra het opgelost is.","Pagina's opgeslagen als concept. Formulieren hebben %n punten die waar ze in opslaan weigert; elk staat bij het veld, en de app kan gepubliceerd worden zodra ze opgelost zijn."],
+        "Own server": "Eigen server",
+        "Run on its own server": "Zelfstandig draaien",
+        "The app becomes a Nextcloud app of its own that runs without buildiq, on a server of the municipality or of a supplier.": "De app wordt een eigen Nextcloud-app die los van buildiq werkt, op een server van de gemeente of van een leverancier.",
+        "What the server needs": "Wat de server nodig heeft",
+        "Why": "Waarom",
+        "In the package": "In het pakket",
+        "App package": "App-pakket",
+        "The app's source with its pages, schemas and the records you chose.": "De broncode van de app met de pagina's, schema's en de records die u koos.",
+        "Docker Compose file": "Docker Compose-bestand",
+        "Builds the app and starts it with Nextcloud and OpenRegister, for a trial or a small environment.": "Bouwt de app en start hem samen met Nextcloud en OpenRegister, voor een proef of een kleine omgeving.",
+        "After the export you no longer change the standalone app from buildiq. Make new versions here and export again.": "Na de export wijzigt u de zelfstandige app niet meer vanuit buildiq. Nieuwe versies maakt u hier en exporteert u opnieuw.",
+        "Make package": "Pakket maken",
+        "{version} or newer": "{version} of nieuwer",
+        "the app runs as a Nextcloud app": "de app draait als Nextcloud-app",
+        "holds the app's schemas and records": "bewaart de schema's en records van de app",
+        "Nextcloud and the app run on it": "Nextcloud en de app draaien erop",
+        "Database": "Database",
+        "Nextcloud keeps its data in it": "Nextcloud bewaart er zijn gegevens in"
     },
     "nplurals=2; plural=(n != 1);"
 )
