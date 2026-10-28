@@ -33,6 +33,7 @@ namespace OCA\Buildiq\Tests\Unit\Controller;
 use OCA\Buildiq\Controller\ApplicationsController;
 use OCA\Buildiq\Controller\StoreController;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
+use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
 use OCP\IUser;
@@ -125,6 +126,59 @@ class StoreControllerTest extends TestCase {
 
 		return $user;
 	}//end mockUser()
+
+	/**
+	 * Publish refuses an anonymous caller, so the canonical route never 500s.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/store-publish-passthrough/specs/buildiq-store/spec.md
+	 */
+	public function testAnonymousPublishIsRejected(): void {
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->storeService->expects(self::never())->method('publish');
+
+		$response = $this->controller()->publish();
+
+		self::assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+	}//end testAnonymousPublishIsRejected()
+
+	/**
+	 * Publish passes the item to the engine and returns its answer.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/store-publish-passthrough/specs/buildiq-store/spec.md
+	 */
+	public function testPublishIsPassedToTheEngine(): void {
+		$this->userSession->method('getUser')->willReturn($this->mockUser(uid: 'admin'));
+		$this->request->method('getParam')->willReturn(['slug' => 'crm-starter']);
+		$this->storeService->expects(self::once())->method('publish')
+			->with(self::isInstanceOf(StoreDescriptor::class), ['slug' => 'crm-starter'])
+			->willReturn(['outcome' => 'not_publishable', 'slug' => '']);
+
+		$response = $this->controller()->publish();
+
+		self::assertSame(Http::STATUS_OK, $response->getStatus());
+		self::assertSame(['outcome' => 'not_publishable', 'slug' => ''], $response->getData());
+	}//end testPublishIsPassedToTheEngine()
+
+	/**
+	 * A publish without an item is a bad request, and the engine is not asked.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/store-publish-passthrough/specs/buildiq-store/spec.md
+	 */
+	public function testPublishWithoutAnItemIsABadRequest(): void {
+		$this->userSession->method('getUser')->willReturn($this->mockUser(uid: 'admin'));
+		$this->request->method('getParam')->willReturn(null);
+		$this->storeService->expects(self::never())->method('publish');
+
+		$response = $this->controller()->publish();
+
+		self::assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+	}//end testPublishWithoutAnItemIsABadRequest()
 
 	/**
 	 * Anonymous search is rejected 401 and the store service is never queried.

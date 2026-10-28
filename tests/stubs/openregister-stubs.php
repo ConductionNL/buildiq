@@ -2494,6 +2494,9 @@ namespace OCA\OpenRegister\AppHost\Service {
 
 			public const OUTCOME_INVALID = 'store_invalid_response';
 
+			/** Outcome: the descriptor or payload cannot be published. */
+			public const OUTCOME_NOT_PUBLISHABLE = 'not_publishable';
+
 			/**
 			 * Stub: whether a registry is configured.
 			 *
@@ -2529,6 +2532,18 @@ namespace OCA\OpenRegister\AppHost\Service {
 			public function resolve(StoreDescriptor $descriptor, string $slug): ?array {
 				return null;
 			}//end resolve()
+
+			/**
+			 * Publish one object of the descriptor's schema.
+			 *
+			 * @param StoreDescriptor      $descriptor The app's store descriptor.
+			 * @param array<string, mixed> $payload    The object to publish; carries `slug`.
+			 *
+			 * @return array{outcome: string, slug: string}
+			 */
+			public function publish(StoreDescriptor $descriptor, array $payload): array {
+				return ['outcome' => 'not_publishable', 'slug' => ''];
+			}//end publish()
 		}
 	}
 }
