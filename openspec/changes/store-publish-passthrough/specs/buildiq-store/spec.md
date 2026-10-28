@@ -4,7 +4,7 @@
 
 ### Requirement: The publish route answers
 
-`POST /api/store/publish` MUST answer: 401 to an anonymous caller, 400 without an `item`, and otherwise the outcome OpenRegister's store service gives for buildiq's store.
+`POST /api/store/publish` MUST answer: 401 to an anonymous caller, 403 to a user `canPublish()` does not admit, 400 without an `item`, and otherwise the outcome OpenRegister's store service gives for buildiq's store.
 
 #### Scenario: a publish to buildiq's store
 

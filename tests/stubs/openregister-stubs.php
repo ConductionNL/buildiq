@@ -2548,6 +2548,28 @@ namespace OCA\OpenRegister\AppHost\Service {
 	}
 }
 
+namespace OCA\OpenRegister\AppHost\Store {
+
+	if (class_exists(StoreActionAuthorizer::class, autoload: false) === false) {
+		/**
+		 * Stub StoreActionAuthorizer: whether a user may publish to an app's store.
+		 */
+		class StoreActionAuthorizer {
+			/**
+			 * Whether the user may publish.
+			 *
+			 * @param \OCA\OpenRegister\AppHost\Service\StoreDescriptor $descriptor The app's store descriptor.
+			 * @param \OCP\IUser                                          $user       The signed-in user.
+			 *
+			 * @return bool
+			 */
+			public function canPublish(\OCA\OpenRegister\AppHost\Service\StoreDescriptor $descriptor, \OCP\IUser $user): bool {
+				return false;
+			}//end canPublish()
+		}
+	}
+}
+
 namespace OCA\OpenRegister\AppHost\Settings {
 
 	if (class_exists(GenericAdminSettings::class, autoload: false) === false) {

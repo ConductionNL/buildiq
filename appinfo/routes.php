@@ -300,6 +300,9 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // shared ApplicationsController install seam.
         ['name' => 'store#search',  'url' => '/api/store/templates',                  'verb' => 'GET'],
         ['name' => 'store#install', 'url' => '/api/store/templates/{slug}/install',   'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        // Also in OpenRegister's canonical table; declared here so it is
+        // visible where this app's routes are read, and it overrides by name.
+        ['name' => 'store#publish', 'url' => '/api/store/publish',                    'verb' => 'POST'],
 
         // GitHub shop source (github-shop-catalogue REQ-GHSC-005 / REQ-GHSC-006).
         // Both #[NoAdminRequired] with an in-body 401 guard; search is an
