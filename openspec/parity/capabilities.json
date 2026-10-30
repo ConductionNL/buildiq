@@ -2014,7 +2014,8 @@
 				"evidence": "lib/Service/ApplicationCreationService.php:262-325 the wizard provisions a per-version OpenRegister register automatically ('Step 3: Create ApplicationVersions + provision registers', registerSlug = buildiq-{appSlug}-{versionSlug}) with no manual OR setup by the maker; storage itself is OpenRegister's own JSON object store",
 				"reachedOn": "buildiq builder, New application wizard (POST /api/applications/wizard)",
 				"owner": "ConductionNL/openregister",
-				"spec": "openspec/specs/openbuild-application-register"
+				"spec": "openspec/specs/application-creation-wizard",
+				"requirement": "Per-version registers + seed schema set (REQ-OBWIZ-008)"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -2127,7 +2128,8 @@
 				"evidence": "src/components/page-editor/DetailPageEditor.vue:67-99 a maker can set config.sidebar=true (boolean shape checkbox) or config.sidebar={enabled:true} on a detail page; nextcloud-vue v2.55.1 CnDetailPage renders CnObjectSidebar with default tabs ['files','notes','tags','tasks','auditTrail'] (CnObjectSidebar.vue:877) unless hiddenTabs excludes them; CnFilesTab.vue is the Files tab implementation",
 				"reachedOn": "buildiq builder, page editor for a detail page, enable Sidebar -> Files tab",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "openspec/specs/page-editor-coverage"
+				"spec": "openspec/specs/openbuild-page-designer",
+				"requirement": "Detail-page sub-editor: sidebar tabs and route param schema (REQ-OBPD-005)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -2163,7 +2165,8 @@
 				"evidence": "same sidebar path as data-files-on-record (DetailPageEditor.vue:67-99, config.sidebar=true); nextcloud-vue's CnObjectSidebar default tabs include auditTrail (CnObjectSidebar.vue:148-156, 877) which renders CnAuditTrailTab.vue (action/user/date/IP/session per entry) sourced from OpenRegister's per-object audit trail, the same OR audit REST the buildiq-own PermissionHistoryModal.vue consumes for its own Application object",
 				"reachedOn": "buildiq builder, page editor for a detail page, enable Sidebar -> Audit trail tab",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "openspec/specs/page-editor-coverage"
+				"spec": "openspec/specs/openbuild-page-designer",
+				"requirement": "Detail-page sub-editor: sidebar tabs and route param schema (REQ-OBPD-005)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -2421,7 +2424,9 @@
 				"owner": "ConductionNL/buildiq",
 				"reachedOn": "Published app, Edit with Buildiq, a dashboard page or a detail page with a widget grid, drag or resize a widget, Save",
 				"note": "Matrix corrected in the OpenSpec pass 2026-09-27: the earlier reading searched the page designer only. Grid positioning, not free pixel placement, as the competitors rated yes (Budibase container grid, Appsmith fixed grid). The page designer's own dashboard editor still takes numeric positions (src/components/page-editor/fields/LayoutItemBuilder.vue).",
-				"spec": "openspec/specs/openbuild-page-designer"
+				"spec": "openspec/specs/openbuild-page-designer",
+				"change": "pages-widget-grid-drag-and-resize",
+				"requirement": "Widget grids are draggable and resizable in edit mode (REQ-OBPD-012)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -2789,7 +2794,8 @@
 				"evidence": "src/components/page-editor/MapPageEditor.vue (746 lines) authors config for type:\"map\"; SUB_EDITOR_MAP['map']='MapPageEditor'; renderer mounts CnMapPage (pageTypes.js)",
 				"reachedOn": "any built app page authored as type map",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "openspec/specs/openbuild-page-designer"
+				"spec": "openspec/specs/page-editor-coverage",
+				"requirement": "Map-page sub-editor: viewport, layers and marker source (REQ-PEC-003)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -5690,7 +5696,9 @@
 				"reachedOn": "no buildiq page; MCP clients via OpenRegister's MCP server (/api/mcp/v1, openregister routes.php:1980)",
 				"owner": "ConductionNL/buildiq",
 				"note": "Open Register's half shipped in ConductionNL/openregister openspec/changes/archive/2026-08-17-declared-actions-and-mcp-scope; the missing half is buildiq's own work, so the owner moved to ConductionNL/buildiq (openregister lane, OpenSpec pass 2026-09-27; owner was ConductionNL/openregister).",
-				"change": "openbuild-runtime-mcp"
+				"change": "archive/retrofit-2026-05-24-openbuild-runtime-mcp",
+				"spec": "openspec/specs/openbuild-runtime",
+				"requirement": "MCP tool-provider contract (REQ-OBR-MCP-001)"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -6442,7 +6450,8 @@
 				"evidence": "routes.php:69 applications#diffVersions GET /api/applications/{slug}/versions/diff (requirements slug) -> lib/Controller/ApplicationsController.php:597 diffVersions() returns two manifest blobs in one round-trip; src/components/ManifestDiff.vue:251 calls it and renders the diff, reached via the VirtualAppDetail 'Diff' sidebar tab (ApplicationDiffTab, src/manifest.json:486)",
 				"reachedOn": "VirtualAppDetail 'Diff' sidebar tab",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/application-versions"
+				"spec": "openspec/specs/openbuild-runtime",
+				"requirement": "ManifestDiff.vue renders a side-by-side diff (REQ-OBR-010)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
