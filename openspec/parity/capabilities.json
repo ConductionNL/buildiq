@@ -3247,7 +3247,8 @@
 				"evidence": "nextcloud-vue v2.55.1 ships @media queries across 22 of its Cn*.vue renderer components (git grep -l '@media' src/components/Cn*.vue), including CnAppRoot.vue, CnIndexPage.vue, CnDetailPage.vue",
 				"reachedOn": "any built app page, rendered through CnAppRoot/CnPageRenderer",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "none"
+				"change": "platform-properties",
+				"requirement": "Built pages adapt to phone and tablet screens (REQ-PLAT-001)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -5647,7 +5648,9 @@
 				"evidence": "lib/Service/CopilotService.php:13 'LLM access rides Nextcloud's Task Processing API', :54-55 OCP\\TaskProcessing\\Task + TaskTypes\\TextToText, :199-203 health() checks a TextToText provider is registered, :1256 resolves OCP\\TaskProcessing\\IManager; no provider-specific client or API key in buildiq (grep -iE 'openai|anthropic|api_key' over lib/Service/Copilot*: none). Agents carry a modelTaskType (src/dialogs/AgentEditDialog.vue:6).",
 				"reachedOn": "any copilot surface (wizard 'Generate with AI', page designer 'AI copilot'), using whichever Task Processing provider the admin installed, local or cloud",
 				"owner": "nextcloud/server",
-				"spec": "openspec/specs/ai-copilot"
+				"spec": "openspec/specs/ai-copilot",
+				"change": "platform-properties",
+				"requirement": "The language model is the one the Nextcloud instance provides (REQ-PLAT-002)"
 			},
 			"provider": "nextcloud",
 			"providerHow": "read-from-code",
@@ -6031,7 +6034,9 @@
 				"evidence": "Built apps are served inside the Nextcloud session: appinfo/routes.php:124-162 dashboard#builder/builderPath -> lib/Controller/DashboardController.php:123-226 #[NoAdminRequired] TemplateResponse, no #[PublicPage] on any builder route (the only PublicPage in lib/Controller is GeneratedDocumentController.php:107). Whatever sign-in the Nextcloud instance uses (user_oidc, user_saml, LDAP) applies unchanged",
 				"reachedOn": "/apps/buildiq/builder/:slug after Nextcloud login",
 				"owner": "nextcloud/server",
-				"spec": "openspec/specs/openbuild-runtime"
+				"spec": "openspec/specs/openbuild-runtime",
+				"change": "platform-properties",
+				"requirement": "Built apps sit behind the Nextcloud login (REQ-PLAT-003)"
 			},
 			"provider": "nextcloud",
 			"providerHow": "read-from-code",
@@ -6178,7 +6183,9 @@
 				"evidence": "Nextcloud's CSRF middleware applies to every state-changing buildiq route: #[NoCSRFRequired] appears only on GET handlers (DashboardController page routes, ApplicationsController.php:174,596,1048, AppOverrideController.php:118,200,359 GETs, ExportsController.php:674 download link; ExportsController.php:526 and AppOverrideController.php:444,578 state explicitly that CSRF stays on). XSS: Vue escaping by default; the three v-html sites are sanitised: DocumentTemplateAttachmentDialog.vue:431 DOMPurify.sanitize, wizard icon previews Step1Basics.vue:156 and Step4Review.vue:63 via src/utils/iconCatalogues.js:108-113 DOMPurify SVG profile",
 				"reachedOn": "all built apps (framework default)",
 				"owner": "nextcloud/server",
-				"spec": "openspec/specs/frontend-foundation"
+				"spec": "openspec/specs/frontend-foundation",
+				"change": "platform-properties",
+				"requirement": "Forged requests and script injection are blocked by default (REQ-PLAT-004)"
 			},
 			"provider": "nextcloud",
 			"providerHow": "read-from-code",
@@ -7568,7 +7575,8 @@
 				"evidence": "built apps render through nextcloud-vue's shared Cn* components (CnIndexPage, CnFormPage, etc.), which are the fleet's common accessibility baseline and are subject to hydra a11y gates (hydra-gate-nc-input-labels etc.) in CI for buildiq's OWN code paths. However buildiq's page/schema/widget editors let a user freely type labels/config without any accessibility validation on the resulting BUILT APP's content (e.g. ActionBuilder.vue and WidgetBuilder.vue take free-text labels with no required aria/label pairing check).",
 				"reachedOn": "any built app, via the shared renderer components",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "none"
+				"change": "platform-properties",
+				"requirement": "Built apps meet WCAG 2.1 AA without extra work (REQ-PLAT-005)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -7633,7 +7641,8 @@
 				"evidence": "built apps use standard HTML form controls and Nextcloud's NcButton/NcSelect/NcActions components throughout the renderer (CnIndexPage.vue imports NcActionButton/NcActions/NcButton etc., v2.55.1 line 733), which are natively keyboard-operable; buildiq's own designer also wires explicit keyboard chords for undo/redo (PageDesigner.vue ~1106-1121)",
 				"reachedOn": "any built app or builder screen",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "none"
+				"change": "platform-properties",
+				"requirement": "Built apps work by keyboard alone (REQ-PLAT-006)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -7816,7 +7825,8 @@
 				"evidence": "buildiq is an ordinary Nextcloud app (appinfo/info.xml, standard app structure) shipping its own buildiq-compose.yaml for local/self-hosted deployment; EUPL-1.2 licensed and open source (info.xml licence, README)",
 				"reachedOn": "any self-managed Nextcloud instance with the app installed",
 				"owner": "nextcloud/server",
-				"spec": "none"
+				"change": "platform-properties",
+				"requirement": "The builder runs on the customer's own Nextcloud (REQ-PLAT-007)"
 			},
 			"provider": "nextcloud",
 			"providerHow": "read-from-code",
@@ -7851,7 +7861,8 @@
 				"evidence": "buildiq runs entirely as a Nextcloud app (appinfo/info.xml id 'buildiq'); built apps are mounted inside the same Nextcloud instance at /apps/buildiq/builder/{slug}/... via a nested CnAppRoot (BuilderHost.vue), sharing the same server, auth, files and other NC apps -- no separate server or deployment for a built app",
 				"reachedOn": "/apps/buildiq/builder/{slug}/...",
 				"owner": "nextcloud/server",
-				"spec": "none"
+				"change": "platform-properties",
+				"requirement": "Built apps run inside the same Nextcloud (REQ-PLAT-008)"
 			},
 			"provider": "nextcloud",
 			"providerHow": "read-from-code",
@@ -8083,7 +8094,8 @@
 				"evidence": "appinfo/info.xml:26 <licence>EUPL-1.2</licence>; description text 'Free and open source under the EUPL-1.2 license.'; no per-user licensing/seat code anywhere in lib/ or src/",
 				"reachedOn": "n/a (licensing model, not a UI feature)",
 				"owner": "ConductionNL/buildiq",
-				"spec": "none"
+				"change": "platform-properties",
+				"requirement": "No per-user licence fees (REQ-PLAT-009)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -9356,7 +9368,8 @@
 				"evidence": "buildiq runs as a Nextcloud app, and Nextcloud scales out behind a load balancer with shared Redis and database (nextcloud/server config/config.sample.php:1892 'redis', memcache.distributed) and background jobs on cron workers; buildiq keeps no single-node state (exports under app data, lib/Service/ExportJobService.php)",
 				"reachedOn": "platform deployment, not a buildiq screen",
 				"owner": "nextcloud/server",
-				"spec": "none"
+				"change": "platform-properties",
+				"requirement": "The platform scales out over several servers (REQ-PLAT-010)"
 			},
 			"provider": "nextcloud",
 			"providerHow": "read-from-code",
@@ -9621,7 +9634,8 @@
 				"evidence": "Built apps authenticate through the Nextcloud session (acc-sso, lib/Controller/DashboardController.php:123-226) and grant access per group (acc-group-access); nextcloud/server apps/user_ldap/appinfo/info.xml:10 'LDAP user and group backend' synchronises users and groups from LDAP or Active Directory",
 				"reachedOn": "Nextcloud admin settings, LDAP/AD integration; groups then usable in buildiq role pickers",
 				"owner": "nextcloud/server",
-				"spec": "none"
+				"change": "platform-properties",
+				"requirement": "Users and groups come from the organisation's directory (REQ-PLAT-011)"
 			},
 			"provider": "nextcloud",
 			"providerHow": "read-from-code",
@@ -9881,7 +9895,8 @@
 				"evidence": "Built apps sit behind the Nextcloud login (lib/Controller/DashboardController.php:123-226, no #[PublicPage]); nextcloud/server core/Controller/TwoFactorChallengeController.php challenges a second factor and core/Command/TwoFactorAuth/Enforce.php:29-35 lets an admin enforce it for all or some groups",
 				"reachedOn": "Nextcloud login, two-factor challenge before any built app opens",
 				"owner": "nextcloud/server",
-				"spec": "none"
+				"change": "platform-properties",
+				"requirement": "Two-factor authentication applies to built apps (REQ-PLAT-012)"
 			},
 			"provider": "nextcloud",
 			"providerHow": "read-from-code",
