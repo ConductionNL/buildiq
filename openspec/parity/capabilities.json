@@ -3639,12 +3639,14 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "specified",
-				"evidence": "CnFormPage v2.55.1 accepts a static initialValue (CnFormPage.vue:369-372, consumed for mode edit), and FormPageEditor.vue:374 lists 'initialValue' only as a validated config key with no input for it. No binding of a field to the current user or known data: grep 'currentUser|getCurrentUser|prefill' in src/components/page-editor hits only FieldValidationBuilder.vue (legacy required/pattern display prefill) and no field default or user-placeholder option exists in FormFieldBuilder.vue",
-				"reachedOn": "",
+				"state": "built",
+				"evidence": "Designer: src/components/page-editor/fields/FieldDefaultBuilder.vue (literal, @me, @me.displayName, @me.email, @today, @object.<field>), mounted in FormFieldBuilder.vue:119; stored as the field default. Renderer (nextcloud-vue development e7b3a09b6, change form-live-values): CnFormPage.vue:1671 resolves default tokens when the form opens, :1750 fills @me.* from src/utils/currentUserProfile.js. Server: lib/Listener/FormLiveValuesListener.php recomputes on save. Only the Playwright run T07 of forms-live-values-and-checks is open.",
+				"reachedOn": "buildiq page designer, form page, field details, Default; the built form opens with the value filled in",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/forms-live-values-and-checks (OpenSpec pass 2026-09-27).",
-				"change": "forms-live-values-and-checks"
+				"change": "forms-live-values-and-checks",
+				"readOn": "2026-10-30",
+				"requirement": "A field can be prefilled from the user or the record (REQ-BQLV-001)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -6895,12 +6897,14 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "building",
-				"evidence": "src/views/TemplateGallery.vue: one category NcSelect (data-testid template-category-filter) groups built-in and organisation templates under a heading per category with Other last, narrows the GitHub cards by their descriptor's category, and keeps the choice in ?category= (onTemplateCategory, $router.replace); tests/views/TemplateGallery.categories.spec.js",
-				"reachedOn": "Templates page /templates (titled 'App store'), category filter above 'Built-in templates'",
+				"state": "built",
+				"evidence": "src/views/TemplateGallery.vue:59-66 one category filter (NcSelect over ApplicationTemplate.category) for built-in, organisation and GitHub templates, grouped per category and kept in ?category=; Vitest tests/views/TemplateGallery.categories.spec.js. Change reuse-gallery-categories-and-form-library T01-T07 ticked; only the Playwright run T08 is open.",
+				"reachedOn": "buildiq Templates, category filter",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/reuse-gallery-categories-and-form-library (OpenSpec pass 2026-09-27). Code built; stays building until the Playwright ?category= case (tests/e2e/template-gallery.spec.ts) has run against a live stack.",
-				"change": "reuse-gallery-categories-and-form-library"
+				"change": "reuse-gallery-categories-and-form-library",
+				"readOn": "2026-10-30",
+				"requirement": "Templates can be filtered and browsed by category (REQ-BQGL-001)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8844,8 +8848,9 @@
 				"evidence": "src/components/schema-editor/CalculationEditor.vue:1-30 is a v1 stub (read-only view, authoring deferred); FormPageEditor.vue and fields/FormFieldBuilder.vue offer no calculated field; nextcloud-vue v2.55.1 src/components/CnFormPage: grep -iE 'calculat|formula|computed' finds no in-form calculation",
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/buildiq",
-				"note": "Specified in openspec/changes/forms-live-values-and-checks (OpenSpec pass 2026-09-27).",
-				"change": "forms-live-values-and-checks"
+				"note": "Designer (FieldCalculationBuilder.vue) and save-time recompute (FormLiveValuesListener) are built, nextcloud-vue CnFormPage takes a calculate hook; the live calculation while filling in waits on task T11 of forms-live-values-and-checks (BuildiqFormPage wrapper in src/builder.js pageTypes).",
+				"change": "forms-live-values-and-checks",
+				"requirement": "A field can be calculated from a rule set (REQ-BQLV-002)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8963,8 +8968,9 @@
 				"evidence": "nextcloud-vue v2.55.1 src/components/CnFormPage: grep -iE 'review|summary|overzicht' finds no summary step before submit; buildiq src/components/page-editor/fields/FormStepsManager.vue:79-120 authors steps only",
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/nextcloud-vue",
-				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/journey-runtime (nextcloud-vue lane, OpenSpec pass 2026-09-27).",
-				"change": "nextcloud-vue/journey-runtime"
+				"note": "Provider half built: nextcloud-vue journey-runtime renders the review step (only a bundle measurement open). buildiq half: journey-designer Task 1 authors form, review and confirmation steps (src/views/JourneyDesigner.vue, src/components/journey-editor/JourneyStepsManager.vue). Was nextcloud-vue/journey-runtime.",
+				"change": "journey-designer",
+				"requirement": "The designer MUST author steps over existing form objects"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -9113,12 +9119,14 @@
 			"mendix": "partial",
 			"power-apps": "partial",
 			"built": {
-				"state": "building",
-				"evidence": "lib/Settings/register.d/83-form-library.json formTemplate; src/dialogs/SaveFormToLibraryDialog.vue from FormPageEditor.vue and RegistrationFormEditor.vue (via RegistrationFormList.vue) captures with src/services/formCapture.js; src/components/store/FormLibraryView.vue is the app store's Forms tab (search, category, Export, Import via src/services/formExport.js, GitHub cards from GET /api/shop/github/forms -> ShopController::githubFormSearch -> GitHubCatalogService::searchForms on topic:buildiq-form); src/dialogs/UseLibraryFormDialog.vue adds a library form to an app as a form page or a draft registration form and adds missing schema properties on confirm (src/services/formLibrary.js useLibraryForm)",
-				"reachedOn": "Templates page /templates, 'Forms' tab; page designer form page and case type form list, 'Save to form library'",
+				"state": "built",
+				"evidence": "Save: src/dialogs/SaveFormToLibraryDialog.vue (from FormPageEditor and RegistrationFormEditor), fragment lib/Settings/register.d/83-form-library.json. Find: Forms tab src/views/TemplateGallery.vue:54,301 rendering src/components/store/FormLibraryView.vue. Use: src/dialogs/UseLibraryFormDialog.vue. Share: src/services/formExport.js export/import and lib/Controller/FormLibraryController.php:74 GitHub search on topic buildiq-form. Only the Playwright run T08 is open.",
+				"reachedOn": "buildiq Templates, Forms tab; form page editor, Save to form library",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/reuse-gallery-categories-and-form-library (OpenSpec pass 2026-09-27). Code built; stays building until tests/e2e/form-library.spec.ts has run against a live stack.",
-				"change": "reuse-gallery-categories-and-form-library"
+				"change": "reuse-gallery-categories-and-form-library",
+				"readOn": "2026-10-30",
+				"requirement": "Forms travel between organisations (REQ-BQGL-005)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -9161,8 +9169,9 @@
 				"evidence": "Business rules can decide an outcome from data (lib/Service/RuleEngineService.php, lib/Service/DecisionTableEvaluator.php; example 'loan-eligibility' in lib/Settings/register.d/10-business-rules.json:599-602), but no form page evaluates a rule while it is filled in and shows the unmet condition; forms show field validation only (form-validation-messages)",
 				"reachedOn": "rule sets page authoring only; not on the form",
 				"owner": "ConductionNL/buildiq",
-				"note": "Specified in openspec/changes/forms-live-values-and-checks (OpenSpec pass 2026-09-27).",
-				"change": "forms-live-values-and-checks"
+				"note": "Designer (EligibilityCheckBuilder.vue) and save-time refusal (FormLiveValuesListener) are built, nextcloud-vue CnFormPage renders unmetConditions; showing the unmet condition while filling in waits on task T11 of forms-live-values-and-checks.",
+				"change": "forms-live-values-and-checks",
+				"requirement": "A form can check eligibility as it is filled in (REQ-BQLV-003)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -9274,12 +9283,13 @@
 			"mendix": "partial",
 			"power-apps": "partial",
 			"built": {
-				"state": "specified",
-				"evidence": "Every built index page renders nextcloud-vue v2.55.1 CnIndexPage, whose sidebar (CnActionsBar.vue:93 'Search and columns') lets the user show and hide columns (CnIndexSidebar.vue:579-621 toggles visibleColumns; CnIndexPage.vue:716,3495); no reorder or pin (grep -iE 'reorder|pin' in CnIndexSidebar: no hits)",
-				"reachedOn": "any built app index page, 'Search and columns' sidebar",
+				"state": "built",
+				"evidence": "nextcloud-vue development e7b3a09b6: CnIndexSidebar.vue:230-270 Columns tab orders and pins columns, CnIndexPage.vue:3032 personalColumns defaults to true, so every index page of a built app offers it without builder work; layout kept in the user's Nextcloud preferences per list (change index-column-order-and-pinning, only the Playwright run open).",
+				"reachedOn": "any built app index page, sidebar, Columns tab",
 				"owner": "ConductionNL/nextcloud-vue",
 				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/index-column-order-and-pinning (nextcloud-vue lane, OpenSpec pass 2026-09-27).",
-				"change": "nextcloud-vue/index-column-order-and-pinning"
+				"change": "nextcloud-vue/index-column-order-and-pinning",
+				"readOn": "2026-10-30"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -10071,12 +10081,13 @@
 			"mendix": "unknown",
 			"power-apps": "yes",
 			"built": {
-				"state": "specified",
-				"evidence": "A built detail page can enable the object sidebar (src/components/page-editor/DetailPageEditor.vue:66-71 Sidebar settings), and nextcloud-vue v2.55.1 CnDetailPage.vue:12 renders CnObjectSidebar, whose Notes tab (CnObjectSidebar.vue:85-89) holds notes on the object; not threaded replies",
-				"reachedOn": "built app detail page with the sidebar enabled, Notes tab",
+				"state": "built",
+				"evidence": "nextcloud-vue development e7b3a09b6: CnObjectSidebar.vue:88-105 default notes tab renders src/components/CnObjectSidebar/CnNotesTab.vue, with replies (:26 replyTo), user and group mentions and pasted images (change notes-replies-group-mentions-and-images, only the a11y run open). buildiq turns the sidebar on per detail page (DetailPageEditor.vue, config.sidebar).",
+				"reachedOn": "built app detail page with the sidebar on, Notes tab",
 				"owner": "ConductionNL/nextcloud-vue",
 				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/notes-replies-group-mentions-and-images (nextcloud-vue lane, OpenSpec pass 2026-09-27).",
-				"change": "nextcloud-vue/notes-replies-group-mentions-and-images"
+				"change": "nextcloud-vue/notes-replies-group-mentions-and-images",
+				"readOn": "2026-10-30"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -10700,12 +10711,14 @@
 			"mendix": "partial",
 			"power-apps": "yes",
 			"built": {
-				"state": "building",
-				"evidence": "lib/Controller/ApplicationsController.php copy() (POST /api/applications/{slug}/copy, admin + owner or editor, rate limited like from-template) captures the app with lib/Service/AppTemplateCapture.php and installs it through installFromTemplateArray(); src/modals/CopyAppDialog.vue from ApplicationDetailActions.vue",
-				"reachedOn": "App detail page, Actions, Copy app",
+				"state": "built",
+				"evidence": "appinfo/routes.php:52 applications#copy POST /api/applications/{slug}/copy -> lib/Controller/ApplicationsController.php:1667 copy() via lib/Service/AppTemplateCapture.php; src/modals/CopyAppDialog.vue opened from src/components/ApplicationDetailActions.vue:87; PHPUnit tests/Unit/Controller/CopyApplicationTest.php, Vitest tests/modals/CopyAppDialog.spec.js. Only the Playwright copy (T03 tail) is open.",
+				"reachedOn": "buildiq app detail, actions, Copy app",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/apps-copy-app-and-page (OpenSpec pass 2026-09-27). Code built; stays building until the Playwright copy (tests/e2e/copy-app-and-page.spec.ts) has run against a live stack.",
-				"change": "apps-copy-app-and-page"
+				"change": "apps-copy-app-and-page",
+				"readOn": "2026-10-30",
+				"requirement": "A maker copies an app (REQ-BQCP-001)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
