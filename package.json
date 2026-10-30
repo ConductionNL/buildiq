@@ -112,7 +112,7 @@
     "patch-package": "^8.0.1",
     "path-browserify": "^1.0.1",
     "postcss-html": "^1.6.0",
-    "prettier": "^3.9.6",
+    "prettier": "^3.9.9",
     "sass": "^1.104.0",
     "sass-loader": "^17.0.1",
     "style-loader": "~4.0.0",
