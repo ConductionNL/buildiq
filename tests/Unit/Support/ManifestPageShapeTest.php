@@ -173,4 +173,26 @@ class ManifestPageShapeTest extends TestCase {
 		self::assertSame('string', $page['config']['fields'][0]['type']);
 		self::assertSame('Due on', $page['config']['fields'][0]['label']);
 	}//end testAnUnknownFieldTypeFallsBackToString()
+	/**
+	 * Decision 179: a form names its destination; `destination` fills the
+	 * register/schema pair and the endpoint, and an endpoint alone yields one.
+	 *
+	 * @return void
+	 */
+	public function testAFormNamesItsDestination(): void {
+		$fromDestination = ManifestPageShape::normalise(
+			page: ['type' => 'form', 'config' => ['destination' => ['register' => 'dossiq', 'schema' => 'case'], 'fields' => ['title']]]
+		);
+		$fromEndpoint = ManifestPageShape::normalise(
+			page: ['type' => 'form', 'config' => ['submitEndpoint' => '/apps/openregister/api/objects/pipelinq/ticket', 'fields' => ['title']]]
+		);
+		$withHandler = ManifestPageShape::normalise(
+			page: ['type' => 'form', 'config' => ['submitHandler' => 'x', 'register' => 'r', 'schema' => 's', 'fields' => ['title']]]
+		);
+
+		self::assertSame('/apps/openregister/api/objects/dossiq/case', $fromDestination['config']['submitEndpoint']);
+		self::assertSame(['register' => 'dossiq', 'schema' => 'case'], $fromDestination['config']['destination']);
+		self::assertSame(['register' => 'pipelinq', 'schema' => 'ticket'], $fromEndpoint['config']['destination']);
+		self::assertArrayNotHasKey('destination', $withHandler['config']);
+	}//end testAFormNamesItsDestination()
 }//end class

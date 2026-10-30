@@ -67,6 +67,7 @@ use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
+use OCA\OpenRegister\AppHost\Store\StoreActionAuthorizer;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -96,6 +97,7 @@ class StoreController extends Controller {
 	 * @param GenericStoreService $storeService Engine-owned store client.
 	 * @param ApplicationsController $appsController Shared clone/install seam.
 	 * @param ConnectionReporter|null $connectionReporter Tells integriq what a search met, or nothing when absent.
+	 * @param StoreActionAuthorizer|null $actionAuthorizer Decides who may publish (OpenRegister); absent, nobody may.
 	 *
 	 * @return void
 	 *
@@ -108,6 +110,7 @@ class StoreController extends Controller {
 		private readonly GenericStoreService $storeService,
 		private readonly ApplicationsController $appsController,
 		private readonly ?ConnectionReporter $connectionReporter = null,
+		private readonly ?StoreActionAuthorizer $actionAuthorizer = null,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
@@ -235,6 +238,53 @@ class StoreController extends Controller {
 
 		return new JSONResponse(data: $body, statusCode: $status);
 	}//end storeError()
+
+	/**
+	 * Publish one store item through the engine.
+	 *
+	 * OpenRegister's canonical routes include `POST /api/store/publish`, and
+	 * buildiq answers its own store routes here rather than through the
+	 * engine's GenericStoreController, so this action must exist or the route
+	 * fails at dispatch. The engine decides: buildiq's descriptor declares no
+	 * publish fields or groups, so it answers `not_publishable`.
+	 *
+	 * @return JSONResponse `{outcome, slug}`; 401 anonymous, 403 not admitted, 400 without an item.
+	 *
+	 * @spec openspec/changes/store-publish-passthrough/specs/buildiq-store/spec.md
+	 */
+	#[NoAdminRequired]
+	public function publish(): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(
+				data: ['outcome' => 'unauthenticated', 'slug' => ''],
+				statusCode: Http::STATUS_UNAUTHORIZED
+			);
+		}
+
+		$descriptor = $this->descriptor();
+		if ($this->actionAuthorizer === null
+			|| $this->actionAuthorizer->canPublish(descriptor: $descriptor, user: $user) === false
+		) {
+			return new JSONResponse(
+				data: ['outcome' => 'forbidden', 'slug' => ''],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
+
+		$item = $this->request->getParam('item');
+		if (is_array($item) === false) {
+			return new JSONResponse(
+				data: ['outcome' => GenericStoreService::OUTCOME_NOT_PUBLISHABLE, 'slug' => ''],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		return new JSONResponse(
+			data: $this->storeService->publish(descriptor: $descriptor, payload: $item),
+			statusCode: Http::STATUS_OK
+		);
+	}//end publish()
 
 	/**
 	 * Resolve a remote template by slug and install it locally (clone).

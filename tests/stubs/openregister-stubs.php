@@ -2494,6 +2494,9 @@ namespace OCA\OpenRegister\AppHost\Service {
 
 			public const OUTCOME_INVALID = 'store_invalid_response';
 
+			/** Outcome: the descriptor or payload cannot be published. */
+			public const OUTCOME_NOT_PUBLISHABLE = 'not_publishable';
+
 			/**
 			 * Stub: whether a registry is configured.
 			 *
@@ -2529,6 +2532,40 @@ namespace OCA\OpenRegister\AppHost\Service {
 			public function resolve(StoreDescriptor $descriptor, string $slug): ?array {
 				return null;
 			}//end resolve()
+
+			/**
+			 * Publish one object of the descriptor's schema.
+			 *
+			 * @param StoreDescriptor      $descriptor The app's store descriptor.
+			 * @param array<string, mixed> $payload    The object to publish; carries `slug`.
+			 *
+			 * @return array{outcome: string, slug: string}
+			 */
+			public function publish(StoreDescriptor $descriptor, array $payload): array {
+				return ['outcome' => 'not_publishable', 'slug' => ''];
+			}//end publish()
+		}
+	}
+}
+
+namespace OCA\OpenRegister\AppHost\Store {
+
+	if (class_exists(StoreActionAuthorizer::class, autoload: false) === false) {
+		/**
+		 * Stub StoreActionAuthorizer: whether a user may publish to an app's store.
+		 */
+		class StoreActionAuthorizer {
+			/**
+			 * Whether the user may publish.
+			 *
+			 * @param \OCA\OpenRegister\AppHost\Service\StoreDescriptor $descriptor The app's store descriptor.
+			 * @param \OCP\IUser                                          $user       The signed-in user.
+			 *
+			 * @return bool
+			 */
+			public function canPublish(\OCA\OpenRegister\AppHost\Service\StoreDescriptor $descriptor, \OCP\IUser $user): bool {
+				return false;
+			}//end canPublish()
 		}
 	}
 }
@@ -2731,6 +2768,47 @@ namespace OCA\OpenRegister\Service\Dmn {
 			 */
 			public function evaluate(array $decisionTable, array $inputs): array {
 				return ['outputs' => [], 'matchedRuleIds' => [], 'hitPolicy' => 'UNIQUE'];
+			}
+		}
+	}
+	if (class_exists(DecisionTableStore::class, autoload: false) === false) {
+		/**
+		 * Stub DecisionTableStore: OpenRegister's reader of stored decision
+		 * tables (openregister#4572). Lookup and validation are proven in
+		 * openregister against the real class; buildiq's suite mocks this type
+		 * to prove its own mapping, so the signature is the part that matters.
+		 */
+		class DecisionTableStore {
+
+			/**
+			 * The register the tables live in.
+			 */
+			public const REGISTER = 'decision-tables';
+
+			/**
+			 * The schema of one table.
+			 */
+			public const SCHEMA = 'decision-table';
+
+			/**
+			 * @param string $reference The table's key or uuid.
+			 *
+			 * @return array<string, mixed> The stored table.
+			 *
+			 * @throws \UnexpectedValueException When no table carries the reference.
+			 */
+			public function find(string $reference): array {
+				throw new \UnexpectedValueException('No decision table has the key or id "' . $reference . '".');
+			}
+
+			/**
+			 * @param string               $reference The table's key or uuid.
+			 * @param array<string, mixed> $inputs    Named input values.
+			 *
+			 * @return array{outputs: array<string, mixed>, matchedRuleIds: array<int, string>, hitPolicy: string, tableKey: string}
+			 */
+			public function evaluate(string $reference, array $inputs): array {
+				return ['outputs' => [], 'matchedRuleIds' => [], 'hitPolicy' => 'UNIQUE', 'tableKey' => $reference];
 			}
 		}
 	}

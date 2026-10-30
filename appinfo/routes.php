@@ -100,6 +100,10 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // auto-granted — mirrors buildiq-version-routing). UUID path params + the
         // trailing `/insights` literal disambiguate from the slug-based CRUD routes.
         ['name' => 'applicationInsights#getInsights', 'url' => '/api/applications/{appUuid}/versions/{versionUuid}/insights', 'verb' => 'GET', 'requirements' => ['appUuid' => '[a-f0-9-]{8,}', 'versionUuid' => '[a-f0-9-]{8,}']],
+        // operate-debug-log-and-monitoring: a version's health for the app detail page (insights' own
+        // RBAC), and the counts a running app posts (the manifest endpoint's rule, rate-limited).
+        ['name' => 'appHealth#show', 'url' => '/api/applications/{appUuid}/versions/{versionUuid}/health', 'verb' => 'GET', 'requirements' => ['appUuid' => '[a-f0-9-]{8,}', 'versionUuid' => '[a-f0-9-]{8,}']],
+        ['name' => 'appHealth#record', 'url' => '/api/applications/{slug}/health-samples', 'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Manual promotion endpoint (buildiq-version-promotion REQ-OBVP-001).
         // Spec mandates UUID path params (`{appUuid}/versions/{versionUuid}/promote`)
@@ -180,6 +184,8 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // Export pipeline (Phase-2 graduation).
         ['name' => 'exports#submit',   'url' => '/api/applications/{slug}/exports', 'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'exports#download', 'url' => '/api/exports/{uuid}/download',     'verb' => 'GET'],
+        // What a server needs to run an exported app (the export dialog's Own server target).
+        ['name' => 'exports#serverRequirements', 'url' => '/api/exports/server-requirements', 'verb' => 'GET'],
         // Runs a queued export in the request instead of waiting for cron (the dialog fires it and moves on).
         ['name' => 'exports#run',      'url' => '/api/exports/{uuid}/run',          'verb' => 'POST'],
 
@@ -194,6 +200,7 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         ['name' => 'rules#evaluate', 'url' => '/api/rules/{ruleSetSlug}/evaluate', 'verb' => 'POST', 'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'rules#schema',   'url' => '/api/rules/{ruleSetSlug}/schema',   'verb' => 'GET',  'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'rules#testAll',  'url' => '/api/rules/{ruleSetSlug}/test-all', 'verb' => 'POST', 'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'rules#saveDecisionTable', 'url' => '/api/rules/{ruleSetSlug}/decision-table', 'verb' => 'PUT', 'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Automation designer (spec automation-designer REQ-AUTD-005/006/007/008).
         //
@@ -284,6 +291,8 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // What the consuming schema declares, so the builder's field, preset and
         // channel pickers offer real values instead of free text.
         ['name' => 'registrationForm#target', 'url' => '/api/registration-forms/target', 'verb' => 'GET'],
+        // Decision 179/189: the page designer checks its form pages against their destinations on save.
+        ['name' => 'formDestination#check', 'url' => '/api/forms/destination-check', 'verb' => 'POST'],
 
         // Remote template store (buildiq-remote-template-store). Consume-only:
         // search proxies the configured remote OpenRegister catalogue server-side;
@@ -291,6 +300,9 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // shared ApplicationsController install seam.
         ['name' => 'store#search',  'url' => '/api/store/templates',                  'verb' => 'GET'],
         ['name' => 'store#install', 'url' => '/api/store/templates/{slug}/install',   'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        // Also in OpenRegister's canonical table; declared here so it is
+        // visible where this app's routes are read, and it overrides by name.
+        ['name' => 'store#publish', 'url' => '/api/store/publish',                    'verb' => 'POST'],
 
         // GitHub shop source (github-shop-catalogue REQ-GHSC-005 / REQ-GHSC-006).
         // Both #[NoAdminRequired] with an in-body 401 guard; search is an

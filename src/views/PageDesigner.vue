@@ -171,15 +171,23 @@
 						     preview navigates the preview, not the designer. -->
 						<div class="page-designer__preview-viewport">
 							<PreviewSandbox
+								ref="previewSandbox"
 								:appId="livePreviewProps.appId"
 								:manifest="livePreviewProps.manifest"
 								:registry="previewRegistry"
 								:customComponents="previewFlatRegistry"
 								:pageTypes="previewPageTypes"
 								:translate="translateForPreview"
-								:permissions="previewPermissions" />
+								:permissions="previewPermissions"
+								:diagnostics="debugLog.record" />
 						</div>
 					</div>
+					<DebugLogPanel
+						:entries="debugLog.entries"
+						:pageTitles="debugPageTitles"
+						@clear="debugLog.clear"
+						@reload="reloadPreview"
+						@selectPage="selectPageById" />
 				</div>
 				<div v-else class="page-designer__preview-fallback">
 					<h4>{{ t('buildiq', 'Live preview') }}</h4>
@@ -214,6 +222,7 @@ import BlockLibraryPanel from '../components/page-editor/BlockLibraryPanel.vue'
 import ChatPageEditor from '../components/page-editor/ChatPageEditor.vue'
 import CustomPageEditor from '../components/page-editor/CustomPageEditor.vue'
 import DashboardPageEditor from '../components/page-editor/DashboardPageEditor.vue'
+import DebugLogPanel from '../components/page-editor/DebugLogPanel.vue'
 import DetailPageEditor from '../components/page-editor/DetailPageEditor.vue'
 import FilesPageEditor from '../components/page-editor/FilesPageEditor.vue'
 import FormPageEditor from '../components/page-editor/FormPageEditor.vue'
@@ -230,12 +239,14 @@ import StubPageEditor from '../components/page-editor/StubPageEditor.vue'
 import WidgetSelectionPanel from '../components/page-editor/WidgetSelectionPanel.vue'
 import WikiPageEditor from '../components/page-editor/WikiPageEditor.vue'
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
+import { useDebugLog } from '../composables/useDebugLog.js'
 import { useLivePreview } from '../composables/useLivePreview.js'
 import { useManifestValidator } from '../composables/useManifestValidator.js'
 import { useRegisterPicker } from '../composables/useRegisterPicker.js'
 import { useSessionHistory } from '../composables/useSessionHistory.js'
 import registry from '../registry.js'
 import { versionRegister } from '../services/appRegister.js'
+import { findingsForPage } from '../services/formDestinationCheck.js'
 import { resolveValidationMessage as resolveMessage } from '../services/manifestValidation/connectorErrorMessages.js'
 import { isEditableTarget } from '../utils/isEditableTarget.js'
 
@@ -268,6 +279,7 @@ const SUB_EDITOR_MAP = {
 export default {
 	name: 'PageDesigner',
 	components: {
+		DebugLogPanel,
 		PreviewSandbox,
 		NcAppSidebar,
 		BlockLibraryPanel,
@@ -334,6 +346,13 @@ export default {
 			type: String,
 			default: '',
 		},
+
+		// Decision 179/189: destination findings from the last save, each
+		// `{page, pageIndex, field?, property, code, message}`.
+		destinationFindings: {
+			type: Array,
+			default: () => [],
+		},
 	},
 
 	emits: ['update:manifest', 'save-and-preview'],
@@ -358,6 +377,8 @@ export default {
 
 	data() {
 		return {
+			// The live preview's error log; it stays in this tab.
+			debugLog: useDebugLog(),
 			selectedIndex: -1,
 			depthError: false,
 			// REQ-OBVR-004: reactive version state resolved by useApplicationVersion.
@@ -393,6 +414,16 @@ export default {
 		 */
 		previewViewportWidth() {
 			return PREVIEW_VIEWPORT_WIDTH
+		},
+
+		/**
+		 * Page titles by id, for the error log.
+		 *
+		 * @return {Record<string, string>} Titles.
+		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
+		 */
+		debugPageTitles() {
+			return Object.fromEntries(this.pages.filter((page) => page && page.id).map((page) => [page.id, page.title || page.id]))
 		},
 
 		/**
@@ -903,6 +934,17 @@ export default {
 		 * @spec openspec/specs/page-designer-ui/spec.md#requirement-per-page-type-config-sub-editors-emit-validated-slices
 		 */
 		stubEditorProps(type) {
+			if (type === 'form') {
+				// Decision 179/189: the destination findings of the selected
+				// form page, marked on its fields by FormPageEditor.
+				return {
+					destinationFindings: findingsForPage(
+						this.destinationFindings,
+						(this.selectedPage && this.selectedPage.id) || '',
+						this.selectedIndex,
+					),
+				}
+			}
 			if (this.subEditorFor(type) !== 'StubPageEditor') {
 				return {}
 			}
@@ -926,6 +968,30 @@ export default {
 		 */
 		selectPage(index) {
 			this.selectedIndex = index
+		},
+
+		/**
+		 * Open the page an error log entry names.
+		 *
+		 * @param {string} pageId The page id.
+		 * @return {void}
+		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
+		 */
+		selectPageById(pageId) {
+			const index = this.pages.findIndex((page) => page && page.id === pageId)
+			if (index !== -1) {
+				this.selectPage(index)
+			}
+		},
+
+		/**
+		 * Build the live preview again, so its requests run once more.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
+		 */
+		reloadPreview() {
+			this.$refs.previewSandbox?.createSandbox()
 		},
 
 		/**

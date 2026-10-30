@@ -509,6 +509,17 @@ class Application extends App implements IBootstrap {
 				listener: \OCA\Buildiq\Listener\BuildiqLeafRegistrationListener::class
 			);
 		}
+
+		// Announce buildiq's published forms when a schema they submit into is
+		// about to change, so a breaking change unpublishes them (decision 179
+		// Q7). Guarded on the event class: an OpenRegister without the form
+		// destination validator does not dispatch it.
+		if (class_exists('OCA\\OpenRegister\\Event\\FormDestinationDependentsEvent') === true) {
+			$context->registerEventListener(
+				event: \OCA\OpenRegister\Event\FormDestinationDependentsEvent::class,
+				listener: \OCA\Buildiq\Listener\FormDestinationDependentsListener::class
+			);
+		}
 		$context->registerEventListener(
 			event: ObjectUpdatedEvent::class,
 			listener: AutomationApprovalTriggerListener::class

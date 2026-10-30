@@ -3,7 +3,7 @@
   "info": {
     "title": "OpenBuild Register",
     "description": "Citizen-developer app builder for Nextcloud: compose apps from registers, connectors, workflows, and documents without code.",
-    "version": "0.10.0"
+    "version": "0.12.0"
   },
   "x-openregister": {
     "type": "application",
@@ -20,6 +20,7 @@
         "description": "OpenBuild register namespace: holds the Application + ApplicationVersion + BuiltAppRoute control schemas, the ApplicationTemplate catalogue, the automation/rule-engine schemas and the seed hello-message schema for the canonical hello-world app.",
         "version": "0.9.0",
         "schemas": [
+          "app-health-sample",
           "buildAgent",
           "agent-run",
           "built-app",
@@ -29,7 +30,6 @@
           "built-app-route",
           "component-block",
           "condition-action-rule",
-          "decision-table",
           "export-job",
           "hello-message",
           "rule-execution-log",
@@ -766,7 +766,7 @@
         },
         "slug": "export-job",
         "icon": "PackageVariant",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "title": "Export Job",
         "description": "Asynchronous pipeline that turns a published Application into a standalone Nextcloud app: delivered as a ZIP download or pushed to GitHub. Lifecycle is declarative per ADR-031; the file-generation surface is an ADR-031 §Exceptions(3) imperative path.",
         "authorization": {
@@ -809,9 +809,10 @@
             "type": "string",
             "enum": [
               "zip",
+              "server",
               "github"
             ],
-            "description": "Delivery target: ZIP download or push to a new GitHub repository."
+            "description": "Delivery target: ZIP download, a ZIP to run on its own server (with the server bundle), or push to a new GitHub repository."
           },
           "status": {
             "title": "Job Status",

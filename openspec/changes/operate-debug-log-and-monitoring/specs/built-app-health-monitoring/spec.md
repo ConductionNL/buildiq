@@ -45,10 +45,14 @@ SHALL delete samples older than the retention setting (30 days by default).
 
 ### Requirement: The app detail page shows the app's health (REQ-BQDM-006)
 
-The app detail page SHALL show a "Health" section for the selected version and
-window (7, 30 or 90 days): failure rate, average page load time, share of
-requests over 1 s, and the five slowest pages. It SHALL be visible to exactly the
-users who may see that version's insights.
+The app detail page SHALL show a "Performance and errors" section (board
+BqAppWerking) for the selected version and window (7, 30 or 90 days): the average
+page load time, the share of page loads over 3 s, the failed requests with their
+share of all requests, the share of requests over 1 s, and the five slowest pages
+by average load time, each with its share of loads over 3 s, its loads and its
+failed requests. A percentile is not shown: the samples hold a histogram, not
+single durations. It SHALL be visible to exactly the users who may see that
+version's insights.
 
 #### Scenario: A maker finds the slow page
 

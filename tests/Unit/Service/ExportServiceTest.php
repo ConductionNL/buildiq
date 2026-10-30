@@ -9,6 +9,8 @@ use OCA\Buildiq\Service\ExportAppContentBundler;
 use OCA\Buildiq\Service\ExportService;
 use OCA\Buildiq\Service\PlaceholderResolver;
 use OCA\Buildiq\Service\RegisterRowReader;
+use OCA\Buildiq\Service\ServerBundleWriter;
+use OCP\App\IAppManager;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -76,6 +78,49 @@ final class ExportServiceTest extends TestCase {
 			);
 		}
 	}//end testGenerateAppZipResolvesPlaceholdersAcrossTheTree()
+
+	/**
+	 * REQ-BQSD-001, REQ-BQSD-003, REQ-BQSD-004: an own-server export carries
+	 * deploy/ with the app id and the builder's OpenRegister version filled in,
+	 * no buildiq and no password, and the README points at it.
+	 *
+	 * @return void
+	 */
+	public function testServerBundleLandsInDeployWithTheAppAndVersionsFilledIn(): void {
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('getAppVersion')->with('openregister')->willReturn('1.14.2');
+		$service = $this->buildService(serverBundleWriter: new ServerBundleWriter($appManager));
+
+		$entries = $this->export(service: $service, includeServerBundle: true);
+
+		foreach (['Dockerfile', 'compose.yaml', '.env.example', 'README.md', 'install-apps.sh', 'enable-apps.sh'] as $file) {
+			self::assertArrayHasKey('deploy/' . $file, $entries);
+			self::assertDoesNotMatchRegularExpression('/\{\{[a-zA-Z]+\}\}/', $entries['deploy/' . $file], 'unresolved placeholder in deploy/' . $file);
+			self::assertStringNotContainsStringIgnoringCase('buildiq', $entries['deploy/' . $file], 'deploy/' . $file . ' names buildiq');
+		}
+
+		self::assertStringContainsString('OPENREGISTER_VERSION=1.14.2', $entries['deploy/.env.example']);
+		self::assertStringContainsString('name: demo-app', $entries['deploy/compose.yaml']);
+		self::assertStringContainsString('${POSTGRES_PASSWORD:?', $entries['deploy/compose.yaml']);
+		self::assertStringContainsString('${NEXTCLOUD_ADMIN_PASSWORD:?', $entries['deploy/compose.yaml']);
+		self::assertMatchesRegularExpression('/^(NEXTCLOUD_ADMIN_PASSWORD|POSTGRES_PASSWORD)=$/m', $entries['deploy/.env.example']);
+		self::assertStringContainsString('app:enable demo-app', $entries['deploy/enable-apps.sh']);
+		self::assertStringContainsString('deploy/README.md', $entries['README.md']);
+	}//end testServerBundleLandsInDeployWithTheAppAndVersionsFilledIn()
+
+	/**
+	 * REQ-BQSD-001: without the flag there is no deploy/ folder, even when
+	 * the writer is wired.
+	 *
+	 * @return void
+	 */
+	public function testExportWithoutTheServerBundleHasNoDeployFolder(): void {
+		$service = $this->buildService(serverBundleWriter: new ServerBundleWriter($this->createMock(IAppManager::class)));
+
+		$entries = $this->export(service: $service);
+
+		self::assertSame([], array_values(array_filter(array_keys($entries), static fn (string $path): bool => str_starts_with($path, 'deploy/'))));
+	}//end testExportWithoutTheServerBundleHasNoDeployFolder()
 
 	/**
 	 * A freshly built archive must not already be older than the window the
@@ -505,6 +550,7 @@ final class ExportServiceTest extends TestCase {
 		array $dataRegisters = [],
 		?ExportService $service = null,
 		?array $source = null,
+		bool $includeServerBundle = false,
 	): array {
 		$jobUuid = 'unit-' . bin2hex(random_bytes(6));
 
@@ -514,7 +560,8 @@ final class ExportServiceTest extends TestCase {
 			context: $this->context(),
 			jobUuid: $jobUuid,
 			dataRegisters: $dataRegisters,
-			source: $source
+			source: $source,
+			includeServerBundle: $includeServerBundle
 		);
 
 		$this->litter[] = $zipPath;
@@ -572,6 +619,7 @@ final class ExportServiceTest extends TestCase {
 		?SchemaMapper $schemaMapper = null,
 		?ObjectServiceInterface $objectService = null,
 		?ExportAppContentBundler $contentBundler = null,
+		?ServerBundleWriter $serverBundleWriter = null,
 	): ExportService {
 		$appData = $this->createStub(IAppData::class);
 		$bundler = new DataRegisterExportBundler(
@@ -595,7 +643,8 @@ final class ExportServiceTest extends TestCase {
 				appManager: $this->createMock(originalClassName: \OCP\App\IAppManager::class),
 				logger: new NullLogger()
 			),
-			$contentBundler
+			$contentBundler,
+			$serverBundleWriter
 		);
 	}//end buildService()
 

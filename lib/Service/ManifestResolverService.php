@@ -215,6 +215,73 @@ class ManifestResolverService {
 	}//end checkNonProductionAccess()
 
 	/**
+	 * The Application with this slug, or null.
+	 *
+	 * @param string $appSlug The virtual-app slug.
+	 *
+	 * @return array<string, mixed>|null The Application, normalised.
+	 *
+	 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-a-draft-form-saves-with-its-findings
+	 */
+	public function findApplication(string $appSlug): ?array {
+		return $this->findApplicationBySlug(appSlug: $appSlug);
+	}//end findApplication()
+
+	/**
+	 * The application and version a signed-in caller runs, by the manifest endpoint's rule.
+	 *
+	 * No version slug means the production version, which every caller of the
+	 * runtime may open; a named version needs the caller to be authorised for it.
+	 *
+	 * @param string $appSlug The application slug.
+	 * @param string|null $versionSlug The version slug, null or empty for production.
+	 * @param IUser|null $caller The caller; null is refused.
+	 *
+	 * @return array{applicationUuid: string, versionUuid: string}|null Null for an unknown app or version, or a caller
+	 *                                                                  who may not open it.
+	 *
+	 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-server-scopes-and-bounds-samples-req-bqdm-005
+	 */
+	public function resolveVersionForCaller(string $appSlug, ?string $versionSlug, ?IUser $caller): ?array {
+		if ($caller === null) {
+			return null;
+		}
+
+		$application = $this->findApplicationBySlug(appSlug: $appSlug);
+		if ($application === null) {
+			return null;
+		}
+
+		$applicationUuid = (string)($application['uuid'] ?? $application['id'] ?? '');
+		if ($versionSlug === null || $versionSlug === '') {
+			$versionUuid = $this->extractProductionVersionUuid(application: $application);
+			if ($applicationUuid === '' || $versionUuid === '') {
+				return null;
+			}
+
+			return ['applicationUuid' => $applicationUuid, 'versionUuid' => $versionUuid];
+		}
+
+		$version = $this->findVersionBySlug(application: $application, versionSlug: $versionSlug);
+		if ($version === null) {
+			return null;
+		}
+
+		$denied = $this->checkNonProductionAccess(
+			application: $application,
+			version: $version,
+			caller: $caller,
+			appSlug: $appSlug,
+			versionSlug: $versionSlug
+		);
+		if ($denied === true) {
+			return null;
+		}
+
+		return ['applicationUuid' => $applicationUuid, 'versionUuid' => (string)($version['uuid'] ?? $version['id'] ?? '')];
+	}//end resolveVersionForCaller()
+
+	/**
 	 * Look up the Application object by slug via OR's ObjectService.
 	 *
 	 * Uses searchObjects with register=openbuild, schema=application, slug={appSlug}.

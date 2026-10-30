@@ -162,6 +162,21 @@ describe('PreviewSandbox', () => {
 		wrapper.unmount()
 	})
 
+	it('hands the designer\'s diagnostics listener to CnAppRoot and reports a render error to it', () => {
+		const diagnostics = vi.fn()
+		const wrapper = mount(PreviewSandbox, {
+			propsData: { appId: 'openbuild-preview-pet-store', manifest: MANIFEST, diagnostics },
+			attachTo: document.body,
+		})
+		expect(wrapper.vm._sandboxState.diagnostics).toBe(diagnostics)
+
+		const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+		wrapper.vm._sandboxApp.config.errorHandler(new Error('boom'), { $options: { name: 'CnTabsWidget' } })
+		expect(diagnostics).toHaveBeenCalledWith(expect.objectContaining({ kind: 'render-error', component: 'CnTabsWidget', message: 'boom' }))
+		consoleError.mockRestore()
+		wrapper.unmount()
+	})
+
 	it('never mounts the first-open support note, so nothing covers the designer', () => {
 		const wrapper = mountSandbox()
 		expect(wrapper.vm._sandboxState.supportDialog).toBe(false)

@@ -26,6 +26,8 @@ function normaliseError(err) {
 		status: response ? response.status : 0,
 		error: data.error || 'network_error',
 		message: data.message || (err && err.message) || 'Request failed.',
+		// Decision 179/189: a publish the destination refuses carries every finding.
+		findings: Array.isArray(data.findings) ? data.findings : [],
 	}
 }
 
@@ -79,9 +81,14 @@ export async function fetchTargetSchema({ register, schema, channelProperty }) {
  * PUT one form.
  *
  * @param {object} form - the form to store.
- * @return {Promise<{form: object, warnings: Array<string>}>} What was stored.
- * @throws {{status: number, error: string, message: string}} Normalised refusal.
+ * A draft is stored with its destination findings, which come back so the
+ * builder can mark each on its field; a published form with findings is
+ * refused with them (decision 189).
+ *
+ * @return {Promise<{form: object, warnings: Array<string>, findings: Array<object>}>} What was stored.
+ * @throws {{status: number, error: string, message: string, findings: Array<object>}} Normalised refusal.
  * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md
+ * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-a-draft-form-saves-with-its-findings
  */
 export async function saveRegistrationForm(form) {
 	try {
@@ -89,6 +96,7 @@ export async function saveRegistrationForm(form) {
 		return {
 			form: (data && data.form) || form,
 			warnings: (data && data.warnings) || [],
+			findings: (data && Array.isArray(data.findings) && data.findings) || [],
 		}
 	} catch (err) {
 		throw normaliseError(err)

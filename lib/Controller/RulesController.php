@@ -48,11 +48,13 @@ use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Service\RuleEngineService;
 use OCA\Buildiq\Service\RuleObjectReader;
 use OCA\Buildiq\Service\RuleSetVersioningService;
+use OCA\Buildiq\Service\StoredDecisionTables;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -81,6 +83,8 @@ class RulesController extends Controller {
 	 * @param RuleSetVersioningService $versioningService Test-gate runner for test-all.
 	 * @param RuleObjectReader $reader Organisation-scoped reads of rule-engine objects (REQ-BRE-007).
 	 * @param IUserSession $userSession Current user session.
+	 * @param StoredDecisionTables $tables A rule set's decision table in OpenRegister's register (decision 196).
+	 * @param IGroupManager $groupManager Admin check for writing a decision table.
 	 *
 	 * @return void
 	 */
@@ -91,6 +95,8 @@ class RulesController extends Controller {
 		private readonly RuleSetVersioningService $versioningService,
 		private readonly RuleObjectReader $reader,
 		private readonly IUserSession $userSession,
+		private readonly StoredDecisionTables $tables,
+		private readonly IGroupManager $groupManager,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 
@@ -209,7 +215,11 @@ class RulesController extends Controller {
 			return $this->error(code: 'not_found', detail: 'RuleSet ' . $ruleSetSlug . ' not found', status: Http::STATUS_NOT_FOUND);
 		}
 
-		$columns = $this->decisionColumns(slug: (string)($ruleSet['slug'] ?? $ruleSetSlug));
+		if (is_string($ruleSet['slug'] ?? null) === false || $ruleSet['slug'] === '') {
+			$ruleSet['slug'] = $ruleSetSlug;
+		}
+
+		$columns = $this->decisionColumns(ruleSet: $ruleSet);
 
 		return new JSONResponse(
 			data: [
@@ -227,22 +237,79 @@ class RulesController extends Controller {
 	}//end schema()
 
 	/**
+	 * Write a rule set's decision table into OpenRegister's decision-tables register.
+	 *
+	 * The table editor sends buildiq's authoring shape (input columns with an
+	 * expression path, rules as a condition map and a value map); the table is
+	 * stored in the shape OpenRegister evaluates, under the key of the rule set
+	 * the caller resolved. OpenRegister refuses a table it cannot run, and that
+	 * refusal comes back as 422 with its reason.
+	 *
+	 * Admin-only, as writing a decision table was in buildiq's own register: the
+	 * guard lives in the method body, the posture SettingsController::update()
+	 * uses, because `#[NoAdminRequired]` alone would open the write to any
+	 * signed-in user.
+	 *
+	 * @param string $ruleSetSlug The RuleSet slug.
+	 *
+	 * @return JSONResponse 200 with the stored table, 401, 403, 404 or 422.
+	 *
+	 * @spec openspec/changes/decision-tables-live-in-openregister/specs/business-rules-engine/spec.md
+	 */
+	#[NoAdminRequired]
+	public function saveDecisionTable(string $ruleSetSlug): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return $this->error(code: 'unauthenticated', detail: null, status: Http::STATUS_UNAUTHORIZED);
+		}
+
+		if ($this->groupManager->isInGroup($user->getUID(), 'admin') === false) {
+			return $this->error(code: 'forbidden', detail: 'Only an administrator can change a decision table.', status: Http::STATUS_FORBIDDEN);
+		}
+
+		$ruleSet = $this->findRuleSet(slug: $ruleSetSlug);
+		if ($ruleSet === null) {
+			return $this->error(code: 'not_found', detail: 'RuleSet ' . $ruleSetSlug . ' not found', status: Http::STATUS_NOT_FOUND);
+		}
+
+		$table = [
+			'hitPolicy' => (string)($this->request->getParam('hitPolicy', 'first') ?? 'first'),
+			'inputColumns' => (array)($this->request->getParam('inputColumns', []) ?? []),
+			'outputColumns' => (array)($this->request->getParam('outputColumns', []) ?? []),
+			'rules' => (array)($this->request->getParam('rules', []) ?? []),
+		];
+
+		try {
+			$stored = $this->tables->save(ruleSet: $ruleSet, table: $table);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'Buildiq: decision table for ' . $ruleSetSlug . ' was refused',
+				['exception' => $e->getMessage()]
+			);
+			return $this->error(code: 'invalid_decision_table', detail: $e->getMessage(), status: Http::STATUS_UNPROCESSABLE_ENTITY);
+		}
+
+		return new JSONResponse(data: ['key' => $stored['key'], 'table' => $stored], statusCode: Http::STATUS_OK);
+
+	}//end saveDecisionTable()
+
+	/**
 	 * The input and output columns of a rule set's decision table, for a
 	 * calculated form field or an eligibility check to bind to (REQ-BQLV-002).
 	 *
 	 * A condition-action rule set has no declared columns and answers two
 	 * empty lists.
 	 *
-	 * @param string $slug The RuleSet slug.
+	 * @param array<string,mixed> $ruleSet The resolved RuleSet.
 	 *
 	 * @return array{inputs:list<array{name:string,path:string,type:string}>,outputs:list<array{name:string,type:string}>}
 	 *
 	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
 	 */
-	private function decisionColumns(string $slug): array {
+	private function decisionColumns(array $ruleSet): array {
 		$inputs = [];
 		$outputs = [];
-		$tables = $this->query(schema: RuleEngineService::DECISION_TABLE_SCHEMA, filters: ['ruleSetId' => $slug], limit: 1);
+		$tables = $this->tables->forRuleSet(ruleSet: $ruleSet);
 		$table = ($tables[0] ?? []);
 
 		foreach ((array)($table['inputColumns'] ?? []) as $column) {

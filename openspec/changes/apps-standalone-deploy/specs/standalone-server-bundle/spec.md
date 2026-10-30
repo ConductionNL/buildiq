@@ -10,19 +10,41 @@ of buildiq.
 
 ## ADDED Requirements
 
-### Requirement: The export can include a server bundle (REQ-BQSD-001)
+### Requirement: The export offers its own server as a target (REQ-BQSD-001)
 
-The export dialog SHALL offer "Include files to run it on its own server", on by
-default, for the ZIP and the GitHub target. When it is on, the exported tree SHALL
-contain `deploy/Dockerfile`, `deploy/compose.yaml`, `deploy/.env.example` and
-`deploy/README.md`, and the app's `README.md` SHALL point to `deploy/README.md`.
-When it is off, the tree SHALL have no `deploy/` folder.
+The export dialog SHALL offer the target "Own server" next to "ZIP download" and
+"Push to GitHub" (board BqExporterenZelfstandig). With that target the dialog
+SHALL show a "Run on its own server" section: one sentence on what it means, a
+table of what the server needs (Nextcloud, OpenRegister, PHP and the database,
+each with its version and why), and what goes in the package: the app package
+(always) and "Docker Compose file" (on by default, sent as
+`includeServerBundle`). The requirements SHALL come from the server
+(`GET /api/exports/server-requirements`), read from the exported app's
+`appinfo/info.xml` and the installed OpenRegister, not from numbers in the
+dialog. The job SHALL be delivered as a ZIP download. When the server bundle is
+included, the exported tree SHALL contain `deploy/Dockerfile`,
+`deploy/compose.yaml`, `deploy/.env.example` and `deploy/README.md`, and the
+app's `README.md` SHALL point to `deploy/README.md`. A ZIP or GitHub export, and
+an own-server export with the compose file switched off, SHALL have no `deploy/`
+folder.
 
-#### Scenario: A maker exports the permit app with a server bundle
+#### Scenario: A maker exports the permit app to run on its own server
 
 - **GIVEN** a maker on the app `vergunningen`, production version
-- **WHEN** they open Export, keep "Include files to run it on its own server" on, and download the ZIP
+- **WHEN** they open Export, choose the target "Own server", keep "Docker Compose file" on and click Make package
 - **THEN** the archive holds `deploy/Dockerfile`, `deploy/compose.yaml`, `deploy/.env.example` and `deploy/README.md`, with the app id `vergunningen` filled in
+
+#### Scenario: The dialog says what the server needs
+
+- **GIVEN** a builder instance running OpenRegister 1.14.2 and an app template that needs Nextcloud 32 and PHP 8.3
+- **WHEN** the maker chooses the target "Own server"
+- **THEN** the dialog lists Nextcloud 32 or newer, OpenRegister 1.14.2 or newer, PHP 8.3 or newer and the database
+
+#### Scenario: A plain ZIP export carries no server bundle
+
+- **GIVEN** a maker exporting with the target "ZIP download"
+- **WHEN** the export finishes
+- **THEN** the archive has no `deploy/` folder
 
 ### Requirement: The bundle runs the app without the builder (REQ-BQSD-002)
 
