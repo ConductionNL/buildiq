@@ -10803,8 +10803,10 @@
 				"evidence": "Re-rated 2026-10-07: records of a buildiq-built app are OpenRegister objects, so openregister's ObjectsProvider finds them in unified search (openregister lib/AppInfo/Application.php:1321), but a hit opens in OpenRegister, not in the app. buildiq registers no deep links: lib/AppInfo/Application.php:143-148 wires the AppHost manifest-driven deep-link listener, and src/manifest.json:1220 has \"deepLinks\": []. buildiq has no search provider of its own (no registerSearchProvider in lib). Apps themselves are not searchable.",
 				"owner": "ConductionNL/buildiq",
 				"spec": "openspec/specs/deep-link-registration",
-				"note": "Main spec deep-link-registration is marked status: done and describes a listener that was deleted; the manifest that replaced it registers nothing. Rated partial (records findable, not opened in the app) and left specified until Ruben decides: fill manifest deepLinks, or retire the spec.",
-				"readOn": "2026-10-07"
+				"note": "Main spec deep-link-registration described a deleted listener and was marked done; set to in-progress. Decision (coverage lane 30 Oct, recommended): fill manifest deepLinks for buildiq's own schema and compute the built-app entries in a listener that extends the AppHost one, instead of retiring the spec. Plan: openspec/changes/apps-unified-search-deep-links.",
+				"readOn": "2026-10-07",
+				"change": "apps-unified-search-deep-links",
+				"requirement": "Records of a built app open on their page in the app (REQ-OBDL-003)"
 			},
 			"feature": "buildiq-runtime",
 			"screen": {
