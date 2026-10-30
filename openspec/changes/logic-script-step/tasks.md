@@ -1,0 +1,11 @@
+# Tasks: logic-script-step
+
+- [ ] **T01**: Add the instance setting "Allow script steps", off by default, to buildiq's admin settings (`lib/Settings/AdminSettings.php`, `src/views/settings/AdminRoot.vue`), and disable automations holding a script step when it is turned off, recording the reason (REQ-BQSS-001, REQ-BQSS-003). Verify: PHPUnit case for the disable sweep, and a vitest case for the setting.
+- [ ] **T02**: Add `script-step` with `code`, `timeoutSeconds` and `note` to `Automation.actions` in `lib/Settings/register.d/40-automations.json`, and to `MATRIX` for flow triggers (REQ-BQSS-001). Verify: PHPUnit on the register import.
+- [ ] **T03**: Require `owners` without admin bypass for any change to a script step in `AutomationWriteService` and the compile route of `AutomationsController` (REQ-BQSS-002). Verify: PHPUnit cases in `tests/Unit/Service/AutomationWriteServiceTest.php` for an editor refused and an owner allowed.
+- [ ] **T04**: Compile `script-step` through the flow backend to OpenRegister's code step, reading its id and keys from the node catalogue, refusing when the catalogue has none, and never evaluating the code (REQ-BQSS-003). Verify: PHPUnit cases in `tests/Unit/Service/AutomationCompilerServiceTest.php`, and a dry-run case asserting no execution.
+- [ ] **T05**: Add the script form to `src/dialogs/AutomationEditDialog.vue` with `CnJsonViewer` in text mode, the sample items box, "Test script" through OpenRegister's single node run, the owner-only edit state and the disabled reasons (REQ-BQSS-001, REQ-BQSS-002, REQ-BQSS-004). Verify: vitest cases in `tests/dialogs/AutomationEditDialog.spec.js`.
+- [ ] **T06**: Record the author of the last code change in the automation's provenance (REQ-BQSS-003). Verify: PHPUnit case.
+- [ ] **T07**: Playwright `tests/e2e/automation-script-step.spec.ts`, once OpenRegister's runner exists: an owner adds and tests a script, an editor is refused a change (REQ-BQSS-001, REQ-BQSS-002, REQ-BQSS-004).
+- [ ] **T08**: Strings and docs: English and Dutch for the step, the setting and the refusals (`l10n/en.json`, `l10n/nl.json`), and a page in `docs/` on script steps: where they run, what they can reach, and who may write them.
+- [ ] **T09**: Run `openspec validate logic-script-step --strict`.

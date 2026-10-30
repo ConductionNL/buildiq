@@ -133,6 +133,17 @@
 						:modelValue="conditionRuleSetSlug"
 						:label="t('buildiq', 'Rule set slug')"
 						@update:modelValue="conditionRuleSetSlug = $event" />
+					<NcNoteCard
+						v-if="conditionKind === 'rule-set'"
+						type="info"
+						data-testid="condition-rule-set-note">
+						{{
+							t(
+								'buildiq',
+								'The actions always run. The rule set runs first, and its outcome does not stop them.',
+							)
+						}}
+					</NcNoteCard>
 				</template>
 			</section>
 
@@ -363,6 +374,7 @@ import {
 	isActionAllowed,
 	isConditionAllowed,
 } from '../services/automationMatrix.js'
+import { fetchConnectorSynchronizations } from '../services/connectorSynchronizations.js'
 
 const INTERVAL_PRESETS = Object.freeze([
 	{ id: 'hourly', interval: 3600 },
@@ -545,7 +557,7 @@ export default {
 			return [
 				{ value: 'none', label: t('buildiq', 'None') },
 				{ value: 'feel', label: t('buildiq', 'FEEL expression') },
-				{ value: 'rule-set', label: t('buildiq', 'Reference a rule set') },
+				{ value: 'rule-set', label: t('buildiq', 'Also run a rule set') },
 			]
 		},
 
@@ -931,30 +943,21 @@ export default {
 		},
 
 		/**
-		 * Load OpenConnector synchronizations for the run-synchronization
+		 * Load the connector app's synchronizations for the run-synchronization
 		 * action picker; degrades to free-text on failure.
 		 *
+		 * The register segment and the paging key both come from the shared
+		 * loader: this list was empty on every renamed instance, because the
+		 * URL named the `openconnector` register and paged with `limit`.
+		 *
 		 * @return {Promise<void>}
+		 * @spec openspec/specs/automation-designer/spec.md#requirement-automation-editor-composes-trigger-condition-and-actions-req-autd-002
 		 */
 		async fetchSynchronizations() {
 			this.syncLoading = true
 			this.syncFetchFailed = false
 			try {
-				const url = generateUrl(
-					'/apps/openregister/api/objects/openconnector/synchronization',
-				)
-				const { data } = await axios.get(url, { params: { limit: 500 } })
-				const list = Array.isArray(data && data.results)
-					? data.results
-					: Array.isArray(data)
-						? data
-						: []
-				this.syncOptions = list
-					.map((sync) => ({
-						id: String(sync.id || sync.uuid),
-						label: sync.name || sync.title || sync.id,
-					}))
-					.filter((o) => o.id && o.id !== 'undefined')
+				this.syncOptions = await fetchConnectorSynchronizations()
 				if (this.syncOptions.length === 0) {
 					this.syncFetchFailed = true
 				}

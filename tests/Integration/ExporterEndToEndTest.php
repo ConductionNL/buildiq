@@ -32,6 +32,7 @@ namespace OCA\Buildiq\Tests\Integration;
 use OCA\Buildiq\Service\DataRegisterExportBundler;
 use OCA\Buildiq\Service\ExportService;
 use OCA\Buildiq\Service\PlaceholderResolver;
+use OCA\Buildiq\Service\RegisterRowReader;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -287,8 +288,8 @@ final class ExporterEndToEndTest extends TestCase {
 		$bundler = new DataRegisterExportBundler(
 			$this->createStub(RegisterMapper::class),
 			$this->createStub(SchemaMapper::class),
-			$this->createStub(ObjectServiceInterface::class),
-			new NullLogger()
+			new NullLogger(),
+			new RegisterRowReader($this->createStub(ObjectServiceInterface::class))
 		);
 
 		return new ExportService(

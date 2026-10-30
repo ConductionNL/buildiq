@@ -1,0 +1,10 @@
+# Tasks: logic-email-and-webhook-triggers
+
+- [ ] **T01**: Add `email-received` and `webhook-called` to the `Automation.trigger` shape in `lib/Settings/register.d/40-automations.json` and to `MATRIX`, allowing flow actions only, mapped by the flow backend to `openregister.trigger-manual` (REQ-BQTR-001). Verify: PHPUnit cases in `tests/Unit/Service/AutomationCompilerServiceTest.php` for both triggers and a refused non-flow action.
+- [ ] **T02**: On apply of an "Email received" automation, write the integriq `event_subscription` of D2, record it in provenance, and disable or remove it with the flow (REQ-BQTR-002). Verify: PHPUnit cases for apply, disable and remove, and for a fail-closed apply when integriq cannot take the object.
+- [ ] **T03**: On apply of a "Webhook called" automation, write the integriq `endpoint` and `consumer` of D3 and record both in provenance (REQ-BQTR-003). Verify: PHPUnit cases for the endpoint path, the flow rule and the rate limit.
+- [ ] **T04**: Add both triggers to `src/dialogs/AutomationEditDialog.vue`: the mailbox source picker and filters, the authorization choice, the shown address, the "Show key" link to integriq, the input field hints, and the disabled states (REQ-BQTR-001, REQ-BQTR-003). Verify: vitest cases in `tests/dialogs/AutomationEditDialog.spec.js`.
+- [ ] **T05**: Assert no new public route: add a case to `tests/Unit/AppInfo/RoutesTest.php` that fails when an automations route targets a `#[PublicPage]` method (REQ-BQTR-004). Verify: that PHPUnit case.
+- [ ] **T06**: Playwright `tests/e2e/automation-inbound-triggers.spec.ts` against integriq mock mode: a seeded mail creates a record, and a signed webhook call updates one while an unsigned call does not (REQ-BQTR-002, REQ-BQTR-003).
+- [ ] **T07**: Strings and docs: English and Dutch for the triggers, the pickers, the address block and the reasons (`l10n/en.json`, `l10n/nl.json`), and a section in `docs/` on starting an automation from mail or from another system.
+- [ ] **T08**: Run `openspec validate logic-email-and-webhook-triggers --strict`.

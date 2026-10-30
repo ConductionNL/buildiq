@@ -1,22 +1,22 @@
 ---
 sidebar_position: 1
 title: Open Buildiq for the first time
-description: Open Buildiq, walk the navigation, and confirm the seed Hello World virtual app loaded.
+description: Open Buildiq, walk the setup wizard, read the dashboard, and open the Apps list.
 ---
 
 # Open Buildiq for the first time
 
-A first look at Buildiq — what the app is for, what the navigation gives you, and how to tell the seed *Hello World* virtual app is ready to play with.
+A first look at Buildiq. What the setup wizard asks you, what the dashboard counts, and what each navigation entry is for.
 
 ## Goal
 
-By the end you will have opened Buildiq, recognised the dashboard tiles and the left-hand navigation, and seen the seed *Hello World* virtual app in the Virtual apps list.
+By the end you will have opened Buildiq and dealt with the setup wizard. You will know what the dashboard tiles count, what each navigation entry does, and what the Apps list gives you.
 
 ## Prerequisites
 
 - A Nextcloud account on an instance where the **Buildiq** app is installed and enabled.
-- The **OpenRegister** app installed and enabled — Buildiq stores virtual apps, schemas, templates and version snapshots in OpenRegister.
-- The Buildiq repair step has run, so the *Hello World* seed virtual app is present (the repair runs once on first enable; an admin can re-trigger it from **Nextcloud admin → Overview**).
+- The **OpenRegister** app installed and enabled. Buildiq keeps apps, schemas, templates and versions in OpenRegister.
+- Nextcloud admin rights if you want to run the setup wizard. Its endpoints are admin-only, so a regular account can read Buildiq but cannot seed it.
 
 ## Steps
 
@@ -24,31 +24,35 @@ By the end you will have opened Buildiq, recognised the dashboard tiles and the 
 
    ![Buildiq dashboard](/screenshots/tutorials/user/01-first-launch-01.png)
 
-2. Read the dashboard tiles — *Virtual apps*, *Published*, *Templates*, *Published versions*. They show counts pulled from OpenRegister; on a fresh install the *Virtual apps* and *Published* tiles read `1` (the seed Hello World app), *Templates* reads however many the template gallery ships and *Published versions* sits on the snapshot count.
+2. On a fresh install the setup wizard opens over the dashboard. Its title reads **Set up buildiq**. It walks six steps: a welcome, a choice of example data, the action that loads that data, **Install starter templates**, an optional remote template store, and a summary. Click **Next** through them, or **Cancel** and come back later. Every step is safe to run twice.
+
+3. Read the dashboard tiles. **Apps** counts every app you have built. **Hybrid apps** counts the ones that layer over an installed Nextcloud app. **Published versions** counts what went to production. Below them, **Recent apps** lists name, type and slug, with an **Edit** action per row.
 
    ![Dashboard stat tiles](/screenshots/tutorials/user/01-first-launch-02.png)
 
-3. Open the left-hand navigation. The entries map one-to-one onto what Buildiq manages: **Virtual apps** (your draft and published apps), **Schemas** (the OpenRegister schemas you can re-use across apps), **Templates** (the gallery you can clone from), **Exports** (zipped manifest exports). Below the divider sit **Documentation** and **Features & roadmap**.
+4. Open the left-hand navigation. **Dashboard** and **Apps** sit at the top. Below the divider sit **Documentation**, **Store**, **Reports**, **Features & roadmap** and a **Settings** button. **Documentation** leaves Nextcloud for buildiq.conduction.nl, and **Store** is the template gallery.
 
    ![Buildiq navigation](/screenshots/tutorials/user/01-first-launch-03.png)
 
-4. Click **Virtual apps**. The list view opens with a *Cards / Table* toggle, an **Add Application** button, and the OpenRegister side filters. The seed *Hello World* row is the one to start poking at.
+5. Click **Apps**. The list opens with a **Cards** and **Table** toggle and a type filter (**All**, **Virtual**, **Hybrid**). Beside them sit a **Search and columns** panel, an **Add app** button and a sidebar you open from the top right. Each card carries the app name, type, status, version and slug.
 
-   ![Virtual apps list, Hello World seeded](/screenshots/tutorials/user/01-first-launch-04.png)
+   ![Apps list](/screenshots/tutorials/user/01-first-launch-04.png)
 
 ## Verification
 
-You are set up correctly when: the Buildiq dashboard renders without an error banner, the left navigation lists the entries above, and **Virtual apps** shows at least the *Hello World* row.
+You are set up correctly when the dashboard renders its three tiles without an error. The navigation lists the entries above, and **Apps** opens on either your apps or an empty state.
 
 ## Common issues
 
 | Symptom | Fix |
 |---|---|
-| "OpenRegister is not installed or enabled" banner | Install and enable the OpenRegister app, then reload Buildiq. |
-| Virtual apps list is empty | The repair step did not run — an admin re-enables Buildiq, or runs `php occ buildiq:repair` on the host. |
-| Buildiq is missing from the app menu | The app is not enabled for your account — ask an administrator to enable it (and check it is not restricted to a group you are not in). |
+| Buildiq is missing from the app menu | The app is not enabled for your account. Ask an administrator to enable it, and to check it is not restricted to a group you are not in. |
+| "OpenRegister is not installed or enabled." | Install and enable the OpenRegister app, then reload Buildiq. Nothing in Buildiq stores anything without it. |
+| The setup wizard refuses a step | The setup endpoints need Nextcloud admin rights. Ask an administrator to run the wizard once. |
+| The Store shows no templates | The seed never ran. Open the setup wizard and run **Install starter templates**. |
+| The Apps list is empty | Nothing has been built yet. Clone a template from the Store, or load the example data from the setup wizard. |
 
 ## Reference
 
-- [Clone from a template](./02-create-from-template.md) — the natural next step.
-- [Admin settings](../admin/03-admin-settings.md) — register, version, support contact.
+- [Create an application from a template](./02-create-from-template.md), the natural next step.
+- [Admin settings](../admin/03-admin-settings.md) for the register, the version and the support contact.

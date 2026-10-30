@@ -35,10 +35,38 @@
 					:checked="enabled"
 					type="checkbox"
 					@change="enabled = $event.target.checked" />
-				{{ t('buildiq', 'Allow anonymous submissions to this endpoint') }}
+				{{
+					t('buildiq', 'Open this form to people outside the organisation')
+				}}
 			</label>
 
 			<template v-if="enabled">
+				<label class="ob-external-form-access__field">
+					{{ t('buildiq', 'Sign-in required') }}
+					<select
+						:value="minTrust"
+						data-testid="external-form-sign-in-level"
+						@change="onMinTrustChange($event.target.value)">
+						<option value="">
+							{{ t('buildiq', 'No sign-in, anyone may fill it in') }}
+						</option>
+						<option value="low">
+							{{ t('buildiq', 'DigiD or eHerkenning, level low') }}
+						</option>
+						<option value="substantial">
+							{{
+								t(
+									'buildiq',
+									'DigiD or eHerkenning, level substantial',
+								)
+							}}
+						</option>
+						<option value="high">
+							{{ t('buildiq', 'DigiD or eHerkenning, level high') }}
+						</option>
+					</select>
+				</label>
+
 				<label class="ob-external-form-access__toggle">
 					<input
 						:checked="publicRead"
@@ -80,10 +108,23 @@
 
 			<NcNoteCard v-if="errorMessage" type="error">
 				{{ errorMessage }}
+				<ul v-if="findings.length" data-testid="external-form-findings">
+					<li v-for="(finding, i) in findings" :key="i">
+						{{ finding.message }}
+					</li>
+				</ul>
 			</NcNoteCard>
 
 			<div v-if="showUrls" class="ob-external-form-access__urls">
-				<p>
+				<p v-if="minTrust">
+					{{
+						t(
+							'buildiq',
+							'This form asks for a sign-in, so it is only open through the portal page. The anonymous submit address stays closed.',
+						)
+					}}
+				</p>
+				<p v-else>
 					<strong>{{ t('buildiq', 'Raw public submit URL') }}</strong
 					><br />
 					<code>{{ rawSubmitUrl }}</code>
@@ -121,7 +162,9 @@ import {
 	enablePublicCreate,
 	provisionPortalPage,
 	revokePublicCreate,
+	SIGN_IN_LEVELS,
 } from '../services/externalFormProvisioningService.js'
+import { checkFormDestinations } from '../services/formDestinationCheck.js'
 
 /**
  * Generate an `ef-<uuid>` bookkeeping id (design.md Decision 1). Falls back
@@ -167,6 +210,19 @@ export default {
 			type: Object,
 			default: null,
 		},
+
+		// The form page's config: its fields are checked against the
+		// destination before anything is provisioned (decision 179).
+		formConfig: {
+			type: Object,
+			default: () => ({}),
+		},
+
+		// The app the form belongs to: the destination check is for its editors.
+		appSlug: {
+			type: String,
+			default: '',
+		},
 	},
 
 	emits: ['update:open', 'save'],
@@ -176,8 +232,16 @@ export default {
 			publicRead: false,
 			organisationScope: null,
 			trackLinkEnabled: false,
+			// '' for no sign-in, else one of SIGN_IN_LEVELS (buildiq#935).
+			minTrust: '',
+			// Whether the maker touched the level in this session. Until they
+			// do, a save asks the portal page to keep the level it stores, so
+			// a level raised in portaliq is not reset by a repeat save.
+			minTrustChanged: false,
 			saving: false,
 			errorMessage: '',
+			// Decision 179: the findings that stopped provisioning.
+			findings: [],
 			portalHint: false,
 			saved: false,
 			savedPortalUrl: '',
@@ -285,6 +349,64 @@ export default {
 				&& e.trackLinkAction
 				&& e.trackLinkAction.enabled
 			)
+			this.minTrust =
+				e && SIGN_IN_LEVELS.includes(e.minTrust) ? e.minTrust : ''
+			this.minTrustChanged = false
+		},
+
+		/**
+		 * The maker picked a sign-in level.
+		 *
+		 * @param {string} value - '' for none, or a level.
+		 * @return {void}
+		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-004
+		 */
+		onMinTrustChange(value) {
+			this.minTrust = SIGN_IN_LEVELS.includes(value) ? value : ''
+			this.minTrustChanged = true
+		},
+
+		/**
+		 * Whether the destination accepts this form, with zero findings.
+		 * Sets the error message and lists the findings when it does not.
+		 *
+		 * @param {boolean} anonymous - check for a public, signed-out audience.
+		 * @return {Promise<boolean>} true when there are no findings.
+		 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-an-external-form-must-have-a-public-destination-and-spam-protection
+		 */
+		async destinationAccepts(anonymous) {
+			const pageId = this.pageId || 'external-form'
+			const manifest = {
+				pages: [
+					{
+						id: pageId,
+						type: 'form',
+						config: {
+							...(this.formConfig || {}),
+							destination: {
+								register: this.register,
+								schema: this.schema,
+							},
+						},
+					},
+				],
+
+				runtime: anonymous
+					? { externalForms: [{ pageId, status: 'enabled' }] }
+					: {},
+			}
+			const { findings } = await checkFormDestinations(manifest, this.appSlug)
+			this.findings = findings
+			if (findings.length === 0) {
+				return true
+			}
+			this.errorMessage = n(
+				'buildiq',
+				'External access is not switched on: where this form saves to refuses it on %n point. Fix it on the form first.',
+				'External access is not switched on: where this form saves to refuses it on %n points. Fix them on the form first.',
+				findings.length,
+			)
+			return false
 		},
 
 		/**
@@ -310,10 +432,35 @@ export default {
 					await this.onDisable()
 					return
 				}
-				await enablePublicCreate({
-					schema: this.schema,
-					publicRead: this.publicRead,
-				})
+				// Spec "An external form MUST have a public destination": the
+				// form is provisioned only with zero findings.
+				if (!(await this.destinationAccepts(false))) {
+					return
+				}
+				if (this.minTrust) {
+					// portaliq writes past OpenRegister's RBAC itself, so a
+					// public create grant would only be a way around the
+					// sign-in. Take back the one an anonymous save gave.
+					const grantedBefore =
+						this.hadEnabledEntry
+						&& !SIGN_IN_LEVELS.includes(this.entry.minTrust)
+					if (grantedBefore) {
+						await revokePublicCreate({
+							schema: this.schema,
+							removeRead: false,
+						})
+					}
+				} else {
+					await enablePublicCreate({
+						schema: this.schema,
+						publicRead: this.publicRead,
+					})
+					// The grant is in; an anonymous form now needs a destination
+					// that lets a public visitor create.
+					if (!(await this.destinationAccepts(true))) {
+						return
+					}
+				}
 				const existingObjectId =
 					this.entry
 					&& this.entry.portalPage
@@ -322,6 +469,9 @@ export default {
 					register: this.register,
 					schema: this.schema,
 					objectId: existingObjectId || null,
+					...(this.minTrustChanged
+						? { minTrust: this.minTrust || null }
+						: {}),
 				})
 				this.portalHint = !!portalResult.unavailable
 				this.savedPortalUrl = portalResult.portalPath
@@ -335,6 +485,7 @@ export default {
 					status: 'enabled',
 					publicRead: this.publicRead,
 					organisationScope: this.organisationScope || null,
+					minTrust: this.minTrust || null,
 					portalPage: portalResult.unavailable
 						? null
 						: {
@@ -343,6 +494,9 @@ export default {
 							},
 
 					trackLinkAction: { enabled: this.trackLinkEnabled },
+					// Spam protection for the anonymous form: a field no person
+					// sees, which the submit refuses when it is filled.
+					honeypot: '_hp',
 				}
 				this.saved = true
 				this.$emit('save', next)
@@ -452,6 +606,12 @@ export default {
 	display: flex;
 	gap: 8px;
 	align-items: center;
+}
+
+.ob-external-form-access__field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
 }
 
 .ob-external-form-access__urls {

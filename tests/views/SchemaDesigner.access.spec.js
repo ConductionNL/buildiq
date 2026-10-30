@@ -254,6 +254,33 @@ describe('SchemaDesigner — Access sub-editor wiring (REQ-OBDSA-001 / REQ-OBDSA
 		expect(body.title).toBe('Hello renamed')
 	})
 
+	it('REQ-BQFT-004: an unrelated edit + save keeps an imported enum, title and x- key on another field (buildiq#990)', async () => {
+		storeMocks.saveObject.mockImplementation(async (_type, body) => body)
+		const status = {
+			type: 'string',
+			title: 'Status',
+			enum: ['open', 'granted', 'refused'],
+			'x-openregister-dependent-values': { field: 'kind' },
+		}
+		const wrapper = await mountDetail({
+			schemaObject: {
+				...persistedSchemaWithAuth,
+				properties: { subject: { type: 'string' }, status },
+				'x-property-order': ['subject', 'status'],
+			},
+		})
+		const fields = wrapper.vm.staged.fields.map((f) =>
+			f.name === 'subject' ? { ...f, description: 'What it is about' } : f,
+		)
+		wrapper.vm.onFieldsChange(fields)
+		await wrapper.vm.$nextTick()
+		await wrapper.vm.save()
+		expect(storeMocks.saveObject).toHaveBeenCalled()
+		const [, body] = storeMocks.saveObject.mock.calls[0]
+		expect(body.properties.subject.description).toBe('What it is about')
+		expect(body.properties.status).toEqual(status)
+	})
+
 	it('REQ-OBDSA-002: a byte-identical authorization block persists after Save even when it holds an unrepresentable entry', async () => {
 		const schemaObject = {
 			...persistedSchemaWithAuth,

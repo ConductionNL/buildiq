@@ -714,6 +714,7 @@ export function schemaToFields(schema) {
  * @param isRequired
  */
 function fieldFromProperty(name, prop, isRequired) {
+	prop = prop || {}
 	const type = prop['x-openregister-relation'] ? 'relation' : prop.type || 'string'
 	const validation = {}
 	if (type === 'string') {
@@ -743,7 +744,55 @@ function fieldFromProperty(name, prop, isRequired) {
 		default: prop.default != null ? prop.default : null,
 		description: prop.description || '',
 		validation,
+		// REQ-BQFT-004: the property as it was loaded, so a save writes back
+		// every key this editor does not own (enum, title, x- keys, ...).
+		_raw: JSON.parse(JSON.stringify(prop)),
 	}
+}
+
+/**
+ * The property keys this editor reads into a field row and writes back.
+ * Every other key of a loaded property is carried through a save untouched.
+ *
+ * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-save-keeps-the-keys-the-designer-does-not-edit-req-bqft-004
+ */
+const EDITOR_OWNED_KEYS = new Set([
+	'type',
+	'description',
+	'default',
+	'format',
+	'pattern',
+	'minLength',
+	'maxLength',
+	'minimum',
+	'maximum',
+	'multipleOf',
+	'items',
+	'minItems',
+	'maxItems',
+	'x-openregister-relation',
+])
+
+/**
+ * Copy an object without the given keys.
+ *
+ * @param {object} source The object to copy (anything else yields `{}`).
+ * @param {Array<string>|Set<string>} keys The keys to leave out.
+ * @return {object} The copy.
+ * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-save-keeps-the-keys-the-designer-does-not-edit-req-bqft-004
+ */
+function withoutKeys(source, keys) {
+	const skip = keys instanceof Set ? keys : new Set(keys)
+	const copy = {}
+	if (!source || typeof source !== 'object' || Array.isArray(source)) {
+		return copy
+	}
+	for (const key of Object.keys(source)) {
+		if (!skip.has(key)) {
+			copy[key] = source[key]
+		}
+	}
+	return copy
 }
 
 /**
@@ -772,11 +821,18 @@ export function fieldsToSchema(fields) {
 }
 
 /**
+ * Build one JSON Schema property from an editor row. Starts from the property
+ * as it was loaded (`_raw`) minus the keys this editor owns, so a save keeps
+ * `enum`, `title`, `x-` keys and anything else set outside the designer, while
+ * the editor's own keys (and a cleared one) still win (REQ-BQFT-004).
  *
- * @param field
+ * @param {object} field Editor field row.
+ * @return {object} The JSON Schema property.
+ * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-save-keeps-the-keys-the-designer-does-not-edit-req-bqft-004
  */
 function propertyFromField(field) {
-	const prop = {}
+	const raw = field._raw && typeof field._raw === 'object' ? field._raw : {}
+	const prop = withoutKeys(raw, EDITOR_OWNED_KEYS)
 	if (field.description) {
 		prop.description = field.description
 	}
@@ -804,7 +860,10 @@ function propertyFromField(field) {
 			break
 		case 'array':
 			prop.type = 'array'
-			prop.items = { type: v.itemsType || 'string' }
+			prop.items = {
+				...withoutKeys(raw.items, ['type']),
+				type: v.itemsType || 'string',
+			}
 			if (v.minItems != null) prop.minItems = v.minItems
 			if (v.maxItems != null) prop.maxItems = v.maxItems
 			break
@@ -814,6 +873,11 @@ function propertyFromField(field) {
 		case 'relation':
 			prop.type = 'string'
 			prop['x-openregister-relation'] = {
+				...withoutKeys(raw['x-openregister-relation'], [
+					'target',
+					'cardinality',
+					'inverseOf',
+				]),
 				target: v.target || '',
 				cardinality: v.cardinality || 'one',
 				...(v.inverseOf ? { inverseOf: v.inverseOf } : {}),

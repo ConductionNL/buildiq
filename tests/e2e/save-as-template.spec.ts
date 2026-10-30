@@ -118,19 +118,27 @@ test.describe('Buildiq save as template', () => {
 		})
 		await dismissOverlays(page)
 
-		// "Save as template" lives in the detail page's overflow Actions menu.
+		// "Save as template" lives in the detail page's overflow Actions menu —
+		// it is not one of the two actions CnActionButtons promotes to an inline
+		// header button (`inline: 2` in ApplicationDetailActions.vue — Settings +
+		// Edit). Targeted by `data-testid` rather than an unscoped role query, to
+		// rule out any collision with another "Actions" trigger on the page
+		// (CnDetailPage renders its own, separate, Refresh/Documentation menu
+		// under the same default label).
 		await page
 			.getByRole('button', { name: /^Actions$/i })
 			.first()
 			.click()
 		await page
-			.getByRole('menuitem', { name: /Save as template/i })
-			.or(page.getByRole('button', { name: /Save as template/i }))
+			.locator('[data-testid="cn-action-app-save-as-template"]')
 			.first()
 			.click()
 
 		const saveDialog = page.locator('.ob-save-template')
-		await expect(saveDialog).toBeVisible({ timeout: 20_000 })
+		// openSaveAsTemplate() chains three sequential requests (manifest,
+		// schemas, existing templates) before the dialog mounts — pad past the
+		// old 20s budget so a slow CI leg doesn't read as "never opened".
+		await expect(saveDialog).toBeVisible({ timeout: 30_000 })
 		await saveDialog.getByLabel(/Template title/i).fill('PW SAT template')
 		await saveDialog.getByLabel(/^Slug/i).fill(TEMPLATE_SLUG)
 		await saveDialog.getByLabel(/Use case/i).fill('e2e capture')

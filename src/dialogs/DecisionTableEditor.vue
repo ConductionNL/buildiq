@@ -246,10 +246,12 @@ export default {
 		},
 
 		/**
-		 * Persist the RuleSet and its DecisionTable via OpenRegister.
+		 * Persist the RuleSet via OpenRegister and its decision table through buildiq,
+		 * which stores it in OpenRegister's decision-tables register.
 		 *
 		 * @return {Promise<void>}
 		 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-002-decisiontable-schema-for-dmn-based-multi-condition-rules
+		 * @spec openspec/changes/decision-tables-live-in-openregister/specs/business-rules-engine/spec.md
 		 */
 		async save() {
 			this.saving = true
@@ -264,11 +266,14 @@ export default {
 					ruleType: 'decision-table',
 					status: this.ruleSet.status || 'draft',
 				})
+				// The table is stored in OpenRegister's decision-tables
+				// register (decision 196). buildiq maps the authoring shape
+				// onto the stored one, so the editor sends it to buildiq.
 				const tableUrl = generateUrl(
-					'/apps/openregister/api/objects/buildiq/decision-table',
+					'/apps/buildiq/api/rules/{slug}/decision-table',
+					{ slug: this.staged.slug },
 				)
-				await axios.post(tableUrl, {
-					ruleSetId: this.staged.slug,
+				await axios.put(tableUrl, {
 					hitPolicy: this.staged.hitPolicy,
 					inputColumns: this.staged.inputColumns,
 					rules: this.staged.rules,
