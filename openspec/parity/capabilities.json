@@ -8911,8 +8911,9 @@
 				"evidence": "Searched: grep -iE 'payment|betal|mollie|stripe|ideal' over buildiq src/ lib/ (only an icon label at src/utils/openGemeentenIcons.json:574) and portaliq origin/development lib/ (no hits); no form or portal step takes a payment",
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/portaliq",
-				"note": "Specified in ConductionNL/portaliq openspec/changes/intake-pay-on-submit (owning lane, OpenSpec pass 2026-09-27).",
-				"change": "portaliq/intake-pay-on-submit"
+				"note": "Provider half built: portaliq intake-pay-on-submit (fee on portalCaseType, pay route, payment state; only a live check and validate open). buildiq half: the registration form has no fee; planned in forms-fee-on-submit, with a portaliq hand-off (T05) to read the form's fee.",
+				"change": "forms-fee-on-submit",
+				"requirement": "A registration form can carry a fee to pay on submit (REQ-OBRF-010)"
 			},
 			"provider": "portaliq",
 			"providerHow": "read-from-code",
