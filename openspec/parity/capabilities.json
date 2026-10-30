@@ -3689,8 +3689,9 @@
 				"evidence": "Renderer supports it: nextcloud-vue v2.55.1 cnFormFieldRenderer.js:127,250-260 type 'file' renders CnFileField, value is the picked file as a data: URL (CnFormPage.vue:50-51). Builder does not offer it: FormFieldBuilder.vue:122 and FormLayoutBuilder.vue:246 FIELD_TYPES = string, number, boolean, select, textarea, date (no 'file'). Files on a saved record go through the detail sidebar Files tab (see data-files-on-record)",
 				"reachedOn": "only by typing type 'file' into the manifest via Raw JSON on a form page",
 				"owner": "ConductionNL/nextcloud-vue",
-				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/form-file-and-camera-fields (nextcloud-vue lane, OpenSpec pass 2026-09-27).",
-				"change": "nextcloud-vue/form-file-and-camera-fields"
+				"note": "Renderer half built: nextcloud-vue form-file-and-camera-fields (development e7b3a09b6). buildiq half: the designer offers no file type (FIELD_TYPES in FormFieldBuilder.vue:151); planned in forms-designer-file-camera-children-and-assign.",
+				"change": "forms-designer-file-camera-children-and-assign",
+				"requirement": "A maker adds a file field with its limits (REQ-BQFK-001)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -9348,8 +9349,9 @@
 				"evidence": "nextcloud-vue v2.55.1 src/components/CnFormPage and CnFormDialog: grep -iE 'subtable|sub-table|inline.?array' finds no editable child-record table; buildiq fields/FormFieldBuilder.vue:22-43 offers scalar field types only",
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/nextcloud-vue",
-				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/form-child-records-table (nextcloud-vue lane, OpenSpec pass 2026-09-27).",
-				"change": "nextcloud-vue/form-child-records-table"
+				"note": "Renderer half built: nextcloud-vue form-child-records-table, useChildRecords (development e7b3a09b6). buildiq half planned in forms-designer-file-camera-children-and-assign.",
+				"change": "forms-designer-file-camera-children-and-assign",
+				"requirement": "A maker adds a table of child records (REQ-BQFK-003)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -9953,8 +9955,9 @@
 				"evidence": "Form logic hides and shows fields only: src/components/page-editor/fields/VisibleWhenBuilder.vue:34-44 writes field.visibleWhen, evaluated by nextcloud-vue v2.55.1 CnFormPage.vue:485-510; grep -iE 'setValue|assign' in CnFormPage.vue finds no rule that sets another field's value",
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/nextcloud-vue",
-				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/form-live-values (nextcloud-vue lane, OpenSpec pass 2026-09-27).",
-				"change": "nextcloud-vue/form-live-values"
+				"note": "Renderer half built: nextcloud-vue form-live-values, assign rules in src/utils/formAssign.js (development e7b3a09b6). buildiq half planned in forms-designer-file-camera-children-and-assign.",
+				"change": "forms-designer-file-camera-children-and-assign",
+				"requirement": "A field is filled in from another answer (REQ-BQFK-004)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -10597,8 +10600,9 @@
 				"evidence": "buildiq's form field types (src/components/page-editor/fields/FormFieldBuilder.vue:22-43) include file upload at most (form-file-upload partial); grep -iE 'getUserMedia|camera|capture' over src/ and nextcloud-vue v2.55.1 CnFormPage: no camera capture",
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/nextcloud-vue",
-				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/form-file-and-camera-fields (nextcloud-vue lane, OpenSpec pass 2026-09-27).",
-				"change": "nextcloud-vue/form-file-and-camera-fields"
+				"note": "Renderer half built: nextcloud-vue form-file-and-camera-fields, CnFileField capture (development e7b3a09b6). buildiq half planned in forms-designer-file-camera-children-and-assign.",
+				"change": "forms-designer-file-camera-children-and-assign",
+				"requirement": "A file field can open the camera (REQ-BQFK-002)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
