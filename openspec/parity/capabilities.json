@@ -9997,8 +9997,9 @@
 				"evidence": "Searched: no sequence or formatted-number field type in buildiq's schema designer (src/components/schema-editor, grep -iE 'sequence|autonumber|numbering': no hits) and none in openregister origin/development lib/Service/Object (grep -iE 'autoIncrement|sequence': no hits)",
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/openregister",
-				"note": "Specified in ConductionNL/openregister openspec/changes/generated-identifier (openregister lane, OpenSpec pass 2026-09-27).",
-				"change": "openregister/generated-identifier"
+				"note": "OpenRegister half built: generated-identifier tasks 1.1-3.2 ticked (x-openregister-generated, sequences under a lock); its open C41 tasks go past the row. buildiq half: the schema designer cannot set the keyword; planned in data-generated-number-field.",
+				"change": "data-generated-number-field",
+				"requirement": "A text field can be an automatic number (REQ-OBSD-009)"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
