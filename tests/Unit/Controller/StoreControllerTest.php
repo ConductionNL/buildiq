@@ -142,7 +142,7 @@ class StoreControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/store-publish-passthrough/specs/buildiq-store/spec.md
+	 * @spec openspec/specs/buildiq-store/spec.md#requirement-the-publish-route-answers
 	 */
 	public function testAnonymousPublishIsRejected(): void {
 		$this->userSession->method('getUser')->willReturn(null);
@@ -158,7 +158,7 @@ class StoreControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/store-publish-passthrough/specs/buildiq-store/spec.md
+	 * @spec openspec/specs/buildiq-store/spec.md#requirement-the-publish-route-answers
 	 */
 	public function testPublishRefusesAUserWhoMayNotPublish(): void {
 		$this->userSession->method('getUser')->willReturn($this->mockUser(uid: 'alice'));
@@ -175,7 +175,7 @@ class StoreControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/store-publish-passthrough/specs/buildiq-store/spec.md
+	 * @spec openspec/specs/buildiq-store/spec.md#requirement-the-publish-route-answers
 	 */
 	public function testPublishIsPassedToTheEngine(): void {
 		$this->userSession->method('getUser')->willReturn($this->mockUser(uid: 'admin'));
@@ -196,7 +196,7 @@ class StoreControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/store-publish-passthrough/specs/buildiq-store/spec.md
+	 * @spec openspec/specs/buildiq-store/spec.md#requirement-the-publish-route-answers
 	 */
 	public function testPublishWithoutAnItemIsABadRequest(): void {
 		$this->userSession->method('getUser')->willReturn($this->mockUser(uid: 'admin'));

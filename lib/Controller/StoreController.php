@@ -250,7 +250,7 @@ class StoreController extends Controller {
 	 *
 	 * @return JSONResponse `{outcome, slug}`; 401 anonymous, 403 not admitted, 400 without an item.
 	 *
-	 * @spec openspec/changes/store-publish-passthrough/specs/buildiq-store/spec.md
+	 * @spec openspec/specs/buildiq-store/spec.md#requirement-the-publish-route-answers
 	 */
 	#[NoAdminRequired]
 	public function publish(): JSONResponse {
