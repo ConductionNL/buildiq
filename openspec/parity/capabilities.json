@@ -2724,8 +2724,9 @@
 				"state": "specified",
 				"evidence": "grep -ri 'calendar' across buildiq src/ and lib/: only hit is src/components/runtime/ProcestCaseStatusPanel.vue (unrelated, a case/status panel, not a records-by-date calendar view). No 'calendar' entry in nextcloud-vue v2.55.1 pageTypes.js (note: CnCalendarWidget exists as a dashboard widget per docs/components/_generated/CnCalendarWidget.md, but that is a small widget, not a page type showing records by date field).",
 				"owner": "ConductionNL/nextcloud-vue",
-				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/index-calendar-view-mode (nextcloud-vue lane, OpenSpec pass 2026-09-27).",
-				"change": "nextcloud-vue/index-calendar-view-mode"
+				"note": "Renderer half built: nextcloud-vue index-calendar-view-mode, CnIndexPage.vue:1080-1084 (development e7b3a09b6, only the e2e run open). buildiq half: IndexPageEditor.vue writes no viewModes; planned in pages-index-calendar-and-manual-order.",
+				"change": "pages-index-calendar-and-manual-order",
+				"requirement": "An index page can offer a calendar view (REQ-PEC-008)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -9995,8 +9996,9 @@
 				"evidence": "Built index pages render nextcloud-vue v2.55.1 CnIndexPage and CnDataTable, which sort by column (CnDataTable.md:6 sortable) but have no drag handle to reorder rows (grep -iE 'draggable|reorder' in CnIndexPage and CnDataTable: no hits)",
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/nextcloud-vue",
-				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/case-page-and-list-as-a-place (nextcloud-vue lane, OpenSpec pass 2026-09-27).",
-				"change": "nextcloud-vue/case-page-and-list-as-a-place"
+				"note": "Renderer half built: nextcloud-vue case-page-and-list-as-a-place, page.manualOrder read in CnPageRenderer.vue:1385 (default off). buildiq half planned in pages-index-calendar-and-manual-order.",
+				"change": "pages-index-calendar-and-manual-order",
+				"requirement": "An index page can let users order rows by dragging (REQ-PEC-009)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
