@@ -96,6 +96,8 @@ class VirtualAppWidget implements IWidget, IIconWidget, IConditionalWidget, IAPI
 	 * The panel title, as the author wrote it in the manifest.
 	 *
 	 * @return string The widget title.
+	 *
+	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-the-widget-renders-in-the-nextcloud-panel-chrome
 	 */
 	public function getTitle(): string {
 		return $this->descriptor->title;
@@ -108,6 +110,8 @@ class VirtualAppWidget implements IWidget, IIconWidget, IConditionalWidget, IAPI
 	 * wins, exactly as it does for every other app's widget.
 	 *
 	 * @return int The widget order.
+	 *
+	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-the-widget-renders-in-the-nextcloud-panel-chrome
 	 */
 	public function getOrder(): int {
 		return $this->descriptor->order;
@@ -117,6 +121,8 @@ class VirtualAppWidget implements IWidget, IIconWidget, IConditionalWidget, IAPI
 	 * The CSS icon class.
 	 *
 	 * @return string The icon CSS class.
+	 *
+	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-the-widget-renders-in-the-nextcloud-panel-chrome
 	 */
 	public function getIconClass(): string {
 		return 'icon-buildiq-widget';
@@ -126,6 +132,8 @@ class VirtualAppWidget implements IWidget, IIconWidget, IConditionalWidget, IAPI
 	 * The panel icon, served from the virtual app's own light icon.
 	 *
 	 * @return string The icon URL.
+	 *
+	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-the-widget-renders-in-the-nextcloud-panel-chrome
 	 */
 	public function getIconUrl(): string {
 		return $this->context->urlGenerator->linkToRouteAbsolute(
@@ -138,6 +146,8 @@ class VirtualAppWidget implements IWidget, IIconWidget, IConditionalWidget, IAPI
 	 * Where the panel title points.
 	 *
 	 * @return string|null The widget URL.
+	 *
+	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-the-widget-renders-in-the-nextcloud-panel-chrome
 	 */
 	public function getUrl(): ?string {
 		if ($this->descriptor->link !== '') {
