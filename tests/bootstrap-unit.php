@@ -53,6 +53,9 @@ foreach ($orCandidates as $orPath) {
 // register a stub set so type-hinted parameters resolve.
 require_once __DIR__ . '/stubs/openregister-stubs.php';
 
+// Form destination contract (openregister#4563). Same guards.
+require_once __DIR__ . '/stubs/openregister-form.stub.php';
+
 // OCP\Files\IRootFolder extends OC\Hooks\Emitter (NC server core, not part
 // of the nextcloud/ocp stub package) — see the stub's own docblock for why
 // this is needed to mock IRootFolder in this out-of-container run.

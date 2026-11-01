@@ -84,6 +84,12 @@
 			:open="historyOpen"
 			:applicationUuid="obAppUuid"
 			@update:open="historyOpen = $event" />
+		<CopyAppDialog
+			v-if="copyOpen && obApp"
+			:open="copyOpen"
+			:application="obApp"
+			@close="copyOpen = false"
+			@copied="onCopied" />
 		<SaveAsTemplateDialog
 			v-if="saveTemplateOpen && obApp"
 			:open="saveTemplateOpen"
@@ -107,6 +113,7 @@ import { defineAsyncComponent } from 'vue'
 import DeleteAppDialog from '../dialogs/DeleteAppDialog.vue'
 import SaveAsTemplateDialog from '../dialogs/SaveAsTemplateDialog.vue'
 import AppSettingsModal from '../modals/AppSettingsModal.vue'
+import CopyAppDialog from '../modals/CopyAppDialog.vue'
 import GitHubSyncModal from '../modals/GitHubSyncModal.vue'
 import PermissionHistoryModal from '../modals/PermissionHistoryModal.vue'
 import PermissionsModal from '../modals/PermissionsModal.vue'
@@ -142,6 +149,7 @@ export default {
 		GitHubSyncModal,
 		DeleteAppDialog,
 		SaveAsTemplateDialog,
+		CopyAppDialog,
 		ExportDialog,
 	},
 
@@ -182,6 +190,7 @@ export default {
 			historyOpen: false,
 			exportOpen: false,
 			saveTemplateOpen: false,
+			copyOpen: false,
 			saveTemplateLoading: false,
 			saveTemplateManifest: null,
 			saveTemplateSchemas: [],
@@ -327,6 +336,16 @@ export default {
 					onSelect: () => this.openSaveAsTemplate(),
 				})
 			}
+			if (this.canCopyApp) {
+				out.push({
+					id: 'app-copy',
+					label: t('buildiq', 'Copy app'),
+					icon: 'ContentCopy',
+					onSelect: () => {
+						this.copyOpen = true
+					},
+				})
+			}
 			if (this.obApp && this.obApp.slug) {
 				out.push({
 					id: 'app-github',
@@ -436,6 +455,22 @@ export default {
 		 */
 		canSaveAsTemplate() {
 			return this.obAppRole === 'owner' || this.obAppRole === 'editor'
+		},
+
+		/**
+		 * "Copy app" is offered to an owner or editor who is a Nextcloud
+		 * administrator: the copy provisions a register, which the server
+		 * refuses anyone else (REQ-BQCP-002).
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-copying-an-app-has-the-gates-of-cloning-a-template-req-bqcp-002
+		 */
+		canCopyApp() {
+			return (
+				this.canSaveAsTemplate
+				&& !!(this.obApp && this.obApp.slug)
+				&& getCurrentUserGroups().includes('admin')
+			)
 		},
 
 		/**
@@ -994,6 +1029,23 @@ export default {
 				this.permissionsOpen = false
 			} catch (e) {
 				this.error = `${t('buildiq', 'Failed to save permissions')}: ${e.message || e}`
+			}
+		},
+
+		/**
+		 * Open the copy once the server made it.
+		 *
+		 * @param {{uuid: string, slug: string}} created The new app.
+		 * @return {void}
+		 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
+		 */
+		onCopied(created) {
+			this.copyOpen = false
+			if (created && created.uuid && this.$router) {
+				this.$router.push({
+					name: 'VirtualAppDetail',
+					params: { objectId: created.uuid },
+				})
 			}
 		},
 

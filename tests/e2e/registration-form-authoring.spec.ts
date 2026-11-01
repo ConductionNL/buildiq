@@ -38,6 +38,48 @@ test.describe('registration form authoring', () => {
 		}
 	})
 
+	test('the target-schema route the builder pickers read exists', async ({
+		request,
+	}) => {
+		// The builder's property, preset and channel pickers are this route's
+		// answer. Unregistered, it comes back as the SPA shell at 200 and the
+		// pickers quietly fall back to free text, which looks like a schema that
+		// declares nothing rather than like a broken route.
+		const response = await request.get(
+			`${API}/target?register=dossiq&schema=Zaak&channelProperty=intakeChannel`,
+			{ headers: HEADERS },
+		)
+
+		test.skip(response.status() === 404, 'buildiq is not installed here')
+
+		if (response.status() === 200) {
+			expect(
+				response.headers()['content-type'] ?? '',
+				'the target-schema route fell through to the SPA shell, so it is not registered',
+			).not.toContain('text/html')
+		}
+	})
+
+	test('a caller with no account cannot read another app data model', async ({
+		playwright,
+	}) => {
+		const anonymous = await playwright.request.newContext({
+			baseURL: process.env.BASE_URL ?? process.env.NC_BASE_URL,
+		})
+
+		const response = await anonymous.get(
+			`${API}/target?register=dossiq&schema=Zaak`,
+			{ headers: HEADERS },
+		)
+
+		expect(
+			response.status(),
+			'an anonymous caller read the consuming schema property list',
+		).not.toBe(200)
+
+		await anonymous.dispose()
+	})
+
 	test('a caller with no account cannot author a form a citizen fills in', async ({
 		playwright,
 	}) => {

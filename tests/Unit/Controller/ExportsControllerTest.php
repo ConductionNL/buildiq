@@ -650,4 +650,35 @@ final class ExportsControllerTest extends TestCase {
 
 		self::assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
 	}//end testRunRefusesAForeignJob()
+
+	/**
+	 * REQ-BQSD-001: the export dialog reads the server's needs from the writer
+	 * that fills in the bundle.
+	 *
+	 * @return void
+	 */
+	public function testServerRequirementsAnswerFromTheBundleWriter(): void {
+		$appManager = $this->createMock(\OCP\App\IAppManager::class);
+		$appManager->method('getAppVersion')->willReturn('1.14.2');
+		$this->container->method('get')->willReturn(new \OCA\Buildiq\Service\ServerBundleWriter($appManager));
+
+		$response = $this->buildController()->serverRequirements();
+
+		self::assertSame(Http::STATUS_OK, $response->getStatus());
+		self::assertSame('1.14.2', $response->getData()['openregister']);
+		self::assertArrayHasKey('nextcloud', $response->getData());
+	}//end testServerRequirementsAnswerFromTheBundleWriter()
+
+	/**
+	 * REQ-BQSD-001: the own-server target is accepted.
+	 *
+	 * @return void
+	 */
+	public function testSubmitAcceptsTheServerTarget(): void {
+		$controller = $this->buildController();
+		$method = new \ReflectionMethod($controller, 'validateSubmitBody');
+
+		self::assertNull($method->invoke($controller, ['target' => 'server', 'applicationVersion' => '1.0.0']));
+		self::assertNotNull($method->invoke($controller, ['target' => 'ftp', 'applicationVersion' => '1.0.0']));
+	}//end testSubmitAcceptsTheServerTarget()
 }//end class

@@ -209,12 +209,12 @@ Each release automatically:
 
 ## Documentation Release Process
 
-Documentation is built with [Docusaurus](https://docusaurus.io/) and deployed to GitHub Pages.
+Documentation is built with [Docusaurus](https://docusaurus.io/) and served by a Cloudflare Worker.
 
-1. Documentation source lives in the `docs/` (or `docusaurus/`) folder on any branch
-2. Push or merge to the `documentation` branch triggers the build
+1. Documentation source lives in the `docs/` folder
+2. A push or merge to `development` triggers the build (`.github/workflows/documentation.yml`)
 3. Docusaurus builds the static site
-4. The site is deployed to GitHub Pages with a custom domain (e.g., `openregister.app`)
+4. The site is published to [buildiq.conduction.nl](https://buildiq.conduction.nl)
 
 Each app has its own documentation site — see the app's README for its URL.
 

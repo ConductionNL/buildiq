@@ -191,7 +191,11 @@
 				],
 				"submitLabel": "Save Loan",
 				"successRoute": "loans",
-				"submitEndpoint": "/apps/openregister/api/objects/loan/loan"
+				"submitEndpoint": "/apps/openregister/api/objects/loan/loan",
+				"destination": {
+					"register": "loan",
+					"schema": "loan"
+				}
 			}
 		}
 	]

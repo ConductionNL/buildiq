@@ -233,7 +233,8 @@ class RunExportJob extends QueuedJob {
 			// The application's own slug IS the agent lookup: agents carry
 			// `applicationSlug`, so there is no agent binding to pass.
 			applicationSlug: $applicationSlug,
-			source: $source
+			source: $source,
+			includeServerBundle: ($job['includeServerBundle'] ?? false) === true
 		);
 
 		// Name what could not be resolved on the job itself. A skip that only

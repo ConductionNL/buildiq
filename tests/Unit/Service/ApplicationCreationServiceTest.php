@@ -198,6 +198,36 @@ class ApplicationCreationServiceTest extends TestCase {
 	}//end substituteVersionContextNamespacesSchemaSlugAlongsideRegister()
 
 	/**
+	 * A page on a register the Application declares in `dataRegisters` keeps
+	 * its schema slug, next to an own-register page that is still namespaced
+	 * (REQ-BQDB-004, buildiq#991).
+	 *
+	 * @test
+	 *
+	 * @return void
+	 */
+	public function substituteVersionContextLeavesADataRegisterPageAlone(): void {
+		$manifest = [
+			'pages' => [
+				['id' => 'Permits', 'config' => ['register' => 'permits-db', 'schema' => 'permits']],
+				['id' => 'Messages', 'config' => ['register' => '{registerSlug}', 'schema' => 'hello-message']],
+			],
+		];
+
+		$result = $this->service->substituteVersionContext(
+			manifest: $manifest,
+			registerSlug: 'openbuild-permit-flow-development',
+			schemaSlugPrefix: 'permit-flow-development-',
+			dataRegisters: ['permits-db']
+		);
+
+		self::assertSame('permits-db', $result['pages'][0]['config']['register']);
+		self::assertSame('permits', $result['pages'][0]['config']['schema']);
+		self::assertSame('openbuild-permit-flow-development', $result['pages'][1]['config']['register']);
+		self::assertSame('permit-flow-development-hello-message', $result['pages'][1]['config']['schema']);
+	}//end substituteVersionContextLeavesADataRegisterPageAlone()
+
+	/**
 	 * substituteVersionContext is idempotent: re-running with the same
 	 * prefix MUST NOT double-prefix the schema slug.
 	 *

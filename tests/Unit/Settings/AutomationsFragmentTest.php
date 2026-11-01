@@ -104,7 +104,8 @@ final class AutomationsFragmentTest extends TestCase {
 
 		// Business-rules-engine schemas survive.
 		$this->assertArrayHasKey('RuleSet', $schemas);
-		$this->assertArrayHasKey('DecisionTable', $schemas);
+		// A decision table is OpenRegister's schema since decision 196, not buildiq's.
+		$this->assertArrayNotHasKey('DecisionTable', $schemas);
 		$this->assertArrayHasKey('ConditionActionRule', $schemas);
 		$this->assertArrayHasKey('RuleExecutionLog', $schemas);
 		$this->assertArrayHasKey('TestCase', $schemas);

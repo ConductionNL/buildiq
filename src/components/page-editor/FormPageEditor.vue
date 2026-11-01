@@ -135,11 +135,40 @@
 
 		<fieldset class="form-page-editor__fieldset">
 			<legend>{{ t('buildiq', 'Fields') }}</legend>
+			<!-- Decision 179/189: findings on no single field (a required
+			     property nothing fills, a destination that refuses the
+			     audience). The form saves as a draft; publishing waits. -->
+			<div
+				v-if="formFindings.length"
+				class="form-page-editor__findings"
+				data-testid="form-destination-findings">
+				<p class="form-page-editor__hint">
+					{{
+						t(
+							'buildiq',
+							'This form is saved as a draft. Its destination refuses it on the points below, so the app cannot be published until they are fixed.',
+						)
+					}}
+				</p>
+				<InlineFieldMark
+					v-for="(finding, i) in findingsOnNoField"
+					:key="'form-finding-' + i"
+					:error="{ hasError: true, message: finding.message }" />
+			</div>
 			<FormFieldBuilder
 				:modelValue="config.fields || []"
+				:findings="findingsPerField"
 				showLogic
 				@update:modelValue="update('fields', $event)" />
 			<InlineFieldMark :error="markFor('fields')" />
+		</fieldset>
+
+		<fieldset class="form-page-editor__fieldset">
+			<legend>{{ t('buildiq', 'Eligibility check') }}</legend>
+			<EligibilityCheckBuilder
+				:modelValue="config.eligibility || null"
+				@update:modelValue="update('eligibility', $event)" />
+			<InlineFieldMark :error="markFor('eligibility')" />
 		</fieldset>
 
 		<fieldset class="form-page-editor__fieldset">
@@ -186,6 +215,8 @@
 					:schema="externalTarget.schema"
 					:pageId="pageId"
 					:entry="externalFormEntry"
+					:formConfig="config"
+					:appSlug="appSlug"
 					@save="onExternalFormSave" />
 			</template>
 			<p v-else class="form-page-editor__hint">
@@ -197,16 +228,37 @@
 				}}
 			</p>
 		</fieldset>
+
+		<!-- reuse-gallery-categories-and-form-library REQ-BQGL-002 -->
+		<div class="form-page-editor__library">
+			<button
+				type="button"
+				data-testid="open-save-form-to-library"
+				@click="libraryDialogOpen = true">
+				{{ t('buildiq', 'Save to form library') }}
+			</button>
+			<SaveFormToLibraryDialog
+				v-if="libraryDialogOpen"
+				v-model:open="libraryDialogOpen"
+				kind="form-page"
+				:form="libraryForm"
+				:register="externalTarget ? externalTarget.register : ''"
+				:schemaSlug="targetSchema"
+				:appSlug="appSlug" />
+		</div>
 	</div>
 </template>
 
 <script>
 import ExternalFormAccessDialog from '../../dialogs/ExternalFormAccessDialog.vue'
+import SaveFormToLibraryDialog from '../../dialogs/SaveFormToLibraryDialog.vue'
+import EligibilityCheckBuilder from './fields/EligibilityCheckBuilder.vue'
 import FormFieldBuilder from './fields/FormFieldBuilder.vue'
 import FormStepsManager from './fields/FormStepsManager.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
 import { useRegisterPicker } from '../../composables/useRegisterPicker.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
+import { findingsByField } from '../../services/formDestinationCheck.js'
 
 // OpenRegister's object collection URL: POSTing the form's values here
 // creates an object in that register and schema.
@@ -217,9 +269,11 @@ export default {
 	name: 'FormPageEditor',
 	components: {
 		FormFieldBuilder,
+		EligibilityCheckBuilder,
 		FormStepsManager,
 		InlineFieldMark,
 		ExternalFormAccessDialog,
+		SaveFormToLibraryDialog,
 	},
 
 	mixins: [pageEditorValidationMixin],
@@ -263,6 +317,12 @@ export default {
 			type: Array,
 			default: () => [],
 		},
+
+		// Decision 179/189: this page's destination findings from the last save.
+		destinationFindings: {
+			type: Array,
+			default: () => [],
+		},
 	},
 
 	emits: ['update:config', 'update:runtimeExternalForms'],
@@ -285,6 +345,7 @@ export default {
 	data() {
 		return {
 			externalDialogOpen: false,
+			libraryDialogOpen: false,
 			// The submit choice the user clicked. Switching choices clears the
 			// other key, so with both keys empty the config alone cannot say
 			// which choice is active; this remembers it.
@@ -297,6 +358,56 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * This page's destination findings.
+		 *
+		 * @return {Array<object>}
+		 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-a-draft-form-saves-with-its-findings
+		 */
+		formFindings() {
+			return Array.isArray(this.destinationFindings)
+				? this.destinationFindings
+				: []
+		},
+
+		/**
+		 * The findings grouped by the field they sit on.
+		 *
+		 * @return {{[key: string]: Array<object>}}
+		 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-every-buildiq-form-must-be-valid-against-its-destination-before-it-is-published
+		 */
+		findingsPerField() {
+			return findingsByField(this.formFindings)
+		},
+
+		/**
+		 * Findings that sit on no field this form has.
+		 *
+		 * @return {Array<object>}
+		 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-every-buildiq-form-must-be-valid-against-its-destination-before-it-is-published
+		 */
+		findingsOnNoField() {
+			const keys = new Set(
+				(this.config.fields || []).map((f) =>
+					typeof f === 'string' ? f : f && f.key,
+				),
+			)
+			return Object.entries(this.findingsPerField)
+				.filter(([key]) => !keys.has(key))
+				.flatMap(([, list]) => list)
+		},
+
+		/**
+		 * The form as the library captures it: the page config, named after
+		 * the page's submit label when it has one.
+		 *
+		 * @return {object}
+		 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-a-form-can-be-saved-to-the-library-req-bqgl-002
+		 */
+		libraryForm() {
+			return { ...this.config, name: this.config.title || this.pageId || '' }
+		},
+
 		/**
 		 * `{register, schema}` resolved from `config.submitEndpoint` when it
 		 * matches OR's `/api/objects/{register}/{schema}` shape; null
@@ -361,6 +472,7 @@ export default {
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 * @spec openspec/specs/form-editor-logic/spec.md#req-obfel-001
+		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003
 		 */
 		validatedConfigKeys() {
 			return [
@@ -373,6 +485,7 @@ export default {
 				'fields',
 				'initialValue',
 				'steps',
+				'eligibility',
 			]
 		},
 
@@ -558,7 +671,7 @@ export default {
 		 * @return {void}
 		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002
 		 */
-		onExternalFormSave(entry) {
+		async onExternalFormSave(entry) {
 			const list = (this.runtimeExternalForms || []).slice()
 			const idx = list.findIndex((e) => e && e.pageId === this.pageId)
 			if (idx >= 0) {
@@ -567,6 +680,14 @@ export default {
 				list.push(entry)
 			}
 			this.$emit('update:runtimeExternalForms', list)
+			// The anonymous form carries the honeypot its entry names. Written
+			// after the runtime change has reached the manifest: both edits
+			// rebuild the manifest from the prop, so the second would
+			// otherwise drop the first.
+			if (entry && entry.honeypot && this.config.honeypot !== entry.honeypot) {
+				await this.$nextTick()
+				this.update('honeypot', entry.honeypot)
+			}
 		},
 	},
 }
@@ -635,6 +756,10 @@ export default {
 	color: var(--color-text-maxcontrast);
 	font-size: 13px;
 	margin: 0;
+}
+
+.form-page-editor__library {
+	margin-top: 12px;
 }
 
 .form-page-editor__external-btn {

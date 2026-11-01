@@ -53,8 +53,11 @@ namespace OCA\Buildiq\Controller;
 use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\Buildiq\AppInfo\Application;
+use InvalidArgumentException;
 use OCA\Buildiq\Service\AppChannelApplier;
+use OCA\Buildiq\Service\AppTemplateCapture;
 use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Service\CompanionSchemaCollector;
 use OCA\Buildiq\Service\ManifestResolverService;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
@@ -1635,6 +1638,128 @@ class ApplicationsController extends Controller {
 
 		return new JSONResponse(data: $result['data'], statusCode: $result['status']);
 	}//end createFromTemplate()
+
+	/**
+	 * Copy an app into a new one, owned by the caller (REQ-BQCP-001).
+	 *
+	 * The copy goes through the template seam without touching the template
+	 * catalogue: the source's companion schemas and current manifest are
+	 * captured in memory, de-namespaced exactly as "Save as template" does
+	 * ({@see AppTemplateCapture}), and installed by installFromTemplateArray().
+	 * So the copy gets its own register, its own namespaced schemas and
+	 * rewritten references, and no records.
+	 *
+	 * Gates (REQ-BQCP-002), the same as cloning a template: a signed-in
+	 * Nextcloud administrator (copying provisions a register), the
+	 * from-template rate limit, and on top an owner or editor of the source
+	 * app; a viewer is refused even when they are an administrator. A taken
+	 * slug is the seam's 409.
+	 *
+	 * @param string $slug The source app's slug
+	 *
+	 * @return JSONResponse 201 with the new app; 400, 401, 403, 404 or 409 otherwise
+	 *
+	 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
+	 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-copying-an-app-has-the-gates-of-cloning-a-template-req-bqcp-002
+	 */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 10, period: 3600)]
+	public function copy(string $slug): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return $this->errorResponse(code: 'unauthenticated', status: Http::STATUS_UNAUTHORIZED);
+		}
+
+		if ($this->groupManager->isInGroup($user->getUID(), self::ADMIN_GROUP) === false) {
+			return $this->errorResponse(
+				code: 'forbidden',
+				detail: 'Copying an app requires Nextcloud admin privileges.',
+				status: Http::STATUS_FORBIDDEN
+			);
+		}
+
+		$validation = $this->validateCloneRequest(body: $this->request->getParams());
+		if (isset($validation['error']) === true) {
+			return new JSONResponse(data: $validation['error'], statusCode: $validation['status']);
+		}
+
+		[$name, $newSlug] = $validation;
+
+		$resolved = $this->resolveApplicationBySlug(slug: $slug);
+		if ($resolved instanceof JSONResponse) {
+			return $resolved;
+		}
+
+		$application = $resolved[1];
+		$canEdit = $this->permissionResolver->matchesCaller(
+			permissions: ($application['permissions'] ?? []),
+			caller: $user,
+			userGroups: $this->permissionResolver->resolveUserGroups($user),
+			allowAdminBypass: false,
+			roles: ['owners', 'editors']
+		);
+		if ($canEdit === false) {
+			return new JSONResponse(
+				data: ['error' => 'forbidden', 'code' => 'buildiq.rbac.no_role'],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
+
+		try {
+			$template = $this->captureForCopy(application: $application);
+		} catch (InvalidArgumentException $e) {
+			return $this->errorResponse(code: 'copy_ambiguous_schemas', detail: $e->getMessage(), status: Http::STATUS_CONFLICT);
+		}
+
+		$result = $this->installFromTemplateArray(
+			template: $template,
+			name: $name,
+			newSlug: $newSlug,
+			ownerUid: $user->getUID()
+		);
+
+		return new JSONResponse(data: $result['data'], statusCode: $result['status']);
+	}//end copy()
+
+	/**
+	 * Capture an app's current version as a template array, in memory.
+	 *
+	 * @param array<string,mixed> $application The source Application
+	 *
+	 * @return array<string,mixed> The template array for installFromTemplateArray()
+	 *
+	 * @throws InvalidArgumentException When two schemas de-namespace to one slug.
+	 *
+	 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
+	 */
+	private function captureForCopy(array $application): array {
+		$version = [];
+		$versionId = ($application['productionVersion'] ?? null);
+		if (is_string($versionId) === true && $versionId !== '' && $versionId !== 'draft') {
+			$version = $this->normaliseObject(
+				object: $this->objectService->find(
+					id: $versionId,
+					register: 'buildiq',
+					schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+				)
+			);
+		}
+
+		$manifest = ($version['manifest'] ?? ($application['manifest'] ?? []));
+		$appSlug = (string)($application['slug'] ?? '');
+		$collector = new CompanionSchemaCollector(
+			registerMapper: $this->registerMapper,
+			schemaMapper: $this->schemaMapper,
+			logger: $this->logger
+		);
+		$schemas = $collector->collect(slug: $appSlug, versionRegister: trim((string)($version['register'] ?? '')));
+
+		return (new AppTemplateCapture())->capture(
+			application: $application,
+			schemas: array_values($schemas),
+			manifest: (array)$manifest
+		);
+	}//end captureForCopy()
 
 	/**
 	 * Clone a template ARRAY into a new local Application (shared install seam).

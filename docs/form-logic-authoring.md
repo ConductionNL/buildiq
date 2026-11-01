@@ -96,6 +96,41 @@ keys on that field are replaced. Fields you never touch keep their flat
 keys exactly as they were; this is opt-in, per field, never a bulk
 rewrite of the whole form.
 
+## Prefilled, calculated and checked while it is filled in
+
+A form can fill in what is already known, work out what follows from the
+answers, and tell the person filling it in straight away why they do not
+qualify. Calculations and checks come from a rule set you already built and
+tested under **Rules**. There is no formula language to learn.
+
+**Filled in when the form opens.** In a field's **Details**, pick what it
+starts with: a fixed value, the user name of the person filling it in, their
+name, their e-mail, today, or a field of the record the form opens from (for
+example `title`). The field stores a token such as `@me.email`; the person
+can still change the value.
+
+**Calculated.** Pick the rule set that works the value out, the outcome to
+show, and the answers it reads. The field shows the outcome read-only and
+works it out again when one of those answers changes. A rule set that is not
+active is marked, because the field stays empty until it is.
+
+**Eligibility check.** On the form page, pick a rule set, the outcome and
+value that mean the person qualifies (for `loan-eligibility`: `decision` is
+`approved`), and the outcome that explains why not (`reason`). With **Wait
+for a pass before the form can be sent** the submit button stays disabled
+until the check passes.
+
+While the form is filled in, buildiq evaluates these rule sets in preview
+mode, which writes nothing to the execution log. When the record is saved,
+buildiq evaluates every calculated field again with the saved values and
+stores its own answer, so a value changed in the browser never lands. A
+blocking check that fails refuses the save with its explanation.
+
+> Showing these values while the form is filled in needs the matching hooks
+> in `@conduction/nextcloud-vue`'s `CnFormPage`. Until the app's renderer has
+> them, the form shows the fields as plain inputs; the server still
+> recomputes and checks on save.
+
 ## The dangling-reference warning
 
 Deleting a field that's still referenced by another field's condition,

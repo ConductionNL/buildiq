@@ -1,0 +1,40 @@
+{
+	"_comment": "ADR-037 register fragment, operate-debug-log-and-monitoring (board BqAppWerking). One app-health-sample per page per five-minute batch of a running built app: counts only, never a user, a path, a body or a message (REQ-BQDM-004). Written by AppHealthService with the app and version the server derived, read back by AppHealthService::computeHealth() for the app detail page, deleted after 30 days by AppHealthSampleCleanup. Samples are append-only, so two browsers never overwrite each other. The register version in openbuild_register.json is bumped so the import runs.",
+	"components": {
+		"schemas": {
+			"AppHealthSample": {
+				"slug": "app-health-sample",
+				"icon": "ChartBoxOutline",
+				"version": "1.0.0",
+				"title": "App health sample",
+				"description": "Counts one browser reported for one page of a running built app during one five-minute window.",
+				"x-openregister-demo-data": "Written by running apps. A generated sample reads as traffic nobody made.",
+				"authorization": {
+					"read": ["admin"],
+					"create": ["admin"],
+					"update": ["admin"],
+					"delete": ["admin"]
+				},
+				"type": "object",
+				"required": ["applicationUuid", "versionUuid", "pageId", "windowStart"],
+				"properties": {
+					"applicationUuid": { "title": "Application", "type": "string", "description": "The built app, derived by the server from the posted slug." },
+					"versionUuid": { "title": "Version", "type": "string", "description": "The version the browser ran, derived by the server." },
+					"pageId": { "title": "Page", "type": "string", "maxLength": 128, "description": "The manifest page id." },
+					"windowStart": { "title": "Window start", "type": "string", "format": "date-time", "description": "Start of the five-minute window, as the server received it." },
+					"requests": { "title": "Requests", "type": "integer", "minimum": 0 , "description": "Requests the page made in the window." },
+					"failures4xx": { "title": "Failures 4xx", "type": "integer", "minimum": 0 , "description": "Requests answered with a 4xx status." },
+					"failures5xx": { "title": "Failures 5xx", "type": "integer", "minimum": 0 , "description": "Requests answered with a 5xx status, or that did not complete." },
+					"durationUnder250": { "title": "Requests under 250 ms", "type": "integer", "minimum": 0 , "description": "Requests that took under 250 ms." },
+					"durationUnder1000": { "title": "Requests from 250 ms to 1 s", "type": "integer", "minimum": 0 , "description": "Requests that took from 250 ms to 1 s." },
+					"durationUnder3000": { "title": "Requests from 1 s to 3 s", "type": "integer", "minimum": 0 , "description": "Requests that took from 1 s to 3 s." },
+					"durationOver3000": { "title": "Requests of 3 s and over", "type": "integer", "minimum": 0 , "description": "Requests that took 3 s or more." },
+					"loads": { "title": "Page loads", "type": "integer", "minimum": 0 , "description": "Times the page was opened." },
+					"loadMsSum": { "title": "Total load time (ms)", "type": "integer", "minimum": 0 , "description": "Total time, in milliseconds, until the page had its data." },
+					"slowLoads": { "title": "Page loads of 3 s and over", "type": "integer", "minimum": 0 , "description": "Times the page took 3 s or more to get its data." },
+					"clientErrors": { "title": "Client errors", "type": "integer", "minimum": 0 , "description": "Render errors and unknown components on the page." }
+				}
+			}
+		}
+	}
+}

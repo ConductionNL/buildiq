@@ -1,9 +1,11 @@
 ---
-status: done
+status: in-progress
 retrofit: true
 ---
 
 # deep-link-registration Specification
+
+> Not done: `DeepLinkRegistrationListener` was deleted when AppHost took over, and `src/manifest.json` `deepLinks` is empty, so no deep link is registered. Change `apps-unified-search-deep-links` restores this capability.
 
 ## Purpose
 

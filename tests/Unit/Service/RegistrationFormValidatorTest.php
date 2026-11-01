@@ -223,7 +223,6 @@ final class RegistrationFormValidatorTest extends TestCase {
 		$this->validator->validate(
 			$this->form(['channel' => 'fax']),
 			[],
-			null,
 			['portal', 'desk']
 		);
 	}//end testAChannelTheConsumerDoesNotAcceptIsRefused()
@@ -247,44 +246,10 @@ final class RegistrationFormValidatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testAConsumerWithNoDeclaredChannelsRefusesNothing(): void {
-		$this->validator->validate($this->form(['channel' => 'fax']), [], null, null);
+		$this->validator->validate($this->form(['channel' => 'fax']), [], null);
 
 		self::assertTrue(true);
 	}//end testAConsumerWithNoDeclaredChannelsRefusesNothing()
-
-	/**
-	 * A preset naming a property the target schema does not have WARNS rather
-	 * than refusing, because buildiq reads that schema across an app boundary and
-	 * a schema it cannot read would otherwise make every save fail
-	 * (REQ-OBRF-005).
-	 *
-	 * @return void
-	 */
-	public function testAnUnknownPresetFieldWarnsAndDoesNotRefuse(): void {
-		$warnings = $this->validator->validate(
-			$this->form(['presets' => [['field' => 'intakeChannnel', 'value' => 'portal', 'hidden' => true]]]),
-			[],
-			['applicantRole', 'intakeChannel']
-		);
-
-		self::assertCount(1, $warnings);
-		self::assertStringContainsString('intakeChannnel', $warnings[0]);
-	}//end testAnUnknownPresetFieldWarnsAndDoesNotRefuse()
-
-	/**
-	 * A preset naming a property that DOES exist warns about nothing.
-	 *
-	 * @return void
-	 */
-	public function testAKnownPresetFieldWarnsAboutNothing(): void {
-		$warnings = $this->validator->validate(
-			$this->form(['presets' => [['field' => 'intakeChannel', 'value' => 'portal', 'hidden' => true]]]),
-			[],
-			['applicantRole', 'intakeChannel']
-		);
-
-		self::assertSame([], $warnings);
-	}//end testAKnownPresetFieldWarnsAboutNothing()
 
 	/**
 	 * An unknown audience is refused: it decides what the form asks and which
@@ -310,4 +275,59 @@ final class RegistrationFormValidatorTest extends TestCase {
 
 		$this->validator->validate($this->form(['name' => '  ']));
 	}//end testAFormWithNoNameIsRefused()
+
+	/**
+	 * Each sign-in level portaliq enforces is accepted (buildiq#935).
+	 *
+	 * @return void
+	 */
+	public function testEachSignInLevelIsAccepted(): void {
+		foreach (['low', 'substantial', 'high'] as $level) {
+			$this->validator->validate($this->form(['minTrust' => $level]));
+		}
+
+		self::assertTrue(true, 'No level was refused.');
+	}//end testEachSignInLevelIsAccepted()
+
+	/**
+	 * A form without a sign-in level is anonymous, and accepted.
+	 *
+	 * @return void
+	 */
+	public function testAFormWithoutASignInLevelIsAccepted(): void {
+		$this->validator->validate($this->form(['minTrust' => null]));
+
+		self::assertTrue(true, 'An anonymous form was not refused.');
+	}//end testAFormWithoutASignInLevelIsAccepted()
+
+	/**
+	 * A level portaliq does not know is refused here rather than stored: the
+	 * portal would refuse every visitor on it, and the maker would never know
+	 * why (buildiq#935, the invalid `0` of buildiq#921 included).
+	 *
+	 * @return void
+	 */
+	public function testAnUnknownSignInLevelIsRefused(): void {
+		foreach (['digid', 0, '0'] as $level) {
+			try {
+				$this->validator->validate($this->form(['minTrust' => $level]));
+				self::fail('minTrust ' . var_export($level, true) . ' was accepted');
+			} catch (InvalidArgumentException $e) {
+				self::assertStringContainsString('sign-in level', $e->getMessage());
+			}
+		}
+	}//end testAnUnknownSignInLevelIsRefused()
+
+	/**
+	 * A form cannot be open to anyone without signing in and require a sign-in
+	 * at the same time.
+	 *
+	 * @return void
+	 */
+	public function testAPublicFormThatRequiresASignInIsRefused(): void {
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('sign-in level');
+
+		$this->validator->validate($this->form(['isPublic' => true, 'minTrust' => 'substantial']));
+	}//end testAPublicFormThatRequiresASignInIsRefused()
 }//end class

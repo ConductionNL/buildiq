@@ -32,8 +32,12 @@ audience)` SHALL be `isDefault`.
 
 ### Requirement: A form presets fields, hidden or visible (REQ-OBRF-005)
 
-A form SHALL carry `presets[]` of `{field, value, hidden}`. Saving SHALL
-warn on a `field` absent from the target schema. The served form SHALL
+A form SHALL carry `presets[]` of `{field, value, hidden}`. A preset is a
+fixed value for OpenRegister's form destination validator: a `field` absent
+from the target schema, or a value its property refuses, is a finding, and a
+form with findings saves only as a draft and cannot be published (amended by
+`forms-are-valid-against-their-destination`, decisions 179 and 189; this
+replaces "Saving SHALL warn"). The served form SHALL
 omit a hidden preset field from `fields[]` and SHALL set `default` on a
 visible one. The leaf SHALL return `presets[]` beside the form, and
 buildiq SHALL NOT write the target object.
@@ -78,10 +82,23 @@ first; with `name` that form. Every entry SHALL carry `name`, `audience`,
 
 `registrationForm` SHALL carry `channel`, an open string validated against
 the consuming schema's own channel property when one is declared on the
-form's `typeProperty` target. Uniqueness SHALL become `(targetApp, register,
-schema, typeProperty, typeValue, name)`, unchanged, and at most one published
-form per `(type tuple, audience, channel)` SHALL be `isDefault`. A form
-without a `channel` SHALL serve every channel.
+form's `typeProperty` target. The form SHALL name that property in
+`channelProperty`, the same way it names the type-carrying property in
+`typeProperty`; the system SHALL NOT infer it from a property name, because
+a save refused on a pattern match is worse than a save not refused at all.
+A form that names no `channelProperty`, or names one the target schema
+declares without an enum, SHALL NOT be channel-checked. Uniqueness SHALL
+become `(targetApp, register, schema, typeProperty, typeValue, name)`,
+unchanged, and at most one published form per `(type tuple, audience,
+channel)` SHALL be `isDefault`. A form without a `channel` SHALL serve every
+channel.
+
+The save path SHALL read the target schema's declared properties and the
+`channelProperty` enum and hand both to the rules, so the preset and field
+warnings and the channel refusal actually run. When the target schema cannot
+be read the save SHALL succeed and SHALL carry a warning saying the checks
+did not run, because a check that silently did not run is indistinguishable
+from one that passed.
 
 **ID:** REQ-OBRF-007
 
@@ -93,9 +110,15 @@ without a `channel` SHALL serve every channel.
 
 #### Scenario: A channel the consumer does not know is refused
 
-- **WHEN** an admin saves a form with `channel = fax` and dossiq's `case.intakeChannel` enum does not list it
+- **WHEN** an admin saves a form with `channelProperty = intakeChannel`, `channel = fax`, and dossiq's `case.intakeChannel` enum does not list it
 - **THEN** the save is refused and the editor names the values the consumer accepts
 - @e2e exclude validation against the target schema's enum; covered by PHPUnit on the save path
+
+#### Scenario: A target schema that cannot be read is said out loud
+
+- **WHEN** an admin saves a form whose register holds no schema by that slug
+- **THEN** the form is stored and the answer carries a warning saying the field and channel checks did not run
+- @e2e exclude a save-path warning shape; covered by PHPUnit on `RegistrationFormAuthoringService`
 
 ### Requirement: The form owns field order and grouping (REQ-OBRF-008)
 

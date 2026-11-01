@@ -43,6 +43,7 @@ import pinia from './pinia.js'
 import { registerDirectives } from './registerDirectives.js'
 import { runtimeRegistry } from './runtimeRegistry.js'
 import { fetchAppRegister } from './services/appRegister.js'
+import { startHealthReporting } from './services/healthReporting.js'
 import { normalizeManifestRouting } from './services/manifestRouting.js'
 import { keepVersionQuery } from './services/versionQuery.js'
 import { virtualAppSupportDialog } from './utils/virtualAppSupportDialog.js'
@@ -363,6 +364,8 @@ async function boot() {
 	})
 	// A development preview stays on its version while you click through it.
 	keepVersionQuery(router, versionSlug)
+	// Counts of requests, failures and page loads for the app's health section.
+	const healthListener = startHealthReporting({ router, slug, versionSlug })
 
 	// Bumped AFTER a router rebuild that changed the PAGE SET, to remount the
 	// shell's <router-view> (via CnAppRoot's `routerViewKey`). Swapping route
@@ -409,6 +412,8 @@ async function boot() {
 		// modal open, so schemas created after boot appear without a reload.
 		dataSourcesLoader,
 		translate: translateForApp,
+		// nextcloud-vue's diagnostics channel feeds the health counts.
+		diagnostics: healthListener,
 		// Persist in-app edits (pages / menu / settings / sidebar / actions)
 		// back to the app's manifest. CnAppRoot's useManifestEditor mutates
 		// THIS same `manifest` object in place while editing, so on Save we

@@ -34,6 +34,7 @@ use OCA\Buildiq\Listener\ApprovalOutcomeListener;
 use OCA\Buildiq\Listener\AutomationApprovalTriggerListener;
 use OCA\Buildiq\Listener\AutomationCleanupListener;
 use OCA\Buildiq\Listener\DocumentGenerationListener;
+use OCA\Buildiq\Listener\FormLiveValuesListener;
 use OCA\Buildiq\Listener\HybridMetadataLockListener;
 use OCA\Buildiq\Listener\ProductionVersionGuardListener;
 use OCA\Buildiq\Mcp\BuildiqToolProvider;
@@ -175,7 +176,7 @@ class Application extends App implements IBootstrap {
 		//
 		// LOAD-ORDER HAZARD (measured, not theoretical). OC_App::getEnabledApps()
 		// sort()s the app list, and Coordinator::registerApps() walks THAT sorted
-		// list calling OC_App::registerAutoloading($appId) and then $app->register()
+		// list registering each app's autoloader and then calling $app->register()
 		// for one app at a time. So every app registers before the PSR-4 prefix of
 		// every alphabetically-LATER app exists: `buildiq` < `openregister`, so
 		// OCA\OpenRegister\ is not autoloadable at this point on a perfectly
@@ -199,9 +200,10 @@ class Application extends App implements IBootstrap {
 		//
 		// The fix is to put OpenRegister's prefix on the autoloader ourselves,
 		// which is exactly what Nextcloud will do a few iterations later. Two
-		// properties make this the correct call. First,
-		// OC_App::registerAutoloading() touches ONLY the autoloader and is
-		// idempotent — it early-returns on an $alreadyRegistered key. Second,
+		// properties make this the correct call. First, the prelude touches ONLY
+		// the autoloader (a PSR-4 loader for OCA\OpenRegister\ over its lib/,
+		// public IAppManager only — the private OC_App::registerAutoloading() it
+		// used to call is gone in Nextcloud 35) and is idempotent. Second,
 		// IAppManager::loadApp() would NOT be correct here: it marks OpenRegister
 		// loaded and calls Coordinator::bootApp(), booting OpenRegister BEFORE
 		// its own register() has run.
@@ -532,6 +534,24 @@ class Application extends App implements IBootstrap {
 			listener: HybridMetadataLockListener::class
 		);
 
+		// Live form values (forms-live-values-and-checks, REQ-BQLV-005).
+		// Before any object is stored, recompute the fields a built app's form
+		// calculates and enforce its blocking eligibility check, so a value
+		// changed in the browser never lands. Unfiltered on purpose: the
+		// registers a built app's form writes to are created per app and
+		// version, so no static register or schema list can name them. Every
+		// write that no live form targets returns after one app config read.
+		// The same listener keeps that index current from ApplicationVersion
+		// saves.
+		$context->registerEventListener(
+			event: ObjectCreatingEvent::class,
+			listener: FormLiveValuesListener::class
+		);
+		$context->registerEventListener(
+			event: ObjectUpdatingEvent::class,
+			listener: FormLiveValuesListener::class
+		);
+
 		// Automation-approval-steps: trigger-fire half of the `approval`
 		// action kind (spec REQ-AUTD-004 approval scenarios). No declarative
 		// primitive already dispatches "start a compiled ApprovalChain
@@ -563,6 +583,17 @@ class Application extends App implements IBootstrap {
 			$context->registerEventListener(
 				event: \OCA\OpenRegister\Event\RegisterLeafProvidersEvent::class,
 				listener: \OCA\Buildiq\Listener\BuildiqLeafRegistrationListener::class
+			);
+		}
+
+		// Announce buildiq's published forms when a schema they submit into is
+		// about to change, so a breaking change unpublishes them (decision 179
+		// Q7). Guarded on the event class: an OpenRegister without the form
+		// destination validator does not dispatch it.
+		if (class_exists('OCA\\OpenRegister\\Event\\FormDestinationDependentsEvent') === true) {
+			$context->registerEventListener(
+				event: \OCA\OpenRegister\Event\FormDestinationDependentsEvent::class,
+				listener: \OCA\Buildiq\Listener\FormDestinationDependentsListener::class
 			);
 		}
 		$context->registerEventListener(

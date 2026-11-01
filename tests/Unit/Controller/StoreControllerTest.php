@@ -33,6 +33,8 @@ namespace OCA\Buildiq\Tests\Unit\Controller;
 use OCA\Buildiq\Controller\ApplicationsController;
 use OCA\Buildiq\Controller\StoreController;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
+use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
+use OCA\OpenRegister\AppHost\Store\StoreActionAuthorizer;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
 use OCP\IUser;
@@ -74,6 +76,13 @@ class StoreControllerTest extends TestCase {
 	private GenericStoreService&MockObject $storeService;
 
 	/**
+	 * Who may publish (OpenRegister).
+	 *
+	 * @var StoreActionAuthorizer&MockObject
+	 */
+	private StoreActionAuthorizer&MockObject $actionAuthorizer;
+
+	/**
 	 * Mock shared install seam.
 	 *
 	 * @var ApplicationsController&MockObject
@@ -93,6 +102,7 @@ class StoreControllerTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->storeService = $this->createMock(GenericStoreService::class);
 		$this->appsController = $this->createMock(ApplicationsController::class);
+		$this->actionAuthorizer = $this->createMock(StoreActionAuthorizer::class);
 
 	}//end setUp()
 
@@ -107,7 +117,8 @@ class StoreControllerTest extends TestCase {
 			logger: $this->logger,
 			userSession: $this->userSession,
 			storeService: $this->storeService,
-			appsController: $this->appsController
+			appsController: $this->appsController,
+			actionAuthorizer: $this->actionAuthorizer
 		);
 
 	}//end controller()
@@ -125,6 +136,78 @@ class StoreControllerTest extends TestCase {
 
 		return $user;
 	}//end mockUser()
+
+	/**
+	 * Publish refuses an anonymous caller, so the canonical route never 500s.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/buildiq-store/spec.md#requirement-the-publish-route-answers
+	 */
+	public function testAnonymousPublishIsRejected(): void {
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->storeService->expects(self::never())->method('publish');
+
+		$response = $this->controller()->publish();
+
+		self::assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+	}//end testAnonymousPublishIsRejected()
+
+	/**
+	 * A user the store's publish groups do not admit gets 403, and nothing is sent.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/buildiq-store/spec.md#requirement-the-publish-route-answers
+	 */
+	public function testPublishRefusesAUserWhoMayNotPublish(): void {
+		$this->userSession->method('getUser')->willReturn($this->mockUser(uid: 'alice'));
+		$this->actionAuthorizer->method('canPublish')->willReturn(false);
+		$this->storeService->expects(self::never())->method('publish');
+
+		$response = $this->controller()->publish();
+
+		self::assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+	}//end testPublishRefusesAUserWhoMayNotPublish()
+
+	/**
+	 * Publish passes the item to the engine and returns its answer.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/buildiq-store/spec.md#requirement-the-publish-route-answers
+	 */
+	public function testPublishIsPassedToTheEngine(): void {
+		$this->userSession->method('getUser')->willReturn($this->mockUser(uid: 'admin'));
+		$this->actionAuthorizer->method('canPublish')->willReturn(true);
+		$this->request->method('getParam')->willReturn(['slug' => 'crm-starter']);
+		$this->storeService->expects(self::once())->method('publish')
+			->with(self::isInstanceOf(StoreDescriptor::class), ['slug' => 'crm-starter'])
+			->willReturn(['outcome' => 'not_publishable', 'slug' => '']);
+
+		$response = $this->controller()->publish();
+
+		self::assertSame(Http::STATUS_OK, $response->getStatus());
+		self::assertSame(['outcome' => 'not_publishable', 'slug' => ''], $response->getData());
+	}//end testPublishIsPassedToTheEngine()
+
+	/**
+	 * A publish without an item is a bad request, and the engine is not asked.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/buildiq-store/spec.md#requirement-the-publish-route-answers
+	 */
+	public function testPublishWithoutAnItemIsABadRequest(): void {
+		$this->userSession->method('getUser')->willReturn($this->mockUser(uid: 'admin'));
+		$this->actionAuthorizer->method('canPublish')->willReturn(true);
+		$this->request->method('getParam')->willReturn(null);
+		$this->storeService->expects(self::never())->method('publish');
+
+		$response = $this->controller()->publish();
+
+		self::assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+	}//end testPublishWithoutAnItemIsABadRequest()
 
 	/**
 	 * Anonymous search is rejected 401 and the store service is never queried.

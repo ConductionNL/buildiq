@@ -1,5 +1,5 @@
 {
-	"_comment": "ADR-037 register fragment — business-rules-engine. Adds the RuleSet, DecisionTable, ConditionActionRule, RuleExecutionLog and TestCase schemas to the shared `buildiq` register, plus three seed RuleSets with companion tables/rules/test-cases. SettingsService::deepMergeConfig unions components.schemas by key and concatenates components.objects[]. RuleSet carries x-openregister-lifecycle (draft → test → active → archived) and x-openregister-notifications (rule-change alerts), so no custom *LifecycleService / *NotificationService class is needed (ADR-031 §Schema-declarative). Evaluation logic (FeelParser, DecisionTableEvaluator, ConditionActionExecutor, RuleEngineService) is the documented ADR-031 §Exceptions code path. ADR-062 rule 7 note: DecisionTable/ConditionActionRule/RuleExecutionLog/TestCase.ruleSetId is a plain `type:\"string\"` slug reference (NOT format:uuid, NOT a $ref relation) BY DESIGN — RuleSet's natural key is its kebab-case slug because it drives the public runtime route `POST /api/rules/{ruleSetSlug}/evaluate`; the slug is stable across RuleSet re-import/versioning while a uuid would churn. This is a deliberate business-key reference, not a bare-string-FK-by-convention violation (gate 31 does not flag it — the heuristic only fires on format:uuid properties).",
+	"_comment": "ADR-037 register fragment — business-rules-engine. Adds the RuleSet, ConditionActionRule, RuleExecutionLog and TestCase schemas to the shared `buildiq` register, plus three seed RuleSets with companion tables/rules/test-cases. A decision table is NOT a buildiq schema: it lives in OpenRegister's decision-tables register (decision 196), keyed buildiq.<organisation>.<rule-set-slug> or, for a shared seed, buildiq.<rule-set-slug>; the seed table below targets that register. SettingsService::deepMergeConfig unions components.schemas by key and concatenates components.objects[]. RuleSet carries x-openregister-lifecycle (draft → test → active → archived) and x-openregister-notifications (rule-change alerts), so no custom *LifecycleService / *NotificationService class is needed (ADR-031 §Schema-declarative). Evaluation logic (FeelParser, DecisionTableEvaluator, ConditionActionExecutor, RuleEngineService) is the documented ADR-031 §Exceptions code path. ADR-062 rule 7 note: DecisionTable/ConditionActionRule/RuleExecutionLog/TestCase.ruleSetId is a plain `type:\"string\"` slug reference (NOT format:uuid, NOT a $ref relation) BY DESIGN — RuleSet's natural key is its kebab-case slug because it drives the public runtime route `POST /api/rules/{ruleSetSlug}/evaluate`; the slug is stable across RuleSet re-import/versioning while a uuid would churn. This is a deliberate business-key reference, not a bare-string-FK-by-convention violation (gate 31 does not flag it — the heuristic only fires on format:uuid properties).",
 	"components": {
 		"schemas": {
 			"RuleSet": {
@@ -192,134 +192,6 @@
 						"subject": {
 							"nl": "Regelset {{name}} is gearchiveerd",
 							"en": "Rule set {{name}} has been archived"
-						}
-					}
-				}
-			},
-			"DecisionTable": {
-				"slug": "decision-table",
-				"icon": "Table",
-				"version": "1.0.0",
-				"title": "DecisionTable",
-				"description": "A DMN 1.4 decision table belonging to a RuleSet. Maps multi-factor input conditions to output values via a hit policy. Cell conditions use the FEEL subset (ranges, lists, comparisons).",
-				"authorization": {
-					"read": [
-						"authenticated"
-					],
-					"create": [
-						"admin"
-					],
-					"update": [
-						"admin"
-					],
-					"delete": [
-						"admin"
-					]
-				},
-				"type": "object",
-				"required": [
-					"ruleSetId",
-					"hitPolicy"
-				],
-				"properties": {
-					"ruleSetId": {
-						"title": "Rule Set ID",
-						"type": "string",
-						"description": "Slug of the owning RuleSet."
-					},
-					"hitPolicy": {
-						"title": "Hit Policy",
-						"type": "string",
-						"enum": [
-							"unique",
-							"first",
-							"priority",
-							"any",
-							"collect",
-							"rule-order"
-						],
-						"default": "first",
-						"description": "DMN hit policy determining which matching rule(s) win."
-					},
-					"inputColumns": {
-						"title": "Input Columns",
-						"type": "array",
-						"description": "Input columns: each carries a name, a type and a dot-notation expression path into the payload.",
-						"items": {
-							"type": "object",
-							"properties": {
-								"name": {
-									"title": "Column Name",
-									"description": "Name of the input column.",
-									"type": "string"
-								},
-								"type": {
-									"title": "Column Type",
-									"description": "Data type of the input column (e.g. string, integer, number).",
-									"type": "string"
-								},
-								"expressionPath": {
-									"title": "Expression Path",
-									"description": "Dot-notation path into the payload for this input column.",
-									"type": "string"
-								}
-							}
-						}
-					},
-					"outputColumns": {
-						"title": "Output Columns",
-						"type": "array",
-						"description": "Output columns: each carries a name, a type and an optional default value.",
-						"items": {
-							"type": "object",
-							"properties": {
-								"name": {
-									"title": "Column Name",
-									"description": "Name of the output column.",
-									"type": "string"
-								},
-								"type": {
-									"title": "Column Type",
-									"description": "Data type of the output column.",
-									"type": "string"
-								},
-								"defaultValue": {
-									"title": "Default Value",
-									"description": "Optional default value for this output column, expressed as text.",
-									"type": "string"
-								}
-							}
-						}
-					},
-					"rules": {
-						"title": "Rules",
-						"type": "array",
-						"description": "The rule rows: each maps input-column FEEL conditions to output-column values.",
-						"items": {
-							"type": "object",
-							"properties": {
-								"conditions": {
-									"title": "Conditions",
-									"description": "Map of input-column names to FEEL condition expressions for this rule row.",
-									"type": "object"
-								},
-								"values": {
-									"title": "Output Values",
-									"description": "Map of output-column names to their values when this rule row matches.",
-									"type": "object"
-								},
-								"label": {
-									"title": "Rule Label",
-									"description": "Human-readable label for this rule row.",
-									"type": "string"
-								},
-								"priority": {
-									"title": "Priority",
-									"description": "Execution priority for this rule row (higher = evaluated first).",
-									"type": "integer",
-									"default": 0
-								}
-							}
 						}
 					}
 				}
@@ -609,13 +481,15 @@
 			},
 			{
 				"@self": {
-					"register": "buildiq",
+					"register": "decision-tables",
 					"schema": "decision-table",
-					"slug": "loan-eligibility-table"
+					"slug": "buildiq-loan-eligibility"
 				},
-				"ruleSetId": "loan-eligibility",
-				"hitPolicy": "first",
-				"inputColumns": [
+				"key": "buildiq.loan-eligibility",
+				"name": "Loan Eligibility Decision",
+				"description": "Seed table of the loan-eligibility rule set. Stored in OpenRegister's decision-tables register (decision 196); buildiq reads it under the key of the rule set.",
+				"hitPolicy": "FIRST",
+				"inputs": [
 					{
 						"name": "applicantAge",
 						"type": "integer",
@@ -632,7 +506,7 @@
 						"expressionPath": "applicant.creditScore"
 					}
 				],
-				"outputColumns": [
+				"outputs": [
 					{
 						"name": "decision",
 						"type": "string",
@@ -646,37 +520,49 @@
 				],
 				"rules": [
 					{
-						"conditions": {
-							"applicantAge": ">=18",
-							"monthlyIncome": ">=2000",
-							"creditScore": ">=600"
-						},
-						"values": {
-							"decision": "approve",
-							"reason": "All criteria met"
-						},
+						"id": "rule-0",
+						"inputEntries": [
+							">=18",
+							">=2000",
+							">=600"
+						],
+						"outputEntries": [
+							"approve",
+							"All criteria met"
+						],
+						"priority": 0,
 						"label": "Standard approval"
 					},
 					{
-						"conditions": {
-							"applicantAge": ">=18",
-							"monthlyIncome": ">=1500",
-							"creditScore": ">=500"
-						},
-						"values": {
-							"decision": "review",
-							"reason": "Manual review required"
-						},
+						"id": "rule-1",
+						"inputEntries": [
+							">=18",
+							">=1500",
+							">=500"
+						],
+						"outputEntries": [
+							"review",
+							"Manual review required"
+						],
+						"priority": 0,
 						"label": "Marginal case"
 					},
 					{
-						"values": {
-							"decision": "deny",
-							"reason": "Eligibility criteria not met"
-						},
+						"id": "rule-2",
+						"inputEntries": [
+							"-",
+							"-",
+							"-"
+						],
+						"outputEntries": [
+							"deny",
+							"Eligibility criteria not met"
+						],
+						"priority": 0,
 						"label": "Default deny"
 					}
-				]
+				],
+				"owner": "buildiq"
 			},
 			{
 				"@self": {

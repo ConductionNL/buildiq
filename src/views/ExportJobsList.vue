@@ -46,7 +46,7 @@
 						<NcButton
 							v-if="
 								job.status === 'succeeded'
-								&& job.target === 'zip'
+								&& (job.target === 'zip' || job.target === 'server')
 								&& job.downloadUrl
 							"
 							:href="job.downloadUrl">
