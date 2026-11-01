@@ -1,6 +1,5 @@
 {
     "translations": {
-        "Widget unavailable": "Widget niet beschikbaar",
         "A custom page must document why a standard page type was not feasible.": "Een aangepaste pagina moet vastleggen waarom een standaard paginatype niet haalbaar was.",
         "Column": "Kolom",
         "Declare this page as custom, with this component:": "Declareer deze pagina als aangepast, met deze component:",
@@ -1646,7 +1645,8 @@
         "Unknown component {name}": "Onbekend onderdeel {name}",
         "{component} failed to draw: {message}": "{component} kon niet worden getekend: {message}",
         "{time}, {count} times": "{time}, {count} keer",
-        "Declared in: {where}": "Ingesteld in: {where}"
+        "Declared in: {where}": "Ingesteld in: {where}",
+        "Widget unavailable": "Widget niet beschikbaar"
     },
     "plurals": null,
     "pluralForm": "nplurals=2; plural=(n != 1);"
