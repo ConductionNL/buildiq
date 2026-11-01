@@ -1625,7 +1625,8 @@ OC.L10N.register(
         "Unknown component {name}": "Onbekend onderdeel {name}",
         "{component} failed to draw: {message}": "{component} kon niet worden getekend: {message}",
         "{time}, {count} times": "{time}, {count} keer",
-        "Declared in: {where}": "Ingesteld in: {where}"
+        "Declared in: {where}": "Ingesteld in: {where}",
+        "Widget unavailable": "Widget niet beschikbaar"
     },
     "nplurals=2; plural=(n != 1);"
 )
