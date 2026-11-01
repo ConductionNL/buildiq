@@ -103,6 +103,7 @@
 			:manifest="manifest"
 			:slug="routeSlug"
 			:sessionKey="sessionKey"
+			:destinationFindings="destinationFindings"
 			@update:manifest="onManifestUpdate"
 			@saveAndPreview="saveAndPreview" />
 
@@ -175,6 +176,7 @@ import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 import { useAppStatus } from '../composables/useAppStatus.js'
 import { useCopilot } from '../composables/useCopilot.js'
 import { useLivePreview } from '../composables/useLivePreview.js'
+import { checkFormDestinations } from '../services/formDestinationCheck.js'
 import {
 	reconcileConnectorDependency,
 	reconcileDocumentDependency,
@@ -240,6 +242,10 @@ export default {
 			docudeskAvailable: true,
 			// spec ai-copilot REQ-OBAIC-007: builder copilot panel toggle.
 			showCopilotPanel: false,
+			// Decision 179/189: destination findings on the form pages from
+			// the last save. The pages save as a draft with them; each is
+			// marked on its field, and publishing waits until none remain.
+			destinationFindings: [],
 			// REQ-BUR-004: incremented after each successful save; feeds
 			// `sessionKey` so a save re-baselines the designer's undo/redo
 			// history (design.md D3). A failed save does NOT increment this.
@@ -684,6 +690,38 @@ export default {
 		},
 
 		/**
+		 * Ask which form pages of the saved manifest their destination refuses.
+		 * The save already happened: the pages are a draft (decision 189). A
+		 * check that cannot run says so, because silence would read as a pass.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-a-draft-form-saves-with-its-findings
+		 */
+		async refreshDestinationFindings() {
+			try {
+				const { findings } = await checkFormDestinations(
+					this.manifest,
+					this.routeSlug,
+				)
+				this.destinationFindings = findings
+				if (findings.length) {
+					this.toast = n(
+						'buildiq',
+						'Pages saved as a draft. A form has %n point its destination refuses; it is marked on its field, and the app can be published once it is fixed.',
+						'Pages saved as a draft. Forms have %n points their destination refuses; each is marked on its field, and the app can be published once they are fixed.',
+						findings.length,
+					)
+				}
+			} catch {
+				this.destinationFindings = []
+				this.error = t(
+					'buildiq',
+					'Pages saved, but the forms could not be checked against where they save to. Save again to retry.',
+				)
+			}
+		},
+
+		/**
 		 * Persist the edited manifest onto the Application object.
 		 *
 		 * @return {Promise<boolean>} true when the manifest was saved.
@@ -746,6 +784,7 @@ export default {
 					// REQ-BUR-004: a successful save is a session boundary — bump
 					// the counter so `sessionKey` changes and the designer resets
 					// its undo/redo history to the just-saved manifest.
+					await this.refreshDestinationFindings()
 					this.saveCounter += 1
 					return true
 				}
@@ -761,6 +800,7 @@ export default {
 				}
 				this.toast = t('buildiq', 'Pages saved.')
 				// REQ-BUR-004: see the PATCH branch above — same session-boundary bump.
+				await this.refreshDestinationFindings()
 				this.saveCounter += 1
 				return true
 			} catch (e) {

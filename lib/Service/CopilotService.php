@@ -455,6 +455,7 @@ class CopilotService {
 	private function normalisePlan(array $plan): array {
 		$steps = (array)($plan['steps'] ?? []);
 		$authoredSchemas = $this->authoredSchemaSlugs(steps: $steps);
+		$dataRegisters = $this->dataRegistersByApp(steps: $steps);
 
 		foreach ($steps as $index => $step) {
 			if (is_array($step) === false) {
@@ -469,7 +470,8 @@ class CopilotService {
 			$steps[$index]['arguments'] = $this->normaliseStepArguments(
 				tool: (string)($step['tool'] ?? ''),
 				args: $args,
-				authoredSchemas: $authoredSchemas
+				authoredSchemas: $authoredSchemas,
+				dataRegisters: $dataRegisters
 			);
 		}
 
@@ -479,14 +481,69 @@ class CopilotService {
 	}//end normalisePlan()
 
 	/**
-	 * The short schema slugs this plan authors, keyed by `appSlug@versionSlug`.
+	 * The register slugs each existing target app binds in `dataRegisters`,
+	 * keyed by app slug.
+	 *
+	 * A page or widget on one of those registers reads shared data somebody
+	 * else owns, so the data binding must leave its register and schema alone
+	 * (REQ-BQDB-004). An app this plan creates binds none yet, so it is not
+	 * looked up.
+	 *
+	 * @param array<int, mixed> $steps The plan's steps.
+	 *
+	 * @return array<string, array<int, string>>
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ManifestDataBinding is a pure rule
+	 * with no collaborators and no state.
+	 *
+	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generated-pages-keep-the-database-register-req-bqdb-004
+	 */
+	private function dataRegistersByApp(array $steps): array {
+		$created = $this->collectCreatedAppSlugs(steps: $steps);
+		$byApp = [];
+		foreach ($steps as $step) {
+			$appSlug = self::bindingStepAppSlug(step: $step);
+			if ($appSlug === '' || isset($byApp[$appSlug]) === true || isset($created[$appSlug]) === true) {
+				continue;
+			}
+
+			$app = $this->resolveApplicationBySlug(appSlug: $appSlug);
+			$byApp[$appSlug] = ManifestDataBinding::dataRegisterSlugs(bindings: ($app['dataRegisters'] ?? []));
+		}
+
+		return $byApp;
+	}//end dataRegistersByApp()
+
+	/**
+	 * The app slug of a step whose config the data binding rewrites, or ''.
+	 *
+	 * @param mixed $step One plan step.
+	 *
+	 * @return string
+	 */
+	private static function bindingStepAppSlug(mixed $step): string {
+		if (is_array($step) === false || in_array((string)($step['tool'] ?? ''), ['buildiq.upsertPage', 'buildiq.addWidget'], true) === false) {
+			return '';
+		}
+
+		$args = ($step['arguments'] ?? null);
+		if (is_array($args) === false) {
+			return '';
+		}
+
+		return (string)($args['appSlug'] ?? '');
+	}//end bindingStepAppSlug()
+
+	/**
+	 * The short schema slugs this plan authors, keyed by `appSlug@versionSlug`,
+	 * each carrying the property names that schema declares required.
 	 *
 	 * Only what the plan itself says, so nothing here is a guess about what
 	 * already exists on the instance.
 	 *
 	 * @param array<int, mixed> $steps The plan's steps.
 	 *
-	 * @return array<string, array<string, bool>>
+	 * @return array<string, array<string, array{required: array<int, string>}>>
 	 */
 	private function authoredSchemaSlugs(array $steps): array {
 		$slugs = [];
@@ -507,11 +564,29 @@ class CopilotService {
 				$versionSlug = 'development';
 			}
 
-			$slugs[$appSlug . '@' . $versionSlug][$slug] = true;
+			$slugs[$appSlug . '@' . $versionSlug][$slug] = ['required' => self::requiredNames(args: $args)];
 		}
 
 		return $slugs;
 	}//end authoredSchemaSlugs()
+
+	/**
+	 * The property names an `upsertSchema` step declares required.
+	 *
+	 * @param array<string, mixed> $args The step's arguments.
+	 *
+	 * @return array<int, string>
+	 */
+	private static function requiredNames(array $args): array {
+		$names = [];
+		foreach ((array)($args['required'] ?? []) as $name) {
+			if (is_string($name) === true && trim($name) !== '') {
+				$names[] = trim($name);
+			}
+		}
+
+		return $names;
+	}//end requiredNames()
 
 	/**
 	 * The version a step's write will land on.
@@ -552,7 +627,7 @@ class CopilotService {
 	 * a genuine registered handler is never touched.
 	 *
 	 * @param array<string, mixed> $config The form page's config block.
-	 * @param array<string, bool> $authored Short schema slugs this plan authors for this version.
+	 * @param array<string, array{required: array<int, string>}> $authored Short schema slugs this plan authors for this version.
 	 *
 	 * @return array<string, mixed>
 	 */
@@ -581,21 +656,92 @@ class CopilotService {
 	}//end resolveSubmitHandler()
 
 	/**
+	 * Mark a form's fields required where the schema this plan authored says
+	 * they are.
+	 *
+	 * The two halves were written by different steps and never compared.
+	 * `upsertSchema` carries `required: ["member", "dueDate"]`, `upsertPage`
+	 * carries `fields[]`, and nothing carried the first into the second. The
+	 * form therefore rendered every field as optional, with no asterisk and no
+	 * client-side check, and OpenRegister rejected the submit with a 400 naming
+	 * a field the user was never told about. Measured on the live instance on
+	 * 2026-09-19 while filming the demo.
+	 *
+	 * A field whose `validation.required` the plan already set is left alone,
+	 * in either direction: the model saying `false` is a decision, not an
+	 * omission. Only the absent key is filled in.
+	 *
+	 * @param array<string, mixed> $config The form page's config block.
+	 * @param array<string, array{required: array<int, string>}> $authored Short schema slugs this plan authors for this version.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function withRequiredFields(array $config, array $authored): array {
+		$slug = strtolower(trim((string)($config['schema'] ?? '')));
+		$fields = ($config['fields'] ?? null);
+		if (is_array($fields) === false) {
+			return $config;
+		}
+
+		$required = (array)($authored[$slug]['required'] ?? []);
+		if ($required === []) {
+			return $config;
+		}
+
+		foreach ($fields as $index => $field) {
+			$validation = self::requiredValidation(field: $field, required: $required);
+			if ($validation !== null) {
+				$fields[$index]['validation'] = $validation;
+			}
+		}
+
+		$config['fields'] = $fields;
+
+		return $config;
+	}//end withRequiredFields()
+
+	/**
+	 * One field's validation block with `required` filled in, or null when
+	 * this field is not one the schema requires or already states its own.
+	 *
+	 * @param mixed $field One `fields[]` entry.
+	 * @param array<int, string> $required Property names the schema requires.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private static function requiredValidation(mixed $field, array $required): ?array {
+		if (is_array($field) === false || in_array((string)($field['key'] ?? ''), $required, true) === false) {
+			return null;
+		}
+
+		$validation = ($field['validation'] ?? []);
+		if (is_array($validation) === false || array_key_exists('required', $validation) === true) {
+			return null;
+		}
+
+		$validation['required'] = true;
+
+		return $validation;
+	}//end requiredValidation()
+
+	/**
 	 * Normalise one step's arguments. Split out of {@see normalisePlan()} to
 	 * keep both within the project's PHPMD complexity thresholds.
 	 *
 	 * @param string $tool The step's tool id.
 	 * @param array<string, mixed> $args The step's arguments.
-	 * @param array<string, array<string, bool>> $authoredSchemas Short schema slugs this
-	 *                                                            plan authors, keyed by
+	 * @param array<string, array<string, array{required: array<int, string>}>> $authoredSchemas Short schema
+	 *                                                            slugs this plan authors, keyed by
 	 *                                                            `appSlug@versionSlug`.
+	 * @param array<string, array<int, string>> $dataRegisters Register slugs each target app binds in
+	 *                                                         `dataRegisters`, keyed by app slug.
 	 *
 	 * @return array<string, mixed>
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) ManifestRoute and
 	 * ManifestDataBinding are pure rules with no collaborators and no state.
 	 */
-	private function normaliseStepArguments(string $tool, array $args, array $authoredSchemas = []): array {
+	private function normaliseStepArguments(string $tool, array $args, array $authoredSchemas = [], array $dataRegisters = []): array {
 		$args = self::withRootedPageRoute(tool: $tool, args: $args);
 
 		$bindKey = match ($tool) {
@@ -613,16 +759,16 @@ class CopilotService {
 		$versionSlug = self::targetVersionSlug(args: $args);
 
 		if ((string)($args['type'] ?? '') === 'form') {
-			$config = $this->resolveSubmitHandler(
-				config: $config,
-				authored: (array)($authoredSchemas[$appSlug . '@' . $versionSlug] ?? [])
-			);
+			$authored = (array)($authoredSchemas[$appSlug . '@' . $versionSlug] ?? []);
+			$config = $this->resolveSubmitHandler(config: $config, authored: $authored);
+			$config = self::withRequiredFields(config: $config, authored: $authored);
 		}
 
 		$args[$bindKey] = ManifestDataBinding::bindBlock(
 			config: $config,
 			appSlug: $appSlug,
-			versionSlug: $versionSlug
+			versionSlug: $versionSlug,
+			dataRegisters: ($dataRegisters[$appSlug] ?? [])
 		);
 
 		return $args;

@@ -20,6 +20,7 @@ import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import ClipboardText from 'vue-material-design-icons/ClipboardText.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
+import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import ContentSaveEditOutline from 'vue-material-design-icons/ContentSaveEditOutline.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import DatabaseExportOutline from 'vue-material-design-icons/DatabaseExportOutline.vue'
@@ -59,6 +60,7 @@ export default {
 	// the help-circle fallback.
 	AccountMultipleOutline,
 	CogOutline,
+	ContentCopy,
 	ContentSaveOutline,
 	DeleteOutline,
 	Github,

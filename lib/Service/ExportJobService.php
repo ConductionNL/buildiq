@@ -149,6 +149,8 @@ class ExportJobService {
 			'githubCredentialId' => (string)($payload['githubCredentialId'] ?? ''),
 			'requestedBy' => (string)($requestedBy ?? ''),
 			'includeSeedData' => (bool)($payload['includeSeedData'] ?? false),
+			// Only an own-server export carries the server bundle.
+			'includeServerBundle' => $target === 'server' && (bool)($payload['includeServerBundle'] ?? true),
 			'dataRegisters' => $this->sanitiser->dataRegisters(raw: $payload['dataRegisters'] ?? []),
 			'flows' => $this->sanitiser->flows(raw: $payload['flows'] ?? []),
 			'license' => (string)($payload['license'] ?? 'EUPL-1.2'),

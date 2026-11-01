@@ -16,14 +16,15 @@
  * test and enforced nowhere. A validator nothing calls is the same as no
  * validation, and it looks identical from a green suite.
  *
- * WHAT IT STILL CANNOT CHECK
- * --------------------------
+ * WHAT IT CHECKS AGAINST THE CONSUMER'S SCHEMA
+ * --------------------------------------------
  * The preset field names and the channel enum are properties of the CONSUMER's
- * schema, which this service cannot read. Both are passed as null, which the
- * validator documents as "cannot be read" rather than "empty", so a preset
- * naming a property that does not exist is neither warned about nor refused
- * yet. That is tasks 2.2 and 6.1 of forms-per-case-type, and saying so here is
- * the only thing that keeps anyone from assuming it is covered.
+ * schema. `RegistrationFormTargetSchemaReader` reads them, so a preset naming a
+ * property that does not exist now earns a warning and a channel the consumer
+ * never declared is now refused. When the schema cannot be read the reader
+ * returns null, the validator reads null as "cannot be read" rather than
+ * "empty", and the reader's note travels back as a warning so the author can
+ * see that the check did not run.
  *
  * @category Service
  * @package  OCA\Buildiq\Service
@@ -45,6 +46,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use InvalidArgumentException;
+use OCA\Buildiq\Exception\FormDestinationRefusedException;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IAppConfig;
 
@@ -67,6 +69,8 @@ class RegistrationFormAuthoringService {
 	 * @param ObjectServiceInterface $objectService OpenRegister's object service.
 	 * @param IAppConfig $appConfig App config, for the register slug.
 	 * @param RegistrationFormValidator $validator The rules a form has to pass.
+	 * @param RegistrationFormTargetSchemaReader $targetSchema Reads the consuming schema.
+	 * @param RegistrationFormTargetWarnings $destination Asks OpenRegister whether the destination accepts the form.
 	 *
 	 * @return void
 	 */
@@ -74,19 +78,30 @@ class RegistrationFormAuthoringService {
 		private readonly ObjectServiceInterface $objectService,
 		private readonly IAppConfig $appConfig,
 		private readonly RegistrationFormValidator $validator,
+		private readonly RegistrationFormTargetSchemaReader $targetSchema,
+		private readonly RegistrationFormTargetWarnings $destination,
 	) {
 	}//end __construct()
 
 	/**
 	 * Save one form.
 	 *
+	 * The rules run first, then OpenRegister's destination check. A draft is
+	 * saved with its findings, which come back for the designer to mark on
+	 * each field (decision 189). A form in any other status (published,
+	 * retired) with a finding is not saved: there is no report-only mode
+	 * (decision 181).
+	 *
 	 * @param array<string, mixed> $form The form to store.
 	 *
-	 * @return array<string, mixed> `{form, warnings}`.
+	 * @return array<string, mixed> `{form, warnings, findings}`; `warnings` stays for callers that read it and is empty.
 	 *
 	 * @throws InvalidArgumentException When a rule refuses it.
+	 * @throws FormDestinationRefusedException When a form that is not a draft has findings.
 	 *
-	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004, REQ-OBRF-005)
+	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
+	 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-every-buildiq-form-must-be-valid-against-its-destination-before-it-is-published
+	 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-a-draft-form-saves-with-its-findings
 	 */
 	public function save(array $form): array {
 		$register = (string)($form['register'] ?? '');
@@ -95,15 +110,28 @@ class RegistrationFormAuthoringService {
 			throw new InvalidArgumentException('A form has to say which register and schema it is for.');
 		}
 
+		$target = $this->targetSchema->read(
+			registerSlug: $register,
+			schemaSlug: $schema,
+			channelProperty: (string)($form['channelProperty'] ?? '')
+		);
+
 		// The validator excludes the form's own id from both uniqueness rules,
 		// so the stored set is handed over whole rather than filtered here: one
 		// place deciding what counts as a collision, not two.
-		$warnings = $this->validator->validate(
+		$this->validator->validate(
 			$form,
 			$this->storedFor(register: $register, schema: $schema),
-			null,
-			null
+			$target['channels']
 		);
+
+		// Decision 189: a draft saves with its findings, so an author can save a
+		// half-built form and see on each field what is still wrong. Publishing
+		// needs zero findings; there is no report-only mode (decision 181).
+		$findings = $this->destination->findings(form: $form);
+		if ($findings !== [] && (string)($form['status'] ?? 'draft') !== 'draft') {
+			throw new FormDestinationRefusedException(findings: $findings);
+		}
 
 		$this->objectService->saveObject(
 			object: $form,
@@ -111,7 +139,7 @@ class RegistrationFormAuthoringService {
 			schema: self::SCHEMA,
 		);
 
-		return ['form' => $form, 'warnings' => $warnings];
+		return ['form' => $form, 'warnings' => [], 'findings' => $findings];
 	}//end save()
 
 	/**
@@ -128,6 +156,29 @@ class RegistrationFormAuthoringService {
 	public function listFor(string $register, string $schema): array {
 		return $this->storedFor(register: $register, schema: $schema);
 	}//end listFor()
+
+	/**
+	 * What the consuming schema declares, for the builder's pickers.
+	 *
+	 * The builder offers the target schema's own property names and its channel
+	 * values rather than free text, because a typed property name is a field
+	 * whose answer is dropped on save and nothing in the form says so.
+	 *
+	 * @param string $register The consuming app's register.
+	 * @param string $schema The schema the form writes into.
+	 * @param string $channelProperty The property carrying the intake channel.
+	 *
+	 * @return array{properties: array<int, string>|null, channels: array<int, string>|null, note: string|null} What it declares.
+	 *
+	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-007)
+	 */
+	public function targetFor(string $register, string $schema, string $channelProperty = ''): array {
+		return $this->targetSchema->read(
+			registerSlug: $register,
+			schemaSlug: $schema,
+			channelProperty: $channelProperty
+		);
+	}//end targetFor()
 
 	/**
 	 * Read the stored forms for one register and schema.

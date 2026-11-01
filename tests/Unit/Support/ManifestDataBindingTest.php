@@ -77,6 +77,32 @@ class ManifestDataBindingTest extends TestCase {
 	}//end testAWidgetsOwnBindingIsReached()
 
 	/**
+	 * A block on a register the app binds in `dataRegisters` keeps its
+	 * register and its schema, next to a block on the app's own data that is
+	 * still rewritten (REQ-BQDB-004, buildiq#991).
+	 *
+	 * @return void
+	 */
+	public function testADataRegisterBlockKeepsItsRegisterAndSchema(): void {
+		$bound = ManifestDataBinding::bindBlock(
+			config: [
+				'widgets' => [
+					['id' => 'permits', 'type' => 'stat', 'content' => ['register' => 'permits-db', 'schema' => 'permits']],
+					['id' => 'notes', 'type' => 'stat', 'content' => ['register' => 'note', 'schema' => 'note']],
+				],
+			],
+			appSlug: 'vergunningen',
+			versionSlug: 'development',
+			dataRegisters: ManifestDataBinding::dataRegisterSlugs(bindings: [['register' => 'permits-db', 'label' => 'Permits'], 'junk', ['label' => 'no register']])
+		);
+
+		self::assertSame('permits-db', $bound['widgets'][0]['content']['register']);
+		self::assertSame('permits', $bound['widgets'][0]['content']['schema']);
+		self::assertSame('openbuild-vergunningen-development', $bound['widgets'][1]['content']['register']);
+		self::assertSame('vergunningen-development-note', $bound['widgets'][1]['content']['schema']);
+	}//end testADataRegisterBlockKeepsItsRegisterAndSchema()
+
+	/**
 	 * A block naming a schema but no register gets this version's register,
 	 * because that is the only register the schema could live in.
 	 *

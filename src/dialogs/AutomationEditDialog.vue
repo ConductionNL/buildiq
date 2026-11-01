@@ -133,6 +133,17 @@
 						:modelValue="conditionRuleSetSlug"
 						:label="t('buildiq', 'Rule set slug')"
 						@update:modelValue="conditionRuleSetSlug = $event" />
+					<NcNoteCard
+						v-if="conditionKind === 'rule-set'"
+						type="info"
+						data-testid="condition-rule-set-note">
+						{{
+							t(
+								'buildiq',
+								'The actions always run. The rule set runs first, and its outcome does not stop them.',
+							)
+						}}
+					</NcNoteCard>
 				</template>
 			</section>
 
@@ -546,7 +557,7 @@ export default {
 			return [
 				{ value: 'none', label: t('buildiq', 'None') },
 				{ value: 'feel', label: t('buildiq', 'FEEL expression') },
-				{ value: 'rule-set', label: t('buildiq', 'Reference a rule set') },
+				{ value: 'rule-set', label: t('buildiq', 'Also run a rule set') },
 			]
 		},
 

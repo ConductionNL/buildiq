@@ -43,6 +43,25 @@ ZIP entries use a fixed timestamp and sorted ordering so re-exports of the same 
 are byte-equivalent (REQ-OBEX-008). The exporter never runs `composer install` or
 `npm install`; it copies the snapshot's lockfiles verbatim.
 
+## Own server delivery
+
+Choose the target **Own server** to run the app on a Nextcloud of its own,
+without buildiq. The dialog lists what that server needs: the Nextcloud and PHP
+versions the exported app declares, the OpenRegister version this instance runs,
+and the database. The export is a ZIP like the ZIP target, with one extra folder
+when **Docker Compose file** is on:
+
+- `deploy/Dockerfile` builds the app from the exported source.
+- `deploy/compose.yaml` starts Nextcloud, PostgreSQL and the installer that puts
+  the app and OpenRegister in place, then enables both.
+- `deploy/.env.example` lists the settings. The administrator and database
+  passwords are empty, and Compose stops and names the setting until they are
+  filled in.
+- `deploy/README.md` takes an administrator from the download to a running
+  server. The app's own `README.md` points at it.
+
+OpenRegister is pinned to the version this instance ran at export time.
+
 ## GitHub delivery
 
 When `target: "github"`, `GitHubPushService` (backed by Nextcloud's `IClientService`

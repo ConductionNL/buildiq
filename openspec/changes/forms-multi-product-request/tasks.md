@@ -1,0 +1,11 @@
+# Tasks: forms-multi-product-request
+
+- [ ] **T01**: Extend the journey validator planned in `src/services/journeyValidation.js` (change `journey-designer`) with `forEach`, `targetBy`, `targets` and `bundle`: list answer and step order checks, every product value mapped, the mapping checked against every target schema, naming product and field (REQ-BQMP-001, REQ-BQMP-002). Verify: cases in the validator's vitest spec planned by `journey-designer`, plus a PHPUnit case that the save path in `JourneyDesignerController` refuses the same input.
+- [ ] **T02**: Add the repeating write, the targets table and the bundle entry to `src/components/journey-editor/JourneyWritesEditor.vue` (REQ-BQMP-001, REQ-BQMP-002, REQ-BQMP-003). Verify: vitest cases in the writes editor spec planned by `journey-designer`.
+- [ ] **T03**: Add the "Product list" field to `src/components/page-editor/fields/FormFieldBuilder.vue` as `widget: sub-objects` with a product column, detail columns and `maxItems` (REQ-BQMP-003). Verify: vitest case in `tests/components/page-editor/FormFieldBuilder.productList.spec.js`.
+- [ ] **T04**: List the creation flows per target and warn when there is none, from `GET /apps/openregister/api/flows` (REQ-BQMP-004). Verify: vitest case with a stubbed flow list.
+- [ ] **T05**: File the run half with openregister (`or-form-and-journey-registry`): `forEach`, `targetBy`, `targets` and `bundle` in the journey schema, one commit per item, per-item outcome on `journeyRun`, retry without duplicates. Verify: the openregister change carries these requirements and cites REQ-BQMP-001 to REQ-BQMP-003.
+- [ ] **T06**: File the widget half with nextcloud-vue: the `sub-objects` widget (`form-widgets-duration-and-subobject-table`) and a per-item review in `CnJourney`. Verify: the nextcloud-vue changes cite REQ-BQMP-003.
+- [ ] **T07**: Playwright `tests/e2e/journey-multi-product.spec.ts`, once the run and the widget exist: author the journey, submit two products in the preview host, see one bundle and two requests (REQ-BQMP-003).
+- [ ] **T08**: Strings and docs: English and Dutch for the repeating write, the targets table, the product list and the warning (`l10n/en.json`, `l10n/nl.json`), and a section in `docs/` on requesting several products in one form.
+- [ ] **T09**: Run `openspec validate forms-multi-product-request --strict`.

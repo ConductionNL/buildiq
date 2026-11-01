@@ -11,12 +11,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('../../src/services/registrationForms.js', () => ({
 	fetchRegistrationForms: vi.fn(),
+	fetchTargetSchema: vi.fn(),
 	saveRegistrationForm: vi.fn(),
 }))
 
 import RegistrationFormList from '../../src/components/page-editor/fields/RegistrationFormList.vue'
 import {
 	fetchRegistrationForms,
+	fetchTargetSchema,
 	saveRegistrationForm,
 } from '../../src/services/registrationForms.js'
 
@@ -50,6 +52,12 @@ async function mountList(forms, props = {}) {
 describe('RegistrationFormList', () => {
 	beforeEach(() => {
 		fetchRegistrationForms.mockReset()
+		fetchTargetSchema.mockReset()
+		fetchTargetSchema.mockResolvedValue({
+			properties: ['naam', 'intakeChannel'],
+			channels: ['portal', 'desk'],
+			note: null,
+		})
 		saveRegistrationForm.mockReset()
 		saveRegistrationForm.mockResolvedValue({
 			form: { id: 'rf-1' },
@@ -120,6 +128,125 @@ describe('RegistrationFormList', () => {
 		expect(sent.typeValue).toBe('bouwvergunning')
 		expect(sent.audience).toBe('client')
 		expect(sent.status).toBe('draft')
+	})
+
+	it('opens the builder on a form, so the fields can actually be authored', async () => {
+		// The panel could add a form and nothing else: every field, section and
+		// preset had to be written into the store by hand. This asserts the
+		// builder from its caller, because a builder with no call site looks
+		// exactly like a builder that works.
+		const wrapper = await mountList([
+			{
+				id: 'rf-1',
+				name: 'Aanvraag',
+				audience: 'client',
+				typeProperty: 'caseType',
+				typeValue: 'bouwvergunning',
+			},
+		])
+
+		expect(
+			wrapper.findComponent({ name: 'RegistrationFormEditor' }).exists(),
+		).toBe(false)
+
+		await wrapper.find('.form-list__item button').trigger('click')
+		await flush()
+		await wrapper.vm.$nextTick()
+
+		const editor = wrapper.findComponent({ name: 'RegistrationFormEditor' })
+		expect(editor.exists()).toBe(true)
+		expect(editor.findComponent({ name: 'FormLayoutBuilder' }).exists()).toBe(
+			true,
+		)
+		expect(editor.findComponent({ name: 'FormPresetsBuilder' }).exists()).toBe(
+			true,
+		)
+	})
+
+	it('hands the builder the target schema, so its pickers are real', async () => {
+		const wrapper = await mountList([
+			{
+				id: 'rf-1',
+				name: 'Aanvraag',
+				typeProperty: 'caseType',
+				typeValue: 'bouwvergunning',
+			},
+		])
+
+		await wrapper.find('.form-list__item button').trigger('click')
+		await flush()
+		await wrapper.vm.$nextTick()
+
+		const editor = wrapper.findComponent({ name: 'RegistrationFormEditor' })
+		expect(editor.props('properties')).toEqual(['naam', 'intakeChannel'])
+		expect(editor.props('channels')).toEqual(['portal', 'desk'])
+	})
+
+	it('saves the sections, the fields and the presets the builder wrote', async () => {
+		const wrapper = await mountList([
+			{
+				id: 'rf-1',
+				name: 'Aanvraag',
+				typeProperty: 'caseType',
+				typeValue: 'bouwvergunning',
+			},
+		])
+
+		await wrapper.find('.form-list__item button').trigger('click')
+		await flush()
+		await wrapper.vm.$nextTick()
+
+		const editor = wrapper.findComponent({ name: 'RegistrationFormEditor' })
+		editor.vm.$emit('update:modelValue', {
+			...editor.props('modelValue'),
+			channel: 'portal',
+			sections: [{ name: 'uw-gegevens', label: 'Uw gegevens', order: 1 }],
+			fields: [{ name: 'naam', section: 'uw-gegevens', order: 1 }],
+			presets: [{ field: 'intakeChannel', value: 'portal', hidden: true }],
+		})
+		await wrapper.vm.$nextTick()
+
+		editor.vm.$emit('save')
+		await flush()
+
+		const sent = saveRegistrationForm.mock.calls[0][0]
+		expect(sent.id).toBe('rf-1')
+		expect(sent.channel).toBe('portal')
+		expect(sent.sections[0].name).toBe('uw-gegevens')
+		expect(sent.fields[0]).toEqual({
+			name: 'naam',
+			section: 'uw-gegevens',
+			order: 1,
+		})
+		expect(sent.presets[0].hidden).toBe(true)
+	})
+
+	it('repeats the warning the save returned rather than swallowing it', async () => {
+		saveRegistrationForm.mockResolvedValue({
+			form: { id: 'rf-1' },
+			warnings: [
+				'The preset "verzonnen" names a property the target schema does not have.',
+			],
+		})
+
+		const wrapper = await mountList([
+			{
+				id: 'rf-1',
+				name: 'Aanvraag',
+				typeProperty: 'caseType',
+				typeValue: 'bouwvergunning',
+			},
+		])
+
+		await wrapper.find('.form-list__item button').trigger('click')
+		await flush()
+		await wrapper.vm.$nextTick()
+
+		wrapper.findComponent({ name: 'RegistrationFormEditor' }).vm.$emit('save')
+		await flush()
+		await wrapper.vm.$nextTick()
+
+		expect(wrapper.text()).toContain('does not have')
 	})
 
 	it('shows the sentence a refusal wrote', async () => {

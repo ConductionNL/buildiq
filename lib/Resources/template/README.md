@@ -94,8 +94,8 @@ app-template/
 
 | Dependency | Version |
 |-----------|---------|
-| Nextcloud | 28 – 33 |
-| PHP | 8.1+ |
+| Nextcloud | 32 – 35 |
+| PHP | 8.3+ |
 | Node.js | 20+ |
 | [OpenRegister](https://github.com/ConductionNL/openregister) | latest |
 
@@ -168,7 +168,7 @@ docker exec nextcloud php occ app:enable app-template
 |-------|-----------|
 | Frontend | Vue 2.7, Pinia, @nextcloud/vue |
 | Build | Webpack 5, @nextcloud/webpack-vue-config |
-| Backend | PHP 8.1+, Nextcloud App Framework |
+| Backend | PHP 8.3+, Nextcloud App Framework |
 | Data | OpenRegister (PostgreSQL JSON objects) |
 | UX | @conduction/nextcloud-vue |
 | Quality | PHPCS, PHPMD, Psalm, PHPStan, ESLint, Stylelint |

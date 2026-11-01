@@ -87,6 +87,72 @@
 				</div>
 			</template>
 
+			<section
+				v-if="isServerTarget"
+				class="export-dialog__server"
+				data-test="export-server-section">
+				<h4 class="export-dialog__section-title">
+					{{ t('buildiq', 'Run on its own server') }}
+				</h4>
+				<p class="export-dialog__scope-hint">
+					{{
+						t(
+							'buildiq',
+							'The app becomes a Nextcloud app of its own that runs without buildiq, on a server of the municipality or of a supplier.',
+						)
+					}}
+				</p>
+				<table class="export-dialog__requirements">
+					<caption class="export-dialog__caption">
+						{{ t('buildiq', 'What the server needs') }}
+					</caption>
+					<thead>
+						<tr>
+							<th scope="col">
+								{{ t('buildiq', 'Part') }}
+							</th>
+							<th scope="col">
+								{{ t('buildiq', 'Version') }}
+							</th>
+							<th scope="col">
+								{{ t('buildiq', 'Why') }}
+							</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr v-for="row in requirementRows" :key="row.key">
+							<th scope="row">
+								{{ row.part }}
+							</th>
+							<td>{{ row.version }}</td>
+							<td>{{ row.why }}</td>
+						</tr>
+					</tbody>
+				</table>
+				<h4 class="export-dialog__section-title">
+					{{ t('buildiq', 'In the package') }}
+				</h4>
+				<NcCheckboxRadioSwitch :modelValue="true" disabled>
+					{{ t('buildiq', 'App package') }}
+				</NcCheckboxRadioSwitch>
+				<p class="export-dialog__scope-hint">
+					{{ t('buildiq', 'The app\'s source with its pages, schemas and the records you chose.') }}
+				</p>
+				<div data-test="export-server-compose">
+					<NcCheckboxRadioSwitch
+						v-model="form.includeServerBundle"
+						:disabled="submitting">
+						{{ t('buildiq', 'Docker Compose file') }}
+					</NcCheckboxRadioSwitch>
+				</div>
+				<p class="export-dialog__scope-hint">
+					{{ t('buildiq', 'Builds the app and starts it with Nextcloud and OpenRegister, for a trial or a small environment.') }}
+				</p>
+				<p class="export-dialog__scope-hint">
+					{{ t('buildiq', 'After the export you no longer change the standalone app from buildiq. Make new versions here and export again.') }}
+				</p>
+			</section>
+
 			<template v-if="form.target && form.target.value === 'github'">
 				<NcTextField
 					v-model="form.githubOrg"
@@ -138,7 +204,7 @@
 				{{ t('buildiq', 'Cancel') }}
 			</NcButton>
 			<NcButton variant="primary" :disabled="submitting" @click="submit">
-				{{ t('buildiq', 'Start export') }}
+				{{ isServerTarget ? t('buildiq', 'Make package') : t('buildiq', 'Start export') }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -211,6 +277,8 @@ export default {
 			// Until they arrive (or when the call fails) the prop is used.
 			loadedVersions: [],
 			loadingVersions: false,
+			// What a server needs to run the app on its own, from the server.
+			serverRequirements: null,
 			form: {
 				version: this.availableVersions[0] || {
 					label: '0.1.0',
@@ -220,6 +288,7 @@ export default {
 				target: { label: this.t('buildiq', 'ZIP download'), value: 'zip' },
 				license: { label: 'EUPL-1.2', value: 'EUPL-1.2' },
 				includeSeedData: false,
+				includeServerBundle: true,
 				githubOrg: '',
 				githubRepo: '',
 				githubVisibility: {
@@ -271,7 +340,58 @@ export default {
 		targetOptions() {
 			return [
 				{ label: this.t('buildiq', 'ZIP download'), value: 'zip' },
+				{ label: this.t('buildiq', 'Own server'), value: 'server' },
 				{ label: this.t('buildiq', 'Push to GitHub'), value: 'github' },
+			]
+		},
+
+		/**
+		 * Whether the export runs the app on its own server.
+		 *
+		 * @spec openspec/changes/apps-standalone-deploy/specs/standalone-server-bundle/spec.md#requirement-the-export-offers-its-own-server-as-a-target-req-bqsd-001
+		 * @return {boolean} True for the Own server target.
+		 */
+		isServerTarget() {
+			return this.form.target?.value === 'server'
+		},
+
+		/**
+		 * The server's needs as table rows; a version the server did not
+		 * report reads as unknown.
+		 *
+		 * @spec openspec/changes/apps-standalone-deploy/specs/standalone-server-bundle/spec.md#requirement-the-export-offers-its-own-server-as-a-target-req-bqsd-001
+		 * @return {Array<{key: string, part: string, version: string, why: string}>} Rows.
+		 */
+		requirementRows() {
+			const needs = this.serverRequirements || {}
+			const orNewer = (version) => (version
+				? this.t('buildiq', '{version} or newer', { version })
+				: this.t('buildiq', 'Unknown'))
+			return [
+				{
+					key: 'nextcloud',
+					part: 'Nextcloud',
+					version: orNewer(needs.nextcloud),
+					why: this.t('buildiq', 'the app runs as a Nextcloud app'),
+				},
+				{
+					key: 'openregister',
+					part: 'OpenRegister',
+					version: orNewer(needs.openregister),
+					why: this.t('buildiq', 'holds the app\'s schemas and records'),
+				},
+				{
+					key: 'php',
+					part: 'PHP',
+					version: orNewer(needs.php),
+					why: this.t('buildiq', 'Nextcloud and the app run on it'),
+				},
+				{
+					key: 'database',
+					part: this.t('buildiq', 'Database'),
+					version: needs.database || this.t('buildiq', 'Unknown'),
+					why: this.t('buildiq', 'Nextcloud keeps its data in it'),
+				},
 			]
 		},
 
@@ -310,6 +430,7 @@ export default {
 	mounted() {
 		this.fetchGithubCredentials()
 		this.fetchVersions()
+		this.fetchServerRequirements()
 	},
 
 	methods: {
@@ -387,6 +508,23 @@ export default {
 		},
 
 		/**
+		 * Load what a server needs to run the app on its own. A failure
+		 * leaves the versions unknown; the export itself still works.
+		 *
+		 * @spec openspec/changes/apps-standalone-deploy/specs/standalone-server-bundle/spec.md#requirement-the-export-offers-its-own-server-as-a-target-req-bqsd-001
+		 * @return {Promise<void>}
+		 */
+		async fetchServerRequirements() {
+			try {
+				const url = generateUrl('/apps/buildiq/api/exports/server-requirements')
+				const response = await axios.get(url)
+				this.serverRequirements = response?.data || null
+			} catch {
+				this.serverRequirements = null
+			}
+		},
+
+		/**
 		 * Start the queued export right away instead of waiting for cron.
 		 *
 		 * Not awaited: the export runs in that request, and the exports list
@@ -451,6 +589,9 @@ export default {
 					flows: this.flowChoices
 						.filter((choice) => choice.include)
 						.map((choice) => ({ flow: choice.flow })),
+				}
+				if (this.isServerTarget) {
+					payload.includeServerBundle = this.form.includeServerBundle
 				}
 				if (this.form.target.value === 'github') {
 					if (!this.form.githubCredential) {
@@ -522,6 +663,30 @@ export default {
 	margin: 8px 0 0;
 	font-size: 0.95rem;
 	font-weight: 600;
+}
+
+.export-dialog__requirements {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.9rem;
+}
+
+.export-dialog__requirements th,
+.export-dialog__requirements td {
+	text-align: start;
+	padding: 4px 8px 4px 0;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.export-dialog__requirements thead th {
+	color: var(--color-text-maxcontrast);
+	font-weight: 600;
+}
+
+.export-dialog__caption {
+	text-align: start;
+	font-weight: 600;
+	padding-bottom: 4px;
 }
 
 .export-dialog__error {

@@ -170,7 +170,8 @@ describe('TemplateGallery.vue — GitHub-only store', () => {
 		// component-blocks REQ-OBTC-003 adds a NEW, unrelated top-level
 		// Templates/Blocks toggle — that one is expected to exist.
 		expect(wrapper.find('.template-gallery__view-toggle').exists()).toBe(true)
-		expect(wrapper.findAll('[role="tab"]').length).toBe(2)
+		// Templates, Blocks and (REQ-BQGL-003) Forms.
+		expect(wrapper.findAll('[role="tab"]').length).toBe(3)
 	})
 
 	it('does not fetch the remote registry store endpoint', async () => {

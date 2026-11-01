@@ -48,6 +48,21 @@ The save worked when the new card shows up under **Built-in templates** with you
 
 Clone it once yourself. A template that nobody has cloned has never been tested.
 
+## Copy instead of templating
+
+When you want one variant for your own team, a template is a detour. Three
+copies skip it:
+
+- **Copy app**, in the app's **Actions**: name the copy and pick a slug. The
+  copy gets its own register and a copy of the pages and data model, and none
+  of the records. Changing the copy leaves the source as it is. You need to be
+  an administrator who owns or edits the source.
+- **Copy page**, the copy button on a row of the page list: the copy appears
+  below it as `<id>-copy` at `<route>-copy`, titled "Copy of ...". Add it to
+  the menu yourself.
+- **Copy form**, beside a registration form: the copy is a draft named
+  "Copy of ...", never the default, and opens in the editor.
+
 ## Common issues
 
 | Symptom | Fix |

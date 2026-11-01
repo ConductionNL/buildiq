@@ -47,6 +47,7 @@ use RuntimeException;
  *
  * @covers \OCA\Buildiq\Service\Connection\ConnectionReporter
  * @uses \OCA\Buildiq\Service\Connection\ConnectionObservations
+ * @uses \OCA\Buildiq\AppInfo\OpenRegisterAutoloader
  */
 class ConnectionReporterTest extends TestCase {
 

@@ -330,8 +330,10 @@ class GitHubCatalogService {
 	 * @param string|null $credentialId The advisory github credential, if any.
 	 *
 	 * @return array{ok: bool, items: array<int, array>, brokerUsed: bool, rateLimited: bool}
+	 *
+	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
-	private function fetchTopic(
+	public function fetchTopic(
 		string $topic,
 		string $term,
 		?string $actingUserId,
@@ -832,8 +834,10 @@ class GitHubCatalogService {
 	 * @param string|null $credentialId Optional allowed `github` credential.
 	 *
 	 * @return string|null The decoded file contents, or null when absent/unreadable.
+	 *
+	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
-	private function fetchFileContents(
+	public function fetchFileContents(
 		string $owner,
 		string $repo,
 		string $path,
@@ -981,8 +985,10 @@ class GitHubCatalogService {
 	 * @param string|null $ref Optional git ref.
 	 *
 	 * @return bool
+	 *
+	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
-	private function validRepo(string $owner, string $repo, ?string $ref): bool {
+	public function validRepo(string $owner, string $repo, ?string $ref): bool {
 		if (preg_match(self::OWNER_REPO_PATTERN, $owner) !== 1 || preg_match(self::OWNER_REPO_PATTERN, $repo) !== 1) {
 			return false;
 		}

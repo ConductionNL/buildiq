@@ -324,6 +324,8 @@ class ExportAppContentBundler {
 	 * @param array{pages: int, menu: int, schemas: int, records: int} $summary What was written.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-a-maker-imports-an-exported-archive-as-a-new-app-req-bqic-001
 	 */
 	private function writeReadme(string $rootDir, array $application, string $semver, array $summary): void {
 		$name = (string)($application['name'] ?? ($application['slug'] ?? 'Buildiq app'));
@@ -348,15 +350,15 @@ class ExportAppContentBundler {
 
 		$lines[] = $recordLine;
 
-		$lines[] = '- `openbuild-app.json`: the description Buildiq reads when you import this archive.';
+		$lines[] = '- `openbuild-app.json`: the app\'s Buildiq descriptor.';
 		$lines[] = '- Everything else is a standalone Nextcloud app. `src/manifest.json` and'
 			. ' `lib/Settings/*_register.json` hold the same pages, schemas and records.';
 		$lines[] = '';
 		$lines[] = '## Use it';
 		$lines[] = '';
-		$lines[] = '- In Buildiq: open Applications, choose Import application and pick this archive.';
 		$lines[] = '- As its own app: run `composer install`, `npm ci` and `npm run build`, then enable it.'
 			. ' It needs OpenRegister.';
+		$lines[] = '- Buildiq cannot import this archive yet.';
 		$lines[] = '';
 
 		$this->writeFile(path: $rootDir . '/README.md', contents: implode("\n", $lines));

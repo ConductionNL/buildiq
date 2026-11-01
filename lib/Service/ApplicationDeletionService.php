@@ -95,7 +95,12 @@ class ApplicationDeletionService {
 	 * @param bool $deleteData When true, also delete the per-version registers,
 	 *                         every object stored in them, and their schemas.
 	 *
-	 * @return array<int,string> Resources that could not be removed (orphaned).
+	 * @return array<int,string> The resources this call TRIED to remove and
+	 *                          could not, empty when everything attempted was
+	 *                          removed. Data preserved by $deleteData false was
+	 *                          never attempted and is never listed here, so an
+	 *                          empty array does not mean nothing survives the
+	 *                          delete.
 	 *
 	 * @spec openspec/specs/application-detail-ui/spec.md
 	 */

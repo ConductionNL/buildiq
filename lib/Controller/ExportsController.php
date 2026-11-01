@@ -34,6 +34,7 @@ namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Service\ExportJobService;
+use OCA\Buildiq\Service\ServerBundleWriter;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -420,9 +421,9 @@ class ExportsController extends Controller {
 	 */
 	private function validateSubmitBody(array $body): ?JSONResponse {
 		$target = $this->readStringField(body: $body, field: 'target', default: 'zip');
-		if (in_array($target, ['zip', 'github'], true) === false) {
+		if (in_array($target, ['zip', 'server', 'github'], true) === false) {
 			return new JSONResponse(
-				['error' => 'Invalid target: must be zip or github.'],
+				['error' => 'Invalid target: must be zip, server or github.'],
 				Http::STATUS_UNPROCESSABLE_ENTITY
 			);
 		}
@@ -612,6 +613,23 @@ class ExportsController extends Controller {
 			Http::STATUS_ACCEPTED
 		);
 	}//end submit()
+
+	/**
+	 * What a server needs to run an exported app on its own.
+	 *
+	 * Read-only and not tied to an application: the versions come from the app
+	 * template and the installed OpenRegister.
+	 *
+	 * @return JSONResponse `{nextcloud, openregister, php, database}` minimum versions.
+	 *
+	 * @spec openspec/changes/apps-standalone-deploy/specs/standalone-server-bundle/spec.md#requirement-the-export-offers-its-own-server-as-a-target-req-bqsd-001
+	 */
+	#[NoAdminRequired]
+	public function serverRequirements(): JSONResponse {
+		$writer = $this->container->get(ServerBundleWriter::class);
+
+		return new JSONResponse($writer->requirements());
+	}//end serverRequirements()
 
 	/**
 	 * Run a queued export now instead of waiting for the next cron run.

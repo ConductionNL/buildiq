@@ -37,6 +37,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\GitHubCatalogService;
+use OCA\Buildiq\Service\GitHubFormCatalogService;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
@@ -77,6 +78,23 @@ final class GitHubCatalogServiceTest extends TestCase {
 			container: $this->createMock(ContainerInterface::class)
 		);
 	}//end makeService()
+
+	/**
+	 * The form search over a catalogue service, caching off unless a factory is given.
+	 *
+	 * @param GitHubCatalogService $catalog      The GitHub source.
+	 * @param ICacheFactory|null   $cacheFactory The cache factory, or null for none.
+	 *
+	 * @return GitHubFormCatalogService
+	 */
+	private function formService(GitHubCatalogService $catalog, ?ICacheFactory $cacheFactory = null): GitHubFormCatalogService {
+		if ($cacheFactory === null) {
+			$cacheFactory = $this->createMock(ICacheFactory::class);
+			$cacheFactory->method('isAvailable')->willReturn(false);
+		}
+
+		return new GitHubFormCatalogService(catalog: $catalog, cacheFactory: $cacheFactory);
+	}//end formService()
 
 	/**
 	 * A 200 JSON response, the shape every `anonymousGet()` caller expects back.
@@ -327,4 +345,136 @@ final class GitHubCatalogServiceTest extends TestCase {
 			'a repo matching both discovery topics must be returned once, not once per topic.'
 		);
 	}//end testSearchDeduplicatesARepoMatchingBothTopics()
+
+	/**
+	 * A repository item as GitHub's search API answers it.
+	 *
+	 * @param string $name The repository name.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function repoItem(string $name): array {
+		return [
+			'full_name' => 'gemeente-voorbeeld/' . $name,
+			'name' => $name,
+			'owner' => ['login' => 'gemeente-voorbeeld'],
+			'description' => 'A shared form.',
+			'html_url' => 'https://github.com/gemeente-voorbeeld/' . $name,
+			'default_branch' => 'main',
+			'stargazers_count' => 2,
+			'topics' => ['buildiq-form'],
+		];
+	}//end repoItem()
+
+	/**
+	 * REQ-BQGL-005: the form search asks GitHub for the buildiq-form topic,
+	 * and a repository with a valid form.json becomes an installable card
+	 * carrying the export envelope.
+	 *
+	 * @return void
+	 */
+	public function testFormSearchAsksForTheFormTopicAndReadsFormJson(): void {
+		$service = $this->makeService();
+		$envelope = [
+			'schemaVersion' => '1.0',
+			'kind' => 'form-template',
+			'form' => [
+				'slug' => 'aanvraag-energiesubsidie',
+				'name' => 'Aanvraag energiesubsidie',
+				'category' => 'citizen-engagement',
+				'kind' => 'registration-form',
+				'publisher' => 'Gemeente Voorbeeld',
+				'form' => ['fields' => [['name' => 'naam']]],
+				'schemaFragment' => ['naam' => ['type' => 'string']],
+			],
+		];
+		$asked = [];
+
+		$client = $this->createMock(IClient::class);
+		$client->method('get')->willReturnCallback(function (string $url) use (&$asked, $envelope) {
+			$asked[] = rawurldecode($url);
+			if (str_contains($url, '/contents/form.json') === true) {
+				return $this->jsonResponse($this->contentsBody((string)json_encode($envelope)));
+			}
+
+			return $this->jsonResponse(['items' => [$this->repoItem('subsidie-formulier')]]);
+		});
+		$this->clientService->method('newClient')->willReturn($client);
+
+		$result = $this->formService(catalog: $service)->searchForms(query: 'subsidie', actingUserId: 'alice', credentialId: null);
+
+		$this->assertSame(GitHubCatalogService::OUTCOME_OK, $result['outcome']);
+		$this->assertStringContainsString('topic:buildiq-form subsidie', $asked[0]);
+		$this->assertStringNotContainsString('buildiq-app', implode(' ', $asked));
+		$this->assertCount(1, $result['cards']);
+		$card = $result['cards'][0];
+		$this->assertTrue($card['installable']);
+		$this->assertSame('Aanvraag energiesubsidie', $card['name']);
+		$this->assertSame('citizen-engagement', $card['category']);
+		$this->assertSame('Gemeente Voorbeeld', $card['publisher']);
+		$this->assertSame($envelope, $card['export']);
+	}//end testFormSearchAsksForTheFormTopicAndReadsFormJson()
+
+	/**
+	 * A repository with the topic but without a form.json, or with one that
+	 * is not a form export, is listed as not installable rather than hidden.
+	 *
+	 * @return void
+	 */
+	public function testFormSearchMarksARepositoryWithoutFormJson(): void {
+		$service = $this->makeService();
+
+		$client = $this->createMock(IClient::class);
+		$client->method('get')->willReturnCallback(function (string $url) {
+			if (str_contains($url, 'no-file') === true && str_contains($url, '/contents/') === true) {
+				return $this->jsonResponse(['message' => 'Not Found'], 404);
+			}
+
+			if (str_contains($url, '/contents/form.json') === true) {
+				return $this->jsonResponse($this->contentsBody('{"kind":"component-block","block":{}}'));
+			}
+
+			return $this->jsonResponse(['items' => [$this->repoItem('no-file'), $this->repoItem('a-block')]]);
+		});
+		$this->clientService->method('newClient')->willReturn($client);
+
+		$result = $this->formService(catalog: $service)->searchForms(query: null, actingUserId: 'alice', credentialId: null);
+
+		$this->assertCount(2, $result['cards']);
+		foreach ($result['cards'] as $card) {
+			$this->assertFalse($card['installable'], $card['repo'] . ' has no form export and must not be installable');
+			$this->assertNull($card['export']);
+		}
+	}//end testFormSearchMarksARepositoryWithoutFormJson()
+
+	/**
+	 * The form search is cached like the app search: a cached answer is
+	 * served without asking GitHub, under its own key.
+	 *
+	 * @return void
+	 */
+	public function testFormSearchIsServedFromTheCache(): void {
+		$this->clientService = $this->createMock(IClientService::class);
+		$cached = ['outcome' => GitHubCatalogService::OUTCOME_OK, 'cards' => [['repo' => 'cached']], 'brokerUsed' => false, 'rateLimited' => false];
+		$keys = [];
+		$cache = $this->createMock(ICache::class);
+		$cache->method('get')->willReturnCallback(static function (string $key) use (&$keys, $cached) {
+			$keys[] = $key;
+			return $cached;
+		});
+		$cacheFactory = $this->createMock(ICacheFactory::class);
+		$cacheFactory->method('isAvailable')->willReturn(true);
+		$cacheFactory->method('createDistributed')->willReturn($cache);
+		$this->clientService->expects($this->never())->method('newClient');
+
+		$service = new GitHubCatalogService(
+			clientService: $this->clientService,
+			cacheFactory: $cacheFactory,
+			logger: new NullLogger(),
+			container: $this->createMock(ContainerInterface::class)
+		);
+
+		$this->assertSame($cached, $this->formService(catalog: $service, cacheFactory: $cacheFactory)->searchForms(query: 'x', actingUserId: 'alice', credentialId: null));
+		$this->assertStringStartsWith('forms:', $keys[0]);
+	}//end testFormSearchIsServedFromTheCache()
 }//end class
