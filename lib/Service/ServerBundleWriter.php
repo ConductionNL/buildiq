@@ -78,7 +78,9 @@ class ServerBundleWriter {
 		$php = '';
 		$xml = false;
 		if (is_file($this->templateInfoXml) === true) {
-			$xml = simplexml_load_file($this->templateInfoXml);
+			// Parsed from a string: Nextcloud's external entity loader returns null,
+			// and libxml routes the primary document of load_file() through it too.
+			$xml = simplexml_load_string((string)file_get_contents($this->templateInfoXml));
 		}
 
 		if ($xml !== false) {
