@@ -691,4 +691,141 @@ describe('PageDesigner', () => {
 			}
 		})
 	})
+
+	// v2-widget-placement-editor task 3.1. The write path the placement panel
+	// persists through, asserted on the EMITTED manifest, which is the thing
+	// the host saves.
+	describe('onWidgetsUpdate', () => {
+		const placement = (id, overrides = {}) => ({
+			id,
+			widgetKey: 'object-table',
+			slot: 'body',
+			gridX: 0,
+			gridY: 0,
+			gridWidth: 6,
+			gridHeight: 3,
+			...overrides,
+		})
+
+		it("replaces the selected page's widgets[] and leaves the others alone", async () => {
+			const wrapper = mountDesigner({
+				pages: [
+					{
+						id: 'a',
+						type: 'dashboard',
+						config: {},
+						widgets: [placement('a1')],
+					},
+					{
+						id: 'b',
+						type: 'dashboard',
+						config: {},
+						widgets: [placement('b1')],
+					},
+				],
+				menu: [],
+			})
+			wrapper.vm.selectPage(1)
+			await wrapper.vm.$nextTick()
+
+			wrapper.vm.onWidgetsUpdate([
+				placement('b1', { gridX: 6 }),
+				placement('b2'),
+			])
+			await wrapper.vm.$nextTick()
+
+			const emitted = wrapper.emitted('update:manifest')
+			expect(emitted).toBeTruthy()
+			const next = emitted[emitted.length - 1][0]
+			expect(next.pages[1].widgets.map((w) => w.id)).toEqual(['b1', 'b2'])
+			expect(next.pages[1].widgets[0].gridX).toBe(6)
+			// The other page and the rest of the edited page are untouched.
+			expect(next.pages[0].widgets.map((w) => w.id)).toEqual(['a1'])
+			expect(next.pages[1].id).toBe('b')
+			expect(next.pages[1].type).toBe('dashboard')
+		})
+
+		it('expresses a DELETION, which the keyed delta merge cannot', async () => {
+			// This is the reason onWidgetsUpdate is a whole-array replace and
+			// not the mergeManifestDelta path onInsertWidgets uses: a delta
+			// keyed by id has no way to say "this entry is gone".
+			const wrapper = mountDesigner({
+				pages: [
+					{
+						id: 'a',
+						type: 'dashboard',
+						config: {},
+						widgets: [
+							placement('keep'),
+							placement('drop', { gridX: 6 }),
+						],
+					},
+				],
+				menu: [],
+			})
+			wrapper.vm.selectPage(0)
+			await wrapper.vm.$nextTick()
+
+			wrapper.vm.onWidgetsUpdate([placement('keep')])
+			await wrapper.vm.$nextTick()
+
+			const emitted = wrapper.emitted('update:manifest')
+			const next = emitted[emitted.length - 1][0]
+			expect(next.pages[0].widgets.map((w) => w.id)).toEqual(['keep'])
+		})
+
+		it('keeps every other manifest key, including ones nothing here reads', async () => {
+			const wrapper = mountDesigner({
+				version: '2.0.0',
+				menu: [{ id: 'm', label: 'Home', route: 'a', order: 10 }],
+				runtime: { externalForms: [{ id: 'f' }] },
+				pages: [{ id: 'a', type: 'dashboard', config: {}, widgets: [] }],
+			})
+			wrapper.vm.selectPage(0)
+			await wrapper.vm.$nextTick()
+
+			wrapper.vm.onWidgetsUpdate([placement('new')])
+			await wrapper.vm.$nextTick()
+
+			const emitted = wrapper.emitted('update:manifest')
+			const next = emitted[emitted.length - 1][0]
+			expect(next.version).toBe('2.0.0')
+			expect(next.menu).toEqual([
+				{ id: 'm', label: 'Home', route: 'a', order: 10 },
+			])
+			expect(next.runtime).toEqual({ externalForms: [{ id: 'f' }] })
+		})
+
+		it('does nothing while no page is selected', async () => {
+			const wrapper = mountDesigner({
+				pages: [{ id: 'a', type: 'dashboard', config: {}, widgets: [] }],
+				menu: [],
+			})
+			wrapper.vm.onWidgetsUpdate([placement('x')])
+			await wrapper.vm.$nextTick()
+			expect(wrapper.emitted('update:manifest')).toBeFalsy()
+		})
+
+		it('is wired to the placement panel the centre pane mounts', async () => {
+			const wrapper = mountDesigner({
+				pages: [{ id: 'a', type: 'dashboard', config: {}, widgets: [] }],
+				menu: [],
+			})
+			wrapper.vm.selectPage(0)
+			await wrapper.vm.$nextTick()
+
+			const panel = wrapper.findComponent({ name: 'WidgetPlacementPanel' })
+			expect(panel.exists()).toBe(true)
+			expect(panel.props('page').id).toBe('a')
+
+			panel.vm.$emit('update:widgets', [placement('from-the-panel')])
+			await wrapper.vm.$nextTick()
+
+			const emitted = wrapper.emitted('update:manifest')
+			expect(emitted).toBeTruthy()
+			expect(emitted[emitted.length - 1][0].pages[0].widgets[0].id).toBe(
+				'from-the-panel',
+			)
+		})
+	})
 })
