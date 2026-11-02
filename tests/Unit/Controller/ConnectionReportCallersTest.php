@@ -36,6 +36,7 @@ use OCA\Buildiq\Service\AppRepoParser;
 use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCA\Buildiq\Service\GitHubAppSyncService;
 use OCA\Buildiq\Service\GitHubCatalogService;
+use OCA\Buildiq\Service\GitHubShopSearch;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCP\AppFramework\Http\JSONResponse;
@@ -53,6 +54,7 @@ use RuntimeException;
  *
  * @covers \OCA\Buildiq\Controller\StoreController
  * @covers \OCA\Buildiq\Controller\ShopController
+ * @covers \OCA\Buildiq\Service\GitHubShopSearch
  * @covers \OCA\Buildiq\Controller\GitHubSyncController
  * @uses \OCA\Buildiq\Service\PermissionResolver
  */
@@ -150,12 +152,15 @@ class ConnectionReportCallersTest extends TestCase {
 
 		return new ShopController(
 			request: $this->createMock(originalClassName: IRequest::class),
-			logger: $this->createMock(originalClassName: LoggerInterface::class),
 			userSession: $this->userSession,
 			catalogService: $catalog,
 			repoParser: $this->createMock(originalClassName: AppRepoParser::class),
 			appsController: $this->createMock(originalClassName: ApplicationsController::class),
-			connectionReporter: $this->reporter
+			shopSearch: new GitHubShopSearch(
+				catalogService: $catalog,
+				logger: $this->createMock(originalClassName: LoggerInterface::class),
+				connectionReporter: $this->reporter
+			)
 		);
 	}//end shopController()
 
