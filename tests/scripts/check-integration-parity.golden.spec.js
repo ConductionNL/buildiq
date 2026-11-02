@@ -249,6 +249,28 @@ new LeafDescriptor(id: 'india', kinds: [LeafDescriptor::KIND_RENDER_SURFACE]);
 		).toMatchSnapshot()
 	})
 
+	it('reads schemas by their own slug, across declaration files', () => {
+		const declare = (schemas) => JSON.stringify({ components: { schemas } })
+		expect(
+			run(
+				fixture({
+					'lib/Leaf/Leaves.php': `<?php
+new LeafDescriptor(id: 'juliet', kinds: [LeafDescriptor::KIND_RENDER_SURFACE]);
+`,
+					'lib/Settings/a.json': declare({
+						first: { slug: 'plan', properties: { title: {} } },
+						noslug: { slug: 7, properties: { owner: {} } },
+					}),
+					'lib/Settings/b.json': declare({
+						plan: { properties: { date: {} } },
+					}),
+					'src/juliet.js': `registerIntegration({ id: 'juliet', tab: T, widget: W, offlineConfig: { plannedSchema: 'plan', referenceSchema: 'noslug', titleField: 'title', dateField: 'date' } })
+`,
+				}),
+			),
+		).toMatchSnapshot()
+	})
+
 	it('fails a pass over nothing', () => {
 		expect(
 			run(fixture({ 'lib/Empty.php': '<?php\n', 'src/empty.js': '\n' })),
