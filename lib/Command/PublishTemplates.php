@@ -138,15 +138,13 @@ class PublishTemplates extends Command {
 			return Command::SUCCESS;
 		}
 
-		$failed = $this->publishAll(
-			templates: $templates,
+		$target = new PublishTarget(
 			credentialId: $credentialId,
 			org: $this->optionOrNull(value: $input->getOption('org')),
 			user: $this->optionOrNull(value: $input->getOption('user')),
-			visibility: $visibility,
-			dryRun: $dryRun,
-			output: $output
+			visibility: $visibility
 		);
+		$failed = $this->publishAll(templates: $templates, target: $target, dryRun: $dryRun, output: $output);
 
 		if ($failed > 0) {
 			return Command::FAILURE;
@@ -159,10 +157,7 @@ class PublishTemplates extends Command {
 	 * Publish each template, printing a per-template result line and a summary.
 	 *
 	 * @param array<int,array<string,mixed>> $templates The seeded templates to publish.
-	 * @param string $credentialId The github credential UUID.
-	 * @param string|null $org Optional org.
-	 * @param string|null $user The acting user UID.
-	 * @param string $visibility Repo visibility.
+	 * @param PublishTarget $target The credential, org, acting user and visibility.
 	 * @param bool $dryRun When true, list only (no GitHub calls).
 	 * @param OutputInterface $output The command output.
 	 *
@@ -170,10 +165,7 @@ class PublishTemplates extends Command {
 	 */
 	private function publishAll(
 		array $templates,
-		string $credentialId,
-		?string $org,
-		?string $user,
-		string $visibility,
+		PublishTarget $target,
 		bool $dryRun,
 		OutputInterface $output,
 	): int {
@@ -188,13 +180,7 @@ class PublishTemplates extends Command {
 				continue;
 			}
 
-			$result = $this->publishOne(
-				template: $template,
-				credentialId: $credentialId,
-				org: $org,
-				user: $user,
-				visibility: $visibility
-			);
+			$result = $this->publishOne(template: $template, target: $target);
 			$outcome = (string)($result['outcome'] ?? 'unknown_error');
 
 			if ($outcome === GitHubAppSyncService::OUTCOME_OK) {
@@ -217,28 +203,19 @@ class PublishTemplates extends Command {
 	 * Publish a single template (never-throw — a thrown error is an outcome).
 	 *
 	 * @param array<string,mixed> $template The template object.
-	 * @param string $credentialId The github credential UUID.
-	 * @param string|null $org Optional org.
-	 * @param string|null $user The acting user UID.
-	 * @param string $visibility Repo visibility.
+	 * @param PublishTarget $target The credential, org, acting user and visibility.
 	 *
 	 * @return array<string,mixed> The publishTemplate outcome array.
 	 */
-	private function publishOne(
-		array $template,
-		string $credentialId,
-		?string $org,
-		?string $user,
-		string $visibility,
-	): array {
+	private function publishOne(array $template, PublishTarget $target): array {
 		try {
 			return $this->syncService->publishTemplate(
 				template: $template,
-				credentialId: $credentialId,
-				org: $org,
+				credentialId: $target->credentialId,
+				org: $target->org,
 				repoName: null,
-				actingUserId: $user,
-				visibility: $visibility
+				actingUserId: $target->user,
+				visibility: $target->visibility
 			);
 		} catch (Throwable $e) {
 			return ['outcome' => 'error: ' . $e->getMessage()];
