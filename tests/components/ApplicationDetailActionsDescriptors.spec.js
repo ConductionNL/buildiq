@@ -31,8 +31,23 @@ globalThis.t = (app, text, vars) => {
 	return out
 }
 
-const FLAGS = ['permissionsOpen', 'copyOpen', 'githubOpen', 'historyOpen', 'exportOpen', 'deleteOpen']
-const CALLS = ['onSettingsOpen', 'editVersion', 'promoteVersion', 'openWalkthroughDesigner', 'openAutomations', 'openSaveAsTemplate', 'openSupportEditor']
+const FLAGS = [
+	'permissionsOpen',
+	'copyOpen',
+	'githubOpen',
+	'historyOpen',
+	'exportOpen',
+	'deleteOpen',
+]
+const CALLS = [
+	'onSettingsOpen',
+	'editVersion',
+	'promoteVersion',
+	'openWalkthroughDesigner',
+	'openAutomations',
+	'openSaveAsTemplate',
+	'openSupportEditor',
+]
 
 function context(gates) {
 	const log = []
@@ -57,6 +72,12 @@ function context(gates) {
 	CALLS.forEach((name) => {
 		ctx[name] = (...args) => log.push(`${name}(${JSON.stringify(args)})`)
 	})
+	// The component's own methods, except the ones faked above.
+	Object.entries(ApplicationDetailActions.methods).forEach(([name, method]) => {
+		if (!(name in ctx)) {
+			ctx[name] = method.bind(ctx)
+		}
+	})
 	return ctx
 }
 
@@ -66,24 +87,39 @@ function select(ctx, entry) {
 		ctx[flag] = false
 	})
 	entry.onSelect()
-	return [...ctx.log, ...FLAGS.filter((flag) => ctx[flag]).map((flag) => `${flag}=true`)]
+	return [
+		...ctx.log,
+		...FLAGS.filter((flag) => ctx[flag]).map((flag) => `${flag}=true`),
+	]
 }
 
 function describeEntry(ctx, entry) {
 	const out = {}
-	Object.keys(entry).sort().forEach((key) => {
-		if (key === 'onSelect') {
-			out.onSelect = select(ctx, entry)
-		} else if (key === 'children') {
-			out.children = entry.children.map((child) => describeEntry(ctx, child))
-		} else {
-			out[key] = entry[key]
-		}
-	})
+	Object.keys(entry)
+		.sort()
+		.forEach((key) => {
+			if (key === 'onSelect') {
+				out.onSelect = select(ctx, entry)
+			} else if (key === 'children') {
+				out.children = entry.children.map((child) =>
+					describeEntry(ctx, child),
+				)
+			} else {
+				out[key] = entry[key]
+			}
+		})
 	return out
 }
 
-const BOOLEAN_GATES = ['owner', 'builderUrl', 'editForm', 'canEditVersions', 'canSaveAsTemplate', 'saveTemplateLoading', 'canCopyApp']
+const BOOLEAN_GATES = [
+	'owner',
+	'builderUrl',
+	'editForm',
+	'canEditVersions',
+	'canSaveAsTemplate',
+	'saveTemplateLoading',
+	'canCopyApp',
+]
 const OB_APPS = { none: null, noSlug: { slug: '' }, slug: { slug: 'permit' } }
 
 function allGates() {
@@ -94,18 +130,30 @@ function allGates() {
 			BOOLEAN_GATES.forEach((gate, i) => {
 				gates[gate] = (mask & (1 << i)) !== 0
 			})
-			out.push({ name: `${BOOLEAN_GATES.filter((g) => gates[g]).join('+') || 'none'}|obApp=${obAppName}`, gates })
+			out.push({
+				name: `${BOOLEAN_GATES.filter((g) => gates[g]).join('+') || 'none'}|obApp=${obAppName}`,
+				gates,
+			})
 		})
 	}
 	return out
 }
 
-const compute = (ctx) => ApplicationDetailActions.computed.actionDescriptors.call(ctx)
+function compute(ctx) {
+	return ApplicationDetailActions.computed.actionDescriptors.call(ctx)
+}
 
 describe('ApplicationDetailActions actionDescriptors golden', () => {
 	it('shows the same entries, in the same order, for every gate combination', async () => {
-		const rows = allGates().map(({ name, gates }) => `${name} => ${compute(context(gates)).map((e) => e.id).join(',')}`)
-		await expect(rows.join('\n') + '\n').toMatchFileSnapshot('./__golden__/actionDescriptors.ids.txt')
+		const rows = allGates().map(
+			({ name, gates }) =>
+				`${name} => ${compute(context(gates))
+					.map((e) => e.id)
+					.join(',')}`,
+		)
+		await expect(rows.join('\n') + '\n').toMatchFileSnapshot(
+			'./__golden__/actionDescriptors.ids.txt',
+		)
 	})
 
 	it('builds each entry the same way when every gate is open', async () => {
@@ -115,11 +163,18 @@ describe('ApplicationDetailActions actionDescriptors golden', () => {
 		})
 		const ctx = context(gates)
 		const entries = compute(ctx).map((entry) => describeEntry(ctx, entry))
-		await expect(JSON.stringify(entries, null, '\t') + '\n').toMatchFileSnapshot('./__golden__/actionDescriptors.full.json')
+		await expect(JSON.stringify(entries, null, '\t') + '\n').toMatchFileSnapshot(
+			'./__golden__/actionDescriptors.full.json',
+		)
 	})
 
 	it('labels the template entry while it is being prepared', () => {
-		const ctx = context({ owner: true, canSaveAsTemplate: true, saveTemplateLoading: true, obApp: null })
+		const ctx = context({
+			owner: true,
+			canSaveAsTemplate: true,
+			saveTemplateLoading: true,
+			obApp: null,
+		})
 		const entry = compute(ctx).find((e) => e.id === 'app-save-as-template')
 		expect(entry.label).toBe('buildiq:Preparing…')
 	})
