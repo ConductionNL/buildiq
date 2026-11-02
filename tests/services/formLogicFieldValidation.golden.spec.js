@@ -54,6 +54,9 @@ const VALIDATION = [
 	{ message: 'Bad' },
 	{ message: 1 },
 	{ required: 1, min: 'a', max: 'b', pattern: '[', message: {} },
+	{ min: '9', max: 1 },
+	{ pattern: ['('] },
+	{ min: 5, max: 1, pattern: '(' },
 ]
 
 const FLAT = [{}, {}, { required: true }, { pattern: 'x' }, { required: undefined }]
