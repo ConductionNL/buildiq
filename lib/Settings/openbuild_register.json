@@ -3,7 +3,7 @@
   "info": {
     "title": "OpenBuild Register",
     "description": "Citizen-developer app builder for Nextcloud: compose apps from registers, connectors, workflows, and documents without code.",
-    "version": "0.12.0"
+    "version": "0.13.0"
   },
   "x-openregister": {
     "type": "application",
@@ -506,7 +506,7 @@
         },
         "slug": "applicationVersion",
         "icon": "SourceBranch",
-        "version": "0.4.0",
+        "version": "0.4.1",
         "title": "Application Version",
         "description": "A deployable runtime for an Application (ADR-002). A VIRTUAL app's version carries a full `manifest` blob and owns its own per-version OpenRegister register so production and test data are physically isolated. A HYBRID app's version (unify-apps-with-app-type) instead carries a delta-only customization: `manifest` is an empty object `{}`, `baseRef.kind` is `fleet-app`, and `manifestDelta` holds the keyed structural diff served raw via GET /api/app-overrides/{appId} and merged client-side over the installed fleet app's bundled manifest (OpenBuild holds no fleet base). The admin-defined linear promotion chain reads via the optional `promotesTo` relation. Lifecycle (draft → published → archived) is per-version; the `draft → published` transition upserts the BuiltAppRoute slug index.",
         "authorization": {
@@ -668,6 +668,7 @@
         "x-openregister-lifecycle": {
           "field": "status",
           "initial": "draft",
+          "createStates": ["published"],
           "states": {
             "draft": {
               "description": "Editable working version, not exposed at the canonical `/apps/openbuild/{slug}` URL unless this version is the parent Application's productionVersion."
