@@ -236,7 +236,11 @@ class ManifestWidgetRoleFilter {
 	private function pruneLayout(array $layout, array $removedIds): array {
 		$kept = [];
 		foreach ($layout as $row) {
-			$widgetId = (is_array($row) === true) ? ($row['widgetId'] ?? null) : null;
+			$widgetId = null;
+			if (is_array($row) === true) {
+				$widgetId = ($row['widgetId'] ?? null);
+			}
+
 			if (is_string($widgetId) === true && isset($removedIds[$widgetId]) === true) {
 				continue;
 			}

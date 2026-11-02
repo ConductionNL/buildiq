@@ -122,7 +122,7 @@ class ManifestResolverServiceTest extends TestCase {
 			schemaMapper: $this->schemaMapper,
 			logger: $this->logger,
 			permissionResolver: $permissionResolver,
-			widgetRoleFilter: new ManifestWidgetRoleFilter(new AppVisibilityResolver(), $groupManager),
+			widgetRoleFilter: new ManifestWidgetRoleFilter(visibility: new AppVisibilityResolver(), groupManager: $groupManager),
 		);
 	}//end setUp()
 

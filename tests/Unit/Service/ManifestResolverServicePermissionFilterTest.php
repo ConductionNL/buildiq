@@ -82,7 +82,7 @@ class ManifestResolverServicePermissionFilterTest extends TestCase {
 			schemaMapper: $this->createMock(SchemaMapper::class),
 			logger: $this->createMock(LoggerInterface::class),
 			permissionResolver: $permissionResolver,
-			widgetRoleFilter: new ManifestWidgetRoleFilter(new AppVisibilityResolver(), $groupManager),
+			widgetRoleFilter: new ManifestWidgetRoleFilter(visibility: new AppVisibilityResolver(), groupManager: $groupManager),
 		);
 	}//end buildService()
 
@@ -444,10 +444,10 @@ class ManifestResolverServicePermissionFilterTest extends TestCase {
 		$result = $service->filterManifestForCaller(
 			manifest: $this->widgetRolesManifest(),
 			application: $application,
-			caller: $this->buildCaller('carol')
+			caller: $this->buildCaller(uid: 'carol')
 		);
 
-		self::assertSame(['open'], array_column($result['pages'][0]['widgets'], 'id'));
+		self::assertSame(expected: ['open'], actual: array_column($result['pages'][0]['widgets'], 'id'));
 	}//end testViewerOutsideWidgetRolesNeverReceivesTheWidget()
 
 	/**
@@ -464,10 +464,10 @@ class ManifestResolverServicePermissionFilterTest extends TestCase {
 		$result = $service->filterManifestForCaller(
 			manifest: $this->widgetRolesManifest(),
 			application: $application,
-			caller: $this->buildCaller('dave')
+			caller: $this->buildCaller(uid: 'dave')
 		);
 
-		self::assertSame(['open', 'budget'], array_column($result['pages'][0]['widgets'], 'id'));
+		self::assertSame(expected: ['open', 'budget'], actual: array_column($result['pages'][0]['widgets'], 'id'));
 	}//end testViewerInWidgetRolesReceivesTheWidget()
 
 	/**
@@ -490,10 +490,10 @@ class ManifestResolverServicePermissionFilterTest extends TestCase {
 			$result = $service->filterManifestForCaller(
 				manifest: $this->widgetRolesManifest(),
 				application: ['permissions' => $permissions],
-				caller: $this->buildCaller('alice')
+				caller: $this->buildCaller(uid: 'alice')
 			);
 
-			self::assertSame($this->widgetRolesManifest(), $result, $label);
+			self::assertSame(expected: $this->widgetRolesManifest(), actual: $result, message: $label);
 		}
 	}//end testOwnerEditorAndAdminKeepEveryWidget()
 
@@ -513,6 +513,6 @@ class ManifestResolverServicePermissionFilterTest extends TestCase {
 			caller: null
 		);
 
-		self::assertSame(['open'], array_column($result['pages'][0]['widgets'], 'id'));
+		self::assertSame(expected: ['open'], actual: array_column($result['pages'][0]['widgets'], 'id'));
 	}//end testNullCallerReceivesNoRoleGatedWidget()
 }//end class

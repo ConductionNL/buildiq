@@ -45,11 +45,11 @@ class ManifestWidgetRoleFilterTest extends TestCase {
 	 * @return ManifestWidgetRoleFilter
 	 */
 	private function buildFilter(array $userGroups = [], bool $isAdmin = false): ManifestWidgetRoleFilter {
-		$groupManager = $this->createMock(IGroupManager::class);
+		$groupManager = $this->createMock(originalClassName: IGroupManager::class);
 		$groupManager->method('getUserGroupIds')->willReturn($userGroups);
 		$groupManager->method('isAdmin')->willReturn($isAdmin);
 
-		return new ManifestWidgetRoleFilter(new AppVisibilityResolver(), $groupManager);
+		return new ManifestWidgetRoleFilter(visibility: new AppVisibilityResolver(), groupManager: $groupManager);
 	}//end buildFilter()
 
 	/**
@@ -60,7 +60,7 @@ class ManifestWidgetRoleFilterTest extends TestCase {
 	 * @return IUser
 	 */
 	private function buildCaller(string $uid = 'carol'): IUser {
-		$caller = $this->createMock(IUser::class);
+		$caller = $this->createMock(originalClassName: IUser::class);
 		$caller->method('getUID')->willReturn($uid);
 		return $caller;
 	}//end buildCaller()
@@ -114,8 +114,8 @@ class ManifestWidgetRoleFilterTest extends TestCase {
 		$filter = $this->buildFilter(userGroups: ['finance']);
 
 		self::assertSame(
-			$visible,
-			$filter->isWidgetVisible(widget: $this->widget('w', $roles), caller: $this->buildCaller('carol'))
+			expected: $visible,
+			actual: $filter->isWidgetVisible(widget: $this->widget(id: 'w', roles: $roles), caller: $this->buildCaller(uid: 'carol'))
 		);
 	}//end testRolesMatchLikeTheDashboard()
 
@@ -127,8 +127,8 @@ class ManifestWidgetRoleFilterTest extends TestCase {
 	public function testWidgetWithoutRolesIsVisibleToEveryone(): void {
 		$filter = $this->buildFilter();
 
-		self::assertTrue($filter->isWidgetVisible(widget: $this->widget('a'), caller: null));
-		self::assertTrue($filter->isWidgetVisible(widget: $this->widget('b', []), caller: $this->buildCaller()));
+		self::assertTrue(condition: $filter->isWidgetVisible(widget: $this->widget(id: 'a'), caller: null));
+		self::assertTrue(condition: $filter->isWidgetVisible(widget: $this->widget(id: 'b', roles: []), caller: $this->buildCaller()));
 	}//end testWidgetWithoutRolesIsVisibleToEveryone()
 
 	/**
@@ -139,7 +139,7 @@ class ManifestWidgetRoleFilterTest extends TestCase {
 	public function testAdminMatchesAnyRoles(): void {
 		$filter = $this->buildFilter(isAdmin: true);
 
-		self::assertTrue($filter->isWidgetVisible(widget: $this->widget('w', ['controllers']), caller: $this->buildCaller()));
+		self::assertTrue(condition: $filter->isWidgetVisible(widget: $this->widget(id: 'w', roles: ['controllers']), caller: $this->buildCaller()));
 	}//end testAdminMatchesAnyRoles()
 
 	/**
@@ -150,7 +150,7 @@ class ManifestWidgetRoleFilterTest extends TestCase {
 	public function testNullCallerMatchesNoRoles(): void {
 		$filter = $this->buildFilter();
 
-		self::assertFalse($filter->isWidgetVisible(widget: $this->widget('w', ['group:*']), caller: null));
+		self::assertFalse(condition: $filter->isWidgetVisible(widget: $this->widget(id: 'w', roles: ['group:*']), caller: null));
 	}//end testNullCallerMatchesNoRoles()
 
 	/**
@@ -160,10 +160,10 @@ class ManifestWidgetRoleFilterTest extends TestCase {
 	 */
 	public function testMalformedRolesHideTheWidget(): void {
 		$filter = $this->buildFilter(userGroups: ['finance']);
-		$widget = $this->widget('w');
+		$widget = $this->widget(id: 'w');
 		$widget['roles'] = 42;
 
-		self::assertFalse($filter->isWidgetVisible(widget: $widget, caller: $this->buildCaller()));
+		self::assertFalse(condition: $filter->isWidgetVisible(widget: $widget, caller: $this->buildCaller()));
 	}//end testMalformedRolesHideTheWidget()
 
 	/**
@@ -173,19 +173,19 @@ class ManifestWidgetRoleFilterTest extends TestCase {
 	 * @return void
 	 */
 	public function testUniformWidgetsAndTabReferencesAreFiltered(): void {
-		$tabs = $this->widget('tabs');
+		$tabs = $this->widget(id: 'tabs');
 		$tabs['widgetKey'] = 'tabs';
 		$tabs['props'] = ['content' => ['tabs' => [['widgetId' => 'notes'], 'budget']]];
 		$page = [
 			'id' => 'Case',
 			'type' => 'detail',
-			'widgets' => [$tabs, $this->widget('notes'), $this->widget('budget', ['finance'])],
+			'widgets' => [$tabs, $this->widget(id: 'notes'), $this->widget(id: 'budget', roles: ['finance'])],
 		];
 
 		$result = $this->buildFilter(userGroups: ['vets'])->filterPage(page: $page, caller: $this->buildCaller());
 
-		self::assertSame(['tabs', 'notes'], array_column($result['widgets'], 'id'));
-		self::assertSame([['widgetId' => 'notes']], $result['widgets'][0]['props']['content']['tabs']);
+		self::assertSame(expected: ['tabs', 'notes'], actual: array_column($result['widgets'], 'id'));
+		self::assertSame(expected: [['widgetId' => 'notes']], actual: $result['widgets'][0]['props']['content']['tabs']);
 	}//end testUniformWidgetsAndTabReferencesAreFiltered()
 
 	/**
@@ -215,9 +215,9 @@ class ManifestWidgetRoleFilterTest extends TestCase {
 
 		$result = $this->buildFilter(userGroups: ['vets'])->filterPage(page: $page, caller: $this->buildCaller());
 
-		self::assertSame(['kpis', 'tabs'], array_column($result['config']['widgets'], 'id'));
-		self::assertSame(['kpis', 'tabs'], array_column($result['config']['layout'], 'widgetId'));
-		self::assertSame(['kpis'], $result['config']['widgets'][1]['content']['tabs']);
+		self::assertSame(expected: ['kpis', 'tabs'], actual: array_column($result['config']['widgets'], 'id'));
+		self::assertSame(expected: ['kpis', 'tabs'], actual: array_column($result['config']['layout'], 'widgetId'));
+		self::assertSame(expected: ['kpis'], actual: $result['config']['widgets'][1]['content']['tabs']);
 	}//end testLegacyConfigWidgetsAndLayoutRowsAreFiltered()
 
 	/**
@@ -239,8 +239,8 @@ class ManifestWidgetRoleFilterTest extends TestCase {
 
 		$result = $this->buildFilter(userGroups: ['vets'])->filterPage(page: $page, caller: $this->buildCaller());
 
-		self::assertSame([['id' => 'notes']], $result['config']['sidebarTabs'][0]['widgets']);
-		self::assertSame($page['config']['sidebarTabs'][1], $result['config']['sidebarTabs'][1]);
+		self::assertSame(expected: [['id' => 'notes']], actual: $result['config']['sidebarTabs'][0]['widgets']);
+		self::assertSame(expected: $page['config']['sidebarTabs'][1], actual: $result['config']['sidebarTabs'][1]);
 	}//end testSidebarTabWidgetsAreFiltered()
 
 	/**
@@ -253,17 +253,17 @@ class ManifestWidgetRoleFilterTest extends TestCase {
 		$manifest = [
 			'version' => '1.0.0',
 			'menu' => [['id' => 'home', 'route' => 'Home']],
-			'pages' => [['id' => 'Home', 'widgets' => [$this->widget('open'), $this->widget('budget', ['finance'])]]],
-			'pageTemplates' => [['id' => 'tpl', 'page' => ['id' => '{{id}}', 'widgets' => [$this->widget('budget', ['finance'])]]]],
-			'pageInstances' => [['templateRef' => 'tpl', 'override' => ['widgets' => [$this->widget('extra', ['user:dave'])]]]],
+			'pages' => [['id' => 'Home', 'widgets' => [$this->widget(id: 'open'), $this->widget(id: 'budget', roles: ['finance'])]]],
+			'pageTemplates' => [['id' => 'tpl', 'page' => ['id' => '{{id}}', 'widgets' => [$this->widget(id: 'budget', roles: ['finance'])]]]],
+			'pageInstances' => [['templateRef' => 'tpl', 'override' => ['widgets' => [$this->widget(id: 'extra', roles: ['user:dave'])]]]],
 		];
 
 		$result = $this->buildFilter(userGroups: ['vets'])->filterManifest(manifest: $manifest, caller: $this->buildCaller());
 
-		self::assertSame($manifest['menu'], $result['menu']);
-		self::assertSame(['open'], array_column($result['pages'][0]['widgets'], 'id'));
-		self::assertSame([], $result['pageTemplates'][0]['page']['widgets']);
-		self::assertSame([], $result['pageInstances'][0]['override']['widgets']);
+		self::assertSame(expected: $manifest['menu'], actual: $result['menu']);
+		self::assertSame(expected: ['open'], actual: array_column($result['pages'][0]['widgets'], 'id'));
+		self::assertSame(expected: [], actual: $result['pageTemplates'][0]['page']['widgets']);
+		self::assertSame(expected: [], actual: $result['pageInstances'][0]['override']['widgets']);
 	}//end testEveryPageShapedPartOfTheManifestIsFiltered()
 
 	/**
@@ -275,11 +275,11 @@ class ManifestWidgetRoleFilterTest extends TestCase {
 		$manifest = [
 			'version' => '1.0.0',
 			'pages' => [
-				['id' => 'Home', 'widgets' => [$this->widget('a')], 'config' => ['layout' => [['id' => 1, 'widgetId' => 'a']]]],
+				['id' => 'Home', 'widgets' => [$this->widget(id: 'a')], 'config' => ['layout' => [['id' => 1, 'widgetId' => 'a']]]],
 				'not-a-page',
 			],
 		];
 
-		self::assertSame($manifest, $this->buildFilter()->filterManifest(manifest: $manifest, caller: null));
+		self::assertSame(expected: $manifest, actual: $this->buildFilter()->filterManifest(manifest: $manifest, caller: null));
 	}//end testManifestWithoutRolesIsUnchanged()
 }//end class
