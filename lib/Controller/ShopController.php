@@ -42,16 +42,14 @@ namespace OCA\Buildiq\Controller;
 use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Exception\AppRepoParseException;
 use OCA\Buildiq\Service\AppRepoParser;
-use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCA\Buildiq\Service\GitHubCatalogService;
+use OCA\Buildiq\Service\GitHubShopSearch;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
  * Controller for the GitHub shop search + install endpoints.
@@ -78,12 +76,11 @@ class ShopController extends Controller {
 	 * Constructor.
 	 *
 	 * @param IRequest $request The current HTTP request.
-	 * @param LoggerInterface $logger PSR logger.
 	 * @param IUserSession $userSession Current NC user session.
 	 * @param GitHubCatalogService $catalogService Fixed-host GitHub source.
 	 * @param AppRepoParser $repoParser Strict repo-file-map parser (change 1).
 	 * @param ApplicationsController $appsController Shared clone/install seam.
-	 * @param ConnectionReporter|null $connectionReporter Tells integriq what a search met, or nothing when absent.
+	 * @param GitHubShopSearch $shopSearch Runs the GitHub search, shapes its answer and reports its outcome.
 	 *
 	 * @return void
 	 *
@@ -91,12 +88,11 @@ class ShopController extends Controller {
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly LoggerInterface $logger,
 		private readonly IUserSession $userSession,
 		private readonly GitHubCatalogService $catalogService,
 		private readonly AppRepoParser $repoParser,
 		private readonly ApplicationsController $appsController,
-		private readonly ?ConnectionReporter $connectionReporter = null,
+		private readonly GitHubShopSearch $shopSearch,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
@@ -129,44 +125,8 @@ class ShopController extends Controller {
 			$query = null;
 		}
 
-		$credentialId = $this->credentialParam();
-
-		try {
-			$result = $this->catalogService->search(
-				query: $query,
-				actingUserId: $user->getUID(),
-				credentialId: $credentialId
-			);
-		} catch (Throwable $e) {
-			$this->logger->error('Buildiq shop: GitHub search failed: ' . $e->getMessage());
-			$this->connectionReporter?->reportGitHubSearch(
-				outcome: GitHubCatalogService::OUTCOME_UNREACHABLE,
-				brokerAvailable: $this->catalogService->isBrokerAvailable()
-			);
-			return new JSONResponse(
-				data: [
-					'outcome' => GitHubCatalogService::OUTCOME_UNREACHABLE,
-					'cards' => [],
-					'brokerCredentialAvailable' => $this->catalogService->isBrokerAvailable(),
-					'rateLimited' => false,
-				],
-				statusCode: Http::STATUS_OK
-			);
-		}
-
-		$this->connectionReporter?->reportGitHubSearch(
-			outcome: (string)$result['outcome'],
-			brokerAvailable: $this->catalogService->isBrokerAvailable()
-		);
-
 		return new JSONResponse(
-			data: [
-				'outcome' => $result['outcome'],
-				'cards' => $result['cards'],
-				'brokerCredentialAvailable' => $this->catalogService->isBrokerAvailable(),
-				'brokerUsed' => $result['brokerUsed'],
-				'rateLimited' => $result['rateLimited'],
-			],
+			data: $this->shopSearch->search(query: $query, actingUserId: $user->getUID(), credentialId: $this->credentialParam()),
 			statusCode: Http::STATUS_OK
 		);
 	}//end githubSearch()

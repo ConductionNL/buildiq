@@ -24,6 +24,7 @@ use OCA\Buildiq\Controller\ShopController;
 use OCA\Buildiq\Service\AppRepoParser;
 use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCA\Buildiq\Service\GitHubCatalogService;
+use OCA\Buildiq\Service\GitHubShopSearch;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -40,6 +41,7 @@ use RuntimeException;
  * missing fixture.
  *
  * @covers \OCA\Buildiq\Controller\ShopController
+ * @covers \OCA\Buildiq\Service\GitHubShopSearch
  */
 class ShopSearchGoldenTest extends TestCase {
 
@@ -172,12 +174,11 @@ class ShopSearchGoldenTest extends TestCase {
 	private function build(IRequest $request, LoggerInterface $logger, IUserSession $session, GitHubCatalogService $catalog, ?ConnectionReporter $reporter): ShopController {
 		return new ShopController(
 			request: $request,
-			logger: $logger,
 			userSession: $session,
 			catalogService: $catalog,
 			repoParser: $this->createMock(AppRepoParser::class),
 			appsController: $this->createMock(ApplicationsController::class),
-			connectionReporter: $reporter
+			shopSearch: new GitHubShopSearch(catalogService: $catalog, logger: $logger, connectionReporter: $reporter)
 		);
 	}//end build()
 }//end class
