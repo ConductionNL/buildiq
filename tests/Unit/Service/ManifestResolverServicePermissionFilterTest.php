@@ -31,7 +31,9 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Service;
 
+use OCA\Buildiq\Service\AppVisibilityResolver;
 use OCA\Buildiq\Service\ManifestResolverService;
+use OCA\Buildiq\Service\ManifestWidgetRoleFilter;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -69,6 +71,7 @@ class ManifestResolverServicePermissionFilterTest extends TestCase {
 
 		$groupManager = $this->createMock(IGroupManager::class);
 		$groupManager->method('getUserGroups')->willReturn($groupObjects);
+		$groupManager->method('getUserGroupIds')->willReturn($userGroups);
 		$groupManager->method('isAdmin')->willReturn($isAdmin);
 
 		$permissionResolver = new PermissionResolver($groupManager, $this->createMock(LoggerInterface::class));
@@ -79,6 +82,7 @@ class ManifestResolverServicePermissionFilterTest extends TestCase {
 			schemaMapper: $this->createMock(SchemaMapper::class),
 			logger: $this->createMock(LoggerInterface::class),
 			permissionResolver: $permissionResolver,
+			widgetRoleFilter: new ManifestWidgetRoleFilter(new AppVisibilityResolver(), $groupManager),
 		);
 	}//end buildService()
 
@@ -402,4 +406,113 @@ class ManifestResolverServicePermissionFilterTest extends TestCase {
 
 		self::assertSame([], $result);
 	}//end testResolveCallerPermissionsForDisplayIsEmptyForOwner()
+
+	/**
+	 * A dashboard with one open widget and one widget for `finance` only.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function widgetRolesManifest(): array {
+		return [
+			'version' => '1.0.0',
+			'pages' => [
+				[
+					'id' => 'Dashboard',
+					'route' => '/',
+					'type' => 'dashboard',
+					'title' => 'Dashboard',
+					'widgets' => [
+						['id' => 'open', 'widgetKey' => 'stat', 'slot' => 'body', 'gridX' => 0, 'gridY' => 0, 'gridWidth' => 6, 'gridHeight' => 2],
+						['id' => 'budget', 'widgetKey' => 'stat', 'slot' => 'body', 'gridX' => 6, 'gridY' => 0, 'gridWidth' => 6, 'gridHeight' => 2, 'roles' => ['finance']],
+					],
+				],
+			],
+		];
+	}//end widgetRolesManifest()
+
+	/**
+	 * A viewer outside the widget's roles never receives the widget.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/widget-roles-on-app-pages/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
+	 */
+	public function testViewerOutsideWidgetRolesNeverReceivesTheWidget(): void {
+		$service = $this->buildService(userGroups: ['vets'], isAdmin: false);
+		$application = ['permissions' => ['owners' => [], 'editors' => [], 'viewers' => ['group:vets']]];
+
+		$result = $service->filterManifestForCaller(
+			manifest: $this->widgetRolesManifest(),
+			application: $application,
+			caller: $this->buildCaller('carol')
+		);
+
+		self::assertSame(['open'], array_column($result['pages'][0]['widgets'], 'id'));
+	}//end testViewerOutsideWidgetRolesNeverReceivesTheWidget()
+
+	/**
+	 * A viewer in the widget's roles keeps the widget.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/widget-roles-on-app-pages/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
+	 */
+	public function testViewerInWidgetRolesReceivesTheWidget(): void {
+		$service = $this->buildService(userGroups: ['finance'], isAdmin: false);
+		$application = ['permissions' => ['owners' => [], 'editors' => []]];
+
+		$result = $service->filterManifestForCaller(
+			manifest: $this->widgetRolesManifest(),
+			application: $application,
+			caller: $this->buildCaller('dave')
+		);
+
+		self::assertSame(['open', 'budget'], array_column($result['pages'][0]['widgets'], 'id'));
+	}//end testViewerInWidgetRolesReceivesTheWidget()
+
+	/**
+	 * Owners, editors and admins keep every widget, whatever its roles.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/widget-roles-on-app-pages/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
+	 */
+	public function testOwnerEditorAndAdminKeepEveryWidget(): void {
+		$cases = [
+			'owner' => [['owners' => ['user:alice'], 'editors' => []], false],
+			'editor' => [['owners' => [], 'editors' => ['user:alice']], false],
+			'admin' => [['owners' => [], 'editors' => []], true],
+		];
+
+		foreach ($cases as $label => [$permissions, $isAdmin]) {
+			$service = $this->buildService(userGroups: [], isAdmin: $isAdmin);
+
+			$result = $service->filterManifestForCaller(
+				manifest: $this->widgetRolesManifest(),
+				application: ['permissions' => $permissions],
+				caller: $this->buildCaller('alice')
+			);
+
+			self::assertSame($this->widgetRolesManifest(), $result, $label);
+		}
+	}//end testOwnerEditorAndAdminKeepEveryWidget()
+
+	/**
+	 * An unauthenticated caller receives no widget that declares roles.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/widget-roles-on-app-pages/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
+	 */
+	public function testNullCallerReceivesNoRoleGatedWidget(): void {
+		$service = $this->buildService(userGroups: [], isAdmin: false);
+
+		$result = $service->filterManifestForCaller(
+			manifest: $this->widgetRolesManifest(),
+			application: ['permissions' => ['owners' => [], 'editors' => []]],
+			caller: null
+		);
+
+		self::assertSame(['open'], array_column($result['pages'][0]['widgets'], 'id'));
+	}//end testNullCallerReceivesNoRoleGatedWidget()
 }//end class
