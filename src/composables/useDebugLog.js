@@ -13,6 +13,98 @@ const LIMIT = 200
 const DESIGNER_PATH = /\/apps\/buildiq\//
 
 /**
+ * A failed request of the previewed app as a log entry, or null when it
+ * succeeded or the designer made it.
+ *
+ * @param {object} report A diagnostics report of kind `request`.
+ * @param {string} pageId The page the report is about.
+ * @return {object|null} The entry.
+ */
+function requestEntry(report, pageId) {
+	const status = Number(report.status) || 0
+	const path = String(report.path || '')
+	if ((status > 0 && status < 400) || DESIGNER_PATH.test(path)) {
+		return null
+	}
+	const request = `${String(report.method || 'GET').toUpperCase()} ${path}`
+	return {
+		key: `request|${pageId}|${request}|${status}`,
+		kind: 'request',
+		pageId,
+		request,
+		status,
+		durationMs: Number(report.durationMs) || 0,
+	}
+}
+
+/**
+ * A render error as a log entry.
+ *
+ * @param {object} report A diagnostics report of kind `render-error`.
+ * @param {string} pageId The page the report is about.
+ * @return {object} The entry.
+ */
+function renderErrorEntry(report, pageId) {
+	const what = String(report.message || '')
+	return {
+		key: `render-error|${pageId}|${report.component}|${what}`,
+		kind: 'render-error',
+		pageId,
+		component: String(report.component || ''),
+		what,
+	}
+}
+
+/**
+ * An unknown component as a log entry.
+ *
+ * @param {object} report A diagnostics report of kind `unknown-component`.
+ * @param {string} pageId The page the report is about.
+ * @return {object} The entry.
+ */
+function unknownComponentEntry(report, pageId) {
+	const name = String(report.name || report.component || '')
+	return {
+		key: `unknown-component|${pageId}|${name}`,
+		kind: 'unknown-component',
+		pageId,
+		component: name,
+		what: name,
+	}
+}
+
+/**
+ * A binding problem as a log entry.
+ *
+ * @param {object} report A diagnostics report of kind `binding`.
+ * @param {string} pageId The page the report is about.
+ * @return {object} The entry.
+ */
+function bindingEntry(report, pageId) {
+	const parts = [report.register, report.schema].filter(Boolean).join('/')
+	const what = String(report.problem || '')
+	return {
+		key: `binding|${pageId}|${parts}|${report.property}|${what}`,
+		kind: 'binding',
+		pageId,
+		problem: what,
+		register: String(report.register || ''),
+		schema: String(report.schema || ''),
+		property: report.property ? String(report.property) : '',
+		where: report.where ? String(report.where) : '',
+		what,
+	}
+}
+
+/** The entry builder of each report kind the log keeps. */
+const ENTRY_BUILDERS = Object.freeze({
+	request: requestEntry,
+	'render-error': renderErrorEntry,
+	'unknown-component': unknownComponentEntry,
+	binding: bindingEntry,
+})
+
+/**
  * What a diagnostics report is about, as one log entry, or null when it is no
  * problem: a request that succeeded, or a request the designer made.
  *
@@ -25,29 +117,13 @@ export function entryOf(report) {
 		return null
 	}
 	const pageId = report.pageId ? String(report.pageId) : ''
-	if (report.kind === 'request') {
-		const status = Number(report.status) || 0
-		const path = String(report.path || '')
-		if ((status > 0 && status < 400) || DESIGNER_PATH.test(path)) {
-			return null
-		}
-		const request = `${String(report.method || 'GET').toUpperCase()} ${path}`
-		return { key: `request|${pageId}|${request}|${status}`, kind: 'request', pageId, request, status, durationMs: Number(report.durationMs) || 0 }
+	if (
+		typeof report.kind !== 'string'
+		|| !Object.hasOwn(ENTRY_BUILDERS, report.kind)
+	) {
+		return null
 	}
-	if (report.kind === 'render-error') {
-		const what = String(report.message || '')
-		return { key: `render-error|${pageId}|${report.component}|${what}`, kind: 'render-error', pageId, component: String(report.component || ''), what }
-	}
-	if (report.kind === 'unknown-component') {
-		const name = String(report.name || report.component || '')
-		return { key: `unknown-component|${pageId}|${name}`, kind: 'unknown-component', pageId, component: name, what: name }
-	}
-	if (report.kind === 'binding') {
-		const parts = [report.register, report.schema].filter(Boolean).join('/')
-		const what = String(report.problem || '')
-		return { key: `binding|${pageId}|${parts}|${report.property}|${what}`, kind: 'binding', pageId, problem: what, register: String(report.register || ''), schema: String(report.schema || ''), property: report.property ? String(report.property) : '', where: report.where ? String(report.where) : '', what }
-	}
-	return null
+	return ENTRY_BUILDERS[report.kind](report, pageId)
 }
 
 /**
