@@ -129,28 +129,44 @@ function collectFiles(root, test, maxDepth = 10) {
 		'js',
 		'coverage',
 	])
+	const visit = (ent, dir) => {
+		const full = path.join(dir, ent.name)
+		if (ent.isDirectory() === true) {
+			return skip.has(ent.name) === false ? full : null
+		}
+		if (ent.isFile() === true && test(ent.name) === true) {
+			out.push(full)
+		}
+		return null
+	}
 	const walk = (dir, depth) => {
 		if (depth > maxDepth) {
 			return
 		}
-		let entries
-		try {
-			entries = fs.readdirSync(dir, { withFileTypes: true })
-		} catch {
-			return
-		}
-		for (const ent of entries) {
-			if (ent.isDirectory() === true) {
-				if (skip.has(ent.name) === false) {
-					walk(path.join(dir, ent.name), depth + 1)
-				}
-			} else if (ent.isFile() === true && test(ent.name) === true) {
-				out.push(path.join(dir, ent.name))
+		for (const ent of directoryEntries(dir)) {
+			const sub = visit(ent, dir)
+			if (sub !== null) {
+				walk(sub, depth + 1)
 			}
 		}
 	}
 	walk(root, 0)
 	return out
+}
+
+/**
+ * The entries of a directory, or none when it cannot be read.
+ *
+ * @param {string} dir Directory to read.
+ *
+ * @return {fs.Dirent[]} Its entries.
+ */
+function directoryEntries(dir) {
+	try {
+		return fs.readdirSync(dir, { withFileTypes: true })
+	} catch {
+		return []
+	}
 }
 
 /**
@@ -663,10 +679,7 @@ function getterValue(source, method) {
  * @return {object|null} The provider face.
  */
 function providerFace(source) {
-	const isProvider =
-		/extends\s+AbstractIntegrationProvider\b/.test(source.src)
-		|| /implements\s+[^{]*\bIntegrationProviderInterface\b/.test(source.src)
-	if (isProvider === false) {
+	if (isProviderSource(source.src) === false) {
 		return null
 	}
 	const face = { kind: 'IntegrationProvider', file: source.rel, fields: {} }
@@ -686,6 +699,20 @@ function providerFace(source) {
 	face.renderSurface = false
 	face.renderMode = stringField(face.fields, 'renderMode')
 	return face
+}
+
+/**
+ * Whether a PHP file declares an IntegrationProvider.
+ *
+ * @param {string} src The file's source.
+ *
+ * @return {boolean} True for a provider.
+ */
+function isProviderSource(src) {
+	return (
+		/extends\s+AbstractIntegrationProvider\b/.test(src)
+		|| /implements\s+[^{]*\bIntegrationProviderInterface\b/.test(src)
+	)
 }
 
 /**
@@ -1092,21 +1119,24 @@ function collectOrSchemas() {
  * @return {object|null} The declared schemas, keyed as in the file.
  */
 function declaredSchemas(file) {
-	let doc
+	const doc = readJson(file)
+	const declared = doc && doc.components && doc.components.schemas
+	return typeof declared === 'object' && declared !== null ? declared : null
+}
+
+/**
+ * A JSON file's document, or null when it cannot be read or parsed.
+ *
+ * @param {string} file Absolute path of the file.
+ *
+ * @return {unknown} The parsed document.
+ */
+function readJson(file) {
 	try {
-		doc = JSON.parse(fs.readFileSync(file, 'utf8'))
+		return JSON.parse(fs.readFileSync(file, 'utf8'))
 	} catch {
 		return null
 	}
-	const declared = doc && doc.components && doc.components.schemas
-	if (
-		declared === undefined
-		|| declared === null
-		|| typeof declared !== 'object'
-	) {
-		return null
-	}
-	return declared
 }
 
 /**
@@ -1199,8 +1229,7 @@ function checkRenderPairs(ctx) {
 			continue // identity inherited from a spread — covered by R5
 		}
 		ctx.counts.R1++
-		const mode = r.renderMode === null ? 'component' : r.renderMode
-		const required = mode === 'mount' ? ['mount', 'unmount'] : ['tab', 'widget']
+		const { mode, required } = renderPairOf(r)
 		for (const key of required.filter((k) => r.keys.includes(k) === false)) {
 			ctx.failures.push(
 				`✗ [R1 render-pair] registerIntegration id "${r.id}" (${r.file}) declares `
@@ -1209,6 +1238,22 @@ function checkRenderPairs(ctx) {
 					+ `ADR-066 decision 7).`,
 			)
 		}
+	}
+}
+
+/**
+ * The renderMode of a registration (`component` when it declares none) and the
+ * keys its render pair needs.
+ *
+ * @param {object} r The JS registration.
+ *
+ * @return {{mode: string, required: string[]}} The mode and its keys.
+ */
+function renderPairOf(r) {
+	const mode = r.renderMode === null ? 'component' : r.renderMode
+	return {
+		mode,
+		required: mode === 'mount' ? ['mount', 'unmount'] : ['tab', 'widget'],
 	}
 }
 
@@ -1293,7 +1338,7 @@ function checkRenderModes(ctx) {
 	ctx.counts.R3 = 0
 	for (const [id, f] of ctx.faceById) {
 		const r = ctx.jsById.get(id)
-		if (r === undefined || f.renderMode === null || r.renderMode === null) {
+		if (bothDeclareRenderMode(f, r) === false) {
 			continue
 		}
 		ctx.counts.R3++
@@ -1305,6 +1350,18 @@ function checkRenderModes(ctx) {
 			)
 		}
 	}
+}
+
+/**
+ * Whether a server face and its JS registration (if any) both declare a renderMode.
+ *
+ * @param {object} f The server face.
+ * @param {object|undefined} r The JS registration with the same id.
+ *
+ * @return {boolean} True when both declare one.
+ */
+function bothDeclareRenderMode(f, r) {
+	return r !== undefined && f.renderMode !== null && r.renderMode !== null
 }
 
 /**
@@ -1377,20 +1434,9 @@ function checkMetadata(ctx) {
 function checkSpreads(ctx, r) {
 	for (const symbol of r.spreads) {
 		ctx.counts.R5++
-		const source = r.spreadSources[symbol]
-		if (source === null) {
-			ctx.failures.push(
-				`✗ [R5 spread-source] registerIntegration in ${r.file} spreads \`...${symbol}\`, `
-					+ `which is not imported in that file — the spread of an undefined binding `
-					+ `registers a leaf with no id.`,
-			)
-		} else if (source !== '@conduction/nextcloud-vue') {
-			ctx.failures.push(
-				`✗ [R5 spread-source] registerIntegration in ${r.file} spreads \`...${symbol}\` `
-					+ `imported from "${source}", not from the leaf-owning package `
-					+ `@conduction/nextcloud-vue — an override must extend the descriptor it `
-					+ `overrides, or the id it registers under is not the one it thinks.`,
-			)
+		const failure = spreadSourceFailure(r, symbol)
+		if (failure !== null) {
+			ctx.failures.push(failure)
 		}
 	}
 	if (r.id === null && r.spreads.length === 0) {
@@ -1399,6 +1445,34 @@ function checkSpreads(ctx, r) {
 				+ `nor a spread of a descriptor — it registers a leaf with no identity.`,
 		)
 	}
+}
+
+/**
+ * The R5 failure of one spread, or null when it comes from the owning package.
+ *
+ * @param {object} r The JS registration.
+ * @param {string} symbol The spread binding.
+ *
+ * @return {string|null} The failure message.
+ */
+function spreadSourceFailure(r, symbol) {
+	const source = r.spreadSources[symbol]
+	if (source === null) {
+		return (
+			`✗ [R5 spread-source] registerIntegration in ${r.file} spreads \`...${symbol}\`, `
+			+ `which is not imported in that file — the spread of an undefined binding `
+			+ `registers a leaf with no id.`
+		)
+	}
+	if (source !== '@conduction/nextcloud-vue') {
+		return (
+			`✗ [R5 spread-source] registerIntegration in ${r.file} spreads \`...${symbol}\` `
+			+ `imported from "${source}", not from the leaf-owning package `
+			+ `@conduction/nextcloud-vue — an override must extend the descriptor it `
+			+ `overrides, or the id it registers under is not the one it thinks.`
+		)
+	}
+	return null
 }
 
 /**
@@ -1451,7 +1525,7 @@ function checkOfflineSchemas(ctx, r) {
  */
 function checkOfflinePlannedFields(ctx, r) {
 	const planned = r.offlineConfig.plannedSchema
-	const props = planned === undefined ? undefined : ctx.schemas[planned]
+	const props = plannedProperties(ctx, planned)
 	if (props === undefined) {
 		return // no planned schema, or one already reported by the schema half
 	}
@@ -1470,6 +1544,19 @@ function checkOfflinePlannedFields(ctx, r) {
 			)
 		}
 	}
+}
+
+/**
+ * The declared properties of the planned schema, or undefined when there is
+ * none or it is not declared.
+ *
+ * @param {object} ctx The rule context.
+ * @param {string|undefined} planned The planned schema slug.
+ *
+ * @return {string[]|undefined} Its property names.
+ */
+function plannedProperties(ctx, planned) {
+	return planned === undefined ? undefined : ctx.schemas[planned]
 }
 
 /**
