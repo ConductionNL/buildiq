@@ -121,11 +121,6 @@
       "count": 2
     }
   },
-  "src/composables/useApplicationVersion.js": {
-    "no-unused-vars": {
-      "count": 1
-    }
-  },
   "src/composables/useOrAccessCapabilities.js": {
     "no-unused-vars": {
       "count": 1

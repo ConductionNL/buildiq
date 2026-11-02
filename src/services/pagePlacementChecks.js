@@ -77,6 +77,55 @@ export function isCustomPageInDisguise(page) {
 }
 
 /**
+ * The full-grid geometry of a body-filling widget. An omitted coordinate is
+ * normalised to these same values, the way the validator normalises it.
+ */
+const FULL_GRID = Object.freeze({
+	gridX: 0,
+	gridY: 0,
+	gridWidth: 12,
+	gridHeight: 12,
+})
+
+/**
+ * The only widget of a dashboard page, or null when the page is no dashboard
+ * or carries any other number of widgets.
+ *
+ * @param {object|null} page - the page to check.
+ * @return {object|null} the widget.
+ * @spec exclude step of customPageInDisguiseKey
+ */
+function soleDashboardWidget(page) {
+	if (!page || page.type !== 'dashboard') {
+		return null
+	}
+	if (!Array.isArray(page.widgets) || page.widgets.length !== 1) {
+		return null
+	}
+	const widget = page.widgets[0]
+	return widget && typeof widget === 'object' ? widget : null
+}
+
+/**
+ * Whether a widget sits in the body slot and fills the 12x12 grid, with
+ * omitted coordinates normalised the same way the validator normalises them,
+ * so an author cannot slip past the rule here and be caught by the save.
+ *
+ * @param {object} widget - the placement.
+ * @return {boolean}
+ * @spec exclude step of customPageInDisguiseKey
+ */
+function fillsBody(widget) {
+	return (
+		widget.slot === 'body'
+		&& Object.entries(FULL_GRID).every(
+			([axis, full]) =>
+				typeof widget[axis] !== 'number' || widget[axis] === full,
+		)
+	)
+}
+
+/**
  * The `widgetKey` that makes a page a custom page in disguise, so the editor
  * can name the component in the alternative it offers, or `null` when the page
  * is fine.
@@ -86,33 +135,10 @@ export function isCustomPageInDisguise(page) {
  * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
  */
 export function customPageInDisguiseKey(page) {
-	if (!page || page.type !== 'dashboard') {
+	const widget = soleDashboardWidget(page)
+	if (widget === null || !fillsBody(widget)) {
 		return null
 	}
-	if (!Array.isArray(page.widgets) || page.widgets.length !== 1) {
-		return null
-	}
-	const widget = page.widgets[0]
-	if (!widget || typeof widget !== 'object') {
-		return null
-	}
-
-	// Normalised the same way the validator normalises them, so an author
-	// cannot slip past the rule here and be caught by the save.
-	const gridX = typeof widget.gridX === 'number' ? widget.gridX : 0
-	const gridY = typeof widget.gridY === 'number' ? widget.gridY : 0
-	const gridWidth = typeof widget.gridWidth === 'number' ? widget.gridWidth : 12
-	const gridHeight = typeof widget.gridHeight === 'number' ? widget.gridHeight : 12
-	if (
-		widget.slot !== 'body'
-		|| gridX !== 0
-		|| gridY !== 0
-		|| gridWidth !== 12
-		|| gridHeight !== 12
-	) {
-		return null
-	}
-
 	const widgetKey = typeof widget.widgetKey === 'string' ? widget.widgetKey : ''
 	if (widgetKey === '' || isLibraryWidgetKey(widgetKey)) {
 		return null
