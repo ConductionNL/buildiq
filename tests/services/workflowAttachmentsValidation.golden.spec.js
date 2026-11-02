@@ -18,7 +18,7 @@ const UUID = '0b6d2c1e-3f4a-4b5c-8d9e-0f1a2b3c4d5e'
 const POOLS = {
 	id: [ABSENT, 'w1', 'w2', 'w1', '', ' ', 4],
 	schema: [ABSENT, 'case', 'case', 'other', 'ghost', '', '  ', 9],
-	caseTypeUuid: [ABSENT, UUID, UUID.toUpperCase(), 'not-a-uuid', 5],
+	caseTypeUuid: [ABSENT, UUID, UUID.toUpperCase(), 'not-a-uuid', 5, [UUID]],
 	caseTypeName: [ABSENT, 'Permit', '', ' ', null],
 	trigger: [ABSENT, 'on-create', 'on-update', null],
 	linkProperty: [ABSENT, 'url', 'title', 'count', 'link', 'missing', '', 3],
@@ -40,6 +40,7 @@ const SCHEMA_SETS = [
 	{ case: { properties: PROPERTIES }, other: { properties: null } },
 	{ other: { schema: { properties: { url: {} } } } },
 	{},
+	[{ properties: PROPERTIES }],
 ]
 
 const PAGE_SETS = [
