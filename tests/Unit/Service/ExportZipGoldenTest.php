@@ -161,6 +161,7 @@ class ExportZipGoldenTest extends TestCase {
 
 		$zip->close();
 		unlink($zipPath);
+		self::assertFileExists($service->scratchTreeDir(jobUuid: $jobUuid) . '/appinfo/info.xml', $name . ': the tree stays where the GitHub push reads it');
 		$this->removeTree(dir: $service->scratchTreeDir(jobUuid: $jobUuid));
 
 		return [

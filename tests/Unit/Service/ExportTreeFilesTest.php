@@ -143,12 +143,13 @@ final class ExportTreeFilesTest extends TestCase {
 	public function testCopySnapshotSkipsTheHelperFilesAndStampsTheTimestamp(): void {
 		file_put_contents($this->root . '/.snapshot-meta.json', '{}');
 		file_put_contents($this->root . '/.path-manifest.txt', 'x');
+		file_put_contents($this->root . '/README.md', '# app');
 		$dest = $this->root . '-copy/nested';
 
 		$this->files->copySnapshot(source: $this->root, dest: $dest, timestamp: 1767225600);
 
 		$this->assertSame(
-			expected: ['appinfo/info.xml', 'lib/Settings/flows/alpha.json', 'lib/Settings/flows/zeta.json'],
+			expected: ['README.md', 'appinfo/info.xml', 'lib/Settings/flows/alpha.json', 'lib/Settings/flows/zeta.json'],
 			actual: $this->files->listFilesSorted(baseDir: $dest)
 		);
 		$this->assertSame(expected: 1767225600, actual: filemtime($dest . '/appinfo/info.xml'));
