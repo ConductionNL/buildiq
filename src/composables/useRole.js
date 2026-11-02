@@ -73,6 +73,41 @@ export function getCurrentUid() {
 	return ''
 }
 
+/** The permission buckets, strongest first, with the role each grants. */
+const ROLE_BUCKETS = Object.freeze([
+	['owners', 'owner'],
+	['editors', 'editor'],
+	['viewers', 'viewer'],
+])
+
+/**
+ * A predicate that tells whether a permission principal is the caller.
+ *
+ * Matches by group GID OR by the caller's own user principal. Permission
+ * buckets carry `user:<uid>`, `group:<gid>`, or a bare GID — the same grammar
+ * the backend PermissionResolver enforces. A group-only check silently denies
+ * a user-principal owner (e.g. owners: ['user:admin']) every role-gated action.
+ *
+ * @param {{groups: string[], uid: string}} caller The caller's groups and uid.
+ * @return {function(string): boolean} The predicate.
+ */
+function principalMatcher(caller) {
+	return (p) =>
+		caller.groups.includes(p)
+		|| (caller.uid !== '' && (p === `user:${caller.uid}` || p === caller.uid))
+}
+
+/**
+ * Whether a permission bucket names the caller.
+ *
+ * @param {unknown} bucket A permission bucket (a list of principals).
+ * @param {function(string): boolean} holds Tells whether a principal is the caller.
+ * @return {boolean}
+ */
+function holdsAny(bucket, holds) {
+	return Array.isArray(bucket) && bucket.some(holds)
+}
+
 /**
  * Compute the caller's effective role on the given Application.
  *
@@ -91,29 +126,11 @@ export function useRole(application, userGroups) {
 		return 'none'
 	}
 	const permissions = application.permissions || {}
-	// Match by group GID OR by the caller's own user principal. Permission
-	// buckets carry `user:<uid>`, `group:<gid>`, or a bare GID — the same
-	// grammar the backend PermissionResolver enforces. The previous group-only
-	// check silently denied a user-principal owner (e.g. owners: ['user:admin'])
-	// every role-gated action.
-	const intersects = (bucket) =>
-		Array.isArray(bucket)
-		&& bucket.some(
-			(p) =>
-				groups.includes(p)
-				|| (uid !== '' && (p === `user:${uid}` || p === uid)),
-		)
-
-	if (intersects(permissions.owners)) {
-		return 'owner'
-	}
-	if (intersects(permissions.editors)) {
-		return 'editor'
-	}
-	if (intersects(permissions.viewers)) {
-		return 'viewer'
-	}
-	return 'none'
+	const holds = principalMatcher({ groups, uid })
+	const role = ROLE_BUCKETS.find(([bucket]) =>
+		holdsAny(permissions[bucket], holds),
+	)
+	return role ? role[1] : 'none'
 }
 
 /**
