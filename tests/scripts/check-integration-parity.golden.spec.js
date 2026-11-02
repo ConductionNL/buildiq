@@ -15,10 +15,7 @@ import * as os from 'os'
 import * as path from 'path'
 import { afterAll, describe, expect, it } from 'vitest'
 
-const SCRIPT = path.resolve(
-	__dirname,
-	'../../scripts/check-integration-parity.js',
-)
+const SCRIPT = path.resolve(__dirname, '../../scripts/check-integration-parity.js')
 const roots = []
 
 /**
