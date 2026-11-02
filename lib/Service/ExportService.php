@@ -36,8 +36,6 @@ namespace OCA\Buildiq\Service;
 use OCP\Files\IAppData;
 use OCP\Files\NotFoundException;
 use Psr\Log\LoggerInterface;
-use RuntimeException;
-use ZipArchive;
 
 /**
  * Generates a real Nextcloud-app tree from an Buildiq Application + ZIPs it.
@@ -156,46 +154,27 @@ class ExportService {
 	/**
 	 * Build the ZIP archive for an Application + version into app-data.
 	 *
-	 * @param string $applicationUuid Source Application UUID.
-	 * @param string $versionSlug Semver of the Application version.
-	 * @param array<string,mixed> $context Placeholder context: appId, appNamespace, etc.
-	 * @param string $jobUuid ExportJob UUID — used as the ZIP
-	 *                        filename.
-	 * @param array<int,mixed> $dataRegisters Source Application's `dataRegisters` bindings + the
-	 *                                        per-export includeData choice for each
-	 *                                        (data-registers-runtime design.md Decision 5).
-	 *                                        Default `[]`. Untrusted shape — see
-	 *                                        bundleDataRegisterSchemas().
-	 * @param array<int,mixed> $flows `Application.flows` bindings, passed straight to
-	 *                                {@see FlowAndAgentExportBundler::bundle()}. Default `[]`.
-	 * @param string $applicationSlug Slug of the application whose agents to collect.
-	 *                                Default `''`.
-	 * @param array<string,mixed>|null $source The application and version to put in the tree, from
-	 *                                         ExportAppContentBundler::resolveSource(), plus
-	 *                                         `includeSeedData`. Null exports the bare scaffold.
+	 * A missing template snapshot or a ZIP that cannot be written surfaces as
+	 * the RuntimeException ExportTreeFiles throws.
+	 *
+	 * @param ExportTarget $target The application, version and job the archive is built for.
+	 * @param ExportContents $contents The placeholder context, data register bindings, flows and
+	 *                                 application source the tree is filled from.
 	 * @param bool $includeServerBundle Add `deploy/`, the files that run the app on its own server.
 	 *
 	 * @return string Absolute (local) path to the produced ZIP.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag mirrors the export job's includeServerBundle field.
 	 *
-	 * @throws RuntimeException When packaging fails.
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
 	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.2
 	 */
 	public function generateAppZip(
-		string $applicationUuid,
-		string $versionSlug,
-		array $context,
-		string $jobUuid,
-		array $dataRegisters = [],
-		array $flows = [],
-		string $applicationSlug = '',
-		?array $source = null,
+		ExportTarget $target,
+		ExportContents $contents,
 		bool $includeServerBundle = false,
 	): string {
-		$scratchDir = $this->prepareScratchDir(jobUuid: $jobUuid);
+		$scratchDir = $this->prepareScratchDir(jobUuid: $target->jobUuid);
 		$this->copyTemplate(source: $this->templateRoot, dest: $scratchDir);
 		$serverBundle = null;
 		if ($includeServerBundle === true) {
@@ -203,17 +182,17 @@ class ExportService {
 		}
 
 		$serverBundle?->write(rootDir: $scratchDir);
-		$this->resolvePlaceholders(rootDir: $scratchDir, context: $context);
-		$this->bundleDataRegisterSchemas(rootDir: $scratchDir, dataRegisters: $dataRegisters);
+		$this->resolvePlaceholders(rootDir: $scratchDir, context: $contents->context);
+		$this->bundleDataRegisterSchemas(rootDir: $scratchDir, dataRegisters: $contents->dataRegisters);
 
 		// The application itself: without this the archive is the empty template.
 		$this->lastContent = null;
-		if ($source !== null && $this->contentBundler !== null) {
+		if ($contents->source !== null && $this->contentBundler !== null) {
 			$this->lastContent = $this->contentBundler->bundle(
 				rootDir: $scratchDir,
-				source: $source,
-				appId: $this->placeholderResolver->slug(value: (string)($context['appId'] ?? '')),
-				semver: $versionSlug
+				source: $contents->source,
+				appId: $this->placeholderResolver->slug(value: (string)($contents->context['appId'] ?? '')),
+				semver: $target->versionSlug
 			);
 		}
 
@@ -224,23 +203,23 @@ class ExportService {
 		// reads the finished job, not the log.
 		$this->lastSkipped = $this->flowAndAgentBundler->bundle(
 			rootDir: $scratchDir,
-			flows: $flows,
-			applicationSlug: $applicationSlug
+			flows: $contents->flows,
+			applicationSlug: $target->applicationSlug
 		);
 
 		// Audit-trail entry names only the source — never the PAT, never secret values.
 		$this->logger->info(
 			'Buildiq export: built tree',
 			[
-				'applicationUuid' => $applicationUuid,
-				'applicationVersion' => $versionSlug,
-				'jobUuid' => $jobUuid,
+				'applicationUuid' => $target->applicationUuid,
+				'applicationVersion' => $target->versionSlug,
+				'jobUuid' => $target->jobUuid,
 			]
 		);
 
 		$this->pinTreeTimestamps(rootDir: $scratchDir);
 
-		return $this->packageZip(sourceDir: $scratchDir, jobUuid: $jobUuid);
+		return $this->packageZip(sourceDir: $scratchDir, jobUuid: $target->jobUuid);
 	}//end generateAppZip()
 
 	/**
@@ -405,12 +384,12 @@ class ExportService {
 	/**
 	 * Package a directory tree into a deterministic ZIP archive.
 	 *
+	 * ExportTreeFiles::zipTree() throws a RuntimeException when the ZIP cannot be written.
+	 *
 	 * @param string $sourceDir Directory to package.
 	 * @param string $jobUuid ExportJob UUID — filename base.
 	 *
 	 * @return string Local path to the ZIP file.
-	 *
-	 * @throws RuntimeException When ZIP creation fails.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
 	 */
@@ -426,22 +405,7 @@ class ExportService {
 			unlink($zipPath);
 		}
 
-		$zip = new ZipArchive();
-		if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-			throw new RuntimeException('Unable to open ZIP archive: ' . $zipPath);
-		}
-
-		$entries = $this->treeFiles->listFilesSorted(baseDir: $sourceDir);
-		foreach ($entries as $relativePath) {
-			$absolute = $sourceDir . '/' . $relativePath;
-			$zip->addFile($absolute, $relativePath);
-			// Fixed timestamp for byte-determinism.
-			$zip->setExternalAttributesName($relativePath, ZipArchive::OPSYS_UNIX, (0o100644 << 16));
-		}
-
-		if ($zip->close() === false) {
-			throw new RuntimeException('Failed to finalise ZIP archive: ' . $zipPath);
-		}
+		$this->treeFiles->zipTree(sourceDir: $sourceDir, zipPath: $zipPath);
 
 		// The archive's ENTRIES carry the deterministic timestamp, which is what
 		// makes two exports of the same tree byte-identical. The .zip file's own
@@ -521,7 +485,8 @@ class ExportService {
 	 * Copy the embedded template snapshot into the scratch directory.
 	 *
 	 * Skips the snapshot-meta + path-manifest helper files; they are
-	 * artefacts of Buildiq, not of the produced app.
+	 * artefacts of Buildiq, not of the produced app. A missing snapshot
+	 * surfaces as the RuntimeException ExportTreeFiles::requireDirectory() throws.
 	 *
 	 * @param string $source Snapshot dir.
 	 * @param string $dest Scratch dir.
@@ -531,9 +496,7 @@ class ExportService {
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
 	 */
 	private function copyTemplate(string $source, string $dest): void {
-		if (is_dir($source) === false) {
-			throw new RuntimeException('Template snapshot is missing: ' . $source);
-		}
+		$this->treeFiles->requireDirectory(dir: $source, label: 'Template snapshot');
 
 		if (is_dir($dest) === false) {
 			mkdir($dest, 0o755, true);

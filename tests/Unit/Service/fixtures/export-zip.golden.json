@@ -1,0 +1,2421 @@
+{
+    "src0 content1 flag0 writer1": {
+        "zip": "golden-cb54a310db93.zip",
+        "entries": {
+            ".gitattributes": "291fc3dc1457da8b3de9439882c2e73faa102299",
+            ".github/workflows/branch-protection.yml": "67d0164fa93a09fc33916442cc9590cb9ec765d9",
+            ".github/workflows/code-quality.yml": "dad7fe7d59359e1bda338cc0b4a7f20a14febb12",
+            ".github/workflows/documentation.yml": "092a9ce0659f76d2195dc361180ba57062d2859c",
+            ".github/workflows/issue-triage.yml": "46950238d9287d204141e3feaeca567ced24e1d3",
+            ".github/workflows/openspec-sync.yml": "06bd0472fc1d6fbafc68ed711f79bdc42bcd5fa1",
+            ".github/workflows/pull-request-lint-check.yaml": "b1eef808dcc94bb224f1db969c21b27ecd5b1158",
+            ".github/workflows/release-beta.yml": "fc592c28e73c44254933efb6679f3a46b0019d6b",
+            ".github/workflows/release-stable.yml": "587227865b1bf1726ee66e434d2a49311429ddbe",
+            ".github/workflows/sync-to-beta.yml": "626a58099a6bafbf1baf9728529e93d5947bfe53",
+            ".gitignore": "883e5b1e1a1fed68ee5ee142188a82bdb44d8639",
+            ".prettierrc": "693104e7d1c3d2e77d4a00e3470f70697448dfe0",
+            ".vscode/settings.json": "bc049c3f248312967dd3d0bdf2b00a003ac978f6",
+            "LICENSE": "1e2bc005404dc951a04330cc32d1ae0b085fe32c",
+            "Makefile": "7000850d4fe7b2bdf6877aa17f9303b122cc5753",
+            "README.md": "82f2fd397bcea38c09d47dabf2fa80fa27148e00",
+            "appinfo/info.xml": "1df629b847ade22b1a35b0807ea65a7ad2e3545a",
+            "appinfo/routes.php": "05fc29f1dbec9f6f70baec667d9a178cea0c3daa",
+            "composer.json": "678873856702a5b6d45c0cf0915b9cdd1d2a2618",
+            "eslint.config.js": "89db2eff96d6349467028e3faea349dbfc7b9541",
+            "img/app-dark.svg": "e31056a2f28fd31dd422b3fb38fae24f28de9251",
+            "img/app-store.svg": "e407ad19e7f492fe0ab07a5507adfcece3abf17c",
+            "img/app.svg": "1d9adda430dc9ad57a2ddb6f0d7a9d70f25dce3f",
+            "l10n/en.json": "b8f96ee97952e2126a0b00e036dc322c5d67e60d",
+            "l10n/nl.json": "407dd18f44cec1956a44d52eaa01a261ffaef1e1",
+            "lib/AppInfo/Application.php": "8d88c37b8da5d1094421d6a78931dc60ed147c79",
+            "lib/AppInfo/OpenRegisterAutoloader.php": "59dd7118aa605841fa48607ccafefcc943be7712",
+            "lib/Controller/DashboardController.php": "37dfcaf57a9d67125321c41527db15d0cdc5e7aa",
+            "lib/Controller/SettingsController.php": "5a50fcf44cbe25b77935f507b9fef3045543f6e7",
+            "lib/Listener/DeepLinkRegistrationListener.php": "5f20dbfc51a8363f903027d36a7506f6d3be832e",
+            "lib/Repair/InitializeSettings.php": "4463cdf34b17ac2229775f7b8e6bc5b7164ea9ce",
+            "lib/Sections/SettingsSection.php": "c1788e02e0398fc53f9ef99966020e8e622b41f3",
+            "lib/Service/FlowSeedService.php": "16183954023764028cf6f0343bd73ae81b2f0568",
+            "lib/Service/SettingsService.php": "2fee5d8b13119c1f9fe04f6c4714012056a06f84",
+            "lib/Settings/AdminSettings.php": "9123ef81e5e68f20708843aba3c32133589a225b",
+            "lib/Settings/demo_app_register.json": "7ba0e6bcf963f705a139b89300a432e6f44ed2df",
+            "package.json": "dc7afb828535ae28e53ede163c22616cb9ec6ed3",
+            "phpcs-custom-sniffs/CustomSniffs/Sniffs/Functions/NamedParametersSniff.php": "10be689fe1efeb62338b1a2b9409828a2ea54fa1",
+            "phpcs-custom-sniffs/CustomSniffs/ruleset.xml": "40c5f637b7409961052ed4d3f796589d91090e09",
+            "phpcs.xml": "e59af4d1dbef5143c859439763ec14d0c3dffc77",
+            "phpmd.xml": "1186ad71b877d9de9035e0e453be110af6418610",
+            "phpstan-bootstrap.php": "cb0d40525f2adcbc0dc6c8ba7f57c631bf30963a",
+            "phpstan.neon": "e907724b7e3ec708d925f42dcc9764a692e187a8",
+            "phpunit-unit.xml": "f18a32b706f355d82bd84daf5e928694a06f7b92",
+            "phpunit.xml": "619c9b2d6ec13bbe4fdfd4a6d8718d5cb234dacc",
+            "project.md": "cc57f34456929538f5018331ca0d1cc3c2d6d9c3",
+            "psalm.xml": "d1ee863c0f5e5bce091d5e35985b62c40b7e83aa",
+            "src/App.vue": "3a5b14c7cbfd2d129bc9018e6417ce1420f5fa68",
+            "src/assets/app.css": "83647af7f30a7c0f8987f0e12f86e3e813c1446c",
+            "src/main.js": "84cc88be5a3609368c6801dc18879e7a16fee218",
+            "src/manifest.json": "1f994131c30b336690c9272c0113fc6634dada0e",
+            "src/navigation/MainMenu.vue": "49690fc718540d8c2e27970019f1ea77926618cf",
+            "src/pinia.js": "c2867886d0bc7bdfbbefad2bb890b8f857533ce1",
+            "src/router/index.js": "0ccba08d66276727a0bb2e27a2ec5b1b504aae31",
+            "src/settings.js": "0ff1286ba374fce5c622d09d089f7657ca7dcd77",
+            "src/store/modules/object.js": "0e3088d559bfea054f795b70f11ac54743c46eaa",
+            "src/store/modules/settings.js": "39c6ca59b9a6401dc05c214d44712edd247ea5fc",
+            "src/store/store.js": "5802e0ed577693b7be45b4960baac5f3934eef7c",
+            "src/views/Dashboard.vue": "2bf4d77cd041fdcc125d76978b13eef2cd806373",
+            "src/views/settings/AdminRoot.vue": "4e80250ce0e561d59df2d5521a21c15ebe7dd723",
+            "src/views/settings/Settings.vue": "50d33a393b3098f2bbadd72ca8e288e0e149e88d",
+            "src/views/settings/UserSettings.vue": "457bd405ad26c753300ec6d219143e901f11301a",
+            "stylelint.config.js": "73fa02e0452e5a65008ec97c0a0c9c44852ab5cd",
+            "templates/index.php": "f5814caefc3b0d734761a75f38a897c98796fbbe",
+            "templates/settings/admin.php": "d930134a12120e0360bc5e3bad2197778328d1eb",
+            "tests/Unit/DemoAppTest.php": "981671ca8ceea8c789b2c11a7ecc0f327d1c688f",
+            "tests/bootstrap-unit.php": "68edb5e8c5f8ded323bb594480da520c83a66efd",
+            "tests/bootstrap.php": "66a0fbb7806cabc5072be6c34da87930ae0926aa",
+            "tests/integration/README.md": "df3a448115ed9d5f1638a24556b08dd21dc155c9",
+            "tests/integration/demo-app.postman_collection.json": "0d72d3e99d63658fea9f16ddeecec8a0cbe4056b",
+            "tests/unit/AppInfo/OpenRegisterAutoloaderTest.php": "53f09681ef755f29cd143d144d048529ae64b5c9",
+            "tests/unit/Controller/SettingsControllerTest.php": "ec96d63465f154824c3e31b5ffa1f6a830691e35",
+            "webpack.config.js": "507ae436be4e15ebc0083e30c9c2b8db9e6da086"
+        },
+        "lastContent": null,
+        "lastSkipped": [
+            {
+                "kind": "flow",
+                "ref": "demo-slug#2",
+                "reason": "golden"
+            }
+        ],
+        "calls": [
+            {
+                "call": "registers.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "dataRegisters": [
+                        {
+                            "register": "r1",
+                            "includeData": true
+                        },
+                        {
+                            "register": "r2"
+                        }
+                    ]
+                }
+            },
+            {
+                "call": "flows.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "flows": [
+                        {
+                            "flow": "f1"
+                        },
+                        "loose"
+                    ],
+                    "applicationSlug": "demo-slug"
+                }
+            },
+            {
+                "call": "log.info",
+                "args": {
+                    "message": "Buildiq export: built tree",
+                    "context": {
+                        "applicationUuid": "uuid-0",
+                        "applicationVersion": "1.2.0",
+                        "jobUuid": "golden-cb54a310db93"
+                    }
+                }
+            }
+        ]
+    },
+    "src0 content1 flag0 writer0": {
+        "zip": "golden-2240dc89d30d.zip",
+        "entries": {
+            ".gitattributes": "291fc3dc1457da8b3de9439882c2e73faa102299",
+            ".github/workflows/branch-protection.yml": "67d0164fa93a09fc33916442cc9590cb9ec765d9",
+            ".github/workflows/code-quality.yml": "dad7fe7d59359e1bda338cc0b4a7f20a14febb12",
+            ".github/workflows/documentation.yml": "092a9ce0659f76d2195dc361180ba57062d2859c",
+            ".github/workflows/issue-triage.yml": "46950238d9287d204141e3feaeca567ced24e1d3",
+            ".github/workflows/openspec-sync.yml": "06bd0472fc1d6fbafc68ed711f79bdc42bcd5fa1",
+            ".github/workflows/pull-request-lint-check.yaml": "b1eef808dcc94bb224f1db969c21b27ecd5b1158",
+            ".github/workflows/release-beta.yml": "fc592c28e73c44254933efb6679f3a46b0019d6b",
+            ".github/workflows/release-stable.yml": "587227865b1bf1726ee66e434d2a49311429ddbe",
+            ".github/workflows/sync-to-beta.yml": "626a58099a6bafbf1baf9728529e93d5947bfe53",
+            ".gitignore": "883e5b1e1a1fed68ee5ee142188a82bdb44d8639",
+            ".prettierrc": "693104e7d1c3d2e77d4a00e3470f70697448dfe0",
+            ".vscode/settings.json": "bc049c3f248312967dd3d0bdf2b00a003ac978f6",
+            "LICENSE": "1e2bc005404dc951a04330cc32d1ae0b085fe32c",
+            "Makefile": "7000850d4fe7b2bdf6877aa17f9303b122cc5753",
+            "README.md": "82f2fd397bcea38c09d47dabf2fa80fa27148e00",
+            "appinfo/info.xml": "1df629b847ade22b1a35b0807ea65a7ad2e3545a",
+            "appinfo/routes.php": "05fc29f1dbec9f6f70baec667d9a178cea0c3daa",
+            "composer.json": "678873856702a5b6d45c0cf0915b9cdd1d2a2618",
+            "eslint.config.js": "89db2eff96d6349467028e3faea349dbfc7b9541",
+            "img/app-dark.svg": "e31056a2f28fd31dd422b3fb38fae24f28de9251",
+            "img/app-store.svg": "e407ad19e7f492fe0ab07a5507adfcece3abf17c",
+            "img/app.svg": "1d9adda430dc9ad57a2ddb6f0d7a9d70f25dce3f",
+            "l10n/en.json": "b8f96ee97952e2126a0b00e036dc322c5d67e60d",
+            "l10n/nl.json": "407dd18f44cec1956a44d52eaa01a261ffaef1e1",
+            "lib/AppInfo/Application.php": "8d88c37b8da5d1094421d6a78931dc60ed147c79",
+            "lib/AppInfo/OpenRegisterAutoloader.php": "59dd7118aa605841fa48607ccafefcc943be7712",
+            "lib/Controller/DashboardController.php": "37dfcaf57a9d67125321c41527db15d0cdc5e7aa",
+            "lib/Controller/SettingsController.php": "5a50fcf44cbe25b77935f507b9fef3045543f6e7",
+            "lib/Listener/DeepLinkRegistrationListener.php": "5f20dbfc51a8363f903027d36a7506f6d3be832e",
+            "lib/Repair/InitializeSettings.php": "4463cdf34b17ac2229775f7b8e6bc5b7164ea9ce",
+            "lib/Sections/SettingsSection.php": "c1788e02e0398fc53f9ef99966020e8e622b41f3",
+            "lib/Service/FlowSeedService.php": "16183954023764028cf6f0343bd73ae81b2f0568",
+            "lib/Service/SettingsService.php": "2fee5d8b13119c1f9fe04f6c4714012056a06f84",
+            "lib/Settings/AdminSettings.php": "9123ef81e5e68f20708843aba3c32133589a225b",
+            "lib/Settings/demo_app_register.json": "7ba0e6bcf963f705a139b89300a432e6f44ed2df",
+            "package.json": "dc7afb828535ae28e53ede163c22616cb9ec6ed3",
+            "phpcs-custom-sniffs/CustomSniffs/Sniffs/Functions/NamedParametersSniff.php": "10be689fe1efeb62338b1a2b9409828a2ea54fa1",
+            "phpcs-custom-sniffs/CustomSniffs/ruleset.xml": "40c5f637b7409961052ed4d3f796589d91090e09",
+            "phpcs.xml": "e59af4d1dbef5143c859439763ec14d0c3dffc77",
+            "phpmd.xml": "1186ad71b877d9de9035e0e453be110af6418610",
+            "phpstan-bootstrap.php": "cb0d40525f2adcbc0dc6c8ba7f57c631bf30963a",
+            "phpstan.neon": "e907724b7e3ec708d925f42dcc9764a692e187a8",
+            "phpunit-unit.xml": "f18a32b706f355d82bd84daf5e928694a06f7b92",
+            "phpunit.xml": "619c9b2d6ec13bbe4fdfd4a6d8718d5cb234dacc",
+            "project.md": "cc57f34456929538f5018331ca0d1cc3c2d6d9c3",
+            "psalm.xml": "d1ee863c0f5e5bce091d5e35985b62c40b7e83aa",
+            "src/App.vue": "3a5b14c7cbfd2d129bc9018e6417ce1420f5fa68",
+            "src/assets/app.css": "83647af7f30a7c0f8987f0e12f86e3e813c1446c",
+            "src/main.js": "84cc88be5a3609368c6801dc18879e7a16fee218",
+            "src/manifest.json": "1f994131c30b336690c9272c0113fc6634dada0e",
+            "src/navigation/MainMenu.vue": "49690fc718540d8c2e27970019f1ea77926618cf",
+            "src/pinia.js": "c2867886d0bc7bdfbbefad2bb890b8f857533ce1",
+            "src/router/index.js": "0ccba08d66276727a0bb2e27a2ec5b1b504aae31",
+            "src/settings.js": "0ff1286ba374fce5c622d09d089f7657ca7dcd77",
+            "src/store/modules/object.js": "0e3088d559bfea054f795b70f11ac54743c46eaa",
+            "src/store/modules/settings.js": "39c6ca59b9a6401dc05c214d44712edd247ea5fc",
+            "src/store/store.js": "5802e0ed577693b7be45b4960baac5f3934eef7c",
+            "src/views/Dashboard.vue": "2bf4d77cd041fdcc125d76978b13eef2cd806373",
+            "src/views/settings/AdminRoot.vue": "4e80250ce0e561d59df2d5521a21c15ebe7dd723",
+            "src/views/settings/Settings.vue": "50d33a393b3098f2bbadd72ca8e288e0e149e88d",
+            "src/views/settings/UserSettings.vue": "457bd405ad26c753300ec6d219143e901f11301a",
+            "stylelint.config.js": "73fa02e0452e5a65008ec97c0a0c9c44852ab5cd",
+            "templates/index.php": "f5814caefc3b0d734761a75f38a897c98796fbbe",
+            "templates/settings/admin.php": "d930134a12120e0360bc5e3bad2197778328d1eb",
+            "tests/Unit/DemoAppTest.php": "981671ca8ceea8c789b2c11a7ecc0f327d1c688f",
+            "tests/bootstrap-unit.php": "68edb5e8c5f8ded323bb594480da520c83a66efd",
+            "tests/bootstrap.php": "66a0fbb7806cabc5072be6c34da87930ae0926aa",
+            "tests/integration/README.md": "df3a448115ed9d5f1638a24556b08dd21dc155c9",
+            "tests/integration/demo-app.postman_collection.json": "0d72d3e99d63658fea9f16ddeecec8a0cbe4056b",
+            "tests/unit/AppInfo/OpenRegisterAutoloaderTest.php": "53f09681ef755f29cd143d144d048529ae64b5c9",
+            "tests/unit/Controller/SettingsControllerTest.php": "ec96d63465f154824c3e31b5ffa1f6a830691e35",
+            "webpack.config.js": "507ae436be4e15ebc0083e30c9c2b8db9e6da086"
+        },
+        "lastContent": null,
+        "lastSkipped": [
+            {
+                "kind": "flow",
+                "ref": "demo-slug#2",
+                "reason": "golden"
+            }
+        ],
+        "calls": [
+            {
+                "call": "registers.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "dataRegisters": [
+                        {
+                            "register": "r1",
+                            "includeData": true
+                        },
+                        {
+                            "register": "r2"
+                        }
+                    ]
+                }
+            },
+            {
+                "call": "flows.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "flows": [
+                        {
+                            "flow": "f1"
+                        },
+                        "loose"
+                    ],
+                    "applicationSlug": "demo-slug"
+                }
+            },
+            {
+                "call": "log.info",
+                "args": {
+                    "message": "Buildiq export: built tree",
+                    "context": {
+                        "applicationUuid": "uuid-0",
+                        "applicationVersion": "1.2.0",
+                        "jobUuid": "golden-2240dc89d30d"
+                    }
+                }
+            }
+        ]
+    },
+    "src0 content1 flag1 writer1": {
+        "zip": "golden-8493c3f0f73e.zip",
+        "entries": {
+            ".gitattributes": "291fc3dc1457da8b3de9439882c2e73faa102299",
+            ".github/workflows/branch-protection.yml": "67d0164fa93a09fc33916442cc9590cb9ec765d9",
+            ".github/workflows/code-quality.yml": "dad7fe7d59359e1bda338cc0b4a7f20a14febb12",
+            ".github/workflows/documentation.yml": "092a9ce0659f76d2195dc361180ba57062d2859c",
+            ".github/workflows/issue-triage.yml": "46950238d9287d204141e3feaeca567ced24e1d3",
+            ".github/workflows/openspec-sync.yml": "06bd0472fc1d6fbafc68ed711f79bdc42bcd5fa1",
+            ".github/workflows/pull-request-lint-check.yaml": "b1eef808dcc94bb224f1db969c21b27ecd5b1158",
+            ".github/workflows/release-beta.yml": "fc592c28e73c44254933efb6679f3a46b0019d6b",
+            ".github/workflows/release-stable.yml": "587227865b1bf1726ee66e434d2a49311429ddbe",
+            ".github/workflows/sync-to-beta.yml": "626a58099a6bafbf1baf9728529e93d5947bfe53",
+            ".gitignore": "883e5b1e1a1fed68ee5ee142188a82bdb44d8639",
+            ".prettierrc": "693104e7d1c3d2e77d4a00e3470f70697448dfe0",
+            ".vscode/settings.json": "bc049c3f248312967dd3d0bdf2b00a003ac978f6",
+            "LICENSE": "1e2bc005404dc951a04330cc32d1ae0b085fe32c",
+            "Makefile": "7000850d4fe7b2bdf6877aa17f9303b122cc5753",
+            "README.md": "82f2fd397bcea38c09d47dabf2fa80fa27148e00",
+            "appinfo/info.xml": "1df629b847ade22b1a35b0807ea65a7ad2e3545a",
+            "appinfo/routes.php": "05fc29f1dbec9f6f70baec667d9a178cea0c3daa",
+            "composer.json": "678873856702a5b6d45c0cf0915b9cdd1d2a2618",
+            "deploy/golden.txt": "b0d51b9ff91b623cc42b17c529b7c21c2ab57fb4",
+            "eslint.config.js": "89db2eff96d6349467028e3faea349dbfc7b9541",
+            "img/app-dark.svg": "e31056a2f28fd31dd422b3fb38fae24f28de9251",
+            "img/app-store.svg": "e407ad19e7f492fe0ab07a5507adfcece3abf17c",
+            "img/app.svg": "1d9adda430dc9ad57a2ddb6f0d7a9d70f25dce3f",
+            "l10n/en.json": "b8f96ee97952e2126a0b00e036dc322c5d67e60d",
+            "l10n/nl.json": "407dd18f44cec1956a44d52eaa01a261ffaef1e1",
+            "lib/AppInfo/Application.php": "8d88c37b8da5d1094421d6a78931dc60ed147c79",
+            "lib/AppInfo/OpenRegisterAutoloader.php": "59dd7118aa605841fa48607ccafefcc943be7712",
+            "lib/Controller/DashboardController.php": "37dfcaf57a9d67125321c41527db15d0cdc5e7aa",
+            "lib/Controller/SettingsController.php": "5a50fcf44cbe25b77935f507b9fef3045543f6e7",
+            "lib/Listener/DeepLinkRegistrationListener.php": "5f20dbfc51a8363f903027d36a7506f6d3be832e",
+            "lib/Repair/InitializeSettings.php": "4463cdf34b17ac2229775f7b8e6bc5b7164ea9ce",
+            "lib/Sections/SettingsSection.php": "c1788e02e0398fc53f9ef99966020e8e622b41f3",
+            "lib/Service/FlowSeedService.php": "16183954023764028cf6f0343bd73ae81b2f0568",
+            "lib/Service/SettingsService.php": "2fee5d8b13119c1f9fe04f6c4714012056a06f84",
+            "lib/Settings/AdminSettings.php": "9123ef81e5e68f20708843aba3c32133589a225b",
+            "lib/Settings/demo_app_register.json": "7ba0e6bcf963f705a139b89300a432e6f44ed2df",
+            "package.json": "dc7afb828535ae28e53ede163c22616cb9ec6ed3",
+            "phpcs-custom-sniffs/CustomSniffs/Sniffs/Functions/NamedParametersSniff.php": "10be689fe1efeb62338b1a2b9409828a2ea54fa1",
+            "phpcs-custom-sniffs/CustomSniffs/ruleset.xml": "40c5f637b7409961052ed4d3f796589d91090e09",
+            "phpcs.xml": "e59af4d1dbef5143c859439763ec14d0c3dffc77",
+            "phpmd.xml": "1186ad71b877d9de9035e0e453be110af6418610",
+            "phpstan-bootstrap.php": "cb0d40525f2adcbc0dc6c8ba7f57c631bf30963a",
+            "phpstan.neon": "e907724b7e3ec708d925f42dcc9764a692e187a8",
+            "phpunit-unit.xml": "f18a32b706f355d82bd84daf5e928694a06f7b92",
+            "phpunit.xml": "619c9b2d6ec13bbe4fdfd4a6d8718d5cb234dacc",
+            "project.md": "cc57f34456929538f5018331ca0d1cc3c2d6d9c3",
+            "psalm.xml": "d1ee863c0f5e5bce091d5e35985b62c40b7e83aa",
+            "src/App.vue": "3a5b14c7cbfd2d129bc9018e6417ce1420f5fa68",
+            "src/assets/app.css": "83647af7f30a7c0f8987f0e12f86e3e813c1446c",
+            "src/main.js": "84cc88be5a3609368c6801dc18879e7a16fee218",
+            "src/manifest.json": "1f994131c30b336690c9272c0113fc6634dada0e",
+            "src/navigation/MainMenu.vue": "49690fc718540d8c2e27970019f1ea77926618cf",
+            "src/pinia.js": "c2867886d0bc7bdfbbefad2bb890b8f857533ce1",
+            "src/router/index.js": "0ccba08d66276727a0bb2e27a2ec5b1b504aae31",
+            "src/settings.js": "0ff1286ba374fce5c622d09d089f7657ca7dcd77",
+            "src/store/modules/object.js": "0e3088d559bfea054f795b70f11ac54743c46eaa",
+            "src/store/modules/settings.js": "39c6ca59b9a6401dc05c214d44712edd247ea5fc",
+            "src/store/store.js": "5802e0ed577693b7be45b4960baac5f3934eef7c",
+            "src/views/Dashboard.vue": "2bf4d77cd041fdcc125d76978b13eef2cd806373",
+            "src/views/settings/AdminRoot.vue": "4e80250ce0e561d59df2d5521a21c15ebe7dd723",
+            "src/views/settings/Settings.vue": "50d33a393b3098f2bbadd72ca8e288e0e149e88d",
+            "src/views/settings/UserSettings.vue": "457bd405ad26c753300ec6d219143e901f11301a",
+            "stylelint.config.js": "73fa02e0452e5a65008ec97c0a0c9c44852ab5cd",
+            "templates/index.php": "f5814caefc3b0d734761a75f38a897c98796fbbe",
+            "templates/settings/admin.php": "d930134a12120e0360bc5e3bad2197778328d1eb",
+            "tests/Unit/DemoAppTest.php": "981671ca8ceea8c789b2c11a7ecc0f327d1c688f",
+            "tests/bootstrap-unit.php": "68edb5e8c5f8ded323bb594480da520c83a66efd",
+            "tests/bootstrap.php": "66a0fbb7806cabc5072be6c34da87930ae0926aa",
+            "tests/integration/README.md": "df3a448115ed9d5f1638a24556b08dd21dc155c9",
+            "tests/integration/demo-app.postman_collection.json": "0d72d3e99d63658fea9f16ddeecec8a0cbe4056b",
+            "tests/unit/AppInfo/OpenRegisterAutoloaderTest.php": "53f09681ef755f29cd143d144d048529ae64b5c9",
+            "tests/unit/Controller/SettingsControllerTest.php": "ec96d63465f154824c3e31b5ffa1f6a830691e35",
+            "webpack.config.js": "507ae436be4e15ebc0083e30c9c2b8db9e6da086"
+        },
+        "lastContent": null,
+        "lastSkipped": [
+            {
+                "kind": "flow",
+                "ref": "demo-slug#2",
+                "reason": "golden"
+            }
+        ],
+        "calls": [
+            {
+                "call": "writer.write",
+                "args": {
+                    "rootDir": "<scratch>"
+                }
+            },
+            {
+                "call": "registers.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "dataRegisters": [
+                        {
+                            "register": "r1",
+                            "includeData": true
+                        },
+                        {
+                            "register": "r2"
+                        }
+                    ]
+                }
+            },
+            {
+                "call": "writer.pointReadme",
+                "args": {
+                    "rootDir": "<scratch>"
+                }
+            },
+            {
+                "call": "flows.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "flows": [
+                        {
+                            "flow": "f1"
+                        },
+                        "loose"
+                    ],
+                    "applicationSlug": "demo-slug"
+                }
+            },
+            {
+                "call": "log.info",
+                "args": {
+                    "message": "Buildiq export: built tree",
+                    "context": {
+                        "applicationUuid": "uuid-0",
+                        "applicationVersion": "1.2.0",
+                        "jobUuid": "golden-8493c3f0f73e"
+                    }
+                }
+            }
+        ]
+    },
+    "src0 content1 flag1 writer0": {
+        "zip": "golden-044c6fac48dd.zip",
+        "entries": {
+            ".gitattributes": "291fc3dc1457da8b3de9439882c2e73faa102299",
+            ".github/workflows/branch-protection.yml": "67d0164fa93a09fc33916442cc9590cb9ec765d9",
+            ".github/workflows/code-quality.yml": "dad7fe7d59359e1bda338cc0b4a7f20a14febb12",
+            ".github/workflows/documentation.yml": "092a9ce0659f76d2195dc361180ba57062d2859c",
+            ".github/workflows/issue-triage.yml": "46950238d9287d204141e3feaeca567ced24e1d3",
+            ".github/workflows/openspec-sync.yml": "06bd0472fc1d6fbafc68ed711f79bdc42bcd5fa1",
+            ".github/workflows/pull-request-lint-check.yaml": "b1eef808dcc94bb224f1db969c21b27ecd5b1158",
+            ".github/workflows/release-beta.yml": "fc592c28e73c44254933efb6679f3a46b0019d6b",
+            ".github/workflows/release-stable.yml": "587227865b1bf1726ee66e434d2a49311429ddbe",
+            ".github/workflows/sync-to-beta.yml": "626a58099a6bafbf1baf9728529e93d5947bfe53",
+            ".gitignore": "883e5b1e1a1fed68ee5ee142188a82bdb44d8639",
+            ".prettierrc": "693104e7d1c3d2e77d4a00e3470f70697448dfe0",
+            ".vscode/settings.json": "bc049c3f248312967dd3d0bdf2b00a003ac978f6",
+            "LICENSE": "1e2bc005404dc951a04330cc32d1ae0b085fe32c",
+            "Makefile": "7000850d4fe7b2bdf6877aa17f9303b122cc5753",
+            "README.md": "82f2fd397bcea38c09d47dabf2fa80fa27148e00",
+            "appinfo/info.xml": "1df629b847ade22b1a35b0807ea65a7ad2e3545a",
+            "appinfo/routes.php": "05fc29f1dbec9f6f70baec667d9a178cea0c3daa",
+            "composer.json": "678873856702a5b6d45c0cf0915b9cdd1d2a2618",
+            "eslint.config.js": "89db2eff96d6349467028e3faea349dbfc7b9541",
+            "img/app-dark.svg": "e31056a2f28fd31dd422b3fb38fae24f28de9251",
+            "img/app-store.svg": "e407ad19e7f492fe0ab07a5507adfcece3abf17c",
+            "img/app.svg": "1d9adda430dc9ad57a2ddb6f0d7a9d70f25dce3f",
+            "l10n/en.json": "b8f96ee97952e2126a0b00e036dc322c5d67e60d",
+            "l10n/nl.json": "407dd18f44cec1956a44d52eaa01a261ffaef1e1",
+            "lib/AppInfo/Application.php": "8d88c37b8da5d1094421d6a78931dc60ed147c79",
+            "lib/AppInfo/OpenRegisterAutoloader.php": "59dd7118aa605841fa48607ccafefcc943be7712",
+            "lib/Controller/DashboardController.php": "37dfcaf57a9d67125321c41527db15d0cdc5e7aa",
+            "lib/Controller/SettingsController.php": "5a50fcf44cbe25b77935f507b9fef3045543f6e7",
+            "lib/Listener/DeepLinkRegistrationListener.php": "5f20dbfc51a8363f903027d36a7506f6d3be832e",
+            "lib/Repair/InitializeSettings.php": "4463cdf34b17ac2229775f7b8e6bc5b7164ea9ce",
+            "lib/Sections/SettingsSection.php": "c1788e02e0398fc53f9ef99966020e8e622b41f3",
+            "lib/Service/FlowSeedService.php": "16183954023764028cf6f0343bd73ae81b2f0568",
+            "lib/Service/SettingsService.php": "2fee5d8b13119c1f9fe04f6c4714012056a06f84",
+            "lib/Settings/AdminSettings.php": "9123ef81e5e68f20708843aba3c32133589a225b",
+            "lib/Settings/demo_app_register.json": "7ba0e6bcf963f705a139b89300a432e6f44ed2df",
+            "package.json": "dc7afb828535ae28e53ede163c22616cb9ec6ed3",
+            "phpcs-custom-sniffs/CustomSniffs/Sniffs/Functions/NamedParametersSniff.php": "10be689fe1efeb62338b1a2b9409828a2ea54fa1",
+            "phpcs-custom-sniffs/CustomSniffs/ruleset.xml": "40c5f637b7409961052ed4d3f796589d91090e09",
+            "phpcs.xml": "e59af4d1dbef5143c859439763ec14d0c3dffc77",
+            "phpmd.xml": "1186ad71b877d9de9035e0e453be110af6418610",
+            "phpstan-bootstrap.php": "cb0d40525f2adcbc0dc6c8ba7f57c631bf30963a",
+            "phpstan.neon": "e907724b7e3ec708d925f42dcc9764a692e187a8",
+            "phpunit-unit.xml": "f18a32b706f355d82bd84daf5e928694a06f7b92",
+            "phpunit.xml": "619c9b2d6ec13bbe4fdfd4a6d8718d5cb234dacc",
+            "project.md": "cc57f34456929538f5018331ca0d1cc3c2d6d9c3",
+            "psalm.xml": "d1ee863c0f5e5bce091d5e35985b62c40b7e83aa",
+            "src/App.vue": "3a5b14c7cbfd2d129bc9018e6417ce1420f5fa68",
+            "src/assets/app.css": "83647af7f30a7c0f8987f0e12f86e3e813c1446c",
+            "src/main.js": "84cc88be5a3609368c6801dc18879e7a16fee218",
+            "src/manifest.json": "1f994131c30b336690c9272c0113fc6634dada0e",
+            "src/navigation/MainMenu.vue": "49690fc718540d8c2e27970019f1ea77926618cf",
+            "src/pinia.js": "c2867886d0bc7bdfbbefad2bb890b8f857533ce1",
+            "src/router/index.js": "0ccba08d66276727a0bb2e27a2ec5b1b504aae31",
+            "src/settings.js": "0ff1286ba374fce5c622d09d089f7657ca7dcd77",
+            "src/store/modules/object.js": "0e3088d559bfea054f795b70f11ac54743c46eaa",
+            "src/store/modules/settings.js": "39c6ca59b9a6401dc05c214d44712edd247ea5fc",
+            "src/store/store.js": "5802e0ed577693b7be45b4960baac5f3934eef7c",
+            "src/views/Dashboard.vue": "2bf4d77cd041fdcc125d76978b13eef2cd806373",
+            "src/views/settings/AdminRoot.vue": "4e80250ce0e561d59df2d5521a21c15ebe7dd723",
+            "src/views/settings/Settings.vue": "50d33a393b3098f2bbadd72ca8e288e0e149e88d",
+            "src/views/settings/UserSettings.vue": "457bd405ad26c753300ec6d219143e901f11301a",
+            "stylelint.config.js": "73fa02e0452e5a65008ec97c0a0c9c44852ab5cd",
+            "templates/index.php": "f5814caefc3b0d734761a75f38a897c98796fbbe",
+            "templates/settings/admin.php": "d930134a12120e0360bc5e3bad2197778328d1eb",
+            "tests/Unit/DemoAppTest.php": "981671ca8ceea8c789b2c11a7ecc0f327d1c688f",
+            "tests/bootstrap-unit.php": "68edb5e8c5f8ded323bb594480da520c83a66efd",
+            "tests/bootstrap.php": "66a0fbb7806cabc5072be6c34da87930ae0926aa",
+            "tests/integration/README.md": "df3a448115ed9d5f1638a24556b08dd21dc155c9",
+            "tests/integration/demo-app.postman_collection.json": "0d72d3e99d63658fea9f16ddeecec8a0cbe4056b",
+            "tests/unit/AppInfo/OpenRegisterAutoloaderTest.php": "53f09681ef755f29cd143d144d048529ae64b5c9",
+            "tests/unit/Controller/SettingsControllerTest.php": "ec96d63465f154824c3e31b5ffa1f6a830691e35",
+            "webpack.config.js": "507ae436be4e15ebc0083e30c9c2b8db9e6da086"
+        },
+        "lastContent": null,
+        "lastSkipped": [
+            {
+                "kind": "flow",
+                "ref": "demo-slug#2",
+                "reason": "golden"
+            }
+        ],
+        "calls": [
+            {
+                "call": "registers.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "dataRegisters": [
+                        {
+                            "register": "r1",
+                            "includeData": true
+                        },
+                        {
+                            "register": "r2"
+                        }
+                    ]
+                }
+            },
+            {
+                "call": "flows.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "flows": [
+                        {
+                            "flow": "f1"
+                        },
+                        "loose"
+                    ],
+                    "applicationSlug": "demo-slug"
+                }
+            },
+            {
+                "call": "log.info",
+                "args": {
+                    "message": "Buildiq export: built tree",
+                    "context": {
+                        "applicationUuid": "uuid-0",
+                        "applicationVersion": "1.2.0",
+                        "jobUuid": "golden-044c6fac48dd"
+                    }
+                }
+            }
+        ]
+    },
+    "src0 content0 flag0 writer1": {
+        "zip": "golden-0a3717643134.zip",
+        "entries": {
+            ".gitattributes": "291fc3dc1457da8b3de9439882c2e73faa102299",
+            ".github/workflows/branch-protection.yml": "67d0164fa93a09fc33916442cc9590cb9ec765d9",
+            ".github/workflows/code-quality.yml": "dad7fe7d59359e1bda338cc0b4a7f20a14febb12",
+            ".github/workflows/documentation.yml": "092a9ce0659f76d2195dc361180ba57062d2859c",
+            ".github/workflows/issue-triage.yml": "46950238d9287d204141e3feaeca567ced24e1d3",
+            ".github/workflows/openspec-sync.yml": "06bd0472fc1d6fbafc68ed711f79bdc42bcd5fa1",
+            ".github/workflows/pull-request-lint-check.yaml": "b1eef808dcc94bb224f1db969c21b27ecd5b1158",
+            ".github/workflows/release-beta.yml": "fc592c28e73c44254933efb6679f3a46b0019d6b",
+            ".github/workflows/release-stable.yml": "587227865b1bf1726ee66e434d2a49311429ddbe",
+            ".github/workflows/sync-to-beta.yml": "626a58099a6bafbf1baf9728529e93d5947bfe53",
+            ".gitignore": "883e5b1e1a1fed68ee5ee142188a82bdb44d8639",
+            ".prettierrc": "693104e7d1c3d2e77d4a00e3470f70697448dfe0",
+            ".vscode/settings.json": "bc049c3f248312967dd3d0bdf2b00a003ac978f6",
+            "LICENSE": "1e2bc005404dc951a04330cc32d1ae0b085fe32c",
+            "Makefile": "7000850d4fe7b2bdf6877aa17f9303b122cc5753",
+            "README.md": "82f2fd397bcea38c09d47dabf2fa80fa27148e00",
+            "appinfo/info.xml": "1df629b847ade22b1a35b0807ea65a7ad2e3545a",
+            "appinfo/routes.php": "05fc29f1dbec9f6f70baec667d9a178cea0c3daa",
+            "composer.json": "678873856702a5b6d45c0cf0915b9cdd1d2a2618",
+            "eslint.config.js": "89db2eff96d6349467028e3faea349dbfc7b9541",
+            "img/app-dark.svg": "e31056a2f28fd31dd422b3fb38fae24f28de9251",
+            "img/app-store.svg": "e407ad19e7f492fe0ab07a5507adfcece3abf17c",
+            "img/app.svg": "1d9adda430dc9ad57a2ddb6f0d7a9d70f25dce3f",
+            "l10n/en.json": "b8f96ee97952e2126a0b00e036dc322c5d67e60d",
+            "l10n/nl.json": "407dd18f44cec1956a44d52eaa01a261ffaef1e1",
+            "lib/AppInfo/Application.php": "8d88c37b8da5d1094421d6a78931dc60ed147c79",
+            "lib/AppInfo/OpenRegisterAutoloader.php": "59dd7118aa605841fa48607ccafefcc943be7712",
+            "lib/Controller/DashboardController.php": "37dfcaf57a9d67125321c41527db15d0cdc5e7aa",
+            "lib/Controller/SettingsController.php": "5a50fcf44cbe25b77935f507b9fef3045543f6e7",
+            "lib/Listener/DeepLinkRegistrationListener.php": "5f20dbfc51a8363f903027d36a7506f6d3be832e",
+            "lib/Repair/InitializeSettings.php": "4463cdf34b17ac2229775f7b8e6bc5b7164ea9ce",
+            "lib/Sections/SettingsSection.php": "c1788e02e0398fc53f9ef99966020e8e622b41f3",
+            "lib/Service/FlowSeedService.php": "16183954023764028cf6f0343bd73ae81b2f0568",
+            "lib/Service/SettingsService.php": "2fee5d8b13119c1f9fe04f6c4714012056a06f84",
+            "lib/Settings/AdminSettings.php": "9123ef81e5e68f20708843aba3c32133589a225b",
+            "lib/Settings/demo_app_register.json": "7ba0e6bcf963f705a139b89300a432e6f44ed2df",
+            "package.json": "dc7afb828535ae28e53ede163c22616cb9ec6ed3",
+            "phpcs-custom-sniffs/CustomSniffs/Sniffs/Functions/NamedParametersSniff.php": "10be689fe1efeb62338b1a2b9409828a2ea54fa1",
+            "phpcs-custom-sniffs/CustomSniffs/ruleset.xml": "40c5f637b7409961052ed4d3f796589d91090e09",
+            "phpcs.xml": "e59af4d1dbef5143c859439763ec14d0c3dffc77",
+            "phpmd.xml": "1186ad71b877d9de9035e0e453be110af6418610",
+            "phpstan-bootstrap.php": "cb0d40525f2adcbc0dc6c8ba7f57c631bf30963a",
+            "phpstan.neon": "e907724b7e3ec708d925f42dcc9764a692e187a8",
+            "phpunit-unit.xml": "f18a32b706f355d82bd84daf5e928694a06f7b92",
+            "phpunit.xml": "619c9b2d6ec13bbe4fdfd4a6d8718d5cb234dacc",
+            "project.md": "cc57f34456929538f5018331ca0d1cc3c2d6d9c3",
+            "psalm.xml": "d1ee863c0f5e5bce091d5e35985b62c40b7e83aa",
+            "src/App.vue": "3a5b14c7cbfd2d129bc9018e6417ce1420f5fa68",
+            "src/assets/app.css": "83647af7f30a7c0f8987f0e12f86e3e813c1446c",
+            "src/main.js": "84cc88be5a3609368c6801dc18879e7a16fee218",
+            "src/manifest.json": "1f994131c30b336690c9272c0113fc6634dada0e",
+            "src/navigation/MainMenu.vue": "49690fc718540d8c2e27970019f1ea77926618cf",
+            "src/pinia.js": "c2867886d0bc7bdfbbefad2bb890b8f857533ce1",
+            "src/router/index.js": "0ccba08d66276727a0bb2e27a2ec5b1b504aae31",
+            "src/settings.js": "0ff1286ba374fce5c622d09d089f7657ca7dcd77",
+            "src/store/modules/object.js": "0e3088d559bfea054f795b70f11ac54743c46eaa",
+            "src/store/modules/settings.js": "39c6ca59b9a6401dc05c214d44712edd247ea5fc",
+            "src/store/store.js": "5802e0ed577693b7be45b4960baac5f3934eef7c",
+            "src/views/Dashboard.vue": "2bf4d77cd041fdcc125d76978b13eef2cd806373",
+            "src/views/settings/AdminRoot.vue": "4e80250ce0e561d59df2d5521a21c15ebe7dd723",
+            "src/views/settings/Settings.vue": "50d33a393b3098f2bbadd72ca8e288e0e149e88d",
+            "src/views/settings/UserSettings.vue": "457bd405ad26c753300ec6d219143e901f11301a",
+            "stylelint.config.js": "73fa02e0452e5a65008ec97c0a0c9c44852ab5cd",
+            "templates/index.php": "f5814caefc3b0d734761a75f38a897c98796fbbe",
+            "templates/settings/admin.php": "d930134a12120e0360bc5e3bad2197778328d1eb",
+            "tests/Unit/DemoAppTest.php": "981671ca8ceea8c789b2c11a7ecc0f327d1c688f",
+            "tests/bootstrap-unit.php": "68edb5e8c5f8ded323bb594480da520c83a66efd",
+            "tests/bootstrap.php": "66a0fbb7806cabc5072be6c34da87930ae0926aa",
+            "tests/integration/README.md": "df3a448115ed9d5f1638a24556b08dd21dc155c9",
+            "tests/integration/demo-app.postman_collection.json": "0d72d3e99d63658fea9f16ddeecec8a0cbe4056b",
+            "tests/unit/AppInfo/OpenRegisterAutoloaderTest.php": "53f09681ef755f29cd143d144d048529ae64b5c9",
+            "tests/unit/Controller/SettingsControllerTest.php": "ec96d63465f154824c3e31b5ffa1f6a830691e35",
+            "webpack.config.js": "507ae436be4e15ebc0083e30c9c2b8db9e6da086"
+        },
+        "lastContent": null,
+        "lastSkipped": [
+            {
+                "kind": "flow",
+                "ref": "demo-slug#2",
+                "reason": "golden"
+            }
+        ],
+        "calls": [
+            {
+                "call": "registers.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "dataRegisters": [
+                        {
+                            "register": "r1",
+                            "includeData": true
+                        },
+                        {
+                            "register": "r2"
+                        }
+                    ]
+                }
+            },
+            {
+                "call": "flows.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "flows": [
+                        {
+                            "flow": "f1"
+                        },
+                        "loose"
+                    ],
+                    "applicationSlug": "demo-slug"
+                }
+            },
+            {
+                "call": "log.info",
+                "args": {
+                    "message": "Buildiq export: built tree",
+                    "context": {
+                        "applicationUuid": "uuid-0",
+                        "applicationVersion": "1.2.0",
+                        "jobUuid": "golden-0a3717643134"
+                    }
+                }
+            }
+        ]
+    },
+    "src0 content0 flag0 writer0": {
+        "zip": "golden-044d218a2c66.zip",
+        "entries": {
+            ".gitattributes": "291fc3dc1457da8b3de9439882c2e73faa102299",
+            ".github/workflows/branch-protection.yml": "67d0164fa93a09fc33916442cc9590cb9ec765d9",
+            ".github/workflows/code-quality.yml": "dad7fe7d59359e1bda338cc0b4a7f20a14febb12",
+            ".github/workflows/documentation.yml": "092a9ce0659f76d2195dc361180ba57062d2859c",
+            ".github/workflows/issue-triage.yml": "46950238d9287d204141e3feaeca567ced24e1d3",
+            ".github/workflows/openspec-sync.yml": "06bd0472fc1d6fbafc68ed711f79bdc42bcd5fa1",
+            ".github/workflows/pull-request-lint-check.yaml": "b1eef808dcc94bb224f1db969c21b27ecd5b1158",
+            ".github/workflows/release-beta.yml": "fc592c28e73c44254933efb6679f3a46b0019d6b",
+            ".github/workflows/release-stable.yml": "587227865b1bf1726ee66e434d2a49311429ddbe",
+            ".github/workflows/sync-to-beta.yml": "626a58099a6bafbf1baf9728529e93d5947bfe53",
+            ".gitignore": "883e5b1e1a1fed68ee5ee142188a82bdb44d8639",
+            ".prettierrc": "693104e7d1c3d2e77d4a00e3470f70697448dfe0",
+            ".vscode/settings.json": "bc049c3f248312967dd3d0bdf2b00a003ac978f6",
+            "LICENSE": "1e2bc005404dc951a04330cc32d1ae0b085fe32c",
+            "Makefile": "7000850d4fe7b2bdf6877aa17f9303b122cc5753",
+            "README.md": "82f2fd397bcea38c09d47dabf2fa80fa27148e00",
+            "appinfo/info.xml": "1df629b847ade22b1a35b0807ea65a7ad2e3545a",
+            "appinfo/routes.php": "05fc29f1dbec9f6f70baec667d9a178cea0c3daa",
+            "composer.json": "678873856702a5b6d45c0cf0915b9cdd1d2a2618",
+            "eslint.config.js": "89db2eff96d6349467028e3faea349dbfc7b9541",
+            "img/app-dark.svg": "e31056a2f28fd31dd422b3fb38fae24f28de9251",
+            "img/app-store.svg": "e407ad19e7f492fe0ab07a5507adfcece3abf17c",
+            "img/app.svg": "1d9adda430dc9ad57a2ddb6f0d7a9d70f25dce3f",
+            "l10n/en.json": "b8f96ee97952e2126a0b00e036dc322c5d67e60d",
+            "l10n/nl.json": "407dd18f44cec1956a44d52eaa01a261ffaef1e1",
+            "lib/AppInfo/Application.php": "8d88c37b8da5d1094421d6a78931dc60ed147c79",
+            "lib/AppInfo/OpenRegisterAutoloader.php": "59dd7118aa605841fa48607ccafefcc943be7712",
+            "lib/Controller/DashboardController.php": "37dfcaf57a9d67125321c41527db15d0cdc5e7aa",
+            "lib/Controller/SettingsController.php": "5a50fcf44cbe25b77935f507b9fef3045543f6e7",
+            "lib/Listener/DeepLinkRegistrationListener.php": "5f20dbfc51a8363f903027d36a7506f6d3be832e",
+            "lib/Repair/InitializeSettings.php": "4463cdf34b17ac2229775f7b8e6bc5b7164ea9ce",
+            "lib/Sections/SettingsSection.php": "c1788e02e0398fc53f9ef99966020e8e622b41f3",
+            "lib/Service/FlowSeedService.php": "16183954023764028cf6f0343bd73ae81b2f0568",
+            "lib/Service/SettingsService.php": "2fee5d8b13119c1f9fe04f6c4714012056a06f84",
+            "lib/Settings/AdminSettings.php": "9123ef81e5e68f20708843aba3c32133589a225b",
+            "lib/Settings/demo_app_register.json": "7ba0e6bcf963f705a139b89300a432e6f44ed2df",
+            "package.json": "dc7afb828535ae28e53ede163c22616cb9ec6ed3",
+            "phpcs-custom-sniffs/CustomSniffs/Sniffs/Functions/NamedParametersSniff.php": "10be689fe1efeb62338b1a2b9409828a2ea54fa1",
+            "phpcs-custom-sniffs/CustomSniffs/ruleset.xml": "40c5f637b7409961052ed4d3f796589d91090e09",
+            "phpcs.xml": "e59af4d1dbef5143c859439763ec14d0c3dffc77",
+            "phpmd.xml": "1186ad71b877d9de9035e0e453be110af6418610",
+            "phpstan-bootstrap.php": "cb0d40525f2adcbc0dc6c8ba7f57c631bf30963a",
+            "phpstan.neon": "e907724b7e3ec708d925f42dcc9764a692e187a8",
+            "phpunit-unit.xml": "f18a32b706f355d82bd84daf5e928694a06f7b92",
+            "phpunit.xml": "619c9b2d6ec13bbe4fdfd4a6d8718d5cb234dacc",
+            "project.md": "cc57f34456929538f5018331ca0d1cc3c2d6d9c3",
+            "psalm.xml": "d1ee863c0f5e5bce091d5e35985b62c40b7e83aa",
+            "src/App.vue": "3a5b14c7cbfd2d129bc9018e6417ce1420f5fa68",
+            "src/assets/app.css": "83647af7f30a7c0f8987f0e12f86e3e813c1446c",
+            "src/main.js": "84cc88be5a3609368c6801dc18879e7a16fee218",
+            "src/manifest.json": "1f994131c30b336690c9272c0113fc6634dada0e",
+            "src/navigation/MainMenu.vue": "49690fc718540d8c2e27970019f1ea77926618cf",
+            "src/pinia.js": "c2867886d0bc7bdfbbefad2bb890b8f857533ce1",
+            "src/router/index.js": "0ccba08d66276727a0bb2e27a2ec5b1b504aae31",
+            "src/settings.js": "0ff1286ba374fce5c622d09d089f7657ca7dcd77",
+            "src/store/modules/object.js": "0e3088d559bfea054f795b70f11ac54743c46eaa",
+            "src/store/modules/settings.js": "39c6ca59b9a6401dc05c214d44712edd247ea5fc",
+            "src/store/store.js": "5802e0ed577693b7be45b4960baac5f3934eef7c",
+            "src/views/Dashboard.vue": "2bf4d77cd041fdcc125d76978b13eef2cd806373",
+            "src/views/settings/AdminRoot.vue": "4e80250ce0e561d59df2d5521a21c15ebe7dd723",
+            "src/views/settings/Settings.vue": "50d33a393b3098f2bbadd72ca8e288e0e149e88d",
+            "src/views/settings/UserSettings.vue": "457bd405ad26c753300ec6d219143e901f11301a",
+            "stylelint.config.js": "73fa02e0452e5a65008ec97c0a0c9c44852ab5cd",
+            "templates/index.php": "f5814caefc3b0d734761a75f38a897c98796fbbe",
+            "templates/settings/admin.php": "d930134a12120e0360bc5e3bad2197778328d1eb",
+            "tests/Unit/DemoAppTest.php": "981671ca8ceea8c789b2c11a7ecc0f327d1c688f",
+            "tests/bootstrap-unit.php": "68edb5e8c5f8ded323bb594480da520c83a66efd",
+            "tests/bootstrap.php": "66a0fbb7806cabc5072be6c34da87930ae0926aa",
+            "tests/integration/README.md": "df3a448115ed9d5f1638a24556b08dd21dc155c9",
+            "tests/integration/demo-app.postman_collection.json": "0d72d3e99d63658fea9f16ddeecec8a0cbe4056b",
+            "tests/unit/AppInfo/OpenRegisterAutoloaderTest.php": "53f09681ef755f29cd143d144d048529ae64b5c9",
+            "tests/unit/Controller/SettingsControllerTest.php": "ec96d63465f154824c3e31b5ffa1f6a830691e35",
+            "webpack.config.js": "507ae436be4e15ebc0083e30c9c2b8db9e6da086"
+        },
+        "lastContent": null,
+        "lastSkipped": [
+            {
+                "kind": "flow",
+                "ref": "demo-slug#2",
+                "reason": "golden"
+            }
+        ],
+        "calls": [
+            {
+                "call": "registers.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "dataRegisters": [
+                        {
+                            "register": "r1",
+                            "includeData": true
+                        },
+                        {
+                            "register": "r2"
+                        }
+                    ]
+                }
+            },
+            {
+                "call": "flows.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "flows": [
+                        {
+                            "flow": "f1"
+                        },
+                        "loose"
+                    ],
+                    "applicationSlug": "demo-slug"
+                }
+            },
+            {
+                "call": "log.info",
+                "args": {
+                    "message": "Buildiq export: built tree",
+                    "context": {
+                        "applicationUuid": "uuid-0",
+                        "applicationVersion": "1.2.0",
+                        "jobUuid": "golden-044d218a2c66"
+                    }
+                }
+            }
+        ]
+    },
+    "src0 content0 flag1 writer1": {
+        "zip": "golden-d21efe234f2e.zip",
+        "entries": {
+            ".gitattributes": "291fc3dc1457da8b3de9439882c2e73faa102299",
+            ".github/workflows/branch-protection.yml": "67d0164fa93a09fc33916442cc9590cb9ec765d9",
+            ".github/workflows/code-quality.yml": "dad7fe7d59359e1bda338cc0b4a7f20a14febb12",
+            ".github/workflows/documentation.yml": "092a9ce0659f76d2195dc361180ba57062d2859c",
+            ".github/workflows/issue-triage.yml": "46950238d9287d204141e3feaeca567ced24e1d3",
+            ".github/workflows/openspec-sync.yml": "06bd0472fc1d6fbafc68ed711f79bdc42bcd5fa1",
+            ".github/workflows/pull-request-lint-check.yaml": "b1eef808dcc94bb224f1db969c21b27ecd5b1158",
+            ".github/workflows/release-beta.yml": "fc592c28e73c44254933efb6679f3a46b0019d6b",
+            ".github/workflows/release-stable.yml": "587227865b1bf1726ee66e434d2a49311429ddbe",
+            ".github/workflows/sync-to-beta.yml": "626a58099a6bafbf1baf9728529e93d5947bfe53",
+            ".gitignore": "883e5b1e1a1fed68ee5ee142188a82bdb44d8639",
+            ".prettierrc": "693104e7d1c3d2e77d4a00e3470f70697448dfe0",
+            ".vscode/settings.json": "bc049c3f248312967dd3d0bdf2b00a003ac978f6",
+            "LICENSE": "1e2bc005404dc951a04330cc32d1ae0b085fe32c",
+            "Makefile": "7000850d4fe7b2bdf6877aa17f9303b122cc5753",
+            "README.md": "82f2fd397bcea38c09d47dabf2fa80fa27148e00",
+            "appinfo/info.xml": "1df629b847ade22b1a35b0807ea65a7ad2e3545a",
+            "appinfo/routes.php": "05fc29f1dbec9f6f70baec667d9a178cea0c3daa",
+            "composer.json": "678873856702a5b6d45c0cf0915b9cdd1d2a2618",
+            "deploy/golden.txt": "b0d51b9ff91b623cc42b17c529b7c21c2ab57fb4",
+            "eslint.config.js": "89db2eff96d6349467028e3faea349dbfc7b9541",
+            "img/app-dark.svg": "e31056a2f28fd31dd422b3fb38fae24f28de9251",
+            "img/app-store.svg": "e407ad19e7f492fe0ab07a5507adfcece3abf17c",
+            "img/app.svg": "1d9adda430dc9ad57a2ddb6f0d7a9d70f25dce3f",
+            "l10n/en.json": "b8f96ee97952e2126a0b00e036dc322c5d67e60d",
+            "l10n/nl.json": "407dd18f44cec1956a44d52eaa01a261ffaef1e1",
+            "lib/AppInfo/Application.php": "8d88c37b8da5d1094421d6a78931dc60ed147c79",
+            "lib/AppInfo/OpenRegisterAutoloader.php": "59dd7118aa605841fa48607ccafefcc943be7712",
+            "lib/Controller/DashboardController.php": "37dfcaf57a9d67125321c41527db15d0cdc5e7aa",
+            "lib/Controller/SettingsController.php": "5a50fcf44cbe25b77935f507b9fef3045543f6e7",
+            "lib/Listener/DeepLinkRegistrationListener.php": "5f20dbfc51a8363f903027d36a7506f6d3be832e",
+            "lib/Repair/InitializeSettings.php": "4463cdf34b17ac2229775f7b8e6bc5b7164ea9ce",
+            "lib/Sections/SettingsSection.php": "c1788e02e0398fc53f9ef99966020e8e622b41f3",
+            "lib/Service/FlowSeedService.php": "16183954023764028cf6f0343bd73ae81b2f0568",
+            "lib/Service/SettingsService.php": "2fee5d8b13119c1f9fe04f6c4714012056a06f84",
+            "lib/Settings/AdminSettings.php": "9123ef81e5e68f20708843aba3c32133589a225b",
+            "lib/Settings/demo_app_register.json": "7ba0e6bcf963f705a139b89300a432e6f44ed2df",
+            "package.json": "dc7afb828535ae28e53ede163c22616cb9ec6ed3",
+            "phpcs-custom-sniffs/CustomSniffs/Sniffs/Functions/NamedParametersSniff.php": "10be689fe1efeb62338b1a2b9409828a2ea54fa1",
+            "phpcs-custom-sniffs/CustomSniffs/ruleset.xml": "40c5f637b7409961052ed4d3f796589d91090e09",
+            "phpcs.xml": "e59af4d1dbef5143c859439763ec14d0c3dffc77",
+            "phpmd.xml": "1186ad71b877d9de9035e0e453be110af6418610",
+            "phpstan-bootstrap.php": "cb0d40525f2adcbc0dc6c8ba7f57c631bf30963a",
+            "phpstan.neon": "e907724b7e3ec708d925f42dcc9764a692e187a8",
+            "phpunit-unit.xml": "f18a32b706f355d82bd84daf5e928694a06f7b92",
+            "phpunit.xml": "619c9b2d6ec13bbe4fdfd4a6d8718d5cb234dacc",
+            "project.md": "cc57f34456929538f5018331ca0d1cc3c2d6d9c3",
+            "psalm.xml": "d1ee863c0f5e5bce091d5e35985b62c40b7e83aa",
+            "src/App.vue": "3a5b14c7cbfd2d129bc9018e6417ce1420f5fa68",
+            "src/assets/app.css": "83647af7f30a7c0f8987f0e12f86e3e813c1446c",
+            "src/main.js": "84cc88be5a3609368c6801dc18879e7a16fee218",
+            "src/manifest.json": "1f994131c30b336690c9272c0113fc6634dada0e",
+            "src/navigation/MainMenu.vue": "49690fc718540d8c2e27970019f1ea77926618cf",
+            "src/pinia.js": "c2867886d0bc7bdfbbefad2bb890b8f857533ce1",
+            "src/router/index.js": "0ccba08d66276727a0bb2e27a2ec5b1b504aae31",
+            "src/settings.js": "0ff1286ba374fce5c622d09d089f7657ca7dcd77",
+            "src/store/modules/object.js": "0e3088d559bfea054f795b70f11ac54743c46eaa",
+            "src/store/modules/settings.js": "39c6ca59b9a6401dc05c214d44712edd247ea5fc",
+            "src/store/store.js": "5802e0ed577693b7be45b4960baac5f3934eef7c",
+            "src/views/Dashboard.vue": "2bf4d77cd041fdcc125d76978b13eef2cd806373",
+            "src/views/settings/AdminRoot.vue": "4e80250ce0e561d59df2d5521a21c15ebe7dd723",
+            "src/views/settings/Settings.vue": "50d33a393b3098f2bbadd72ca8e288e0e149e88d",
+            "src/views/settings/UserSettings.vue": "457bd405ad26c753300ec6d219143e901f11301a",
+            "stylelint.config.js": "73fa02e0452e5a65008ec97c0a0c9c44852ab5cd",
+            "templates/index.php": "f5814caefc3b0d734761a75f38a897c98796fbbe",
+            "templates/settings/admin.php": "d930134a12120e0360bc5e3bad2197778328d1eb",
+            "tests/Unit/DemoAppTest.php": "981671ca8ceea8c789b2c11a7ecc0f327d1c688f",
+            "tests/bootstrap-unit.php": "68edb5e8c5f8ded323bb594480da520c83a66efd",
+            "tests/bootstrap.php": "66a0fbb7806cabc5072be6c34da87930ae0926aa",
+            "tests/integration/README.md": "df3a448115ed9d5f1638a24556b08dd21dc155c9",
+            "tests/integration/demo-app.postman_collection.json": "0d72d3e99d63658fea9f16ddeecec8a0cbe4056b",
+            "tests/unit/AppInfo/OpenRegisterAutoloaderTest.php": "53f09681ef755f29cd143d144d048529ae64b5c9",
+            "tests/unit/Controller/SettingsControllerTest.php": "ec96d63465f154824c3e31b5ffa1f6a830691e35",
+            "webpack.config.js": "507ae436be4e15ebc0083e30c9c2b8db9e6da086"
+        },
+        "lastContent": null,
+        "lastSkipped": [
+            {
+                "kind": "flow",
+                "ref": "demo-slug#2",
+                "reason": "golden"
+            }
+        ],
+        "calls": [
+            {
+                "call": "writer.write",
+                "args": {
+                    "rootDir": "<scratch>"
+                }
+            },
+            {
+                "call": "registers.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "dataRegisters": [
+                        {
+                            "register": "r1",
+                            "includeData": true
+                        },
+                        {
+                            "register": "r2"
+                        }
+                    ]
+                }
+            },
+            {
+                "call": "writer.pointReadme",
+                "args": {
+                    "rootDir": "<scratch>"
+                }
+            },
+            {
+                "call": "flows.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "flows": [
+                        {
+                            "flow": "f1"
+                        },
+                        "loose"
+                    ],
+                    "applicationSlug": "demo-slug"
+                }
+            },
+            {
+                "call": "log.info",
+                "args": {
+                    "message": "Buildiq export: built tree",
+                    "context": {
+                        "applicationUuid": "uuid-0",
+                        "applicationVersion": "1.2.0",
+                        "jobUuid": "golden-d21efe234f2e"
+                    }
+                }
+            }
+        ]
+    },
+    "src0 content0 flag1 writer0": {
+        "zip": "golden-775dcaaa51cb.zip",
+        "entries": {
+            ".gitattributes": "291fc3dc1457da8b3de9439882c2e73faa102299",
+            ".github/workflows/branch-protection.yml": "67d0164fa93a09fc33916442cc9590cb9ec765d9",
+            ".github/workflows/code-quality.yml": "dad7fe7d59359e1bda338cc0b4a7f20a14febb12",
+            ".github/workflows/documentation.yml": "092a9ce0659f76d2195dc361180ba57062d2859c",
+            ".github/workflows/issue-triage.yml": "46950238d9287d204141e3feaeca567ced24e1d3",
+            ".github/workflows/openspec-sync.yml": "06bd0472fc1d6fbafc68ed711f79bdc42bcd5fa1",
+            ".github/workflows/pull-request-lint-check.yaml": "b1eef808dcc94bb224f1db969c21b27ecd5b1158",
+            ".github/workflows/release-beta.yml": "fc592c28e73c44254933efb6679f3a46b0019d6b",
+            ".github/workflows/release-stable.yml": "587227865b1bf1726ee66e434d2a49311429ddbe",
+            ".github/workflows/sync-to-beta.yml": "626a58099a6bafbf1baf9728529e93d5947bfe53",
+            ".gitignore": "883e5b1e1a1fed68ee5ee142188a82bdb44d8639",
+            ".prettierrc": "693104e7d1c3d2e77d4a00e3470f70697448dfe0",
+            ".vscode/settings.json": "bc049c3f248312967dd3d0bdf2b00a003ac978f6",
+            "LICENSE": "1e2bc005404dc951a04330cc32d1ae0b085fe32c",
+            "Makefile": "7000850d4fe7b2bdf6877aa17f9303b122cc5753",
+            "README.md": "82f2fd397bcea38c09d47dabf2fa80fa27148e00",
+            "appinfo/info.xml": "1df629b847ade22b1a35b0807ea65a7ad2e3545a",
+            "appinfo/routes.php": "05fc29f1dbec9f6f70baec667d9a178cea0c3daa",
+            "composer.json": "678873856702a5b6d45c0cf0915b9cdd1d2a2618",
+            "eslint.config.js": "89db2eff96d6349467028e3faea349dbfc7b9541",
+            "img/app-dark.svg": "e31056a2f28fd31dd422b3fb38fae24f28de9251",
+            "img/app-store.svg": "e407ad19e7f492fe0ab07a5507adfcece3abf17c",
+            "img/app.svg": "1d9adda430dc9ad57a2ddb6f0d7a9d70f25dce3f",
+            "l10n/en.json": "b8f96ee97952e2126a0b00e036dc322c5d67e60d",
+            "l10n/nl.json": "407dd18f44cec1956a44d52eaa01a261ffaef1e1",
+            "lib/AppInfo/Application.php": "8d88c37b8da5d1094421d6a78931dc60ed147c79",
+            "lib/AppInfo/OpenRegisterAutoloader.php": "59dd7118aa605841fa48607ccafefcc943be7712",
+            "lib/Controller/DashboardController.php": "37dfcaf57a9d67125321c41527db15d0cdc5e7aa",
+            "lib/Controller/SettingsController.php": "5a50fcf44cbe25b77935f507b9fef3045543f6e7",
+            "lib/Listener/DeepLinkRegistrationListener.php": "5f20dbfc51a8363f903027d36a7506f6d3be832e",
+            "lib/Repair/InitializeSettings.php": "4463cdf34b17ac2229775f7b8e6bc5b7164ea9ce",
+            "lib/Sections/SettingsSection.php": "c1788e02e0398fc53f9ef99966020e8e622b41f3",
+            "lib/Service/FlowSeedService.php": "16183954023764028cf6f0343bd73ae81b2f0568",
+            "lib/Service/SettingsService.php": "2fee5d8b13119c1f9fe04f6c4714012056a06f84",
+            "lib/Settings/AdminSettings.php": "9123ef81e5e68f20708843aba3c32133589a225b",
+            "lib/Settings/demo_app_register.json": "7ba0e6bcf963f705a139b89300a432e6f44ed2df",
+            "package.json": "dc7afb828535ae28e53ede163c22616cb9ec6ed3",
+            "phpcs-custom-sniffs/CustomSniffs/Sniffs/Functions/NamedParametersSniff.php": "10be689fe1efeb62338b1a2b9409828a2ea54fa1",
+            "phpcs-custom-sniffs/CustomSniffs/ruleset.xml": "40c5f637b7409961052ed4d3f796589d91090e09",
+            "phpcs.xml": "e59af4d1dbef5143c859439763ec14d0c3dffc77",
+            "phpmd.xml": "1186ad71b877d9de9035e0e453be110af6418610",
+            "phpstan-bootstrap.php": "cb0d40525f2adcbc0dc6c8ba7f57c631bf30963a",
+            "phpstan.neon": "e907724b7e3ec708d925f42dcc9764a692e187a8",
+            "phpunit-unit.xml": "f18a32b706f355d82bd84daf5e928694a06f7b92",
+            "phpunit.xml": "619c9b2d6ec13bbe4fdfd4a6d8718d5cb234dacc",
+            "project.md": "cc57f34456929538f5018331ca0d1cc3c2d6d9c3",
+            "psalm.xml": "d1ee863c0f5e5bce091d5e35985b62c40b7e83aa",
+            "src/App.vue": "3a5b14c7cbfd2d129bc9018e6417ce1420f5fa68",
+            "src/assets/app.css": "83647af7f30a7c0f8987f0e12f86e3e813c1446c",
+            "src/main.js": "84cc88be5a3609368c6801dc18879e7a16fee218",
+            "src/manifest.json": "1f994131c30b336690c9272c0113fc6634dada0e",
+            "src/navigation/MainMenu.vue": "49690fc718540d8c2e27970019f1ea77926618cf",
+            "src/pinia.js": "c2867886d0bc7bdfbbefad2bb890b8f857533ce1",
+            "src/router/index.js": "0ccba08d66276727a0bb2e27a2ec5b1b504aae31",
+            "src/settings.js": "0ff1286ba374fce5c622d09d089f7657ca7dcd77",
+            "src/store/modules/object.js": "0e3088d559bfea054f795b70f11ac54743c46eaa",
+            "src/store/modules/settings.js": "39c6ca59b9a6401dc05c214d44712edd247ea5fc",
+            "src/store/store.js": "5802e0ed577693b7be45b4960baac5f3934eef7c",
+            "src/views/Dashboard.vue": "2bf4d77cd041fdcc125d76978b13eef2cd806373",
+            "src/views/settings/AdminRoot.vue": "4e80250ce0e561d59df2d5521a21c15ebe7dd723",
+            "src/views/settings/Settings.vue": "50d33a393b3098f2bbadd72ca8e288e0e149e88d",
+            "src/views/settings/UserSettings.vue": "457bd405ad26c753300ec6d219143e901f11301a",
+            "stylelint.config.js": "73fa02e0452e5a65008ec97c0a0c9c44852ab5cd",
+            "templates/index.php": "f5814caefc3b0d734761a75f38a897c98796fbbe",
+            "templates/settings/admin.php": "d930134a12120e0360bc5e3bad2197778328d1eb",
+            "tests/Unit/DemoAppTest.php": "981671ca8ceea8c789b2c11a7ecc0f327d1c688f",
+            "tests/bootstrap-unit.php": "68edb5e8c5f8ded323bb594480da520c83a66efd",
+            "tests/bootstrap.php": "66a0fbb7806cabc5072be6c34da87930ae0926aa",
+            "tests/integration/README.md": "df3a448115ed9d5f1638a24556b08dd21dc155c9",
+            "tests/integration/demo-app.postman_collection.json": "0d72d3e99d63658fea9f16ddeecec8a0cbe4056b",
+            "tests/unit/AppInfo/OpenRegisterAutoloaderTest.php": "53f09681ef755f29cd143d144d048529ae64b5c9",
+            "tests/unit/Controller/SettingsControllerTest.php": "ec96d63465f154824c3e31b5ffa1f6a830691e35",
+            "webpack.config.js": "507ae436be4e15ebc0083e30c9c2b8db9e6da086"
+        },
+        "lastContent": null,
+        "lastSkipped": [
+            {
+                "kind": "flow",
+                "ref": "demo-slug#2",
+                "reason": "golden"
+            }
+        ],
+        "calls": [
+            {
+                "call": "registers.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "dataRegisters": [
+                        {
+                            "register": "r1",
+                            "includeData": true
+                        },
+                        {
+                            "register": "r2"
+                        }
+                    ]
+                }
+            },
+            {
+                "call": "flows.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "flows": [
+                        {
+                            "flow": "f1"
+                        },
+                        "loose"
+                    ],
+                    "applicationSlug": "demo-slug"
+                }
+            },
+            {
+                "call": "log.info",
+                "args": {
+                    "message": "Buildiq export: built tree",
+                    "context": {
+                        "applicationUuid": "uuid-0",
+                        "applicationVersion": "1.2.0",
+                        "jobUuid": "golden-775dcaaa51cb"
+                    }
+                }
+            }
+        ]
+    },
+    "src1 content1 flag0 writer1": {
+        "zip": "golden-16d5e851f566.zip",
+        "entries": {
+            ".gitattributes": "291fc3dc1457da8b3de9439882c2e73faa102299",
+            ".github/workflows/branch-protection.yml": "67d0164fa93a09fc33916442cc9590cb9ec765d9",
+            ".github/workflows/code-quality.yml": "dad7fe7d59359e1bda338cc0b4a7f20a14febb12",
+            ".github/workflows/documentation.yml": "092a9ce0659f76d2195dc361180ba57062d2859c",
+            ".github/workflows/issue-triage.yml": "46950238d9287d204141e3feaeca567ced24e1d3",
+            ".github/workflows/openspec-sync.yml": "06bd0472fc1d6fbafc68ed711f79bdc42bcd5fa1",
+            ".github/workflows/pull-request-lint-check.yaml": "b1eef808dcc94bb224f1db969c21b27ecd5b1158",
+            ".github/workflows/release-beta.yml": "fc592c28e73c44254933efb6679f3a46b0019d6b",
+            ".github/workflows/release-stable.yml": "587227865b1bf1726ee66e434d2a49311429ddbe",
+            ".github/workflows/sync-to-beta.yml": "626a58099a6bafbf1baf9728529e93d5947bfe53",
+            ".gitignore": "883e5b1e1a1fed68ee5ee142188a82bdb44d8639",
+            ".prettierrc": "693104e7d1c3d2e77d4a00e3470f70697448dfe0",
+            ".vscode/settings.json": "bc049c3f248312967dd3d0bdf2b00a003ac978f6",
+            "LICENSE": "1e2bc005404dc951a04330cc32d1ae0b085fe32c",
+            "Makefile": "7000850d4fe7b2bdf6877aa17f9303b122cc5753",
+            "README.md": "82f2fd397bcea38c09d47dabf2fa80fa27148e00",
+            "appinfo/info.xml": "1df629b847ade22b1a35b0807ea65a7ad2e3545a",
+            "appinfo/routes.php": "05fc29f1dbec9f6f70baec667d9a178cea0c3daa",
+            "composer.json": "678873856702a5b6d45c0cf0915b9cdd1d2a2618",
+            "eslint.config.js": "89db2eff96d6349467028e3faea349dbfc7b9541",
+            "golden-content.txt": "d37b467d7b81b4592a84bc70737d061bd3fc87b5",
+            "img/app-dark.svg": "e31056a2f28fd31dd422b3fb38fae24f28de9251",
+            "img/app-store.svg": "e407ad19e7f492fe0ab07a5507adfcece3abf17c",
+            "img/app.svg": "1d9adda430dc9ad57a2ddb6f0d7a9d70f25dce3f",
+            "l10n/en.json": "b8f96ee97952e2126a0b00e036dc322c5d67e60d",
+            "l10n/nl.json": "407dd18f44cec1956a44d52eaa01a261ffaef1e1",
+            "lib/AppInfo/Application.php": "8d88c37b8da5d1094421d6a78931dc60ed147c79",
+            "lib/AppInfo/OpenRegisterAutoloader.php": "59dd7118aa605841fa48607ccafefcc943be7712",
+            "lib/Controller/DashboardController.php": "37dfcaf57a9d67125321c41527db15d0cdc5e7aa",
+            "lib/Controller/SettingsController.php": "5a50fcf44cbe25b77935f507b9fef3045543f6e7",
+            "lib/Listener/DeepLinkRegistrationListener.php": "5f20dbfc51a8363f903027d36a7506f6d3be832e",
+            "lib/Repair/InitializeSettings.php": "4463cdf34b17ac2229775f7b8e6bc5b7164ea9ce",
+            "lib/Sections/SettingsSection.php": "c1788e02e0398fc53f9ef99966020e8e622b41f3",
+            "lib/Service/FlowSeedService.php": "16183954023764028cf6f0343bd73ae81b2f0568",
+            "lib/Service/SettingsService.php": "2fee5d8b13119c1f9fe04f6c4714012056a06f84",
+            "lib/Settings/AdminSettings.php": "9123ef81e5e68f20708843aba3c32133589a225b",
+            "lib/Settings/demo_app_register.json": "7ba0e6bcf963f705a139b89300a432e6f44ed2df",
+            "package.json": "dc7afb828535ae28e53ede163c22616cb9ec6ed3",
+            "phpcs-custom-sniffs/CustomSniffs/Sniffs/Functions/NamedParametersSniff.php": "10be689fe1efeb62338b1a2b9409828a2ea54fa1",
+            "phpcs-custom-sniffs/CustomSniffs/ruleset.xml": "40c5f637b7409961052ed4d3f796589d91090e09",
+            "phpcs.xml": "e59af4d1dbef5143c859439763ec14d0c3dffc77",
+            "phpmd.xml": "1186ad71b877d9de9035e0e453be110af6418610",
+            "phpstan-bootstrap.php": "cb0d40525f2adcbc0dc6c8ba7f57c631bf30963a",
+            "phpstan.neon": "e907724b7e3ec708d925f42dcc9764a692e187a8",
+            "phpunit-unit.xml": "f18a32b706f355d82bd84daf5e928694a06f7b92",
+            "phpunit.xml": "619c9b2d6ec13bbe4fdfd4a6d8718d5cb234dacc",
+            "project.md": "cc57f34456929538f5018331ca0d1cc3c2d6d9c3",
+            "psalm.xml": "d1ee863c0f5e5bce091d5e35985b62c40b7e83aa",
+            "src/App.vue": "3a5b14c7cbfd2d129bc9018e6417ce1420f5fa68",
+            "src/assets/app.css": "83647af7f30a7c0f8987f0e12f86e3e813c1446c",
+            "src/main.js": "84cc88be5a3609368c6801dc18879e7a16fee218",
+            "src/manifest.json": "1f994131c30b336690c9272c0113fc6634dada0e",
+            "src/navigation/MainMenu.vue": "49690fc718540d8c2e27970019f1ea77926618cf",
+            "src/pinia.js": "c2867886d0bc7bdfbbefad2bb890b8f857533ce1",
+            "src/router/index.js": "0ccba08d66276727a0bb2e27a2ec5b1b504aae31",
+            "src/settings.js": "0ff1286ba374fce5c622d09d089f7657ca7dcd77",
+            "src/store/modules/object.js": "0e3088d559bfea054f795b70f11ac54743c46eaa",
+            "src/store/modules/settings.js": "39c6ca59b9a6401dc05c214d44712edd247ea5fc",
+            "src/store/store.js": "5802e0ed577693b7be45b4960baac5f3934eef7c",
+            "src/views/Dashboard.vue": "2bf4d77cd041fdcc125d76978b13eef2cd806373",
+            "src/views/settings/AdminRoot.vue": "4e80250ce0e561d59df2d5521a21c15ebe7dd723",
+            "src/views/settings/Settings.vue": "50d33a393b3098f2bbadd72ca8e288e0e149e88d",
+            "src/views/settings/UserSettings.vue": "457bd405ad26c753300ec6d219143e901f11301a",
+            "stylelint.config.js": "73fa02e0452e5a65008ec97c0a0c9c44852ab5cd",
+            "templates/index.php": "f5814caefc3b0d734761a75f38a897c98796fbbe",
+            "templates/settings/admin.php": "d930134a12120e0360bc5e3bad2197778328d1eb",
+            "tests/Unit/DemoAppTest.php": "981671ca8ceea8c789b2c11a7ecc0f327d1c688f",
+            "tests/bootstrap-unit.php": "68edb5e8c5f8ded323bb594480da520c83a66efd",
+            "tests/bootstrap.php": "66a0fbb7806cabc5072be6c34da87930ae0926aa",
+            "tests/integration/README.md": "df3a448115ed9d5f1638a24556b08dd21dc155c9",
+            "tests/integration/demo-app.postman_collection.json": "0d72d3e99d63658fea9f16ddeecec8a0cbe4056b",
+            "tests/unit/AppInfo/OpenRegisterAutoloaderTest.php": "53f09681ef755f29cd143d144d048529ae64b5c9",
+            "tests/unit/Controller/SettingsControllerTest.php": "ec96d63465f154824c3e31b5ffa1f6a830691e35",
+            "webpack.config.js": "507ae436be4e15ebc0083e30c9c2b8db9e6da086"
+        },
+        "lastContent": {
+            "pages": 3,
+            "menu": 1,
+            "schemas": 2,
+            "records": 3
+        },
+        "lastSkipped": [
+            {
+                "kind": "flow",
+                "ref": "demo-slug#2",
+                "reason": "golden"
+            }
+        ],
+        "calls": [
+            {
+                "call": "registers.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "dataRegisters": [
+                        {
+                            "register": "r1",
+                            "includeData": true
+                        },
+                        {
+                            "register": "r2"
+                        }
+                    ]
+                }
+            },
+            {
+                "call": "content.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "source": {
+                        "application": {
+                            "slug": "demo"
+                        },
+                        "version": {
+                            "slug": "development"
+                        },
+                        "includeSeedData": true
+                    },
+                    "appId": "demo-app",
+                    "semver": "1.2.1"
+                }
+            },
+            {
+                "call": "flows.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "flows": [
+                        {
+                            "flow": "f1"
+                        },
+                        "loose"
+                    ],
+                    "applicationSlug": "demo-slug"
+                }
+            },
+            {
+                "call": "log.info",
+                "args": {
+                    "message": "Buildiq export: built tree",
+                    "context": {
+                        "applicationUuid": "uuid-1",
+                        "applicationVersion": "1.2.1",
+                        "jobUuid": "golden-16d5e851f566"
+                    }
+                }
+            }
+        ]
+    },
+    "src1 content1 flag0 writer0": {
+        "zip": "golden-8bb401d0cf88.zip",
+        "entries": {
+            ".gitattributes": "291fc3dc1457da8b3de9439882c2e73faa102299",
+            ".github/workflows/branch-protection.yml": "67d0164fa93a09fc33916442cc9590cb9ec765d9",
+            ".github/workflows/code-quality.yml": "dad7fe7d59359e1bda338cc0b4a7f20a14febb12",
+            ".github/workflows/documentation.yml": "092a9ce0659f76d2195dc361180ba57062d2859c",
+            ".github/workflows/issue-triage.yml": "46950238d9287d204141e3feaeca567ced24e1d3",
+            ".github/workflows/openspec-sync.yml": "06bd0472fc1d6fbafc68ed711f79bdc42bcd5fa1",
+            ".github/workflows/pull-request-lint-check.yaml": "b1eef808dcc94bb224f1db969c21b27ecd5b1158",
+            ".github/workflows/release-beta.yml": "fc592c28e73c44254933efb6679f3a46b0019d6b",
+            ".github/workflows/release-stable.yml": "587227865b1bf1726ee66e434d2a49311429ddbe",
+            ".github/workflows/sync-to-beta.yml": "626a58099a6bafbf1baf9728529e93d5947bfe53",
+            ".gitignore": "883e5b1e1a1fed68ee5ee142188a82bdb44d8639",
+            ".prettierrc": "693104e7d1c3d2e77d4a00e3470f70697448dfe0",
+            ".vscode/settings.json": "bc049c3f248312967dd3d0bdf2b00a003ac978f6",
+            "LICENSE": "1e2bc005404dc951a04330cc32d1ae0b085fe32c",
+            "Makefile": "7000850d4fe7b2bdf6877aa17f9303b122cc5753",
+            "README.md": "82f2fd397bcea38c09d47dabf2fa80fa27148e00",
+            "appinfo/info.xml": "1df629b847ade22b1a35b0807ea65a7ad2e3545a",
+            "appinfo/routes.php": "05fc29f1dbec9f6f70baec667d9a178cea0c3daa",
+            "composer.json": "678873856702a5b6d45c0cf0915b9cdd1d2a2618",
+            "eslint.config.js": "89db2eff96d6349467028e3faea349dbfc7b9541",
+            "golden-content.txt": "d37b467d7b81b4592a84bc70737d061bd3fc87b5",
+            "img/app-dark.svg": "e31056a2f28fd31dd422b3fb38fae24f28de9251",
+            "img/app-store.svg": "e407ad19e7f492fe0ab07a5507adfcece3abf17c",
+            "img/app.svg": "1d9adda430dc9ad57a2ddb6f0d7a9d70f25dce3f",
+            "l10n/en.json": "b8f96ee97952e2126a0b00e036dc322c5d67e60d",
+            "l10n/nl.json": "407dd18f44cec1956a44d52eaa01a261ffaef1e1",
+            "lib/AppInfo/Application.php": "8d88c37b8da5d1094421d6a78931dc60ed147c79",
+            "lib/AppInfo/OpenRegisterAutoloader.php": "59dd7118aa605841fa48607ccafefcc943be7712",
+            "lib/Controller/DashboardController.php": "37dfcaf57a9d67125321c41527db15d0cdc5e7aa",
+            "lib/Controller/SettingsController.php": "5a50fcf44cbe25b77935f507b9fef3045543f6e7",
+            "lib/Listener/DeepLinkRegistrationListener.php": "5f20dbfc51a8363f903027d36a7506f6d3be832e",
+            "lib/Repair/InitializeSettings.php": "4463cdf34b17ac2229775f7b8e6bc5b7164ea9ce",
+            "lib/Sections/SettingsSection.php": "c1788e02e0398fc53f9ef99966020e8e622b41f3",
+            "lib/Service/FlowSeedService.php": "16183954023764028cf6f0343bd73ae81b2f0568",
+            "lib/Service/SettingsService.php": "2fee5d8b13119c1f9fe04f6c4714012056a06f84",
+            "lib/Settings/AdminSettings.php": "9123ef81e5e68f20708843aba3c32133589a225b",
+            "lib/Settings/demo_app_register.json": "7ba0e6bcf963f705a139b89300a432e6f44ed2df",
+            "package.json": "dc7afb828535ae28e53ede163c22616cb9ec6ed3",
+            "phpcs-custom-sniffs/CustomSniffs/Sniffs/Functions/NamedParametersSniff.php": "10be689fe1efeb62338b1a2b9409828a2ea54fa1",
+            "phpcs-custom-sniffs/CustomSniffs/ruleset.xml": "40c5f637b7409961052ed4d3f796589d91090e09",
+            "phpcs.xml": "e59af4d1dbef5143c859439763ec14d0c3dffc77",
+            "phpmd.xml": "1186ad71b877d9de9035e0e453be110af6418610",
+            "phpstan-bootstrap.php": "cb0d40525f2adcbc0dc6c8ba7f57c631bf30963a",
+            "phpstan.neon": "e907724b7e3ec708d925f42dcc9764a692e187a8",
+            "phpunit-unit.xml": "f18a32b706f355d82bd84daf5e928694a06f7b92",
+            "phpunit.xml": "619c9b2d6ec13bbe4fdfd4a6d8718d5cb234dacc",
+            "project.md": "cc57f34456929538f5018331ca0d1cc3c2d6d9c3",
+            "psalm.xml": "d1ee863c0f5e5bce091d5e35985b62c40b7e83aa",
+            "src/App.vue": "3a5b14c7cbfd2d129bc9018e6417ce1420f5fa68",
+            "src/assets/app.css": "83647af7f30a7c0f8987f0e12f86e3e813c1446c",
+            "src/main.js": "84cc88be5a3609368c6801dc18879e7a16fee218",
+            "src/manifest.json": "1f994131c30b336690c9272c0113fc6634dada0e",
+            "src/navigation/MainMenu.vue": "49690fc718540d8c2e27970019f1ea77926618cf",
+            "src/pinia.js": "c2867886d0bc7bdfbbefad2bb890b8f857533ce1",
+            "src/router/index.js": "0ccba08d66276727a0bb2e27a2ec5b1b504aae31",
+            "src/settings.js": "0ff1286ba374fce5c622d09d089f7657ca7dcd77",
+            "src/store/modules/object.js": "0e3088d559bfea054f795b70f11ac54743c46eaa",
+            "src/store/modules/settings.js": "39c6ca59b9a6401dc05c214d44712edd247ea5fc",
+            "src/store/store.js": "5802e0ed577693b7be45b4960baac5f3934eef7c",
+            "src/views/Dashboard.vue": "2bf4d77cd041fdcc125d76978b13eef2cd806373",
+            "src/views/settings/AdminRoot.vue": "4e80250ce0e561d59df2d5521a21c15ebe7dd723",
+            "src/views/settings/Settings.vue": "50d33a393b3098f2bbadd72ca8e288e0e149e88d",
+            "src/views/settings/UserSettings.vue": "457bd405ad26c753300ec6d219143e901f11301a",
+            "stylelint.config.js": "73fa02e0452e5a65008ec97c0a0c9c44852ab5cd",
+            "templates/index.php": "f5814caefc3b0d734761a75f38a897c98796fbbe",
+            "templates/settings/admin.php": "d930134a12120e0360bc5e3bad2197778328d1eb",
+            "tests/Unit/DemoAppTest.php": "981671ca8ceea8c789b2c11a7ecc0f327d1c688f",
+            "tests/bootstrap-unit.php": "68edb5e8c5f8ded323bb594480da520c83a66efd",
+            "tests/bootstrap.php": "66a0fbb7806cabc5072be6c34da87930ae0926aa",
+            "tests/integration/README.md": "df3a448115ed9d5f1638a24556b08dd21dc155c9",
+            "tests/integration/demo-app.postman_collection.json": "0d72d3e99d63658fea9f16ddeecec8a0cbe4056b",
+            "tests/unit/AppInfo/OpenRegisterAutoloaderTest.php": "53f09681ef755f29cd143d144d048529ae64b5c9",
+            "tests/unit/Controller/SettingsControllerTest.php": "ec96d63465f154824c3e31b5ffa1f6a830691e35",
+            "webpack.config.js": "507ae436be4e15ebc0083e30c9c2b8db9e6da086"
+        },
+        "lastContent": {
+            "pages": 3,
+            "menu": 1,
+            "schemas": 2,
+            "records": 3
+        },
+        "lastSkipped": [
+            {
+                "kind": "flow",
+                "ref": "demo-slug#2",
+                "reason": "golden"
+            }
+        ],
+        "calls": [
+            {
+                "call": "registers.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "dataRegisters": [
+                        {
+                            "register": "r1",
+                            "includeData": true
+                        },
+                        {
+                            "register": "r2"
+                        }
+                    ]
+                }
+            },
+            {
+                "call": "content.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "source": {
+                        "application": {
+                            "slug": "demo"
+                        },
+                        "version": {
+                            "slug": "development"
+                        },
+                        "includeSeedData": true
+                    },
+                    "appId": "demo-app",
+                    "semver": "1.2.1"
+                }
+            },
+            {
+                "call": "flows.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "flows": [
+                        {
+                            "flow": "f1"
+                        },
+                        "loose"
+                    ],
+                    "applicationSlug": "demo-slug"
+                }
+            },
+            {
+                "call": "log.info",
+                "args": {
+                    "message": "Buildiq export: built tree",
+                    "context": {
+                        "applicationUuid": "uuid-1",
+                        "applicationVersion": "1.2.1",
+                        "jobUuid": "golden-8bb401d0cf88"
+                    }
+                }
+            }
+        ]
+    },
+    "src1 content1 flag1 writer1": {
+        "zip": "golden-555ffcba5fac.zip",
+        "entries": {
+            ".gitattributes": "291fc3dc1457da8b3de9439882c2e73faa102299",
+            ".github/workflows/branch-protection.yml": "67d0164fa93a09fc33916442cc9590cb9ec765d9",
+            ".github/workflows/code-quality.yml": "dad7fe7d59359e1bda338cc0b4a7f20a14febb12",
+            ".github/workflows/documentation.yml": "092a9ce0659f76d2195dc361180ba57062d2859c",
+            ".github/workflows/issue-triage.yml": "46950238d9287d204141e3feaeca567ced24e1d3",
+            ".github/workflows/openspec-sync.yml": "06bd0472fc1d6fbafc68ed711f79bdc42bcd5fa1",
+            ".github/workflows/pull-request-lint-check.yaml": "b1eef808dcc94bb224f1db969c21b27ecd5b1158",
+            ".github/workflows/release-beta.yml": "fc592c28e73c44254933efb6679f3a46b0019d6b",
+            ".github/workflows/release-stable.yml": "587227865b1bf1726ee66e434d2a49311429ddbe",
+            ".github/workflows/sync-to-beta.yml": "626a58099a6bafbf1baf9728529e93d5947bfe53",
+            ".gitignore": "883e5b1e1a1fed68ee5ee142188a82bdb44d8639",
+            ".prettierrc": "693104e7d1c3d2e77d4a00e3470f70697448dfe0",
+            ".vscode/settings.json": "bc049c3f248312967dd3d0bdf2b00a003ac978f6",
+            "LICENSE": "1e2bc005404dc951a04330cc32d1ae0b085fe32c",
+            "Makefile": "7000850d4fe7b2bdf6877aa17f9303b122cc5753",
+            "README.md": "82f2fd397bcea38c09d47dabf2fa80fa27148e00",
+            "appinfo/info.xml": "1df629b847ade22b1a35b0807ea65a7ad2e3545a",
+            "appinfo/routes.php": "05fc29f1dbec9f6f70baec667d9a178cea0c3daa",
+            "composer.json": "678873856702a5b6d45c0cf0915b9cdd1d2a2618",
+            "deploy/golden.txt": "b0d51b9ff91b623cc42b17c529b7c21c2ab57fb4",
+            "eslint.config.js": "89db2eff96d6349467028e3faea349dbfc7b9541",
+            "golden-content.txt": "d37b467d7b81b4592a84bc70737d061bd3fc87b5",
+            "img/app-dark.svg": "e31056a2f28fd31dd422b3fb38fae24f28de9251",
+            "img/app-store.svg": "e407ad19e7f492fe0ab07a5507adfcece3abf17c",
+            "img/app.svg": "1d9adda430dc9ad57a2ddb6f0d7a9d70f25dce3f",
+            "l10n/en.json": "b8f96ee97952e2126a0b00e036dc322c5d67e60d",
+            "l10n/nl.json": "407dd18f44cec1956a44d52eaa01a261ffaef1e1",
+            "lib/AppInfo/Application.php": "8d88c37b8da5d1094421d6a78931dc60ed147c79",
+            "lib/AppInfo/OpenRegisterAutoloader.php": "59dd7118aa605841fa48607ccafefcc943be7712",
+            "lib/Controller/DashboardController.php": "37dfcaf57a9d67125321c41527db15d0cdc5e7aa",
+            "lib/Controller/SettingsController.php": "5a50fcf44cbe25b77935f507b9fef3045543f6e7",
+            "lib/Listener/DeepLinkRegistrationListener.php": "5f20dbfc51a8363f903027d36a7506f6d3be832e",
+            "lib/Repair/InitializeSettings.php": "4463cdf34b17ac2229775f7b8e6bc5b7164ea9ce",
+            "lib/Sections/SettingsSection.php": "c1788e02e0398fc53f9ef99966020e8e622b41f3",
+            "lib/Service/FlowSeedService.php": "16183954023764028cf6f0343bd73ae81b2f0568",
+            "lib/Service/SettingsService.php": "2fee5d8b13119c1f9fe04f6c4714012056a06f84",
+            "lib/Settings/AdminSettings.php": "9123ef81e5e68f20708843aba3c32133589a225b",
+            "lib/Settings/demo_app_register.json": "7ba0e6bcf963f705a139b89300a432e6f44ed2df",
+            "package.json": "dc7afb828535ae28e53ede163c22616cb9ec6ed3",
+            "phpcs-custom-sniffs/CustomSniffs/Sniffs/Functions/NamedParametersSniff.php": "10be689fe1efeb62338b1a2b9409828a2ea54fa1",
+            "phpcs-custom-sniffs/CustomSniffs/ruleset.xml": "40c5f637b7409961052ed4d3f796589d91090e09",
+            "phpcs.xml": "e59af4d1dbef5143c859439763ec14d0c3dffc77",
+            "phpmd.xml": "1186ad71b877d9de9035e0e453be110af6418610",
+            "phpstan-bootstrap.php": "cb0d40525f2adcbc0dc6c8ba7f57c631bf30963a",
+            "phpstan.neon": "e907724b7e3ec708d925f42dcc9764a692e187a8",
+            "phpunit-unit.xml": "f18a32b706f355d82bd84daf5e928694a06f7b92",
+            "phpunit.xml": "619c9b2d6ec13bbe4fdfd4a6d8718d5cb234dacc",
+            "project.md": "cc57f34456929538f5018331ca0d1cc3c2d6d9c3",
+            "psalm.xml": "d1ee863c0f5e5bce091d5e35985b62c40b7e83aa",
+            "src/App.vue": "3a5b14c7cbfd2d129bc9018e6417ce1420f5fa68",
+            "src/assets/app.css": "83647af7f30a7c0f8987f0e12f86e3e813c1446c",
+            "src/main.js": "84cc88be5a3609368c6801dc18879e7a16fee218",
+            "src/manifest.json": "1f994131c30b336690c9272c0113fc6634dada0e",
+            "src/navigation/MainMenu.vue": "49690fc718540d8c2e27970019f1ea77926618cf",
+            "src/pinia.js": "c2867886d0bc7bdfbbefad2bb890b8f857533ce1",
+            "src/router/index.js": "0ccba08d66276727a0bb2e27a2ec5b1b504aae31",
+            "src/settings.js": "0ff1286ba374fce5c622d09d089f7657ca7dcd77",
+            "src/store/modules/object.js": "0e3088d559bfea054f795b70f11ac54743c46eaa",
+            "src/store/modules/settings.js": "39c6ca59b9a6401dc05c214d44712edd247ea5fc",
+            "src/store/store.js": "5802e0ed577693b7be45b4960baac5f3934eef7c",
+            "src/views/Dashboard.vue": "2bf4d77cd041fdcc125d76978b13eef2cd806373",
+            "src/views/settings/AdminRoot.vue": "4e80250ce0e561d59df2d5521a21c15ebe7dd723",
+            "src/views/settings/Settings.vue": "50d33a393b3098f2bbadd72ca8e288e0e149e88d",
+            "src/views/settings/UserSettings.vue": "457bd405ad26c753300ec6d219143e901f11301a",
+            "stylelint.config.js": "73fa02e0452e5a65008ec97c0a0c9c44852ab5cd",
+            "templates/index.php": "f5814caefc3b0d734761a75f38a897c98796fbbe",
+            "templates/settings/admin.php": "d930134a12120e0360bc5e3bad2197778328d1eb",
+            "tests/Unit/DemoAppTest.php": "981671ca8ceea8c789b2c11a7ecc0f327d1c688f",
+            "tests/bootstrap-unit.php": "68edb5e8c5f8ded323bb594480da520c83a66efd",
+            "tests/bootstrap.php": "66a0fbb7806cabc5072be6c34da87930ae0926aa",
+            "tests/integration/README.md": "df3a448115ed9d5f1638a24556b08dd21dc155c9",
+            "tests/integration/demo-app.postman_collection.json": "0d72d3e99d63658fea9f16ddeecec8a0cbe4056b",
+            "tests/unit/AppInfo/OpenRegisterAutoloaderTest.php": "53f09681ef755f29cd143d144d048529ae64b5c9",
+            "tests/unit/Controller/SettingsControllerTest.php": "ec96d63465f154824c3e31b5ffa1f6a830691e35",
+            "webpack.config.js": "507ae436be4e15ebc0083e30c9c2b8db9e6da086"
+        },
+        "lastContent": {
+            "pages": 3,
+            "menu": 1,
+            "schemas": 2,
+            "records": 3
+        },
+        "lastSkipped": [
+            {
+                "kind": "flow",
+                "ref": "demo-slug#2",
+                "reason": "golden"
+            }
+        ],
+        "calls": [
+            {
+                "call": "writer.write",
+                "args": {
+                    "rootDir": "<scratch>"
+                }
+            },
+            {
+                "call": "registers.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "dataRegisters": [
+                        {
+                            "register": "r1",
+                            "includeData": true
+                        },
+                        {
+                            "register": "r2"
+                        }
+                    ]
+                }
+            },
+            {
+                "call": "content.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "source": {
+                        "application": {
+                            "slug": "demo"
+                        },
+                        "version": {
+                            "slug": "development"
+                        },
+                        "includeSeedData": true
+                    },
+                    "appId": "demo-app",
+                    "semver": "1.2.1"
+                }
+            },
+            {
+                "call": "writer.pointReadme",
+                "args": {
+                    "rootDir": "<scratch>"
+                }
+            },
+            {
+                "call": "flows.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "flows": [
+                        {
+                            "flow": "f1"
+                        },
+                        "loose"
+                    ],
+                    "applicationSlug": "demo-slug"
+                }
+            },
+            {
+                "call": "log.info",
+                "args": {
+                    "message": "Buildiq export: built tree",
+                    "context": {
+                        "applicationUuid": "uuid-1",
+                        "applicationVersion": "1.2.1",
+                        "jobUuid": "golden-555ffcba5fac"
+                    }
+                }
+            }
+        ]
+    },
+    "src1 content1 flag1 writer0": {
+        "zip": "golden-0f9bfbd497d1.zip",
+        "entries": {
+            ".gitattributes": "291fc3dc1457da8b3de9439882c2e73faa102299",
+            ".github/workflows/branch-protection.yml": "67d0164fa93a09fc33916442cc9590cb9ec765d9",
+            ".github/workflows/code-quality.yml": "dad7fe7d59359e1bda338cc0b4a7f20a14febb12",
+            ".github/workflows/documentation.yml": "092a9ce0659f76d2195dc361180ba57062d2859c",
+            ".github/workflows/issue-triage.yml": "46950238d9287d204141e3feaeca567ced24e1d3",
+            ".github/workflows/openspec-sync.yml": "06bd0472fc1d6fbafc68ed711f79bdc42bcd5fa1",
+            ".github/workflows/pull-request-lint-check.yaml": "b1eef808dcc94bb224f1db969c21b27ecd5b1158",
+            ".github/workflows/release-beta.yml": "fc592c28e73c44254933efb6679f3a46b0019d6b",
+            ".github/workflows/release-stable.yml": "587227865b1bf1726ee66e434d2a49311429ddbe",
+            ".github/workflows/sync-to-beta.yml": "626a58099a6bafbf1baf9728529e93d5947bfe53",
+            ".gitignore": "883e5b1e1a1fed68ee5ee142188a82bdb44d8639",
+            ".prettierrc": "693104e7d1c3d2e77d4a00e3470f70697448dfe0",
+            ".vscode/settings.json": "bc049c3f248312967dd3d0bdf2b00a003ac978f6",
+            "LICENSE": "1e2bc005404dc951a04330cc32d1ae0b085fe32c",
+            "Makefile": "7000850d4fe7b2bdf6877aa17f9303b122cc5753",
+            "README.md": "82f2fd397bcea38c09d47dabf2fa80fa27148e00",
+            "appinfo/info.xml": "1df629b847ade22b1a35b0807ea65a7ad2e3545a",
+            "appinfo/routes.php": "05fc29f1dbec9f6f70baec667d9a178cea0c3daa",
+            "composer.json": "678873856702a5b6d45c0cf0915b9cdd1d2a2618",
+            "eslint.config.js": "89db2eff96d6349467028e3faea349dbfc7b9541",
+            "golden-content.txt": "d37b467d7b81b4592a84bc70737d061bd3fc87b5",
+            "img/app-dark.svg": "e31056a2f28fd31dd422b3fb38fae24f28de9251",
+            "img/app-store.svg": "e407ad19e7f492fe0ab07a5507adfcece3abf17c",
+            "img/app.svg": "1d9adda430dc9ad57a2ddb6f0d7a9d70f25dce3f",
+            "l10n/en.json": "b8f96ee97952e2126a0b00e036dc322c5d67e60d",
+            "l10n/nl.json": "407dd18f44cec1956a44d52eaa01a261ffaef1e1",
+            "lib/AppInfo/Application.php": "8d88c37b8da5d1094421d6a78931dc60ed147c79",
+            "lib/AppInfo/OpenRegisterAutoloader.php": "59dd7118aa605841fa48607ccafefcc943be7712",
+            "lib/Controller/DashboardController.php": "37dfcaf57a9d67125321c41527db15d0cdc5e7aa",
+            "lib/Controller/SettingsController.php": "5a50fcf44cbe25b77935f507b9fef3045543f6e7",
+            "lib/Listener/DeepLinkRegistrationListener.php": "5f20dbfc51a8363f903027d36a7506f6d3be832e",
+            "lib/Repair/InitializeSettings.php": "4463cdf34b17ac2229775f7b8e6bc5b7164ea9ce",
+            "lib/Sections/SettingsSection.php": "c1788e02e0398fc53f9ef99966020e8e622b41f3",
+            "lib/Service/FlowSeedService.php": "16183954023764028cf6f0343bd73ae81b2f0568",
+            "lib/Service/SettingsService.php": "2fee5d8b13119c1f9fe04f6c4714012056a06f84",
+            "lib/Settings/AdminSettings.php": "9123ef81e5e68f20708843aba3c32133589a225b",
+            "lib/Settings/demo_app_register.json": "7ba0e6bcf963f705a139b89300a432e6f44ed2df",
+            "package.json": "dc7afb828535ae28e53ede163c22616cb9ec6ed3",
+            "phpcs-custom-sniffs/CustomSniffs/Sniffs/Functions/NamedParametersSniff.php": "10be689fe1efeb62338b1a2b9409828a2ea54fa1",
+            "phpcs-custom-sniffs/CustomSniffs/ruleset.xml": "40c5f637b7409961052ed4d3f796589d91090e09",
+            "phpcs.xml": "e59af4d1dbef5143c859439763ec14d0c3dffc77",
+            "phpmd.xml": "1186ad71b877d9de9035e0e453be110af6418610",
+            "phpstan-bootstrap.php": "cb0d40525f2adcbc0dc6c8ba7f57c631bf30963a",
+            "phpstan.neon": "e907724b7e3ec708d925f42dcc9764a692e187a8",
+            "phpunit-unit.xml": "f18a32b706f355d82bd84daf5e928694a06f7b92",
+            "phpunit.xml": "619c9b2d6ec13bbe4fdfd4a6d8718d5cb234dacc",
+            "project.md": "cc57f34456929538f5018331ca0d1cc3c2d6d9c3",
+            "psalm.xml": "d1ee863c0f5e5bce091d5e35985b62c40b7e83aa",
+            "src/App.vue": "3a5b14c7cbfd2d129bc9018e6417ce1420f5fa68",
+            "src/assets/app.css": "83647af7f30a7c0f8987f0e12f86e3e813c1446c",
+            "src/main.js": "84cc88be5a3609368c6801dc18879e7a16fee218",
+            "src/manifest.json": "1f994131c30b336690c9272c0113fc6634dada0e",
+            "src/navigation/MainMenu.vue": "49690fc718540d8c2e27970019f1ea77926618cf",
+            "src/pinia.js": "c2867886d0bc7bdfbbefad2bb890b8f857533ce1",
+            "src/router/index.js": "0ccba08d66276727a0bb2e27a2ec5b1b504aae31",
+            "src/settings.js": "0ff1286ba374fce5c622d09d089f7657ca7dcd77",
+            "src/store/modules/object.js": "0e3088d559bfea054f795b70f11ac54743c46eaa",
+            "src/store/modules/settings.js": "39c6ca59b9a6401dc05c214d44712edd247ea5fc",
+            "src/store/store.js": "5802e0ed577693b7be45b4960baac5f3934eef7c",
+            "src/views/Dashboard.vue": "2bf4d77cd041fdcc125d76978b13eef2cd806373",
+            "src/views/settings/AdminRoot.vue": "4e80250ce0e561d59df2d5521a21c15ebe7dd723",
+            "src/views/settings/Settings.vue": "50d33a393b3098f2bbadd72ca8e288e0e149e88d",
+            "src/views/settings/UserSettings.vue": "457bd405ad26c753300ec6d219143e901f11301a",
+            "stylelint.config.js": "73fa02e0452e5a65008ec97c0a0c9c44852ab5cd",
+            "templates/index.php": "f5814caefc3b0d734761a75f38a897c98796fbbe",
+            "templates/settings/admin.php": "d930134a12120e0360bc5e3bad2197778328d1eb",
+            "tests/Unit/DemoAppTest.php": "981671ca8ceea8c789b2c11a7ecc0f327d1c688f",
+            "tests/bootstrap-unit.php": "68edb5e8c5f8ded323bb594480da520c83a66efd",
+            "tests/bootstrap.php": "66a0fbb7806cabc5072be6c34da87930ae0926aa",
+            "tests/integration/README.md": "df3a448115ed9d5f1638a24556b08dd21dc155c9",
+            "tests/integration/demo-app.postman_collection.json": "0d72d3e99d63658fea9f16ddeecec8a0cbe4056b",
+            "tests/unit/AppInfo/OpenRegisterAutoloaderTest.php": "53f09681ef755f29cd143d144d048529ae64b5c9",
+            "tests/unit/Controller/SettingsControllerTest.php": "ec96d63465f154824c3e31b5ffa1f6a830691e35",
+            "webpack.config.js": "507ae436be4e15ebc0083e30c9c2b8db9e6da086"
+        },
+        "lastContent": {
+            "pages": 3,
+            "menu": 1,
+            "schemas": 2,
+            "records": 3
+        },
+        "lastSkipped": [
+            {
+                "kind": "flow",
+                "ref": "demo-slug#2",
+                "reason": "golden"
+            }
+        ],
+        "calls": [
+            {
+                "call": "registers.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "dataRegisters": [
+                        {
+                            "register": "r1",
+                            "includeData": true
+                        },
+                        {
+                            "register": "r2"
+                        }
+                    ]
+                }
+            },
+            {
+                "call": "content.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "source": {
+                        "application": {
+                            "slug": "demo"
+                        },
+                        "version": {
+                            "slug": "development"
+                        },
+                        "includeSeedData": true
+                    },
+                    "appId": "demo-app",
+                    "semver": "1.2.1"
+                }
+            },
+            {
+                "call": "flows.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "flows": [
+                        {
+                            "flow": "f1"
+                        },
+                        "loose"
+                    ],
+                    "applicationSlug": "demo-slug"
+                }
+            },
+            {
+                "call": "log.info",
+                "args": {
+                    "message": "Buildiq export: built tree",
+                    "context": {
+                        "applicationUuid": "uuid-1",
+                        "applicationVersion": "1.2.1",
+                        "jobUuid": "golden-0f9bfbd497d1"
+                    }
+                }
+            }
+        ]
+    },
+    "src1 content0 flag0 writer1": {
+        "zip": "golden-ade9fb7ec1bc.zip",
+        "entries": {
+            ".gitattributes": "291fc3dc1457da8b3de9439882c2e73faa102299",
+            ".github/workflows/branch-protection.yml": "67d0164fa93a09fc33916442cc9590cb9ec765d9",
+            ".github/workflows/code-quality.yml": "dad7fe7d59359e1bda338cc0b4a7f20a14febb12",
+            ".github/workflows/documentation.yml": "092a9ce0659f76d2195dc361180ba57062d2859c",
+            ".github/workflows/issue-triage.yml": "46950238d9287d204141e3feaeca567ced24e1d3",
+            ".github/workflows/openspec-sync.yml": "06bd0472fc1d6fbafc68ed711f79bdc42bcd5fa1",
+            ".github/workflows/pull-request-lint-check.yaml": "b1eef808dcc94bb224f1db969c21b27ecd5b1158",
+            ".github/workflows/release-beta.yml": "fc592c28e73c44254933efb6679f3a46b0019d6b",
+            ".github/workflows/release-stable.yml": "587227865b1bf1726ee66e434d2a49311429ddbe",
+            ".github/workflows/sync-to-beta.yml": "626a58099a6bafbf1baf9728529e93d5947bfe53",
+            ".gitignore": "883e5b1e1a1fed68ee5ee142188a82bdb44d8639",
+            ".prettierrc": "693104e7d1c3d2e77d4a00e3470f70697448dfe0",
+            ".vscode/settings.json": "bc049c3f248312967dd3d0bdf2b00a003ac978f6",
+            "LICENSE": "1e2bc005404dc951a04330cc32d1ae0b085fe32c",
+            "Makefile": "7000850d4fe7b2bdf6877aa17f9303b122cc5753",
+            "README.md": "82f2fd397bcea38c09d47dabf2fa80fa27148e00",
+            "appinfo/info.xml": "1df629b847ade22b1a35b0807ea65a7ad2e3545a",
+            "appinfo/routes.php": "05fc29f1dbec9f6f70baec667d9a178cea0c3daa",
+            "composer.json": "678873856702a5b6d45c0cf0915b9cdd1d2a2618",
+            "eslint.config.js": "89db2eff96d6349467028e3faea349dbfc7b9541",
+            "img/app-dark.svg": "e31056a2f28fd31dd422b3fb38fae24f28de9251",
+            "img/app-store.svg": "e407ad19e7f492fe0ab07a5507adfcece3abf17c",
+            "img/app.svg": "1d9adda430dc9ad57a2ddb6f0d7a9d70f25dce3f",
+            "l10n/en.json": "b8f96ee97952e2126a0b00e036dc322c5d67e60d",
+            "l10n/nl.json": "407dd18f44cec1956a44d52eaa01a261ffaef1e1",
+            "lib/AppInfo/Application.php": "8d88c37b8da5d1094421d6a78931dc60ed147c79",
+            "lib/AppInfo/OpenRegisterAutoloader.php": "59dd7118aa605841fa48607ccafefcc943be7712",
+            "lib/Controller/DashboardController.php": "37dfcaf57a9d67125321c41527db15d0cdc5e7aa",
+            "lib/Controller/SettingsController.php": "5a50fcf44cbe25b77935f507b9fef3045543f6e7",
+            "lib/Listener/DeepLinkRegistrationListener.php": "5f20dbfc51a8363f903027d36a7506f6d3be832e",
+            "lib/Repair/InitializeSettings.php": "4463cdf34b17ac2229775f7b8e6bc5b7164ea9ce",
+            "lib/Sections/SettingsSection.php": "c1788e02e0398fc53f9ef99966020e8e622b41f3",
+            "lib/Service/FlowSeedService.php": "16183954023764028cf6f0343bd73ae81b2f0568",
+            "lib/Service/SettingsService.php": "2fee5d8b13119c1f9fe04f6c4714012056a06f84",
+            "lib/Settings/AdminSettings.php": "9123ef81e5e68f20708843aba3c32133589a225b",
+            "lib/Settings/demo_app_register.json": "7ba0e6bcf963f705a139b89300a432e6f44ed2df",
+            "package.json": "dc7afb828535ae28e53ede163c22616cb9ec6ed3",
+            "phpcs-custom-sniffs/CustomSniffs/Sniffs/Functions/NamedParametersSniff.php": "10be689fe1efeb62338b1a2b9409828a2ea54fa1",
+            "phpcs-custom-sniffs/CustomSniffs/ruleset.xml": "40c5f637b7409961052ed4d3f796589d91090e09",
+            "phpcs.xml": "e59af4d1dbef5143c859439763ec14d0c3dffc77",
+            "phpmd.xml": "1186ad71b877d9de9035e0e453be110af6418610",
+            "phpstan-bootstrap.php": "cb0d40525f2adcbc0dc6c8ba7f57c631bf30963a",
+            "phpstan.neon": "e907724b7e3ec708d925f42dcc9764a692e187a8",
+            "phpunit-unit.xml": "f18a32b706f355d82bd84daf5e928694a06f7b92",
+            "phpunit.xml": "619c9b2d6ec13bbe4fdfd4a6d8718d5cb234dacc",
+            "project.md": "cc57f34456929538f5018331ca0d1cc3c2d6d9c3",
+            "psalm.xml": "d1ee863c0f5e5bce091d5e35985b62c40b7e83aa",
+            "src/App.vue": "3a5b14c7cbfd2d129bc9018e6417ce1420f5fa68",
+            "src/assets/app.css": "83647af7f30a7c0f8987f0e12f86e3e813c1446c",
+            "src/main.js": "84cc88be5a3609368c6801dc18879e7a16fee218",
+            "src/manifest.json": "1f994131c30b336690c9272c0113fc6634dada0e",
+            "src/navigation/MainMenu.vue": "49690fc718540d8c2e27970019f1ea77926618cf",
+            "src/pinia.js": "c2867886d0bc7bdfbbefad2bb890b8f857533ce1",
+            "src/router/index.js": "0ccba08d66276727a0bb2e27a2ec5b1b504aae31",
+            "src/settings.js": "0ff1286ba374fce5c622d09d089f7657ca7dcd77",
+            "src/store/modules/object.js": "0e3088d559bfea054f795b70f11ac54743c46eaa",
+            "src/store/modules/settings.js": "39c6ca59b9a6401dc05c214d44712edd247ea5fc",
+            "src/store/store.js": "5802e0ed577693b7be45b4960baac5f3934eef7c",
+            "src/views/Dashboard.vue": "2bf4d77cd041fdcc125d76978b13eef2cd806373",
+            "src/views/settings/AdminRoot.vue": "4e80250ce0e561d59df2d5521a21c15ebe7dd723",
+            "src/views/settings/Settings.vue": "50d33a393b3098f2bbadd72ca8e288e0e149e88d",
+            "src/views/settings/UserSettings.vue": "457bd405ad26c753300ec6d219143e901f11301a",
+            "stylelint.config.js": "73fa02e0452e5a65008ec97c0a0c9c44852ab5cd",
+            "templates/index.php": "f5814caefc3b0d734761a75f38a897c98796fbbe",
+            "templates/settings/admin.php": "d930134a12120e0360bc5e3bad2197778328d1eb",
+            "tests/Unit/DemoAppTest.php": "981671ca8ceea8c789b2c11a7ecc0f327d1c688f",
+            "tests/bootstrap-unit.php": "68edb5e8c5f8ded323bb594480da520c83a66efd",
+            "tests/bootstrap.php": "66a0fbb7806cabc5072be6c34da87930ae0926aa",
+            "tests/integration/README.md": "df3a448115ed9d5f1638a24556b08dd21dc155c9",
+            "tests/integration/demo-app.postman_collection.json": "0d72d3e99d63658fea9f16ddeecec8a0cbe4056b",
+            "tests/unit/AppInfo/OpenRegisterAutoloaderTest.php": "53f09681ef755f29cd143d144d048529ae64b5c9",
+            "tests/unit/Controller/SettingsControllerTest.php": "ec96d63465f154824c3e31b5ffa1f6a830691e35",
+            "webpack.config.js": "507ae436be4e15ebc0083e30c9c2b8db9e6da086"
+        },
+        "lastContent": null,
+        "lastSkipped": [
+            {
+                "kind": "flow",
+                "ref": "demo-slug#2",
+                "reason": "golden"
+            }
+        ],
+        "calls": [
+            {
+                "call": "registers.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "dataRegisters": [
+                        {
+                            "register": "r1",
+                            "includeData": true
+                        },
+                        {
+                            "register": "r2"
+                        }
+                    ]
+                }
+            },
+            {
+                "call": "flows.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "flows": [
+                        {
+                            "flow": "f1"
+                        },
+                        "loose"
+                    ],
+                    "applicationSlug": "demo-slug"
+                }
+            },
+            {
+                "call": "log.info",
+                "args": {
+                    "message": "Buildiq export: built tree",
+                    "context": {
+                        "applicationUuid": "uuid-1",
+                        "applicationVersion": "1.2.1",
+                        "jobUuid": "golden-ade9fb7ec1bc"
+                    }
+                }
+            }
+        ]
+    },
+    "src1 content0 flag0 writer0": {
+        "zip": "golden-2210059356da.zip",
+        "entries": {
+            ".gitattributes": "291fc3dc1457da8b3de9439882c2e73faa102299",
+            ".github/workflows/branch-protection.yml": "67d0164fa93a09fc33916442cc9590cb9ec765d9",
+            ".github/workflows/code-quality.yml": "dad7fe7d59359e1bda338cc0b4a7f20a14febb12",
+            ".github/workflows/documentation.yml": "092a9ce0659f76d2195dc361180ba57062d2859c",
+            ".github/workflows/issue-triage.yml": "46950238d9287d204141e3feaeca567ced24e1d3",
+            ".github/workflows/openspec-sync.yml": "06bd0472fc1d6fbafc68ed711f79bdc42bcd5fa1",
+            ".github/workflows/pull-request-lint-check.yaml": "b1eef808dcc94bb224f1db969c21b27ecd5b1158",
+            ".github/workflows/release-beta.yml": "fc592c28e73c44254933efb6679f3a46b0019d6b",
+            ".github/workflows/release-stable.yml": "587227865b1bf1726ee66e434d2a49311429ddbe",
+            ".github/workflows/sync-to-beta.yml": "626a58099a6bafbf1baf9728529e93d5947bfe53",
+            ".gitignore": "883e5b1e1a1fed68ee5ee142188a82bdb44d8639",
+            ".prettierrc": "693104e7d1c3d2e77d4a00e3470f70697448dfe0",
+            ".vscode/settings.json": "bc049c3f248312967dd3d0bdf2b00a003ac978f6",
+            "LICENSE": "1e2bc005404dc951a04330cc32d1ae0b085fe32c",
+            "Makefile": "7000850d4fe7b2bdf6877aa17f9303b122cc5753",
+            "README.md": "82f2fd397bcea38c09d47dabf2fa80fa27148e00",
+            "appinfo/info.xml": "1df629b847ade22b1a35b0807ea65a7ad2e3545a",
+            "appinfo/routes.php": "05fc29f1dbec9f6f70baec667d9a178cea0c3daa",
+            "composer.json": "678873856702a5b6d45c0cf0915b9cdd1d2a2618",
+            "eslint.config.js": "89db2eff96d6349467028e3faea349dbfc7b9541",
+            "img/app-dark.svg": "e31056a2f28fd31dd422b3fb38fae24f28de9251",
+            "img/app-store.svg": "e407ad19e7f492fe0ab07a5507adfcece3abf17c",
+            "img/app.svg": "1d9adda430dc9ad57a2ddb6f0d7a9d70f25dce3f",
+            "l10n/en.json": "b8f96ee97952e2126a0b00e036dc322c5d67e60d",
+            "l10n/nl.json": "407dd18f44cec1956a44d52eaa01a261ffaef1e1",
+            "lib/AppInfo/Application.php": "8d88c37b8da5d1094421d6a78931dc60ed147c79",
+            "lib/AppInfo/OpenRegisterAutoloader.php": "59dd7118aa605841fa48607ccafefcc943be7712",
+            "lib/Controller/DashboardController.php": "37dfcaf57a9d67125321c41527db15d0cdc5e7aa",
+            "lib/Controller/SettingsController.php": "5a50fcf44cbe25b77935f507b9fef3045543f6e7",
+            "lib/Listener/DeepLinkRegistrationListener.php": "5f20dbfc51a8363f903027d36a7506f6d3be832e",
+            "lib/Repair/InitializeSettings.php": "4463cdf34b17ac2229775f7b8e6bc5b7164ea9ce",
+            "lib/Sections/SettingsSection.php": "c1788e02e0398fc53f9ef99966020e8e622b41f3",
+            "lib/Service/FlowSeedService.php": "16183954023764028cf6f0343bd73ae81b2f0568",
+            "lib/Service/SettingsService.php": "2fee5d8b13119c1f9fe04f6c4714012056a06f84",
+            "lib/Settings/AdminSettings.php": "9123ef81e5e68f20708843aba3c32133589a225b",
+            "lib/Settings/demo_app_register.json": "7ba0e6bcf963f705a139b89300a432e6f44ed2df",
+            "package.json": "dc7afb828535ae28e53ede163c22616cb9ec6ed3",
+            "phpcs-custom-sniffs/CustomSniffs/Sniffs/Functions/NamedParametersSniff.php": "10be689fe1efeb62338b1a2b9409828a2ea54fa1",
+            "phpcs-custom-sniffs/CustomSniffs/ruleset.xml": "40c5f637b7409961052ed4d3f796589d91090e09",
+            "phpcs.xml": "e59af4d1dbef5143c859439763ec14d0c3dffc77",
+            "phpmd.xml": "1186ad71b877d9de9035e0e453be110af6418610",
+            "phpstan-bootstrap.php": "cb0d40525f2adcbc0dc6c8ba7f57c631bf30963a",
+            "phpstan.neon": "e907724b7e3ec708d925f42dcc9764a692e187a8",
+            "phpunit-unit.xml": "f18a32b706f355d82bd84daf5e928694a06f7b92",
+            "phpunit.xml": "619c9b2d6ec13bbe4fdfd4a6d8718d5cb234dacc",
+            "project.md": "cc57f34456929538f5018331ca0d1cc3c2d6d9c3",
+            "psalm.xml": "d1ee863c0f5e5bce091d5e35985b62c40b7e83aa",
+            "src/App.vue": "3a5b14c7cbfd2d129bc9018e6417ce1420f5fa68",
+            "src/assets/app.css": "83647af7f30a7c0f8987f0e12f86e3e813c1446c",
+            "src/main.js": "84cc88be5a3609368c6801dc18879e7a16fee218",
+            "src/manifest.json": "1f994131c30b336690c9272c0113fc6634dada0e",
+            "src/navigation/MainMenu.vue": "49690fc718540d8c2e27970019f1ea77926618cf",
+            "src/pinia.js": "c2867886d0bc7bdfbbefad2bb890b8f857533ce1",
+            "src/router/index.js": "0ccba08d66276727a0bb2e27a2ec5b1b504aae31",
+            "src/settings.js": "0ff1286ba374fce5c622d09d089f7657ca7dcd77",
+            "src/store/modules/object.js": "0e3088d559bfea054f795b70f11ac54743c46eaa",
+            "src/store/modules/settings.js": "39c6ca59b9a6401dc05c214d44712edd247ea5fc",
+            "src/store/store.js": "5802e0ed577693b7be45b4960baac5f3934eef7c",
+            "src/views/Dashboard.vue": "2bf4d77cd041fdcc125d76978b13eef2cd806373",
+            "src/views/settings/AdminRoot.vue": "4e80250ce0e561d59df2d5521a21c15ebe7dd723",
+            "src/views/settings/Settings.vue": "50d33a393b3098f2bbadd72ca8e288e0e149e88d",
+            "src/views/settings/UserSettings.vue": "457bd405ad26c753300ec6d219143e901f11301a",
+            "stylelint.config.js": "73fa02e0452e5a65008ec97c0a0c9c44852ab5cd",
+            "templates/index.php": "f5814caefc3b0d734761a75f38a897c98796fbbe",
+            "templates/settings/admin.php": "d930134a12120e0360bc5e3bad2197778328d1eb",
+            "tests/Unit/DemoAppTest.php": "981671ca8ceea8c789b2c11a7ecc0f327d1c688f",
+            "tests/bootstrap-unit.php": "68edb5e8c5f8ded323bb594480da520c83a66efd",
+            "tests/bootstrap.php": "66a0fbb7806cabc5072be6c34da87930ae0926aa",
+            "tests/integration/README.md": "df3a448115ed9d5f1638a24556b08dd21dc155c9",
+            "tests/integration/demo-app.postman_collection.json": "0d72d3e99d63658fea9f16ddeecec8a0cbe4056b",
+            "tests/unit/AppInfo/OpenRegisterAutoloaderTest.php": "53f09681ef755f29cd143d144d048529ae64b5c9",
+            "tests/unit/Controller/SettingsControllerTest.php": "ec96d63465f154824c3e31b5ffa1f6a830691e35",
+            "webpack.config.js": "507ae436be4e15ebc0083e30c9c2b8db9e6da086"
+        },
+        "lastContent": null,
+        "lastSkipped": [
+            {
+                "kind": "flow",
+                "ref": "demo-slug#2",
+                "reason": "golden"
+            }
+        ],
+        "calls": [
+            {
+                "call": "registers.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "dataRegisters": [
+                        {
+                            "register": "r1",
+                            "includeData": true
+                        },
+                        {
+                            "register": "r2"
+                        }
+                    ]
+                }
+            },
+            {
+                "call": "flows.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "flows": [
+                        {
+                            "flow": "f1"
+                        },
+                        "loose"
+                    ],
+                    "applicationSlug": "demo-slug"
+                }
+            },
+            {
+                "call": "log.info",
+                "args": {
+                    "message": "Buildiq export: built tree",
+                    "context": {
+                        "applicationUuid": "uuid-1",
+                        "applicationVersion": "1.2.1",
+                        "jobUuid": "golden-2210059356da"
+                    }
+                }
+            }
+        ]
+    },
+    "src1 content0 flag1 writer1": {
+        "zip": "golden-3e16797186c1.zip",
+        "entries": {
+            ".gitattributes": "291fc3dc1457da8b3de9439882c2e73faa102299",
+            ".github/workflows/branch-protection.yml": "67d0164fa93a09fc33916442cc9590cb9ec765d9",
+            ".github/workflows/code-quality.yml": "dad7fe7d59359e1bda338cc0b4a7f20a14febb12",
+            ".github/workflows/documentation.yml": "092a9ce0659f76d2195dc361180ba57062d2859c",
+            ".github/workflows/issue-triage.yml": "46950238d9287d204141e3feaeca567ced24e1d3",
+            ".github/workflows/openspec-sync.yml": "06bd0472fc1d6fbafc68ed711f79bdc42bcd5fa1",
+            ".github/workflows/pull-request-lint-check.yaml": "b1eef808dcc94bb224f1db969c21b27ecd5b1158",
+            ".github/workflows/release-beta.yml": "fc592c28e73c44254933efb6679f3a46b0019d6b",
+            ".github/workflows/release-stable.yml": "587227865b1bf1726ee66e434d2a49311429ddbe",
+            ".github/workflows/sync-to-beta.yml": "626a58099a6bafbf1baf9728529e93d5947bfe53",
+            ".gitignore": "883e5b1e1a1fed68ee5ee142188a82bdb44d8639",
+            ".prettierrc": "693104e7d1c3d2e77d4a00e3470f70697448dfe0",
+            ".vscode/settings.json": "bc049c3f248312967dd3d0bdf2b00a003ac978f6",
+            "LICENSE": "1e2bc005404dc951a04330cc32d1ae0b085fe32c",
+            "Makefile": "7000850d4fe7b2bdf6877aa17f9303b122cc5753",
+            "README.md": "82f2fd397bcea38c09d47dabf2fa80fa27148e00",
+            "appinfo/info.xml": "1df629b847ade22b1a35b0807ea65a7ad2e3545a",
+            "appinfo/routes.php": "05fc29f1dbec9f6f70baec667d9a178cea0c3daa",
+            "composer.json": "678873856702a5b6d45c0cf0915b9cdd1d2a2618",
+            "deploy/golden.txt": "b0d51b9ff91b623cc42b17c529b7c21c2ab57fb4",
+            "eslint.config.js": "89db2eff96d6349467028e3faea349dbfc7b9541",
+            "img/app-dark.svg": "e31056a2f28fd31dd422b3fb38fae24f28de9251",
+            "img/app-store.svg": "e407ad19e7f492fe0ab07a5507adfcece3abf17c",
+            "img/app.svg": "1d9adda430dc9ad57a2ddb6f0d7a9d70f25dce3f",
+            "l10n/en.json": "b8f96ee97952e2126a0b00e036dc322c5d67e60d",
+            "l10n/nl.json": "407dd18f44cec1956a44d52eaa01a261ffaef1e1",
+            "lib/AppInfo/Application.php": "8d88c37b8da5d1094421d6a78931dc60ed147c79",
+            "lib/AppInfo/OpenRegisterAutoloader.php": "59dd7118aa605841fa48607ccafefcc943be7712",
+            "lib/Controller/DashboardController.php": "37dfcaf57a9d67125321c41527db15d0cdc5e7aa",
+            "lib/Controller/SettingsController.php": "5a50fcf44cbe25b77935f507b9fef3045543f6e7",
+            "lib/Listener/DeepLinkRegistrationListener.php": "5f20dbfc51a8363f903027d36a7506f6d3be832e",
+            "lib/Repair/InitializeSettings.php": "4463cdf34b17ac2229775f7b8e6bc5b7164ea9ce",
+            "lib/Sections/SettingsSection.php": "c1788e02e0398fc53f9ef99966020e8e622b41f3",
+            "lib/Service/FlowSeedService.php": "16183954023764028cf6f0343bd73ae81b2f0568",
+            "lib/Service/SettingsService.php": "2fee5d8b13119c1f9fe04f6c4714012056a06f84",
+            "lib/Settings/AdminSettings.php": "9123ef81e5e68f20708843aba3c32133589a225b",
+            "lib/Settings/demo_app_register.json": "7ba0e6bcf963f705a139b89300a432e6f44ed2df",
+            "package.json": "dc7afb828535ae28e53ede163c22616cb9ec6ed3",
+            "phpcs-custom-sniffs/CustomSniffs/Sniffs/Functions/NamedParametersSniff.php": "10be689fe1efeb62338b1a2b9409828a2ea54fa1",
+            "phpcs-custom-sniffs/CustomSniffs/ruleset.xml": "40c5f637b7409961052ed4d3f796589d91090e09",
+            "phpcs.xml": "e59af4d1dbef5143c859439763ec14d0c3dffc77",
+            "phpmd.xml": "1186ad71b877d9de9035e0e453be110af6418610",
+            "phpstan-bootstrap.php": "cb0d40525f2adcbc0dc6c8ba7f57c631bf30963a",
+            "phpstan.neon": "e907724b7e3ec708d925f42dcc9764a692e187a8",
+            "phpunit-unit.xml": "f18a32b706f355d82bd84daf5e928694a06f7b92",
+            "phpunit.xml": "619c9b2d6ec13bbe4fdfd4a6d8718d5cb234dacc",
+            "project.md": "cc57f34456929538f5018331ca0d1cc3c2d6d9c3",
+            "psalm.xml": "d1ee863c0f5e5bce091d5e35985b62c40b7e83aa",
+            "src/App.vue": "3a5b14c7cbfd2d129bc9018e6417ce1420f5fa68",
+            "src/assets/app.css": "83647af7f30a7c0f8987f0e12f86e3e813c1446c",
+            "src/main.js": "84cc88be5a3609368c6801dc18879e7a16fee218",
+            "src/manifest.json": "1f994131c30b336690c9272c0113fc6634dada0e",
+            "src/navigation/MainMenu.vue": "49690fc718540d8c2e27970019f1ea77926618cf",
+            "src/pinia.js": "c2867886d0bc7bdfbbefad2bb890b8f857533ce1",
+            "src/router/index.js": "0ccba08d66276727a0bb2e27a2ec5b1b504aae31",
+            "src/settings.js": "0ff1286ba374fce5c622d09d089f7657ca7dcd77",
+            "src/store/modules/object.js": "0e3088d559bfea054f795b70f11ac54743c46eaa",
+            "src/store/modules/settings.js": "39c6ca59b9a6401dc05c214d44712edd247ea5fc",
+            "src/store/store.js": "5802e0ed577693b7be45b4960baac5f3934eef7c",
+            "src/views/Dashboard.vue": "2bf4d77cd041fdcc125d76978b13eef2cd806373",
+            "src/views/settings/AdminRoot.vue": "4e80250ce0e561d59df2d5521a21c15ebe7dd723",
+            "src/views/settings/Settings.vue": "50d33a393b3098f2bbadd72ca8e288e0e149e88d",
+            "src/views/settings/UserSettings.vue": "457bd405ad26c753300ec6d219143e901f11301a",
+            "stylelint.config.js": "73fa02e0452e5a65008ec97c0a0c9c44852ab5cd",
+            "templates/index.php": "f5814caefc3b0d734761a75f38a897c98796fbbe",
+            "templates/settings/admin.php": "d930134a12120e0360bc5e3bad2197778328d1eb",
+            "tests/Unit/DemoAppTest.php": "981671ca8ceea8c789b2c11a7ecc0f327d1c688f",
+            "tests/bootstrap-unit.php": "68edb5e8c5f8ded323bb594480da520c83a66efd",
+            "tests/bootstrap.php": "66a0fbb7806cabc5072be6c34da87930ae0926aa",
+            "tests/integration/README.md": "df3a448115ed9d5f1638a24556b08dd21dc155c9",
+            "tests/integration/demo-app.postman_collection.json": "0d72d3e99d63658fea9f16ddeecec8a0cbe4056b",
+            "tests/unit/AppInfo/OpenRegisterAutoloaderTest.php": "53f09681ef755f29cd143d144d048529ae64b5c9",
+            "tests/unit/Controller/SettingsControllerTest.php": "ec96d63465f154824c3e31b5ffa1f6a830691e35",
+            "webpack.config.js": "507ae436be4e15ebc0083e30c9c2b8db9e6da086"
+        },
+        "lastContent": null,
+        "lastSkipped": [
+            {
+                "kind": "flow",
+                "ref": "demo-slug#2",
+                "reason": "golden"
+            }
+        ],
+        "calls": [
+            {
+                "call": "writer.write",
+                "args": {
+                    "rootDir": "<scratch>"
+                }
+            },
+            {
+                "call": "registers.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "dataRegisters": [
+                        {
+                            "register": "r1",
+                            "includeData": true
+                        },
+                        {
+                            "register": "r2"
+                        }
+                    ]
+                }
+            },
+            {
+                "call": "writer.pointReadme",
+                "args": {
+                    "rootDir": "<scratch>"
+                }
+            },
+            {
+                "call": "flows.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "flows": [
+                        {
+                            "flow": "f1"
+                        },
+                        "loose"
+                    ],
+                    "applicationSlug": "demo-slug"
+                }
+            },
+            {
+                "call": "log.info",
+                "args": {
+                    "message": "Buildiq export: built tree",
+                    "context": {
+                        "applicationUuid": "uuid-1",
+                        "applicationVersion": "1.2.1",
+                        "jobUuid": "golden-3e16797186c1"
+                    }
+                }
+            }
+        ]
+    },
+    "src1 content0 flag1 writer0": {
+        "zip": "golden-4854332f17bd.zip",
+        "entries": {
+            ".gitattributes": "291fc3dc1457da8b3de9439882c2e73faa102299",
+            ".github/workflows/branch-protection.yml": "67d0164fa93a09fc33916442cc9590cb9ec765d9",
+            ".github/workflows/code-quality.yml": "dad7fe7d59359e1bda338cc0b4a7f20a14febb12",
+            ".github/workflows/documentation.yml": "092a9ce0659f76d2195dc361180ba57062d2859c",
+            ".github/workflows/issue-triage.yml": "46950238d9287d204141e3feaeca567ced24e1d3",
+            ".github/workflows/openspec-sync.yml": "06bd0472fc1d6fbafc68ed711f79bdc42bcd5fa1",
+            ".github/workflows/pull-request-lint-check.yaml": "b1eef808dcc94bb224f1db969c21b27ecd5b1158",
+            ".github/workflows/release-beta.yml": "fc592c28e73c44254933efb6679f3a46b0019d6b",
+            ".github/workflows/release-stable.yml": "587227865b1bf1726ee66e434d2a49311429ddbe",
+            ".github/workflows/sync-to-beta.yml": "626a58099a6bafbf1baf9728529e93d5947bfe53",
+            ".gitignore": "883e5b1e1a1fed68ee5ee142188a82bdb44d8639",
+            ".prettierrc": "693104e7d1c3d2e77d4a00e3470f70697448dfe0",
+            ".vscode/settings.json": "bc049c3f248312967dd3d0bdf2b00a003ac978f6",
+            "LICENSE": "1e2bc005404dc951a04330cc32d1ae0b085fe32c",
+            "Makefile": "7000850d4fe7b2bdf6877aa17f9303b122cc5753",
+            "README.md": "82f2fd397bcea38c09d47dabf2fa80fa27148e00",
+            "appinfo/info.xml": "1df629b847ade22b1a35b0807ea65a7ad2e3545a",
+            "appinfo/routes.php": "05fc29f1dbec9f6f70baec667d9a178cea0c3daa",
+            "composer.json": "678873856702a5b6d45c0cf0915b9cdd1d2a2618",
+            "eslint.config.js": "89db2eff96d6349467028e3faea349dbfc7b9541",
+            "img/app-dark.svg": "e31056a2f28fd31dd422b3fb38fae24f28de9251",
+            "img/app-store.svg": "e407ad19e7f492fe0ab07a5507adfcece3abf17c",
+            "img/app.svg": "1d9adda430dc9ad57a2ddb6f0d7a9d70f25dce3f",
+            "l10n/en.json": "b8f96ee97952e2126a0b00e036dc322c5d67e60d",
+            "l10n/nl.json": "407dd18f44cec1956a44d52eaa01a261ffaef1e1",
+            "lib/AppInfo/Application.php": "8d88c37b8da5d1094421d6a78931dc60ed147c79",
+            "lib/AppInfo/OpenRegisterAutoloader.php": "59dd7118aa605841fa48607ccafefcc943be7712",
+            "lib/Controller/DashboardController.php": "37dfcaf57a9d67125321c41527db15d0cdc5e7aa",
+            "lib/Controller/SettingsController.php": "5a50fcf44cbe25b77935f507b9fef3045543f6e7",
+            "lib/Listener/DeepLinkRegistrationListener.php": "5f20dbfc51a8363f903027d36a7506f6d3be832e",
+            "lib/Repair/InitializeSettings.php": "4463cdf34b17ac2229775f7b8e6bc5b7164ea9ce",
+            "lib/Sections/SettingsSection.php": "c1788e02e0398fc53f9ef99966020e8e622b41f3",
+            "lib/Service/FlowSeedService.php": "16183954023764028cf6f0343bd73ae81b2f0568",
+            "lib/Service/SettingsService.php": "2fee5d8b13119c1f9fe04f6c4714012056a06f84",
+            "lib/Settings/AdminSettings.php": "9123ef81e5e68f20708843aba3c32133589a225b",
+            "lib/Settings/demo_app_register.json": "7ba0e6bcf963f705a139b89300a432e6f44ed2df",
+            "package.json": "dc7afb828535ae28e53ede163c22616cb9ec6ed3",
+            "phpcs-custom-sniffs/CustomSniffs/Sniffs/Functions/NamedParametersSniff.php": "10be689fe1efeb62338b1a2b9409828a2ea54fa1",
+            "phpcs-custom-sniffs/CustomSniffs/ruleset.xml": "40c5f637b7409961052ed4d3f796589d91090e09",
+            "phpcs.xml": "e59af4d1dbef5143c859439763ec14d0c3dffc77",
+            "phpmd.xml": "1186ad71b877d9de9035e0e453be110af6418610",
+            "phpstan-bootstrap.php": "cb0d40525f2adcbc0dc6c8ba7f57c631bf30963a",
+            "phpstan.neon": "e907724b7e3ec708d925f42dcc9764a692e187a8",
+            "phpunit-unit.xml": "f18a32b706f355d82bd84daf5e928694a06f7b92",
+            "phpunit.xml": "619c9b2d6ec13bbe4fdfd4a6d8718d5cb234dacc",
+            "project.md": "cc57f34456929538f5018331ca0d1cc3c2d6d9c3",
+            "psalm.xml": "d1ee863c0f5e5bce091d5e35985b62c40b7e83aa",
+            "src/App.vue": "3a5b14c7cbfd2d129bc9018e6417ce1420f5fa68",
+            "src/assets/app.css": "83647af7f30a7c0f8987f0e12f86e3e813c1446c",
+            "src/main.js": "84cc88be5a3609368c6801dc18879e7a16fee218",
+            "src/manifest.json": "1f994131c30b336690c9272c0113fc6634dada0e",
+            "src/navigation/MainMenu.vue": "49690fc718540d8c2e27970019f1ea77926618cf",
+            "src/pinia.js": "c2867886d0bc7bdfbbefad2bb890b8f857533ce1",
+            "src/router/index.js": "0ccba08d66276727a0bb2e27a2ec5b1b504aae31",
+            "src/settings.js": "0ff1286ba374fce5c622d09d089f7657ca7dcd77",
+            "src/store/modules/object.js": "0e3088d559bfea054f795b70f11ac54743c46eaa",
+            "src/store/modules/settings.js": "39c6ca59b9a6401dc05c214d44712edd247ea5fc",
+            "src/store/store.js": "5802e0ed577693b7be45b4960baac5f3934eef7c",
+            "src/views/Dashboard.vue": "2bf4d77cd041fdcc125d76978b13eef2cd806373",
+            "src/views/settings/AdminRoot.vue": "4e80250ce0e561d59df2d5521a21c15ebe7dd723",
+            "src/views/settings/Settings.vue": "50d33a393b3098f2bbadd72ca8e288e0e149e88d",
+            "src/views/settings/UserSettings.vue": "457bd405ad26c753300ec6d219143e901f11301a",
+            "stylelint.config.js": "73fa02e0452e5a65008ec97c0a0c9c44852ab5cd",
+            "templates/index.php": "f5814caefc3b0d734761a75f38a897c98796fbbe",
+            "templates/settings/admin.php": "d930134a12120e0360bc5e3bad2197778328d1eb",
+            "tests/Unit/DemoAppTest.php": "981671ca8ceea8c789b2c11a7ecc0f327d1c688f",
+            "tests/bootstrap-unit.php": "68edb5e8c5f8ded323bb594480da520c83a66efd",
+            "tests/bootstrap.php": "66a0fbb7806cabc5072be6c34da87930ae0926aa",
+            "tests/integration/README.md": "df3a448115ed9d5f1638a24556b08dd21dc155c9",
+            "tests/integration/demo-app.postman_collection.json": "0d72d3e99d63658fea9f16ddeecec8a0cbe4056b",
+            "tests/unit/AppInfo/OpenRegisterAutoloaderTest.php": "53f09681ef755f29cd143d144d048529ae64b5c9",
+            "tests/unit/Controller/SettingsControllerTest.php": "ec96d63465f154824c3e31b5ffa1f6a830691e35",
+            "webpack.config.js": "507ae436be4e15ebc0083e30c9c2b8db9e6da086"
+        },
+        "lastContent": null,
+        "lastSkipped": [
+            {
+                "kind": "flow",
+                "ref": "demo-slug#2",
+                "reason": "golden"
+            }
+        ],
+        "calls": [
+            {
+                "call": "registers.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "dataRegisters": [
+                        {
+                            "register": "r1",
+                            "includeData": true
+                        },
+                        {
+                            "register": "r2"
+                        }
+                    ]
+                }
+            },
+            {
+                "call": "flows.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "flows": [
+                        {
+                            "flow": "f1"
+                        },
+                        "loose"
+                    ],
+                    "applicationSlug": "demo-slug"
+                }
+            },
+            {
+                "call": "log.info",
+                "args": {
+                    "message": "Buildiq export: built tree",
+                    "context": {
+                        "applicationUuid": "uuid-1",
+                        "applicationVersion": "1.2.1",
+                        "jobUuid": "golden-4854332f17bd"
+                    }
+                }
+            }
+        ]
+    },
+    "defaults only": {
+        "zip": "golden-736a36bfe6c5.zip",
+        "entries": {
+            ".gitattributes": "291fc3dc1457da8b3de9439882c2e73faa102299",
+            ".github/workflows/branch-protection.yml": "67d0164fa93a09fc33916442cc9590cb9ec765d9",
+            ".github/workflows/code-quality.yml": "f6d816dcfd47cbf737111109453e356443fa6837",
+            ".github/workflows/documentation.yml": "c27ce57f425ea30f7dd3947db34934eacc1e2084",
+            ".github/workflows/issue-triage.yml": "467a5f52ded9dda1078085b6025989966ee0ac14",
+            ".github/workflows/openspec-sync.yml": "c5a516fbc11f307af43b5d403553ade6a141c16d",
+            ".github/workflows/pull-request-lint-check.yaml": "b1eef808dcc94bb224f1db969c21b27ecd5b1158",
+            ".github/workflows/release-beta.yml": "040891a6d13264a3d23e570dad2a75a29b6ab4c1",
+            ".github/workflows/release-stable.yml": "29bc25e2dfbe15bcec9371570d43064ae1a17036",
+            ".github/workflows/sync-to-beta.yml": "626a58099a6bafbf1baf9728529e93d5947bfe53",
+            ".gitignore": "883e5b1e1a1fed68ee5ee142188a82bdb44d8639",
+            ".prettierrc": "693104e7d1c3d2e77d4a00e3470f70697448dfe0",
+            ".vscode/settings.json": "bc049c3f248312967dd3d0bdf2b00a003ac978f6",
+            "LICENSE": "1e2bc005404dc951a04330cc32d1ae0b085fe32c",
+            "Makefile": "289f8f2b2d08b5d5fe60ca0558517559d35a5cdd",
+            "README.md": "cf5af8a1ea071a9f4a7f93cfd621674b5656b02d",
+            "appinfo/info.xml": "d0d0e2916f147386ccbe3dd826074518e8558465",
+            "appinfo/routes.php": "789882080b28080a3bd2721deceecd9ed235bce7",
+            "composer.json": "e9c68f0ad706288cb53ccc90fcc42c3cabc45bd1",
+            "eslint.config.js": "89db2eff96d6349467028e3faea349dbfc7b9541",
+            "img/app-dark.svg": "e31056a2f28fd31dd422b3fb38fae24f28de9251",
+            "img/app-store.svg": "e407ad19e7f492fe0ab07a5507adfcece3abf17c",
+            "img/app.svg": "1d9adda430dc9ad57a2ddb6f0d7a9d70f25dce3f",
+            "l10n/en.json": "e47dca30a7ed382f583c1936e358f38ff05910dd",
+            "l10n/nl.json": "f2e6b4776afef87f9bfc1fb3ba17617b379dd698",
+            "lib/AppInfo/Application.php": "0b62847d27fcd965d8bd9dd9789658452507922a",
+            "lib/AppInfo/OpenRegisterAutoloader.php": "bcdc23413606e3b26e67e881cccbf887429afec3",
+            "lib/Controller/DashboardController.php": "b8aa181f1d075f051fb82894f0ccbf91cb8ed83c",
+            "lib/Controller/SettingsController.php": "9a55b963d727dbeff90115df85ec586f1a3d4a4e",
+            "lib/Listener/DeepLinkRegistrationListener.php": "124991913f596ed38247d01501ce9ee94a60a0d6",
+            "lib/Repair/InitializeSettings.php": "05a3921b6498715a5688ba0f5d222eee8e88cdb6",
+            "lib/Sections/SettingsSection.php": "900a696ade89ee7d3026a51f3941697d75395f2e",
+            "lib/Service/FlowSeedService.php": "2af50b9922b6e0a7a6eaeb098ef2b52d167344a5",
+            "lib/Service/SettingsService.php": "757f6913917b2c2c81f37331673c07f2b60665a1",
+            "lib/Settings/AdminSettings.php": "53ce2f792cecd1e5e853e1e432e9b3cfe680943f",
+            "lib/Settings/my_app_register.json": "ba397af7924ef312c966f68fc80a1453eee15e35",
+            "package.json": "68e40ce55f4940a7186310aa980a55da230c1007",
+            "phpcs-custom-sniffs/CustomSniffs/Sniffs/Functions/NamedParametersSniff.php": "10be689fe1efeb62338b1a2b9409828a2ea54fa1",
+            "phpcs-custom-sniffs/CustomSniffs/ruleset.xml": "40c5f637b7409961052ed4d3f796589d91090e09",
+            "phpcs.xml": "93d90f7a9fd3abc10d6ac2120afcda00cff9d6ad",
+            "phpmd.xml": "d6b2cafbaccf0e11659e2df088701c13e854bcaf",
+            "phpstan-bootstrap.php": "69f64bae1dbcbce6920846e5b94fbd0113fe31c0",
+            "phpstan.neon": "e907724b7e3ec708d925f42dcc9764a692e187a8",
+            "phpunit-unit.xml": "f18a32b706f355d82bd84daf5e928694a06f7b92",
+            "phpunit.xml": "619c9b2d6ec13bbe4fdfd4a6d8718d5cb234dacc",
+            "project.md": "43688f10cfbb1cc8f180d3f347eaa4d854128d11",
+            "psalm.xml": "d1ee863c0f5e5bce091d5e35985b62c40b7e83aa",
+            "src/App.vue": "3a5b14c7cbfd2d129bc9018e6417ce1420f5fa68",
+            "src/assets/app.css": "afeb6da2c566a1b143ee4565a60ec384f9619dc0",
+            "src/main.js": "84cc88be5a3609368c6801dc18879e7a16fee218",
+            "src/manifest.json": "e20ef6ce88772daa0b1083ad65a1bbbde4e76c13",
+            "src/navigation/MainMenu.vue": "513f70919f3a71bee0b76d216c8f536aff086fba",
+            "src/pinia.js": "c2867886d0bc7bdfbbefad2bb890b8f857533ce1",
+            "src/router/index.js": "a724c6417d899364a30c9ba414cd0b92e550aba1",
+            "src/settings.js": "44e121619731a2f2b49658d426f4afedf212073e",
+            "src/store/modules/object.js": "0e3088d559bfea054f795b70f11ac54743c46eaa",
+            "src/store/modules/settings.js": "34f8d7917499c8cda66516436eb5b5d255d4038a",
+            "src/store/store.js": "5802e0ed577693b7be45b4960baac5f3934eef7c",
+            "src/views/Dashboard.vue": "87dcb2513ba3223b256104c17cddca98647730a4",
+            "src/views/settings/AdminRoot.vue": "25f5fcde2cc645766197204a45698b00a6c3c712",
+            "src/views/settings/Settings.vue": "d0f7fa4946143f6ba02791b1899931d0db38fe12",
+            "src/views/settings/UserSettings.vue": "f6f5efd81a0786c3e9da8caecbd40986bda25d8e",
+            "stylelint.config.js": "73fa02e0452e5a65008ec97c0a0c9c44852ab5cd",
+            "templates/index.php": "8bd8cc73b88d98563f8bc0a6e14e996c8ef6b5d7",
+            "templates/settings/admin.php": "79de0ce0af2a71ec4e65f432e7f0b7518f7244b7",
+            "tests/Unit/MyAppTest.php": "76b2652cbea15a2d82b433259e27633327e7e062",
+            "tests/bootstrap-unit.php": "abedca37e9ef9a3ae35e39e6fd5692083dcf56d7",
+            "tests/bootstrap.php": "c120630ab6888de540f63ae48cd5bec024a4223c",
+            "tests/integration/README.md": "6a89a4cb73748316ac17b7778a5d69d2d0955469",
+            "tests/integration/my-app.postman_collection.json": "55ba34e4d70ac6b48b4e90a65c376d13dfaa16d5",
+            "tests/unit/AppInfo/OpenRegisterAutoloaderTest.php": "7675c696a70e37f973e682b5a73feed4b9fc29a9",
+            "tests/unit/Controller/SettingsControllerTest.php": "cf073d9e0a6e5f8d1571e7da5dd11bbfdf723f32",
+            "webpack.config.js": "d37e3905c533365f491149516777e9964d92f073"
+        },
+        "lastContent": null,
+        "lastSkipped": [
+            {
+                "kind": "flow",
+                "ref": "#0",
+                "reason": "golden"
+            }
+        ],
+        "calls": [
+            {
+                "call": "registers.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "dataRegisters": []
+                }
+            },
+            {
+                "call": "flows.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "flows": [],
+                    "applicationSlug": ""
+                }
+            },
+            {
+                "call": "log.info",
+                "args": {
+                    "message": "Buildiq export: built tree",
+                    "context": {
+                        "applicationUuid": "uuid-d",
+                        "applicationVersion": "0.0.1",
+                        "jobUuid": "golden-736a36bfe6c5"
+                    }
+                }
+            }
+        ]
+    },
+    "context without appId": {
+        "zip": "golden-7f48b75ba71e.zip",
+        "entries": {
+            ".gitattributes": "291fc3dc1457da8b3de9439882c2e73faa102299",
+            ".github/workflows/branch-protection.yml": "67d0164fa93a09fc33916442cc9590cb9ec765d9",
+            ".github/workflows/code-quality.yml": "f6d816dcfd47cbf737111109453e356443fa6837",
+            ".github/workflows/documentation.yml": "c27ce57f425ea30f7dd3947db34934eacc1e2084",
+            ".github/workflows/issue-triage.yml": "467a5f52ded9dda1078085b6025989966ee0ac14",
+            ".github/workflows/openspec-sync.yml": "c5a516fbc11f307af43b5d403553ade6a141c16d",
+            ".github/workflows/pull-request-lint-check.yaml": "b1eef808dcc94bb224f1db969c21b27ecd5b1158",
+            ".github/workflows/release-beta.yml": "040891a6d13264a3d23e570dad2a75a29b6ab4c1",
+            ".github/workflows/release-stable.yml": "29bc25e2dfbe15bcec9371570d43064ae1a17036",
+            ".github/workflows/sync-to-beta.yml": "626a58099a6bafbf1baf9728529e93d5947bfe53",
+            ".gitignore": "883e5b1e1a1fed68ee5ee142188a82bdb44d8639",
+            ".prettierrc": "693104e7d1c3d2e77d4a00e3470f70697448dfe0",
+            ".vscode/settings.json": "bc049c3f248312967dd3d0bdf2b00a003ac978f6",
+            "LICENSE": "1e2bc005404dc951a04330cc32d1ae0b085fe32c",
+            "Makefile": "289f8f2b2d08b5d5fe60ca0558517559d35a5cdd",
+            "README.md": "b7e60e61af0a71253689658e6580aad0bdf9124a",
+            "appinfo/info.xml": "c42baac37a6c85037fc30da1f6014811277306cc",
+            "appinfo/routes.php": "789882080b28080a3bd2721deceecd9ed235bce7",
+            "composer.json": "e9c68f0ad706288cb53ccc90fcc42c3cabc45bd1",
+            "eslint.config.js": "89db2eff96d6349467028e3faea349dbfc7b9541",
+            "golden-content.txt": "0b113da41eb0b5817b0225c40a968c713aeac283",
+            "img/app-dark.svg": "e31056a2f28fd31dd422b3fb38fae24f28de9251",
+            "img/app-store.svg": "e407ad19e7f492fe0ab07a5507adfcece3abf17c",
+            "img/app.svg": "1d9adda430dc9ad57a2ddb6f0d7a9d70f25dce3f",
+            "l10n/en.json": "0af2a17011ac78420e23015152cf0e8107c3ab21",
+            "l10n/nl.json": "7126f16212b6c4a53f3a3e5bfed342cef0e6db89",
+            "lib/AppInfo/Application.php": "0b62847d27fcd965d8bd9dd9789658452507922a",
+            "lib/AppInfo/OpenRegisterAutoloader.php": "bcdc23413606e3b26e67e881cccbf887429afec3",
+            "lib/Controller/DashboardController.php": "b8aa181f1d075f051fb82894f0ccbf91cb8ed83c",
+            "lib/Controller/SettingsController.php": "9a55b963d727dbeff90115df85ec586f1a3d4a4e",
+            "lib/Listener/DeepLinkRegistrationListener.php": "124991913f596ed38247d01501ce9ee94a60a0d6",
+            "lib/Repair/InitializeSettings.php": "05a3921b6498715a5688ba0f5d222eee8e88cdb6",
+            "lib/Sections/SettingsSection.php": "58a9a6d8ccb52a269b10db8321a669238d9e15f7",
+            "lib/Service/FlowSeedService.php": "2af50b9922b6e0a7a6eaeb098ef2b52d167344a5",
+            "lib/Service/SettingsService.php": "757f6913917b2c2c81f37331673c07f2b60665a1",
+            "lib/Settings/AdminSettings.php": "53ce2f792cecd1e5e853e1e432e9b3cfe680943f",
+            "lib/Settings/my_app_register.json": "53b1143a87d8a4e5b3c18178c69400a6838b2b0d",
+            "package.json": "68e40ce55f4940a7186310aa980a55da230c1007",
+            "phpcs-custom-sniffs/CustomSniffs/Sniffs/Functions/NamedParametersSniff.php": "10be689fe1efeb62338b1a2b9409828a2ea54fa1",
+            "phpcs-custom-sniffs/CustomSniffs/ruleset.xml": "40c5f637b7409961052ed4d3f796589d91090e09",
+            "phpcs.xml": "93d90f7a9fd3abc10d6ac2120afcda00cff9d6ad",
+            "phpmd.xml": "d6b2cafbaccf0e11659e2df088701c13e854bcaf",
+            "phpstan-bootstrap.php": "69f64bae1dbcbce6920846e5b94fbd0113fe31c0",
+            "phpstan.neon": "e907724b7e3ec708d925f42dcc9764a692e187a8",
+            "phpunit-unit.xml": "f18a32b706f355d82bd84daf5e928694a06f7b92",
+            "phpunit.xml": "619c9b2d6ec13bbe4fdfd4a6d8718d5cb234dacc",
+            "project.md": "0d99eefa6cc12e8abd5301086786a2429f83b74c",
+            "psalm.xml": "d1ee863c0f5e5bce091d5e35985b62c40b7e83aa",
+            "src/App.vue": "3a5b14c7cbfd2d129bc9018e6417ce1420f5fa68",
+            "src/assets/app.css": "afeb6da2c566a1b143ee4565a60ec384f9619dc0",
+            "src/main.js": "84cc88be5a3609368c6801dc18879e7a16fee218",
+            "src/manifest.json": "1b83d29b6a07856cce6ce948f9901766f5070454",
+            "src/navigation/MainMenu.vue": "513f70919f3a71bee0b76d216c8f536aff086fba",
+            "src/pinia.js": "c2867886d0bc7bdfbbefad2bb890b8f857533ce1",
+            "src/router/index.js": "a724c6417d899364a30c9ba414cd0b92e550aba1",
+            "src/settings.js": "44e121619731a2f2b49658d426f4afedf212073e",
+            "src/store/modules/object.js": "0e3088d559bfea054f795b70f11ac54743c46eaa",
+            "src/store/modules/settings.js": "34f8d7917499c8cda66516436eb5b5d255d4038a",
+            "src/store/store.js": "5802e0ed577693b7be45b4960baac5f3934eef7c",
+            "src/views/Dashboard.vue": "87dcb2513ba3223b256104c17cddca98647730a4",
+            "src/views/settings/AdminRoot.vue": "add527ea61d56c4312a9de05afa4ee7d0cbdf5a7",
+            "src/views/settings/Settings.vue": "d0f7fa4946143f6ba02791b1899931d0db38fe12",
+            "src/views/settings/UserSettings.vue": "362e80816d7a4f7c0007ae5dafd16045a980f20e",
+            "stylelint.config.js": "73fa02e0452e5a65008ec97c0a0c9c44852ab5cd",
+            "templates/index.php": "8bd8cc73b88d98563f8bc0a6e14e996c8ef6b5d7",
+            "templates/settings/admin.php": "79de0ce0af2a71ec4e65f432e7f0b7518f7244b7",
+            "tests/Unit/MyAppTest.php": "76b2652cbea15a2d82b433259e27633327e7e062",
+            "tests/bootstrap-unit.php": "abedca37e9ef9a3ae35e39e6fd5692083dcf56d7",
+            "tests/bootstrap.php": "c120630ab6888de540f63ae48cd5bec024a4223c",
+            "tests/integration/README.md": "6a89a4cb73748316ac17b7778a5d69d2d0955469",
+            "tests/integration/my-app.postman_collection.json": "cf9e644b267b77221b50e28c476a88dc18963339",
+            "tests/unit/AppInfo/OpenRegisterAutoloaderTest.php": "7675c696a70e37f973e682b5a73feed4b9fc29a9",
+            "tests/unit/Controller/SettingsControllerTest.php": "cf073d9e0a6e5f8d1571e7da5dd11bbfdf723f32",
+            "webpack.config.js": "d37e3905c533365f491149516777e9964d92f073"
+        },
+        "lastContent": {
+            "pages": 0,
+            "menu": 1,
+            "schemas": 2,
+            "records": 3
+        },
+        "lastSkipped": [
+            {
+                "kind": "flow",
+                "ref": "#0",
+                "reason": "golden"
+            }
+        ],
+        "calls": [
+            {
+                "call": "registers.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "dataRegisters": []
+                }
+            },
+            {
+                "call": "content.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "source": [],
+                    "appId": "my-app",
+                    "semver": ""
+                }
+            },
+            {
+                "call": "flows.bundle",
+                "args": {
+                    "rootDir": "<scratch>",
+                    "flows": [],
+                    "applicationSlug": ""
+                }
+            },
+            {
+                "call": "log.info",
+                "args": {
+                    "message": "Buildiq export: built tree",
+                    "context": {
+                        "applicationUuid": "",
+                        "applicationVersion": "",
+                        "jobUuid": "golden-7f48b75ba71e"
+                    }
+                }
+            }
+        ]
+    }
+}
