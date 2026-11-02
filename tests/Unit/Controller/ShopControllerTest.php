@@ -238,4 +238,68 @@ class ShopControllerTest extends TestCase {
 
 	}//end testGithubInstallRequiresNameAndSlug()
 
+	/**
+	 * githubInstall hands the install seam the parsed template, the requested
+	 * name and slug, the session user as owner, and the repo and credential
+	 * the template was fetched with. A missing credential stays null.
+	 *
+	 * @return void
+	 */
+	public function testGithubInstallHandsTheTemplateAndSourceToTheInstallSeam(): void {
+		foreach (['cred-1' => 'cred-1', '' => null] as $credential => $expected) {
+			$this->setUp();
+			$this->authenticate('carol');
+			$this->request->method('getParam')->willReturnMap(
+				[
+					['owner', null, 'ConductionNL'],
+					['repo', null, 'example-app'],
+					['ref', null, 'v1.0'],
+					['name', null, 'Example'],
+					['slug', null, 'example'],
+					['credentialId', null, $credential],
+				]
+			);
+			$this->catalogService->method('fetchRepoFiles')->willReturn(['manifest.json' => '{}']);
+			$this->repoParser->method('parse')->willReturn(['slug' => 'tpl', 'manifest' => []]);
+			$captured = null;
+			$this->appsController->expects(self::once())->method('installFromTemplateArray')->willReturnCallback(
+				static function (...$args) use (&$captured): array {
+					$captured = $args;
+					return ['status' => Http::STATUS_CREATED, 'data' => ['slug' => 'example']];
+				}
+			);
+
+			$response = $this->controller()->githubInstall();
+
+			self::assertSame(Http::STATUS_CREATED, $response->getStatus());
+			self::assertSame(
+				[
+					'template' => ['slug' => 'tpl', 'manifest' => []],
+					'name' => 'Example',
+					'newSlug' => 'example',
+					'ownerUid' => 'carol',
+					'sourceOwner' => 'ConductionNL',
+					'sourceRepo' => 'example-app',
+					'credentialId' => $expected,
+				],
+				self::installArguments(args: $captured),
+				'credential ' . $credential
+			);
+		}
+
+	}//end testGithubInstallHandsTheTemplateAndSourceToTheInstallSeam()
+
+	/**
+	 * The install seam's arguments by name.
+	 *
+	 * @param array<int,mixed> $args The arguments as passed.
+	 *
+	 * @return array<string,mixed> The arguments by name.
+	 */
+	private static function installArguments(array $args): array {
+		$names = ['template', 'name', 'newSlug', 'ownerUid', 'sourceOwner', 'sourceRepo', 'credentialId'];
+		return array_combine($names, array_pad($args, count($names), null));
+
+	}//end installArguments()
+
 }//end class
