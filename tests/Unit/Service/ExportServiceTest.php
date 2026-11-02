@@ -6,7 +6,9 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\DataRegisterExportBundler;
 use OCA\Buildiq\Service\ExportAppContentBundler;
+use OCA\Buildiq\Service\ExportContents;
 use OCA\Buildiq\Service\ExportService;
+use OCA\Buildiq\Service\ExportTarget;
 use OCA\Buildiq\Service\PlaceholderResolver;
 use OCA\Buildiq\Service\RegisterRowReader;
 use OCA\Buildiq\Service\ServerBundleWriter;
@@ -144,12 +146,8 @@ final class ExportServiceTest extends TestCase {
 	public function testGeneratedZipIsNotBornOlderThanTheCleanupWindow(): void {
 		$jobUuid = 'unit-' . bin2hex(random_bytes(6));
 		$zipPath = $this->buildService()->generateAppZip(
-			applicationUuid: 'app-uuid',
-			versionSlug: '1.2.3',
-			context: $this->context(),
-			jobUuid: $jobUuid,
-			dataRegisters: [],
-			source: null
+			target: new ExportTarget(applicationUuid: 'app-uuid', versionSlug: '1.2.3', jobUuid: $jobUuid),
+			contents: new ExportContents(context: $this->context(), dataRegisters: [], source: null)
 		);
 		$this->litter[] = $zipPath;
 		$this->litter[] = sys_get_temp_dir() . '/buildiq-work/' . $jobUuid;
@@ -555,12 +553,8 @@ final class ExportServiceTest extends TestCase {
 		$jobUuid = 'unit-' . bin2hex(random_bytes(6));
 
 		$zipPath = ($service ?? $this->buildService())->generateAppZip(
-			applicationUuid: 'app-uuid',
-			versionSlug: '1.2.3',
-			context: $this->context(),
-			jobUuid: $jobUuid,
-			dataRegisters: $dataRegisters,
-			source: $source,
+			target: new ExportTarget(applicationUuid: 'app-uuid', versionSlug: '1.2.3', jobUuid: $jobUuid),
+			contents: new ExportContents(context: $this->context(), dataRegisters: $dataRegisters, source: $source),
 			includeServerBundle: $includeServerBundle
 		);
 

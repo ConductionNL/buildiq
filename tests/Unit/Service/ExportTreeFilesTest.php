@@ -21,6 +21,8 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\ExportTreeFiles;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
+use ZipArchive;
 
 /**
  * @covers \OCA\Buildiq\Service\ExportTreeFiles
@@ -131,4 +133,99 @@ final class ExportTreeFilesTest extends TestCase {
 		$this->assertDirectoryExists($this->root, 'the surrounding tree must be untouched');
 
 	}//end testRemovingAMissingTreeIsANoOp()
+
+	/**
+	 * The snapshot copy leaves the two helper files behind, stamps the fixed
+	 * mtime and creates the destination when it is missing.
+	 *
+	 * @return void
+	 */
+	public function testCopySnapshotSkipsTheHelperFilesAndStampsTheTimestamp(): void {
+		file_put_contents($this->root . '/.snapshot-meta.json', '{}');
+		file_put_contents($this->root . '/.path-manifest.txt', 'x');
+		$dest = $this->root . '-copy/nested';
+
+		$this->files->copySnapshot(source: $this->root, dest: $dest, timestamp: 1767225600);
+
+		$this->assertSame(
+			expected: ['appinfo/info.xml', 'lib/Settings/flows/alpha.json', 'lib/Settings/flows/zeta.json'],
+			actual: $this->files->listFilesSorted(baseDir: $dest)
+		);
+		$this->assertSame(expected: 1767225600, actual: filemtime($dest . '/appinfo/info.xml'));
+		exec('rm -rf ' . escapeshellarg($this->root . '-copy'));
+
+	}//end testCopySnapshotSkipsTheHelperFilesAndStampsTheTimestamp()
+
+	/**
+	 * A missing snapshot is an error that names the path, and nothing is created.
+	 *
+	 * @return void
+	 */
+	public function testCopySnapshotRefusesAMissingSnapshot(): void {
+		try {
+			$this->files->copySnapshot(source: $this->root . '/missing', dest: $this->root . '/dest', timestamp: 1);
+			$this->fail('a missing snapshot must throw');
+		} catch (RuntimeException $e) {
+			$this->assertSame(expected: 'Template snapshot is missing: ' . $this->root . '/missing', actual: $e->getMessage());
+		}
+
+		$this->assertDirectoryDoesNotExist($this->root . '/dest');
+
+	}//end testCopySnapshotRefusesAMissingSnapshot()
+
+	/**
+	 * The archive holds every file, in sorted order, as a plain 0644 Unix file,
+	 * and replaces an existing archive instead of appending to it.
+	 *
+	 * @return void
+	 */
+	public function testZipTreeWritesEveryFileSortedAndOverwrites(): void {
+		$zipPath = $this->root . '-out.zip';
+		file_put_contents($zipPath, 'not a zip');
+		$this->files->zipTree(sourceDir: $this->root, zipPath: $zipPath);
+		unlink($this->root . '/appinfo/info.xml');
+		$this->files->zipTree(sourceDir: $this->root, zipPath: $zipPath);
+
+		$zip = new ZipArchive();
+		$this->assertTrue($zip->open($zipPath) === true);
+		$names = [];
+		for ($i = 0; $i < $zip->numFiles; $i++) {
+			$name = (string)$zip->getNameIndex($i);
+			$names[] = $name;
+			$zip->getExternalAttributesName($name, $opsys, $attr);
+			$this->assertSame(expected: [ZipArchive::OPSYS_UNIX, 0o100644 << 16], actual: [$opsys, $attr], message: $name);
+		}
+
+		$this->assertSame(expected: '{}', actual: $zip->getFromName('lib/Settings/flows/zeta.json'));
+		$zip->close();
+		unlink($zipPath);
+		$this->assertSame(expected: ['lib/Settings/flows/alpha.json', 'lib/Settings/flows/zeta.json'], actual: $names);
+
+	}//end testZipTreeWritesEveryFileSortedAndOverwrites()
+
+	/**
+	 * An archive path that is a directory cannot be opened; the error names the path.
+	 *
+	 * @return void
+	 */
+	public function testZipTreeRefusesAnArchiveItCannotOpen(): void {
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('Unable to open ZIP archive: ' . $this->root . '/appinfo');
+		$this->files->zipTree(sourceDir: $this->root, zipPath: $this->root . '/appinfo');
+
+	}//end testZipTreeRefusesAnArchiveItCannotOpen()
+
+	/**
+	 * An archive whose directory does not exist cannot be finalised; the error names the path.
+	 *
+	 * @return void
+	 */
+	public function testZipTreeRefusesAnArchiveItCannotFinalise(): void {
+		$zipPath = $this->root . '/no-such-dir/out.zip';
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('Failed to finalise ZIP archive: ' . $zipPath);
+		@$this->files->zipTree(sourceDir: $this->root, zipPath: $zipPath);
+
+	}//end testZipTreeRefusesAnArchiveItCannotFinalise()
 }//end class

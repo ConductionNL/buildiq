@@ -21,7 +21,9 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\DataRegisterExportBundler;
 use OCA\Buildiq\Service\ExportAppContentBundler;
+use OCA\Buildiq\Service\ExportContents;
 use OCA\Buildiq\Service\ExportService;
+use OCA\Buildiq\Service\ExportTarget;
 use OCA\Buildiq\Service\FlowAndAgentExportBundler;
 use OCA\Buildiq\Service\PlaceholderResolver;
 use OCA\Buildiq\Service\ServerBundleWriter;
@@ -38,6 +40,8 @@ use ZipArchive;
  * and the log lines. Set GOLDEN_RECORD=1 to write a missing fixture.
  *
  * @covers \OCA\Buildiq\Service\ExportService
+ * @uses   \OCA\Buildiq\Service\ExportContents
+ * @uses   \OCA\Buildiq\Service\ExportTarget
  * @uses   \OCA\Buildiq\Service\ExportTreeFiles
  * @uses   \OCA\Buildiq\Service\PlaceholderResolver
  */
@@ -178,19 +182,16 @@ class ExportZipGoldenTest extends TestCase {
 	 * @return string The ZIP path.
 	 */
 	private function export(ExportService $service, string $jobUuid, array $case): string {
-		$args = [
-			'applicationUuid' => $case['applicationUuid'],
-			'versionSlug' => $case['versionSlug'],
-			'context' => $case['context'],
-			'jobUuid' => $jobUuid,
-		];
-		foreach (['dataRegisters', 'flows', 'applicationSlug', 'source', 'includeServerBundle'] as $key) {
+		$target = ['applicationUuid' => $case['applicationUuid'], 'versionSlug' => $case['versionSlug'], 'jobUuid' => $jobUuid];
+		$contents = ['context' => $case['context']];
+		$flag = [];
+		foreach (['applicationSlug' => 'target', 'dataRegisters' => 'contents', 'flows' => 'contents', 'source' => 'contents', 'includeServerBundle' => 'flag'] as $key => $into) {
 			if (array_key_exists($key, $case) === true) {
-				$args[$key] = $case[$key];
+				${$into}[$key] = $case[$key];
 			}
 		}
 
-		return $service->generateAppZip(...$args);
+		return $service->generateAppZip(new ExportTarget(...$target), new ExportContents(...$contents), ...$flag);
 	}//end export()
 
 	/**

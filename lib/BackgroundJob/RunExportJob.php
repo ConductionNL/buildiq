@@ -31,7 +31,9 @@ namespace OCA\Buildiq\BackgroundJob;
 
 use OCA\Buildiq\Service\ExportAppContentBundler;
 use OCA\Buildiq\Service\ExportJobService;
+use OCA\Buildiq\Service\ExportContents;
 use OCA\Buildiq\Service\ExportService;
+use OCA\Buildiq\Service\ExportTarget;
 use OCA\Buildiq\Service\GitHubPushService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
@@ -224,16 +226,20 @@ class RunExportJob extends QueuedJob {
 		]);
 
 		$this->exportService->generateAppZip(
-			applicationUuid: $applicationUuid,
-			versionSlug: $applicationVersion,
-			context: $context,
-			jobUuid: $jobUuid,
-			dataRegisters: $dataRegisters,
-			flows: $flows,
-			// The application's own slug IS the agent lookup: agents carry
-			// `applicationSlug`, so there is no agent binding to pass.
-			applicationSlug: $applicationSlug,
-			source: $source,
+			target: new ExportTarget(
+				applicationUuid: $applicationUuid,
+				versionSlug: $applicationVersion,
+				jobUuid: $jobUuid,
+				// The application's own slug IS the agent lookup: agents carry
+				// `applicationSlug`, so there is no agent binding to pass.
+				applicationSlug: $applicationSlug
+			),
+			contents: new ExportContents(
+				context: $context,
+				dataRegisters: $dataRegisters,
+				flows: $flows,
+				source: $source
+			),
 			includeServerBundle: ($job['includeServerBundle'] ?? false) === true
 		);
 

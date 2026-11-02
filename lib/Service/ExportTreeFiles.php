@@ -31,9 +31,13 @@ namespace OCA\Buildiq\Service;
 use FilesystemIterator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use RuntimeException;
+use ZipArchive;
 
 /**
- * Walks and removes export scratch trees.
+ * Walks, copies, removes and archives export scratch trees.
+ *
+ * @spec openspec/specs/openbuild-exporter/spec.md#requirement-re-exports-are-idempotent
  */
 class ExportTreeFiles {
 
@@ -140,6 +144,67 @@ class ExportTreeFiles {
 			touch($target, $timestamp);
 		}
 	}//end copyTree()
+
+	/**
+	 * Copy the embedded template snapshot into a scratch directory.
+	 *
+	 * Skips the snapshot-meta and path-manifest helper files; they are
+	 * artefacts of Buildiq, not of the produced app.
+	 *
+	 * @param string  $source    Snapshot dir.
+	 * @param string  $dest      Scratch dir, created when missing.
+	 * @param integer $timestamp mtime to stamp on every copied file.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When the snapshot is missing.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
+	 */
+	public function copySnapshot(string $source, string $dest, int $timestamp): void {
+		if (is_dir($source) === false) {
+			throw new RuntimeException('Template snapshot is missing: ' . $source);
+		}
+
+		if (is_dir($dest) === false) {
+			mkdir($dest, 0o755, true);
+		}
+
+		$this->copyTree(
+			source: $source,
+			dest: $dest,
+			skip: ['.snapshot-meta.json', '.path-manifest.txt'],
+			timestamp: $timestamp
+		);
+	}//end copySnapshot()
+
+	/**
+	 * Write every file under a directory into a ZIP archive, in sorted order.
+	 *
+	 * @param string $sourceDir Directory to package.
+	 * @param string $zipPath   Archive to write; an existing file is overwritten.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When the archive cannot be opened or finalised.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
+	 */
+	public function zipTree(string $sourceDir, string $zipPath): void {
+		$zip = new ZipArchive();
+		if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+			throw new RuntimeException('Unable to open ZIP archive: ' . $zipPath);
+		}
+
+		foreach ($this->listFilesSorted(baseDir: $sourceDir) as $relativePath) {
+			$zip->addFile($sourceDir . '/' . $relativePath, $relativePath);
+			$zip->setExternalAttributesName($relativePath, ZipArchive::OPSYS_UNIX, (0o100644 << 16));
+		}
+
+		if ($zip->close() === false) {
+			throw new RuntimeException('Failed to finalise ZIP archive: ' . $zipPath);
+		}
+	}//end zipTree()
 
 	/**
 	 * Rename files whose relative path contains a template name.
