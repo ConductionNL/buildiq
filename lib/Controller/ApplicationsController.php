@@ -60,6 +60,7 @@ use OCA\Buildiq\Service\ApplicationVersionService;
 use OCA\Buildiq\Service\CompanionSchemaCollector;
 use OCA\Buildiq\Service\ManifestResolverService;
 use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Service\TemplateInstall;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -1826,9 +1827,7 @@ class ApplicationsController extends Controller {
 		// companion-schema namespacing, per-app register provisioning, the
 		// owner-tagged Application record, and its production ApplicationVersion.
 		$built = $this->materialiseApplication(
-			template: $template,
-			name: $name,
-			newSlug: $newSlug,
+			install: new TemplateInstall(template: $template, name: $name, newSlug: $newSlug),
 			ownerUid: $ownerUid,
 			ctx: $ctx
 		);
@@ -1884,21 +1883,15 @@ class ApplicationsController extends Controller {
 	 * caller keeps the parts that are about the REQUEST — validating it,
 	 * applying the app-repo channels, and shaping the response.
 	 *
-	 * @param array<string,mixed> $template The template record (local or remote payload).
-	 * @param string $name Human-readable name for the new app.
-	 * @param string $newSlug The new (kebab-case, pre-validated) app slug.
+	 * @param TemplateInstall $install The template, and the new app's name and slug.
 	 * @param string $ownerUid The owner UID (becomes the app owner).
 	 * @param array{register:int,templateSchema:int,applicationSchema:int} $ctx Shared context.
 	 *
 	 * @return array{uuid:string|null,registerSlug:string,schemaIds:array<int,int>}|array{error:array<string,mixed>,status:int}
 	 */
-	private function materialiseApplication(
-		array $template,
-		string $name,
-		string $newSlug,
-		string $ownerUid,
-		array $ctx,
-	): array {
+	private function materialiseApplication(TemplateInstall $install, string $ownerUid, array $ctx): array {
+		$template = $install->template;
+		$newSlug = $install->newSlug;
 		// Prepare manifest + companion-schema clone map.
 		$companionInput = $this->extractCompanionSchemas(template: $template);
 		$rewriteMap = $this->buildRewriteMap(companions: $companionInput, newSlug: $newSlug);
@@ -1917,12 +1910,9 @@ class ApplicationsController extends Controller {
 
 		// Persist the Application record (shared register), tagged with owner.
 		$persistResult = $this->persistApplication(
-			name: $name,
-			newSlug: $newSlug,
+			install: $install,
 			ownerUid: $ownerUid,
 			manifest: $manifest,
-			template: $template,
-			templateSlug: (string)($template['slug'] ?? $newSlug),
 			ctx: $ctx
 		);
 		if (isset($persistResult['error']) === true) {
@@ -2064,12 +2054,9 @@ class ApplicationsController extends Controller {
 	/**
 	 * Persist the cloned Application record.
 	 *
-	 * @param string $name Human-readable name
-	 * @param string $newSlug The new application slug
+	 * @param TemplateInstall $install The source template record, and the new app's name and slug
 	 * @param string $ownerUid The owner UID (multi-user isolation)
 	 * @param array<string,mixed> $manifest The cloned manifest
-	 * @param array<string,mixed> $template The source template record
-	 * @param string $templateSlug The source template slug
 	 * @param array{register:int,templateSchema:int,applicationSchema:int} $ctx Shared context
 	 *
 	 * @return array{uuid:string|null,application:array<string,mixed>}|array{error:array<string,mixed>,status:int}
@@ -2089,19 +2076,17 @@ class ApplicationsController extends Controller {
 	 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
 	 */
 	private function persistApplication(
-		string $name,
-		string $newSlug,
+		TemplateInstall $install,
 		string $ownerUid,
 		array $manifest,
-		array $template,
-		string $templateSlug,
 		array $ctx,
 	): array {
+		$template = $install->template;
 		try {
 			$created = $this->objectService->saveObject(
 				object: [
-					'name' => $name,
-					'slug' => $newSlug,
+					'name' => $install->name,
+					'slug' => $install->newSlug,
 					// The template's description, or the one the user typed
 					// (createFromTemplate() puts that on the template array).
 					'description' => (string)($template['description'] ?? ''),
@@ -2110,7 +2095,7 @@ class ApplicationsController extends Controller {
 					'owner' => $ownerUid,
 					'manifest' => $manifest,
 					'templateOrigin' => [
-						'slug' => (string)($template['slug'] ?? $templateSlug),
+						'slug' => (string)($template['slug'] ?? $install->newSlug),
 						'version' => (string)($template['version'] ?? ''),
 					],
 					// Grant the creating user full ownership so PermissionResolver
