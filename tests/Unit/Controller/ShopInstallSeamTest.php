@@ -37,6 +37,7 @@ use PHPUnit\Framework\TestCase;
  * for a credential that is set, empty or missing and with and without a ref.
  *
  * @covers \OCA\Buildiq\Controller\ShopController
+ * @uses   \OCA\Buildiq\Service\RepoSource
  */
 class ShopInstallSeamTest extends TestCase {
 
@@ -116,8 +117,16 @@ class ShopInstallSeamTest extends TestCase {
 	 * @return array<string,mixed> The arguments by name.
 	 */
 	private static function seamArguments(array $args): array {
-		$names = ['template', 'name', 'newSlug', 'ownerUid', 'sourceOwner', 'sourceRepo', 'credentialId'];
-		$named = array_combine($names, array_pad($args, count($names), null));
-		return array_slice($named, 0, 6) + ['sourceRef' => null, 'credentialId' => $named['credentialId']];
+		[$template, $name, $newSlug, $ownerUid, $source] = array_pad($args, 5, null);
+		return [
+			'template' => $template,
+			'name' => $name,
+			'newSlug' => $newSlug,
+			'ownerUid' => $ownerUid,
+			'sourceOwner' => $source?->owner,
+			'sourceRepo' => $source?->repo,
+			'sourceRef' => $source?->ref,
+			'credentialId' => $source?->credentialId,
+		];
 	}//end seamArguments()
 }//end class

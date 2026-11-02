@@ -34,6 +34,7 @@ use OCA\Buildiq\Controller\ApplicationsController;
 use OCA\Buildiq\Service\AppChannelApplier;
 use OCA\Buildiq\Service\ManifestResolverService;
 use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Service\RepoSource;
 use OCA\Buildiq\Service\ApplicationVersionService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -974,9 +975,7 @@ class CreateFromTemplateTest extends TestCase {
 			name: 'Repo app',
 			newSlug: 'repo-app',
 			ownerUid: 'dora',
-			sourceOwner: $owner,
-			sourceRepo: $repo,
-			credentialId: $credentialId
+			source: new RepoSource(owner: $owner, repo: $repo, ref: null, credentialId: $credentialId)
 		);
 	}//end installFromRepo()
 }//end class

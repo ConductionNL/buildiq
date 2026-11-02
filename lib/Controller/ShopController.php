@@ -44,6 +44,7 @@ use OCA\Buildiq\Exception\AppRepoParseException;
 use OCA\Buildiq\Service\AppRepoParser;
 use OCA\Buildiq\Service\GitHubCatalogService;
 use OCA\Buildiq\Service\GitHubShopSearch;
+use OCA\Buildiq\Service\RepoSource;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -206,9 +207,7 @@ class ShopController extends Controller {
 			name: $name,
 			newSlug: $newSlug,
 			ownerUid: $user->getUID(),
-			sourceOwner: $owner,
-			sourceRepo: $repo,
-			credentialId: $this->credentialParam()
+			source: new RepoSource(owner: $owner, repo: $repo, ref: null, credentialId: $this->credentialParam())
 		);
 
 		return new JSONResponse(data: $result['data'], statusCode: $result['status']);
