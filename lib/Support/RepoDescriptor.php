@@ -51,4 +51,48 @@ final class RepoDescriptor {
 
 		return 'general';
 	}//end category()
+
+	/**
+	 * The descriptor `credentials[]`: one `{provider, reason, scopes}` entry per
+	 * manifest credential that names a provider (REQ-GARF-009).
+	 *
+	 * @param array<string,mixed> $manifest The manifest blob.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 *
+	 * @spec exclude shared descriptor field derivation for the repo serialisers, no behaviour of its own
+	 */
+	public static function credentials(array $manifest): array {
+		$raw = ($manifest['credentials'] ?? null);
+		if (is_array($raw) === false) {
+			return [];
+		}
+
+		$declared = array_filter(
+			$raw,
+			static fn (mixed $entry): bool => is_array($entry) === true && isset($entry['provider']) === true
+		);
+
+		return array_values(array_map(static fn (array $entry): array => self::credential(entry: $entry), $declared));
+	}//end credentials()
+
+	/**
+	 * One descriptor credential entry, with its scopes as a list of strings.
+	 *
+	 * @param array<string,mixed> $entry A manifest credential that names a provider.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private static function credential(array $entry): array {
+		$scopes = [];
+		if (is_array($entry['scopes'] ?? null) === true) {
+			$scopes = array_values(array_map(static fn (mixed $scope): string => (string)$scope, $entry['scopes']));
+		}
+
+		return [
+			'provider' => (string)$entry['provider'],
+			'reason' => (string)($entry['reason'] ?? ''),
+			'scopes' => $scopes,
+		];
+	}//end credential()
 }//end class
