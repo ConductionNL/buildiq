@@ -1,0 +1,305 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`check-manifest CLI golden > pins bad types 1`] = `
+"code=1
+--stdout--
+--stderr--
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+FAIL <tmp>/bad-types.json (v1)
+  /version must be string
+  /menu/0 must have required property 'label'
+  /menu/0/id must be string
+  /pages/0 must have required property 'route'
+  /pages/0 must have required property 'type'
+  /pages/0 must have required property 'title'
+"
+`;
+
+exports[`check-manifest CLI golden > pins broken then valid 1`] = `
+"code=1
+--stdout--
+PASS <tmp>/valid.json (v1)
+--stderr--
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+FAIL <tmp>/broken.json (v1)
+  (root) must have required property 'version'
+  (root) must have required property 'pages'
+"
+`;
+
+exports[`check-manifest CLI golden > pins defaults 1`] = `
+"code=0
+--stdout--
+PASS src/manifest.json (v2)
+PASS lib/Resources/wizard/default-manifest.json (v1)
+--stderr--
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+"
+`;
+
+exports[`check-manifest CLI golden > pins engine 1`] = `
+"code=0
+--stdout--
+PASS <tmp>/engine.json (v1)
+--stderr--
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+"
+`;
+
+exports[`check-manifest CLI golden > pins everything 1`] = `
+"code=1
+--stdout--
+PASS <tmp>/valid.json (v1)
+PASS <tmp>/engine.json (v1)
+PASS <tmp>/v2.json (v2)
+PASS src/manifest.json (v2)
+--stderr--
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+FAIL <tmp>/broken.json (v1)
+  (root) must have required property 'version'
+  (root) must have required property 'pages'
+FAIL <tmp>/token.json (v1)
+  /pages/1 must be object
+  /pages/2 must be object
+FAIL <tmp>/extra.json (v1)
+  (root) must NOT have additional properties
+FAIL <tmp>/v2-broken.json (v2)
+  (root) must have required property 'observability'
+  (root) must match "then" schema
+  (root) must have required property 'version'
+  /menu must be array
+FAIL <tmp>/array.json (v1)
+  (root) must have required property 'version'
+  (root) must have required property 'menu'
+  (root) must have required property 'pages'
+FAIL <tmp>/string.json (v1)
+  (root) must be object
+FAIL <tmp>/pages-not-array.json (v1)
+  /pages must be array
+FAIL <tmp>/bad-types.json (v1)
+  /version must be string
+  /menu/0 must have required property 'label'
+  /menu/0/id must be string
+  /pages/0 must have required property 'route'
+  /pages/0 must have required property 'type'
+  /pages/0 must have required property 'title'
+FAIL <tmp>/unparseable.json — JSON parse error: Expected property name or '}' in JSON at position 2 (line 1 column 3)
+SKIP <tmp>/missing.json (not found)
+"
+`;
+
+exports[`check-manifest CLI golden > pins extra 1`] = `
+"code=1
+--stdout--
+--stderr--
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+FAIL <tmp>/extra.json (v1)
+  (root) must NOT have additional properties
+"
+`;
+
+exports[`check-manifest CLI golden > pins missing 1`] = `
+"code=0
+--stdout--
+--stderr--
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+SKIP <tmp>/missing.json (not found)
+"
+`;
+
+exports[`check-manifest CLI golden > pins missing only, then valid 1`] = `
+"code=0
+--stdout--
+PASS <tmp>/valid.json (v1)
+--stderr--
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+SKIP <tmp>/missing.json (not found)
+"
+`;
+
+exports[`check-manifest CLI golden > pins non-objects 1`] = `
+"code=1
+--stdout--
+--stderr--
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+FAIL <tmp>/array.json (v1)
+  (root) must have required property 'version'
+  (root) must have required property 'menu'
+  (root) must have required property 'pages'
+FAIL <tmp>/string.json (v1)
+  (root) must be object
+"
+`;
+
+exports[`check-manifest CLI golden > pins one broken 1`] = `
+"code=1
+--stdout--
+--stderr--
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+FAIL <tmp>/broken.json (v1)
+  (root) must have required property 'version'
+  (root) must have required property 'pages'
+"
+`;
+
+exports[`check-manifest CLI golden > pins one valid 1`] = `
+"code=0
+--stdout--
+PASS <tmp>/valid.json (v1)
+--stderr--
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+"
+`;
+
+exports[`check-manifest CLI golden > pins pages not an array 1`] = `
+"code=1
+--stdout--
+--stderr--
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+FAIL <tmp>/pages-not-array.json (v1)
+  /pages must be array
+"
+`;
+
+exports[`check-manifest CLI golden > pins relative path 1`] = `
+"code=0
+--stdout--
+PASS ../../../../..<tmp>/valid.json (v1)
+--stderr--
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+"
+`;
+
+exports[`check-manifest CLI golden > pins relative paths resolved against the repo, not the working directory 1`] = `
+"code=0
+--stdout--
+PASS src/manifest.json (v2)
+--stderr--
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+SKIP valid.json (not found)
+"
+`;
+
+exports[`check-manifest CLI golden > pins token 1`] = `
+"code=1
+--stdout--
+--stderr--
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+FAIL <tmp>/token.json (v1)
+  /pages/1 must be object
+  /pages/2 must be object
+"
+`;
+
+exports[`check-manifest CLI golden > pins unparseable 1`] = `
+"code=1
+--stdout--
+--stderr--
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+FAIL <tmp>/unparseable.json — JSON parse error: Expected property name or '}' in JSON at position 2 (line 1 column 3)
+"
+`;
+
+exports[`check-manifest CLI golden > pins unparseable then valid 1`] = `
+"code=1
+--stdout--
+PASS <tmp>/valid.json (v1)
+--stderr--
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+FAIL <tmp>/unparseable.json — JSON parse error: Expected property name or '}' in JSON at position 2 (line 1 column 3)
+"
+`;
+
+exports[`check-manifest CLI golden > pins v2 1`] = `
+"code=0
+--stdout--
+PASS <tmp>/v2.json (v2)
+--stderr--
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+"
+`;
+
+exports[`check-manifest CLI golden > pins v2 broken 1`] = `
+"code=1
+--stdout--
+--stderr--
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+FAIL <tmp>/v2-broken.json (v2)
+  (root) must have required property 'observability'
+  (root) must match "then" schema
+  (root) must have required property 'version'
+  /menu must be array
+"
+`;
+
+exports[`check-manifest CLI golden > pins valid then broken 1`] = `
+"code=1
+--stdout--
+PASS <tmp>/valid.json (v1)
+--stderr--
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+unknown format "uri" ignored in schema at path "#/properties/%24schema"
+FAIL <tmp>/broken.json (v1)
+  (root) must have required property 'version'
+  (root) must have required property 'pages'
+"
+`;

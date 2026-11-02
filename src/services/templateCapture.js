@@ -143,6 +143,66 @@ export class SlugCollisionError extends Error {
 }
 
 /**
+ * The source-slug to canonical-slug rewrite map of an app's schemas, and one
+ * summary entry per schema.
+ *
+ * @param {Array<object>} sourceSchemas - the app's companion schema definitions.
+ * @param {string} appSlug - the source Application's slug.
+ * @return {{rewriteMap: Object<string, string>, summaryEntries: Array<{sourceSlug: string, slug: string, shared: boolean}>}}
+ * @throws {SlugCollisionError} when two schemas de-namespace to the same slug.
+ */
+function slugRewrites(sourceSchemas, appSlug) {
+	const rewriteMap = {}
+	const canonicalToSource = {}
+	const summaryEntries = []
+	for (const schema of sourceSchemas) {
+		const sourceSlug = String((schema && schema.slug) || '')
+		if (!sourceSlug) {
+			continue
+		}
+		const { slug: canonical, shared } = deNamespaceSlug(sourceSlug, appSlug)
+		if (
+			Object.hasOwn(canonicalToSource, canonical)
+			&& canonicalToSource[canonical] !== sourceSlug
+		) {
+			throw new SlugCollisionError(canonical, [
+				canonicalToSource[canonical],
+				sourceSlug,
+			])
+		}
+		canonicalToSource[canonical] = sourceSlug
+		rewriteMap[sourceSlug] = canonical
+		summaryEntries.push({ sourceSlug, slug: canonical, shared })
+	}
+	return { rewriteMap, summaryEntries }
+}
+
+/**
+ * The `ApplicationTemplate` record of a capture (`isSeeded: false`).
+ *
+ * @param {object} metadata - { title, slug, description, useCase, category, sourceUrl }.
+ * @param {{manifest: object, companionSchemas: Array<object>, version: string}} captured - the rewritten manifest, the companion schemas and the source version.
+ * @return {object} the record.
+ */
+function templateRecord(metadata, captured) {
+	const record = {
+		slug: metadata.slug,
+		title: metadata.title,
+		description: metadata.description || '',
+		useCase: metadata.useCase || '',
+		category: metadata.category,
+		manifest: captured.manifest,
+		companionSchemas: captured.companionSchemas,
+		isSeeded: false,
+		version: captured.version,
+	}
+	if (metadata.sourceUrl) {
+		record.sourceUrl = metadata.sourceUrl
+	}
+	return record
+}
+
+/**
  * Capture a virtual app + its schemas into an `ApplicationTemplate`
  * record shape — de-namespaced so the existing clone flow round-trips
  * to a clean rename (REQ-SAT-002). Pure function; performs NO I/O and
@@ -168,28 +228,7 @@ export function captureTemplate(application, schemas, manifest, metadata) {
 	const sourceSchemas = Array.isArray(schemas) ? schemas : []
 
 	// 1. Build the source-slug → canonical-slug rewrite map, detecting collisions.
-	const rewriteMap = {}
-	const canonicalToSource = {}
-	const summaryEntries = []
-	for (const schema of sourceSchemas) {
-		const sourceSlug = String((schema && schema.slug) || '')
-		if (!sourceSlug) {
-			continue
-		}
-		const { slug: canonical, shared } = deNamespaceSlug(sourceSlug, appSlug)
-		if (
-			Object.hasOwn(canonicalToSource, canonical)
-			&& canonicalToSource[canonical] !== sourceSlug
-		) {
-			throw new SlugCollisionError(canonical, [
-				canonicalToSource[canonical],
-				sourceSlug,
-			])
-		}
-		canonicalToSource[canonical] = sourceSlug
-		rewriteMap[sourceSlug] = canonical
-		summaryEntries.push({ sourceSlug, slug: canonical, shared })
-	}
+	const { rewriteMap, summaryEntries } = slugRewrites(sourceSchemas, appSlug)
 
 	// 2. Deep-copy + de-namespace the companion schemas (definition only — no rows).
 	const companionSchemas = sourceSchemas
@@ -203,23 +242,12 @@ export function captureTemplate(application, schemas, manifest, metadata) {
 	// 3. Deep-copy the manifest and rewrite every schema reference site.
 	const capturedManifest = rewriteSchemaRefs(deepClone(manifest || {}), rewriteMap)
 
-	const record = {
-		slug: metadata.slug,
-		title: metadata.title,
-		description: metadata.description || '',
-		useCase: metadata.useCase || '',
-		category: metadata.category,
-		manifest: capturedManifest,
-		companionSchemas,
-		isSeeded: false,
-		version: (application && application.version) || '0.1.0',
-	}
-	if (metadata.sourceUrl) {
-		record.sourceUrl = metadata.sourceUrl
-	}
-
 	return {
-		record,
+		record: templateRecord(metadata, {
+			manifest: capturedManifest,
+			companionSchemas,
+			version: (application && application.version) || '0.1.0',
+		}),
 		summary: { companionSchemas: summaryEntries },
 	}
 }

@@ -222,11 +222,8 @@ class AppChannelApplier {
 
 		$this->applySkillsChannel(
 			skills: $this->channelOf(template: $template, name: 'skills'),
-			owner: $owner,
-			repo: $repo,
-			ref: $ref,
+			source: new RepoSource(owner: $owner, repo: $repo, ref: $ref, credentialId: $credentialId),
 			actingUserId: $actingUserId,
-			credentialId: $credentialId,
 			report: $report
 		);
 
@@ -248,11 +245,8 @@ class AppChannelApplier {
 	 * of the generic `hermiq-install-failed` a caught Throwable produces.
 	 *
 	 * @param array<string,mixed> $skills The declared skills channel.
-	 * @param string $owner Repo owner (for the delegation).
-	 * @param string $repo Repo name (for the delegation).
-	 * @param string|null $ref Optional git ref.
+	 * @param RepoSource $source The repo coordinates, ref and credential (for the delegation).
 	 * @param string|null $actingUserId The session UID.
-	 * @param string|null $credentialId Optional broker credential UUID.
 	 * @param ChannelApplyReport $report The report to write into.
 	 *
 	 * @return void
@@ -261,13 +255,11 @@ class AppChannelApplier {
 	 */
 	private function applySkillsChannel(
 		array $skills,
-		string $owner,
-		string $repo,
-		?string $ref,
+		RepoSource $source,
 		?string $actingUserId,
-		?string $credentialId,
 		ChannelApplyReport $report,
 	): void {
+		$credentialId = $source->credentialId;
 		if ($skills !== [] && in_array($credentialId, [null, ''], true) === false
 			&& $this->credentialAllowsApp(credentialId: $credentialId, appId: self::HERMIQ_APP_ID) === false
 		) {
@@ -290,11 +282,8 @@ class AppChannelApplier {
 
 		$this->skillDelegate->apply(
 			skills: $skills,
-			owner: $owner,
-			repo: $repo,
-			ref: $ref,
+			source: $source,
 			actingUserId: $actingUserId,
-			credentialId: $credentialId,
 			report: $report
 		);
 

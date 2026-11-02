@@ -224,12 +224,12 @@ function applySignInLevel(entry, minTrust) {
  * entry rather than appending a duplicate (REQ-EFP-004).
  *
  * @param {Array<object>|undefined} actions - the portalPage's current actions.
- * @param {string} register - the OR register slug.
- * @param {string} schema - the OR schema slug.
- * @param {?string|undefined} minTrust - the sign-in level (see applySignInLevel).
+ * @param {{register: string, schema: string, minTrust: (?string|undefined)}} target - the OR
+ *   register and schema slugs, and the sign-in level (see applySignInLevel).
  * @return {Array<object>}
  */
-function mergeCreateAction(actions, register, schema, minTrust) {
+function mergeCreateAction(actions, target) {
+	const { register, schema, minTrust } = target
 	const next = Array.isArray(actions) ? actions.slice() : []
 	const idx = next.findIndex(
 		(a) =>
@@ -254,12 +254,12 @@ function mergeCreateAction(actions, register, schema, minTrust) {
  * same sign-in level as its create action.
  *
  * @param {Array<object>|undefined} collections - the portalPage's current collections.
- * @param {string} register - the OR register slug.
- * @param {string} schema - the OR schema slug.
- * @param {?string|undefined} minTrust - the sign-in level (see applySignInLevel).
+ * @param {{register: string, schema: string, minTrust: (?string|undefined)}} target - the OR
+ *   register and schema slugs, and the sign-in level (see applySignInLevel).
  * @return {Array<object>}
  */
-function mergeCollection(collections, register, schema, minTrust) {
+function mergeCollection(collections, target) {
+	const { register, schema, minTrust } = target
 	const next = Array.isArray(collections) ? collections.slice() : []
 	const idx = next.findIndex(
 		(c) => c && c.register === register && c.schema === schema,
@@ -287,6 +287,75 @@ function resolveObjectId(data) {
 		|| (data && data.uuid)
 		|| ''
 	)
+}
+
+/**
+ * Merge the collection and create action for a target into a stored
+ * `portalPage`, activate it, and drop a page-level `minTrust` that is not
+ * one of portaliq's levels.
+ *
+ * @param {?object} current - the stored portalPage object.
+ * @param {{register: string, schema: string, minTrust: (?string|undefined)}} target - the toggle's target.
+ * @return {object} the payload to PUT.
+ */
+function mergedPortalPage(current, target) {
+	const payload = {
+		...current,
+		status: 'active',
+		collections: mergeCollection(current && current.collections, target),
+		actions: mergeCreateAction(current && current.actions, target),
+	}
+	// An older save wrote the page-level number 0, which is not one of
+	// portaliq's levels (buildiq#921). A real stored level stays.
+	if ('minTrust' in payload && !isSignInLevel(payload.minTrust)) {
+		delete payload.minTrust
+	}
+	return payload
+}
+
+/**
+ * Repeat save: GET-merge-PUT the stored `portalPage` object.
+ *
+ * @param {string} objectId - the stored portalPage uuid.
+ * @param {{target: object, client: object}} context - the toggle's target and the axios-like client.
+ * @return {Promise<{objectId: string, portalPath: string, unavailable: boolean}>}
+ */
+async function updatePortalPage(objectId, context) {
+	const { target, client } = context
+	const { data: current } = await client.get(portalPageUrl(objectId))
+	const { data } = await client.put(
+		portalPageUrl(objectId),
+		mergedPortalPage(current, target),
+	)
+	return {
+		objectId: resolveObjectId(data) || objectId,
+		portalPath: '/portal',
+		unavailable: false,
+	}
+}
+
+/**
+ * First save: POST a new public `portalPage` object for the target.
+ *
+ * @param {{register: string, schema: string, minTrust: (?string|undefined)}} target - the toggle's target.
+ * @param {object} client - axios-like client.
+ * @return {Promise<{objectId: string, portalPath: string, unavailable: boolean}>}
+ */
+async function createPortalPage(target, client) {
+	const payload = {
+		label: `${target.schema} — external intake`,
+		status: 'active',
+		audience: 'public',
+		collections: mergeCollection([], target),
+		actions: mergeCreateAction([], target),
+		pages: [],
+	}
+	const { data } = await client.post(portalPageUrl(), payload)
+	return {
+		objectId: resolveObjectId(data),
+		portalPath: '/portal',
+		unavailable: false,
+	}
 }
 
 /**
@@ -318,51 +387,12 @@ export async function provisionPortalPage(
 	{ register, schema, objectId, minTrust },
 	client = defaultAxios,
 ) {
+	const target = { register, schema, minTrust }
 	try {
 		if (objectId) {
-			const { data: current } = await client.get(portalPageUrl(objectId))
-			const payload = {
-				...current,
-				status: 'active',
-				collections: mergeCollection(
-					current && current.collections,
-					register,
-					schema,
-					minTrust,
-				),
-				actions: mergeCreateAction(
-					current && current.actions,
-					register,
-					schema,
-					minTrust,
-				),
-			}
-			// An older save wrote the page-level number 0, which is not one of
-			// portaliq's levels (buildiq#921). A real stored level stays.
-			if ('minTrust' in payload && !isSignInLevel(payload.minTrust)) {
-				delete payload.minTrust
-			}
-			const { data } = await client.put(portalPageUrl(objectId), payload)
-			return {
-				objectId: resolveObjectId(data) || objectId,
-				portalPath: '/portal',
-				unavailable: false,
-			}
+			return await updatePortalPage(objectId, { target, client })
 		}
-		const payload = {
-			label: `${schema} — external intake`,
-			status: 'active',
-			audience: 'public',
-			collections: mergeCollection([], register, schema, minTrust),
-			actions: mergeCreateAction([], register, schema, minTrust),
-			pages: [],
-		}
-		const { data } = await client.post(portalPageUrl(), payload)
-		return {
-			objectId: resolveObjectId(data),
-			portalPath: '/portal',
-			unavailable: false,
-		}
+		return await createPortalPage(target, client)
 	} catch (error) {
 		if (isPortalPageSchemaMissing(error)) {
 			return { objectId: null, portalPath: null, unavailable: true }

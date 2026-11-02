@@ -67,6 +67,15 @@ exports[`check-integration-parity golden output > passes data-provider leaves th
 }
 `;
 
+exports[`check-integration-parity golden output > reads schemas by their own slug, across declaration files 1`] = `
+{
+  "status": 0,
+  "stderr": "",
+  "stdout": "✓ integration parity: 1 server leaf face(s), 1 JS registration(s), 2 OpenRegister schema declaration file(s) — all rules pass (assertions run per rule: R1:1 R2:2 R3:0 R4:0 R5:0 R7:0 R6:4)
+",
+}
+`;
+
 exports[`check-integration-parity golden output > reports every rule violation in a disagreeing repository 1`] = `
 {
   "status": 1,
