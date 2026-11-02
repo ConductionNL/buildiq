@@ -25,6 +25,8 @@ use OCA\Buildiq\Service\ConnectorRegisterAvailability;
 use OCA\Buildiq\Service\ContainerLocator;
 use OCA\Buildiq\Service\DataRegisterProvisioner;
 use OCA\Buildiq\Service\FlowChannelProvisioner;
+use OCA\Buildiq\Service\LocalApplicationRef;
+use OCA\Buildiq\Service\RepoSource;
 use OCA\Buildiq\Service\SkillChannelDelegate;
 use OCA\Buildiq\Tests\Unit\Support\FakeSlugResolver;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
@@ -341,11 +343,8 @@ class SkillsChannelGoldenTest extends TestCase {
 		try {
 			$report = $applier->apply(
 				template: $template,
-				owner: $owner,
-				repo: $repo,
-				ref: $case['ref'],
+				source: new RepoSource(owner: (string)$owner, repo: (string)$repo, ref: $case['ref'], credentialId: $credentialId),
 				actingUserId: $case['actingUserId'],
-				credentialId: $credentialId,
 			);
 		} catch (RuntimeException $e) {
 			$error = $e->getMessage();

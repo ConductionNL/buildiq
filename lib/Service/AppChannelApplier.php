@@ -161,18 +161,13 @@ class AppChannelApplier {
 	 * through is a path that eventually gets added without them.
 	 *
 	 * @param array<string,mixed> $template The parsed repo template.
-	 * @param string|null $owner Repo owner (for the skills delegation).
-	 * @param string|null $repo Repo name (for the skills delegation).
-	 * @param string|null $ref Optional git ref.
+	 * @param RepoSource|null $source Repo coordinates, ref and broker credential for the skills delegation.
+	 *                               An empty owner or repo falls back to the template's origin.
 	 * @param string|null $actingUserId The session UID.
-	 * @param string|null $credentialId Optional broker credential UUID.
-	 * @param string|null $applicationUuid The LOCAL Application's own uuid — needed by the flows channel to
-	 *                                     rebind newly created flows. Null on a caller with no local
-	 *                                     Application context yet, in which case the flows channel degrades
-	 *                                     with a stated reason like any other missing context.
-	 * @param string|null $applicationSlug The LOCAL Application's own slug — needed by the agents channel
-	 *                                     to tag newly created agents with THIS instance's slug, never the
-	 *                                     source instance's.
+	 * @param LocalApplicationRef|null $local The LOCAL Application: its uuid lets the flows channel rebind newly
+	 *                                       created flows, its slug lets the agents channel tag newly created
+	 *                                       agents with THIS instance's slug, never the source instance's. A
+	 *                                       missing uuid degrades the flows channel with a stated reason.
 	 *
 	 * @return array<string,mixed> The channel report.
 	 *
@@ -181,17 +176,13 @@ class AppChannelApplier {
 	 */
 	public function apply(
 		array $template,
-		?string $owner = null,
-		?string $repo = null,
-		?string $ref = null,
+		?RepoSource $source = null,
 		?string $actingUserId = null,
-		?string $credentialId = null,
-		?string $applicationUuid = null,
-		?string $applicationSlug = null,
+		?LocalApplicationRef $local = null,
 	): array {
 		$report = new ChannelApplyReport();
 
-		[$owner, $repo] = $this->coordinatesFor(template: $template, owner: $owner, repo: $repo);
+		[$owner, $repo] = $this->coordinatesFor(template: $template, owner: $source?->owner, repo: $source?->repo);
 
 		$this->registerProvisioner->apply(
 			registers: $this->channelOf(template: $template, name: 'dataRegisters'),
@@ -210,19 +201,19 @@ class AppChannelApplier {
 
 		$this->flowProvisioner->apply(
 			flows: $this->channelOf(template: $template, name: 'flows'),
-			applicationUuid: $applicationUuid,
+			applicationUuid: $local?->uuid,
 			report: $report
 		);
 
 		$this->agentProvisioner->apply(
 			agents: $this->channelOf(template: $template, name: 'agents'),
-			applicationSlug: $applicationSlug,
+			applicationSlug: $local?->slug,
 			report: $report
 		);
 
 		$this->applySkillsChannel(
 			skills: $this->channelOf(template: $template, name: 'skills'),
-			source: new RepoSource(owner: $owner, repo: $repo, ref: $ref, credentialId: $credentialId),
+			source: new RepoSource(owner: $owner, repo: $repo, ref: $source?->ref, credentialId: $source?->credentialId),
 			actingUserId: $actingUserId,
 			report: $report
 		);
