@@ -46,6 +46,12 @@ use RuntimeException;
  *
  * @covers \OCA\Buildiq\Service\AppChannelApplier
  * @covers \OCA\Buildiq\Service\SkillChannelDelegate
+ * @uses   \OCA\Buildiq\Service\RepoSource
+ * @uses   \OCA\Buildiq\Service\AgentChannelProvisioner
+ * @uses   \OCA\Buildiq\Service\ChannelApplyReport
+ * @uses   \OCA\Buildiq\Service\ConnectorRegisterAvailability
+ * @uses   \OCA\Buildiq\Service\DataRegisterProvisioner
+ * @uses   \OCA\Buildiq\Service\FlowChannelProvisioner
  */
 class SkillsChannelGoldenTest extends TestCase {
 
