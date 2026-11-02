@@ -1433,6 +1433,10 @@ if (require.main === module) {
 }
 
 module.exports = {
+	balanced,
+	splitTopLevel,
+	resolvePhp,
+	resolveJs,
 	collectServerFaces,
 	collectJsRegistrations,
 	collectOrSchemas,
