@@ -110,11 +110,24 @@ class ManifestWidgetRoleFilter {
 			$page['widgets'] = $this->filterWidgetList(widgets: $page['widgets'], caller: $caller, removedIds: $removedIds);
 		}
 
-		$config = ($page['config'] ?? null);
-		if (is_array($config) === false) {
-			return $this->pruneTabReferences(page: $page, removedIds: $removedIds);
+		if (isset($page['config']) === true && is_array($page['config']) === true) {
+			$page['config'] = $this->filterConfig(config: $page['config'], caller: $caller, removedIds: $removedIds);
 		}
 
+		return $this->pruneTabReferences(page: $page, removedIds: $removedIds);
+	}//end filterPage()
+
+	/**
+	 * Filter the legacy widget lists in a page's `config` and drop the
+	 * `config.layout[]` rows of removed widgets.
+	 *
+	 * @param array<string, mixed> $config The page's `config`.
+	 * @param IUser|null $caller The caller, or null.
+	 * @param array<string, true> $removedIds Collects the ids of removed widgets.
+	 *
+	 * @return array<string, mixed> The filtered `config`.
+	 */
+	private function filterConfig(array $config, ?IUser $caller, array &$removedIds): array {
 		if (isset($config['widgets']) === true && is_array($config['widgets']) === true) {
 			$config['widgets'] = $this->filterWidgetList(widgets: $config['widgets'], caller: $caller, removedIds: $removedIds);
 		}
@@ -135,10 +148,8 @@ class ManifestWidgetRoleFilter {
 			$config['layout'] = $this->pruneLayout(layout: $config['layout'], removedIds: $removedIds);
 		}
 
-		$page['config'] = $config;
-
-		return $this->pruneTabReferences(page: $page, removedIds: $removedIds);
-	}//end filterPage()
+		return $config;
+	}//end filterConfig()
 
 	/**
 	 * Whether the caller may see a widget entry. A widget without `roles`
@@ -267,29 +278,43 @@ class ManifestWidgetRoleFilter {
 		}
 
 		if (isset($page['widgets']) === true && is_array($page['widgets']) === true) {
-			foreach ($page['widgets'] as $index => $widget) {
-				if (is_array($widget) === true && isset($widget['props']['content']['tabs']) === true) {
-					$page['widgets'][$index]['props']['content']['tabs'] = $this->pruneTabs(
-						tabs: $widget['props']['content']['tabs'],
-						removedIds: $removedIds
-					);
-				}
-			}
+			$page['widgets'] = $this->pruneTabsInWidgets(widgets: $page['widgets'], uniform: true, removedIds: $removedIds);
 		}
 
 		if (isset($page['config']['widgets']) === true && is_array($page['config']['widgets']) === true) {
-			foreach ($page['config']['widgets'] as $index => $widget) {
-				if (is_array($widget) === true && isset($widget['content']['tabs']) === true) {
-					$page['config']['widgets'][$index]['content']['tabs'] = $this->pruneTabs(
-						tabs: $widget['content']['tabs'],
-						removedIds: $removedIds
-					);
-				}
-			}
+			$page['config']['widgets'] = $this->pruneTabsInWidgets(widgets: $page['config']['widgets'], uniform: false, removedIds: $removedIds);
 		}
 
 		return $page;
 	}//end pruneTabReferences()
+
+	/**
+	 * Prune the `content.tabs[]` of every tabs widget in a list. A uniform
+	 * entry carries `content` under `props`; a legacy entry carries it at the
+	 * top level.
+	 *
+	 * @param array<int|string, mixed> $widgets The widget list.
+	 * @param bool $uniform True for uniform `widgets[]` entries.
+	 * @param array<string, true> $removedIds Ids of removed widgets.
+	 *
+	 * @return array<int|string, mixed> The widgets with pruned tab lists.
+	 */
+	private function pruneTabsInWidgets(array $widgets, bool $uniform, array $removedIds): array {
+		foreach ($widgets as $index => $widget) {
+			if ($uniform === true && isset($widget['props']['content']['tabs']) === true) {
+				$widgets[$index]['props']['content']['tabs'] = $this->pruneTabs(
+					tabs: $widget['props']['content']['tabs'],
+					removedIds: $removedIds
+				);
+			}
+
+			if ($uniform === false && isset($widget['content']['tabs']) === true) {
+				$widgets[$index]['content']['tabs'] = $this->pruneTabs(tabs: $widget['content']['tabs'], removedIds: $removedIds);
+			}
+		}
+
+		return $widgets;
+	}//end pruneTabsInWidgets()
 
 	/**
 	 * Drop the tab entries (`'id'` or `{widgetId}`) that name a removed widget.

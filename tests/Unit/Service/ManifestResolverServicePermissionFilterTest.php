@@ -423,7 +423,11 @@ class ManifestResolverServicePermissionFilterTest extends TestCase {
 					'title' => 'Dashboard',
 					'widgets' => [
 						['id' => 'open', 'widgetKey' => 'stat', 'slot' => 'body', 'gridX' => 0, 'gridY' => 0, 'gridWidth' => 6, 'gridHeight' => 2],
-						['id' => 'budget', 'widgetKey' => 'stat', 'slot' => 'body', 'gridX' => 6, 'gridY' => 0, 'gridWidth' => 6, 'gridHeight' => 2, 'roles' => ['finance']],
+						[
+							'id' => 'budget', 'widgetKey' => 'stat', 'slot' => 'body',
+							'gridX' => 6, 'gridY' => 0, 'gridWidth' => 6, 'gridHeight' => 2,
+							'roles' => ['finance'],
+						],
 					],
 				],
 			],
