@@ -47,6 +47,7 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -151,6 +152,7 @@ class ApplicationVersionsController extends Controller {
 	 * @return JSONResponse Versions array on 200, error envelope on miss
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	#[NoAdminRequired]
 	public function index(string $appSlug): JSONResponse {
@@ -195,7 +197,7 @@ class ApplicationVersionsController extends Controller {
 
 			$normalised = [];
 			foreach ($rowsList as $row) {
-				$normalisedRow = $this->normaliseObject(object: $row);
+				$normalisedRow = ObjectRecord::toArray(object: $row);
 				$rowAppUuid = (string)($normalisedRow['application'] ?? '');
 				if ($rowAppUuid !== $applicationUuid) {
 					continue;
@@ -247,6 +249,7 @@ class ApplicationVersionsController extends Controller {
 	 * @return JSONResponse 201 with the created version, or error envelope
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 20, period: 60)]
@@ -308,7 +311,7 @@ class ApplicationVersionsController extends Controller {
 			);
 
 			return new JSONResponse(
-				data: $this->normaliseObject(object: $created),
+				data: ObjectRecord::toArray(object: $created),
 				statusCode: Http::STATUS_CREATED
 			);
 		} catch (Throwable $e) {
@@ -333,6 +336,7 @@ class ApplicationVersionsController extends Controller {
 	 * @return JSONResponse 200 with the updated version, or error envelope
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 60, period: 60)]
@@ -420,7 +424,7 @@ class ApplicationVersionsController extends Controller {
 			}
 
 			return new JSONResponse(
-				data: $this->normaliseObject(object: $updated),
+				data: ObjectRecord::toArray(object: $updated),
 				statusCode: Http::STATUS_OK
 			);
 		} catch (Throwable $e) {
@@ -569,6 +573,7 @@ class ApplicationVersionsController extends Controller {
 	 * @param array<string,mixed> $application Normalised Application data
 	 *
 	 * @return string|null The production version's register slug, or null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function resolveProductionRegister(array $application): ?string {
 		$productionVersion = ($application['productionVersion'] ?? null);
@@ -601,7 +606,7 @@ class ApplicationVersionsController extends Controller {
 			return null;
 		}
 
-		$register = (string)($this->normaliseObject(object: $version)['register'] ?? '');
+		$register = (string)(ObjectRecord::toArray(object: $version)['register'] ?? '');
 		if ($register !== '') {
 			return $register;
 		}
@@ -649,6 +654,7 @@ class ApplicationVersionsController extends Controller {
 	 * @param string $versionSlug The version slug to find
 	 *
 	 * @return array<string,mixed>|null The version row, or null on miss
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findVersionRowBySlug(array $application, string $versionSlug): ?array {
 		$applicationUuid = (string)($application['id'] ?? $application['uuid'] ?? '');
@@ -668,7 +674,7 @@ class ApplicationVersionsController extends Controller {
 		}
 
 		foreach ($rows as $row) {
-			$normalised = $this->normaliseObject(object: $row);
+			$normalised = ObjectRecord::toArray(object: $row);
 			if ((string)($normalised['application'] ?? '') !== $applicationUuid) {
 				continue;
 			}
@@ -708,6 +714,7 @@ class ApplicationVersionsController extends Controller {
 	 * @param string $slug Parent Application slug
 	 *
 	 * @return array<string,mixed>|null Application record or null when missing
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function loadApplication(string $slug): ?array {
 		$ids = $this->resolveRegisterAndSchema(schemaSlug: ApplicationVersionService::APPLICATION_SCHEMA);
@@ -731,7 +738,7 @@ class ApplicationVersionsController extends Controller {
 			return null;
 		}
 
-		return $this->normaliseObject(object: $rows[0]);
+		return ObjectRecord::toArray(object: $rows[0]);
 	}//end loadApplication()
 
 	/**
@@ -747,6 +754,7 @@ class ApplicationVersionsController extends Controller {
 	 * @return array<string,mixed>|null Version record or null on miss
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findVersionForApplication(string $slug, string $versionSlug): ?array {
 		$application = $this->loadApplication(slug: $slug);
@@ -778,7 +786,7 @@ class ApplicationVersionsController extends Controller {
 			return null;
 		}
 
-		return $this->normaliseObject(object: $rows[0]);
+		return ObjectRecord::toArray(object: $rows[0]);
 	}//end findVersionForApplication()
 
 	/**
@@ -1014,33 +1022,4 @@ class ApplicationVersionsController extends Controller {
 
 		return new JSONResponse(data: $body, statusCode: $status);
 	}//end errorResponse()
-
-	/**
-	 * Coerce an OR result entry to a plain associative array.
-	 *
-	 * @param mixed $object The OR object/result entry
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normaliseObject(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normaliseObject()
 }//end class

@@ -41,6 +41,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -98,6 +99,7 @@ class RuleObjectReader {
 	 * @return array<int,array<string,mixed>>
 	 *
 	 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-007-per-tenant-isolation-and-multitenancy
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function findScoped(string $schema, array $filters, ?int $limit = null): array {
 		$scope = $this->scopeOf(schema: $schema);
@@ -123,7 +125,7 @@ class RuleObjectReader {
 
 		$rows = [];
 		foreach ($results as $row) {
-			$normalised = $this->normalise(object: $row);
+			$normalised = ObjectRecord::toArray(object: $row);
 			if ($normalised !== []) {
 				$rows[] = $normalised;
 			}
@@ -206,34 +208,4 @@ class RuleObjectReader {
 		return (int)$inRegister[0];
 
 	}//end schemaIdInRegister()
-
-	/**
-	 * Coerce an OpenRegister result entry to a plain array.
-	 *
-	 * @param mixed $object The result entry.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normalise(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-
-	}//end normalise()
 }//end class

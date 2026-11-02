@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Mcp\Handler;
 
 use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -527,20 +528,10 @@ abstract class AbstractToolHandler {
 	 * @param mixed $item Value to coerce.
 	 *
 	 * @return array<string, mixed>
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	protected function toArray(mixed $item): array {
-		if (is_array($item) === true) {
-			return $item;
-		}
-
-		if (is_object($item) === true && method_exists($item, 'jsonSerialize') === true) {
-			$serialised = $item->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		return (array)$item;
+		return ObjectRecord::castArray(object: $item);
 	}//end toArray()
 
 	/**

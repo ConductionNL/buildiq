@@ -46,6 +46,7 @@ namespace OCA\Buildiq\Listener;
 
 use OCA\Buildiq\Service\AutomationCompilerService;
 use OCA\Buildiq\Service\DocumentGenerationService;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -270,6 +271,7 @@ class DocumentGenerationListener implements IEventListener {
 	 * @param string|null $transitionAction The matched transition action name (lifecycle-transition only).
 	 *
 	 * @return array<int,array<string,mixed>>
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findMatchingAutomations(string $triggerType, string $schemaSlug, ?string $transitionAction): array {
 		try {
@@ -293,7 +295,7 @@ class DocumentGenerationListener implements IEventListener {
 
 		$matches = [];
 		foreach ($results as $row) {
-			$automation = $this->normalise(object: $row);
+			$automation = ObjectRecord::toArray(object: $row);
 			$isMatch = $this->matches(
 				automation: $automation,
 				triggerType: $triggerType,
@@ -389,33 +391,4 @@ class DocumentGenerationListener implements IEventListener {
 		);
 
 	}//end generateDocumentActions()
-
-	/**
-	 * Coerce an OR result entry to a plain associative array.
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normalise(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normalise()
 }//end class

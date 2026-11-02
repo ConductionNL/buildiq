@@ -51,6 +51,7 @@ use Throwable;
  * @covers \OCA\Buildiq\Service\ApplicationCreationService
  * @uses   \OCA\Buildiq\Service\SlugValidator
  * @uses   \OCA\Buildiq\Exception\WizardCreationException
+ * @uses   \OCA\Buildiq\Support\ObjectRecord
  */
 class ApplicationCreationGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/application-creation.golden.json';

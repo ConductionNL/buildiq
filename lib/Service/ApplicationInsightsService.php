@@ -58,6 +58,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use DateTime;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -727,6 +728,7 @@ class ApplicationInsightsService {
 	 * @param string $uuid Application UUID.
 	 *
 	 * @return array<string, mixed>|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function loadApplication(string $uuid): ?array {
 		try {
@@ -740,7 +742,7 @@ class ApplicationInsightsService {
 				return null;
 			}
 
-			return $this->normaliseObject(object: $entity);
+			return ObjectRecord::toArray(object: $entity);
 		} catch (Throwable $e) {
 			$this->logger->debug(
 				'Buildiq: ApplicationInsightsService::loadApplication failed for uuid={uuid}: {message}',
@@ -756,6 +758,7 @@ class ApplicationInsightsService {
 	 * @param string $uuid ApplicationVersion UUID.
 	 *
 	 * @return array<string, mixed>|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function loadVersion(string $uuid): ?array {
 		try {
@@ -769,7 +772,7 @@ class ApplicationInsightsService {
 				return null;
 			}
 
-			return $this->normaliseObject(object: $entity);
+			return ObjectRecord::toArray(object: $entity);
 		} catch (Throwable $e) {
 			$this->logger->debug(
 				'Buildiq: ApplicationInsightsService::loadVersion failed for uuid={uuid}: {message}',
@@ -1187,33 +1190,4 @@ class ApplicationInsightsService {
 			$buckets[$label] = ($buckets[$label] ?? 0) + (int)$count;
 		}
 	}//end mergeSeriesData()
-
-	/**
-	 * Coerce an OR result entry (ObjectEntity or array) to a plain assoc array.
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function normaliseObject(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normaliseObject()
 }//end class

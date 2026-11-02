@@ -44,6 +44,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -294,6 +295,7 @@ class ManifestResolverService {
 	 * @return array<string, mixed>|null
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findApplicationBySlug(string $appSlug): ?array {
 		try {
@@ -323,7 +325,7 @@ class ManifestResolverService {
 				return null;
 			}
 
-			return $this->normaliseObject(object: $results[0]);
+			return ObjectRecord::toArray(object: $results[0]);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				'ManifestResolverService: findApplicationBySlug failed for slug={slug}: {message}',
@@ -399,6 +401,7 @@ class ManifestResolverService {
 	 * @return array<string, mixed>|null
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findVersionBySlug(array $application, string $versionSlug): ?array {
 		try {
@@ -427,7 +430,7 @@ class ManifestResolverService {
 			);
 
 			if (empty($results) === false) {
-				$version = $this->normaliseObject(object: $results[0]);
+				$version = ObjectRecord::toArray(object: $results[0]);
 				// Verify application relation ownership (IDOR guard).
 				if ($this->versionBelongsToApplication(version: $version, applicationUuid: $applicationUuid) === true) {
 					return $version;
@@ -458,6 +461,7 @@ class ManifestResolverService {
 	 * @param string $versionSlug The requested version slug.
 	 *
 	 * @return array<string, mixed>|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findVersionBySlugFallback(string $applicationUuid, string $versionSlug): ?array {
 		try {
@@ -475,7 +479,7 @@ class ManifestResolverService {
 			);
 
 			foreach ($allVersions as $entry) {
-				$version = $this->normaliseObject(object: $entry);
+				$version = ObjectRecord::toArray(object: $entry);
 				if (($version['slug'] ?? '') === $versionSlug
 					&& $this->versionBelongsToApplication(version: $version, applicationUuid: $applicationUuid) === true
 				) {
@@ -499,6 +503,7 @@ class ManifestResolverService {
 	 * @param string $uuid The ApplicationVersion UUID.
 	 *
 	 * @return array<string, mixed>|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findVersionByUuid(string $uuid): ?array {
 		try {
@@ -512,7 +517,7 @@ class ManifestResolverService {
 				return null;
 			}
 
-			return $this->normaliseObject(object: $version);
+			return ObjectRecord::toArray(object: $version);
 		} catch (Throwable $e) {
 			$this->logger->debug(
 				'ManifestResolverService: findVersionByUuid failed for uuid={uuid}: {message}',
@@ -914,33 +919,4 @@ class ManifestResolverService {
 
 		return array_values($pages);
 	}//end promoteLandingDashboard()
-
-	/**
-	 * Coerce an OR result entry (ObjectEntity or array) to a plain associative array.
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function normaliseObject(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normaliseObject()
 }//end class

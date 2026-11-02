@@ -34,6 +34,7 @@ use Symfony\Component\Console\Tester\CommandTester;
  *
  * @covers \OCA\Buildiq\Command\PublishTemplates
  * @uses   \OCA\Buildiq\Command\PublishTarget
+ * @uses   \OCA\Buildiq\Support\ObjectRecord
  */
 class PublishTemplatesGoldenTest extends TestCase {
 

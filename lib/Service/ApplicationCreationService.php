@@ -51,6 +51,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\WizardCreationException;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -272,6 +273,7 @@ class ApplicationCreationService {
 	 * @return string The UUID OpenRegister assigned ('' when none)
 	 *
 	 * @throws WizardCreationException On a slug conflict or any other save failure
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function createApplicationRecord(array $plan): string {
 		$caller = $this->resolveCallerUid();
@@ -294,7 +296,7 @@ class ApplicationCreationService {
 				register: ApplicationVersionService::REGISTER_SLUG,
 				schema: ApplicationVersionService::APPLICATION_SCHEMA
 			);
-			$appData = $this->normaliseObject(object: $created);
+			$appData = ObjectRecord::toArray(object: $created);
 			return (string)($appData['id'] ?? $appData['uuid'] ?? '');
 		} catch (Throwable $e) {
 			// Detect TOCTOU duplicate-slug races: two concurrent createApp calls both
@@ -372,6 +374,7 @@ class ApplicationCreationService {
 	 * @return void
 	 *
 	 * @throws WizardCreationException On failure (with rollback)
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function createVersionRecord(array $version, array &$state): void {
 		$versionSlug = $version['slug'];
@@ -398,7 +401,7 @@ class ApplicationCreationService {
 				register: ApplicationVersionService::REGISTER_SLUG,
 				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
 			);
-			$versionData = $this->normaliseObject(object: $createdVersion);
+			$versionData = ObjectRecord::toArray(object: $createdVersion);
 			$versionUuid = (string)($versionData['id'] ?? $versionData['uuid'] ?? '');
 			$state['versionUuids'][$versionSlug] = $versionUuid;
 			$state['registerSlugs'][$versionSlug] = $registerSlug;
@@ -569,6 +572,7 @@ class ApplicationCreationService {
 	 * @return void
 	 *
 	 * @throws WizardCreationException On failure (with rollback)
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function publishRoute(array $plan, array &$state): void {
 		try {
@@ -577,7 +581,7 @@ class ApplicationCreationService {
 				register: ApplicationVersionService::REGISTER_SLUG,
 				schema: self::BUILT_APP_ROUTE_SCHEMA
 			);
-			$routeData = $this->normaliseObject(object: $createdRoute);
+			$routeData = ObjectRecord::toArray(object: $createdRoute);
 			$routeUuid = (string)($routeData['id'] ?? $routeData['uuid'] ?? '');
 			if ($routeUuid !== '') {
 				$state['routeUuids'][] = $routeUuid;
@@ -1195,33 +1199,4 @@ class ApplicationCreationService {
 
 		return $user->getUID();
 	}//end resolveCallerUid()
-
-	/**
-	 * Coerce an OR result entry to a plain associative array.
-	 *
-	 * @param mixed $object The OR object / result entry
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normaliseObject(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normaliseObject()
 }//end class
