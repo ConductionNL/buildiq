@@ -110,6 +110,13 @@ class DashboardWidgetRegistrarTest extends TestCase {
 			['register' => 'r', 'schema' => 's'],
 			$byEntry['recent-cases']->dataSource
 		);
+		// Application identity from the Application record; the id is keyed on its uuid.
+		foreach ($byEntry as $entryId => $descriptor) {
+			$this->assertSame(
+				['11111111-2222-3333-4444-555555555555', 'pet-store', 'Pet Store', WidgetDescriptor::deriveId(applicationUuid: '11111111-2222-3333-4444-555555555555', entryId: $entryId)],
+				[$descriptor->applicationUuid, $descriptor->applicationSlug, $descriptor->applicationName, $descriptor->id]
+			);
+		}
 	}//end testCollectsOneDescriptorPerPromotedEntry()
 
 	/**
