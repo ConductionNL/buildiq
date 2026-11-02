@@ -60,14 +60,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Listener;
 
-use OCA\Buildiq\Service\AutomationCompilerService;
-use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Event\ObjectCreatedEvent;
-use OCA\OpenRegister\Event\ObjectDeletedEvent;
-use OCA\OpenRegister\Event\ObjectTransitionedEvent;
-use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserSession;
@@ -277,23 +271,16 @@ class AutomationApprovalTriggerListener implements IEventListener {
 	 *
 	 * @spec openspec/changes/automation-approval-steps/tasks.md#1.3
 	 * @spec openspec/specs/automation-designer/spec.md#req-autd-004
+	 * @SuppressWarnings(PHPMD.StaticAccess) FiredAutomationTrigger is a pure value read off the event.
 	 */
 	public function handle(Event $event): void {
-		$fired = $this->resolveFiredTrigger(event: $event);
-		if ($fired === null) {
+		$fired = FiredAutomationTrigger::fromEvent(event: $event);
+		if ($fired === null || $fired->isAddressable() === false) {
 			return;
 		}
 
-		[$triggerType, $schemaSlug, $objectUuid, $transitionAction] = $fired;
-		if ($schemaSlug === '' || $objectUuid === '') {
-			return;
-		}
-
-		$automations = $this->findMatchingAutomations(
-			triggerType: $triggerType,
-			schemaSlug: $schemaSlug,
-			transitionAction: $transitionAction
-		);
+		$objectUuid = $fired->objectUuid();
+		$automations = $this->findMatchingAutomations(fired: $fired);
 
 		foreach ($automations as $automation) {
 			$this->initializeFor(automation: $automation, objectUuid: $objectUuid);
@@ -302,205 +289,30 @@ class AutomationApprovalTriggerListener implements IEventListener {
 	}//end handle()
 
 	/**
-	 * Resolve `[triggerType, schemaSlug, objectUuid, transitionAction]` from
-	 * the dispatched event, or null when the event is not one this listener
-	 * acts on.
-	 *
-	 * @param Event $event Dispatched event.
-	 *
-	 * @return array{0:string,1:string,2:string,3:?string}|null
-	 */
-	private function resolveFiredTrigger(Event $event): ?array {
-		if ($event instanceof ObjectCreatedEvent) {
-			return ['object-created', $this->schemaOf(entity: $event->getObject()), $this->uuidOf(entity: $event->getObject()), null];
-		}
-
-		if ($event instanceof ObjectUpdatedEvent) {
-			return ['object-updated', $this->schemaOf(entity: $event->getObject()), $this->uuidOf(entity: $event->getObject()), null];
-		}
-
-		if ($event instanceof ObjectDeletedEvent) {
-			return ['object-deleted', $this->schemaOf(entity: $event->getObject()), $this->uuidOf(entity: $event->getObject()), null];
-		}
-
-		if ($event instanceof ObjectTransitionedEvent) {
-			return [
-				'lifecycle-transition',
-				$event->getSchema(),
-				$this->uuidOf(entity: $event->getObject()),
-				$event->getAction(),
-			];
-		}
-
-		return null;
-	}//end resolveFiredTrigger()
-
-	/**
-	 * Read a schema slug off an `ObjectEntity`, defensively.
-	 *
-	 * @param object $entity The `ObjectEntity` instance.
-	 *
-	 * @return string
-	 */
-	private function schemaOf(object $entity): string {
-		if (method_exists($entity, 'getSchema') === true) {
-			$schema = $entity->getSchema();
-			if (is_string($schema) === true) {
-				return $schema;
-			}
-		}
-
-		return '';
-	}//end schemaOf()
-
-	/**
-	 * Read the uuid off an `ObjectEntity`, defensively.
-	 *
-	 * @param object $entity The `ObjectEntity` instance.
-	 *
-	 * @return string
-	 */
-	private function uuidOf(object $entity): string {
-		if (method_exists($entity, 'getUuid') === true) {
-			$uuid = $entity->getUuid();
-			if (is_string($uuid) === true) {
-				return $uuid;
-			}
-		}
-
-		return '';
-	}//end uuidOf()
-
-	/**
 	 * Scan the shared `buildiq` register's `automation` objects for every
 	 * ENABLED automation whose `trigger` matches the fired event and whose
 	 * `actions[]` includes a compiled `approval` action.
 	 *
-	 * @param string $triggerType The fired trigger type.
-	 * @param string $schemaSlug The fired object's schema slug.
-	 * @param string|null $transitionAction The matched transition action name (lifecycle-transition only).
+	 * @param FiredAutomationTrigger $fired The fired trigger.
 	 *
 	 * @return array<int,array<string,mixed>>
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
-	private function findMatchingAutomations(string $triggerType, string $schemaSlug, ?string $transitionAction): array {
+	private function findMatchingAutomations(FiredAutomationTrigger $fired): array {
 		try {
 			// ADR-078 (gate-61): bounded, not unbounded — a real install's
 			// configured automations number in the tens, never the thousands
 			// this limit would need to matter; the bound exists to cap worst
 			// case, not to reflect an expected count.
 			$results = $this->objectService()->findAll(
-				config: [
-					'filters' => [
-						'register' => AutomationCompilerService::REGISTER_SLUG,
-						'schema' => AutomationCompilerService::AUTOMATION_SCHEMA,
-					],
-					'limit' => 1000,
-				]
+				config: ['filters' => FiredAutomationTrigger::AUTOMATION_FILTERS, 'limit' => 1000]
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning('Buildiq: AutomationApprovalTriggerListener could not scan automations: ' . $e->getMessage());
 			return [];
 		}
 
-		$matches = [];
-		foreach ($results as $row) {
-			$automation = ObjectRecord::toArray(object: $row);
-			$isMatch = $this->matches(
-				automation: $automation,
-				triggerType: $triggerType,
-				schemaSlug: $schemaSlug,
-				transitionAction: $transitionAction
-			);
-			if ($isMatch === true) {
-				$matches[] = $automation;
-			}
-		}
-
-		return $matches;
+		return $fired->select(rows: $results, actionType: 'approval');
 	}//end findMatchingAutomations()
-
-	/**
-	 * Whether an automation's trigger matches the fired event, it is enabled,
-	 * and it carries a compiled `approval` action.
-	 *
-	 * @param array<string,mixed> $automation The candidate automation.
-	 * @param string $triggerType The fired trigger type.
-	 * @param string $schemaSlug The fired object's schema slug.
-	 * @param string|null $transitionAction The matched transition action name.
-	 *
-	 * @return bool
-	 */
-	private function matches(array $automation, string $triggerType, string $schemaSlug, ?string $transitionAction): bool {
-		if (($automation['enabled'] ?? true) === false) {
-			return false;
-		}
-
-		$trigger = $automation['trigger'] ?? null;
-		if (is_array($trigger) === false) {
-			return false;
-		}
-
-		$triggerMatches = $this->triggerMatches(
-			trigger: $trigger,
-			triggerType: $triggerType,
-			schemaSlug: $schemaSlug,
-			transitionAction: $transitionAction
-		);
-		if ($triggerMatches === false) {
-			return false;
-		}
-
-		return $this->hasApprovalAction(automation: $automation);
-	}//end matches()
-
-	/**
-	 * Whether the automation's `trigger` block matches the fired event.
-	 *
-	 * @param array<string,mixed> $trigger The automation's `trigger` block.
-	 * @param string $triggerType The fired trigger type.
-	 * @param string $schemaSlug The fired object's schema slug.
-	 * @param string|null $transitionAction The matched transition action name.
-	 *
-	 * @return bool
-	 */
-	private function triggerMatches(array $trigger, string $triggerType, string $schemaSlug, ?string $transitionAction): bool {
-		if ((string)($trigger['type'] ?? '') !== $triggerType) {
-			return false;
-		}
-
-		if ((string)($trigger['schema'] ?? '') !== $schemaSlug) {
-			return false;
-		}
-
-		if ($triggerType !== 'lifecycle-transition') {
-			return true;
-		}
-
-		return (string)($trigger['transition'] ?? '') === (string)$transitionAction;
-	}//end triggerMatches()
-
-	/**
-	 * Whether the automation carries at least one compiled `approval` action.
-	 *
-	 * @param array<string,mixed> $automation The candidate automation.
-	 *
-	 * @return bool
-	 */
-	private function hasApprovalAction(array $automation): bool {
-		$actions = $automation['actions'] ?? [];
-		if (is_array($actions) === false) {
-			return false;
-		}
-
-		foreach ($actions as $action) {
-			if (is_array($action) === true && ($action['type'] ?? '') === 'approval') {
-				return true;
-			}
-		}
-
-		return false;
-	}//end hasApprovalAction()
 
 	/**
 	 * Initialise the automation's compiled approval chain for the fired
