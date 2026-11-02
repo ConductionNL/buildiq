@@ -36,6 +36,7 @@ function pagesOf(manifest) {
  *
  * @param {object} schema - a schema list entry.
  * @return {unknown} The name.
+ * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-001
  */
 export function schemaName(schema) {
 	return schema.slug || schema.id || schema.title
