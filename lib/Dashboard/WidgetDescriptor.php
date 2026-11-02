@@ -150,32 +150,26 @@ final class WidgetDescriptor implements \JsonSerializable {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $applicationUuid Immutable Application UUID the id is keyed on.
-	 * @param string $applicationSlug Application slug, for links and icons only.
-	 * @param string $applicationName Application display name.
+	 * @param WidgetApplication $application The Application the widget is promoted from.
 	 * @param array<int,mixed> $principals Flattened Application permissions plus placement roles.
 	 * @param string $entryId The widget placement's own `id`.
 	 * @param string $widgetKey The runtime registry key the browser resolves.
 	 * @param array{title?:string,icon?:string,order?:int,link?:string} $panel The ncDashboard object.
 	 * @param array{pageRoute?:string,props?:array<string,mixed>,dataSource?:array<string,mixed>} $placement Placement details.
-	 * @param string|null $id Pre-derived id; omit to derive it here.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $applicationUuid,
-		string $applicationSlug,
-		string $applicationName,
+		WidgetApplication $application,
 		array $principals,
 		string $entryId,
 		string $widgetKey,
 		array $panel,
 		array $placement,
-		?string $id = null,
 	) {
-		$this->applicationUuid = $applicationUuid;
-		$this->applicationSlug = $applicationSlug;
-		$this->applicationName = $applicationName;
+		$this->applicationUuid = $application->uuid;
+		$this->applicationSlug = $application->slug;
+		$this->applicationName = $application->name;
 		$this->principals = $principals;
 		$this->entryId = $entryId;
 		$this->widgetKey = $widgetKey;
@@ -189,7 +183,7 @@ final class WidgetDescriptor implements \JsonSerializable {
 		$this->props = (array)($placement['props'] ?? []);
 		$this->dataSource = (array)($placement['dataSource'] ?? []);
 
-		$this->id = ($id ?? self::deriveId(applicationUuid: $applicationUuid, entryId: $entryId));
+		$this->id = self::deriveId(applicationUuid: $application->uuid, entryId: $entryId);
 	}//end __construct()
 
 	/**

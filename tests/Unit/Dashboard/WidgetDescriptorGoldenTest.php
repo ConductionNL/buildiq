@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Dashboard;
 
+use OCA\Buildiq\Dashboard\WidgetApplication;
 use OCA\Buildiq\Dashboard\WidgetDescriptor;
 use PHPUnit\Framework\TestCase;
 
@@ -29,6 +30,7 @@ use PHPUnit\Framework\TestCase;
  * GOLDEN_RECORD=1 to write a missing fixture.
  *
  * @covers \OCA\Buildiq\Dashboard\WidgetDescriptor
+ * @uses   \OCA\Buildiq\Dashboard\WidgetApplication
  */
 class WidgetDescriptorGoldenTest extends TestCase {
 
@@ -115,9 +117,7 @@ class WidgetDescriptorGoldenTest extends TestCase {
 	 */
 	private function build(array $case): WidgetDescriptor {
 		return new WidgetDescriptor(
-			applicationUuid: $case['uuid'],
-			applicationSlug: $case['slug'],
-			applicationName: $case['name'],
+			application: new WidgetApplication(uuid: $case['uuid'], slug: $case['slug'], name: $case['name']),
 			principals: $case['principals'],
 			entryId: $case['entryId'],
 			widgetKey: $case['widgetKey'],

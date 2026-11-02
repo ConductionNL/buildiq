@@ -46,6 +46,7 @@ namespace OCA\Buildiq\Tests\Unit\Dashboard;
 
 use OCA\Buildiq\Dashboard\VirtualAppWidget;
 use OCA\Buildiq\Dashboard\VirtualAppWidgetContext;
+use OCA\Buildiq\Dashboard\WidgetApplication;
 use OCA\Buildiq\Dashboard\WidgetDescriptor;
 use OCA\Buildiq\Service\AppVisibilityResolver;
 use OCA\Buildiq\Service\Dashboard\WidgetItemProjector;
@@ -277,9 +278,7 @@ class SyntheticServiceResolutionPinTest extends TestCase {
 	 */
 	private function descriptor(string $entryId, array $principals = ['group:*']): WidgetDescriptor {
 		return new WidgetDescriptor(
-			applicationUuid: self::APP_UUID,
-			applicationSlug: 'pin-fixture-app',
-			applicationName: 'Pin Fixture App',
+			application: new WidgetApplication(uuid: self::APP_UUID, slug: 'pin-fixture-app', name: 'Pin Fixture App'),
 			principals: $principals,
 			entryId: $entryId,
 			widgetKey: 'stat',
