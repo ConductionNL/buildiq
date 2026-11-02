@@ -50,6 +50,7 @@ namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Dashboard\VirtualAppWidget;
 use OCA\Buildiq\Dashboard\VirtualAppWidgetContext;
+use OCA\Buildiq\Dashboard\WidgetApplication;
 use OCA\Buildiq\Dashboard\WidgetDescriptor;
 use OCP\Dashboard\IManager;
 use OCP\IContainer;
@@ -312,9 +313,7 @@ class DashboardWidgetRegistrar {
 		}
 
 		return new WidgetDescriptor(
-			applicationUuid: $application['uuid'],
-			applicationSlug: $application['slug'],
-			applicationName: $application['name'],
+			application: new WidgetApplication(uuid: $application['uuid'], slug: $application['slug'], name: $application['name']),
 			principals: array_merge($appPrincipals, array_values($roles)),
 			entryId: $entryId,
 			widgetKey: (string)($entry['widgetKey'] ?? ''),
