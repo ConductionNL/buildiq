@@ -102,7 +102,8 @@ class ApplicationRegisterTest extends TestCase {
 				$this->calls,
 				static fn (array $call): bool => ($call['args']['event'] ?? null) === $event
 			);
-			self::assertCount(expectedCount: (class_exists($event) === true) ? 1 : 0, haystack: $found, message: $event);
+			self::assertSame(expected: class_exists($event), actual: count($found) === 1, message: $event);
+			self::assertLessThanOrEqual(expected: 1, actual: count($found), message: $event);
 		}
 	}//end testGuardedListenersFollowTheirEventClass()
 
@@ -114,7 +115,7 @@ class ApplicationRegisterTest extends TestCase {
 	private function runRegister(): void {
 		$this->calls = [];
 
-		$context = $this->createMock(IRegistrationContext::class);
+		$context = $this->createMock(originalClassName: IRegistrationContext::class);
 		foreach ((new ReflectionClass(IRegistrationContext::class))->getMethods() as $method) {
 			$name = $method->getName();
 			$params = $method->getParameters();
@@ -184,7 +185,11 @@ class ApplicationRegisterTest extends TestCase {
 	private function describe(mixed $value): mixed {
 		if ($value instanceof \Closure) {
 			$type = (new ReflectionFunction($value))->getReturnType();
-			return 'factory:' . (($type instanceof ReflectionNamedType) ? $type->getName() : 'untyped');
+			if ($type instanceof ReflectionNamedType) {
+				return 'factory:' . $type->getName();
+			}
+
+			return 'factory:untyped';
 		}
 
 		return $value;
