@@ -80,7 +80,7 @@ class ManifestWidgetRoleFilter {
 	 * @spec openspec/changes/widget-roles-on-app-pages/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
 	 */
 	public function filterManifest(array $manifest, ?IUser $caller): array {
-		if (isset($manifest['pages']) === true && is_array($manifest['pages']) === true) {
+		if (is_array($manifest['pages'] ?? null) === true) {
 			foreach ($manifest['pages'] as $index => $page) {
 				if (is_array($page) === true) {
 					$manifest['pages'][$index] = $this->filterPage(page: $page, caller: $caller);
@@ -106,11 +106,11 @@ class ManifestWidgetRoleFilter {
 	public function filterPage(array $page, ?IUser $caller): array {
 		$removedIds = [];
 
-		if (isset($page['widgets']) === true && is_array($page['widgets']) === true) {
+		if (is_array($page['widgets'] ?? null) === true) {
 			$page['widgets'] = $this->filterWidgetList(widgets: $page['widgets'], caller: $caller, removedIds: $removedIds);
 		}
 
-		if (isset($page['config']) === true && is_array($page['config']) === true) {
+		if (is_array($page['config'] ?? null) === true) {
 			$page['config'] = $this->filterConfig(config: $page['config'], caller: $caller, removedIds: $removedIds);
 		}
 
@@ -128,16 +128,16 @@ class ManifestWidgetRoleFilter {
 	 * @return array<string, mixed> The filtered `config`.
 	 */
 	private function filterConfig(array $config, ?IUser $caller, array &$removedIds): array {
-		if (isset($config['widgets']) === true && is_array($config['widgets']) === true) {
+		if (is_array($config['widgets'] ?? null) === true) {
 			$config['widgets'] = $this->filterWidgetList(widgets: $config['widgets'], caller: $caller, removedIds: $removedIds);
 		}
 
-		if (isset($config['sidebarTabs']) === true && is_array($config['sidebarTabs']) === true) {
+		if (is_array($config['sidebarTabs'] ?? null) === true) {
 			$config['sidebarTabs'] = $this->filterSidebarTabs(tabs: $config['sidebarTabs'], caller: $caller, removedIds: $removedIds);
 		}
 
-		if ($removedIds !== [] && isset($config['layout']) === true && is_array($config['layout']) === true) {
-			$config['layout'] = $this->pruneLayout(layout: $config['layout'], removedIds: $removedIds);
+		if (is_array($config['layout'] ?? null) === true) {
+			$config['layout'] = $this->dropReferences(entries: $config['layout'], removedIds: $removedIds);
 		}
 
 		return $config;
@@ -154,7 +154,7 @@ class ManifestWidgetRoleFilter {
 	 */
 	private function filterSidebarTabs(array $tabs, ?IUser $caller, array &$removedIds): array {
 		foreach ($tabs as $index => $tab) {
-			if (is_array($tab) === true && isset($tab['widgets']) === true && is_array($tab['widgets']) === true) {
+			if (is_array($tab) === true && is_array($tab['widgets'] ?? null) === true) {
 				$tabs[$index]['widgets'] = $this->filterWidgetList(widgets: $tab['widgets'], caller: $caller, removedIds: $removedIds);
 			}
 		}
@@ -208,12 +208,12 @@ class ManifestWidgetRoleFilter {
 	 * @return array<string, mixed> The manifest with that list filtered.
 	 */
 	private function filterNestedPages(array $manifest, string $listKey, string $pageKey, ?IUser $caller): array {
-		if (isset($manifest[$listKey]) === false || is_array($manifest[$listKey]) === false) {
+		if (is_array($manifest[$listKey] ?? null) === false) {
 			return $manifest;
 		}
 
 		foreach ($manifest[$listKey] as $index => $entry) {
-			if (is_array($entry) === true && isset($entry[$pageKey]) === true && is_array($entry[$pageKey]) === true) {
+			if (is_array($entry) === true && is_array($entry[$pageKey] ?? null) === true) {
 				$manifest[$listKey][$index][$pageKey] = $this->filterPage(page: $entry[$pageKey], caller: $caller);
 			}
 		}
@@ -248,32 +248,6 @@ class ManifestWidgetRoleFilter {
 	}//end filterWidgetList()
 
 	/**
-	 * Drop the layout rows that place a removed widget.
-	 *
-	 * @param array<int|string, mixed> $layout The `config.layout[]` rows.
-	 * @param array<string, true> $removedIds Ids of removed widgets.
-	 *
-	 * @return array<int, mixed> The layout without dangling rows, reindexed.
-	 */
-	private function pruneLayout(array $layout, array $removedIds): array {
-		$kept = [];
-		foreach ($layout as $row) {
-			$widgetId = null;
-			if (is_array($row) === true) {
-				$widgetId = ($row['widgetId'] ?? null);
-			}
-
-			if (is_string($widgetId) === true && isset($removedIds[$widgetId]) === true) {
-				continue;
-			}
-
-			$kept[] = $row;
-		}
-
-		return $kept;
-	}//end pruneLayout()
-
-	/**
 	 * Drop the `content.tabs[]` entries of surviving tabs widgets that name a
 	 * removed widget, in both the uniform (`props.content`) and the legacy
 	 * (`content`) shape.
@@ -284,15 +258,11 @@ class ManifestWidgetRoleFilter {
 	 * @return array<string, mixed> The page without dangling tab references.
 	 */
 	private function pruneTabReferences(array $page, array $removedIds): array {
-		if ($removedIds === []) {
-			return $page;
-		}
-
-		if (isset($page['widgets']) === true && is_array($page['widgets']) === true) {
+		if (is_array($page['widgets'] ?? null) === true) {
 			$page['widgets'] = $this->pruneTabsInWidgets(widgets: $page['widgets'], uniform: true, removedIds: $removedIds);
 		}
 
-		if (isset($page['config']['widgets']) === true && is_array($page['config']['widgets']) === true) {
+		if (is_array($page['config']['widgets'] ?? null) === true) {
 			$page['config']['widgets'] = $this->pruneTabsInWidgets(widgets: $page['config']['widgets'], uniform: false, removedIds: $removedIds);
 		}
 
@@ -313,14 +283,14 @@ class ManifestWidgetRoleFilter {
 	private function pruneTabsInWidgets(array $widgets, bool $uniform, array $removedIds): array {
 		foreach ($widgets as $index => $widget) {
 			if ($uniform === true && isset($widget['props']['content']['tabs']) === true) {
-				$widgets[$index]['props']['content']['tabs'] = $this->pruneTabs(
-					tabs: $widget['props']['content']['tabs'],
+				$widgets[$index]['props']['content']['tabs'] = $this->dropReferences(
+					entries: $widget['props']['content']['tabs'],
 					removedIds: $removedIds
 				);
 			}
 
 			if ($uniform === false && isset($widget['content']['tabs']) === true) {
-				$widgets[$index]['content']['tabs'] = $this->pruneTabs(tabs: $widget['content']['tabs'], removedIds: $removedIds);
+				$widgets[$index]['content']['tabs'] = $this->dropReferences(entries: $widget['content']['tabs'], removedIds: $removedIds);
 			}
 		}
 
@@ -328,33 +298,34 @@ class ManifestWidgetRoleFilter {
 	}//end pruneTabsInWidgets()
 
 	/**
-	 * Drop the tab entries (`'id'` or `{widgetId}`) that name a removed widget.
+	 * Drop the entries that name a removed widget: a bare id or an object
+	 * with `widgetId` (a `config.layout[]` row or a `content.tabs[]` entry).
 	 *
-	 * @param mixed $tabs The `content.tabs` value.
+	 * @param mixed $entries The list.
 	 * @param array<string, true> $removedIds Ids of removed widgets.
 	 *
-	 * @return mixed The tabs without removed widgets, or the value unchanged
-	 *               when it is not a list.
+	 * @return mixed The list without references to removed widgets, or the
+	 *               value unchanged when it is not a list.
 	 */
-	private function pruneTabs(mixed $tabs, array $removedIds): mixed {
-		if (is_array($tabs) === false) {
-			return $tabs;
+	private function dropReferences(mixed $entries, array $removedIds): mixed {
+		if (is_array($entries) === false) {
+			return $entries;
 		}
 
 		$kept = [];
-		foreach ($tabs as $tab) {
-			$widgetId = $tab;
-			if (is_array($tab) === true) {
-				$widgetId = ($tab['widgetId'] ?? null);
+		foreach ($entries as $entry) {
+			$widgetId = $entry;
+			if (is_array($entry) === true) {
+				$widgetId = ($entry['widgetId'] ?? null);
 			}
 
 			if (is_string($widgetId) === true && isset($removedIds[$widgetId]) === true) {
 				continue;
 			}
 
-			$kept[] = $tab;
+			$kept[] = $entry;
 		}
 
 		return $kept;
-	}//end pruneTabs()
+	}//end dropReferences()
 }//end class
