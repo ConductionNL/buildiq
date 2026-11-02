@@ -97,6 +97,7 @@ const LABEL = 'Alpha'
 registerIntegration({
 	id: 'alpha',
 	label: LABEL,
+	icon: 'only-on-the-js-side',
 	surfaces: ['widget', 'tab'],
 	tab: AlphaTab,
 	widget: AlphaWidget,
@@ -118,6 +119,7 @@ final class Leaves {
 			new LeafDescriptor(id: 'bravo', kinds: [LeafDescriptor::KIND_RENDER_SURFACE], renderMode: LeafDescriptor::RENDER_MODE_COMPONENT, label: 'Bravo', icon: 'i', group: 'x', requiredApp: 'a', referenceType: 'r', surfaces: ['tab']),
 			new LeafDescriptor(label: 'nameless'),
 			new LeafDescriptor(id: 'charlie', kinds: [LeafDescriptor::KIND_RENDER_SURFACE]),
+			new LeafDescriptor(id: ['listed'], kinds: [LeafDescriptor::KIND_RENDER_SURFACE], renderMode: ['mount']),
 			new LeafDescriptor('positional', id: 'foxtrot', kinds: ['render-surface'], renderMode: self::MODE, label: Other::NAME, icon: Leaves::MISSING),
 		];
 	}
@@ -146,7 +148,7 @@ class NamelessProvider extends AbstractIntegrationProvider {
 	'src/bravo.js': `import { local } from './local'
 import Def, { other as aliased } from '@conduction/nextcloud-vue'
 registerIntegration({ id: 'bravo', renderMode: 'mount', mount, label: 'Bravo2', icon: 'i', group: 'y', requiredApp: 'a', referenceType: 'q', surfaces: ['widget'] })
-registerIntegration({ id: 'delta', tab: T, widget: W, offlineConfig: { plannedSchema: 'nope', resultSchema: 'plan' } })
+registerIntegration({ id: 'delta', tab: T, widget: W, offlineConfig: { plannedSchema: 'nope', resultSchema: 'plan', titleField: 'title' } })
 registerIntegration({ id: 'echo', tab: T, widget: W, offlineConfig: { plannedSchema: 'plan', titleField: 'missing', assigneeField: 'title', templateRefField: 'gone' } })
 registerIntegration({ ...ghost })
 registerIntegration({ ...local, tab: T })
@@ -230,6 +232,20 @@ describe('check-integration-parity golden output', () => {
 				fixture({
 					'lib/Listener/Leaves.php': `<?php
 $event->registerLeaf(new LeafDescriptor(id: 'only', kinds: [LeafDescriptor::KIND_DATA_PROVIDER]), $this->forms);
+`,
+				}),
+			),
+		).toMatchSnapshot()
+	})
+
+	it('leaves an offlineConfig passed by name unchecked', () => {
+		expect(
+			run(
+				fixture({
+					'lib/Leaf/Leaves.php': `<?php
+new LeafDescriptor(id: 'india', kinds: [LeafDescriptor::KIND_RENDER_SURFACE]);
+`,
+					'src/india.js': `registerIntegration({ id: 'india', tab: T, widget: W, offlineConfig: cfg })
 `,
 				}),
 			),
