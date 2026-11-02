@@ -558,10 +558,18 @@ class CreateFromTemplateTest extends TestCase {
 	 * @return array<string,mixed> The arguments by name.
 	 */
 	private static function applyArguments(array $args): array {
-		$names = ['template', 'owner', 'repo', 'ref', 'actingUserId', 'credentialId', 'applicationUuid', 'applicationSlug'];
-		$named = array_combine($names, array_pad($args, count($names), null));
-		unset($named['template']);
-		return $named;
+		[$template, $source, $actingUserId, $local] = array_pad($args, 4, null);
+
+		// apply() reads an empty owner or repo exactly like a missing one.
+		return [
+			'owner' => in_array($source?->owner, [null, ''], true) ? null : $source->owner,
+			'repo' => in_array($source?->repo, [null, ''], true) ? null : $source->repo,
+			'ref' => $source?->ref,
+			'actingUserId' => $actingUserId,
+			'credentialId' => $source?->credentialId,
+			'applicationUuid' => $local?->uuid,
+			'applicationSlug' => $local?->slug,
+		];
 	}//end applyArguments()
 
 	/**
