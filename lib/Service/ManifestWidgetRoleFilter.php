@@ -16,9 +16,8 @@
  *   - The same shapes inside `pageTemplates[].page` and
  *     `pageInstances[].override`, which expand into pages on the client.
  *
- * Anything that names a removed widget by id is pruned with it: rows of
- * `config.layout[]` (`widgetId`) and the `content.tabs[]` of a tabs widget,
- * which would otherwise render a tab announcing the missing widget's id.
+ * Anything that names a removed widget by id is pruned with it, by
+ * {@see ManifestWidgetReferencePruner}.
  *
  * Matching reuses {@see AppVisibilityResolver}, so a page widget and a widget
  * promoted to the Nextcloud dashboard read `roles` the same way.
@@ -58,12 +57,14 @@ class ManifestWidgetRoleFilter {
 	 *
 	 * @param AppVisibilityResolver $visibility Shared principal matching (group:*, user:, group:, admin).
 	 * @param IGroupManager $groupManager Group membership lookup for the caller.
+	 * @param ManifestWidgetReferencePruner $pruner Removes references to removed widgets.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly AppVisibilityResolver $visibility,
 		private readonly IGroupManager $groupManager,
+		private readonly ManifestWidgetReferencePruner $pruner = new ManifestWidgetReferencePruner(),
 	) {
 	}//end __construct()
 
@@ -114,7 +115,7 @@ class ManifestWidgetRoleFilter {
 			$page['config'] = $this->filterConfig(config: $page['config'], caller: $caller, removedIds: $removedIds);
 		}
 
-		return $this->pruneTabReferences(page: $page, removedIds: $removedIds);
+		return $this->pruner->pruneTabReferences(page: $page, removedIds: $removedIds);
 	}//end filterPage()
 
 	/**
@@ -137,7 +138,7 @@ class ManifestWidgetRoleFilter {
 		}
 
 		if (is_array($config['layout'] ?? null) === true) {
-			$config['layout'] = $this->dropReferences(entries: $config['layout'], removedIds: $removedIds);
+			$config['layout'] = $this->pruner->dropReferences(entries: $config['layout'], removedIds: $removedIds);
 		}
 
 		return $config;
@@ -246,86 +247,4 @@ class ManifestWidgetRoleFilter {
 
 		return $kept;
 	}//end filterWidgetList()
-
-	/**
-	 * Drop the `content.tabs[]` entries of surviving tabs widgets that name a
-	 * removed widget, in both the uniform (`props.content`) and the legacy
-	 * (`content`) shape.
-	 *
-	 * @param array<string, mixed> $page The page.
-	 * @param array<string, true> $removedIds Ids of removed widgets.
-	 *
-	 * @return array<string, mixed> The page without dangling tab references.
-	 */
-	private function pruneTabReferences(array $page, array $removedIds): array {
-		if (is_array($page['widgets'] ?? null) === true) {
-			$page['widgets'] = $this->pruneTabsInWidgets(widgets: $page['widgets'], uniform: true, removedIds: $removedIds);
-		}
-
-		if (is_array($page['config']['widgets'] ?? null) === true) {
-			$page['config']['widgets'] = $this->pruneTabsInWidgets(widgets: $page['config']['widgets'], uniform: false, removedIds: $removedIds);
-		}
-
-		return $page;
-	}//end pruneTabReferences()
-
-	/**
-	 * Prune the `content.tabs[]` of every tabs widget in a list. A uniform
-	 * entry carries `content` under `props`; a legacy entry carries it at the
-	 * top level.
-	 *
-	 * @param array<int|string, mixed> $widgets The widget list.
-	 * @param bool $uniform True for uniform `widgets[]` entries.
-	 * @param array<string, true> $removedIds Ids of removed widgets.
-	 *
-	 * @return array<int|string, mixed> The widgets with pruned tab lists.
-	 */
-	private function pruneTabsInWidgets(array $widgets, bool $uniform, array $removedIds): array {
-		foreach ($widgets as $index => $widget) {
-			if ($uniform === true && isset($widget['props']['content']['tabs']) === true) {
-				$widgets[$index]['props']['content']['tabs'] = $this->dropReferences(
-					entries: $widget['props']['content']['tabs'],
-					removedIds: $removedIds
-				);
-			}
-
-			if ($uniform === false && isset($widget['content']['tabs']) === true) {
-				$widgets[$index]['content']['tabs'] = $this->dropReferences(entries: $widget['content']['tabs'], removedIds: $removedIds);
-			}
-		}
-
-		return $widgets;
-	}//end pruneTabsInWidgets()
-
-	/**
-	 * Drop the entries that name a removed widget: a bare id or an object
-	 * with `widgetId` (a `config.layout[]` row or a `content.tabs[]` entry).
-	 *
-	 * @param mixed $entries The list.
-	 * @param array<string, true> $removedIds Ids of removed widgets.
-	 *
-	 * @return mixed The list without references to removed widgets, or the
-	 *               value unchanged when it is not a list.
-	 */
-	private function dropReferences(mixed $entries, array $removedIds): mixed {
-		if (is_array($entries) === false) {
-			return $entries;
-		}
-
-		$kept = [];
-		foreach ($entries as $entry) {
-			$widgetId = $entry;
-			if (is_array($entry) === true) {
-				$widgetId = ($entry['widgetId'] ?? null);
-			}
-
-			if (is_string($widgetId) === true && isset($removedIds[$widgetId]) === true) {
-				continue;
-			}
-
-			$kept[] = $entry;
-		}
-
-		return $kept;
-	}//end dropReferences()
 }//end class
