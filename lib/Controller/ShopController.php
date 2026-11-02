@@ -51,6 +51,7 @@ use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
+use Throwable;
 
 /**
  * Controller for the GitHub shop search + install endpoints.
@@ -81,7 +82,7 @@ class ShopController extends Controller {
 	 * @param GitHubCatalogService $catalogService Fixed-host GitHub source.
 	 * @param AppRepoParser $repoParser Strict repo-file-map parser (change 1).
 	 * @param ApplicationsController $appsController Shared clone/install seam.
-	 * @param GitHubShopSearch $shopSearch Runs the GitHub search, shapes its answer and reports its outcome.
+	 * @param GitHubShopSearch $shopSearch Shapes the GitHub search's answer and reports its outcome.
 	 *
 	 * @return void
 	 *
@@ -126,10 +127,19 @@ class ShopController extends Controller {
 			$query = null;
 		}
 
-		return new JSONResponse(
-			data: $this->shopSearch->search(query: $query, actingUserId: $user->getUID(), credentialId: $this->credentialParam()),
-			statusCode: Http::STATUS_OK
-		);
+		$credentialId = $this->credentialParam();
+
+		try {
+			$result = $this->catalogService->search(
+				query: $query,
+				actingUserId: $user->getUID(),
+				credentialId: $credentialId
+			);
+		} catch (Throwable $e) {
+			return new JSONResponse(data: $this->shopSearch->failed(error: $e), statusCode: Http::STATUS_OK);
+		}
+
+		return new JSONResponse(data: $this->shopSearch->answered(result: $result), statusCode: Http::STATUS_OK);
 	}//end githubSearch()
 
 	/**

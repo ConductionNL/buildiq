@@ -3,9 +3,9 @@
 /**
  * Buildiq GitHubShopSearch
  *
- * Runs one GitHub shop search and shapes its answer: the catalogue's cards and
- * hints, or a fixed unreachable answer when the catalogue throws. Every outcome
- * is reported to integriq's connection registry when a reporter is present.
+ * Shapes the answer of one GitHub shop search: the catalogue's cards and hints,
+ * or a fixed unreachable answer when the catalogue threw. Every outcome is
+ * reported to integriq's connection registry when a reporter is present.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -33,7 +33,7 @@ use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
- * The GitHub shop search behind ShopController::githubSearch().
+ * The answer and the connection report of ShopController::githubSearch().
  *
  * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
  */
@@ -42,7 +42,7 @@ class GitHubShopSearch {
 	/**
 	 * Constructor.
 	 *
-	 * @param GitHubCatalogService    $catalogService     Fixed-host GitHub source.
+	 * @param GitHubCatalogService    $catalogService     Fixed-host GitHub source, asked whether the broker is installed.
 	 * @param LoggerInterface         $logger             PSR logger.
 	 * @param ConnectionReporter|null $connectionReporter Tells integriq what a search met, or nothing when absent.
 	 *
@@ -56,40 +56,42 @@ class GitHubShopSearch {
 	}//end __construct()
 
 	/**
-	 * Search GitHub for `topic:buildiq-app` repos and shape the response body.
+	 * The response body for a search the catalogue could not answer.
 	 *
-	 * The outcome is reported to integriq's connection registry, at most once an
-	 * hour while it stays the same. The report never changes the body.
+	 * Logs the failure and reports the search as unreachable.
 	 *
-	 * @param string|null $query        The search text, or null for every app.
-	 * @param string      $actingUserId The signed-in user.
-	 * @param string|null $credentialId Optional broker credential UUID.
+	 * @param Throwable $error What the catalogue threw.
 	 *
-	 * @return array<string,mixed> `{outcome, cards, brokerCredentialAvailable, rateLimited}`, plus `brokerUsed` on success.
+	 * @return array<string,mixed> `{outcome, cards, brokerCredentialAvailable, rateLimited}`.
 	 *
 	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
-	public function search(?string $query, string $actingUserId, ?string $credentialId): array {
-		try {
-			$result = $this->catalogService->search(
-				query: $query,
-				actingUserId: $actingUserId,
-				credentialId: $credentialId
-			);
-		} catch (Throwable $e) {
-			$this->logger->error('Buildiq shop: GitHub search failed: ' . $e->getMessage());
-			$this->connectionReporter?->reportGitHubSearch(
-				outcome: GitHubCatalogService::OUTCOME_UNREACHABLE,
-				brokerAvailable: $this->catalogService->isBrokerAvailable()
-			);
-			return [
-				'outcome' => GitHubCatalogService::OUTCOME_UNREACHABLE,
-				'cards' => [],
-				'brokerCredentialAvailable' => $this->catalogService->isBrokerAvailable(),
-				'rateLimited' => false,
-			];
-		}
+	public function failed(Throwable $error): array {
+		$this->logger->error('Buildiq shop: GitHub search failed: ' . $error->getMessage());
+		$this->connectionReporter?->reportGitHubSearch(
+			outcome: GitHubCatalogService::OUTCOME_UNREACHABLE,
+			brokerAvailable: $this->catalogService->isBrokerAvailable()
+		);
+		return [
+			'outcome' => GitHubCatalogService::OUTCOME_UNREACHABLE,
+			'cards' => [],
+			'brokerCredentialAvailable' => $this->catalogService->isBrokerAvailable(),
+			'rateLimited' => false,
+		];
+	}//end failed()
 
+	/**
+	 * The response body for a search the catalogue answered.
+	 *
+	 * Reports the search's outcome first; the report never changes the body.
+	 *
+	 * @param array<string,mixed> $result GitHubCatalogService::search()'s answer.
+	 *
+	 * @return array<string,mixed> `{outcome, cards, brokerCredentialAvailable, brokerUsed, rateLimited}`.
+	 *
+	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
+	 */
+	public function answered(array $result): array {
 		$this->connectionReporter?->reportGitHubSearch(
 			outcome: (string)$result['outcome'],
 			brokerAvailable: $this->catalogService->isBrokerAvailable()
@@ -102,5 +104,5 @@ class GitHubShopSearch {
 			'brokerUsed' => $result['brokerUsed'],
 			'rateLimited' => $result['rateLimited'],
 		];
-	}//end search()
+	}//end answered()
 }//end class
