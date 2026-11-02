@@ -33,6 +33,7 @@ use Symfony\Component\Console\Tester\CommandTester;
  * name) and the lookup filters. Set GOLDEN_RECORD=1 to write a missing fixture.
  *
  * @covers \OCA\Buildiq\Command\PublishTemplates
+ * @uses   \OCA\Buildiq\Command\PublishTarget
  */
 class PublishTemplatesGoldenTest extends TestCase {
 
