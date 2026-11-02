@@ -26,6 +26,7 @@ use OCA\Buildiq\Controller\ApplicationsController;
 use OCA\Buildiq\Controller\ShopController;
 use OCA\Buildiq\Service\AppRepoParser;
 use OCA\Buildiq\Service\GitHubCatalogService;
+use OCA\Buildiq\Service\GitHubShopSearch;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
 use OCP\IUser;
@@ -103,11 +104,11 @@ class ShopControllerTest extends TestCase {
 	private function controller(): ShopController {
 		return new ShopController(
 			request: $this->request,
-			logger: $this->createMock(LoggerInterface::class),
 			userSession: $this->userSession,
 			catalogService: $this->catalogService,
 			repoParser: $this->repoParser,
-			appsController: $this->appsController
+			appsController: $this->appsController,
+			shopSearch: new GitHubShopSearch(catalogService: $this->catalogService, logger: $this->createMock(LoggerInterface::class))
 		);
 
 	}//end controller()
@@ -297,8 +298,16 @@ class ShopControllerTest extends TestCase {
 	 * @return array<string,mixed> The arguments by name.
 	 */
 	private static function installArguments(array $args): array {
-		$names = ['template', 'name', 'newSlug', 'ownerUid', 'sourceOwner', 'sourceRepo', 'credentialId'];
-		return array_combine($names, array_pad($args, count($names), null));
+		[$template, $name, $newSlug, $ownerUid, $source] = array_pad($args, 5, null);
+		return [
+			'template' => $template,
+			'name' => $name,
+			'newSlug' => $newSlug,
+			'ownerUid' => $ownerUid,
+			'sourceOwner' => $source?->owner,
+			'sourceRepo' => $source?->repo,
+			'credentialId' => $source?->credentialId,
+		];
 
 	}//end installArguments()
 

@@ -34,6 +34,7 @@ use OCA\Buildiq\Controller\ApplicationsController;
 use OCA\Buildiq\Service\AppChannelApplier;
 use OCA\Buildiq\Service\ManifestResolverService;
 use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Service\RepoSource;
 use OCA\Buildiq\Service\ApplicationVersionService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -963,4 +964,60 @@ class CreateFromTemplateTest extends TestCase {
 		$attributes = $method->getAttributes(UserRateLimit::class);
 		self::assertCount(1, $attributes);
 	}//end testCreateFromTemplateHasRateLimit()
+
+	/**
+	 * A template fetched from a repo hands the channel applier that repo and
+	 * the broker credential; a source without a credential passes none.
+	 *
+	 * @return void
+	 */
+	public function testInstallFromARepoHandsItsSourceToTheChannelApplier(): void {
+		$cases = [
+			'with credential' => ['ConductionNL', 'example-app', 'cred-1'],
+			'without credential' => ['ConductionNL', 'example-app', null],
+		];
+		foreach ($cases as $name => [$owner, $repo, $credentialId]) {
+			$this->setUp();
+			$this->objectService->method('searchObjects')->willReturn([]);
+			$this->schemaMapper->method('createFromArray')->willReturn($this->schemaWithId(7777));
+			$calls = [];
+			$this->recordSaves($calls);
+			$captured = null;
+			$this->channelApplier->expects(self::once())->method('apply')->willReturnCallback(
+				static function (...$args) use (&$captured): array {
+					$captured = $args;
+					return [];
+				}
+			);
+
+			$result = $this->installFromRepo(owner: $owner, repo: $repo, credentialId: $credentialId);
+
+			self::assertSame(Http::STATUS_CREATED, $result['status'], $name);
+			self::assertSame(['uuid', 'slug', 'register', 'companionSchemas', 'channels', 'warnings'], array_keys($result['data']), $name . ': the response carries no source or credential');
+			self::assertSame(
+				['owner' => $owner, 'repo' => $repo, 'ref' => null, 'actingUserId' => 'dora', 'credentialId' => $credentialId, 'applicationUuid' => 'new-uuid-1', 'applicationSlug' => 'repo-app'],
+				self::applyArguments(args: $captured),
+				$name
+			);
+		}
+	}//end testInstallFromARepoHandsItsSourceToTheChannelApplier()
+
+	/**
+	 * Install the fixture template as `repo-app` for `dora`, fetched from the given repo.
+	 *
+	 * @param string      $owner        Repo owner.
+	 * @param string      $repo         Repo name.
+	 * @param string|null $credentialId Broker credential UUID.
+	 *
+	 * @return array{status:int,data:array<string,mixed>} The install result.
+	 */
+	private function installFromRepo(string $owner, string $repo, ?string $credentialId): array {
+		return $this->controller->installFromTemplateArray(
+			template: $this->templateRecord(self::TEMPLATE_SLUG),
+			name: 'Repo app',
+			newSlug: 'repo-app',
+			ownerUid: 'dora',
+			source: new RepoSource(owner: $owner, repo: $repo, ref: null, credentialId: $credentialId)
+		);
+	}//end installFromRepo()
 }//end class

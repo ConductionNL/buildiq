@@ -1785,11 +1785,9 @@ class ApplicationsController extends Controller {
 	 * @param string $name Human-readable name for the new app.
 	 * @param string $newSlug The new (kebab-case, pre-validated) app slug.
 	 * @param string $ownerUid The owner UID (becomes the app owner).
-	 * @param string|null $sourceOwner GitHub owner the template was fetched from, when
-	 *                                 applicable — forwarded to the skills channel so a
-	 *                                 private-repo Hermiq bundle fetch can authenticate.
-	 * @param string|null $sourceRepo GitHub repo the template was fetched from, when applicable.
-	 * @param string|null $credentialId Broker credential UUID used for the original fetch, when applicable.
+	 * @param RepoSource|null $source GitHub repo the template was fetched from and the broker credential
+	 *                               used for that fetch, when applicable: forwarded to the skills channel
+	 *                               so a private-repo Hermiq bundle fetch can authenticate.
 	 *
 	 * @return array{status:int,data:array<string,mixed>} 201 + app on success; 409/500/503 on failure.
 	 *
@@ -1800,9 +1798,7 @@ class ApplicationsController extends Controller {
 		string $name,
 		string $newSlug,
 		string $ownerUid,
-		?string $sourceOwner = null,
-		?string $sourceRepo = null,
-		?string $credentialId = null,
+		?RepoSource $source = null,
 	): array {
 		$ctx = $this->resolveSharedContext();
 		if ($ctx === null) {
@@ -1850,7 +1846,7 @@ class ApplicationsController extends Controller {
 		// being reported as a clean `skipped` rather than a credential gap.
 		$channels = $this->channelApplier->apply(
 			template: $template,
-			source: new RepoSource(owner: (string)$sourceOwner, repo: (string)$sourceRepo, ref: null, credentialId: $credentialId),
+			source: new RepoSource(owner: (string)$source?->owner, repo: (string)$source?->repo, ref: null, credentialId: $source?->credentialId),
 			actingUserId: $ownerUid,
 			local: new LocalApplicationRef(uuid: (string)($built['uuid'] ?? ''), slug: $newSlug)
 		);
