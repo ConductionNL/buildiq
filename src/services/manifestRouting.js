@@ -87,6 +87,23 @@ function pageIndex(pages) {
 }
 
 /**
+ * Point a menu entry that names a page's path at that page's id.
+ *
+ * @param {object} item - the menu entry.
+ * @param {{ids: Set<string>, idByRoute: Map<string, string>}} index - the page ids and the id of each page path.
+ * @return {void}
+ */
+function repointRoute(item, index) {
+	if (
+		isFilled(item.route)
+		&& !index.ids.has(item.route)
+		&& index.idByRoute.has(item.route)
+	) {
+		item.route = index.idByRoute.get(item.route)
+	}
+}
+
+/**
  * Repoint one level of menu entries, then their children.
  *
  * @param {Array<object>} items - menu entries.
@@ -100,13 +117,7 @@ function repointMenu(items, index) {
 		if (!item || typeof item !== 'object') {
 			continue
 		}
-		if (
-			isFilled(item.route)
-			&& !index.ids.has(item.route)
-			&& index.idByRoute.has(item.route)
-		) {
-			item.route = index.idByRoute.get(item.route)
-		}
+		repointRoute(item, index)
 		if (Array.isArray(item.children)) {
 			repointMenu(item.children, index)
 		}

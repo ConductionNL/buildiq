@@ -53,22 +53,36 @@ function removedFieldLines(savedProps, nextProps) {
 function retypedFieldLines(savedProps, nextProps) {
 	const lines = []
 	for (const name of Object.keys(nextProps)) {
-		if (!(name in savedProps)) {
-			continue
-		}
-		const before = typeOf(savedProps[name])
-		const after = typeOf(nextProps[name])
-		if (before !== '' && after !== '' && before !== after) {
+		const change = typeChange(name, { savedProps, nextProps })
+		if (change !== null) {
 			lines.push(
 				t(
 					'buildiq',
 					'The field "{name}" changes from {before} to {after}. Existing values may no longer fit.',
-					{ name, before, after },
+					{ name, ...change },
 				),
 			)
 		}
 	}
 	return lines
+}
+
+/**
+ * The type change of a field both bodies type, or null when it keeps its type.
+ *
+ * @param {string} name The field name.
+ * @param {{savedProps: object, nextProps: object}} props The saved and next properties.
+ * @return {{before: string, after: string}|null} The two types.
+ */
+function typeChange(name, props) {
+	if (!(name in props.savedProps)) {
+		return null
+	}
+	const before = typeOf(props.savedProps[name])
+	const after = typeOf(props.nextProps[name])
+	return before !== '' && after !== '' && before !== after
+		? { before, after }
+		: null
 }
 
 /**
