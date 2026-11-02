@@ -261,25 +261,26 @@ class RuleEngineService {
 			$errors[] = 'Evaluation exceeded the ' . self::TIMEOUT_MS . 'ms soft timeout (' . $durationMs . 'ms).';
 		}
 
-		if ($preview === false) {
-			$this->persistLog(
-				ruleSetSlug: $ruleSetSlug,
-				version: (string)($bundle['ruleSet']['version'] ?? ''),
-				payload: $payload,
-				result: $result,
-				triggeredRules: $triggeredRules,
-				durationMs: $durationMs,
-				errors: $errors,
-				maskPii: $maskPii
-			);
-		}
-
-		return [
+		$outcome = [
 			'result' => $result,
 			'triggeredRules' => $triggeredRules,
 			'executionTime' => $durationMs,
 			'errors' => $errors,
 		];
+
+		if ($preview === false) {
+			$this->persistLog(
+				run: [
+					'ruleSetSlug' => $ruleSetSlug,
+					'version' => (string)($bundle['ruleSet']['version'] ?? ''),
+					'payload' => $payload,
+					'maskPii' => $maskPii,
+				],
+				outcome: $outcome
+			);
+		}
+
+		return $outcome;
 
 	}//end evaluateChain()
 
@@ -364,48 +365,34 @@ class RuleEngineService {
 	/**
 	 * Persist a RuleExecutionLog audit record.
 	 *
-	 * @param string $ruleSetSlug The RuleSet slug.
-	 * @param string $version The evaluated version.
-	 * @param array<string,mixed> $payload The raw input payload.
-	 * @param array<string,mixed> $result The evaluation result.
-	 * @param array<int,mixed> $triggeredRules Triggered rule identifiers.
-	 * @param int $durationMs Execution duration.
-	 * @param array<int,string> $errors Any errors.
-	 * @param bool $maskPii Whether to mask PII in the logged input.
+	 * @param array{ruleSetSlug:string,version:string,payload:array<string,mixed>,maskPii:bool} $run The run:
+	 *        the RuleSet slug and version, the raw input payload, and whether to mask PII in the log.
+	 * @param array{result:array<string,mixed>,triggeredRules:array<int,mixed>,executionTime:int,errors:array<int,string>} $outcome The answer.
 	 *
 	 * @return void
 	 */
-	private function persistLog(
-		string $ruleSetSlug,
-		string $version,
-		array $payload,
-		array $result,
-		array $triggeredRules,
-		int $durationMs,
-		array $errors,
-		bool $maskPii,
-	): void {
+	private function persistLog(array $run, array $outcome): void {
 		$user = $this->userSession->getUser();
 		$userId = '';
 		if ($user !== null) {
 			$userId = $user->getUID();
 		}
 
-		$loggedInput = $payload;
-		if ($maskPii === true) {
-			$loggedInput = $this->maskPii(payload: $payload);
+		$loggedInput = $run['payload'];
+		if ($run['maskPii'] === true) {
+			$loggedInput = $this->maskPii(payload: $run['payload']);
 		}
 
 		$log = [
-			'ruleSetId' => $ruleSetSlug,
-			'ruleSetVersion' => $version,
+			'ruleSetId' => $run['ruleSetSlug'],
+			'ruleSetVersion' => $run['version'],
 			'timestamp' => gmdate('Y-m-d\TH:i:s\Z'),
 			'triggerContext' => 'api',
 			'inputPayload' => $loggedInput,
-			'outputResult' => $result,
-			'triggeredRules' => array_map('strval', $triggeredRules),
-			'executionDurationMs' => $durationMs,
-			'errors' => $errors,
+			'outputResult' => $outcome['result'],
+			'triggeredRules' => array_map('strval', $outcome['triggeredRules']),
+			'executionDurationMs' => $outcome['executionTime'],
+			'errors' => $outcome['errors'],
 			'userId' => $userId,
 			'archived' => false,
 		];
@@ -421,7 +408,7 @@ class RuleEngineService {
 			// it is a compliance gap — log at error so ops alerting catches it.
 			$this->logger->error(
 				'Buildiq: failed to persist RuleExecutionLog',
-				['ruleSet' => $ruleSetSlug, 'exception' => $e->getMessage()]
+				['ruleSet' => $run['ruleSetSlug'], 'exception' => $e->getMessage()]
 			);
 		}
 
