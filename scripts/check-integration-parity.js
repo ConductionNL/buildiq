@@ -347,6 +347,201 @@ function phpLocalConsts(src) {
 }
 
 /**
+ * Read a file, or null when it cannot be read.
+ *
+ * @param {string} file Absolute path.
+ *
+ * @return {string|null} The file text.
+ */
+function readSource(file) {
+	try {
+		return fs.readFileSync(file, 'utf8')
+	} catch {
+		return null
+	}
+}
+
+/**
+ * Read every PHP file and build the global `Class::CONST` table, so
+ * `Application::APP_ID` resolves.
+ *
+ * @param {string[]} phpFiles Absolute paths.
+ *
+ * @return {{sources: Map<string, string>, globalConsts: Object<string, (string|string[])>}}
+ *   The readable sources and the constant table.
+ */
+function readPhpSources(phpFiles) {
+	const globalConsts = {}
+	const sources = new Map()
+	for (const file of phpFiles) {
+		const src = readSource(file)
+		if (src === null) {
+			continue
+		}
+		sources.set(file, src)
+		const cls =
+			/\b(?:final\s+|abstract\s+)?class\s+([A-Za-z_][A-Za-z0-9_]*)/.exec(src)
+		if (cls === null) {
+			continue
+		}
+		for (const [name, value] of Object.entries(phpLocalConsts(src))) {
+			globalConsts[`${cls[1]}::${name}`] = value
+		}
+	}
+	return { sources, globalConsts }
+}
+
+/**
+ * The string value of `fields[name]`, or null.
+ *
+ * @param {object} fields Statically resolved fields.
+ * @param {string} name Field name.
+ *
+ * @return {string|null} The value when it is a string.
+ */
+function stringField(fields, name) {
+	return typeof fields[name] === 'string' ? fields[name] : null
+}
+
+/**
+ * Which provider the descriptor at `at` was registered WITH.
+ *
+ * The collect event takes the descriptor and its provider as two arguments:
+ * `$event->registerLeaf(<descriptor>, $this->forms)`, and `null` there means
+ * "this leaf answers nothing server-side": correct for a render surface, and
+ * a dark leaf for a data provider. Scanning back to the enclosing call is
+ * bounded: a descriptor lives inside its own registerLeaf argument list.
+ *
+ * @param {string} src The file text.
+ * @param {number} at Index where the descriptor's `new` starts.
+ *
+ * @return {boolean|null} True when bound, false for `null`, null when unknown.
+ */
+function providerBinding(src, at) {
+	const callStart = src.lastIndexOf('registerLeaf(', at)
+	if (callStart === -1 || at - callStart >= 2000) {
+		return null
+	}
+	const callArgs = splitTopLevel(balanced(src, src.indexOf('(', callStart)))
+	return callArgs.length >= 2 ? callArgs[1].trim() !== 'null' : null
+}
+
+/**
+ * Parse one `new LeafDescriptor(…)` call's named arguments into a face.
+ *
+ * @param {object} source The file: rel, src, locals and globalConsts.
+ * @param {number} at Index where the call's `new` starts.
+ *
+ * @return {object} The LeafDescriptor face.
+ */
+function descriptorFace(source, at) {
+	const open = source.src.indexOf('(', at)
+	const face = { kind: 'LeafDescriptor', file: source.rel, fields: {} }
+	for (const arg of splitTopLevel(balanced(source.src, open))) {
+		const m = /^([A-Za-z_][A-Za-z0-9_]*)\s*:\s*([\s\S]+)$/.exec(arg)
+		const value =
+			m === null ? null : resolvePhp(m[2], source.locals, source.globalConsts)
+		if (value !== null) {
+			face.fields[m[1]] = value
+		}
+	}
+	face.id = stringField(face.fields, 'id')
+	const kinds = Array.isArray(face.fields.kinds) ? face.fields.kinds : []
+	face.renderSurface = kinds.includes('render-surface')
+	face.dataProvider = kinds.includes('data-provider')
+	face.providerBound = providerBinding(source.src, at)
+	face.renderMode = stringField(face.fields, 'renderMode')
+	return face
+}
+
+/**
+ * Every `new LeafDescriptor(` face in one file.
+ *
+ * @param {object} source The file: rel, src, locals and globalConsts.
+ *
+ * @return {Array<object>} The faces, in source order.
+ */
+function descriptorFaces(source) {
+	const faces = []
+	let idx = 0
+	while ((idx = source.src.indexOf('new LeafDescriptor(', idx)) !== -1) {
+		faces.push(descriptorFace(source, idx))
+		idx = source.src.indexOf('(', idx) + 1
+	}
+	return faces
+}
+
+/**
+ * Provider getters whose literal return value is a face field.
+ *
+ * @type {Object<string, string>}
+ */
+const PROVIDER_GETTERS = {
+	getId: 'id',
+	getLabel: 'label',
+	getIcon: 'icon',
+	getGroup: 'group',
+	getRequiredApp: 'requiredApp',
+	getReferenceType: 'referenceType',
+}
+
+/**
+ * The statically resolved return value of one getter, or null.
+ *
+ * @param {object} source The file: rel, src, locals and globalConsts.
+ * @param {string} method The getter name.
+ *
+ * @return {string|string[]|null} The returned value.
+ */
+function getterValue(source, method) {
+	const sig = new RegExp(`function\\s+${method}\\s*\\([^)]*\\)[^{;]*\\{`).exec(
+		source.src,
+	)
+	if (sig === null) {
+		return null
+	}
+	const body = balanced(source.src, sig.index + sig[0].length - 1)
+	const ret = /\breturn\s+([^;]+);/.exec(body)
+	return ret === null
+		? null
+		: resolvePhp(ret[1], source.locals, source.globalConsts)
+}
+
+/**
+ * The IntegrationProvider face of one file, or null when the file is not a
+ * provider or its `getId()` is not a literal.
+ *
+ * @param {object} source The file: rel, src, locals and globalConsts.
+ *
+ * @return {object|null} The provider face.
+ */
+function providerFace(source) {
+	const isProvider =
+		/extends\s+AbstractIntegrationProvider\b/.test(source.src)
+		|| /implements\s+[^{]*\bIntegrationProviderInterface\b/.test(source.src)
+	if (isProvider === false) {
+		return null
+	}
+	const face = { kind: 'IntegrationProvider', file: source.rel, fields: {} }
+	for (const [method, field] of Object.entries(PROVIDER_GETTERS)) {
+		const value = getterValue(source, method)
+		if (value !== null) {
+			face.fields[field] = value
+		}
+	}
+	if (typeof face.fields.id !== 'string') {
+		return null
+	}
+	face.id = face.fields.id
+	// A provider is a data face, not a render surface: it is discoverable
+	// through the capability and therefore MUST have a JS registration,
+	// but it does not itself declare a render pair.
+	face.renderSurface = false
+	face.renderMode = stringField(face.fields, 'renderMode')
+	return face
+}
+
+/**
  * Collect the server-side leaf faces declared in this repo's PHP.
  *
  * Two shapes count as a server face, because both are how a leaf reaches the
@@ -363,122 +558,18 @@ function collectServerFaces() {
 	const phpFiles = collectFiles(path.join(REPO_ROOT, 'lib'), (n) =>
 		n.endsWith('.php'),
 	)
-
-	// Global `Class::CONST` table, so `Application::APP_ID` resolves.
-	const globalConsts = {}
-	const sources = new Map()
-	for (const file of phpFiles) {
-		let src
-		try {
-			src = fs.readFileSync(file, 'utf8')
-		} catch {
-			continue
-		}
-		sources.set(file, src)
-		const cls =
-			/\b(?:final\s+|abstract\s+)?class\s+([A-Za-z_][A-Za-z0-9_]*)/.exec(src)
-		if (cls === null) {
-			continue
-		}
-		const locals = phpLocalConsts(src)
-		for (const [name, value] of Object.entries(locals)) {
-			globalConsts[`${cls[1]}::${name}`] = value
-		}
-	}
-
+	const { sources, globalConsts } = readPhpSources(phpFiles)
 	for (const [file, src] of sources) {
-		const rel = path.relative(REPO_ROOT, file)
-		const locals = phpLocalConsts(src)
-
-		// --- shape 1: `new LeafDescriptor(` named arguments -------------------
-		let idx = 0
-		while ((idx = src.indexOf('new LeafDescriptor(', idx)) !== -1) {
-			const open = src.indexOf('(', idx)
-			const args = splitTopLevel(balanced(src, open))
-			const face = { kind: 'LeafDescriptor', file: rel, fields: {} }
-			for (const arg of args) {
-				const m = /^([A-Za-z_][A-Za-z0-9_]*)\s*:\s*([\s\S]+)$/.exec(arg)
-				if (m === null) {
-					continue
-				}
-				const value = resolvePhp(m[2], locals, globalConsts)
-				if (value !== null) {
-					face.fields[m[1]] = value
-				}
-			}
-			face.id = typeof face.fields.id === 'string' ? face.fields.id : null
-			const kinds = Array.isArray(face.fields.kinds) ? face.fields.kinds : []
-			face.renderSurface = kinds.includes('render-surface')
-			face.dataProvider = kinds.includes('data-provider')
-			// Which provider this descriptor was registered WITH. The collect
-			// event takes the descriptor and its provider as two arguments:
-			// `$event->registerLeaf(new LeafDescriptor(…), $this->forms)`, and
-			// `null` there means "this leaf answers nothing server-side" —
-			// correct for a render surface, and a dark leaf for a data
-			// provider. Scanning back to the enclosing call is bounded: a
-			// descriptor lives inside its own registerLeaf argument list.
-			const callStart = src.lastIndexOf('registerLeaf(', idx)
-			face.providerBound = null
-			if (callStart !== -1 && idx - callStart < 2000) {
-				const callArgs = splitTopLevel(
-					balanced(src, src.indexOf('(', callStart)),
-				)
-				if (callArgs.length >= 2) {
-					face.providerBound = callArgs[1].trim() !== 'null'
-				}
-			}
-			face.renderMode =
-				typeof face.fields.renderMode === 'string'
-					? face.fields.renderMode
-					: null
-			faces.push(face)
-			idx = open + 1
+		const source = {
+			rel: path.relative(REPO_ROOT, file),
+			src,
+			locals: phpLocalConsts(src),
+			globalConsts,
 		}
-
-		// --- shape 2: an IntegrationProvider ---------------------------------
-		const isProvider =
-			/extends\s+AbstractIntegrationProvider\b/.test(src)
-			|| /implements\s+[^{]*\bIntegrationProviderInterface\b/.test(src)
-		if (isProvider === false) {
-			continue
-		}
-		const getters = {
-			getId: 'id',
-			getLabel: 'label',
-			getIcon: 'icon',
-			getGroup: 'group',
-			getRequiredApp: 'requiredApp',
-			getReferenceType: 'referenceType',
-		}
-		const face = { kind: 'IntegrationProvider', file: rel, fields: {} }
-		for (const [method, field] of Object.entries(getters)) {
-			const sig = new RegExp(
-				`function\\s+${method}\\s*\\([^)]*\\)[^{;]*\\{`,
-			).exec(src)
-			if (sig === null) {
-				continue
-			}
-			const body = balanced(src, sig.index + sig[0].length - 1)
-			const ret = /\breturn\s+([^;]+);/.exec(body)
-			if (ret === null) {
-				continue
-			}
-			const value = resolvePhp(ret[1], locals, globalConsts)
-			if (value !== null) {
-				face.fields[field] = value
-			}
-		}
-		if (typeof face.fields.id === 'string') {
-			face.id = face.fields.id
-			// A provider is a data face, not a render surface: it is discoverable
-			// through the capability and therefore MUST have a JS registration,
-			// but it does not itself declare a render pair.
-			face.renderSurface = false
-			face.renderMode =
-				typeof face.fields.renderMode === 'string'
-					? face.fields.renderMode
-					: null
-			faces.push(face)
+		faces.push(...descriptorFaces(source))
+		const provider = providerFace(source)
+		if (provider !== null) {
+			faces.push(provider)
 		}
 	}
 	return faces
@@ -592,6 +683,171 @@ function jsLocalConsts(src) {
 }
 
 /**
+ * The key a key/value regex match captured: single-quoted, double-quoted or bare.
+ *
+ * @param {Array<string>} match The match with the key in groups 1 to 3.
+ *
+ * @return {string} The key.
+ */
+function keyOf(match) {
+	return match[1] || match[2] || match[3]
+}
+
+/**
+ * Whether a member value is an inline object literal.
+ *
+ * @param {string|undefined} raw The value text, undefined for a shorthand.
+ *
+ * @return {boolean} True for `{ … }`.
+ */
+function isObjectLiteral(raw) {
+	return raw !== undefined && raw.trim().startsWith('{') === true
+}
+
+/**
+ * Parse an inline `offlineConfig: { … }` into its string-valued entries.
+ *
+ * @param {string} text The object literal text.
+ * @param {Object<string, (string|string[])>} locals Same-file `const` table.
+ *
+ * @return {Object<string, string>} Config key to resolved string.
+ */
+function parseOfflineConfig(text, locals) {
+	const config = {}
+	for (const cfg of splitTopLevel(balanced(text, 0))) {
+		const ckv =
+			/^(?:'([^']+)'|"([^"]+)"|([A-Za-z_$][A-Za-z0-9_$]*))\s*:\s*([\s\S]+)$/.exec(
+				cfg,
+			)
+		const cvalue = ckv === null ? null : resolveJs(ckv[4], locals)
+		if (typeof cvalue === 'string') {
+			config[keyOf(ckv)] = cvalue
+		}
+	}
+	return config
+}
+
+/**
+ * Record one `key: value` (or shorthand) member on a registration.
+ *
+ * @param {object} reg The registration being built.
+ * @param {{key: string, raw: (string|undefined), locals: object}} member The key,
+ *   its value text, and the same-file `const` table.
+ *
+ * @return {void}
+ */
+function addField(reg, member) {
+	const { key, raw, locals } = member
+	reg.keys.push(key)
+	// A shorthand (`mount,`) carries the key without a value.
+	const value = raw === undefined ? null : resolveJs(raw, locals)
+	if (value !== null) {
+		reg.fields[key] = value
+	}
+	if (key === 'offlineConfig' && isObjectLiteral(raw) === true) {
+		reg.offlineConfig = parseOfflineConfig(raw.trim(), locals)
+	}
+}
+
+/**
+ * Record one top-level member of a registration literal: a spread or a field.
+ *
+ * @param {object} reg The registration being built.
+ * @param {{member: string, locals: object}} item The member text and the
+ *   same-file `const` table.
+ *
+ * @return {void}
+ */
+function addMember(reg, item) {
+	const spread = /^\.\.\.\s*([A-Za-z_$][A-Za-z0-9_$]*)/.exec(item.member)
+	if (spread !== null) {
+		reg.spreads.push(spread[1])
+		return
+	}
+	const kv =
+		/^(?:'([^']+)'|"([^"]+)"|([A-Za-z_$][A-Za-z0-9_$]*))\s*(?::\s*([\s\S]+))?$/.exec(
+			item.member,
+		)
+	if (kv !== null) {
+		addField(reg, { key: keyOf(kv), raw: kv[4], locals: item.locals })
+	}
+}
+
+/**
+ * Build a registration from its object-literal argument text.
+ *
+ * @param {object} source The file: rel, src, locals and objects.
+ * @param {string} argText The `{ … }` argument text.
+ *
+ * @return {object} The registration.
+ */
+function parseRegistration(source, argText) {
+	const reg = { file: source.rel, fields: {}, keys: [], spreads: [] }
+	for (const member of splitTopLevel(balanced(argText, 0))) {
+		addMember(reg, { member, locals: source.locals })
+	}
+	reg.id = typeof reg.fields.id === 'string' ? reg.fields.id : null
+	reg.renderMode =
+		typeof reg.fields.renderMode === 'string' ? reg.fields.renderMode : null
+	// Import source per spread symbol, for R5.
+	reg.spreadSources = {}
+	for (const symbol of reg.spreads) {
+		reg.spreadSources[symbol] = importSourceOf(source.src, symbol)
+	}
+	return reg
+}
+
+/**
+ * The object-literal argument text of the registration call at `at`, or null
+ * when the call is a declaration or its argument cannot be resolved.
+ *
+ * @param {object} source The file: rel, src, locals and objects.
+ * @param {number} at Index where the call's callee starts.
+ *
+ * @return {string|null} The `{ … }` argument text.
+ */
+function registrationArgument(source, at) {
+	const { src, objects } = source
+	const before = src.slice(Math.max(0, at - 20), at)
+	if (/function\s+$/.test(before) === true) {
+		return null // the library's own `export function registerIntegration(`
+	}
+	const argText = balanced(src, src.indexOf('(', at)).trim()
+	if (argText.startsWith('{') === true) {
+		return argText
+	}
+	// A descriptor passed BY NAME is the same registration as an
+	// inline literal; resolve it to the literal's text or skip.
+	const ident = /^([A-Za-z_$][A-Za-z0-9_$]*)$/.exec(argText)
+	if (ident === null || objects[ident[1]] === undefined) {
+		return null
+	}
+	return '{' + objects[ident[1]] + '}'
+}
+
+/**
+ * Every registration call in one source file.
+ *
+ * @param {object} source The file: rel, src, locals and objects.
+ *
+ * @return {Array<object>} The registrations, in source order.
+ */
+function registrationsIn(source) {
+	const regs = []
+	// `\s*\(` anchors both alternatives to a CALL, so neither
+	// `registerIntegrationIcons(` nor `installIntegrationRegistry(` matches.
+	const re = /(?:\bregisterIntegration|\bintegrations\s*\.\s*register)\s*\(/g
+	let m
+	while ((m = re.exec(source.src)) !== null) {
+		const argText = registrationArgument(source, m.index)
+		if (argText !== null) {
+			regs.push(parseRegistration(source, argText))
+		}
+	}
+	return regs
+}
+
+/**
  * Collect the JS `registerIntegration({ … })` call sites in `src/**`.
  *
  * @return {Array<object>} The discovered registrations.
@@ -603,12 +859,7 @@ function collectJsRegistrations() {
 		(n) => n.endsWith('.js') || n.endsWith('.ts') || n.endsWith('.vue'),
 	)
 	for (const file of jsFiles) {
-		let src
-		try {
-			src = fs.readFileSync(file, 'utf8')
-		} catch {
-			continue
-		}
+		const src = readSource(file)
 		// BOTH SUPPORTED REGISTRATION APIs, NOT ONE.
 		//
 		// `registerIntegration(descriptor)` is the convenience wrapper exported
@@ -621,88 +872,20 @@ function collectJsRegistrations() {
 		// gate-24's own selector probe was fixed for exactly this and reads
 		// both forms; this checker was a generation behind it.
 		if (
-			src.includes('registerIntegration') === false
-			&& src.includes('integrations.register') === false
+			src === null
+			|| (src.includes('registerIntegration') === false
+				&& src.includes('integrations.register') === false)
 		) {
 			continue
 		}
-		const rel = path.relative(REPO_ROOT, file)
-		const locals = jsLocalConsts(src)
-		const objects = jsLocalObjectLiterals(src)
-		// `\s*\(` anchors both alternatives to a CALL, so neither
-		// `registerIntegrationIcons(` nor `installIntegrationRegistry(` matches.
-		const re = /(?:\bregisterIntegration|\bintegrations\s*\.\s*register)\s*\(/g
-		let m
-		while ((m = re.exec(src)) !== null) {
-			const before = src.slice(Math.max(0, m.index - 20), m.index)
-			if (/function\s+$/.test(before) === true) {
-				continue // the library's own `export function registerIntegration(`
-			}
-			const open = src.indexOf('(', m.index)
-			let argText = balanced(src, open).trim()
-			if (argText.startsWith('{') === false) {
-				// A descriptor passed BY NAME is the same registration as an
-				// inline literal; resolve it to the literal's text or skip.
-				const ident = /^([A-Za-z_$][A-Za-z0-9_$]*)$/.exec(argText)
-				if (ident === null || objects[ident[1]] === undefined) {
-					continue
-				}
-				argText = '{' + objects[ident[1]] + '}'
-			}
-			const reg = { file: rel, fields: {}, keys: [], spreads: [] }
-			for (const member of splitTopLevel(balanced(argText, 0))) {
-				const spread = /^\.\.\.\s*([A-Za-z_$][A-Za-z0-9_$]*)/.exec(member)
-				if (spread !== null) {
-					reg.spreads.push(spread[1])
-					continue
-				}
-				const kv =
-					/^(?:'([^']+)'|"([^"]+)"|([A-Za-z_$][A-Za-z0-9_$]*))\s*(?::\s*([\s\S]+))?$/.exec(
-						member,
-					)
-				if (kv === null) {
-					continue
-				}
-				const key = kv[1] || kv[2] || kv[3]
-				reg.keys.push(key)
-				// A shorthand (`mount,`) carries the key without a value.
-				const value = kv[4] === undefined ? null : resolveJs(kv[4], locals)
-				if (value !== null) {
-					reg.fields[key] = value
-				}
-				if (
-					key === 'offlineConfig'
-					&& kv[4] !== undefined
-					&& kv[4].trim().startsWith('{') === true
-				) {
-					reg.offlineConfig = {}
-					for (const cfg of splitTopLevel(balanced(kv[4].trim(), 0))) {
-						const ckv =
-							/^(?:'([^']+)'|"([^"]+)"|([A-Za-z_$][A-Za-z0-9_$]*))\s*:\s*([\s\S]+)$/.exec(
-								cfg,
-							)
-						if (ckv === null) {
-							continue
-						}
-						const cvalue = resolveJs(ckv[4], locals)
-						if (typeof cvalue === 'string') {
-							reg.offlineConfig[ckv[1] || ckv[2] || ckv[3]] = cvalue
-						}
-					}
-				}
-			}
-			reg.id = typeof reg.fields.id === 'string' ? reg.fields.id : null
-			reg.renderMode =
-				typeof reg.fields.renderMode === 'string'
-					? reg.fields.renderMode
-					: null
-			// Import source per spread symbol, for R5.
-			reg.spreadSources = {}
-			for (const symbol of reg.spreads) {
-				reg.spreadSources[symbol] = importSourceOf(src, symbol)
-			}
-			regs.push(reg)
-		}
+		regs.push(
+			...registrationsIn({
+				rel: path.relative(REPO_ROOT, file),
+				src,
+				locals: jsLocalConsts(src),
+				objects: jsLocalObjectLiterals(src),
+			}),
+		)
 	}
 	return regs
 }
@@ -798,56 +981,83 @@ function sameValue(a, b) {
 }
 
 /**
- * Run every rule and report.
+ * Index items that carry a statically-read id by that id.
  *
- * @return {void}
+ * @param {Array<object>} items Server faces or JS registrations.
+ *
+ * @return {Map<string, object>} Id to item; items without an id are left out.
  */
-function main() {
-	const failures = []
-	const counts = {}
+function indexById(items) {
+	const map = new Map()
+	for (const item of items) {
+		if (item.id !== null) {
+			map.set(item.id, item)
+		}
+	}
+	return map
+}
+
+/**
+ * Read both faces and the schema declarations into one rule context.
+ *
+ * @return {object} The faces, registrations, schemas, their indexes, and the
+ *   failures and per-rule counts the rules fill in.
+ */
+function buildContext() {
 	const faces = collectServerFaces()
 	const regs = collectJsRegistrations()
 	const { schemas, files: schemaFiles } = collectOrSchemas()
-
-	const jsById = new Map()
-	for (const r of regs) {
-		if (r.id !== null) {
-			jsById.set(r.id, r)
-		}
+	return {
+		faces,
+		regs,
+		schemas,
+		schemaFiles,
+		jsById: indexById(regs),
+		faceById: indexById(faces),
+		failures: [],
+		counts: {},
 	}
-	const faceById = new Map()
-	for (const f of faces) {
-		if (f.id !== null) {
-			faceById.set(f.id, f)
-		}
-	}
+}
 
-	// --- R1: complete render pair for the declared renderMode ---------------
-	counts.R1 = 0
-	for (const r of regs) {
+/**
+ * R1: a JS registration with its own id ships the render pair of its renderMode.
+ *
+ * @param {object} ctx The rule context.
+ *
+ * @return {void}
+ */
+function checkRenderPairs(ctx) {
+	ctx.counts.R1 = 0
+	for (const r of ctx.regs) {
 		if (r.id === null) {
 			continue // identity inherited from a spread — covered by R5
 		}
-		counts.R1++
+		ctx.counts.R1++
 		const mode = r.renderMode === null ? 'component' : r.renderMode
 		const required = mode === 'mount' ? ['mount', 'unmount'] : ['tab', 'widget']
-		for (const key of required) {
-			if (r.keys.includes(key) === false) {
-				failures.push(
-					`✗ [R1 render-pair] registerIntegration id "${r.id}" (${r.file}) declares `
-						+ `renderMode "${mode}" but is missing the required \`${key}\` key — an `
-						+ `incomplete render pair renders nothing on its surface (ADR-019 AD-11/AD-13, `
-						+ `ADR-066 decision 7).`,
-				)
-			}
+		for (const key of required.filter((k) => r.keys.includes(k) === false)) {
+			ctx.failures.push(
+				`✗ [R1 render-pair] registerIntegration id "${r.id}" (${r.file}) declares `
+					+ `renderMode "${mode}" but is missing the required \`${key}\` key — an `
+					+ `incomplete render pair renders nothing on its surface (ADR-019 AD-11/AD-13, `
+					+ `ADR-066 decision 7).`,
+			)
 		}
 	}
+}
 
-	// --- R2: server↔JS id correlation ---------------------------------------
-	counts.R2 = 0
-	for (const f of faces) {
+/**
+ * R2, server half: every server face has a readable id with a JS registration.
+ *
+ * @param {object} ctx The rule context.
+ *
+ * @return {void}
+ */
+function checkServerIds(ctx) {
+	ctx.counts.R2 = 0
+	for (const f of ctx.faces) {
 		if (f.id === null) {
-			failures.push(
+			ctx.failures.push(
 				`✗ [R2 id-correlation] a ${f.kind} in ${f.file} declares no statically-readable `
 					+ `\`id\` — a leaf whose id cannot be read cannot be correlated with its JS half.`,
 			)
@@ -870,22 +1080,32 @@ function main() {
 		if (f.renderSurface !== true) {
 			continue
 		}
-		counts.R2++
-		if (jsById.has(f.id) === false) {
-			failures.push(
+		ctx.counts.R2++
+		if (ctx.jsById.has(f.id) === false) {
+			ctx.failures.push(
 				`✗ [R2 id-correlation] server leaf "${f.id}" (${f.kind}, ${f.file}) has NO matching `
 					+ `registerIntegration({ id: '${f.id}' }) in src/** — phantom leaf: the `
 					+ `openregister.integrations.leaves capability advertises a surface that never mounts.`,
 			)
 		}
 	}
-	for (const r of regs) {
+}
+
+/**
+ * R2, JS half: every JS registration id has a server face.
+ *
+ * @param {object} ctx The rule context.
+ *
+ * @return {void}
+ */
+function checkJsIds(ctx) {
+	for (const r of ctx.regs) {
 		if (r.id === null) {
 			continue
 		}
-		counts.R2++
-		if (faceById.has(r.id) === false) {
-			failures.push(
+		ctx.counts.R2++
+		if (ctx.faceById.has(r.id) === false) {
+			ctx.failures.push(
 				`✗ [R2 id-correlation] registerIntegration id "${r.id}" (${r.file}) has NO matching `
 					+ `server-side face in lib/** (neither a \`new LeafDescriptor(id: '${r.id}')\` nor an `
 					+ `IntegrationProvider whose getId() returns '${r.id}') — orphan registration: it `
@@ -894,85 +1114,229 @@ function main() {
 			)
 		}
 	}
+}
 
-	// --- R3: renderMode agreement across layers -----------------------------
-	counts.R3 = 0
-	for (const [id, f] of faceById) {
-		const r = jsById.get(id)
+/**
+ * R3: for a shared id, both faces declare the same renderMode.
+ *
+ * @param {object} ctx The rule context.
+ *
+ * @return {void}
+ */
+function checkRenderModes(ctx) {
+	ctx.counts.R3 = 0
+	for (const [id, f] of ctx.faceById) {
+		const r = ctx.jsById.get(id)
 		if (r === undefined || f.renderMode === null || r.renderMode === null) {
 			continue
 		}
-		counts.R3++
+		ctx.counts.R3++
 		if (f.renderMode !== r.renderMode) {
-			failures.push(
+			ctx.failures.push(
 				`✗ [R3 renderMode] leaf "${id}" declares renderMode "${f.renderMode}" server-side `
 					+ `(${f.file}) but "${r.renderMode}" in its JS registration (${r.file}) — a `
 					+ `renderMode mismatch blanks the surface (ADR-066 decision 7).`,
 			)
 		}
 	}
+}
 
-	// --- R4: cross-layer metadata agreement ---------------------------------
-	const COMPARED = [
-		'label',
-		'icon',
-		'group',
-		'requiredApp',
-		'referenceType',
-		'surfaces',
-	]
-	counts.R4 = 0
-	for (const [id, f] of faceById) {
-		const r = jsById.get(id)
-		if (r === undefined) {
+/**
+ * Metadata fields R4 compares when both faces declare them statically.
+ *
+ * @type {string[]}
+ */
+const COMPARED = [
+	'label',
+	'icon',
+	'group',
+	'requiredApp',
+	'referenceType',
+	'surfaces',
+]
+
+/**
+ * R4 for one shared id: every field both faces declare agrees.
+ *
+ * @param {object} ctx The rule context.
+ * @param {{id: string, f: object, r: object}} leaf The id with its two faces.
+ *
+ * @return {void}
+ */
+function compareLeafFields(ctx, leaf) {
+	const { id, f, r } = leaf
+	for (const field of COMPARED) {
+		const left = f.fields[field]
+		const right = r.fields[field]
+		if (left === undefined || right === undefined) {
 			continue
 		}
-		for (const field of COMPARED) {
-			const left = f.fields[field]
-			const right = r.fields[field]
-			if (left === undefined || right === undefined) {
-				continue
-			}
-			counts.R4++
-			if (sameValue(left, right) === false) {
-				failures.push(
-					`✗ [R4 metadata] leaf "${id}" field \`${field}\` mismatch across layers: `
-						+ `server (${f.file}) says ${JSON.stringify(left)}, JS (${r.file}) says `
-						+ `${JSON.stringify(right)} — the two halves describe different leaves.`,
-				)
-			}
-		}
-	}
-
-	// --- R5: a spread registration must spread the OWNING package's descriptor
-	counts.R5 = 0
-	for (const r of regs) {
-		for (const symbol of r.spreads) {
-			counts.R5++
-			const source = r.spreadSources[symbol]
-			if (source === null) {
-				failures.push(
-					`✗ [R5 spread-source] registerIntegration in ${r.file} spreads \`...${symbol}\`, `
-						+ `which is not imported in that file — the spread of an undefined binding `
-						+ `registers a leaf with no id.`,
-				)
-			} else if (source !== '@conduction/nextcloud-vue') {
-				failures.push(
-					`✗ [R5 spread-source] registerIntegration in ${r.file} spreads \`...${symbol}\` `
-						+ `imported from "${source}", not from the leaf-owning package `
-						+ `@conduction/nextcloud-vue — an override must extend the descriptor it `
-						+ `overrides, or the id it registers under is not the one it thinks.`,
-				)
-			}
-		}
-		if (r.id === null && r.spreads.length === 0) {
-			failures.push(
-				`✗ [R5 spread-source] registerIntegration in ${r.file} declares neither an \`id\` `
-					+ `nor a spread of a descriptor — it registers a leaf with no identity.`,
+		ctx.counts.R4++
+		if (sameValue(left, right) === false) {
+			ctx.failures.push(
+				`✗ [R4 metadata] leaf "${id}" field \`${field}\` mismatch across layers: `
+					+ `server (${f.file}) says ${JSON.stringify(left)}, JS (${r.file}) says `
+					+ `${JSON.stringify(right)} — the two halves describe different leaves.`,
 			)
 		}
 	}
+}
 
+/**
+ * R4: cross-layer metadata agreement for every shared id.
+ *
+ * @param {object} ctx The rule context.
+ *
+ * @return {void}
+ */
+function checkMetadata(ctx) {
+	ctx.counts.R4 = 0
+	for (const [id, f] of ctx.faceById) {
+		const r = ctx.jsById.get(id)
+		if (r !== undefined) {
+			compareLeafFields(ctx, { id, f, r })
+		}
+	}
+}
+
+/**
+ * R5 for one registration: each spread comes from the owning package, and a
+ * registration without an id spreads at least one descriptor.
+ *
+ * @param {object} ctx The rule context.
+ * @param {object} r The JS registration.
+ *
+ * @return {void}
+ */
+function checkSpreads(ctx, r) {
+	for (const symbol of r.spreads) {
+		ctx.counts.R5++
+		const source = r.spreadSources[symbol]
+		if (source === null) {
+			ctx.failures.push(
+				`✗ [R5 spread-source] registerIntegration in ${r.file} spreads \`...${symbol}\`, `
+					+ `which is not imported in that file — the spread of an undefined binding `
+					+ `registers a leaf with no id.`,
+			)
+		} else if (source !== '@conduction/nextcloud-vue') {
+			ctx.failures.push(
+				`✗ [R5 spread-source] registerIntegration in ${r.file} spreads \`...${symbol}\` `
+					+ `imported from "${source}", not from the leaf-owning package `
+					+ `@conduction/nextcloud-vue — an override must extend the descriptor it `
+					+ `overrides, or the id it registers under is not the one it thinks.`,
+			)
+		}
+	}
+	if (r.id === null && r.spreads.length === 0) {
+		ctx.failures.push(
+			`✗ [R5 spread-source] registerIntegration in ${r.file} declares neither an \`id\` `
+				+ `nor a spread of a descriptor — it registers a leaf with no identity.`,
+		)
+	}
+}
+
+/**
+ * R5: a spread registration spreads the owning package's descriptor.
+ *
+ * @param {object} ctx The rule context.
+ *
+ * @return {void}
+ */
+function checkSpreadSources(ctx) {
+	ctx.counts.R5 = 0
+	for (const r of ctx.regs) {
+		checkSpreads(ctx, r)
+	}
+}
+
+/**
+ * R6, schema half: each schema slug an offlineConfig names is declared.
+ *
+ * @param {object} ctx The rule context.
+ * @param {object} r The JS registration with an offlineConfig.
+ *
+ * @return {void}
+ */
+function checkOfflineSchemas(ctx, r) {
+	for (const key of OFFLINE_CONFIG_CONTRACT.schemas) {
+		const slug = r.offlineConfig[key]
+		if (slug === undefined) {
+			continue
+		}
+		ctx.counts.R6++
+		if (Object.hasOwn(ctx.schemas, slug) === false) {
+			ctx.failures.push(
+				`✗ [R6 offlineConfig] leaf offlineConfig.${key} = "${slug}" (${r.file}) names a `
+					+ `schema this repo does not declare in lib/Settings/** — the leaf would query a `
+					+ `schema that does not exist. Declared slugs: ${Object.keys(ctx.schemas).sort().join(', ')}`,
+			)
+		}
+	}
+}
+
+/**
+ * R6, property half: each planned-item field an offlineConfig names is a
+ * property of the declared planned schema.
+ *
+ * @param {object} ctx The rule context.
+ * @param {object} r The JS registration with an offlineConfig.
+ *
+ * @return {void}
+ */
+function checkOfflinePlannedFields(ctx, r) {
+	const planned = r.offlineConfig.plannedSchema
+	const props = planned === undefined ? undefined : ctx.schemas[planned]
+	if (props === undefined) {
+		return // no planned schema, or one already reported by the schema half
+	}
+	for (const key of OFFLINE_CONFIG_CONTRACT.plannedFields) {
+		const prop = r.offlineConfig[key]
+		if (prop === undefined) {
+			continue
+		}
+		ctx.counts.R6++
+		if (props.includes(prop) === false) {
+			ctx.failures.push(
+				`✗ [R6 offlineConfig] leaf offlineConfig.${key} = "${prop}" (${r.file}) is not a `
+					+ `property of schema "${planned}" as declared in lib/Settings/** — the leaf `
+					+ `would filter/display on a property that does not exist. Declared properties: `
+					+ `${[...new Set(props)].sort().join(', ')}`,
+			)
+		}
+	}
+}
+
+/**
+ * R6: an offlineConfig names schemas and properties this repo declares.
+ *
+ * @param {object} ctx The rule context.
+ *
+ * @return {void}
+ */
+function checkOfflineConfigs(ctx) {
+	ctx.counts.R6 = 0
+	for (const r of ctx.regs.filter((reg) => reg.offlineConfig !== undefined)) {
+		if (ctx.schemaFiles === 0) {
+			ctx.failures.push(
+				`✗ [R6 offlineConfig] registerIntegration in ${r.file} supplies an \`offlineConfig\` `
+					+ `naming OpenRegister schemas, but this repo declares no register/schema JSON under `
+					+ `lib/Settings/** to check it against — the mapping cannot be verified.`,
+			)
+			continue
+		}
+		checkOfflineSchemas(ctx, r)
+		checkOfflinePlannedFields(ctx, r)
+	}
+}
+
+/**
+ * R7: a data-provider leaf is registered with a provider.
+ *
+ * @param {object} ctx The rule context.
+ *
+ * @return {void}
+ */
+function checkProviderBindings(ctx) {
 	// --- R7: a data-provider leaf is bound to a provider ---------------------
 	// The mirror of R2. R2 asks whether a RENDER SURFACE has the JS half that
 	// draws it; this asks whether a DATA PROVIDER has the server half that
@@ -985,75 +1349,35 @@ function main() {
 	// "every rule had ZERO subject matter" refusal below, and a gate that
 	// cannot speak about the only subject matter present is a gate that does
 	// not run.
-	counts.R7 = 0
-	for (const f of faces) {
+	ctx.counts.R7 = 0
+	for (const f of ctx.faces) {
 		if (f.dataProvider !== true || f.id === null) {
 			continue
 		}
-		counts.R7++
+		ctx.counts.R7++
 		if (f.providerBound === false) {
-			failures.push(
+			ctx.failures.push(
 				`✗ [R7 provider-binding] server leaf "${f.id}" (${f.kind}, ${f.file}) declares `
 					+ `KIND_DATA_PROVIDER but is registered with a null provider — the catalogue `
 					+ `advertises a data source that can never answer.`,
 			)
 		}
 	}
+}
 
-	// --- R6: offlineConfig names schemas/properties this repo declares -------
-	counts.R6 = 0
-	for (const r of regs) {
-		if (r.offlineConfig === undefined) {
-			continue
-		}
-		if (schemaFiles === 0) {
-			failures.push(
-				`✗ [R6 offlineConfig] registerIntegration in ${r.file} supplies an \`offlineConfig\` `
-					+ `naming OpenRegister schemas, but this repo declares no register/schema JSON under `
-					+ `lib/Settings/** to check it against — the mapping cannot be verified.`,
-			)
-			continue
-		}
-		const planned = r.offlineConfig.plannedSchema
-		for (const key of OFFLINE_CONFIG_CONTRACT.schemas) {
-			const slug = r.offlineConfig[key]
-			if (slug === undefined) {
-				continue
-			}
-			counts.R6++
-			if (Object.hasOwn(schemas, slug) === false) {
-				failures.push(
-					`✗ [R6 offlineConfig] leaf offlineConfig.${key} = "${slug}" (${r.file}) names a `
-						+ `schema this repo does not declare in lib/Settings/** — the leaf would query a `
-						+ `schema that does not exist. Declared slugs: ${Object.keys(schemas).sort().join(', ')}`,
-				)
-			}
-		}
-		for (const key of OFFLINE_CONFIG_CONTRACT.plannedFields) {
-			const prop = r.offlineConfig[key]
-			if (prop === undefined || planned === undefined) {
-				continue
-			}
-			const props = schemas[planned]
-			if (props === undefined) {
-				continue // already reported by the schema loop above
-			}
-			counts.R6++
-			if (props.includes(prop) === false) {
-				failures.push(
-					`✗ [R6 offlineConfig] leaf offlineConfig.${key} = "${prop}" (${r.file}) is not a `
-						+ `property of schema "${planned}" as declared in lib/Settings/** — the leaf `
-						+ `would filter/display on a property that does not exist. Declared properties: `
-						+ `${[...new Set(props)].sort().join(', ')}`,
-				)
-			}
-		}
-	}
-
-	// --- report --------------------------------------------------------------
+/**
+ * Print the outcome and exit: 0 when every rule with subject matter passed,
+ * 1 on a violation or when no rule had any subject matter.
+ *
+ * @param {object} ctx The rule context after every rule ran.
+ *
+ * @return {void}
+ */
+function report(ctx) {
+	const { failures, counts } = ctx
 	const scope =
-		`${faces.length} server leaf face(s), ${regs.length} JS registration(s), `
-		+ `${schemaFiles} OpenRegister schema declaration file(s)`
+		`${ctx.faces.length} server leaf face(s), ${ctx.regs.length} JS registration(s), `
+		+ `${ctx.schemaFiles} OpenRegister schema declaration file(s)`
 	const perRule = Object.entries(counts)
 		.map(([rule, n]) => `${rule}:${n}`)
 		.join(' ')
@@ -1084,6 +1408,24 @@ function main() {
 
 	console.error(`\nAssertions run per rule: ${perRule}`)
 	process.exit(1)
+}
+
+/**
+ * Run every rule and report.
+ *
+ * @return {void}
+ */
+function main() {
+	const ctx = buildContext()
+	checkRenderPairs(ctx)
+	checkServerIds(ctx)
+	checkJsIds(ctx)
+	checkRenderModes(ctx)
+	checkMetadata(ctx)
+	checkSpreadSources(ctx)
+	checkProviderBindings(ctx)
+	checkOfflineConfigs(ctx)
+	report(ctx)
 }
 
 if (require.main === module) {
