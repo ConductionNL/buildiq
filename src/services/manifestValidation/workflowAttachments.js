@@ -15,6 +15,8 @@
  * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-001
  */
 
+import { schemaKnown, schemaName } from './manifestSchemas.js'
+
 /** Closed enum of supported triggers for v1. */
 export const WORKFLOW_TRIGGERS = Object.freeze(['on-create'])
 
@@ -44,62 +46,67 @@ const UUID_RE =
  * @return {?object} - `{ has(name), isString(name) }` accessor, or null.
  */
 function schemaPropsAccessor(manifest, schemaSlug) {
-	const schemas = manifest && manifest.schemas
-	let entry = null
-	if (Array.isArray(schemas)) {
-		entry = schemas.find((s) => (s.slug || s.id || s.title) === schemaSlug)
-	} else if (schemas && typeof schemas === 'object') {
-		entry = schemas[schemaSlug]
-	}
-	if (!entry) {
-		return null
-	}
-	const props =
-		entry.properties || (entry.schema && entry.schema.properties) || null
+	const entry = embeddedSchema(manifest && manifest.schemas, schemaSlug)
+	const props = entry ? propertiesOf(entry) : null
 	if (!props || typeof props !== 'object') {
 		return null
 	}
 	return {
 		has: (name) => Object.hasOwn(props, name),
-		isString: (name) => {
-			const p = props[name]
-			if (!p) {
-				return false
-			}
-			const type = p.type || (p.format ? 'string' : undefined)
-			return type === 'string' || p.format === 'uri' || p.format === 'url'
-		},
+		isString: (name) => isStringProperty(props[name]),
 	}
 }
 
 /**
- * Whether a schema slug is known to the manifest (in `schemas` or referenced
- * by any page's register/schema binding). Returns true when the schema set is
- * not embedded, to avoid false rejects in manifests that reference external
- * schemas only.
+ * The embedded schema entry for a slug, if any.
  *
- * @param {object} manifest - the manifest.
+ * @param {unknown} schemas - the manifest's `schemas` value.
  * @param {string} schemaSlug - the schema slug.
+ * @return {?object}
+ */
+function embeddedSchema(schemas, schemaSlug) {
+	if (Array.isArray(schemas)) {
+		return schemas.find((s) => schemaName(s) === schemaSlug)
+	}
+	return schemas && typeof schemas === 'object' ? schemas[schemaSlug] : null
+}
+
+/**
+ * A schema entry's properties: its own, else those of its nested `schema`.
+ *
+ * @param {object} entry - the schema entry.
+ * @return {?object}
+ */
+function propertiesOf(entry) {
+	return entry.properties || (entry.schema && entry.schema.properties) || null
+}
+
+/**
+ * Whether a property holds a string: typed `string`, or untyped with a
+ * format, or a `uri` / `url` format.
+ *
+ * @param {?object} property - the property definition.
  * @return {boolean}
  */
-function schemaKnown(manifest, schemaSlug) {
-	const schemas = manifest && manifest.schemas
-	if (Array.isArray(schemas)) {
-		if (schemas.some((s) => (s.slug || s.id || s.title) === schemaSlug)) {
-			return true
-		}
-	} else if (schemas && typeof schemas === 'object') {
-		if (Object.hasOwn(schemas, schemaSlug)) {
-			return true
-		}
+function isStringProperty(property) {
+	if (!property) {
+		return false
 	}
-	// Page bindings reference schemas by slug.
-	const pages = (manifest && manifest.pages) || []
-	if (pages.some((p) => p && p.config && p.config.schema === schemaSlug)) {
-		return true
-	}
-	// No embedded schema set and no page reference — cannot disprove; allow.
-	return !schemas && !pages.some((p) => p && p.config && p.config.schema)
+	return (
+		declaredType(property) === 'string'
+		|| property.format === 'uri'
+		|| property.format === 'url'
+	)
+}
+
+/**
+ * A property's type: its `type`, else `string` when it carries a format.
+ *
+ * @param {object} property - the property definition.
+ * @return {string|undefined}
+ */
+function declaredType(property) {
+	return property.type || (property.format ? 'string' : undefined)
 }
 
 /**
@@ -221,10 +228,7 @@ function linkPropertyErrors(wf, ctx) {
 	if (!isFilledString(wf.linkProperty)) {
 		return [workflowError(ctx, 'buildiq.workflow.error.link-property-required')]
 	}
-	const accessor =
-		typeof wf.schema === 'string'
-			? schemaPropsAccessor(ctx.manifest, wf.schema)
-			: null
+	const accessor = linkSchemaAccessor(wf, ctx.manifest)
 	if (!accessor) {
 		return []
 	}
@@ -237,6 +241,19 @@ function linkPropertyErrors(wf, ctx) {
 		]
 	}
 	return []
+}
+
+/**
+ * The property accessor of the workflow's schema, when it names one.
+ *
+ * @param {object} wf - the workflow entry.
+ * @param {object} manifest - the manifest.
+ * @return {?object}
+ */
+function linkSchemaAccessor(wf, manifest) {
+	return typeof wf.schema === 'string'
+		? schemaPropsAccessor(manifest, wf.schema)
+		: null
 }
 
 /**
