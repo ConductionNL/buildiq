@@ -570,6 +570,16 @@ export function moveItem(items, index, delta) {
 	return renumber(list)
 }
 
+// The key each tab kind needs before the server accepts it, by kind.
+const MISSING_REFERENCE = {
+	leaf: (tab) => (tab.ref ? '' : 'ref'),
+	fieldGroup: (tab) => ((tab.fields || []).length > 0 ? '' : 'fields'),
+	relatedList: (tab) => {
+		if (!tab.relatedRegister) return 'relatedRegister'
+		return tab.relatedSchema ? '' : 'relatedSchema'
+	},
+}
+
 /**
  * The reference a tab's kind needs and does not have, or an empty string.
  *
@@ -578,17 +588,11 @@ export function moveItem(items, index, delta) {
  * @return {string} The missing key.
  */
 export function missingReference(tab) {
-	switch (tab?.kind) {
-		case 'leaf':
-			return tab.ref ? '' : 'ref'
-		case 'fieldGroup':
-			return (tab.fields || []).length > 0 ? '' : 'fields'
-		case 'relatedList':
-			if (!tab.relatedRegister) return 'relatedRegister'
-			return tab.relatedSchema ? '' : 'relatedSchema'
-		default:
-			return ''
+	const kind = tab?.kind
+	if (typeof kind !== 'string' || !Object.hasOwn(MISSING_REFERENCE, kind)) {
+		return ''
 	}
+	return MISSING_REFERENCE[kind](tab)
 }
 
 /**
@@ -602,21 +606,28 @@ export function previewRows(widgets) {
 	const sorted = [...(widgets || [])].sort(
 		(a, b) => (a.order ?? 0) - (b.order ?? 0),
 	)
-	const rows = []
-	let row = []
-	let used = 0
-	for (const widget of sorted) {
-		const units = UNITS[widget.width] || UNITS.medium
-		if (used + units > 4 && row.length > 0) {
-			rows.push(row)
-			row = []
-			used = 0
-		}
-		row.push(widget)
-		used += units
+	const grid = sorted.reduce(placeWidget, { rows: [], row: [], used: 0 })
+	if (grid.row.length > 0) grid.rows.push(grid.row)
+	return grid.rows
+}
+
+/**
+ * Place one widget on the grid, starting a new row when it does not fit.
+ *
+ * @param {{rows: Array<Array<object>>, row: Array<object>, used: number}} grid The rows so far, the open row and its used units.
+ * @param {object} widget The widget.
+ * @return {{rows: Array<Array<object>>, row: Array<object>, used: number}} The same grid.
+ */
+function placeWidget(grid, widget) {
+	const units = UNITS[widget.width] || UNITS.medium
+	if (grid.used + units > 4 && grid.row.length > 0) {
+		grid.rows.push(grid.row)
+		grid.row = []
+		grid.used = 0
 	}
-	if (row.length > 0) rows.push(row)
-	return rows
+	grid.row.push(widget)
+	grid.used += units
+	return grid
 }
 
 /**
