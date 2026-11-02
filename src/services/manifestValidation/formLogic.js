@@ -118,6 +118,133 @@ function validateSteps(config, pathBase, declaredKeys) {
 }
 
 /**
+ * Errors of a LOCAL-mode `visibleWhen` (no `endpoint` / `source`).
+ *
+ * @param {object} visibleWhen - the condition object.
+ * @param {{fieldPath: string, declaredKeys: Set<string>}} ctx - the field
+ *   pointer prefix and the declared field keys.
+ * @return {string[]}
+ */
+function visibleWhenErrors(visibleWhen, ctx) {
+	const errors = []
+	const path = `${ctx.fieldPath}/visibleWhen`
+	if (typeof visibleWhen.field !== 'string' || visibleWhen.field.trim() === '') {
+		errors.push(
+			`${path}/field: buildiq.formLogic.error.condition-field-required`,
+		)
+	} else if (!ctx.declaredKeys.has(visibleWhen.field)) {
+		errors.push(
+			`${path}/field: buildiq.formLogic.error.dangling-condition-field`,
+		)
+	}
+	if (visibleWhen.op !== undefined && !VISIBLE_WHEN_OPS.includes(visibleWhen.op)) {
+		errors.push(`${path}/op: buildiq.formLogic.error.condition-op-not-allowed`)
+	}
+	return errors
+}
+
+/** The type each optional `validation` key must have, and its error code. */
+const VALIDATION_TYPES = Object.freeze({
+	required: {
+		type: 'boolean',
+		code: 'buildiq.formLogic.error.validation-required-not-boolean',
+	},
+	min: {
+		type: 'number',
+		code: 'buildiq.formLogic.error.validation-min-not-number',
+	},
+	max: {
+		type: 'number',
+		code: 'buildiq.formLogic.error.validation-max-not-number',
+	},
+	message: {
+		type: 'string',
+		code: 'buildiq.formLogic.error.validation-message-not-string',
+	},
+})
+
+/**
+ * Type errors for the given `validation` keys that are present.
+ *
+ * @param {object} validation - the field's validation object.
+ * @param {{fieldPath: string, keys: string[]}} scope - the field pointer
+ *   prefix and the keys to check, in report order.
+ * @return {string[]}
+ */
+function validationTypeErrors(validation, scope) {
+	return scope.keys
+		.filter(
+			(key) =>
+				validation[key] !== undefined
+				&& typeof validation[key] !== VALIDATION_TYPES[key].type,
+		)
+		.map(
+			(key) =>
+				`${scope.fieldPath}/validation/${key}: ${VALIDATION_TYPES[key].code}`,
+		)
+}
+
+/**
+ * A numeric `min` above a numeric `max`.
+ *
+ * @param {object} validation - the field's validation object.
+ * @param {string} fieldPath - the field pointer prefix.
+ * @return {string[]}
+ */
+function validationRangeErrors(validation, fieldPath) {
+	if (
+		typeof validation.min === 'number'
+		&& typeof validation.max === 'number'
+		&& validation.min > validation.max
+	) {
+		return [
+			`${fieldPath}/validation: buildiq.formLogic.error.validation-min-greater-than-max`,
+		]
+	}
+	return []
+}
+
+/**
+ * A string `pattern` that does not compile as a RegExp.
+ *
+ * @param {object} validation - the field's validation object.
+ * @param {string} fieldPath - the field pointer prefix.
+ * @return {string[]}
+ */
+function validationPatternErrors(validation, fieldPath) {
+	if (typeof validation.pattern !== 'string') {
+		return []
+	}
+	try {
+		new RegExp(validation.pattern)
+	} catch {
+		return [
+			`${fieldPath}/validation/pattern: buildiq.formLogic.error.validation-pattern-does-not-compile`,
+		]
+	}
+	return []
+}
+
+/**
+ * Errors of a field's structured `validation` object, in report order.
+ *
+ * @param {object} validation - the field's validation object.
+ * @param {string} fieldPath - the field pointer prefix.
+ * @return {string[]}
+ */
+function validationErrors(validation, fieldPath) {
+	return [
+		...validationTypeErrors(validation, {
+			fieldPath,
+			keys: ['required', 'min', 'max'],
+		}),
+		...validationRangeErrors(validation, fieldPath),
+		...validationPatternErrors(validation, fieldPath),
+		...validationTypeErrors(validation, { fieldPath, keys: ['message'] }),
+	]
+}
+
+/**
  * Validate one field's `visibleWhen` (LOCAL mode only — `endpoint` /
  * `source` shapes are canonical-schema territory, not re-validated here
  * beyond being objects) and `validation` object.
@@ -128,86 +255,16 @@ function validateSteps(config, pathBase, declaredKeys) {
  * @return {string[]} - `<pointer>: <code>` error/warning strings.
  */
 function validateFieldLogic(field, fieldPath, declaredKeys) {
-	const errors = []
 	if (!isPlainObject(field)) {
-		return errors
+		return []
 	}
-
-	const visibleWhen = isPlainObject(field.visibleWhen) ? field.visibleWhen : null
-	if (visibleWhen && !visibleWhen.endpoint && !visibleWhen.source) {
-		// LOCAL mode.
-		if (
-			typeof visibleWhen.field !== 'string'
-			|| visibleWhen.field.trim() === ''
-		) {
-			errors.push(
-				`${fieldPath}/visibleWhen/field: buildiq.formLogic.error.condition-field-required`,
-			)
-		} else if (!declaredKeys.has(visibleWhen.field)) {
-			errors.push(
-				`${fieldPath}/visibleWhen/field: buildiq.formLogic.error.dangling-condition-field`,
-			)
-		}
-		if (
-			visibleWhen.op !== undefined
-			&& !VISIBLE_WHEN_OPS.includes(visibleWhen.op)
-		) {
-			errors.push(
-				`${fieldPath}/visibleWhen/op: buildiq.formLogic.error.condition-op-not-allowed`,
-			)
-		}
+	const errors = []
+	const visibleWhen = field.visibleWhen
+	if (isPlainObject(visibleWhen) && !visibleWhen.endpoint && !visibleWhen.source) {
+		errors.push(...visibleWhenErrors(visibleWhen, { fieldPath, declaredKeys }))
 	}
-
-	const validation = isPlainObject(field.validation) ? field.validation : null
-	if (validation) {
-		if (
-			validation.required !== undefined
-			&& typeof validation.required !== 'boolean'
-		) {
-			errors.push(
-				`${fieldPath}/validation/required: buildiq.formLogic.error.validation-required-not-boolean`,
-			)
-		}
-		const hasMin = validation.min !== undefined
-		const hasMax = validation.max !== undefined
-		if (hasMin && typeof validation.min !== 'number') {
-			errors.push(
-				`${fieldPath}/validation/min: buildiq.formLogic.error.validation-min-not-number`,
-			)
-		}
-		if (hasMax && typeof validation.max !== 'number') {
-			errors.push(
-				`${fieldPath}/validation/max: buildiq.formLogic.error.validation-max-not-number`,
-			)
-		}
-		if (
-			hasMin
-			&& hasMax
-			&& typeof validation.min === 'number'
-			&& typeof validation.max === 'number'
-			&& validation.min > validation.max
-		) {
-			errors.push(
-				`${fieldPath}/validation: buildiq.formLogic.error.validation-min-greater-than-max`,
-			)
-		}
-		if (typeof validation.pattern === 'string') {
-			try {
-				new RegExp(validation.pattern)
-			} catch {
-				errors.push(
-					`${fieldPath}/validation/pattern: buildiq.formLogic.error.validation-pattern-does-not-compile`,
-				)
-			}
-		}
-		if (
-			validation.message !== undefined
-			&& typeof validation.message !== 'string'
-		) {
-			errors.push(
-				`${fieldPath}/validation/message: buildiq.formLogic.error.validation-message-not-string`,
-			)
-		}
+	if (isPlainObject(field.validation)) {
+		errors.push(...validationErrors(field.validation, fieldPath))
 		// Warning-level: an un-migrated field carries both the structured
 		// object AND a legacy flat key (Decision 4 — migration is opt-in
 		// per field, so this can legitimately persist until the developer
@@ -218,7 +275,6 @@ function validateFieldLogic(field, fieldPath, declaredKeys) {
 			)
 		}
 	}
-
 	return errors
 }
 
