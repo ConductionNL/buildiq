@@ -58,8 +58,10 @@ use OCA\Buildiq\Service\AppChannelApplier;
 use OCA\Buildiq\Service\AppTemplateCapture;
 use OCA\Buildiq\Service\ApplicationVersionService;
 use OCA\Buildiq\Service\CompanionSchemaCollector;
+use OCA\Buildiq\Service\LocalApplicationRef;
 use OCA\Buildiq\Service\ManifestResolverService;
 use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Service\RepoSource;
 use OCA\Buildiq\Service\TemplateInstall;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -1848,12 +1850,9 @@ class ApplicationsController extends Controller {
 		// being reported as a clean `skipped` rather than a credential gap.
 		$channels = $this->channelApplier->apply(
 			template: $template,
-			owner: $sourceOwner,
-			repo: $sourceRepo,
+			source: new RepoSource(owner: (string)$sourceOwner, repo: (string)$sourceRepo, ref: null, credentialId: $credentialId),
 			actingUserId: $ownerUid,
-			credentialId: $credentialId,
-			applicationUuid: (string)($built['uuid'] ?? ''),
-			applicationSlug: $newSlug
+			local: new LocalApplicationRef(uuid: (string)($built['uuid'] ?? ''), slug: $newSlug)
 		);
 
 		return [

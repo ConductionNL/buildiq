@@ -522,13 +522,9 @@ class GitHubAppSyncService {
 		// carried — a complete, silent failure of what the format is for.
 		$channels = $this->channelApplier->apply(
 			template: $template,
-			owner: $owner,
-			repo: $name,
-			ref: $ref,
+			source: new RepoSource(owner: $owner, repo: $name, ref: $ref, credentialId: $credentialId),
 			actingUserId: $actingUserId,
-			credentialId: $credentialId,
-			applicationUuid: $appUuid,
-			applicationSlug: $appSlug
+			local: new LocalApplicationRef(uuid: $appUuid, slug: $appSlug)
 		);
 
 		return [
