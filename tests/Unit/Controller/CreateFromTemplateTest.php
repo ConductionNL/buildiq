@@ -515,6 +515,56 @@ class CreateFromTemplateTest extends TestCase {
 	}//end testSuccessCreatesApplicationAndPerAppArtifacts()
 
 	/**
+	 * The install hands the channel applier the template, the acting user
+	 * and the new application; a local template has no repo or credential.
+	 *
+	 * @return void
+	 */
+	public function testInstallHandsTheNewApplicationToTheChannelApplier(): void {
+		$this->authenticateAs('alice');
+		$this->withRequestParams(['name' => 'My permits', 'slug' => 'my-permits']);
+		$this->objectService->method('searchObjects')->willReturnOnConsecutiveCalls(
+			[$this->templateRecord(self::TEMPLATE_SLUG)],
+			[]
+		);
+		$this->schemaMapper->method('createFromArray')->willReturn($this->schemaWithId(7777));
+		$calls = [];
+		$this->recordSaves($calls, self::exactly(3));
+
+		$captured = null;
+		$this->channelApplier->expects(self::once())->method('apply')->willReturnCallback(
+			static function (...$args) use (&$captured): array {
+				$captured = $args;
+				return ['warnings' => ['w']];
+			}
+		);
+
+		$result = $this->controller->createFromTemplate(templateSlug: self::TEMPLATE_SLUG);
+
+		self::assertSame(Http::STATUS_CREATED, $result->getStatus());
+		self::assertSame(['w'], $result->getData()['warnings']);
+		self::assertSame(self::TEMPLATE_SLUG, $captured[0]['slug'] ?? null);
+		self::assertSame(
+			['owner' => null, 'repo' => null, 'ref' => null, 'actingUserId' => 'alice', 'credentialId' => null, 'applicationUuid' => 'new-uuid-1', 'applicationSlug' => 'my-permits'],
+			self::applyArguments(args: $captured)
+		);
+	}//end testInstallHandsTheNewApplicationToTheChannelApplier()
+
+	/**
+	 * The channel applier's arguments after the template, by name.
+	 *
+	 * @param array<int,mixed> $args The arguments as passed.
+	 *
+	 * @return array<string,mixed> The arguments by name.
+	 */
+	private static function applyArguments(array $args): array {
+		$names = ['template', 'owner', 'repo', 'ref', 'actingUserId', 'credentialId', 'applicationUuid', 'applicationSlug'];
+		$named = array_combine($names, array_pad($args, count($names), null));
+		unset($named['template']);
+		return $named;
+	}//end applyArguments()
+
+	/**
 	 * Regression: the productionVersion re-save must PRESERVE the Application.
 	 *
 	 * OpenRegister's `saveObject()` is PUT, not PATCH — on the update path it
