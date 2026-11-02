@@ -213,7 +213,15 @@ class RunExportJob extends QueuedJob {
 			);
 		}
 
-		$source = $this->resolveSource(job: $job, applicationUuid: $applicationUuid, applicationVersion: $applicationVersion);
+		$target = new ExportTarget(
+			applicationUuid: $applicationUuid,
+			versionSlug: $applicationVersion,
+			jobUuid: $jobUuid,
+			// The application's own slug IS the agent lookup: agents carry
+			// `applicationSlug`, so there is no agent binding to pass.
+			applicationSlug: $applicationSlug
+		);
+		$source = $this->resolveSource(job: $job, target: $target);
 
 		$context = $this->nameFromSource(source: $source, context: [
 			'appId' => $applicationSlug,
@@ -226,14 +234,7 @@ class RunExportJob extends QueuedJob {
 		]);
 
 		$this->exportService->generateAppZip(
-			target: new ExportTarget(
-				applicationUuid: $applicationUuid,
-				versionSlug: $applicationVersion,
-				jobUuid: $jobUuid,
-				// The application's own slug IS the agent lookup: agents carry
-				// `applicationSlug`, so there is no agent binding to pass.
-				applicationSlug: $applicationSlug
-			),
+			target: $target,
 			contents: new ExportContents(
 				context: $context,
 				dataRegisters: $dataRegisters,
@@ -267,8 +268,7 @@ class RunExportJob extends QueuedJob {
 	 * template and call it a success, so that fails the job instead.
 	 *
 	 * @param array<string,mixed> $job The loaded ExportJob record.
-	 * @param string $applicationUuid The application UUID.
-	 * @param string $applicationVersion The semver on the job.
+	 * @param ExportTarget $target The application and the semver on the job.
 	 *
 	 * @return array{application: array<string,mixed>, version: array<string,mixed>}|null Null without a bundler.
 	 *
@@ -276,14 +276,14 @@ class RunExportJob extends QueuedJob {
 	 *
 	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-export-targets-a-specific-application-version
 	 */
-	private function resolveSource(array $job, string $applicationUuid, string $applicationVersion): ?array {
+	private function resolveSource(array $job, ExportTarget $target): ?array {
 		if ($this->contentBundler === null) {
 			return null;
 		}
 
 		$source = $this->contentBundler->resolveSource(
-			applicationUuid: $applicationUuid,
-			semver: $applicationVersion,
+			applicationUuid: $target->applicationUuid,
+			semver: $target->versionSlug,
 			versionSlug: (string)($job['applicationVersionSlug'] ?? '')
 		);
 

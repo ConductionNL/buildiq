@@ -50,7 +50,7 @@ use Psr\Log\LoggerInterface;
  *                         `path => contents` map instead of a ZIP, for a
  *                         config-set repo publish.
  *
- * Every remaining step (resolvePlaceholders, packageZip,
+ * Every remaining step (copyTemplate, resolvePlaceholders, packageZip,
  * listFilesSorted, isBinary, prepareScratchDir, getOrCreateAppDataDir,
  * rrmdir, bundleDataRegisterSchemas) is an implementation detail of those
  * three and is private. They were public only so the tests could reach them;
@@ -175,7 +175,7 @@ class ExportService {
 		bool $includeServerBundle = false,
 	): string {
 		$scratchDir = $this->prepareScratchDir(jobUuid: $target->jobUuid);
-		$this->treeFiles->copySnapshot(source: $this->templateRoot, dest: $scratchDir, timestamp: $this->zipTimestamp);
+		$this->copyTemplate(source: $this->templateRoot, dest: $scratchDir);
 		$serverBundle = null;
 		if ($includeServerBundle === true) {
 			$serverBundle = $this->serverBundleWriter;
@@ -293,7 +293,7 @@ class ExportService {
 		$scratch = $this->prepareScratchDir(jobUuid: $jobUuid);
 
 		try {
-			$this->treeFiles->copySnapshot(source: $this->templateRoot, dest: $scratch, timestamp: $this->zipTimestamp);
+			$this->copyTemplate(source: $this->templateRoot, dest: $scratch);
 			$this->resolvePlaceholders(rootDir: $scratch, context: $context);
 			if ($dataRegisters !== []) {
 				$this->bundleDataRegisterSchemas(rootDir: $scratch, dataRegisters: $dataRegisters);
@@ -351,7 +351,7 @@ class ExportService {
 	/**
 	 * Pin every file `bundleDataRegisterSchemas()` just wrote to the
 	 * deterministic `$zipTimestamp` (REQ-OBEX-008) — mirrors how every
-	 * other write in this class (the snapshot copy, `resolvePlaceholders()`)
+	 * other write in this class (`copyTemplate()`, `resolvePlaceholders()`)
 	 * touches its own output. Kept here (not in the bundler) because the
 	 * ZIP-determinism contract is this class's concern, not the bundler's.
 	 *
@@ -480,6 +480,37 @@ class ExportService {
 		$ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
 		return in_array($ext, $binaryExtensions, true);
 	}//end isBinary()
+
+	/**
+	 * Copy the embedded template snapshot into the scratch directory.
+	 *
+	 * Skips the snapshot-meta + path-manifest helper files; they are
+	 * artefacts of Buildiq, not of the produced app. A missing snapshot
+	 * surfaces as the RuntimeException ExportTreeFiles::requireDirectory() throws.
+	 *
+	 * @param string $source Snapshot dir.
+	 * @param string $dest Scratch dir.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
+	 */
+	private function copyTemplate(string $source, string $dest): void {
+		$this->treeFiles->requireDirectory(dir: $source, label: 'Template snapshot');
+
+		if (is_dir($dest) === false) {
+			mkdir($dest, 0o755, true);
+		}
+
+		$skip = ['.snapshot-meta.json', '.path-manifest.txt'];
+
+		$this->treeFiles->copyTree(
+			source: $source,
+			dest: $dest,
+			skip: $skip,
+			timestamp: $this->zipTimestamp
+		);
+	}//end copyTemplate()
 
 	/**
 	 * Create + clean a per-job scratch directory under app-data.

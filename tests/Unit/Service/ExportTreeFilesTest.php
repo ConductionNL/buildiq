@@ -135,44 +135,18 @@ final class ExportTreeFilesTest extends TestCase {
 	}//end testRemovingAMissingTreeIsANoOp()
 
 	/**
-	 * The snapshot copy leaves the two helper files behind, stamps the fixed
-	 * mtime and creates the destination when it is missing.
+	 * A missing directory is an error that names it; a present one passes.
 	 *
 	 * @return void
 	 */
-	public function testCopySnapshotSkipsTheHelperFilesAndStampsTheTimestamp(): void {
-		file_put_contents($this->root . '/.snapshot-meta.json', '{}');
-		file_put_contents($this->root . '/.path-manifest.txt', 'x');
-		file_put_contents($this->root . '/README.md', '# app');
-		$dest = $this->root . '-copy/nested';
+	public function testRequireDirectoryNamesTheMissingDirectory(): void {
+		$this->files->requireDirectory(dir: $this->root, label: 'Root');
 
-		$this->files->copySnapshot(source: $this->root, dest: $dest, timestamp: 1767225600);
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('Template snapshot is missing: ' . $this->root . '/missing');
+		$this->files->requireDirectory(dir: $this->root . '/missing', label: 'Template snapshot');
 
-		$this->assertSame(
-			expected: ['README.md', 'appinfo/info.xml', 'lib/Settings/flows/alpha.json', 'lib/Settings/flows/zeta.json'],
-			actual: $this->files->listFilesSorted(baseDir: $dest)
-		);
-		$this->assertSame(expected: 1767225600, actual: filemtime($dest . '/appinfo/info.xml'));
-		exec('rm -rf ' . escapeshellarg($this->root . '-copy'));
-
-	}//end testCopySnapshotSkipsTheHelperFilesAndStampsTheTimestamp()
-
-	/**
-	 * A missing snapshot is an error that names the path, and nothing is created.
-	 *
-	 * @return void
-	 */
-	public function testCopySnapshotRefusesAMissingSnapshot(): void {
-		try {
-			$this->files->copySnapshot(source: $this->root . '/missing', dest: $this->root . '/dest', timestamp: 1);
-			$this->fail('a missing snapshot must throw');
-		} catch (RuntimeException $e) {
-			$this->assertSame(expected: 'Template snapshot is missing: ' . $this->root . '/missing', actual: $e->getMessage());
-		}
-
-		$this->assertDirectoryDoesNotExist($this->root . '/dest');
-
-	}//end testCopySnapshotRefusesAMissingSnapshot()
+	}//end testRequireDirectoryNamesTheMissingDirectory()
 
 	/**
 	 * The archive holds every file, in sorted order, as a plain 0644 Unix file,

@@ -146,37 +146,22 @@ class ExportTreeFiles {
 	}//end copyTree()
 
 	/**
-	 * Copy the embedded template snapshot into a scratch directory.
+	 * Fail when a directory the export reads from is missing.
 	 *
-	 * Skips the snapshot-meta and path-manifest helper files; they are
-	 * artefacts of Buildiq, not of the produced app.
-	 *
-	 * @param string  $source    Snapshot dir.
-	 * @param string  $dest      Scratch dir, created when missing.
-	 * @param integer $timestamp mtime to stamp on every copied file.
+	 * @param string $dir   The directory.
+	 * @param string $label What the directory is, for the error message.
 	 *
 	 * @return void
 	 *
-	 * @throws RuntimeException When the snapshot is missing.
+	 * @throws RuntimeException When the directory is missing.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
 	 */
-	public function copySnapshot(string $source, string $dest, int $timestamp): void {
-		if (is_dir($source) === false) {
-			throw new RuntimeException('Template snapshot is missing: ' . $source);
+	public function requireDirectory(string $dir, string $label): void {
+		if (is_dir($dir) === false) {
+			throw new RuntimeException($label . ' is missing: ' . $dir);
 		}
-
-		if (is_dir($dest) === false) {
-			mkdir($dest, 0o755, true);
-		}
-
-		$this->copyTree(
-			source: $source,
-			dest: $dest,
-			skip: ['.snapshot-meta.json', '.path-manifest.txt'],
-			timestamp: $timestamp
-		);
-	}//end copySnapshot()
+	}//end requireDirectory()
 
 	/**
 	 * Write every file under a directory into a ZIP archive, in sorted order.
