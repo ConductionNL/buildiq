@@ -31,9 +31,13 @@ namespace OCA\Buildiq\Service;
 use FilesystemIterator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use RuntimeException;
+use ZipArchive;
 
 /**
- * Walks and removes export scratch trees.
+ * Walks, copies, removes and archives export scratch trees.
+ *
+ * @spec openspec/specs/openbuild-exporter/spec.md#requirement-re-exports-are-idempotent
  */
 class ExportTreeFiles {
 
@@ -140,6 +144,52 @@ class ExportTreeFiles {
 			touch($target, $timestamp);
 		}
 	}//end copyTree()
+
+	/**
+	 * Fail when a directory the export reads from is missing.
+	 *
+	 * @param string $dir   The directory.
+	 * @param string $label What the directory is, for the error message.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When the directory is missing.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
+	 */
+	public function requireDirectory(string $dir, string $label): void {
+		if (is_dir($dir) === false) {
+			throw new RuntimeException($label . ' is missing: ' . $dir);
+		}
+	}//end requireDirectory()
+
+	/**
+	 * Write every file under a directory into a ZIP archive, in sorted order.
+	 *
+	 * @param string $sourceDir Directory to package.
+	 * @param string $zipPath   Archive to write; an existing file is overwritten.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When the archive cannot be opened or finalised.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
+	 */
+	public function zipTree(string $sourceDir, string $zipPath): void {
+		$zip = new ZipArchive();
+		if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+			throw new RuntimeException('Unable to open ZIP archive: ' . $zipPath);
+		}
+
+		foreach ($this->listFilesSorted(baseDir: $sourceDir) as $relativePath) {
+			$zip->addFile($sourceDir . '/' . $relativePath, $relativePath);
+			$zip->setExternalAttributesName($relativePath, ZipArchive::OPSYS_UNIX, (0o100644 << 16));
+		}
+
+		if ($zip->close() === false) {
+			throw new RuntimeException('Failed to finalise ZIP archive: ' . $zipPath);
+		}
+	}//end zipTree()
 
 	/**
 	 * Rename files whose relative path contains a template name.

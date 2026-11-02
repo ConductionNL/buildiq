@@ -21,6 +21,8 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\ExportTreeFiles;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
+use ZipArchive;
 
 /**
  * @covers \OCA\Buildiq\Service\ExportTreeFiles
@@ -131,4 +133,74 @@ final class ExportTreeFilesTest extends TestCase {
 		$this->assertDirectoryExists($this->root, 'the surrounding tree must be untouched');
 
 	}//end testRemovingAMissingTreeIsANoOp()
+
+	/**
+	 * A missing directory is an error that names it; a present one passes.
+	 *
+	 * @return void
+	 */
+	public function testRequireDirectoryNamesTheMissingDirectory(): void {
+		$this->files->requireDirectory(dir: $this->root, label: 'Root');
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('Template snapshot is missing: ' . $this->root . '/missing');
+		$this->files->requireDirectory(dir: $this->root . '/missing', label: 'Template snapshot');
+
+	}//end testRequireDirectoryNamesTheMissingDirectory()
+
+	/**
+	 * The archive holds every file, in sorted order, as a plain 0644 Unix file,
+	 * and replaces an existing archive instead of appending to it.
+	 *
+	 * @return void
+	 */
+	public function testZipTreeWritesEveryFileSortedAndOverwrites(): void {
+		$zipPath = $this->root . '-out.zip';
+		file_put_contents($zipPath, 'not a zip');
+		$this->files->zipTree(sourceDir: $this->root, zipPath: $zipPath);
+		unlink($this->root . '/appinfo/info.xml');
+		$this->files->zipTree(sourceDir: $this->root, zipPath: $zipPath);
+
+		$zip = new ZipArchive();
+		$this->assertTrue($zip->open($zipPath) === true);
+		$names = [];
+		for ($i = 0; $i < $zip->numFiles; $i++) {
+			$name = (string)$zip->getNameIndex($i);
+			$names[] = $name;
+			$zip->getExternalAttributesName($name, $opsys, $attr);
+			$this->assertSame(expected: [ZipArchive::OPSYS_UNIX, 0o100644 << 16], actual: [$opsys, $attr], message: $name);
+		}
+
+		$this->assertSame(expected: '{}', actual: $zip->getFromName('lib/Settings/flows/zeta.json'));
+		$zip->close();
+		unlink($zipPath);
+		$this->assertSame(expected: ['lib/Settings/flows/alpha.json', 'lib/Settings/flows/zeta.json'], actual: $names);
+
+	}//end testZipTreeWritesEveryFileSortedAndOverwrites()
+
+	/**
+	 * An archive path that is a directory cannot be opened; the error names the path.
+	 *
+	 * @return void
+	 */
+	public function testZipTreeRefusesAnArchiveItCannotOpen(): void {
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('Unable to open ZIP archive: ' . $this->root . '/appinfo');
+		$this->files->zipTree(sourceDir: $this->root, zipPath: $this->root . '/appinfo');
+
+	}//end testZipTreeRefusesAnArchiveItCannotOpen()
+
+	/**
+	 * An archive whose directory does not exist cannot be finalised; the error names the path.
+	 *
+	 * @return void
+	 */
+	public function testZipTreeRefusesAnArchiveItCannotFinalise(): void {
+		$zipPath = $this->root . '/no-such-dir/out.zip';
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('Failed to finalise ZIP archive: ' . $zipPath);
+		@$this->files->zipTree(sourceDir: $this->root, zipPath: $zipPath);
+
+	}//end testZipTreeRefusesAnArchiveItCannotFinalise()
 }//end class
