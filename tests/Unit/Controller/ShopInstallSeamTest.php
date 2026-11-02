@@ -35,6 +35,7 @@ use PHPUnit\Framework\TestCase;
  * seam: the parsed template, the requested name and slug, the signed-in user
  * as owner, and the repo and broker credential the template was fetched with,
  * for a credential that is set, empty or missing and with and without a ref.
+ * Forged userId and ownerUid request parameters never become the owner.
  *
  * @covers \OCA\Buildiq\Controller\ShopController
  * @uses   \OCA\Buildiq\Service\RepoSource
@@ -62,6 +63,9 @@ class ShopInstallSeamTest extends TestCase {
 					'name' => 'Example',
 					'slug' => 'example',
 					'credentialId' => $credential,
+					// Forged identity parameters: the owner must come from the session.
+					'userId' => 'mallory',
+					'ownerUid' => 'mallory',
 				][$key] ?? null
 			);
 			$user = $this->createMock(IUser::class);

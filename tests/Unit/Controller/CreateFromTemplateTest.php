@@ -993,6 +993,7 @@ class CreateFromTemplateTest extends TestCase {
 			$result = $this->installFromRepo(owner: $owner, repo: $repo, credentialId: $credentialId);
 
 			self::assertSame(Http::STATUS_CREATED, $result['status'], $name);
+			self::assertSame(['uuid', 'slug', 'register', 'companionSchemas', 'channels', 'warnings'], array_keys($result['data']), $name . ': the response carries no source or credential');
 			self::assertSame(
 				['owner' => $owner, 'repo' => $repo, 'ref' => null, 'actingUserId' => 'dora', 'credentialId' => $credentialId, 'applicationUuid' => 'new-uuid-1', 'applicationSlug' => 'repo-app'],
 				self::applyArguments(args: $captured),
