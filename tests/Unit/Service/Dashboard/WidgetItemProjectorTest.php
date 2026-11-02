@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Service\Dashboard;
 
+use OCA\Buildiq\Dashboard\WidgetApplication;
 use OCA\Buildiq\Dashboard\WidgetDescriptor;
 use OCA\Buildiq\Service\Dashboard\AggregationGateway;
 use OCA\Buildiq\Service\Dashboard\WidgetItemProjector;
@@ -371,9 +372,7 @@ class WidgetItemProjectorTest extends TestCase {
 	 */
 	private function descriptor(array $dataSource, string $widgetKey = 'object-table'): WidgetDescriptor {
 		return new WidgetDescriptor(
-			applicationUuid: self::APP_UUID,
-			applicationSlug: 'pet-store',
-			applicationName: 'Pet Store',
+			application: new WidgetApplication(uuid: self::APP_UUID, slug: 'pet-store', name: 'Pet Store'),
 			principals: ['group:*'],
 			entryId: 'open-cases',
 			widgetKey: $widgetKey,

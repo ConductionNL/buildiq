@@ -516,6 +516,47 @@ class CreateFromTemplateTest extends TestCase {
 	}//end testSuccessCreatesApplicationAndPerAppArtifacts()
 
 	/**
+	 * The stored Application carries the requested name and slug, the owner,
+	 * owner-only permissions and the template origin; a template without a
+	 * slug of its own records the new slug as its origin.
+	 *
+	 * @return void
+	 */
+	public function testTheStoredApplicationRecordsNameOwnerAndOrigin(): void {
+		$withSlug = $this->templateRecord(self::TEMPLATE_SLUG);
+		$withoutSlug = $withSlug;
+		unset($withoutSlug['slug'], $withoutSlug['version']);
+		foreach (['with slug' => [$withSlug, self::TEMPLATE_SLUG, '1.0.0'], 'without slug' => [$withoutSlug, 'my-permits', '']] as $name => [$record, $originSlug, $originVersion]) {
+			$this->setUp();
+			$this->authenticateAs('alice');
+			$this->withRequestParams(['name' => 'My permits', 'slug' => 'my-permits']);
+			$this->objectService->method('searchObjects')->willReturnOnConsecutiveCalls([$record], []);
+			$this->schemaMapper->method('createFromArray')->willReturn($this->schemaWithId(7777));
+			$calls = [];
+			$this->recordSaves($calls);
+
+			$this->controller->createFromTemplate(templateSlug: self::TEMPLATE_SLUG);
+
+			$application = $calls[0]['object'];
+			unset($application['manifest']);
+			self::assertSame(
+				[
+					'name' => 'My permits',
+					'slug' => 'my-permits',
+					'description' => '',
+					'status' => 'draft',
+					'version' => '0.1.0',
+					'owner' => 'alice',
+					'templateOrigin' => ['slug' => $originSlug, 'version' => $originVersion],
+					'permissions' => ['owners' => ['user:alice'], 'editors' => [], 'viewers' => []],
+				],
+				$application,
+				$name
+			);
+		}
+	}//end testTheStoredApplicationRecordsNameOwnerAndOrigin()
+
+	/**
 	 * The install hands the channel applier the template, the acting user
 	 * and the new application; a local template has no repo or credential.
 	 *

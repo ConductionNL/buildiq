@@ -28,6 +28,7 @@ namespace OCA\Buildiq\Tests\Unit\Dashboard;
 
 use OCA\Buildiq\Dashboard\VirtualAppWidget;
 use OCA\Buildiq\Dashboard\VirtualAppWidgetContext;
+use OCA\Buildiq\Dashboard\WidgetApplication;
 use OCA\Buildiq\Dashboard\WidgetDescriptor;
 use OCA\Buildiq\Service\AppVisibilityResolver;
 use OCA\Buildiq\Service\Dashboard\WidgetItemProjector;
@@ -246,9 +247,7 @@ class VirtualAppWidgetTest extends TestCase {
 	 */
 	public function testAPlacementCarryingVisibleWhenIsShownOnRolesAlone(): void {
 		$descriptor = new WidgetDescriptor(
-			applicationUuid: self::APP_UUID,
-			applicationSlug: 'pet-store',
-			applicationName: 'Pet Store',
+			application: new WidgetApplication(uuid: self::APP_UUID, slug: 'pet-store', name: 'Pet Store'),
 			principals: ['group:controllers'],
 			entryId: 'open-cases',
 			widgetKey: 'stat',
@@ -326,9 +325,7 @@ class VirtualAppWidgetTest extends TestCase {
 		string $entryId = 'open-cases',
 	): WidgetDescriptor {
 		return new WidgetDescriptor(
-			applicationUuid: self::APP_UUID,
-			applicationSlug: 'pet-store',
-			applicationName: 'Pet Store',
+			application: new WidgetApplication(uuid: self::APP_UUID, slug: 'pet-store', name: 'Pet Store'),
 			principals: $principals,
 			entryId: $entryId,
 			widgetKey: 'stat',
