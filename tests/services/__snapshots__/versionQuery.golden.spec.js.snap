@@ -1,0 +1,99 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`withVersion golden > pins the location of every pair 1`] = `
+"undefined undefined => true undefined
+null undefined => true null
+"" undefined => true ""
+"/list" undefined => true "/list"
+"/list?page=2" undefined => true "/list?page=2"
+"/list#top" undefined => true "/list#top"
+"/list?page=2#top" undefined => true "/list?page=2#top"
+"/list?_version=old" undefined => true "/list?_version=old"
+"/list?a=1&_version=old" undefined => true "/list?a=1&_version=old"
+"/list?my_version=1" undefined => true "/list?my_version=1"
+"#only" undefined => true "#only"
+7 undefined => true 7
+true undefined => true true
+{"name":"list"} undefined => true {"name":"list"}
+{"name":"list","query":{"page":"2"}} undefined => true {"name":"list","query":{"page":"2"}}
+{"name":"list","query":{"_version":"old"}} undefined => true {"name":"list","query":{"_version":"old"}}
+{"name":"list","query":{"_version":""}} undefined => true {"name":"list","query":{"_version":""}}
+{"path":"/x","query":null} undefined => true {"path":"/x","query":null}
+[] undefined => true []
+undefined "" => true undefined
+null "" => true null
+"" "" => true ""
+"/list" "" => true "/list"
+"/list?page=2" "" => true "/list?page=2"
+"/list#top" "" => true "/list#top"
+"/list?page=2#top" "" => true "/list?page=2#top"
+"/list?_version=old" "" => true "/list?_version=old"
+"/list?a=1&_version=old" "" => true "/list?a=1&_version=old"
+"/list?my_version=1" "" => true "/list?my_version=1"
+"#only" "" => true "#only"
+7 "" => true 7
+true "" => true true
+{"name":"list"} "" => true {"name":"list"}
+{"name":"list","query":{"page":"2"}} "" => true {"name":"list","query":{"page":"2"}}
+{"name":"list","query":{"_version":"old"}} "" => true {"name":"list","query":{"_version":"old"}}
+{"name":"list","query":{"_version":""}} "" => true {"name":"list","query":{"_version":""}}
+{"path":"/x","query":null} "" => true {"path":"/x","query":null}
+[] "" => true []
+undefined "development" => true undefined
+null "development" => true null
+"" "development" => false "?_version=development"
+"/list" "development" => false "/list?_version=development"
+"/list?page=2" "development" => false "/list?page=2&_version=development"
+"/list#top" "development" => false "/list?_version=development#top"
+"/list?page=2#top" "development" => false "/list?page=2&_version=development#top"
+"/list?_version=old" "development" => true "/list?_version=old"
+"/list?a=1&_version=old" "development" => true "/list?a=1&_version=old"
+"/list?my_version=1" "development" => false "/list?my_version=1&_version=development"
+"#only" "development" => false "?_version=development#only"
+7 "development" => true 7
+true "development" => true true
+{"name":"list"} "development" => false {"name":"list","query":{"_version":"development"}}
+{"name":"list","query":{"page":"2"}} "development" => false {"name":"list","query":{"page":"2","_version":"development"}}
+{"name":"list","query":{"_version":"old"}} "development" => true {"name":"list","query":{"_version":"old"}}
+{"name":"list","query":{"_version":""}} "development" => false {"name":"list","query":{"_version":"development"}}
+{"path":"/x","query":null} "development" => false {"path":"/x","query":{"_version":"development"}}
+[] "development" => false {"query":{"_version":"development"}}
+undefined "a b&c" => true undefined
+null "a b&c" => true null
+"" "a b&c" => false "?_version=a%20b%26c"
+"/list" "a b&c" => false "/list?_version=a%20b%26c"
+"/list?page=2" "a b&c" => false "/list?page=2&_version=a%20b%26c"
+"/list#top" "a b&c" => false "/list?_version=a%20b%26c#top"
+"/list?page=2#top" "a b&c" => false "/list?page=2&_version=a%20b%26c#top"
+"/list?_version=old" "a b&c" => true "/list?_version=old"
+"/list?a=1&_version=old" "a b&c" => true "/list?a=1&_version=old"
+"/list?my_version=1" "a b&c" => false "/list?my_version=1&_version=a%20b%26c"
+"#only" "a b&c" => false "?_version=a%20b%26c#only"
+7 "a b&c" => true 7
+true "a b&c" => true true
+{"name":"list"} "a b&c" => false {"name":"list","query":{"_version":"a b&c"}}
+{"name":"list","query":{"page":"2"}} "a b&c" => false {"name":"list","query":{"page":"2","_version":"a b&c"}}
+{"name":"list","query":{"_version":"old"}} "a b&c" => true {"name":"list","query":{"_version":"old"}}
+{"name":"list","query":{"_version":""}} "a b&c" => false {"name":"list","query":{"_version":"a b&c"}}
+{"path":"/x","query":null} "a b&c" => false {"path":"/x","query":{"_version":"a b&c"}}
+[] "a b&c" => false {"query":{"_version":"a b&c"}}
+undefined 0 => true undefined
+null 0 => true null
+"" 0 => true ""
+"/list" 0 => true "/list"
+"/list?page=2" 0 => true "/list?page=2"
+"/list#top" 0 => true "/list#top"
+"/list?page=2#top" 0 => true "/list?page=2#top"
+"/list?_version=old" 0 => true "/list?_version=old"
+"/list?a=1&_version=old" 0 => true "/list?a=1&_version=old"
+"/list?my_version=1" 0 => true "/list?my_version=1"
+"#only" 0 => true "#only"
+7 0 => true 7
+true 0 => true true
+{"name":"list"} 0 => true {"name":"list"}
+{"name":"list","query":{"page":"2"}} 0 => true {"name":"list","query":{"page":"2"}}
+{"name":"list","query":{"_version":"old"}} 0 => true {"name":"list","query":{"_version":"old"}}
+{"name":"list","query":{"_version":""}} 0 => true {"name":"list","query":{"_version":""}}
+{"path":"/x","query":null} 0 => true {"path":"/x","query":null}
+[] 0 => true []"
+`;

@@ -1,0 +1,576 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`builder boot golden > pins l10n returns a non-promise 1`] = `
+"log: registerIcons | registerBuiltinDashboardWidgets | registerTranslations | loadTranslations | GET /index.php/apps/buildiq/api/applications/pet-store/manifest | health slug=pet-store version= router=object
+title: pet-store – Nextcloud
+topbar: pet-store | /index.php/apps/buildiq/icons/pet-store.svg | Pet Store | brightness(0) invert(1) | Open apps menu, currently in {app} {"app":"pet-store"}
+app: mounted=#content uses=2 mixins=t,n directives=tooltip root=BuildiqBuilderRoot
+shell: CnAppRoot keys=appId,appName,supportDialog,manifest,permissions,isLoading,registry,pageTypes,dataSourcesLoader,translate,diagnostics,persistManifestDelta,routerViewKey
+props: {"appId":"openbuild-pet-store","appName":"pet-store","supportDialog":false,"permissions":[],"isLoading":false,"dataSourcesLoader":"[fn]","translate":"[fn]","diagnostics":{"health":true},"persistManifestDelta":"[fn]","routerViewKey":0}
+registry: TrackLinkAction,connector-data,docudesk-document-actions,my-approvals,procest-case-status pageTypes: {"index":"I","detail":"D"}
+manifest: {"version":"1.0.0","menu":[],"pages":[]}
+translate: Hello {"a":1} | Plain
+slots: _ctx
+routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+loader: {"opts":{"appSlug":"pet-store"},"scope":{"register":{"register":"pet-store@"},"pages":0}}
+save unchanged: ok key=0 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[],"pages":[]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save menu only: ok key=0 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save page added: ok key=1 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/new"}]}}
+  routes: New /new redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/new" props={} c=-
+save same pages again: ok key=1 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/new"}]}}
+  routes: New /new redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/new" props={} c=-
+save route changed: ok key=2 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/renamed"}]}}
+  routes: New /renamed redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/renamed" props={} c=-
+save duplicate name: ok key=3 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/renamed"},{"id":"New","route":"/dup"}]}}
+  routes: New /dup redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/renamed" props={} c=-
+save invalid route: ok key=4 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/renamed"},{"id":"New","route":"/dup"},{"id":"Bad","route":"no-slash"}]}}
+  routes: New /dup redirect=undefined props={"default":false} c=CnPageRenderer
+save pages removed: ok key=5 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save pages not an array: ok key=5 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":"x"}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save put fails: err save failed key=5 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"After","route":"/after"}]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+console: error [ERROR] @nextcloud/vue: The \`@nextcloud/vue\` library was used without setting / replacing the \`appName\`. undefined || error [ERROR] @nextcloud/vue: The \`@nextcloud/vue\` library was used without setting / replacing the \`appVersion\`. undefined || warn [buildiq:builder] router rebuild after save failed (edit is saved; reload to pick up new routes) Route paths should start with a "/": "no-slash" should be "/no-slash"."
+`;
+
+exports[`builder boot golden > pins no slug / named 1`] = `
+"log: registerIcons | registerBuiltinDashboardWidgets | registerTranslations | loadTranslations | GET /index.php/apps/buildiq/api/applications//manifest | health slug= version= router=object
+title: Pet Store – Nextcloud
+topbar: Pet Store | /index.php/apps/buildiq/icons/.svg | Pet Store | brightness(0) invert(1) | Open apps menu, currently in {app} {"app":"Pet Store"}
+app: mounted=#content uses=2 mixins=t,n directives=tooltip root=BuildiqBuilderRoot
+shell: CnAppRoot keys=appId,appName,supportDialog,manifest,permissions,isLoading,registry,pageTypes,dataSourcesLoader,translate,diagnostics,persistManifestDelta,routerViewKey
+props: {"appId":"openbuild-","appName":"Pet Store","supportDialog":true,"permissions":["read"],"isLoading":false,"dataSourcesLoader":"[fn]","translate":"[fn]","diagnostics":{"health":true},"persistManifestDelta":"[fn]","routerViewKey":0}
+registry: TrackLinkAction,connector-data,docudesk-document-actions,my-approvals,procest-case-status pageTypes: {"index":"I","detail":"D"}
+manifest: {"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"m","route":"Home"}],"pages":[{"id":"Home","route":"/","type":"dashboard","config":{}},{"id":"List","route":"/list","type":"index","config":{"register":"r","showTitle":true}},{"id":"Item","route":"/list/:id","type":"detail","config":{"showTitle":false}}],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}
+translate: Hello {"a":1} | Plain
+slots: menu,_ctx
+menu@undefined: CnAppNav {"navProp":1} children=primary-action,_ctx
+  primary: BackToVirtualApps
+menu@A: CnAppNav {"navProp":1} children=primary-action,_ctx
+  primary: BackToVirtualApps
+menu@Home: CnAppNav {"navProp":1} children=primary-action,_ctx
+  primary: BackToVirtualApps
+menu@P: CnAppNav {"navProp":1} children=primary-action,_ctx
+  primary: BackToVirtualApps
+routes: Item /list/:id redirect=undefined props={"default":true} c=CnPageRenderer; Home / redirect=undefined props={"default":false} c=CnPageRenderer; List /list redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/" props={} c=-
+loader: {"opts":{"appSlug":""},"scope":{"register":{"register":"@"},"pages":3}}
+save unchanged: ok key=0 log=PUT /index.php/apps/buildiq/api/applications//manifest {"manifest":{"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"m","route":"Home"}],"pages":[{"id":"Home","route":"/","type":"dashboard","config":{}},{"id":"List","route":"/list","type":"index","config":{"register":"r","showTitle":true}},{"id":"Item","route":"/list/:id","type":"detail","config":{"showTitle":false}}],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}}
+  routes: Item /list/:id redirect=undefined props={"default":true} c=CnPageRenderer; Home / redirect=undefined props={"default":false} c=CnPageRenderer; List /list redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/" props={} c=-
+save menu only: ok key=0 log=PUT /index.php/apps/buildiq/api/applications//manifest {"manifest":{"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"z"}],"pages":[{"id":"Home","route":"/","type":"dashboard","config":{}},{"id":"List","route":"/list","type":"index","config":{"register":"r","showTitle":true}},{"id":"Item","route":"/list/:id","type":"detail","config":{"showTitle":false}}],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}}
+  routes: Item /list/:id redirect=undefined props={"default":true} c=CnPageRenderer; Home / redirect=undefined props={"default":false} c=CnPageRenderer; List /list redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/" props={} c=-
+save page added: ok key=1 log=PUT /index.php/apps/buildiq/api/applications//manifest {"manifest":{"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"z"}],"pages":[{"id":"Home","route":"/","type":"dashboard","config":{}},{"id":"List","route":"/list","type":"index","config":{"register":"r","showTitle":true}},{"id":"Item","route":"/list/:id","type":"detail","config":{"showTitle":false}},{"id":"New","route":"/new"}],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}}
+  routes: Item /list/:id redirect=undefined props={"default":true} c=CnPageRenderer; Home / redirect=undefined props={"default":false} c=CnPageRenderer; List /list redirect=undefined props={"default":false} c=CnPageRenderer; New /new redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/" props={} c=-
+save same pages again: ok key=1 log=PUT /index.php/apps/buildiq/api/applications//manifest {"manifest":{"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"z"}],"pages":[{"id":"Home","route":"/","type":"dashboard","config":{}},{"id":"List","route":"/list","type":"index","config":{"register":"r","showTitle":true}},{"id":"Item","route":"/list/:id","type":"detail","config":{"showTitle":false}},{"id":"New","route":"/new"}],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}}
+  routes: Item /list/:id redirect=undefined props={"default":true} c=CnPageRenderer; Home / redirect=undefined props={"default":false} c=CnPageRenderer; List /list redirect=undefined props={"default":false} c=CnPageRenderer; New /new redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/" props={} c=-
+save route changed: ok key=2 log=PUT /index.php/apps/buildiq/api/applications//manifest {"manifest":{"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"z"}],"pages":[{"id":"Home","route":"/","type":"dashboard","config":{}},{"id":"List","route":"/list","type":"index","config":{"register":"r","showTitle":true}},{"id":"Item","route":"/list/:id","type":"detail","config":{"showTitle":false}},{"id":"New","route":"/renamed"}],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}}
+  routes: Item /list/:id redirect=undefined props={"default":true} c=CnPageRenderer; Home / redirect=undefined props={"default":false} c=CnPageRenderer; List /list redirect=undefined props={"default":false} c=CnPageRenderer; New /renamed redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/" props={} c=-
+save duplicate name: ok key=3 log=PUT /index.php/apps/buildiq/api/applications//manifest {"manifest":{"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"z"}],"pages":[{"id":"Home","route":"/","type":"dashboard","config":{}},{"id":"List","route":"/list","type":"index","config":{"register":"r","showTitle":true}},{"id":"Item","route":"/list/:id","type":"detail","config":{"showTitle":false}},{"id":"New","route":"/renamed"},{"id":"New","route":"/dup"}],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}}
+  routes: Item /list/:id redirect=undefined props={"default":true} c=CnPageRenderer; Home / redirect=undefined props={"default":false} c=CnPageRenderer; List /list redirect=undefined props={"default":false} c=CnPageRenderer; New /dup redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/" props={} c=-
+save invalid route: ok key=4 log=PUT /index.php/apps/buildiq/api/applications//manifest {"manifest":{"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"z"}],"pages":[{"id":"Home","route":"/","type":"dashboard","config":{}},{"id":"List","route":"/list","type":"index","config":{"register":"r","showTitle":true}},{"id":"Item","route":"/list/:id","type":"detail","config":{"showTitle":false}},{"id":"New","route":"/renamed"},{"id":"New","route":"/dup"},{"id":"Bad","route":"no-slash"}],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}}
+  routes: Item /list/:id redirect=undefined props={"default":true} c=CnPageRenderer; Home / redirect=undefined props={"default":false} c=CnPageRenderer; List /list redirect=undefined props={"default":false} c=CnPageRenderer; New /dup redirect=undefined props={"default":false} c=CnPageRenderer
+save pages removed: ok key=5 log=PUT /index.php/apps/buildiq/api/applications//manifest {"manifest":{"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"z"}],"pages":[],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save pages not an array: ok key=5 log=PUT /index.php/apps/buildiq/api/applications//manifest {"manifest":{"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"z"}],"pages":"x","support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save put fails: err save failed key=5 log=PUT /index.php/apps/buildiq/api/applications//manifest {"manifest":{"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"z"}],"pages":[{"id":"After","route":"/after"}],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+console: error [ERROR] @nextcloud/vue: The \`@nextcloud/vue\` library was used without setting / replacing the \`appName\`. undefined || error [ERROR] @nextcloud/vue: The \`@nextcloud/vue\` library was used without setting / replacing the \`appVersion\`. undefined || warn [buildiq:builder] router rebuild after save failed (edit is saved; reload to pick up new routes) Route paths should start with a "/": "no-slash" should be "/no-slash"."
+`;
+
+exports[`builder boot golden > pins no slug / no name 1`] = `
+"log: registerIcons | registerBuiltinDashboardWidgets | registerTranslations | loadTranslations | GET /index.php/apps/buildiq/api/applications//manifest | health slug= version= router=object
+title: Host
+topbar: Buildiq | /old.svg | null |  | Open apps menu, currently in Buildiq
+app: mounted=#content uses=2 mixins=t,n directives=tooltip root=BuildiqBuilderRoot
+shell: CnAppRoot keys=appId,appName,supportDialog,manifest,permissions,isLoading,registry,pageTypes,dataSourcesLoader,translate,diagnostics,persistManifestDelta,routerViewKey
+props: {"appId":"openbuild-","appName":"","supportDialog":false,"permissions":[],"isLoading":false,"dataSourcesLoader":"[fn]","translate":"[fn]","diagnostics":{"health":true},"persistManifestDelta":"[fn]","routerViewKey":0}
+registry: TrackLinkAction,connector-data,docudesk-document-actions,my-approvals,procest-case-status pageTypes: {"index":"I","detail":"D"}
+manifest: {"version":"1.0.0","menu":[],"pages":[]}
+translate: Hello {"a":1} | Plain
+slots: _ctx
+routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+loader: {"opts":{"appSlug":""},"scope":{"register":{"register":"@"},"pages":0}}
+save unchanged: ok key=0 log=PUT /index.php/apps/buildiq/api/applications//manifest {"manifest":{"version":"1.0.0","menu":[],"pages":[]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save menu only: ok key=0 log=PUT /index.php/apps/buildiq/api/applications//manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save page added: ok key=1 log=PUT /index.php/apps/buildiq/api/applications//manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/new"}]}}
+  routes: New /new redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/new" props={} c=-
+save same pages again: ok key=1 log=PUT /index.php/apps/buildiq/api/applications//manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/new"}]}}
+  routes: New /new redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/new" props={} c=-
+save route changed: ok key=2 log=PUT /index.php/apps/buildiq/api/applications//manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/renamed"}]}}
+  routes: New /renamed redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/renamed" props={} c=-
+save duplicate name: ok key=3 log=PUT /index.php/apps/buildiq/api/applications//manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/renamed"},{"id":"New","route":"/dup"}]}}
+  routes: New /dup redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/renamed" props={} c=-
+save invalid route: ok key=4 log=PUT /index.php/apps/buildiq/api/applications//manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/renamed"},{"id":"New","route":"/dup"},{"id":"Bad","route":"no-slash"}]}}
+  routes: New /dup redirect=undefined props={"default":false} c=CnPageRenderer
+save pages removed: ok key=5 log=PUT /index.php/apps/buildiq/api/applications//manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save pages not an array: ok key=5 log=PUT /index.php/apps/buildiq/api/applications//manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":"x"}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save put fails: err save failed key=5 log=PUT /index.php/apps/buildiq/api/applications//manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"After","route":"/after"}]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+console: error [ERROR] @nextcloud/vue: The \`@nextcloud/vue\` library was used without setting / replacing the \`appName\`. undefined || error [ERROR] @nextcloud/vue: The \`@nextcloud/vue\` library was used without setting / replacing the \`appVersion\`. undefined || warn [buildiq:builder] router rebuild after save failed (edit is saved; reload to pick up new routes) Route paths should start with a "/": "no-slash" should be "/no-slash"."
+`;
+
+exports[`builder boot golden > pins pet-store / named 1`] = `
+"log: registerIcons | registerBuiltinDashboardWidgets | registerTranslations | loadTranslations | GET /index.php/apps/buildiq/api/applications/pet-store/manifest | health slug=pet-store version= router=object
+title: Pet Store – Nextcloud
+topbar: Pet Store | /index.php/apps/buildiq/icons/pet-store.svg | Pet Store | brightness(0) invert(1) | Open apps menu, currently in {app} {"app":"Pet Store"}
+app: mounted=#content uses=2 mixins=t,n directives=tooltip root=BuildiqBuilderRoot
+shell: CnAppRoot keys=appId,appName,supportDialog,manifest,permissions,isLoading,registry,pageTypes,dataSourcesLoader,translate,diagnostics,persistManifestDelta,routerViewKey
+props: {"appId":"openbuild-pet-store","appName":"Pet Store","supportDialog":true,"permissions":["read"],"isLoading":false,"dataSourcesLoader":"[fn]","translate":"[fn]","diagnostics":{"health":true},"persistManifestDelta":"[fn]","routerViewKey":0}
+registry: TrackLinkAction,connector-data,docudesk-document-actions,my-approvals,procest-case-status pageTypes: {"index":"I","detail":"D"}
+manifest: {"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"m","route":"Home"}],"pages":[{"id":"Home","route":"/","type":"dashboard","config":{}},{"id":"List","route":"/list","type":"index","config":{"register":"r","showTitle":true}},{"id":"Item","route":"/list/:id","type":"detail","config":{"showTitle":false}}],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}
+translate: Hello {"a":1} | Plain
+slots: menu,_ctx
+menu@undefined: CnAppNav {"navProp":1} children=primary-action,_ctx
+  primary: BackToVirtualApps
+menu@A: CnAppNav {"navProp":1} children=primary-action,_ctx
+  primary: BackToVirtualApps
+menu@Home: CnAppNav {"navProp":1} children=primary-action,_ctx
+  primary: BackToVirtualApps
+menu@P: CnAppNav {"navProp":1} children=primary-action,_ctx
+  primary: BackToVirtualApps
+routes: Item /list/:id redirect=undefined props={"default":true} c=CnPageRenderer; Home / redirect=undefined props={"default":false} c=CnPageRenderer; List /list redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/" props={} c=-
+loader: {"opts":{"appSlug":"pet-store"},"scope":{"register":{"register":"pet-store@"},"pages":3}}
+save unchanged: ok key=0 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"m","route":"Home"}],"pages":[{"id":"Home","route":"/","type":"dashboard","config":{}},{"id":"List","route":"/list","type":"index","config":{"register":"r","showTitle":true}},{"id":"Item","route":"/list/:id","type":"detail","config":{"showTitle":false}}],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}}
+  routes: Item /list/:id redirect=undefined props={"default":true} c=CnPageRenderer; Home / redirect=undefined props={"default":false} c=CnPageRenderer; List /list redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/" props={} c=-
+save menu only: ok key=0 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"z"}],"pages":[{"id":"Home","route":"/","type":"dashboard","config":{}},{"id":"List","route":"/list","type":"index","config":{"register":"r","showTitle":true}},{"id":"Item","route":"/list/:id","type":"detail","config":{"showTitle":false}}],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}}
+  routes: Item /list/:id redirect=undefined props={"default":true} c=CnPageRenderer; Home / redirect=undefined props={"default":false} c=CnPageRenderer; List /list redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/" props={} c=-
+save page added: ok key=1 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"z"}],"pages":[{"id":"Home","route":"/","type":"dashboard","config":{}},{"id":"List","route":"/list","type":"index","config":{"register":"r","showTitle":true}},{"id":"Item","route":"/list/:id","type":"detail","config":{"showTitle":false}},{"id":"New","route":"/new"}],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}}
+  routes: Item /list/:id redirect=undefined props={"default":true} c=CnPageRenderer; Home / redirect=undefined props={"default":false} c=CnPageRenderer; List /list redirect=undefined props={"default":false} c=CnPageRenderer; New /new redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/" props={} c=-
+save same pages again: ok key=1 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"z"}],"pages":[{"id":"Home","route":"/","type":"dashboard","config":{}},{"id":"List","route":"/list","type":"index","config":{"register":"r","showTitle":true}},{"id":"Item","route":"/list/:id","type":"detail","config":{"showTitle":false}},{"id":"New","route":"/new"}],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}}
+  routes: Item /list/:id redirect=undefined props={"default":true} c=CnPageRenderer; Home / redirect=undefined props={"default":false} c=CnPageRenderer; List /list redirect=undefined props={"default":false} c=CnPageRenderer; New /new redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/" props={} c=-
+save route changed: ok key=2 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"z"}],"pages":[{"id":"Home","route":"/","type":"dashboard","config":{}},{"id":"List","route":"/list","type":"index","config":{"register":"r","showTitle":true}},{"id":"Item","route":"/list/:id","type":"detail","config":{"showTitle":false}},{"id":"New","route":"/renamed"}],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}}
+  routes: Item /list/:id redirect=undefined props={"default":true} c=CnPageRenderer; Home / redirect=undefined props={"default":false} c=CnPageRenderer; List /list redirect=undefined props={"default":false} c=CnPageRenderer; New /renamed redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/" props={} c=-
+save duplicate name: ok key=3 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"z"}],"pages":[{"id":"Home","route":"/","type":"dashboard","config":{}},{"id":"List","route":"/list","type":"index","config":{"register":"r","showTitle":true}},{"id":"Item","route":"/list/:id","type":"detail","config":{"showTitle":false}},{"id":"New","route":"/renamed"},{"id":"New","route":"/dup"}],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}}
+  routes: Item /list/:id redirect=undefined props={"default":true} c=CnPageRenderer; Home / redirect=undefined props={"default":false} c=CnPageRenderer; List /list redirect=undefined props={"default":false} c=CnPageRenderer; New /dup redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/" props={} c=-
+save invalid route: ok key=4 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"z"}],"pages":[{"id":"Home","route":"/","type":"dashboard","config":{}},{"id":"List","route":"/list","type":"index","config":{"register":"r","showTitle":true}},{"id":"Item","route":"/list/:id","type":"detail","config":{"showTitle":false}},{"id":"New","route":"/renamed"},{"id":"New","route":"/dup"},{"id":"Bad","route":"no-slash"}],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}}
+  routes: Item /list/:id redirect=undefined props={"default":true} c=CnPageRenderer; Home / redirect=undefined props={"default":false} c=CnPageRenderer; List /list redirect=undefined props={"default":false} c=CnPageRenderer; New /dup redirect=undefined props={"default":false} c=CnPageRenderer
+save pages removed: ok key=5 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"z"}],"pages":[],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save pages not an array: ok key=5 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"z"}],"pages":"x","support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save put fails: err save failed key=5 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"z"}],"pages":[{"id":"After","route":"/after"}],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+console: error [ERROR] @nextcloud/vue: The \`@nextcloud/vue\` library was used without setting / replacing the \`appName\`. undefined || error [ERROR] @nextcloud/vue: The \`@nextcloud/vue\` library was used without setting / replacing the \`appVersion\`. undefined || warn [buildiq:builder] router rebuild after save failed (edit is saved; reload to pick up new routes) Route paths should start with a "/": "no-slash" should be "/no-slash"."
+`;
+
+exports[`builder boot golden > pins pet-store / nav primary action, route-less first page 1`] = `
+"log: registerIcons | registerBuiltinDashboardWidgets | registerTranslations | loadTranslations | GET /index.php/apps/buildiq/api/applications/pet-store/manifest | health slug=pet-store version= router=object
+title: Nav – Nextcloud
+topbar: Nav | /index.php/apps/buildiq/icons/pet-store.svg | Pet Store | brightness(0) invert(1) | Open apps menu, currently in {app} {"app":"Nav"}
+app: mounted=#content uses=2 mixins=t,n directives=tooltip root=BuildiqBuilderRoot
+shell: CnAppRoot keys=appId,appName,supportDialog,manifest,permissions,isLoading,registry,pageTypes,dataSourcesLoader,translate,diagnostics,persistManifestDelta,routerViewKey
+props: {"appId":"openbuild-pet-store","appName":"Nav","supportDialog":false,"permissions":[],"isLoading":false,"dataSourcesLoader":"[fn]","translate":"[fn]","diagnostics":{"health":true},"persistManifestDelta":"[fn]","routerViewKey":0}
+registry: TrackLinkAction,connector-data,docudesk-document-actions,my-approvals,procest-case-status pageTypes: {"index":"I","detail":"D"}
+manifest: {"version":"1.0.0","name":"Nav","nav":{"primaryAction":{"label":"y"}},"pages":[{"id":"P","type":"custom","config":{}}],"runtime":{"user":{"isOwner":true,"permissions":[]}}}
+translate: Hello {"a":1} | Plain
+slots: menu,_ctx
+menu@undefined: CnAppNav {"navProp":1} children=_ctx
+menu@A: CnAppNav {"navProp":1} children=_ctx
+menu@Home: CnAppNav {"navProp":1} children=_ctx
+menu@P: CnAppNav {"navProp":1} children=_ctx
+routes: P undefined redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/" props={} c=-
+loader: {"opts":{"appSlug":"pet-store"},"scope":{"register":{"register":"pet-store@"},"pages":1}}
+save unchanged: ok key=0 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","name":"Nav","nav":{"primaryAction":{"label":"y"}},"pages":[{"id":"P","type":"custom","config":{}}],"runtime":{"user":{"isOwner":true,"permissions":[]}}}}
+  routes: P undefined redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/" props={} c=-
+save menu only: ok key=0 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","name":"Nav","nav":{"primaryAction":{"label":"y"}},"pages":[{"id":"P","type":"custom","config":{}}],"runtime":{"user":{"isOwner":true,"permissions":[]}},"menu":[{"id":"z"}]}}
+  routes: P undefined redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/" props={} c=-
+save page added: ok key=1 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","name":"Nav","nav":{"primaryAction":{"label":"y"}},"pages":[{"id":"P","type":"custom","config":{}},{"id":"New","route":"/new"}],"runtime":{"user":{"isOwner":true,"permissions":[]}},"menu":[{"id":"z"}]}}
+  routes: P undefined redirect=undefined props={"default":false} c=CnPageRenderer; New /new redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/" props={} c=-
+save same pages again: ok key=1 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","name":"Nav","nav":{"primaryAction":{"label":"y"}},"pages":[{"id":"P","type":"custom","config":{}},{"id":"New","route":"/new"}],"runtime":{"user":{"isOwner":true,"permissions":[]}},"menu":[{"id":"z"}]}}
+  routes: P undefined redirect=undefined props={"default":false} c=CnPageRenderer; New /new redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/" props={} c=-
+save route changed: ok key=2 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","name":"Nav","nav":{"primaryAction":{"label":"y"}},"pages":[{"id":"P","type":"custom","config":{}},{"id":"New","route":"/renamed"}],"runtime":{"user":{"isOwner":true,"permissions":[]}},"menu":[{"id":"z"}]}}
+  routes: P undefined redirect=undefined props={"default":false} c=CnPageRenderer; New /renamed redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/" props={} c=-
+save duplicate name: ok key=3 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","name":"Nav","nav":{"primaryAction":{"label":"y"}},"pages":[{"id":"P","type":"custom","config":{}},{"id":"New","route":"/renamed"},{"id":"New","route":"/dup"}],"runtime":{"user":{"isOwner":true,"permissions":[]}},"menu":[{"id":"z"}]}}
+  routes: P undefined redirect=undefined props={"default":false} c=CnPageRenderer; New /dup redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/" props={} c=-
+save invalid route: ok key=4 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","name":"Nav","nav":{"primaryAction":{"label":"y"}},"pages":[{"id":"P","type":"custom","config":{}},{"id":"New","route":"/renamed"},{"id":"New","route":"/dup"},{"id":"Bad","route":"no-slash"}],"runtime":{"user":{"isOwner":true,"permissions":[]}},"menu":[{"id":"z"}]}}
+  routes: P undefined redirect=undefined props={"default":false} c=CnPageRenderer; New /dup redirect=undefined props={"default":false} c=CnPageRenderer
+save pages removed: ok key=5 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","name":"Nav","nav":{"primaryAction":{"label":"y"}},"pages":[],"runtime":{"user":{"isOwner":true,"permissions":[]}},"menu":[{"id":"z"}]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save pages not an array: ok key=5 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","name":"Nav","nav":{"primaryAction":{"label":"y"}},"pages":"x","runtime":{"user":{"isOwner":true,"permissions":[]}},"menu":[{"id":"z"}]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save put fails: err save failed key=5 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","name":"Nav","nav":{"primaryAction":{"label":"y"}},"pages":[{"id":"After","route":"/after"}],"runtime":{"user":{"isOwner":true,"permissions":[]}},"menu":[{"id":"z"}]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+console: error [ERROR] @nextcloud/vue: The \`@nextcloud/vue\` library was used without setting / replacing the \`appName\`. undefined || error [ERROR] @nextcloud/vue: The \`@nextcloud/vue\` library was used without setting / replacing the \`appVersion\`. undefined || warn [buildiq:builder] router rebuild after save failed (edit is saved; reload to pick up new routes) Route paths should start with a "/": "no-slash" should be "/no-slash"."
+`;
+
+exports[`builder boot golden > pins pet-store / no name, no pages 1`] = `
+"log: registerIcons | registerBuiltinDashboardWidgets | registerTranslations | loadTranslations | GET /index.php/apps/buildiq/api/applications/pet-store/manifest | health slug=pet-store version= router=object
+title: pet-store – Nextcloud
+topbar: pet-store | /index.php/apps/buildiq/icons/pet-store.svg | Pet Store | brightness(0) invert(1) | Open apps menu, currently in {app} {"app":"pet-store"}
+app: mounted=#content uses=2 mixins=t,n directives=tooltip root=BuildiqBuilderRoot
+shell: CnAppRoot keys=appId,appName,supportDialog,manifest,permissions,isLoading,registry,pageTypes,dataSourcesLoader,translate,diagnostics,persistManifestDelta,routerViewKey
+props: {"appId":"openbuild-pet-store","appName":"pet-store","supportDialog":false,"permissions":[],"isLoading":false,"dataSourcesLoader":"[fn]","translate":"[fn]","diagnostics":{"health":true},"persistManifestDelta":"[fn]","routerViewKey":0}
+registry: TrackLinkAction,connector-data,docudesk-document-actions,my-approvals,procest-case-status pageTypes: {"index":"I","detail":"D"}
+manifest: {"version":"1.0.0","menu":[],"pages":[]}
+translate: Hello {"a":1} | Plain
+slots: _ctx
+routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+loader: {"opts":{"appSlug":"pet-store"},"scope":{"register":{"register":"pet-store@"},"pages":0}}
+save unchanged: ok key=0 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[],"pages":[]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save menu only: ok key=0 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save page added: ok key=1 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/new"}]}}
+  routes: New /new redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/new" props={} c=-
+save same pages again: ok key=1 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/new"}]}}
+  routes: New /new redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/new" props={} c=-
+save route changed: ok key=2 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/renamed"}]}}
+  routes: New /renamed redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/renamed" props={} c=-
+save duplicate name: ok key=3 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/renamed"},{"id":"New","route":"/dup"}]}}
+  routes: New /dup redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/renamed" props={} c=-
+save invalid route: ok key=4 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/renamed"},{"id":"New","route":"/dup"},{"id":"Bad","route":"no-slash"}]}}
+  routes: New /dup redirect=undefined props={"default":false} c=CnPageRenderer
+save pages removed: ok key=5 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save pages not an array: ok key=5 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":"x"}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save put fails: err save failed key=5 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"After","route":"/after"}]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+console: error [ERROR] @nextcloud/vue: The \`@nextcloud/vue\` library was used without setting / replacing the \`appName\`. undefined || error [ERROR] @nextcloud/vue: The \`@nextcloud/vue\` library was used without setting / replacing the \`appVersion\`. undefined || warn [buildiq:builder] router rebuild after save failed (edit is saved; reload to pick up new routes) Route paths should start with a "/": "no-slash" should be "/no-slash"."
+`;
+
+exports[`builder boot golden > pins pet-store / null data 1`] = `
+"log: registerIcons | registerBuiltinDashboardWidgets | registerTranslations | loadTranslations | GET /index.php/apps/buildiq/api/applications/pet-store/manifest | health slug=pet-store version= router=object
+title: pet-store – Nextcloud
+topbar: pet-store | /index.php/apps/buildiq/icons/pet-store.svg | Pet Store | brightness(0) invert(1) | Open apps menu, currently in {app} {"app":"pet-store"}
+app: mounted=#content uses=2 mixins=t,n directives=tooltip root=BuildiqBuilderRoot
+shell: CnAppRoot keys=appId,appName,supportDialog,manifest,permissions,isLoading,registry,pageTypes,dataSourcesLoader,translate,diagnostics,persistManifestDelta,routerViewKey
+props: {"appId":"openbuild-pet-store","appName":"pet-store","supportDialog":false,"permissions":[],"isLoading":false,"dataSourcesLoader":"[fn]","translate":"[fn]","diagnostics":{"health":true},"persistManifestDelta":"[fn]","routerViewKey":0}
+registry: TrackLinkAction,connector-data,docudesk-document-actions,my-approvals,procest-case-status pageTypes: {"index":"I","detail":"D"}
+manifest: {"version":"1.0.0","menu":[],"pages":[]}
+translate: Hello {"a":1} | Plain
+slots: _ctx
+routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+loader: {"opts":{"appSlug":"pet-store"},"scope":{"register":{"register":"pet-store@"},"pages":0}}
+save unchanged: ok key=0 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[],"pages":[]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save menu only: ok key=0 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save page added: ok key=1 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/new"}]}}
+  routes: New /new redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/new" props={} c=-
+save same pages again: ok key=1 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/new"}]}}
+  routes: New /new redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/new" props={} c=-
+save route changed: ok key=2 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/renamed"}]}}
+  routes: New /renamed redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/renamed" props={} c=-
+save duplicate name: ok key=3 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/renamed"},{"id":"New","route":"/dup"}]}}
+  routes: New /dup redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/renamed" props={} c=-
+save invalid route: ok key=4 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/renamed"},{"id":"New","route":"/dup"},{"id":"Bad","route":"no-slash"}]}}
+  routes: New /dup redirect=undefined props={"default":false} c=CnPageRenderer
+save pages removed: ok key=5 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save pages not an array: ok key=5 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":"x"}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save put fails: err save failed key=5 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"After","route":"/after"}]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+console: error [ERROR] @nextcloud/vue: The \`@nextcloud/vue\` library was used without setting / replacing the \`appName\`. undefined || error [ERROR] @nextcloud/vue: The \`@nextcloud/vue\` library was used without setting / replacing the \`appVersion\`. undefined || warn [buildiq:builder] router rebuild after save failed (edit is saved; reload to pick up new routes) Route paths should start with a "/": "no-slash" should be "/no-slash"."
+`;
+
+exports[`builder boot golden > pins pet-store / pages not an array 1`] = `
+"log: registerIcons | registerBuiltinDashboardWidgets | registerTranslations | loadTranslations | GET /index.php/apps/buildiq/api/applications/pet-store/manifest | health slug=pet-store version= router=object
+title: pet-store – Nextcloud
+topbar: pet-store | /index.php/apps/buildiq/icons/pet-store.svg | Pet Store | brightness(0) invert(1) | Open apps menu, currently in {app} {"app":"pet-store"}
+app: mounted=#content uses=2 mixins=t,n directives=tooltip root=BuildiqBuilderRoot
+shell: CnAppRoot keys=appId,appName,supportDialog,manifest,permissions,isLoading,registry,pageTypes,dataSourcesLoader,translate,diagnostics,persistManifestDelta,routerViewKey
+props: {"appId":"openbuild-pet-store","appName":"pet-store","supportDialog":false,"permissions":[],"isLoading":false,"dataSourcesLoader":"[fn]","translate":"[fn]","diagnostics":{"health":true},"persistManifestDelta":"[fn]","routerViewKey":0}
+registry: TrackLinkAction,connector-data,docudesk-document-actions,my-approvals,procest-case-status pageTypes: {"index":"I","detail":"D"}
+manifest: {"version":"1.0.0","menu":[],"pages":[]}
+translate: Hello {"a":1} | Plain
+slots: _ctx
+routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+loader: {"opts":{"appSlug":"pet-store"},"scope":{"register":{"register":"pet-store@"},"pages":0}}
+save unchanged: ok key=0 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[],"pages":[]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save menu only: ok key=0 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save page added: ok key=1 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/new"}]}}
+  routes: New /new redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/new" props={} c=-
+save same pages again: ok key=1 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/new"}]}}
+  routes: New /new redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/new" props={} c=-
+save route changed: ok key=2 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/renamed"}]}}
+  routes: New /renamed redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/renamed" props={} c=-
+save duplicate name: ok key=3 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/renamed"},{"id":"New","route":"/dup"}]}}
+  routes: New /dup redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/renamed" props={} c=-
+save invalid route: ok key=4 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/renamed"},{"id":"New","route":"/dup"},{"id":"Bad","route":"no-slash"}]}}
+  routes: New /dup redirect=undefined props={"default":false} c=CnPageRenderer
+save pages removed: ok key=5 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save pages not an array: ok key=5 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":"x"}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save put fails: err save failed key=5 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"After","route":"/after"}]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+console: error [ERROR] @nextcloud/vue: The \`@nextcloud/vue\` library was used without setting / replacing the \`appName\`. undefined || error [ERROR] @nextcloud/vue: The \`@nextcloud/vue\` library was used without setting / replacing the \`appVersion\`. undefined || warn [buildiq:builder] router rebuild after save failed (edit is saved; reload to pick up new routes) Route paths should start with a "/": "no-slash" should be "/no-slash"."
+`;
+
+exports[`builder boot golden > pins pet-store / string data 1`] = `
+"log: registerIcons | registerBuiltinDashboardWidgets | registerTranslations | loadTranslations | GET /index.php/apps/buildiq/api/applications/pet-store/manifest | health slug=pet-store version= router=object
+title: pet-store – Nextcloud
+topbar: pet-store | /index.php/apps/buildiq/icons/pet-store.svg | Pet Store | brightness(0) invert(1) | Open apps menu, currently in {app} {"app":"pet-store"}
+app: mounted=#content uses=2 mixins=t,n directives=tooltip root=BuildiqBuilderRoot
+shell: CnAppRoot keys=appId,appName,supportDialog,manifest,permissions,isLoading,registry,pageTypes,dataSourcesLoader,translate,diagnostics,persistManifestDelta,routerViewKey
+props: {"appId":"openbuild-pet-store","appName":"pet-store","supportDialog":false,"permissions":[],"isLoading":false,"dataSourcesLoader":"[fn]","translate":"[fn]","diagnostics":{"health":true},"persistManifestDelta":"[fn]","routerViewKey":0}
+registry: TrackLinkAction,connector-data,docudesk-document-actions,my-approvals,procest-case-status pageTypes: {"index":"I","detail":"D"}
+manifest: {"version":"1.0.0","menu":[],"pages":[]}
+translate: Hello {"a":1} | Plain
+slots: _ctx
+routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+loader: {"opts":{"appSlug":"pet-store"},"scope":{"register":{"register":"pet-store@"},"pages":0}}
+save unchanged: ok key=0 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[],"pages":[]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save menu only: ok key=0 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save page added: ok key=1 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/new"}]}}
+  routes: New /new redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/new" props={} c=-
+save same pages again: ok key=1 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/new"}]}}
+  routes: New /new redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/new" props={} c=-
+save route changed: ok key=2 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/renamed"}]}}
+  routes: New /renamed redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/renamed" props={} c=-
+save duplicate name: ok key=3 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/renamed"},{"id":"New","route":"/dup"}]}}
+  routes: New /dup redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/renamed" props={} c=-
+save invalid route: ok key=4 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/renamed"},{"id":"New","route":"/dup"},{"id":"Bad","route":"no-slash"}]}}
+  routes: New /dup redirect=undefined props={"default":false} c=CnPageRenderer
+save pages removed: ok key=5 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save pages not an array: ok key=5 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":"x"}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save put fails: err save failed key=5 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"After","route":"/after"}]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+console: error [ERROR] @nextcloud/vue: The \`@nextcloud/vue\` library was used without setting / replacing the \`appName\`. undefined || error [ERROR] @nextcloud/vue: The \`@nextcloud/vue\` library was used without setting / replacing the \`appVersion\`. undefined || warn [buildiq:builder] router rebuild after save failed (edit is saved; reload to pick up new routes) Route paths should start with a "/": "no-slash" should be "/no-slash"."
+`;
+
+exports[`builder boot golden > pins pet-store / title only 1`] = `
+"log: registerIcons | registerBuiltinDashboardWidgets | registerTranslations | loadTranslations | GET /index.php/apps/buildiq/api/applications/pet-store/manifest | health slug=pet-store version= router=object
+title: Titled – Nextcloud
+topbar: Titled | /index.php/apps/buildiq/icons/pet-store.svg | Pet Store | brightness(0) invert(1) | Open apps menu, currently in {app} {"app":"Titled"}
+app: mounted=#content uses=2 mixins=t,n directives=tooltip root=BuildiqBuilderRoot
+shell: CnAppRoot keys=appId,appName,supportDialog,manifest,permissions,isLoading,registry,pageTypes,dataSourcesLoader,translate,diagnostics,persistManifestDelta,routerViewKey
+props: {"appId":"openbuild-pet-store","appName":"Titled","supportDialog":false,"permissions":[],"isLoading":false,"dataSourcesLoader":"[fn]","translate":"[fn]","diagnostics":{"health":true},"persistManifestDelta":"[fn]","routerViewKey":0}
+registry: TrackLinkAction,connector-data,docudesk-document-actions,my-approvals,procest-case-status pageTypes: {"index":"I","detail":"D"}
+manifest: {"version":"1.0.0","title":"Titled","menu":[],"pages":[{"id":"A","route":"/a","type":"index","primaryAction":{"label":"x"},"config":{"showTitle":true}}],"runtime":{"user":{}}}
+translate: Hello {"a":1} | Plain
+slots: _ctx
+routes: A /a redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/a" props={} c=-
+loader: {"opts":{"appSlug":"pet-store"},"scope":{"register":{"register":"pet-store@"},"pages":1}}
+save unchanged: ok key=0 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","title":"Titled","menu":[],"pages":[{"id":"A","route":"/a","type":"index","primaryAction":{"label":"x"},"config":{"showTitle":true}}],"runtime":{"user":{}}}}
+  routes: A /a redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/a" props={} c=-
+save menu only: ok key=0 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","title":"Titled","menu":[{"id":"z"}],"pages":[{"id":"A","route":"/a","type":"index","primaryAction":{"label":"x"},"config":{"showTitle":true}}],"runtime":{"user":{}}}}
+  routes: A /a redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/a" props={} c=-
+save page added: ok key=1 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","title":"Titled","menu":[{"id":"z"}],"pages":[{"id":"A","route":"/a","type":"index","primaryAction":{"label":"x"},"config":{"showTitle":true}},{"id":"New","route":"/new"}],"runtime":{"user":{}}}}
+  routes: A /a redirect=undefined props={"default":false} c=CnPageRenderer; New /new redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/a" props={} c=-
+save same pages again: ok key=1 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","title":"Titled","menu":[{"id":"z"}],"pages":[{"id":"A","route":"/a","type":"index","primaryAction":{"label":"x"},"config":{"showTitle":true}},{"id":"New","route":"/new"}],"runtime":{"user":{}}}}
+  routes: A /a redirect=undefined props={"default":false} c=CnPageRenderer; New /new redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/a" props={} c=-
+save route changed: ok key=2 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","title":"Titled","menu":[{"id":"z"}],"pages":[{"id":"A","route":"/a","type":"index","primaryAction":{"label":"x"},"config":{"showTitle":true}},{"id":"New","route":"/renamed"}],"runtime":{"user":{}}}}
+  routes: A /a redirect=undefined props={"default":false} c=CnPageRenderer; New /renamed redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/a" props={} c=-
+save duplicate name: ok key=3 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","title":"Titled","menu":[{"id":"z"}],"pages":[{"id":"A","route":"/a","type":"index","primaryAction":{"label":"x"},"config":{"showTitle":true}},{"id":"New","route":"/renamed"},{"id":"New","route":"/dup"}],"runtime":{"user":{}}}}
+  routes: A /a redirect=undefined props={"default":false} c=CnPageRenderer; New /dup redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/a" props={} c=-
+save invalid route: ok key=4 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","title":"Titled","menu":[{"id":"z"}],"pages":[{"id":"A","route":"/a","type":"index","primaryAction":{"label":"x"},"config":{"showTitle":true}},{"id":"New","route":"/renamed"},{"id":"New","route":"/dup"},{"id":"Bad","route":"no-slash"}],"runtime":{"user":{}}}}
+  routes: A /a redirect=undefined props={"default":false} c=CnPageRenderer; New /dup redirect=undefined props={"default":false} c=CnPageRenderer
+save pages removed: ok key=5 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","title":"Titled","menu":[{"id":"z"}],"pages":[],"runtime":{"user":{}}}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save pages not an array: ok key=5 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","title":"Titled","menu":[{"id":"z"}],"pages":"x","runtime":{"user":{}}}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save put fails: err save failed key=5 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","title":"Titled","menu":[{"id":"z"}],"pages":[{"id":"After","route":"/after"}],"runtime":{"user":{}}}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+console: error [ERROR] @nextcloud/vue: The \`@nextcloud/vue\` library was used without setting / replacing the \`appName\`. undefined || error [ERROR] @nextcloud/vue: The \`@nextcloud/vue\` library was used without setting / replacing the \`appVersion\`. undefined || warn [buildiq:builder] router rebuild after save failed (edit is saved; reload to pick up new routes) Route paths should start with a "/": "no-slash" should be "/no-slash"."
+`;
+
+exports[`builder boot golden > pins request fails 1`] = `
+"log: registerIcons | registerBuiltinDashboardWidgets | registerTranslations | loadTranslations | GET /index.php/apps/buildiq/api/applications/gone/manifest | health slug=gone version= router=object
+title: Host
+topbar: Gone | /index.php/apps/buildiq/icons/gone.svg | Gone | brightness(0) invert(1) | Open apps menu, currently in {app} {"app":"Gone"}
+app: mounted=#content uses=2 mixins=t,n directives=tooltip root=BuildiqBuilderRoot
+shell: CnAppRoot keys=appId,appName,supportDialog,manifest,permissions,isLoading,registry,pageTypes,dataSourcesLoader,translate,diagnostics,persistManifestDelta,routerViewKey
+props: {"appId":"openbuild-gone","appName":"gone","supportDialog":false,"permissions":[],"isLoading":false,"dataSourcesLoader":"[fn]","translate":"[fn]","diagnostics":{"health":true},"persistManifestDelta":"[fn]","routerViewKey":0}
+registry: TrackLinkAction,connector-data,docudesk-document-actions,my-approvals,procest-case-status pageTypes: {"index":"I","detail":"D"}
+manifest: {"version":"1.0.0","menu":[],"pages":[]}
+translate: Hello {"a":1} | Plain
+slots: _ctx
+routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+loader: {"opts":{"appSlug":"gone"},"scope":{"register":{"register":"gone@"},"pages":0}}
+save unchanged: ok key=0 log=PUT /index.php/apps/buildiq/api/applications/gone/manifest {"manifest":{"version":"1.0.0","menu":[],"pages":[]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save menu only: ok key=0 log=PUT /index.php/apps/buildiq/api/applications/gone/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save page added: ok key=1 log=PUT /index.php/apps/buildiq/api/applications/gone/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/new"}]}}
+  routes: New /new redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/new" props={} c=-
+save same pages again: ok key=1 log=PUT /index.php/apps/buildiq/api/applications/gone/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/new"}]}}
+  routes: New /new redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/new" props={} c=-
+save route changed: ok key=2 log=PUT /index.php/apps/buildiq/api/applications/gone/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/renamed"}]}}
+  routes: New /renamed redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/renamed" props={} c=-
+save duplicate name: ok key=3 log=PUT /index.php/apps/buildiq/api/applications/gone/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/renamed"},{"id":"New","route":"/dup"}]}}
+  routes: New /dup redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/renamed" props={} c=-
+save invalid route: ok key=4 log=PUT /index.php/apps/buildiq/api/applications/gone/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/renamed"},{"id":"New","route":"/dup"},{"id":"Bad","route":"no-slash"}]}}
+  routes: New /dup redirect=undefined props={"default":false} c=CnPageRenderer
+save pages removed: ok key=5 log=PUT /index.php/apps/buildiq/api/applications/gone/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save pages not an array: ok key=5 log=PUT /index.php/apps/buildiq/api/applications/gone/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":"x"}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save put fails: err save failed key=5 log=PUT /index.php/apps/buildiq/api/applications/gone/manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"After","route":"/after"}]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+console: error [ERROR] @nextcloud/vue: The \`@nextcloud/vue\` library was used without setting / replacing the \`appName\`. undefined || error [ERROR] @nextcloud/vue: The \`@nextcloud/vue\` library was used without setting / replacing the \`appVersion\`. undefined || error [buildiq:builder] failed to load manifest for gone HTTP 404 || warn [buildiq:builder] router rebuild after save failed (edit is saved; reload to pick up new routes) Route paths should start with a "/": "no-slash" should be "/no-slash"."
+`;
+
+exports[`builder boot golden > pins request fails, no slug 1`] = `
+"log: registerIcons | registerBuiltinDashboardWidgets | registerTranslations | loadTranslations | GET /index.php/apps/buildiq/api/applications//manifest | health slug= version= router=object
+title: Host
+topbar: Buildiq | /old.svg | null |  | Open apps menu, currently in Buildiq
+app: mounted=#content uses=2 mixins=t,n directives=tooltip root=BuildiqBuilderRoot
+shell: CnAppRoot keys=appId,appName,supportDialog,manifest,permissions,isLoading,registry,pageTypes,dataSourcesLoader,translate,diagnostics,persistManifestDelta,routerViewKey
+props: {"appId":"openbuild-","appName":"","supportDialog":false,"permissions":[],"isLoading":false,"dataSourcesLoader":"[fn]","translate":"[fn]","diagnostics":{"health":true},"persistManifestDelta":"[fn]","routerViewKey":0}
+registry: TrackLinkAction,connector-data,docudesk-document-actions,my-approvals,procest-case-status pageTypes: {"index":"I","detail":"D"}
+manifest: {"version":"1.0.0","menu":[],"pages":[]}
+translate: Hello {"a":1} | Plain
+slots: _ctx
+routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+loader: {"opts":{"appSlug":""},"scope":{"register":{"register":"@"},"pages":0}}
+save unchanged: ok key=0 log=PUT /index.php/apps/buildiq/api/applications//manifest {"manifest":{"version":"1.0.0","menu":[],"pages":[]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save menu only: ok key=0 log=PUT /index.php/apps/buildiq/api/applications//manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save page added: ok key=1 log=PUT /index.php/apps/buildiq/api/applications//manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/new"}]}}
+  routes: New /new redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/new" props={} c=-
+save same pages again: ok key=1 log=PUT /index.php/apps/buildiq/api/applications//manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/new"}]}}
+  routes: New /new redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/new" props={} c=-
+save route changed: ok key=2 log=PUT /index.php/apps/buildiq/api/applications//manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/renamed"}]}}
+  routes: New /renamed redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/renamed" props={} c=-
+save duplicate name: ok key=3 log=PUT /index.php/apps/buildiq/api/applications//manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/renamed"},{"id":"New","route":"/dup"}]}}
+  routes: New /dup redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/renamed" props={} c=-
+save invalid route: ok key=4 log=PUT /index.php/apps/buildiq/api/applications//manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"New","route":"/renamed"},{"id":"New","route":"/dup"},{"id":"Bad","route":"no-slash"}]}}
+  routes: New /dup redirect=undefined props={"default":false} c=CnPageRenderer
+save pages removed: ok key=5 log=PUT /index.php/apps/buildiq/api/applications//manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save pages not an array: ok key=5 log=PUT /index.php/apps/buildiq/api/applications//manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":"x"}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save put fails: err save failed key=5 log=PUT /index.php/apps/buildiq/api/applications//manifest {"manifest":{"version":"1.0.0","menu":[{"id":"z"}],"pages":[{"id":"After","route":"/after"}]}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+console: error [ERROR] @nextcloud/vue: The \`@nextcloud/vue\` library was used without setting / replacing the \`appName\`. undefined || error [ERROR] @nextcloud/vue: The \`@nextcloud/vue\` library was used without setting / replacing the \`appVersion\`. undefined || error [buildiq:builder] failed to load manifest for  HTTP 500 || warn [buildiq:builder] router rebuild after save failed (edit is saved; reload to pick up new routes) Route paths should start with a "/": "no-slash" should be "/no-slash"."
+`;
+
+exports[`builder boot golden > pins translations throw, l10n promise rejects 1`] = `
+"log: registerIcons | registerBuiltinDashboardWidgets | registerTranslations | loadTranslations | GET /index.php/apps/buildiq/api/applications/pet-store/manifest | health slug=pet-store version= router=object
+title: Titled – Nextcloud
+topbar: Titled | /index.php/apps/buildiq/icons/pet-store.svg | Pet Store | brightness(0) invert(1) | Open apps menu, currently in {app} {"app":"Titled"}
+app: mounted=#content uses=2 mixins=t,n directives=tooltip root=BuildiqBuilderRoot
+shell: CnAppRoot keys=appId,appName,supportDialog,manifest,permissions,isLoading,registry,pageTypes,dataSourcesLoader,translate,diagnostics,persistManifestDelta,routerViewKey
+props: {"appId":"openbuild-pet-store","appName":"Titled","supportDialog":false,"permissions":[],"isLoading":false,"dataSourcesLoader":"[fn]","translate":"[fn]","diagnostics":{"health":true},"persistManifestDelta":"[fn]","routerViewKey":0}
+registry: TrackLinkAction,connector-data,docudesk-document-actions,my-approvals,procest-case-status pageTypes: {"index":"I","detail":"D"}
+manifest: {"version":"1.0.0","title":"Titled","menu":[],"pages":[{"id":"A","route":"/a","type":"index","primaryAction":{"label":"x"},"config":{"showTitle":true}}],"runtime":{"user":{}}}
+translate: Hello {"a":1} | Plain
+slots: _ctx
+routes: A /a redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/a" props={} c=-
+loader: {"opts":{"appSlug":"pet-store"},"scope":{"register":{"register":"pet-store@"},"pages":1}}
+save unchanged: ok key=0 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","title":"Titled","menu":[],"pages":[{"id":"A","route":"/a","type":"index","primaryAction":{"label":"x"},"config":{"showTitle":true}}],"runtime":{"user":{}}}}
+  routes: A /a redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/a" props={} c=-
+save menu only: ok key=0 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","title":"Titled","menu":[{"id":"z"}],"pages":[{"id":"A","route":"/a","type":"index","primaryAction":{"label":"x"},"config":{"showTitle":true}}],"runtime":{"user":{}}}}
+  routes: A /a redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/a" props={} c=-
+save page added: ok key=1 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","title":"Titled","menu":[{"id":"z"}],"pages":[{"id":"A","route":"/a","type":"index","primaryAction":{"label":"x"},"config":{"showTitle":true}},{"id":"New","route":"/new"}],"runtime":{"user":{}}}}
+  routes: A /a redirect=undefined props={"default":false} c=CnPageRenderer; New /new redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/a" props={} c=-
+save same pages again: ok key=1 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","title":"Titled","menu":[{"id":"z"}],"pages":[{"id":"A","route":"/a","type":"index","primaryAction":{"label":"x"},"config":{"showTitle":true}},{"id":"New","route":"/new"}],"runtime":{"user":{}}}}
+  routes: A /a redirect=undefined props={"default":false} c=CnPageRenderer; New /new redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/a" props={} c=-
+save route changed: ok key=2 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","title":"Titled","menu":[{"id":"z"}],"pages":[{"id":"A","route":"/a","type":"index","primaryAction":{"label":"x"},"config":{"showTitle":true}},{"id":"New","route":"/renamed"}],"runtime":{"user":{}}}}
+  routes: A /a redirect=undefined props={"default":false} c=CnPageRenderer; New /renamed redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/a" props={} c=-
+save duplicate name: ok key=3 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","title":"Titled","menu":[{"id":"z"}],"pages":[{"id":"A","route":"/a","type":"index","primaryAction":{"label":"x"},"config":{"showTitle":true}},{"id":"New","route":"/renamed"},{"id":"New","route":"/dup"}],"runtime":{"user":{}}}}
+  routes: A /a redirect=undefined props={"default":false} c=CnPageRenderer; New /dup redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/a" props={} c=-
+save invalid route: ok key=4 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","title":"Titled","menu":[{"id":"z"}],"pages":[{"id":"A","route":"/a","type":"index","primaryAction":{"label":"x"},"config":{"showTitle":true}},{"id":"New","route":"/renamed"},{"id":"New","route":"/dup"},{"id":"Bad","route":"no-slash"}],"runtime":{"user":{}}}}
+  routes: A /a redirect=undefined props={"default":false} c=CnPageRenderer; New /dup redirect=undefined props={"default":false} c=CnPageRenderer
+save pages removed: ok key=5 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","title":"Titled","menu":[{"id":"z"}],"pages":[],"runtime":{"user":{}}}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save pages not an array: ok key=5 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","title":"Titled","menu":[{"id":"z"}],"pages":"x","runtime":{"user":{}}}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save put fails: err save failed key=5 log=PUT /index.php/apps/buildiq/api/applications/pet-store/manifest {"manifest":{"version":"1.0.0","title":"Titled","menu":[{"id":"z"}],"pages":[{"id":"After","route":"/after"}],"runtime":{"user":{}}}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+console: error [ERROR] @nextcloud/vue: The \`@nextcloud/vue\` library was used without setting / replacing the \`appName\`. undefined || error [ERROR] @nextcloud/vue: The \`@nextcloud/vue\` library was used without setting / replacing the \`appVersion\`. undefined || warn [buildiq:builder] registerTranslations failed; lib strings fall back to English source no translations || warn [buildiq:builder] router rebuild after save failed (edit is saved; reload to pick up new routes) Route paths should start with a "/": "no-slash" should be "/no-slash"."
+`;
+
+exports[`builder boot golden > pins version / named 1`] = `
+"log: registerIcons | registerBuiltinDashboardWidgets | registerTranslations | loadTranslations | GET /index.php/apps/buildiq/api/applications/pet_store-x/manifest?_version=dev%201 | health slug=pet_store-x version=dev 1 router=object
+title: Pet Store – Nextcloud
+topbar: Pet Store | /index.php/apps/buildiq/icons/pet_store-x.svg | Pet Store X | brightness(0) invert(1) | Open apps menu, currently in {app} {"app":"Pet Store"}
+app: mounted=#content uses=2 mixins=t,n directives=tooltip root=BuildiqBuilderRoot
+shell: CnAppRoot keys=appId,appName,supportDialog,manifest,permissions,isLoading,registry,pageTypes,dataSourcesLoader,translate,diagnostics,persistManifestDelta,routerViewKey
+props: {"appId":"openbuild-pet_store-x","appName":"Pet Store","supportDialog":true,"permissions":["read"],"isLoading":false,"dataSourcesLoader":"[fn]","translate":"[fn]","diagnostics":{"health":true},"persistManifestDelta":"[fn]","routerViewKey":0}
+registry: TrackLinkAction,connector-data,docudesk-document-actions,my-approvals,procest-case-status pageTypes: {"index":"I","detail":"D"}
+manifest: {"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"m","route":"Home"}],"pages":[{"id":"Home","route":"/","type":"dashboard","config":{}},{"id":"List","route":"/list","type":"index","config":{"register":"r","showTitle":true}},{"id":"Item","route":"/list/:id","type":"detail","config":{"showTitle":false}}],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}
+translate: Hello {"a":1} | Plain
+slots: menu,_ctx
+menu@undefined: CnAppNav {"navProp":1} children=primary-action,_ctx
+  primary: BackToVirtualApps
+menu@A: CnAppNav {"navProp":1} children=primary-action,_ctx
+  primary: BackToVirtualApps
+menu@Home: CnAppNav {"navProp":1} children=primary-action,_ctx
+  primary: BackToVirtualApps
+menu@P: CnAppNav {"navProp":1} children=primary-action,_ctx
+  primary: BackToVirtualApps
+routes: Item /list/:id redirect=undefined props={"default":true} c=CnPageRenderer; Home / redirect=undefined props={"default":false} c=CnPageRenderer; List /list redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/" props={} c=-
+loader: {"opts":{"appSlug":"pet_store-x"},"scope":{"register":{"register":"pet_store-x@dev 1"},"pages":3}}
+save unchanged: ok key=0 log=PUT /index.php/apps/buildiq/api/applications/pet_store-x/manifest {"manifest":{"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"m","route":"Home"}],"pages":[{"id":"Home","route":"/","type":"dashboard","config":{}},{"id":"List","route":"/list","type":"index","config":{"register":"r","showTitle":true}},{"id":"Item","route":"/list/:id","type":"detail","config":{"showTitle":false}}],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}}
+  routes: Item /list/:id redirect=undefined props={"default":true} c=CnPageRenderer; Home / redirect=undefined props={"default":false} c=CnPageRenderer; List /list redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/" props={} c=-
+save menu only: ok key=0 log=PUT /index.php/apps/buildiq/api/applications/pet_store-x/manifest {"manifest":{"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"z"}],"pages":[{"id":"Home","route":"/","type":"dashboard","config":{}},{"id":"List","route":"/list","type":"index","config":{"register":"r","showTitle":true}},{"id":"Item","route":"/list/:id","type":"detail","config":{"showTitle":false}}],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}}
+  routes: Item /list/:id redirect=undefined props={"default":true} c=CnPageRenderer; Home / redirect=undefined props={"default":false} c=CnPageRenderer; List /list redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/" props={} c=-
+save page added: ok key=1 log=PUT /index.php/apps/buildiq/api/applications/pet_store-x/manifest {"manifest":{"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"z"}],"pages":[{"id":"Home","route":"/","type":"dashboard","config":{}},{"id":"List","route":"/list","type":"index","config":{"register":"r","showTitle":true}},{"id":"Item","route":"/list/:id","type":"detail","config":{"showTitle":false}},{"id":"New","route":"/new"}],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}}
+  routes: Item /list/:id redirect=undefined props={"default":true} c=CnPageRenderer; Home / redirect=undefined props={"default":false} c=CnPageRenderer; List /list redirect=undefined props={"default":false} c=CnPageRenderer; New /new redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/" props={} c=-
+save same pages again: ok key=1 log=PUT /index.php/apps/buildiq/api/applications/pet_store-x/manifest {"manifest":{"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"z"}],"pages":[{"id":"Home","route":"/","type":"dashboard","config":{}},{"id":"List","route":"/list","type":"index","config":{"register":"r","showTitle":true}},{"id":"Item","route":"/list/:id","type":"detail","config":{"showTitle":false}},{"id":"New","route":"/new"}],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}}
+  routes: Item /list/:id redirect=undefined props={"default":true} c=CnPageRenderer; Home / redirect=undefined props={"default":false} c=CnPageRenderer; List /list redirect=undefined props={"default":false} c=CnPageRenderer; New /new redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/" props={} c=-
+save route changed: ok key=2 log=PUT /index.php/apps/buildiq/api/applications/pet_store-x/manifest {"manifest":{"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"z"}],"pages":[{"id":"Home","route":"/","type":"dashboard","config":{}},{"id":"List","route":"/list","type":"index","config":{"register":"r","showTitle":true}},{"id":"Item","route":"/list/:id","type":"detail","config":{"showTitle":false}},{"id":"New","route":"/renamed"}],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}}
+  routes: Item /list/:id redirect=undefined props={"default":true} c=CnPageRenderer; Home / redirect=undefined props={"default":false} c=CnPageRenderer; List /list redirect=undefined props={"default":false} c=CnPageRenderer; New /renamed redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/" props={} c=-
+save duplicate name: ok key=3 log=PUT /index.php/apps/buildiq/api/applications/pet_store-x/manifest {"manifest":{"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"z"}],"pages":[{"id":"Home","route":"/","type":"dashboard","config":{}},{"id":"List","route":"/list","type":"index","config":{"register":"r","showTitle":true}},{"id":"Item","route":"/list/:id","type":"detail","config":{"showTitle":false}},{"id":"New","route":"/renamed"},{"id":"New","route":"/dup"}],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}}
+  routes: Item /list/:id redirect=undefined props={"default":true} c=CnPageRenderer; Home / redirect=undefined props={"default":false} c=CnPageRenderer; List /list redirect=undefined props={"default":false} c=CnPageRenderer; New /dup redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/" props={} c=-
+save invalid route: ok key=4 log=PUT /index.php/apps/buildiq/api/applications/pet_store-x/manifest {"manifest":{"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"z"}],"pages":[{"id":"Home","route":"/","type":"dashboard","config":{}},{"id":"List","route":"/list","type":"index","config":{"register":"r","showTitle":true}},{"id":"Item","route":"/list/:id","type":"detail","config":{"showTitle":false}},{"id":"New","route":"/renamed"},{"id":"New","route":"/dup"},{"id":"Bad","route":"no-slash"}],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}}
+  routes: Item /list/:id redirect=undefined props={"default":true} c=CnPageRenderer; Home / redirect=undefined props={"default":false} c=CnPageRenderer; List /list redirect=undefined props={"default":false} c=CnPageRenderer; New /dup redirect=undefined props={"default":false} c=CnPageRenderer
+save pages removed: ok key=5 log=PUT /index.php/apps/buildiq/api/applications/pet_store-x/manifest {"manifest":{"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"z"}],"pages":[],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save pages not an array: ok key=5 log=PUT /index.php/apps/buildiq/api/applications/pet_store-x/manifest {"manifest":{"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"z"}],"pages":"x","support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save put fails: err save failed key=5 log=PUT /index.php/apps/buildiq/api/applications/pet_store-x/manifest {"manifest":{"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"z"}],"pages":[{"id":"After","route":"/after"}],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+console: error [ERROR] @nextcloud/vue: The \`@nextcloud/vue\` library was used without setting / replacing the \`appName\`. undefined || error [ERROR] @nextcloud/vue: The \`@nextcloud/vue\` library was used without setting / replacing the \`appVersion\`. undefined || warn [buildiq:builder] router rebuild after save failed (edit is saved; reload to pick up new routes) Route paths should start with a "/": "no-slash" should be "/no-slash"."
+`;
+
+exports[`builder boot golden > pins version / title only 1`] = `
+"log: registerIcons | registerBuiltinDashboardWidgets | registerTranslations | loadTranslations | GET /index.php/apps/buildiq/api/applications/a/manifest?_version=v2 | health slug=a version=v2 router=object
+title: Titled – Nextcloud
+topbar: Titled | /index.php/apps/buildiq/icons/a.svg | A | brightness(0) invert(1) | Open apps menu, currently in {app} {"app":"Titled"}
+app: mounted=#content uses=2 mixins=t,n directives=tooltip root=BuildiqBuilderRoot
+shell: CnAppRoot keys=appId,appName,supportDialog,manifest,permissions,isLoading,registry,pageTypes,dataSourcesLoader,translate,diagnostics,persistManifestDelta,routerViewKey
+props: {"appId":"openbuild-a","appName":"Titled","supportDialog":false,"permissions":[],"isLoading":false,"dataSourcesLoader":"[fn]","translate":"[fn]","diagnostics":{"health":true},"persistManifestDelta":"[fn]","routerViewKey":0}
+registry: TrackLinkAction,connector-data,docudesk-document-actions,my-approvals,procest-case-status pageTypes: {"index":"I","detail":"D"}
+manifest: {"version":"1.0.0","title":"Titled","menu":[],"pages":[{"id":"A","route":"/a","type":"index","primaryAction":{"label":"x"},"config":{"showTitle":true}}],"runtime":{"user":{}}}
+translate: Hello {"a":1} | Plain
+slots: menu,_ctx
+menu@undefined: CnAppNav {"navProp":1} children=primary-action,_ctx
+  primary: BackToVirtualApps
+menu@A: CnAppNav {"navProp":1} children=_ctx
+menu@Home: CnAppNav {"navProp":1} children=primary-action,_ctx
+  primary: BackToVirtualApps
+menu@P: CnAppNav {"navProp":1} children=primary-action,_ctx
+  primary: BackToVirtualApps
+routes: A /a redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/a" props={} c=-
+loader: {"opts":{"appSlug":"a"},"scope":{"register":{"register":"a@v2"},"pages":1}}
+save unchanged: ok key=0 log=PUT /index.php/apps/buildiq/api/applications/a/manifest {"manifest":{"version":"1.0.0","title":"Titled","menu":[],"pages":[{"id":"A","route":"/a","type":"index","primaryAction":{"label":"x"},"config":{"showTitle":true}}],"runtime":{"user":{}}}}
+  routes: A /a redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/a" props={} c=-
+save menu only: ok key=0 log=PUT /index.php/apps/buildiq/api/applications/a/manifest {"manifest":{"version":"1.0.0","title":"Titled","menu":[{"id":"z"}],"pages":[{"id":"A","route":"/a","type":"index","primaryAction":{"label":"x"},"config":{"showTitle":true}}],"runtime":{"user":{}}}}
+  routes: A /a redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/a" props={} c=-
+save page added: ok key=1 log=PUT /index.php/apps/buildiq/api/applications/a/manifest {"manifest":{"version":"1.0.0","title":"Titled","menu":[{"id":"z"}],"pages":[{"id":"A","route":"/a","type":"index","primaryAction":{"label":"x"},"config":{"showTitle":true}},{"id":"New","route":"/new"}],"runtime":{"user":{}}}}
+  routes: A /a redirect=undefined props={"default":false} c=CnPageRenderer; New /new redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/a" props={} c=-
+save same pages again: ok key=1 log=PUT /index.php/apps/buildiq/api/applications/a/manifest {"manifest":{"version":"1.0.0","title":"Titled","menu":[{"id":"z"}],"pages":[{"id":"A","route":"/a","type":"index","primaryAction":{"label":"x"},"config":{"showTitle":true}},{"id":"New","route":"/new"}],"runtime":{"user":{}}}}
+  routes: A /a redirect=undefined props={"default":false} c=CnPageRenderer; New /new redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/a" props={} c=-
+save route changed: ok key=2 log=PUT /index.php/apps/buildiq/api/applications/a/manifest {"manifest":{"version":"1.0.0","title":"Titled","menu":[{"id":"z"}],"pages":[{"id":"A","route":"/a","type":"index","primaryAction":{"label":"x"},"config":{"showTitle":true}},{"id":"New","route":"/renamed"}],"runtime":{"user":{}}}}
+  routes: A /a redirect=undefined props={"default":false} c=CnPageRenderer; New /renamed redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/a" props={} c=-
+save duplicate name: ok key=3 log=PUT /index.php/apps/buildiq/api/applications/a/manifest {"manifest":{"version":"1.0.0","title":"Titled","menu":[{"id":"z"}],"pages":[{"id":"A","route":"/a","type":"index","primaryAction":{"label":"x"},"config":{"showTitle":true}},{"id":"New","route":"/renamed"},{"id":"New","route":"/dup"}],"runtime":{"user":{}}}}
+  routes: A /a redirect=undefined props={"default":false} c=CnPageRenderer; New /dup redirect=undefined props={"default":false} c=CnPageRenderer; openbuild-builder-catch-all /:catchAll(.*) redirect="/a" props={} c=-
+save invalid route: ok key=4 log=PUT /index.php/apps/buildiq/api/applications/a/manifest {"manifest":{"version":"1.0.0","title":"Titled","menu":[{"id":"z"}],"pages":[{"id":"A","route":"/a","type":"index","primaryAction":{"label":"x"},"config":{"showTitle":true}},{"id":"New","route":"/renamed"},{"id":"New","route":"/dup"},{"id":"Bad","route":"no-slash"}],"runtime":{"user":{}}}}
+  routes: A /a redirect=undefined props={"default":false} c=CnPageRenderer; New /dup redirect=undefined props={"default":false} c=CnPageRenderer
+save pages removed: ok key=5 log=PUT /index.php/apps/buildiq/api/applications/a/manifest {"manifest":{"version":"1.0.0","title":"Titled","menu":[{"id":"z"}],"pages":[],"runtime":{"user":{}}}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save pages not an array: ok key=5 log=PUT /index.php/apps/buildiq/api/applications/a/manifest {"manifest":{"version":"1.0.0","title":"Titled","menu":[{"id":"z"}],"pages":"x","runtime":{"user":{}}}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+save put fails: err save failed key=5 log=PUT /index.php/apps/buildiq/api/applications/a/manifest {"manifest":{"version":"1.0.0","title":"Titled","menu":[{"id":"z"}],"pages":[{"id":"After","route":"/after"}],"runtime":{"user":{}}}}
+  routes: openbuild-builder-catch-all /:catchAll(.*) redirect=undefined props={"default":false} c=AppNotFound
+console: error [ERROR] @nextcloud/vue: The \`@nextcloud/vue\` library was used without setting / replacing the \`appName\`. undefined || error [ERROR] @nextcloud/vue: The \`@nextcloud/vue\` library was used without setting / replacing the \`appVersion\`. undefined || warn [buildiq:builder] router rebuild after save failed (edit is saved; reload to pick up new routes) Route paths should start with a "/": "no-slash" should be "/no-slash"."
+`;

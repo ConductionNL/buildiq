@@ -88,14 +88,14 @@ export function downloadFormExport(form) {
 }
 
 /**
- * Read a form export and return the library form to create.
+ * The parsed content of a form export; throws when it is not JSON or not a
+ * form export.
  *
  * @param {string|object} input The file's text, or its parsed content.
- * @return {object} The form-template record, without local identity.
- * @throws {FormImportError} When the file is not a valid form export.
- * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-forms-travel-between-organisations-req-bqgl-005
+ * @return {object} The export, with a `form` object.
+ * @throws {FormImportError} When the file is not a form export.
  */
-export function parseFormImport(input) {
+function readFormExport(input) {
 	let data = input
 	if (typeof input === 'string') {
 		try {
@@ -113,21 +113,54 @@ export function parseFormImport(input) {
 	) {
 		throw new FormImportError('not-a-form')
 	}
-	const form = withoutIdentity(data.form)
-	const valid =
+	return data
+}
+
+/**
+ * Whether a form carries a valid slug, name, kind and category.
+ *
+ * @param {object} form The form-template record.
+ * @return {boolean}
+ */
+function hasValidIdentity(form) {
+	return (
 		typeof form.slug === 'string'
 		&& /^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(form.slug)
 		&& typeof form.name === 'string'
 		&& form.name !== ''
 		&& FORM_KINDS.includes(form.kind)
 		&& CATEGORIES.includes(form.category)
-		&& form.form
+	)
+}
+
+/**
+ * Whether a form carries a fields list and an object schema fragment.
+ *
+ * @param {object} form The form-template record.
+ * @return {boolean}
+ */
+function hasValidBody(form) {
+	return Boolean(
+		form.form
 		&& typeof form.form === 'object'
 		&& Array.isArray(form.form.fields)
 		&& form.schemaFragment
 		&& typeof form.schemaFragment === 'object'
-		&& !Array.isArray(form.schemaFragment)
-	if (!valid) {
+		&& !Array.isArray(form.schemaFragment),
+	)
+}
+
+/**
+ * Read a form export and return the library form to create.
+ *
+ * @param {string|object} input The file's text, or its parsed content.
+ * @return {object} The form-template record, without local identity.
+ * @throws {FormImportError} When the file is not a valid form export.
+ * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-forms-travel-between-organisations-req-bqgl-005
+ */
+export function parseFormImport(input) {
+	const form = withoutIdentity(readFormExport(input).form)
+	if (!hasValidIdentity(form) || !hasValidBody(form)) {
 		throw new FormImportError('invalid-form')
 	}
 	return form

@@ -77,6 +77,73 @@ export function defaultEditableVersion(versions, productionUuid) {
 }
 
 /**
+ * The version records of a list response: a bare array or `{ results }`.
+ *
+ * @param {unknown} data The response body.
+ * @return {Array<object>} The versions, or an empty list.
+ */
+function versionListOf(data) {
+	if (Array.isArray(data)) {
+		return data
+	}
+	return data && Array.isArray(data.results) ? data.results : []
+}
+
+/**
+ * The records of an OpenRegister objects response: `{ results }` or a bare
+ * array.
+ *
+ * @param {unknown} data The response body.
+ * @return {Array<object>} The records, or an empty list.
+ */
+function recordsOf(data) {
+	if (data && Array.isArray(data.results)) {
+		return data.results
+	}
+	return Array.isArray(data) ? data : []
+}
+
+/**
+ * The production version UUID an Application record points at: a UUID
+ * string, or an object carrying `uuid` or `id`.
+ *
+ * @param {object} app The Application record.
+ * @return {string|null} The UUID, or null when it has none.
+ */
+function productionUuidOf(app) {
+	const pv = app.productionVersion
+	if (typeof pv === 'string') {
+		return pv
+	}
+	return (pv && (pv.uuid || pv.id)) || null
+}
+
+/**
+ * Read the production version UUID from the app's Application record, via
+ * OpenRegister's objects endpoint (the application-level slug lookup).
+ *
+ * Degrades to null when the record cannot be read: the fallback rule still
+ * works then, but does not distinguish production from non-production.
+ *
+ * @param {string} appSlug The virtual-app slug.
+ * @return {Promise<string|null>} The UUID, or null.
+ */
+async function fetchProductionUuid(appSlug) {
+	try {
+		const appUrl = generateUrl(
+			'/apps/openregister/api/objects/buildiq/built-app',
+		)
+		const { data: appData } = await axios.get(appUrl, {
+			params: { slug: appSlug, _limit: 1 },
+		})
+		const app = recordsOf(appData).find((a) => a && a.slug === appSlug) || null
+		return app ? productionUuidOf(app) : null
+	} catch {
+		return null
+	}
+}
+
+/**
  * Composable: resolve an ApplicationVersion record for the given app + version slug.
  *
  * @param {string}           appSlug     The virtual-app slug (e.g. `hello-world`).
@@ -133,49 +200,16 @@ export function useApplicationVersion(appSlug, versionSlug) {
 				`/apps/buildiq/api/applications/${encodeURIComponent(appSlug)}/versions`,
 			)
 			const { data: versionsData } = await axios.get(versionsUrl)
-			const versions = Array.isArray(versionsData)
-				? versionsData
-				: versionsData && Array.isArray(versionsData.results)
-					? versionsData.results
-					: []
+			const versions = versionListOf(versionsData)
 
 			if (versions.length === 0) {
 				applicationVersion.value = null
 				return
 			}
 
-			// Fetch the Application record to read productionVersion UUID.
-			// Uses OR's objects endpoint — the application-level slug lookup.
-			let productionUuid = null
-			try {
-				const appUrl = generateUrl(
-					'/apps/openregister/api/objects/buildiq/built-app',
-				)
-				const { data: appData } = await axios.get(appUrl, {
-					params: { slug: appSlug, _limit: 1 },
-				})
-				const apps =
-					appData && Array.isArray(appData.results)
-						? appData.results
-						: Array.isArray(appData)
-							? appData
-							: []
-				const app = apps.find((a) => a && a.slug === appSlug) || null
-				if (app) {
-					const pv = app.productionVersion
-					productionUuid =
-						typeof pv === 'string'
-							? pv
-							: (pv && (pv.uuid || pv.id)) || null
-				}
-			} catch (appErr) {
-				// Degraded: can't read productionVersion — fallback rule still works
-				// but won't distinguish production from non-production.
-			}
-
 			applicationVersion.value = defaultEditableVersion(
 				versions,
-				productionUuid,
+				await fetchProductionUuid(appSlug),
 			)
 		} catch (e) {
 			error.value = e instanceof Error ? e : new Error(String(e))

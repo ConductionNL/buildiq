@@ -138,6 +138,18 @@ const ExportDialog = defineAsyncComponent(
 
 const OR_TEMPLATES = '/apps/openregister/api/objects/buildiq/application-template'
 
+/**
+ * The descriptors of the rows whose gate is truthy, in row order. A row is
+ * `[gate, build]`; `build` returns one descriptor or an array of them and is
+ * only called for a shown row.
+ *
+ * @param {Array<Array>} rows The gated rows.
+ * @return {Array<object>} The shown descriptors.
+ */
+function shownEntries(rows) {
+	return rows.filter(([shown]) => shown).flatMap(([, build]) => build())
+}
+
 export default {
 	name: 'ApplicationDetailActions',
 	components: {
@@ -221,189 +233,138 @@ export default {
 		 */
 		actionDescriptors() {
 			const isOwner = this.obAppRole === 'owner'
-			const out = []
 
-			if (this.builderUrl) {
-				out.push({
-					id: 'open-app',
-					label: t('buildiq', 'Open app'),
-					icon: 'OpenInNew',
-					variant: 'primary',
-					href: this.builderUrl,
-					target: '_blank',
-					childrenLabel: t('buildiq', 'Open a version'),
-					children: this.openableVersions.flatMap((v) => [
-						{
-							id: `open-${v.slug}`,
-							label: this.versionLabel(v),
-							icon: 'OpenInNew',
-							href: this.versionUrl(v),
-							target: '_blank',
+			return shownEntries([
+				[Boolean(this.builderUrl), () => this.openAppDescriptor()],
+
+				// ── Meant to stay BUTTONS, Edit last ──
+				// CnActionButtons promotes the first N collapsible entries in
+				// declaration order, so this block IS the inline set: whatever sits
+				// here is what the header shows beside `···`. Both entries are
+				// conditional (isOwner, openEditForm), so a non-owner promotes
+				// whatever comes next instead — keep Edit at the end of the block
+				// regardless, since that is what puts it immediately left of the
+				// trigger whenever it is present. With the never-collapsed "Open
+				// app" the owner case makes three buttons in the header.
+				[
+					isOwner,
+					() => ({
+						id: 'app-settings-action',
+						label: t('buildiq', 'Settings'),
+						icon: 'CogOutline',
+						onSelect: () => this.onSettingsOpen(true),
+					}),
+				],
+				[
+					typeof this.openEditForm === 'function',
+					() => ({
+						id: 'app-edit-record',
+						label: t('buildiq', 'Edit'),
+						icon: 'PencilOutline',
+						onSelect: () => this.openEditForm(),
+					}),
+				],
+
+				// ── Everything below collapses into the `···` menu ──
+				[this.canEditVersions, () => this.versionEditorDescriptors()],
+				[
+					isOwner,
+					() => ({
+						id: 'app-permissions',
+						label: t('buildiq', 'Manage permissions'),
+						icon: 'AccountMultipleOutline',
+						onSelect: () => {
+							this.permissionsOpen = true
 						},
-						...(this.canEditVersions
-							? [
-									{
-										id: `edit-${v.slug}`,
-										label: t('buildiq', 'Edit {name}', {
-											name: this.versionLabel(v),
-										}),
-										icon: 'PencilRulerOutline',
-										onSelect: () => this.editVersion(v),
-									},
-								]
-							: []),
-					]),
-				})
-			}
-
-			// ── Meant to stay BUTTONS, Edit last ──
-			// CnActionButtons promotes the first N collapsible entries in
-			// declaration order, so this block IS the inline set: whatever sits
-			// here is what the header shows beside `···`. Both entries are
-			// conditional (isOwner, openEditForm), so a non-owner promotes
-			// whatever comes next instead — keep Edit at the end of the block
-			// regardless, since that is what puts it immediately left of the
-			// trigger whenever it is present. With the never-collapsed "Open
-			// app" the owner case makes three buttons in the header.
-			if (isOwner) {
-				out.push({
-					id: 'app-settings-action',
-					label: t('buildiq', 'Settings'),
-					icon: 'CogOutline',
-					onSelect: () => this.onSettingsOpen(true),
-				})
-			}
-			if (typeof this.openEditForm === 'function') {
-				out.push({
-					id: 'app-edit-record',
-					label: t('buildiq', 'Edit'),
-					icon: 'PencilOutline',
-					onSelect: () => this.openEditForm(),
-				})
-			}
-
-			// ── Everything below collapses into the `···` menu ──
-			if (this.canEditVersions) {
-				// One Promote entry per version that has a next version.
-				this.promotableVersions.forEach((v) => {
-					out.push({
-						id: `app-promote-${v.slug}`,
-						label: t('buildiq', 'Promote {name}', {
-							name: this.versionLabel(v),
-						}),
-						icon: 'ArrowUpBoldCircleOutline',
-						onSelect: () => this.promoteVersion(v),
-					})
-				})
-				out.push(
-					{
-						id: 'app-edit-setup',
-						label: t('buildiq', 'Setup wizard'),
-						icon: 'MapMarkerPath',
-						onSelect: () => this.openWalkthroughDesigner('setup'),
-					},
-					{
-						id: 'app-edit-walkthrough',
-						label: t('buildiq', 'Walkthrough'),
-						icon: 'MapMarkerPath',
-						onSelect: () => this.openWalkthroughDesigner('walkthrough'),
-					},
-					{
-						id: 'app-automations',
-						label: t('buildiq', 'Automations'),
-						icon: 'Sitemap',
-						onSelect: () => this.openAutomations(),
-					},
-				)
-			}
-			if (isOwner) {
-				out.push({
-					id: 'app-permissions',
-					label: t('buildiq', 'Manage permissions'),
-					icon: 'AccountMultipleOutline',
-					onSelect: () => {
-						this.permissionsOpen = true
-					},
-				})
-			}
-			if (this.canSaveAsTemplate) {
-				out.push({
-					id: 'app-save-as-template',
-					label: this.saveTemplateLoading
-						? t('buildiq', 'Preparing…')
-						: t('buildiq', 'Save as template'),
-					icon: 'ContentSaveOutline',
-					onSelect: () => this.openSaveAsTemplate(),
-				})
-			}
-			if (this.canCopyApp) {
-				out.push({
-					id: 'app-copy',
-					label: t('buildiq', 'Copy app'),
-					icon: 'ContentCopy',
-					onSelect: () => {
-						this.copyOpen = true
-					},
-				})
-			}
-			if (this.obApp && this.obApp.slug) {
-				out.push({
-					id: 'app-github',
-					label: t('buildiq', 'GitHub'),
-					icon: 'Github',
-					onSelect: () => {
-						this.githubOpen = true
-					},
-				})
-			}
-			if (isOwner) {
-				out.push({
-					id: 'app-permission-history',
-					label: t('buildiq', 'Permission history'),
-					icon: 'History',
-					onSelect: () => {
-						this.historyOpen = true
-					},
-				})
-			}
-			if (this.canEditVersions) {
-				out.push({
-					id: 'app-edit-support',
-					label: t('buildiq', 'Support & donation'),
-					icon: 'HeartOutline',
-					onSelect: () => this.openSupportEditor(),
-				})
-			}
-			out.push(
-				{
-					id: 'app-export',
-					label: t('buildiq', 'Export'),
-					icon: 'TrayArrowDown',
-					onSelect: () => {
-						this.exportOpen = true
-					},
-				},
-				{
-					id: 'app-documentation',
-					label: t('buildiq', 'Documentation'),
-					icon: 'HelpCircleOutline',
-					href: 'https://buildiq.conduction.nl',
-					target: '_blank',
-				},
-			)
-			if (isOwner) {
-				out.push({
-					id: 'app-delete',
-					label: t('buildiq', 'Delete'),
-					icon: 'DeleteOutline',
-					variant: 'error',
-					onSelect: () => {
-						this.deleteOpen = true
-					},
-				})
-			}
-
-			return out
+					}),
+				],
+				[
+					this.canSaveAsTemplate,
+					() => ({
+						id: 'app-save-as-template',
+						label: this.saveTemplateLoading
+							? t('buildiq', 'Preparing…')
+							: t('buildiq', 'Save as template'),
+						icon: 'ContentSaveOutline',
+						onSelect: () => this.openSaveAsTemplate(),
+					}),
+				],
+				[
+					this.canCopyApp,
+					() => ({
+						id: 'app-copy',
+						label: t('buildiq', 'Copy app'),
+						icon: 'ContentCopy',
+						onSelect: () => {
+							this.copyOpen = true
+						},
+					}),
+				],
+				[
+					this.obApp && this.obApp.slug,
+					() => ({
+						id: 'app-github',
+						label: t('buildiq', 'GitHub'),
+						icon: 'Github',
+						onSelect: () => {
+							this.githubOpen = true
+						},
+					}),
+				],
+				[
+					isOwner,
+					() => ({
+						id: 'app-permission-history',
+						label: t('buildiq', 'Permission history'),
+						icon: 'History',
+						onSelect: () => {
+							this.historyOpen = true
+						},
+					}),
+				],
+				[
+					this.canEditVersions,
+					() => ({
+						id: 'app-edit-support',
+						label: t('buildiq', 'Support & donation'),
+						icon: 'HeartOutline',
+						onSelect: () => this.openSupportEditor(),
+					}),
+				],
+				[
+					true,
+					() => ({
+						id: 'app-export',
+						label: t('buildiq', 'Export'),
+						icon: 'TrayArrowDown',
+						onSelect: () => {
+							this.exportOpen = true
+						},
+					}),
+				],
+				[
+					true,
+					() => ({
+						id: 'app-documentation',
+						label: t('buildiq', 'Documentation'),
+						icon: 'HelpCircleOutline',
+						href: 'https://buildiq.conduction.nl',
+						target: '_blank',
+					}),
+				],
+				[
+					isOwner,
+					() => ({
+						id: 'app-delete',
+						label: t('buildiq', 'Delete'),
+						icon: 'DeleteOutline',
+						variant: 'error',
+						onSelect: () => {
+							this.deleteOpen = true
+						},
+					}),
+				],
+			])
 		},
 
 		/**
@@ -570,6 +531,87 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * The primary "Open app" entry, with one open (and, for an editor,
+		 * one edit) child per openable version.
+		 *
+		 * @return {object} Descriptor for CnActionButtons.
+		 *
+		 * @spec exclude assembles the already-specified `builderUrl` and version links into a descriptor
+		 */
+		openAppDescriptor() {
+			return {
+				id: 'open-app',
+				label: t('buildiq', 'Open app'),
+				icon: 'OpenInNew',
+				variant: 'primary',
+				href: this.builderUrl,
+				target: '_blank',
+				childrenLabel: t('buildiq', 'Open a version'),
+				children: this.openableVersions.flatMap((v) => [
+					{
+						id: `open-${v.slug}`,
+						label: this.versionLabel(v),
+						icon: 'OpenInNew',
+						href: this.versionUrl(v),
+						target: '_blank',
+					},
+					...(this.canEditVersions
+						? [
+								{
+									id: `edit-${v.slug}`,
+									label: t('buildiq', 'Edit {name}', {
+										name: this.versionLabel(v),
+									}),
+									icon: 'PencilRulerOutline',
+									onSelect: () => this.editVersion(v),
+								},
+							]
+						: []),
+				]),
+			}
+		},
+
+		/**
+		 * The version editor entries: one Promote per promotable version, then
+		 * the setup wizard, walkthrough and automations editors.
+		 *
+		 * @return {Array<object>} Descriptors for CnActionButtons.
+		 *
+		 * @spec exclude assembles the already-specified promote and editor openers into descriptors
+		 */
+		versionEditorDescriptors() {
+			return [
+				// One Promote entry per version that has a next version.
+				...this.promotableVersions.map((v) => ({
+					id: `app-promote-${v.slug}`,
+					label: t('buildiq', 'Promote {name}', {
+						name: this.versionLabel(v),
+					}),
+					icon: 'ArrowUpBoldCircleOutline',
+					onSelect: () => this.promoteVersion(v),
+				})),
+				{
+					id: 'app-edit-setup',
+					label: t('buildiq', 'Setup wizard'),
+					icon: 'MapMarkerPath',
+					onSelect: () => this.openWalkthroughDesigner('setup'),
+				},
+				{
+					id: 'app-edit-walkthrough',
+					label: t('buildiq', 'Walkthrough'),
+					icon: 'MapMarkerPath',
+					onSelect: () => this.openWalkthroughDesigner('walkthrough'),
+				},
+				{
+					id: 'app-automations',
+					label: t('buildiq', 'Automations'),
+					icon: 'Sitemap',
+					onSelect: () => this.openAutomations(),
+				},
+			]
+		},
+
 		/**
 		 * Load the app's ApplicationVersion rows for the Open-a-version chevron.
 		 *

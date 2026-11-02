@@ -152,286 +152,10 @@ class ApplicationCreationService {
 		// to avoid colliding with real object locks in the OR lock table.
 		$appSlug = (string)($payload['slug'] ?? '');
 		$lockKey = 'createApp:' . $appSlug;
-		$locked = false;
-
-		if ($appSlug !== '') {
-			try {
-				$this->objectService->lockObject(
-					identifier: $lockKey,
-					process: 'buildiq.createApplication',
-					duration: 10,
-					advisory: true
-				);
-				$locked = true;
-			} catch (Throwable $lockError) {
-				throw new WizardCreationException(
-					errorCode: 'app_slug_conflict',
-					failedAtStep: 'validate',
-					message: sprintf(
-						'An Application with slug "%s" is being created by another request.',
-						$appSlug
-					),
-					rollbackStatus: 'none',
-					previous: $lockError
-				);
-			}
-		}//end if
+		$locked = $this->acquireSlugLock(appSlug: $appSlug, lockKey: $lockKey);
 
 		try {
-			// ---- Step 1: Validate -----------------------------------------------
-			$this->validatePayload(payload: $payload);
-			$appName = (string)($payload['name'] ?? '');
-			$description = (string)($payload['description'] ?? '');
-			$versions = $this->resolveVersionChain(payload: $payload);
-
-			// ---- State tracker for rollback -------------------------------------
-			// Indexed by version slug.
-			$state = [
-				'applicationUuid' => null,
-				'versionUuids' => [],
-				'registerSlugs' => [],
-				'versionPayloads' => [],
-				'routeUuids' => [],
-			];
-
-			// ---- Step 2: Create Application -------------------------------------
-			$caller = $this->resolveCallerUid();
-			$permissions = [
-				'owners' => ['user:' . $caller],
-				'editors' => [],
-				'viewers' => [],
-			];
-
-			$applicationPayload = [
-				'slug' => $appSlug,
-				'name' => $appName,
-				'description' => $description,
-				'permissions' => $permissions,
-			];
-
-			try {
-				$created = $this->objectService->saveObject(
-					object: $applicationPayload,
-					register: ApplicationVersionService::REGISTER_SLUG,
-					schema: ApplicationVersionService::APPLICATION_SCHEMA
-				);
-				$appData = $this->normaliseObject(object: $created);
-				$state['applicationUuid'] = (string)($appData['id'] ?? $appData['uuid'] ?? '');
-			} catch (Throwable $e) {
-				// Detect TOCTOU duplicate-slug races: two concurrent createApp calls both
-				// passed appSlugExists() then both tried saveObject — the second one will
-				// receive a unique-constraint violation (issue #163).
-				$errorMsg = $e->getMessage();
-				$isSlugConflict = (
-					str_contains($errorMsg, 'Duplicate')
-					|| str_contains($errorMsg, 'duplicate')
-					|| str_contains($errorMsg, 'unique constraint')
-					|| str_contains($errorMsg, 'UNIQUE')
-				);
-				if ($isSlugConflict === true) {
-					throw new WizardCreationException(
-						errorCode: 'app_slug_conflict',
-						failedAtStep: 'validate',
-						message: sprintf('An Application with slug "%s" already exists.', $appSlug),
-						rollbackStatus: 'none',
-						previous: $e
-					);
-				}
-
-				$this->logger->error(
-					'Buildiq: wizard create-application failed for slug ' . $appSlug . ': ' . $errorMsg,
-					['exception' => $e]
-				);
-				throw new WizardCreationException(
-					errorCode: 'wizard_rollback',
-					failedAtStep: 'create-application',
-					message: $errorMsg,
-					rollbackStatus: 'complete',
-					previous: $e
-				);
-			}//end try
-
-			if ($state['applicationUuid'] === '') {
-				$this->rollbackAndThrow(
-					state: $state,
-					failedAtStep: 'create-application',
-					cause: 'Application record was not assigned a UUID by OR.'
-				);
-			}
-
-			// ---- Step 3: Create ApplicationVersions + provision registers -------
-			$defaultManifest = $this->loadDefaultManifest();
-			$defaultSchemas = $this->loadDefaultSchemas();
-
-			foreach ($versions as $versionDef) {
-				$versionSlug = (string)($versionDef['slug'] ?? '');
-				$versionName = (string)($versionDef['name'] ?? '');
-				// Prefix from the constant, never typed: see
-				// ApplicationVersionService::VERSION_REGISTER_PREFIX.
-				$registerSlug = ApplicationVersionService::VERSION_REGISTER_PREFIX . $appSlug . '-' . $versionSlug;
-
-				// 3a: Create ApplicationVersion
-				$versionManifest = $this->substituteVersionContext(
-					manifest: $defaultManifest,
-					registerSlug: $registerSlug,
-					schemaSlugPrefix: $appSlug . '-' . $versionSlug . '-'
-				);
-
-				$versionPayload = [
-					'name' => $versionName,
-					'slug' => $versionSlug,
-					'manifest' => $versionManifest,
-					'register' => $registerSlug,
-					'semver' => self::INITIAL_SEMVER,
-					'status' => 'draft',
-					'application' => $state['applicationUuid'],
-				];
-
-				try {
-					$createdVersion = $this->objectService->saveObject(
-						object: $versionPayload,
-						register: ApplicationVersionService::REGISTER_SLUG,
-						schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
-					);
-					$versionData = $this->normaliseObject(object: $createdVersion);
-					$versionUuid = (string)($versionData['id'] ?? $versionData['uuid'] ?? '');
-					$state['versionUuids'][$versionSlug] = $versionUuid;
-					$state['registerSlugs'][$versionSlug] = $registerSlug;
-					// Keep the full payload so we can do the chain-wiring patch
-					// below without OR rejecting a partial payload against the
-					// schema's `required[]` validator (issue #71).
-					$state['versionPayloads'][$versionSlug] = $versionPayload;
-				} catch (Throwable $e) {
-					$this->logger->error(
-						'Buildiq: wizard create-version failed for ' . $versionSlug . ': ' . $e->getMessage(),
-						['exception' => $e]
-					);
-					$this->rollbackAndThrow(state: $state, failedAtStep: 'create-version-' . $versionSlug, cause: $e);
-				}//end try
-
-				// 3b: Provision per-version register
-				try {
-					$this->provisionRegister(
-						registerSlug: $registerSlug,
-						appSlug: $appSlug,
-						versionSlug: $versionSlug,
-						defaultSchemas: $defaultSchemas
-					);
-				} catch (Throwable $e) {
-					$this->logger->error(
-						'Buildiq: wizard register-provision failed for ' . $registerSlug . ': ' . $e->getMessage(),
-						['exception' => $e]
-					);
-					$this->rollbackAndThrow(state: $state, failedAtStep: 'register-provision-' . $versionSlug, cause: $e);
-				}//end try
-			}//end foreach
-
-			// ---- Step 4: Wire promotesTo chain ----------------------------------
-			$versionSlugs = array_column($versions, 'slug');
-			$lastIdx = count($versionSlugs) - 1;
-
-			for ($i = 0; $i < $lastIdx; $i++) {
-				$currentSlug = $versionSlugs[$i];
-				$nextSlug = $versionSlugs[$i + 1];
-
-				$currentUuid = (string)($state['versionUuids'][$currentSlug] ?? '');
-				$nextUuid = (string)($state['versionUuids'][$nextSlug] ?? '');
-
-				if ($currentUuid === '' || $nextUuid === '') {
-					continue;
-				}
-
-				try {
-					// OR's saveObject runs full-schema validation against `required[]`
-					// even when a UUID is passed (no separate PATCH semantics for an
-					// ApplicationVersion in this OR floor). Merge `promotesTo` into
-					// the full payload we kept from the create step so the validator
-					// sees all required fields.
-					$fullPayload = ($state['versionPayloads'][$currentSlug] ?? []);
-					$fullPayload['promotesTo'] = $nextUuid;
-
-					$this->objectService->saveObject(
-						object: $fullPayload,
-						register: ApplicationVersionService::REGISTER_SLUG,
-						schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
-						uuid: $currentUuid
-					);
-				} catch (Throwable $e) {
-					$this->logger->error(
-						'Buildiq: wizard chain-wiring failed for ' . $currentSlug . ' → ' . $nextSlug . ': ' . $e->getMessage(),
-						['exception' => $e]
-					);
-					$this->rollbackAndThrow(state: $state, failedAtStep: 'wire-chain-' . $currentSlug . '-to-' . $nextSlug, cause: $e);
-				}//end try
-			}//end for
-
-			// ---- Step 5: Set productionVersion on Application -------------------
-			$terminalSlug = $versionSlugs[$lastIdx];
-			$terminalUuid = (string)($state['versionUuids'][$terminalSlug] ?? '');
-
-			try {
-				// OR runs full-schema validation on saveObject even with UUID set;
-				// build a full Application payload with the productionVersion field
-				// patched, mirroring the chain-wiring fix above (issue #71).
-				$fullPayload = [
-					'slug' => $appSlug,
-					'name' => $appName,
-					'description' => $description,
-					'permissions' => [
-						'owners' => ['user:' . $this->resolveCallerUid()],
-						'editors' => [],
-						'viewers' => [],
-					],
-					'productionVersion' => $terminalUuid,
-				];
-
-				$this->objectService->saveObject(
-					object: $fullPayload,
-					register: ApplicationVersionService::REGISTER_SLUG,
-					schema: ApplicationVersionService::APPLICATION_SCHEMA,
-					uuid: $state['applicationUuid']
-				);
-			} catch (Throwable $e) {
-				$this->logger->error(
-					'Buildiq: wizard set-productionVersion failed: ' . $e->getMessage(),
-					['exception' => $e]
-				);
-				$this->rollbackAndThrow(state: $state, failedAtStep: 'set-production-version', cause: $e);
-			}//end try
-
-			// ---- Step 6: Publish the BuiltAppRoute index -----------------------
-			// The manifest endpoint (ApplicationsController::getManifest →
-			// resolveApplicationBySlug) resolves a virtual-app slug to its
-			// Application UUID through a BuiltAppRoute object. Without this step
-			// the wizard-built app is unreachable by slug and the manifest
-			// endpoint returns 404 `not_found` even though the app, its versions
-			// and its productionVersion pointer all exist (buildiq publish gap).
-			try {
-				$createdRoute = $this->objectService->saveObject(
-					object: ['slug' => $appSlug, 'applicationUuid' => $state['applicationUuid']],
-					register: ApplicationVersionService::REGISTER_SLUG,
-					schema: self::BUILT_APP_ROUTE_SCHEMA
-				);
-				$routeData = $this->normaliseObject(object: $createdRoute);
-				$routeUuid = (string)($routeData['id'] ?? $routeData['uuid'] ?? '');
-				if ($routeUuid !== '') {
-					$state['routeUuids'][] = $routeUuid;
-				}
-			} catch (Throwable $e) {
-				$this->logger->error(
-					'Buildiq: wizard built-app-route publish failed for slug ' . $appSlug . ': ' . $e->getMessage(),
-					['exception' => $e]
-				);
-				$this->rollbackAndThrow(state: $state, failedAtStep: 'publish-route', cause: $e);
-			}//end try
-
-			$versionCount = count($versions);
-			$this->logger->info(
-				'Buildiq: wizard successfully created Application ' . $appSlug
-				. ' (uuid: ' . $state['applicationUuid'] . ') with ' . $versionCount . ' version(s).'
-			);
-
-			return $state['applicationUuid'];
+			return $this->runCreation(payload: $payload);
 		} finally {
 			// M2: Release the per-slug advisory lock regardless of outcome.
 			if ($locked === true) {
@@ -447,6 +171,425 @@ class ApplicationCreationService {
 		}//end try
 
 	}//end createApplication()
+
+	/**
+	 * Take the per-slug advisory lock; a lock held by another request is a slug conflict.
+	 *
+	 * @param string $appSlug The requested Application slug ('' takes no lock)
+	 * @param string $lockKey The lock identifier
+	 *
+	 * @return bool Whether a lock was taken
+	 *
+	 * @throws WizardCreationException When another request holds the lock
+	 */
+	private function acquireSlugLock(string $appSlug, string $lockKey): bool {
+		if ($appSlug === '') {
+			return false;
+		}
+
+		try {
+			$this->objectService->lockObject(
+				identifier: $lockKey,
+				process: 'buildiq.createApplication',
+				duration: 10,
+				advisory: true
+			);
+		} catch (Throwable $lockError) {
+			throw new WizardCreationException(
+				errorCode: 'app_slug_conflict',
+				failedAtStep: 'validate',
+				message: sprintf(
+					'An Application with slug "%s" is being created by another request.',
+					$appSlug
+				),
+				rollbackStatus: 'none',
+				previous: $lockError
+			);
+		}
+
+		return true;
+	}//end acquireSlugLock()
+
+	/**
+	 * Validate the payload, then create the Application, its versions, the
+	 * promotion chain, the production pointer and the route, in that order.
+	 *
+	 * @param array<string,mixed> $payload The wizard POST payload
+	 *
+	 * @return string The newly-created Application's UUID
+	 *
+	 * @throws WizardCreationException On validation failure or on any creation failure (with rollback)
+	 */
+	private function runCreation(array $payload): string {
+		// ---- Step 1: Validate -----------------------------------------------
+		$this->validatePayload(payload: $payload);
+		$plan = [
+			'slug' => (string)($payload['slug'] ?? ''),
+			'name' => (string)($payload['name'] ?? ''),
+			'description' => (string)($payload['description'] ?? ''),
+			'versions' => $this->resolveVersionChain(payload: $payload),
+		];
+
+		// ---- State tracker for rollback -------------------------------------
+		// Indexed by version slug.
+		$state = [
+			'applicationUuid' => null,
+			'versionUuids' => [],
+			'registerSlugs' => [],
+			'versionPayloads' => [],
+			'routeUuids' => [],
+		];
+
+		// ---- Step 2: Create Application -------------------------------------
+		$state['applicationUuid'] = $this->createApplicationRecord(plan: $plan);
+		if ($state['applicationUuid'] === '') {
+			$this->rollbackAndThrow(
+				state: $state,
+				failedAtStep: 'create-application',
+				cause: 'Application record was not assigned a UUID by OR.'
+			);
+		}
+
+		$this->createVersions(plan: $plan, state: $state);
+		$this->wirePromotionChain(plan: $plan, state: $state);
+		$this->setProductionVersion(plan: $plan, state: $state);
+		$this->publishRoute(plan: $plan, state: $state);
+
+		$versionCount = count($plan['versions']);
+		$this->logger->info(
+			'Buildiq: wizard successfully created Application ' . $plan['slug']
+			. ' (uuid: ' . $state['applicationUuid'] . ') with ' . $versionCount . ' version(s).'
+		);
+
+		return $state['applicationUuid'];
+	}//end runCreation()
+
+	/**
+	 * Create the Application record with the caller as sole owner.
+	 *
+	 * @param array<string,mixed> $plan The validated slug, name, description and versions
+	 *
+	 * @return string The UUID OpenRegister assigned ('' when none)
+	 *
+	 * @throws WizardCreationException On a slug conflict or any other save failure
+	 */
+	private function createApplicationRecord(array $plan): string {
+		$caller = $this->resolveCallerUid();
+		$permissions = [
+			'owners' => ['user:' . $caller],
+			'editors' => [],
+			'viewers' => [],
+		];
+
+		$applicationPayload = [
+			'slug' => $plan['slug'],
+			'name' => $plan['name'],
+			'description' => $plan['description'],
+			'permissions' => $permissions,
+		];
+
+		try {
+			$created = $this->objectService->saveObject(
+				object: $applicationPayload,
+				register: ApplicationVersionService::REGISTER_SLUG,
+				schema: ApplicationVersionService::APPLICATION_SCHEMA
+			);
+			$appData = $this->normaliseObject(object: $created);
+			return (string)($appData['id'] ?? $appData['uuid'] ?? '');
+		} catch (Throwable $e) {
+			// Detect TOCTOU duplicate-slug races: two concurrent createApp calls both
+			// passed appSlugExists() then both tried saveObject — the second one will
+			// receive a unique-constraint violation (issue #163).
+			$errorMsg = $e->getMessage();
+			$isSlugConflict = (
+				str_contains($errorMsg, 'Duplicate')
+				|| str_contains($errorMsg, 'duplicate')
+				|| str_contains($errorMsg, 'unique constraint')
+				|| str_contains($errorMsg, 'UNIQUE')
+			);
+			if ($isSlugConflict === true) {
+				throw new WizardCreationException(
+					errorCode: 'app_slug_conflict',
+					failedAtStep: 'validate',
+					message: sprintf('An Application with slug "%s" already exists.', $plan['slug']),
+					rollbackStatus: 'none',
+					previous: $e
+				);
+			}
+
+			$this->logger->error(
+				'Buildiq: wizard create-application failed for slug ' . $plan['slug'] . ': ' . $errorMsg,
+				['exception' => $e]
+			);
+			throw new WizardCreationException(
+				errorCode: 'wizard_rollback',
+				failedAtStep: 'create-application',
+				message: $errorMsg,
+				rollbackStatus: 'complete',
+				previous: $e
+			);
+		}//end try
+	}//end createApplicationRecord()
+
+	/**
+	 * Step 3: create each ApplicationVersion and provision its register, in chain order.
+	 *
+	 * @param array<string,mixed> $plan The validated slug, name, description and versions
+	 * @param array<string,mixed> $state Creation state tracker (by ref)
+	 *
+	 * @return void
+	 *
+	 * @throws WizardCreationException On any failure (with rollback)
+	 */
+	private function createVersions(array $plan, array &$state): void {
+		$defaultManifest = $this->loadDefaultManifest();
+		$defaultSchemas = $this->loadDefaultSchemas();
+
+		foreach ($plan['versions'] as $versionDef) {
+			$versionSlug = (string)($versionDef['slug'] ?? '');
+			$version = [
+				'appSlug' => $plan['slug'],
+				'slug' => $versionSlug,
+				'name' => (string)($versionDef['name'] ?? ''),
+				// Prefix from the constant, never typed: see
+				// ApplicationVersionService::VERSION_REGISTER_PREFIX.
+				'registerSlug' => ApplicationVersionService::VERSION_REGISTER_PREFIX . $plan['slug'] . '-' . $versionSlug,
+				'manifest' => $defaultManifest,
+				'schemas' => $defaultSchemas,
+			];
+
+			$this->createVersionRecord(version: $version, state: $state);
+			$this->provisionVersionRegister(version: $version, state: $state);
+		}
+	}//end createVersions()
+
+	/**
+	 * 3a: create one ApplicationVersion and track it for rollback and chain wiring.
+	 *
+	 * @param array<string,mixed> $version The app slug, version slug, name, register slug, manifest and schemas
+	 * @param array<string,mixed> $state Creation state tracker (by ref)
+	 *
+	 * @return void
+	 *
+	 * @throws WizardCreationException On failure (with rollback)
+	 */
+	private function createVersionRecord(array $version, array &$state): void {
+		$versionSlug = $version['slug'];
+		$registerSlug = $version['registerSlug'];
+		$versionManifest = $this->substituteVersionContext(
+			manifest: $version['manifest'],
+			registerSlug: $registerSlug,
+			schemaSlugPrefix: $version['appSlug'] . '-' . $versionSlug . '-'
+		);
+
+		$versionPayload = [
+			'name' => $version['name'],
+			'slug' => $versionSlug,
+			'manifest' => $versionManifest,
+			'register' => $registerSlug,
+			'semver' => self::INITIAL_SEMVER,
+			'status' => 'draft',
+			'application' => $state['applicationUuid'],
+		];
+
+		try {
+			$createdVersion = $this->objectService->saveObject(
+				object: $versionPayload,
+				register: ApplicationVersionService::REGISTER_SLUG,
+				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+			);
+			$versionData = $this->normaliseObject(object: $createdVersion);
+			$versionUuid = (string)($versionData['id'] ?? $versionData['uuid'] ?? '');
+			$state['versionUuids'][$versionSlug] = $versionUuid;
+			$state['registerSlugs'][$versionSlug] = $registerSlug;
+			// Keep the full payload so we can do the chain-wiring patch
+			// below without OR rejecting a partial payload against the
+			// schema's `required[]` validator (issue #71).
+			$state['versionPayloads'][$versionSlug] = $versionPayload;
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'Buildiq: wizard create-version failed for ' . $versionSlug . ': ' . $e->getMessage(),
+				['exception' => $e]
+			);
+			$this->rollbackAndThrow(state: $state, failedAtStep: 'create-version-' . $versionSlug, cause: $e);
+		}//end try
+	}//end createVersionRecord()
+
+	/**
+	 * 3b: provision the per-version register.
+	 *
+	 * @param array<string,mixed> $version The app slug, version slug, name, register slug, manifest and schemas
+	 * @param array<string,mixed> $state Creation state tracker
+	 *
+	 * @return void
+	 *
+	 * @throws WizardCreationException On failure (with rollback)
+	 */
+	private function provisionVersionRegister(array $version, array $state): void {
+		$registerSlug = $version['registerSlug'];
+		try {
+			$this->provisionRegister(
+				registerSlug: $registerSlug,
+				appSlug: $version['appSlug'],
+				versionSlug: $version['slug'],
+				defaultSchemas: $version['schemas']
+			);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'Buildiq: wizard register-provision failed for ' . $registerSlug . ': ' . $e->getMessage(),
+				['exception' => $e]
+			);
+			$this->rollbackAndThrow(state: $state, failedAtStep: 'register-provision-' . $version['slug'], cause: $e);
+		}//end try
+	}//end provisionVersionRegister()
+
+	/**
+	 * Step 4: wire `promotesTo` on every non-terminal version.
+	 *
+	 * @param array<string,mixed> $plan The validated slug, name, description and versions
+	 * @param array<string,mixed> $state Creation state tracker
+	 *
+	 * @return void
+	 *
+	 * @throws WizardCreationException On failure (with rollback)
+	 */
+	private function wirePromotionChain(array $plan, array $state): void {
+		$versionSlugs = array_column($plan['versions'], 'slug');
+		$lastIdx = count($versionSlugs) - 1;
+
+		for ($i = 0; $i < $lastIdx; $i++) {
+			$this->wirePromotion(link: ['from' => $versionSlugs[$i], 'to' => $versionSlugs[$i + 1]], state: $state);
+		}
+	}//end wirePromotionChain()
+
+	/**
+	 * Point one version's `promotesTo` at the next version.
+	 *
+	 * @param array{from:string,to:string} $link The version slug and its successor's slug
+	 * @param array<string,mixed> $state Creation state tracker
+	 *
+	 * @return void
+	 *
+	 * @throws WizardCreationException On failure (with rollback)
+	 */
+	private function wirePromotion(array $link, array $state): void {
+		$currentSlug = $link['from'];
+		$nextSlug = $link['to'];
+
+		$currentUuid = (string)($state['versionUuids'][$currentSlug] ?? '');
+		$nextUuid = (string)($state['versionUuids'][$nextSlug] ?? '');
+
+		if ($currentUuid === '' || $nextUuid === '') {
+			return;
+		}
+
+		try {
+			// OR's saveObject runs full-schema validation against `required[]`
+			// even when a UUID is passed (no separate PATCH semantics for an
+			// ApplicationVersion in this OR floor). Merge `promotesTo` into
+			// the full payload we kept from the create step so the validator
+			// sees all required fields.
+			$fullPayload = ($state['versionPayloads'][$currentSlug] ?? []);
+			$fullPayload['promotesTo'] = $nextUuid;
+
+			$this->objectService->saveObject(
+				object: $fullPayload,
+				register: ApplicationVersionService::REGISTER_SLUG,
+				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
+				uuid: $currentUuid
+			);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'Buildiq: wizard chain-wiring failed for ' . $currentSlug . ' → ' . $nextSlug . ': ' . $e->getMessage(),
+				['exception' => $e]
+			);
+			$this->rollbackAndThrow(state: $state, failedAtStep: 'wire-chain-' . $currentSlug . '-to-' . $nextSlug, cause: $e);
+		}//end try
+	}//end wirePromotion()
+
+	/**
+	 * Step 5: set Application.productionVersion to the terminal version.
+	 *
+	 * @param array<string,mixed> $plan The validated slug, name, description and versions
+	 * @param array<string,mixed> $state Creation state tracker
+	 *
+	 * @return void
+	 *
+	 * @throws WizardCreationException On failure (with rollback)
+	 */
+	private function setProductionVersion(array $plan, array $state): void {
+		$versionSlugs = array_column($plan['versions'], 'slug');
+		$terminalSlug = $versionSlugs[count($versionSlugs) - 1];
+		$terminalUuid = (string)($state['versionUuids'][$terminalSlug] ?? '');
+
+		try {
+			// OR runs full-schema validation on saveObject even with UUID set;
+			// build a full Application payload with the productionVersion field
+			// patched, mirroring the chain-wiring fix above (issue #71).
+			$fullPayload = [
+				'slug' => $plan['slug'],
+				'name' => $plan['name'],
+				'description' => $plan['description'],
+				'permissions' => [
+					'owners' => ['user:' . $this->resolveCallerUid()],
+					'editors' => [],
+					'viewers' => [],
+				],
+				'productionVersion' => $terminalUuid,
+			];
+
+			$this->objectService->saveObject(
+				object: $fullPayload,
+				register: ApplicationVersionService::REGISTER_SLUG,
+				schema: ApplicationVersionService::APPLICATION_SCHEMA,
+				uuid: $state['applicationUuid']
+			);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'Buildiq: wizard set-productionVersion failed: ' . $e->getMessage(),
+				['exception' => $e]
+			);
+			$this->rollbackAndThrow(state: $state, failedAtStep: 'set-production-version', cause: $e);
+		}//end try
+	}//end setProductionVersion()
+
+	/**
+	 * Step 6: publish the BuiltAppRoute index.
+	 *
+	 * The manifest endpoint (ApplicationsController::getManifest →
+	 * resolveApplicationBySlug) resolves a virtual-app slug to its
+	 * Application UUID through a BuiltAppRoute object. Without this step
+	 * the wizard-built app is unreachable by slug and the manifest
+	 * endpoint returns 404 `not_found` even though the app, its versions
+	 * and its productionVersion pointer all exist (buildiq publish gap).
+	 *
+	 * @param array<string,mixed> $plan The validated slug, name, description and versions
+	 * @param array<string,mixed> $state Creation state tracker (by ref)
+	 *
+	 * @return void
+	 *
+	 * @throws WizardCreationException On failure (with rollback)
+	 */
+	private function publishRoute(array $plan, array &$state): void {
+		try {
+			$createdRoute = $this->objectService->saveObject(
+				object: ['slug' => $plan['slug'], 'applicationUuid' => $state['applicationUuid']],
+				register: ApplicationVersionService::REGISTER_SLUG,
+				schema: self::BUILT_APP_ROUTE_SCHEMA
+			);
+			$routeData = $this->normaliseObject(object: $createdRoute);
+			$routeUuid = (string)($routeData['id'] ?? $routeData['uuid'] ?? '');
+			if ($routeUuid !== '') {
+				$state['routeUuids'][] = $routeUuid;
+			}
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'Buildiq: wizard built-app-route publish failed for slug ' . $plan['slug'] . ': ' . $e->getMessage(),
+				['exception' => $e]
+			);
+			$this->rollbackAndThrow(state: $state, failedAtStep: 'publish-route', cause: $e);
+		}//end try
+	}//end publishRoute()
 
 	/**
 	 * Validate the wizard payload before any persistence.
