@@ -66,6 +66,7 @@ class ManifestResolverService {
 	 * @param SchemaMapper $schemaMapper Schema slug-to-ID resolver
 	 * @param LoggerInterface $logger PSR logger for diagnostics
 	 * @param PermissionResolver $permissionResolver Shared principal-grammar resolver (H1/H2 fix)
+	 * @param ManifestWidgetRoleFilter $widgetRoleFilter Removes page widgets by `roles`
 	 *
 	 * @return void
 	 */
@@ -75,6 +76,7 @@ class ManifestResolverService {
 		private readonly SchemaMapper $schemaMapper,
 		private readonly LoggerInterface $logger,
 		private readonly PermissionResolver $permissionResolver,
+		private readonly ManifestWidgetRoleFilter $widgetRoleFilter,
 	) {
 	}//end __construct()
 
@@ -635,6 +637,9 @@ class ManifestResolverService {
 	 * Fail-closed: an unauthenticated caller (`null`) is treated as holding NO
 	 * permissions — every gated entry is stripped.
 	 *
+	 * Page widgets that declare `roles` the caller does not match are removed
+	 * too, with the same bypass ({@see ManifestWidgetRoleFilter}).
+	 *
 	 * @param array<string, mixed> $manifest The resolved manifest payload.
 	 * @param array<string, mixed> $application The normalised Application data
 	 *                                          (source of `permissions`, for the
@@ -646,9 +651,12 @@ class ManifestResolverService {
 	 *                              declared `permission`. A group-scoped
 	 *                              dashboard the caller satisfies is promoted to
 	 *                              the landing position (first in `pages[]`).
+	 *                              Page widgets whose `roles` the caller does
+	 *                              not match are removed.
 	 *
 	 * @spec openspec/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
 	 * @spec openspec/specs/openbuild-runtime/spec.md#requirement-a-group-scoped-dashboard-may-be-the-landing-page-for-its-group
+	 * @spec openspec/changes/widget-roles-on-app-pages/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
 	 */
 	public function filterManifestForCaller(array $manifest, array $application, ?IUser $caller): array {
 		if ($caller !== null && $this->permissionResolver->isAdmin($caller) === true) {
@@ -673,7 +681,7 @@ class ManifestResolverService {
 			$manifest['pages'] = $this->promoteLandingDashboard(pages: $pages);
 		}
 
-		return $manifest;
+		return $this->widgetRoleFilter->filterManifest(manifest: $manifest, caller: $caller);
 	}//end filterManifestForCaller()
 
 	/**

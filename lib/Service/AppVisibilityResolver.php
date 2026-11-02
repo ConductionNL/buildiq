@@ -41,6 +41,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCP\IGroupManager;
+use OCP\IUser;
 use OCP\IUserSession;
 
 /**
@@ -73,7 +74,36 @@ class AppVisibilityResolver {
 		IUserSession $userSession,
 		IGroupManager $groupManager,
 	): bool {
-		$user = $userSession->getUser();
+		return $this->isVisibleToUser(
+			permissions: $permissions,
+			extraPrincipals: $extraPrincipals,
+			user: $userSession->getUser(),
+			groupManager: $groupManager
+		);
+	}//end isVisible()
+
+	/**
+	 * Decide whether the given user may see a surface of this Application.
+	 *
+	 * Same check order as {@see isVisible()}, for callers that hold the user
+	 * rather than the session (the manifest filter receives its caller).
+	 *
+	 * @param array<string,mixed> $permissions The Application's permissions block.
+	 * @param array<mixed> $extraPrincipals Extra principals from the surface itself.
+	 * @param IUser|null $user The user, or null when nobody is signed in.
+	 * @param IGroupManager $groupManager The group manager.
+	 *
+	 * @return bool True when the surface should be visible.
+	 *
+	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-a-user-only-sees-widgets-they-are-allowed-to-see
+	 * @spec openspec/changes/widget-roles-on-app-pages/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
+	 */
+	public function isVisibleToUser(
+		array $permissions,
+		array $extraPrincipals,
+		?IUser $user,
+		IGroupManager $groupManager,
+	): bool {
 		if ($user === null) {
 			return false;
 		}
@@ -102,7 +132,7 @@ class AppVisibilityResolver {
 
 		// 4. Nextcloud admin always sees all surfaces.
 		return $groupManager->isAdmin($uid);
-	}//end isVisible()
+	}//end isVisibleToUser()
 
 	/**
 	 * Flatten the three permission role arrays into a single principal list.
