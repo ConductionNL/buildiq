@@ -1,0 +1,86 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`check-integration-parity golden output > checks the provider binding of data-provider leaves 1`] = `
+{
+  "status": 1,
+  "stderr": "integration parity gate FAILED — 7 violation(s) over 11 server leaf face(s), 2 JS registration(s), 0 OpenRegister schema declaration file(s):
+✗ [R2 id-correlation] a LeafDescriptor in lib/Listener/Leaves.php declares no statically-readable \`id\` — a leaf whose id cannot be read cannot be correlated with its JS half.
+✗ [R2 id-correlation] server leaf "surface" (LeafDescriptor, lib/Listener/Leaves.php) has NO matching registerIntegration({ id: 'surface' }) in src/** — phantom leaf: the openregister.integrations.leaves capability advertises a surface that never mounts.
+✗ [R7 provider-binding] server leaf "unbound" (LeafDescriptor, lib/Listener/Leaves.php) declares KIND_DATA_PROVIDER but is registered with a null provider — the catalogue advertises a data source that can never answer.
+✗ [R7 provider-binding] server leaf "spaced" (LeafDescriptor, lib/Listener/Leaves.php) declares KIND_DATA_PROVIDER but is registered with a null provider — the catalogue advertises a data source that can never answer.
+✗ [R7 provider-binding] server leaf "both" (LeafDescriptor, lib/Listener/Leaves.php) declares KIND_DATA_PROVIDER but is registered with a null provider — the catalogue advertises a data source that can never answer.
+✗ [R7 provider-binding] server leaf "unread" (LeafDescriptor, lib/Listener/Leaves.php) declares KIND_DATA_PROVIDER but is registered with a null provider — the catalogue advertises a data source that can never answer.
+✗ [R7 provider-binding] server leaf "near" (LeafDescriptor, lib/Listener/Leaves.php) declares KIND_DATA_PROVIDER but is registered with a null provider — the catalogue advertises a data source that can never answer.
+
+Assertions run per rule: R1:2 R2:4 R3:0 R4:0 R5:0 R7:9 R6:0
+",
+  "stdout": "",
+}
+`;
+
+exports[`check-integration-parity golden output > fails a pass over nothing 1`] = `
+{
+  "status": 1,
+  "stderr": "✗ integration parity: every rule had ZERO subject matter, yet gate-24 selected this repo as one that registers leaves. That contradiction means this checker failed to read what the gate can see — a pass here would be a pass over nothing.
+",
+  "stdout": "✓ integration parity: 0 server leaf face(s), 0 JS registration(s), 0 OpenRegister schema declaration file(s) — all rules pass (assertions run per rule: R1:0 R2:0 R3:0 R4:0 R5:0 R7:0 R6:0)
+",
+}
+`;
+
+exports[`check-integration-parity golden output > fails an offlineConfig when no schema declaration exists 1`] = `
+{
+  "status": 1,
+  "stderr": "integration parity gate FAILED — 1 violation(s) over 2 server leaf face(s), 2 JS registration(s), 0 OpenRegister schema declaration file(s):
+✗ [R6 offlineConfig] registerIntegration in src/alpha.js supplies an \`offlineConfig\` naming OpenRegister schemas, but this repo declares no register/schema JSON under lib/Settings/** to check it against — the mapping cannot be verified.
+
+Assertions run per rule: R1:2 R2:3 R3:0 R4:3 R5:0 R7:0 R6:0
+",
+  "stdout": "",
+}
+`;
+
+exports[`check-integration-parity golden output > passes a repository whose faces agree 1`] = `
+{
+  "status": 0,
+  "stderr": "",
+  "stdout": "✓ integration parity: 2 server leaf face(s), 2 JS registration(s), 1 OpenRegister schema declaration file(s) — all rules pass (assertions run per rule: R1:2 R2:3 R3:0 R4:3 R5:0 R7:0 R6:4)
+",
+}
+`;
+
+exports[`check-integration-parity golden output > passes data-provider leaves that are all bound 1`] = `
+{
+  "status": 0,
+  "stderr": "",
+  "stdout": "✓ integration parity: 1 server leaf face(s), 0 JS registration(s), 0 OpenRegister schema declaration file(s) — all rules pass (assertions run per rule: R1:0 R2:0 R3:0 R4:0 R5:0 R7:1 R6:0)
+",
+}
+`;
+
+exports[`check-integration-parity golden output > reports every rule violation in a disagreeing repository 1`] = `
+{
+  "status": 1,
+  "stderr": "integration parity gate FAILED — 16 violation(s) over 5 server leaf face(s), 9 JS registration(s), 1 OpenRegister schema declaration file(s):
+✗ [R1 render-pair] registerIntegration id "bravo" (src/bravo.js) declares renderMode "mount" but is missing the required \`unmount\` key — an incomplete render pair renders nothing on its surface (ADR-019 AD-11/AD-13, ADR-066 decision 7).
+✗ [R2 id-correlation] a LeafDescriptor in lib/Leaf/Leaves.php declares no statically-readable \`id\` — a leaf whose id cannot be read cannot be correlated with its JS half.
+✗ [R2 id-correlation] server leaf "charlie" (LeafDescriptor, lib/Leaf/Leaves.php) has NO matching registerIntegration({ id: 'charlie' }) in src/** — phantom leaf: the openregister.integrations.leaves capability advertises a surface that never mounts.
+✗ [R2 id-correlation] registerIntegration id "delta" (src/bravo.js) has NO matching server-side face in lib/** (neither a \`new LeafDescriptor(id: 'delta')\` nor an IntegrationProvider whose getId() returns 'delta') — orphan registration: it mounts on window.OCA.OpenRegister.integrations but is invisible to the openregister.integrations.leaves capability.
+✗ [R2 id-correlation] registerIntegration id "echo" (src/bravo.js) has NO matching server-side face in lib/** (neither a \`new LeafDescriptor(id: 'echo')\` nor an IntegrationProvider whose getId() returns 'echo') — orphan registration: it mounts on window.OCA.OpenRegister.integrations but is invisible to the openregister.integrations.leaves capability.
+✗ [R3 renderMode] leaf "bravo" declares renderMode "component" server-side (lib/Leaf/Leaves.php) but "mount" in its JS registration (src/bravo.js) — a renderMode mismatch blanks the surface (ADR-066 decision 7).
+✗ [R4 metadata] leaf "bravo" field \`label\` mismatch across layers: server (lib/Leaf/Leaves.php) says "Bravo", JS (src/bravo.js) says "Bravo2" — the two halves describe different leaves.
+✗ [R4 metadata] leaf "bravo" field \`group\` mismatch across layers: server (lib/Leaf/Leaves.php) says "x", JS (src/bravo.js) says "y" — the two halves describe different leaves.
+✗ [R4 metadata] leaf "bravo" field \`referenceType\` mismatch across layers: server (lib/Leaf/Leaves.php) says "r", JS (src/bravo.js) says "q" — the two halves describe different leaves.
+✗ [R4 metadata] leaf "bravo" field \`surfaces\` mismatch across layers: server (lib/Leaf/Leaves.php) says ["tab"], JS (src/bravo.js) says ["widget"] — the two halves describe different leaves.
+✗ [R5 spread-source] registerIntegration in src/bravo.js spreads \`...ghost\`, which is not imported in that file — the spread of an undefined binding registers a leaf with no id.
+✗ [R5 spread-source] registerIntegration in src/bravo.js spreads \`...local\` imported from "./local", not from the leaf-owning package @conduction/nextcloud-vue — an override must extend the descriptor it overrides, or the id it registers under is not the one it thinks.
+✗ [R5 spread-source] registerIntegration in src/bravo.js declares neither an \`id\` nor a spread of a descriptor — it registers a leaf with no identity.
+✗ [R6 offlineConfig] leaf offlineConfig.plannedSchema = "nope" (src/bravo.js) names a schema this repo does not declare in lib/Settings/** — the leaf would query a schema that does not exist. Declared slugs: plan, ref
+✗ [R6 offlineConfig] leaf offlineConfig.templateRefField = "gone" (src/bravo.js) is not a property of schema "plan" as declared in lib/Settings/** — the leaf would filter/display on a property that does not exist. Declared properties: date, title
+✗ [R6 offlineConfig] leaf offlineConfig.titleField = "missing" (src/bravo.js) is not a property of schema "plan" as declared in lib/Settings/** — the leaf would filter/display on a property that does not exist. Declared properties: date, title
+
+Assertions run per rule: R1:5 R2:8 R3:2 R4:7 R5:4 R7:0 R6:7
+",
+  "stdout": "",
+}
+`;
