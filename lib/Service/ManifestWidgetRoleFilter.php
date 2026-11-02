@@ -133,15 +133,7 @@ class ManifestWidgetRoleFilter {
 		}
 
 		if (isset($config['sidebarTabs']) === true && is_array($config['sidebarTabs']) === true) {
-			foreach ($config['sidebarTabs'] as $tabIndex => $tab) {
-				if (is_array($tab) === true && isset($tab['widgets']) === true && is_array($tab['widgets']) === true) {
-					$config['sidebarTabs'][$tabIndex]['widgets'] = $this->filterWidgetList(
-						widgets: $tab['widgets'],
-						caller: $caller,
-						removedIds: $removedIds
-					);
-				}
-			}
+			$config['sidebarTabs'] = $this->filterSidebarTabs(tabs: $config['sidebarTabs'], caller: $caller, removedIds: $removedIds);
 		}
 
 		if ($removedIds !== [] && isset($config['layout']) === true && is_array($config['layout']) === true) {
@@ -150,6 +142,25 @@ class ManifestWidgetRoleFilter {
 
 		return $config;
 	}//end filterConfig()
+
+	/**
+	 * Filter the `widgets[]` of every legacy sidebar tab.
+	 *
+	 * @param array<int|string, mixed> $tabs The `config.sidebarTabs[]` entries.
+	 * @param IUser|null $caller The caller, or null.
+	 * @param array<string, true> $removedIds Collects the ids of removed widgets.
+	 *
+	 * @return array<int|string, mixed> The tabs with filtered widgets.
+	 */
+	private function filterSidebarTabs(array $tabs, ?IUser $caller, array &$removedIds): array {
+		foreach ($tabs as $index => $tab) {
+			if (is_array($tab) === true && isset($tab['widgets']) === true && is_array($tab['widgets']) === true) {
+				$tabs[$index]['widgets'] = $this->filterWidgetList(widgets: $tab['widgets'], caller: $caller, removedIds: $removedIds);
+			}
+		}
+
+		return $tabs;
+	}//end filterSidebarTabs()
 
 	/**
 	 * Whether the caller may see a widget entry. A widget without `roles`
