@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Mcp\Handler;
 
 use OCA\Buildiq\Support\ManifestWidgetShape;
+use OCA\Buildiq\Support\WidgetSpec;
 
 /**
  * Handles the buildiq.addWidget tool invocation.
@@ -129,10 +130,7 @@ class AddWidgetHandler extends AbstractToolHandler {
 			[$pages, $widget] = $this->appendWidget(
 				pages: $pages,
 				pageIdx: $foundIdx,
-				widgetType: $widgetType,
-				widgetConfig: $widgetConfig,
-				widgetId: $validation['widgetId'],
-				title: $validation['title']
+				spec: new WidgetSpec(type: $widgetType, config: $widgetConfig, id: $validation['widgetId'], title: $validation['title'])
 			);
 
 			$manifest['pages'] = array_values($pages);
@@ -274,10 +272,7 @@ class AddWidgetHandler extends AbstractToolHandler {
 	 *
 	 * @param array<int, mixed> $pages Pages list from the manifest.
 	 * @param int $pageIdx Index of the target page.
-	 * @param string $widgetType Widget type identifier.
-	 * @param array $widgetConfig Widget-type-specific configuration blob.
-	 * @param string $widgetId Caller-supplied widget id, or '' to derive one.
-	 * @param string $title Caller-supplied widget title, or '' to derive one.
+	 * @param WidgetSpec $spec The widget type, settings bag, and optional id and title.
 	 *
 	 * @return array{0: array, 1: array{id: string, title: string, type: string}}
 	 *
@@ -286,23 +281,10 @@ class AddWidgetHandler extends AbstractToolHandler {
 	 * same object on four constructors to satisfy a rule aimed at hidden
 	 * service coupling, and this class has none to hide.
 	 */
-	private function appendWidget(
-		array $pages,
-		int $pageIdx,
-		string $widgetType,
-		array $widgetConfig,
-		string $widgetId = '',
-		string $title = '',
-	): array {
+	private function appendWidget(array $pages, int $pageIdx, WidgetSpec $spec): array {
 		// Shared with CopilotService::applyAddWidget() — see ManifestWidgetShape
 		// for why id, title and a layout row all come from one place.
-		[$page, $widget] = ManifestWidgetShape::appendTo(
-			page: (array)$pages[$pageIdx],
-			widgetType: $widgetType,
-			widgetConfig: $widgetConfig,
-			widgetId: $widgetId,
-			title: $title
-		);
+		[$page, $widget] = ManifestWidgetShape::appendTo(page: (array)$pages[$pageIdx], spec: $spec);
 		$pages[$pageIdx] = $page;
 
 		return [$pages, $widget];

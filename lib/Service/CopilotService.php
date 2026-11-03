@@ -46,6 +46,7 @@ use OCA\Buildiq\Support\ManifestPageShape;
 use OCA\Buildiq\Support\ManifestRoute;
 use OCA\Buildiq\Support\ManifestWidgetShape;
 use OCA\Buildiq\Support\ObjectRecord;
+use OCA\Buildiq\Support\WidgetSpec;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -1778,10 +1779,12 @@ class CopilotService {
 			// the widget's id, title or placement.
 			[$page] = ManifestWidgetShape::appendTo(
 				page: $page,
-				widgetType: (string)($args['widgetType'] ?? ''),
-				widgetConfig: (array)($args['widgetConfig'] ?? []),
-				widgetId: (string)($args['widgetId'] ?? ''),
-				title: (string)($args['title'] ?? '')
+				spec: new WidgetSpec(
+					type: (string)($args['widgetType'] ?? ''),
+					config: (array)($args['widgetConfig'] ?? []),
+					id: (string)($args['widgetId'] ?? ''),
+					title: (string)($args['title'] ?? '')
+				)
 			);
 			$pages[$i] = $page;
 			break;
