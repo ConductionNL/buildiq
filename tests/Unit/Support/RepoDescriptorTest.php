@@ -28,7 +28,8 @@ use PHPUnit\Framework\TestCase;
 /**
  * The fixture holds the answers of the former private copies
  * (TemplateRepoSerializer sortKeysRecursive() and resolveCategory(),
- * LayoutDeltaService normalise()), recorded on the old code.
+ * LayoutDeltaService normalise(), and TemplateRepoSerializer deriveCredentials()
+ * in its own fixture), recorded on the old code.
  *
  * @covers \OCA\Buildiq\Support\CanonicalJson
  * @covers \OCA\Buildiq\Support\RepoDescriptor
@@ -98,6 +99,43 @@ class RepoDescriptorTest extends TestCase {
 			$this->assertSame(expected: $golden[$name], actual: RepoDescriptor::category(record: $record, manifest: $manifest), message: $name);
 		}
 	}//end testCategoryAnswersAsTheFormerCopy()
+
+	/**
+	 * credentials() derives every recorded manifest's list as before.
+	 *
+	 * @return void
+	 */
+	public function testCredentialsAnswerAsTheFormerCopy(): void {
+		$golden = json_decode((string)file_get_contents(__DIR__ . '/../../Fixtures/repo-descriptor-credentials-golden.json'), true);
+		$golden = $golden['OCA\Buildiq\Service\TemplateRepoSerializer::deriveCredentials'];
+		$this->assertSame(expected: array_keys(self::credentialInputs()), actual: array_keys($golden));
+		foreach (self::credentialInputs() as $name => $manifest) {
+			$this->assertSame(expected: $golden[$name], actual: RepoDescriptor::credentials(manifest: $manifest), message: $name);
+		}
+	}//end testCredentialsAnswerAsTheFormerCopy()
+
+	/**
+	 * The recorded manifests.
+	 *
+	 * @return array<string,array<string,mixed>>
+	 */
+	private static function credentialInputs(): array {
+		return [
+			'none' => [],
+			'notList' => ['credentials' => 'x'],
+			'mixed' => [
+				'credentials' => [
+					['provider' => 'github', 'reason' => 'Push', 'scopes' => ['repo', 7]],
+					['reason' => 'no provider'],
+					'text',
+					null,
+					['provider' => 5, 'scopes' => 'repo'],
+					['provider' => 'mail', 'scopes' => ['a' => 'x', 'b' => 'y']],
+					['provider' => null],
+				],
+			],
+		];
+	}//end credentialInputs()
 
 	/**
 	 * The recorded structures.

@@ -127,48 +127,13 @@ class TemplateRepoSerializer {
 			$descriptor['useCase'] = $useCase;
 		}
 
-		$credentials = $this->deriveCredentials(manifest: $manifest);
+		$credentials = RepoDescriptor::credentials(manifest: $manifest);
 		if ($credentials !== []) {
 			$descriptor['credentials'] = $credentials;
 		}
 
 		return $descriptor;
 	}//end buildDescriptor()
-
-	/**
-	 * Derive the descriptor `credentials[]` from the manifest's top-level
-	 * `credentials[]` (REQ-GARF-009), mirroring AppRepoSerializer.
-	 *
-	 * @param array<string,mixed> $manifest The template's manifest blob.
-	 *
-	 * @return array<int,array<string,mixed>>
-	 */
-	private function deriveCredentials(array $manifest): array {
-		$raw = ($manifest['credentials'] ?? null);
-		if (is_array($raw) === false) {
-			return [];
-		}
-
-		$credentials = [];
-		foreach ($raw as $entry) {
-			if (is_array($entry) === false || isset($entry['provider']) === false) {
-				continue;
-			}
-
-			$scopes = [];
-			if (is_array($entry['scopes'] ?? null) === true) {
-				$scopes = array_values(array_map(static fn ($scope): string => (string)$scope, $entry['scopes']));
-			}
-
-			$credentials[] = [
-				'provider' => (string)$entry['provider'],
-				'reason' => (string)($entry['reason'] ?? ''),
-				'scopes' => $scopes,
-			];
-		}
-
-		return $credentials;
-	}//end deriveCredentials()
 
 	/**
 	 * Resolve a template's `companionSchemas` into `slug => blob` pairs.
