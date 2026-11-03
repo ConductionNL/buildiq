@@ -3,7 +3,9 @@
 /**
  * Buildiq Channel Provisioners
  *
- * The per-channel provisioners a published repository is applied through. AppChannelApplier applies a published repository channel by channel; this object carries the provisioner for each channel.
+ * The per-channel provisioners a published repository is applied through. AppChannelApplier
+ * applies a published repository channel by channel; this object carries the provisioner for each
+ * channel.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -26,6 +28,8 @@ namespace OCA\Buildiq\Service;
 
 /**
  * The per-channel provisioners a published repository is applied through.
+ *
+ * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md
  */
 final class ChannelProvisioners {
 	/**

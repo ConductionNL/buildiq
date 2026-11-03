@@ -3,7 +3,9 @@
 /**
  * Buildiq Caller Context
  *
- * The caller's session, group memberships and the shared permission matcher. Controllers and services that check who is calling take the session, the group manager and the permission matcher together, so they come as one object.
+ * The caller's session, group memberships and the shared permission matcher. Controllers and
+ * services that check who is calling take the session, the group manager and the permission
+ * matcher together, so they come as one object.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -29,6 +31,8 @@ use OCP\IUserSession;
 
 /**
  * The caller's session, group memberships and the shared permission matcher.
+ *
+ * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/agent-workspace/spec.md
  */
 final class CallerContext {
 	/**

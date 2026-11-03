@@ -26,6 +26,8 @@ namespace OCA\Buildiq\Service;
 
 /**
  * The shared published-application read and visibility check order.
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-4
  */
 final class PublishedApps {
 	/**

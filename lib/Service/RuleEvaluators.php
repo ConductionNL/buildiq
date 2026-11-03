@@ -3,7 +3,8 @@
 /**
  * Buildiq Rule Evaluators
  *
- * The decision table evaluator, condition executor, action dispatcher and rule cache. RuleEngineService evaluates rules with these four collaborators; they come as one object.
+ * The decision table evaluator, condition executor, action dispatcher and rule cache.
+ * RuleEngineService evaluates rules with these four collaborators; they come as one object.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -26,6 +27,8 @@ namespace OCA\Buildiq\Service;
 
 /**
  * The decision table evaluator, condition executor, action dispatcher and rule cache.
+ *
+ * @spec openspec/changes/business-rules-engine/tasks.md#5.1
  */
 final class RuleEvaluators {
 	/**

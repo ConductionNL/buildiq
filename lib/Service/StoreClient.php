@@ -30,6 +30,8 @@ use OCA\OpenRegister\AppHost\Store\StoreActionAuthorizer;
 
 /**
  * OpenRegister's store client and the authorizer that decides who may publish.
+ *
+ * @spec openspec/specs/openbuild-remote-template-store/spec.md
  */
 final class StoreClient {
 	/**

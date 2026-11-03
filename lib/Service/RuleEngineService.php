@@ -389,7 +389,7 @@ class RuleEngineService {
 	 * Persist a RuleExecutionLog audit record.
 	 *
 	 * @param array{ruleSetSlug:string,version:string,payload:array<string,mixed>,maskPii:bool} $run The run:
-	 *                                                                                               the RuleSet slug and version, the raw input payload, and whether to mask PII in the log.
+	 *        the RuleSet slug and version, the raw input payload, and whether to mask PII in the log.
 	 * @param array{result:array<string,mixed>,triggeredRules:array<int,mixed>,executionTime:int,errors:array<int,string>} $outcome The answer.
 	 *
 	 * @return void

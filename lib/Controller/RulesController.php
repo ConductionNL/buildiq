@@ -48,17 +48,13 @@ use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\RuleEngineService;
 use OCA\Buildiq\Service\RuleObjectReader;
-use OCA\Buildiq\Service\RuleSetVersioningService;
 use OCA\Buildiq\Service\RuleStorage;
-use OCA\Buildiq\Service\StoredDecisionTables;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IGroupManager;
 use OCP\IRequest;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -77,41 +73,6 @@ class RulesController extends Controller {
 	private const MAX_PAYLOAD_BYTES = 65536;
 
 	/**
-	 * Current user session.
-	 *
-	 * @var IUserSession
-	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * Admin check for writing a decision table.
-	 *
-	 * @var IGroupManager
-	 */
-	private readonly IGroupManager $groupManager;
-
-	/**
-	 * Organisation-scoped reads of rule-engine objects (REQ-BRE-007).
-	 *
-	 * @var RuleObjectReader
-	 */
-	private readonly RuleObjectReader $reader;
-
-	/**
-	 * A rule set's decision table in OpenRegister's register (decision 196).
-	 *
-	 * @var StoredDecisionTables
-	 */
-	private readonly StoredDecisionTables $tables;
-
-	/**
-	 * Test-gate runner for test-all.
-	 *
-	 * @var RuleSetVersioningService
-	 */
-	private readonly RuleSetVersioningService $versioningService;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param IRequest $request The current HTTP request.
@@ -126,14 +87,9 @@ class RulesController extends Controller {
 		IRequest $request,
 		private readonly LoggerInterface $logger,
 		private readonly RuleEngineService $ruleEngine,
-		RuleStorage $storage,
-		CallerContext $caller,
+		private readonly RuleStorage $storage,
+		private readonly CallerContext $caller,
 	) {
-		$this->userSession = $caller->userSession;
-		$this->groupManager = $caller->groupManager;
-		$this->reader = $storage->reader;
-		$this->tables = $storage->tables;
-		$this->versioningService = $storage->versioningService;
 		parent::__construct(appName: Application::APP_ID, request: $request);
 
 	}//end __construct()
@@ -161,7 +117,7 @@ class RulesController extends Controller {
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 60, period: 60)]
 	public function evaluate(string $ruleSetSlug): JSONResponse {
-		if ($this->userSession->getUser() === null) {
+		if ($this->caller->userSession->getUser() === null) {
 			return $this->error(code: 'unauthenticated', detail: null, status: Http::STATUS_UNAUTHORIZED);
 		}
 
@@ -242,7 +198,7 @@ class RulesController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function schema(string $ruleSetSlug): JSONResponse {
-		if ($this->userSession->getUser() === null) {
+		if ($this->caller->userSession->getUser() === null) {
 			return $this->error(code: 'unauthenticated', detail: null, status: Http::STATUS_UNAUTHORIZED);
 		}
 
@@ -294,12 +250,12 @@ class RulesController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function saveDecisionTable(string $ruleSetSlug): JSONResponse {
-		$user = $this->userSession->getUser();
+		$user = $this->caller->userSession->getUser();
 		if ($user === null) {
 			return $this->error(code: 'unauthenticated', detail: null, status: Http::STATUS_UNAUTHORIZED);
 		}
 
-		if ($this->groupManager->isInGroup($user->getUID(), 'admin') === false) {
+		if ($this->caller->groupManager->isInGroup($user->getUID(), 'admin') === false) {
 			return $this->error(code: 'forbidden', detail: 'Only an administrator can change a decision table.', status: Http::STATUS_FORBIDDEN);
 		}
 
@@ -316,7 +272,7 @@ class RulesController extends Controller {
 		];
 
 		try {
-			$stored = $this->tables->save(ruleSet: $ruleSet, table: $table);
+			$stored = $this->storage->tables->save(ruleSet: $ruleSet, table: $table);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'Buildiq: decision table for ' . $ruleSetSlug . ' was refused',
@@ -344,7 +300,7 @@ class RulesController extends Controller {
 	private function decisionColumns(array $ruleSet): array {
 		$inputs = [];
 		$outputs = [];
-		$tables = $this->tables->forRuleSet(ruleSet: $ruleSet);
+		$tables = $this->storage->tables->forRuleSet(ruleSet: $ruleSet);
 		$table = ($tables[0] ?? []);
 
 		foreach ((array)($table['inputColumns'] ?? []) as $column) {
@@ -384,7 +340,7 @@ class RulesController extends Controller {
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 20, period: 60)]
 	public function testAll(string $ruleSetSlug): JSONResponse {
-		if ($this->userSession->getUser() === null) {
+		if ($this->caller->userSession->getUser() === null) {
 			return $this->error(code: 'unauthenticated', detail: null, status: Http::STATUS_UNAUTHORIZED);
 		}
 
@@ -395,7 +351,7 @@ class RulesController extends Controller {
 
 		$testCases = $this->findTestCases(slug: $ruleSetSlug);
 		try {
-			$failures = $this->versioningService->runTestGate($ruleSetSlug, $testCases);
+			$failures = $this->storage->versioningService->runTestGate($ruleSetSlug, $testCases);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				'Buildiq: test-all failed for ' . $ruleSetSlug,
@@ -459,7 +415,7 @@ class RulesController extends Controller {
 	 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-007-per-tenant-isolation-and-multitenancy
 	 */
 	private function query(string $schema, array $filters, ?int $limit): array {
-		return $this->reader->findScoped(schema: $schema, filters: $filters, limit: $limit);
+		return $this->storage->reader->findScoped(schema: $schema, filters: $filters, limit: $limit);
 	}//end query()
 
 	/**

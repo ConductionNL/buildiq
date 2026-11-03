@@ -3,7 +3,9 @@
 /**
  * Buildiq Rule Storage
  *
- * The rule object reader, stored decision tables and rule set versioning. RulesController reads rules, stored decision tables and rule set versions through these three collaborators; they come as one object.
+ * The rule object reader, stored decision tables and rule set versioning. RulesController reads
+ * rules, stored decision tables and rule set versions through these three collaborators; they come
+ * as one object.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -26,6 +28,8 @@ namespace OCA\Buildiq\Service;
 
 /**
  * The rule object reader, stored decision tables and rule set versioning.
+ *
+ * @spec openspec/changes/business-rules-engine/tasks.md#9.1
  */
 final class RuleStorage {
 	/**

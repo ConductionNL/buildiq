@@ -52,9 +52,6 @@ namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\WizardCreationException;
 use OCA\Buildiq\Support\ObjectRecord;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\RegisterService;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -107,27 +104,6 @@ class ApplicationCreationService {
 	private const BUILT_APP_ROUTE_SCHEMA = 'built-app-route';
 
 	/**
-	 * OpenRegister object service
-	 *
-	 * @var ObjectServiceInterface
-	 */
-	private readonly ObjectServiceInterface $objectService;
-
-	/**
-	 * Resolves register slugs
-	 *
-	 * @var RegisterMapper
-	 */
-	private readonly RegisterMapper $registerMapper;
-
-	/**
-	 * Resolves schema slugs
-	 *
-	 * @var SchemaMapper
-	 */
-	private readonly SchemaMapper $schemaMapper;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger PSR logger for diagnostics
@@ -140,14 +116,11 @@ class ApplicationCreationService {
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
-		RegisterStore $store,
+		private readonly RegisterStore $store,
 		private readonly RegisterService $registerService,
 		private readonly IUserSession $userSession,
 		private readonly SlugValidator $slugValidator,
 	) {
-		$this->objectService = $store->objectService;
-		$this->registerMapper = $store->registerMapper;
-		$this->schemaMapper = $store->schemaMapper;
 	}//end __construct()
 
 	/**
@@ -181,7 +154,7 @@ class ApplicationCreationService {
 			// M2: Release the per-slug advisory lock regardless of outcome.
 			if ($locked === true) {
 				try {
-					$this->objectService->unlockObject(identifier: $lockKey, advisory: true);
+					$this->store->objectService->unlockObject(identifier: $lockKey, advisory: true);
 				} catch (Throwable $unlockError) {
 					$this->logger->warning(
 						'Buildiq: failed to release slug lock ' . $lockKey,
@@ -209,7 +182,7 @@ class ApplicationCreationService {
 		}
 
 		try {
-			$this->objectService->lockObject(
+			$this->store->objectService->lockObject(
 				identifier: $lockKey,
 				process: 'buildiq.createApplication',
 				duration: 10,
@@ -311,7 +284,7 @@ class ApplicationCreationService {
 		];
 
 		try {
-			$created = $this->objectService->saveObject(
+			$created = $this->store->objectService->saveObject(
 				object: $applicationPayload,
 				register: ApplicationVersionService::REGISTER_SLUG,
 				schema: ApplicationVersionService::APPLICATION_SCHEMA
@@ -416,7 +389,7 @@ class ApplicationCreationService {
 		];
 
 		try {
-			$createdVersion = $this->objectService->saveObject(
+			$createdVersion = $this->store->objectService->saveObject(
 				object: $versionPayload,
 				register: ApplicationVersionService::REGISTER_SLUG,
 				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
@@ -515,7 +488,7 @@ class ApplicationCreationService {
 			$fullPayload = ($state['versionPayloads'][$currentSlug] ?? []);
 			$fullPayload['promotesTo'] = $nextUuid;
 
-			$this->objectService->saveObject(
+			$this->store->objectService->saveObject(
 				object: $fullPayload,
 				register: ApplicationVersionService::REGISTER_SLUG,
 				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
@@ -561,7 +534,7 @@ class ApplicationCreationService {
 				'productionVersion' => $terminalUuid,
 			];
 
-			$this->objectService->saveObject(
+			$this->store->objectService->saveObject(
 				object: $fullPayload,
 				register: ApplicationVersionService::REGISTER_SLUG,
 				schema: ApplicationVersionService::APPLICATION_SCHEMA,
@@ -596,7 +569,7 @@ class ApplicationCreationService {
 	 */
 	private function publishRoute(array $plan, array &$state): void {
 		try {
-			$createdRoute = $this->objectService->saveObject(
+			$createdRoute = $this->store->objectService->saveObject(
 				object: ['slug' => $plan['slug'], 'applicationUuid' => $state['applicationUuid']],
 				register: ApplicationVersionService::REGISTER_SLUG,
 				schema: self::BUILT_APP_ROUTE_SCHEMA
@@ -769,11 +742,11 @@ class ApplicationCreationService {
 			// Pin _multitenancy: false throughout so all three calls operate in
 			// the same scope and a slug taken in one org cannot appear free to
 			// another (issue #163 — cross-org multitenancy flag mismatch).
-			$registerId = $this->registerMapper->find(
+			$registerId = $this->store->registerMapper->find(
 				ApplicationVersionService::REGISTER_SLUG,
 				_multitenancy: false
 			)->getId();
-			$schemaId = $this->schemaMapper->find(
+			$schemaId = $this->store->schemaMapper->find(
 				ApplicationVersionService::APPLICATION_SCHEMA,
 				_multitenancy: false
 			)->getId();
@@ -796,7 +769,7 @@ class ApplicationCreationService {
 			// an RBAC-filtered search run as `admin` would not see it and would
 			// again report the slug as free. A uniqueness check must see every
 			// row, exactly as AppNavigationService does when it enumerates apps.
-			$rows = $this->objectService->searchObjects(
+			$rows = $this->store->objectService->searchObjects(
 				query: [
 					'@self' => [
 						'register' => $registerId,
@@ -844,7 +817,7 @@ class ApplicationCreationService {
 		string $versionSlug,
 		array $defaultSchemas,
 	): void {
-		$register = $this->registerMapper->createFromArray(
+		$register = $this->store->registerMapper->createFromArray(
 			[
 				'slug' => $registerSlug,
 				'title' => 'Buildiq — ' . $appSlug . ' (' . $versionSlug . ')',
@@ -868,7 +841,7 @@ class ApplicationCreationService {
 				$blob['slug'] = $slugPrefix . $originalSlug;
 			}
 
-			$schema = $this->schemaMapper->createFromArray(object: $blob);
+			$schema = $this->store->schemaMapper->createFromArray(object: $blob);
 			$createdIds[] = $schema->getId();
 		}
 
@@ -879,7 +852,7 @@ class ApplicationCreationService {
 			}
 
 			$register->setSchemas(array_values(array_unique(array_merge($existing, $createdIds))));
-			$this->registerMapper->update($register);
+			$this->store->registerMapper->update($register);
 		}
 	}//end provisionRegister()
 
@@ -896,7 +869,7 @@ class ApplicationCreationService {
 	 */
 	private function deleteRegister(string $registerSlug): bool {
 		try {
-			$register = $this->registerMapper->find($registerSlug, _multitenancy: false);
+			$register = $this->store->registerMapper->find($registerSlug, _multitenancy: false);
 			$this->registerService->delete(register: $register);
 			return true;
 		} catch (Throwable $e) {
@@ -1026,7 +999,7 @@ class ApplicationCreationService {
 			}
 
 			try {
-				$this->objectService->deleteObject(uuid: $uuid);
+				$this->store->objectService->deleteObject(uuid: $uuid);
 			} catch (Throwable $e) {
 				$this->logger->error(
 					'Buildiq: wizard rollback failed to delete ' . $label . ' ' . $uuid . ': ' . $e->getMessage(),

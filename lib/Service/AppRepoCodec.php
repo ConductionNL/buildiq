@@ -3,7 +3,8 @@
 /**
  * Buildiq App Repo Codec
  *
- * The app repository serializer and parser. GitHubAppSyncService turns an application into repository files and back with this serializer and parser pair.
+ * The app repository serializer and parser. GitHubAppSyncService turns an application into
+ * repository files and back with this serializer and parser pair.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -26,6 +27,8 @@ namespace OCA\Buildiq\Service;
 
 /**
  * The app repository serializer and parser.
+ *
+ * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
  */
 final class AppRepoCodec {
 	/**

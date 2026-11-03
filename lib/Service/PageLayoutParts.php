@@ -3,7 +3,9 @@
 /**
  * Buildiq Page Layout Parts
  *
- * The layer stack, frozen base, presenter and delta store of a page layout. PageLayoutLeafProvider resolves a page layout from its layers, frozen base and stored deltas, and presents the result; this object carries those parts.
+ * The layer stack, frozen base, presenter and delta store of a page layout. PageLayoutLeafProvider
+ * resolves a page layout from its layers, frozen base and stored deltas, and presents the result;
+ * this object carries those parts.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -26,6 +28,8 @@ namespace OCA\Buildiq\Service;
 
 /**
  * The layer stack, frozen base, presenter and delta store of a page layout.
+ *
+ * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md
  */
 final class PageLayoutParts {
 	/**

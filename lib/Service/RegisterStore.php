@@ -3,7 +3,9 @@
 /**
  * Buildiq Register Store
  *
- * OpenRegister's object service, register and schema mappers and audit trail. Most services and controllers reach OpenRegister through the same three or four collaborators. Taking them as one object keeps their constructors short.
+ * OpenRegister's object service, register and schema mappers and audit trail. Most services and
+ * controllers reach OpenRegister through the same three or four collaborators. Taking them as one
+ * object keeps their constructors short.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -31,6 +33,8 @@ use OCA\OpenRegister\Db\SchemaMapper;
 
 /**
  * OpenRegister's object service, register and schema mappers and audit trail.
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-9
  */
 final class RegisterStore {
 	/**

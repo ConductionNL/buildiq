@@ -68,7 +68,6 @@ use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCA\Buildiq\Service\StoreClient;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
-use OCA\OpenRegister\AppHost\Store\StoreActionAuthorizer;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -90,20 +89,6 @@ class StoreController extends Controller {
 	private const SLUG_PATTERN = '/^[a-z0-9][a-z0-9-]*[a-z0-9]$/';
 
 	/**
-	 * Engine-owned store client.
-	 *
-	 * @var GenericStoreService
-	 */
-	private readonly GenericStoreService $storeService;
-
-	/**
-	 * Decides who may publish (OpenRegister); absent, nobody may.
-	 *
-	 * @var StoreActionAuthorizer|null
-	 */
-	private readonly ?StoreActionAuthorizer $actionAuthorizer;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param IRequest $request The current HTTP request.
@@ -121,12 +106,10 @@ class StoreController extends Controller {
 		IRequest $request,
 		private readonly LoggerInterface $logger,
 		private readonly IUserSession $userSession,
-		StoreClient $store,
+		private readonly StoreClient $store,
 		private readonly ApplicationsController $appsController,
 		private readonly ?ConnectionReporter $connectionReporter = null,
 	) {
-		$this->storeService = $store->storeService;
-		$this->actionAuthorizer = $store->actionAuthorizer;
 		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
 
@@ -192,7 +175,7 @@ class StoreController extends Controller {
 		}
 
 		try {
-			$result = $this->storeService->search(
+			$result = $this->store->storeService->search(
 				descriptor: $this->descriptor(),
 				query: $query,
 				kind: $kind
@@ -229,7 +212,7 @@ class StoreController extends Controller {
 		}
 
 		try {
-			return $this->storeService->resolve(descriptor: $this->descriptor(), slug: $slug);
+			return $this->store->storeService->resolve(descriptor: $this->descriptor(), slug: $slug);
 		} catch (Throwable $e) {
 			$this->logger->error('Buildiq store: resolve failed for ' . $slug . ': ' . $e->getMessage());
 			return null;
@@ -278,8 +261,8 @@ class StoreController extends Controller {
 		}
 
 		$descriptor = $this->descriptor();
-		if ($this->actionAuthorizer === null
-			|| $this->actionAuthorizer->canPublish(descriptor: $descriptor, user: $user) === false
+		if ($this->store->actionAuthorizer === null
+			|| $this->store->actionAuthorizer->canPublish(descriptor: $descriptor, user: $user) === false
 		) {
 			return new JSONResponse(
 				data: ['outcome' => 'forbidden', 'slug' => ''],
@@ -296,7 +279,7 @@ class StoreController extends Controller {
 		}
 
 		return new JSONResponse(
-			data: $this->storeService->publish(descriptor: $descriptor, payload: $item),
+			data: $this->store->storeService->publish(descriptor: $descriptor, payload: $item),
 			statusCode: Http::STATUS_OK
 		);
 	}//end publish()

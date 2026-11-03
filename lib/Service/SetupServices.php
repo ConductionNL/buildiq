@@ -3,7 +3,8 @@
 /**
  * Buildiq Setup Services
  *
- * Demo data, settings and template seeding. SetupController runs demo data, settings and template seeding through these three services; they come as one object.
+ * Demo data, settings and template seeding. SetupController runs demo data, settings and template
+ * seeding through these three services; they come as one object.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -26,6 +27,8 @@ namespace OCA\Buildiq\Service;
 
 /**
  * Demo data, settings and template seeding.
+ *
+ * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-2.1
  */
 final class SetupServices {
 	/**
