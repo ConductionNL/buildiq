@@ -338,10 +338,10 @@ import MenuWidget from './widgets/MenuWidget.vue'
 import PagesWidget from './widgets/PagesWidget.vue'
 import RegisterWidget from './widgets/RegisterWidget.vue'
 import SchemasWidget from './widgets/SchemasWidget.vue'
-import { fetchApplicationRecord } from '../../composables/useApplicationRecord.js'
 import { useInsightsWindow } from '../../composables/useInsightsWindow.js'
 import { useRegisterPicker } from '../../composables/useRegisterPicker.js'
 import { useRole } from '../../composables/useRole.js'
+import { applicationVersionsMixin } from '../../mixins/applicationVersions.js'
 import { buildVersionedRoute } from '../../router/helpers.js'
 
 export default {
@@ -361,6 +361,8 @@ export default {
 		UserDeltaEditModal,
 		ImportDataWizard,
 	},
+
+	mixins: [applicationVersionsMixin],
 
 	props: {
 		// CnDetailPage's #before-body slot forwards the resolved record as
@@ -424,74 +426,6 @@ export default {
 	},
 
 	computed: {
-		/**
-		 * App slug from the resolved Application record.
-		 *
-		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
-		 */
-		appSlug() {
-			return (this.application && this.application.slug) || ''
-		},
-
-		/**
-		 * Production version UUID resolved from the Application record.
-		 *
-		 * @return {string|null}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
-		 */
-		productionVersionUuid() {
-			const pv = this.application && this.application.productionVersion
-			if (!pv) return null
-			if (typeof pv === 'string') return pv
-			return pv.uuid || pv.id || null
-		},
-
-		/**
-		 * Versions ordered along the promotesTo chain (most-upstream first).
-		 *
-		 * @return {Array<object>}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
-		 */
-		orderedVersions() {
-			const all = Array.isArray(this.versions) ? this.versions.slice() : []
-			if (all.length === 0) return []
-			const byUuid = new Map()
-			all.forEach((v) => byUuid.set(v.uuid, v))
-			const roots = all.filter(
-				(v) => !all.some((u) => u.promotesTo === v.uuid),
-			)
-			const ordered = []
-			const visited = new Set()
-			const walk = (v) => {
-				if (!v || visited.has(v.uuid)) return
-				visited.add(v.uuid)
-				ordered.push(v)
-				if (v.promotesTo) {
-					walk(byUuid.get(v.promotesTo))
-				}
-			}
-			roots.forEach((r) => walk(r))
-			all.forEach((v) => walk(v))
-			return ordered
-		},
-
-		/**
-		 * Currently active version (selected, or production, or first).
-		 *
-		 * @return {object|null}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
-		 */
-		activeVersion() {
-			if (!this.selectedVersionUuid) {
-				return this.productionVersion || this.orderedVersions[0] || null
-			}
-			return (
-				this.orderedVersions.find((v) => v.uuid === this.selectedVersionUuid)
-				|| null
-			)
-		},
-
 		/**
 		 * Active version UUID.
 		 *
@@ -614,21 +548,6 @@ export default {
 		activeFlows() {
 			const flows = this.application && this.application.flows
 			return Array.isArray(flows) ? flows : []
-		},
-
-		/**
-		 * The production version row (for the chain/star resolution).
-		 *
-		 * @return {object|null}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
-		 */
-		productionVersion() {
-			if (!this.productionVersionUuid) return null
-			return (
-				this.orderedVersions.find(
-					(v) => v.uuid === this.productionVersionUuid,
-				) || null
-			)
 		},
 
 		/**
@@ -780,30 +699,6 @@ export default {
 
 	watch: {
 		/**
-		 * Re-bind to a freshly resolved record and reload its versions.
-		 *
-		 * @param {object} next The new Application record.
-		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
-		 */
-		object(next) {
-			if (next) {
-				this.application = next
-				this.loadVersions()
-			}
-		},
-
-		'$route.query._version': function (newSlug) {
-			if (!newSlug) {
-				if (this.productionVersionUuid)
-					this.selectedVersionUuid = this.productionVersionUuid
-				return
-			}
-			const match = this.orderedVersions.find((v) => v.slug === newSlug)
-			if (match) this.selectedVersionUuid = match.uuid
-		},
-
-		/**
 		 * Re-fetch insights when the active version changes.
 		 *
 		 * @return {void}
@@ -822,20 +717,6 @@ export default {
 		selectedWindow() {
 			this.scheduleInsightsFetch()
 		},
-	},
-
-	/**
-	 * Load the version list (and seed the active version) on mount.
-	 *
-	 * @return {void}
-	 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
-	 */
-	mounted() {
-		if (!this.application) {
-			this.refreshApplication()
-		} else {
-			this.loadVersions()
-		}
 	},
 
 	/**
@@ -1073,80 +954,13 @@ export default {
 		},
 
 		/**
-		 * Re-load the Application record by `objectId` (fallback when the slot
-		 * did not pass a resolved `object`).
+		 * Start the insights and the user delta of the picked version.
 		 *
-		 * @return {Promise<void>}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @return {void}
 		 */
-		async refreshApplication() {
-			const uuid =
-				this.objectId
-				|| (this.$route && this.$route.params && this.$route.params.objectId)
-				|| ''
-			if (!uuid) return
-
-			// Latest-request-wins if the uuid changes mid-flight (route change).
-			const seq = (this._appReqSeq || 0) + 1
-			this._appReqSeq = seq
-
-			try {
-				// Shared with ApplicationDetailHeader — both components resolve
-				// the same record, and each has several triggers, so without
-				// coalescing one page load issued ten identical GETs (#49).
-				const record = await fetchApplicationRecord(uuid)
-				if (seq !== this._appReqSeq) return
-				this.application = record
-				this.loadVersions()
-			} catch (e) {
-				if (seq !== this._appReqSeq) return
-				this.error = e instanceof Error ? e : new Error(String(e))
-			}
-		},
-
-		/**
-		 * Load the version list for the current Application.
-		 *
-		 * @return {Promise<void>}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
-		 */
-		async loadVersions() {
-			if (!this.appSlug) return
-			try {
-				const url = generateUrl(
-					`/apps/buildiq/api/applications/${encodeURIComponent(this.appSlug)}/versions`,
-				)
-				const { data } = await axios.get(url)
-				const list = Array.isArray(data)
-					? data
-					: data && Array.isArray(data.results)
-						? data.results
-						: []
-				this.versions = list.map((v) => ({
-					...v,
-					uuid: v.uuid || v.id || (v['@self'] && v['@self'].id) || null,
-				}))
-
-				const versionSlugFromRoute =
-					(this.$route && this.$route.query && this.$route.query._version)
-					|| ''
-				const match = versionSlugFromRoute
-					? this.orderedVersions.find(
-							(v) => v.slug === versionSlugFromRoute,
-						)
-					: null
-				if (match) {
-					this.selectedVersionUuid = match.uuid
-				} else if (this.productionVersionUuid) {
-					this.selectedVersionUuid = this.productionVersionUuid
-				} else if (this.orderedVersions[0]) {
-					this.selectedVersionUuid = this.orderedVersions[0].uuid
-				}
-				this.scheduleInsightsFetch()
-				this.loadUserDeltaContent()
-			} catch (e) {
-				this.error = e instanceof Error ? e : new Error(String(e))
-			}
+		onVersionsLoaded() {
+			this.scheduleInsightsFetch()
+			this.loadUserDeltaContent()
 		},
 
 		/**
