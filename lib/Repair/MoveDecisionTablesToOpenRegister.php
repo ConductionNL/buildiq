@@ -49,6 +49,7 @@ namespace OCA\Buildiq\Repair;
 
 use OCA\Buildiq\Service\RuleEngineService;
 use OCA\Buildiq\Service\StoredDecisionTables;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCP\IDBConnection;
@@ -219,6 +220,7 @@ class MoveDecisionTablesToOpenRegister implements IRepairStep {
 	 * @param list<int> $schemaIds The old schema ids.
 	 *
 	 * @return list<array<string,mixed>> The rows.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function oldRows(array $schemaIds): array {
 		try {
@@ -248,7 +250,7 @@ class MoveDecisionTablesToOpenRegister implements IRepairStep {
 			}
 
 			foreach ((array)$found as $object) {
-				$data = $this->normalise(object: $object);
+				$data = ObjectRecord::serialised(object: $object);
 				if ($data !== []) {
 					$rows[] = $data;
 				}
@@ -323,27 +325,4 @@ class MoveDecisionTablesToOpenRegister implements IRepairStep {
 		return array_values(array_map('intval', (array)$rows));
 
 	}//end schemaIds()
-
-	/**
-	 * An object as an array, with its `@self` metadata when the entity has it.
-	 *
-	 * @param mixed $object The search result.
-	 *
-	 * @return array<string,mixed> The data, or an empty array.
-	 */
-	private function normalise(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		return [];
-
-	}//end normalise()
 }//end class

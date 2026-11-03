@@ -9,30 +9,50 @@
 		<header class="ob-debug-log__header">
 			<h4>
 				{{ t('buildiq', 'Error log') }}
-				<span v-if="entries.length" class="ob-debug-log__count">{{ entries.length }}</span>
+				<span v-if="entries.length" class="ob-debug-log__count">{{
+					entries.length
+				}}</span>
 			</h4>
 			<div class="ob-debug-log__tools">
 				<label class="ob-debug-log__filter">
 					<span class="hidden-visually">{{ t('buildiq', 'Show') }}</span>
 					<select v-model="filter" data-testid="debug-log-filter">
-						<option v-for="option in filterOptions" :key="option.value" :value="option.value">
+						<option
+							v-for="option in filterOptions"
+							:key="option.value"
+							:value="option.value">
 							{{ option.label }}
 						</option>
 					</select>
 				</label>
-				<NcButton variant="tertiary" data-testid="debug-log-reload" @click="$emit('reload')">
+				<NcButton
+					variant="tertiary"
+					data-testid="debug-log-reload"
+					@click="$emit('reload')">
 					{{ t('buildiq', 'Reload preview') }}
 				</NcButton>
-				<NcButton variant="tertiary" :disabled="!entries.length" data-testid="debug-log-clear" @click="$emit('clear')">
+				<NcButton
+					variant="tertiary"
+					:disabled="!entries.length"
+					data-testid="debug-log-clear"
+					@click="$emit('clear')">
 					{{ t('buildiq', 'Clear') }}
 				</NcButton>
 			</div>
 		</header>
 		<p class="ob-debug-log__hint">
-			{{ t('buildiq', 'Failed data requests and broken bindings of the preview. They stay in this browser.') }}
+			{{
+				t(
+					'buildiq',
+					'Failed data requests and broken bindings of the preview. They stay in this browser.',
+				)
+			}}
 		</p>
 
-		<p v-if="!shown.length" class="ob-debug-log__hint" data-testid="debug-log-empty">
+		<p
+			v-if="!shown.length"
+			class="ob-debug-log__hint"
+			data-testid="debug-log-empty">
 			{{ t('buildiq', 'No problems in the preview.') }}
 		</p>
 		<table v-else class="ob-debug-log__table">
@@ -59,7 +79,9 @@
 							<button
 								type="button"
 								class="ob-debug-log__toggle"
-								:aria-expanded="open === entry.key ? 'true' : 'false'"
+								:aria-expanded="
+									open === entry.key ? 'true' : 'false'
+								"
 								@click="toggle(entry.key)">
 								{{ pageLabel(entry.pageId) }}
 							</button>
@@ -73,7 +95,10 @@
 					<tr v-if="open === entry.key" class="ob-debug-log__detail">
 						<td colspan="4">
 							<pre>{{ detail(entry) }}</pre>
-							<NcButton v-if="entry.pageId" variant="secondary" @click="$emit('selectPage', entry.pageId)">
+							<NcButton
+								v-if="entry.pageId"
+								variant="secondary"
+								@click="$emit('selectPage', entry.pageId)">
 								{{ t('buildiq', 'Go to the page') }}
 							</NcButton>
 							<NcButton variant="tertiary" @click="copy(entry)">
@@ -147,7 +172,10 @@ export default {
 				return this.entries
 			}
 			if (this.filter === 'error') {
-				return this.entries.filter((e) => e.kind === 'render-error' || e.kind === 'unknown-component')
+				return this.entries.filter(
+					(e) =>
+						e.kind === 'render-error' || e.kind === 'unknown-component',
+				)
 			}
 			return this.entries.filter((e) => e.kind === this.filter)
 		},
@@ -173,7 +201,11 @@ export default {
 		 * @return {string} The label.
 		 */
 		pageLabel(pageId) {
-			return this.pageTitles[pageId] || pageId || this.t('buildiq', 'Unknown page')
+			return (
+				this.pageTitles[pageId]
+				|| pageId
+				|| this.t('buildiq', 'Unknown page')
+			)
 		},
 
 		/**
@@ -187,21 +219,36 @@ export default {
 			if (entry.kind === 'request') {
 				return entry.status === 0
 					? this.t('buildiq', 'The request did not complete')
-					: this.t('buildiq', 'The server answered {status}', { status: entry.status })
+					: this.t('buildiq', 'The server answered {status}', {
+							status: entry.status,
+						})
 			}
 			if (entry.kind === 'binding') {
 				if (entry.problem === 'missing-schema') {
-					return this.t('buildiq', 'Schema {schema} does not exist', { schema: entry.schema })
+					return this.t('buildiq', 'Schema {schema} does not exist', {
+						schema: entry.schema,
+					})
 				}
 				if (entry.problem === 'missing-register') {
-					return this.t('buildiq', 'Register {register} does not exist', { register: entry.register })
+					return this.t('buildiq', 'Register {register} does not exist', {
+						register: entry.register,
+					})
 				}
-				return this.t('buildiq', '{property} is not a field of schema {schema}', { property: entry.property, schema: entry.schema })
+				return this.t(
+					'buildiq',
+					'{property} is not a field of schema {schema}',
+					{ property: entry.property, schema: entry.schema },
+				)
 			}
 			if (entry.kind === 'unknown-component') {
-				return this.t('buildiq', 'Unknown component {name}', { name: entry.component })
+				return this.t('buildiq', 'Unknown component {name}', {
+					name: entry.component,
+				})
 			}
-			return this.t('buildiq', '{component} failed to draw: {message}', { component: entry.component, message: entry.what })
+			return this.t('buildiq', '{component} failed to draw: {message}', {
+				component: entry.component,
+				message: entry.what,
+			})
 		},
 
 		/**
@@ -212,8 +259,16 @@ export default {
 		 * @return {string} For example "10:41, 12 times".
 		 */
 		when(entry) {
-			const time = new Date(entry.lastAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
-			return entry.count > 1 ? this.t('buildiq', '{time}, {count} times', { time, count: entry.count }) : time
+			const time = new Date(entry.lastAt).toLocaleTimeString(undefined, {
+				hour: '2-digit',
+				minute: '2-digit',
+			})
+			return entry.count > 1
+				? this.t('buildiq', '{time}, {count} times', {
+						time,
+						count: entry.count,
+					})
+				: time
 		},
 
 		/**
@@ -226,10 +281,16 @@ export default {
 		detail(entry) {
 			const lines = [this.describe(entry)]
 			if (entry.request) {
-				lines.push(`${entry.request}  ${entry.status || '-'}  ${entry.durationMs} ms`)
+				lines.push(
+					`${entry.request}  ${entry.status || '-'}  ${entry.durationMs} ms`,
+				)
 			}
 			if (entry.where) {
-				lines.push(this.t('buildiq', 'Declared in: {where}', { where: entry.where }))
+				lines.push(
+					this.t('buildiq', 'Declared in: {where}', {
+						where: entry.where,
+					}),
+				)
 			}
 			return lines.join('\n')
 		},
@@ -297,7 +358,9 @@ export default {
 .ob-debug-log__table td {
 	text-align: start;
 	vertical-align: top;
-	padding: var(--default-grid-baseline, 4px) calc(var(--default-grid-baseline, 4px) * 2) var(--default-grid-baseline, 4px) 0;
+	padding: var(--default-grid-baseline, 4px)
+		calc(var(--default-grid-baseline, 4px) * 2) var(--default-grid-baseline, 4px)
+		0;
 	border-bottom: 1px solid var(--color-border);
 }
 

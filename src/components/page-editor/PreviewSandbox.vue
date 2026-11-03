@@ -434,9 +434,17 @@ export default {
 				this.diagnostics?.({
 					kind: 'render-error',
 					at: Date.now(),
-					pageId: router.currentRoute.value?.name ? String(router.currentRoute.value.name) : null,
-					component: instance?.$options?.name || instance?.$options?.__name || 'unknown',
-					message: error && error.message ? String(error.message) : String(error),
+					pageId: router.currentRoute.value?.name
+						? String(router.currentRoute.value.name)
+						: null,
+					component:
+						instance?.$options?.name
+						|| instance?.$options?.__name
+						|| 'unknown',
+					message:
+						error && error.message
+							? String(error.message)
+							: String(error),
 				})
 				// eslint-disable-next-line no-console
 				console.error(error)

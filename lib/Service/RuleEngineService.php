@@ -104,18 +104,41 @@ class RuleEngineService {
 	private array $activeSlugs = [];
 
 	/**
+	 * DMN table evaluator.
+	 *
+	 * @var DecisionTableEvaluator
+	 */
+	private readonly DecisionTableEvaluator $decisionEvaluator;
+
+	/**
+	 * Condition-action chain executor.
+	 *
+	 * @var ConditionActionExecutor
+	 */
+	private readonly ConditionActionExecutor $conditionExecutor;
+
+	/**
+	 * Wired side-effect dispatcher (spec REQ-AUTD-010 — fixes the verified defect where side-effecting
+	 * actions silently no-op in wet runs because no dispatcher was ever passed to the executor).
+	 *
+	 * @var RuleActionDispatcher
+	 */
+	private readonly RuleActionDispatcher $actionDispatcher;
+
+	/**
+	 * Hot-reload bundle cache.
+	 *
+	 * @var RuleSetCacheManager
+	 */
+	private readonly RuleSetCacheManager $cacheManager;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectServiceInterface $objectService OpenRegister object service.
-	 * @param DecisionTableEvaluator $decisionEvaluator DMN table evaluator.
-	 * @param ConditionActionExecutor $conditionExecutor Condition-action chain executor.
-	 * @param RuleSetCacheManager $cacheManager Hot-reload bundle cache.
+	 * @param RuleEvaluators $evaluators The decision table evaluator, condition executor, action dispatcher and rule cache.
 	 * @param IUserSession $userSession Current user session.
 	 * @param LoggerInterface $logger PSR logger.
-	 * @param RuleActionDispatcher $actionDispatcher Wired side-effect dispatcher (spec REQ-AUTD-010 —
-	 *                                               fixes the verified defect where side-effecting
-	 *                                               actions silently no-op in wet runs because no
-	 *                                               dispatcher was ever passed to the executor).
 	 * @param RuleObjectReader $reader Organisation-scoped reads of rule-engine objects (REQ-BRE-007).
 	 * @param StoredDecisionTables $tables A rule set's decision table, held in OpenRegister's decision-tables register (decision 196).
 	 *
@@ -125,15 +148,16 @@ class RuleEngineService {
 	 */
 	public function __construct(
 		private readonly ObjectServiceInterface $objectService,
-		private readonly DecisionTableEvaluator $decisionEvaluator,
-		private readonly ConditionActionExecutor $conditionExecutor,
-		private readonly RuleSetCacheManager $cacheManager,
+		RuleEvaluators $evaluators,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
-		private readonly RuleActionDispatcher $actionDispatcher,
 		private readonly RuleObjectReader $reader,
 		private readonly StoredDecisionTables $tables,
 	) {
+		$this->decisionEvaluator = $evaluators->decisionEvaluator;
+		$this->conditionExecutor = $evaluators->conditionExecutor;
+		$this->actionDispatcher = $evaluators->actionDispatcher;
+		$this->cacheManager = $evaluators->cacheManager;
 
 	}//end __construct()
 
@@ -146,8 +170,8 @@ class RuleEngineService {
 	 * @param bool $dryRun When true, side-effecting actions are suppressed.
 	 * @param bool $maskPii When true, mask PII fields in the audit log.
 	 * @param bool $preview When true, a live preview for a form being filled
-	 *   in: no execution log entry is written and no side-effecting action runs
-	 *   (REQ-BQLV-004). A preview answer is never trusted for a save.
+	 *                      in: no execution log entry is written and no side-effecting action runs
+	 *                      (REQ-BQLV-004). A preview answer is never trusted for a save.
 	 *
 	 * @return array{result:array<string,mixed>,triggeredRules:array<int,mixed>,executionTime:int,errors:array<int,string>}
 	 *
@@ -281,7 +305,6 @@ class RuleEngineService {
 		}
 
 		return $outcome;
-
 	}//end evaluateChain()
 
 	/**

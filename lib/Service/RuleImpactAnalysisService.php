@@ -38,6 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -119,6 +120,7 @@ class RuleImpactAnalysisService {
 	 * @param int $windowDays Number of days to look back.
 	 *
 	 * @return array<int,array<string,mixed>>
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function fetchLogs(string $ruleSetId, int $windowDays): array {
 		$since = gmdate('Y-m-d\TH:i:s\Z', strtotime("-{$windowDays} days"));
@@ -143,7 +145,7 @@ class RuleImpactAnalysisService {
 
 		$logs = [];
 		foreach ($results as $row) {
-			$entry = $this->normalise(object: $row);
+			$entry = ObjectRecord::toArray(object: $row);
 			if ($entry === []) {
 				continue;
 			}
@@ -208,33 +210,4 @@ class RuleImpactAnalysisService {
 
 		return $apps;
 	}//end buildConsumerApps()
-
-	/**
-	 * Coerce an OR result entry to a plain array.
-	 *
-	 * @param mixed $object The OR object / result entry.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normalise(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normalise()
 }//end class

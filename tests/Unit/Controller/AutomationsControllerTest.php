@@ -29,6 +29,7 @@ namespace OCA\Buildiq\Tests\Unit\Controller;
 use OCA\Buildiq\Controller\AutomationsController;
 use OCA\Buildiq\Service\AutomationCompilerService;
 use OCA\Buildiq\Service\AutomationWriteService;
+use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\ConditionActionExecutor;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -120,8 +121,11 @@ final class AutomationsControllerTest extends TestCase {
 			logger: $this->createMock(LoggerInterface::class),
 			compiler: $this->compiler,
 			conditionExecutor: $this->conditionExecutor,
-			permissionResolver: $permissionResolver,
-			userSession: $this->userSession,
+			caller: new CallerContext(
+				userSession: $this->userSession,
+				groupManager: $this->createMock(IGroupManager::class),
+				permissionResolver: $permissionResolver
+			),
 			writeService: $writeService
 		);
 

@@ -22,6 +22,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Exception\WizardCreationException;
 use OCA\Buildiq\Service\ApplicationCreationService;
+use OCA\Buildiq\Service\RegisterStore;
 use OCA\Buildiq\Service\SlugValidator;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -51,6 +52,8 @@ use Throwable;
  * @covers \OCA\Buildiq\Service\ApplicationCreationService
  * @uses   \OCA\Buildiq\Service\SlugValidator
  * @uses   \OCA\Buildiq\Exception\WizardCreationException
+ * @uses   \OCA\Buildiq\Support\ObjectRecord
+ * @uses   \OCA\Buildiq\Service\RegisterStore
  */
 class ApplicationCreationGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/application-creation.golden.json';
@@ -187,10 +190,12 @@ class ApplicationCreationGoldenTest extends TestCase {
 
 		$service = new ApplicationCreationService(
 			logger: $this->recorder(class: LoggerInterface::class, label: 'logger'),
-			objectService: $this->recorder(class: ObjectServiceInterface::class, label: 'objectService'),
+			store: new RegisterStore(
+				objectService: $this->recorder(class: ObjectServiceInterface::class, label: 'objectService'),
+				registerMapper: $this->recorder(class: RegisterMapper::class, label: 'registerMapper'),
+				schemaMapper: $this->recorder(class: SchemaMapper::class, label: 'schemaMapper')
+			),
 			registerService: $this->recorder(class: RegisterService::class, label: 'registerService'),
-			registerMapper: $this->recorder(class: RegisterMapper::class, label: 'registerMapper'),
-			schemaMapper: $this->recorder(class: SchemaMapper::class, label: 'schemaMapper'),
 			userSession: $userSession,
 			slugValidator: new SlugValidator(),
 		);

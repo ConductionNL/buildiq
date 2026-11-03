@@ -30,18 +30,19 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 use OCA\Buildiq\Service\ConditionActionExecutor;
 use OCA\Buildiq\Service\DecisionTableEvaluator;
 use OCA\Buildiq\Service\DecisionTableShape;
-use OCA\OpenRegister\Service\Dmn\DecisionTableEvaluator as SharedEvaluator;
 use OCA\Buildiq\Service\ExpressionEvaluator;
 use OCA\Buildiq\Service\RuleActionDispatcher;
 use OCA\Buildiq\Service\RuleEngineService;
+use OCA\Buildiq\Service\RuleEvaluators;
 use OCA\Buildiq\Service\RuleObjectReader;
 use OCA\Buildiq\Service\RuleSetCacheManager;
 use OCA\Buildiq\Service\StoredDecisionTables;
-use OCA\OpenRegister\Service\Dmn\DecisionTableStore;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Dmn\DecisionTableEvaluator as SharedEvaluator;
+use OCA\OpenRegister\Service\Dmn\DecisionTableStore;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -145,15 +146,17 @@ final class RuleEngineServiceTest extends TestCase {
 		$this->actionDispatcher = $this->createMock(RuleActionDispatcher::class);
 		$this->tables = $this->storedTables(evaluator: new DecisionTableEvaluator($evaluator, $this->sharedEvaluator()));
 		$this->service = new RuleEngineService(
-			$this->objectService,
-			new DecisionTableEvaluator($evaluator, $this->sharedEvaluator()),
-			new ConditionActionExecutor($evaluator),
-			$this->cacheManager,
-			$this->userSession,
-			$this->createMock(LoggerInterface::class),
-			$this->actionDispatcher,
-			$this->reader,
-			$this->tables,
+			objectService: $this->objectService,
+			evaluators: new RuleEvaluators(
+				decisionEvaluator: new DecisionTableEvaluator($evaluator, $this->sharedEvaluator()),
+				conditionExecutor: new ConditionActionExecutor($evaluator),
+				actionDispatcher: $this->actionDispatcher,
+				cacheManager: $this->cacheManager
+			),
+			userSession: $this->userSession,
+			logger: $this->createMock(LoggerInterface::class),
+			reader: $this->reader,
+			tables: $this->tables,
 		);
 
 	}//end setUp()
@@ -183,7 +186,6 @@ final class RuleEngineServiceTest extends TestCase {
 		);
 
 		return $shared;
-
 	}//end sharedEvaluator()
 
 	/**
@@ -224,7 +226,6 @@ final class RuleEngineServiceTest extends TestCase {
 		);
 
 		return $tables;
-
 	}//end storedTables()
 
 	/**
@@ -461,7 +462,6 @@ final class RuleEngineServiceTest extends TestCase {
 		}
 
 		return [];
-
 	}//end brokenRuleRows()
 
 	/**
@@ -520,22 +520,23 @@ final class RuleEngineServiceTest extends TestCase {
 		);
 		$evaluator = new ExpressionEvaluator();
 		$service = new RuleEngineService(
-			$objectService,
-			new DecisionTableEvaluator($evaluator, $this->sharedEvaluator()),
-			new ConditionActionExecutor($evaluator),
-			$this->cacheManager,
-			$session,
-			$logger,
-			$this->actionDispatcher,
-			new RuleObjectReader($objectService, $this->registerMapper(), $this->schemaMapper(), $this->createMock(LoggerInterface::class)),
-			$this->storedTables(evaluator: new DecisionTableEvaluator($evaluator, $this->sharedEvaluator())),
+			objectService: $objectService,
+			evaluators: new RuleEvaluators(
+				decisionEvaluator: new DecisionTableEvaluator($evaluator, $this->sharedEvaluator()),
+				conditionExecutor: new ConditionActionExecutor($evaluator),
+				actionDispatcher: $this->actionDispatcher,
+				cacheManager: $this->cacheManager
+			),
+			userSession: $session,
+			logger: $logger,
+			reader: new RuleObjectReader($objectService, $this->registerMapper(), $this->schemaMapper(), $this->createMock(LoggerInterface::class)),
+			tables: $this->storedTables(evaluator: new DecisionTableEvaluator($evaluator, $this->sharedEvaluator())),
 		);
 
 		$answer = $service->evaluate($case['slug'], $case['payload'], null, true, $case['maskPii']);
 		$answer['executionTime'] = '<duration>';
 
 		return ['case' => $case, 'saved' => $saved, 'logged' => $logged, 'answer' => $answer];
-
 	}//end executionLogCase()
 
 	/**
@@ -616,15 +617,17 @@ final class RuleEngineServiceTest extends TestCase {
 	public function testCallRuleSetSelfReferenceIsRefused(): void {
 		$conditionExecutor = $this->createMock(ConditionActionExecutor::class);
 		$service = new RuleEngineService(
-			$this->objectService,
-			$this->createMock(DecisionTableEvaluator::class),
-			$conditionExecutor,
-			$this->cacheManager,
-			$this->userSession,
-			$this->createMock(LoggerInterface::class),
-			$this->actionDispatcher,
-			$this->reader,
-			$this->tables,
+			objectService: $this->objectService,
+			evaluators: new RuleEvaluators(
+				decisionEvaluator: $this->createMock(DecisionTableEvaluator::class),
+				conditionExecutor: $conditionExecutor,
+				actionDispatcher: $this->actionDispatcher,
+				cacheManager: $this->cacheManager
+			),
+			userSession: $this->userSession,
+			logger: $this->createMock(LoggerInterface::class),
+			reader: $this->reader,
+			tables: $this->tables,
 		);
 
 		$this->stubScopedRows(
@@ -665,15 +668,17 @@ final class RuleEngineServiceTest extends TestCase {
 	public function testCallRuleSetDepthIsBounded(): void {
 		$conditionExecutor = $this->createMock(ConditionActionExecutor::class);
 		$service = new RuleEngineService(
-			$this->objectService,
-			$this->createMock(DecisionTableEvaluator::class),
-			$conditionExecutor,
-			$this->cacheManager,
-			$this->userSession,
-			$this->createMock(LoggerInterface::class),
-			$this->actionDispatcher,
-			$this->reader,
-			$this->tables,
+			objectService: $this->objectService,
+			evaluators: new RuleEvaluators(
+				decisionEvaluator: $this->createMock(DecisionTableEvaluator::class),
+				conditionExecutor: $conditionExecutor,
+				actionDispatcher: $this->actionDispatcher,
+				cacheManager: $this->cacheManager
+			),
+			userSession: $this->userSession,
+			logger: $this->createMock(LoggerInterface::class),
+			reader: $this->reader,
+			tables: $this->tables,
 		);
 
 		$this->stubScopedRows(
@@ -833,7 +838,6 @@ final class RuleEngineServiceTest extends TestCase {
 		);
 
 		return $mapper;
-
 	}//end registerMapper()
 
 	/**
@@ -865,7 +869,6 @@ final class RuleEngineServiceTest extends TestCase {
 		);
 
 		return $mapper;
-
 	}//end schemaMapper()
 
 	/**
@@ -928,7 +931,6 @@ final class RuleEngineServiceTest extends TestCase {
 		}
 
 		return $slug;
-
 	}//end schemaSlugOf()
 
 	/**
@@ -941,15 +943,17 @@ final class RuleEngineServiceTest extends TestCase {
 	private function serviceWith(RuleSetCacheManager $cacheManager): RuleEngineService {
 		$evaluator = new ExpressionEvaluator();
 		return new RuleEngineService(
-			$this->objectService,
-			new DecisionTableEvaluator($evaluator, $this->sharedEvaluator()),
-			new ConditionActionExecutor($evaluator),
-			$cacheManager,
-			$this->userSession,
-			$this->createMock(LoggerInterface::class),
-			$this->actionDispatcher,
-			$this->reader,
-			$this->tables,
+			objectService: $this->objectService,
+			evaluators: new RuleEvaluators(
+				decisionEvaluator: new DecisionTableEvaluator($evaluator, $this->sharedEvaluator()),
+				conditionExecutor: new ConditionActionExecutor($evaluator),
+				actionDispatcher: $this->actionDispatcher,
+				cacheManager: $cacheManager
+			),
+			userSession: $this->userSession,
+			logger: $this->createMock(LoggerInterface::class),
+			reader: $this->reader,
+			tables: $this->tables,
 		);
 
 	}//end serviceWith()

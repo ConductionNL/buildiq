@@ -10,7 +10,12 @@
 		<header class="ob-health__header">
 			<h3>{{ t('buildiq', 'Performance and errors') }}</h3>
 			<p class="ob-health__hint">
-				{{ t('buildiq', 'What the people using this version noticed: how fast its pages load and how often a request fails.') }}
+				{{
+					t(
+						'buildiq',
+						'What the people using this version noticed: how fast its pages load and how often a request fails.',
+					)
+				}}
 			</p>
 		</header>
 
@@ -20,7 +25,10 @@
 		<p v-else-if="state === 'error'" class="ob-health__hint" role="alert">
 			{{ t('buildiq', 'The performance figures could not be loaded.') }}
 		</p>
-		<p v-else-if="!health || !health.loads" class="ob-health__hint" data-testid="app-health-empty">
+		<p
+			v-else-if="!health || !health.loads"
+			class="ob-health__hint"
+			data-testid="app-health-empty">
 			{{ t('buildiq', 'No page loads were reported in this window yet.') }}
 		</p>
 		<template v-else>
@@ -37,7 +45,12 @@
 					<dt>{{ t('buildiq', 'Failed requests') }}</dt>
 					<dd>
 						{{ health.failures }}
-						<span class="ob-health__hint">{{ t('buildiq', '{share} of {count} requests', { share: percent(health.failureShare), count: health.requests }) }}</span>
+						<span class="ob-health__hint">{{
+							t('buildiq', '{share} of {count} requests', {
+								share: percent(health.failureShare),
+								count: health.requests,
+							})
+						}}</span>
 					</dd>
 				</div>
 				<div>
@@ -47,7 +60,11 @@
 			</dl>
 
 			<table class="ob-health__table" data-testid="app-health-pages">
-				<caption>{{ t('buildiq', 'Slowest pages') }}</caption>
+				<caption>
+					{{
+						t('buildiq', 'Slowest pages')
+					}}
+				</caption>
 				<thead>
 					<tr>
 						<th scope="col">
@@ -176,7 +193,9 @@ export default {
 				const url = generateUrl(
 					`/apps/buildiq/api/applications/${encodeURIComponent(this.appUuid)}/versions/${encodeURIComponent(this.versionUuid)}/health`,
 				)
-				const { data } = await axios.get(url, { params: { window: this.window } })
+				const { data } = await axios.get(url, {
+					params: { window: this.window },
+				})
 				this.health = data && typeof data === 'object' ? data : null
 				this.state = 'done'
 			} catch {
@@ -197,7 +216,10 @@ export default {
 				return this.t('buildiq', 'Not known')
 			}
 			return this.t('buildiq', '{seconds} s', {
-				seconds: (ms / 1000).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
+				seconds: (ms / 1000).toLocaleString(undefined, {
+					minimumFractionDigits: 1,
+					maximumFractionDigits: 1,
+				}),
 			})
 		},
 
@@ -212,7 +234,10 @@ export default {
 			if (share === null || share === undefined) {
 				return this.t('buildiq', 'Not known')
 			}
-			return (share).toLocaleString(undefined, { style: 'percent', maximumFractionDigits: 1 })
+			return share.toLocaleString(undefined, {
+				style: 'percent',
+				maximumFractionDigits: 1,
+			})
 		},
 
 		/**
@@ -277,7 +302,9 @@ export default {
 .ob-health__table th,
 .ob-health__table td {
 	text-align: start;
-	padding: var(--default-grid-baseline, 4px) calc(var(--default-grid-baseline, 4px) * 2) var(--default-grid-baseline, 4px) 0;
+	padding: var(--default-grid-baseline, 4px)
+		calc(var(--default-grid-baseline, 4px) * 2) var(--default-grid-baseline, 4px)
+		0;
 	border-bottom: 1px solid var(--color-border);
 }
 

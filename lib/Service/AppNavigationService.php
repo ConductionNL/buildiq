@@ -97,31 +97,43 @@ class AppNavigationService {
 	private AppVisibilityResolver $visibilityResolver;
 
 	/**
+	 * User session
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectServiceInterface $objectService OpenRegister object service
 	 * @param IURLGenerator $urlGenerator URL generator
-	 * @param IUserSession $userSession User session
-	 * @param IGroupManager $groupManager Group manager
+	 * @param CallerContext $caller The caller's session, group memberships and the shared permission matcher.
 	 * @param IAppConfig $appConfig App config (nav order base override)
 	 * @param LoggerInterface $logger PSR logger
-	 * @param PublishedApplicationProvider|null $applicationProvider Shared published-app read
-	 * @param AppVisibilityResolver|null $visibilityResolver Shared visibility check order
+	 * @param PublishedApps $published Shared published-app read and visibility check order
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly ObjectServiceInterface $objectService,
 		private readonly IURLGenerator $urlGenerator,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		CallerContext $caller,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
-		?PublishedApplicationProvider $applicationProvider = null,
-		?AppVisibilityResolver $visibilityResolver = null,
+		PublishedApps $published = new PublishedApps(),
 	) {
-		$this->applicationProvider = $applicationProvider;
-		$this->visibilityResolver = ($visibilityResolver ?? new AppVisibilityResolver());
+		$this->userSession = $caller->userSession;
+		$this->groupManager = $caller->groupManager;
+		$this->applicationProvider = $published->applicationProvider;
+		$this->visibilityResolver = ($published->visibilityResolver ?? new AppVisibilityResolver());
 	}//end __construct()
 
 	/**

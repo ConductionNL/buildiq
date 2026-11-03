@@ -44,6 +44,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Listener;
 
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -119,6 +120,7 @@ class HybridMetadataLockListener implements IEventListener {
 	 * @return void
 	 *
 	 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function handle(Event $event): void {
 		if (($event instanceof ObjectUpdatingEvent) === false) {
@@ -132,8 +134,8 @@ class HybridMetadataLockListener implements IEventListener {
 			return;
 		}
 
-		$old = $this->extractObjectData(entity: $oldEntity);
-		$new = $this->extractObjectData(entity: $newEntity);
+		$old = ObjectRecord::entityData(entity: $oldEntity);
+		$new = ObjectRecord::entityData(entity: $newEntity);
 
 		// `appType` is immutable for EVERY Application (virtual or hybrid) once
 		// created — flipping the discriminator would desync the entire
@@ -236,30 +238,4 @@ class HybridMetadataLockListener implements IEventListener {
 
 		return null;
 	}//end lockedFieldChanged()
-
-	/**
-	 * Read the object payload (post-`@self`) from the ObjectEntity.
-	 *
-	 * @param object $entity The ObjectEntity instance.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function extractObjectData(object $entity): array {
-		if (method_exists($entity, 'getObject') === true) {
-			$object = $entity->getObject();
-			if (is_array($object) === true) {
-				return $object;
-			}
-		}
-
-		if (method_exists($entity, 'jsonSerialize') === true) {
-			$serialised = $entity->jsonSerialize();
-			if (is_array($serialised) === true) {
-				unset($serialised['@self']);
-				return $serialised;
-			}
-		}
-
-		return [];
-	}//end extractObjectData()
 }//end class

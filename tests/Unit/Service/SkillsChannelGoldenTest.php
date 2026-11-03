@@ -21,11 +21,11 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\AgentChannelProvisioner;
 use OCA\Buildiq\Service\AppChannelApplier;
+use OCA\Buildiq\Service\ChannelProvisioners;
 use OCA\Buildiq\Service\ConnectorRegisterAvailability;
 use OCA\Buildiq\Service\ContainerLocator;
 use OCA\Buildiq\Service\DataRegisterProvisioner;
 use OCA\Buildiq\Service\FlowChannelProvisioner;
-use OCA\Buildiq\Service\LocalApplicationRef;
 use OCA\Buildiq\Service\RepoSource;
 use OCA\Buildiq\Service\SkillChannelDelegate;
 use OCA\Buildiq\Tests\Unit\Support\FakeSlugResolver;
@@ -54,6 +54,7 @@ use RuntimeException;
  * @uses   \OCA\Buildiq\Service\ConnectorRegisterAvailability
  * @uses   \OCA\Buildiq\Service\DataRegisterProvisioner
  * @uses   \OCA\Buildiq\Service\FlowChannelProvisioner
+ * @uses   \OCA\Buildiq\Service\ChannelProvisioners
  */
 class SkillsChannelGoldenTest extends TestCase {
 
@@ -238,18 +239,21 @@ class SkillsChannelGoldenTest extends TestCase {
 			/**
 			 * Recording installer double.
 			 *
-			 * @param object $trace   The trace to write into.
-			 * @param mixed  $outcome The scripted outcome.
+			 * @param object $trace The trace to write into.
+			 * @param mixed $outcome The scripted outcome.
 			 */
-			public function __construct(private object $trace, private mixed $outcome) {
+			public function __construct(
+				private object $trace,
+				private mixed $outcome,
+			) {
 			}
 
 			/**
 			 * Hermiq's installFromRepo, recorded by parameter name.
 			 *
-			 * @param string      $owner        Repo owner.
-			 * @param string      $repo         Repo name.
-			 * @param string|null $ref          Git ref.
+			 * @param string $owner Repo owner.
+			 * @param string $repo Repo name.
+			 * @param string|null $ref Git ref.
 			 * @param string|null $actingUserId Session UID.
 			 * @param string|null $credentialId Credential UUID.
 			 *
@@ -314,17 +318,19 @@ class SkillsChannelGoldenTest extends TestCase {
 		}
 
 		$applier = new AppChannelApplier(
-			$objectService,
-			new ConnectorRegisterAvailability(new FakeSlugResolver(['integriq']), $appManager, $logger),
-			new DataRegisterProvisioner(
-				$this->createMock(RegisterMapper::class),
-				$this->createMock(SchemaMapper::class),
-				$logger
+			objectService: $objectService,
+			connectorRegister: new ConnectorRegisterAvailability(new FakeSlugResolver(['integriq']), $appManager, $logger),
+			provisioners: new ChannelProvisioners(
+				registerProvisioner: new DataRegisterProvisioner(
+					$this->createMock(RegisterMapper::class),
+					$this->createMock(SchemaMapper::class),
+					$logger
+				),
+				skillDelegate: new SkillChannelDelegate($appManager, $locator, $logger),
+				flowProvisioner: new FlowChannelProvisioner($this->createMock(FlowService::class), $objectService, $logger),
+				agentProvisioner: new AgentChannelProvisioner($objectService, $logger)
 			),
-			new SkillChannelDelegate($appManager, $locator, $logger),
-			new FlowChannelProvisioner($this->createMock(FlowService::class), $objectService, $logger),
-			new AgentChannelProvisioner($objectService, $logger),
-			$logger,
+			logger: $logger,
 		);
 
 		$template = ['channels' => []];

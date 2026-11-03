@@ -58,10 +58,10 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use DateTime;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IUser;
@@ -123,15 +123,27 @@ class ApplicationInsightsService {
 	private const REGISTER_SLUG = 'buildiq';
 
 	/**
+	 * OR object surface
+	 *
+	 * @var ObjectServiceInterface
+	 */
+	private readonly ObjectServiceInterface $objectService;
+
+	/**
+	 * Register lookup (installed-app footprint for hybrid apps)
+	 *
+	 * @var RegisterMapper
+	 */
+	private readonly RegisterMapper $registerMapper;
+
+	/**
 	 * Constructor.
 	 *
 	 * Per ADR-022 — no app-local DB access; everything flows through
 	 * OpenRegister abstractions.
 	 *
-	 * @param ObjectServiceInterface $objectService OR object surface
+	 * @param RegisterStore $store OpenRegister's object service, register and schema mappers and audit trail.
 	 * @param AuditTrailMapper $auditTrailMapper Audit-trail aggregations (chart + actors + counts)
-	 * @param SchemaMapper $schemaMapper Schema slug-to-integer-ID resolver
-	 * @param RegisterMapper $registerMapper Register lookup (installed-app footprint for hybrid apps)
 	 * @param ICacheFactory $cacheFactory Distributed-cache factory (memoises computed payloads)
 	 * @param LoggerInterface $logger PSR logger
 	 * @param PermissionResolver|null $permissionResolver Shared role/group matcher (group-aware insights authz, L9)
@@ -140,19 +152,19 @@ class ApplicationInsightsService {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectServiceInterface $objectService,
+		RegisterStore $store,
 		private readonly AuditTrailMapper $auditTrailMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
 		ICacheFactory $cacheFactory,
 		private readonly LoggerInterface $logger,
 		private readonly ?PermissionResolver $permissionResolver = null,
 		?VersionDataSourceResolver $dataSourceResolver = null,
 	) {
+		$this->objectService = $store->objectService;
+		$this->registerMapper = $store->registerMapper;
 		$this->cache = $cacheFactory->createDistributed('buildiq_insights');
 		$this->dataSources = ($dataSourceResolver ?? new VersionDataSourceResolver(
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper
+			registerMapper: $this->registerMapper,
+			schemaMapper: $store->schemaMapper
 		));
 	}//end __construct()
 
@@ -727,6 +739,7 @@ class ApplicationInsightsService {
 	 * @param string $uuid Application UUID.
 	 *
 	 * @return array<string, mixed>|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function loadApplication(string $uuid): ?array {
 		try {
@@ -740,7 +753,7 @@ class ApplicationInsightsService {
 				return null;
 			}
 
-			return $this->normaliseObject(object: $entity);
+			return ObjectRecord::toArray(object: $entity);
 		} catch (Throwable $e) {
 			$this->logger->debug(
 				'Buildiq: ApplicationInsightsService::loadApplication failed for uuid={uuid}: {message}',
@@ -756,6 +769,7 @@ class ApplicationInsightsService {
 	 * @param string $uuid ApplicationVersion UUID.
 	 *
 	 * @return array<string, mixed>|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function loadVersion(string $uuid): ?array {
 		try {
@@ -769,7 +783,7 @@ class ApplicationInsightsService {
 				return null;
 			}
 
-			return $this->normaliseObject(object: $entity);
+			return ObjectRecord::toArray(object: $entity);
 		} catch (Throwable $e) {
 			$this->logger->debug(
 				'Buildiq: ApplicationInsightsService::loadVersion failed for uuid={uuid}: {message}',
@@ -1187,33 +1201,4 @@ class ApplicationInsightsService {
 			$buckets[$label] = ($buckets[$label] ?? 0) + (int)$count;
 		}
 	}//end mergeSeriesData()
-
-	/**
-	 * Coerce an OR result entry (ObjectEntity or array) to a plain assoc array.
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function normaliseObject(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normaliseObject()
 }//end class

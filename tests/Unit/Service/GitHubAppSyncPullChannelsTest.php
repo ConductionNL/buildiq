@@ -20,10 +20,12 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\AppChannelApplier;
+use OCA\Buildiq\Service\AppRepoCodec;
 use OCA\Buildiq\Service\AppRepoParser;
 use OCA\Buildiq\Service\AppRepoSerializer;
 use OCA\Buildiq\Service\GitHubAppSyncService;
 use OCA\Buildiq\Service\GitHubCatalogService;
+use OCA\Buildiq\Service\RegisterStore;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -41,8 +43,36 @@ use RuntimeException;
  * @covers \OCA\Buildiq\Service\GitHubAppSyncService
  * @uses   \OCA\Buildiq\Service\LocalApplicationRef
  * @uses   \OCA\Buildiq\Service\RepoSource
+ * @uses   \OCA\Buildiq\Support\ObjectRecord
+ * @uses   \OCA\Buildiq\Service\AppRepoCodec
+ * @uses   \OCA\Buildiq\Service\RegisterStore
  */
 class GitHubAppSyncPullChannelsTest extends TestCase {
+
+	/**
+	 * The service writes and reads repositories with the codec it was given.
+	 *
+	 * @return void
+	 */
+	public function testTheCodecIsWhatTheServiceWritesAndReadsWith(): void {
+		$serializer = $this->createMock(AppRepoSerializer::class);
+		$parser = $this->createMock(AppRepoParser::class);
+		$service = new GitHubAppSyncService(
+			store: new RegisterStore(
+				objectService: $this->createMock(ObjectServiceInterface::class),
+				registerMapper: $this->createMock(RegisterMapper::class),
+				schemaMapper: $this->createMock(SchemaMapper::class)
+			),
+			codec: new AppRepoCodec(serializer: $serializer, parser: $parser),
+			catalogService: $this->createMock(GitHubCatalogService::class),
+			channelApplier: $this->createMock(AppChannelApplier::class),
+			logger: new NullLogger(),
+			container: $this->createMock(ContainerInterface::class)
+		);
+
+		$this->assertSame($serializer, (new \ReflectionProperty($service, 'serializer'))->getValue($service));
+		$this->assertSame($parser, (new \ReflectionProperty($service, 'parser'))->getValue($service));
+	}//end testTheCodecIsWhatTheServiceWritesAndReadsWith()
 
 	/**
 	 * The applier receives the pulled template, the linked repo, the ref,
@@ -116,15 +146,19 @@ class GitHubAppSyncPullChannelsTest extends TestCase {
 		);
 
 		return new GitHubAppSyncService(
-			$objects,
-			$registers,
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(AppRepoSerializer::class),
-			$parser,
-			$catalog,
-			$applier,
-			new NullLogger(),
-			$this->createMock(ContainerInterface::class)
+			store: new RegisterStore(
+				objectService: $objects,
+				registerMapper: $registers,
+				schemaMapper: $this->createMock(SchemaMapper::class)
+			),
+			codec: new AppRepoCodec(
+				serializer: $this->createMock(AppRepoSerializer::class),
+				parser: $parser
+			),
+			catalogService: $catalog,
+			channelApplier: $applier,
+			logger: new NullLogger(),
+			container: $this->createMock(ContainerInterface::class)
 		);
 	}//end service()
 

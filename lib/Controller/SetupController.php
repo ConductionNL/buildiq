@@ -51,18 +51,17 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\DemoDataService;
 use OCA\Buildiq\Service\SettingsService;
-use OCA\Buildiq\Service\TemplateSeedService;
+use OCA\Buildiq\Service\SetupServices;
 use OCA\Buildiq\Settings\AdminSettings;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
-use OCP\IGroupManager;
 use OCP\IRequest;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -116,11 +115,8 @@ class SetupController extends Controller {
 	 * @param IRequest $request The current HTTP request
 	 * @param LoggerInterface $logger PSR logger for diagnostics
 	 * @param IAppConfig $appConfig App-config reader/writer
-	 * @param IUserSession $userSession Current Nextcloud user session
-	 * @param IGroupManager $groupManager Group membership resolver (admin gate)
-	 * @param DemoDataService $demoDataService Demo dataset import (ADR-111 rule 4)
-	 * @param SettingsService $settings Settings write path (registry_* + secret token)
-	 * @param TemplateSeedService $seedService Shared idempotent seeding service
+	 * @param CallerContext $caller The caller's session, group memberships and the shared permission matcher.
+	 * @param SetupServices $setup Demo data, settings and template seeding.
 	 *
 	 * @return void
 	 */
@@ -128,11 +124,8 @@ class SetupController extends Controller {
 		IRequest $request,
 		private readonly LoggerInterface $logger,
 		private readonly IAppConfig $appConfig,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly DemoDataService $demoDataService,
-		private readonly SettingsService $settings,
-		private readonly TemplateSeedService $seedService,
+		private readonly CallerContext $caller,
+		private readonly SetupServices $setup,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
@@ -158,7 +151,7 @@ class SetupController extends Controller {
 			return $denied;
 		}
 
-		$seedDone = $this->seedService->countSeeded() > 0;
+		$seedDone = $this->setup->seedService->countSeeded() > 0;
 		$storeDone = $this->appConfig->getValueString(Application::APP_ID, 'registry_url', '') !== '';
 		// DEALT WITH, not "demo objects exist". An operator who declines demo
 		// data has finished the step; re-offering it every visit would make
@@ -181,7 +174,7 @@ class SetupController extends Controller {
 				// The choice step reads its options from here: it declares
 				// `optionsSource: datasets` and no options of its own, so a
 				// dataset missing from this list is a dataset nobody can pick.
-				'datasets' => $this->demoDataService->listChoices(),
+				'datasets' => $this->setup->demoDataService->listChoices(),
 				// Exactly the ids of `manifest.setup.steps`: a step the server
 				// never reports stays open and reopens the wizard.
 				'steps' => [
@@ -228,7 +221,7 @@ class SetupController extends Controller {
 
 			unset($params[self::DATASET_KEY]);
 
-			$known = array_column($this->demoDataService->listChoices(), 'id');
+			$known = array_column($this->setup->demoDataService->listChoices(), 'id');
 			if (in_array($named, $known, true) === false) {
 				return new JSONResponse(
 					['success' => false, 'message' => 'No dataset is called "' . $named . '".'],
@@ -239,7 +232,7 @@ class SetupController extends Controller {
 			$this->appConfig->setValueString(Application::APP_ID, self::DATASET_KEY, $named);
 		}
 
-		$this->settings->updateSettings($params);
+		$this->setup->settings->updateSettings($params);
 
 		return new JSONResponse(['success' => true]);
 	}//end saveConfig()
@@ -279,7 +272,7 @@ class SetupController extends Controller {
 		}
 
 		try {
-			$result = $this->seedService->seed();
+			$result = $this->setup->seedService->seed();
 		} catch (Throwable $e) {
 			$this->logger->error(
 				'Buildiq: setup seed-templates action failed',
@@ -364,7 +357,7 @@ class SetupController extends Controller {
 		}
 
 		try {
-			$imported = $this->demoDataService->install();
+			$imported = $this->setup->demoDataService->install();
 		} catch (Throwable $e) {
 			$this->logger->error('Buildiq: setup install-demo-data failed', ['exception' => $e->getMessage()]);
 
@@ -382,8 +375,8 @@ class SetupController extends Controller {
 		// neither can a count that merely repeats what was asked for. An
 		// operator who got part of the dataset must see the gap.
 		$declared = (int)($imported['declared'] ?? $imported['objects']);
-		$skipped  = (int)($imported['skipped'] ?? 0);
-		$message  = sprintf('Imported %d of %d demo object(s).', $imported['objects'], $declared);
+		$skipped = (int)($imported['skipped'] ?? 0);
+		$message = sprintf('Imported %d of %d demo object(s).', $imported['objects'], $declared);
 		if ($skipped > 0) {
 			$message .= sprintf(
 				' %d skipped: their schema is not installed on this instance.',
@@ -395,7 +388,7 @@ class SetupController extends Controller {
 			[
 				'success' => true,
 				'message' => $message,
-				'detail'  => $imported,
+				'detail' => $imported,
 			]
 		);
 	}//end loadDataset()
@@ -435,7 +428,7 @@ class SetupController extends Controller {
 	 * @spec openspec/changes/wizard-dataset-card-load/specs/first-time-setup/spec.md
 	 */
 	private function refuseDataset(string $value): ?JSONResponse {
-		$known = array_column($this->demoDataService->listChoices(), 'id');
+		$known = array_column($this->setup->demoDataService->listChoices(), 'id');
 		if ($value !== '' && in_array($value, $known, true) === true) {
 			return null;
 		}
@@ -481,7 +474,7 @@ class SetupController extends Controller {
 	 * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-2.1
 	 */
 	private function requireAdmin(): ?JSONResponse {
-		$user = $this->userSession->getUser();
+		$user = $this->caller->userSession->getUser();
 		if ($user === null) {
 			return new JSONResponse(
 				['error' => 'unauthenticated'],
@@ -489,7 +482,7 @@ class SetupController extends Controller {
 			);
 		}
 
-		if ($this->groupManager->isAdmin($user->getUID()) === false) {
+		if ($this->caller->groupManager->isAdmin($user->getUID()) === false) {
 			return new JSONResponse(
 				['error' => 'forbidden', 'message' => 'Setup requires Nextcloud admin privileges.'],
 				Http::STATUS_FORBIDDEN

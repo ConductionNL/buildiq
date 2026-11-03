@@ -50,6 +50,7 @@ namespace OCA\Buildiq\Integration;
 use OCA\Buildiq\Service\LayoutDeltaService;
 use OCA\Buildiq\Service\PageLayoutFrozenBase;
 use OCA\Buildiq\Service\PageLayoutLayerStack;
+use OCA\Buildiq\Service\PageLayoutParts;
 use OCA\Buildiq\Service\PageLayoutPresenter;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
@@ -78,14 +79,39 @@ final class PageLayoutLeafProvider implements IntegrationProvider {
 	private const SCHEMA = 'pageLayout';
 
 	/**
+	 * The keyed-delta merge and the base fingerprint.
+	 *
+	 * @var LayoutDeltaService
+	 */
+	private readonly LayoutDeltaService $deltas;
+
+	/**
+	 * Which layers apply to this caller and this object, and in which order.
+	 *
+	 * @var PageLayoutLayerStack
+	 */
+	private readonly PageLayoutLayerStack $layers;
+
+	/**
+	 * Which layers an override's base is frozen from.
+	 *
+	 * @var PageLayoutFrozenBase
+	 */
+	private readonly PageLayoutFrozenBase $frozenBase;
+
+	/**
+	 * The shape a resolved layout takes on its way out.
+	 *
+	 * @var PageLayoutPresenter
+	 */
+	private readonly PageLayoutPresenter $presenter;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectServiceInterface $objectService OpenRegister's object service.
 	 * @param IAppConfig $appConfig App config, for the register slug.
-	 * @param LayoutDeltaService $deltas The keyed-delta merge and the base fingerprint.
-	 * @param PageLayoutLayerStack $layers Which layers apply to this caller and this object, and in which order.
-	 * @param PageLayoutFrozenBase $frozenBase Which layers an override's base is frozen from.
-	 * @param PageLayoutPresenter $presenter The shape a resolved layout takes on its way out.
+	 * @param PageLayoutParts $parts The layer stack, frozen base, presenter and delta store of a page layout.
 	 * @param LoggerInterface $logger Logger.
 	 *
 	 * @return void
@@ -93,12 +119,13 @@ final class PageLayoutLeafProvider implements IntegrationProvider {
 	public function __construct(
 		private readonly ObjectServiceInterface $objectService,
 		private readonly IAppConfig $appConfig,
-		private readonly LayoutDeltaService $deltas,
-		private readonly PageLayoutLayerStack $layers,
-		private readonly PageLayoutFrozenBase $frozenBase,
-		private readonly PageLayoutPresenter $presenter,
+		PageLayoutParts $parts,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->deltas = $parts->deltas;
+		$this->layers = $parts->layers;
+		$this->frozenBase = $parts->frozenBase;
+		$this->presenter = $parts->presenter;
 	}//end __construct()
 
 	/**
@@ -485,9 +512,6 @@ final class PageLayoutLeafProvider implements IntegrationProvider {
 	public function health(): array {
 		return ['status' => 'ok', 'leaf' => self::LEAF_ID];
 	}//end health()
-
-
-
 
 	/**
 	 * Read the host object, so its type value and its condition fields can be

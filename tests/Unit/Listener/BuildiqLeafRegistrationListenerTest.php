@@ -35,19 +35,20 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Listener;
 
-use OCA\Buildiq\Listener\BuildiqLeafRegistrationListener;
 use OCA\Buildiq\Integration\PageLayoutLeafProvider;
 use OCA\Buildiq\Integration\RegistrationFormLeafProvider;
+use OCA\Buildiq\Listener\BuildiqLeafRegistrationListener;
 use OCA\Buildiq\Service\LayoutDeltaService;
 use OCA\Buildiq\Service\PageLayoutFrozenBase;
 use OCA\Buildiq\Service\PageLayoutLayerStack;
+use OCA\Buildiq\Service\PageLayoutParts;
 use OCA\Buildiq\Service\PageLayoutPresenter;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Event\RegisterLeafProvidersEvent;
+use OCA\OpenRegister\Service\Integration\LeafDescriptor;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUserSession;
-use OCA\OpenRegister\Event\RegisterLeafProvidersEvent;
-use OCA\OpenRegister\Service\Integration\LeafDescriptor;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
@@ -71,6 +72,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\Buildiq\Service\LayoutDeltaService
  * @uses \OCA\Buildiq\Service\PageLayoutFrozenBase
  * @uses \OCA\Buildiq\Service\PageLayoutLayerStack
+ * @uses   \OCA\Buildiq\Service\PageLayoutParts
  */
 class BuildiqLeafRegistrationListenerTest extends TestCase {
 
@@ -98,13 +100,15 @@ class BuildiqLeafRegistrationListenerTest extends TestCase {
 				$this->createMock(IUserSession::class)
 			),
 			new PageLayoutLeafProvider(
-				$this->createMock(ObjectServiceInterface::class),
-				$this->createMock(IAppConfig::class),
-				new LayoutDeltaService(),
-				$layers,
-				new PageLayoutFrozenBase($layers),
-				new PageLayoutPresenter(),
-				new NullLogger()
+				objectService: $this->createMock(ObjectServiceInterface::class),
+				appConfig: $this->createMock(IAppConfig::class),
+				parts: new PageLayoutParts(
+					deltas: new LayoutDeltaService(),
+					layers: $layers,
+					frozenBase: new PageLayoutFrozenBase($layers),
+					presenter: new PageLayoutPresenter()
+				),
+				logger: new NullLogger()
 			)
 		);
 

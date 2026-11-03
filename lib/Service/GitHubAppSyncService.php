@@ -43,6 +43,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\AppRepoParseException;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -127,13 +128,45 @@ class GitHubAppSyncService {
 	public const OUTCOME_FORBIDDEN = 'github_forbidden';
 
 	/**
+	 * OR object CRUD (load/save Application + versions).
+	 *
+	 * @var ObjectServiceInterface
+	 */
+	private readonly ObjectServiceInterface $objectService;
+
+	/**
+	 * Provisions the draft register on pull.
+	 *
+	 * @var RegisterMapper
+	 */
+	private readonly RegisterMapper $registerMapper;
+
+	/**
+	 * Clones pulled companion schemas into the draft register.
+	 *
+	 * @var SchemaMapper
+	 */
+	private readonly SchemaMapper $schemaMapper;
+
+	/**
+	 * Local → repo file map (change 1).
+	 *
+	 * @var AppRepoSerializer
+	 */
+	private readonly AppRepoSerializer $serializer;
+
+	/**
+	 * Repo file map → clone-seam array (change 1).
+	 *
+	 * @var AppRepoParser
+	 */
+	private readonly AppRepoParser $parser;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectServiceInterface $objectService OR object CRUD (load/save Application + versions).
-	 * @param RegisterMapper $registerMapper Provisions the draft register on pull.
-	 * @param SchemaMapper $schemaMapper Clones pulled companion schemas into the draft register.
-	 * @param AppRepoSerializer $serializer Local → repo file map (change 1).
-	 * @param AppRepoParser $parser Repo file map → clone-seam array (change 1).
+	 * @param RegisterStore $store OpenRegister's object service, register and schema mappers and audit trail.
+	 * @param AppRepoCodec $codec The app repository serializer and parser.
 	 * @param GitHubCatalogService $catalogService Repo fetch + commit-sha resolution (change 2).
 	 * @param AppChannelApplier $channelApplier Applies the v2 repo channels (apply-v2-channels).
 	 * @param LoggerInterface $logger PSR logger (secret-free diagnostics only).
@@ -143,16 +176,18 @@ class GitHubAppSyncService {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectServiceInterface $objectService,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly AppRepoSerializer $serializer,
-		private readonly AppRepoParser $parser,
+		RegisterStore $store,
+		AppRepoCodec $codec,
 		private readonly GitHubCatalogService $catalogService,
 		private readonly AppChannelApplier $channelApplier,
 		private readonly LoggerInterface $logger,
 		private readonly ContainerInterface $container,
 	) {
+		$this->objectService = $store->objectService;
+		$this->registerMapper = $store->registerMapper;
+		$this->schemaMapper = $store->schemaMapper;
+		$this->serializer = $codec->serializer;
+		$this->parser = $codec->parser;
 	}//end __construct()
 
 	/**
@@ -174,6 +209,7 @@ class GitHubAppSyncService {
 	 * @return array<string,mixed>|null The Application object, or null when absent.
 	 *
 	 * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function loadApplicationBySlug(string $slug): ?array {
 		try {
@@ -195,7 +231,7 @@ class GitHubAppSyncService {
 		}
 
 		foreach ((array)$results as $result) {
-			$data = $this->normalise(object: $result);
+			$data = ObjectRecord::serialised(object: $result);
 			if ((string)($data['slug'] ?? '') === $slug) {
 				return $data;
 			}
@@ -430,6 +466,7 @@ class GitHubAppSyncService {
 	 * @throws AppRepoParseException On a strict-parse failure (caller surfaces the code + file).
 	 *
 	 * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function pull(
 		array $application,
@@ -513,7 +550,7 @@ class GitHubAppSyncService {
 			register: self::REGISTER_SLUG,
 			schema: self::VERSION_SCHEMA
 		);
-		$versionData = $this->normalise(object: $created);
+		$versionData = ObjectRecord::serialised(object: $created);
 		$versionUuid = $this->uuidOf(object: $versionData);
 
 		// Apply the app-repo-format-v2 channels through the SAME applier the shop
@@ -1052,6 +1089,7 @@ class GitHubAppSyncService {
 	 * @param string|null $versionSlug Optional version slug.
 	 *
 	 * @return array<string,mixed>|null The version object, or null when none resolvable.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function resolveVersion(array $application, ?string $versionSlug): ?array {
 		$appUuid = $this->uuidOf(object: $application);
@@ -1079,7 +1117,7 @@ class GitHubAppSyncService {
 
 		$versions = [];
 		foreach ((array)$results as $result) {
-			$normalisedRow = $this->normalise(object: $result);
+			$normalisedRow = ObjectRecord::serialised(object: $result);
 			if ((string)($normalisedRow['application'] ?? '') !== $appUuid) {
 				continue;
 			}
@@ -1317,26 +1355,4 @@ class GitHubAppSyncService {
 
 		return (string)($object['id'] ?? ($object['uuid'] ?? ''));
 	}//end uuidOf()
-
-	/**
-	 * Coerce an OR result entry to a plain associative array.
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normalise(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		return [];
-	}//end normalise()
 }//end class
