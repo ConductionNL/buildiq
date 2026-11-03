@@ -344,8 +344,8 @@ class ApplicationCreationService {
 	 * @throws WizardCreationException On any failure (with rollback)
 	 */
 	private function createVersions(array $plan, array &$state): void {
-		$defaultManifest = $this->loadDefaultManifest();
-		$defaultSchemas = $this->loadDefaultSchemas();
+		$defaultManifest = $this->loadWizardFixture(fixture: ['name' => 'manifest', 'shape' => 'object']);
+		$defaultSchemas = $this->loadWizardFixture(fixture: ['name' => 'schemas', 'shape' => 'array']);
 
 		foreach ($plan['versions'] as $versionDef) {
 			$versionSlug = (string)($versionDef['slug'] ?? '');
@@ -1018,21 +1018,27 @@ class ApplicationCreationService {
 	}//end rollbackObjects()
 
 	/**
-	 * Load the default manifest from the static fixture file.
+	 * Read and decode one of the wizard's static fixture files
+	 * (`Resources/wizard/default-<name>.json`): the default manifest (a JSON
+	 * object) or the default schema set (a JSON array).
 	 *
-	 * @return array<string,mixed> The parsed manifest blob
+	 * @param array{name: string, shape: string} $fixture The fixture name and the JSON shape named in its error.
 	 *
-	 * @throws WizardCreationException When the fixture cannot be read or decoded
+	 * @return array<int|string,mixed> The decoded fixture
+	 *
+	 * @throws WizardCreationException When the fixture cannot be found, read or decoded
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
 	 */
-	private function loadDefaultManifest(): array {
-		$path = __DIR__ . '/../Resources/wizard/default-manifest.json';
+	private function loadWizardFixture(array $fixture): array {
+		$name = $fixture['name'];
+		$step = 'load-default-' . $name;
+		$path = __DIR__ . '/../Resources/wizard/default-' . $name . '.json';
 		if (file_exists($path) === false) {
 			throw new WizardCreationException(
 				errorCode: 'wizard_rollback',
-				failedAtStep: 'load-default-manifest',
-				message: 'Default manifest fixture not found at ' . $path,
+				failedAtStep: $step,
+				message: 'Default ' . $name . ' fixture not found at ' . $path,
 				rollbackStatus: 'none'
 			);
 		}
@@ -1041,8 +1047,8 @@ class ApplicationCreationService {
 		if ($raw === false) {
 			throw new WizardCreationException(
 				errorCode: 'wizard_rollback',
-				failedAtStep: 'load-default-manifest',
-				message: 'Could not read default manifest fixture.',
+				failedAtStep: $step,
+				message: 'Could not read default ' . $name . ' fixture.',
 				rollbackStatus: 'none'
 			);
 		}
@@ -1051,57 +1057,14 @@ class ApplicationCreationService {
 		if (is_array($decoded) === false) {
 			throw new WizardCreationException(
 				errorCode: 'wizard_rollback',
-				failedAtStep: 'load-default-manifest',
-				message: 'Default manifest fixture is not a JSON object.',
+				failedAtStep: $step,
+				message: 'Default ' . $name . ' fixture is not a JSON ' . $fixture['shape'] . '.',
 				rollbackStatus: 'none'
 			);
 		}
 
 		return $decoded;
-	}//end loadDefaultManifest()
-
-	/**
-	 * Load the default schema set from the static fixture file.
-	 *
-	 * @return array<int,array<string,mixed>> The parsed schema blobs
-	 *
-	 * @throws WizardCreationException When the fixture cannot be read or decoded
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
-	 */
-	private function loadDefaultSchemas(): array {
-		$path = __DIR__ . '/../Resources/wizard/default-schemas.json';
-		if (file_exists($path) === false) {
-			throw new WizardCreationException(
-				errorCode: 'wizard_rollback',
-				failedAtStep: 'load-default-schemas',
-				message: 'Default schemas fixture not found at ' . $path,
-				rollbackStatus: 'none'
-			);
-		}
-
-		$raw = file_get_contents($path);
-		if ($raw === false) {
-			throw new WizardCreationException(
-				errorCode: 'wizard_rollback',
-				failedAtStep: 'load-default-schemas',
-				message: 'Could not read default schemas fixture.',
-				rollbackStatus: 'none'
-			);
-		}
-
-		$decoded = json_decode($raw, associative: true, flags: JSON_THROW_ON_ERROR);
-		if (is_array($decoded) === false) {
-			throw new WizardCreationException(
-				errorCode: 'wizard_rollback',
-				failedAtStep: 'load-default-schemas',
-				message: 'Default schemas fixture is not a JSON array.',
-				rollbackStatus: 'none'
-			);
-		}
-
-		return $decoded;
-	}//end loadDefaultSchemas()
+	}//end loadWizardFixture()
 
 	/**
 	 * Substitute the `{registerSlug}` placeholder in a manifest template.
