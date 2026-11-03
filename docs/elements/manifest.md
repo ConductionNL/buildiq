@@ -50,7 +50,7 @@ Three things follow, and they are the practical payoff:
 - **Snapshots.** Save a version of the whole app and roll a bad edit back.
 - **Export.** Take the app out as a ZIP.
 - **Publish.** Push the app to a GitHub repository and install it on another
-  instance. See [GitHub store](../github-store.md).
+  instance. See [GitHub marketplace](../github-store.md).
 
 A snapshot captures the manifest, so it captures the app: schemas, pages, and
 wiring together, not a set of files you have to keep in step.

@@ -2,7 +2,7 @@
 
 ### Requirement: Manifest declares a first-time setup block
 
-Buildiq's `src/manifest.json` SHALL declare an ADR-042 `setup` block (`enabled`, `version`, `completionConfigKey: "setup_completed_version"`, `steps[]`) validating against the canonical app-manifest v2 schema. The steps SHALL include, in order: an `info` introduction, a required `run-action` step that seeds the bundled application templates, an optional (skippable) `config-fields` step for the remote template store (`registry_url`, `registry_register`, `registry_token` — token write-only, never echoed), and a `summary` step reflecting the manifest health checks.
+Buildiq's `src/manifest.json` SHALL declare an ADR-042 `setup` block (`enabled`, `version`, `completionConfigKey: "setup_completed_version"`, `steps[]`) validating against the canonical app-manifest v2 schema. The steps SHALL include, in order: an `info` introduction, a required `run-action` step that seeds the bundled application templates, an optional (skippable) `config-fields` step for the remote template marketplace (`registry_url`, `registry_register`, `registry_token` — token write-only, never echoed), and a `summary` step reflecting the manifest health checks.
 
 #### Scenario: Setup block is present and schema-valid
 
@@ -54,4 +54,4 @@ The wizard SHALL stamp `completionConfigKey` with the manifest `setup.version` w
 - **GIVEN** a fresh instance where setup has not been completed
 - **WHEN** an admin first visits Buildiq
 - **THEN** the setup wizard SHALL take precedence over the `first-visit` walkthrough trigger
-- **AND** after completion the walkthrough MAY start with the Store populated
+- **AND** after completion the walkthrough MAY start with the Marketplace populated

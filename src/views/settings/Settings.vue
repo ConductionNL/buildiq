@@ -22,7 +22,7 @@
 				{{
 					t(
 						'buildiq',
-						'Connect a remote registry to browse and install shared templates from a store.',
+						'Connect a remote registry to browse and install shared templates from a marketplace.',
 					)
 				}}
 			</p>

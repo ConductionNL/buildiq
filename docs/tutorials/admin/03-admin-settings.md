@@ -35,20 +35,20 @@ By the end you will have read the running version, confirmed the register, and k
 
    ![Configuration section](/screenshots/tutorials/admin/03-admin-settings-04.png)
 
-5. Under **Template registry**, point Buildiq at a remote store to browse templates published elsewhere. Fill in **Registry URL**, **Registry register** and **Registry token**, then click **Save**. Leave all three empty to stay on the shipped templates only.
+5. Under **Template registry**, point Buildiq at a remote marketplace to browse templates published elsewhere. Fill in **Registry URL**, **Registry register** and **Registry token**, then click **Save**. Leave all three empty to stay on the shipped templates only.
 
    ![Configuration saved](/screenshots/tutorials/admin/03-admin-settings-05.png)
 
 ## Verification
 
-The page is healthy when the version matches the release you installed, the Support block shows your team's address, and the **Register** field names a register that exists on this Nextcloud. Open **Store** in Buildiq afterwards: the built-in templates should still load.
+The page is healthy when the version matches the release you installed, the Support block shows your team's address, and the **Register** field names a register that exists on this Nextcloud. Open **Marketplace** in Buildiq afterwards: the built-in templates should still load.
 
 ## Common issues
 
 | Symptom | Fix |
 |---|---|
 | The **Register** field is empty | Buildiq never imported its configuration. Click **Re-import configuration** on this page. |
-| **Store** shows no templates | The starter templates were never installed. Run Buildiq's setup wizard again and complete the **Install starter templates** step. |
+| **Marketplace** shows no templates | The starter templates were never installed. Run Buildiq's setup wizard again and complete the **Install starter templates** step. |
 | **Save** does nothing | The instance is locked. Check `config.php` for `'config_is_read_only' => true`. |
 | The remote registry returns nothing | The token is read-only and write-only in the form, so retype it. Check the URL answers over HTTPS from the server, not just from your laptop. |
 
