@@ -217,11 +217,6 @@
       "count": 1
     }
   },
-  "src/services/blockExport.js": {
-    "no-unused-vars": {
-      "count": 1
-    }
-  },
   "src/services/blockInsert.js": {
     "no-useless-assignment": {
       "count": 1
