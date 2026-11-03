@@ -208,11 +208,7 @@ class GitHubPushService {
 		$prUrl = $this->openPullRequest(
 			org: $org,
 			repo: $repo,
-			fromBranch: self::BOOTSTRAP_BRANCH,
 			toBranch: $defaultBranch,
-			title: 'chore: bootstrap from Buildiq',
-			body: 'This repository was bootstrapped from an Buildiq application export. '
-				. 'Review the tree, then run `composer install` and `npm install` locally before merging.',
 			credentialId: $credentialId,
 			actingUserId: $actingUserId
 		);
@@ -380,14 +376,11 @@ class GitHubPushService {
 	}//end pushTree()
 
 	/**
-	 * Open a pull request from one branch to another.
+	 * Open the bootstrap pull request from the bootstrap branch to the default branch.
 	 *
 	 * @param string $org Organisation/owner.
 	 * @param string $repo Repository name.
-	 * @param string $fromBranch Source branch.
 	 * @param string $toBranch Target branch.
-	 * @param string $title PR title.
-	 * @param string $body PR body.
 	 * @param string $credentialId Broker credential UUID.
 	 * @param string|null $actingUserId Owner of the credential (background context).
 	 *
@@ -400,20 +393,18 @@ class GitHubPushService {
 	public function openPullRequest(
 		string $org,
 		string $repo,
-		string $fromBranch,
 		string $toBranch,
-		string $title,
-		string $body,
 		string $credentialId,
 		?string $actingUserId = null,
 	): string {
 		$pullRequest = $this->postJson(
 			path: '/repos/' . rawurlencode($org) . '/' . rawurlencode($repo) . '/pulls',
 			body: [
-				'title' => $title,
-				'head' => $fromBranch,
+				'title' => 'chore: bootstrap from Buildiq',
+				'head' => self::BOOTSTRAP_BRANCH,
 				'base' => $toBranch,
-				'body' => $body,
+				'body' => 'This repository was bootstrapped from an Buildiq application export. '
+					. 'Review the tree, then run `composer install` and `npm install` locally before merging.',
 			],
 			credentialId: $credentialId,
 			actingUserId: $actingUserId
@@ -594,6 +585,8 @@ class GitHubPushService {
 	 * Whether OpenRegister's credential broker is installed.
 	 *
 	 * @return bool True when the broker class can be resolved.
+	 *
+	 * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
 	 */
 	public function isBrokerAvailable(): bool {
 		return class_exists(self::BROKER_CLASS) === true;

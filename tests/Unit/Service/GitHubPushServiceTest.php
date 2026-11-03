@@ -335,4 +335,58 @@ final class GitHubPushServiceTest extends TestCase {
 			$suffixMethod->invoke($service)
 		);
 	}//end testFailureSuffixFormatsTheCapturedDetail()
+
+	/**
+	 * The bootstrap pull request carries the fixed branch, title and body.
+	 *
+	 * Recorded on the former eight-parameter openPullRequest(); the credential and
+	 * the acting user reach the broker unchanged.
+	 *
+	 * @return void
+	 */
+	public function testTheBootstrapPullRequestIsPostedAsRecorded(): void {
+		$calls = [];
+		$broker = $this->createMock(\OCA\OpenRegister\Service\Credential\CredentialBrokerService::class);
+		$broker->method('request')->willReturnCallback(
+			static function (...$args) use (&$calls): array {
+				$calls[] = $args;
+				return ['status' => 201, 'body' => '{"html_url":"https://github.com/acme/app/pull/1"}'];
+			}
+		);
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturn($broker);
+		$service = new GitHubPushService(new NullLogger(), $container);
+
+		$url = $service->openPullRequest(
+			org: 'acme',
+			repo: 'app',
+			toBranch: 'trunk',
+			credentialId: 'cred-1',
+			actingUserId: 'alice'
+		);
+
+		$this->assertSame('https://github.com/acme/app/pull/1', $url);
+		$this->assertSame(
+			[
+				[
+					'cred-1',
+					'buildiq',
+					'POST',
+					'/repos/acme/app/pulls',
+					['Accept' => 'application/vnd.github+json', 'Content-Type' => 'application/json'],
+					json_encode(
+						[
+							'title' => 'chore: bootstrap from Buildiq',
+							'head' => 'bootstrap',
+							'base' => 'trunk',
+							'body' => 'This repository was bootstrapped from an Buildiq application export. '
+								. 'Review the tree, then run `composer install` and `npm install` locally before merging.',
+						]
+					),
+					'alice',
+				],
+			],
+			$calls
+		);
+	}//end testTheBootstrapPullRequestIsPostedAsRecorded()
 }//end class
