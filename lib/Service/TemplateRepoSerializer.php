@@ -34,6 +34,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Support\CanonicalJson;
+use OCA\Buildiq\Support\RepoDescriptor;
 use OCA\OpenRegister\Db\SchemaMapper;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -103,6 +105,7 @@ class TemplateRepoSerializer {
 	 * @param array<string,mixed> $manifest The template's manifest blob.
 	 *
 	 * @return array<string,mixed>
+	 * @SuppressWarnings(PHPMD.StaticAccess) RepoDescriptor is a pure function with no collaborators.
 	 */
 	private function buildDescriptor(array $template, array $manifest): array {
 		$slug = (string)($template['slug'] ?? '');
@@ -112,7 +115,7 @@ class TemplateRepoSerializer {
 			'slug' => $slug,
 			'name' => (string)($template['title'] ?? ($template['name'] ?? $slug)),
 			'description' => (string)($template['description'] ?? ''),
-			'category' => $this->resolveCategory(template: $template, manifest: $manifest),
+			'category' => RepoDescriptor::category(record: $template, manifest: $manifest),
 			'appType' => 'virtual',
 			'version' => (string)($template['version'] ?? '0.1.0'),
 		];
@@ -131,29 +134,6 @@ class TemplateRepoSerializer {
 
 		return $descriptor;
 	}//end buildDescriptor()
-
-	/**
-	 * Resolve the descriptor category from the template, then the manifest, else
-	 * a neutral default.
-	 *
-	 * @param array<string,mixed> $template The application-template object.
-	 * @param array<string,mixed> $manifest The template's manifest blob.
-	 *
-	 * @return string
-	 */
-	private function resolveCategory(array $template, array $manifest): string {
-		$category = trim((string)($template['category'] ?? ''));
-		if ($category !== '') {
-			return $category;
-		}
-
-		$category = trim((string)($manifest['category'] ?? ''));
-		if ($category !== '') {
-			return $category;
-		}
-
-		return 'general';
-	}//end resolveCategory()
 
 	/**
 	 * Derive the descriptor `credentials[]` from the manifest's top-level
@@ -343,9 +323,10 @@ class TemplateRepoSerializer {
 	 * @param array<string,mixed> $data The payload to encode.
 	 *
 	 * @return string Canonical JSON with a trailing newline.
+	 * @SuppressWarnings(PHPMD.StaticAccess) CanonicalJson is a pure function with no collaborators.
 	 */
 	private function encode(array $data): string {
-		$sorted = $this->sortKeysRecursive(value: $data);
+		$sorted = CanonicalJson::sortKeys(value: $data);
 		$encoded = json_encode($sorted, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 		if ($encoded === false) {
 			$this->logger->warning('Buildiq TemplateRepoSerializer: JSON encode failed for a repo file.');
@@ -354,29 +335,4 @@ class TemplateRepoSerializer {
 
 		return $encoded . "\n";
 	}//end encode()
-
-	/**
-	 * Recursively sort associative-array keys while preserving list order.
-	 *
-	 * @param mixed $value The value to canonicalise.
-	 *
-	 * @return mixed The canonicalised value.
-	 */
-	private function sortKeysRecursive(mixed $value): mixed {
-		if (is_array($value) === false) {
-			return $value;
-		}
-
-		if (array_is_list($value) === true) {
-			return array_map(fn ($item): mixed => $this->sortKeysRecursive(value: $item), $value);
-		}
-
-		ksort($value);
-		$result = [];
-		foreach ($value as $key => $item) {
-			$result[$key] = $this->sortKeysRecursive(value: $item);
-		}
-
-		return $result;
-	}//end sortKeysRecursive()
 }//end class
