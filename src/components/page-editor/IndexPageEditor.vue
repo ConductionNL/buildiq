@@ -104,7 +104,13 @@ import ColumnBuilder from './fields/ColumnBuilder.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
 import SidebarSectionBuilder from './fields/SidebarSectionBuilder.vue'
 import { useEditorRegisterPicker } from '../../composables/useEditorRegisterPicker.js'
-import { pageEditorBaseMixin, pageEditorRegisterPropsMixin } from '../../mixins/pageEditorBase.js'
+import {
+	pageEditorBaseMixin,
+	pageEditorPickerMixin,
+	pageEditorRegisterPropsMixin,
+	pageEditorRegisterWatchMixin,
+	pageEditorSchemaWatchMixin,
+} from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
@@ -117,7 +123,7 @@ export default {
 		DataSourceOriginToggle,
 	},
 
-	mixins: [pageEditorBaseMixin, pageEditorRegisterPropsMixin, pageEditorValidationMixin],
+	mixins: [pageEditorBaseMixin, pageEditorRegisterPropsMixin, pageEditorValidationMixin, pageEditorPickerMixin, pageEditorRegisterWatchMixin, pageEditorSchemaWatchMixin],
 	props: {
 		pageType: {
 			type: String,
@@ -126,14 +132,6 @@ export default {
 	},
 
 	setup: useEditorRegisterPicker,
-
-	data() {
-		return {
-			registers: [],
-			schemas: [],
-			schemaProperties: {},
-		}
-	},
 
 	computed: {
 		/**
@@ -178,48 +176,6 @@ export default {
 			}
 			return s && s.enabled !== false
 		},
-	},
-
-	watch: {
-		'config.register': {
-			immediate: true,
-			/**
-			 * Reload the schema dropdown whenever the bound register changes
-			 * (also fires immediately on mount for an already-bound page).
-			 *
-			 * @param {string} val - the newly selected register slug; empty when the binding was cleared, which empties the schema list instead of fetching.
-			 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
-			 */
-			handler(val) {
-				if (val) {
-					this.fetchSchemas(val)
-				} else {
-					this.schemas = []
-				}
-			},
-		},
-
-		'config.schema': {
-			immediate: true,
-			/**
-			 * Reload the property map that feeds ColumnBuilder's field picker
-			 * whenever the bound schema changes.
-			 *
-			 * @param {string} val - the newly selected schema slug; empty (or a schema without a register) clears the property map so the column picker offers nothing stale.
-			 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
-			 */
-			handler(val) {
-				if (val && this.config.register) {
-					this.fetchSchemaProperties(this.config.register, val)
-				} else {
-					this.schemaProperties = {}
-				}
-			},
-		},
-	},
-
-	async mounted() {
-		await this.fetchRegisters()
 	},
 
 	methods: {
@@ -285,15 +241,6 @@ export default {
 			}
 			next.sidebar = { ...current, [key]: value }
 			this.$emit('update:config', next)
-		},
-
-		/**
-		 * Observed behaviour of `fetchRegisters` (retrofit annotation).
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
-		 */
-		async fetchRegisters() {
-			this.registers = await this.picker.fetchRegisters()
 		},
 
 		/**

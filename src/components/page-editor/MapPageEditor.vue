@@ -304,13 +304,17 @@
 <script>
 import InlineFieldMark from './fields/InlineFieldMark.vue'
 import { useEditorRegisterPicker } from '../../composables/useEditorRegisterPicker.js'
-import { pageEditorBaseMixin, pageEditorRegisterPropsMixin } from '../../mixins/pageEditorBase.js'
+import {
+	pageEditorBaseMixin,
+	pageEditorPickerMixin,
+	pageEditorRegisterPropsMixin,
+} from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'MapPageEditor',
 	components: { InlineFieldMark },
-	mixins: [pageEditorBaseMixin, pageEditorRegisterPropsMixin, pageEditorValidationMixin],
+	mixins: [pageEditorBaseMixin, pageEditorRegisterPropsMixin, pageEditorValidationMixin, pageEditorPickerMixin],
 	props: {
 		pageType: {
 			type: String,
@@ -319,14 +323,6 @@ export default {
 	},
 
 	setup: useEditorRegisterPicker,
-
-	data() {
-		return {
-			registers: [],
-			schemas: [],
-			schemaProperties: {},
-		}
-	},
 
 	computed: {
 		validatedConfigKeys() {
@@ -389,10 +385,6 @@ export default {
 				}
 			},
 		},
-	},
-
-	async mounted() {
-		await this.fetchRegisters()
 	},
 
 	methods: {
@@ -539,22 +531,6 @@ export default {
 				nextMarkers.dataSource = ds
 			}
 			this.update('markers', nextMarkers)
-		},
-
-		/**
-		 * Fetch the registers list for the picker dropdown.
-		 */
-		async fetchRegisters() {
-			this.registers = await this.picker.fetchRegisters()
-		},
-
-		/**
-		 * Fetch the schemas for a given register.
-		 *
-		 * @param {string} register - register slug.
-		 */
-		async fetchSchemas(register) {
-			this.schemas = await this.picker.fetchSchemas(register)
 		},
 
 		/**

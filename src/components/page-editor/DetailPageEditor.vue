@@ -164,7 +164,12 @@ import RegistrationFormList from './fields/RegistrationFormList.vue'
 import ScreenOverrideList from './fields/ScreenOverrideList.vue'
 import SidebarTabBuilder from './fields/SidebarTabBuilder.vue'
 import { useEditorRegisterPicker } from '../../composables/useEditorRegisterPicker.js'
-import { pageEditorBaseMixin, pageEditorRegisterPropsMixin } from '../../mixins/pageEditorBase.js'
+import {
+	pageEditorBaseMixin,
+	pageEditorPickerMixin,
+	pageEditorRegisterPropsMixin,
+	pageEditorRegisterWatchMixin,
+} from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
@@ -177,7 +182,7 @@ export default {
 		SidebarTabBuilder,
 	},
 
-	mixins: [pageEditorBaseMixin, pageEditorRegisterPropsMixin, pageEditorValidationMixin],
+	mixins: [pageEditorBaseMixin, pageEditorRegisterPropsMixin, pageEditorValidationMixin, pageEditorPickerMixin, pageEditorRegisterWatchMixin],
 	props: {
 		pageType: {
 			type: String,
@@ -186,13 +191,6 @@ export default {
 	},
 
 	setup: useEditorRegisterPicker,
-
-	data() {
-		return {
-			registers: [],
-			schemas: [],
-		}
-	},
 
 	computed: {
 		/**
@@ -239,30 +237,6 @@ export default {
 			}
 			return 'object'
 		},
-	},
-
-	watch: {
-		'config.register': {
-			immediate: true,
-			/**
-			 * Reload the schema dropdown whenever the bound register changes
-			 * (also fires immediately on mount for an already-bound page).
-			 *
-			 * @param {string} val - the newly selected register slug; empty when the binding was cleared, which empties the schema list instead of fetching.
-			 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
-			 */
-			handler(val) {
-				if (val) {
-					this.fetchSchemas(val)
-				} else {
-					this.schemas = []
-				}
-			},
-		},
-	},
-
-	async mounted() {
-		await this.fetchRegisters()
 	},
 
 	methods: {
@@ -351,25 +325,6 @@ export default {
 			this.$emit('update:config', next)
 		},
 
-		/**
-		 * Observed behaviour of `fetchRegisters` (retrofit annotation).
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
-		 */
-		async fetchRegisters() {
-			this.registers = await this.picker.fetchRegisters()
-		},
-
-		/**
-		 * Load the schemas of one register into the schema dropdown.
-		 *
-		 * @param {string} register - slug of the register to list schemas for, i.e. `config.register`.
-		 * @return {Promise<void>} - resolves once `this.schemas` holds the result (`[]` when the request fails).
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
-		 */
-		async fetchSchemas(register) {
-			this.schemas = await this.picker.fetchSchemas(register)
-		},
 	},
 }
 </script>

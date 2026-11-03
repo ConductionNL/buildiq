@@ -227,13 +227,18 @@
 <script>
 import InlineFieldMark from './fields/InlineFieldMark.vue'
 import { useEditorRegisterPicker } from '../../composables/useEditorRegisterPicker.js'
-import { pageEditorBaseMixin, pageEditorRegisterPropsMixin } from '../../mixins/pageEditorBase.js'
+import {
+	pageEditorBaseMixin,
+	pageEditorPickerMixin,
+	pageEditorRegisterPropsMixin,
+	pageEditorRegisterWatchMixin,
+} from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'SearchPageEditor',
 	components: { InlineFieldMark },
-	mixins: [pageEditorBaseMixin, pageEditorRegisterPropsMixin, pageEditorValidationMixin],
+	mixins: [pageEditorBaseMixin, pageEditorRegisterPropsMixin, pageEditorValidationMixin, pageEditorPickerMixin, pageEditorRegisterWatchMixin],
 	props: {
 		pageType: {
 			type: String,
@@ -242,13 +247,6 @@ export default {
 	},
 
 	setup: useEditorRegisterPicker,
-
-	data() {
-		return {
-			registers: [],
-			schemas: [],
-		}
-	},
 
 	computed: {
 		validatedConfigKeys() {
@@ -267,23 +265,6 @@ export default {
 		facets() {
 			return Array.isArray(this.config.facets) ? this.config.facets : []
 		},
-	},
-
-	watch: {
-		'config.register': {
-			immediate: true,
-			handler(val) {
-				if (val) {
-					this.fetchSchemas(val)
-				} else {
-					this.schemas = []
-				}
-			},
-		},
-	},
-
-	async mounted() {
-		await this.fetchRegisters()
 	},
 
 	methods: {
@@ -404,21 +385,6 @@ export default {
 			this.update('facets', next)
 		},
 
-		/**
-		 * Fetch the registers list for the picker dropdown.
-		 */
-		async fetchRegisters() {
-			this.registers = await this.picker.fetchRegisters()
-		},
-
-		/**
-		 * Fetch the schemas for a given register.
-		 *
-		 * @param {string} register - register slug.
-		 */
-		async fetchSchemas(register) {
-			this.schemas = await this.picker.fetchSchemas(register)
-		},
 	},
 }
 </script>

@@ -69,3 +69,93 @@ export const pageEditorRegisterPropsMixin = {
 		},
 	},
 }
+
+/**
+ * The register and schema lists of an editor with a register picker: loaded through
+ * `this.picker`, the registers once on mount.
+ *
+ * @spec openspec/specs/form-editor-logic/spec.md
+ */
+export const pageEditorPickerMixin = {
+	data() {
+		return {
+			registers: [],
+			schemas: [],
+			schemaProperties: {},
+		}
+	},
+
+	async mounted() {
+		await this.fetchRegisters()
+	},
+
+	methods: {
+		/**
+		 * Fetch the registers list for the picker dropdown.
+		 */
+		async fetchRegisters() {
+			this.registers = await this.picker.fetchRegisters()
+		},
+
+		/**
+		 * Fetch the schemas in the bound register.
+		 *
+		 * @param {string} register - register slug.
+		 */
+		async fetchSchemas(register) {
+			this.schemas = await this.picker.fetchSchemas(register)
+		},
+
+		/**
+		 * Fetch schema properties for the field-mapping dropdowns.
+		 *
+		 * @param {string} register - register slug.
+		 * @param {string} schema - schema slug.
+		 */
+		async fetchSchemaProperties(register, schema) {
+			this.schemaProperties = await this.picker.fetchSchemaProperties(register, schema)
+		},
+	},
+}
+
+/**
+ * Keeps the schema list on `config.register`: reloads when the bound register changes
+ * (also on mount for an already-bound page), and empties it when the binding is cleared.
+ *
+ * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+ */
+export const pageEditorRegisterWatchMixin = {
+	watch: {
+		'config.register': {
+			immediate: true,
+			handler(val) {
+				if (val) {
+					this.fetchSchemas(val)
+				} else {
+					this.schemas = []
+				}
+			},
+		},
+	},
+}
+
+/**
+ * Keeps the schema properties on `config.schema`: reloads for a bound register and
+ * schema, and empties them otherwise.
+ *
+ * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+ */
+export const pageEditorSchemaWatchMixin = {
+	watch: {
+		'config.schema': {
+			immediate: true,
+			handler(val) {
+				if (val && this.config.register) {
+					this.fetchSchemaProperties(this.config.register, val)
+				} else {
+					this.schemaProperties = {}
+				}
+			},
+		},
+	},
+}
