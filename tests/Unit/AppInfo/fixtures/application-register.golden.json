@@ -1,0 +1,232 @@
+[
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\OpenRegister\\Contract\\ObjectServiceInterface",
+            "target": "OCA\\OpenRegister\\Service\\ObjectService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\OpenRegister\\Contract\\RegisterSlugResolverInterface",
+            "target": "OCA\\OpenRegister\\Service\\RegisterSlugResolver"
+        }
+    },
+    {
+        "method": "registerService",
+        "args": {
+            "name": "OCA\\Buildiq\\Service\\PublishedApplicationProvider",
+            "factory": "factory:OCA\\Buildiq\\Service\\PublishedApplicationProvider"
+        }
+    },
+    {
+        "method": "registerService",
+        "args": {
+            "name": "OCA\\Buildiq\\Service\\AppNavigationService",
+            "factory": "factory:OCA\\Buildiq\\Service\\AppNavigationService"
+        }
+    },
+    {
+        "method": "registerService",
+        "args": {
+            "name": "OCA\\Buildiq\\Service\\DashboardWidgetRegistrar",
+            "factory": "factory:OCA\\Buildiq\\Service\\DashboardWidgetRegistrar"
+        }
+    },
+    {
+        "method": "registerService",
+        "args": {
+            "name": "OCA\\Buildiq\\Service\\Dashboard\\WidgetItemProjector",
+            "factory": "factory:OCA\\Buildiq\\Service\\Dashboard\\WidgetItemProjector"
+        }
+    },
+    {
+        "method": "registerService",
+        "args": {
+            "name": "OCA\\Buildiq\\Service\\Dashboard\\AggregationGateway",
+            "factory": "factory:OCA\\Buildiq\\Service\\Dashboard\\AggregationGateway"
+        }
+    },
+    {
+        "method": "registerService",
+        "args": {
+            "name": "OCA\\Buildiq\\Controller\\DashboardController",
+            "factory": "factory:OCA\\Buildiq\\Controller\\DashboardController"
+        }
+    },
+    {
+        "method": "registerService",
+        "args": {
+            "name": "OCA\\Buildiq\\Controller\\PreferencesController",
+            "factory": "factory:OCA\\Buildiq\\Controller\\PreferencesController"
+        }
+    },
+    {
+        "method": "registerService",
+        "args": {
+            "name": "OCA\\Buildiq\\Service\\SettingsService",
+            "factory": "factory:OCA\\Buildiq\\Service\\SettingsService"
+        }
+    },
+    {
+        "method": "registerService",
+        "args": {
+            "name": "OCA\\Buildiq\\Repair\\InitializeSettings",
+            "factory": "factory:OCA\\Buildiq\\Repair\\InitializeSettings"
+        }
+    },
+    {
+        "method": "registerService",
+        "args": {
+            "name": "OCA\\Buildiq\\Controller\\SettingsController",
+            "factory": "factory:OCA\\Buildiq\\Controller\\SettingsController"
+        }
+    },
+    {
+        "method": "registerService",
+        "args": {
+            "name": "OCA\\Buildiq\\Sections\\SettingsSection",
+            "factory": "factory:OCA\\Buildiq\\Sections\\SettingsSection"
+        }
+    },
+    {
+        "method": "registerService",
+        "args": {
+            "name": "OCA\\Buildiq\\Settings\\AdminSettings",
+            "factory": "factory:OCA\\Buildiq\\Settings\\AdminSettings"
+        }
+    },
+    {
+        "method": "registerService",
+        "args": {
+            "name": "OCA\\Buildiq\\Controller\\HealthController",
+            "factory": "factory:untyped"
+        }
+    },
+    {
+        "method": "registerService",
+        "args": {
+            "name": "OCA\\Buildiq\\Controller\\MetricsController",
+            "factory": "factory:untyped"
+        }
+    },
+    {
+        "method": "registerEventListener",
+        "args": {
+            "event": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+            "listener": "OCA\\Buildiq\\Listener\\ProductionVersionGuardListener"
+        }
+    },
+    {
+        "method": "registerEventListener",
+        "args": {
+            "event": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+            "listener": "OCA\\Buildiq\\Listener\\HybridMetadataLockListener"
+        }
+    },
+    {
+        "method": "registerEventListener",
+        "args": {
+            "event": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+            "listener": "OCA\\Buildiq\\Listener\\FormLiveValuesListener"
+        }
+    },
+    {
+        "method": "registerEventListener",
+        "args": {
+            "event": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+            "listener": "OCA\\Buildiq\\Listener\\FormLiveValuesListener"
+        }
+    },
+    {
+        "method": "registerEventListener",
+        "args": {
+            "event": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+            "listener": "OCA\\Buildiq\\Listener\\AutomationApprovalTriggerListener"
+        }
+    },
+    {
+        "method": "registerEventListener",
+        "args": {
+            "event": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+            "listener": "OCA\\Buildiq\\Listener\\AutomationApprovalTriggerListener"
+        }
+    },
+    {
+        "method": "registerEventListener",
+        "args": {
+            "event": "OCA\\OpenRegister\\Event\\ObjectDeletedEvent",
+            "listener": "OCA\\Buildiq\\Listener\\AutomationApprovalTriggerListener"
+        }
+    },
+    {
+        "method": "registerEventListener",
+        "args": {
+            "event": "OCA\\OpenRegister\\Event\\ObjectTransitionedEvent",
+            "listener": "OCA\\Buildiq\\Listener\\AutomationApprovalTriggerListener"
+        }
+    },
+    {
+        "method": "registerEventListener",
+        "args": {
+            "event": "OCA\\OpenRegister\\Event\\TaskSequenceCompletedEvent",
+            "listener": "OCA\\Buildiq\\Listener\\ApprovalOutcomeListener"
+        }
+    },
+    {
+        "method": "registerEventListener",
+        "args": {
+            "event": "OCA\\OpenRegister\\Event\\TaskTerminalEvent",
+            "listener": "OCA\\Buildiq\\Listener\\ApprovalOutcomeListener"
+        }
+    },
+    {
+        "method": "registerEventListener",
+        "args": {
+            "event": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+            "listener": "OCA\\Buildiq\\Listener\\DocumentGenerationListener"
+        }
+    },
+    {
+        "method": "registerEventListener",
+        "args": {
+            "event": "OCA\\OpenRegister\\Event\\ObjectUpdatedEvent",
+            "listener": "OCA\\Buildiq\\Listener\\DocumentGenerationListener"
+        }
+    },
+    {
+        "method": "registerEventListener",
+        "args": {
+            "event": "OCA\\OpenRegister\\Event\\ObjectDeletedEvent",
+            "listener": "OCA\\Buildiq\\Listener\\DocumentGenerationListener"
+        }
+    },
+    {
+        "method": "registerEventListener",
+        "args": {
+            "event": "OCA\\OpenRegister\\Event\\ObjectTransitionedEvent",
+            "listener": "OCA\\Buildiq\\Listener\\DocumentGenerationListener"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\OpenRegister\\Mcp\\IMcpToolProvider::buildiq",
+            "target": "OCA\\Buildiq\\Mcp\\BuildiqToolProvider"
+        }
+    },
+    {
+        "method": "registerService",
+        "args": {
+            "name": "OCA\\Buildiq\\Lifecycle\\ApplicationVersionOwnerGuard",
+            "factory": "factory:OCA\\Buildiq\\Lifecycle\\ApplicationVersionOwnerGuard"
+        }
+    },
+    {
+        "method": "registerCapability",
+        "args": {
+            "capability": "OCA\\Buildiq\\Capabilities"
+        }
+    }
+]
