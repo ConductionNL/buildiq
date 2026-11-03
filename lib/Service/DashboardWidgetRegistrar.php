@@ -307,14 +307,18 @@ class DashboardWidgetRegistrar {
 			return null;
 		}
 
-		$roles = ($entry['roles'] ?? []);
-		if (is_array($roles) === false) {
-			$roles = [];
+		$roles = $this->visibility->normaliseRoles(roles: ($entry['roles'] ?? null));
+		if ($roles === null) {
+			$this->logger->warning(
+				'DashboardWidgetRegistrar: skipped promoted widget "' . $entryId . '" on app "'
+				. $application['slug'] . '" because its roles are neither a string nor a list.'
+			);
+			return null;
 		}
 
 		return new WidgetDescriptor(
 			application: new WidgetApplication(uuid: $application['uuid'], slug: $application['slug'], name: $application['name']),
-			principals: array_merge($appPrincipals, array_values($roles)),
+			principals: $appPrincipals,
 			entryId: $entryId,
 			widgetKey: (string)($entry['widgetKey'] ?? ''),
 			panel: $this->panelFrom(panel: $panel, entryId: $entryId),
@@ -322,6 +326,7 @@ class DashboardWidgetRegistrar {
 				'pageRoute' => (string)($page['route'] ?? '/'),
 				'props' => (array)($entry['props'] ?? []),
 				'dataSource' => (array)($entry['dataSource'] ?? []),
+				'roles' => $roles,
 			]
 		);
 	}//end descriptorForEntry()

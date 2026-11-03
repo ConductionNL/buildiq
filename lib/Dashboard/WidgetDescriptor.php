@@ -76,12 +76,19 @@ final class WidgetDescriptor implements \JsonSerializable {
 	public readonly string $applicationName;
 
 	/**
-	 * Every principal that may see this widget: the Application's own
-	 * permissions block flattened, plus the placement's `roles`.
+	 * The Application's own permissions block, flattened: who may see the app.
 	 *
 	 * @var array<int,mixed>
 	 */
 	public readonly array $principals;
+
+	/**
+	 * The placement's `roles`, which narrow {@see $principals}. Empty means
+	 * every principal of the Application may see the widget.
+	 *
+	 * @var array<int,mixed>
+	 */
+	public readonly array $roles;
 
 	/**
 	 * The widget placement's own `id`, as written in the manifest.
@@ -151,11 +158,11 @@ final class WidgetDescriptor implements \JsonSerializable {
 	 * Constructor.
 	 *
 	 * @param WidgetApplication $application The Application the widget is promoted from.
-	 * @param array<int,mixed> $principals Flattened Application permissions plus placement roles.
+	 * @param array<int,mixed> $principals Flattened Application permissions.
 	 * @param string $entryId The widget placement's own `id`.
 	 * @param string $widgetKey The runtime registry key the browser resolves.
 	 * @param array{title?:string,icon?:string,order?:int,link?:string} $panel The ncDashboard object.
-	 * @param array{pageRoute?:string,props?:array<string,mixed>,dataSource?:array<string,mixed>} $placement Placement details.
+	 * @param array{pageRoute?:string,props?:array<string,mixed>,dataSource?:array<string,mixed>,roles?:array<mixed>} $placement Placement details.
 	 *
 	 * @return void
 	 */
@@ -182,6 +189,7 @@ final class WidgetDescriptor implements \JsonSerializable {
 		$this->pageRoute = (string)($placement['pageRoute'] ?? '/');
 		$this->props = (array)($placement['props'] ?? []);
 		$this->dataSource = (array)($placement['dataSource'] ?? []);
+		$this->roles = array_values((array)($placement['roles'] ?? []));
 
 		$this->id = self::deriveId(applicationUuid: $application->uuid, entryId: $entryId);
 	}//end __construct()
@@ -251,7 +259,7 @@ final class WidgetDescriptor implements \JsonSerializable {
 	/**
 	 * The descriptor as the browser entry receives it in initial state.
 	 *
-	 * The `principals` list is deliberately NOT serialised: the browser never
+	 * The `principals` and `roles` lists are deliberately NOT serialised: the browser never
 	 * needs it, and shipping an authorization list to the client is how a
 	 * hidden surface becomes a readable one.
 	 *
