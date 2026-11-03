@@ -90,6 +90,18 @@ async function mounted(Component, { answer, route, props = { object: application
 describe('application versions', () => {
 	beforeEach(() => vi.clearAllMocks())
 
+	it('picks the first version in chain order when the route and the application name none', async () => {
+		for (const Component of [ApplicationDetailHeader, ApplicationDetailDashboard]) {
+			const wrapper = await mounted(Component, {
+				answer: [stage, dev],
+				route: routes['empty query'],
+				props: { object: { uuid: 'app-uuid', slug: 'hello' }, objectId: 'app-uuid' },
+			})
+			expect(wrapper.vm.selectedVersionUuid).toBe('dev')
+			wrapper.unmount()
+		}
+	})
+
 	it('matches what was recorded', async () => {
 		const actual = {}
 		for (const [name, Component] of [['header', ApplicationDetailHeader], ['dashboard', ApplicationDetailDashboard]]) {
