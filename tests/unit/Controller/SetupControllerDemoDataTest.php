@@ -121,6 +121,16 @@ class SetupControllerDemoDataTest extends TestCase {
 		$this->assertFalse($data['templatesSeeded']);
 	}
 
+	public function testStatusSaysSoOnceTemplatesAreSeeded(): void {
+		$this->seedService = $this->createMock(TemplateSeedService::class);
+		$this->seedService->method('countSeeded')->willReturn(3);
+		$this->demoData->method('listChoices')->willReturn([]);
+
+		$data = $this->controller()->status()->getData();
+
+		$this->assertTrue($data['templatesSeeded']);
+	}
+
 	public function testStatusCarriesTheOptionListTheChoiceStepReads(): void {
 		// 🔴 THIS RESPONSE *IS* THE OPTION LIST. The step declares
 		// `optionsSource: datasets` and carries no options of its own, so a
