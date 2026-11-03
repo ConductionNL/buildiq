@@ -82,7 +82,9 @@ final class CompileInput {
 	 *
 	 * @return void
 	 */
-	public function __construct(public readonly array $automation) {
+	public function __construct(
+		public readonly array $automation,
+	) {
 		$this->slug = (string)($automation['slug'] ?? '');
 		$this->trigger = self::arrayOrEmpty(value: $automation['trigger'] ?? null);
 		$this->triggerType = (string)($this->trigger['type'] ?? '');

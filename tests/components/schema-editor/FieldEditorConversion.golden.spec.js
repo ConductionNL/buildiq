@@ -105,6 +105,7 @@ function schemaFor(values) {
 	properties.empty = null
 	properties.relationEmpty = { 'x-openregister-relation': {} }
 	properties.arrayNoItems = { type: 'array', items: {} }
+	properties.stringWithItems = { type: 'string', items: { type: 'integer' } }
 	return {
 		properties,
 		required: ['p_string', 'p_array', 'missing'],

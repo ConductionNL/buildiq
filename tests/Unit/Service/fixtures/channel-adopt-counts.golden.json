@@ -1,0 +1,2218 @@
+{
+    "declared none / empty / truncated false / breakdown none / once": {
+        "channels": {
+            "skills": {
+                "declared": 0,
+                "created": 0,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / empty / truncated false / breakdown none / twice": {
+        "channels": {
+            "skills": {
+                "declared": 0,
+                "created": 0,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / empty / truncated false / breakdown some / once": {
+        "channels": {
+            "skills": {
+                "declared": 0,
+                "created": 0,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / empty / truncated false / breakdown some / twice": {
+        "channels": {
+            "skills": {
+                "declared": 0,
+                "created": 0,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / empty / truncated true / breakdown none / once": {
+        "channels": {
+            "skills": {
+                "declared": 0,
+                "created": 0,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / empty / truncated true / breakdown none / twice": {
+        "channels": {
+            "skills": {
+                "declared": 0,
+                "created": 0,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / empty / truncated true / breakdown some / once": {
+        "channels": {
+            "skills": {
+                "declared": 0,
+                "created": 0,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / empty / truncated true / breakdown some / twice": {
+        "channels": {
+            "skills": {
+                "declared": 0,
+                "created": 0,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / all created / truncated false / breakdown none / once": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 3,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / all created / truncated false / breakdown none / twice": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 3,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / all created / truncated false / breakdown some / once": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 3,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / all created / truncated false / breakdown some / twice": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 3,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / all created / truncated true / breakdown none / once": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 3,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / all created / truncated true / breakdown none / twice": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 3,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / all created / truncated true / breakdown some / once": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 3,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / all created / truncated true / breakdown some / twice": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 3,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / mixed / truncated false / breakdown none / once": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 1,
+                "skipped": 1,
+                "failed": 1,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / mixed / truncated false / breakdown none / twice": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 1,
+                "skipped": 1,
+                "failed": 1,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / mixed / truncated false / breakdown some / once": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 1,
+                "skipped": 1,
+                "failed": 1,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / mixed / truncated false / breakdown some / twice": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 1,
+                "skipped": 1,
+                "failed": 1,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / mixed / truncated true / breakdown none / once": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 1,
+                "skipped": 1,
+                "failed": 1,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / mixed / truncated true / breakdown none / twice": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 1,
+                "skipped": 1,
+                "failed": 1,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / mixed / truncated true / breakdown some / once": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 1,
+                "skipped": 1,
+                "failed": 1,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / mixed / truncated true / breakdown some / twice": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 1,
+                "skipped": 1,
+                "failed": 1,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / short / truncated false / breakdown none / once": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 2,
+                "skipped": 1,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / short / truncated false / breakdown none / twice": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 2,
+                "skipped": 1,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / short / truncated false / breakdown some / once": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 2,
+                "skipped": 1,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / short / truncated false / breakdown some / twice": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 2,
+                "skipped": 1,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / short / truncated true / breakdown none / once": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 2,
+                "skipped": 1,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / short / truncated true / breakdown none / twice": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 2,
+                "skipped": 1,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / short / truncated true / breakdown some / once": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 2,
+                "skipped": 1,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / short / truncated true / breakdown some / twice": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 2,
+                "skipped": 1,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / over / truncated false / breakdown none / once": {
+        "channels": {
+            "skills": {
+                "declared": 14,
+                "created": 8,
+                "skipped": 4,
+                "failed": 2,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / over / truncated false / breakdown none / twice": {
+        "channels": {
+            "skills": {
+                "declared": 14,
+                "created": 8,
+                "skipped": 4,
+                "failed": 2,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / over / truncated false / breakdown some / once": {
+        "channels": {
+            "skills": {
+                "declared": 14,
+                "created": 8,
+                "skipped": 4,
+                "failed": 2,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / over / truncated false / breakdown some / twice": {
+        "channels": {
+            "skills": {
+                "declared": 14,
+                "created": 8,
+                "skipped": 4,
+                "failed": 2,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / over / truncated true / breakdown none / once": {
+        "channels": {
+            "skills": {
+                "declared": 14,
+                "created": 8,
+                "skipped": 4,
+                "failed": 2,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / over / truncated true / breakdown none / twice": {
+        "channels": {
+            "skills": {
+                "declared": 14,
+                "created": 8,
+                "skipped": 4,
+                "failed": 2,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / over / truncated true / breakdown some / once": {
+        "channels": {
+            "skills": {
+                "declared": 14,
+                "created": 8,
+                "skipped": 4,
+                "failed": 2,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared none / over / truncated true / breakdown some / twice": {
+        "channels": {
+            "skills": {
+                "declared": 14,
+                "created": 8,
+                "skipped": 4,
+                "failed": 2,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared zero / empty / truncated false / breakdown none / once": {
+        "channels": {
+            "skills": {
+                "declared": 0,
+                "created": 0,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared zero / empty / truncated false / breakdown none / twice": {
+        "channels": {
+            "skills": {
+                "declared": 0,
+                "created": 0,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared zero / empty / truncated false / breakdown some / once": {
+        "channels": {
+            "skills": {
+                "declared": 0,
+                "created": 0,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared zero / empty / truncated false / breakdown some / twice": {
+        "channels": {
+            "skills": {
+                "declared": 0,
+                "created": 0,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared zero / empty / truncated true / breakdown none / once": {
+        "channels": {
+            "skills": {
+                "declared": 0,
+                "created": 0,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared zero / empty / truncated true / breakdown none / twice": {
+        "channels": {
+            "skills": {
+                "declared": 0,
+                "created": 0,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared zero / empty / truncated true / breakdown some / once": {
+        "channels": {
+            "skills": {
+                "declared": 0,
+                "created": 0,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared zero / empty / truncated true / breakdown some / twice": {
+        "channels": {
+            "skills": {
+                "declared": 0,
+                "created": 0,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared zero / all created / truncated false / breakdown none / once": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 3 (created 3, skipped 0, failed 0). An item was dropped."
+    },
+    "declared zero / all created / truncated false / breakdown none / twice": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 3 (created 3, skipped 0, failed 0). An item was dropped."
+    },
+    "declared zero / all created / truncated false / breakdown some / once": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 3 (created 3, skipped 0, failed 0). An item was dropped."
+    },
+    "declared zero / all created / truncated false / breakdown some / twice": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 3 (created 3, skipped 0, failed 0). An item was dropped."
+    },
+    "declared zero / all created / truncated true / breakdown none / once": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 3 (created 3, skipped 0, failed 0). An item was dropped."
+    },
+    "declared zero / all created / truncated true / breakdown none / twice": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 3 (created 3, skipped 0, failed 0). An item was dropped."
+    },
+    "declared zero / all created / truncated true / breakdown some / once": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 3 (created 3, skipped 0, failed 0). An item was dropped."
+    },
+    "declared zero / all created / truncated true / breakdown some / twice": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 3 (created 3, skipped 0, failed 0). An item was dropped."
+    },
+    "declared zero / mixed / truncated false / breakdown none / once": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 3 (created 1, skipped 1, failed 1). An item was dropped."
+    },
+    "declared zero / mixed / truncated false / breakdown none / twice": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 3 (created 1, skipped 1, failed 1). An item was dropped."
+    },
+    "declared zero / mixed / truncated false / breakdown some / once": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 3 (created 1, skipped 1, failed 1). An item was dropped."
+    },
+    "declared zero / mixed / truncated false / breakdown some / twice": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 3 (created 1, skipped 1, failed 1). An item was dropped."
+    },
+    "declared zero / mixed / truncated true / breakdown none / once": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 3 (created 1, skipped 1, failed 1). An item was dropped."
+    },
+    "declared zero / mixed / truncated true / breakdown none / twice": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 3 (created 1, skipped 1, failed 1). An item was dropped."
+    },
+    "declared zero / mixed / truncated true / breakdown some / once": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 3 (created 1, skipped 1, failed 1). An item was dropped."
+    },
+    "declared zero / mixed / truncated true / breakdown some / twice": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 3 (created 1, skipped 1, failed 1). An item was dropped."
+    },
+    "declared zero / short / truncated false / breakdown none / once": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 3 (created 2, skipped 1, failed 0). An item was dropped."
+    },
+    "declared zero / short / truncated false / breakdown none / twice": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 3 (created 2, skipped 1, failed 0). An item was dropped."
+    },
+    "declared zero / short / truncated false / breakdown some / once": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 3 (created 2, skipped 1, failed 0). An item was dropped."
+    },
+    "declared zero / short / truncated false / breakdown some / twice": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 3 (created 2, skipped 1, failed 0). An item was dropped."
+    },
+    "declared zero / short / truncated true / breakdown none / once": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 3 (created 2, skipped 1, failed 0). An item was dropped."
+    },
+    "declared zero / short / truncated true / breakdown none / twice": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 3 (created 2, skipped 1, failed 0). An item was dropped."
+    },
+    "declared zero / short / truncated true / breakdown some / once": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 3 (created 2, skipped 1, failed 0). An item was dropped."
+    },
+    "declared zero / short / truncated true / breakdown some / twice": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 3 (created 2, skipped 1, failed 0). An item was dropped."
+    },
+    "declared zero / over / truncated false / breakdown none / once": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 14 (created 8, skipped 4, failed 2). An item was dropped."
+    },
+    "declared zero / over / truncated false / breakdown none / twice": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 14 (created 8, skipped 4, failed 2). An item was dropped."
+    },
+    "declared zero / over / truncated false / breakdown some / once": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 14 (created 8, skipped 4, failed 2). An item was dropped."
+    },
+    "declared zero / over / truncated false / breakdown some / twice": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 14 (created 8, skipped 4, failed 2). An item was dropped."
+    },
+    "declared zero / over / truncated true / breakdown none / once": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 14 (created 8, skipped 4, failed 2). An item was dropped."
+    },
+    "declared zero / over / truncated true / breakdown none / twice": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 14 (created 8, skipped 4, failed 2). An item was dropped."
+    },
+    "declared zero / over / truncated true / breakdown some / once": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 14 (created 8, skipped 4, failed 2). An item was dropped."
+    },
+    "declared zero / over / truncated true / breakdown some / twice": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 0 but accounted for 14 (created 8, skipped 4, failed 2). An item was dropped."
+    },
+    "declared three / empty / truncated false / breakdown none / once": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 0,
+                "skipped": 3,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "not-accounted-for-by-source",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / empty / truncated false / breakdown none / twice": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 0,
+                "skipped": 3,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "not-accounted-for-by-source",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / empty / truncated false / breakdown some / once": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 0,
+                "skipped": 3,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "not-accounted-for-by-source",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / empty / truncated false / breakdown some / twice": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 0,
+                "skipped": 3,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "not-accounted-for-by-source",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / empty / truncated true / breakdown none / once": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 0,
+                "skipped": 3,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / empty / truncated true / breakdown none / twice": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 0,
+                "skipped": 3,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / empty / truncated true / breakdown some / once": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 0,
+                "skipped": 3,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / empty / truncated true / breakdown some / twice": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 0,
+                "skipped": 3,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / all created / truncated false / breakdown none / once": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 3,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / all created / truncated false / breakdown none / twice": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 3,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / all created / truncated false / breakdown some / once": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 3,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / all created / truncated false / breakdown some / twice": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 3,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / all created / truncated true / breakdown none / once": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 3,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / all created / truncated true / breakdown none / twice": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 3,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / all created / truncated true / breakdown some / once": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 3,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / all created / truncated true / breakdown some / twice": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 3,
+                "skipped": 0,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / mixed / truncated false / breakdown none / once": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 1,
+                "skipped": 1,
+                "failed": 1,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / mixed / truncated false / breakdown none / twice": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 1,
+                "skipped": 1,
+                "failed": 1,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / mixed / truncated false / breakdown some / once": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 1,
+                "skipped": 1,
+                "failed": 1,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / mixed / truncated false / breakdown some / twice": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 1,
+                "skipped": 1,
+                "failed": 1,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / mixed / truncated true / breakdown none / once": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 1,
+                "skipped": 1,
+                "failed": 1,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / mixed / truncated true / breakdown none / twice": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 1,
+                "skipped": 1,
+                "failed": 1,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / mixed / truncated true / breakdown some / once": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 1,
+                "skipped": 1,
+                "failed": 1,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / mixed / truncated true / breakdown some / twice": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 1,
+                "skipped": 1,
+                "failed": 1,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / short / truncated false / breakdown none / once": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 2,
+                "skipped": 1,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / short / truncated false / breakdown none / twice": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 2,
+                "skipped": 1,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / short / truncated false / breakdown some / once": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 2,
+                "skipped": 1,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / short / truncated false / breakdown some / twice": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 2,
+                "skipped": 1,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": null,
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / short / truncated true / breakdown none / once": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 2,
+                "skipped": 1,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / short / truncated true / breakdown none / twice": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 2,
+                "skipped": 1,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / short / truncated true / breakdown some / once": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 2,
+                "skipped": 1,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / short / truncated true / breakdown some / twice": {
+        "channels": {
+            "skills": {
+                "declared": 3,
+                "created": 2,
+                "skipped": 1,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared three / over / truncated false / breakdown none / once": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 3 but accounted for 14 (created 8, skipped 4, failed 2). An item was dropped."
+    },
+    "declared three / over / truncated false / breakdown none / twice": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 3 but accounted for 14 (created 8, skipped 4, failed 2). An item was dropped."
+    },
+    "declared three / over / truncated false / breakdown some / once": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 3 but accounted for 14 (created 8, skipped 4, failed 2). An item was dropped."
+    },
+    "declared three / over / truncated false / breakdown some / twice": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 3 but accounted for 14 (created 8, skipped 4, failed 2). An item was dropped."
+    },
+    "declared three / over / truncated true / breakdown none / once": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 3 but accounted for 14 (created 8, skipped 4, failed 2). An item was dropped."
+    },
+    "declared three / over / truncated true / breakdown none / twice": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 3 but accounted for 14 (created 8, skipped 4, failed 2). An item was dropped."
+    },
+    "declared three / over / truncated true / breakdown some / once": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 3 but accounted for 14 (created 8, skipped 4, failed 2). An item was dropped."
+    },
+    "declared three / over / truncated true / breakdown some / twice": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 3 but accounted for 14 (created 8, skipped 4, failed 2). An item was dropped."
+    },
+    "declared ten / empty / truncated false / breakdown none / once": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 0,
+                "skipped": 10,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "not-accounted-for-by-source",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / empty / truncated false / breakdown none / twice": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 0,
+                "skipped": 10,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "not-accounted-for-by-source",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / empty / truncated false / breakdown some / once": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 0,
+                "skipped": 10,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "not-accounted-for-by-source",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / empty / truncated false / breakdown some / twice": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 0,
+                "skipped": 10,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "not-accounted-for-by-source",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / empty / truncated true / breakdown none / once": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 0,
+                "skipped": 10,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / empty / truncated true / breakdown none / twice": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 0,
+                "skipped": 10,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / empty / truncated true / breakdown some / once": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 0,
+                "skipped": 10,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / empty / truncated true / breakdown some / twice": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 0,
+                "skipped": 10,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / all created / truncated false / breakdown none / once": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 3,
+                "skipped": 7,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "not-accounted-for-by-source",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / all created / truncated false / breakdown none / twice": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 3,
+                "skipped": 7,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "not-accounted-for-by-source",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / all created / truncated false / breakdown some / once": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 3,
+                "skipped": 7,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "not-accounted-for-by-source",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / all created / truncated false / breakdown some / twice": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 3,
+                "skipped": 7,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "not-accounted-for-by-source",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / all created / truncated true / breakdown none / once": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 3,
+                "skipped": 7,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / all created / truncated true / breakdown none / twice": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 3,
+                "skipped": 7,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / all created / truncated true / breakdown some / once": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 3,
+                "skipped": 7,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / all created / truncated true / breakdown some / twice": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 3,
+                "skipped": 7,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / mixed / truncated false / breakdown none / once": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 1,
+                "skipped": 8,
+                "failed": 1,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "not-accounted-for-by-source",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / mixed / truncated false / breakdown none / twice": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 1,
+                "skipped": 8,
+                "failed": 1,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "not-accounted-for-by-source",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / mixed / truncated false / breakdown some / once": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 1,
+                "skipped": 8,
+                "failed": 1,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "not-accounted-for-by-source",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / mixed / truncated false / breakdown some / twice": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 1,
+                "skipped": 8,
+                "failed": 1,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "not-accounted-for-by-source",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / mixed / truncated true / breakdown none / once": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 1,
+                "skipped": 8,
+                "failed": 1,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / mixed / truncated true / breakdown none / twice": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 1,
+                "skipped": 8,
+                "failed": 1,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / mixed / truncated true / breakdown some / once": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 1,
+                "skipped": 8,
+                "failed": 1,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / mixed / truncated true / breakdown some / twice": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 1,
+                "skipped": 8,
+                "failed": 1,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / short / truncated false / breakdown none / once": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 2,
+                "skipped": 8,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "not-accounted-for-by-source",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / short / truncated false / breakdown none / twice": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 2,
+                "skipped": 8,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "not-accounted-for-by-source",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / short / truncated false / breakdown some / once": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 2,
+                "skipped": 8,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "not-accounted-for-by-source",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / short / truncated false / breakdown some / twice": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 2,
+                "skipped": 8,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "not-accounted-for-by-source",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / short / truncated true / breakdown none / once": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 2,
+                "skipped": 8,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / short / truncated true / breakdown none / twice": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 2,
+                "skipped": 8,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": []
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / short / truncated true / breakdown some / once": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 2,
+                "skipped": 8,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / short / truncated true / breakdown some / twice": {
+        "channels": {
+            "skills": {
+                "declared": 10,
+                "created": 2,
+                "skipped": 8,
+                "failed": 0,
+                "truncated": 0,
+                "status": "applied",
+                "reason": "source-bundle-truncated",
+                "items": [],
+                "sourceCounts": {
+                    "installed": 1,
+                    "updated": 0,
+                    "unchanged": 2
+                }
+            }
+        },
+        "needsCredentials": [],
+        "warnings": []
+    },
+    "declared ten / over / truncated false / breakdown none / once": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 10 but accounted for 14 (created 8, skipped 4, failed 2). An item was dropped."
+    },
+    "declared ten / over / truncated false / breakdown none / twice": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 10 but accounted for 14 (created 8, skipped 4, failed 2). An item was dropped."
+    },
+    "declared ten / over / truncated false / breakdown some / once": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 10 but accounted for 14 (created 8, skipped 4, failed 2). An item was dropped."
+    },
+    "declared ten / over / truncated false / breakdown some / twice": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 10 but accounted for 14 (created 8, skipped 4, failed 2). An item was dropped."
+    },
+    "declared ten / over / truncated true / breakdown none / once": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 10 but accounted for 14 (created 8, skipped 4, failed 2). An item was dropped."
+    },
+    "declared ten / over / truncated true / breakdown none / twice": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 10 but accounted for 14 (created 8, skipped 4, failed 2). An item was dropped."
+    },
+    "declared ten / over / truncated true / breakdown some / once": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 10 but accounted for 14 (created 8, skipped 4, failed 2). An item was dropped."
+    },
+    "declared ten / over / truncated true / breakdown some / twice": {
+        "refused": "Buildiq channel apply: report for channel \"skills\" does not balance \u2014 declared 10 but accounted for 14 (created 8, skipped 4, failed 2). An item was dropped."
+    }
+}

@@ -276,7 +276,7 @@ final class ManifestWidgetShape {
 	 * Resolve a page-unique, kebab-case widget id.
 	 *
 	 * @param array<int, string> $sources Candidate sources in order: the caller-supplied id
-	 *        (possibly empty), the already-resolved title, the widget type.
+	 *                                    (possibly empty), the already-resolved title, the widget type.
 	 * @param array<string, bool> $taken Ids already used on this page, keyed by id.
 	 *
 	 * @return string A non-empty id not present in $taken.

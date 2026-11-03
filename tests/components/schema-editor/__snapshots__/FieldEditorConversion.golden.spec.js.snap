@@ -755,6 +755,20 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
    "type": "array",
    "items": {}
   }
+ },
+ {
+  "name": "stringWithItems",
+  "type": "string",
+  "required": false,
+  "default": null,
+  "description": "",
+  "validation": {},
+  "_raw": {
+   "type": "string",
+   "items": {
+    "type": "integer"
+   }
+  }
  }
 ]"
 `;
@@ -898,6 +912,9 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
    "items": {
     "type": "string"
    }
+  },
+  "stringWithItems": {
+   "type": "string"
   }
  },
  "required": [
@@ -918,7 +935,8 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
   "p_undefined",
   "empty",
   "relationEmpty",
-  "arrayNoItems"
+  "arrayNoItems",
+  "stringWithItems"
  ]
 }"
 `;
@@ -1157,6 +1175,20 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
    "type": "array",
    "items": {}
   }
+ },
+ {
+  "name": "stringWithItems",
+  "type": "string",
+  "required": false,
+  "default": null,
+  "description": "",
+  "validation": {},
+  "_raw": {
+   "type": "string",
+   "items": {
+    "type": "integer"
+   }
+  }
  }
 ]"
 `;
@@ -1288,6 +1320,9 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 2
    "items": {
     "type": "string"
    }
+  },
+  "stringWithItems": {
+   "type": "string"
   }
  },
  "required": [
@@ -1308,7 +1343,8 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 2
   "p_undefined",
   "empty",
   "relationEmpty",
-  "arrayNoItems"
+  "arrayNoItems",
+  "stringWithItems"
  ]
 }"
 `;
@@ -1646,6 +1682,20 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
    "type": "array",
    "items": {}
   }
+ },
+ {
+  "name": "stringWithItems",
+  "type": "string",
+  "required": false,
+  "default": null,
+  "description": "",
+  "validation": {},
+  "_raw": {
+   "type": "string",
+   "items": {
+    "type": "integer"
+   }
+  }
  }
 ]"
 `;
@@ -1777,6 +1827,9 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 2
    "items": {
     "type": "string"
    }
+  },
+  "stringWithItems": {
+   "type": "string"
   }
  },
  "required": [
@@ -1797,7 +1850,8 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 2
   "p_undefined",
   "empty",
   "relationEmpty",
-  "arrayNoItems"
+  "arrayNoItems",
+  "stringWithItems"
  ]
 }"
 `;
@@ -2155,6 +2209,20 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
    "type": "array",
    "items": {}
   }
+ },
+ {
+  "name": "stringWithItems",
+  "type": "string",
+  "required": false,
+  "default": null,
+  "description": "",
+  "validation": {},
+  "_raw": {
+   "type": "string",
+   "items": {
+    "type": "integer"
+   }
+  }
  }
 ]"
 `;
@@ -2302,6 +2370,9 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 2`
    "items": {
     "type": "string"
    }
+  },
+  "stringWithItems": {
+   "type": "string"
   }
  },
  "required": [
@@ -2322,7 +2393,8 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 2`
   "p_undefined",
   "empty",
   "relationEmpty",
-  "arrayNoItems"
+  "arrayNoItems",
+  "stringWithItems"
  ]
 }"
 `;

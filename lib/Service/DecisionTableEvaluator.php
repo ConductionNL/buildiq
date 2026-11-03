@@ -169,8 +169,7 @@ class DecisionTableEvaluator {
 	 * evaluator's `matchedRuleIds` come back as buildiq's rule indexes and the
 	 * winning row can be read straight out of buildiq's `rules` array.
 	 *
-	 * @param array{inputs: array<int,mixed>, outputs: array<int,mixed>, rules: array<int,mixed>, hitPolicy: string} $table
-	 *        buildiq's input columns, output columns and rule rows, and the already-translated hit policy.
+	 * @param array<string,mixed> $table buildiq's `inputs`, `outputs` and `rules`, and the translated `hitPolicy`.
 	 * @param array<int,string> $unresolved Columns whose payload path yielded null.
 	 *
 	 * @return array<string,mixed> The shared evaluator's table shape.
