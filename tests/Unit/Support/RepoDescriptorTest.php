@@ -103,6 +103,11 @@ class RepoDescriptorTest extends TestCase {
 	/**
 	 * credentials() derives every recorded manifest's list as before.
 	 *
+	 * The secretBearing manifest carries token, secret, password, value,
+	 * clientSecret, credentialId and apiKey keys next to the declaration: the
+	 * derived list holds provider, reason and scopes only, so a descriptor
+	 * never carries a secret value.
+	 *
 	 * @return void
 	 */
 	public function testCredentialsAnswerAsTheFormerCopy(): void {
@@ -132,6 +137,22 @@ class RepoDescriptorTest extends TestCase {
 					['provider' => 5, 'scopes' => 'repo'],
 					['provider' => 'mail', 'scopes' => ['a' => 'x', 'b' => 'y']],
 					['provider' => null],
+				],
+			],
+			'secretBearing' => [
+				'credentials' => [
+					[
+						'provider' => 'github',
+						'reason' => 'Push',
+						'scopes' => ['repo'],
+						'token' => 'ghp_secret-token-value',
+						'secret' => 'client-secret-value',
+						'password' => 'p4ssw0rd',
+						'value' => 'inline-secret',
+						'clientSecret' => 'oauth-client-secret',
+						'credentialId' => '0b7d1f2e-credential-uuid',
+					],
+					['provider' => 'mail', 'apiKey' => 'mail-api-key', 'scopes' => ['send' => 'send'], 'reason' => 'Notify'],
 				],
 			],
 		];
