@@ -7,7 +7,7 @@
  * rejects saves whose `productionVersion` relation points at an
  * ApplicationVersion that does not back-reference the Application being
  * saved. The check is the imperative cross-row companion to the same-row
- * `x-openregister-validation` block declared on ApplicationVersion
+ * `x-openregister-validations` block declared on ApplicationVersion
  * (ADR-031 §Exceptions(1) — cross-row validation that OR's per-row
  * declarative engine cannot perform).
  *
@@ -52,6 +52,8 @@ use Throwable;
 
 /**
  * Pre-save integrity guard for `Application.productionVersion`.
+ *
+ * @spec openspec/specs/application-versions/spec.md#requirement-production-version-is-set-explicitly-on-application
  *
  * @template-implements IEventListener<Event>
  */

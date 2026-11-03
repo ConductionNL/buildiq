@@ -10,7 +10,7 @@
  *     over the canonicalised manifest; ADR-031 §Exceptions(2) — stateful
  *     diff outside OR's calc vocabulary).
  *   - `promotesTo` cross-row cycle detection (ADR-031 §Exceptions(1) —
- *     traversal that OR's per-row x-openregister-validation cannot
+ *     traversal that OR's per-row x-openregister-validations cannot
  *     perform).
  *   - `Application.productionVersion` back-reference integrity guard
  *     (ADR-031 §Exceptions(1) — cross-row).
@@ -62,6 +62,8 @@ use Throwable;
  * declarative-vs-imperative table classifies as imperative. Lifecycle
  * transitions, route upserts on publish, and the same-row promotesTo
  * self-loop check are declared in `lib/Settings/openbuild_register.json`.
+ *
+ * @spec openspec/specs/application-versions/spec.md#requirement-cycle-prevention-on-the-promotesto-chain
  */
 class ApplicationVersionService {
 	/**
