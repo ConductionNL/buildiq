@@ -3,7 +3,7 @@
   "info": {
     "title": "OpenBuild Register",
     "description": "Citizen-developer app builder for Nextcloud: compose apps from registers, connectors, workflows, and documents without code.",
-    "version": "0.13.0"
+    "version": "0.14.0"
   },
   "x-openregister": {
     "type": "application",
@@ -254,8 +254,8 @@
         },
         "x-openregister-validations": {
           "hybrid-requires-baseRef": {
-            "description": "A hybrid app MUST carry a baseRef.id naming the installed Nextcloud app it customizes (unify-apps-with-app-type). Same-row rule; the cross-row metadata-lock (slug/name immutable on hybrid) is enforced imperatively by HybridMetadataLockListener (ADR-031 §Exceptions(1) cross-row). The condition names the violation.",
-            "condition": {"and": [{"==": [{"var": "appType"}, "hybrid"]}, {"==": [{"var": "baseRef.id"}, null]}]},
+            "description": "A hybrid app MUST carry a baseRef.id naming the installed Nextcloud app it customizes (unify-apps-with-app-type). Same-row rule; the cross-row metadata-lock (slug/name immutable on hybrid) is enforced imperatively by HybridMetadataLockListener (ADR-031 §Exceptions(1) cross-row). A blank or whitespace-only id counts as missing. The condition names the violation.",
+            "condition": {"and": [{"==": [{"var": "appType"}, "hybrid"]}, {"==": [{"trim": {"var": "baseRef.id"}}, ""]}]},
             "severity": "refuse",
             "properties": ["appType", "baseRef"],
             "message": "A hybrid app requires baseRef.id (the installed Nextcloud app it customizes)."
@@ -647,15 +647,15 @@
         },
         "x-openregister-validations": {
           "promotesTo-no-self-loop": {
-            "description": "Same-row self-loop guard: an ApplicationVersion cannot promote to itself. Broader cross-row cycle detection lives in ApplicationVersionService::guardNoCycle(). The object's `id` is its UUID. The condition names the violation.",
-            "condition": {"and": [{"!=": [{"var": "promotesTo"}, null]}, {"==": [{"var": "promotesTo"}, {"var": "id"}]}]},
+            "description": "Same-row self-loop guard: an ApplicationVersion cannot promote to itself. Broader cross-row cycle detection lives in ApplicationVersionService::guardNoCycle(). The object's `id` is its UUID; the check ignores case and also refuses a promotesTo that wraps the UUID, such as its `urn:uuid:` or braced form. The condition names the violation.",
+            "condition": {"and": [{"!=": [{"trim": {"var": "id"}}, ""]}, {"in": [{"lower": {"var": "id"}}, {"lower": {"var": "promotesTo"}}]}]},
             "severity": "refuse",
             "properties": ["promotesTo"],
             "message": "promotesTo cannot equal the version's own UUID (self-loop)."
           },
           "user-scope-requires-owner": {
-            "description": "A user-scoped delta MUST name its owner UID (layered-versioned-app-deltas). Same-row rule; the cross-row owner-vs-caller authorization is enforced imperatively by ApplicationVersionOwnerGuard + PermissionResolver (ADR-031 §Exceptions(1) cross-row). The condition names the violation.",
-            "condition": {"and": [{"==": [{"var": "scope"}, "user"]}, {"==": [{"var": "owner"}, null]}]},
+            "description": "A user-scoped delta MUST name its owner UID (layered-versioned-app-deltas). Same-row rule; the cross-row owner-vs-caller authorization is enforced imperatively by ApplicationVersionOwnerGuard + PermissionResolver (ADR-031 §Exceptions(1) cross-row). A blank or whitespace-only owner counts as missing. The condition names the violation.",
+            "condition": {"and": [{"==": [{"var": "scope"}, "user"]}, {"==": [{"trim": {"var": "owner"}}, ""]}]},
             "severity": "refuse",
             "properties": ["scope", "owner"],
             "message": "A user-scoped ApplicationVersion requires an owner UID."
