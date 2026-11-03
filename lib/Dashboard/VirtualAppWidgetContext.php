@@ -109,10 +109,10 @@ final class VirtualAppWidgetContext {
 	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-a-user-only-sees-widgets-they-are-allowed-to-see
 	 */
 	public function isVisible(WidgetDescriptor $descriptor): bool {
-		return $this->visibility->isVisible(
-			permissions: [],
-			extraPrincipals: $descriptor->principals,
-			userSession: $this->userSession,
+		return $this->visibility->isPlacementVisibleToUser(
+			appPrincipals: $descriptor->principals,
+			roles: $descriptor->roles,
+			user: $this->userSession->getUser(),
 			groupManager: $this->groupManager
 		);
 	}//end isVisible()

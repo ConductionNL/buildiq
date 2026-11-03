@@ -42,6 +42,7 @@ namespace OCA\Buildiq\Listener;
 use OCA\Buildiq\Service\ApplicationVersionService;
 use OCA\Buildiq\Service\ListenerSlugContract;
 use OCA\Buildiq\Service\ObjectSchemaSlugResolver;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCP\EventDispatcher\Event;
@@ -88,6 +89,7 @@ class ProductionVersionGuardListener implements IEventListener {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-31
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-32
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function handle(Event $event): void {
 		if ($event instanceof ObjectCreatingEvent) {
@@ -126,7 +128,7 @@ class ProductionVersionGuardListener implements IEventListener {
 			return;
 		}
 
-		$object = $this->extractObjectData(entity: $entity);
+		$object = ObjectRecord::entityData(entity: $entity);
 		$proposedVersion = (string)($object['productionVersion'] ?? '');
 		if ($proposedVersion === '') {
 			// Unset productionVersion is always allowed (REQ-OBA-008 makes it optional).
@@ -167,32 +169,6 @@ class ProductionVersionGuardListener implements IEventListener {
 			);
 		}//end try
 	}//end handle()
-
-	/**
-	 * Read the object payload (post-`@self`) from the ObjectEntity.
-	 *
-	 * @param object $entity The ObjectEntity instance
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function extractObjectData(object $entity): array {
-		if (method_exists($entity, 'getObject') === true) {
-			$object = $entity->getObject();
-			if (is_array($object) === true) {
-				return $object;
-			}
-		}
-
-		if (method_exists($entity, 'jsonSerialize') === true) {
-			$serialised = $entity->jsonSerialize();
-			if (is_array($serialised) === true) {
-				unset($serialised['@self']);
-				return $serialised;
-			}
-		}
-
-		return [];
-	}//end extractObjectData()
 
 	/**
 	 * Read the canonical UUID from the entity / object payload.

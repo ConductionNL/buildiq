@@ -47,6 +47,7 @@ use OCA\Buildiq\Exception\PromotionFailedException;
 use OCA\Buildiq\Exception\VersionLockedException;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Service\VersionPromotionService;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -263,6 +264,7 @@ class VersionPromotionController extends Controller {
 	 * @param string $uuid Application UUID
 	 *
 	 * @return array<string,mixed>|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function loadApplication(string $uuid): ?array {
 		try {
@@ -283,7 +285,7 @@ class VersionPromotionController extends Controller {
 			return null;
 		}
 
-		return $this->normaliseObject(object: $entity);
+		return ObjectRecord::toArray(object: $entity);
 	}//end loadApplication()
 
 	/**
@@ -296,6 +298,7 @@ class VersionPromotionController extends Controller {
 	 * @param string $uuid ApplicationVersion UUID
 	 *
 	 * @return array<string,mixed>|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function loadVersion(string $uuid): ?array {
 		try {
@@ -316,7 +319,7 @@ class VersionPromotionController extends Controller {
 			return null;
 		}
 
-		return $this->normaliseObject(object: $entity);
+		return ObjectRecord::toArray(object: $entity);
 	}//end loadVersion()
 
 	/**
@@ -363,35 +366,6 @@ class VersionPromotionController extends Controller {
 				. (string)($application['slug'] ?? ($application['id'] ?? '?'))
 		);
 	}//end assertEditorOrOwner()
-
-	/**
-	 * Coerce an OR result entry to a plain associative array.
-	 *
-	 * @param mixed $object The OR object/result entry
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normaliseObject(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normaliseObject()
 
 	/**
 	 * Build a uniform error envelope.

@@ -85,6 +85,7 @@ namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCA\Buildiq\Support\FleetAppId;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -363,6 +364,7 @@ class DocumentGenerationService {
 	 * @param string $slug The Application slug.
 	 *
 	 * @return string|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function resolveApplicationUuid(string $slug): ?string {
 		if ($slug === '') {
@@ -388,7 +390,7 @@ class DocumentGenerationService {
 			return null;
 		}
 
-		$application = $this->normalise(object: $results[0]);
+		$application = ObjectRecord::toArray(object: $results[0]);
 		$uuid = (string)($application['id'] ?? $application['uuid'] ?? '');
 
 		if ($uuid === '') {
@@ -787,33 +789,4 @@ class DocumentGenerationService {
 		);
 
 	}//end dispatchNotification()
-
-	/**
-	 * Coerce an OR result entry to a plain associative array.
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normalise(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normalise()
 }//end class

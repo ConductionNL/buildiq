@@ -1,0 +1,235 @@
+{
+    "validateAppSlug": [
+        [
+            "",
+            {
+                "code": "slug_empty",
+                "message": "Application slug must not be empty."
+            }
+        ],
+        [
+            "ok",
+            []
+        ],
+        [
+            "ok-1",
+            []
+        ],
+        [
+            "_x",
+            {
+                "code": "slug_leading_underscore",
+                "message": "Version slugs cannot start with `_` (reserved for buildiq system use)."
+            }
+        ],
+        [
+            "_",
+            {
+                "code": "slug_leading_underscore",
+                "message": "Version slugs cannot start with `_` (reserved for buildiq system use)."
+            }
+        ],
+        [
+            "-x",
+            {
+                "code": "slug_invalid",
+                "message": "Slug must match `^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$` — lowercase letters, digits, and hyphens only."
+            }
+        ],
+        [
+            "x-",
+            {
+                "code": "slug_invalid",
+                "message": "Slug must match `^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$` — lowercase letters, digits, and hyphens only."
+            }
+        ],
+        [
+            "X",
+            {
+                "code": "slug_invalid",
+                "message": "Slug must match `^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$` — lowercase letters, digits, and hyphens only."
+            }
+        ],
+        [
+            "a_b",
+            {
+                "code": "slug_invalid",
+                "message": "Slug must match `^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$` — lowercase letters, digits, and hyphens only."
+            }
+        ],
+        [
+            "foo-dark",
+            {
+                "code": "slug_reserved_dark_suffix",
+                "message": "Application slugs cannot end in `-dark` — reserved for the dark-variant icon route `/icons/{slug}-dark.svg`."
+            }
+        ],
+        [
+            "dark",
+            []
+        ],
+        [
+            "-dark",
+            {
+                "code": "slug_invalid",
+                "message": "Slug must match `^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$` — lowercase letters, digits, and hyphens only."
+            }
+        ],
+        [
+            "a--b",
+            []
+        ],
+        [
+            "ä",
+            {
+                "code": "slug_invalid",
+                "message": "Slug must match `^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$` — lowercase letters, digits, and hyphens only."
+            }
+        ],
+        [
+            "9",
+            {
+                "code": "slug_invalid",
+                "message": "Slug must match `^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$` — lowercase letters, digits, and hyphens only."
+            }
+        ],
+        [
+            "9a",
+            []
+        ],
+        [
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            []
+        ],
+        [
+            "a b",
+            {
+                "code": "slug_invalid",
+                "message": "Slug must match `^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$` — lowercase letters, digits, and hyphens only."
+            }
+        ],
+        [
+            "__init",
+            {
+                "code": "slug_leading_underscore",
+                "message": "Version slugs cannot start with `_` (reserved for buildiq system use)."
+            }
+        ]
+    ],
+    "validateVersionSlug": [
+        [
+            "",
+            {
+                "code": "slug_empty",
+                "message": "Version slug must not be empty."
+            }
+        ],
+        [
+            "ok",
+            []
+        ],
+        [
+            "ok-1",
+            []
+        ],
+        [
+            "_x",
+            {
+                "code": "slug_leading_underscore",
+                "message": "Version slugs cannot start with `_` (reserved for buildiq system use)."
+            }
+        ],
+        [
+            "_",
+            {
+                "code": "slug_leading_underscore",
+                "message": "Version slugs cannot start with `_` (reserved for buildiq system use)."
+            }
+        ],
+        [
+            "-x",
+            {
+                "code": "slug_invalid",
+                "message": "Slug must match `^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$` — lowercase letters, digits, and hyphens only."
+            }
+        ],
+        [
+            "x-",
+            {
+                "code": "slug_invalid",
+                "message": "Slug must match `^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$` — lowercase letters, digits, and hyphens only."
+            }
+        ],
+        [
+            "X",
+            {
+                "code": "slug_invalid",
+                "message": "Slug must match `^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$` — lowercase letters, digits, and hyphens only."
+            }
+        ],
+        [
+            "a_b",
+            {
+                "code": "slug_invalid",
+                "message": "Slug must match `^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$` — lowercase letters, digits, and hyphens only."
+            }
+        ],
+        [
+            "foo-dark",
+            []
+        ],
+        [
+            "dark",
+            []
+        ],
+        [
+            "-dark",
+            {
+                "code": "slug_invalid",
+                "message": "Slug must match `^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$` — lowercase letters, digits, and hyphens only."
+            }
+        ],
+        [
+            "a--b",
+            []
+        ],
+        [
+            "ä",
+            {
+                "code": "slug_invalid",
+                "message": "Slug must match `^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$` — lowercase letters, digits, and hyphens only."
+            }
+        ],
+        [
+            "9",
+            {
+                "code": "slug_invalid",
+                "message": "Slug must match `^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$` — lowercase letters, digits, and hyphens only."
+            }
+        ],
+        [
+            "9a",
+            []
+        ],
+        [
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            []
+        ],
+        [
+            "a b",
+            {
+                "code": "slug_invalid",
+                "message": "Slug must match `^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$` — lowercase letters, digits, and hyphens only."
+            }
+        ],
+        [
+            "__init",
+            {
+                "code": "slug_leading_underscore",
+                "message": "Version slugs cannot start with `_` (reserved for buildiq system use)."
+            }
+        ]
+    ],
+    "loadDefaultManifest": "54f648163270dca3ccc3d992f73ec8e2",
+    "loadDefaultSchemas": "4f7ec6c196bbbe2632d75a67494ee668"
+}

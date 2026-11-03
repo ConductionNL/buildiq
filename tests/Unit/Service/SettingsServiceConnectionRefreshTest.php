@@ -27,13 +27,14 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Service;
 
+use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\Connection\ConnectionReporter;
+use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Service\SettingsService;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUserSession;
-use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
@@ -42,6 +43,7 @@ use Psr\Log\NullLogger;
  * Unit tests for the refresh SettingsService asks for after a save.
  *
  * @covers \OCA\Buildiq\Service\SettingsService
+ * @uses   \OCA\Buildiq\Service\CallerContext
  */
 class SettingsServiceConnectionRefreshTest extends TestCase {
 
@@ -86,8 +88,11 @@ class SettingsServiceConnectionRefreshTest extends TestCase {
 			appConfig: $appConfig,
 			appManager: $appManager,
 			container: $this->createMock(originalClassName: ContainerInterface::class),
-			groupManager: $this->createMock(originalClassName: IGroupManager::class),
-			userSession: $this->createMock(originalClassName: IUserSession::class),
+			caller: new CallerContext(
+				userSession: $this->createMock(originalClassName: IUserSession::class),
+				groupManager: $this->createMock(originalClassName: IGroupManager::class),
+				permissionResolver: $this->createMock(PermissionResolver::class)
+			),
 			logger: new NullLogger(),
 			connectionReporter: $reporter,
 		);
@@ -101,9 +106,9 @@ class SettingsServiceConnectionRefreshTest extends TestCase {
 	public function testASaveHandsOverTheKeysItWrote(): void {
 		$this->service()->updateSettings(
 			[
-				'registry_url'   => 'https://store.example.nl',
+				'registry_url' => 'https://store.example.nl',
 				'registry_token' => 's3cret',
-				'not_a_key'      => 'ignored',
+				'not_a_key' => 'ignored',
 			]
 		);
 
@@ -147,9 +152,9 @@ class SettingsServiceConnectionRefreshTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheContainerFactoryHandsTheReporterIn(): void {
-		$application = (string) file_get_contents(dirname(__DIR__, 3) . '/lib/AppInfo/Application.php');
+		$application = (string)file_get_contents(dirname(__DIR__, 3) . '/lib/AppInfo/Application.php');
 
-		$factory = substr($application, (int) strpos($application, 'static fn ($c): SettingsService => new SettingsService('), 900);
+		$factory = substr($application, (int)strpos($application, 'static fn ($c): SettingsService => new SettingsService('), 900);
 		$this->assertStringContainsString(needle: 'connectionReporter: $c->get(ConnectionReporter::class)', haystack: $factory);
 	}//end testTheContainerFactoryHandsTheReporterIn()
 }//end class

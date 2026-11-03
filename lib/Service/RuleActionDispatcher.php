@@ -68,6 +68,7 @@ namespace OCA\Buildiq\Service;
 
 use DateTime;
 use OCA\Buildiq\Service\Connection\ConnectionReporter;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\SecurityService;
 use OCP\Http\Client\IClientService;
@@ -203,6 +204,7 @@ class RuleActionDispatcher {
 	 * @param array<string,mixed> $params Action parameters.
 	 *
 	 * @return array<string,mixed>|null The saved object, normalised, or null on skip.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function dispatchObjectOp(array $params): ?array {
 		$schema = (string)($params['schema'] ?? '');
@@ -239,7 +241,7 @@ class RuleActionDispatcher {
 			$saved = $write();
 		}
 
-		return $this->normalise(object: $saved);
+		return ObjectRecord::arrayOrNull(object: $saved);
 	}//end dispatchObjectOp()
 
 	/**
@@ -353,26 +355,4 @@ class RuleActionDispatcher {
 		$this->logger->warning('Buildiq: RuleActionDispatcher received an unrecognised action type "' . $type . '".');
 		return null;
 	}//end logUnknown()
-
-	/**
-	 * Coerce an OR result entry to a plain associative array.
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string,mixed>|null
-	 */
-	private function normalise(mixed $object): ?array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		return null;
-	}//end normalise()
 }//end class

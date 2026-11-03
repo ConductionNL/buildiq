@@ -1,0 +1,197 @@
+{
+    "events": {
+        "created": {
+            "fired": [
+                "object-created",
+                "s1",
+                "u1",
+                null
+            ],
+            "selected": {
+                "DocumentGenerationListener": [
+                    "a2",
+                    "a5",
+                    "a5b",
+                    "a5c",
+                    "a5d",
+                    "a5e",
+                    "a14"
+                ],
+                "AutomationApprovalTriggerListener": [
+                    "a1",
+                    "a5",
+                    "a5b",
+                    "a5c",
+                    "a5d",
+                    "a5e"
+                ]
+            }
+        },
+        "updated": {
+            "fired": [
+                "object-updated",
+                "s1",
+                "u1",
+                null
+            ],
+            "selected": {
+                "DocumentGenerationListener": [
+                    "a3",
+                    "a18"
+                ],
+                "AutomationApprovalTriggerListener": [
+                    "a3",
+                    "a18"
+                ]
+            }
+        },
+        "deleted": {
+            "fired": [
+                "object-deleted",
+                "s1",
+                "u1",
+                null
+            ],
+            "selected": {
+                "DocumentGenerationListener": [
+                    "a12"
+                ],
+                "AutomationApprovalTriggerListener": [
+                    "a13"
+                ]
+            }
+        },
+        "transitionApprove": {
+            "fired": [
+                "lifecycle-transition",
+                "s1",
+                "u1",
+                "approve"
+            ],
+            "selected": {
+                "DocumentGenerationListener": [
+                    "a9"
+                ],
+                "AutomationApprovalTriggerListener": [
+                    "a9"
+                ]
+            }
+        },
+        "transitionEmpty": {
+            "fired": [
+                "lifecycle-transition",
+                "s1",
+                "u1",
+                ""
+            ],
+            "selected": {
+                "DocumentGenerationListener": [
+                    "a10"
+                ],
+                "AutomationApprovalTriggerListener": [
+                    "a10"
+                ]
+            }
+        },
+        "transitionReject": {
+            "fired": [
+                "lifecycle-transition",
+                "s1",
+                "u1",
+                "reject"
+            ],
+            "selected": {
+                "DocumentGenerationListener": [],
+                "AutomationApprovalTriggerListener": [
+                    "a17"
+                ]
+            }
+        },
+        "transitionNoUuid": {
+            "fired": [
+                "lifecycle-transition",
+                "s1",
+                "",
+                "approve"
+            ],
+            "selected": {
+                "DocumentGenerationListener": [
+                    "a9"
+                ],
+                "AutomationApprovalTriggerListener": [
+                    "a9"
+                ]
+            }
+        },
+        "createdNoSchema": {
+            "fired": [
+                "object-created",
+                "",
+                "u1",
+                null
+            ],
+            "selected": {
+                "DocumentGenerationListener": [
+                    "a16"
+                ],
+                "AutomationApprovalTriggerListener": [
+                    "a16"
+                ]
+            }
+        },
+        "createdNoUuid": {
+            "fired": [
+                "object-created",
+                "s1",
+                "",
+                null
+            ],
+            "selected": {
+                "DocumentGenerationListener": [
+                    "a2",
+                    "a5",
+                    "a5b",
+                    "a5c",
+                    "a5d",
+                    "a5e",
+                    "a14"
+                ],
+                "AutomationApprovalTriggerListener": [
+                    "a1",
+                    "a5",
+                    "a5b",
+                    "a5c",
+                    "a5d",
+                    "a5e"
+                ]
+            }
+        },
+        "createdOtherSchema": {
+            "fired": [
+                "object-created",
+                "s2",
+                "u2",
+                null
+            ],
+            "selected": {
+                "DocumentGenerationListener": [
+                    "a8"
+                ],
+                "AutomationApprovalTriggerListener": [
+                    "a8"
+                ]
+            }
+        },
+        "plainEvent": {
+            "fired": null,
+            "selected": []
+        }
+    },
+    "scan": {
+        "filters": {
+            "register": "buildiq",
+            "schema": "automation"
+        },
+        "limit": 1000
+    }
+}

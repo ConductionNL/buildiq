@@ -23,9 +23,11 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\FormDestinationController;
+use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\ManifestFormDestinations;
 use OCA\Buildiq\Service\ManifestResolverService;
 use OCA\Buildiq\Service\PermissionResolver;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -146,8 +148,11 @@ final class FormDestinationControllerTest extends TestCase {
 			request: $request,
 			destinations: $destinations,
 			applications: $applications,
-			permissions: $permissions,
-			userSession: $session,
+			caller: new CallerContext(
+				userSession: $session,
+				groupManager: $this->createMock(IGroupManager::class),
+				permissionResolver: $permissions
+			),
 			logger: $this->createMock(LoggerInterface::class),
 		);
 	}//end controllerOver()

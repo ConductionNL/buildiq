@@ -43,6 +43,7 @@ namespace OCA\Buildiq\Listener;
 use OCA\Buildiq\Service\AutomationCompilerService;
 use OCA\Buildiq\Service\ListenerSlugContract;
 use OCA\Buildiq\Service\ObjectSchemaSlugResolver;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -82,6 +83,7 @@ class AutomationCleanupListener implements IEventListener {
 	 * @return void
 	 *
 	 * @spec openspec/specs/automation-designer/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function handle(Event $event): void {
 		if (($event instanceof ObjectDeletedEvent) === false) {
@@ -113,7 +115,7 @@ class AutomationCleanupListener implements IEventListener {
 			return;
 		}
 
-		$automation = $this->extractObjectData(entity: $entity);
+		$automation = ObjectRecord::entityData(entity: $entity);
 		$provenance = $automation['provenance'] ?? [];
 		if (is_array($provenance) === false) {
 			$provenance = [];
@@ -129,30 +131,4 @@ class AutomationCleanupListener implements IEventListener {
 			);
 		}
 	}//end handle()
-
-	/**
-	 * Read the object payload (post-`@self`) from the ObjectEntity.
-	 *
-	 * @param object $entity The ObjectEntity instance.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function extractObjectData(object $entity): array {
-		if (method_exists($entity, 'getObject') === true) {
-			$object = $entity->getObject();
-			if (is_array($object) === true) {
-				return $object;
-			}
-		}
-
-		if (method_exists($entity, 'jsonSerialize') === true) {
-			$serialised = $entity->jsonSerialize();
-			if (is_array($serialised) === true) {
-				unset($serialised['@self']);
-				return $serialised;
-			}
-		}
-
-		return [];
-	}//end extractObjectData()
 }//end class

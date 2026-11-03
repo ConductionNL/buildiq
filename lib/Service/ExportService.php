@@ -117,27 +117,13 @@ class ExportService {
 	 * @param IAppData $appData The app-data area for scratch + exports.
 	 * @param PlaceholderResolver $placeholderResolver Pure resolver for {{tokens}}.
 	 * @param LoggerInterface $logger Logger.
-	 * @param DataRegisterExportBundler $dataRegisterBundler Bundles bound data registers into the exported
-	 *                                                       tree (data-registers-runtime) — a dedicated
-	 *                                                       collaborator so this class's own coupling/
-	 *                                                       complexity stays within PHPMD's thresholds.
-	 * @param FlowAndAgentExportBundler $flowAndAgentBundler Bundles the application's flows and the
-	 *                                                       agents that point at it into the exported
-	 *                                                       tree, for the same reason.
-	 * @param ExportAppContentBundler|null $contentBundler Writes the application's own manifest, schemas
-	 *                                                     and records into the tree. Null only where a
-	 *                                                     caller builds the bare scaffold.
-	 * @param ServerBundleWriter|null $serverBundleWriter Writes `deploy/` for an export that runs on its
-	 *                                                    own server. Null leaves it out.
+	 * @param ExportBundlers $bundlers The writers that bundle registers, flows/agents, content and the server bundle.
 	 */
 	public function __construct(
 		private IAppData $appData,
 		private PlaceholderResolver $placeholderResolver,
 		private LoggerInterface $logger,
-		private DataRegisterExportBundler $dataRegisterBundler,
-		private FlowAndAgentExportBundler $flowAndAgentBundler,
-		private ?ExportAppContentBundler $contentBundler = null,
-		private ?ServerBundleWriter $serverBundleWriter = null,
+		private readonly ExportBundlers $bundlers,
 	) {
 		// Constructed rather than injected: it is stateless, has no
 		// dependencies of its own, and is deterministic — so injecting it buys
@@ -178,7 +164,7 @@ class ExportService {
 		$this->copyTemplate(source: $this->templateRoot, dest: $scratchDir);
 		$serverBundle = null;
 		if ($includeServerBundle === true) {
-			$serverBundle = $this->serverBundleWriter;
+			$serverBundle = $this->bundlers->serverBundleWriter;
 		}
 
 		$serverBundle?->write(rootDir: $scratchDir);
@@ -187,8 +173,8 @@ class ExportService {
 
 		// The application itself: without this the archive is the empty template.
 		$this->lastContent = null;
-		if ($contents->source !== null && $this->contentBundler !== null) {
-			$this->lastContent = $this->contentBundler->bundle(
+		if ($contents->source !== null && $this->bundlers->contentBundler !== null) {
+			$this->lastContent = $this->bundlers->contentBundler->bundle(
 				rootDir: $scratchDir,
 				source: $contents->source,
 				appId: $this->placeholderResolver->slug(value: (string)($contents->context['appId'] ?? '')),
@@ -201,7 +187,7 @@ class ExportService {
 		// The flows the app is composed of, and the agents that point at it.
 		// Skips are RETURNED so the job result can name them — an operator
 		// reads the finished job, not the log.
-		$this->lastSkipped = $this->flowAndAgentBundler->bundle(
+		$this->lastSkipped = $this->bundlers->flowAndAgentBundler->bundle(
 			rootDir: $scratchDir,
 			flows: $contents->flows,
 			applicationSlug: $target->applicationSlug
@@ -300,7 +286,7 @@ class ExportService {
 			}
 
 			if ($flows !== [] || $applicationSlug !== '') {
-				$this->lastSkipped = $this->flowAndAgentBundler->bundle(
+				$this->lastSkipped = $this->bundlers->flowAndAgentBundler->bundle(
 					rootDir: $scratch,
 					flows: $flows,
 					applicationSlug: $applicationSlug
@@ -344,7 +330,7 @@ class ExportService {
 	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.2
 	 */
 	private function bundleDataRegisterSchemas(string $rootDir, array $dataRegisters): void {
-		$this->dataRegisterBundler->bundle(rootDir: $rootDir, dataRegisters: $dataRegisters);
+		$this->bundlers->dataRegisterBundler->bundle(rootDir: $rootDir, dataRegisters: $dataRegisters);
 		$this->pinDataRegisterFileTimestamps(rootDir: $rootDir);
 	}//end bundleDataRegisterSchemas()
 

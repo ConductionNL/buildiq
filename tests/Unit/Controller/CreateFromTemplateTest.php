@@ -32,10 +32,12 @@ namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\ApplicationsController;
 use OCA\Buildiq\Service\AppChannelApplier;
+use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\ManifestResolverService;
 use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Service\RegisterStore;
 use OCA\Buildiq\Service\RepoSource;
-use OCA\Buildiq\Service\ApplicationVersionService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -229,15 +231,19 @@ class CreateFromTemplateTest extends TestCase {
 		$this->controller = new ApplicationsController(
 			request: $this->request,
 			logger: $this->logger,
-			objectService: $this->objectService,
-			registerMapper: $this->registerMapper,
-			schemaMapper: $this->schemaMapper,
-			userSession: $this->userSession,
-			groupManager: $this->groupManager,
+			store: new RegisterStore(
+				objectService: $this->objectService,
+				registerMapper: $this->registerMapper,
+				schemaMapper: $this->schemaMapper,
+				auditTrailMapper: null
+			),
+			caller: new CallerContext(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				permissionResolver: $permissionResolver
+			),
 			manifestResolver: $this->manifestResolver,
-			permissionResolver: $permissionResolver,
 			channelApplier: $this->channelApplier,
-			auditTrailMapper: null,
 		);
 	}//end setUp()
 
@@ -1005,8 +1011,8 @@ class CreateFromTemplateTest extends TestCase {
 	/**
 	 * Install the fixture template as `repo-app` for `dora`, fetched from the given repo.
 	 *
-	 * @param string      $owner        Repo owner.
-	 * @param string      $repo         Repo name.
+	 * @param string $owner Repo owner.
+	 * @param string $repo Repo name.
 	 * @param string|null $credentialId Broker credential UUID.
 	 *
 	 * @return array{status:int,data:array<string,mixed>} The install result.

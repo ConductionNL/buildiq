@@ -32,6 +32,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Command;
 
 use OCA\Buildiq\Service\GitHubAppSyncService;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
@@ -232,6 +233,7 @@ class PublishTemplates extends Command {
 	 * @return array<int,array<string,mixed>> The seeded template objects (jsonSerialize shape).
 	 *
 	 * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function resolveTemplates(?string $slug): array {
 		$filters = [];
@@ -260,7 +262,7 @@ class PublishTemplates extends Command {
 
 		$templates = [];
 		foreach ($results as $result) {
-			$data = $this->normalise(object: $result);
+			$data = ObjectRecord::serialised(object: $result);
 			if ($this->acceptsTemplate(template: $data, slug: $slug) === true) {
 				$templates[] = $data;
 			}
@@ -291,28 +293,6 @@ class PublishTemplates extends Command {
 
 		return true;
 	}//end acceptsTemplate()
-
-	/**
-	 * Coerce an OR result entry to a plain associative array.
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normalise(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		return [];
-	}//end normalise()
 
 	/**
 	 * Normalise an option value to a non-empty string or null.

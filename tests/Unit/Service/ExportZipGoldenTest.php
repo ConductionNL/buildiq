@@ -21,6 +21,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\DataRegisterExportBundler;
 use OCA\Buildiq\Service\ExportAppContentBundler;
+use OCA\Buildiq\Service\ExportBundlers;
 use OCA\Buildiq\Service\ExportContents;
 use OCA\Buildiq\Service\ExportService;
 use OCA\Buildiq\Service\ExportTarget;
@@ -44,6 +45,7 @@ use ZipArchive;
  * @uses   \OCA\Buildiq\Service\ExportTarget
  * @uses   \OCA\Buildiq\Service\ExportTreeFiles
  * @uses   \OCA\Buildiq\Service\PlaceholderResolver
+ * @uses   \OCA\Buildiq\Service\ExportBundlers
  */
 class ExportZipGoldenTest extends TestCase {
 
@@ -140,7 +142,7 @@ class ExportZipGoldenTest extends TestCase {
 	/**
 	 * Build the service for one case, export, and record the outcome.
 	 *
-	 * @param string              $name Case name.
+	 * @param string $name Case name.
 	 * @param array<string,mixed> $case The case.
 	 *
 	 * @return array<string,mixed> What the case produced.
@@ -176,9 +178,9 @@ class ExportZipGoldenTest extends TestCase {
 	/**
 	 * Call generateAppZip() with the case's arguments, leaving out the ones the case leaves out.
 	 *
-	 * @param ExportService       $service The service.
-	 * @param string              $jobUuid Job UUID.
-	 * @param array<string,mixed> $case    The case.
+	 * @param ExportService $service The service.
+	 * @param string $jobUuid Job UUID.
+	 * @param array<string,mixed> $case The case.
 	 *
 	 * @return string The ZIP path.
 	 */
@@ -199,7 +201,7 @@ class ExportZipGoldenTest extends TestCase {
 	 * The service with recording doubles for every bundler.
 	 *
 	 * @param bool $withContent Wire a content bundler.
-	 * @param bool $withWriter  Wire a server bundle writer.
+	 * @param bool $withWriter Wire a server bundle writer.
 	 *
 	 * @return ExportService The service.
 	 */
@@ -243,13 +245,15 @@ class ExportZipGoldenTest extends TestCase {
 			/**
 			 * @param ExportZipGoldenTest $test The recording test.
 			 */
-			public function __construct(private ExportZipGoldenTest $test) {
+			public function __construct(
+				private ExportZipGoldenTest $test,
+			) {
 			}
 
 			/**
-			 * @param mixed                $level   Level.
-			 * @param string|\Stringable   $message Message.
-			 * @param array<string,mixed>  $context Context.
+			 * @param mixed $level Level.
+			 * @param string|\Stringable $message Message.
+			 * @param array<string,mixed> $context Context.
 			 *
 			 * @return void
 			 */
@@ -259,20 +263,22 @@ class ExportZipGoldenTest extends TestCase {
 		};
 
 		return new ExportService(
-			$this->createStub(IAppData::class),
-			new PlaceholderResolver(),
-			$logger,
-			$registers,
-			$flows,
-			$content,
-			$writer
+			appData: $this->createStub(IAppData::class),
+			placeholderResolver: new PlaceholderResolver(),
+			logger: $logger,
+			bundlers: new ExportBundlers(
+				dataRegisterBundler: $registers,
+				flowAndAgentBundler: $flows,
+				contentBundler: $content,
+				serverBundleWriter: $writer
+			)
 		);
 	}//end buildService()
 
 	/**
 	 * Record one call, with the scratch directory replaced by a token.
 	 *
-	 * @param string              $call Call name.
+	 * @param string $call Call name.
 	 * @param array<string,mixed> $args Arguments by name.
 	 *
 	 * @return void

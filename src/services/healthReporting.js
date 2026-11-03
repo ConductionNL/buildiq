@@ -21,19 +21,25 @@ const FLUSH_MS = 5 * 60 * 1000
  * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-a-running-app-reports-counts-not-content-req-bqdm-004
  */
 export function startHealthReporting({ router, slug, versionSlug = '' }) {
-	let url = generateUrl(`/apps/buildiq/api/applications/${encodeURIComponent(slug)}/health-samples`)
+	let url = generateUrl(
+		`/apps/buildiq/api/applications/${encodeURIComponent(slug)}/health-samples`,
+	)
 	if (versionSlug) {
 		url += `?_version=${encodeURIComponent(versionSlug)}`
 	}
 
 	const reporter = createHealthReporter({
-		post: (pages) => fetch(url, {
-			method: 'POST',
-			keepalive: true,
-			credentials: 'same-origin',
-			headers: { 'Content-Type': 'application/json', requesttoken: getRequestToken() || '' },
-			body: JSON.stringify({ pages }),
-		}).catch(() => {}),
+		post: (pages) =>
+			fetch(url, {
+				method: 'POST',
+				keepalive: true,
+				credentials: 'same-origin',
+				headers: {
+					'Content-Type': 'application/json',
+					requesttoken: getRequestToken() || '',
+				},
+				body: JSON.stringify({ pages }),
+			}).catch(() => {}),
 	})
 
 	router.afterEach((to) => reporter.navigate(to.name))

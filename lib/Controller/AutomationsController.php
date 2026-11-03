@@ -80,6 +80,7 @@ use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
 use OCA\Buildiq\Service\AutomationCompilerService;
 use OCA\Buildiq\Service\AutomationWriteService;
+use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\ConditionActionExecutor;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCP\AppFramework\Controller;
@@ -116,14 +117,27 @@ class AutomationsController extends Controller {
 	private const PRODUCTION_ENABLE_ROLES = ['owners'];
 
 	/**
+	 * Current user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Shared permission-grammar resolver.
+	 *
+	 * @var PermissionResolver
+	 */
+	private readonly PermissionResolver $permissionResolver;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest $request The current HTTP request.
 	 * @param LoggerInterface $logger PSR logger.
 	 * @param AutomationCompilerService $compiler Compiler/apply/remove/status service.
 	 * @param ConditionActionExecutor $conditionExecutor Rules engine executor (dry-run panel).
-	 * @param PermissionResolver $permissionResolver Shared permission-grammar resolver.
-	 * @param IUserSession $userSession Current user session.
+	 * @param CallerContext $caller The caller's session, group memberships and the shared permission matcher.
 	 * @param AutomationWriteService $writeService Create/update/delete write path.
 	 *
 	 * @return void
@@ -133,10 +147,11 @@ class AutomationsController extends Controller {
 		private readonly LoggerInterface $logger,
 		private readonly AutomationCompilerService $compiler,
 		private readonly ConditionActionExecutor $conditionExecutor,
-		private readonly PermissionResolver $permissionResolver,
-		private readonly IUserSession $userSession,
+		CallerContext $caller,
 		private readonly AutomationWriteService $writeService,
 	) {
+		$this->userSession = $caller->userSession;
+		$this->permissionResolver = $caller->permissionResolver;
 		parent::__construct(appName: Application::APP_ID, request: $request);
 
 	}//end __construct()

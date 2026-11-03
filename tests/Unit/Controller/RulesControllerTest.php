@@ -27,19 +27,22 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\RulesController;
-use OCA\Buildiq\Service\RuleEngineService;
-use OCA\Buildiq\Service\RuleObjectReader;
-use OCA\Buildiq\Service\RuleSetVersioningService;
+use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\DecisionTableEvaluator;
 use OCA\Buildiq\Service\DecisionTableShape;
 use OCA\Buildiq\Service\ExpressionEvaluator;
+use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Service\RuleEngineService;
+use OCA\Buildiq\Service\RuleObjectReader;
+use OCA\Buildiq\Service\RuleSetVersioningService;
+use OCA\Buildiq\Service\RuleStorage;
 use OCA\Buildiq\Service\StoredDecisionTables;
-use OCA\OpenRegister\Service\Dmn\DecisionTableEvaluator as SharedEvaluator;
-use OCA\OpenRegister\Service\Dmn\DecisionTableStore;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Dmn\DecisionTableEvaluator as SharedEvaluator;
+use OCA\OpenRegister\Service\Dmn\DecisionTableStore;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -137,19 +140,24 @@ final class RulesControllerTest extends TestCase {
 		);
 
 		return new RulesController(
-			$this->request,
-			$this->createMock(LoggerInterface::class),
-			$this->ruleEngine,
-			$this->versioningService,
-			new RuleObjectReader($this->objectService, $registerMapper, $schemaMapper, $this->createMock(LoggerInterface::class)),
-			$this->userSession,
-			new StoredDecisionTables(
-				$this->store,
-				$this->objectService,
-				new DecisionTableShape(new DecisionTableEvaluator(new ExpressionEvaluator(), $this->createMock(SharedEvaluator::class))),
-				$this->createMock(LoggerInterface::class),
+			request: $this->request,
+			logger: $this->createMock(LoggerInterface::class),
+			ruleEngine: $this->ruleEngine,
+			storage: new RuleStorage(
+				reader: new RuleObjectReader($this->objectService, $registerMapper, $schemaMapper, $this->createMock(LoggerInterface::class)),
+				tables: new StoredDecisionTables(
+					$this->store,
+					$this->objectService,
+					new DecisionTableShape(new DecisionTableEvaluator(new ExpressionEvaluator(), $this->createMock(SharedEvaluator::class))),
+					$this->createMock(LoggerInterface::class),
+				),
+				versioningService: $this->versioningService
 			),
-			$this->groupManager,
+			caller: new CallerContext(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				permissionResolver: $this->createMock(PermissionResolver::class)
+			),
 		);
 
 	}//end controller()

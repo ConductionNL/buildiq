@@ -10,6 +10,7 @@
  */
 
 import { FORM_KINDS } from './formCapture.js'
+import { isEnvelope, parsedInput } from './importEnvelope.js'
 
 /** The envelope kind of a form export. */
 export const FORM_EXPORT_KIND = 'form-template'
@@ -96,21 +97,8 @@ export function downloadFormExport(form) {
  * @throws {FormImportError} When the file is not a form export.
  */
 function readFormExport(input) {
-	let data = input
-	if (typeof input === 'string') {
-		try {
-			data = JSON.parse(input)
-		} catch {
-			throw new FormImportError('invalid-json')
-		}
-	}
-	if (
-		!data
-		|| typeof data !== 'object'
-		|| data.kind !== FORM_EXPORT_KIND
-		|| !data.form
-		|| typeof data.form !== 'object'
-	) {
+	const data = parsedInput(input, () => new FormImportError('invalid-json'))
+	if (!isEnvelope(data, { kind: FORM_EXPORT_KIND, part: 'form' })) {
 		throw new FormImportError('not-a-form')
 	}
 	return data

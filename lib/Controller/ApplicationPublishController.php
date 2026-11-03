@@ -39,6 +39,7 @@ use OCA\Buildiq\Service\ManifestResolverService;
 use OCA\Buildiq\Service\Credential\VirtualAppCredentialRegistrar;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Service\VersionPromotionService;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -269,6 +270,7 @@ class ApplicationPublishController extends Controller {
 	 * @param string $status Target status (`published` or `draft`).
 	 *
 	 * @return JSONResponse
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function setStatus(string $appUuid, string $status): JSONResponse {
 		$user = $this->userSession->getUser();
@@ -335,7 +337,7 @@ class ApplicationPublishController extends Controller {
 			return new JSONResponse(
 				data: [
 					'status' => $status,
-					'application' => $this->normaliseObject(object: $saved),
+					'application' => ObjectRecord::toArray(object: $saved),
 				],
 				statusCode: Http::STATUS_OK
 			);
@@ -377,6 +379,7 @@ class ApplicationPublishController extends Controller {
 	 * @param string $applicationUuid The Application UUID the route should point at.
 	 *
 	 * @return void
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function ensureBuiltAppRoute(string $slug, string $applicationUuid): void {
 		try {
@@ -385,7 +388,7 @@ class ApplicationPublishController extends Controller {
 				register: VersionPromotionService::REGISTER_SLUG,
 				schema: 'built-app-route'
 			);
-			$existingData = $this->normaliseObject(object: $existing);
+			$existingData = ObjectRecord::toArray(object: $existing);
 			$existingTarget = (string)($existingData['applicationUuid'] ?? '');
 			if ($existingTarget === $applicationUuid) {
 				return;
@@ -427,6 +430,7 @@ class ApplicationPublishController extends Controller {
 	 * @param string $uuid Application UUID.
 	 *
 	 * @return array<string,mixed>|null Normalised application array, or null when absent.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function loadApplication(string $uuid): ?array {
 		try {
@@ -447,7 +451,7 @@ class ApplicationPublishController extends Controller {
 			return null;
 		}
 
-		return $this->normaliseObject(object: $entity);
+		return ObjectRecord::toArray(object: $entity);
 	}//end loadApplication()
 
 	/**
@@ -484,33 +488,4 @@ class ApplicationPublishController extends Controller {
 				. (string)($application['slug'] ?? ($application['id'] ?? '?'))
 		);
 	}//end assertOwner()
-
-	/**
-	 * Coerce an OR result entry (ObjectEntity or array) to an associative array.
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normaliseObject(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normaliseObject()
 }//end class

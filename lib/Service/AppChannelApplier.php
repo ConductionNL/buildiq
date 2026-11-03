@@ -123,6 +123,34 @@ class AppChannelApplier {
 	private const HERMIQ_APP_ID = 'hermiq';
 
 	/**
+	 * The data-registers channel.
+	 *
+	 * @var DataRegisterProvisioner
+	 */
+	private readonly DataRegisterProvisioner $registerProvisioner;
+
+	/**
+	 * The skills channel (delegated to hermiq).
+	 *
+	 * @var SkillChannelDelegate
+	 */
+	private readonly SkillChannelDelegate $skillDelegate;
+
+	/**
+	 * The flows channel (app-repo-format-flow-agent-export).
+	 *
+	 * @var FlowChannelProvisioner
+	 */
+	private readonly FlowChannelProvisioner $flowProvisioner;
+
+	/**
+	 * The agents channel (app-repo-format-flow-agent-export).
+	 *
+	 * @var AgentChannelProvisioner
+	 */
+	private readonly AgentChannelProvisioner $agentProvisioner;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectServiceInterface $objectService OpenRegister object read/write.
@@ -130,10 +158,7 @@ class AppChannelApplier {
 	 *                                                         here, and with which slug. Not nullable: the
 	 *                                                         only fallback a null would leave is the
 	 *                                                         literal it replaces.
-	 * @param DataRegisterProvisioner $registerProvisioner The data-registers channel.
-	 * @param SkillChannelDelegate $skillDelegate The skills channel (delegated to hermiq).
-	 * @param FlowChannelProvisioner $flowProvisioner The flows channel (app-repo-format-flow-agent-export).
-	 * @param AgentChannelProvisioner $agentProvisioner The agents channel (app-repo-format-flow-agent-export).
+	 * @param ChannelProvisioners $provisioners The per-channel provisioners a published repository is applied through.
 	 * @param LoggerInterface $logger PSR logger (secret-free diagnostics).
 	 *
 	 * @return void
@@ -141,12 +166,13 @@ class AppChannelApplier {
 	public function __construct(
 		private readonly ObjectServiceInterface $objectService,
 		private readonly ConnectorRegisterAvailability $connectorRegister,
-		private readonly DataRegisterProvisioner $registerProvisioner,
-		private readonly SkillChannelDelegate $skillDelegate,
-		private readonly FlowChannelProvisioner $flowProvisioner,
-		private readonly AgentChannelProvisioner $agentProvisioner,
+		ChannelProvisioners $provisioners,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->registerProvisioner = $provisioners->registerProvisioner;
+		$this->skillDelegate = $provisioners->skillDelegate;
+		$this->flowProvisioner = $provisioners->flowProvisioner;
+		$this->agentProvisioner = $provisioners->agentProvisioner;
 	}//end __construct()
 
 	/**
@@ -162,12 +188,12 @@ class AppChannelApplier {
 	 *
 	 * @param array<string,mixed> $template The parsed repo template.
 	 * @param RepoSource|null $source Repo coordinates, ref and broker credential for the skills delegation.
-	 *                               An empty owner or repo falls back to the template's origin.
+	 *                                An empty owner or repo falls back to the template's origin.
 	 * @param string|null $actingUserId The session UID.
 	 * @param LocalApplicationRef|null $local The LOCAL Application: its uuid lets the flows channel rebind newly
-	 *                                       created flows, its slug lets the agents channel tag newly created
-	 *                                       agents with THIS instance's slug, never the source instance's. A
-	 *                                       missing uuid degrades the flows channel with a stated reason.
+	 *                                        created flows, its slug lets the agents channel tag newly created
+	 *                                        agents with THIS instance's slug, never the source instance's. A
+	 *                                        missing uuid degrades the flows channel with a stated reason.
 	 *
 	 * @return array<string,mixed> The channel report.
 	 *

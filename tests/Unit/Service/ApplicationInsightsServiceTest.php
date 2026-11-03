@@ -33,6 +33,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\ApplicationInsightsService;
 use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Service\RegisterStore;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -108,10 +109,12 @@ class ApplicationInsightsServiceTest extends TestCase {
 		$cacheFactory->method('createDistributed')->willReturn($cache);
 
 		$this->service = new ApplicationInsightsService(
-			objectService: $this->objectService,
+			store: new RegisterStore(
+				objectService: $this->objectService,
+				registerMapper: $this->registerMapper,
+				schemaMapper: $this->schemaMapper
+			),
 			auditTrailMapper: $this->auditTrailMapper,
-			schemaMapper: $this->schemaMapper,
-			registerMapper: $this->registerMapper,
 			cacheFactory: $cacheFactory,
 			logger: $this->logger,
 		);
@@ -573,10 +576,12 @@ class ApplicationInsightsServiceTest extends TestCase {
 		$cacheFactory->method('createDistributed')->willReturn($cache);
 
 		return new ApplicationInsightsService(
-			objectService: $this->objectService,
+			store: new RegisterStore(
+				objectService: $this->objectService,
+				registerMapper: $this->registerMapper,
+				schemaMapper: $this->schemaMapper
+			),
 			auditTrailMapper: $this->auditTrailMapper,
-			schemaMapper: $this->schemaMapper,
-			registerMapper: $this->registerMapper,
 			cacheFactory: $cacheFactory,
 			logger: $this->logger,
 			permissionResolver: new PermissionResolver($groupManager, $this->logger)

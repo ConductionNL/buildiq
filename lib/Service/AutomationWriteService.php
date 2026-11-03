@@ -60,6 +60,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -164,6 +165,7 @@ class AutomationWriteService {
 	 * @return JSONResponse The created Automation, or an error envelope.
 	 *
 	 * @spec openspec/specs/automation-designer/spec.md#req-autd-008
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function create(array $payload, array $roles): JSONResponse {
 		return $this->withApplication(
@@ -175,7 +177,7 @@ class AutomationWriteService {
 				// documented on saveAuthorised().
 				$saved = $this->saveAuthorised(automation: $payload, uuid: null);
 
-				return new JSONResponse(data: $this->normalise(object: $saved), statusCode: Http::STATUS_CREATED);
+				return new JSONResponse(data: ObjectRecord::toArray(object: $saved), statusCode: Http::STATUS_CREATED);
 			}
 		);
 
@@ -197,6 +199,7 @@ class AutomationWriteService {
 	 * @return JSONResponse The saved Automation.
 	 *
 	 * @spec openspec/specs/automation-designer/spec.md#req-autd-008
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function update(string $uuid, array $payload, array $automation): JSONResponse {
 		$payload['applicationSlug'] = ($automation['applicationSlug'] ?? null);
@@ -204,7 +207,7 @@ class AutomationWriteService {
 
 		$saved = $this->saveAuthorised(automation: $payload, uuid: $uuid);
 
-		return new JSONResponse(data: $this->normalise(object: $saved), statusCode: Http::STATUS_OK);
+		return new JSONResponse(data: ObjectRecord::toArray(object: $saved), statusCode: Http::STATUS_OK);
 	}//end update()
 
 	/**
@@ -257,9 +260,10 @@ class AutomationWriteService {
 	 * @return array<string,mixed> The saved object, normalised.
 	 *
 	 * @spec openspec/specs/automation-designer/spec.md#req-autd-008
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function saveCompiled(array $automation, string $uuid): array {
-		return $this->normalise(object: $this->saveAuthorised(automation: $automation, uuid: $uuid));
+		return ObjectRecord::toArray(object: $this->saveAuthorised(automation: $automation, uuid: $uuid));
 	}//end saveCompiled()
 
 	/**
@@ -403,6 +407,7 @@ class AutomationWriteService {
 	 * @return array<string,mixed>|null
 	 *
 	 * @spec openspec/specs/automation-designer/spec.md#req-autd-008
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function loadAutomation(string $uuid): ?array {
 		try {
@@ -415,7 +420,7 @@ class AutomationWriteService {
 			return null;
 		}
 
-		return $this->normalise(object: $entity);
+		return ObjectRecord::toArray(object: $entity);
 	}//end loadAutomation()
 
 	/**
@@ -426,6 +431,7 @@ class AutomationWriteService {
 	 * @return array<string,mixed>|null
 	 *
 	 * @spec openspec/specs/automation-designer/spec.md#req-autd-008
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function loadApplication(string $slug): ?array {
 		if ($slug === '') {
@@ -442,7 +448,7 @@ class AutomationWriteService {
 			return null;
 		}
 
-		return $this->normalise(object: $entity);
+		return ObjectRecord::toArray(object: $entity);
 	}//end loadApplication()
 
 	/**
@@ -459,35 +465,6 @@ class AutomationWriteService {
 
 		return [];
 	}//end orArray()
-
-	/**
-	 * Coerce an OR result entry to a plain associative array.
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normalise(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normalise()
 
 	/**
 	 * Build a uniform error envelope.

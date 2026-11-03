@@ -15,6 +15,8 @@
  * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
  */
 
+import { isEnvelope, parsedInput } from './importEnvelope.js'
+
 /** The export envelope's `kind` discriminator (design.md D4). */
 export const BLOCK_EXPORT_KIND = 'component-block'
 
@@ -90,21 +92,8 @@ export function downloadBlockExport(block) {
  * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
  */
 export function parseBlockImport(input) {
-	let data = input
-	if (typeof input === 'string') {
-		try {
-			data = JSON.parse(input)
-		} catch (e) {
-			throw new BlockImportError('invalid-json')
-		}
-	}
-	if (
-		!data
-		|| typeof data !== 'object'
-		|| data.kind !== BLOCK_EXPORT_KIND
-		|| !data.block
-		|| typeof data.block !== 'object'
-	) {
+	const data = parsedInput(input, () => new BlockImportError('invalid-json'))
+	if (!isEnvelope(data, { kind: BLOCK_EXPORT_KIND, part: 'block' })) {
 		throw new BlockImportError('invalid-shape')
 	}
 	const block = { ...data.block }

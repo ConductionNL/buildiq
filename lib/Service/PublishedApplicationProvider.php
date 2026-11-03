@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 
 /**
@@ -96,6 +97,7 @@ class PublishedApplicationProvider {
 	 * @throws \Throwable When the OpenRegister query fails.
 	 *
 	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-published-applications-are-read-once-per-request
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function getPublishedApplications(): array {
 		if ($this->cachedApplications !== null) {
@@ -118,39 +120,10 @@ class PublishedApplicationProvider {
 
 		$applications = [];
 		foreach ($results as $item) {
-			$applications[] = $this->normaliseObject(object: $item);
+			$applications[] = ObjectRecord::toArray(object: $item);
 		}
 
 		$this->cachedApplications = $applications;
 		return $applications;
 	}//end getPublishedApplications()
-
-	/**
-	 * Coerce an OpenRegister result entry (ObjectEntity or array) to an array.
-	 *
-	 * @param mixed $object The OpenRegister object/result entry.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normaliseObject(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normaliseObject()
 }//end class

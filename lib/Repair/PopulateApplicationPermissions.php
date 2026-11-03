@@ -42,6 +42,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Repair;
 
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -145,6 +146,7 @@ class PopulateApplicationPermissions implements IRepairStep {
 	 * @return integer|null Number of Applications patched, or null when none were found
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-30
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function patchApplicationsMissingPermissions(IOutput $output): ?int {
 		$applications = $this->objectService->findAll(
@@ -163,7 +165,7 @@ class PopulateApplicationPermissions implements IRepairStep {
 
 		$patched = 0;
 		foreach ($applications as $applicationEntry) {
-			$applicationArray = $this->normaliseObject(object: $applicationEntry);
+			$applicationArray = ObjectRecord::toArray(object: $applicationEntry);
 			if ($this->needsMigration(application: $applicationArray) === false) {
 				continue;
 			}
@@ -248,33 +250,4 @@ class PopulateApplicationPermissions implements IRepairStep {
 
 		return null;
 	}//end extractUuid()
-
-	/**
-	 * Coerce an OR result entry (ObjectEntity or array) to an associative array.
-	 *
-	 * @param mixed $object The OR object/result entry
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function normaliseObject(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normaliseObject()
 }//end class
