@@ -130,8 +130,9 @@ Getting it right is cheaper than any recovery, because there is no recovery.
 ### D3. Permissions reuse `PermissionResolver`, through `isEnabled()`
 
 `IConditionalWidget::isEnabled()` runs the existing `PermissionResolver` against the
-Application's `permissions` block plus the widget entry's own `roles` array, per user, per
-request. `Manager::loadLazyPanels()` calls `isEnabled()` before registering, so a widget a
+Application's `permissions` block and, when the widget entry declares `roles`, against those
+roles too, per user, per request. The user must pass both: `roles` narrows the Application's
+viewers and never adds to them. `Manager::loadLazyPanels()` calls `isEnabled()` before registering, so a widget a
 user may not see never enters the map at all, which covers both the picker and a stored id
 from an earlier grant.
 

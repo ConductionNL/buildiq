@@ -58,8 +58,7 @@ class AppVisibilityResolver {
 	 * Decide whether the signed-in user may see a surface of this Application.
 	 *
 	 * @param array<string,mixed> $permissions The Application's permissions block.
-	 * @param array<mixed> $extraPrincipals Extra principals from the surface itself
-	 *                                      (a widget placement's `roles` array),
+	 * @param array<mixed> $extraPrincipals Extra principals from the surface itself,
 	 *                                      merged with the Application's own.
 	 * @param IUserSession $userSession The user session.
 	 * @param IGroupManager $groupManager The group manager.
@@ -133,6 +132,69 @@ class AppVisibilityResolver {
 		// 4. Nextcloud admin always sees all surfaces.
 		return $groupManager->isAdmin($uid);
 	}//end isVisibleToUser()
+
+	/**
+	 * Decide whether the given user may see one placement of this Application.
+	 *
+	 * The user must pass the Application's own check AND, when the placement
+	 * declares `roles`, match one of them. Roles narrow who sees a placement;
+	 * they never add viewers the Application itself does not have.
+	 *
+	 * @param array<mixed> $appPrincipals The Application's flattened permissions.
+	 * @param array<mixed> $roles The placement's normalised `roles`; empty means unrestricted.
+	 * @param IUser|null $user The user, or null when nobody is signed in.
+	 * @param IGroupManager $groupManager The group manager.
+	 *
+	 * @return bool True when the placement should be visible.
+	 *
+	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-a-user-only-sees-widgets-they-are-allowed-to-see
+	 */
+	public function isPlacementVisibleToUser(
+		array $appPrincipals,
+		array $roles,
+		?IUser $user,
+		IGroupManager $groupManager,
+	): bool {
+		$mayUseApp = $this->isVisibleToUser(
+			permissions: [],
+			extraPrincipals: $appPrincipals,
+			user: $user,
+			groupManager: $groupManager
+		);
+		if ($mayUseApp === false || $roles === []) {
+			return $mayUseApp;
+		}
+
+		return $this->isVisibleToUser(permissions: [], extraPrincipals: $roles, user: $user, groupManager: $groupManager);
+	}//end isPlacementVisibleToUser()
+
+	/**
+	 * Normalise a placement's `roles` value. Absent, null, `''` and `[]` mean
+	 * unrestricted (`[]`); a string is one role; a list is kept. Anything else
+	 * is malformed and returns null, which callers treat as "hide".
+	 *
+	 * @param mixed $roles The raw `roles` value.
+	 *
+	 * @return array<int,mixed>|null The roles, or null when malformed.
+	 *
+	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-a-user-only-sees-widgets-they-are-allowed-to-see
+	 * @spec openspec/changes/widget-roles-on-app-pages/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
+	 */
+	public function normaliseRoles(mixed $roles): ?array {
+		if ($roles === null || $roles === '') {
+			return [];
+		}
+
+		if (is_string($roles) === true) {
+			return [$roles];
+		}
+
+		if (is_array($roles) === false) {
+			return null;
+		}
+
+		return array_values($roles);
+	}//end normaliseRoles()
 
 	/**
 	 * Flatten the three permission role arrays into a single principal list.

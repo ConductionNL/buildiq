@@ -141,6 +141,40 @@ class DashboardWidgetRegistrarTest extends TestCase {
 	}//end testAPromotedPlacementWithoutAnIdIsSkipped()
 
 	/**
+	 * The placement's roles travel apart from the Application's permissions,
+	 * so the dashboard can require both; a single-string role is one role.
+	 *
+	 * @return void
+	 */
+	public function testThePlacementRolesAreKeptApartFromTheAppPermissions(): void {
+		$application = WidgetDescriptorTest::fixtureApplication(slug: 'pet-store', name: 'Pet Store');
+		$application['productionVersion']['manifest']['pages'][0]['widgets'][0]['roles'] = ['group:controllers'];
+		$application['productionVersion']['manifest']['pages'][0]['widgets'][1]['roles'] = 'user:alice';
+
+		$descriptors = $this->registrar()->collectDescriptors(applications: [$application]);
+
+		$this->assertSame(expected: ['group:*'], actual: $descriptors[0]->principals);
+		$this->assertSame(expected: ['group:controllers'], actual: $descriptors[0]->roles);
+		$this->assertSame(expected: ['user:alice'], actual: $descriptors[1]->roles);
+	}//end testThePlacementRolesAreKeptApartFromTheAppPermissions()
+
+	/**
+	 * A placement whose roles are neither a string nor a list is skipped with
+	 * a warning instead of falling open to every viewer of the Application.
+	 *
+	 * @return void
+	 */
+	public function testAPlacementWithMalformedRolesIsSkipped(): void {
+		$application = WidgetDescriptorTest::fixtureApplication(slug: 'pet-store', name: 'Pet Store');
+		$application['productionVersion']['manifest']['pages'][0]['widgets'][0]['roles'] = 42;
+
+		$this->logger->expects($this->once())->method('warning');
+
+		$descriptors = $this->registrar()->collectDescriptors(applications: [$application]);
+		$this->assertSame(expected: ['recent-cases'], actual: array_map(static fn (WidgetDescriptor $d): string => $d->entryId, $descriptors));
+	}//end testAPlacementWithMalformedRolesIsSkipped()
+
+	/**
 	 * An Application whose production pointer is still a bare UUID falls back
 	 * to its own manifest, the same order ManifestResolverService applies.
 	 *
