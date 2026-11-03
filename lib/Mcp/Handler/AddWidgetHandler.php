@@ -130,12 +130,7 @@ class AddWidgetHandler extends AbstractToolHandler {
 			[$pages, $widget] = $this->appendWidget(
 				pages: $pages,
 				pageIdx: $foundIdx,
-				spec: new WidgetSpec(
-					type: $widgetType,
-					config: $widgetConfig,
-					id: $validation['widgetId'],
-					title: $validation['title']
-				)
+				spec: new WidgetSpec(type: $widgetType, config: $widgetConfig, id: $validation['widgetId'], title: $validation['title'])
 			);
 
 			$manifest['pages'] = array_values($pages);

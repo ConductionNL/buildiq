@@ -708,6 +708,35 @@ export function schemaToFields(schema) {
 }
 
 /**
+ * The validation keys each field type copies between a property and a row.
+ * A `truthy` key is copied when its value is truthy, a `present` key whenever
+ * it is not null or undefined.
+ */
+const VALIDATION_KEYS = {
+	string: { truthy: ['format', 'pattern'], present: ['minLength', 'maxLength'] },
+	number: { truthy: [], present: ['minimum', 'maximum', 'multipleOf'] },
+	integer: { truthy: [], present: ['minimum', 'maximum', 'multipleOf'] },
+	array: { truthy: [], present: ['minItems', 'maxItems'] },
+}
+
+/** The relation keys a relation row reads from `x-openregister-relation`. */
+const RELATION_KEYS = { truthy: ['target', 'cardinality', 'inverseOf'], present: [] }
+
+/** No validation keys, for a field type that has none. */
+const NO_KEYS = { truthy: [], present: [] }
+
+/** The JSON Schema `type` each field type is saved as; any other type saves as a string. */
+const PROPERTY_TYPES = {
+	string: 'string',
+	number: 'number',
+	integer: 'integer',
+	boolean: 'boolean',
+	array: 'array',
+	object: 'object',
+	relation: 'string',
+}
+
+/**
  *
  * @param name
  * @param prop
@@ -762,24 +791,6 @@ function validationFromProperty(prop, type) {
 	copyKeys(validation, prop, keysFor(type))
 	return validation
 }
-
-/**
- * The validation keys each field type copies between a property and a row.
- * A `truthy` key is copied when its value is truthy, a `present` key whenever
- * it is not null or undefined.
- */
-const VALIDATION_KEYS = {
-	string: { truthy: ['format', 'pattern'], present: ['minLength', 'maxLength'] },
-	number: { truthy: [], present: ['minimum', 'maximum', 'multipleOf'] },
-	integer: { truthy: [], present: ['minimum', 'maximum', 'multipleOf'] },
-	array: { truthy: [], present: ['minItems', 'maxItems'] },
-}
-
-/** The relation keys a relation row reads from `x-openregister-relation`. */
-const RELATION_KEYS = { truthy: ['target', 'cardinality', 'inverseOf'], present: [] }
-
-/** No validation keys, for a field type that has none. */
-const NO_KEYS = { truthy: [], present: [] }
 
 /**
  * The validation keys a field type owns. A type without an own entry, also
@@ -942,17 +953,6 @@ function baseProperty(field, raw) {
 		prop.default = field.default
 	}
 	return prop
-}
-
-/** The JSON Schema `type` each field type is saved as; any other type saves as a string. */
-const PROPERTY_TYPES = {
-	string: 'string',
-	number: 'number',
-	integer: 'integer',
-	boolean: 'boolean',
-	array: 'array',
-	object: 'object',
-	relation: 'string',
 }
 
 /**

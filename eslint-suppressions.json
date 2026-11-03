@@ -97,7 +97,7 @@
   },
   "src/components/schema-editor/FieldEditor.vue": {
     "eqeqeq": {
-      "count": 19
+      "count": 6
     },
     "jsdoc/require-param-type": {
       "count": 3
