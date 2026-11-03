@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Support\RepoDescriptor;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -96,6 +97,7 @@ class ExportAppContentBundler {
 	 *
 	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-companion-schemas-migrate-into-the-exported-app-s-own-namespace
 	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-optional-seed-data-inclusion
+	 * @SuppressWarnings(PHPMD.StaticAccess) RepoDescriptor is a pure function with no collaborators.
 	 */
 	public function bundle(string $rootDir, array $source, string $appId, string $semver): array {
 		$application = (array)($source['application'] ?? []);
@@ -117,7 +119,9 @@ class ExportAppContentBundler {
 			$renames[$entry['sourceSlug']] = $entry['slug'];
 		}
 
-		$manifest = $this->schemaReader->renameSlugs(node: (array)($version['manifest'] ?? []), renames: $renames);
+		$manifest = RepoDescriptor::publishableManifest(
+			manifest: $this->schemaReader->renameSlugs(node: (array)($version['manifest'] ?? []), renames: $renames)
+		);
 		$content = $this->readContent(schemas: $schemas, renames: $renames, withRecords: (($source['includeSeedData'] ?? false) === true));
 
 		$this->writeAppManifest(rootDir: $rootDir, manifest: $manifest, semver: $semver);

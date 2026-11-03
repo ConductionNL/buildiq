@@ -7,7 +7,8 @@
  * `openbuild-app.json` descriptor. A manifest `credentials[]` entry that holds a
  * secret next to its declaration must reach neither file: the descriptor lists
  * provider, reason and scopes, and `manifest.json` keeps the same declaration
- * keys while every other part of the manifest is published unchanged.
+ * keys, each only in its schema type, while every other part of the manifest
+ * is published unchanged.
  * The files are canonical JSON with sorted keys, so they are compared by value.
  *
  * SPDX-License-Identifier: EUPL-1.2
@@ -63,6 +64,10 @@ class PublishedRepoSecretsTest extends TestCase {
 		'BEGIN PRIVATE KEY',
 		'url-password',
 		'bare-string-entry-token',
+		'provider-object-token',
+		'reason-object-secret',
+		'scope-item-token',
+		'scope-map-token',
 	];
 
 	/**
@@ -136,6 +141,8 @@ class PublishedRepoSecretsTest extends TestCase {
 			[
 				['provider' => 'github', 'reason' => 'Push', 'scopes' => ['repo']],
 				['provider' => 'mail', 'reason' => 'Notify', 'scopes' => ['send']],
+				['provider' => 'gitlab', 'reason' => '', 'scopes' => ['api']],
+				['provider' => 'deck', 'reason' => 'Map scopes', 'scopes' => []],
 			],
 			$descriptor['credentials']
 		);
@@ -145,6 +152,9 @@ class PublishedRepoSecretsTest extends TestCase {
 			['provider' => 'github', 'reason' => 'Push', 'scopes' => ['repo']],
 			['provider' => 'mail', 'scopes' => ['send'], 'reason' => 'Notify'],
 			['reason' => 'no provider'],
+			['reason' => 'Object provider'],
+			['provider' => 'gitlab', 'scopes' => ['api']],
+			['provider' => 'deck', 'reason' => 'Map scopes', 'scopes' => []],
 		];
 		$this->assertEquals($expected, json_decode($files['manifest.json'], true));
 	}//end assertPublishedDeclarations()
@@ -181,6 +191,9 @@ class PublishedRepoSecretsTest extends TestCase {
 				['provider' => 'mail', 'apiKey' => 'mail-api-key', 'scopes' => ['send'], 'reason' => 'Notify'],
 				'bare-string-entry-token',
 				['reason' => 'no provider'],
+				['provider' => ['token' => 'provider-object-token'], 'reason' => 'Object provider'],
+				['provider' => 'gitlab', 'reason' => ['secret' => 'reason-object-secret'], 'scopes' => ['api', ['token' => 'scope-item-token']]],
+				['provider' => 'deck', 'reason' => 'Map scopes', 'scopes' => ['token' => 'scope-map-token']],
 			],
 		];
 	}//end manifest()

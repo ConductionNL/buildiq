@@ -152,6 +152,19 @@ final class ExportAppContentBundlerTest extends TestCase {
 	}//end testBundleWritesThePortableLayout()
 
 	/**
+	 * Neither exported manifest carries a secret written next to a credential
+	 * declaration; the declaration itself is kept.
+	 */
+	public function testExportedManifestsCarryNoCredentialSecret(): void {
+		$this->bundleDevelopment(includeSeedData: false);
+
+		foreach (['manifest.json', 'src/manifest.json'] as $file) {
+			self::assertStringNotContainsString('ghp_exported-secret', (string)file_get_contents($this->root . '/' . $file), $file);
+			self::assertSame([['provider' => 'github', 'reason' => 'Push', 'scopes' => ['repo']]], $this->json($file)['credentials'], $file);
+		}
+	}//end testExportedManifestsCarryNoCredentialSecret()
+
+	/**
 	 * The README only names a way to use the archive that exists (buildiq#992).
 	 *
 	 * Buildiq has no route, controller or button that takes an uploaded app
@@ -314,6 +327,7 @@ final class ExportAppContentBundlerTest extends TestCase {
 				'version' => '1.0.0',
 				'menu' => [['id' => 'messages', 'label' => 'Messages', 'route' => 'Messages']],
 				'pages' => $pages,
+				'credentials' => [['provider' => 'github', 'reason' => 'Push', 'scopes' => ['repo'], 'token' => 'ghp_exported-secret']],
 			],
 		];
 	}//end version()
