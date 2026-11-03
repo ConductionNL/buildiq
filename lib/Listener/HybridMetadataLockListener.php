@@ -12,7 +12,7 @@
  * editable, and a `virtual` app keeps full edit of slug/name.
  *
  * This is the cross-row companion to the same-row `hybrid-requires-baseRef`
- * `x-openregister-validation` rule declared on the Application schema: a plain
+ * `x-openregister-validations` rule declared on the Application schema: a plain
  * field rule cannot compare the proposed slug/name against the stored row, so
  * the immutability check is an imperative pre-save guard (ADR-031 §Exceptions(1)
  * — cross-row / temporal validation OR's per-row declarative engine cannot

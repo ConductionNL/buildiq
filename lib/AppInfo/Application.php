@@ -505,7 +505,7 @@ class Application extends App implements IBootstrap {
 		// update), verify that `productionVersion` (when set) points at an
 		// ApplicationVersion whose `application` relation refers back to
 		// this Application (ADR-031 §Exceptions(1) — cross-row validation
-		// that OR's per-row x-openregister-validation cannot perform).
+		// that OR's per-row x-openregister-validations cannot perform).
 		//
 		// The CREATE half declares its schema interest up front and is
 		// therefore subscribed from boot() — see boot().
@@ -527,7 +527,7 @@ class Application extends App implements IBootstrap {
 		// /api/app-overrides/{appId} shim key. Cross-row check (compares the
 		// proposed payload against the stored row) realized as a pre-save
 		// listener, the imperative companion to the same-row
-		// `hybrid-requires-baseRef` x-openregister-validation rule (ADR-031
+		// `hybrid-requires-baseRef` x-openregister-validations rule (ADR-031
 		// §Exceptions(1)). Virtual apps keep full slug/name edit.
 		$context->registerEventListener(
 			event: ObjectUpdatingEvent::class,

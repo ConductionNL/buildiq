@@ -17,7 +17,7 @@ The system SHALL extend the `ApplicationVersion` schema in
 - `owner` (string) — the owning Nextcloud user UID. Set ONLY on a `scope: user`
   row; empty/absent on `scope: admin` rows.
 
-The schema SHALL declare an `x-openregister-validation` same-row rule
+The schema SHALL declare an `x-openregister-validations` same-row rule
 `user-scope-requires-owner` asserting that when `scope == 'user'` the `owner` is
 non-null. No new OpenRegister schema SHALL be introduced — the user layer reuses
 the existing `ApplicationVersion` row (Schema.org analogue: `SoftwareApplication`).

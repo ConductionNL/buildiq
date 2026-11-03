@@ -252,16 +252,14 @@
             "description": "Optional branch that push/pull operations target, resolved from the linked repo's default branch at link time and admin-overridable (github-app-repo-format). Omittable, and purely declarative."
           }
         },
-        "x-openregister-validation": {
-          "rules": [
-            {
-              "id": "hybrid-requires-baseRef",
-              "description": "A hybrid app MUST carry a baseRef.id naming the installed Nextcloud app it customizes (unify-apps-with-app-type). Same-row rule; the cross-row metadata-lock (slug/name immutable on hybrid) is enforced imperatively by HybridMetadataLockListener (ADR-031 §Exceptions(1) cross-row).",
-              "when": "appType == 'hybrid'",
-              "assert": "baseRef.id != null",
-              "message": "A hybrid app requires baseRef.id (the installed Nextcloud app it customizes)."
-            }
-          ]
+        "x-openregister-validations": {
+          "hybrid-requires-baseRef": {
+            "description": "A hybrid app MUST carry a baseRef.id naming the installed Nextcloud app it customizes (unify-apps-with-app-type). Same-row rule; the cross-row metadata-lock (slug/name immutable on hybrid) is enforced imperatively by HybridMetadataLockListener (ADR-031 §Exceptions(1) cross-row). The condition names the violation.",
+            "condition": {"and": [{"==": [{"var": "appType"}, "hybrid"]}, {"==": [{"var": "baseRef.id"}, null]}]},
+            "severity": "refuse",
+            "properties": ["appType", "baseRef"],
+            "message": "A hybrid app requires baseRef.id (the installed Nextcloud app it customizes)."
+          }
         }
       },
       "ApplicationTemplate": {
@@ -647,23 +645,21 @@
             "description": "Optional GitHub provenance (github-app-repo-format). The branch, tag or ref a pulled version was imported from, such as `refs/heads/main` or a tag name. Omittable, and absent on versions with no GitHub provenance. Purely declarative, with no lifecycle or semver effect."
           }
         },
-        "x-openregister-validation": {
-          "rules": [
-            {
-              "id": "promotesTo-no-self-loop",
-              "description": "Same-row self-loop guard: an ApplicationVersion cannot promote to itself. Broader cross-row cycle detection lives in ApplicationVersionService::guardNoCycle().",
-              "when": "promotesTo != null",
-              "assert": "promotesTo != self.uuid",
-              "message": "promotesTo cannot equal the version's own UUID (self-loop)."
-            },
-            {
-              "id": "user-scope-requires-owner",
-              "description": "A user-scoped delta MUST name its owner UID (layered-versioned-app-deltas). Same-row rule; the cross-row owner-vs-caller authorization is enforced imperatively by ApplicationVersionOwnerGuard + PermissionResolver (ADR-031 §Exceptions(1) cross-row).",
-              "when": "scope == 'user'",
-              "assert": "owner != null",
-              "message": "A user-scoped ApplicationVersion requires an owner UID."
-            }
-          ]
+        "x-openregister-validations": {
+          "promotesTo-no-self-loop": {
+            "description": "Same-row self-loop guard: an ApplicationVersion cannot promote to itself. Broader cross-row cycle detection lives in ApplicationVersionService::guardNoCycle(). The object's `id` is its UUID. The condition names the violation.",
+            "condition": {"and": [{"!=": [{"var": "promotesTo"}, null]}, {"==": [{"var": "promotesTo"}, {"var": "id"}]}]},
+            "severity": "refuse",
+            "properties": ["promotesTo"],
+            "message": "promotesTo cannot equal the version's own UUID (self-loop)."
+          },
+          "user-scope-requires-owner": {
+            "description": "A user-scoped delta MUST name its owner UID (layered-versioned-app-deltas). Same-row rule; the cross-row owner-vs-caller authorization is enforced imperatively by ApplicationVersionOwnerGuard + PermissionResolver (ADR-031 §Exceptions(1) cross-row). The condition names the violation.",
+            "condition": {"and": [{"==": [{"var": "scope"}, "user"]}, {"==": [{"var": "owner"}, null]}]},
+            "severity": "refuse",
+            "properties": ["scope", "owner"],
+            "message": "A user-scoped ApplicationVersion requires an owner UID."
+          }
         },
         "x-openregister-lifecycle": {
           "field": "status",
