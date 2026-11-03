@@ -339,7 +339,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .my-approvals-widget {
 	padding: 12px;
 	display: flex;
@@ -361,12 +363,7 @@ export default {
 }
 
 .my-approvals-widget__list {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
+	@include c.plain-list(8px);
 }
 
 .my-approvals-widget__row {

@@ -374,7 +374,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .detail-page-editor {
 	display: flex;
 	flex-direction: column;
@@ -402,11 +404,7 @@ export default {
 }
 
 .detail-page-editor__group select {
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .detail-page-editor__fieldset {

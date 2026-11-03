@@ -355,7 +355,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .buildiq-schema-list {
 	display: flex;
 	flex-direction: column;
@@ -383,12 +385,7 @@ export default {
 }
 
 .buildiq-schema-list__rows {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
+	@include c.plain-list(4px);
 }
 
 .buildiq-schema-list__row {

@@ -210,7 +210,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../../assets/editor-controls.scss' as c;
+
 .visible-when-builder {
 	display: flex;
 	flex-wrap: wrap;
@@ -228,11 +230,7 @@ export default {
 .visible-when-builder__select,
 .visible-when-builder__value {
 	flex: 1 1 120px;
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .visible-when-builder__select--narrow {
@@ -240,11 +238,6 @@ export default {
 }
 
 .visible-when-builder__clear {
-	background: transparent;
-	border: 1px solid var(--color-border);
-	color: var(--color-main-text);
-	padding: 4px 8px;
-	border-radius: var(--border-radius);
-	cursor: pointer;
+	@include c.ghost-button;
 }
 </style>
