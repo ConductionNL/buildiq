@@ -100,19 +100,36 @@ function idErrors(entry, pointer) {
  */
 function cadenceErrorCode(entry) {
 	const hasInterval = entry.interval !== undefined
-	const hasCron = entry.cron !== undefined
-	if (hasInterval && hasCron) {
-		return 'buildiq.schedule.error.cadence-both'
+	if (hasInterval === (entry.cron !== undefined)) {
+		return hasInterval
+			? 'buildiq.schedule.error.cadence-both'
+			: 'buildiq.schedule.error.cadence-required'
 	}
-	if (!hasInterval && !hasCron) {
-		return 'buildiq.schedule.error.cadence-required'
-	}
-	if (hasInterval) {
-		return Number.isInteger(entry.interval) && entry.interval > 0
-			? null
-			: 'buildiq.schedule.error.interval-invalid'
-	}
-	return isValidCron(entry.cron) ? null : 'buildiq.schedule.error.cron-invalid'
+	return hasInterval
+		? intervalErrorCode(entry.interval)
+		: cronErrorCode(entry.cron)
+}
+
+/**
+ * The error code of an interval that is not a positive integer, else null.
+ *
+ * @param {unknown} interval - the entry's interval.
+ * @return {string|null}
+ */
+function intervalErrorCode(interval) {
+	return Number.isInteger(interval) && interval > 0
+		? null
+		: 'buildiq.schedule.error.interval-invalid'
+}
+
+/**
+ * The error code of a malformed cron expression, else null.
+ *
+ * @param {unknown} cron - the entry's cron expression.
+ * @return {string|null}
+ */
+function cronErrorCode(cron) {
+	return isValidCron(cron) ? null : 'buildiq.schedule.error.cron-invalid'
 }
 
 /**
@@ -138,15 +155,24 @@ function actionErrors(entry, pointer) {
 	if (!SCHEDULE_ACTIONS.includes(entry.action)) {
 		return [`${pointer}: buildiq.schedule.error.action-unsupported`]
 	}
-	const args = entry.arguments
-	const syncId = args && args.synchronizationId
 	if (
 		entry.action === 'openconnector:synchronization'
-		&& (typeof syncId !== 'string' || syncId.trim() === '')
+		&& !hasSynchronizationId(entry.arguments)
 	) {
 		return [`${pointer}: buildiq.schedule.error.synchronization-required`]
 	}
 	return []
+}
+
+/**
+ * Whether the arguments name a synchronization (a non-blank string id).
+ *
+ * @param {unknown} args - the entry's arguments.
+ * @return {boolean}
+ */
+function hasSynchronizationId(args) {
+	const syncId = args && args.synchronizationId
+	return typeof syncId === 'string' && syncId.trim() !== ''
 }
 
 /**

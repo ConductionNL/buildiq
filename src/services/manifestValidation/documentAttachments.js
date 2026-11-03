@@ -19,6 +19,8 @@
  * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-001
  */
 
+import { schemaKnown } from './manifestSchemas.js'
+
 /**
  * Closed enum of supported Docudesk output formats, pinned against the
  * deployed Docudesk `CorrespondenceService::VALID_FORMATS` 2026-06-15. Shared
@@ -40,36 +42,6 @@ const ALLOWED_KEYS = Object.freeze([
 /** Loose UUID check (8-4-4-4-12 hex). */
 const UUID_RE =
 	/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
-
-/**
- * Whether a schema slug is known to the manifest (in `schemas` or referenced
- * by any page's register/schema binding). Mirrors the workflow sibling's
- * accessor so behaviour is consistent across runtime-block features: returns
- * true when the schema set is not embedded, to avoid false rejects in
- * manifests that reference external schemas only.
- *
- * @param {object} manifest - the manifest.
- * @param {string} schemaSlug - the schema slug.
- * @return {boolean}
- */
-function schemaKnown(manifest, schemaSlug) {
-	const schemas = manifest && manifest.schemas
-	if (Array.isArray(schemas)) {
-		if (schemas.some((s) => (s.slug || s.id || s.title) === schemaSlug)) {
-			return true
-		}
-	} else if (schemas && typeof schemas === 'object') {
-		if (Object.hasOwn(schemas, schemaSlug)) {
-			return true
-		}
-	}
-	const pages = (manifest && manifest.pages) || []
-	if (pages.some((p) => p && p.config && p.config.schema === schemaSlug)) {
-		return true
-	}
-	// No embedded schema set and no page reference — cannot disprove; allow.
-	return !schemas && !pages.some((p) => p && p.config && p.config.schema)
-}
 
 /**
  * Whether a value is a non-null, non-array object.
