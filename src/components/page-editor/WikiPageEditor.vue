@@ -439,19 +439,6 @@ export default {
 		},
 
 		/**
-		 * Fetch schema properties for the article field-mapping dropdowns.
-		 *
-		 * @param {string} register - register slug.
-		 * @param {string} schema - schema slug.
-		 */
-		async fetchSchemaProperties(register, schema) {
-			this.schemaProperties = await this.picker.fetchSchemaProperties(
-				register,
-				schema,
-			)
-		},
-
-		/**
 		 * Fetch the schemas in the (effective) sidebar register.
 		 *
 		 * @param {string} register - register slug.

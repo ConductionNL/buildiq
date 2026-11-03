@@ -225,21 +225,6 @@ export default {
 			this.$emit('update:config', next)
 		},
 
-		/**
-		 * Load one schema's JSON-Schema `properties` map, which ColumnBuilder
-		 * turns into the column field picker's options.
-		 *
-		 * @param {string} register - slug of the register the schema lives in.
-		 * @param {string} schema - slug of the schema whose properties are wanted.
-		 * @return {Promise<void>} - resolves once `this.schemaProperties` holds the map (`{}` when the request fails).
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
-		 */
-		async fetchSchemaProperties(register, schema) {
-			this.schemaProperties = await this.picker.fetchSchemaProperties(
-				register,
-				schema,
-			)
-		},
 	},
 }
 </script>

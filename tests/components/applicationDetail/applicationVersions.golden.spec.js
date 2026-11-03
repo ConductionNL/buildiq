@@ -7,11 +7,11 @@
  * record refresh and the watchers.
  */
 
-import { flushPromises, shallowMount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { readFileSync, writeFileSync, existsSync } from 'node:fs'
-import { resolve } from 'node:path'
 import axios from '@nextcloud/axios'
+import { flushPromises, shallowMount } from '@vue/test-utils'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ApplicationDetailDashboard from '../../../src/components/applicationDetail/ApplicationDetailDashboard.vue'
 import ApplicationDetailHeader from '../../../src/components/applicationDetail/ApplicationDetailHeader.vue'
 import { fetchApplicationRecord } from '../../../src/composables/useApplicationRecord.js'

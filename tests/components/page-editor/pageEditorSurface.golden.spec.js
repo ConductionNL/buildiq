@@ -7,10 +7,10 @@
  * which register-picker calls it makes.
  */
 
-import { mount, flushPromises } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { flushPromises, mount } from '@vue/test-utils'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const calls = []
 vi.mock('../../../src/composables/useRegisterPicker.js', () => ({
@@ -81,6 +81,31 @@ async function surface(Component) {
 
 describe('page editor surface', () => {
 	beforeEach(() => vi.clearAllMocks())
+
+	it('removes a cleared key rather than leaving it undefined', async () => {
+		const { default: Wiki } = await modules['../../../src/components/page-editor/WikiPageEditor.vue']()
+		const wrapper = mount(Wiki, { props: { config: { x: 'old', keep: 1 } }, shallow: true, global: { mocks: { t: (_a, text) => text } } })
+		wrapper.vm.update('x', '')
+		expect(Object.keys(wrapper.emitted('update:config')[0][0])).toEqual(['keep'])
+		wrapper.unmount()
+	})
+
+	it('follows the bound register and schema, and empties the lists when they are cleared', async () => {
+		const { default: Logs } = await modules['../../../src/components/page-editor/LogsPageEditor.vue']()
+		const wrapper = mount(Logs, { props: { config: { register: 'reg-a', schema: 'sch-a' } }, shallow: true, global: { mocks: { t: (_a, text) => text } } })
+		await flushPromises()
+		expect(calls).toContainEqual(['fetchSchemaProperties', 'reg-a', 'sch-a'])
+		expect(wrapper.vm.schemas).toEqual([{ slug: 's1', title: 'S1' }])
+		expect(wrapper.vm.schemaProperties).toEqual({ p: { type: 'string' } })
+
+		calls.length = 0
+		await wrapper.setProps({ config: { schema: 'sch-b' } })
+		await flushPromises()
+		expect(wrapper.vm.schemas).toEqual([])
+		expect(wrapper.vm.schemaProperties).toEqual({})
+		expect(calls).toEqual([])
+		wrapper.unmount()
+	})
 
 	it('matches what was recorded for every editor', async () => {
 		const actual = {}

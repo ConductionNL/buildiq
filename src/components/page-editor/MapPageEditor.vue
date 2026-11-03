@@ -533,18 +533,6 @@ export default {
 			this.update('markers', nextMarkers)
 		},
 
-		/**
-		 * Fetch schema properties for the field-mapping dropdowns.
-		 *
-		 * @param {string} register - register slug.
-		 * @param {string} schema - schema slug.
-		 */
-		async fetchSchemaProperties(register, schema) {
-			this.schemaProperties = await this.picker.fetchSchemaProperties(
-				register,
-				schema,
-			)
-		},
 	},
 }
 </script>
