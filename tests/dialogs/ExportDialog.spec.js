@@ -149,20 +149,35 @@ describe('ExportDialog — Own server target (apps-standalone-deploy, board BqEx
 		axiosPostMock.mockReset()
 		axiosPostMock.mockResolvedValue({ data: { uuid: 'job-uuid' } })
 		axiosGetMock.mockReset()
-		axiosGetMock.mockImplementation((url) => (url.endsWith('/api/exports/server-requirements')
-			? Promise.resolve({ data: { nextcloud: '32', openregister: '1.14.2', php: '8.3', database: 'PostgreSQL 16' } })
-			: Promise.reject(new Error('not mocked'))))
+		axiosGetMock.mockImplementation((url) =>
+			url.endsWith('/api/exports/server-requirements')
+				? Promise.resolve({
+						data: {
+							nextcloud: '32',
+							openregister: '1.14.2',
+							php: '8.3',
+							database: 'PostgreSQL 16',
+						},
+					})
+				: Promise.reject(new Error('not mocked')),
+		)
 	})
 
 	it('offers Own server as a target', () => {
 		const wrapper = mountDialog()
-		expect(wrapper.vm.targetOptions.map((o) => o.value)).toEqual(['zip', 'server', 'github'])
+		expect(wrapper.vm.targetOptions.map((o) => o.value)).toEqual([
+			'zip',
+			'server',
+			'github',
+		])
 	})
 
 	it('shows what the server needs only for the Own server target, from the server', async () => {
 		const wrapper = mountDialog()
 		await new Promise((resolve) => setTimeout(resolve))
-		expect(wrapper.find('[data-test="export-server-section"]').exists()).toBe(false)
+		expect(wrapper.find('[data-test="export-server-section"]').exists()).toBe(
+			false,
+		)
 
 		wrapper.vm.form.target = { label: 'Own server', value: 'server' }
 		await wrapper.vm.$nextTick()
@@ -177,7 +192,9 @@ describe('ExportDialog — Own server target (apps-standalone-deploy, board BqEx
 			['database', 'PostgreSQL 16'],
 		])
 		expect(wrapper.vm.serverRequirements.openregister).toBe('1.14.2')
-		expect(section.find('[data-test="export-server-compose"]').exists()).toBe(true)
+		expect(section.find('[data-test="export-server-compose"]').exists()).toBe(
+			true,
+		)
 	})
 
 	it('sends the server bundle choice with the Own server target only', async () => {

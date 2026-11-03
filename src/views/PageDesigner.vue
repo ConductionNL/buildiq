@@ -432,7 +432,11 @@ export default {
 		 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/builder-debug-log/spec.md#requirement-the-designer-logs-the-preview-s-requests-and-errors-req-bqdm-001
 		 */
 		debugPageTitles() {
-			return Object.fromEntries(this.pages.filter((page) => page && page.id).map((page) => [page.id, page.title || page.id]))
+			return Object.fromEntries(
+				this.pages
+					.filter((page) => page && page.id)
+					.map((page) => [page.id, page.title || page.id]),
+			)
 		},
 
 		/**

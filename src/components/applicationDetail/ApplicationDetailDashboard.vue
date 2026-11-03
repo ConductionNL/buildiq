@@ -525,7 +525,11 @@ export default {
 		 * @return {string} The UUID.
 		 */
 		healthAppUuid() {
-			return String((this.application && (this.application.uuid || this.application.id)) || this.objectId || '')
+			return String(
+				(this.application && (this.application.uuid || this.application.id))
+					|| this.objectId
+					|| '',
+			)
 		},
 
 		/**
@@ -535,8 +539,14 @@ export default {
 		 * @return {Record<string, string>} Titles.
 		 */
 		pageTitles() {
-			const pages = Array.isArray(this.activeManifest.pages) ? this.activeManifest.pages : []
-			return Object.fromEntries(pages.filter((page) => page && page.id).map((page) => [page.id, page.title || page.id]))
+			const pages = Array.isArray(this.activeManifest.pages)
+				? this.activeManifest.pages
+				: []
+			return Object.fromEntries(
+				pages
+					.filter((page) => page && page.id)
+					.map((page) => [page.id, page.title || page.id]),
+			)
 		},
 
 		activeManifest() {
