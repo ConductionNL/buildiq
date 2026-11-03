@@ -144,4 +144,31 @@ final class ObjectRecord {
 		unset($serialised['@self']);
 		return $serialised;
 	}//end entityData()
+
+	/**
+	 * A normalised record's uuid: its `@self` id (or `@self` uuid), else its own
+	 * `uuid`, else null when neither is a non-empty string.
+	 *
+	 * @param array<string,mixed> $record The normalised OR record.
+	 *
+	 * @return string|null
+	 *
+	 * @spec exclude shared coercion helper for OpenRegister result entries, no behaviour of its own
+	 */
+	public static function uuid(array $record): ?string {
+		$self = ($record['@self'] ?? []);
+		$candidates = [];
+		if (is_array($self) === true) {
+			$candidates[] = ($self['id'] ?? ($self['uuid'] ?? null));
+		}
+
+		$candidates[] = ($record['uuid'] ?? null);
+		foreach ($candidates as $candidate) {
+			if (is_string($candidate) === true && $candidate !== '') {
+				return $candidate;
+			}
+		}
+
+		return null;
+	}//end uuid()
 }//end class

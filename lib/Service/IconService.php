@@ -311,6 +311,7 @@ class IconService {
 	 *                      it avoids a scan of every magic table.
 	 *
 	 * @return resource|null A readable PHP stream, or null on failure.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function fetchAttachedFileStream(array $application, string $filename, mixed $entity = null): mixed {
 		try {
@@ -330,7 +331,7 @@ class IconService {
 			}
 
 			if ($target === null) {
-				$target = $this->extractUuid(application: $application);
+				$target = ObjectRecord::uuid(record: $application);
 			}
 
 			if ($target === null) {
@@ -383,28 +384,4 @@ class IconService {
 
 		return ['stream' => $stream, 'mimeType' => 'image/svg+xml'];
 	}//end fallbackStream()
-
-	/**
-	 * Extract the OR UUID from a normalised Application array.
-	 *
-	 * @param array<string,mixed> $application Application data array.
-	 *
-	 * @return string|null The UUID, or null when missing.
-	 */
-	private function extractUuid(array $application): ?string {
-		$self = ($application['@self'] ?? []);
-		if (is_array($self) === true) {
-			$candidate = ($self['id'] ?? ($self['uuid'] ?? null));
-			if (is_string($candidate) === true && $candidate !== '') {
-				return $candidate;
-			}
-		}
-
-		$direct = ($application['uuid'] ?? null);
-		if (is_string($direct) === true && $direct !== '') {
-			return $direct;
-		}
-
-		return null;
-	}//end extractUuid()
 }//end class
