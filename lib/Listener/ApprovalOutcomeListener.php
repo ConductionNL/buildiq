@@ -51,6 +51,7 @@ namespace OCA\Buildiq\Listener;
 
 use OCA\Buildiq\Service\AutomationCompilerService;
 use OCA\Buildiq\Service\RuleActionDispatcher;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
@@ -375,6 +376,7 @@ class ApprovalOutcomeListener implements IEventListener {
 	 * @param string $slug The automation slug (chain name minus the `aut-` prefix).
 	 *
 	 * @return array<string,mixed>|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findAutomationBySlug(string $slug): ?array {
 		try {
@@ -397,35 +399,6 @@ class ApprovalOutcomeListener implements IEventListener {
 			return null;
 		}
 
-		return $this->normalise(object: $results[0]);
+		return ObjectRecord::toArray(object: $results[0]);
 	}//end findAutomationBySlug()
-
-	/**
-	 * Coerce an OR result entry to a plain associative array.
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normalise(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normalise()
 }//end class

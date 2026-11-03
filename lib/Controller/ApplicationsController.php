@@ -63,6 +63,7 @@ use OCA\Buildiq\Service\ManifestResolverService;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Service\RepoSource;
 use OCA\Buildiq\Service\TemplateInstall;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -338,6 +339,7 @@ class ApplicationsController extends Controller {
 	 * @return JSONResponse 200 on save, 400 on bad body, 403 without write role.
 	 *
 	 * @spec openspec/specs/openbuild-rbac/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	#[NoAdminRequired]
 	public function saveManifest(string $slug): JSONResponse {
@@ -437,7 +439,7 @@ class ApplicationsController extends Controller {
 					schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
 				);
 				if ($versionEntity !== null) {
-					$versionArray = $this->normaliseObject(object: $versionEntity);
+					$versionArray = ObjectRecord::toArray(object: $versionEntity);
 					$versionArray['manifest'] = $manifest;
 					$this->objectService->saveObject(
 						object: $versionArray,
@@ -678,6 +680,7 @@ class ApplicationsController extends Controller {
 	 * @return array<string, mixed>|null Blob or null if the version is missing.
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-58
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function resolveVersionBlob(string $token, array $application, string $applicationUuid): ?array {
 		if ($token === 'draft') {
@@ -726,7 +729,7 @@ class ApplicationsController extends Controller {
 			return null;
 		}
 
-		$versionArray = $this->normaliseObject(object: $version);
+		$versionArray = ObjectRecord::toArray(object: $version);
 
 		// Scope enforcement: a version of another Application is a miss. The
 		// old check read `applicationUuid`, a field no ApplicationVersion has,
@@ -831,6 +834,7 @@ class ApplicationsController extends Controller {
 	 * @throws \OCP\DB\Exception When the register, schema or object search fails.
 	 *
 	 * @spec openspec/specs/openbuild-version-snapshots/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findVersionBySlugForDiff(string $slug, string $applicationUuid): mixed {
 		$registerId = $this->registerMapper->find(ApplicationVersionService::REGISTER_SLUG, _multitenancy: false)->getId();
@@ -848,7 +852,7 @@ class ApplicationsController extends Controller {
 		);
 
 		foreach ((array)$results as $result) {
-			if (($this->normaliseObject(object: $result)['slug'] ?? null) === $slug) {
+			if ((ObjectRecord::toArray(object: $result)['slug'] ?? null) === $slug) {
 				return $result;
 			}
 		}
@@ -873,6 +877,7 @@ class ApplicationsController extends Controller {
 	 * @return JSONResponse|array{0: ObjectEntityInterface|array<string, mixed>, 1: array<string, mixed>, 2: string}
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function resolveApplicationBySlug(string $slug): JSONResponse|array {
 		// Resolve register + schema slugs to numeric IDs. OR's searchObjects
@@ -937,7 +942,7 @@ class ApplicationsController extends Controller {
 			);
 		}
 
-		return [$application, $this->normaliseObject(object: $application), (string)$applicationUuid];
+		return [$application, ObjectRecord::toArray(object: $application), (string)$applicationUuid];
 	}//end resolveApplicationBySlug()
 
 	/**
@@ -955,6 +960,7 @@ class ApplicationsController extends Controller {
 	 * @return array<string, mixed>|JSONResponse The route data, or a 404
 	 *
 	 * @spec openspec/specs/openbuild-runtime/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findRouteForSlug(string $slug, mixed $registerId, mixed $routeSchema): array|JSONResponse {
 		$routeResults = $this->objectService->searchObjects(
@@ -969,7 +975,7 @@ class ApplicationsController extends Controller {
 
 		if (empty($routeResults) === false) {
 			// FindAll renders entities; result entries may be ObjectEntity or arrays.
-			return $this->normaliseObject(object: $routeResults[0]);
+			return ObjectRecord::toArray(object: $routeResults[0]);
 		}
 
 		$applicationUuid = $this->findApplicationUuidBySlug(slug: $slug, registerId: $registerId);
@@ -993,6 +999,7 @@ class ApplicationsController extends Controller {
 	 * @return string|null The Application UUID, or null when no Application has this slug
 	 *
 	 * @spec openspec/specs/openbuild-runtime/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findApplicationUuidBySlug(string $slug, mixed $registerId): ?string {
 		try {
@@ -1012,7 +1019,7 @@ class ApplicationsController extends Controller {
 		);
 
 		foreach ((array)$results as $result) {
-			$application = $this->normaliseObject(object: $result);
+			$application = ObjectRecord::toArray(object: $result);
 			if (($application['slug'] ?? null) !== $slug) {
 				continue;
 			}
@@ -1130,6 +1137,7 @@ class ApplicationsController extends Controller {
 	 * @return array{0: array<array<string,mixed>>, 1: bool} [filtered list, adminBypassUsed].
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-48
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function filterApplicationsByRole(
 		array $results,
@@ -1145,7 +1153,7 @@ class ApplicationsController extends Controller {
 		}
 
 		foreach ($results as $entry) {
-			$app = $this->normaliseObject(object: $entry);
+			$app = ObjectRecord::toArray(object: $entry);
 			if ($app === []) {
 				continue;
 			}
@@ -1229,6 +1237,7 @@ class ApplicationsController extends Controller {
 	 *                                    production version resolves.
 	 *
 	 * @spec openspec/specs/openbuild-runtime/spec.md#req-obr-007b
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function attachProductionVersionDetail(array $applications): array {
 		// Nothing to resolve — skip the query entirely.
@@ -1281,7 +1290,7 @@ class ApplicationsController extends Controller {
 
 		$byUuid = [];
 		foreach ($rows as $row) {
-			$version = $this->normaliseObject(object: $row);
+			$version = ObjectRecord::toArray(object: $row);
 			if ($version === []) {
 				continue;
 			}
@@ -1734,12 +1743,13 @@ class ApplicationsController extends Controller {
 	 * @throws InvalidArgumentException When two schemas de-namespace to one slug.
 	 *
 	 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function captureForCopy(array $application): array {
 		$version = [];
 		$versionId = ($application['productionVersion'] ?? null);
 		if (is_string($versionId) === true && $versionId !== '' && $versionId !== 'draft') {
-			$version = $this->normaliseObject(
+			$version = ObjectRecord::toArray(
 				object: $this->objectService->find(
 					id: $versionId,
 					register: 'buildiq',
@@ -2062,13 +2072,14 @@ class ApplicationsController extends Controller {
 	 * of them are translated into the `clone_failed` envelope rather than leaking
 	 * out of the controller.
 	 *
-	 * @throws Throwable From normaliseObject() AFTER a successful save. Deliberately
+	 * @throws Throwable From ObjectRecord::toArray() AFTER a successful save. Deliberately
 	 *                   NOT folded into the envelope: by then the Application record
 	 *                   already exists, so returning `clone_failed` would tell the
 	 *                   caller nothing was created when something was.
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-55
 	 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function persistApplication(
 		TemplateInstall $install,
@@ -2114,7 +2125,7 @@ class ApplicationsController extends Controller {
 			];
 		}//end try
 
-		$createdArray = $this->normaliseObject(object: $created);
+		$createdArray = ObjectRecord::toArray(object: $created);
 		return [
 			'uuid' => ($createdArray['uuid'] ?? $createdArray['id'] ?? null),
 			// The STORED payload, handed back so a follow-up write can patch one
@@ -2139,6 +2150,7 @@ class ApplicationsController extends Controller {
 	 * @param string $registerSlug The per-app register slug already provisioned for this install.
 	 *
 	 * @return void
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function linkProductionVersion(
 		array $application,
@@ -2171,7 +2183,7 @@ class ApplicationsController extends Controller {
 				register: ApplicationVersionService::REGISTER_SLUG,
 				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
 			);
-			$versionData = $this->normaliseObject(object: $createdVersion);
+			$versionData = ObjectRecord::toArray(object: $createdVersion);
 			$versionUuid = (string)($versionData['uuid'] ?? $versionData['id'] ?? '');
 			if ($versionUuid === '') {
 				return;
@@ -2479,6 +2491,7 @@ class ApplicationsController extends Controller {
 	 * @param string|null $owner Optional owner UID (multi-user isolation scope)
 	 *
 	 * @return array<string,mixed>|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function lookupOne(
 		int|string $registerId,
@@ -2511,43 +2524,10 @@ class ApplicationsController extends Controller {
 				return null;
 			}
 
-			return $this->normaliseObject(object: $results[0]);
+			return ObjectRecord::toArray(object: $results[0]);
 		} catch (Throwable $e) {
 			$this->logger->warning('Buildiq: lookup failed', ['exception' => $e->getMessage()]);
 			return null;
 		}//end try
 	}//end lookupOne()
-
-	/**
-	 * Coerce an OR result entry (ObjectEntity or array) to a plain associative array.
-	 *
-	 * FindAll() and find() may return ObjectEntity instances; we normalise to an
-	 * array so the caller can use array access uniformly. Uses jsonSerialize()
-	 * when present (the canonical ObjectEntity surface).
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function normaliseObject(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normaliseObject()
 }//end class

@@ -113,6 +113,7 @@ namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
 use OCA\Buildiq\Support\FleetAppId;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -1992,6 +1993,7 @@ class AutomationCompilerService {
 	 * @param string $uuid The ApplicationVersion uuid.
 	 *
 	 * @return array<string,mixed>|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function loadApplicationVersion(string $uuid): ?array {
 		if ($uuid === '') {
@@ -2009,7 +2011,7 @@ class AutomationCompilerService {
 			return null;
 		}
 
-		return $this->normalise(object: $entity);
+		return ObjectRecord::toArray(object: $entity);
 	}//end loadApplicationVersion()
 
 	/**
@@ -2019,6 +2021,7 @@ class AutomationCompilerService {
 	 * @param array<string,mixed> $filters Equality filters.
 	 *
 	 * @return array<string,mixed>|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findOneObject(string $schema, array $filters): ?array {
 		try {
@@ -2034,35 +2037,6 @@ class AutomationCompilerService {
 			return null;
 		}
 
-		return $this->normalise(object: $results[0]);
+		return ObjectRecord::toArray(object: $results[0]);
 	}//end findOneObject()
-
-	/**
-	 * Coerce an OR result entry to a plain associative array.
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normalise(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normalise()
 }//end class

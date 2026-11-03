@@ -35,6 +35,7 @@ namespace OCA\Buildiq\Controller;
 use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Service\ExportJobService;
 use OCA\Buildiq\Service\ServerBundleWriter;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -155,6 +156,7 @@ class ExportsController extends Controller {
 	 * @return bool True when the caller is allowed.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function isAuthorisedForApplication(string $applicationSlug): bool {
 		$user = $this->userSession->getUser();
@@ -207,7 +209,7 @@ class ExportsController extends Controller {
 			// permissions only `if (is_array($app))` — which is never true — so every
 			// non-admin fell through to an empty bucket list and was denied. The admin
 			// bypass above masked it.
-			$app = $this->toArray(object: $apps[0]);
+			$app = ObjectRecord::serialised(object: $apps[0]);
 			$permissions = ($app['permissions'] ?? []);
 
 			if (is_array($permissions) === false) {
@@ -340,6 +342,7 @@ class ExportsController extends Controller {
 	 * @return string The UUID, or '' when the slug does not resolve.
 	 *
 	 * @spec openspec/changes/export-github-broker/tasks.md#task-9-fix-the-unpersistable-export-job
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function resolveApplicationUuid(string $applicationSlug): string {
 		try {
@@ -367,7 +370,7 @@ class ExportsController extends Controller {
 				return '';
 			}
 
-			$app = $this->toArray(object: $apps[0]);
+			$app = ObjectRecord::serialised(object: $apps[0]);
 
 			// OR serialises the object id both at the top level and under `@self`.
 			$uuid = ($app['id'] ?? ($app['@self']['id'] ?? ''));
@@ -381,34 +384,6 @@ class ExportsController extends Controller {
 			return '';
 		}//end try
 	}//end resolveApplicationUuid()
-
-	/**
-	 * Normalise an OpenRegister search hit to a plain array.
-	 *
-	 * `searchObjectsBySlug()` returns ObjectEntity OBJECTS, not arrays. Both call sites
-	 * here used to guard with `is_array($app)` and fall through on failure — which meant
-	 * they never actually read the object. In `isAuthorisedForApplication()` that
-	 * silently produced an empty permissions set, so every non-admin was denied; only
-	 * the admin bypass above it kept the endpoint working at all.
-	 *
-	 * @param mixed $object An ObjectEntity, or an already-plain array.
-	 *
-	 * @return array<string,mixed> The serialised object, or [] when it is neither.
-	 */
-	private function toArray(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		return [];
-	}//end toArray()
 
 	/**
 	 * Validate the submit() request body.

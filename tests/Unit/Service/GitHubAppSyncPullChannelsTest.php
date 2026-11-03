@@ -41,6 +41,7 @@ use RuntimeException;
  * @covers \OCA\Buildiq\Service\GitHubAppSyncService
  * @uses   \OCA\Buildiq\Service\LocalApplicationRef
  * @uses   \OCA\Buildiq\Service\RepoSource
+ * @uses   \OCA\Buildiq\Support\ObjectRecord
  */
 class GitHubAppSyncPullChannelsTest extends TestCase {
 

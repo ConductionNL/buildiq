@@ -40,6 +40,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service\Dashboard;
 
 use OCA\Buildiq\Dashboard\WidgetDescriptor;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\Dashboard\Model\WidgetItem;
 use OCP\Dashboard\Model\WidgetItems;
@@ -169,6 +170,7 @@ class WidgetItemProjector {
 	 * @return WidgetItems One item per returned row.
 	 *
 	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-clients-that-cannot-run-the-widget-receive-projected-items
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function projectRows(WidgetDescriptor $descriptor, int $limit): WidgetItems {
 		$params = $this->objectsRequestParams(dataSource: $descriptor->dataSource, limit: $limit);
@@ -194,7 +196,7 @@ class WidgetItemProjector {
 		$link = $this->appPageLink(descriptor: $descriptor);
 		$items = [];
 		foreach ($rows as $row) {
-			$normalised = $this->normaliseRow(row: $row);
+			$normalised = ObjectRecord::toArray(object: $row);
 			$items[] = new WidgetItem(
 				title: $this->rowTitle(row: $normalised),
 				subtitle: (string)($normalised['description'] ?? ''),
@@ -371,33 +373,4 @@ class WidgetItemProjector {
 
 		return (string)($row['id'] ?? $row['uuid'] ?? '');
 	}//end rowTitle()
-
-	/**
-	 * Coerce an OpenRegister result entry to an associative array.
-	 *
-	 * @param mixed $row The OpenRegister object/result entry.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normaliseRow(mixed $row): array {
-		if (is_array($row) === true) {
-			return $row;
-		}
-
-		if (is_object($row) === true && method_exists($row, 'jsonSerialize') === true) {
-			$serialised = $row->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($row) === true && method_exists($row, 'getObject') === true) {
-			$inner = $row->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normaliseRow()
 }//end class

@@ -37,6 +37,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
@@ -145,6 +146,7 @@ class IconService {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-2
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-3
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function getIconStream(string $slug, bool $dark): array {
 		// Keep the entity, not just its serialized form. fetchAttachedFileStream()
@@ -153,7 +155,7 @@ class IconService {
 		$entity = $this->fetchApplicationEntity(slug: $slug);
 		$application = null;
 		if ($entity !== null) {
-			$application = $this->normaliseObject(object: $entity);
+			$application = ObjectRecord::toArray(object: $entity);
 		}
 
 		if ($dark === true) {
@@ -405,33 +407,4 @@ class IconService {
 
 		return null;
 	}//end extractUuid()
-
-	/**
-	 * Coerce an OR result entry (ObjectEntity or array) to an associative array.
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normaliseObject(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normaliseObject()
 }//end class
