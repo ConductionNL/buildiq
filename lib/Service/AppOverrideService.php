@@ -785,12 +785,10 @@ class AppOverrideService {
 	 * @return array<string, mixed> The baseRef object.
 	 */
 	private function buildBaseRef(string $appId, ?string $baseRef): array {
-		if ($baseRef !== null && $baseRef !== '') {
-			$decoded = json_decode($baseRef, true);
-			if (is_array($decoded) === true && ($decoded['id'] ?? null) !== null) {
-				$decoded['kind'] = ($decoded['kind'] ?? 'fleet-app');
-				return $decoded;
-			}
+		$decoded = json_decode((string)$baseRef, true);
+		if (is_array($decoded) === true && is_string($decoded['id'] ?? null) === true && trim($decoded['id']) !== '') {
+			$decoded['kind'] = ($decoded['kind'] ?? 'fleet-app');
+			return $decoded;
 		}
 
 		return ['kind' => 'fleet-app', 'id' => $appId];
