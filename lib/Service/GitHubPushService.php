@@ -43,6 +43,7 @@ namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Service\GitHub\BrokerAccess;
 use OCA\Buildiq\Service\GitHub\PushTarget;
+use OCA\Buildiq\Service\GitHub\TokenScrubber;
 use FilesystemIterator;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -405,6 +406,8 @@ class GitHubPushService {
 	 * @param bool $failQuietly Suppress the error log on failure.
 	 *
 	 * @return array<string,mixed>|null Decoded payload, or null on any non-2xx.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) TokenScrubber is a pure text function with no collaborators.
 	 */
 	private function brokerCall(array $request, BrokerAccess $access, bool $failQuietly = false): ?array {
 		$this->lastFailureDetail = null;
@@ -431,7 +434,7 @@ class GitHubPushService {
 		} catch (\Throwable $e) {
 			// The broker never puts the secret in its exception messages, but this
 			// path is also reached for transport errors, so scrub anyway.
-			$scrubbed = $this->scrub(message: $e->getMessage());
+			$scrubbed = TokenScrubber::scrub(message: $e->getMessage());
 			$this->lastFailureDetail = 'transport error: ' . $scrubbed;
 
 			if ($failQuietly === false) {
@@ -477,9 +480,11 @@ class GitHubPushService {
 	 *
 	 * @return string The `HTTP {status}` detail, with a scrubbed/truncated body
 	 *                excerpt appended when the body is non-empty.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) TokenScrubber is a pure text function with no collaborators.
 	 */
 	private function failureDetailFromStatus(int $status, string $body): string {
-		$scrubbedBody = $this->truncate(value: $this->scrub(message: $body));
+		$scrubbedBody = $this->truncate(value: TokenScrubber::scrub(message: $body));
 
 		$detail = 'HTTP ' . $status;
 		if ($scrubbedBody !== '') {
@@ -540,18 +545,6 @@ class GitHubPushService {
 		sort($paths);
 		return $paths;
 	}//end walkTree()
-
-	/**
-	 * Remove any leaked PAT-shaped tokens from an error message before it is
-	 * surfaced into errorMessage / logs (defence in depth for Decision 3).
-	 *
-	 * @param string $message Raw error message.
-	 *
-	 * @return string Scrubbed message.
-	 */
-	private function scrub(string $message): string {
-		return (string)preg_replace('/gh[pousr]_[A-Za-z0-9]{20,}/', '[redacted-token]', $message);
-	}//end scrub()
 
 	/**
 	 * Truncate a string to {@see MAX_FAILURE_DETAIL_LENGTH}, so a large GitHub
