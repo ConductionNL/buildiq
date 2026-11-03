@@ -103,7 +103,8 @@ import ActionBuilder from './fields/ActionBuilder.vue'
 import ColumnBuilder from './fields/ColumnBuilder.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
 import SidebarSectionBuilder from './fields/SidebarSectionBuilder.vue'
-import { useRegisterPicker } from '../../composables/useRegisterPicker.js'
+import { useEditorRegisterPicker } from '../../composables/useEditorRegisterPicker.js'
+import { pageEditorBaseMixin, pageEditorRegisterPropsMixin } from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
@@ -116,63 +117,15 @@ export default {
 		DataSourceOriginToggle,
 	},
 
-	mixins: [pageEditorValidationMixin],
+	mixins: [pageEditorBaseMixin, pageEditorRegisterPropsMixin, pageEditorValidationMixin],
 	props: {
-		config: {
-			type: Object,
-			default: () => ({}),
-		},
-
-		// Current Application slug. Drives the hybrid register model so the
-		// register picker hoists `buildiq-{slug}` to the top of the list.
-		appSlug: {
-			type: String,
-			default: '',
-		},
-
-		// The app's own register, read off the version being edited.
-		appRegister: {
-			type: String,
-			default: '',
-		},
-
-		// The Application's declared `dataRegisters` bindings, forwarded into
-		// useRegisterPicker so the register picker labels/hoists them.
-		dataRegisters: {
-			type: Array,
-			default: () => [],
-		},
-
 		pageType: {
 			type: String,
 			default: 'index',
 		},
-
-		parentRoute: {
-			type: String,
-			default: '',
-		},
 	},
 
-	emits: ['update:config'],
-	/**
-	 * Build the register/schema picker for this editor. Options-API `data`
-	 * cannot see props at construction time, so the picker is created here
-	 * from the resolved props and exposed as `this.picker`.
-	 *
-	 * @param {{appSlug: string, dataRegisters: Array<{register: string, label?: string}>, config: object, pageType: string, parentRoute: string}} props - the resolved component props; only `appSlug` (hoists `buildiq-{slug}` in the register list) and `dataRegisters` (labels/hoists the Application's declared bindings) are read.
-	 * @return {{picker: object}} - bindings merged into the instance; `picker` exposes fetchRegisters/fetchSchemas/fetchSchemaProperties.
-	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
-	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-2.1
-	 */
-	setup(props) {
-		const picker = useRegisterPicker({
-			appSlug: props.appSlug,
-			appRegister: () => props.appRegister,
-			dataRegisters: props.dataRegisters,
-		})
-		return { picker }
-	},
+	setup: useEditorRegisterPicker,
 
 	data() {
 		return {

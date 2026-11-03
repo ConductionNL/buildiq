@@ -91,35 +91,20 @@
 
 <script>
 import InlineFieldMark from './fields/InlineFieldMark.vue'
+import { pageEditorBaseMixin } from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'ChatPageEditor',
 	components: { InlineFieldMark },
-	mixins: [pageEditorValidationMixin],
+	mixins: [pageEditorBaseMixin, pageEditorValidationMixin],
 	props: {
-		config: {
-			type: Object,
-			default: () => ({}),
-		},
-
 		pageType: {
 			type: String,
 			default: 'chat',
 		},
-
-		appSlug: {
-			type: String,
-			default: '',
-		},
-
-		parentRoute: {
-			type: String,
-			default: '',
-		},
 	},
 
-	emits: ['update:config'],
 	computed: {
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).

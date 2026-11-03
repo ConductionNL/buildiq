@@ -257,6 +257,7 @@ import FormFieldBuilder from './fields/FormFieldBuilder.vue'
 import FormStepsManager from './fields/FormStepsManager.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
 import { useRegisterPicker } from '../../composables/useRegisterPicker.js'
+import { pageEditorBaseMixin } from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 import { findingsByField } from '../../services/formDestinationCheck.js'
 
@@ -276,31 +277,16 @@ export default {
 		SaveFormToLibraryDialog,
 	},
 
-	mixins: [pageEditorValidationMixin],
+	mixins: [pageEditorBaseMixin, pageEditorValidationMixin],
 	props: {
-		config: {
-			type: Object,
-			default: () => ({}),
-		},
-
-		pageType: {
-			type: String,
-			default: 'form',
-		},
-
-		appSlug: {
-			type: String,
-			default: '',
-		},
-
 		dataRegisters: {
 			type: Array,
 			default: () => [],
 		},
 
-		parentRoute: {
+		pageType: {
 			type: String,
-			default: '',
+			default: 'form',
 		},
 
 		// The selected page's `id` (mergeManifestDelta's page key) — the

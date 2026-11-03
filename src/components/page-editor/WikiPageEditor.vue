@@ -255,63 +255,22 @@
 
 <script>
 import InlineFieldMark from './fields/InlineFieldMark.vue'
-import { useRegisterPicker } from '../../composables/useRegisterPicker.js'
+import { useEditorRegisterPicker } from '../../composables/useEditorRegisterPicker.js'
+import { pageEditorBaseMixin, pageEditorRegisterPropsMixin } from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'WikiPageEditor',
 	components: { InlineFieldMark },
-	mixins: [pageEditorValidationMixin],
+	mixins: [pageEditorBaseMixin, pageEditorRegisterPropsMixin, pageEditorValidationMixin],
 	props: {
-		config: {
-			type: Object,
-			default: () => ({}),
-		},
-
 		pageType: {
 			type: String,
 			default: 'wiki',
 		},
-
-		appSlug: {
-			type: String,
-			default: '',
-		},
-
-		// The app's own register, read off the version being edited.
-		appRegister: {
-			type: String,
-			default: '',
-		},
-
-		dataRegisters: {
-			type: Array,
-			default: () => [],
-		},
-
-		parentRoute: {
-			type: String,
-			default: '',
-		},
 	},
 
-	emits: ['update:config'],
-	/**
-	 * Build the register/schema picker, handing it the app's own register
-	 * as a getter so it follows the prop.
-	 *
-	 * @param {object} props - the resolved component props.
-	 * @return {{picker: object}} the picker, exposed as `this.picker`.
-	 * @spec openspec/specs/version-routing-ui/spec.md#requirement-version-composables-resolve-active-version-and-manifest-history
-	 */
-	setup(props) {
-		const picker = useRegisterPicker({
-			appSlug: props.appSlug,
-			appRegister: () => props.appRegister,
-			dataRegisters: props.dataRegisters,
-		})
-		return { picker }
-	},
+	setup: useEditorRegisterPicker,
 
 	data() {
 		return {
@@ -468,27 +427,6 @@ export default {
 	},
 
 	methods: {
-		/**
-		 * Lossless top-level `config` key update: clone, delete-on-empty,
-		 * touch only the edited key.
-		 *
-		 * @param {string} key - top-level config key.
-		 * @param {*} value - new value.
-		 */
-		update(key, value) {
-			const next = { ...this.config }
-			if (
-				value === ''
-				|| value === null
-				|| (Array.isArray(value) && value.length === 0)
-			) {
-				delete next[key]
-			} else {
-				next[key] = value
-			}
-			this.$emit('update:config', next)
-		},
-
 		/**
 		 * Register-picker change handler: writes `register` and resets the
 		 * dependent `schema` dropdown (same partner-clear as LogsPageEditor).

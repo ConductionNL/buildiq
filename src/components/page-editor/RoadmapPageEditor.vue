@@ -135,42 +135,25 @@
 
 <script>
 import InlineFieldMark from './fields/InlineFieldMark.vue'
+import { pageEditorBaseMixin } from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'RoadmapPageEditor',
 	components: { InlineFieldMark },
-	mixins: [pageEditorValidationMixin],
+	mixins: [pageEditorBaseMixin, pageEditorValidationMixin],
 	props: {
-		config: {
-			type: Object,
-			default: () => ({}),
+		dataRegisters: {
+			type: Array,
+			default: () => [],
 		},
 
 		pageType: {
 			type: String,
 			default: 'roadmap',
 		},
-
-		appSlug: {
-			type: String,
-			default: '',
-		},
-
-		// Kept for contract uniformity with the other sub-editors; the
-		// roadmap page needs no register/schema picker.
-		dataRegisters: {
-			type: Array,
-			default: () => [],
-		},
-
-		parentRoute: {
-			type: String,
-			default: '',
-		},
 	},
 
-	emits: ['update:config'],
 	computed: {
 		validatedConfigKeys() {
 			return [
@@ -186,27 +169,6 @@ export default {
 	},
 
 	methods: {
-		/**
-		 * Lossless top-level `config` key update: clone, delete-on-empty,
-		 * touch only the edited key.
-		 *
-		 * @param {string} key - top-level config key.
-		 * @param {*} value - new value.
-		 */
-		update(key, value) {
-			const next = { ...this.config }
-			if (
-				value === ''
-				|| value === null
-				|| (Array.isArray(value) && value.length === 0)
-			) {
-				delete next[key]
-			} else {
-				next[key] = value
-			}
-			this.$emit('update:config', next)
-		},
-
 		/**
 		 * Update `forge.type`; unsetting it deletes the whole `forge` key
 		 * (an empty `{ baseUrl }` with no type is not a valid forge shape).
