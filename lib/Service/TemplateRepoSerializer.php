@@ -73,6 +73,7 @@ class TemplateRepoSerializer {
 	 * @return array<string,string> Ordered map (canonical JSON + README).
 	 *
 	 * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) RepoDescriptor is a pure function with no collaborators.
 	 */
 	public function serialize(array $template): array {
 		$manifest = [];
@@ -82,7 +83,7 @@ class TemplateRepoSerializer {
 
 		$files = [];
 		$files['openbuild-app.json'] = $this->encode(data: $this->buildDescriptor(template: $template, manifest: $manifest));
-		$files['manifest.json'] = $this->encode(data: $manifest);
+		$files['manifest.json'] = $this->encode(data: RepoDescriptor::publishableManifest(manifest: $manifest));
 
 		$companions = $this->collectCompanionSchemas(template: $template);
 		ksort($companions);
