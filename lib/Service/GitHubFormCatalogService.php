@@ -185,12 +185,9 @@ class GitHubFormCatalogService {
 
 		$ref = (string)($item['default_branch'] ?? '');
 		$contents = $this->catalog->fetchFileContents(
-			owner: $owner,
-			repo: $repo,
+			source: new RepoSource(owner: $owner, repo: $repo, ref: $ref, credentialId: $credentialId),
 			path: self::FORM_FILE,
-			ref: $ref,
-			actingUserId: $actingUserId,
-			credentialId: $credentialId
+			actingUserId: $actingUserId
 		);
 
 		$export = null;

@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Command;
 
 use OCA\Buildiq\Command\PublishTemplates;
+use OCA\Buildiq\Service\GitHub\BrokeredRepo;
 use OCA\Buildiq\Service\GitHubAppSyncService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use PHPUnit\Framework\TestCase;
@@ -34,6 +35,9 @@ use Symfony\Component\Console\Tester\CommandTester;
  *
  * @covers \OCA\Buildiq\Command\PublishTemplates
  * @uses   \OCA\Buildiq\Command\PublishTarget
+ * @uses   \OCA\Buildiq\Service\GitHub\BrokerAccess
+ * @uses   \OCA\Buildiq\Service\GitHub\BrokeredRepo
+ * @uses   \OCA\Buildiq\Service\GitHub\PushTarget
  * @uses   \OCA\Buildiq\Support\ObjectRecord
  */
 class PublishTemplatesGoldenTest extends TestCase {
@@ -134,6 +138,25 @@ class PublishTemplatesGoldenTest extends TestCase {
 	}//end testPublishTemplatesGolden()
 
 	/**
+	 * What one publish was asked to do, under the fixture's names.
+	 *
+	 * @param array<string,mixed> $template The template.
+	 * @param BrokeredRepo        $repo     The repo and access.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private static function publishArguments(array $template, BrokeredRepo $repo): array {
+		return [
+			'template' => $template,
+			'credentialId' => $repo->access->credentialId,
+			'org' => ($repo->target->org === '' ? null : $repo->target->org),
+			'repoName' => ($repo->target->repo === '' ? null : $repo->target->repo),
+			'actingUserId' => $repo->access->actingUserId,
+			'visibility' => $repo->target->visibility,
+		];
+	}//end publishArguments()
+
+	/**
 	 * Run the command for one case and describe what happened.
 	 *
 	 * @param array<string,mixed> $case The case.
@@ -145,13 +168,9 @@ class PublishTemplatesGoldenTest extends TestCase {
 
 		$sync = $this->createMock(GitHubAppSyncService::class);
 		$sync->method('isBrokerAvailable')->willReturn($case['broker']);
-		$names = array_map(
-			static fn ($p) => $p->getName(),
-			(new \ReflectionMethod(GitHubAppSyncService::class, 'publishTemplate'))->getParameters()
-		);
 		$sync->method('publishTemplate')->willReturnCallback(
-			static function (...$args) use ($trace, $names): array {
-				$trace->publishes[] = array_combine(array_slice($names, 0, count($args)), $args);
+			static function (...$args) use ($trace): array {
+				$trace->publishes[] = self::publishArguments(template: $args[0], repo: $args[1]);
 				$slug = (string)($args[0]['slug'] ?? '');
 				return match ($slug) {
 					'good' => ['outcome' => GitHubAppSyncService::OUTCOME_OK, 'repoUrl' => 'https://github.com/acme/buildiq-good'],

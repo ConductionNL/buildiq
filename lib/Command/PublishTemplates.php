@@ -212,11 +212,7 @@ class PublishTemplates extends Command {
 		try {
 			return $this->syncService->publishTemplate(
 				template: $template,
-				credentialId: $target->credentialId,
-				org: $target->org,
-				repoName: null,
-				actingUserId: $target->user,
-				visibility: $target->visibility
+				repo: $target->brokeredRepo()
 			);
 		} catch (Throwable $e) {
 			return ['outcome' => 'error: ' . $e->getMessage()];

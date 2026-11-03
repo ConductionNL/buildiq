@@ -196,11 +196,8 @@ class ShopController extends Controller {
 		}
 
 		$files = $this->catalogService->fetchRepoFiles(
-			owner: $owner,
-			repo: $repo,
-			ref: $ref,
-			actingUserId: $user->getUID(),
-			credentialId: $this->credentialParam()
+			source: new RepoSource(owner: $owner, repo: $repo, ref: $ref, credentialId: $this->credentialParam()),
+			actingUserId: $user->getUID()
 		);
 		if ($files === []) {
 			return $this->error(code: GitHubCatalogService::OUTCOME_UNREACHABLE, status: Http::STATUS_NOT_FOUND);
