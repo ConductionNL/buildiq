@@ -30,11 +30,17 @@ namespace OCA\Buildiq\Support;
  * @spec exclude shared descriptor field derivation for the repo serialisers, no behaviour of its own
  */
 final class RepoDescriptor {
+	/**
+	 * The keys the app-manifest schema allows on a `credentials[]` entry.
+	 *
+	 * @var array<string,true>
+	 */
+	private const DECLARATION_KEYS = ['provider' => true, 'reason' => true, 'scopes' => true];
 
 	/**
 	 * The descriptor category: the record's, else the manifest's, else `general`.
 	 *
-	 * @param array<string,mixed> $record   The application or template object.
+	 * @param array<string,mixed> $record The application or template object.
 	 * @param array<string,mixed> $manifest Its manifest blob.
 	 *
 	 * @return string
@@ -95,4 +101,32 @@ final class RepoDescriptor {
 			'scopes' => $scopes,
 		];
 	}//end credential()
+
+	/**
+	 * The manifest as it is published to `manifest.json`.
+	 *
+	 * Each `credentials[]` entry keeps only the declaration keys the
+	 * app-manifest schema allows (provider, reason, scopes), and entries that
+	 * are not objects are dropped, so a secret written next to a declaration
+	 * never leaves the instance. A manifest without `credentials` is returned
+	 * as is.
+	 *
+	 * @param array<string,mixed> $manifest The manifest blob.
+	 *
+	 * @return array<string,mixed>
+	 *
+	 * @spec exclude shared descriptor field derivation for the repo serialisers, no behaviour of its own
+	 */
+	public static function publishableManifest(array $manifest): array {
+		if (array_key_exists('credentials', $manifest) === false) {
+			return $manifest;
+		}
+
+		$entries = array_filter((array)$manifest['credentials'], static fn (mixed $entry): bool => is_array($entry) === true);
+		$manifest['credentials'] = array_values(
+			array_map(static fn (array $entry): array => array_intersect_key($entry, self::DECLARATION_KEYS), $entries)
+		);
+
+		return $manifest;
+	}//end publishableManifest()
 }//end class

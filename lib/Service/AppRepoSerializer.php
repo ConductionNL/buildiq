@@ -38,6 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Support\RepoDescriptor;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -143,6 +144,7 @@ class AppRepoSerializer {
 	 * @return array<string,string> Ordered `path => contents` map (canonical JSON + README).
 	 *
 	 * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) RepoDescriptor is a pure function with no collaborators.
 	 */
 	public function serialize(array $application, array $version): array {
 		$slug = (string)($application['slug'] ?? '');
@@ -171,7 +173,7 @@ class AppRepoSerializer {
 				channels: $this->descriptorChannelCounts(channels: $channels)
 			)
 		);
-		$files['manifest.json'] = $this->encode(data: $manifest);
+		$files['manifest.json'] = $this->encode(data: RepoDescriptor::publishableManifest(manifest: $manifest));
 
 		$this->appendChannelFiles(files: $files, channels: $channels);
 
@@ -793,6 +795,7 @@ class AppRepoSerializer {
 	 *
 	 * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
 	 * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
+	 * @SuppressWarnings(PHPMD.StaticAccess) RepoDescriptor is a pure function with no collaborators.
 	 */
 	private function buildDescriptor(array $application, array $version, array $manifest, array $channels = []): array {
 		$appType = (string)($application['appType'] ?? 'virtual');
@@ -821,7 +824,7 @@ class AppRepoSerializer {
 			$descriptor['baseRef'] = $application['baseRef'];
 		}
 
-		$credentials = $this->deriveCredentials(manifest: $manifest);
+		$credentials = RepoDescriptor::credentials(manifest: $manifest);
 		if ($credentials !== []) {
 			$descriptor['credentials'] = $credentials;
 		}
@@ -837,42 +840,6 @@ class AppRepoSerializer {
 
 		return $descriptor;
 	}//end buildDescriptor()
-
-	/**
-	 * Derive the descriptor `credentials[]` from the manifest's top-level
-	 * `credentials[]` (REQ-GARF-009) — a surfaced convenience mirror; the manifest
-	 * stays authoritative on parse.
-	 *
-	 * @param array<string,mixed> $manifest The version's manifest blob.
-	 *
-	 * @return array<int,array<string,mixed>>
-	 */
-	private function deriveCredentials(array $manifest): array {
-		$raw = ($manifest['credentials'] ?? null);
-		if (is_array($raw) === false) {
-			return [];
-		}
-
-		$credentials = [];
-		foreach ($raw as $entry) {
-			if (is_array($entry) === false || isset($entry['provider']) === false) {
-				continue;
-			}
-
-			$scopes = [];
-			if (is_array($entry['scopes'] ?? null) === true) {
-				$scopes = array_values(array_map(static fn ($scope): string => (string)$scope, $entry['scopes']));
-			}
-
-			$credentials[] = [
-				'provider' => (string)$entry['provider'],
-				'reason' => (string)($entry['reason'] ?? ''),
-				'scopes' => $scopes,
-			];
-		}
-
-		return $credentials;
-	}//end deriveCredentials()
 
 	/**
 	 * The schemas of the register this version publishes.
