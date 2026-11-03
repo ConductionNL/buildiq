@@ -224,6 +224,110 @@ class VirtualAppWidgetTest extends TestCase {
 	}//end testAUserOutsideEveryListedRoleIsNotOfferedTheWidget()
 
 	/**
+	 * A placement's roles narrow the Application's viewers: an app viewer
+	 * outside every role is not offered the widget.
+	 *
+	 * @return void
+	 */
+	public function testAnAppViewerOutsideThePlacementRolesIsNotOfferedTheWidget(): void {
+		$this->assertFalse(
+			condition: $this->isEnabledFor(
+				principals: ['group:staff'],
+				uid: 'alice',
+				groups: ['staff'],
+				isAdmin: false,
+				roles: ['group:controllers', 'user:bob']
+			)
+		);
+	}//end testAnAppViewerOutsideThePlacementRolesIsNotOfferedTheWidget()
+
+	/**
+	 * An app viewer who matches a role, by group or by uid, is offered the widget.
+	 *
+	 * @return void
+	 */
+	public function testAnAppViewerInThePlacementRolesIsOfferedTheWidget(): void {
+		$this->assertTrue(
+			condition: $this->isEnabledFor(
+				principals: ['group:staff'],
+				uid: 'alice',
+				groups: ['staff', 'controllers'],
+				isAdmin: false,
+				roles: ['group:controllers']
+			)
+		);
+		$this->assertTrue(
+			condition: $this->isEnabledFor(
+				principals: ['group:staff'],
+				uid: 'alice',
+				groups: ['staff'],
+				isAdmin: false,
+				roles: ['user:alice']
+			)
+		);
+	}//end testAnAppViewerInThePlacementRolesIsOfferedTheWidget()
+
+	/**
+	 * A placement without roles is visible to every viewer of the Application.
+	 *
+	 * @return void
+	 */
+	public function testAPlacementWithoutRolesIsVisibleToEveryAppViewer(): void {
+		$this->assertTrue(
+			condition: $this->isEnabledFor(principals: ['group:staff'], uid: 'alice', groups: ['staff'], isAdmin: false)
+		);
+	}//end testAPlacementWithoutRolesIsVisibleToEveryAppViewer()
+
+	/**
+	 * Matching a role does not admit a user who may not see the Application.
+	 *
+	 * @return void
+	 */
+	public function testARoleMemberWhoMayNotSeeTheAppIsNotOfferedTheWidget(): void {
+		$this->assertFalse(
+			condition: $this->isEnabledFor(
+				principals: ['group:staff'],
+				uid: 'alice',
+				groups: ['controllers'],
+				isAdmin: false,
+				roles: ['group:controllers', 'user:alice']
+			)
+		);
+	}//end testARoleMemberWhoMayNotSeeTheAppIsNotOfferedTheWidget()
+
+	/**
+	 * The Nextcloud admin sees a role-restricted widget without being in the
+	 * Application's permissions or the placement's roles.
+	 *
+	 * @return void
+	 */
+	public function testTheNextcloudAdminSeesARoleRestrictedWidget(): void {
+		$this->assertTrue(
+			condition: $this->isEnabledFor(
+				principals: ['group:staff'],
+				uid: 'admin',
+				groups: [],
+				isAdmin: true,
+				roles: ['group:controllers']
+			)
+		);
+	}//end testTheNextcloudAdminSeesARoleRestrictedWidget()
+
+	/**
+	 * The group:* sentinel in roles admits every app viewer, and nobody else.
+	 *
+	 * @return void
+	 */
+	public function testTheGroupWildcardInRolesAdmitsEveryAppViewerOnly(): void {
+		$this->assertTrue(
+			condition: $this->isEnabledFor(principals: ['group:staff'], uid: 'alice', groups: ['staff'], isAdmin: false, roles: ['group:*'])
+		);
+		$this->assertFalse(
+			condition: $this->isEnabledFor(principals: ['group:staff'], uid: 'bob', groups: [], isAdmin: false, roles: ['group:*'])
+		);
+	}//end testTheGroupWildcardInRolesAdmitsEveryAppViewerOnly()
+
+	/**
 	 * An unauthenticated session sees nothing.
 	 *
 	 * @return void
@@ -248,11 +352,11 @@ class VirtualAppWidgetTest extends TestCase {
 	public function testAPlacementCarryingVisibleWhenIsShownOnRolesAlone(): void {
 		$descriptor = new WidgetDescriptor(
 			application: new WidgetApplication(uuid: self::APP_UUID, slug: 'pet-store', name: 'Pet Store'),
-			principals: ['group:controllers'],
+			principals: ['group:*'],
 			entryId: 'open-cases',
 			widgetKey: 'stat',
 			panel: ['title' => 'Open cases'],
-			placement: ['pageRoute' => '/overview']
+			placement: ['pageRoute' => '/overview', 'roles' => ['group:controllers']]
 		);
 
 		// visibleWhen is not carried on the descriptor at all: there is no
@@ -296,16 +400,17 @@ class VirtualAppWidgetTest extends TestCase {
 	 * @param string $uid The signed-in user's id.
 	 * @param array<int,string> $groups The user's group memberships.
 	 * @param bool $isAdmin Whether the user is a Nextcloud admin.
+	 * @param array<int,string> $roles The placement's roles.
 	 *
 	 * @return bool The widget's isEnabled() answer.
 	 */
-	private function isEnabledFor(array $principals, string $uid, array $groups, bool $isAdmin): bool {
+	private function isEnabledFor(array $principals, string $uid, array $groups, bool $isAdmin, array $roles = []): bool {
 		$context = $this->context(
 			user: $this->signedInUser(uid: $uid, groups: $groups, isAdmin: $isAdmin)
 		);
 
 		return (new VirtualAppWidget(
-			descriptor: $this->descriptor(principals: $principals),
+			descriptor: $this->descriptor(principals: $principals, roles: $roles),
 			context: $context
 		))->isEnabled();
 	}//end isEnabledFor()
@@ -316,6 +421,7 @@ class VirtualAppWidgetTest extends TestCase {
 	 * @param array<int,string> $principals The principals allowed to see it.
 	 * @param array<string,mixed> $panel The ncDashboard object.
 	 * @param string $entryId The placement's own id.
+	 * @param array<int,string> $roles The placement's roles.
 	 *
 	 * @return WidgetDescriptor The descriptor.
 	 */
@@ -323,6 +429,7 @@ class VirtualAppWidgetTest extends TestCase {
 		array $principals = ['group:*'],
 		array $panel = ['title' => 'Open cases'],
 		string $entryId = 'open-cases',
+		array $roles = [],
 	): WidgetDescriptor {
 		return new WidgetDescriptor(
 			application: new WidgetApplication(uuid: self::APP_UUID, slug: 'pet-store', name: 'Pet Store'),
@@ -330,7 +437,7 @@ class VirtualAppWidgetTest extends TestCase {
 			entryId: $entryId,
 			widgetKey: 'stat',
 			panel: $panel,
-			placement: ['pageRoute' => '/overview']
+			placement: ['pageRoute' => '/overview', 'roles' => $roles]
 		);
 	}//end descriptor()
 

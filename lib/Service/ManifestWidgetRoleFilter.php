@@ -176,22 +176,18 @@ class ManifestWidgetRoleFilter {
 	 * @spec openspec/changes/widget-roles-on-app-pages/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
 	 */
 	public function isWidgetVisible(array $widget, ?IUser $caller): bool {
-		$roles = ($widget['roles'] ?? null);
-		if ($roles === null || $roles === '' || $roles === []) {
+		$roles = $this->visibility->normaliseRoles(roles: ($widget['roles'] ?? null));
+		if ($roles === []) {
 			return true;
 		}
 
-		if (is_string($roles) === true) {
-			$roles = [$roles];
-		}
-
-		if (is_array($roles) === false) {
+		if ($roles === null) {
 			return false;
 		}
 
 		return $this->visibility->isVisibleToUser(
 			permissions: [],
-			extraPrincipals: array_values($roles),
+			extraPrincipals: $roles,
 			user: $caller,
 			groupManager: $this->groupManager
 		);
