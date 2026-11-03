@@ -116,6 +116,7 @@ class SkillsChannelGoldenTest extends TestCase {
 	private const INSTALLS = [
 		'installs' => ['installed' => 1, 'updated' => 1, 'unchanged' => 0, 'skipped' => 0, 'failed' => 0, 'truncated' => false],
 		'partial result' => ['unchanged' => '3', 'failed' => 1, 'truncated' => 1],
+		'truncated short' => ['installed' => 1, 'truncated' => true],
 		'empty result' => [],
 		'throws' => 'throws',
 	];

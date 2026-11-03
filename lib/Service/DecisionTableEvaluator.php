@@ -120,10 +120,7 @@ class DecisionTableEvaluator {
 		try {
 			$outcome = $this->sharedEvaluator->evaluate(
 				decisionTable: $this->toSharedTable(
-					inputs: $inputs,
-					outputs: $outputs,
-					rules: $rules,
-					hitPolicy: $hitPolicy,
+					table: ['inputs' => $inputs, 'outputs' => $outputs, 'rules' => $rules, 'hitPolicy' => $hitPolicy],
 					unresolved: $unresolved,
 				),
 				inputs: $columnValues,
@@ -172,51 +169,28 @@ class DecisionTableEvaluator {
 	 * evaluator's `matchedRuleIds` come back as buildiq's rule indexes and the
 	 * winning row can be read straight out of buildiq's `rules` array.
 	 *
-	 * @param array<int,mixed>  $inputs     buildiq's input columns.
-	 * @param array<int,mixed>  $outputs    buildiq's output columns.
-	 * @param array<int,mixed>  $rules      buildiq's rule rows.
-	 * @param string            $hitPolicy  The already-translated hit policy.
+	 * @param array<string,mixed> $table buildiq's `inputs`, `outputs` and `rules`, and the translated `hitPolicy`.
 	 * @param array<int,string> $unresolved Columns whose payload path yielded null.
 	 *
 	 * @return array<string,mixed> The shared evaluator's table shape.
 	 */
-	private function toSharedTable(array $inputs, array $outputs, array $rules, string $hitPolicy, array $unresolved = []): array {
+	private function toSharedTable(array $table, array $unresolved): array {
+		$inputColumns = [];
+		foreach ($this->columnNames(columns: $table['inputs']) as $name) {
+			$inputColumns[] = [$name, in_array($name, $unresolved, true)];
+		}
+
+		$outputNames = $this->columnNames(columns: $table['outputs']);
+
 		$sharedRules = [];
-		foreach ($rules as $index => $rule) {
-			$inputEntries = [];
-			$testsNullColumn = false;
-			foreach ($inputs as $col) {
-				$name = (string)($col['name'] ?? '');
-				if ($name === '') {
-					continue;
-				}
-
-				$cell = $this->sharedCell(cell: (string)($rule['conditions'][$name] ?? ''));
-				if (in_array($name, $unresolved, true) === true) {
-					// The column has no value, so a real test on it cannot pass.
-					// A wildcard still would, and dropping the column leaves the
-					// rest of the rule to decide, which is what used to happen.
-					if ($cell !== '-') {
-						$testsNullColumn = true;
-					}
-
-					continue;
-				}
-
-				$inputEntries[] = $cell;
-			}
-
-			if ($testsNullColumn === true) {
+		foreach ($table['rules'] as $index => $rule) {
+			$inputEntries = $this->sharedInputEntries(rule: $rule, inputColumns: $inputColumns);
+			if ($inputEntries === null) {
 				continue;
 			}
 
 			$outputEntries = [];
-			foreach ($outputs as $col) {
-				$name = (string)($col['name'] ?? '');
-				if ($name === '') {
-					continue;
-				}
-
+			foreach ($outputNames as $name) {
 				$outputEntries[] = ($rule['values'][$name] ?? null);
 			}
 
@@ -229,13 +203,61 @@ class DecisionTableEvaluator {
 		}//end foreach
 
 		return [
-			'hitPolicy' => $hitPolicy,
-			'inputs' => $this->sharedColumns(columns: $inputs, exclude: $unresolved),
-			'outputs' => $this->sharedColumns(columns: $outputs),
+			'hitPolicy' => $table['hitPolicy'],
+			'inputs' => $this->sharedColumns(columns: $table['inputs'], exclude: $unresolved),
+			'outputs' => $this->sharedColumns(columns: $table['outputs']),
 			'rules' => $sharedRules,
 		];
 
 	}//end toSharedTable()
+
+	/**
+	 * The names of the columns that have one, in column order.
+	 *
+	 * @param array<int,mixed> $columns Input or output columns.
+	 *
+	 * @return array<int,string>
+	 */
+	private function columnNames(array $columns): array {
+		$names = [];
+		foreach ($columns as $col) {
+			$name = (string)($col['name'] ?? '');
+			if ($name !== '') {
+				$names[] = $name;
+			}
+		}
+
+		return $names;
+
+	}//end columnNames()
+
+	/**
+	 * One rule's input entries in the shared evaluator's cell syntax, or null
+	 * when the rule tests an unresolved column.
+	 *
+	 * An unresolved column has no value, so a real test on it cannot pass and
+	 * the rule is dropped. A wildcard still would pass, so it only drops the
+	 * column and leaves the rest of the rule to decide.
+	 *
+	 * @param mixed $rule One rule row.
+	 * @param array<int,array{0: string, 1: bool}> $inputColumns Each named input column and whether it is unresolved.
+	 *
+	 * @return array<int,string>|null
+	 */
+	private function sharedInputEntries(mixed $rule, array $inputColumns): ?array {
+		$entries = [];
+		foreach ($inputColumns as [$name, $isUnresolved]) {
+			$cell = $this->sharedCell(cell: (string)($rule['conditions'][$name] ?? ''));
+			if ($isUnresolved === false) {
+				$entries[] = $cell;
+			} elseif ($cell !== '-') {
+				return null;
+			}
+		}
+
+		return $entries;
+
+	}//end sharedInputEntries()
 
 	/**
 	 * Reduce buildiq's column definitions to the shared `{name, type}` shape.
