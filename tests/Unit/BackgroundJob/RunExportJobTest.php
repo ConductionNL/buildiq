@@ -33,6 +33,8 @@ use OCA\Buildiq\Service\ExportContents;
 use OCA\Buildiq\Service\ExportJobService;
 use OCA\Buildiq\Service\ExportService;
 use OCA\Buildiq\Service\ExportTarget;
+use OCA\Buildiq\Service\GitHub\BrokerAccess;
+use OCA\Buildiq\Service\GitHub\PushTarget;
 use OCA\Buildiq\Service\GitHubPushService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -407,11 +409,8 @@ final class RunExportJobTest extends TestCase {
 			->with(
 				self::anything(),
 				self::anything(),
-				self::equalTo('cred-uuid-1234'),
-				self::equalTo('acme-co'),
-				self::equalTo('hello-world'),
-				self::anything(),
-				self::equalTo('alice')
+				self::equalTo(new BrokerAccess(credentialId: 'cred-uuid-1234', actingUserId: 'alice')),
+				self::equalTo(new PushTarget(org: 'acme-co', repo: 'hello-world', visibility: 'private'))
 			)
 			->willReturn(
 				[

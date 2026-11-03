@@ -34,6 +34,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Service;
 
+use OCA\Buildiq\Service\GitHub\BrokerAccess;
+use OCA\Buildiq\Service\GitHub\PushTarget;
 use OCA\Buildiq\Service\GitHubPushService;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -119,13 +121,16 @@ final class GitHubPushServiceTest extends TestCase {
 	 */
 	public function testPushTakesACredentialIdAndAnActingUser(): void {
 		$reflection = new \ReflectionMethod(GitHubPushService::class, 'push');
-		$names = array_map(static fn ($p) => $p->getName(), $reflection->getParameters());
+		$types = array_map(static fn ($p) => (string)$p->getType(), $reflection->getParameters());
+		self::assertContains(BrokerAccess::class, $types, 'push() must take the broker access, not a secret');
 
-		self::assertContains('credentialId', $names, 'push() must take a broker credential UUID');
-		self::assertContains(
-			'actingUserId',
-			$names,
-			'push() must take the credential owner — the background job has no session for the broker to read'
+		$access = new \ReflectionClass(BrokerAccess::class);
+		$names = array_map(static fn ($p) => $p->getName(), $access->getConstructor()->getParameters());
+		self::assertSame(['credentialId', 'actingUserId'], $names, 'the access must name a broker credential UUID');
+		self::assertSame(
+			['credentialId', 'actingUserId'],
+			array_map(static fn ($p) => $p->getName(), $access->getProperties()),
+			'the access must carry the credential owner — the background job has no session for the broker to read'
 		);
 	}//end testPushTakesACredentialIdAndAnActingUser()
 
@@ -167,10 +172,8 @@ final class GitHubPushServiceTest extends TestCase {
 			$service->push(
 				jobUuid: 'job-123',
 				treeDir: $treeDir,
-				credentialId: 'cred-uuid',
-				org: 'acme',
-				repo: 'app',
-				visibility: 'public'
+				access: new BrokerAccess(credentialId: 'cred-uuid'),
+				target: new PushTarget(org: 'acme', repo: 'app', visibility: 'public')
 			);
 			self::fail('push() must throw when the broker cannot serve the call.');
 		} catch (RuntimeException $e) {
@@ -230,9 +233,8 @@ final class GitHubPushServiceTest extends TestCase {
 			$service->push(
 				jobUuid: 'job-123',
 				treeDir: $treeDir,
-				credentialId: '',
-				org: 'acme',
-				repo: 'app'
+				access: new BrokerAccess(credentialId: ''),
+				target: new PushTarget(org: 'acme', repo: 'app')
 			);
 		} finally {
 			$this->removeTree($treeDir);
@@ -358,11 +360,9 @@ final class GitHubPushServiceTest extends TestCase {
 		$service = new GitHubPushService(new NullLogger(), $container);
 
 		$url = $service->openPullRequest(
-			org: 'acme',
-			repo: 'app',
+			target: new PushTarget(org: 'acme', repo: 'app'),
 			toBranch: 'trunk',
-			credentialId: 'cred-1',
-			actingUserId: 'alice'
+			access: new BrokerAccess(credentialId: 'cred-1', actingUserId: 'alice')
 		);
 
 		$this->assertSame('https://github.com/acme/app/pull/1', $url);
