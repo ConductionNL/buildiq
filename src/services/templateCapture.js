@@ -106,18 +106,38 @@ export function rewriteSchemaRefs(node, map) {
 		return node
 	}
 	const out = {}
-	for (const [key, value] of Object.entries(node)) {
-		if (
-			(key === 'schema' || key === 'relatedSchema')
-			&& typeof value === 'string'
-			&& Object.hasOwn(map, value)
-		) {
-			out[key] = map[value]
-			continue
-		}
-		out[key] = rewriteSchemaRefs(value, map)
+	for (const entry of Object.entries(node)) {
+		out[entry[0]] = rewriteEntry(entry, map)
 	}
 	return out
+}
+
+/**
+ * Whether a key/value pair is a schema reference: a string under `schema` or
+ * `relatedSchema`.
+ *
+ * @param {string} key - the property key.
+ * @param {unknown} value - the property value.
+ * @return {boolean} true for a schema reference.
+ * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+ */
+export function isSchemaRefEntry(key, value) {
+	return (key === 'schema' || key === 'relatedSchema') && typeof value === 'string'
+}
+
+/**
+ * The rewritten value of one property: the mapped slug for a mapped schema
+ * reference, else the value rewritten recursively.
+ *
+ * @param {[string, unknown]} entry - the key and value.
+ * @param {{[key: string]: string}} map - source-slug → de-namespaced-slug.
+ * @return {unknown} the rewritten value.
+ */
+function rewriteEntry(entry, map) {
+	const [key, value] = entry
+	return isSchemaRefEntry(key, value) && Object.hasOwn(map, value)
+		? map[value]
+		: rewriteSchemaRefs(value, map)
 }
 
 /**
@@ -152,29 +172,54 @@ export class SlugCollisionError extends Error {
  * @throws {SlugCollisionError} when two schemas de-namespace to the same slug.
  */
 function slugRewrites(sourceSchemas, appSlug) {
-	const rewriteMap = {}
+	const sourceSlugs = sourceSchemas
+		.map((schema) => String((schema && schema.slug) || ''))
+		.filter((slug) => slug !== '')
+	return slugRewritesOf(sourceSlugs, appSlug)
+}
+
+/**
+ * The source-slug to canonical-slug rewrite map of a list of schema slugs,
+ * and one summary entry per slug.
+ *
+ * @param {Array<string>} sourceSlugs - the source schema slugs, in order.
+ * @param {string} appSlug - the source Application's slug.
+ * @return {{rewriteMap: Object<string, string>, summaryEntries: Array<{sourceSlug: string, slug: string, shared: boolean}>}}
+ * @throws {SlugCollisionError} when two slugs de-namespace to the same slug.
+ * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+ */
+export function slugRewritesOf(sourceSlugs, appSlug) {
+	const rewrites = { rewriteMap: {}, summaryEntries: [] }
 	const canonicalToSource = {}
-	const summaryEntries = []
-	for (const schema of sourceSchemas) {
-		const sourceSlug = String((schema && schema.slug) || '')
-		if (!sourceSlug) {
-			continue
-		}
+	for (const sourceSlug of sourceSlugs) {
 		const { slug: canonical, shared } = deNamespaceSlug(sourceSlug, appSlug)
-		if (
-			Object.hasOwn(canonicalToSource, canonical)
-			&& canonicalToSource[canonical] !== sourceSlug
-		) {
-			throw new SlugCollisionError(canonical, [
-				canonicalToSource[canonical],
-				sourceSlug,
-			])
-		}
-		canonicalToSource[canonical] = sourceSlug
-		rewriteMap[sourceSlug] = canonical
-		summaryEntries.push({ sourceSlug, slug: canonical, shared })
+		claimCanonical(canonicalToSource, { canonical, sourceSlug })
+		rewrites.rewriteMap[sourceSlug] = canonical
+		rewrites.summaryEntries.push({ sourceSlug, slug: canonical, shared })
 	}
-	return { rewriteMap, summaryEntries }
+	return rewrites
+}
+
+/**
+ * Record which source slug a canonical slug came from.
+ *
+ * @param {Object<string, string>} canonicalToSource - canonical slug → source slug so far.
+ * @param {{canonical: string, sourceSlug: string}} claim - the pair to record.
+ * @return {void}
+ * @throws {SlugCollisionError} when another source slug already claimed it.
+ */
+function claimCanonical(canonicalToSource, claim) {
+	const { canonical, sourceSlug } = claim
+	if (
+		Object.hasOwn(canonicalToSource, canonical)
+		&& canonicalToSource[canonical] !== sourceSlug
+	) {
+		throw new SlugCollisionError(canonical, [
+			canonicalToSource[canonical],
+			sourceSlug,
+		])
+	}
+	canonicalToSource[canonical] = sourceSlug
 }
 
 /**
