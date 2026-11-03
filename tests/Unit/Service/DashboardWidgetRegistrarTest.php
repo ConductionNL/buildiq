@@ -31,9 +31,12 @@ use OCA\Buildiq\Dashboard\VirtualAppWidgetContext;
 use OCA\Buildiq\Dashboard\WidgetDescriptor;
 use OCA\Buildiq\Service\AppNavigationService;
 use OCA\Buildiq\Service\AppVisibilityResolver;
+use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\Dashboard\WidgetItemProjector;
 use OCA\Buildiq\Service\DashboardWidgetRegistrar;
+use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Service\PublishedApplicationProvider;
+use OCA\Buildiq\Service\PublishedApps;
 use OCA\Buildiq\Tests\Unit\Dashboard\WidgetDescriptorTest;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Services\IInitialState;
@@ -264,12 +267,17 @@ class DashboardWidgetRegistrarTest extends TestCase {
 		$navigation = new AppNavigationService(
 			objectService: $this->objectService,
 			urlGenerator: $urlGenerator,
-			userSession: $this->createMock(IUserSession::class),
-			groupManager: $this->createMock(IGroupManager::class),
+			caller: new CallerContext(
+				userSession: $this->createMock(IUserSession::class),
+				groupManager: $this->createMock(IGroupManager::class),
+				permissionResolver: $this->createMock(PermissionResolver::class)
+			),
 			appConfig: $this->createMock(IAppConfig::class),
 			logger: $this->logger,
-			applicationProvider: $provider,
-			visibilityResolver: $visibility
+			published: new PublishedApps(
+				applicationProvider: $provider,
+				visibilityResolver: $visibility
+			)
 		);
 
 		$registrar = new DashboardWidgetRegistrar(

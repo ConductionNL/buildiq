@@ -58,12 +58,31 @@ class ApplicationDeletionService {
 	private const MAX_PURGE_ROUNDS = 200;
 
 	/**
+	 * OR object surface (find + delete)
+	 *
+	 * @var ObjectServiceInterface
+	 */
+	private readonly ObjectServiceInterface $objectService;
+
+	/**
+	 * OR register lookup (by slug)
+	 *
+	 * @var RegisterMapper
+	 */
+	private readonly RegisterMapper $registerMapper;
+
+	/**
+	 * OR schema lookup + delete
+	 *
+	 * @var SchemaMapper
+	 */
+	private readonly SchemaMapper $schemaMapper;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectServiceInterface $objectService OR object surface (find + delete)
+	 * @param RegisterStore $store OpenRegister's object service, register and schema mappers and audit trail.
 	 * @param RegisterService $registerService OR register-level service (delete)
-	 * @param RegisterMapper $registerMapper OR register lookup (by slug)
-	 * @param SchemaMapper $schemaMapper OR schema lookup + delete
 	 * @param SchemaReferenceResolver $schemaReferences Whether a schema is still claimed elsewhere
 	 * @param VersionSchemaLocator $schemaLocator Finds version schemas no register lists
 	 * @param LoggerInterface $logger PSR logger
@@ -71,14 +90,15 @@ class ApplicationDeletionService {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectServiceInterface $objectService,
+		RegisterStore $store,
 		private readonly RegisterService $registerService,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
 		private readonly SchemaReferenceResolver $schemaReferences,
 		private readonly VersionSchemaLocator $schemaLocator,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->objectService = $store->objectService;
+		$this->registerMapper = $store->registerMapper;
+		$this->schemaMapper = $store->schemaMapper;
 	}//end __construct()
 
 	/**
@@ -96,11 +116,11 @@ class ApplicationDeletionService {
 	 *                         every object stored in them, and their schemas.
 	 *
 	 * @return array<int,string> The resources this call TRIED to remove and
-	 *                          could not, empty when everything attempted was
-	 *                          removed. Data preserved by $deleteData false was
-	 *                          never attempted and is never listed here, so an
-	 *                          empty array does not mean nothing survives the
-	 *                          delete.
+	 *                           could not, empty when everything attempted was
+	 *                           removed. Data preserved by $deleteData false was
+	 *                           never attempted and is never listed here, so an
+	 *                           empty array does not mean nothing survives the
+	 *                           delete.
 	 *
 	 * @spec openspec/specs/application-detail-ui/spec.md
 	 */

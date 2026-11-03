@@ -45,9 +45,11 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\RuleEngineService;
 use OCA\Buildiq\Service\RuleObjectReader;
 use OCA\Buildiq\Service\RuleSetVersioningService;
+use OCA\Buildiq\Service\RuleStorage;
 use OCA\Buildiq\Service\StoredDecisionTables;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -75,16 +77,48 @@ class RulesController extends Controller {
 	private const MAX_PAYLOAD_BYTES = 65536;
 
 	/**
+	 * Current user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Admin check for writing a decision table.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * Organisation-scoped reads of rule-engine objects (REQ-BRE-007).
+	 *
+	 * @var RuleObjectReader
+	 */
+	private readonly RuleObjectReader $reader;
+
+	/**
+	 * A rule set's decision table in OpenRegister's register (decision 196).
+	 *
+	 * @var StoredDecisionTables
+	 */
+	private readonly StoredDecisionTables $tables;
+
+	/**
+	 * Test-gate runner for test-all.
+	 *
+	 * @var RuleSetVersioningService
+	 */
+	private readonly RuleSetVersioningService $versioningService;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest $request The current HTTP request.
 	 * @param LoggerInterface $logger PSR logger.
 	 * @param RuleEngineService $ruleEngine The rule-evaluation orchestrator.
-	 * @param RuleSetVersioningService $versioningService Test-gate runner for test-all.
-	 * @param RuleObjectReader $reader Organisation-scoped reads of rule-engine objects (REQ-BRE-007).
-	 * @param IUserSession $userSession Current user session.
-	 * @param StoredDecisionTables $tables A rule set's decision table in OpenRegister's register (decision 196).
-	 * @param IGroupManager $groupManager Admin check for writing a decision table.
+	 * @param RuleStorage $storage The rule object reader, stored decision tables and rule set versioning.
+	 * @param CallerContext $caller The caller's session, group memberships and the shared permission matcher.
 	 *
 	 * @return void
 	 */
@@ -92,12 +126,14 @@ class RulesController extends Controller {
 		IRequest $request,
 		private readonly LoggerInterface $logger,
 		private readonly RuleEngineService $ruleEngine,
-		private readonly RuleSetVersioningService $versioningService,
-		private readonly RuleObjectReader $reader,
-		private readonly IUserSession $userSession,
-		private readonly StoredDecisionTables $tables,
-		private readonly IGroupManager $groupManager,
+		RuleStorage $storage,
+		CallerContext $caller,
 	) {
+		$this->userSession = $caller->userSession;
+		$this->groupManager = $caller->groupManager;
+		$this->reader = $storage->reader;
+		$this->tables = $storage->tables;
+		$this->versioningService = $storage->versioningService;
 		parent::__construct(appName: Application::APP_ID, request: $request);
 
 	}//end __construct()
@@ -290,7 +326,6 @@ class RulesController extends Controller {
 		}
 
 		return new JSONResponse(data: ['key' => $stored['key'], 'table' => $stored], statusCode: Http::STATUS_OK);
-
 	}//end saveDecisionTable()
 
 	/**

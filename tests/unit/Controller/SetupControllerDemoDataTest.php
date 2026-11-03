@@ -3,8 +3,11 @@
 namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\SetupController;
+use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\DemoDataService;
+use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Service\SettingsService;
+use OCA\Buildiq\Service\SetupServices;
 use OCA\Buildiq\Service\TemplateSeedService;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -67,14 +70,19 @@ class SetupControllerDemoDataTest extends TestCase {
 		$groupManager->method('isAdmin')->willReturn(true);
 
 		return new SetupController(
-			$request,
-			new NullLogger(),
-			$appConfig,
-			$userSession,
-			$groupManager,
-			$this->demoData,
-			$this->settings,
-			$this->seedService
+			request: $request,
+			logger: new NullLogger(),
+			appConfig: $appConfig,
+			caller: new CallerContext(
+				userSession: $userSession,
+				groupManager: $groupManager,
+				permissionResolver: $this->createMock(PermissionResolver::class)
+			),
+			setup: new SetupServices(
+				demoDataService: $this->demoData,
+				settings: $this->settings,
+				seedService: $this->seedService
+			)
 		);
 	}
 

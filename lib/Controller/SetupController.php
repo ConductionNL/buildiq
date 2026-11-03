@@ -51,8 +51,10 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\DemoDataService;
 use OCA\Buildiq\Service\SettingsService;
+use OCA\Buildiq\Service\SetupServices;
 use OCA\Buildiq\Service\TemplateSeedService;
 use OCA\Buildiq\Settings\AdminSettings;
 use OCP\AppFramework\Controller;
@@ -111,16 +113,48 @@ class SetupController extends Controller {
 	private const COMPLETION_KEY = 'setup_completed_version';
 
 	/**
+	 * Current Nextcloud user session
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group membership resolver (admin gate)
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * Demo dataset import (ADR-111 rule 4)
+	 *
+	 * @var DemoDataService
+	 */
+	private readonly DemoDataService $demoDataService;
+
+	/**
+	 * Settings write path (registry_* + secret token)
+	 *
+	 * @var SettingsService
+	 */
+	private readonly SettingsService $settings;
+
+	/**
+	 * Shared idempotent seeding service
+	 *
+	 * @var TemplateSeedService
+	 */
+	private readonly TemplateSeedService $seedService;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest $request The current HTTP request
 	 * @param LoggerInterface $logger PSR logger for diagnostics
 	 * @param IAppConfig $appConfig App-config reader/writer
-	 * @param IUserSession $userSession Current Nextcloud user session
-	 * @param IGroupManager $groupManager Group membership resolver (admin gate)
-	 * @param DemoDataService $demoDataService Demo dataset import (ADR-111 rule 4)
-	 * @param SettingsService $settings Settings write path (registry_* + secret token)
-	 * @param TemplateSeedService $seedService Shared idempotent seeding service
+	 * @param CallerContext $caller The caller's session, group memberships and the shared permission matcher.
+	 * @param SetupServices $setup Demo data, settings and template seeding.
 	 *
 	 * @return void
 	 */
@@ -128,12 +162,14 @@ class SetupController extends Controller {
 		IRequest $request,
 		private readonly LoggerInterface $logger,
 		private readonly IAppConfig $appConfig,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly DemoDataService $demoDataService,
-		private readonly SettingsService $settings,
-		private readonly TemplateSeedService $seedService,
+		CallerContext $caller,
+		SetupServices $setup,
 	) {
+		$this->userSession = $caller->userSession;
+		$this->groupManager = $caller->groupManager;
+		$this->demoDataService = $setup->demoDataService;
+		$this->settings = $setup->settings;
+		$this->seedService = $setup->seedService;
 		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
 
@@ -382,8 +418,8 @@ class SetupController extends Controller {
 		// neither can a count that merely repeats what was asked for. An
 		// operator who got part of the dataset must see the gap.
 		$declared = (int)($imported['declared'] ?? $imported['objects']);
-		$skipped  = (int)($imported['skipped'] ?? 0);
-		$message  = sprintf('Imported %d of %d demo object(s).', $imported['objects'], $declared);
+		$skipped = (int)($imported['skipped'] ?? 0);
+		$message = sprintf('Imported %d of %d demo object(s).', $imported['objects'], $declared);
 		if ($skipped > 0) {
 			$message .= sprintf(
 				' %d skipped: their schema is not installed on this instance.',
@@ -395,7 +431,7 @@ class SetupController extends Controller {
 			[
 				'success' => true,
 				'message' => $message,
-				'detail'  => $imported,
+				'detail' => $imported,
 			]
 		);
 	}//end loadDataset()

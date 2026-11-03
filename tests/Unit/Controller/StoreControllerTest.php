@@ -32,6 +32,7 @@ namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\ApplicationsController;
 use OCA\Buildiq\Controller\StoreController;
+use OCA\Buildiq\Service\StoreClient;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
 use OCA\OpenRegister\AppHost\Store\StoreActionAuthorizer;
@@ -116,9 +117,11 @@ class StoreControllerTest extends TestCase {
 			request: $this->request,
 			logger: $this->logger,
 			userSession: $this->userSession,
-			storeService: $this->storeService,
-			appsController: $this->appsController,
-			actionAuthorizer: $this->actionAuthorizer
+			store: new StoreClient(
+				storeService: $this->storeService,
+				actionAuthorizer: $this->actionAuthorizer
+			),
+			appsController: $this->appsController
 		);
 
 	}//end controller()

@@ -27,6 +27,8 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\AppNavigationService;
+use OCA\Buildiq\Service\CallerContext;
+use OCA\Buildiq\Service\PermissionResolver;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
@@ -120,12 +122,15 @@ class AppNavigationServiceTest extends TestCase {
 		// constructor parameter (the nav-order base override) and this test was never
 		// updated, so all 11 of its cases have simply been erroring on a TypeError.
 		$this->service = new AppNavigationService(
-			$this->objectService,
-			$this->urlGenerator,
-			$this->userSession,
-			$this->groupManager,
-			$this->appConfig,
-			$this->logger,
+			objectService: $this->objectService,
+			urlGenerator: $this->urlGenerator,
+			caller: new CallerContext(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				permissionResolver: $this->createMock(PermissionResolver::class)
+			),
+			appConfig: $this->appConfig,
+			logger: $this->logger,
 		);
 	}//end setUp()
 
@@ -492,12 +497,15 @@ class AppNavigationServiceTest extends TestCase {
 			);
 
 		$service = new AppNavigationService(
-			$this->objectService,
-			$urlGenerator,
-			$this->userSession,
-			$this->groupManager,
-			$this->appConfig,
-			$this->logger,
+			objectService: $this->objectService,
+			urlGenerator: $urlGenerator,
+			caller: new CallerContext(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				permissionResolver: $this->createMock(PermissionResolver::class)
+			),
+			appConfig: $this->appConfig,
+			logger: $this->logger,
 		);
 
 		$user = $this->createMock(IUser::class);

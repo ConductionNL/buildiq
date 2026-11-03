@@ -128,13 +128,45 @@ class GitHubAppSyncService {
 	public const OUTCOME_FORBIDDEN = 'github_forbidden';
 
 	/**
+	 * OR object CRUD (load/save Application + versions).
+	 *
+	 * @var ObjectServiceInterface
+	 */
+	private readonly ObjectServiceInterface $objectService;
+
+	/**
+	 * Provisions the draft register on pull.
+	 *
+	 * @var RegisterMapper
+	 */
+	private readonly RegisterMapper $registerMapper;
+
+	/**
+	 * Clones pulled companion schemas into the draft register.
+	 *
+	 * @var SchemaMapper
+	 */
+	private readonly SchemaMapper $schemaMapper;
+
+	/**
+	 * Local → repo file map (change 1).
+	 *
+	 * @var AppRepoSerializer
+	 */
+	private readonly AppRepoSerializer $serializer;
+
+	/**
+	 * Repo file map → clone-seam array (change 1).
+	 *
+	 * @var AppRepoParser
+	 */
+	private readonly AppRepoParser $parser;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectServiceInterface $objectService OR object CRUD (load/save Application + versions).
-	 * @param RegisterMapper $registerMapper Provisions the draft register on pull.
-	 * @param SchemaMapper $schemaMapper Clones pulled companion schemas into the draft register.
-	 * @param AppRepoSerializer $serializer Local → repo file map (change 1).
-	 * @param AppRepoParser $parser Repo file map → clone-seam array (change 1).
+	 * @param RegisterStore $store OpenRegister's object service, register and schema mappers and audit trail.
+	 * @param AppRepoCodec $codec The app repository serializer and parser.
 	 * @param GitHubCatalogService $catalogService Repo fetch + commit-sha resolution (change 2).
 	 * @param AppChannelApplier $channelApplier Applies the v2 repo channels (apply-v2-channels).
 	 * @param LoggerInterface $logger PSR logger (secret-free diagnostics only).
@@ -144,16 +176,18 @@ class GitHubAppSyncService {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectServiceInterface $objectService,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly AppRepoSerializer $serializer,
-		private readonly AppRepoParser $parser,
+		RegisterStore $store,
+		AppRepoCodec $codec,
 		private readonly GitHubCatalogService $catalogService,
 		private readonly AppChannelApplier $channelApplier,
 		private readonly LoggerInterface $logger,
 		private readonly ContainerInterface $container,
 	) {
+		$this->objectService = $store->objectService;
+		$this->registerMapper = $store->registerMapper;
+		$this->schemaMapper = $store->schemaMapper;
+		$this->serializer = $codec->serializer;
+		$this->parser = $codec->parser;
 	}//end __construct()
 
 	/**

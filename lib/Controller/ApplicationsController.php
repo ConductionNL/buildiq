@@ -52,15 +52,17 @@ namespace OCA\Buildiq\Controller;
 
 use DateTimeImmutable;
 use DateTimeInterface;
-use OCA\Buildiq\AppInfo\Application;
 use InvalidArgumentException;
+use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Service\AppChannelApplier;
-use OCA\Buildiq\Service\AppTemplateCapture;
 use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Service\AppTemplateCapture;
+use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\CompanionSchemaCollector;
 use OCA\Buildiq\Service\LocalApplicationRef;
 use OCA\Buildiq\Service\ManifestResolverService;
 use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Service\RegisterStore;
 use OCA\Buildiq\Service\RepoSource;
 use OCA\Buildiq\Service\TemplateInstall;
 use OCA\Buildiq\Support\ObjectRecord;
@@ -100,35 +102,81 @@ class ApplicationsController extends Controller {
 	private const EVENT_ADMIN_BYPASS = 'rbac.admin_bypass';
 
 	/**
+	 * OpenRegister object service (hard dep via info.xml)
+	 *
+	 * @var ObjectServiceInterface
+	 */
+	private readonly ObjectServiceInterface $objectService;
+
+	/**
+	 * Resolves slugs/UUIDs to numeric register IDs
+	 *
+	 * @var RegisterMapper
+	 */
+	private readonly RegisterMapper $registerMapper;
+
+	/**
+	 * Resolves slugs/UUIDs to numeric schema IDs
+	 *
+	 * @var SchemaMapper
+	 */
+	private readonly SchemaMapper $schemaMapper;
+
+	/**
+	 * Optional OR audit-trail writer (null until OR loaded)
+	 *
+	 * @var AuditTrailMapper|null
+	 */
+	private readonly ?AuditTrailMapper $auditTrailMapper;
+
+	/**
+	 * Current Nextcloud user session
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group membership resolver
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * Shared permission-grammar resolver (H1/H2 fix)
+	 *
+	 * @var PermissionResolver
+	 */
+	private readonly PermissionResolver $permissionResolver;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest $request The current HTTP request
 	 * @param LoggerInterface $logger PSR logger for diagnostics
-	 * @param ObjectServiceInterface $objectService OpenRegister object service (hard dep via info.xml)
-	 * @param RegisterMapper $registerMapper Resolves slugs/UUIDs to numeric register IDs
-	 * @param SchemaMapper $schemaMapper Resolves slugs/UUIDs to numeric schema IDs
-	 * @param IUserSession $userSession Current Nextcloud user session
-	 * @param IGroupManager $groupManager Group membership resolver
+	 * @param RegisterStore $store OpenRegister's object service, register and schema mappers and audit trail.
+	 * @param CallerContext $caller The caller's session, group memberships and the shared permission matcher.
 	 * @param ManifestResolverService $manifestResolver Version-aware manifest resolver (REQ-OBVR-002)
-	 * @param PermissionResolver $permissionResolver Shared permission-grammar resolver (H1/H2 fix)
 	 * @param AppChannelApplier $channelApplier Applies the v2 repo channels (apply-v2-channels)
-	 * @param AuditTrailMapper|null $auditTrailMapper Optional OR audit-trail writer (null until OR loaded)
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		IRequest $request,
 		private readonly LoggerInterface $logger,
-		private readonly ObjectServiceInterface $objectService,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		RegisterStore $store,
+		CallerContext $caller,
 		private readonly ManifestResolverService $manifestResolver,
-		private readonly PermissionResolver $permissionResolver,
 		private readonly AppChannelApplier $channelApplier,
-		private readonly ?AuditTrailMapper $auditTrailMapper = null,
 	) {
+		$this->objectService = $store->objectService;
+		$this->registerMapper = $store->registerMapper;
+		$this->schemaMapper = $store->schemaMapper;
+		$this->auditTrailMapper = $store->auditTrailMapper;
+		$this->userSession = $caller->userSession;
+		$this->groupManager = $caller->groupManager;
+		$this->permissionResolver = $caller->permissionResolver;
 		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
 
@@ -1796,8 +1844,8 @@ class ApplicationsController extends Controller {
 	 * @param string $newSlug The new (kebab-case, pre-validated) app slug.
 	 * @param string $ownerUid The owner UID (becomes the app owner).
 	 * @param RepoSource|null $source GitHub repo the template was fetched from and the broker credential
-	 *                               used for that fetch, when applicable: forwarded to the skills channel
-	 *                               so a private-repo Hermiq bundle fetch can authenticate.
+	 *                                used for that fetch, when applicable: forwarded to the skills channel
+	 *                                so a private-repo Hermiq bundle fetch can authenticate.
 	 *
 	 * @return array{status:int,data:array<string,mixed>} 201 + app on success; 409/500/503 on failure.
 	 *

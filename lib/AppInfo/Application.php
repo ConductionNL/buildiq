@@ -42,6 +42,7 @@ use OCA\Buildiq\Repair\InitializeSettings;
 use OCA\Buildiq\Sections\SettingsSection;
 use OCA\Buildiq\Service\AppNavigationService;
 use OCA\Buildiq\Service\AppVisibilityResolver;
+use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCA\Buildiq\Service\Dashboard\AggregationGateway;
 use OCA\Buildiq\Service\Dashboard\OpenRegisterAggregationGateway;
@@ -49,19 +50,20 @@ use OCA\Buildiq\Service\Dashboard\WidgetItemProjector;
 use OCA\Buildiq\Service\DashboardWidgetRegistrar;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Service\PublishedApplicationProvider;
+use OCA\Buildiq\Service\PublishedApps;
 use OCA\Buildiq\Service\SettingsService;
 use OCA\Buildiq\Settings\AdminSettings;
 use OCA\OpenRegister\AppHost\Bootstrap;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
-use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
-use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
+use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\App\IAppManager;
 use OCP\AppFramework\App;
@@ -301,12 +303,13 @@ class Application extends App implements IBootstrap {
 			static fn ($c): AppNavigationService => new AppNavigationService(
 				objectService: $c->get(ObjectServiceInterface::class),
 				urlGenerator: $c->get('OCP\\IURLGenerator'),
-				userSession: $c->get('OCP\\IUserSession'),
-				groupManager: $c->get('OCP\\IGroupManager'),
+				caller: $c->get(CallerContext::class),
 				appConfig: $c->get('OCP\\IAppConfig'),
 				logger: $c->get(LoggerInterface::class),
-				applicationProvider: $c->get(PublishedApplicationProvider::class),
-				visibilityResolver: $c->get(AppVisibilityResolver::class)
+				published: new PublishedApps(
+					applicationProvider: $c->get(PublishedApplicationProvider::class),
+					visibilityResolver: $c->get(AppVisibilityResolver::class)
+				)
 			)
 		);
 
@@ -433,8 +436,7 @@ class Application extends App implements IBootstrap {
 				appConfig: $c->get('OCP\\IAppConfig'),
 				appManager: $c->get('OCP\\App\\IAppManager'),
 				container: $c,
-				groupManager: $c->get('OCP\\IGroupManager'),
-				userSession: $c->get('OCP\\IUserSession'),
+				caller: $c->get(CallerContext::class),
 				logger: $c->get('Psr\\Log\\LoggerInterface'),
 				// Adopt-connection-registry: without it a store save would never
 				// ask integriq to look again, and nothing would say so. The

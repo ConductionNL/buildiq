@@ -107,13 +107,32 @@ class ApplicationCreationService {
 	private const BUILT_APP_ROUTE_SCHEMA = 'built-app-route';
 
 	/**
+	 * OpenRegister object service
+	 *
+	 * @var ObjectServiceInterface
+	 */
+	private readonly ObjectServiceInterface $objectService;
+
+	/**
+	 * Resolves register slugs
+	 *
+	 * @var RegisterMapper
+	 */
+	private readonly RegisterMapper $registerMapper;
+
+	/**
+	 * Resolves schema slugs
+	 *
+	 * @var SchemaMapper
+	 */
+	private readonly SchemaMapper $schemaMapper;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger PSR logger for diagnostics
-	 * @param ObjectServiceInterface $objectService OpenRegister object service
+	 * @param RegisterStore $store OpenRegister's object service, register and schema mappers and audit trail.
 	 * @param RegisterService $registerService OpenRegister register-level service
-	 * @param RegisterMapper $registerMapper Resolves register slugs
-	 * @param SchemaMapper $schemaMapper Resolves schema slugs
 	 * @param IUserSession $userSession Current Nextcloud user session
 	 * @param SlugValidator $slugValidator Slug validation helper
 	 *
@@ -121,13 +140,14 @@ class ApplicationCreationService {
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
-		private readonly ObjectServiceInterface $objectService,
+		RegisterStore $store,
 		private readonly RegisterService $registerService,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
 		private readonly IUserSession $userSession,
 		private readonly SlugValidator $slugValidator,
 	) {
+		$this->objectService = $store->objectService;
+		$this->registerMapper = $store->registerMapper;
+		$this->schemaMapper = $store->schemaMapper;
 	}//end __construct()
 
 	/**

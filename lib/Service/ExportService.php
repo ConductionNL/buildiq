@@ -112,33 +112,54 @@ class ExportService {
 	private int $zipTimestamp;
 
 	/**
+	 * Bundles bound data registers into the exported tree (data-registers-runtime) — a dedicated
+	 * collaborator so this class's own coupling/ complexity stays within PHPMD's thresholds.
+	 *
+	 * @var DataRegisterExportBundler
+	 */
+	private DataRegisterExportBundler $dataRegisterBundler;
+
+	/**
+	 * Bundles the application's flows and the agents that point at it into the exported tree, for the
+	 * same reason.
+	 *
+	 * @var FlowAndAgentExportBundler
+	 */
+	private FlowAndAgentExportBundler $flowAndAgentBundler;
+
+	/**
+	 * Writes the application's own manifest, schemas and records into the tree. Null only where a
+	 * caller builds the bare scaffold.
+	 *
+	 * @var ExportAppContentBundler|null
+	 */
+	private ?ExportAppContentBundler $contentBundler;
+
+	/**
+	 * Writes `deploy/` for an export that runs on its own server. Null leaves it out.
+	 *
+	 * @var ServerBundleWriter|null
+	 */
+	private ?ServerBundleWriter $serverBundleWriter;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IAppData $appData The app-data area for scratch + exports.
 	 * @param PlaceholderResolver $placeholderResolver Pure resolver for {{tokens}}.
 	 * @param LoggerInterface $logger Logger.
-	 * @param DataRegisterExportBundler $dataRegisterBundler Bundles bound data registers into the exported
-	 *                                                       tree (data-registers-runtime) — a dedicated
-	 *                                                       collaborator so this class's own coupling/
-	 *                                                       complexity stays within PHPMD's thresholds.
-	 * @param FlowAndAgentExportBundler $flowAndAgentBundler Bundles the application's flows and the
-	 *                                                       agents that point at it into the exported
-	 *                                                       tree, for the same reason.
-	 * @param ExportAppContentBundler|null $contentBundler Writes the application's own manifest, schemas
-	 *                                                     and records into the tree. Null only where a
-	 *                                                     caller builds the bare scaffold.
-	 * @param ServerBundleWriter|null $serverBundleWriter Writes `deploy/` for an export that runs on its
-	 *                                                    own server. Null leaves it out.
+	 * @param ExportBundlers $bundlers The writers that bundle registers, flows/agents, content and the server bundle.
 	 */
 	public function __construct(
 		private IAppData $appData,
 		private PlaceholderResolver $placeholderResolver,
 		private LoggerInterface $logger,
-		private DataRegisterExportBundler $dataRegisterBundler,
-		private FlowAndAgentExportBundler $flowAndAgentBundler,
-		private ?ExportAppContentBundler $contentBundler = null,
-		private ?ServerBundleWriter $serverBundleWriter = null,
+		ExportBundlers $bundlers,
 	) {
+		$this->dataRegisterBundler = $bundlers->dataRegisterBundler;
+		$this->flowAndAgentBundler = $bundlers->flowAndAgentBundler;
+		$this->contentBundler = $bundlers->contentBundler;
+		$this->serverBundleWriter = $bundlers->serverBundleWriter;
 		// Constructed rather than injected: it is stateless, has no
 		// dependencies of its own, and is deterministic — so injecting it buys
 		// no seam and costs a constructor dependency, which is what phpmd's

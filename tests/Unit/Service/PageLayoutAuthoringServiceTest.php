@@ -35,6 +35,7 @@ use OCA\Buildiq\Service\LayoutDeltaService;
 use OCA\Buildiq\Service\PageLayoutAuthoringService;
 use OCA\Buildiq\Service\PageLayoutFrozenBase;
 use OCA\Buildiq\Service\PageLayoutLayerStack;
+use OCA\Buildiq\Service\PageLayoutParts;
 use OCA\Buildiq\Service\PageLayoutPresenter;
 use OCA\Buildiq\Service\PageLayoutValidator;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
@@ -109,10 +110,12 @@ final class PageLayoutAuthoringServiceTest extends TestCase {
 		$this->provider = new PageLayoutLeafProvider(
 			objectService: $objectService,
 			appConfig: $appConfig,
-			deltas: $this->deltas,
-			layers: $layers,
-			frozenBase: new PageLayoutFrozenBase(layers: $layers),
-			presenter: new PageLayoutPresenter(),
+			parts: new PageLayoutParts(
+				deltas: $this->deltas,
+				layers: $layers,
+				frozenBase: new PageLayoutFrozenBase(layers: $layers),
+				presenter: new PageLayoutPresenter()
+			),
 			logger: $this->createMock(LoggerInterface::class),
 		);
 
@@ -513,10 +516,10 @@ final class PageLayoutAuthoringServiceTest extends TestCase {
 			}//end listIds()
 		};
 		$cases = [
-			'not resolvable'   => null,
-			'without listIds'  => new \stdClass(),
-			'throws'           => $throws,
-			'answers no list'  => $noList,
+			'not resolvable' => null,
+			'without listIds' => new \stdClass(),
+			'throws' => $throws,
+			'answers no list' => $noList,
 		];
 
 		foreach ($cases as $name => $registry) {
@@ -524,7 +527,7 @@ final class PageLayoutAuthoringServiceTest extends TestCase {
 			$layout['tabs'][] = ['id' => 'kaart', 'kind' => 'leaf', 'label' => 'Kaart', 'ref' => 'nobody-offers-this'];
 			$result = $this->serviceWithRegistry(registry: $registry)->save($layout, 'beheerder');
 
-			$this->assertSame([], $result['warnings'], 'A registry that '.$name.' must not make the save warn.');
+			$this->assertSame([], $result['warnings'], 'A registry that ' . $name . ' must not make the save warn.');
 		}
 	}//end testARegistryThatCannotAnswerDoesNotWarn()
 
