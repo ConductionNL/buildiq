@@ -50,6 +50,31 @@ use RuntimeException;
 class GitHubAppSyncPullChannelsTest extends TestCase {
 
 	/**
+	 * The service writes and reads repositories with the codec it was given.
+	 *
+	 * @return void
+	 */
+	public function testTheCodecIsWhatTheServiceWritesAndReadsWith(): void {
+		$serializer = $this->createMock(AppRepoSerializer::class);
+		$parser = $this->createMock(AppRepoParser::class);
+		$service = new GitHubAppSyncService(
+			store: new RegisterStore(
+				objectService: $this->createMock(ObjectServiceInterface::class),
+				registerMapper: $this->createMock(RegisterMapper::class),
+				schemaMapper: $this->createMock(SchemaMapper::class)
+			),
+			codec: new AppRepoCodec(serializer: $serializer, parser: $parser),
+			catalogService: $this->createMock(GitHubCatalogService::class),
+			channelApplier: $this->createMock(AppChannelApplier::class),
+			logger: new NullLogger(),
+			container: $this->createMock(ContainerInterface::class)
+		);
+
+		$this->assertSame($serializer, (new \ReflectionProperty($service, 'serializer'))->getValue($service));
+		$this->assertSame($parser, (new \ReflectionProperty($service, 'parser'))->getValue($service));
+	}//end testTheCodecIsWhatTheServiceWritesAndReadsWith()
+
+	/**
 	 * The applier receives the pulled template, the linked repo, the ref,
 	 * the credential, the acting user and this instance's application.
 	 *
