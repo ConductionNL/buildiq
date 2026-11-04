@@ -907,7 +907,10 @@ function propertyFromField(field) {
 	const v = field.validation || {}
 	prop.type = propertyTypeOf(field.type)
 	if (field.type === 'array') {
-		prop.items = { ...withoutKeys(raw.items, ['type']), type: v.itemsType || 'string' }
+		prop.items = {
+			...withoutKeys(raw.items, ['type']),
+			type: v.itemsType || 'string',
+		}
 	}
 	if (field.type === 'relation') {
 		prop['x-openregister-relation'] = relationFromField(raw, v)

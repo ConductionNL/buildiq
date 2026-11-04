@@ -31,7 +31,9 @@ function steppableClock() {
  * @return {Promise<object>} The first version row afterwards.
  */
 async function typeNameAfterStepBack(time) {
-	const wrapper = mount(Step3Custom, { propsData: { payload: { preset: 'custom', versions: [] } } })
+	const wrapper = mount(Step3Custom, {
+		propsData: { payload: { preset: 'custom', versions: [] } },
+	})
 	time.value -= 600
 	await wrapper.find('#wizard-version-name-0').setValue('My Version')
 	return wrapper.vm.localVersions[0]

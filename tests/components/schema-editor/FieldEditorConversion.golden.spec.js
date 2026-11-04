@@ -86,7 +86,13 @@ function withoutKey(row) {
 function schemaFor(values) {
 	const properties = {}
 	for (const type of TYPES) {
-		const prop = { ...values, description: 'd', default: 'x', enum: ['a'], 'x-extra': 1 }
+		const prop = {
+			...values,
+			description: 'd',
+			default: 'x',
+			enum: ['a'],
+			'x-extra': 1,
+		}
 		if (type === 'relation') {
 			prop['x-openregister-relation'] = {
 				target: 'person',
@@ -133,8 +139,14 @@ function rowsFor(values) {
 			cardinality: i % 2 === 0 ? '' : 'many',
 			inverseOf: i % 2 === 0 ? 'back' : '',
 		},
-		_raw: i % 4 === 0 ? null : { title: 'kept', type: 'gone', items: { title: 'it', type: 'x' } },
-	})).concat([{ name: '', type: 'string' }, { name: 'noValidation', type: 'array' }])
+		_raw:
+			i % 4 === 0
+				? null
+				: { title: 'kept', type: 'gone', items: { title: 'it', type: 'x' } },
+	})).concat([
+		{ name: '', type: 'string' },
+		{ name: 'noValidation', type: 'array' },
+	])
 }
 
 /**
