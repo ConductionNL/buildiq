@@ -319,7 +319,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../assets/editor-controls.scss' as c;
+
 .agents-page {
 	display: flex;
 	flex-direction: column;
@@ -348,12 +350,7 @@ export default {
 }
 
 .agents-page__list {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
+	@include c.plain-list(8px);
 	flex: 0 0 280px;
 }
 

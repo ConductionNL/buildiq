@@ -252,7 +252,9 @@ export function editorToRelations(relations) {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .buildiq-relation-editor {
 	display: flex;
 	flex-direction: column;
@@ -277,12 +279,7 @@ export function editorToRelations(relations) {
 }
 
 .buildiq-relation-editor__rows {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
+	@include c.plain-list(8px);
 }
 
 .buildiq-relation-editor__row {

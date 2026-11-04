@@ -83,6 +83,7 @@
 
 <script>
 import InlineFieldMark from './fields/InlineFieldMark.vue'
+import { pageEditorBaseMixin } from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 const TYPE_SUGGESTIONS = [
@@ -105,30 +106,14 @@ const TYPE_SUGGESTIONS = [
 export default {
 	name: 'FilesPageEditor',
 	components: { InlineFieldMark },
-	mixins: [pageEditorValidationMixin],
+	mixins: [pageEditorBaseMixin, pageEditorValidationMixin],
 	props: {
-		config: {
-			type: Object,
-			default: () => ({}),
-		},
-
 		pageType: {
 			type: String,
 			default: 'files',
 		},
-
-		appSlug: {
-			type: String,
-			default: '',
-		},
-
-		parentRoute: {
-			type: String,
-			default: '',
-		},
 	},
 
-	emits: ['update:config'],
 	data() {
 		return {
 			typeDraft: '',
@@ -160,29 +145,6 @@ export default {
 
 	methods: {
 		/**
-		 * Write one key on the page's `config` block. Only the named key is
-		 * touched, so config keys this editor does not surface round-trip
-		 * losslessly.
-		 *
-		 * @param {string} key - the config key being written: `folder` or `allowedTypes`.
-		 * @param {string|string[]} value - the new value: the folder path from the text input, or the full replacement tag list. An empty string or empty array deletes the key — that is how "allow everything" is expressed.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
-		 */
-		update(key, value) {
-			const next = { ...this.config }
-			if (
-				value === ''
-				|| value === null
-				|| (Array.isArray(value) && value.length === 0)
-			) {
-				delete next[key]
-			} else {
-				next[key] = value
-			}
-			this.$emit('update:config', next)
-		},
-
-		/**
 		 * Observed behaviour of `commitDraft` (retrofit annotation).
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
@@ -213,7 +175,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .files-page-editor {
 	display: flex;
 	flex-direction: column;
@@ -228,12 +192,7 @@ export default {
 }
 
 .files-page-editor__fieldset {
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	padding: 8px;
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
+	@include c.fieldset;
 }
 
 .files-page-editor__fieldset legend {
@@ -250,11 +209,7 @@ export default {
 }
 
 .files-page-editor__group-row input {
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .files-page-editor__tags {

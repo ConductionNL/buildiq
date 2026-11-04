@@ -493,7 +493,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .page-list-editor {
 	display: flex;
 	flex-direction: column;
@@ -518,12 +520,7 @@ export default {
 
 .page-list-editor__add,
 .page-list-editor__add-row button {
-	background: var(--color-primary-element-light);
-	border: 1px solid var(--color-border);
-	color: var(--color-main-text);
-	padding: 4px 10px;
-	border-radius: var(--border-radius);
-	cursor: pointer;
+	@include c.add-button;
 }
 
 .page-list-editor__add-row {
@@ -548,11 +545,7 @@ export default {
 
 .page-list-editor__select {
 	flex: 1 1 auto;
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .page-list-editor__list {
@@ -627,11 +620,7 @@ export default {
 	   below it. Two such inputs alone exceeded the 284px row, which is how the
 	   type tag and the remove button ended up outside the pane. */
 	min-width: 0;
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .page-list-editor__permission {
@@ -682,21 +671,11 @@ export default {
 }
 
 .page-list-editor__copy {
-	background: transparent;
-	border: 1px solid var(--color-border);
-	color: var(--color-main-text);
-	padding: 4px 8px;
-	border-radius: var(--border-radius);
-	cursor: pointer;
+	@include c.ghost-button;
 }
 
 .page-list-editor__remove {
-	background: transparent;
-	border: 1px solid var(--color-border);
-	color: var(--color-error, var(--color-main-text));
-	padding: 4px 8px;
-	border-radius: var(--border-radius);
-	cursor: pointer;
+	@include c.danger-button;
 }
 
 .page-list-editor__empty {

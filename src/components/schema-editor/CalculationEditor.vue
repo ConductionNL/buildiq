@@ -413,7 +413,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .buildiq-calculation-editor {
 	display: flex;
 	flex-direction: column;
@@ -462,12 +464,6 @@ export default {
 }
 
 .buildiq-calculation-editor__readonly {
-	margin: 0;
-	padding: 8px;
-	background: var(--color-background-dark);
-	border-radius: var(--border-radius);
-	font-family: monospace;
-	font-size: 13px;
-	overflow: auto;
+	@include c.code-block;
 }
 </style>

@@ -303,71 +303,32 @@
 
 <script>
 import InlineFieldMark from './fields/InlineFieldMark.vue'
-import { useRegisterPicker } from '../../composables/useRegisterPicker.js'
+import { useEditorRegisterPicker } from '../../composables/useEditorRegisterPicker.js'
+import {
+	pageEditorBaseMixin,
+	pageEditorPickerMixin,
+	pageEditorRegisterPropsMixin,
+} from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'MapPageEditor',
 	components: { InlineFieldMark },
-	mixins: [pageEditorValidationMixin],
-	props: {
-		config: {
-			type: Object,
-			default: () => ({}),
-		},
+	mixins: [
+		pageEditorBaseMixin,
+		pageEditorRegisterPropsMixin,
+		pageEditorValidationMixin,
+		pageEditorPickerMixin,
+	],
 
+	props: {
 		pageType: {
 			type: String,
 			default: 'map',
 		},
-
-		appSlug: {
-			type: String,
-			default: '',
-		},
-
-		// The app's own register, read off the version being edited.
-		appRegister: {
-			type: String,
-			default: '',
-		},
-
-		dataRegisters: {
-			type: Array,
-			default: () => [],
-		},
-
-		parentRoute: {
-			type: String,
-			default: '',
-		},
 	},
 
-	emits: ['update:config'],
-	/**
-	 * Build the register/schema picker, handing it the app's own register
-	 * as a getter so it follows the prop.
-	 *
-	 * @param {object} props - the resolved component props.
-	 * @return {{picker: object}} the picker, exposed as `this.picker`.
-	 * @spec openspec/specs/version-routing-ui/spec.md#requirement-version-composables-resolve-active-version-and-manifest-history
-	 */
-	setup(props) {
-		const picker = useRegisterPicker({
-			appSlug: props.appSlug,
-			appRegister: () => props.appRegister,
-			dataRegisters: props.dataRegisters,
-		})
-		return { picker }
-	},
-
-	data() {
-		return {
-			registers: [],
-			schemas: [],
-			schemaProperties: {},
-		}
-	},
+	setup: useEditorRegisterPicker,
 
 	computed: {
 		validatedConfigKeys() {
@@ -432,32 +393,7 @@ export default {
 		},
 	},
 
-	async mounted() {
-		await this.fetchRegisters()
-	},
-
 	methods: {
-		/**
-		 * Lossless top-level `config` key update: clone, delete-on-empty,
-		 * touch only the edited key.
-		 *
-		 * @param {string} key - top-level config key.
-		 * @param {*} value - new value.
-		 */
-		update(key, value) {
-			const next = { ...this.config }
-			if (
-				value === ''
-				|| value === null
-				|| (Array.isArray(value) && value.length === 0)
-			) {
-				delete next[key]
-			} else {
-				next[key] = value
-			}
-			this.$emit('update:config', next)
-		},
-
 		/**
 		 * Write one element of the `center` [lat, lng] pair.
 		 *
@@ -602,40 +538,13 @@ export default {
 			}
 			this.update('markers', nextMarkers)
 		},
-
-		/**
-		 * Fetch the registers list for the picker dropdown.
-		 */
-		async fetchRegisters() {
-			this.registers = await this.picker.fetchRegisters()
-		},
-
-		/**
-		 * Fetch the schemas for a given register.
-		 *
-		 * @param {string} register - register slug.
-		 */
-		async fetchSchemas(register) {
-			this.schemas = await this.picker.fetchSchemas(register)
-		},
-
-		/**
-		 * Fetch schema properties for the field-mapping dropdowns.
-		 *
-		 * @param {string} register - register slug.
-		 * @param {string} schema - schema slug.
-		 */
-		async fetchSchemaProperties(register, schema) {
-			this.schemaProperties = await this.picker.fetchSchemaProperties(
-				register,
-				schema,
-			)
-		},
 	},
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .map-page-editor {
 	display: flex;
 	flex-direction: column;
@@ -650,12 +559,7 @@ export default {
 }
 
 .map-page-editor__fieldset {
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	padding: 8px;
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
+	@include c.fieldset;
 }
 
 .map-page-editor__fieldset legend {
@@ -679,11 +583,7 @@ export default {
 
 .map-page-editor__group-row input,
 .map-page-editor__group-row select {
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .map-page-editor__shape {
@@ -707,11 +607,7 @@ export default {
 
 .map-page-editor__row select,
 .map-page-editor__row-url {
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .map-page-editor__row-url {
@@ -719,22 +615,12 @@ export default {
 }
 
 .map-page-editor__row-remove {
-	background: transparent;
-	border: 1px solid var(--color-border);
-	color: var(--color-error, var(--color-main-text));
-	padding: 4px 8px;
-	border-radius: var(--border-radius);
-	cursor: pointer;
+	@include c.danger-button;
 }
 
 .map-page-editor__row-add {
 	align-self: flex-start;
-	background: var(--color-primary-element-light);
-	border: 1px solid var(--color-border);
-	color: var(--color-main-text);
-	padding: 4px 10px;
-	border-radius: var(--border-radius);
-	cursor: pointer;
+	@include c.add-button;
 }
 
 .map-page-editor__hint {

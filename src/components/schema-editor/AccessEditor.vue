@@ -659,7 +659,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .buildiq-access-editor {
 	display: flex;
 	flex-direction: column;
@@ -679,12 +681,7 @@ export default {
 }
 
 .buildiq-access-editor__rows {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
+	@include c.plain-list(12px);
 }
 
 .buildiq-access-editor__row {

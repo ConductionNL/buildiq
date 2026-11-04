@@ -461,7 +461,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../../assets/editor-controls.scss' as c;
+
 .form-steps-manager {
 	display: flex;
 	flex-direction: column;
@@ -521,11 +523,7 @@ export default {
 .form-steps-manager__field,
 .form-steps-manager__select {
 	flex: 1 1 auto;
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .form-steps-manager__field--narrow {
@@ -538,12 +536,7 @@ export default {
 
 .form-steps-manager__icon-button,
 .form-steps-manager__remove {
-	background: transparent;
-	border: 1px solid var(--color-border);
-	color: var(--color-main-text);
-	padding: 4px 8px;
-	border-radius: var(--border-radius);
-	cursor: pointer;
+	@include c.ghost-button;
 }
 
 .form-steps-manager__remove {
@@ -592,21 +585,11 @@ export default {
 }
 
 .form-steps-manager__assign button {
-	background: var(--color-primary-element-light);
-	border: 1px solid var(--color-border);
-	color: var(--color-main-text);
-	padding: 4px 10px;
-	border-radius: var(--border-radius);
-	cursor: pointer;
+	@include c.add-button;
 }
 
 .form-steps-manager__add {
 	align-self: flex-start;
-	background: var(--color-primary-element-light);
-	border: 1px solid var(--color-border);
-	color: var(--color-main-text);
-	padding: 4px 10px;
-	border-radius: var(--border-radius);
-	cursor: pointer;
+	@include c.add-button;
 }
 </style>

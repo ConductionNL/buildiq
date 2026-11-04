@@ -458,7 +458,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .menu-tree-editor {
 	display: flex;
 	flex-direction: column;
@@ -482,12 +484,7 @@ export default {
 }
 
 .menu-tree-editor__add {
-	background: var(--color-primary-element-light);
-	border: 1px solid var(--color-border);
-	color: var(--color-main-text);
-	padding: 4px 10px;
-	border-radius: var(--border-radius);
-	cursor: pointer;
+	@include c.add-button;
 }
 
 .menu-tree-editor__list {
@@ -527,11 +524,7 @@ export default {
 
 .menu-tree-editor__field {
 	flex: 1 1 110px;
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .menu-tree-editor__field--narrow {
@@ -544,12 +537,7 @@ export default {
 }
 
 .menu-tree-editor__icon-btn {
-	background: transparent;
-	border: 1px solid var(--color-border);
-	color: var(--color-main-text);
-	padding: 4px 8px;
-	border-radius: var(--border-radius);
-	cursor: pointer;
+	@include c.ghost-button;
 }
 
 .menu-tree-editor__icon-btn--remove {

@@ -876,7 +876,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .wt-designer {
 	display: flex;
 	flex-direction: column;
@@ -978,12 +980,7 @@ export default {
 }
 
 .wt-designer__steps {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
+	@include c.plain-list(12px);
 }
 
 .wt-designer__step {

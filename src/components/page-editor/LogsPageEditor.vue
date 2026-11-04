@@ -123,75 +123,30 @@
 <script>
 import ColumnBuilder from './fields/ColumnBuilder.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
-import { useRegisterPicker } from '../../composables/useRegisterPicker.js'
+import { useEditorRegisterPicker } from '../../composables/useEditorRegisterPicker.js'
+import {
+	pageEditorBaseMixin,
+	pageEditorSchemaBoundMixin,
+} from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'LogsPageEditor',
 	components: { ColumnBuilder, InlineFieldMark },
-	mixins: [pageEditorValidationMixin],
-	props: {
-		config: {
-			type: Object,
-			default: () => ({}),
-		},
+	mixins: [
+		pageEditorBaseMixin,
+		pageEditorValidationMixin,
+		pageEditorSchemaBoundMixin,
+	],
 
+	props: {
 		pageType: {
 			type: String,
 			default: 'logs',
 		},
-
-		appSlug: {
-			type: String,
-			default: '',
-		},
-
-		// The app's own register, read off the version being edited.
-		appRegister: {
-			type: String,
-			default: '',
-		},
-
-		// The Application's declared `dataRegisters` bindings, forwarded into
-		// useRegisterPicker so the register picker labels/hoists them.
-		dataRegisters: {
-			type: Array,
-			default: () => [],
-		},
-
-		parentRoute: {
-			type: String,
-			default: '',
-		},
 	},
 
-	emits: ['update:config'],
-	/**
-	 * Build the register/schema picker for this editor. Options-API `data`
-	 * cannot see props at construction time, so the picker is created here
-	 * from the resolved props and exposed as `this.picker`.
-	 *
-	 * @param {{appSlug: string, dataRegisters: Array<{register: string, label?: string}>, config: object, pageType: string, parentRoute: string}} props - the resolved component props; only `appSlug` (hoists `buildiq-{slug}` in the register list) and `dataRegisters` (labels/hoists the Application's declared bindings) are read.
-	 * @return {{picker: object}} - bindings merged into the instance; `picker` exposes fetchRegisters/fetchSchemas/fetchSchemaProperties.
-	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
-	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-2.1
-	 */
-	setup(props) {
-		const picker = useRegisterPicker({
-			appSlug: props.appSlug,
-			appRegister: () => props.appRegister,
-			dataRegisters: props.dataRegisters,
-		})
-		return { picker }
-	},
-
-	data() {
-		return {
-			registers: [],
-			schemas: [],
-			schemaProperties: {},
-		}
-	},
+	setup: useEditorRegisterPicker,
 
 	computed: {
 		/**
@@ -216,48 +171,6 @@ export default {
 			}
 			return 'register'
 		},
-	},
-
-	watch: {
-		'config.register': {
-			immediate: true,
-			/**
-			 * Reload the schema dropdown whenever the bound register changes
-			 * (also fires immediately on mount for an already-bound page).
-			 *
-			 * @param {string} val - the newly selected register slug; empty when the binding was cleared — including by a switch to the `source` branch — which empties the schema list instead of fetching.
-			 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
-			 */
-			handler(val) {
-				if (val) {
-					this.fetchSchemas(val)
-				} else {
-					this.schemas = []
-				}
-			},
-		},
-
-		'config.schema': {
-			immediate: true,
-			/**
-			 * Reload the property map that feeds ColumnBuilder's field picker
-			 * whenever the bound schema changes.
-			 *
-			 * @param {string} val - the newly selected schema slug; empty (or a schema without a register) clears the property map so the column picker offers nothing stale.
-			 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
-			 */
-			handler(val) {
-				if (val && this.config.register) {
-					this.fetchSchemaProperties(this.config.register, val)
-				} else {
-					this.schemaProperties = {}
-				}
-			},
-		},
-	},
-
-	async mounted() {
-		await this.fetchRegisters()
 	},
 
 	methods: {
@@ -313,47 +226,13 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
-
-		/**
-		 * Observed behaviour of `fetchRegisters` (retrofit annotation).
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
-		 */
-		async fetchRegisters() {
-			this.registers = await this.picker.fetchRegisters()
-		},
-
-		/**
-		 * Load the schemas of one register into the schema dropdown.
-		 *
-		 * @param {string} register - slug of the register to list schemas for, i.e. `config.register`.
-		 * @return {Promise<void>} - resolves once `this.schemas` holds the result (`[]` when the request fails).
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
-		 */
-		async fetchSchemas(register) {
-			this.schemas = await this.picker.fetchSchemas(register)
-		},
-
-		/**
-		 * Load one schema's JSON-Schema `properties` map, which ColumnBuilder
-		 * turns into the column field picker's options.
-		 *
-		 * @param {string} register - slug of the register the schema lives in.
-		 * @param {string} schema - slug of the schema whose properties are wanted.
-		 * @return {Promise<void>} - resolves once `this.schemaProperties` holds the map (`{}` when the request fails).
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
-		 */
-		async fetchSchemaProperties(register, schema) {
-			this.schemaProperties = await this.picker.fetchSchemaProperties(
-				register,
-				schema,
-			)
-		},
 	},
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .logs-page-editor {
 	display: flex;
 	flex-direction: column;
@@ -368,12 +247,7 @@ export default {
 }
 
 .logs-page-editor__fieldset {
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	padding: 8px;
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
+	@include c.fieldset;
 }
 
 .logs-page-editor__fieldset legend {
@@ -409,11 +283,7 @@ export default {
 
 .logs-page-editor__group input,
 .logs-page-editor__group select {
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .logs-page-editor__hint {

@@ -280,7 +280,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../../assets/editor-controls.scss' as c;
+
 .field-validation-builder {
 	display: flex;
 	flex-wrap: wrap;
@@ -296,11 +298,7 @@ export default {
 
 .field-validation-builder__field {
 	flex: 1 1 140px;
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .field-validation-builder__field--narrow {

@@ -36,6 +36,7 @@ import DataSourceOriginToggle from './DataSourceOriginToggle.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
 import LayoutItemBuilder from './fields/LayoutItemBuilder.vue'
 import WidgetBuilder from './fields/WidgetBuilder.vue'
+import { pageEditorBaseMixin } from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
@@ -47,30 +48,14 @@ export default {
 		DataSourceOriginToggle,
 	},
 
-	mixins: [pageEditorValidationMixin],
+	mixins: [pageEditorBaseMixin, pageEditorValidationMixin],
 	props: {
-		config: {
-			type: Object,
-			default: () => ({}),
-		},
-
 		pageType: {
 			type: String,
 			default: 'dashboard',
 		},
-
-		appSlug: {
-			type: String,
-			default: '',
-		},
-
-		parentRoute: {
-			type: String,
-			default: '',
-		},
 	},
 
-	emits: ['update:config'],
 	computed: {
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).

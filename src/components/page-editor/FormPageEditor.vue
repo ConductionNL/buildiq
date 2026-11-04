@@ -257,6 +257,7 @@ import FormFieldBuilder from './fields/FormFieldBuilder.vue'
 import FormStepsManager from './fields/FormStepsManager.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
 import { useRegisterPicker } from '../../composables/useRegisterPicker.js'
+import { pageEditorBaseMixin } from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 import { findingsByField } from '../../services/formDestinationCheck.js'
 
@@ -276,31 +277,16 @@ export default {
 		SaveFormToLibraryDialog,
 	},
 
-	mixins: [pageEditorValidationMixin],
+	mixins: [pageEditorBaseMixin, pageEditorValidationMixin],
 	props: {
-		config: {
-			type: Object,
-			default: () => ({}),
-		},
-
-		pageType: {
-			type: String,
-			default: 'form',
-		},
-
-		appSlug: {
-			type: String,
-			default: '',
-		},
-
 		dataRegisters: {
 			type: Array,
 			default: () => [],
 		},
 
-		parentRoute: {
+		pageType: {
 			type: String,
-			default: '',
+			default: 'form',
 		},
 
 		// The selected page's `id` (mergeManifestDelta's page key) — the
@@ -693,7 +679,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .form-page-editor {
 	display: flex;
 	flex-direction: column;
@@ -708,12 +696,7 @@ export default {
 }
 
 .form-page-editor__fieldset {
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	padding: 8px;
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
+	@include c.fieldset;
 }
 
 .form-page-editor__fieldset legend {
@@ -737,11 +720,7 @@ export default {
 .form-page-editor__input,
 .form-page-editor__group-row input,
 .form-page-editor__group-row select {
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .form-page-editor__group-row {

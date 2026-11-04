@@ -298,6 +298,31 @@ export default {
 		},
 
 		/**
+		 * Add the assistant's answer to the last request: the plan to review, or the error.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 */
+		appendPlanOutcome() {
+			const assistantId = this.nextMessageId++
+			if (this.copilot.state.value === 'review') {
+				this.pendingMessageId = assistantId
+				this.messages.push({
+					id: assistantId,
+					role: 'assistant',
+					plan: this.copilot.plan.value,
+				})
+			} else {
+				this.messages.push({
+					id: assistantId,
+					role: 'assistant',
+					error: this.copilot.errorMessage.value,
+					errorDetail: this.copilot.errorDetail.value,
+				})
+			}
+		},
+
+		/**
 		 * Send the draft as a new user turn and request a plan.
 		 *
 		 * @return {Promise<void>}
@@ -318,22 +343,7 @@ export default {
 				this.versionSlug || undefined,
 			)
 
-			const assistantId = this.nextMessageId++
-			if (this.copilot.state.value === 'review') {
-				this.pendingMessageId = assistantId
-				this.messages.push({
-					id: assistantId,
-					role: 'assistant',
-					plan: this.copilot.plan.value,
-				})
-			} else {
-				this.messages.push({
-					id: assistantId,
-					role: 'assistant',
-					error: this.copilot.errorMessage.value,
-					errorDetail: this.copilot.errorDetail.value,
-				})
-			}
+			this.appendPlanOutcome()
 		},
 
 		/**

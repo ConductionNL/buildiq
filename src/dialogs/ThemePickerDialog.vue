@@ -410,7 +410,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../assets/editor-controls.scss' as c;
+
 .ob-theme-picker {
 	display: flex;
 	flex-direction: column;
@@ -451,12 +453,7 @@ export default {
 }
 
 .ob-theme-picker__contrast {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 2px;
+	@include c.plain-list(2px);
 	font-size: 0.9em;
 }
 
