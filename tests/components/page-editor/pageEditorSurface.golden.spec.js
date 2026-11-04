@@ -10,7 +10,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const calls = []
 vi.mock('../../../src/composables/useRegisterPicker.js', () => ({
@@ -80,6 +80,8 @@ async function surface(Component) {
 }
 
 describe('page editor surface', () => {
+	// Transforming the editors takes most of a minute on a loaded machine: not on any test's clock.
+	beforeAll(() => Promise.all(Object.values(modules).map((load) => load())), 300000)
 	beforeEach(() => vi.clearAllMocks())
 
 	it('removes a cleared key rather than leaving it undefined', async () => {
