@@ -2049,7 +2049,21 @@
         "This page has no widgets yet. Add one to start placing them.": "This page has no widgets yet. Add one to start placing them.",
         "Why this page is custom": "Why this page is custom",
         "Widget placements": "Widget placements",
-        "Widget unavailable": "Widget unavailable"
+        "Widget unavailable": "Widget unavailable",
+        "App health sample": "App health sample",
+        "Client errors": "Client errors",
+        "Failures 4xx": "Failures 4xx",
+        "Failures 5xx": "Failures 5xx",
+        "Page loads": "Page loads",
+        "Page loads of 3 s and over": "Page loads of 3 s and over",
+        "Requests": "Requests",
+        "Requests from 1 s to 3 s": "Requests from 1 s to 3 s",
+        "Requests from 250 ms to 1 s": "Requests from 250 ms to 1 s",
+        "Requests of 3 s and over": "Requests of 3 s and over",
+        "Requests under 250 ms": "Requests under 250 ms",
+        "Total load time (ms)": "Total load time (ms)",
+        "Window start": "Window start",
+        "Include server bundle": "Include server bundle"
     },
     "plurals": "",
     "pluralForm": "nplurals=2; plural=(n != 1);"

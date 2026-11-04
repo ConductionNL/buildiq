@@ -293,3 +293,24 @@ class StoreActionAuthorizer {
 		return false;
 	}//end canPublish()
 }//end class
+
+namespace OCA\OpenRegister\AppHost;
+
+/**
+ * Static-analysis stub for OpenRegister's one-call AppHost bootstrap.
+ *
+ * The real class lives in the openregister sibling app (ADR-040).
+ */
+class Bootstrap {
+	/**
+	 * Wire the generic AppHost plumbing for one app.
+	 *
+	 * @param \OCP\AppFramework\Bootstrap\IRegistrationContext $context The registration context.
+	 * @param string $appId The app id.
+	 * @param array<string,mixed> $options Namespaces and feature switches.
+	 *
+	 * @return void
+	 */
+	public static function register(\OCP\AppFramework\Bootstrap\IRegistrationContext $context, string $appId, array $options = []): void {
+	}//end register()
+}//end class

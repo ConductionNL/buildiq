@@ -45,6 +45,8 @@ use OCA\Buildiq\Support\ManifestDataBinding;
 use OCA\Buildiq\Support\ManifestPageShape;
 use OCA\Buildiq\Support\ManifestRoute;
 use OCA\Buildiq\Support\ManifestWidgetShape;
+use OCA\Buildiq\Support\ObjectRecord;
+use OCA\Buildiq\Support\WidgetSpec;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -1126,6 +1128,7 @@ class CopilotService {
 	 * @param string $appSlug Application slug.
 	 *
 	 * @return array<string, mixed>|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function resolveApplicationBySlug(string $appSlug): ?array {
 		$apps = $this->objectService->searchObjectsBySlug(
@@ -1140,7 +1143,7 @@ class CopilotService {
 			return null;
 		}
 
-		return $this->toArray(item: $apps[0]);
+		return ObjectRecord::castArray(object: $apps[0]);
 	}//end resolveApplicationBySlug()
 
 	/**
@@ -1154,6 +1157,7 @@ class CopilotService {
 	 * @return array<string, mixed>
 	 *
 	 * @throws CopilotException (404 not_found) When no such agent exists.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function requireAgent(string $agentId): array {
 		try {
@@ -1170,7 +1174,7 @@ class CopilotService {
 			);
 		}
 
-		return $this->toArray(item: $entity);
+		return ObjectRecord::castArray(object: $entity);
 	}//end requireAgent()
 
 	/**
@@ -1665,6 +1669,7 @@ class CopilotService {
 	 * @param string $versionSlug ApplicationVersion slug.
 	 *
 	 * @return array<string, mixed>|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function loadRawVersion(string $appSlug, string $versionSlug): ?array {
 		$app = $this->resolveApplicationBySlug(appSlug: $appSlug);
@@ -1685,7 +1690,7 @@ class CopilotService {
 			return null;
 		}
 
-		return $this->toArray(item: $versions[0]);
+		return ObjectRecord::castArray(object: $versions[0]);
 	}//end loadRawVersion()
 
 	/**
@@ -1774,10 +1779,12 @@ class CopilotService {
 			// the widget's id, title or placement.
 			[$page] = ManifestWidgetShape::appendTo(
 				page: $page,
-				widgetType: (string)($args['widgetType'] ?? ''),
-				widgetConfig: (array)($args['widgetConfig'] ?? []),
-				widgetId: (string)($args['widgetId'] ?? ''),
-				title: (string)($args['title'] ?? '')
+				spec: new WidgetSpec(
+					type: (string)($args['widgetType'] ?? ''),
+					config: (array)($args['widgetConfig'] ?? []),
+					id: (string)($args['widgetId'] ?? ''),
+					title: (string)($args['title'] ?? '')
+				)
 			);
 			$pages[$i] = $page;
 			break;
@@ -2062,28 +2069,6 @@ class CopilotService {
 
 		return $report;
 	}//end rollback()
-
-	/**
-	 * Coerce an OR entity, array, or generic value into an associative array.
-	 *
-	 * @param mixed $item Value to coerce.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function toArray(mixed $item): array {
-		if (is_array($item) === true) {
-			return $item;
-		}
-
-		if (is_object($item) === true && method_exists($item, 'jsonSerialize') === true) {
-			$serialised = $item->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		return (array)$item;
-	}//end toArray()
 
 	/**
 	 * Extract a UUID from a normalised OR object array.

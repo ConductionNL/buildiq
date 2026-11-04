@@ -90,13 +90,26 @@ class SettingsService {
 	];
 
 	/**
+	 * The user session
+	 *
+	 * @var IUserSession
+	 */
+	private IUserSession $userSession;
+
+	/**
+	 * The group manager
+	 *
+	 * @var IGroupManager
+	 */
+	private IGroupManager $groupManager;
+
+	/**
 	 * Constructor for the SettingsService.
 	 *
 	 * @param IAppConfig $appConfig The app config interface
 	 * @param IAppManager $appManager The app manager
 	 * @param ContainerInterface $container The container
-	 * @param IGroupManager $groupManager The group manager
-	 * @param IUserSession $userSession The user session
+	 * @param CallerContext $caller The caller's session, group memberships and the shared permission matcher.
 	 * @param LoggerInterface $logger The logger
 	 * @param ConnectionReporter|null $connectionReporter Asks integriq to look again after a store save.
 	 *
@@ -108,11 +121,12 @@ class SettingsService {
 		private IAppConfig $appConfig,
 		private IAppManager $appManager,
 		private ContainerInterface $container,
-		private IGroupManager $groupManager,
-		private IUserSession $userSession,
+		CallerContext $caller,
 		private LoggerInterface $logger,
 		private ?ConnectionReporter $connectionReporter = null,
 	) {
+		$this->userSession = $caller->userSession;
+		$this->groupManager = $caller->groupManager;
 	}//end __construct()
 
 	/**

@@ -37,10 +37,13 @@ use OCA\Buildiq\Service\AgentChannelProvisioner;
 use OCA\Buildiq\Service\AppChannelApplier;
 use OCA\Buildiq\Service\AppRepoParser;
 use OCA\Buildiq\Service\ChannelApplyReport;
+use OCA\Buildiq\Service\ChannelProvisioners;
 use OCA\Buildiq\Service\ConnectorRegisterAvailability;
 use OCA\Buildiq\Service\ContainerLocator;
 use OCA\Buildiq\Service\DataRegisterProvisioner;
 use OCA\Buildiq\Service\FlowChannelProvisioner;
+use OCA\Buildiq\Service\LocalApplicationRef;
+use OCA\Buildiq\Service\RepoSource;
 use OCA\Buildiq\Service\SkillChannelDelegate;
 use OCA\Buildiq\Tests\Unit\Support\FakeSlugResolver;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
@@ -136,48 +139,37 @@ class AppChannelApplierTest extends TestCase {
 	 */
 	private function applier(): AppChannelApplier {
 		return new AppChannelApplier(
-			$this->objectService,
+			objectService: $this->objectService,
 			// A MIGRATED instance, which is what every existing test in this file
 			// assumes without ever having said so. `ConnectorRegisterResolutionTest`
 			// is where the migrated and unmigrated cases are told apart.
-			new ConnectorRegisterAvailability(
+			connectorRegister: new ConnectorRegisterAvailability(
 				new FakeSlugResolver(['integriq']),
 				$this->appManager,
 				$this->createMock(LoggerInterface::class)
 			),
-			// A REAL provisioner over mocked mappers: its declareChannel call is
-			// what keeps the dataRegisters channel present in every report, so a
-			// mock here would quietly remove an assertion this file depends on.
-			new DataRegisterProvisioner(
-				$this->registerMapper,
-				$this->schemaMapper,
-				$this->createMock(LoggerInterface::class)
+			provisioners: new ChannelProvisioners(
+				registerProvisioner: new DataRegisterProvisioner(
+					$this->registerMapper,
+					$this->schemaMapper,
+					$this->createMock(LoggerInterface::class)
+				),
+				skillDelegate: new SkillChannelDelegate(
+					$this->appManager,
+					$this->locator,
+					$this->createMock(LoggerInterface::class)
+				),
+				flowProvisioner: new FlowChannelProvisioner(
+					$this->flowService,
+					$this->objectService,
+					$this->createMock(LoggerInterface::class)
+				),
+				agentProvisioner: new AgentChannelProvisioner(
+					$this->objectService,
+					$this->createMock(LoggerInterface::class)
+				)
 			),
-			// A REAL delegate over the mocked app-manager and locator: the skills
-			// channel's degradation and count-adoption behaviour is exactly what
-			// several tests in this file assert, so a mock would gut them.
-			new SkillChannelDelegate(
-				$this->appManager,
-				$this->locator,
-				$this->createMock(LoggerInterface::class)
-			),
-			// A REAL provisioner over a mocked FlowService and the shared
-			// mocked objectService: the flows channel's declared-count and
-			// degradation behaviour is asserted below, same reasoning as the
-			// two providers/delegates above.
-			new FlowChannelProvisioner(
-				$this->flowService,
-				$this->objectService,
-				$this->createMock(LoggerInterface::class)
-			),
-			// A REAL provisioner over the shared mocked objectService: the
-			// agents channel's tagging and skip-if-exists behaviour is
-			// asserted below, same reasoning as the two providers above.
-			new AgentChannelProvisioner(
-				$this->objectService,
-				$this->createMock(LoggerInterface::class)
-			),
-			$this->createMock(LoggerInterface::class),
+			logger: $this->createMock(LoggerInterface::class),
 		);
 
 	}//end applier()
@@ -497,7 +489,6 @@ class AppChannelApplierTest extends TestCase {
 		);
 
 		return $appManager;
-
 	}//end appManagerWithOnly()
 
 	/**
@@ -595,7 +586,7 @@ class AppChannelApplierTest extends TestCase {
 					],
 				],
 			],
-			credentialId: 'a-github-credential-uuid'
+			source: new RepoSource(owner: '', repo: '', ref: null, credentialId: 'a-github-credential-uuid')
 		);
 
 		$skills = $report['channels']['skills'];
@@ -653,7 +644,7 @@ class AppChannelApplierTest extends TestCase {
 					],
 				],
 			],
-			credentialId: 'a-github-credential-uuid'
+			source: new RepoSource(owner: '', repo: '', ref: null, credentialId: 'a-github-credential-uuid')
 		);
 
 		self::assertSame(2, $report['channels']['skills']['created']);
@@ -705,7 +696,7 @@ class AppChannelApplierTest extends TestCase {
 					],
 				],
 			],
-			credentialId: 'a-github-credential-uuid'
+			source: new RepoSource(owner: '', repo: '', ref: null, credentialId: 'a-github-credential-uuid')
 		);
 
 		self::assertSame(2, $report['channels']['skills']['created']);
@@ -884,8 +875,7 @@ class AppChannelApplierTest extends TestCase {
 				'templateOrigin' => ['repo' => 'ConductionNL/example-app'],
 				'channels' => ['flows' => [$sourceUuid => ['name' => 'Sequencer']]],
 			],
-			applicationUuid: $applicationUuid,
-			applicationSlug: 'hydra-console'
+			local: new LocalApplicationRef(uuid: $applicationUuid, slug: 'hydra-console')
 		);
 
 		self::assertSame(1, $report['channels']['flows']['created']);
@@ -914,8 +904,7 @@ class AppChannelApplierTest extends TestCase {
 				'templateOrigin' => ['repo' => 'ConductionNL/example-app'],
 				'channels' => ['flows' => [$sourceUuid => ['name' => 'Sequencer']]],
 			],
-			applicationUuid: $applicationUuid,
-			applicationSlug: 'hydra-console'
+			local: new LocalApplicationRef(uuid: $applicationUuid, slug: 'hydra-console')
 		);
 
 		self::assertSame(0, $report['channels']['flows']['created']);
@@ -961,8 +950,7 @@ class AppChannelApplierTest extends TestCase {
 					'agents' => [$uuid => ['name' => 'Reviewer', 'applicationSlug' => 'source-instance-app']],
 				],
 			],
-			applicationUuid: '33333333-3333-4333-8333-333333333333',
-			applicationSlug: 'local-app'
+			local: new LocalApplicationRef(uuid: '33333333-3333-4333-8333-333333333333', slug: 'local-app')
 		);
 
 		self::assertSame(1, $report['channels']['agents']['created']);
@@ -983,8 +971,7 @@ class AppChannelApplierTest extends TestCase {
 				'templateOrigin' => ['repo' => 'ConductionNL/example-app'],
 				'channels' => ['agents' => [self::NIL_UUID => ['name' => 'Reviewer']]],
 			],
-			applicationUuid: '33333333-3333-4333-8333-333333333333',
-			applicationSlug: 'local-app'
+			local: new LocalApplicationRef(uuid: '33333333-3333-4333-8333-333333333333', slug: 'local-app')
 		);
 
 		self::assertSame(0, $report['channels']['agents']['created']);

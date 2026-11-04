@@ -241,29 +241,25 @@ class ChannelApplyReport {
 	 * real event with a real explanation — usually its own truncation — and the
 	 * report should say which, not throw or quietly disagree with itself.
 	 *
+	 * The outcome carries `created`, `skipped` and `failed` (items the source
+	 * installed, skipped and failed), `truncated` (whether the SOURCE truncated
+	 * its own fetch: a flag, not a count, because it knows truncation happened
+	 * but not how many items it never read) and `sourceCounts` (the source's own
+	 * breakdown, carried verbatim so "installed 0, updated 0, unchanged 94" is
+	 * not flattened into an indistinguishable total; [] for none).
+	 *
 	 * @param string $channel The channel name.
-	 * @param int $created Items the source installed.
-	 * @param int $skipped Items the source skipped.
-	 * @param int $failed Items the source failed.
-	 * @param bool $truncated Whether the SOURCE truncated its own fetch. A flag,
-	 *                        not a count: it knows truncation happened but not
-	 *                        how many items it never read.
-	 * @param array $sourceCounts The source's own breakdown, carried verbatim so
-	 *                            "installed 0, updated 0, unchanged 94" is not
-	 *                            flattened into an indistinguishable total.
+	 * @param array{created: int, skipped: int, failed: int, truncated: bool, sourceCounts: array<string,int>} $outcome The source's counts.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md#requirement-skills-are-delegated-to-hermiq-by-repository-coordinates
 	 */
-	public function adoptCounts(
-		string $channel,
-		int $created,
-		int $skipped,
-		int $failed,
-		bool $truncated,
-		array $sourceCounts = [],
-	): void {
+	public function adoptCounts(string $channel, array $outcome): void {
+		$created = $outcome['created'];
+		$skipped = $outcome['skipped'];
+		$failed = $outcome['failed'];
+		$sourceCounts = $outcome['sourceCounts'];
 		if (isset($this->channels[$channel]) === false) {
 			$this->declareChannel(channel: $channel, declared: ($created + $skipped + $failed));
 		}
@@ -280,7 +276,7 @@ class ChannelApplyReport {
 			$this->channels[$channel]['sourceCounts'] = $sourceCounts;
 		}
 
-		if ($truncated === true) {
+		if ($outcome['truncated'] === true) {
 			$this->channels[$channel]['reason'] = 'source-bundle-truncated';
 		}
 

@@ -41,6 +41,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Service\GitHub\BrokerAccess;
+use OCA\Buildiq\Service\GitHub\PushTarget;
 use FilesystemIterator;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -133,15 +135,9 @@ class GitHubPushService {
 	 *
 	 * @param string $jobUuid Export job UUID — correlation key in audit logs.
 	 * @param string $treeDir Absolute path to the generated tree on disk.
-	 * @param string $credentialId Broker credential UUID for a `github` provider
-	 *                             credential. Not a token: this service cannot
-	 *                             read the secret behind it.
-	 * @param string $org Target GitHub organisation/owner.
-	 * @param string $repo Target repository name.
-	 * @param string $visibility Repository visibility (`public`|`private`).
-	 * @param string|null $actingUserId Credential owner. Required on the background-job
-	 *                                  path, where there is no user session for the
-	 *                                  broker's ownership guard to read.
+	 * @param BrokerAccess $access The broker credential and its owner. Not a token:
+	 *                             this service cannot read the secret behind it.
+	 * @param PushTarget $target The organisation, repository and visibility.
 	 *
 	 * @return array{repoUrl:string,pullRequestUrl:string,commitSha:string} URLs of repo + PR.
 	 *
@@ -149,15 +145,9 @@ class GitHubPushService {
 	 *
 	 * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
 	 */
-	public function push(
-		string $jobUuid,
-		string $treeDir,
-		string $credentialId,
-		string $org = '',
-		string $repo = '',
-		string $visibility = 'private',
-		?string $actingUserId = null,
-	): array {
+	public function push(string $jobUuid, string $treeDir, BrokerAccess $access, PushTarget $target): array {
+		$org = $target->org;
+		$repo = $target->repo;
 		// Audit log names only the job + repo — never the credential, never tree contents.
 		$this->logger->info(
 			'Buildiq GitHub push: creating repository',
@@ -172,7 +162,7 @@ class GitHubPushService {
 			);
 		}
 
-		if ($credentialId === '') {
+		if ($access->credentialId === '') {
 			throw new RuntimeException('GitHub push requires a broker credential.');
 		}
 
@@ -184,38 +174,14 @@ class GitHubPushService {
 			throw new RuntimeException('GitHub push: generated tree directory is missing: ' . $treeDir);
 		}
 
-		$this->assertRepoAbsent(org: $org, repo: $repo, credentialId: $credentialId, actingUserId: $actingUserId);
-		$repoData = $this->createRepo(
-			org: $org,
-			repo: $repo,
-			visibility: $visibility,
-			credentialId: $credentialId,
-			actingUserId: $actingUserId
-		);
+		$this->assertRepoAbsent(target: $target, access: $access);
+		$repoData = $this->createRepo(target: $target, access: $access);
 
 		// The created repo reports its own default branch; `auto_init` guarantees one,
 		// so there is no separate lookup (and GET /user is not needed at all).
 		$defaultBranch = (string)($repoData['default_branch'] ?? 'main');
-		$commitSha = $this->pushTree(
-			org: $org,
-			repo: $repo,
-			branch: self::BOOTSTRAP_BRANCH,
-			treeDir: $treeDir,
-			credentialId: $credentialId,
-			actingUserId: $actingUserId
-		);
-
-		$prUrl = $this->openPullRequest(
-			org: $org,
-			repo: $repo,
-			fromBranch: self::BOOTSTRAP_BRANCH,
-			toBranch: $defaultBranch,
-			title: 'chore: bootstrap from Buildiq',
-			body: 'This repository was bootstrapped from an Buildiq application export. '
-				. 'Review the tree, then run `composer install` and `npm install` locally before merging.',
-			credentialId: $credentialId,
-			actingUserId: $actingUserId
-		);
+		$commitSha = $this->pushTree(target: $target, branch: self::BOOTSTRAP_BRANCH, treeDir: $treeDir, access: $access);
+		$prUrl = $this->openPullRequest(target: $target, toBranch: $defaultBranch, access: $access);
 
 		return [
 			'repoUrl' => (string)($repoData['html_url'] ?? ('https://github.com/' . $org . '/' . $repo)),
@@ -227,35 +193,25 @@ class GitHubPushService {
 	/**
 	 * Fail fast when the target repository already exists (REQ-OBEX-007).
 	 *
-	 * @param string $org Organisation/owner.
-	 * @param string $repo Repository name.
-	 * @param string $credentialId Broker credential UUID.
-	 * @param string|null $actingUserId Owner of the credential (background context).
+	 * @param PushTarget $target The organisation, repository and visibility.
+	 * @param BrokerAccess $access The broker credential and its owner (background context).
 	 *
 	 * @return void
 	 *
 	 * @throws RuntimeException When the repo already exists.
 	 */
-	private function assertRepoAbsent(
-		string $org,
-		string $repo,
-		string $credentialId,
-		?string $actingUserId,
-	): void {
+	private function assertRepoAbsent(PushTarget $target, BrokerAccess $access): void {
 		// Absent is the desired outcome, so a broker denial/404 here is NOT an error —
 		// only a successful 200 means the repo already exists.
 		$existing = $this->brokerCall(
-			method: 'GET',
-			path: '/repos/' . rawurlencode($org) . '/' . rawurlencode($repo),
-			body: null,
-			credentialId: $credentialId,
-			actingUserId: $actingUserId,
+			request: ['method' => 'GET', 'path' => $target->repoPath(), 'body' => null],
+			access: $access,
 			failQuietly: true
 		);
 
 		if ($existing !== null) {
 			throw new RuntimeException(
-				sprintf('Repository %s/%s already exists', $org, $repo)
+				sprintf('Repository %s/%s already exists', $target->org, $target->repo)
 			);
 		}
 	}//end assertRepoAbsent()
@@ -263,11 +219,8 @@ class GitHubPushService {
 	/**
 	 * Create a new GitHub repository under the given org.
 	 *
-	 * @param string $org Organisation/owner.
-	 * @param string $repo Repository name.
-	 * @param string $visibility `public`|`private`.
-	 * @param string $credentialId Broker credential UUID.
-	 * @param string|null $actingUserId Owner of the credential (background context).
+	 * @param PushTarget $target The organisation, repository and visibility.
+	 * @param BrokerAccess $access The broker credential and its owner (background context).
 	 *
 	 * @return array<string,mixed> Decoded repo payload.
 	 *
@@ -275,24 +228,19 @@ class GitHubPushService {
 	 *
 	 * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
 	 */
-	public function createRepo(
-		string $org,
-		string $repo,
-		string $visibility,
-		string $credentialId,
-		?string $actingUserId = null,
-	): array {
+	public function createRepo(PushTarget $target, BrokerAccess $access): array {
 		$created = $this->brokerCall(
-			method: 'POST',
-			path: '/orgs/' . rawurlencode($org) . '/repos',
-			body: [
-				'name' => $repo,
-				'private' => ($visibility === 'private'),
-				'auto_init' => true,
-				'description' => 'Bootstrapped from Buildiq',
+			request: [
+				'method' => 'POST',
+				'path' => '/orgs/' . rawurlencode($target->org) . '/repos',
+				'body' => [
+					'name' => $target->repo,
+					'private' => ($target->visibility === 'private'),
+					'auto_init' => true,
+					'description' => 'Bootstrapped from Buildiq',
+				],
 			],
-			credentialId: $credentialId,
-			actingUserId: $actingUserId
+			access: $access
 		);
 
 		if ($created === null) {
@@ -308,12 +256,10 @@ class GitHubPushService {
 	 * Walks the on-disk tree, creates a blob per file via the Git Data API,
 	 * assembles a tree + commit, and points a new ref at it.
 	 *
-	 * @param string $org Organisation/owner.
-	 * @param string $repo Repository name.
+	 * @param PushTarget $target The organisation, repository and visibility.
 	 * @param string $branch Branch to create (e.g. `bootstrap`).
 	 * @param string $treeDir Absolute path to the generated tree.
-	 * @param string $credentialId Broker credential UUID.
-	 * @param string|null $actingUserId Owner of the credential (background context).
+	 * @param BrokerAccess $access The broker credential and its owner (background context).
 	 *
 	 * @return string Commit SHA.
 	 *
@@ -321,15 +267,8 @@ class GitHubPushService {
 	 *
 	 * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
 	 */
-	public function pushTree(
-		string $org,
-		string $repo,
-		string $branch,
-		string $treeDir,
-		string $credentialId,
-		?string $actingUserId = null,
-	): string {
-		$base = '/repos/' . rawurlencode($org) . '/' . rawurlencode($repo);
+	public function pushTree(PushTarget $target, string $branch, string $treeDir, BrokerAccess $access): string {
+		$base = $target->repoPath();
 		$entries = [];
 
 		foreach ($this->walkTree(root: $treeDir) as $relativePath) {
@@ -338,20 +277,14 @@ class GitHubPushService {
 				'path' => $relativePath,
 				'mode' => '100644',
 				'type' => 'blob',
-				'sha' => $this->createBlob(
-					base: $base,
-					contents: $contents,
-					credentialId: $credentialId,
-					actingUserId: $actingUserId
-				),
+				'sha' => $this->createBlob(base: $base, contents: $contents, access: $access),
 			];
 		}
 
 		$tree = $this->postJson(
 			path: $base . '/git/trees',
 			body: ['tree' => $entries],
-			credentialId: $credentialId,
-			actingUserId: $actingUserId
+			access: $access
 		);
 		$treeSha = (string)($tree['sha'] ?? '');
 
@@ -361,8 +294,7 @@ class GitHubPushService {
 				'message' => 'chore: bootstrap from Buildiq',
 				'tree' => $treeSha,
 			],
-			credentialId: $credentialId,
-			actingUserId: $actingUserId
+			access: $access
 		);
 		$commitSha = (string)($commit['sha'] ?? '');
 
@@ -372,24 +304,18 @@ class GitHubPushService {
 				'ref' => 'refs/heads/' . $branch,
 				'sha' => $commitSha,
 			],
-			credentialId: $credentialId,
-			actingUserId: $actingUserId
+			access: $access
 		);
 
 		return $commitSha;
 	}//end pushTree()
 
 	/**
-	 * Open a pull request from one branch to another.
+	 * Open the bootstrap pull request from the bootstrap branch to the default branch.
 	 *
-	 * @param string $org Organisation/owner.
-	 * @param string $repo Repository name.
-	 * @param string $fromBranch Source branch.
+	 * @param PushTarget $target The organisation, repository and visibility.
 	 * @param string $toBranch Target branch.
-	 * @param string $title PR title.
-	 * @param string $body PR body.
-	 * @param string $credentialId Broker credential UUID.
-	 * @param string|null $actingUserId Owner of the credential (background context).
+	 * @param BrokerAccess $access The broker credential and its owner (background context).
 	 *
 	 * @return string PR URL.
 	 *
@@ -397,26 +323,17 @@ class GitHubPushService {
 	 *
 	 * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
 	 */
-	public function openPullRequest(
-		string $org,
-		string $repo,
-		string $fromBranch,
-		string $toBranch,
-		string $title,
-		string $body,
-		string $credentialId,
-		?string $actingUserId = null,
-	): string {
+	public function openPullRequest(PushTarget $target, string $toBranch, BrokerAccess $access): string {
 		$pullRequest = $this->postJson(
-			path: '/repos/' . rawurlencode($org) . '/' . rawurlencode($repo) . '/pulls',
+			path: $target->repoPath() . '/pulls',
 			body: [
-				'title' => $title,
-				'head' => $fromBranch,
+				'title' => 'chore: bootstrap from Buildiq',
+				'head' => self::BOOTSTRAP_BRANCH,
 				'base' => $toBranch,
-				'body' => $body,
+				'body' => 'This repository was bootstrapped from an Buildiq application export. '
+					. 'Review the tree, then run `composer install` and `npm install` locally before merging.',
 			],
-			credentialId: $credentialId,
-			actingUserId: $actingUserId
+			access: $access
 		);
 
 		return (string)($pullRequest['html_url'] ?? '');
@@ -427,25 +344,18 @@ class GitHubPushService {
 	 *
 	 * @param string $base Repo-relative API path prefix.
 	 * @param string $contents Raw file contents.
-	 * @param string $credentialId Broker credential UUID.
-	 * @param string|null $actingUserId Owner of the credential (background context).
+	 * @param BrokerAccess $access The broker credential and its owner (background context).
 	 *
 	 * @return string Blob SHA.
 	 */
-	private function createBlob(
-		string $base,
-		string $contents,
-		string $credentialId,
-		?string $actingUserId,
-	): string {
+	private function createBlob(string $base, string $contents, BrokerAccess $access): string {
 		$blob = $this->postJson(
 			path: $base . '/git/blobs',
 			body: [
 				'content' => base64_encode($contents),
 				'encoding' => 'base64',
 			],
-			credentialId: $credentialId,
-			actingUserId: $actingUserId
+			access: $access
 		);
 
 		return (string)($blob['sha'] ?? '');
@@ -457,20 +367,16 @@ class GitHubPushService {
 	 * @param string $path GitHub-relative path (host comes from the
 	 *                     broker's host-lock, not from us).
 	 * @param array<string,mixed> $body Request body.
-	 * @param string $credentialId Broker credential UUID.
-	 * @param string|null $actingUserId Owner of the credential (background context).
+	 * @param BrokerAccess $access The broker credential and its owner (background context).
 	 *
 	 * @return array<string,mixed> Decoded response payload.
 	 *
 	 * @throws RuntimeException On API failure.
 	 */
-	private function postJson(string $path, array $body, string $credentialId, ?string $actingUserId): array {
+	private function postJson(string $path, array $body, BrokerAccess $access): array {
 		$decoded = $this->brokerCall(
-			method: 'POST',
-			path: $path,
-			body: $body,
-			credentialId: $credentialId,
-			actingUserId: $actingUserId
+			request: ['method' => 'POST', 'path' => $path, 'body' => $body],
+			access: $access
 		);
 
 		if ($decoded === null) {
@@ -494,24 +400,17 @@ class GitHubPushService {
 	 * "error" — assertRepoAbsent() — treats absence as the happy path. Every other
 	 * caller turns `null` into a RuntimeException.
 	 *
-	 * @param string $method HTTP method.
-	 * @param string $path GitHub-relative path.
-	 * @param array<string,mixed>|null $body Optional JSON body.
-	 * @param string $credentialId Broker credential UUID.
-	 * @param string|null $actingUserId Owner of the credential (background context).
+	 * @param array{method: string, path: string, body: array<string,mixed>|null} $request HTTP method, GitHub-relative path and optional JSON body.
+	 * @param BrokerAccess $access The broker credential and its owner (background context).
 	 * @param bool $failQuietly Suppress the error log on failure.
 	 *
 	 * @return array<string,mixed>|null Decoded payload, or null on any non-2xx.
 	 */
-	private function brokerCall(
-		string $method,
-		string $path,
-		?array $body,
-		string $credentialId,
-		?string $actingUserId,
-		bool $failQuietly = false,
-	): ?array {
+	private function brokerCall(array $request, BrokerAccess $access, bool $failQuietly = false): ?array {
 		$this->lastFailureDetail = null;
+		$method = (string)$request['method'];
+		$path = (string)$request['path'];
+		$body = $request['body'];
 
 		$encoded = null;
 		if ($body !== null) {
@@ -521,13 +420,13 @@ class GitHubPushService {
 		try {
 			$broker = $this->container->get(self::BROKER_CLASS);
 			$response = $broker->request(
-				$credentialId,
+				$access->credentialId,
 				self::APP_ID,
 				$method,
 				$path,
 				['Accept' => 'application/vnd.github+json', 'Content-Type' => 'application/json'],
 				$encoded,
-				$actingUserId
+				$access->actingUserId
 			);
 		} catch (\Throwable $e) {
 			// The broker never puts the secret in its exception messages, but this
@@ -594,6 +493,8 @@ class GitHubPushService {
 	 * Whether OpenRegister's credential broker is installed.
 	 *
 	 * @return bool True when the broker class can be resolved.
+	 *
+	 * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
 	 */
 	public function isBrokerAvailable(): bool {
 		return class_exists(self::BROKER_CLASS) === true;

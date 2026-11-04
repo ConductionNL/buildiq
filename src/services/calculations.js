@@ -58,21 +58,42 @@ export async function tryCalculation(declaration, sample) {
 			generateUrl('/apps/openregister/api/schemas/calculation-evaluate'),
 			{ calculation: declaration, object: sample || {} },
 		)
-		return {
-			ok: data?.ok === true,
-			value: data?.value ?? null,
-			error: data?.ok === true ? null : (data?.error ?? null),
-		}
+		return trialAnswer(data)
 	} catch (e) {
-		const body = e?.response?.data
-		return {
-			ok: false,
-			value: null,
-			error: body?.error ?? {
-				code: 'request-failed',
-				message: e?.message || '',
-			},
-		}
+		return trialFailure(e)
+	}
+}
+
+/**
+ * The trial result of an answered evaluation.
+ *
+ * @param {object|undefined} data The response body.
+ * @return {{ok: boolean, value: unknown, error: object|null}} The value, or the refusal.
+ */
+function trialAnswer(data) {
+	const ok = data?.ok === true
+	return {
+		ok,
+		value: data?.value ?? null,
+		error: ok ? null : (data?.error ?? null),
+	}
+}
+
+/**
+ * The trial result of a failed request: the refusal the server sent, or a
+ * request failure carrying the error's message.
+ *
+ * @param {Error|object|null} e The rejection.
+ * @return {{ok: boolean, value: null, error: object}} The refusal.
+ */
+function trialFailure(e) {
+	return {
+		ok: false,
+		value: null,
+		error: e?.response?.data?.error ?? {
+			code: 'request-failed',
+			message: e?.message || '',
+		},
 	}
 }
 
@@ -89,22 +110,41 @@ export async function tryCalculation(declaration, sample) {
  */
 export function refusalsByProperty(errors, names) {
 	const out = {}
-	if (!Array.isArray(errors)) {
-		return out
-	}
-	for (const error of errors) {
+	for (const error of Array.isArray(errors) ? errors : []) {
 		const message = String(error?.message || '')
-		for (const name of names) {
-			const quoted = message.includes(`"${name}"`)
-			const inCycle = new RegExp(
-				`(^|[\\s:])${escapeRegExp(name)} ->|-> ${escapeRegExp(name)}(\\W|$)`,
-			).test(message)
-			if (quoted || inCycle) {
-				out[name] = [...(out[name] || []), message]
-			}
+		for (const name of names.filter((n) => mentions(message, n))) {
+			appendTo(out, { name, message })
 		}
 	}
 	return out
+}
+
+/**
+ * Whether a refusal message names a calculation: quoted, or as a step of a
+ * cycle (`a -> b -> a`).
+ *
+ * @param {string} message The refusal message.
+ * @param {string} name The calculation name.
+ * @return {boolean} True when the message is about that name.
+ */
+function mentions(message, name) {
+	return (
+		message.includes(`"${name}"`)
+		|| new RegExp(
+			`(^|[\\s:])${escapeRegExp(name)} ->|-> ${escapeRegExp(name)}(\\W|$)`,
+		).test(message)
+	)
+}
+
+/**
+ * Add a message to the list kept for a name.
+ *
+ * @param {Object<string, Array<string>>} out Messages per name.
+ * @param {{name: string, message: string}} entry The name and its message.
+ * @return {void}
+ */
+function appendTo(out, entry) {
+	out[entry.name] = [...(out[entry.name] || []), entry.message]
 }
 
 /**
@@ -127,12 +167,23 @@ function escapeRegExp(value) {
 export function calculationsFromProperties(properties) {
 	const out = {}
 	for (const [name, prop] of Object.entries(properties || {})) {
-		const calc = prop && typeof prop === 'object' ? prop[CALCULATION_KEY] : null
-		if (calc && typeof calc === 'object') {
+		const calc = calculationOf(prop)
+		if (calc) {
 			out[name] = { type: calc.type, expression: calc.expression }
 		}
 	}
 	return out
+}
+
+/**
+ * The `calculation` object a property carries, or null.
+ *
+ * @param {unknown} prop A schema property.
+ * @return {object|null} The declaration.
+ */
+function calculationOf(prop) {
+	const calc = prop && typeof prop === 'object' ? prop[CALCULATION_KEY] : null
+	return calc && typeof calc === 'object' ? calc : null
 }
 
 /**
@@ -163,26 +214,54 @@ function propertyForType(type) {
  * @return {{properties: object, order: Array<string>}} The new map and order.
  */
 export function applyCalculations(properties, order, calculations) {
+	const target = {
+		properties: withoutCalculations(properties),
+		order: [...(order || [])],
+	}
+	for (const entry of Object.entries(calculations || {})) {
+		if (entry[0]) {
+			placeCalculation(target, entry)
+		}
+	}
+	return target
+}
+
+/**
+ * Copies of the properties with every `calculation` key dropped.
+ *
+ * @param {object} properties The composed `properties` map.
+ * @return {object} The copied map.
+ */
+function withoutCalculations(properties) {
 	const out = {}
 	for (const [name, prop] of Object.entries(properties || {})) {
 		const copy = { ...prop }
 		delete copy[CALCULATION_KEY]
 		out[name] = copy
 	}
-	const nextOrder = [...(order || [])]
-	for (const [name, calc] of Object.entries(calculations || {})) {
-		if (!name) {
-			continue
+	return out
+}
+
+/**
+ * Write one calculation onto the target, adding its property (typed from the
+ * declaration, at the end of the order) when the schema does not have it.
+ *
+ * @param {{properties: object, order: Array<string>}} target The map and order being written.
+ * @param {[string, {type: string, expression: unknown}]} entry The name and its declaration.
+ * @return {void}
+ */
+function placeCalculation(target, entry) {
+	const [name, calc] = entry
+	if (!target.properties[name]) {
+		target.properties[name] = propertyForType(calc.type)
+		if (!target.order.includes(name)) {
+			target.order.push(name)
 		}
-		if (!out[name]) {
-			out[name] = propertyForType(calc.type)
-			if (!nextOrder.includes(name)) {
-				nextOrder.push(name)
-			}
-		}
-		out[name][CALCULATION_KEY] = { type: calc.type, expression: calc.expression }
 	}
-	return { properties: out, order: nextOrder }
+	target.properties[name][CALCULATION_KEY] = {
+		type: calc.type,
+		expression: calc.expression,
+	}
 }
 
 /**
@@ -203,16 +282,35 @@ export function referencedFields(expression) {
 			return
 		}
 		const op = Object.keys(node)[0]
-		const args = node[op]
 		if (op === 'prop') {
-			const name = Array.isArray(args) ? args[0] : args
-			if (typeof name === 'string' && name !== '' && !seen.includes(name)) {
-				seen.push(name)
-			}
+			noteField(seen, propName(node[op]))
 			return
 		}
-		walk(args)
+		walk(node[op])
 	}
 	walk(expression)
 	return seen
+}
+
+/**
+ * The field name a `prop` node reads.
+ *
+ * @param {unknown} args The node's arguments.
+ * @return {unknown} The name.
+ */
+function propName(args) {
+	return Array.isArray(args) ? args[0] : args
+}
+
+/**
+ * Note a field name once, in first-read order.
+ *
+ * @param {Array<string>} seen The names read so far.
+ * @param {unknown} name The name a `prop` node reads.
+ * @return {void}
+ */
+function noteField(seen, name) {
+	if (typeof name === 'string' && name !== '' && !seen.includes(name)) {
+		seen.push(name)
+	}
 }

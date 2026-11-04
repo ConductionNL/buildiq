@@ -22,7 +22,7 @@ Vrij en open source onder de EUPL-1.2-licentie.
 
 **Ondersteuning:** Voor ondersteuning, neem contact op via support@conduction.nl.
     ]]></description>
-    <version>0.7.16-unstable.20261011120000</version>
+    <version>0.7.16-unstable.20261103190000</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>Buildiq</namespace>
@@ -187,6 +187,15 @@ Vrij en open source onder de EUPL-1.2-licentie.
                 OpenRegister's `decision-table`. Idempotent; never throws.
             -->
             <step>OCA\Buildiq\Repair\MoveDecisionTablesToOpenRegister</step>
+            <!--
+                BEFORE InitializeSettings: the import makes OpenRegister enforce
+                the register's x-openregister-validations, and a stored row that
+                breaks one is refused on its next save. Backfills a hybrid app's
+                baseRef.id from its slug, clears a self-pointing promotesTo, and
+                reports user-scoped versions without an owner. Idempotent; never
+                throws.
+            -->
+            <step>OCA\Buildiq\Repair\RepairValidationViolations</step>
             <step>OCA\Buildiq\Repair\InitializeSettings</step>
             <step>OCA\Buildiq\Repair\MigrateToVersionedModel</step>
             <step>OCA\Buildiq\Repair\MigrateAppOverridesToHybrid</step>
@@ -277,6 +286,15 @@ Vrij en open source onder de EUPL-1.2-licentie.
                 OpenRegister's `decision-table`. Idempotent; never throws.
             -->
             <step>OCA\Buildiq\Repair\MoveDecisionTablesToOpenRegister</step>
+            <!--
+                BEFORE InitializeSettings: the import makes OpenRegister enforce
+                the register's x-openregister-validations, and a stored row that
+                breaks one is refused on its next save. Backfills a hybrid app's
+                baseRef.id from its slug, clears a self-pointing promotesTo, and
+                reports user-scoped versions without an owner. Idempotent; never
+                throws.
+            -->
+            <step>OCA\Buildiq\Repair\RepairValidationViolations</step>
             <step>OCA\Buildiq\Repair\InitializeSettings</step>
             <step>OCA\Buildiq\Repair\MigrateToVersionedModel</step>
             <step>OCA\Buildiq\Repair\MigrateAppOverridesToHybrid</step>

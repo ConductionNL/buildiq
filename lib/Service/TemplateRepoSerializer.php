@@ -34,6 +34,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Support\CanonicalJson;
+use OCA\Buildiq\Support\RepoDescriptor;
 use OCA\OpenRegister\Db\SchemaMapper;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -71,6 +73,7 @@ class TemplateRepoSerializer {
 	 * @return array<string,string> Ordered map (canonical JSON + README).
 	 *
 	 * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) RepoDescriptor is a pure function with no collaborators.
 	 */
 	public function serialize(array $template): array {
 		$manifest = [];
@@ -80,7 +83,7 @@ class TemplateRepoSerializer {
 
 		$files = [];
 		$files['openbuild-app.json'] = $this->encode(data: $this->buildDescriptor(template: $template, manifest: $manifest));
-		$files['manifest.json'] = $this->encode(data: $manifest);
+		$files['manifest.json'] = $this->encode(data: RepoDescriptor::publishableManifest(manifest: $manifest));
 
 		$companions = $this->collectCompanionSchemas(template: $template);
 		ksort($companions);
@@ -103,6 +106,7 @@ class TemplateRepoSerializer {
 	 * @param array<string,mixed> $manifest The template's manifest blob.
 	 *
 	 * @return array<string,mixed>
+	 * @SuppressWarnings(PHPMD.StaticAccess) RepoDescriptor is a pure function with no collaborators.
 	 */
 	private function buildDescriptor(array $template, array $manifest): array {
 		$slug = (string)($template['slug'] ?? '');
@@ -112,7 +116,7 @@ class TemplateRepoSerializer {
 			'slug' => $slug,
 			'name' => (string)($template['title'] ?? ($template['name'] ?? $slug)),
 			'description' => (string)($template['description'] ?? ''),
-			'category' => $this->resolveCategory(template: $template, manifest: $manifest),
+			'category' => RepoDescriptor::category(record: $template, manifest: $manifest),
 			'appType' => 'virtual',
 			'version' => (string)($template['version'] ?? '0.1.0'),
 		];
@@ -124,71 +128,13 @@ class TemplateRepoSerializer {
 			$descriptor['useCase'] = $useCase;
 		}
 
-		$credentials = $this->deriveCredentials(manifest: $manifest);
+		$credentials = RepoDescriptor::credentials(manifest: $manifest);
 		if ($credentials !== []) {
 			$descriptor['credentials'] = $credentials;
 		}
 
 		return $descriptor;
 	}//end buildDescriptor()
-
-	/**
-	 * Resolve the descriptor category from the template, then the manifest, else
-	 * a neutral default.
-	 *
-	 * @param array<string,mixed> $template The application-template object.
-	 * @param array<string,mixed> $manifest The template's manifest blob.
-	 *
-	 * @return string
-	 */
-	private function resolveCategory(array $template, array $manifest): string {
-		$category = trim((string)($template['category'] ?? ''));
-		if ($category !== '') {
-			return $category;
-		}
-
-		$category = trim((string)($manifest['category'] ?? ''));
-		if ($category !== '') {
-			return $category;
-		}
-
-		return 'general';
-	}//end resolveCategory()
-
-	/**
-	 * Derive the descriptor `credentials[]` from the manifest's top-level
-	 * `credentials[]` (REQ-GARF-009), mirroring AppRepoSerializer.
-	 *
-	 * @param array<string,mixed> $manifest The template's manifest blob.
-	 *
-	 * @return array<int,array<string,mixed>>
-	 */
-	private function deriveCredentials(array $manifest): array {
-		$raw = ($manifest['credentials'] ?? null);
-		if (is_array($raw) === false) {
-			return [];
-		}
-
-		$credentials = [];
-		foreach ($raw as $entry) {
-			if (is_array($entry) === false || isset($entry['provider']) === false) {
-				continue;
-			}
-
-			$scopes = [];
-			if (is_array($entry['scopes'] ?? null) === true) {
-				$scopes = array_values(array_map(static fn ($scope): string => (string)$scope, $entry['scopes']));
-			}
-
-			$credentials[] = [
-				'provider' => (string)$entry['provider'],
-				'reason' => (string)($entry['reason'] ?? ''),
-				'scopes' => $scopes,
-			];
-		}
-
-		return $credentials;
-	}//end deriveCredentials()
 
 	/**
 	 * Resolve a template's `companionSchemas` into `slug => blob` pairs.
@@ -343,9 +289,10 @@ class TemplateRepoSerializer {
 	 * @param array<string,mixed> $data The payload to encode.
 	 *
 	 * @return string Canonical JSON with a trailing newline.
+	 * @SuppressWarnings(PHPMD.StaticAccess) CanonicalJson is a pure function with no collaborators.
 	 */
 	private function encode(array $data): string {
-		$sorted = $this->sortKeysRecursive(value: $data);
+		$sorted = CanonicalJson::sortKeys(value: $data);
 		$encoded = json_encode($sorted, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 		if ($encoded === false) {
 			$this->logger->warning('Buildiq TemplateRepoSerializer: JSON encode failed for a repo file.');
@@ -354,29 +301,4 @@ class TemplateRepoSerializer {
 
 		return $encoded . "\n";
 	}//end encode()
-
-	/**
-	 * Recursively sort associative-array keys while preserving list order.
-	 *
-	 * @param mixed $value The value to canonicalise.
-	 *
-	 * @return mixed The canonicalised value.
-	 */
-	private function sortKeysRecursive(mixed $value): mixed {
-		if (is_array($value) === false) {
-			return $value;
-		}
-
-		if (array_is_list($value) === true) {
-			return array_map(fn ($item): mixed => $this->sortKeysRecursive(value: $item), $value);
-		}
-
-		ksort($value);
-		$result = [];
-		foreach ($value as $key => $item) {
-			$result[$key] = $this->sortKeysRecursive(value: $item);
-		}
-
-		return $result;
-	}//end sortKeysRecursive()
 }//end class

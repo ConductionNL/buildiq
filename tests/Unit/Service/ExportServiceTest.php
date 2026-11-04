@@ -6,16 +6,19 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\DataRegisterExportBundler;
 use OCA\Buildiq\Service\ExportAppContentBundler;
+use OCA\Buildiq\Service\ExportBundlers;
+use OCA\Buildiq\Service\ExportContents;
 use OCA\Buildiq\Service\ExportService;
+use OCA\Buildiq\Service\ExportTarget;
 use OCA\Buildiq\Service\PlaceholderResolver;
 use OCA\Buildiq\Service\RegisterRowReader;
 use OCA\Buildiq\Service\ServerBundleWriter;
-use OCP\App\IAppManager;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCP\App\IAppManager;
 use OCP\Files\IAppData;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -144,12 +147,8 @@ final class ExportServiceTest extends TestCase {
 	public function testGeneratedZipIsNotBornOlderThanTheCleanupWindow(): void {
 		$jobUuid = 'unit-' . bin2hex(random_bytes(6));
 		$zipPath = $this->buildService()->generateAppZip(
-			applicationUuid: 'app-uuid',
-			versionSlug: '1.2.3',
-			context: $this->context(),
-			jobUuid: $jobUuid,
-			dataRegisters: [],
-			source: null
+			target: new ExportTarget(applicationUuid: 'app-uuid', versionSlug: '1.2.3', jobUuid: $jobUuid),
+			contents: new ExportContents(context: $this->context(), dataRegisters: [], source: null)
 		);
 		$this->litter[] = $zipPath;
 		$this->litter[] = sys_get_temp_dir() . '/buildiq-work/' . $jobUuid;
@@ -555,12 +554,8 @@ final class ExportServiceTest extends TestCase {
 		$jobUuid = 'unit-' . bin2hex(random_bytes(6));
 
 		$zipPath = ($service ?? $this->buildService())->generateAppZip(
-			applicationUuid: 'app-uuid',
-			versionSlug: '1.2.3',
-			context: $this->context(),
-			jobUuid: $jobUuid,
-			dataRegisters: $dataRegisters,
-			source: $source,
+			target: new ExportTarget(applicationUuid: 'app-uuid', versionSlug: '1.2.3', jobUuid: $jobUuid),
+			contents: new ExportContents(context: $this->context(), dataRegisters: $dataRegisters, source: $source),
 			includeServerBundle: $includeServerBundle
 		);
 
@@ -630,21 +625,20 @@ final class ExportServiceTest extends TestCase {
 		);
 
 		return new ExportService(
-			$appData,
-			new PlaceholderResolver(),
-			new NullLogger(),
-			$bundler,
-			// The flow/agent bundler. Injected as a no-op double: these tests
-			// are about the data-register path and the ZIP mechanics, and a
-			// real one here would couple them to a second store.
-			new \OCA\Buildiq\Service\FlowAndAgentExportBundler(
-				$this->createMock(\OCA\OpenRegister\Db\FlowMapper::class),
-				$this->createMock(\OCA\OpenRegister\Service\ObjectService::class),
-				appManager: $this->createMock(originalClassName: \OCP\App\IAppManager::class),
-				logger: new NullLogger()
-			),
-			$contentBundler,
-			$serverBundleWriter
+			appData: $appData,
+			placeholderResolver: new PlaceholderResolver(),
+			logger: new NullLogger(),
+			bundlers: new ExportBundlers(
+				dataRegisterBundler: $bundler,
+				flowAndAgentBundler: new \OCA\Buildiq\Service\FlowAndAgentExportBundler(
+					$this->createMock(\OCA\OpenRegister\Db\FlowMapper::class),
+					$this->createMock(\OCA\OpenRegister\Service\ObjectService::class),
+					appManager: $this->createMock(originalClassName: \OCP\App\IAppManager::class),
+					logger: new NullLogger()
+				),
+				contentBundler: $contentBundler,
+				serverBundleWriter: $serverBundleWriter
+			)
 		);
 	}//end buildService()
 

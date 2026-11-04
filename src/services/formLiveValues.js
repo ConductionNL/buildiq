@@ -125,6 +125,20 @@ function readPath(source, path) {
 }
 
 /**
+ * The resolver of each fixed `@` token a field default can carry. Each takes
+ * the user (or null) and the context.
+ */
+const TOKEN_RESOLVERS = Object.freeze({
+	'@me': (user) => (user ? user.uid : undefined),
+	'@me.displayName': (user) => (user ? user.displayName : undefined),
+	'@me.email': (user) => (user && user.email ? user.email : undefined),
+	'@today': (user, context) =>
+		(context.now instanceof Date ? context.now : new Date())
+			.toISOString()
+			.slice(0, 10),
+})
+
+/**
  * The value a field `default` stands for when the form opens.
  *
  * @param {*} value The stored default.
@@ -138,18 +152,8 @@ export function resolveDefault(value, context = {}) {
 		return value
 	}
 	const user = context.user || null
-	if (value === '@me') {
-		return user ? user.uid : undefined
-	}
-	if (value === '@me.displayName') {
-		return user ? user.displayName : undefined
-	}
-	if (value === '@me.email') {
-		return user && user.email ? user.email : undefined
-	}
-	if (value === '@today') {
-		const now = context.now instanceof Date ? context.now : new Date()
-		return now.toISOString().slice(0, 10)
+	if (Object.hasOwn(TOKEN_RESOLVERS, value)) {
+		return TOKEN_RESOLVERS[value](user, context)
 	}
 	if (value.startsWith('@object.')) {
 		return context.object

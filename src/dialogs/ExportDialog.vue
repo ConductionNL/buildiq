@@ -104,7 +104,9 @@
 				</p>
 				<table class="export-dialog__requirements">
 					<caption class="export-dialog__caption">
-						{{ t('buildiq', 'What the server needs') }}
+						{{
+							t('buildiq', 'What the server needs')
+						}}
 					</caption>
 					<thead>
 						<tr>
@@ -136,7 +138,12 @@
 					{{ t('buildiq', 'App package') }}
 				</NcCheckboxRadioSwitch>
 				<p class="export-dialog__scope-hint">
-					{{ t('buildiq', 'The app\'s source with its pages, schemas and the records you chose.') }}
+					{{
+						t(
+							'buildiq',
+							"The app's source with its pages, schemas and the records you chose.",
+						)
+					}}
 				</p>
 				<div data-test="export-server-compose">
 					<NcCheckboxRadioSwitch
@@ -146,10 +153,20 @@
 					</NcCheckboxRadioSwitch>
 				</div>
 				<p class="export-dialog__scope-hint">
-					{{ t('buildiq', 'Builds the app and starts it with Nextcloud and OpenRegister, for a trial or a small environment.') }}
+					{{
+						t(
+							'buildiq',
+							'Builds the app and starts it with Nextcloud and OpenRegister, for a trial or a small environment.',
+						)
+					}}
 				</p>
 				<p class="export-dialog__scope-hint">
-					{{ t('buildiq', 'After the export you no longer change the standalone app from buildiq. Make new versions here and export again.') }}
+					{{
+						t(
+							'buildiq',
+							'After the export you no longer change the standalone app from buildiq. Make new versions here and export again.',
+						)
+					}}
 				</p>
 			</section>
 
@@ -204,7 +221,11 @@
 				{{ t('buildiq', 'Cancel') }}
 			</NcButton>
 			<NcButton variant="primary" :disabled="submitting" @click="submit">
-				{{ isServerTarget ? t('buildiq', 'Make package') : t('buildiq', 'Start export') }}
+				{{
+					isServerTarget
+						? t('buildiq', 'Make package')
+						: t('buildiq', 'Start export')
+				}}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -364,9 +385,10 @@ export default {
 		 */
 		requirementRows() {
 			const needs = this.serverRequirements || {}
-			const orNewer = (version) => (version
-				? this.t('buildiq', '{version} or newer', { version })
-				: this.t('buildiq', 'Unknown'))
+			const orNewer = (version) =>
+				version
+					? this.t('buildiq', '{version} or newer', { version })
+					: this.t('buildiq', 'Unknown')
 			return [
 				{
 					key: 'nextcloud',
@@ -378,7 +400,7 @@ export default {
 					key: 'openregister',
 					part: 'OpenRegister',
 					version: orNewer(needs.openregister),
-					why: this.t('buildiq', 'holds the app\'s schemas and records'),
+					why: this.t('buildiq', "holds the app's schemas and records"),
 				},
 				{
 					key: 'php',
@@ -516,7 +538,9 @@ export default {
 		 */
 		async fetchServerRequirements() {
 			try {
-				const url = generateUrl('/apps/buildiq/api/exports/server-requirements')
+				const url = generateUrl(
+					'/apps/buildiq/api/exports/server-requirements',
+				)
 				const response = await axios.get(url)
 				this.serverRequirements = response?.data || null
 			} catch {

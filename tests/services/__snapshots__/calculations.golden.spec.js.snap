@@ -1,0 +1,2259 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`calculations golden > applyCalculations writes every grid cell as recorded and leaves its input unchanged 1`] = `
+[
+  {
+    "order": [],
+    "properties": {},
+  },
+  {
+    "order": [],
+    "properties": {},
+  },
+  {
+    "order": [
+      "total",
+    ],
+    "properties": {
+      "total": {
+        "calculation": {
+          "expression": {
+            "*": [
+              {
+                "prop": "price",
+              },
+              2,
+            ],
+          },
+          "type": "number",
+        },
+        "type": "number",
+      },
+    },
+  },
+  {
+    "order": [
+      "due",
+    ],
+    "properties": {
+      "due": {
+        "calculation": {
+          "expression": "x",
+          "type": "date",
+        },
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "flag",
+      "other",
+      "price",
+    ],
+    "properties": {
+      "flag": {
+        "calculation": {
+          "expression": true,
+          "type": "boolean",
+        },
+        "type": "boolean",
+      },
+      "other": {
+        "calculation": {
+          "expression": null,
+          "type": "weird",
+        },
+        "type": "string",
+      },
+      "price": {
+        "calculation": {
+          "expression": 3,
+          "type": "integer",
+        },
+        "type": "integer",
+      },
+    },
+  },
+  {
+    "order": [
+      "when",
+      "total",
+    ],
+    "properties": {
+      "total": {
+        "calculation": {
+          "expression": undefined,
+          "type": "string",
+        },
+        "type": "string",
+      },
+      "when": {
+        "calculation": {
+          "expression": "y",
+          "type": "string",
+        },
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [],
+    "properties": {},
+  },
+  {
+    "order": [],
+    "properties": {},
+  },
+  {
+    "order": [
+      "total",
+    ],
+    "properties": {
+      "total": {
+        "calculation": {
+          "expression": {
+            "*": [
+              {
+                "prop": "price",
+              },
+              2,
+            ],
+          },
+          "type": "number",
+        },
+        "type": "number",
+      },
+    },
+  },
+  {
+    "order": [
+      "due",
+    ],
+    "properties": {
+      "due": {
+        "calculation": {
+          "expression": "x",
+          "type": "date",
+        },
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "flag",
+      "other",
+      "price",
+    ],
+    "properties": {
+      "flag": {
+        "calculation": {
+          "expression": true,
+          "type": "boolean",
+        },
+        "type": "boolean",
+      },
+      "other": {
+        "calculation": {
+          "expression": null,
+          "type": "weird",
+        },
+        "type": "string",
+      },
+      "price": {
+        "calculation": {
+          "expression": 3,
+          "type": "integer",
+        },
+        "type": "integer",
+      },
+    },
+  },
+  {
+    "order": [
+      "when",
+      "total",
+    ],
+    "properties": {
+      "total": {
+        "calculation": {
+          "expression": undefined,
+          "type": "string",
+        },
+        "type": "string",
+      },
+      "when": {
+        "calculation": {
+          "expression": "y",
+          "type": "string",
+        },
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "total",
+    ],
+    "properties": {},
+  },
+  {
+    "order": [
+      "price",
+      "total",
+    ],
+    "properties": {},
+  },
+  {
+    "order": [
+      "price",
+      "total",
+    ],
+    "properties": {
+      "total": {
+        "calculation": {
+          "expression": {
+            "*": [
+              {
+                "prop": "price",
+              },
+              2,
+            ],
+          },
+          "type": "number",
+        },
+        "type": "number",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "total",
+      "due",
+    ],
+    "properties": {
+      "due": {
+        "calculation": {
+          "expression": "x",
+          "type": "date",
+        },
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "total",
+      "flag",
+      "other",
+    ],
+    "properties": {
+      "flag": {
+        "calculation": {
+          "expression": true,
+          "type": "boolean",
+        },
+        "type": "boolean",
+      },
+      "other": {
+        "calculation": {
+          "expression": null,
+          "type": "weird",
+        },
+        "type": "string",
+      },
+      "price": {
+        "calculation": {
+          "expression": 3,
+          "type": "integer",
+        },
+        "type": "integer",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "total",
+      "when",
+    ],
+    "properties": {
+      "total": {
+        "calculation": {
+          "expression": undefined,
+          "type": "string",
+        },
+        "type": "string",
+      },
+      "when": {
+        "calculation": {
+          "expression": "y",
+          "type": "string",
+        },
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+    ],
+    "properties": {},
+  },
+  {
+    "order": [
+      "price",
+    ],
+    "properties": {},
+  },
+  {
+    "order": [
+      "price",
+      "total",
+    ],
+    "properties": {
+      "total": {
+        "calculation": {
+          "expression": {
+            "*": [
+              {
+                "prop": "price",
+              },
+              2,
+            ],
+          },
+          "type": "number",
+        },
+        "type": "number",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "due",
+    ],
+    "properties": {
+      "due": {
+        "calculation": {
+          "expression": "x",
+          "type": "date",
+        },
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "flag",
+      "other",
+    ],
+    "properties": {
+      "flag": {
+        "calculation": {
+          "expression": true,
+          "type": "boolean",
+        },
+        "type": "boolean",
+      },
+      "other": {
+        "calculation": {
+          "expression": null,
+          "type": "weird",
+        },
+        "type": "string",
+      },
+      "price": {
+        "calculation": {
+          "expression": 3,
+          "type": "integer",
+        },
+        "type": "integer",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "when",
+      "total",
+    ],
+    "properties": {
+      "total": {
+        "calculation": {
+          "expression": undefined,
+          "type": "string",
+        },
+        "type": "string",
+      },
+      "when": {
+        "calculation": {
+          "expression": "y",
+          "type": "string",
+        },
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [],
+    "properties": {},
+  },
+  {
+    "order": [],
+    "properties": {},
+  },
+  {
+    "order": [
+      "total",
+    ],
+    "properties": {
+      "total": {
+        "calculation": {
+          "expression": {
+            "*": [
+              {
+                "prop": "price",
+              },
+              2,
+            ],
+          },
+          "type": "number",
+        },
+        "type": "number",
+      },
+    },
+  },
+  {
+    "order": [
+      "due",
+    ],
+    "properties": {
+      "due": {
+        "calculation": {
+          "expression": "x",
+          "type": "date",
+        },
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "flag",
+      "other",
+      "price",
+    ],
+    "properties": {
+      "flag": {
+        "calculation": {
+          "expression": true,
+          "type": "boolean",
+        },
+        "type": "boolean",
+      },
+      "other": {
+        "calculation": {
+          "expression": null,
+          "type": "weird",
+        },
+        "type": "string",
+      },
+      "price": {
+        "calculation": {
+          "expression": 3,
+          "type": "integer",
+        },
+        "type": "integer",
+      },
+    },
+  },
+  {
+    "order": [
+      "when",
+      "total",
+    ],
+    "properties": {
+      "total": {
+        "calculation": {
+          "expression": undefined,
+          "type": "string",
+        },
+        "type": "string",
+      },
+      "when": {
+        "calculation": {
+          "expression": "y",
+          "type": "string",
+        },
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [],
+    "properties": {},
+  },
+  {
+    "order": [],
+    "properties": {},
+  },
+  {
+    "order": [
+      "total",
+    ],
+    "properties": {
+      "total": {
+        "calculation": {
+          "expression": {
+            "*": [
+              {
+                "prop": "price",
+              },
+              2,
+            ],
+          },
+          "type": "number",
+        },
+        "type": "number",
+      },
+    },
+  },
+  {
+    "order": [
+      "due",
+    ],
+    "properties": {
+      "due": {
+        "calculation": {
+          "expression": "x",
+          "type": "date",
+        },
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "flag",
+      "other",
+      "price",
+    ],
+    "properties": {
+      "flag": {
+        "calculation": {
+          "expression": true,
+          "type": "boolean",
+        },
+        "type": "boolean",
+      },
+      "other": {
+        "calculation": {
+          "expression": null,
+          "type": "weird",
+        },
+        "type": "string",
+      },
+      "price": {
+        "calculation": {
+          "expression": 3,
+          "type": "integer",
+        },
+        "type": "integer",
+      },
+    },
+  },
+  {
+    "order": [
+      "when",
+      "total",
+    ],
+    "properties": {
+      "total": {
+        "calculation": {
+          "expression": undefined,
+          "type": "string",
+        },
+        "type": "string",
+      },
+      "when": {
+        "calculation": {
+          "expression": "y",
+          "type": "string",
+        },
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "total",
+    ],
+    "properties": {},
+  },
+  {
+    "order": [
+      "price",
+      "total",
+    ],
+    "properties": {},
+  },
+  {
+    "order": [
+      "price",
+      "total",
+    ],
+    "properties": {
+      "total": {
+        "calculation": {
+          "expression": {
+            "*": [
+              {
+                "prop": "price",
+              },
+              2,
+            ],
+          },
+          "type": "number",
+        },
+        "type": "number",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "total",
+      "due",
+    ],
+    "properties": {
+      "due": {
+        "calculation": {
+          "expression": "x",
+          "type": "date",
+        },
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "total",
+      "flag",
+      "other",
+    ],
+    "properties": {
+      "flag": {
+        "calculation": {
+          "expression": true,
+          "type": "boolean",
+        },
+        "type": "boolean",
+      },
+      "other": {
+        "calculation": {
+          "expression": null,
+          "type": "weird",
+        },
+        "type": "string",
+      },
+      "price": {
+        "calculation": {
+          "expression": 3,
+          "type": "integer",
+        },
+        "type": "integer",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "total",
+      "when",
+    ],
+    "properties": {
+      "total": {
+        "calculation": {
+          "expression": undefined,
+          "type": "string",
+        },
+        "type": "string",
+      },
+      "when": {
+        "calculation": {
+          "expression": "y",
+          "type": "string",
+        },
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+    ],
+    "properties": {},
+  },
+  {
+    "order": [
+      "price",
+    ],
+    "properties": {},
+  },
+  {
+    "order": [
+      "price",
+      "total",
+    ],
+    "properties": {
+      "total": {
+        "calculation": {
+          "expression": {
+            "*": [
+              {
+                "prop": "price",
+              },
+              2,
+            ],
+          },
+          "type": "number",
+        },
+        "type": "number",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "due",
+    ],
+    "properties": {
+      "due": {
+        "calculation": {
+          "expression": "x",
+          "type": "date",
+        },
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "flag",
+      "other",
+    ],
+    "properties": {
+      "flag": {
+        "calculation": {
+          "expression": true,
+          "type": "boolean",
+        },
+        "type": "boolean",
+      },
+      "other": {
+        "calculation": {
+          "expression": null,
+          "type": "weird",
+        },
+        "type": "string",
+      },
+      "price": {
+        "calculation": {
+          "expression": 3,
+          "type": "integer",
+        },
+        "type": "integer",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "when",
+      "total",
+    ],
+    "properties": {
+      "total": {
+        "calculation": {
+          "expression": undefined,
+          "type": "string",
+        },
+        "type": "string",
+      },
+      "when": {
+        "calculation": {
+          "expression": "y",
+          "type": "string",
+        },
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [],
+    "properties": {
+      "price": {
+        "type": "number",
+      },
+      "total": {
+        "type": "number",
+      },
+    },
+  },
+  {
+    "order": [],
+    "properties": {
+      "price": {
+        "type": "number",
+      },
+      "total": {
+        "type": "number",
+      },
+    },
+  },
+  {
+    "order": [],
+    "properties": {
+      "price": {
+        "type": "number",
+      },
+      "total": {
+        "calculation": {
+          "expression": {
+            "*": [
+              {
+                "prop": "price",
+              },
+              2,
+            ],
+          },
+          "type": "number",
+        },
+        "type": "number",
+      },
+    },
+  },
+  {
+    "order": [
+      "due",
+    ],
+    "properties": {
+      "due": {
+        "calculation": {
+          "expression": "x",
+          "type": "date",
+        },
+        "format": "date",
+        "type": "string",
+      },
+      "price": {
+        "type": "number",
+      },
+      "total": {
+        "type": "number",
+      },
+    },
+  },
+  {
+    "order": [
+      "flag",
+      "other",
+    ],
+    "properties": {
+      "flag": {
+        "calculation": {
+          "expression": true,
+          "type": "boolean",
+        },
+        "type": "boolean",
+      },
+      "other": {
+        "calculation": {
+          "expression": null,
+          "type": "weird",
+        },
+        "type": "string",
+      },
+      "price": {
+        "calculation": {
+          "expression": 3,
+          "type": "integer",
+        },
+        "type": "number",
+      },
+      "total": {
+        "type": "number",
+      },
+    },
+  },
+  {
+    "order": [
+      "when",
+    ],
+    "properties": {
+      "price": {
+        "type": "number",
+      },
+      "total": {
+        "calculation": {
+          "expression": undefined,
+          "type": "string",
+        },
+        "type": "number",
+      },
+      "when": {
+        "calculation": {
+          "expression": "y",
+          "type": "string",
+        },
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [],
+    "properties": {
+      "price": {
+        "type": "number",
+      },
+      "total": {
+        "type": "number",
+      },
+    },
+  },
+  {
+    "order": [],
+    "properties": {
+      "price": {
+        "type": "number",
+      },
+      "total": {
+        "type": "number",
+      },
+    },
+  },
+  {
+    "order": [],
+    "properties": {
+      "price": {
+        "type": "number",
+      },
+      "total": {
+        "calculation": {
+          "expression": {
+            "*": [
+              {
+                "prop": "price",
+              },
+              2,
+            ],
+          },
+          "type": "number",
+        },
+        "type": "number",
+      },
+    },
+  },
+  {
+    "order": [
+      "due",
+    ],
+    "properties": {
+      "due": {
+        "calculation": {
+          "expression": "x",
+          "type": "date",
+        },
+        "format": "date",
+        "type": "string",
+      },
+      "price": {
+        "type": "number",
+      },
+      "total": {
+        "type": "number",
+      },
+    },
+  },
+  {
+    "order": [
+      "flag",
+      "other",
+    ],
+    "properties": {
+      "flag": {
+        "calculation": {
+          "expression": true,
+          "type": "boolean",
+        },
+        "type": "boolean",
+      },
+      "other": {
+        "calculation": {
+          "expression": null,
+          "type": "weird",
+        },
+        "type": "string",
+      },
+      "price": {
+        "calculation": {
+          "expression": 3,
+          "type": "integer",
+        },
+        "type": "number",
+      },
+      "total": {
+        "type": "number",
+      },
+    },
+  },
+  {
+    "order": [
+      "when",
+    ],
+    "properties": {
+      "price": {
+        "type": "number",
+      },
+      "total": {
+        "calculation": {
+          "expression": undefined,
+          "type": "string",
+        },
+        "type": "number",
+      },
+      "when": {
+        "calculation": {
+          "expression": "y",
+          "type": "string",
+        },
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "total",
+    ],
+    "properties": {
+      "price": {
+        "type": "number",
+      },
+      "total": {
+        "type": "number",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "total",
+    ],
+    "properties": {
+      "price": {
+        "type": "number",
+      },
+      "total": {
+        "type": "number",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "total",
+    ],
+    "properties": {
+      "price": {
+        "type": "number",
+      },
+      "total": {
+        "calculation": {
+          "expression": {
+            "*": [
+              {
+                "prop": "price",
+              },
+              2,
+            ],
+          },
+          "type": "number",
+        },
+        "type": "number",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "total",
+      "due",
+    ],
+    "properties": {
+      "due": {
+        "calculation": {
+          "expression": "x",
+          "type": "date",
+        },
+        "format": "date",
+        "type": "string",
+      },
+      "price": {
+        "type": "number",
+      },
+      "total": {
+        "type": "number",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "total",
+      "flag",
+      "other",
+    ],
+    "properties": {
+      "flag": {
+        "calculation": {
+          "expression": true,
+          "type": "boolean",
+        },
+        "type": "boolean",
+      },
+      "other": {
+        "calculation": {
+          "expression": null,
+          "type": "weird",
+        },
+        "type": "string",
+      },
+      "price": {
+        "calculation": {
+          "expression": 3,
+          "type": "integer",
+        },
+        "type": "number",
+      },
+      "total": {
+        "type": "number",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "total",
+      "when",
+    ],
+    "properties": {
+      "price": {
+        "type": "number",
+      },
+      "total": {
+        "calculation": {
+          "expression": undefined,
+          "type": "string",
+        },
+        "type": "number",
+      },
+      "when": {
+        "calculation": {
+          "expression": "y",
+          "type": "string",
+        },
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+    ],
+    "properties": {
+      "price": {
+        "type": "number",
+      },
+      "total": {
+        "type": "number",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+    ],
+    "properties": {
+      "price": {
+        "type": "number",
+      },
+      "total": {
+        "type": "number",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+    ],
+    "properties": {
+      "price": {
+        "type": "number",
+      },
+      "total": {
+        "calculation": {
+          "expression": {
+            "*": [
+              {
+                "prop": "price",
+              },
+              2,
+            ],
+          },
+          "type": "number",
+        },
+        "type": "number",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "due",
+    ],
+    "properties": {
+      "due": {
+        "calculation": {
+          "expression": "x",
+          "type": "date",
+        },
+        "format": "date",
+        "type": "string",
+      },
+      "price": {
+        "type": "number",
+      },
+      "total": {
+        "type": "number",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "flag",
+      "other",
+    ],
+    "properties": {
+      "flag": {
+        "calculation": {
+          "expression": true,
+          "type": "boolean",
+        },
+        "type": "boolean",
+      },
+      "other": {
+        "calculation": {
+          "expression": null,
+          "type": "weird",
+        },
+        "type": "string",
+      },
+      "price": {
+        "calculation": {
+          "expression": 3,
+          "type": "integer",
+        },
+        "type": "number",
+      },
+      "total": {
+        "type": "number",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "when",
+    ],
+    "properties": {
+      "price": {
+        "type": "number",
+      },
+      "total": {
+        "calculation": {
+          "expression": undefined,
+          "type": "string",
+        },
+        "type": "number",
+      },
+      "when": {
+        "calculation": {
+          "expression": "y",
+          "type": "string",
+        },
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [],
+    "properties": {
+      "price": {
+        "title": "Price",
+        "type": "integer",
+      },
+      "when": {
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [],
+    "properties": {
+      "price": {
+        "title": "Price",
+        "type": "integer",
+      },
+      "when": {
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "total",
+    ],
+    "properties": {
+      "price": {
+        "title": "Price",
+        "type": "integer",
+      },
+      "total": {
+        "calculation": {
+          "expression": {
+            "*": [
+              {
+                "prop": "price",
+              },
+              2,
+            ],
+          },
+          "type": "number",
+        },
+        "type": "number",
+      },
+      "when": {
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "due",
+    ],
+    "properties": {
+      "due": {
+        "calculation": {
+          "expression": "x",
+          "type": "date",
+        },
+        "format": "date",
+        "type": "string",
+      },
+      "price": {
+        "title": "Price",
+        "type": "integer",
+      },
+      "when": {
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "flag",
+      "other",
+    ],
+    "properties": {
+      "flag": {
+        "calculation": {
+          "expression": true,
+          "type": "boolean",
+        },
+        "type": "boolean",
+      },
+      "other": {
+        "calculation": {
+          "expression": null,
+          "type": "weird",
+        },
+        "type": "string",
+      },
+      "price": {
+        "calculation": {
+          "expression": 3,
+          "type": "integer",
+        },
+        "title": "Price",
+        "type": "integer",
+      },
+      "when": {
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "total",
+    ],
+    "properties": {
+      "price": {
+        "title": "Price",
+        "type": "integer",
+      },
+      "total": {
+        "calculation": {
+          "expression": undefined,
+          "type": "string",
+        },
+        "type": "string",
+      },
+      "when": {
+        "calculation": {
+          "expression": "y",
+          "type": "string",
+        },
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [],
+    "properties": {
+      "price": {
+        "title": "Price",
+        "type": "integer",
+      },
+      "when": {
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [],
+    "properties": {
+      "price": {
+        "title": "Price",
+        "type": "integer",
+      },
+      "when": {
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "total",
+    ],
+    "properties": {
+      "price": {
+        "title": "Price",
+        "type": "integer",
+      },
+      "total": {
+        "calculation": {
+          "expression": {
+            "*": [
+              {
+                "prop": "price",
+              },
+              2,
+            ],
+          },
+          "type": "number",
+        },
+        "type": "number",
+      },
+      "when": {
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "due",
+    ],
+    "properties": {
+      "due": {
+        "calculation": {
+          "expression": "x",
+          "type": "date",
+        },
+        "format": "date",
+        "type": "string",
+      },
+      "price": {
+        "title": "Price",
+        "type": "integer",
+      },
+      "when": {
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "flag",
+      "other",
+    ],
+    "properties": {
+      "flag": {
+        "calculation": {
+          "expression": true,
+          "type": "boolean",
+        },
+        "type": "boolean",
+      },
+      "other": {
+        "calculation": {
+          "expression": null,
+          "type": "weird",
+        },
+        "type": "string",
+      },
+      "price": {
+        "calculation": {
+          "expression": 3,
+          "type": "integer",
+        },
+        "title": "Price",
+        "type": "integer",
+      },
+      "when": {
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "total",
+    ],
+    "properties": {
+      "price": {
+        "title": "Price",
+        "type": "integer",
+      },
+      "total": {
+        "calculation": {
+          "expression": undefined,
+          "type": "string",
+        },
+        "type": "string",
+      },
+      "when": {
+        "calculation": {
+          "expression": "y",
+          "type": "string",
+        },
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "total",
+    ],
+    "properties": {
+      "price": {
+        "title": "Price",
+        "type": "integer",
+      },
+      "when": {
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "total",
+    ],
+    "properties": {
+      "price": {
+        "title": "Price",
+        "type": "integer",
+      },
+      "when": {
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "total",
+    ],
+    "properties": {
+      "price": {
+        "title": "Price",
+        "type": "integer",
+      },
+      "total": {
+        "calculation": {
+          "expression": {
+            "*": [
+              {
+                "prop": "price",
+              },
+              2,
+            ],
+          },
+          "type": "number",
+        },
+        "type": "number",
+      },
+      "when": {
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "total",
+      "due",
+    ],
+    "properties": {
+      "due": {
+        "calculation": {
+          "expression": "x",
+          "type": "date",
+        },
+        "format": "date",
+        "type": "string",
+      },
+      "price": {
+        "title": "Price",
+        "type": "integer",
+      },
+      "when": {
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "total",
+      "flag",
+      "other",
+    ],
+    "properties": {
+      "flag": {
+        "calculation": {
+          "expression": true,
+          "type": "boolean",
+        },
+        "type": "boolean",
+      },
+      "other": {
+        "calculation": {
+          "expression": null,
+          "type": "weird",
+        },
+        "type": "string",
+      },
+      "price": {
+        "calculation": {
+          "expression": 3,
+          "type": "integer",
+        },
+        "title": "Price",
+        "type": "integer",
+      },
+      "when": {
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "total",
+    ],
+    "properties": {
+      "price": {
+        "title": "Price",
+        "type": "integer",
+      },
+      "total": {
+        "calculation": {
+          "expression": undefined,
+          "type": "string",
+        },
+        "type": "string",
+      },
+      "when": {
+        "calculation": {
+          "expression": "y",
+          "type": "string",
+        },
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+    ],
+    "properties": {
+      "price": {
+        "title": "Price",
+        "type": "integer",
+      },
+      "when": {
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+    ],
+    "properties": {
+      "price": {
+        "title": "Price",
+        "type": "integer",
+      },
+      "when": {
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "total",
+    ],
+    "properties": {
+      "price": {
+        "title": "Price",
+        "type": "integer",
+      },
+      "total": {
+        "calculation": {
+          "expression": {
+            "*": [
+              {
+                "prop": "price",
+              },
+              2,
+            ],
+          },
+          "type": "number",
+        },
+        "type": "number",
+      },
+      "when": {
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "due",
+    ],
+    "properties": {
+      "due": {
+        "calculation": {
+          "expression": "x",
+          "type": "date",
+        },
+        "format": "date",
+        "type": "string",
+      },
+      "price": {
+        "title": "Price",
+        "type": "integer",
+      },
+      "when": {
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "flag",
+      "other",
+    ],
+    "properties": {
+      "flag": {
+        "calculation": {
+          "expression": true,
+          "type": "boolean",
+        },
+        "type": "boolean",
+      },
+      "other": {
+        "calculation": {
+          "expression": null,
+          "type": "weird",
+        },
+        "type": "string",
+      },
+      "price": {
+        "calculation": {
+          "expression": 3,
+          "type": "integer",
+        },
+        "title": "Price",
+        "type": "integer",
+      },
+      "when": {
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+  {
+    "order": [
+      "price",
+      "total",
+    ],
+    "properties": {
+      "price": {
+        "title": "Price",
+        "type": "integer",
+      },
+      "total": {
+        "calculation": {
+          "expression": undefined,
+          "type": "string",
+        },
+        "type": "string",
+      },
+      "when": {
+        "calculation": {
+          "expression": "y",
+          "type": "string",
+        },
+        "format": "date",
+        "type": "string",
+      },
+    },
+  },
+]
+`;
+
+exports[`calculations golden > calculationsFromProperties reads every map as recorded 1`] = `
+[
+  {},
+  {},
+  {
+    "total": {
+      "expression": 1,
+      "type": "number",
+    },
+  },
+  {},
+  {},
+  {
+    "e": {
+      "expression": undefined,
+      "type": undefined,
+    },
+  },
+  {
+    "f": {
+      "expression": undefined,
+      "type": "number",
+    },
+    "g": {
+      "expression": 2,
+      "type": undefined,
+    },
+  },
+]
+`;
+
+exports[`calculations golden > referencedFields reads every expression as recorded 1`] = `
+[
+  [],
+  [],
+  [],
+  [],
+  [
+    "price",
+  ],
+  [
+    "price",
+  ],
+  [],
+  [],
+  [
+    "a",
+    "b",
+  ],
+  [
+    "x",
+    "y",
+    "z",
+  ],
+  [
+    "q",
+  ],
+  [
+    "a",
+  ],
+  [],
+  [],
+]
+`;
+
+exports[`calculations golden > refusalsByProperty maps every error grid cell as recorded 1`] = `
+[
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {
+    "total": [
+      "Calculation "total" refers to "price"",
+    ],
+  },
+  {
+    "price": [
+      "Calculation "total" refers to "price"",
+    ],
+    "total": [
+      "Calculation "total" refers to "price"",
+    ],
+  },
+  {},
+  {},
+  {
+    "total": [
+      "Cycle: total -> price -> total",
+    ],
+  },
+  {
+    "price": [
+      "Cycle: total -> price -> total",
+    ],
+    "total": [
+      "Cycle: total -> price -> total",
+    ],
+  },
+  {},
+  {},
+  {
+    "total": [
+      "total -> sub.total",
+    ],
+  },
+  {
+    "total": [
+      "total -> sub.total",
+    ],
+  },
+  {
+    "sub.total": [
+      "total -> sub.total",
+    ],
+  },
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {
+    "a+b": [
+      "a+b -> x",
+    ],
+    "a.b": [
+      "Calculation "a.b" is wrong; a.b -> c",
+    ],
+    "x": [
+      "a+b -> x",
+    ],
+  },
+  {},
+  {
+    "total": [
+      "Calculation "total" is wrong",
+      "Cycle: price -> total",
+      ""x" and "total"",
+    ],
+  },
+  {
+    "price": [
+      "Cycle: price -> total",
+    ],
+    "total": [
+      "Calculation "total" is wrong",
+      "Cycle: price -> total",
+      ""x" and "total"",
+    ],
+  },
+  {
+    "x": [
+      ""x" and "total"",
+    ],
+  },
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+]
+`;
+
+exports[`calculations golden > tryCalculation answers each response and failure as recorded 1`] = `
+[
+  {
+    "error": null,
+    "ok": true,
+    "value": 4,
+  },
+  {
+    "calculation": {
+      "expression": 1,
+      "type": "number",
+    },
+    "object": {
+      "a": 1,
+    },
+  },
+  {
+    "error": null,
+    "ok": true,
+    "value": 0,
+  },
+  {
+    "calculation": {
+      "expression": 1,
+      "type": "number",
+    },
+    "object": {
+      "a": 1,
+    },
+  },
+  {
+    "error": null,
+    "ok": true,
+    "value": null,
+  },
+  {
+    "calculation": {
+      "expression": 1,
+      "type": "number",
+    },
+    "object": {
+      "a": 1,
+    },
+  },
+  {
+    "error": null,
+    "ok": true,
+    "value": null,
+  },
+  {
+    "calculation": {
+      "expression": 1,
+      "type": "number",
+    },
+    "object": {
+      "a": 1,
+    },
+  },
+  {
+    "error": {
+      "code": "div-zero",
+      "message": "no",
+    },
+    "ok": false,
+    "value": null,
+  },
+  {
+    "calculation": {
+      "expression": 1,
+      "type": "number",
+    },
+    "object": {},
+  },
+  {
+    "error": null,
+    "ok": false,
+    "value": null,
+  },
+  {
+    "calculation": {
+      "expression": 1,
+      "type": "number",
+    },
+    "object": {},
+  },
+  {
+    "error": null,
+    "ok": false,
+    "value": 1,
+  },
+  {
+    "calculation": {
+      "expression": 1,
+      "type": "number",
+    },
+    "object": {
+      "a": 1,
+    },
+  },
+  {
+    "error": null,
+    "ok": false,
+    "value": 2,
+  },
+  {
+    "calculation": {
+      "expression": 1,
+      "type": "number",
+    },
+    "object": {
+      "a": 1,
+    },
+  },
+  {
+    "error": null,
+    "ok": false,
+    "value": null,
+  },
+  {
+    "calculation": {
+      "expression": 1,
+      "type": "number",
+    },
+    "object": {},
+  },
+  {
+    "error": null,
+    "ok": false,
+    "value": null,
+  },
+  {
+    "calculation": {
+      "expression": 1,
+      "type": "number",
+    },
+    "object": {},
+  },
+  {
+    "error": {
+      "code": "bad",
+      "message": "Bad",
+    },
+    "ok": false,
+    "value": null,
+  },
+  {
+    "error": {
+      "code": "request-failed",
+      "message": "Request failed",
+    },
+    "ok": false,
+    "value": null,
+  },
+  {
+    "error": {
+      "code": "request-failed",
+      "message": "",
+    },
+    "ok": false,
+    "value": null,
+  },
+  {
+    "error": {
+      "code": "request-failed",
+      "message": "Network Error",
+    },
+    "ok": false,
+    "value": null,
+  },
+  {
+    "error": {
+      "code": "request-failed",
+      "message": "",
+    },
+    "ok": false,
+    "value": null,
+  },
+  {
+    "error": {
+      "code": "request-failed",
+      "message": "",
+    },
+    "ok": false,
+    "value": null,
+  },
+]
+`;

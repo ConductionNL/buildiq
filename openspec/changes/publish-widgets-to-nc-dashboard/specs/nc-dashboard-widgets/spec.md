@@ -102,8 +102,10 @@ read, the system SHALL log a warning and register no widgets.
 ### Requirement: A user only sees widgets they are allowed to see
 
 A promoted widget SHALL be offered and rendered only to users who pass the Application's
-own permission check combined with the widget placement's `roles` array. The check order
-SHALL be the one the app already applies to its navigation entries: a `group:*` sentinel
+own permission check AND, when the widget placement declares a `roles` array, match one of
+those roles. `roles` narrows who sees the widget; it SHALL NOT admit a user who may not see
+the Application. A placement without `roles` SHALL be visible to every user who may see the
+Application. Both checks SHALL use the order the app already applies to its navigation entries: a `group:*` sentinel
 makes the widget visible to every signed-in user, then a `user:<uid>` match, then a
 `group:<gid>` or bare group id match against the user's memberships, then the Nextcloud
 admin bypass.
@@ -130,7 +132,7 @@ answer would reflect the invented values rather than the author's intent.
 
 @e2e nc-dashboard-widgets::a-user-outside-every-listed-role-is-not-offered-the-widget
 
-- **WHEN** a user who matches no entry in the Application's permissions or the placement's roles opens the dashboard
+- **WHEN** a user who may see the Application but matches no entry in the placement's roles opens the dashboard
 - **THEN** the widget picker does not list that widget
 - **AND** the widget does not render even if its id is already stored on that user's dashboard
 
@@ -139,7 +141,7 @@ answer would reflect the invented values rather than the author's intent.
 @e2e exclude permission-matrix branch, asserted by PHPUnit across the four check-order cases
 
 - **WHEN** the placement's roles contain the `group:*` sentinel
-- **THEN** every signed-in user is offered the widget
+- **THEN** every signed-in user who may see the Application is offered the widget
 
 ### Requirement: The widget renders in the Nextcloud panel chrome
 

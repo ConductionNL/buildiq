@@ -104,18 +104,41 @@ class RuleEngineService {
 	private array $activeSlugs = [];
 
 	/**
+	 * DMN table evaluator.
+	 *
+	 * @var DecisionTableEvaluator
+	 */
+	private readonly DecisionTableEvaluator $decisionEvaluator;
+
+	/**
+	 * Condition-action chain executor.
+	 *
+	 * @var ConditionActionExecutor
+	 */
+	private readonly ConditionActionExecutor $conditionExecutor;
+
+	/**
+	 * Wired side-effect dispatcher (spec REQ-AUTD-010 — fixes the verified defect where side-effecting
+	 * actions silently no-op in wet runs because no dispatcher was ever passed to the executor).
+	 *
+	 * @var RuleActionDispatcher
+	 */
+	private readonly RuleActionDispatcher $actionDispatcher;
+
+	/**
+	 * Hot-reload bundle cache.
+	 *
+	 * @var RuleSetCacheManager
+	 */
+	private readonly RuleSetCacheManager $cacheManager;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectServiceInterface $objectService OpenRegister object service.
-	 * @param DecisionTableEvaluator $decisionEvaluator DMN table evaluator.
-	 * @param ConditionActionExecutor $conditionExecutor Condition-action chain executor.
-	 * @param RuleSetCacheManager $cacheManager Hot-reload bundle cache.
+	 * @param RuleEvaluators $evaluators The decision table evaluator, condition executor, action dispatcher and rule cache.
 	 * @param IUserSession $userSession Current user session.
 	 * @param LoggerInterface $logger PSR logger.
-	 * @param RuleActionDispatcher $actionDispatcher Wired side-effect dispatcher (spec REQ-AUTD-010 —
-	 *                                               fixes the verified defect where side-effecting
-	 *                                               actions silently no-op in wet runs because no
-	 *                                               dispatcher was ever passed to the executor).
 	 * @param RuleObjectReader $reader Organisation-scoped reads of rule-engine objects (REQ-BRE-007).
 	 * @param StoredDecisionTables $tables A rule set's decision table, held in OpenRegister's decision-tables register (decision 196).
 	 *
@@ -125,15 +148,16 @@ class RuleEngineService {
 	 */
 	public function __construct(
 		private readonly ObjectServiceInterface $objectService,
-		private readonly DecisionTableEvaluator $decisionEvaluator,
-		private readonly ConditionActionExecutor $conditionExecutor,
-		private readonly RuleSetCacheManager $cacheManager,
+		RuleEvaluators $evaluators,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
-		private readonly RuleActionDispatcher $actionDispatcher,
 		private readonly RuleObjectReader $reader,
 		private readonly StoredDecisionTables $tables,
 	) {
+		$this->decisionEvaluator = $evaluators->decisionEvaluator;
+		$this->conditionExecutor = $evaluators->conditionExecutor;
+		$this->actionDispatcher = $evaluators->actionDispatcher;
+		$this->cacheManager = $evaluators->cacheManager;
 
 	}//end __construct()
 
@@ -146,8 +170,8 @@ class RuleEngineService {
 	 * @param bool $dryRun When true, side-effecting actions are suppressed.
 	 * @param bool $maskPii When true, mask PII fields in the audit log.
 	 * @param bool $preview When true, a live preview for a form being filled
-	 *   in: no execution log entry is written and no side-effecting action runs
-	 *   (REQ-BQLV-004). A preview answer is never trusted for a save.
+	 *                      in: no execution log entry is written and no side-effecting action runs
+	 *                      (REQ-BQLV-004). A preview answer is never trusted for a save.
 	 *
 	 * @return array{result:array<string,mixed>,triggeredRules:array<int,mixed>,executionTime:int,errors:array<int,string>}
 	 *
@@ -261,26 +285,26 @@ class RuleEngineService {
 			$errors[] = 'Evaluation exceeded the ' . self::TIMEOUT_MS . 'ms soft timeout (' . $durationMs . 'ms).';
 		}
 
-		if ($preview === false) {
-			$this->persistLog(
-				ruleSetSlug: $ruleSetSlug,
-				version: (string)($bundle['ruleSet']['version'] ?? ''),
-				payload: $payload,
-				result: $result,
-				triggeredRules: $triggeredRules,
-				durationMs: $durationMs,
-				errors: $errors,
-				maskPii: $maskPii
-			);
-		}
-
-		return [
+		$outcome = [
 			'result' => $result,
 			'triggeredRules' => $triggeredRules,
 			'executionTime' => $durationMs,
 			'errors' => $errors,
 		];
 
+		if ($preview === false) {
+			$this->persistLog(
+				run: [
+					'ruleSetSlug' => $ruleSetSlug,
+					'version' => (string)($bundle['ruleSet']['version'] ?? ''),
+					'payload' => $payload,
+					'maskPii' => $maskPii,
+				],
+				outcome: $outcome
+			);
+		}
+
+		return $outcome;
 	}//end evaluateChain()
 
 	/**
@@ -364,48 +388,34 @@ class RuleEngineService {
 	/**
 	 * Persist a RuleExecutionLog audit record.
 	 *
-	 * @param string $ruleSetSlug The RuleSet slug.
-	 * @param string $version The evaluated version.
-	 * @param array<string,mixed> $payload The raw input payload.
-	 * @param array<string,mixed> $result The evaluation result.
-	 * @param array<int,mixed> $triggeredRules Triggered rule identifiers.
-	 * @param int $durationMs Execution duration.
-	 * @param array<int,string> $errors Any errors.
-	 * @param bool $maskPii Whether to mask PII in the logged input.
+	 * @param array{ruleSetSlug:string,version:string,payload:array<string,mixed>,maskPii:bool} $run The run:
+	 *        the RuleSet slug and version, the raw input payload, and whether to mask PII in the log.
+	 * @param array{result:array<string,mixed>,triggeredRules:array<int,mixed>,executionTime:int,errors:array<int,string>} $outcome The answer.
 	 *
 	 * @return void
 	 */
-	private function persistLog(
-		string $ruleSetSlug,
-		string $version,
-		array $payload,
-		array $result,
-		array $triggeredRules,
-		int $durationMs,
-		array $errors,
-		bool $maskPii,
-	): void {
+	private function persistLog(array $run, array $outcome): void {
 		$user = $this->userSession->getUser();
 		$userId = '';
 		if ($user !== null) {
 			$userId = $user->getUID();
 		}
 
-		$loggedInput = $payload;
-		if ($maskPii === true) {
-			$loggedInput = $this->maskPii(payload: $payload);
+		$loggedInput = $run['payload'];
+		if ($run['maskPii'] === true) {
+			$loggedInput = $this->maskPii(payload: $run['payload']);
 		}
 
 		$log = [
-			'ruleSetId' => $ruleSetSlug,
-			'ruleSetVersion' => $version,
+			'ruleSetId' => $run['ruleSetSlug'],
+			'ruleSetVersion' => $run['version'],
 			'timestamp' => gmdate('Y-m-d\TH:i:s\Z'),
 			'triggerContext' => 'api',
 			'inputPayload' => $loggedInput,
-			'outputResult' => $result,
-			'triggeredRules' => array_map('strval', $triggeredRules),
-			'executionDurationMs' => $durationMs,
-			'errors' => $errors,
+			'outputResult' => $outcome['result'],
+			'triggeredRules' => array_map('strval', $outcome['triggeredRules']),
+			'executionDurationMs' => $outcome['executionTime'],
+			'errors' => $outcome['errors'],
 			'userId' => $userId,
 			'archived' => false,
 		];
@@ -421,7 +431,7 @@ class RuleEngineService {
 			// it is a compliance gap — log at error so ops alerting catches it.
 			$this->logger->error(
 				'Buildiq: failed to persist RuleExecutionLog',
-				['ruleSet' => $ruleSetSlug, 'exception' => $e->getMessage()]
+				['ruleSet' => $run['ruleSetSlug'], 'exception' => $e->getMessage()]
 			);
 		}
 

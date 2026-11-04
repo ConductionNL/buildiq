@@ -30,7 +30,10 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Integration;
 
 use OCA\Buildiq\Service\DataRegisterExportBundler;
+use OCA\Buildiq\Service\ExportBundlers;
+use OCA\Buildiq\Service\ExportContents;
 use OCA\Buildiq\Service\ExportService;
+use OCA\Buildiq\Service\ExportTarget;
 use OCA\Buildiq\Service\PlaceholderResolver;
 use OCA\Buildiq\Service\RegisterRowReader;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -205,10 +208,8 @@ final class ExporterEndToEndTest extends TestCase {
 	 */
 	private function export(string $jobUuid): array {
 		$zipPath = $this->buildService()->generateAppZip(
-			applicationUuid: 'e2e-application',
-			versionSlug: '1.0.0',
-			context: $this->context(),
-			jobUuid: $jobUuid
+			target: new ExportTarget(applicationUuid: 'e2e-application', versionSlug: '1.0.0', jobUuid: $jobUuid),
+			contents: new ExportContents(context: $this->context())
 		);
 
 		$this->litter[] = $zipPath;
@@ -293,18 +294,17 @@ final class ExporterEndToEndTest extends TestCase {
 		);
 
 		return new ExportService(
-			$appData,
-			new PlaceholderResolver(),
-			new NullLogger(),
-			$bundler,
-			// The flow/agent bundler. Injected as a no-op double: these tests
-			// are about the data-register path and the ZIP mechanics, and a
-			// real one here would couple them to a second store.
-			new \OCA\Buildiq\Service\FlowAndAgentExportBundler(
-				$this->createMock(\OCA\OpenRegister\Db\FlowMapper::class),
-				$this->createMock(\OCA\OpenRegister\Service\ObjectService::class),
-				appManager: $this->createMock(originalClassName: \OCP\App\IAppManager::class),
-				logger: new NullLogger()
+			appData: $appData,
+			placeholderResolver: new PlaceholderResolver(),
+			logger: new NullLogger(),
+			bundlers: new ExportBundlers(
+				dataRegisterBundler: $bundler,
+				flowAndAgentBundler: new \OCA\Buildiq\Service\FlowAndAgentExportBundler(
+					$this->createMock(\OCA\OpenRegister\Db\FlowMapper::class),
+					$this->createMock(\OCA\OpenRegister\Service\ObjectService::class),
+					appManager: $this->createMock(originalClassName: \OCP\App\IAppManager::class),
+					logger: new NullLogger()
+				)
 			)
 		);
 	}//end buildService()

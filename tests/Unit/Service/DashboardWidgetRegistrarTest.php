@@ -31,9 +31,12 @@ use OCA\Buildiq\Dashboard\VirtualAppWidgetContext;
 use OCA\Buildiq\Dashboard\WidgetDescriptor;
 use OCA\Buildiq\Service\AppNavigationService;
 use OCA\Buildiq\Service\AppVisibilityResolver;
+use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\Dashboard\WidgetItemProjector;
 use OCA\Buildiq\Service\DashboardWidgetRegistrar;
+use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Service\PublishedApplicationProvider;
+use OCA\Buildiq\Service\PublishedApps;
 use OCA\Buildiq\Tests\Unit\Dashboard\WidgetDescriptorTest;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Services\IInitialState;
@@ -110,6 +113,13 @@ class DashboardWidgetRegistrarTest extends TestCase {
 			['register' => 'r', 'schema' => 's'],
 			$byEntry['recent-cases']->dataSource
 		);
+		// Application identity from the Application record; the id is keyed on its uuid.
+		foreach ($byEntry as $entryId => $descriptor) {
+			$this->assertSame(
+				['11111111-2222-3333-4444-555555555555', 'pet-store', 'Pet Store', WidgetDescriptor::deriveId(applicationUuid: '11111111-2222-3333-4444-555555555555', entryId: $entryId)],
+				[$descriptor->applicationUuid, $descriptor->applicationSlug, $descriptor->applicationName, $descriptor->id]
+			);
+		}
 	}//end testCollectsOneDescriptorPerPromotedEntry()
 
 	/**
@@ -129,6 +139,40 @@ class DashboardWidgetRegistrarTest extends TestCase {
 		$descriptors = $this->registrar()->collectDescriptors(applications: [$application]);
 		$this->assertSame([], $descriptors);
 	}//end testAPromotedPlacementWithoutAnIdIsSkipped()
+
+	/**
+	 * The placement's roles travel apart from the Application's permissions,
+	 * so the dashboard can require both; a single-string role is one role.
+	 *
+	 * @return void
+	 */
+	public function testThePlacementRolesAreKeptApartFromTheAppPermissions(): void {
+		$application = WidgetDescriptorTest::fixtureApplication(slug: 'pet-store', name: 'Pet Store');
+		$application['productionVersion']['manifest']['pages'][0]['widgets'][0]['roles'] = ['group:controllers'];
+		$application['productionVersion']['manifest']['pages'][0]['widgets'][1]['roles'] = 'user:alice';
+
+		$descriptors = $this->registrar()->collectDescriptors(applications: [$application]);
+
+		$this->assertSame(expected: ['group:*'], actual: $descriptors[0]->principals);
+		$this->assertSame(expected: ['group:controllers'], actual: $descriptors[0]->roles);
+		$this->assertSame(expected: ['user:alice'], actual: $descriptors[1]->roles);
+	}//end testThePlacementRolesAreKeptApartFromTheAppPermissions()
+
+	/**
+	 * A placement whose roles are neither a string nor a list is skipped with
+	 * a warning instead of falling open to every viewer of the Application.
+	 *
+	 * @return void
+	 */
+	public function testAPlacementWithMalformedRolesIsSkipped(): void {
+		$application = WidgetDescriptorTest::fixtureApplication(slug: 'pet-store', name: 'Pet Store');
+		$application['productionVersion']['manifest']['pages'][0]['widgets'][0]['roles'] = 42;
+
+		$this->logger->expects($this->once())->method('warning');
+
+		$descriptors = $this->registrar()->collectDescriptors(applications: [$application]);
+		$this->assertSame(expected: ['recent-cases'], actual: array_map(static fn (WidgetDescriptor $d): string => $d->entryId, $descriptors));
+	}//end testAPlacementWithMalformedRolesIsSkipped()
 
 	/**
 	 * An Application whose production pointer is still a bare UUID falls back
@@ -257,12 +301,17 @@ class DashboardWidgetRegistrarTest extends TestCase {
 		$navigation = new AppNavigationService(
 			objectService: $this->objectService,
 			urlGenerator: $urlGenerator,
-			userSession: $this->createMock(IUserSession::class),
-			groupManager: $this->createMock(IGroupManager::class),
+			caller: new CallerContext(
+				userSession: $this->createMock(IUserSession::class),
+				groupManager: $this->createMock(IGroupManager::class),
+				permissionResolver: $this->createMock(PermissionResolver::class)
+			),
 			appConfig: $this->createMock(IAppConfig::class),
 			logger: $this->logger,
-			applicationProvider: $provider,
-			visibilityResolver: $visibility
+			published: new PublishedApps(
+				applicationProvider: $provider,
+				visibilityResolver: $visibility
+			)
 		);
 
 		$registrar = new DashboardWidgetRegistrar(

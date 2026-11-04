@@ -36,7 +36,9 @@ use OCA\Buildiq\Service\AppRepoParser;
 use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCA\Buildiq\Service\GitHubAppSyncService;
 use OCA\Buildiq\Service\GitHubCatalogService;
+use OCA\Buildiq\Service\GitHubShopSearch;
 use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Service\StoreClient;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
@@ -53,8 +55,10 @@ use RuntimeException;
  *
  * @covers \OCA\Buildiq\Controller\StoreController
  * @covers \OCA\Buildiq\Controller\ShopController
+ * @covers \OCA\Buildiq\Service\GitHubShopSearch
  * @covers \OCA\Buildiq\Controller\GitHubSyncController
  * @uses \OCA\Buildiq\Service\PermissionResolver
+ * @uses   \OCA\Buildiq\Service\StoreClient
  */
 class ConnectionReportCallersTest extends TestCase {
 
@@ -85,7 +89,7 @@ class ConnectionReportCallersTest extends TestCase {
 	 * @return void
 	 */
 	protected function setUp(): void {
-		$this->reports  = [];
+		$this->reports = [];
 		$this->reporter = $this->getMockBuilder(className: ConnectionReporter::class)
 			->disableOriginalConstructor()
 			->onlyMethods(['reportStoreSearch', 'reportGitHubSearch', 'reportGitHubSync'])
@@ -108,7 +112,7 @@ class ConnectionReportCallersTest extends TestCase {
 	/**
 	 * The store controller around a store service that answers the given outcome.
 	 *
-	 * @param string|RuntimeException  $outcome  The search outcome, or an exception to throw.
+	 * @param string|RuntimeException $outcome The search outcome, or an exception to throw.
 	 * @param ConnectionReporter|null $reporter The reporter, or none.
 	 *
 	 * @return StoreController
@@ -125,7 +129,9 @@ class ConnectionReportCallersTest extends TestCase {
 			request: $this->createMock(originalClassName: IRequest::class),
 			logger: $this->createMock(originalClassName: LoggerInterface::class),
 			userSession: $this->userSession,
-			storeService: $store,
+			store: new StoreClient(
+				storeService: $store
+			),
 			appsController: $this->createMock(originalClassName: ApplicationsController::class),
 			connectionReporter: $reporter
 		);
@@ -135,7 +141,7 @@ class ConnectionReportCallersTest extends TestCase {
 	 * The shop controller around a catalogue that answers the given outcome.
 	 *
 	 * @param string|RuntimeException $outcome The search outcome, or an exception to throw.
-	 * @param bool                    $broker  Whether the broker is installed.
+	 * @param bool $broker Whether the broker is installed.
 	 *
 	 * @return ShopController
 	 */
@@ -150,12 +156,15 @@ class ConnectionReportCallersTest extends TestCase {
 
 		return new ShopController(
 			request: $this->createMock(originalClassName: IRequest::class),
-			logger: $this->createMock(originalClassName: LoggerInterface::class),
 			userSession: $this->userSession,
 			catalogService: $catalog,
 			repoParser: $this->createMock(originalClassName: AppRepoParser::class),
 			appsController: $this->createMock(originalClassName: ApplicationsController::class),
-			connectionReporter: $this->reporter
+			shopSearch: new GitHubShopSearch(
+				catalogService: $catalog,
+				logger: $this->createMock(originalClassName: LoggerInterface::class),
+				connectionReporter: $this->reporter
+			)
 		);
 	}//end shopController()
 
@@ -206,7 +215,7 @@ class ConnectionReportCallersTest extends TestCase {
 	 * @return void
 	 */
 	public function testAStoreSearchHandsItsOutcomeOver(): void {
-		$with    = $this->storeController(outcome: 'store_invalid_response', reporter: $this->reporter)->search();
+		$with = $this->storeController(outcome: 'store_invalid_response', reporter: $this->reporter)->search();
 		$without = $this->storeController(outcome: 'store_invalid_response', reporter: null)->search();
 
 		$this->assertSame(expected: [['reportStoreSearch', ['store_invalid_response']]], actual: $this->reports);

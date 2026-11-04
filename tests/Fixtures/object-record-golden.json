@@ -1,0 +1,1975 @@
+{
+    "OCA\\Buildiq\\Listener\\DocumentGenerationListener::normalise": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": {
+            "id": "i1"
+        },
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": {
+            "from": "inner"
+        },
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": {
+            "@self": 1,
+            "id": "i"
+        },
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Controller\\AgentsController::normalise": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": {
+            "id": "i1"
+        },
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": {
+            "from": "inner"
+        },
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": {
+            "@self": 1,
+            "id": "i"
+        },
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Service\\RuleImpactAnalysisService::normalise": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": {
+            "id": "i1"
+        },
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": {
+            "from": "inner"
+        },
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": {
+            "@self": 1,
+            "id": "i"
+        },
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Listener\\AutomationApprovalTriggerListener::normalise": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": {
+            "id": "i1"
+        },
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": {
+            "from": "inner"
+        },
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": {
+            "@self": 1,
+            "id": "i"
+        },
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Service\\DocumentGenerationService::normalise": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": {
+            "id": "i1"
+        },
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": {
+            "from": "inner"
+        },
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": {
+            "@self": 1,
+            "id": "i"
+        },
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Service\\AutomationCompilerService::normalise": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": {
+            "id": "i1"
+        },
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": {
+            "from": "inner"
+        },
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": {
+            "@self": 1,
+            "id": "i"
+        },
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Service\\AutomationWriteService::normalise": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": {
+            "id": "i1"
+        },
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": {
+            "from": "inner"
+        },
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": {
+            "@self": 1,
+            "id": "i"
+        },
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Listener\\ApprovalOutcomeListener::normalise": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": {
+            "id": "i1"
+        },
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": {
+            "from": "inner"
+        },
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": {
+            "@self": 1,
+            "id": "i"
+        },
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Service\\RuleObjectReader::normalise": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": {
+            "id": "i1"
+        },
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": {
+            "from": "inner"
+        },
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": {
+            "@self": 1,
+            "id": "i"
+        },
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\BackgroundJob\\RuleExecutionLogCleanup::normalise": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": [],
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": [],
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": [],
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Command\\PublishTemplates::normalise": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": [],
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": [],
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": [],
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Service\\ExportAppSchemaReader::normalise": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": [],
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": [],
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": [],
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Service\\ExportAppSourceResolver::normalise": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": [],
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": [],
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": [],
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Service\\GitHubAppSyncService::normalise": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": [],
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": [],
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": [],
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Repair\\MoveDecisionTablesToOpenRegister::normalise": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": [],
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": [],
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": [],
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Service\\AppHealthService::normalise": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": [],
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": [],
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": [],
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Service\\RuleActionDispatcher::normalise": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": null,
+        "string": null,
+        "int": null,
+        "plainObject": null,
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": null,
+        "serialisedNull": null,
+        "innerArray": null,
+        "innerString": null,
+        "innerNull": null,
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": null,
+        "bothScalars": null,
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": null,
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Controller\\ApplicationVersionsController::normaliseObject": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": {
+            "id": "i1"
+        },
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": {
+            "from": "inner"
+        },
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": {
+            "@self": 1,
+            "id": "i"
+        },
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Controller\\VersionPromotionController::normaliseObject": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": {
+            "id": "i1"
+        },
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": {
+            "from": "inner"
+        },
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": {
+            "@self": 1,
+            "id": "i"
+        },
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Controller\\ApplicationsController::normaliseObject": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": {
+            "id": "i1"
+        },
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": {
+            "from": "inner"
+        },
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": {
+            "@self": 1,
+            "id": "i"
+        },
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Controller\\ApplicationPublishController::normaliseObject": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": {
+            "id": "i1"
+        },
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": {
+            "from": "inner"
+        },
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": {
+            "@self": 1,
+            "id": "i"
+        },
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Repair\\PopulateApplicationPermissions::normaliseObject": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": {
+            "id": "i1"
+        },
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": {
+            "from": "inner"
+        },
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": {
+            "@self": 1,
+            "id": "i"
+        },
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Repair\\MigrateAppOverridesToHybrid::normaliseObjectArray": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": {
+            "id": "i1"
+        },
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": {
+            "from": "inner"
+        },
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": {
+            "@self": 1,
+            "id": "i"
+        },
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Repair\\MigrateToVersionedModel::normaliseObjectArray": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": {
+            "id": "i1"
+        },
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": {
+            "from": "inner"
+        },
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": {
+            "@self": 1,
+            "id": "i"
+        },
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Service\\ApplicationVersionService::normaliseObjectArray": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": {
+            "id": "i1"
+        },
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": {
+            "from": "inner"
+        },
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": {
+            "@self": 1,
+            "id": "i"
+        },
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Service\\ManifestResolverService::normaliseObject": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": {
+            "id": "i1"
+        },
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": {
+            "from": "inner"
+        },
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": {
+            "@self": 1,
+            "id": "i"
+        },
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Service\\IconService::normaliseObject": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": {
+            "id": "i1"
+        },
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": {
+            "from": "inner"
+        },
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": {
+            "@self": 1,
+            "id": "i"
+        },
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Service\\ApplicationInsightsService::normaliseObject": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": {
+            "id": "i1"
+        },
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": {
+            "from": "inner"
+        },
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": {
+            "@self": 1,
+            "id": "i"
+        },
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Service\\AppOverrideService::normaliseObject": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": {
+            "id": "i1"
+        },
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": {
+            "from": "inner"
+        },
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": {
+            "@self": 1,
+            "id": "i"
+        },
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Service\\PublishedApplicationProvider::normaliseObject": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": {
+            "id": "i1"
+        },
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": {
+            "from": "inner"
+        },
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": {
+            "@self": 1,
+            "id": "i"
+        },
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Service\\Dashboard\\WidgetItemProjector::normaliseRow": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": {
+            "id": "i1"
+        },
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": {
+            "from": "inner"
+        },
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": {
+            "@self": 1,
+            "id": "i"
+        },
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Service\\DataRegisterExportBundler::normaliseObjectArray": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": {
+            "id": "i1"
+        },
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": {
+            "from": "inner"
+        },
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": {
+            "@self": 1,
+            "id": "i"
+        },
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Service\\ApplicationCreationService::normaliseObject": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": {
+            "id": "i1"
+        },
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": {
+            "from": "inner"
+        },
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": {
+            "@self": 1,
+            "id": "i"
+        },
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Controller\\ExportsController::toArray": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [],
+        "int": [],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": [],
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": [],
+        "bothScalars": [],
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": [],
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Mcp\\Handler\\AbstractToolHandler::toArray": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [
+            "x"
+        ],
+        "int": [
+            7
+        ],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": {
+            "v": "s"
+        },
+        "serialisedNull": {
+            "v": null
+        },
+        "innerArray": {
+            "v": {
+                "id": "i1"
+            }
+        },
+        "innerString": {
+            "v": "i"
+        },
+        "innerNull": {
+            "v": null
+        },
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": {
+            "s": "x",
+            "i": {
+                "from": "inner"
+            }
+        },
+        "bothScalars": {
+            "s": "x",
+            "i": "y"
+        },
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": {
+            "v": {
+                "@self": 1,
+                "id": "i"
+            }
+        },
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Service\\AgentRunLogger::toArray": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [
+            "x"
+        ],
+        "int": [
+            7
+        ],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": {
+            "v": "s"
+        },
+        "serialisedNull": {
+            "v": null
+        },
+        "innerArray": {
+            "v": {
+                "id": "i1"
+            }
+        },
+        "innerString": {
+            "v": "i"
+        },
+        "innerNull": {
+            "v": null
+        },
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": {
+            "s": "x",
+            "i": {
+                "from": "inner"
+            }
+        },
+        "bothScalars": {
+            "s": "x",
+            "i": "y"
+        },
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": {
+            "v": {
+                "@self": 1,
+                "id": "i"
+            }
+        },
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Service\\CopilotService::toArray": {
+        "array": {
+            "a": 1,
+            "b": {
+                "c": 2
+            }
+        },
+        "emptyArray": [],
+        "list": [
+            1,
+            2
+        ],
+        "null": [],
+        "string": [
+            "x"
+        ],
+        "int": [
+            7
+        ],
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": {
+            "v": "s"
+        },
+        "serialisedNull": {
+            "v": null
+        },
+        "innerArray": {
+            "v": {
+                "id": "i1"
+            }
+        },
+        "innerString": {
+            "v": "i"
+        },
+        "innerNull": {
+            "v": null
+        },
+        "bothArrays": {
+            "from": "ser"
+        },
+        "bothSerEmpty": [],
+        "bothSerScalar": {
+            "s": "x",
+            "i": {
+                "from": "inner"
+            }
+        },
+        "bothScalars": {
+            "s": "x",
+            "i": "y"
+        },
+        "serialisedSelf": {
+            "@self": {
+                "id": 1
+            },
+            "id": "s"
+        },
+        "innerSelf": {
+            "v": {
+                "@self": 1,
+                "id": "i"
+            }
+        },
+        "bothSelf": {
+            "@self": 2,
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Listener\\ProductionVersionGuardListener::extractObjectData": {
+        "array": "TypeError",
+        "emptyArray": "TypeError",
+        "list": "TypeError",
+        "null": "TypeError",
+        "string": "TypeError",
+        "int": "TypeError",
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": {
+            "id": "i1"
+        },
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "inner"
+        },
+        "bothSerEmpty": {
+            "from": "inner"
+        },
+        "bothSerScalar": {
+            "from": "inner"
+        },
+        "bothScalars": [],
+        "serialisedSelf": {
+            "id": "s"
+        },
+        "innerSelf": {
+            "@self": 1,
+            "id": "i"
+        },
+        "bothSelf": {
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Listener\\AutomationCleanupListener::extractObjectData": {
+        "array": "TypeError",
+        "emptyArray": "TypeError",
+        "list": "TypeError",
+        "null": "TypeError",
+        "string": "TypeError",
+        "int": "TypeError",
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": {
+            "id": "i1"
+        },
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "inner"
+        },
+        "bothSerEmpty": {
+            "from": "inner"
+        },
+        "bothSerScalar": {
+            "from": "inner"
+        },
+        "bothScalars": [],
+        "serialisedSelf": {
+            "id": "s"
+        },
+        "innerSelf": {
+            "@self": 1,
+            "id": "i"
+        },
+        "bothSelf": {
+            "k": "ser"
+        }
+    },
+    "OCA\\Buildiq\\Listener\\HybridMetadataLockListener::extractObjectData": {
+        "array": "TypeError",
+        "emptyArray": "TypeError",
+        "list": "TypeError",
+        "null": "TypeError",
+        "string": "TypeError",
+        "int": "TypeError",
+        "plainObject": [],
+        "serialisedArray": {
+            "id": "u1"
+        },
+        "serialisedEmpty": [],
+        "serialisedString": [],
+        "serialisedNull": [],
+        "innerArray": {
+            "id": "i1"
+        },
+        "innerString": [],
+        "innerNull": [],
+        "bothArrays": {
+            "from": "inner"
+        },
+        "bothSerEmpty": {
+            "from": "inner"
+        },
+        "bothSerScalar": {
+            "from": "inner"
+        },
+        "bothScalars": [],
+        "serialisedSelf": {
+            "id": "s"
+        },
+        "innerSelf": {
+            "@self": 1,
+            "id": "i"
+        },
+        "bothSelf": {
+            "k": "ser"
+        }
+    }
+}

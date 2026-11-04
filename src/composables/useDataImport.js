@@ -48,7 +48,31 @@ import { generateUrl } from '@nextcloud/router'
  * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#1.1
  */
 export function summarizeImport(responseData) {
-	const empty = {
+	const result = emptySummary()
+	if (!isObject(responseData)) {
+		return result
+	}
+
+	const summary = isObject(responseData.summary) ? responseData.summary : {}
+	result.importJobId =
+		typeof summary.importJobId === 'string' ? summary.importJobId : null
+
+	Object.keys(summary).forEach((key) => {
+		if (key !== 'importJobId') {
+			addSheet(result, { key, sheet: summary[key] })
+		}
+	})
+
+	return Object.assign(result, errorsCsvOf(responseData))
+}
+
+/**
+ * The summary of an import that wrote nothing.
+ *
+ * @return {{importJobId: null, created: number, updated: number, skipped: number, errors: Array<object>, errorsCsv: null, errorsCsvFilename: null}}
+ */
+function emptySummary() {
+	return {
 		importJobId: null,
 		created: 0,
 		updated: 0,
@@ -57,59 +81,118 @@ export function summarizeImport(responseData) {
 		errorsCsv: null,
 		errorsCsvFilename: null,
 	}
-	if (!responseData || typeof responseData !== 'object') {
-		return empty
+}
+
+/**
+ * Whether a value is a non-null object (arrays included).
+ *
+ * @param {unknown} value The value.
+ * @return {boolean} True for an object.
+ */
+function isObject(value) {
+	return !!value && typeof value === 'object'
+}
+
+/**
+ * The summary key each sheet list adds its length to. OR labels unimported
+ * rows "unchanged"; the wizard calls them "skipped".
+ *
+ * @type {Array<[string, string]>}
+ */
+const SHEET_COUNTS = [
+	['created', 'created'],
+	['updated', 'updated'],
+	['unchanged', 'skipped'],
+]
+
+/**
+ * Add one sheet's counts and errors to the summary.
+ *
+ * @param {object} result The summary being built.
+ * @param {{key: string, sheet: unknown}} entry The sheet name and its summary.
+ * @return {void}
+ */
+function addSheet(result, entry) {
+	if (!isObject(entry.sheet)) {
+		return
 	}
+	for (const [from, to] of SHEET_COUNTS) {
+		if (Array.isArray(entry.sheet[from])) {
+			result[to] += entry.sheet[from].length
+		}
+	}
+	if (Array.isArray(entry.sheet.errors)) {
+		entry.sheet.errors.forEach((e) =>
+			result.errors.push({ sheet: entry.key, ...errorRow(e) }),
+		)
+	}
+}
 
-	const summary =
-		responseData.summary && typeof responseData.summary === 'object'
-			? responseData.summary
-			: {}
+/**
+ * One reported error as an object.
+ *
+ * @param {unknown} e The error OR reported.
+ * @return {object} The error, or `{message}` for a scalar.
+ */
+function errorRow(e) {
+	return isObject(e) ? e : { message: String(e) }
+}
 
-	const result = { ...empty }
-	result.importJobId =
-		typeof summary.importJobId === 'string' ? summary.importJobId : null
-
-	Object.keys(summary).forEach((key) => {
-		if (key === 'importJobId') {
-			return
-		}
-		const sheet = summary[key]
-		if (!sheet || typeof sheet !== 'object') {
-			return
-		}
-		if (Array.isArray(sheet.created)) {
-			result.created += sheet.created.length
-		}
-		if (Array.isArray(sheet.updated)) {
-			result.updated += sheet.updated.length
-		}
-		// OR labels unimported rows "unchanged"; the wizard calls them "skipped".
-		if (Array.isArray(sheet.unchanged)) {
-			result.skipped += sheet.unchanged.length
-		}
-		if (Array.isArray(sheet.errors)) {
-			sheet.errors.forEach((e) =>
-				result.errors.push({
-					sheet: key,
-					...(e && typeof e === 'object' ? e : { message: String(e) }),
-				}),
-			)
-		}
-	})
-
+/**
+ * The per-row error CSV OR attached, if any.
+ *
+ * @param {object} responseData The raw import response.
+ * @return {{errorsCsv?: string, errorsCsvFilename?: string}} The CSV and its file name, or nothing.
+ */
+function errorsCsvOf(responseData) {
 	if (
-		typeof responseData.errors_csv === 'string'
-		&& responseData.errors_csv !== ''
+		typeof responseData.errors_csv !== 'string'
+		|| responseData.errors_csv === ''
 	) {
-		result.errorsCsv = responseData.errors_csv
-		result.errorsCsvFilename =
+		return {}
+	}
+	return {
+		errorsCsv: responseData.errors_csv,
+		errorsCsvFilename:
 			typeof responseData.errors_csv_filename === 'string'
 				? responseData.errors_csv_filename
-				: 'import_errors.csv'
+				: 'import_errors.csv',
 	}
+}
 
-	return result
+/**
+ * Refuse an import without a register or a file.
+ *
+ * @param {{registerId: string, file: (File|Blob)}} params The import target and file.
+ * @return {void}
+ * @throws {Error} When either is missing.
+ */
+function requireImportInputs(params) {
+	if (!params.registerId) {
+		throw new Error('registerId is required')
+	}
+	if (!params.file) {
+		throw new Error('file is required')
+	}
+}
+
+/**
+ * The multipart body of an import.
+ *
+ * @param {{file: (File|Blob), schema: (string|undefined), includeObjects: boolean, type: (string|undefined)}} params The import parameters.
+ * @return {FormData} The form.
+ */
+function importForm(params) {
+	const form = new FormData()
+	form.append('file', params.file)
+	form.append('includeObjects', params.includeObjects ? 'true' : 'false')
+	if (params.schema) {
+		form.append('schema', String(params.schema))
+	}
+	if (params.type) {
+		form.append('type', String(params.type))
+	}
+	return form
 }
 
 /**
@@ -151,21 +234,8 @@ export function useDataImport(opts = {}) {
 		includeObjects = true,
 		type,
 	}) {
-		if (!registerId) {
-			throw new Error('registerId is required')
-		}
-		if (!file) {
-			throw new Error('file is required')
-		}
-		const form = new FormData()
-		form.append('file', file)
-		form.append('includeObjects', includeObjects ? 'true' : 'false')
-		if (schema) {
-			form.append('schema', String(schema))
-		}
-		if (type) {
-			form.append('type', String(type))
-		}
+		requireImportInputs({ registerId, file })
+		const form = importForm({ file, schema, includeObjects, type })
 		const url = generateUrl(
 			`/apps/openregister/api/registers/${encodeURIComponent(registerId)}/import`,
 		)

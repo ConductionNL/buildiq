@@ -112,7 +112,9 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
+use OCA\Buildiq\Service\Automation\CompileInput;
 use OCA\Buildiq\Support\FleetAppId;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -294,15 +296,10 @@ class AutomationCompilerService {
 	 * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-existing-declarative-primitives-req-autd-004
 	 */
 	public function compile(array $automation): array {
-		$slug = (string)($automation['slug'] ?? '');
-		$trigger = $this->orArray(value: $automation['trigger'] ?? null);
-		$triggerType = (string)($trigger['type'] ?? '');
-		$condition = $automation['condition'] ?? null;
-		$actions = array_values($this->orArray(value: $automation['actions'] ?? null));
-		$enabled = (bool)($automation['enabled'] ?? true);
+		$input = new CompileInput(automation: $automation);
 
-		$this->assertMatrix(triggerType: $triggerType, condition: $condition, actions: $actions);
-		$this->assertGenerateDocumentActions(actions: $actions);
+		$this->assertMatrix(triggerType: $input->triggerType, condition: $input->condition, actions: $input->actions);
+		$this->assertGenerateDocumentActions(actions: $input->actions);
 
 		$plan = [
 			'notifications' => [],
@@ -314,27 +311,13 @@ class AutomationCompilerService {
 		];
 
 		$dialectTriggers = ['object-created', 'object-updated', 'object-deleted', 'lifecycle-transition'];
-		if (in_array($triggerType, $dialectTriggers, true) === true) {
-			$this->compileDialectBackend(
-				slug: $slug,
-				trigger: $trigger,
-				triggerType: $triggerType,
-				actions: $actions,
-				enabled: $enabled,
-				plan: $plan
-			);
-		} elseif ($triggerType === 'schedule') {
-			$this->compileSchedulesBackend(slug: $slug, trigger: $trigger, actions: $actions, enabled: $enabled, plan: $plan);
-		} elseif ($triggerType === 'manual') {
-			$this->compileRulesBackend(
-				automation: $automation,
-				slug: $slug,
-				condition: $condition,
-				actions: $actions,
-				enabled: $enabled,
-				plan: $plan
-			);
-		}//end if
+		if (in_array($input->triggerType, $dialectTriggers, true) === true) {
+			$this->compileDialectBackend(input: $input, plan: $plan);
+		} elseif ($input->triggerType === 'schedule') {
+			$this->compileSchedulesBackend(input: $input, plan: $plan);
+		} elseif ($input->triggerType === 'manual') {
+			$this->compileRulesBackend(input: $input, plan: $plan);
+		}
 
 		$plan['hash'] = $this->hashPlan(plan: $plan);
 		return $plan;
@@ -741,41 +724,23 @@ class AutomationCompilerService {
 	/**
 	 * Dialect backend: event/lifecycle-transition triggers.
 	 *
-	 * @param string $slug Automation slug.
-	 * @param array<string,mixed> $trigger Trigger block.
-	 * @param string $triggerType Trigger type.
-	 * @param array<int,mixed> $actions Action records.
-	 * @param bool $enabled Automation enabled flag.
+	 * @param CompileInput $input The automation being compiled.
 	 * @param array<string,mixed> $plan The plan being built (by reference).
 	 *
 	 * @return void
 	 */
-	private function compileDialectBackend(string $slug, array $trigger, string $triggerType, array $actions, bool $enabled, array &$plan): void {
-		$schema = (string)($trigger['schema'] ?? '');
-		$transition = (string)($trigger['transition'] ?? '');
-		$marker = 'aut-' . $slug;
+	private function compileDialectBackend(CompileInput $input, array &$plan): void {
 		$notifIndex = 0;
 
-		foreach ($actions as $action) {
+		foreach ($input->actions as $action) {
 			$type = (string)($action['type'] ?? '');
 
 			if ($type === 'send-notification') {
 				$notifIndex++;
-				$dialectTrigger = ['type' => $this->dialectEventType(triggerType: $triggerType)];
-				if ($triggerType === 'lifecycle-transition') {
-					$dialectTrigger = ['type' => 'transition', 'action' => $transition];
-				}
-
 				$plan['notifications'][] = [
-					'schema' => $schema,
-					'key' => 'aut-' . $slug . '-' . $notifIndex,
-					'entry' => [
-						'trigger' => $dialectTrigger,
-						'enabled' => $enabled,
-						'channels' => array_values((array)($action['channels'] ?? ['nc-notification'])),
-						'recipients' => array_values((array)($action['recipients'] ?? [])),
-						'subject' => (array)($action['subject'] ?? []),
-					],
+					'schema' => (string)($input->trigger['schema'] ?? ''),
+					'key' => 'aut-' . $input->slug . '-' . $notifIndex,
+					'entry' => $this->notificationEntry(input: $input, action: $action),
 				];
 				continue;
 			}
@@ -786,61 +751,95 @@ class AutomationCompilerService {
 				// the same automation would overwrite this entry, matching
 				// the "exactly one step per approval action" v1 scope.
 				$plan['approvalChain'] = [
-					'name' => $marker,
-					'schema' => $schema,
+					'name' => 'aut-' . $input->slug,
+					'schema' => (string)($input->trigger['schema'] ?? ''),
 					'assigneeGroup' => (string)($action['assigneeGroup'] ?? ''),
-					'enabled' => $enabled,
+					'enabled' => $input->enabled,
 				];
 				continue;
 			}
 
-			if ($type === 'generateDocument') {
-				// No compile-time plan entry (design.md Decision 2 of
-				// automation-document-action — Docudesk's generate route is
-				// stateless; already config-validated by
-				// {@see assertGenerateDocumentActions()}). The
-				// owner-impersonated Docudesk call happens at trigger-fire
-				// time in {@see \OCA\Buildiq\Listener\DocumentGenerationListener},
-				// reading the action straight off the stored `Automation`
-				// object — the compiler has nothing to provision or upsert.
-				continue;
+			// A `generateDocument` action has no compile-time plan entry
+			// (design.md Decision 2 of automation-document-action — Docudesk's
+			// generate route is stateless; already config-validated by
+			// {@see assertGenerateDocumentActions()}). The owner-impersonated
+			// Docudesk call happens at trigger-fire time in
+			// {@see \OCA\Buildiq\Listener\DocumentGenerationListener}, reading the
+			// action straight off the stored `Automation` object.
+			$lifecycleAction = $this->lifecycleActionEntry(input: $input, action: $action);
+			if ($lifecycleAction !== null) {
+				$plan['lifecycleActions'][] = $lifecycleAction;
 			}
-
-			if ($triggerType !== 'lifecycle-transition') {
-				// The matrix already blocked any other action type for
-				// object-* triggers — defensive no-op.
-				continue;
-			}
-
-			if ($type === 'object-op') {
-				$plan['lifecycleActions'][] = [
-					'schema' => $schema,
-					'transition' => $transition,
-					'marker' => $marker,
-					'action' => [
-						'type' => 'related-object-upsert',
-						'operation' => (string)($action['operation'] ?? 'create'),
-						'schema' => (string)($action['schema'] ?? ''),
-						'fieldMapping' => (array)($action['fieldMapping'] ?? []),
-						'marker' => $marker,
-					],
-				];
-			} elseif ($type === 'webhook') {
-				$plan['lifecycleActions'][] = [
-					'schema' => $schema,
-					'transition' => $transition,
-					'marker' => $marker,
-					'action' => [
-						'type' => 'webhook-dispatch',
-						'url' => (string)($action['url'] ?? ''),
-						'payloadTemplate' => (array)($action['payloadTemplate'] ?? []),
-						'marker' => $marker,
-					],
-				];
-			}//end if
 		}//end foreach
 
 	}//end compileDialectBackend()
+
+	/**
+	 * The notifications-dialect entry for one `send-notification` action.
+	 *
+	 * @param CompileInput $input The automation being compiled.
+	 * @param array<string,mixed> $action The action record.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function notificationEntry(CompileInput $input, array $action): array {
+		$dialectTrigger = ['type' => $this->dialectEventType(triggerType: $input->triggerType)];
+		if ($input->triggerType === 'lifecycle-transition') {
+			$dialectTrigger = ['type' => 'transition', 'action' => (string)($input->trigger['transition'] ?? '')];
+		}
+
+		return [
+			'trigger' => $dialectTrigger,
+			'enabled' => $input->enabled,
+			'channels' => array_values((array)($action['channels'] ?? ['nc-notification'])),
+			'recipients' => array_values((array)($action['recipients'] ?? [])),
+			'subject' => (array)($action['subject'] ?? []),
+		];
+	}//end notificationEntry()
+
+	/**
+	 * The lifecycle-dialect entry for one `object-op` or `webhook` action on a
+	 * `lifecycle-transition` trigger, or null for any other trigger or action
+	 * (the matrix already blocked those for object-* triggers).
+	 *
+	 * @param CompileInput $input The automation being compiled.
+	 * @param array<string,mixed> $action The action record.
+	 *
+	 * @return array<string,mixed>|null
+	 */
+	private function lifecycleActionEntry(CompileInput $input, array $action): ?array {
+		if ($input->triggerType !== 'lifecycle-transition') {
+			return null;
+		}
+
+		$type = (string)($action['type'] ?? '');
+		$marker = 'aut-' . $input->slug;
+		if ($type === 'object-op') {
+			$body = [
+				'type' => 'related-object-upsert',
+				'operation' => (string)($action['operation'] ?? 'create'),
+				'schema' => (string)($action['schema'] ?? ''),
+				'fieldMapping' => (array)($action['fieldMapping'] ?? []),
+				'marker' => $marker,
+			];
+		} elseif ($type === 'webhook') {
+			$body = [
+				'type' => 'webhook-dispatch',
+				'url' => (string)($action['url'] ?? ''),
+				'payloadTemplate' => (array)($action['payloadTemplate'] ?? []),
+				'marker' => $marker,
+			];
+		} else {
+			return null;
+		}
+
+		return [
+			'schema' => (string)($input->trigger['schema'] ?? ''),
+			'transition' => (string)($input->trigger['transition'] ?? ''),
+			'marker' => $marker,
+			'action' => $body,
+		];
+	}//end lifecycleActionEntry()
 
 	/**
 	 * Map an object-event trigger type to the notifications dialect's event
@@ -864,34 +863,31 @@ class AutomationCompilerService {
 	/**
 	 * Schedules backend: `schedule` trigger + `run-synchronization`.
 	 *
-	 * @param string $slug Automation slug.
-	 * @param array<string,mixed> $trigger Trigger block.
-	 * @param array<int,mixed> $actions Action records.
-	 * @param bool $enabled Automation enabled flag.
+	 * @param CompileInput $input The automation being compiled.
 	 * @param array<string,mixed> $plan The plan being built (by reference).
 	 *
 	 * @return void
 	 */
-	private function compileSchedulesBackend(string $slug, array $trigger, array $actions, bool $enabled, array &$plan): void {
+	private function compileSchedulesBackend(CompileInput $input, array &$plan): void {
 		$index = 0;
-		foreach ($actions as $action) {
+		foreach ($input->actions as $action) {
 			if ((string)($action['type'] ?? '') !== 'run-synchronization') {
 				continue;
 			}
 
 			$index++;
 			$entry = [
-				'id' => 'aut-' . $slug . '-' . $index,
-				'enabled' => $enabled,
+				'id' => 'aut-' . $input->slug . '-' . $index,
+				'enabled' => $input->enabled,
 				'action' => 'openconnector:synchronization',
 				'arguments' => ['synchronizationId' => (string)($action['synchronizationId'] ?? '')],
 			];
 
-			$cron = (string)($trigger['cron'] ?? '');
+			$cron = (string)($input->trigger['cron'] ?? '');
 			if ($cron !== '') {
 				$entry['cron'] = $cron;
 			} else {
-				$entry['interval'] = (int)($trigger['interval'] ?? 86400);
+				$entry['interval'] = (int)($input->trigger['interval'] ?? 86400);
 			}
 
 			$plan['schedules'][] = $entry;
@@ -902,22 +898,22 @@ class AutomationCompilerService {
 	/**
 	 * Rules backend: `manual` trigger.
 	 *
-	 * @param array<string,mixed> $automation The full Automation object (for slug/name/applicationSlug/uuid).
-	 * @param string $slug Automation slug.
-	 * @param mixed $condition Condition block (or null).
-	 * @param array<int,mixed> $actions Action records.
-	 * @param bool $enabled Automation enabled flag.
+	 * @param CompileInput $input The automation being compiled (the full object gives name, applicationSlug and uuid).
 	 * @param array<string,mixed> $plan The plan being built (by reference).
 	 *
 	 * @return void
 	 */
-	private function compileRulesBackend(array $automation, string $slug, mixed $condition, array $actions, bool $enabled, array &$plan): void {
+	private function compileRulesBackend(CompileInput $input, array &$plan): void {
+		$automation = $input->automation;
 		$ruleSetSlug = 'aut-' . $this->shortUuid(automation: $automation);
-		['condition' => $compiledCondition, 'actions' => $mappedActions] = $this->buildConditionAndActions(condition: $condition, actions: $actions);
+		['condition' => $compiledCondition, 'actions' => $mappedActions] = $this->buildConditionAndActions(
+			condition: $input->condition,
+			actions: $input->actions
+		);
 
 		$plan['ruleSet'] = [
 			'slug' => $ruleSetSlug,
-			'name' => (string)($automation['name'] ?? $slug),
+			'name' => (string)($automation['name'] ?? $input->slug),
 			'version' => '1.0.0',
 			'status' => 'active',
 			'ruleType' => 'condition-action',
@@ -926,10 +922,10 @@ class AutomationCompilerService {
 
 		$plan['conditionActionRule'] = [
 			'ruleSetId' => $ruleSetSlug,
-			'name' => (string)($automation['name'] ?? $slug),
+			'name' => (string)($automation['name'] ?? $input->slug),
 			'condition' => $compiledCondition,
 			'actions' => $mappedActions,
-			'active' => $enabled,
+			'active' => $input->enabled,
 		];
 
 	}//end compileRulesBackend()
@@ -1992,6 +1988,7 @@ class AutomationCompilerService {
 	 * @param string $uuid The ApplicationVersion uuid.
 	 *
 	 * @return array<string,mixed>|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function loadApplicationVersion(string $uuid): ?array {
 		if ($uuid === '') {
@@ -2009,7 +2006,7 @@ class AutomationCompilerService {
 			return null;
 		}
 
-		return $this->normalise(object: $entity);
+		return ObjectRecord::toArray(object: $entity);
 	}//end loadApplicationVersion()
 
 	/**
@@ -2019,6 +2016,7 @@ class AutomationCompilerService {
 	 * @param array<string,mixed> $filters Equality filters.
 	 *
 	 * @return array<string,mixed>|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findOneObject(string $schema, array $filters): ?array {
 		try {
@@ -2034,35 +2032,6 @@ class AutomationCompilerService {
 			return null;
 		}
 
-		return $this->normalise(object: $results[0]);
+		return ObjectRecord::toArray(object: $results[0]);
 	}//end findOneObject()
-
-	/**
-	 * Coerce an OR result entry to a plain associative array.
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normalise(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normalise()
 }//end class

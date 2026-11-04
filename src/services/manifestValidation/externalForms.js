@@ -157,13 +157,24 @@ function scalarErrors(entry, ctx) {
 			entryError(ctx, 'buildiq.externalForm.error.public-read-not-boolean'),
 		)
 	}
-	const scope = entry.organisationScope
-	if (scope !== undefined && scope !== null && typeof scope !== 'string') {
-		errors.push(
-			entryError(ctx, 'buildiq.externalForm.error.organisation-scope-invalid'),
-		)
-	}
+	errors.push(...organisationScopeErrors(entry.organisationScope, ctx))
 	return errors
+}
+
+/**
+ * organisationScope: a string id or null (absent tolerated).
+ *
+ * @param {unknown} scope - the entry's organisationScope.
+ * @param {{pointer: string}} ctx - the entry context.
+ * @return {string[]}
+ */
+function organisationScopeErrors(scope, ctx) {
+	if (scope !== undefined && scope !== null && typeof scope !== 'string') {
+		return [
+			entryError(ctx, 'buildiq.externalForm.error.organisation-scope-invalid'),
+		]
+	}
+	return []
 }
 
 /**
@@ -181,10 +192,24 @@ function portalPageErrors(entry, ctx) {
 	if (!isPlainObject(pp)) {
 		return [entryError(ctx, 'buildiq.externalForm.error.portal-page-invalid')]
 	}
-	const errors = unknownKeyErrors(pp, {
-		allowed: ALLOWED_PORTAL_PAGE_KEYS,
-		pointer: `${ctx.pointer}/portalPage`,
-	})
+	return [
+		...unknownKeyErrors(pp, {
+			allowed: ALLOWED_PORTAL_PAGE_KEYS,
+			pointer: `${ctx.pointer}/portalPage`,
+		}),
+		...portalPageFieldErrors(pp, ctx),
+	]
+}
+
+/**
+ * portalPage fields: a filled `objectId`, and a string `portalPath` when present.
+ *
+ * @param {object} pp - the portalPage object.
+ * @param {{pointer: string}} ctx - the entry context.
+ * @return {string[]}
+ */
+function portalPageFieldErrors(pp, ctx) {
+	const errors = []
 	if (!isFilledString(pp.objectId)) {
 		errors.push(
 			entryError(

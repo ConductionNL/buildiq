@@ -1,0 +1,2400 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`FieldEditor conversions golden > fieldsToSchema over hand-written rows, values falsy 1`] = `
+"{
+ "properties": {
+  "r0": {
+   "type": "string",
+   "minLength": 0,
+   "maxLength": 0
+  },
+  "r1": {
+   "title": "kept",
+   "description": "desc",
+   "default": 1,
+   "type": "number",
+   "minimum": 0,
+   "maximum": 0,
+   "multipleOf": 0
+  },
+  "r2": {
+   "title": "kept",
+   "default": 2,
+   "type": "integer",
+   "minimum": 0,
+   "maximum": 0,
+   "multipleOf": 0
+  },
+  "r3": {
+   "title": "kept",
+   "description": "desc",
+   "type": "boolean"
+  },
+  "r4": {
+   "default": 4,
+   "type": "array",
+   "items": {
+    "type": "number"
+   },
+   "minItems": 0,
+   "maxItems": 0
+  },
+  "r5": {
+   "title": "kept",
+   "description": "desc",
+   "default": 5,
+   "type": "object"
+  },
+  "r6": {
+   "title": "kept",
+   "type": "string",
+   "x-openregister-relation": {
+    "target": "t",
+    "cardinality": "one",
+    "inverseOf": "back"
+   }
+  },
+  "r7": {
+   "title": "kept",
+   "description": "desc",
+   "default": 7,
+   "type": "string"
+  },
+  "r8": {
+   "default": 8,
+   "type": "string"
+  },
+  "r9": {
+   "title": "kept",
+   "description": "desc",
+   "type": "string"
+  },
+  "r10": {
+   "title": "kept",
+   "default": 10,
+   "type": "string"
+  },
+  "noValidation": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  }
+ },
+ "required": [
+  "r0",
+  "r2",
+  "r4",
+  "r6",
+  "r8",
+  "r10"
+ ],
+ "order": [
+  "r0",
+  "r1",
+  "r2",
+  "r3",
+  "r4",
+  "r5",
+  "r6",
+  "r7",
+  "r8",
+  "r9",
+  "r10",
+  "noValidation"
+ ]
+}"
+`;
+
+exports[`FieldEditor conversions golden > fieldsToSchema over hand-written rows, values none 1`] = `
+"{
+ "properties": {
+  "r0": {
+   "type": "string"
+  },
+  "r1": {
+   "title": "kept",
+   "description": "desc",
+   "default": 1,
+   "type": "number"
+  },
+  "r2": {
+   "title": "kept",
+   "default": 2,
+   "type": "integer"
+  },
+  "r3": {
+   "title": "kept",
+   "description": "desc",
+   "type": "boolean"
+  },
+  "r4": {
+   "default": 4,
+   "type": "array",
+   "items": {
+    "type": "number"
+   }
+  },
+  "r5": {
+   "title": "kept",
+   "description": "desc",
+   "default": 5,
+   "type": "object"
+  },
+  "r6": {
+   "title": "kept",
+   "type": "string",
+   "x-openregister-relation": {
+    "target": "t",
+    "cardinality": "one",
+    "inverseOf": "back"
+   }
+  },
+  "r7": {
+   "title": "kept",
+   "description": "desc",
+   "default": 7,
+   "type": "string"
+  },
+  "r8": {
+   "default": 8,
+   "type": "string"
+  },
+  "r9": {
+   "title": "kept",
+   "description": "desc",
+   "type": "string"
+  },
+  "r10": {
+   "title": "kept",
+   "default": 10,
+   "type": "string"
+  },
+  "noValidation": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  }
+ },
+ "required": [
+  "r0",
+  "r2",
+  "r4",
+  "r6",
+  "r8",
+  "r10"
+ ],
+ "order": [
+  "r0",
+  "r1",
+  "r2",
+  "r3",
+  "r4",
+  "r5",
+  "r6",
+  "r7",
+  "r8",
+  "r9",
+  "r10",
+  "noValidation"
+ ]
+}"
+`;
+
+exports[`FieldEditor conversions golden > fieldsToSchema over hand-written rows, values null 1`] = `
+"{
+ "properties": {
+  "r0": {
+   "type": "string"
+  },
+  "r1": {
+   "title": "kept",
+   "description": "desc",
+   "default": 1,
+   "type": "number"
+  },
+  "r2": {
+   "title": "kept",
+   "default": 2,
+   "type": "integer"
+  },
+  "r3": {
+   "title": "kept",
+   "description": "desc",
+   "type": "boolean"
+  },
+  "r4": {
+   "default": 4,
+   "type": "array",
+   "items": {
+    "type": "number"
+   }
+  },
+  "r5": {
+   "title": "kept",
+   "description": "desc",
+   "default": 5,
+   "type": "object"
+  },
+  "r6": {
+   "title": "kept",
+   "type": "string",
+   "x-openregister-relation": {
+    "target": "t",
+    "cardinality": "one",
+    "inverseOf": "back"
+   }
+  },
+  "r7": {
+   "title": "kept",
+   "description": "desc",
+   "default": 7,
+   "type": "string"
+  },
+  "r8": {
+   "default": 8,
+   "type": "string"
+  },
+  "r9": {
+   "title": "kept",
+   "description": "desc",
+   "type": "string"
+  },
+  "r10": {
+   "title": "kept",
+   "default": 10,
+   "type": "string"
+  },
+  "noValidation": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  }
+ },
+ "required": [
+  "r0",
+  "r2",
+  "r4",
+  "r6",
+  "r8",
+  "r10"
+ ],
+ "order": [
+  "r0",
+  "r1",
+  "r2",
+  "r3",
+  "r4",
+  "r5",
+  "r6",
+  "r7",
+  "r8",
+  "r9",
+  "r10",
+  "noValidation"
+ ]
+}"
+`;
+
+exports[`FieldEditor conversions golden > fieldsToSchema over hand-written rows, values set 1`] = `
+"{
+ "properties": {
+  "r0": {
+   "type": "string",
+   "format": "email",
+   "pattern": "^a",
+   "minLength": 1,
+   "maxLength": 9
+  },
+  "r1": {
+   "title": "kept",
+   "description": "desc",
+   "default": 1,
+   "type": "number",
+   "minimum": -2,
+   "maximum": 2,
+   "multipleOf": 0.5
+  },
+  "r2": {
+   "title": "kept",
+   "default": 2,
+   "type": "integer",
+   "minimum": -2,
+   "maximum": 2,
+   "multipleOf": 0.5
+  },
+  "r3": {
+   "title": "kept",
+   "description": "desc",
+   "type": "boolean"
+  },
+  "r4": {
+   "default": 4,
+   "type": "array",
+   "items": {
+    "type": "number"
+   },
+   "minItems": 0,
+   "maxItems": 3
+  },
+  "r5": {
+   "title": "kept",
+   "description": "desc",
+   "default": 5,
+   "type": "object"
+  },
+  "r6": {
+   "title": "kept",
+   "type": "string",
+   "x-openregister-relation": {
+    "target": "t",
+    "cardinality": "one",
+    "inverseOf": "back"
+   }
+  },
+  "r7": {
+   "title": "kept",
+   "description": "desc",
+   "default": 7,
+   "type": "string"
+  },
+  "r8": {
+   "default": 8,
+   "type": "string"
+  },
+  "r9": {
+   "title": "kept",
+   "description": "desc",
+   "type": "string"
+  },
+  "r10": {
+   "title": "kept",
+   "default": 10,
+   "type": "string"
+  },
+  "noValidation": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  }
+ },
+ "required": [
+  "r0",
+  "r2",
+  "r4",
+  "r6",
+  "r8",
+  "r10"
+ ],
+ "order": [
+  "r0",
+  "r1",
+  "r2",
+  "r3",
+  "r4",
+  "r5",
+  "r6",
+  "r7",
+  "r8",
+  "r9",
+  "r10",
+  "noValidation"
+ ]
+}"
+`;
+
+exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 1`] = `
+"[
+ {
+  "name": "p_array",
+  "type": "array",
+  "required": true,
+  "default": "x",
+  "description": "d",
+  "validation": {
+   "itemsType": "integer",
+   "minItems": 0,
+   "maxItems": 0
+  },
+  "_raw": {
+   "format": "",
+   "pattern": "",
+   "minLength": 0,
+   "maxLength": 0,
+   "minimum": 0,
+   "maximum": 0,
+   "multipleOf": 0,
+   "minItems": 0,
+   "maxItems": 0,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "array",
+   "items": {
+    "type": "integer",
+    "title": "item"
+   }
+  }
+ },
+ {
+  "name": "p_string",
+  "type": "string",
+  "required": true,
+  "default": "x",
+  "description": "d",
+  "validation": {
+   "minLength": 0,
+   "maxLength": 0
+  },
+  "_raw": {
+   "format": "",
+   "pattern": "",
+   "minLength": 0,
+   "maxLength": 0,
+   "minimum": 0,
+   "maximum": 0,
+   "multipleOf": 0,
+   "minItems": 0,
+   "maxItems": 0,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "string"
+  }
+ },
+ {
+  "name": "p_number",
+  "type": "number",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {
+   "minimum": 0,
+   "maximum": 0,
+   "multipleOf": 0
+  },
+  "_raw": {
+   "format": "",
+   "pattern": "",
+   "minLength": 0,
+   "maxLength": 0,
+   "minimum": 0,
+   "maximum": 0,
+   "multipleOf": 0,
+   "minItems": 0,
+   "maxItems": 0,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "number"
+  }
+ },
+ {
+  "name": "p_integer",
+  "type": "integer",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {
+   "minimum": 0,
+   "maximum": 0,
+   "multipleOf": 0
+  },
+  "_raw": {
+   "format": "",
+   "pattern": "",
+   "minLength": 0,
+   "maxLength": 0,
+   "minimum": 0,
+   "maximum": 0,
+   "multipleOf": 0,
+   "minItems": 0,
+   "maxItems": 0,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "integer"
+  }
+ },
+ {
+  "name": "p_boolean",
+  "type": "boolean",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {},
+  "_raw": {
+   "format": "",
+   "pattern": "",
+   "minLength": 0,
+   "maxLength": 0,
+   "minimum": 0,
+   "maximum": 0,
+   "multipleOf": 0,
+   "minItems": 0,
+   "maxItems": 0,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "boolean"
+  }
+ },
+ {
+  "name": "p_object",
+  "type": "object",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {},
+  "_raw": {
+   "format": "",
+   "pattern": "",
+   "minLength": 0,
+   "maxLength": 0,
+   "minimum": 0,
+   "maximum": 0,
+   "multipleOf": 0,
+   "minItems": 0,
+   "maxItems": 0,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "object"
+  }
+ },
+ {
+  "name": "p_relation",
+  "type": "relation",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {
+   "target": "person",
+   "cardinality": "many",
+   "inverseOf": "cases"
+  },
+  "_raw": {
+   "format": "",
+   "pattern": "",
+   "minLength": 0,
+   "maxLength": 0,
+   "minimum": 0,
+   "maximum": 0,
+   "multipleOf": 0,
+   "minItems": 0,
+   "maxItems": 0,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "x-openregister-relation": {
+    "target": "person",
+    "cardinality": "many",
+    "inverseOf": "cases",
+    "extra": true
+   }
+  }
+ },
+ {
+  "name": "p_unknown",
+  "type": "unknown",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {},
+  "_raw": {
+   "format": "",
+   "pattern": "",
+   "minLength": 0,
+   "maxLength": 0,
+   "minimum": 0,
+   "maximum": 0,
+   "multipleOf": 0,
+   "minItems": 0,
+   "maxItems": 0,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "unknown"
+  }
+ },
+ {
+  "name": "p_constructor",
+  "type": "constructor",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {},
+  "_raw": {
+   "format": "",
+   "pattern": "",
+   "minLength": 0,
+   "maxLength": 0,
+   "minimum": 0,
+   "maximum": 0,
+   "multipleOf": 0,
+   "minItems": 0,
+   "maxItems": 0,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "constructor"
+  }
+ },
+ {
+  "name": "p_toString",
+  "type": "toString",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {},
+  "_raw": {
+   "format": "",
+   "pattern": "",
+   "minLength": 0,
+   "maxLength": 0,
+   "minimum": 0,
+   "maximum": 0,
+   "multipleOf": 0,
+   "minItems": 0,
+   "maxItems": 0,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "toString"
+  }
+ },
+ {
+  "name": "p_undefined",
+  "type": "string",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {
+   "minLength": 0,
+   "maxLength": 0
+  },
+  "_raw": {
+   "format": "",
+   "pattern": "",
+   "minLength": 0,
+   "maxLength": 0,
+   "minimum": 0,
+   "maximum": 0,
+   "multipleOf": 0,
+   "minItems": 0,
+   "maxItems": 0,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1
+  }
+ },
+ {
+  "name": "empty",
+  "type": "string",
+  "required": false,
+  "default": null,
+  "description": "",
+  "validation": {},
+  "_raw": {}
+ },
+ {
+  "name": "relationEmpty",
+  "type": "relation",
+  "required": false,
+  "default": null,
+  "description": "",
+  "validation": {},
+  "_raw": {
+   "x-openregister-relation": {}
+  }
+ },
+ {
+  "name": "arrayNoItems",
+  "type": "array",
+  "required": false,
+  "default": null,
+  "description": "",
+  "validation": {},
+  "_raw": {
+   "type": "array",
+   "items": {}
+  }
+ },
+ {
+  "name": "stringWithItems",
+  "type": "string",
+  "required": false,
+  "default": null,
+  "description": "",
+  "validation": {},
+  "_raw": {
+   "type": "string",
+   "items": {
+    "type": "integer"
+   }
+  }
+ }
+]"
+`;
+
+exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 2`] = `
+"{
+ "properties": {
+  "p_array": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "array",
+   "items": {
+    "title": "item",
+    "type": "integer"
+   },
+   "minItems": 0,
+   "maxItems": 0
+  },
+  "p_string": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "string",
+   "minLength": 0,
+   "maxLength": 0
+  },
+  "p_number": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "number",
+   "minimum": 0,
+   "maximum": 0,
+   "multipleOf": 0
+  },
+  "p_integer": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "integer",
+   "minimum": 0,
+   "maximum": 0,
+   "multipleOf": 0
+  },
+  "p_boolean": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "boolean"
+  },
+  "p_object": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "object"
+  },
+  "p_relation": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "string",
+   "x-openregister-relation": {
+    "extra": true,
+    "target": "person",
+    "cardinality": "many",
+    "inverseOf": "cases"
+   }
+  },
+  "p_unknown": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "string"
+  },
+  "p_constructor": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "string"
+  },
+  "p_toString": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "string"
+  },
+  "p_undefined": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "string",
+   "minLength": 0,
+   "maxLength": 0
+  },
+  "empty": {
+   "type": "string"
+  },
+  "relationEmpty": {
+   "type": "string",
+   "x-openregister-relation": {
+    "target": "",
+    "cardinality": "one"
+   }
+  },
+  "arrayNoItems": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  },
+  "stringWithItems": {
+   "type": "string"
+  }
+ },
+ "required": [
+  "p_array",
+  "p_string"
+ ],
+ "order": [
+  "p_array",
+  "p_string",
+  "p_number",
+  "p_integer",
+  "p_boolean",
+  "p_object",
+  "p_relation",
+  "p_unknown",
+  "p_constructor",
+  "p_toString",
+  "p_undefined",
+  "empty",
+  "relationEmpty",
+  "arrayNoItems",
+  "stringWithItems"
+ ]
+}"
+`;
+
+exports[`FieldEditor conversions golden > schemaToFields and back, values none 1`] = `
+"[
+ {
+  "name": "p_array",
+  "type": "array",
+  "required": true,
+  "default": "x",
+  "description": "d",
+  "validation": {
+   "itemsType": "integer"
+  },
+  "_raw": {
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "array",
+   "items": {
+    "type": "integer",
+    "title": "item"
+   }
+  }
+ },
+ {
+  "name": "p_string",
+  "type": "string",
+  "required": true,
+  "default": "x",
+  "description": "d",
+  "validation": {},
+  "_raw": {
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "string"
+  }
+ },
+ {
+  "name": "p_number",
+  "type": "number",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {},
+  "_raw": {
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "number"
+  }
+ },
+ {
+  "name": "p_integer",
+  "type": "integer",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {},
+  "_raw": {
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "integer"
+  }
+ },
+ {
+  "name": "p_boolean",
+  "type": "boolean",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {},
+  "_raw": {
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "boolean"
+  }
+ },
+ {
+  "name": "p_object",
+  "type": "object",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {},
+  "_raw": {
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "object"
+  }
+ },
+ {
+  "name": "p_relation",
+  "type": "relation",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {
+   "target": "person",
+   "cardinality": "many",
+   "inverseOf": "cases"
+  },
+  "_raw": {
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "x-openregister-relation": {
+    "target": "person",
+    "cardinality": "many",
+    "inverseOf": "cases",
+    "extra": true
+   }
+  }
+ },
+ {
+  "name": "p_unknown",
+  "type": "unknown",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {},
+  "_raw": {
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "unknown"
+  }
+ },
+ {
+  "name": "p_constructor",
+  "type": "constructor",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {},
+  "_raw": {
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "constructor"
+  }
+ },
+ {
+  "name": "p_toString",
+  "type": "toString",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {},
+  "_raw": {
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "toString"
+  }
+ },
+ {
+  "name": "p_undefined",
+  "type": "string",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {},
+  "_raw": {
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1
+  }
+ },
+ {
+  "name": "empty",
+  "type": "string",
+  "required": false,
+  "default": null,
+  "description": "",
+  "validation": {},
+  "_raw": {}
+ },
+ {
+  "name": "relationEmpty",
+  "type": "relation",
+  "required": false,
+  "default": null,
+  "description": "",
+  "validation": {},
+  "_raw": {
+   "x-openregister-relation": {}
+  }
+ },
+ {
+  "name": "arrayNoItems",
+  "type": "array",
+  "required": false,
+  "default": null,
+  "description": "",
+  "validation": {},
+  "_raw": {
+   "type": "array",
+   "items": {}
+  }
+ },
+ {
+  "name": "stringWithItems",
+  "type": "string",
+  "required": false,
+  "default": null,
+  "description": "",
+  "validation": {},
+  "_raw": {
+   "type": "string",
+   "items": {
+    "type": "integer"
+   }
+  }
+ }
+]"
+`;
+
+exports[`FieldEditor conversions golden > schemaToFields and back, values none 2`] = `
+"{
+ "properties": {
+  "p_array": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "array",
+   "items": {
+    "title": "item",
+    "type": "integer"
+   }
+  },
+  "p_string": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "string"
+  },
+  "p_number": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "number"
+  },
+  "p_integer": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "integer"
+  },
+  "p_boolean": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "boolean"
+  },
+  "p_object": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "object"
+  },
+  "p_relation": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "string",
+   "x-openregister-relation": {
+    "extra": true,
+    "target": "person",
+    "cardinality": "many",
+    "inverseOf": "cases"
+   }
+  },
+  "p_unknown": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "string"
+  },
+  "p_constructor": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "string"
+  },
+  "p_toString": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "string"
+  },
+  "p_undefined": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "string"
+  },
+  "empty": {
+   "type": "string"
+  },
+  "relationEmpty": {
+   "type": "string",
+   "x-openregister-relation": {
+    "target": "",
+    "cardinality": "one"
+   }
+  },
+  "arrayNoItems": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  },
+  "stringWithItems": {
+   "type": "string"
+  }
+ },
+ "required": [
+  "p_array",
+  "p_string"
+ ],
+ "order": [
+  "p_array",
+  "p_string",
+  "p_number",
+  "p_integer",
+  "p_boolean",
+  "p_object",
+  "p_relation",
+  "p_unknown",
+  "p_constructor",
+  "p_toString",
+  "p_undefined",
+  "empty",
+  "relationEmpty",
+  "arrayNoItems",
+  "stringWithItems"
+ ]
+}"
+`;
+
+exports[`FieldEditor conversions golden > schemaToFields and back, values null 1`] = `
+"[
+ {
+  "name": "p_array",
+  "type": "array",
+  "required": true,
+  "default": "x",
+  "description": "d",
+  "validation": {
+   "itemsType": "integer"
+  },
+  "_raw": {
+   "format": null,
+   "pattern": null,
+   "minLength": null,
+   "maxLength": null,
+   "minimum": null,
+   "maximum": null,
+   "multipleOf": null,
+   "minItems": null,
+   "maxItems": null,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "array",
+   "items": {
+    "type": "integer",
+    "title": "item"
+   }
+  }
+ },
+ {
+  "name": "p_string",
+  "type": "string",
+  "required": true,
+  "default": "x",
+  "description": "d",
+  "validation": {},
+  "_raw": {
+   "format": null,
+   "pattern": null,
+   "minLength": null,
+   "maxLength": null,
+   "minimum": null,
+   "maximum": null,
+   "multipleOf": null,
+   "minItems": null,
+   "maxItems": null,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "string"
+  }
+ },
+ {
+  "name": "p_number",
+  "type": "number",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {},
+  "_raw": {
+   "format": null,
+   "pattern": null,
+   "minLength": null,
+   "maxLength": null,
+   "minimum": null,
+   "maximum": null,
+   "multipleOf": null,
+   "minItems": null,
+   "maxItems": null,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "number"
+  }
+ },
+ {
+  "name": "p_integer",
+  "type": "integer",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {},
+  "_raw": {
+   "format": null,
+   "pattern": null,
+   "minLength": null,
+   "maxLength": null,
+   "minimum": null,
+   "maximum": null,
+   "multipleOf": null,
+   "minItems": null,
+   "maxItems": null,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "integer"
+  }
+ },
+ {
+  "name": "p_boolean",
+  "type": "boolean",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {},
+  "_raw": {
+   "format": null,
+   "pattern": null,
+   "minLength": null,
+   "maxLength": null,
+   "minimum": null,
+   "maximum": null,
+   "multipleOf": null,
+   "minItems": null,
+   "maxItems": null,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "boolean"
+  }
+ },
+ {
+  "name": "p_object",
+  "type": "object",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {},
+  "_raw": {
+   "format": null,
+   "pattern": null,
+   "minLength": null,
+   "maxLength": null,
+   "minimum": null,
+   "maximum": null,
+   "multipleOf": null,
+   "minItems": null,
+   "maxItems": null,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "object"
+  }
+ },
+ {
+  "name": "p_relation",
+  "type": "relation",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {
+   "target": "person",
+   "cardinality": "many",
+   "inverseOf": "cases"
+  },
+  "_raw": {
+   "format": null,
+   "pattern": null,
+   "minLength": null,
+   "maxLength": null,
+   "minimum": null,
+   "maximum": null,
+   "multipleOf": null,
+   "minItems": null,
+   "maxItems": null,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "x-openregister-relation": {
+    "target": "person",
+    "cardinality": "many",
+    "inverseOf": "cases",
+    "extra": true
+   }
+  }
+ },
+ {
+  "name": "p_unknown",
+  "type": "unknown",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {},
+  "_raw": {
+   "format": null,
+   "pattern": null,
+   "minLength": null,
+   "maxLength": null,
+   "minimum": null,
+   "maximum": null,
+   "multipleOf": null,
+   "minItems": null,
+   "maxItems": null,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "unknown"
+  }
+ },
+ {
+  "name": "p_constructor",
+  "type": "constructor",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {},
+  "_raw": {
+   "format": null,
+   "pattern": null,
+   "minLength": null,
+   "maxLength": null,
+   "minimum": null,
+   "maximum": null,
+   "multipleOf": null,
+   "minItems": null,
+   "maxItems": null,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "constructor"
+  }
+ },
+ {
+  "name": "p_toString",
+  "type": "toString",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {},
+  "_raw": {
+   "format": null,
+   "pattern": null,
+   "minLength": null,
+   "maxLength": null,
+   "minimum": null,
+   "maximum": null,
+   "multipleOf": null,
+   "minItems": null,
+   "maxItems": null,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "toString"
+  }
+ },
+ {
+  "name": "p_undefined",
+  "type": "string",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {},
+  "_raw": {
+   "format": null,
+   "pattern": null,
+   "minLength": null,
+   "maxLength": null,
+   "minimum": null,
+   "maximum": null,
+   "multipleOf": null,
+   "minItems": null,
+   "maxItems": null,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1
+  }
+ },
+ {
+  "name": "empty",
+  "type": "string",
+  "required": false,
+  "default": null,
+  "description": "",
+  "validation": {},
+  "_raw": {}
+ },
+ {
+  "name": "relationEmpty",
+  "type": "relation",
+  "required": false,
+  "default": null,
+  "description": "",
+  "validation": {},
+  "_raw": {
+   "x-openregister-relation": {}
+  }
+ },
+ {
+  "name": "arrayNoItems",
+  "type": "array",
+  "required": false,
+  "default": null,
+  "description": "",
+  "validation": {},
+  "_raw": {
+   "type": "array",
+   "items": {}
+  }
+ },
+ {
+  "name": "stringWithItems",
+  "type": "string",
+  "required": false,
+  "default": null,
+  "description": "",
+  "validation": {},
+  "_raw": {
+   "type": "string",
+   "items": {
+    "type": "integer"
+   }
+  }
+ }
+]"
+`;
+
+exports[`FieldEditor conversions golden > schemaToFields and back, values null 2`] = `
+"{
+ "properties": {
+  "p_array": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "array",
+   "items": {
+    "title": "item",
+    "type": "integer"
+   }
+  },
+  "p_string": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "string"
+  },
+  "p_number": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "number"
+  },
+  "p_integer": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "integer"
+  },
+  "p_boolean": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "boolean"
+  },
+  "p_object": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "object"
+  },
+  "p_relation": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "string",
+   "x-openregister-relation": {
+    "extra": true,
+    "target": "person",
+    "cardinality": "many",
+    "inverseOf": "cases"
+   }
+  },
+  "p_unknown": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "string"
+  },
+  "p_constructor": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "string"
+  },
+  "p_toString": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "string"
+  },
+  "p_undefined": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "string"
+  },
+  "empty": {
+   "type": "string"
+  },
+  "relationEmpty": {
+   "type": "string",
+   "x-openregister-relation": {
+    "target": "",
+    "cardinality": "one"
+   }
+  },
+  "arrayNoItems": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  },
+  "stringWithItems": {
+   "type": "string"
+  }
+ },
+ "required": [
+  "p_array",
+  "p_string"
+ ],
+ "order": [
+  "p_array",
+  "p_string",
+  "p_number",
+  "p_integer",
+  "p_boolean",
+  "p_object",
+  "p_relation",
+  "p_unknown",
+  "p_constructor",
+  "p_toString",
+  "p_undefined",
+  "empty",
+  "relationEmpty",
+  "arrayNoItems",
+  "stringWithItems"
+ ]
+}"
+`;
+
+exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`] = `
+"[
+ {
+  "name": "p_array",
+  "type": "array",
+  "required": true,
+  "default": "x",
+  "description": "d",
+  "validation": {
+   "itemsType": "integer",
+   "minItems": 0,
+   "maxItems": 3
+  },
+  "_raw": {
+   "format": "email",
+   "pattern": "^a",
+   "minLength": 1,
+   "maxLength": 9,
+   "minimum": -2,
+   "maximum": 2,
+   "multipleOf": 0.5,
+   "minItems": 0,
+   "maxItems": 3,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "array",
+   "items": {
+    "type": "integer",
+    "title": "item"
+   }
+  }
+ },
+ {
+  "name": "p_string",
+  "type": "string",
+  "required": true,
+  "default": "x",
+  "description": "d",
+  "validation": {
+   "format": "email",
+   "pattern": "^a",
+   "minLength": 1,
+   "maxLength": 9
+  },
+  "_raw": {
+   "format": "email",
+   "pattern": "^a",
+   "minLength": 1,
+   "maxLength": 9,
+   "minimum": -2,
+   "maximum": 2,
+   "multipleOf": 0.5,
+   "minItems": 0,
+   "maxItems": 3,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "string"
+  }
+ },
+ {
+  "name": "p_number",
+  "type": "number",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {
+   "minimum": -2,
+   "maximum": 2,
+   "multipleOf": 0.5
+  },
+  "_raw": {
+   "format": "email",
+   "pattern": "^a",
+   "minLength": 1,
+   "maxLength": 9,
+   "minimum": -2,
+   "maximum": 2,
+   "multipleOf": 0.5,
+   "minItems": 0,
+   "maxItems": 3,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "number"
+  }
+ },
+ {
+  "name": "p_integer",
+  "type": "integer",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {
+   "minimum": -2,
+   "maximum": 2,
+   "multipleOf": 0.5
+  },
+  "_raw": {
+   "format": "email",
+   "pattern": "^a",
+   "minLength": 1,
+   "maxLength": 9,
+   "minimum": -2,
+   "maximum": 2,
+   "multipleOf": 0.5,
+   "minItems": 0,
+   "maxItems": 3,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "integer"
+  }
+ },
+ {
+  "name": "p_boolean",
+  "type": "boolean",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {},
+  "_raw": {
+   "format": "email",
+   "pattern": "^a",
+   "minLength": 1,
+   "maxLength": 9,
+   "minimum": -2,
+   "maximum": 2,
+   "multipleOf": 0.5,
+   "minItems": 0,
+   "maxItems": 3,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "boolean"
+  }
+ },
+ {
+  "name": "p_object",
+  "type": "object",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {},
+  "_raw": {
+   "format": "email",
+   "pattern": "^a",
+   "minLength": 1,
+   "maxLength": 9,
+   "minimum": -2,
+   "maximum": 2,
+   "multipleOf": 0.5,
+   "minItems": 0,
+   "maxItems": 3,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "object"
+  }
+ },
+ {
+  "name": "p_relation",
+  "type": "relation",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {
+   "target": "person",
+   "cardinality": "many",
+   "inverseOf": "cases"
+  },
+  "_raw": {
+   "format": "email",
+   "pattern": "^a",
+   "minLength": 1,
+   "maxLength": 9,
+   "minimum": -2,
+   "maximum": 2,
+   "multipleOf": 0.5,
+   "minItems": 0,
+   "maxItems": 3,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "x-openregister-relation": {
+    "target": "person",
+    "cardinality": "many",
+    "inverseOf": "cases",
+    "extra": true
+   }
+  }
+ },
+ {
+  "name": "p_unknown",
+  "type": "unknown",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {},
+  "_raw": {
+   "format": "email",
+   "pattern": "^a",
+   "minLength": 1,
+   "maxLength": 9,
+   "minimum": -2,
+   "maximum": 2,
+   "multipleOf": 0.5,
+   "minItems": 0,
+   "maxItems": 3,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "unknown"
+  }
+ },
+ {
+  "name": "p_constructor",
+  "type": "constructor",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {},
+  "_raw": {
+   "format": "email",
+   "pattern": "^a",
+   "minLength": 1,
+   "maxLength": 9,
+   "minimum": -2,
+   "maximum": 2,
+   "multipleOf": 0.5,
+   "minItems": 0,
+   "maxItems": 3,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "constructor"
+  }
+ },
+ {
+  "name": "p_toString",
+  "type": "toString",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {},
+  "_raw": {
+   "format": "email",
+   "pattern": "^a",
+   "minLength": 1,
+   "maxLength": 9,
+   "minimum": -2,
+   "maximum": 2,
+   "multipleOf": 0.5,
+   "minItems": 0,
+   "maxItems": 3,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "type": "toString"
+  }
+ },
+ {
+  "name": "p_undefined",
+  "type": "string",
+  "required": false,
+  "default": "x",
+  "description": "d",
+  "validation": {
+   "format": "email",
+   "pattern": "^a",
+   "minLength": 1,
+   "maxLength": 9
+  },
+  "_raw": {
+   "format": "email",
+   "pattern": "^a",
+   "minLength": 1,
+   "maxLength": 9,
+   "minimum": -2,
+   "maximum": 2,
+   "multipleOf": 0.5,
+   "minItems": 0,
+   "maxItems": 3,
+   "description": "d",
+   "default": "x",
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1
+  }
+ },
+ {
+  "name": "empty",
+  "type": "string",
+  "required": false,
+  "default": null,
+  "description": "",
+  "validation": {},
+  "_raw": {}
+ },
+ {
+  "name": "relationEmpty",
+  "type": "relation",
+  "required": false,
+  "default": null,
+  "description": "",
+  "validation": {},
+  "_raw": {
+   "x-openregister-relation": {}
+  }
+ },
+ {
+  "name": "arrayNoItems",
+  "type": "array",
+  "required": false,
+  "default": null,
+  "description": "",
+  "validation": {},
+  "_raw": {
+   "type": "array",
+   "items": {}
+  }
+ },
+ {
+  "name": "stringWithItems",
+  "type": "string",
+  "required": false,
+  "default": null,
+  "description": "",
+  "validation": {},
+  "_raw": {
+   "type": "string",
+   "items": {
+    "type": "integer"
+   }
+  }
+ }
+]"
+`;
+
+exports[`FieldEditor conversions golden > schemaToFields and back, values set 2`] = `
+"{
+ "properties": {
+  "p_array": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "array",
+   "items": {
+    "title": "item",
+    "type": "integer"
+   },
+   "minItems": 0,
+   "maxItems": 3
+  },
+  "p_string": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "string",
+   "format": "email",
+   "pattern": "^a",
+   "minLength": 1,
+   "maxLength": 9
+  },
+  "p_number": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "number",
+   "minimum": -2,
+   "maximum": 2,
+   "multipleOf": 0.5
+  },
+  "p_integer": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "integer",
+   "minimum": -2,
+   "maximum": 2,
+   "multipleOf": 0.5
+  },
+  "p_boolean": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "boolean"
+  },
+  "p_object": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "object"
+  },
+  "p_relation": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "string",
+   "x-openregister-relation": {
+    "extra": true,
+    "target": "person",
+    "cardinality": "many",
+    "inverseOf": "cases"
+   }
+  },
+  "p_unknown": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "string"
+  },
+  "p_constructor": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "string"
+  },
+  "p_toString": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "string"
+  },
+  "p_undefined": {
+   "enum": [
+    "a"
+   ],
+   "x-extra": 1,
+   "description": "d",
+   "default": "x",
+   "type": "string",
+   "format": "email",
+   "pattern": "^a",
+   "minLength": 1,
+   "maxLength": 9
+  },
+  "empty": {
+   "type": "string"
+  },
+  "relationEmpty": {
+   "type": "string",
+   "x-openregister-relation": {
+    "target": "",
+    "cardinality": "one"
+   }
+  },
+  "arrayNoItems": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  },
+  "stringWithItems": {
+   "type": "string"
+  }
+ },
+ "required": [
+  "p_array",
+  "p_string"
+ ],
+ "order": [
+  "p_array",
+  "p_string",
+  "p_number",
+  "p_integer",
+  "p_boolean",
+  "p_object",
+  "p_relation",
+  "p_unknown",
+  "p_constructor",
+  "p_toString",
+  "p_undefined",
+  "empty",
+  "relationEmpty",
+  "arrayNoItems",
+  "stringWithItems"
+ ]
+}"
+`;

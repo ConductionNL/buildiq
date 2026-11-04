@@ -129,28 +129,129 @@ function collectFiles(root, test, maxDepth = 10) {
 		'js',
 		'coverage',
 	])
+	const visit = (ent, dir) => {
+		const full = path.join(dir, ent.name)
+		if (ent.isDirectory() === true) {
+			return skip.has(ent.name) === false ? full : null
+		}
+		if (ent.isFile() === true && test(ent.name) === true) {
+			out.push(full)
+		}
+		return null
+	}
 	const walk = (dir, depth) => {
 		if (depth > maxDepth) {
 			return
 		}
-		let entries
-		try {
-			entries = fs.readdirSync(dir, { withFileTypes: true })
-		} catch {
-			return
-		}
-		for (const ent of entries) {
-			if (ent.isDirectory() === true) {
-				if (skip.has(ent.name) === false) {
-					walk(path.join(dir, ent.name), depth + 1)
-				}
-			} else if (ent.isFile() === true && test(ent.name) === true) {
-				out.push(path.join(dir, ent.name))
+		for (const ent of directoryEntries(dir)) {
+			const sub = visit(ent, dir)
+			if (sub !== null) {
+				walk(sub, depth + 1)
 			}
 		}
 	}
 	walk(root, 0)
 	return out
+}
+
+/**
+ * The entries of a directory, or none when it cannot be read.
+ *
+ * @param {string} dir Directory to read.
+ *
+ * @return {fs.Dirent[]} Its entries.
+ */
+function directoryEntries(dir) {
+	try {
+		return fs.readdirSync(dir, { withFileTypes: true })
+	} catch {
+		return []
+	}
+}
+
+/**
+ * The closing delimiter for each opening one.
+ *
+ * @type {Object<string, string>}
+ */
+const CLOSING = { '(': ')', '{': '}', '[': ']' }
+
+/**
+ * Characters that open a string literal.
+ *
+ * @type {string[]}
+ */
+const QUOTES = ["'", '"', '`']
+
+/**
+ * Advance the scan's string-literal state over `text[i]`.
+ *
+ * @param {object} scan The scan state (text, hash, quote, opens, closes).
+ * @param {number} i The index.
+ *
+ * @return {boolean} True when `text[i]` belongs to a string literal, its quotes included.
+ */
+function inQuote(scan, i) {
+	if (scan.quote !== null) {
+		endQuoteAt(scan, i)
+		return true
+	}
+	if (QUOTES.includes(scan.text[i]) === true) {
+		scan.quote = scan.text[i]
+		return true
+	}
+	return false
+}
+
+/**
+ * Close the open string literal when `text[i]` is its unescaped quote.
+ *
+ * @param {object} scan The scan state.
+ * @param {number} i The index.
+ *
+ * @return {void}
+ */
+function endQuoteAt(scan, i) {
+	if (scan.text[i] === scan.quote && scan.text[i - 1] !== '\\') {
+		scan.quote = null
+	}
+}
+
+/**
+ * Where to resume when a comment starts at `text[i]`: the newline ending a
+ * line comment, the `/` closing a block comment, or the end of the text.
+ *
+ * @param {object} scan The scan state; `hash` makes `#` start a line comment.
+ * @param {number} i The index.
+ *
+ * @return {number} The index to resume from, -1 when no comment starts here.
+ */
+function commentEnd(scan, i) {
+	const two = scan.text.slice(i, i + 2)
+	if (two === '//' || (scan.hash === true && scan.text[i] === '#')) {
+		const nl = scan.text.indexOf('\n', i)
+		return nl === -1 ? scan.text.length : nl
+	}
+	if (two === '/*') {
+		const end = scan.text.indexOf('*/', i)
+		return end === -1 ? scan.text.length : end + 1
+	}
+	return -1
+}
+
+/**
+ * How a code character changes the nesting depth.
+ *
+ * @param {object} scan The scan state; `opens` and `closes` list the delimiters.
+ * @param {string} c The character.
+ *
+ * @return {number} 1, -1 or 0.
+ */
+function depthStep(scan, c) {
+	if (scan.opens.includes(c) === true) {
+		return 1
+	}
+	return scan.closes.includes(c) === true ? -1 : 0
 }
 
 /**
@@ -163,48 +264,49 @@ function collectFiles(root, test, maxDepth = 10) {
  * @return {string} The text between the delimiters (exclusive), '' when unbalanced.
  */
 function balanced(src, from) {
-	const open = src[from]
-	const close = { '(': ')', '{': '}', '[': ']' }[open]
+	const scan = bracketScan(src, from)
 	let depth = 0
-	let quote = null
 	for (let i = from; i < src.length; i++) {
-		const c = src[i]
-		const prev = src[i - 1]
-		if (quote !== null) {
-			if (c === quote && prev !== '\\') {
-				quote = null
-			}
+		const skip = skipNonCode(scan, i)
+		if (skip !== -1) {
+			i = skip
 			continue
 		}
-		if (c === "'" || c === '"' || c === '`') {
-			quote = c
-			continue
-		}
-		if (c === '/' && src[i + 1] === '/') {
-			const nl = src.indexOf('\n', i)
-			i = nl === -1 ? src.length : nl
-			continue
-		}
-		if (c === '/' && src[i + 1] === '*') {
-			const end = src.indexOf('*/', i)
-			i = end === -1 ? src.length : end + 1
-			continue
-		}
-		if (c === '#' && open === '(') {
-			const nl = src.indexOf('\n', i)
-			i = nl === -1 ? src.length : nl
-			continue
-		}
-		if (c === open) {
-			depth++
-		} else if (c === close) {
-			depth--
-			if (depth === 0) {
-				return src.slice(from + 1, i)
-			}
+		const step = depthStep(scan, src[i])
+		depth += step
+		if (step === -1 && depth === 0) {
+			return src.slice(from + 1, i)
 		}
 	}
 	return ''
+}
+
+/**
+ * Where to resume when `text[i]` is not code: `i` itself inside a string
+ * literal, the comment's end when one starts here.
+ *
+ * @param {object} scan The scan state.
+ * @param {number} i The index.
+ *
+ * @return {number} The index to resume from, -1 when `text[i]` is code.
+ */
+function skipNonCode(scan, i) {
+	return inQuote(scan, i) === true ? i : commentEnd(scan, i)
+}
+
+/**
+ * The scan state for `balanced`: only the delimiter at `src[from]` and its
+ * closing one nest, and `#` starts a comment only inside parentheses.
+ *
+ * @param {string} src Source text.
+ * @param {number} from Index of the opening delimiter.
+ *
+ * @return {object} The scan state.
+ */
+function bracketScan(src, from) {
+	const open = src[from]
+	const close = CLOSING[open] || ''
+	return { text: src, hash: open === '(', quote: null, opens: open, closes: close }
 }
 
 /**
@@ -215,57 +317,111 @@ function balanced(src, from) {
  * @return {string[]} Trimmed top-level members.
  */
 function splitTopLevel(body) {
-	const parts = []
-	let depth = 0
-	let quote = null
-	let current = ''
+	const scan = { text: body, hash: true, quote: null, opens: '([{', closes: ')]}' }
+	const split = { depth: 0, current: '', parts: [] }
 	for (let i = 0; i < body.length; i++) {
-		const c = body[i]
-		const prev = body[i - 1]
-		if (quote !== null) {
-			current += c
-			if (c === quote && prev !== '\\') {
-				quote = null
-			}
+		if (inQuote(scan, i) === true) {
+			split.current += body[i]
 			continue
 		}
-		if (c === "'" || c === '"' || c === '`') {
-			quote = c
-			current += c
+		const skip = commentEnd(scan, i)
+		if (skip !== -1) {
+			i = skip
 			continue
 		}
-		if (c === '/' && body[i + 1] === '/') {
-			const nl = body.indexOf('\n', i)
-			i = nl === -1 ? body.length : nl
-			continue
-		}
-		if (c === '/' && body[i + 1] === '*') {
-			const end = body.indexOf('*/', i)
-			i = end === -1 ? body.length : end + 1
-			continue
-		}
-		if (c === '#') {
-			const nl = body.indexOf('\n', i)
-			i = nl === -1 ? body.length : nl
-			continue
-		}
-		if (c === '(' || c === '[' || c === '{') {
-			depth++
-		} else if (c === ')' || c === ']' || c === '}') {
-			depth--
-		}
-		if (c === ',' && depth === 0) {
-			parts.push(current.trim())
-			current = ''
-			continue
-		}
-		current += c
+		split.depth += depthStep(scan, body[i])
+		addCodeChar(split, body[i])
 	}
-	if (current.trim() !== '') {
-		parts.push(current.trim())
-	}
-	return parts
+	return finishSplit(split)
 }
+
+/**
+ * The split's parts, with the last one added when it is not blank.
+ *
+ * @param {{depth: number, current: string, parts: string[]}} split The split state.
+ *
+ * @return {string[]} Trimmed top-level members.
+ */
+function finishSplit(split) {
+	if (split.current.trim() !== '') {
+		split.parts.push(split.current.trim())
+	}
+	return split.parts
+}
+
+/**
+ * Add one code character to a split: a top-level comma ends the current part.
+ *
+ * @param {{depth: number, current: string, parts: string[]}} split The split state.
+ * @param {string} c The character.
+ *
+ * @return {void}
+ */
+function addCodeChar(split, c) {
+	if (c === ',' && split.depth === 0) {
+		split.parts.push(split.current.trim())
+		split.current = ''
+		return
+	}
+	split.current += c
+}
+
+/**
+ * Unescape the quotes inside a string literal's body.
+ *
+ * @param {string} body The text between the quotes.
+ *
+ * @return {string} The string value.
+ */
+function unescapeQuotes(body) {
+	return body.replace(/\\'/g, "'").replace(/\\"/g, '"')
+}
+
+/**
+ * Resolve a `Class::CONST` reference: a known foreign constant first, then
+ * the repo's own class constants.
+ *
+ * @param {string} key The `Class::CONST` text.
+ * @param {Object<string, (string|string[])>} globalConsts `Class::CONST` table.
+ *
+ * @return {string|string[]|null} The resolved value.
+ */
+function classConstant(key, globalConsts) {
+	if (Object.hasOwn(FOREIGN_CONSTANTS, key) === true) {
+		return FOREIGN_CONSTANTS[key]
+	}
+	return Object.hasOwn(globalConsts, key) ? globalConsts[key] : null
+}
+
+/**
+ * The PHP expression shapes that resolve statically, in the order they are
+ * tried. Each rule's `value` reads its match and the `{local, global}` const
+ * tables. The translated literal of `$this->l10n->t('X')` (or
+ * `$this->l->t('X', […])`) is taken as is.
+ *
+ * @type {Array<{pattern: RegExp, value: function(Array, object): (string|string[]|null)}>}
+ */
+const PHP_RULES = [
+	{ pattern: /^'((?:[^'\\]|\\.)*)'$/, value: (m) => unescapeQuotes(m[1]) },
+	{ pattern: /^"((?:[^"\\]|\\.)*)"$/, value: (m) => unescapeQuotes(m[1]) },
+	{
+		pattern: /^\$this->[A-Za-z0-9_]+->t\(\s*'((?:[^'\\]|\\.)*)'/,
+		value: (m) => m[1],
+	},
+	{
+		pattern: /^\$this->[A-Za-z0-9_]+->t\(\s*"((?:[^"\\]|\\.)*)"/,
+		value: (m) => m[1],
+	},
+	{
+		pattern: /^(?:self|static)::([A-Z0-9_]+)$/,
+		value: (m, consts) =>
+			Object.hasOwn(consts.local, m[1]) ? consts.local[m[1]] : null,
+	},
+	{
+		pattern: /^([A-Za-z_][A-Za-z0-9_]*)::([A-Z0-9_]+)$/,
+		value: (m, consts) => classConstant(`${m[1]}::${m[2]}`, consts.global),
+	},
+]
 
 /**
  * Resolve a PHP expression to a string or array of strings, or null when it is
@@ -279,43 +435,50 @@ function splitTopLevel(body) {
  * @return {string|string[]|null} The resolved value.
  */
 function resolvePhp(expr, localConsts, globalConsts) {
-	const e = expr.trim()
-	let m = /^'((?:[^'\\]|\\.)*)'$/.exec(e) || /^"((?:[^"\\]|\\.)*)"$/.exec(e)
-	if (m !== null) {
-		return m[1].replace(/\\'/g, "'").replace(/\\"/g, '"')
-	}
-	// `$this->l10n->t('X')` / `$this->l->t('X', […])` — the translated literal.
-	m =
-		/^\$this->[A-Za-z0-9_]+->t\(\s*'((?:[^'\\]|\\.)*)'/.exec(e)
-		|| /^\$this->[A-Za-z0-9_]+->t\(\s*"((?:[^"\\]|\\.)*)"/.exec(e)
-	if (m !== null) {
-		return m[1]
-	}
-	m = /^(?:self|static)::([A-Z0-9_]+)$/.exec(e)
-	if (m !== null) {
-		return Object.hasOwn(localConsts, m[1]) ? localConsts[m[1]] : null
-	}
-	m = /^([A-Za-z_][A-Za-z0-9_]*)::([A-Z0-9_]+)$/.exec(e)
-	if (m !== null) {
-		const key = `${m[1]}::${m[2]}`
-		if (Object.hasOwn(FOREIGN_CONSTANTS, key) === true) {
-			return FOREIGN_CONSTANTS[key]
+	return resolveExpression(expr.trim(), {
+		rules: PHP_RULES,
+		consts: { local: localConsts, global: globalConsts },
+		member: (member) => resolvePhp(member, localConsts, globalConsts),
+	})
+}
+
+/**
+ * Resolve a trimmed expression with the first matching rule, or as a list
+ * when it opens with `[`.
+ *
+ * @param {string} e The trimmed expression.
+ * @param {{rules: Array, consts: object, member: function(string): (string|string[]|null)}} how The rules, their const tables and the member resolver.
+ *
+ * @return {string|string[]|null} The resolved value.
+ */
+function resolveExpression(e, how) {
+	for (const rule of how.rules) {
+		const m = rule.pattern.exec(e)
+		if (m !== null) {
+			return rule.value(m, how.consts)
 		}
-		return Object.hasOwn(globalConsts, key) ? globalConsts[key] : null
 	}
-	if (e.startsWith('[') === true) {
-		const members = splitTopLevel(balanced(e, 0))
-		const out = []
-		for (const member of members) {
-			const v = resolvePhp(member, localConsts, globalConsts)
-			if (typeof v !== 'string') {
-				return null
-			}
-			out.push(v)
+	return e.startsWith('[') === true ? resolveList(e, how.member) : null
+}
+
+/**
+ * Resolve a `[…]` list whose members all resolve to strings.
+ *
+ * @param {string} e The list expression, opening with `[`.
+ * @param {function(string): (string|string[]|null)} resolveMember Resolves one member.
+ *
+ * @return {string[]|null} The member values, null when one is not a string.
+ */
+function resolveList(e, resolveMember) {
+	const out = []
+	for (const member of splitTopLevel(balanced(e, 0))) {
+		const v = resolveMember(member)
+		if (typeof v !== 'string') {
+			return null
 		}
-		return out
+		out.push(v)
 	}
-	return null
+	return out
 }
 
 /**
@@ -516,10 +679,7 @@ function getterValue(source, method) {
  * @return {object|null} The provider face.
  */
 function providerFace(source) {
-	const isProvider =
-		/extends\s+AbstractIntegrationProvider\b/.test(source.src)
-		|| /implements\s+[^{]*\bIntegrationProviderInterface\b/.test(source.src)
-	if (isProvider === false) {
+	if (isProviderSource(source.src) === false) {
 		return null
 	}
 	const face = { kind: 'IntegrationProvider', file: source.rel, fields: {} }
@@ -539,6 +699,20 @@ function providerFace(source) {
 	face.renderSurface = false
 	face.renderMode = stringField(face.fields, 'renderMode')
 	return face
+}
+
+/**
+ * Whether a PHP file declares an IntegrationProvider.
+ *
+ * @param {string} src The file's source.
+ *
+ * @return {boolean} True for a provider.
+ */
+function isProviderSource(src) {
+	return (
+		/extends\s+AbstractIntegrationProvider\b/.test(src)
+		|| /implements\s+[^{]*\bIntegrationProviderInterface\b/.test(src)
+	)
 }
 
 /**
@@ -576,6 +750,26 @@ function collectServerFaces() {
 }
 
 /**
+ * The JS expression shapes that resolve statically, in the order they are
+ * tried: string and plain template literals, the translated literal of
+ * `t('appid', 'Label')` / `t('Label')`, and a same-file constant name.
+ *
+ * @type {Array<{pattern: RegExp, value: function(Array, object): (string|string[]|null)}>}
+ */
+const JS_RULES = [
+	{ pattern: /^'((?:[^'\\]|\\.)*)'$/, value: (m) => unescapeQuotes(m[1]) },
+	{ pattern: /^"((?:[^"\\]|\\.)*)"$/, value: (m) => unescapeQuotes(m[1]) },
+	{ pattern: /^`([^`$]*)`$/, value: (m) => unescapeQuotes(m[1]) },
+	{ pattern: /^t\(\s*'[^']*'\s*,\s*'((?:[^'\\]|\\.)*)'/, value: (m) => m[1] },
+	{ pattern: /^t\(\s*'((?:[^'\\]|\\.)*)'\s*\)/, value: (m) => m[1] },
+	{
+		pattern: /^[A-Za-z_$][A-Za-z0-9_$]*$/,
+		value: (m, locals) =>
+			Object.hasOwn(locals, m[0]) === true ? locals[m[0]] : null,
+	},
+]
+
+/**
  * Resolve a JS expression to a string or array of strings, or null when it is
  * not statically knowable.
  *
@@ -585,39 +779,11 @@ function collectServerFaces() {
  * @return {string|string[]|null} The resolved value.
  */
 function resolveJs(expr, locals) {
-	const e = expr.trim()
-	let m =
-		/^'((?:[^'\\]|\\.)*)'$/.exec(e)
-		|| /^"((?:[^"\\]|\\.)*)"$/.exec(e)
-		|| /^`([^`$]*)`$/.exec(e)
-	if (m !== null) {
-		return m[1].replace(/\\'/g, "'").replace(/\\"/g, '"')
-	}
-	// `t('appid', 'Label')` / `t('Label')` — the translated literal.
-	m =
-		/^t\(\s*'[^']*'\s*,\s*'((?:[^'\\]|\\.)*)'/.exec(e)
-		|| /^t\(\s*'((?:[^'\\]|\\.)*)'\s*\)/.exec(e)
-	if (m !== null) {
-		return m[1]
-	}
-	if (e.startsWith('[') === true) {
-		const out = []
-		for (const member of splitTopLevel(balanced(e, 0))) {
-			const v = resolveJs(member, locals)
-			if (typeof v !== 'string') {
-				return null
-			}
-			out.push(v)
-		}
-		return out
-	}
-	if (
-		/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(e) === true
-		&& Object.hasOwn(locals, e) === true
-	) {
-		return locals[e]
-	}
-	return null
+	return resolveExpression(expr.trim(), {
+		rules: JS_RULES,
+		consts: locals,
+		member: (member) => resolveJs(member, locals),
+	})
 }
 
 /**
@@ -935,32 +1101,62 @@ function collectOrSchemas() {
 	for (const file of collectFiles(path.join(REPO_ROOT, 'lib', 'Settings'), (n) =>
 		n.endsWith('.json'),
 	)) {
-		let doc
-		try {
-			doc = JSON.parse(fs.readFileSync(file, 'utf8'))
-		} catch {
-			continue
-		}
-		const declared = doc && doc.components && doc.components.schemas
-		if (
-			declared === undefined
-			|| declared === null
-			|| typeof declared !== 'object'
-		) {
-			continue
-		}
-		files++
-		for (const [key, schema] of Object.entries(declared)) {
-			const slug =
-				schema && typeof schema.slug === 'string' ? schema.slug : key
-			const props =
-				schema && schema.properties && typeof schema.properties === 'object'
-					? Object.keys(schema.properties)
-					: []
-			schemas[slug] = (schemas[slug] || []).concat(props)
+		const declared = declaredSchemas(file)
+		if (declared !== null) {
+			files++
+			addSchemaProperties(schemas, declared)
 		}
 	}
 	return { schemas, files }
+}
+
+/**
+ * The `components.schemas` block of one declaration file, or null when the
+ * file does not parse or declares none.
+ *
+ * @param {string} file Absolute path of a `lib/Settings` JSON file.
+ *
+ * @return {object|null} The declared schemas, keyed as in the file.
+ */
+function declaredSchemas(file) {
+	const doc = readJson(file)
+	const declared = doc && doc.components && doc.components.schemas
+	return typeof declared === 'object' && declared !== null ? declared : null
+}
+
+/**
+ * A JSON file's document, or null when it cannot be read or parsed.
+ *
+ * @param {string} file Absolute path of the file.
+ *
+ * @return {unknown} The parsed document.
+ */
+function readJson(file) {
+	try {
+		return JSON.parse(fs.readFileSync(file, 'utf8'))
+	} catch {
+		return null
+	}
+}
+
+/**
+ * Add the property names of each declared schema under its slug (the
+ * schema's own `slug`, or its key).
+ *
+ * @param {Object<string, string[]>} schemas Slug to property names, extended in place.
+ * @param {object} declared One file's `components.schemas` block.
+ *
+ * @return {void}
+ */
+function addSchemaProperties(schemas, declared) {
+	for (const [key, schema] of Object.entries(declared)) {
+		const slug = schema && typeof schema.slug === 'string' ? schema.slug : key
+		const props =
+			schema && schema.properties && typeof schema.properties === 'object'
+				? Object.keys(schema.properties)
+				: []
+		schemas[slug] = (schemas[slug] || []).concat(props)
+	}
 }
 
 /**
@@ -1033,8 +1229,7 @@ function checkRenderPairs(ctx) {
 			continue // identity inherited from a spread — covered by R5
 		}
 		ctx.counts.R1++
-		const mode = r.renderMode === null ? 'component' : r.renderMode
-		const required = mode === 'mount' ? ['mount', 'unmount'] : ['tab', 'widget']
+		const { mode, required } = renderPairOf(r)
 		for (const key of required.filter((k) => r.keys.includes(k) === false)) {
 			ctx.failures.push(
 				`✗ [R1 render-pair] registerIntegration id "${r.id}" (${r.file}) declares `
@@ -1043,6 +1238,22 @@ function checkRenderPairs(ctx) {
 					+ `ADR-066 decision 7).`,
 			)
 		}
+	}
+}
+
+/**
+ * The renderMode of a registration (`component` when it declares none) and the
+ * keys its render pair needs.
+ *
+ * @param {object} r The JS registration.
+ *
+ * @return {{mode: string, required: string[]}} The mode and its keys.
+ */
+function renderPairOf(r) {
+	const mode = r.renderMode === null ? 'component' : r.renderMode
+	return {
+		mode,
+		required: mode === 'mount' ? ['mount', 'unmount'] : ['tab', 'widget'],
 	}
 }
 
@@ -1127,7 +1338,7 @@ function checkRenderModes(ctx) {
 	ctx.counts.R3 = 0
 	for (const [id, f] of ctx.faceById) {
 		const r = ctx.jsById.get(id)
-		if (r === undefined || f.renderMode === null || r.renderMode === null) {
+		if (bothDeclareRenderMode(f, r) === false) {
 			continue
 		}
 		ctx.counts.R3++
@@ -1139,6 +1350,18 @@ function checkRenderModes(ctx) {
 			)
 		}
 	}
+}
+
+/**
+ * Whether a server face and its JS registration (if any) both declare a renderMode.
+ *
+ * @param {object} f The server face.
+ * @param {object|undefined} r The JS registration with the same id.
+ *
+ * @return {boolean} True when both declare one.
+ */
+function bothDeclareRenderMode(f, r) {
+	return r !== undefined && f.renderMode !== null && r.renderMode !== null
 }
 
 /**
@@ -1211,20 +1434,9 @@ function checkMetadata(ctx) {
 function checkSpreads(ctx, r) {
 	for (const symbol of r.spreads) {
 		ctx.counts.R5++
-		const source = r.spreadSources[symbol]
-		if (source === null) {
-			ctx.failures.push(
-				`✗ [R5 spread-source] registerIntegration in ${r.file} spreads \`...${symbol}\`, `
-					+ `which is not imported in that file — the spread of an undefined binding `
-					+ `registers a leaf with no id.`,
-			)
-		} else if (source !== '@conduction/nextcloud-vue') {
-			ctx.failures.push(
-				`✗ [R5 spread-source] registerIntegration in ${r.file} spreads \`...${symbol}\` `
-					+ `imported from "${source}", not from the leaf-owning package `
-					+ `@conduction/nextcloud-vue — an override must extend the descriptor it `
-					+ `overrides, or the id it registers under is not the one it thinks.`,
-			)
+		const failure = spreadSourceFailure(r, symbol)
+		if (failure !== null) {
+			ctx.failures.push(failure)
 		}
 	}
 	if (r.id === null && r.spreads.length === 0) {
@@ -1233,6 +1445,34 @@ function checkSpreads(ctx, r) {
 				+ `nor a spread of a descriptor — it registers a leaf with no identity.`,
 		)
 	}
+}
+
+/**
+ * The R5 failure of one spread, or null when it comes from the owning package.
+ *
+ * @param {object} r The JS registration.
+ * @param {string} symbol The spread binding.
+ *
+ * @return {string|null} The failure message.
+ */
+function spreadSourceFailure(r, symbol) {
+	const source = r.spreadSources[symbol]
+	if (source === null) {
+		return (
+			`✗ [R5 spread-source] registerIntegration in ${r.file} spreads \`...${symbol}\`, `
+			+ `which is not imported in that file — the spread of an undefined binding `
+			+ `registers a leaf with no id.`
+		)
+	}
+	if (source !== '@conduction/nextcloud-vue') {
+		return (
+			`✗ [R5 spread-source] registerIntegration in ${r.file} spreads \`...${symbol}\` `
+			+ `imported from "${source}", not from the leaf-owning package `
+			+ `@conduction/nextcloud-vue — an override must extend the descriptor it `
+			+ `overrides, or the id it registers under is not the one it thinks.`
+		)
+	}
+	return null
 }
 
 /**
@@ -1285,7 +1525,7 @@ function checkOfflineSchemas(ctx, r) {
  */
 function checkOfflinePlannedFields(ctx, r) {
 	const planned = r.offlineConfig.plannedSchema
-	const props = planned === undefined ? undefined : ctx.schemas[planned]
+	const props = plannedProperties(ctx, planned)
 	if (props === undefined) {
 		return // no planned schema, or one already reported by the schema half
 	}
@@ -1304,6 +1544,19 @@ function checkOfflinePlannedFields(ctx, r) {
 			)
 		}
 	}
+}
+
+/**
+ * The declared properties of the planned schema, or undefined when there is
+ * none or it is not declared.
+ *
+ * @param {object} ctx The rule context.
+ * @param {string|undefined} planned The planned schema slug.
+ *
+ * @return {string[]|undefined} Its property names.
+ */
+function plannedProperties(ctx, planned) {
+	return planned === undefined ? undefined : ctx.schemas[planned]
 }
 
 /**
@@ -1433,6 +1686,10 @@ if (require.main === module) {
 }
 
 module.exports = {
+	balanced,
+	splitTopLevel,
+	resolvePhp,
+	resolveJs,
 	collectServerFaces,
 	collectJsRegistrations,
 	collectOrSchemas,

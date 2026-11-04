@@ -224,6 +224,24 @@ const CONNECTOR_CHECKS = Object.freeze([
 ])
 
 /**
+ * Exclusivity: a connector cannot coexist with register/schema or graphql.
+ *
+ * @param {object} dataSource - the `dataSource` object.
+ * @param {string} pointer - JSON-Pointer to this dataSource.
+ * @return {string[]}
+ */
+function mixedFormErrors(dataSource, pointer) {
+	if (
+		dataSource.register !== undefined
+		|| dataSource.schema !== undefined
+		|| dataSource.graphql !== undefined
+	) {
+		return [`${pointer}: buildiq.connector.error.mixed-form`]
+	}
+	return []
+}
+
+/**
  * Validate a single `dataSource` object that may carry a `connector` branch.
  * Returns a list of `<pointer>: <code>` error strings (empty when valid or
  * when no `connector` branch is present).
@@ -243,15 +261,7 @@ export function validateConnectorDataSource(dataSource, pointer) {
 		return [connectorError(pointer, 'buildiq.connector.error.invalid-shape')]
 	}
 
-	const errors = []
-	// Exclusivity: connector cannot coexist with register/schema or graphql.
-	if (
-		dataSource.register !== undefined
-		|| dataSource.schema !== undefined
-		|| dataSource.graphql !== undefined
-	) {
-		errors.push(`${pointer}: buildiq.connector.error.mixed-form`)
-	}
+	const errors = mixedFormErrors(dataSource, pointer)
 	for (const check of CONNECTOR_CHECKS) {
 		errors.push(...check(connector, pointer))
 	}

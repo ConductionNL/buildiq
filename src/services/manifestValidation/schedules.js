@@ -62,6 +62,143 @@ export function isValidCron(expr) {
 }
 
 /**
+ * Unknown keys on the entry.
+ *
+ * @param {object} entry - the schedule entry.
+ * @param {string} pointer - the entry's JSON-Pointer.
+ * @return {string[]}
+ */
+function keyErrors(entry, pointer) {
+	return Object.keys(entry)
+		.filter((key) => !ALLOWED_KEYS.includes(key))
+		.map((key) => `${pointer}/${key}: buildiq.schedule.error.unknown-key`)
+}
+
+/**
+ * id: a required kebab-case slug.
+ *
+ * @param {object} entry - the schedule entry.
+ * @param {string} pointer - the entry's JSON-Pointer.
+ * @return {string[]}
+ */
+function idErrors(entry, pointer) {
+	if (typeof entry.id !== 'string' || entry.id.trim() === '') {
+		return [`${pointer}: buildiq.schedule.error.id-required`]
+	}
+	if (!SLUG_RE.test(entry.id)) {
+		return [`${pointer}: buildiq.schedule.error.id-not-slug`]
+	}
+	return []
+}
+
+/**
+ * The cadence error code of an entry: exactly one of interval | cron, and
+ * that one well-formed. Null when the cadence is valid.
+ *
+ * @param {object} entry - the schedule entry.
+ * @return {string|null}
+ */
+function cadenceErrorCode(entry) {
+	const hasInterval = entry.interval !== undefined
+	if (hasInterval === (entry.cron !== undefined)) {
+		return hasInterval
+			? 'buildiq.schedule.error.cadence-both'
+			: 'buildiq.schedule.error.cadence-required'
+	}
+	return hasInterval
+		? intervalErrorCode(entry.interval)
+		: cronErrorCode(entry.cron)
+}
+
+/**
+ * The error code of an interval that is not a positive integer, else null.
+ *
+ * @param {unknown} interval - the entry's interval.
+ * @return {string|null}
+ */
+function intervalErrorCode(interval) {
+	return Number.isInteger(interval) && interval > 0
+		? null
+		: 'buildiq.schedule.error.interval-invalid'
+}
+
+/**
+ * The error code of a malformed cron expression, else null.
+ *
+ * @param {unknown} cron - the entry's cron expression.
+ * @return {string|null}
+ */
+function cronErrorCode(cron) {
+	return isValidCron(cron) ? null : 'buildiq.schedule.error.cron-invalid'
+}
+
+/**
+ * cadence: exactly one of interval | cron.
+ *
+ * @param {object} entry - the schedule entry.
+ * @param {string} pointer - the entry's JSON-Pointer.
+ * @return {string[]}
+ */
+function cadenceErrors(entry, pointer) {
+	const code = cadenceErrorCode(entry)
+	return code === null ? [] : [`${pointer}: ${code}`]
+}
+
+/**
+ * action: allow-listed, with the arguments that action needs.
+ *
+ * @param {object} entry - the schedule entry.
+ * @param {string} pointer - the entry's JSON-Pointer.
+ * @return {string[]}
+ */
+function actionErrors(entry, pointer) {
+	if (!SCHEDULE_ACTIONS.includes(entry.action)) {
+		return [`${pointer}: buildiq.schedule.error.action-unsupported`]
+	}
+	if (
+		entry.action === 'openconnector:synchronization'
+		&& !hasSynchronizationId(entry.arguments)
+	) {
+		return [`${pointer}: buildiq.schedule.error.synchronization-required`]
+	}
+	return []
+}
+
+/**
+ * Whether the arguments name a synchronization (a non-blank string id).
+ *
+ * @param {unknown} args - the entry's arguments.
+ * @return {boolean}
+ */
+function hasSynchronizationId(args) {
+	const syncId = args && args.synchronizationId
+	return typeof syncId === 'string' && syncId.trim() !== ''
+}
+
+/**
+ * enabled: an optional boolean.
+ *
+ * @param {object} entry - the schedule entry.
+ * @param {string} pointer - the entry's JSON-Pointer.
+ * @return {string[]}
+ */
+function enabledErrors(entry, pointer) {
+	if (entry.enabled !== undefined && typeof entry.enabled !== 'boolean') {
+		return [`${pointer}: buildiq.schedule.error.enabled-invalid`]
+	}
+	return []
+}
+
+/** The per-entry checks, in the order their errors are reported. */
+const SCHEDULE_CHECKS = Object.freeze([
+	keyErrors,
+	idErrors,
+	cadenceErrors,
+	actionErrors,
+	enabledErrors,
+])
+
+/**
  * Validate one schedule entry (no cross-entry uniqueness — that is the
  * array-level check). Used both by the pipeline validator below and by the
  * dialog's live save-gating.
@@ -72,58 +209,11 @@ export function isValidCron(expr) {
  * @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-006
  */
 export function validateScheduleEntry(entry, idx = 0) {
-	const errors = []
-	const at = (code) => `/schedules/${idx}: ${code}`
+	const pointer = `/schedules/${idx}`
 	if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
-		errors.push(at('buildiq.schedule.error.invalid-shape'))
-		return errors
+		return [`${pointer}: buildiq.schedule.error.invalid-shape`]
 	}
-	for (const key of Object.keys(entry)) {
-		if (!ALLOWED_KEYS.includes(key)) {
-			errors.push(
-				`/schedules/${idx}/${key}: buildiq.schedule.error.unknown-key`,
-			)
-		}
-	}
-	// id
-	if (typeof entry.id !== 'string' || entry.id.trim() === '') {
-		errors.push(at('buildiq.schedule.error.id-required'))
-	} else if (!SLUG_RE.test(entry.id)) {
-		errors.push(at('buildiq.schedule.error.id-not-slug'))
-	}
-	// cadence: exactly one of interval | cron
-	const hasInterval = entry.interval !== undefined
-	const hasCron = entry.cron !== undefined
-	if (hasInterval && hasCron) {
-		errors.push(at('buildiq.schedule.error.cadence-both'))
-	} else if (!hasInterval && !hasCron) {
-		errors.push(at('buildiq.schedule.error.cadence-required'))
-	} else if (hasInterval) {
-		if (
-			typeof entry.interval !== 'number'
-			|| !Number.isInteger(entry.interval)
-			|| entry.interval <= 0
-		) {
-			errors.push(at('buildiq.schedule.error.interval-invalid'))
-		}
-	} else if (!isValidCron(entry.cron)) {
-		errors.push(at('buildiq.schedule.error.cron-invalid'))
-	}
-	// action
-	if (!SCHEDULE_ACTIONS.includes(entry.action)) {
-		errors.push(at('buildiq.schedule.error.action-unsupported'))
-	} else if (entry.action === 'openconnector:synchronization') {
-		const args = entry.arguments
-		const syncId = args && args.synchronizationId
-		if (typeof syncId !== 'string' || syncId.trim() === '') {
-			errors.push(at('buildiq.schedule.error.synchronization-required'))
-		}
-	}
-	// enabled (optional boolean)
-	if (entry.enabled !== undefined && typeof entry.enabled !== 'boolean') {
-		errors.push(at('buildiq.schedule.error.enabled-invalid'))
-	}
-	return errors
+	return SCHEDULE_CHECKS.flatMap((check) => check(entry, pointer))
 }
 
 /**

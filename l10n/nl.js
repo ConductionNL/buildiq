@@ -1626,7 +1626,21 @@ OC.L10N.register(
         "{component} failed to draw: {message}": "{component} kon niet worden getekend: {message}",
         "{time}, {count} times": "{time}, {count} keer",
         "Declared in: {where}": "Ingesteld in: {where}",
-        "Widget unavailable": "Widget niet beschikbaar"
+        "Widget unavailable": "Widget niet beschikbaar",
+        "App health sample": "App-gezondheidsmeting",
+        "Client errors": "Fouten in de browser",
+        "Failures 4xx": "Fouten 4xx",
+        "Failures 5xx": "Fouten 5xx",
+        "Page loads": "Paginaladingen",
+        "Page loads of 3 s and over": "Paginaladingen van 3 s en langer",
+        "Requests": "Verzoeken",
+        "Requests from 1 s to 3 s": "Verzoeken van 1 s tot 3 s",
+        "Requests from 250 ms to 1 s": "Verzoeken van 250 ms tot 1 s",
+        "Requests of 3 s and over": "Verzoeken van 3 s en langer",
+        "Requests under 250 ms": "Verzoeken onder 250 ms",
+        "Total load time (ms)": "Totale laadtijd (ms)",
+        "Window start": "Begin van het venster",
+        "Include server bundle": "Serverbundel meenemen"
     },
     "nplurals=2; plural=(n != 1);"
 )

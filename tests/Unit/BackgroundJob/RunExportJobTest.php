@@ -29,8 +29,12 @@ namespace OCA\Buildiq\Tests\Unit\BackgroundJob;
 
 use OCA\Buildiq\BackgroundJob\RunExportJob;
 use OCA\Buildiq\Service\ExportAppContentBundler;
+use OCA\Buildiq\Service\ExportContents;
 use OCA\Buildiq\Service\ExportJobService;
 use OCA\Buildiq\Service\ExportService;
+use OCA\Buildiq\Service\ExportTarget;
+use OCA\Buildiq\Service\GitHub\BrokerAccess;
+use OCA\Buildiq\Service\GitHub\PushTarget;
 use OCA\Buildiq\Service\GitHubPushService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -206,10 +210,10 @@ final class RunExportJobTest extends TestCase {
 			->method('generateAppZip')
 			->willReturnCallback(
 				function (...$args) use ($source): string {
-					// Positional: uuid, version, context, jobUuid, dataRegisters, flows, slug, source.
-					self::assertSame('Test things', $args[2]['appName']);
-					self::assertSame('Tracks things.', $args[2]['appDescription']);
-					self::assertSame($source + ['includeSeedData' => true], $args[7]);
+					// Positional: target, contents, includeServerBundle.
+					self::assertSame('Test things', $args[1]->context['appName']);
+					self::assertSame('Tracks things.', $args[1]->context['appDescription']);
+					self::assertSame($source + ['includeSeedData' => true], $args[1]->source);
 					return '/tmp/x.zip';
 				}
 			);
@@ -230,6 +234,45 @@ final class RunExportJobTest extends TestCase {
 
 		self::assertSame(['Exported 3 pages, 2 menu items, 1 schemas and 4 records.'], $succeeded['log'] ?? null);
 	}//end testRunExportsTheApplicationTheJobNames()
+
+	/**
+	 * Every field of the job reaches the exporter in the right place: the
+	 * target names the application, version, job and agent slug; the contents
+	 * carry the context, the data registers, the flows and the source; the
+	 * server bundle flag is set only by a literal true.
+	 *
+	 * @return void
+	 */
+	public function testHandsEveryJobFieldToTheExporter(): void {
+		$cases = [
+			'bundle on' => [['includeServerBundle' => true, 'flows' => [['flow' => 'f1']], 'dataRegisters' => [['register' => 'r']]], true, [['flow' => 'f1']], [['register' => 'r']]],
+			'bundle truthy' => [['includeServerBundle' => 1, 'flows' => 'not-a-list', 'dataRegisters' => 'x'], false, [], []],
+			'bundle absent' => [[], false, [], []],
+		];
+		foreach ($cases as $name => [$extra, $bundle, $flows, $registers]) {
+			$this->setUp();
+			$this->exportJobService->method('loadJob')->willReturn($extra + $this->jobFixture('app-uuid-fields'));
+			$this->exportJobService->method('transitionJob')->willReturn(true);
+			$captured = [];
+			$this->exportService->expects(self::once())->method('generateAppZip')->willReturnCallback(
+				function (ExportTarget $target, ExportContents $contents, bool $includeServerBundle) use (&$captured): string {
+					$captured = [$target, $contents, $includeServerBundle];
+					return '/tmp/x.zip';
+				}
+			);
+
+			$this->invokeRun($this->buildJob(), ['jobUuid' => 'job-fields']);
+
+			[$target, $contents, $includeServerBundle] = $captured;
+			self::assertSame(['app-uuid-fields', '1.0.0', 'job-fields', 'test-app'], [$target->applicationUuid, $target->versionSlug, $target->jobUuid, $target->applicationSlug], $name);
+			self::assertSame('test-app', $contents->context['appId'], $name);
+			self::assertSame('1.0.0', $contents->context['appVersion'], $name);
+			self::assertSame($registers, $contents->dataRegisters, $name);
+			self::assertSame($flows, $contents->flows, $name);
+			self::assertNull($contents->source, $name);
+			self::assertSame($bundle, $includeServerBundle, $name);
+		}
+	}//end testHandsEveryJobFieldToTheExporter()
 
 	/**
 	 * An application that cannot be read fails the job instead of exporting
@@ -366,11 +409,8 @@ final class RunExportJobTest extends TestCase {
 			->with(
 				self::anything(),
 				self::anything(),
-				self::equalTo('cred-uuid-1234'),
-				self::equalTo('acme-co'),
-				self::equalTo('hello-world'),
-				self::anything(),
-				self::equalTo('alice')
+				self::equalTo(new BrokerAccess(credentialId: 'cred-uuid-1234', actingUserId: 'alice')),
+				self::equalTo(new PushTarget(org: 'acme-co', repo: 'hello-world', visibility: 'private'))
 			)
 			->willReturn(
 				[
@@ -402,16 +442,14 @@ final class RunExportJobTest extends TestCase {
 			->expects(self::exactly(2))
 			->method('generateAppZip')
 			->willReturnCallback(function (
-				string $applicationUuid,
-				string $versionSlug,
-				array $context,
-				string $jobUuidArg,
+				ExportTarget $target,
+				ExportContents $contents,
 			) use (&$captured): string {
 				$captured[] = [
-					'applicationUuid' => $applicationUuid,
-					'versionSlug' => $versionSlug,
-					'context' => $context,
-					'jobUuid' => $jobUuidArg,
+					'applicationUuid' => $target->applicationUuid,
+					'versionSlug' => $target->versionSlug,
+					'context' => $contents->context,
+					'jobUuid' => $target->jobUuid,
 				];
 
 				return '/tmp/out.zip';
@@ -456,7 +494,7 @@ final class RunExportJobTest extends TestCase {
 
 		$this->invokeRun($this->buildJob(), ['jobUuid' => $jobUuid]);
 
-		self::assertSame($dataRegisters, $captured[4] ?? null, 'dataRegisters must be forwarded as the 5th argument');
+		self::assertSame($dataRegisters, $captured[1]->dataRegisters ?? null, 'dataRegisters must be forwarded in the export contents');
 	}//end testForwardsDataRegistersFromLoadedJobIntoGenerateAppZip()
 
 	/**
@@ -482,7 +520,7 @@ final class RunExportJobTest extends TestCase {
 
 		$this->invokeRun($this->buildJob(), ['jobUuid' => $jobUuid]);
 
-		self::assertSame([], $captured[4] ?? null);
+		self::assertSame([], $captured[1]->dataRegisters ?? null);
 	}//end testForwardsEmptyDataRegistersWhenJobRecordPredatesTheProperty()
 
 	/**

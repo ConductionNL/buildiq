@@ -140,7 +140,7 @@ would create a cycle in the linear promotion chain. The check SHALL walk
 `promotesTo` forward from the proposed target up to a hard cap of 100 hops; if the
 current row's `uuid` is encountered along the walk, the save is rejected with a
 422 response naming the conflict. Self-loops (`promotesTo` equal to the current
-row's `uuid`) SHALL be rejected by an `x-openregister-validation` same-row check.
+row's `uuid`) SHALL be rejected by an `x-openregister-validations` same-row check.
 Broader cycle detection SHALL run as
 `ApplicationVersionService::guardNoCycle()` (per ADR-031 §Exceptions(1) —
 cross-row validation).
@@ -477,7 +477,7 @@ OpenRegister schema:
 - `owner` (string) — the owning Nextcloud user UID, set ONLY on `scope: user`
   rows.
 
-The schema SHALL declare an `x-openregister-validation` same-row rule asserting
+The schema SHALL declare an `x-openregister-validations` same-row rule asserting
 `owner != null` when `scope == 'user'`. The existing lifecycle, semver auto-bump,
 cycle guard, and CRUD contract (REQ-OBV-101 … REQ-OBV-108) SHALL be unchanged
 except that LIST and GET of `scope: user` rows SHALL be filtered to the owning

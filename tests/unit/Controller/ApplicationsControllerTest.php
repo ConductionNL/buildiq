@@ -23,8 +23,10 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\ApplicationsController;
+use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\ManifestResolverService;
 use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Service\RegisterStore;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -174,15 +176,19 @@ class ApplicationsControllerTest extends TestCase {
 		return new ApplicationsController(
 			request: $request,
 			logger: $this->logger,
-			objectService: $this->objectService,
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
-			userSession: $this->userSession,
-			groupManager: $this->groupManager,
+			store: new RegisterStore(
+				objectService: $this->objectService,
+				registerMapper: $registerMapper,
+				schemaMapper: $schemaMapper,
+				auditTrailMapper: $this->auditTrailMapper
+			),
+			caller: new CallerContext(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				permissionResolver: $permissionResolver
+			),
 			manifestResolver: $this->manifestResolver,
-			permissionResolver: $permissionResolver,
 			channelApplier: $this->createMock(\OCA\Buildiq\Service\AppChannelApplier::class),
-			auditTrailMapper: $this->auditTrailMapper,
 		);
 	}//end buildController()
 

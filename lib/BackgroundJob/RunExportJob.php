@@ -31,7 +31,11 @@ namespace OCA\Buildiq\BackgroundJob;
 
 use OCA\Buildiq\Service\ExportAppContentBundler;
 use OCA\Buildiq\Service\ExportJobService;
+use OCA\Buildiq\Service\ExportContents;
 use OCA\Buildiq\Service\ExportService;
+use OCA\Buildiq\Service\ExportTarget;
+use OCA\Buildiq\Service\GitHub\BrokerAccess;
+use OCA\Buildiq\Service\GitHub\PushTarget;
 use OCA\Buildiq\Service\GitHubPushService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
@@ -211,7 +215,15 @@ class RunExportJob extends QueuedJob {
 			);
 		}
 
-		$source = $this->resolveSource(job: $job, applicationUuid: $applicationUuid, applicationVersion: $applicationVersion);
+		$target = new ExportTarget(
+			applicationUuid: $applicationUuid,
+			versionSlug: $applicationVersion,
+			jobUuid: $jobUuid,
+			// The application's own slug IS the agent lookup: agents carry
+			// `applicationSlug`, so there is no agent binding to pass.
+			applicationSlug: $applicationSlug
+		);
+		$source = $this->resolveSource(job: $job, target: $target);
 
 		$context = $this->nameFromSource(source: $source, context: [
 			'appId' => $applicationSlug,
@@ -224,16 +236,13 @@ class RunExportJob extends QueuedJob {
 		]);
 
 		$this->exportService->generateAppZip(
-			applicationUuid: $applicationUuid,
-			versionSlug: $applicationVersion,
-			context: $context,
-			jobUuid: $jobUuid,
-			dataRegisters: $dataRegisters,
-			flows: $flows,
-			// The application's own slug IS the agent lookup: agents carry
-			// `applicationSlug`, so there is no agent binding to pass.
-			applicationSlug: $applicationSlug,
-			source: $source,
+			target: $target,
+			contents: new ExportContents(
+				context: $context,
+				dataRegisters: $dataRegisters,
+				flows: $flows,
+				source: $source
+			),
 			includeServerBundle: ($job['includeServerBundle'] ?? false) === true
 		);
 
@@ -261,8 +270,7 @@ class RunExportJob extends QueuedJob {
 	 * template and call it a success, so that fails the job instead.
 	 *
 	 * @param array<string,mixed> $job The loaded ExportJob record.
-	 * @param string $applicationUuid The application UUID.
-	 * @param string $applicationVersion The semver on the job.
+	 * @param ExportTarget $target The application and the semver on the job.
 	 *
 	 * @return array{application: array<string,mixed>, version: array<string,mixed>}|null Null without a bundler.
 	 *
@@ -270,14 +278,14 @@ class RunExportJob extends QueuedJob {
 	 *
 	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-export-targets-a-specific-application-version
 	 */
-	private function resolveSource(array $job, string $applicationUuid, string $applicationVersion): ?array {
+	private function resolveSource(array $job, ExportTarget $target): ?array {
 		if ($this->contentBundler === null) {
 			return null;
 		}
 
 		$source = $this->contentBundler->resolveSource(
-			applicationUuid: $applicationUuid,
-			semver: $applicationVersion,
+			applicationUuid: $target->applicationUuid,
+			semver: $target->versionSlug,
 			versionSlug: (string)($job['applicationVersionSlug'] ?? '')
 		);
 
@@ -421,11 +429,12 @@ class RunExportJob extends QueuedJob {
 		return $this->githubPushService->push(
 			jobUuid: $jobUuid,
 			treeDir: $treeDir,
-			credentialId: $credentialId,
-			org: (string)($job['githubOrg'] ?? ''),
-			repo: (string)($job['githubRepo'] ?? ''),
-			visibility: (string)($job['githubVisibility'] ?? 'private'),
-			actingUserId: $actingUserId
+			access: new BrokerAccess(credentialId: $credentialId, actingUserId: $actingUserId),
+			target: new PushTarget(
+				org: (string)($job['githubOrg'] ?? ''),
+				repo: (string)($job['githubRepo'] ?? ''),
+				visibility: (string)($job['githubVisibility'] ?? 'private')
+			)
 		);
 	}//end maybePush()
 

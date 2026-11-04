@@ -12,6 +12,39 @@
  */
 
 /**
+ * A path string with `_version` added to its query, before any `#fragment`.
+ *
+ * @param {string} to - a path, possibly with a query and a fragment.
+ * @param {string} versionSlug - the version to keep.
+ * @return {string} the path, carrying the version.
+ */
+function pathWithVersion(to, versionSlug) {
+	if (/[?&]_version=/.test(to)) {
+		return to
+	}
+	const hash = to.indexOf('#')
+	const path = hash === -1 ? to : to.slice(0, hash)
+	const fragment = hash === -1 ? '' : to.slice(hash)
+	const joiner = path.includes('?') ? '&' : '?'
+	return `${path}${joiner}_version=${encodeURIComponent(versionSlug)}${fragment}`
+}
+
+/**
+ * A location object with `_version` added to its query.
+ *
+ * @param {object} to - a vue-router location object.
+ * @param {string} versionSlug - the version to keep.
+ * @return {object} the location, carrying the version.
+ */
+function locationWithVersion(to, versionSlug) {
+	const query = to.query || {}
+	if (query._version) {
+		return to
+	}
+	return { ...to, query: { ...query, _version: versionSlug } }
+}
+
+/**
  * A route location with `_version` added to its query.
  *
  * @param {string|object} to - a vue-router location.
@@ -24,23 +57,9 @@ export function withVersion(to, versionSlug) {
 		return to
 	}
 	if (typeof to === 'string') {
-		if (/[?&]_version=/.test(to)) {
-			return to
-		}
-		const hash = to.indexOf('#')
-		const path = hash === -1 ? to : to.slice(0, hash)
-		const fragment = hash === -1 ? '' : to.slice(hash)
-		const joiner = path.includes('?') ? '&' : '?'
-		return `${path}${joiner}_version=${encodeURIComponent(versionSlug)}${fragment}`
+		return pathWithVersion(to, versionSlug)
 	}
-	if (typeof to !== 'object') {
-		return to
-	}
-	const query = to.query || {}
-	if (query._version) {
-		return to
-	}
-	return { ...to, query: { ...query, _version: versionSlug } }
+	return typeof to === 'object' ? locationWithVersion(to, versionSlug) : to
 }
 
 /**

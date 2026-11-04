@@ -65,9 +65,9 @@ namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Service\Connection\ConnectionReporter;
+use OCA\Buildiq\Service\StoreClient;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
-use OCA\OpenRegister\AppHost\Store\StoreActionAuthorizer;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -94,10 +94,9 @@ class StoreController extends Controller {
 	 * @param IRequest $request The current HTTP request.
 	 * @param LoggerInterface $logger PSR logger.
 	 * @param IUserSession $userSession Current NC user session.
-	 * @param GenericStoreService $storeService Engine-owned store client.
+	 * @param StoreClient $store OpenRegister's store client and the authorizer that decides who may publish.
 	 * @param ApplicationsController $appsController Shared clone/install seam.
 	 * @param ConnectionReporter|null $connectionReporter Tells integriq what a search met, or nothing when absent.
-	 * @param StoreActionAuthorizer|null $actionAuthorizer Decides who may publish (OpenRegister); absent, nobody may.
 	 *
 	 * @return void
 	 *
@@ -107,10 +106,9 @@ class StoreController extends Controller {
 		IRequest $request,
 		private readonly LoggerInterface $logger,
 		private readonly IUserSession $userSession,
-		private readonly GenericStoreService $storeService,
+		private readonly StoreClient $store,
 		private readonly ApplicationsController $appsController,
 		private readonly ?ConnectionReporter $connectionReporter = null,
-		private readonly ?StoreActionAuthorizer $actionAuthorizer = null,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
@@ -177,7 +175,7 @@ class StoreController extends Controller {
 		}
 
 		try {
-			$result = $this->storeService->search(
+			$result = $this->store->storeService->search(
 				descriptor: $this->descriptor(),
 				query: $query,
 				kind: $kind
@@ -214,7 +212,7 @@ class StoreController extends Controller {
 		}
 
 		try {
-			return $this->storeService->resolve(descriptor: $this->descriptor(), slug: $slug);
+			return $this->store->storeService->resolve(descriptor: $this->descriptor(), slug: $slug);
 		} catch (Throwable $e) {
 			$this->logger->error('Buildiq store: resolve failed for ' . $slug . ': ' . $e->getMessage());
 			return null;
@@ -263,8 +261,8 @@ class StoreController extends Controller {
 		}
 
 		$descriptor = $this->descriptor();
-		if ($this->actionAuthorizer === null
-			|| $this->actionAuthorizer->canPublish(descriptor: $descriptor, user: $user) === false
+		if ($this->store->actionAuthorizer === null
+			|| $this->store->actionAuthorizer->canPublish(descriptor: $descriptor, user: $user) === false
 		) {
 			return new JSONResponse(
 				data: ['outcome' => 'forbidden', 'slug' => ''],
@@ -281,7 +279,7 @@ class StoreController extends Controller {
 		}
 
 		return new JSONResponse(
-			data: $this->storeService->publish(descriptor: $descriptor, payload: $item),
+			data: $this->store->storeService->publish(descriptor: $descriptor, payload: $item),
 			statusCode: Http::STATUS_OK
 		);
 	}//end publish()

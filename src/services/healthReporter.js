@@ -52,6 +52,20 @@ function durationBucket(ms) {
 }
 
 /**
+ * The failure count a request status adds to: 4xx, or 5xx and no status at
+ * all (the request never got an answer). Null for a success.
+ *
+ * @param {number} status The HTTP status, 0 when there was none.
+ * @return {string|null} The count, or null.
+ */
+function failureBucket(status) {
+	if (status >= 400 && status < 500) {
+		return 'failures4xx'
+	}
+	return status >= 500 || status === 0 ? 'failures5xx' : null
+}
+
+/**
  * Create a reporter.
  *
  * @param {object} options Options.
@@ -86,6 +100,26 @@ export function createHealthReporter({ post, now = () => Date.now() }) {
 		view.counted = true
 	}
 
+	const countRequest = (report, pageId) => {
+		const counts = countsOf(pageId)
+		const status = Number(report.status) || 0
+		counts.requests += 1
+		const failure = failureBucket(status)
+		if (failure !== null) {
+			counts[failure] += 1
+		}
+		counts[durationBucket(Number(report.durationMs) || 0)] += 1
+		const at = now()
+		if (
+			view
+			&& !view.counted
+			&& view.pageId === pageId
+			&& at - view.start <= LOAD_WINDOW_MS
+		) {
+			view.loadEnd = at
+		}
+	}
+
 	return {
 		/**
 		 * The diagnostics listener for CnAppRoot.
@@ -100,22 +134,13 @@ export function createHealthReporter({ post, now = () => Date.now() }) {
 			}
 			const pageId = report.pageId || view?.pageId
 			if (report.kind === 'request') {
-				const counts = countsOf(pageId)
-				const status = Number(report.status) || 0
-				counts.requests += 1
-				if (status >= 400 && status < 500) {
-					counts.failures4xx += 1
-				} else if (status >= 500 || status === 0) {
-					counts.failures5xx += 1
-				}
-				counts[durationBucket(Number(report.durationMs) || 0)] += 1
-				const at = now()
-				if (view && !view.counted && view.pageId === pageId && at - view.start <= LOAD_WINDOW_MS) {
-					view.loadEnd = at
-				}
+				countRequest(report, pageId)
 				return
 			}
-			if (report.kind === 'render-error' || report.kind === 'unknown-component') {
+			if (
+				report.kind === 'render-error'
+				|| report.kind === 'unknown-component'
+			) {
 				countsOf(pageId).clientErrors += 1
 			}
 		},
@@ -130,7 +155,12 @@ export function createHealthReporter({ post, now = () => Date.now() }) {
 		navigate(pageId) {
 			closeLoad()
 			const at = now()
-			view = { pageId: String(pageId || 'unknown'), start: at, loadEnd: at, counted: false }
+			view = {
+				pageId: String(pageId || 'unknown'),
+				start: at,
+				loadEnd: at,
+				counted: false,
+			}
 		},
 
 		/**
@@ -160,7 +190,10 @@ export function createHealthReporter({ post, now = () => Date.now() }) {
 		 * @return {Array<object>} The samples.
 		 */
 		pending() {
-			return [...pages.entries()].map(([pageId, counts]) => ({ pageId, ...counts }))
+			return [...pages.entries()].map(([pageId, counts]) => ({
+				pageId,
+				...counts,
+			}))
 		},
 	}
 }

@@ -45,7 +45,10 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Service\RegisterStore;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -90,29 +93,69 @@ class AgentsController extends Controller {
 	private const READ_ROLES = ['owners', 'editors'];
 
 	/**
+	 * OpenRegister object service.
+	 *
+	 * @var ObjectServiceInterface
+	 */
+	private readonly ObjectServiceInterface $objectService;
+
+	/**
+	 * Resolves register slugs to ids.
+	 *
+	 * @var RegisterMapper
+	 */
+	private readonly RegisterMapper $registerMapper;
+
+	/**
+	 * Resolves schema slugs to ids.
+	 *
+	 * @var SchemaMapper
+	 */
+	private readonly SchemaMapper $schemaMapper;
+
+	/**
+	 * Current user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager (admin bypass logging).
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * Shared permission-grammar resolver.
+	 *
+	 * @var PermissionResolver
+	 */
+	private readonly PermissionResolver $permissionResolver;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest $request The current HTTP request.
 	 * @param LoggerInterface $logger PSR logger.
-	 * @param ObjectServiceInterface $objectService OpenRegister object service.
-	 * @param RegisterMapper $registerMapper Resolves register slugs to ids.
-	 * @param SchemaMapper $schemaMapper Resolves schema slugs to ids.
-	 * @param PermissionResolver $permissionResolver Shared permission-grammar resolver.
-	 * @param IGroupManager $groupManager Group manager (admin bypass logging).
-	 * @param IUserSession $userSession Current user session.
+	 * @param RegisterStore $store OpenRegister's object service, register and schema mappers and audit trail.
+	 * @param CallerContext $caller The caller's session, group memberships and the shared permission matcher.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		IRequest $request,
 		private readonly LoggerInterface $logger,
-		private readonly ObjectServiceInterface $objectService,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly PermissionResolver $permissionResolver,
-		private readonly IGroupManager $groupManager,
-		private readonly IUserSession $userSession,
+		RegisterStore $store,
+		CallerContext $caller,
 	) {
+		$this->objectService = $store->objectService;
+		$this->registerMapper = $store->registerMapper;
+		$this->schemaMapper = $store->schemaMapper;
+		$this->userSession = $caller->userSession;
+		$this->groupManager = $caller->groupManager;
+		$this->permissionResolver = $caller->permissionResolver;
 		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
 
@@ -207,6 +250,7 @@ class AgentsController extends Controller {
 	 *
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException When the buildiq register or the agentRun schema is absent.
 	 * @throws \Exception When the register/schema RBAC check refuses, or the object search fails.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function loadRunsForAgent(string $agentUuid): array {
 		$registerId = $this->registerMapper->find(self::REGISTER_SLUG, _multitenancy: false)->getId();
@@ -228,7 +272,7 @@ class AgentsController extends Controller {
 
 		$matching = [];
 		foreach ($rowsList as $row) {
-			$normalised = $this->normalise(object: $row);
+			$normalised = ObjectRecord::toArray(object: $row);
 			if ((string)($normalised['agentId'] ?? '') !== $agentUuid) {
 				continue;
 			}
@@ -252,6 +296,7 @@ class AgentsController extends Controller {
 	 * @param string $uuid The Agent object uuid.
 	 *
 	 * @return array<string,mixed>|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function loadAgent(string $uuid): ?array {
 		try {
@@ -264,7 +309,7 @@ class AgentsController extends Controller {
 			return null;
 		}
 
-		return $this->normalise(object: $entity);
+		return ObjectRecord::toArray(object: $entity);
 	}//end loadAgent()
 
 	/**
@@ -273,6 +318,7 @@ class AgentsController extends Controller {
 	 * @param string $slug The Application slug.
 	 *
 	 * @return array<string,mixed>|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function loadApplication(string $slug): ?array {
 		if ($slug === '') {
@@ -289,7 +335,7 @@ class AgentsController extends Controller {
 			return null;
 		}
 
-		return $this->normalise(object: $entity);
+		return ObjectRecord::toArray(object: $entity);
 	}//end loadApplication()
 
 	/**
@@ -306,35 +352,6 @@ class AgentsController extends Controller {
 
 		return [];
 	}//end orArray()
-
-	/**
-	 * Coerce an OR result entry to a plain associative array.
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normalise(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normalise()
 
 	/**
 	 * Build a uniform error envelope.
