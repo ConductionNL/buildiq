@@ -319,7 +319,8 @@ class RepairValidationViolationsTest extends TestCase {
 	 * @return void
 	 */
 	public function testRunsBeforeInitializeSettings(): void {
-		$info = simplexml_load_file(__DIR__ . '/../../../appinfo/info.xml');
+		// Parsed from a string: Nextcloud's bootstrap sets a null external entity loader, which refuses load_file().
+		$info = simplexml_load_string((string) file_get_contents(__DIR__ . '/../../../appinfo/info.xml'));
 		$this->assertNotFalse($info);
 		foreach (['post-migration', 'install'] as $list) {
 			$steps = array_map('strval', $info->xpath('/info/repair-steps/' . $list . '/step'));
