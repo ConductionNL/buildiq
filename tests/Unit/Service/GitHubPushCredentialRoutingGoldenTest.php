@@ -40,10 +40,16 @@ use Throwable;
  * @covers \OCA\Buildiq\Service\GitHubPushService
  * @uses   \OCA\Buildiq\Service\GitHub\BrokerAccess
  * @uses   \OCA\Buildiq\Service\GitHub\PushTarget
+ * @uses   \OCA\Buildiq\Service\GitHub\TokenScrubber
  */
 class GitHubPushCredentialRoutingGoldenTest extends TestCase {
 
 	private const FIXTURE = __DIR__ . '/fixtures/github-push-credential-routing.golden.json';
+
+	/**
+	 * Every GitHub token shape, the classic and the fine-grained one.
+	 */
+	private const TOKEN_PATTERN = '/gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}/';
 
 	/**
 	 * A token-shaped string built at run time, so no literal token is in the repository.
@@ -53,6 +59,15 @@ class GitHubPushCredentialRoutingGoldenTest extends TestCase {
 	private static function tokenShaped(): string {
 		return 'gh' . 'p_' . str_repeat('Z9', 18);
 	}//end tokenShaped()
+
+	/**
+	 * A fine-grained token-shaped string built at run time.
+	 *
+	 * @return string
+	 */
+	private static function fineGrainedTokenShaped(): string {
+		return 'github' . '_pat_' . str_repeat('Z9_', 27);
+	}//end fineGrainedTokenShaped()
 
 	/**
 	 * Broker answer scripts by name: a list of [method, path suffix, status, body].
@@ -81,7 +96,65 @@ class GitHubPushCredentialRoutingGoldenTest extends TestCase {
 	 */
 	private function runCase(array $case): array {
 		$calls = [];
-		$script = $case['script'];
+		$logger = $this->recordingLogger();
+		$service = new GitHubPushService($logger, $this->brokerContainer(script: $case['script'], calls: $calls));
+
+		$outcome = $this->attempt(service: $service, case: $case);
+		$outcome['calls'] = $calls;
+		$outcome['logs'] = $logger->lines;
+		return $outcome;
+	}//end runCase()
+
+	/**
+	 * Two jobs through one service instance, as cron does it: NC's DI shares the
+	 * instance, so nothing of the first job may carry over to the second.
+	 *
+	 * @param array<int,array<string,mixed>> $jobs The jobs, in order.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function runJobsThroughOneInstance(array $jobs): array {
+		$calls = [];
+		$logger = $this->recordingLogger();
+		$service = new GitHubPushService($logger, $this->brokerContainer(script: [], calls: $calls));
+
+		$outcome = ['jobs' => []];
+		foreach ($jobs as $job) {
+			$before = count($calls);
+			$result = $this->attempt(service: $service, case: $job);
+			$result['calls'] = array_slice($calls, $before);
+			$outcome['jobs'][] = $result;
+		}
+
+		$outcome['logs'] = $logger->lines;
+		return $outcome;
+	}//end runJobsThroughOneInstance()
+
+	/**
+	 * One push, its result or its error.
+	 *
+	 * @param GitHubPushService   $service The service.
+	 * @param array<string,mixed> $case    The case.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function attempt(GitHubPushService $service, array $case): array {
+		try {
+			return ['result' => $this->push(service: $service, case: $case)];
+		} catch (Throwable $e) {
+			return ['error' => get_class($e) . ': ' . $e->getMessage()];
+		}
+	}//end attempt()
+
+	/**
+	 * A container whose broker answers from the script and records every call.
+	 *
+	 * @param array<int,array{0:string,1:string,2:int,3:string}> $script The broker's answers.
+	 * @param array<int,array<string,mixed>>                     $calls  Receives each call.
+	 *
+	 * @return ContainerInterface
+	 */
+	private function brokerContainer(array $script, array &$calls): ContainerInterface {
 		$broker = $this->createMock(CredentialBrokerService::class);
 		$broker->method('request')->willReturnCallback(
 			static function (...$args) use (&$calls, $script): array {
@@ -120,7 +193,16 @@ class GitHubPushCredentialRoutingGoldenTest extends TestCase {
 		);
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturn($broker);
-		$logger = new class extends AbstractLogger {
+		return $container;
+	}//end brokerContainer()
+
+	/**
+	 * A logger that keeps every line.
+	 *
+	 * @return AbstractLogger
+	 */
+	private function recordingLogger(): AbstractLogger {
+		return new class extends AbstractLogger {
 			/**
 			 * Recorded log lines.
 			 *
@@ -141,19 +223,7 @@ class GitHubPushCredentialRoutingGoldenTest extends TestCase {
 				$this->lines[] = $level . ': ' . $message . ' ' . json_encode($context);
 			}//end log()
 		};
-
-		$service = new GitHubPushService($logger, $container);
-		$outcome = [];
-		try {
-			$outcome['result'] = $this->push(service: $service, case: $case);
-		} catch (Throwable $e) {
-			$outcome['error'] = get_class($e) . ': ' . $e->getMessage();
-		}
-
-		$outcome['calls'] = $calls;
-		$outcome['logs'] = $logger->lines;
-		return $outcome;
-	}//end runCase()
+	}//end recordingLogger()
 
 	/**
 	 * Call push() through its public signature.
@@ -165,7 +235,7 @@ class GitHubPushCredentialRoutingGoldenTest extends TestCase {
 	 */
 	private function push(GitHubPushService $service, array $case): array {
 		return $service->push(
-			jobUuid: 'job-1',
+			jobUuid: (string)($case['jobUuid'] ?? 'job-1'),
 			treeDir: $case['treeDir'],
 			access: new BrokerAccess(credentialId: $case['credentialId'], actingUserId: $case['actingUserId']),
 			target: new PushTarget(org: $case['org'], repo: $case['repo'], visibility: $case['visibility'])
@@ -215,6 +285,20 @@ class GitHubPushCredentialRoutingGoldenTest extends TestCase {
 				}
 			}
 
+			$alice = ['treeDir' => $tree, 'credentialId' => 'cred-A', 'actingUserId' => 'alice', 'org' => 'acme', 'repo' => 'app', 'visibility' => 'private'];
+			foreach (['create denied' => ['POST', '/repos', 403], 'broker throws' => ['POST', '/repos', -1]] as $sn => [$method, $suffix, $status]) {
+				$actual["fine-grained token echoed / $sn"] = $this->runCase(
+					case: $alice + ['script' => [[$method, $suffix, $status, 'bad credentials ' . self::fineGrainedTokenShaped()]]]
+				);
+			}
+
+			$actual['two jobs through one instance'] = $this->runJobsThroughOneInstance(
+				jobs: [
+					['jobUuid' => 'job-1', 'treeDir' => $tree, 'credentialId' => 'cred-A', 'actingUserId' => 'alice', 'org' => 'acme', 'repo' => 'repo-one', 'visibility' => 'private'],
+					['jobUuid' => 'job-2', 'treeDir' => $tree, 'credentialId' => 'cred-B', 'actingUserId' => 'bob', 'org' => 'beta', 'repo' => 'repo-two', 'visibility' => 'public'],
+				]
+			);
+
 			$actual['missing tree'] = $this->runCase(
 				case: [
 					'treeDir' => $tree . '/absent',
@@ -235,7 +319,7 @@ class GitHubPushCredentialRoutingGoldenTest extends TestCase {
 
 		$json = (string)json_encode($actual, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 		$json = str_replace($tree, '<tree>', $json);
-		self::assertSame(0, preg_match('/gh[pousr]_[A-Za-z0-9]{20,}/', $json), 'a recorded call, log or error carries a token');
+		self::assertSame(0, preg_match(self::TOKEN_PATTERN, $json), 'a recorded call, log or error carries a token');
 
 		if (file_exists(self::FIXTURE) === false && getenv('GOLDEN_RECORD') === '1') {
 			file_put_contents(self::FIXTURE, $json . "\n");

@@ -36,6 +36,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\GitHub\BrokerAccess;
 use OCA\Buildiq\Service\GitHub\PushTarget;
+use OCA\Buildiq\Service\GitHub\TokenScrubber;
 use OCA\Buildiq\Service\GitHubPushService;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -295,22 +296,21 @@ final class GitHubPushServiceTest extends TestCase {
 	}//end testFailureDetailFromStatusTruncatesAnOversizedBody()
 
 	/**
-	 * `scrub()` is the redaction the whole fix leans on: verify it actually
-	 * strips a GitHub PAT-shaped token out of a failure-detail string before
-	 * that string could reach `errorMessage` or a log line.
+	 * The redaction the failure detail leans on strips every token shape, classic
+	 * and fine-grained, before the text could reach `errorMessage` or a log line.
 	 *
 	 * @return void
 	 */
 	public function testScrubRedactsAGitHubPatShapedToken(): void {
-		$service = $this->makeService();
-		$method = new \ReflectionMethod(GitHubPushService::class, 'scrub');
-		$method->setAccessible(true);
+		$tokens = ['gh' . 'p_' . str_repeat('a', 36), 'gh' . 's_' . str_repeat('b', 36), 'github' . '_pat_' . str_repeat('c1_', 27)];
+		foreach ($tokens as $token) {
+			self::assertSame(
+				'upstream rejected [redacted-token] here',
+				TokenScrubber::scrub(message: 'upstream rejected ' . $token . ' here')
+			);
+		}
 
-		$leaky = 'upstream rejected credential ghp_' . str_repeat('a', 36);
-		$scrubbed = $method->invoke($service, $leaky);
-
-		self::assertStringNotContainsString('ghp_', $scrubbed, 'A PAT-shaped token must never survive scrub()');
-		self::assertStringContainsString('[redacted-token]', $scrubbed);
+		self::assertSame('ghp_short and github_pat_short', TokenScrubber::scrub(message: 'ghp_short and github_pat_short'));
 	}//end testScrubRedactsAGitHubPatShapedToken()
 
 	/**
