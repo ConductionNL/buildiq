@@ -97,7 +97,7 @@
   },
   "src/components/schema-editor/FieldEditor.vue": {
     "eqeqeq": {
-      "count": 19
+      "count": 6
     },
     "jsdoc/require-param-type": {
       "count": 3
@@ -214,11 +214,6 @@
   },
   "src/modals/UserDeltaEditModal.vue": {
     "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "src/services/blockExport.js": {
-    "no-unused-vars": {
       "count": 1
     }
   },

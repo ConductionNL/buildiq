@@ -90,31 +90,22 @@ final class ManifestWidgetShape {
 	 * so predicting a plan and executing it yield the same ids.
 	 *
 	 * @param array<string, mixed> $page The page to append to.
-	 * @param string $widgetType Widget type identifier, already allow-listed by the caller.
-	 * @param array<string, mixed> $widgetConfig Widget-type-specific settings bag.
-	 * @param string $widgetId Caller-supplied id, or '' to derive one.
-	 * @param string $title Caller-supplied title, or '' to derive one.
+	 * @param WidgetSpec $spec The widget type, settings bag, and optional id and title.
 	 *
 	 * @return array{0: array<string, mixed>, 1: array<string, mixed>} The updated page and the widget that was appended.
 	 *
 	 * @spec openspec/specs/ai-copilot/spec.md
 	 */
-	public static function appendTo(
-		array $page,
-		string $widgetType,
-		array $widgetConfig,
-		string $widgetId = '',
-		string $title = '',
-	): array {
+	public static function appendTo(array $page, WidgetSpec $spec): array {
 		$pageConfig = self::asMap(value: ($page['config'] ?? []));
 		$widgets = self::asList(value: ($pageConfig['widgets'] ?? []));
 		$layout = self::asList(value: ($pageConfig['layout'] ?? []));
+		$widgetType = $spec->type;
+		$widgetConfig = $spec->config;
 
-		$resolvedTitle = self::resolveTitle(title: $title, widgetConfig: $widgetConfig, widgetType: $widgetType);
+		$resolvedTitle = self::resolveTitle(spec: $spec);
 		$resolvedId = self::resolveId(
-			widgetId: $widgetId,
-			title: $resolvedTitle,
-			widgetType: $widgetType,
+			sources: [$spec->id, $resolvedTitle, $widgetType],
 			taken: self::takenIds(widgets: $widgets, layout: $layout)
 		);
 
@@ -255,14 +246,12 @@ final class ManifestWidgetShape {
 	 * thing, so `widgetConfig.title` is read before falling back to a label
 	 * made from the type.
 	 *
-	 * @param string $title Caller-supplied title, possibly empty.
-	 * @param array<string, mixed> $widgetConfig Widget settings bag.
-	 * @param string $widgetType Widget type identifier.
+	 * @param WidgetSpec $spec The requested widget; its title may be empty.
 	 *
 	 * @return string A non-empty title.
 	 */
-	private static function resolveTitle(string $title, array $widgetConfig, string $widgetType): string {
-		$candidates = [$title, ($widgetConfig['title'] ?? null), ($widgetConfig['label'] ?? null)];
+	private static function resolveTitle(WidgetSpec $spec): string {
+		$candidates = [$spec->title, ($spec->config['title'] ?? null), ($spec->config['label'] ?? null)];
 
 		foreach ($candidates as $candidate) {
 			if (is_string($candidate) === false) {
@@ -275,7 +264,7 @@ final class ManifestWidgetShape {
 			}
 		}
 
-		$fromType = trim(str_replace(['-', '_'], ' ', $widgetType));
+		$fromType = trim(str_replace(['-', '_'], ' ', $spec->type));
 		if ($fromType === '') {
 			return 'Widget';
 		}
@@ -286,16 +275,15 @@ final class ManifestWidgetShape {
 	/**
 	 * Resolve a page-unique, kebab-case widget id.
 	 *
-	 * @param string $widgetId Caller-supplied id, possibly empty.
-	 * @param string $title Already-resolved title, used as the second source.
-	 * @param string $widgetType Widget type identifier, used as the last source.
+	 * @param array<int, string> $sources Candidate sources in order: the caller-supplied id
+	 *                                    (possibly empty), the already-resolved title, the widget type.
 	 * @param array<string, bool> $taken Ids already used on this page, keyed by id.
 	 *
 	 * @return string A non-empty id not present in $taken.
 	 */
-	private static function resolveId(string $widgetId, string $title, string $widgetType, array $taken): string {
+	private static function resolveId(array $sources, array $taken): string {
 		$base = '';
-		foreach ([$widgetId, $title, $widgetType] as $source) {
+		foreach ($sources as $source) {
 			$base = self::slug(value: $source);
 			if ($base !== '') {
 				break;

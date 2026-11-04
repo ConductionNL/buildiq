@@ -34,6 +34,8 @@ use OCA\Buildiq\Service\ExportJobService;
 use OCA\Buildiq\Service\ExportContents;
 use OCA\Buildiq\Service\ExportService;
 use OCA\Buildiq\Service\ExportTarget;
+use OCA\Buildiq\Service\GitHub\BrokerAccess;
+use OCA\Buildiq\Service\GitHub\PushTarget;
 use OCA\Buildiq\Service\GitHubPushService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
@@ -427,11 +429,12 @@ class RunExportJob extends QueuedJob {
 		return $this->githubPushService->push(
 			jobUuid: $jobUuid,
 			treeDir: $treeDir,
-			credentialId: $credentialId,
-			org: (string)($job['githubOrg'] ?? ''),
-			repo: (string)($job['githubRepo'] ?? ''),
-			visibility: (string)($job['githubVisibility'] ?? 'private'),
-			actingUserId: $actingUserId
+			access: new BrokerAccess(credentialId: $credentialId, actingUserId: $actingUserId),
+			target: new PushTarget(
+				org: (string)($job['githubOrg'] ?? ''),
+				repo: (string)($job['githubRepo'] ?? ''),
+				visibility: (string)($job['githubVisibility'] ?? 'private')
+			)
 		);
 	}//end maybePush()
 
