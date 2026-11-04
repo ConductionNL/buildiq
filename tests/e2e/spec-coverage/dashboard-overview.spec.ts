@@ -112,7 +112,7 @@ test.describe('Buildiq Dashboard', () => {
 		for (const [label, path] of [
 			['Dashboard', '/'],
 			['Apps', '/applications'],
-			['Store', '/templates'],
+			['Marketplace', '/templates'],
 			['Features & roadmap', '/features-roadmap'],
 		] as const) {
 			const link = navLink(page, path)

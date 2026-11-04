@@ -25,7 +25,7 @@
 				"id": "welcome",
 				"type": "info",
 				"title": "Welcome to Buildiq",
-				"body": "Buildiq builds apps from templates. This quick setup offers example data and can connect a remote template store. The starter templates install on their own. An admin can reinstall them in the admin settings."
+				"body": "Buildiq builds apps from templates. This quick setup offers example data and can connect a remote template marketplace. The starter templates install on their own. An admin can reinstall them in the admin settings."
 			},
 			{
 				"id": "demo-data",
@@ -41,14 +41,14 @@
 			{
 				"id": "store",
 				"type": "config-fields",
-				"title": "Remote template store (optional)",
+				"title": "Remote template marketplace (optional)",
 				"body": "Connect a remote template catalogue to offer more starter apps. The bundled templates work without it, so leave this blank to skip.",
 				"schema": {
 					"type": "object",
 					"properties": {
 						"registry_url": {
 							"type": "string",
-							"title": "Store URL"
+							"title": "Marketplace URL"
 						},
 						"registry_register": {
 							"type": "string",
@@ -67,7 +67,7 @@
 				"type": "summary",
 				"title": "All set",
 				"healthCheck": true,
-				"body": "Buildiq is ready. Open the Store to clone a template into your first app."
+				"body": "Buildiq is ready. Open the Marketplace to clone a template into your first app."
 			}
 		]
 	},
@@ -336,7 +336,7 @@
 		},
 		{
 			"id": "Store",
-			"label": "Store",
+			"label": "Marketplace",
 			"icon": "StoreOutline",
 			"route": "Templates",
 			"order": 92,
@@ -522,7 +522,7 @@
 			"id": "Templates",
 			"route": "/templates",
 			"type": "custom",
-			"title": "Store",
+			"title": "Marketplace",
 			"component": "TemplateGallery",
 			"config": {
 				"register": "buildiq",
