@@ -108,6 +108,8 @@ class RepoDescriptorTest extends TestCase {
 	 * GITHUB_TOKEN, accessToken, refreshToken, privateKey and a url with a
 	 * password next to the declaration: the derived list holds provider,
 	 * reason and scopes only, so a descriptor never carries a secret value.
+	 * Scopes are read from a list only: a scopes map (mixed, secretBearing)
+	 * yields no scopes, because its values could be anything.
 	 *
 	 * @return void
 	 */

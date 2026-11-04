@@ -76,7 +76,7 @@ final class RepoDescriptor {
 
 		$declared = array_filter(
 			$raw,
-			static fn (mixed $entry): bool => is_array($entry) === true && isset($entry['provider']) === true
+			static fn (mixed $entry): bool => is_array($entry) === true && is_scalar($entry['provider'] ?? null) === true
 		);
 
 		return array_values(array_map(static fn (array $entry): array => self::credential(entry: $entry), $declared));
@@ -85,29 +85,72 @@ final class RepoDescriptor {
 	/**
 	 * One descriptor credential entry, with its scopes as a list of strings.
 	 *
-	 * @param array<string,mixed> $entry A manifest credential that names a provider.
+	 * Only scalar values are read: scopes come from a list, and a reason that
+	 * is not scalar reads as empty, so a nested value never reaches the descriptor.
+	 *
+	 * @param array<string,mixed> $entry A manifest credential that names a scalar provider.
 	 *
 	 * @return array<string,mixed>
 	 */
 	private static function credential(array $entry): array {
-		$scopes = [];
-		if (is_array($entry['scopes'] ?? null) === true) {
-			$scopes = array_values(array_map(static fn (mixed $scope): string => (string)$scope, $entry['scopes']));
+		$reason = ($entry['reason'] ?? '');
+		if (is_scalar($reason) === false) {
+			$reason = '';
 		}
 
 		return [
 			'provider' => (string)$entry['provider'],
-			'reason' => (string)($entry['reason'] ?? ''),
-			'scopes' => $scopes,
+			'reason' => (string)$reason,
+			'scopes' => array_map(static fn (mixed $scope): string => (string)$scope, self::scalarScopes(entry: $entry)),
 		];
 	}//end credential()
+
+	/**
+	 * The scalar items of an entry's `scopes`, when it is a list; [] otherwise.
+	 *
+	 * @param array<string,mixed> $entry A manifest credential.
+	 *
+	 * @return array<int,mixed>
+	 */
+	private static function scalarScopes(array $entry): array {
+		$scopes = ($entry['scopes'] ?? null);
+		if (is_array($scopes) === false || array_is_list($scopes) === false) {
+			return [];
+		}
+
+		return array_values(array_filter($scopes, static fn (mixed $scope): bool => is_scalar($scope)));
+	}//end scalarScopes()
+
+	/**
+	 * A `credentials[]` entry with only its schema keys, each only in its schema
+	 * type: provider and reason as strings, scopes as a list of strings.
+	 *
+	 * @param array<string,mixed> $entry A manifest credential.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private static function declaration(array $entry): array {
+		$declaration = [];
+		foreach (array_intersect_key($entry, self::DECLARATION_KEYS) as $key => $value) {
+			if ($key === 'scopes') {
+				$value = array_values(array_filter(self::scalarScopes(entry: $entry), static fn (mixed $scope): bool => is_string($scope)));
+			}
+
+			if (is_string($value) === true || $key === 'scopes') {
+				$declaration[$key] = $value;
+			}
+		}
+
+		return $declaration;
+	}//end declaration()
 
 	/**
 	 * The manifest as it is published to `manifest.json`.
 	 *
 	 * Each `credentials[]` entry keeps only the declaration keys the
-	 * app-manifest schema allows (provider, reason, scopes), and entries that
-	 * are not objects are dropped, so a secret written next to a declaration
+	 * app-manifest schema allows, each only in its schema type (provider and
+	 * reason as strings, scopes as a list of strings), and entries that are
+	 * not objects are dropped, so a secret written next to a declaration
 	 * never leaves the instance. A manifest without `credentials` is returned
 	 * as is.
 	 *
@@ -124,7 +167,7 @@ final class RepoDescriptor {
 
 		$entries = array_filter((array)$manifest['credentials'], static fn (mixed $entry): bool => is_array($entry) === true);
 		$manifest['credentials'] = array_values(
-			array_map(static fn (array $entry): array => array_intersect_key($entry, self::DECLARATION_KEYS), $entries)
+			array_map(static fn (array $entry): array => self::declaration(entry: $entry), $entries)
 		);
 
 		return $manifest;
