@@ -27,6 +27,10 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Command;
 
+use OCA\Buildiq\Service\GitHub\BrokerAccess;
+use OCA\Buildiq\Service\GitHub\BrokeredRepo;
+use OCA\Buildiq\Service\GitHub\PushTarget;
+
 /**
  * Credential, org, acting user and visibility of one publish run.
  *
@@ -51,4 +55,19 @@ final class PublishTarget {
 		public readonly string $visibility,
 	) {
 	}//end __construct()
+
+	/**
+	 * The repository this run publishes to: the org (empty = the credential user's
+	 * account) with no name yet, and the access it goes out under.
+	 *
+	 * @return BrokeredRepo
+	 *
+	 * @spec openspec/specs/github-app-repo-format/spec.md
+	 */
+	public function brokeredRepo(): BrokeredRepo {
+		return new BrokeredRepo(
+			target: new PushTarget(org: (string)$this->org, repo: '', visibility: $this->visibility),
+			access: new BrokerAccess(credentialId: $this->credentialId, actingUserId: $this->user)
+		);
+	}//end brokeredRepo()
 }//end class

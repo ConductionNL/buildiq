@@ -38,6 +38,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\GitHubCatalogService;
 use OCA\Buildiq\Service\GitHubFormCatalogService;
+use OCA\Buildiq\Service\RepoSource;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
@@ -179,11 +180,8 @@ final class GitHubCatalogServiceTest extends TestCase {
 		$this->clientService->method('newClient')->willReturn($client);
 
 		$files = $service->fetchRepoFiles(
-			owner: 'example-owner',
-			repo: 'example-repo',
-			ref: null,
-			actingUserId: null,
-			credentialId: null
+			source: new RepoSource(owner: 'example-owner', repo: 'example-repo', ref: null, credentialId: null),
+			actingUserId: null
 		);
 
 		$this->assertArrayHasKey('flows/11111111-1111-1111-1111-111111111111.json', $files, 'flows/ channel was not fetched — the exact defect this test guards against.');

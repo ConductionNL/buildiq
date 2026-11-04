@@ -26,6 +26,7 @@ use OCA\Buildiq\Service\AppRepoSerializer;
 use OCA\Buildiq\Service\GitHubAppSyncService;
 use OCA\Buildiq\Service\GitHubCatalogService;
 use OCA\Buildiq\Service\RegisterStore;
+use OCA\Buildiq\Service\RepoSource;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -48,6 +49,13 @@ use RuntimeException;
  * @uses   \OCA\Buildiq\Service\RegisterStore
  */
 class GitHubAppSyncPullChannelsTest extends TestCase {
+
+	/**
+	 * What the catalogue was asked to fetch: [kind, source, acting user].
+	 *
+	 * @var array<int,array{0:string,1:RepoSource,2:?string}>
+	 */
+	private array $fetches = [];
 
 	/**
 	 * The service writes and reads repositories with the codec it was given.
@@ -88,6 +96,7 @@ class GitHubAppSyncPullChannelsTest extends TestCase {
 		];
 		foreach ($cases as $name => [$ref, $credentialId, $actingUserId, $app]) {
 			$captured = null;
+			$this->fetches = [];
 			$service = $this->service(captured: $captured);
 			$application = $app + ['githubRepo' => ['owner' => 'Conduction', 'name' => 'example-app']];
 
@@ -107,6 +116,8 @@ class GitHubAppSyncPullChannelsTest extends TestCase {
 				$captured,
 				$name
 			);
+			$source = new RepoSource(owner: 'Conduction', repo: 'example-app', ref: $ref, credentialId: $credentialId);
+			self::assertEquals([['files', $source, $actingUserId], ['commit', $source, $actingUserId]], $this->fetches, $name);
 			self::assertSame(['report' => true, 'warnings' => ['w1']], $result['channels'], $name);
 			self::assertSame(['w1'], $result['warnings'], $name);
 		}
@@ -121,8 +132,18 @@ class GitHubAppSyncPullChannelsTest extends TestCase {
 	 */
 	private function service(mixed &$captured): GitHubAppSyncService {
 		$catalog = $this->createMock(GitHubCatalogService::class);
-		$catalog->method('fetchRepoFiles')->willReturn(['manifest.json' => '{}']);
-		$catalog->method('resolveCommitSha')->willReturn('abc123');
+		$catalog->method('fetchRepoFiles')->willReturnCallback(
+			function (RepoSource $source, ?string $actingUserId): array {
+				$this->fetches[] = ['files', $source, $actingUserId];
+				return ['manifest.json' => '{}'];
+			}
+		);
+		$catalog->method('resolveCommitSha')->willReturnCallback(
+			function (RepoSource $source, ?string $actingUserId): string {
+				$this->fetches[] = ['commit', $source, $actingUserId];
+				return 'abc123';
+			}
+		);
 
 		$parser = $this->createMock(AppRepoParser::class);
 		$parser->method('parse')->willReturn(['manifest' => ['pages' => []], 'version' => '1.2.3']);

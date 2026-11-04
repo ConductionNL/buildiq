@@ -58,6 +58,11 @@ use RuntimeException;
  * @covers \OCA\Buildiq\Service\GitHubShopSearch
  * @covers \OCA\Buildiq\Controller\GitHubSyncController
  * @uses \OCA\Buildiq\Service\PermissionResolver
+ * @uses   \OCA\Buildiq\Service\GitHub\AppPushRequest
+ * @uses   \OCA\Buildiq\Service\GitHub\BrokerAccess
+ * @uses   \OCA\Buildiq\Service\GitHub\PushTarget
+ * @uses   \OCA\Buildiq\Service\GitHub\SyncRequestParams
+ * @uses   \OCA\Buildiq\Service\RepoSource
  * @uses   \OCA\Buildiq\Service\StoreClient
  */
 class ConnectionReportCallersTest extends TestCase {

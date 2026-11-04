@@ -26,6 +26,7 @@ use OCA\Buildiq\Controller\ApplicationsController;
 use OCA\Buildiq\Controller\ShopController;
 use OCA\Buildiq\Service\AppRepoParser;
 use OCA\Buildiq\Service\GitHubCatalogService;
+use OCA\Buildiq\Service\RepoSource;
 use OCA\Buildiq\Service\GitHubShopSearch;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
@@ -260,7 +261,13 @@ class ShopControllerTest extends TestCase {
 					['credentialId', null, $credential],
 				]
 			);
-			$this->catalogService->method('fetchRepoFiles')->willReturn(['manifest.json' => '{}']);
+			$fetches = [];
+			$this->catalogService->method('fetchRepoFiles')->willReturnCallback(
+				static function (RepoSource $source, ?string $actingUserId) use (&$fetches): array {
+					$fetches[] = [$source, $actingUserId];
+					return ['manifest.json' => '{}'];
+				}
+			);
 			$this->repoParser->method('parse')->willReturn(['slug' => 'tpl', 'manifest' => []]);
 			$captured = null;
 			$this->appsController->expects(self::once())->method('installFromTemplateArray')->willReturnCallback(
@@ -272,6 +279,10 @@ class ShopControllerTest extends TestCase {
 
 			$response = $this->controller()->githubInstall();
 
+			self::assertEquals(
+				[[new RepoSource(owner: 'ConductionNL', repo: 'example-app', ref: 'v1.0', credentialId: $expected), 'carol']],
+				$fetches
+			);
 			self::assertSame(Http::STATUS_CREATED, $response->getStatus());
 			self::assertSame(
 				[

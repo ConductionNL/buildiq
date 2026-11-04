@@ -24,6 +24,10 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\GitHubSyncController;
+use OCA\Buildiq\Service\GitHub\AppPushRequest;
+use OCA\Buildiq\Service\GitHub\BrokerAccess;
+use OCA\Buildiq\Service\GitHub\BrokeredRepo;
+use OCA\Buildiq\Service\GitHub\PushTarget;
 use OCA\Buildiq\Service\GitHubAppSyncService;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCP\AppFramework\Http;
@@ -201,6 +205,158 @@ class GitHubSyncControllerTest extends TestCase {
 		self::assertSame('invalid_repo', $response->getData()['error']);
 
 	}//end testLinkRejectsMalformedRepo()
+
+	/**
+	 * push: the credential, version, new repo and visibility come from the
+	 * request, and the acting user only from the session: a forged identity
+	 * parameter changes nothing.
+	 *
+	 * @return void
+	 */
+	public function testPushActsAsTheSessionUserWithTheRequestedCredential(): void {
+		$this->authenticate(uid: 'alice');
+		$this->syncService->method('loadApplicationBySlug')->willReturn(
+			['id' => 'app-1', 'slug' => 'permit-tracker', 'permissions' => ['owners' => ['user:alice']]]
+		);
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key, mixed $default = null): mixed => [
+				'credentialId' => '11111111-1111-4111-8111-111111111111',
+				'versionSlug' => 'v2',
+				'repo' => ['owner' => 'ignored', 'name' => 'fresh', 'org' => 'acme'],
+				'visibility' => 'PRIVATE',
+				'userId' => 'mallory',
+				'actingUserId' => 'mallory',
+				'requestedBy' => 'mallory',
+			][$key] ?? $default
+		);
+		$this->syncService->expects(self::once())
+			->method('push')
+			->with(
+				self::anything(),
+				self::equalTo(
+					new AppPushRequest(
+						access: new BrokerAccess(credentialId: '11111111-1111-4111-8111-111111111111', actingUserId: 'alice'),
+						versionSlug: 'v2',
+						newRepo: new PushTarget(org: 'acme', repo: 'fresh', visibility: 'private')
+					)
+				)
+			)
+			->willReturn(['outcome' => GitHubAppSyncService::OUTCOME_OK]);
+
+		self::assertSame(Http::STATUS_OK, $this->controller()->push(slug: 'permit-tracker')->getStatus());
+
+	}//end testPushActsAsTheSessionUserWithTheRequestedCredential()
+
+	/**
+	 * push: without a `repo` param nothing is created, whatever `visibility` says,
+	 * and without a visibility a new repo is public.
+	 *
+	 * @return void
+	 */
+	public function testPushWithoutARepoParamCreatesNothing(): void {
+		$this->authenticate(uid: 'alice');
+		$this->syncService->method('loadApplicationBySlug')->willReturn(
+			['id' => 'app-1', 'slug' => 'permit-tracker', 'permissions' => ['owners' => ['user:alice']]]
+		);
+		$credentialId = '11111111-1111-4111-8111-111111111111';
+		$params = ['credentialId' => $credentialId, 'visibility' => 'private'];
+		$this->request->method('getParam')->willReturnCallback(
+			static function (string $key, mixed $default = null) use (&$params): mixed {
+				return $params[$key] ?? $default;
+			}
+		);
+		$seen = [];
+		$this->syncService->method('push')->willReturnCallback(
+			static function (array $application, AppPushRequest $request) use (&$seen): array {
+				$seen[] = $request;
+				return ['outcome' => GitHubAppSyncService::OUTCOME_OK];
+			}
+		);
+
+		$this->controller()->push(slug: 'permit-tracker');
+		$params = ['credentialId' => $credentialId, 'repo' => ['name' => 'fresh']];
+		$this->controller()->push(slug: 'permit-tracker');
+
+		self::assertNull($seen[0]->newRepo);
+		self::assertNull($seen[0]->versionSlug);
+		self::assertEquals(new PushTarget(org: '', repo: 'fresh', visibility: 'public'), $seen[1]->newRepo);
+
+	}//end testPushWithoutARepoParamCreatesNothing()
+
+	/**
+	 * push: a `repo` param with a malformed name, owner or org creates nothing, so
+	 * an attacker-supplied string never reaches a GitHub path.
+	 *
+	 * @return void
+	 */
+	public function testPushWithAMalformedRepoParamCreatesNothing(): void {
+		$this->authenticate(uid: 'alice');
+		$this->syncService->method('loadApplicationBySlug')->willReturn(
+			['id' => 'app-1', 'slug' => 'permit-tracker', 'permissions' => ['owners' => ['user:alice']]]
+		);
+		$params = [];
+		$this->request->method('getParam')->willReturnCallback(
+			static function (string $key, mixed $default = null) use (&$params): mixed {
+				return $params[$key] ?? $default;
+			}
+		);
+		$seen = [];
+		$this->syncService->method('push')->willReturnCallback(
+			static function (array $application, AppPushRequest $request) use (&$seen): array {
+				$seen[] = $request->newRepo;
+				return ['outcome' => GitHubAppSyncService::OUTCOME_OK];
+			}
+		);
+
+		$malformed = [
+			['name' => '../etc'],
+			['name' => 'fine', 'owner' => 'a/b'],
+			['name' => 'fine', 'org' => 'a b'],
+			'not an array',
+		];
+		foreach ($malformed as $repo) {
+			$params = ['credentialId' => 'cred-1', 'repo' => $repo];
+			$this->controller()->push(slug: 'permit-tracker');
+		}
+
+		self::assertSame([null, null, null, null], $seen);
+
+	}//end testPushWithAMalformedRepoParamCreatesNothing()
+
+	/**
+	 * link: the repo and credential come from the request, the acting user only
+	 * from the session; no credential means an empty one.
+	 *
+	 * @return void
+	 */
+	public function testLinkActsAsTheSessionUser(): void {
+		$this->authenticate(uid: 'alice');
+		$this->syncService->method('loadApplicationBySlug')->willReturn(
+			['id' => 'app-1', 'slug' => 'permit-tracker', 'permissions' => ['owners' => ['user:alice']]]
+		);
+		$params = ['owner' => 'acme', 'name' => 'app', 'credentialId' => 'cred-1', 'userId' => 'mallory', 'actingUserId' => 'mallory'];
+		$this->request->method('getParam')->willReturnCallback(
+			static function (string $key, mixed $default = null) use (&$params): mixed {
+				return $params[$key] ?? $default;
+			}
+		);
+		$seen = [];
+		$this->syncService->method('link')->willReturnCallback(
+			static function (array $application, BrokeredRepo $repo) use (&$seen): array {
+				$seen[] = $repo;
+				return [];
+			}
+		);
+
+		$this->controller()->link(slug: 'permit-tracker');
+		unset($params['credentialId']);
+		$this->controller()->link(slug: 'permit-tracker');
+
+		$target = new PushTarget(org: 'acme', repo: 'app');
+		self::assertEquals(new BrokeredRepo(target: $target, access: new BrokerAccess(credentialId: 'cred-1', actingUserId: 'alice')), $seen[0]);
+		self::assertEquals(new BrokeredRepo(target: $target, access: new BrokerAccess(credentialId: '', actingUserId: 'alice')), $seen[1]);
+
+	}//end testLinkActsAsTheSessionUser()
 
 	/**
 	 * pull: anonymous callers get 401 and nothing is pulled.
