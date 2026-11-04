@@ -307,6 +307,25 @@ export default {
 		},
 
 		/**
+		 * The agent object the form saves.
+		 *
+		 * @return {object} The payload.
+		 */
+		agentPayload() {
+			return {
+				name: this.name,
+				instructions: this.instructions,
+				modelTaskType: this.modelTaskTypeOption
+					? this.modelTaskTypeOption.value
+					: 'TextToText',
+
+				enabledTools: this.enabledTools,
+				maxActionsPerRun: this.maxActionsPerRun,
+				applicationSlug: this.applicationSlug,
+			}
+		},
+
+		/**
 		 * Persist the agent via OpenRegister's generic REST surface (ADR-022).
 		 *
 		 * @return {Promise<void>}
@@ -319,25 +338,14 @@ export default {
 			}
 			this.saving = true
 			this.errorMessage = ''
-			const payload = {
-				name: this.name,
-				instructions: this.instructions,
-				modelTaskType: this.modelTaskTypeOption
-					? this.modelTaskTypeOption.value
-					: 'TextToText',
-
-				enabledTools: this.enabledTools,
-				maxActionsPerRun: this.maxActionsPerRun,
-				applicationSlug: this.applicationSlug,
-			}
 			try {
 				const base = generateUrl(
 					'/apps/openregister/api/objects/buildiq/buildAgent',
 				)
 				if (this.editing && this.id) {
-					await axios.put(`${base}/${this.id}`, payload)
+					await axios.put(`${base}/${this.id}`, this.agentPayload())
 				} else {
-					await axios.post(base, payload)
+					await axios.post(base, this.agentPayload())
 				}
 				this.$emit('saved')
 			} catch (error) {

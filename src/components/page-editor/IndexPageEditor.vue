@@ -104,13 +104,7 @@ import ColumnBuilder from './fields/ColumnBuilder.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
 import SidebarSectionBuilder from './fields/SidebarSectionBuilder.vue'
 import { useEditorRegisterPicker } from '../../composables/useEditorRegisterPicker.js'
-import {
-	pageEditorBaseMixin,
-	pageEditorPickerMixin,
-	pageEditorRegisterPropsMixin,
-	pageEditorRegisterWatchMixin,
-	pageEditorSchemaWatchMixin,
-} from '../../mixins/pageEditorBase.js'
+import { pageEditorBaseMixin, pageEditorSchemaBoundMixin } from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
@@ -123,7 +117,7 @@ export default {
 		DataSourceOriginToggle,
 	},
 
-	mixins: [pageEditorBaseMixin, pageEditorRegisterPropsMixin, pageEditorValidationMixin, pageEditorPickerMixin, pageEditorRegisterWatchMixin, pageEditorSchemaWatchMixin],
+	mixins: [pageEditorBaseMixin, pageEditorValidationMixin, pageEditorSchemaBoundMixin],
 	props: {
 		pageType: {
 			type: String,

@@ -159,3 +159,18 @@ export const pageEditorSchemaWatchMixin = {
 		},
 	},
 }
+
+/**
+ * Everything an editor bound to one register and schema needs on top of the base:
+ * the register props, the picker lists and both watchers.
+ *
+ * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+ */
+export const pageEditorSchemaBoundMixin = {
+	mixins: [
+		pageEditorRegisterPropsMixin,
+		pageEditorPickerMixin,
+		pageEditorRegisterWatchMixin,
+		pageEditorSchemaWatchMixin,
+	],
+}
