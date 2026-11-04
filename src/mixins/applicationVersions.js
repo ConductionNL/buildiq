@@ -195,7 +195,9 @@ export const applicationVersionsMixin = {
 		 */
 		versionFromRoute() {
 			const slug = this.$route?.query?._version
-			return slug ? this.orderedVersions.find((v) => v.slug === slug) : undefined
+			return slug
+				? this.orderedVersions.find((v) => v.slug === slug)
+				: undefined
 		},
 
 		/**

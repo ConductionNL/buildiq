@@ -256,13 +256,21 @@
 <script>
 import InlineFieldMark from './fields/InlineFieldMark.vue'
 import { useEditorRegisterPicker } from '../../composables/useEditorRegisterPicker.js'
-import { pageEditorBaseMixin, pageEditorSchemaBoundMixin } from '../../mixins/pageEditorBase.js'
+import {
+	pageEditorBaseMixin,
+	pageEditorSchemaBoundMixin,
+} from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'WikiPageEditor',
 	components: { InlineFieldMark },
-	mixins: [pageEditorBaseMixin, pageEditorValidationMixin, pageEditorSchemaBoundMixin],
+	mixins: [
+		pageEditorBaseMixin,
+		pageEditorValidationMixin,
+		pageEditorSchemaBoundMixin,
+	],
+
 	props: {
 		pageType: {
 			type: String,

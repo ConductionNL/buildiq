@@ -310,6 +310,7 @@ export default {
 		 * The agent object the form saves.
 		 *
 		 * @return {object} The payload.
+		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
 		 */
 		agentPayload() {
 			return {

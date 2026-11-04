@@ -182,7 +182,14 @@ export default {
 		SidebarTabBuilder,
 	},
 
-	mixins: [pageEditorBaseMixin, pageEditorRegisterPropsMixin, pageEditorValidationMixin, pageEditorPickerMixin, pageEditorRegisterWatchMixin],
+	mixins: [
+		pageEditorBaseMixin,
+		pageEditorRegisterPropsMixin,
+		pageEditorValidationMixin,
+		pageEditorPickerMixin,
+		pageEditorRegisterWatchMixin,
+	],
+
 	props: {
 		pageType: {
 			type: String,
@@ -324,7 +331,6 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
-
 	},
 }
 </script>

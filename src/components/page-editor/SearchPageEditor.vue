@@ -238,7 +238,14 @@ import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 export default {
 	name: 'SearchPageEditor',
 	components: { InlineFieldMark },
-	mixins: [pageEditorBaseMixin, pageEditorRegisterPropsMixin, pageEditorValidationMixin, pageEditorPickerMixin, pageEditorRegisterWatchMixin],
+	mixins: [
+		pageEditorBaseMixin,
+		pageEditorRegisterPropsMixin,
+		pageEditorValidationMixin,
+		pageEditorPickerMixin,
+		pageEditorRegisterWatchMixin,
+	],
+
 	props: {
 		pageType: {
 			type: String,
@@ -384,7 +391,6 @@ export default {
 			next[facetIndex] = current
 			this.update('facets', next)
 		},
-
 	},
 }
 </script>

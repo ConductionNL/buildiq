@@ -301,6 +301,7 @@ export default {
 		 * Add the assistant's answer to the last request: the plan to review, or the error.
 		 *
 		 * @return {void}
+		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
 		 */
 		appendPlanOutcome() {
 			const assistantId = this.nextMessageId++

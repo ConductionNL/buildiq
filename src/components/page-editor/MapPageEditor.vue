@@ -314,7 +314,13 @@ import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 export default {
 	name: 'MapPageEditor',
 	components: { InlineFieldMark },
-	mixins: [pageEditorBaseMixin, pageEditorRegisterPropsMixin, pageEditorValidationMixin, pageEditorPickerMixin],
+	mixins: [
+		pageEditorBaseMixin,
+		pageEditorRegisterPropsMixin,
+		pageEditorValidationMixin,
+		pageEditorPickerMixin,
+	],
+
 	props: {
 		pageType: {
 			type: String,
@@ -532,7 +538,6 @@ export default {
 			}
 			this.update('markers', nextMarkers)
 		},
-
 	},
 }
 </script>

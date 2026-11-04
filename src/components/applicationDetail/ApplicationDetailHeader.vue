@@ -438,7 +438,6 @@ export default {
 		'promoteDialog.promotedAt': function () {
 			this.loadVersions()
 		},
-
 	},
 
 	methods: {
@@ -585,7 +584,6 @@ export default {
 				this.promoting = false
 			}
 		},
-
 	},
 }
 </script>

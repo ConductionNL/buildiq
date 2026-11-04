@@ -113,7 +113,10 @@ export const pageEditorPickerMixin = {
 		 * @param {string} schema - schema slug.
 		 */
 		async fetchSchemaProperties(register, schema) {
-			this.schemaProperties = await this.picker.fetchSchemaProperties(register, schema)
+			this.schemaProperties = await this.picker.fetchSchemaProperties(
+				register,
+				schema,
+			)
 		},
 	},
 }

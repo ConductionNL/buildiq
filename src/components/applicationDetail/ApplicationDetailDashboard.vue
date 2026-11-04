@@ -957,6 +957,7 @@ export default {
 		 * Start the insights and the user delta of the picked version.
 		 *
 		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		onVersionsLoaded() {
 			this.scheduleInsightsFetch()

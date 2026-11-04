@@ -15,17 +15,33 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 const calls = []
 vi.mock('../../../src/composables/useRegisterPicker.js', () => ({
 	useRegisterPicker: (options) => {
-		calls.push(['useRegisterPicker', options.appSlug, options.appRegister?.(), options.dataRegisters])
+		calls.push([
+			'useRegisterPicker',
+			options.appSlug,
+			options.appRegister?.(),
+			options.dataRegisters,
+		])
 		return {
-			fetchRegisters: async () => { calls.push(['fetchRegisters']); return [{ slug: 'r1', title: 'R1' }] },
-			fetchSchemas: async (register) => { calls.push(['fetchSchemas', register]); return [{ slug: 's1', title: 'S1' }] },
-			fetchSchemaProperties: async (register, schema) => { calls.push(['fetchSchemaProperties', register, schema]); return { p: { type: 'string' } } },
+			fetchRegisters: async () => {
+				calls.push(['fetchRegisters'])
+				return [{ slug: 'r1', title: 'R1' }]
+			},
+			fetchSchemas: async (register) => {
+				calls.push(['fetchSchemas', register])
+				return [{ slug: 's1', title: 'S1' }]
+			},
+			fetchSchemaProperties: async (register, schema) => {
+				calls.push(['fetchSchemaProperties', register, schema])
+				return { p: { type: 'string' } }
+			},
 			resolveAppRegister: () => 'own-register',
 		}
 	},
 }))
 
-const modules = import.meta.glob('../../../src/components/page-editor/*PageEditor.vue')
+const modules = import.meta.glob(
+	'../../../src/components/page-editor/*PageEditor.vue',
+)
 const FIXTURE = resolve(__dirname, '__golden__/pageEditorSurface.golden.json')
 
 /**
@@ -48,7 +64,13 @@ async function surface(Component) {
 	calls.length = 0
 	const wrapper = mount(Component, {
 		props: {
-			config: { keep: 'me', register: 'reg-a', schema: 'sch-a', sidebarSchema: 'side-a', x: 'old' },
+			config: {
+				keep: 'me',
+				register: 'reg-a',
+				schema: 'sch-a',
+				sidebarSchema: 'side-a',
+				x: 'old',
+			},
 			appSlug: 'my-app',
 			appRegister: 'own',
 			dataRegisters: [{ slug: 'data' }],
@@ -59,12 +81,26 @@ async function surface(Component) {
 	await flushPromises()
 	const vm = wrapper.vm
 	const record = {
-		props: Object.fromEntries(Object.keys(wrapper.vm.$props).sort().map((key) => [key, plain(vm.$props[key])])),
+		props: Object.fromEntries(
+			Object.keys(wrapper.vm.$props)
+				.sort()
+				.map((key) => [key, plain(vm.$props[key])]),
+		),
 		emits: Object.keys(vm.$.emitsOptions || {}).sort(),
 		picker: [...calls],
 		handlers: {},
 	}
-	const inputs = { update: [['x', 'new'], ['x', ''], ['x', null], ['x', []], ['y', 0], ['y', false]], updateRegister: [['reg-b'], [''], [null]] }
+	const inputs = {
+		update: [
+			['x', 'new'],
+			['x', ''],
+			['x', null],
+			['x', []],
+			['y', 0],
+			['y', false],
+		],
+		updateRegister: [['reg-b'], [''], [null]],
+	}
 	for (const [handler, cases] of Object.entries(inputs)) {
 		if (typeof vm[handler] !== 'function') {
 			continue
@@ -72,7 +108,12 @@ async function surface(Component) {
 		record.handlers[handler] = cases.map((args) => {
 			const before = (wrapper.emitted('update:config') || []).length
 			vm[handler](...args)
-			return { args, emitted: plain((wrapper.emitted('update:config') || []).slice(before)) }
+			return {
+				args,
+				emitted: plain(
+					(wrapper.emitted('update:config') || []).slice(before),
+				),
+			}
 		})
 	}
 	wrapper.unmount()
@@ -81,20 +122,33 @@ async function surface(Component) {
 
 describe('page editor surface', () => {
 	// Transforming the editors takes most of a minute on a loaded machine: not on any test's clock.
-	beforeAll(() => Promise.all(Object.values(modules).map((load) => load())), 300000)
+	beforeAll(
+		() => Promise.all(Object.values(modules).map((load) => load())),
+		300000,
+	)
 	beforeEach(() => vi.clearAllMocks())
 
 	it('removes a cleared key rather than leaving it undefined', async () => {
-		const { default: Wiki } = await modules['../../../src/components/page-editor/WikiPageEditor.vue']()
-		const wrapper = mount(Wiki, { props: { config: { x: 'old', keep: 1 } }, shallow: true, global: { mocks: { t: (_a, text) => text } } })
+		const { default: Wiki } =
+			await modules['../../../src/components/page-editor/WikiPageEditor.vue']()
+		const wrapper = mount(Wiki, {
+			props: { config: { x: 'old', keep: 1 } },
+			shallow: true,
+			global: { mocks: { t: (_a, text) => text } },
+		})
 		wrapper.vm.update('x', '')
 		expect(Object.keys(wrapper.emitted('update:config')[0][0])).toEqual(['keep'])
 		wrapper.unmount()
 	})
 
 	it('follows the bound register and schema, and empties the lists when they are cleared', async () => {
-		const { default: Logs } = await modules['../../../src/components/page-editor/LogsPageEditor.vue']()
-		const wrapper = mount(Logs, { props: { config: { register: 'reg-a', schema: 'sch-a' } }, shallow: true, global: { mocks: { t: (_a, text) => text } } })
+		const { default: Logs } =
+			await modules['../../../src/components/page-editor/LogsPageEditor.vue']()
+		const wrapper = mount(Logs, {
+			props: { config: { register: 'reg-a', schema: 'sch-a' } },
+			shallow: true,
+			global: { mocks: { t: (_a, text) => text } },
+		})
 		await flushPromises()
 		expect(calls).toContainEqual(['fetchSchemaProperties', 'reg-a', 'sch-a'])
 		expect(wrapper.vm.schemas).toEqual([{ slug: 's1', title: 'S1' }])
