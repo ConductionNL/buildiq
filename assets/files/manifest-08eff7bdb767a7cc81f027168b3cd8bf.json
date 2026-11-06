@@ -1159,8 +1159,16 @@
 			"route": "/flows/:id",
 			"type": "flow",
 			"title": "Flow",
-			"config": { "app": "buildiq" },
-			"_note": "The shared flow canvas over the same native flow store the rest of the fleet uses - not an app-owned editor."
+			"config": { "app": "buildiq", "listMode": true },
+			"_note": "The shared flow canvas over the same native flow store the rest of the fleet uses - not an app-owned editor. listMode offers the list view beside the canvas (board BqFlowsBewerken, a variant of OrFlowLijst)."
+		},
+		{
+			"id": "ApplicationFlow",
+			"route": "/applications/:app/flows/:id",
+			"type": "flow",
+			"title": "Flow",
+			"config": { "listMode": true },
+			"_note": "The same flow page for a flow of a built application, opened from Automations with ?view=list. No config.app on purpose: the :app route param reaches the page as its app prop, so a new flow is stamped with the application under construction. Stays after FlowDetail: CnBuildiqEditButton opens the first listMode page with :id set to new, and this route has an :app it cannot fill."
 		}
 	],
 	"observability": {
